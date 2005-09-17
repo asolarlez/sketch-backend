@@ -100,6 +100,29 @@ using namespace std;
 }
 
 
+
+ void SAT_AddClauseSigned(SAT_Manager           mng,
+                          int *                 clause_lits,
+                          int                   num_lits,
+                          int                   gid = 0) {
+ 
+ 	
+  CSolver * solver = (CSolver*) mng;
+  int vars = solver->num_variables();
+   for(int i=0; i<num_lits; ++i){   
+   	int sign=0;	
+   	if( clause_lits[i] < 0){ clause_lits[i] = -clause_lits[i]; sign = 1;}
+   	if( clause_lits[i]>vars){
+  		cout<<" INCORRECT STUFF "<<vars<<"  "<< clause_lits[i]<<"  "<<i<<endl;	
+  	}
+   	clause_lits[i] = (clause_lits[i] << 1) + sign;
+  }
+
+  solver->add_orig_clause(clause_lits, num_lits, gid);
+}
+
+
+
  void SAT_AddClause(SAT_Manager           mng,
                           int *                 clause_lits,
                           int                   num_lits,
@@ -109,7 +132,7 @@ using namespace std;
   CSolver * solver = (CSolver*) mng;
   int vars = solver->num_variables();
    for(int i=0; i<num_lits; ++i){
-  	if( clause_lits[i]< -vars || clause_lits[i] > vars){
+  	if( clause_lits[i]<0){
   		cout<<" INCORRECT STUFF "<<vars<<"  "<< clause_lits[i]<<"  "<<i<<endl;	
   	}
   }
