@@ -279,7 +279,7 @@ class bitSwapSketchCheck{
 		setVarClause(mng, dir.getArr("Tout", N-1));
 		
 		for(int i=0; i<N; ++i){
-			setVarClause(mng, dir.getArr("C", N-1), 2);
+			setVarClause(mng, dir.getArr("C", i), 2);
 		}
 	}
 };
@@ -385,7 +385,7 @@ class bitSwapSketch{
 
 
 
-int main(int argc, char ** argv)
+int maon(int argc, char ** argv)
 {
 	SAT_Manager mng = SAT_InitManager();	
 	SAT_SetNumVariables(mng, 0);
@@ -419,7 +419,7 @@ int main(int argc, char ** argv)
 
 
 
-int maon(int argc, char ** argv)
+int main(int argc, char ** argv)
 {
 	//SAT_Manager mng = SAT_InitManager();		
 	// in = 0;
@@ -442,8 +442,8 @@ int maon(int argc, char ** argv)
 	int iterations = 0;
 	bool isDone;
 	do{
-		for(int i=0; i<N; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl;
-		isDone = bscheck.testControls(ctrl, N, input);
+		for(int i=0; i<N+SN; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl;
+		isDone = bscheck.testControls(ctrl, N+SN, input);
 		if(isDone){
 			for(int i=0; i<N; ++i) cout<<"		input["<<i<<"]="<<input[i]<<endl; cout<<"-----------------------------"<<endl;
 			bss.anotherInput(input, N);
