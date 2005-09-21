@@ -120,6 +120,7 @@ public:
 typedef enum{LEFT, RIGHT} direction;
 
 void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const string& source, const string& shamt, direction shift){
+		cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<endl;
 		int amtsize = dir.getArrSize(shamt);
 		int amtrange = 1;
 		for(int i=0; i<amtsize; ++i) amtrange *= 2;
@@ -156,7 +157,7 @@ void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const string
 					addOrClause(mng, cvar2, cvar, cvar-1);
 				}
 				
-				if( shift == RIGHT && aridx - j>0){
+				if( shift == RIGHT && aridx - j>=0){
 					int cvar = dir.newAnonymousVar();
 					addAndClause(mng, cvar, roundVars+j, dir.getArr(source, aridx-j));
 					int cvar2 = dir.newAnonymousVar();
@@ -177,23 +178,28 @@ void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const string
 class bitSwapSketchCheck{
 
 	int N;
+	int SN;
 	SAT_Manager mng;
 	varDir dir;
 	public:
 	
-	bitSwapSketchCheck(int N_p):dir(mng){
+	bitSwapSketchCheck(int N_p, int SN_p):dir(mng){
 		mng = SAT_InitManager();
 		SAT_SetNumVariables(mng, 0);		
 		dir.setMng(mng);		
 		N = N_p;
+		SN = SN_p;
 		cout<<"N="<<N;
 		dir.declareArr("C", N);
+		dir.declareArr("shamt", SN);
 		dir.declareArr("IN", N);
 		dir.declareArr("T1p", N);
 		dir.declareArr("T1", N);
 		dir.declareArr("T2", N);
 		dir.declareArr("T3", N);
 		dir.declareArr("T4", N);
+		dir.declareArr("Tsp", N);
+		dir.declareArr("Tsm", N);
 		dir.declareArr("Tout", N);
 	}
 	
@@ -201,6 +207,9 @@ class bitSwapSketchCheck{
 		SAT_DeleteClauseGroup(mng, 2);
 		for(int i=0; i<N; ++i){
 			setVarClause(mng, ctrl[i%ctrllen]*dir.getArr("C", i), 2);
+		}
+		for(int i=0; i<SN; ++i){
+			setVarClause(mng, ctrl[(N+i)%ctrllen]*dir.getArr("shamt", i), 2);
 		}
 	    int result = SAT_Solve(mng);
 	    if (result != SATISFIABLE) 
@@ -210,6 +219,7 @@ class bitSwapSketchCheck{
 			if( val == 1) inv[i]= 1;
 			else inv[i]= -1;
 		}
+		dir.print();
 		return true;
 	}
 	
@@ -217,22 +227,28 @@ class bitSwapSketchCheck{
 
 		cout<<" t1[0] = in[0] & c[0]; "<<endl;
 		addAndClause(mng, dir.getArr("T1", 0), dir.getArr("IN", 0), dir.getArr("C" ,0));
+
+
+		shiftArrNdet(mng, dir, "Tsm", "IN", "shamt", RIGHT);
+
 	
-		// t1'[i] = in[i] xor in[i-1];
-		cout<<" t1'[i] = in[i] xor in[i-1]; "<<endl;
+		// t1'[i] = in[i] xor Tsm[i];
+		cout<<" t1'[i] = in[i] xor Tsm[i]; "<<endl;
 		for(int i=1; i<N; ++i){
-			addXorClause(mng, dir.getArr("T1p", i), dir.getArr("IN", i), dir.getArr("IN" ,i-1));
+			addXorClause(mng, dir.getArr("T1p", i), dir.getArr("IN", i), dir.getArr("Tsm" ,i));
 		}
 		// t1[i] = t1p[i] & c[i]
 		cout<<" t1[i] = t1p[i] & c[i] "<<endl;
 		for(int i=1; i<N; ++i){
 			addAndClause(mng, dir.getArr("T1", i), dir.getArr("T1p", i), dir.getArr("C" ,i));
 		}
+
+		shiftArrNdet(mng, dir, "Tsp", "T1", "shamt", LEFT);
 		
-		// t2[i] = t1[i] xor t1[i+1]
-		cout<<" t2[i] = t1[i] xor t1[i+1] "<<endl;
+		// t2[i] = t1[i] xor Tsp[i]
+		cout<<" t2[i] = t1[i] xor tsp[i] "<<endl;
 		for(int i=0; i<N-1; ++i){
-			addXorClause(mng, dir.getArr("T2", i), dir.getArr("T1", i), dir.getArr("T1" ,i+1));
+			addXorClause(mng, dir.getArr("T2", i), dir.getArr("T1", i), dir.getArr("Tsp" ,i));
 		}
 		// t2[N-1] = t1[N-1]
 		addEqualsClause(mng, dir.getArr("T2", N-1), dir.getArr("T1", N-1));		
@@ -273,17 +289,20 @@ class bitSwapSketchCheck{
 
 class bitSwapSketch{
 	int N;
+	int SN;
 	SAT_Manager mng;
 	varDir dir;
 	public:
 	
-	bitSwapSketch(int N_p):dir(mng){
+	bitSwapSketch(int N_p, int SN_p):dir(mng){
 		mng = SAT_InitManager();
 		SAT_SetNumVariables(mng, 0);		
 		dir.setMng(mng);
 		N = N_p;
+		SN = SN_p;
 		cout<<"N="<<N;
 		dir.declareArr("C", N);
+		dir.declareArr("shamt", SN);
 	}
 	
 	
@@ -293,11 +312,18 @@ class bitSwapSketch{
 			if( val == 1) ctrl[i]= 1;
 			else ctrl[i]= -1;
 		}
+		
+		for(int i=0; i<SN; ++i){
+			int val = SAT_GetVarAsgnment(mng, dir.getArr("shamt", i));
+			if( val == 1) ctrl[i+N]= 1;
+			else ctrl[i+N]= -1;
+		}
 		SAT_Reset(mng);
 	}
 		
 	void solve(){
 		SAT_Solve(mng);
+		dir.print();
 	}
 	
 	void anotherInput(int inv[], int invlen){
@@ -305,26 +331,38 @@ class bitSwapSketch{
 		dir.declareArr("T1p", N);
 		dir.declareArr("T1", N);
 		dir.declareArr("T2", N);
+		dir.declareArr("Tsp", N);
+		dir.declareArr("Tsm", N);
 		
 				cout<<" t1[0] = in[0] & c[0]; "<<endl;
 		addAndClause(mng, dir.getArr("T1", 0), dir.getArr("IN", 0), dir.getArr("C" ,0));
+
+
+
+
+
+		shiftArrNdet(mng, dir, "Tsm", "IN", "shamt", RIGHT);
+
 	
-		// t1'[i] = in[i] xor in[i-1];
-		cout<<" t1'[i] = in[i] xor in[i-1]; "<<endl;
+		// t1'[i] = in[i] xor Tsm[i];
+		cout<<" t1'[i] = in[i] xor Tsm[i]; "<<endl;
 		for(int i=1; i<N; ++i){
-			addXorClause(mng, dir.getArr("T1p", i), dir.getArr("IN", i), dir.getArr("IN" ,i-1));
+			addXorClause(mng, dir.getArr("T1p", i), dir.getArr("IN", i), dir.getArr("Tsm" ,i));
 		}
 		// t1[i] = t1p[i] & c[i]
 		cout<<" t1[i] = t1p[i] & c[i] "<<endl;
 		for(int i=1; i<N; ++i){
 			addAndClause(mng, dir.getArr("T1", i), dir.getArr("T1p", i), dir.getArr("C" ,i));
 		}
+
+		shiftArrNdet(mng, dir, "Tsp", "T1", "shamt", LEFT);
 		
-		// t2[i] = t1[i] xor t1[i+1]
-		cout<<" t2[i] = t1[i] xor t1[i+1] "<<endl;
+		// t2[i] = t1[i] xor Tsp[i]
+		cout<<" t2[i] = t1[i] xor tsp[i] "<<endl;
 		for(int i=0; i<N-1; ++i){
-			addXorClause(mng, dir.getArr("T2", i), dir.getArr("T1", i), dir.getArr("T1" ,i+1));
+			addXorClause(mng, dir.getArr("T2", i), dir.getArr("T1", i), dir.getArr("Tsp" ,i));
 		}
+
 		// t2[N-1] = t1[N-1]
 		addEqualsClause(mng, dir.getArr("T2", N-1), dir.getArr("T1", N-1));		
 		
@@ -347,7 +385,7 @@ class bitSwapSketch{
 
 
 
-int maon(int argc, char ** argv)
+int main(int argc, char ** argv)
 {
 	SAT_Manager mng = SAT_InitManager();	
 	SAT_SetNumVariables(mng, 0);
@@ -359,15 +397,16 @@ int maon(int argc, char ** argv)
 	dir.declareArr("shamt", 2);	
 	setVarClause(mng, -dir.getArr("input", 0));
 	setVarClause(mng, -dir.getArr("input", 1));
-	setVarClause(mng, -dir.getArr("input", 2));
-	setVarClause(mng, dir.getArr("input", 3));
+	setVarClause(mng, dir.getArr("input", 2));
+	setVarClause(mng, -dir.getArr("input", 3));
 	setVarClause(mng, -dir.getArr("input", 4));
-	shiftArrNdet(mng, dir, "output", "input", "shamt", LEFT);
+	shiftArrNdet(mng, dir, "output", "input", "shamt", RIGHT);
 
-	addEqualsClause(mng, dir.getArr("output", 0), dir.getArr("input", 0+1));
-	addEqualsClause(mng, dir.getArr("output", 1), dir.getArr("input", 1+1));
-	addEqualsClause(mng, dir.getArr("output", 2), dir.getArr("input", 2+1));
-	addEqualsClause(mng, dir.getArr("output", 3), dir.getArr("input", 3+1));
+//	addEqualsClause(mng, dir.getArr("output", 0), dir.getArr("input", 0+1));
+//	addEqualsClause(mng, dir.getArr("output", 1), dir.getArr("input", 1-1));
+	addEqualsClause(mng, dir.getArr("output", 2), dir.getArr("input", 2-2));
+	addEqualsClause(mng, dir.getArr("output", 3), dir.getArr("input", 3-2));
+	addEqualsClause(mng, dir.getArr("output", 4), dir.getArr("input", 4-2));
 	
     int result = SAT_Solve(mng);
     if (result != SATISFIABLE)
@@ -380,7 +419,7 @@ int maon(int argc, char ** argv)
 
 
 
-int main(int argc, char ** argv)
+int maon(int argc, char ** argv)
 {
 	//SAT_Manager mng = SAT_InitManager();		
 	// in = 0;
@@ -388,10 +427,11 @@ int main(int argc, char ** argv)
 	// t1 = 2;
 	// t2 = 3;
 	int N = 3*atoi(argv[1]);
-	int * ctrl = new int[N];
+	int SN = 2;
+	int * ctrl = new int[N+SN];
 	int * input = new int[N];
-	bitSwapSketch bss(N);
-	bitSwapSketchCheck bscheck(N);
+	bitSwapSketch bss(N, SN);
+	bitSwapSketchCheck bscheck(N, SN);
 
 	{ int tmp[] = {-1,-1,-1}; bss.anotherInput(tmp, 3); }
 	bss.solve();
