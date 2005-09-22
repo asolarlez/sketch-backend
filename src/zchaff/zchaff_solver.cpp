@@ -840,6 +840,9 @@ ClauseIdx CSolver::add_clause_with_gid(int * lits, int n_lits, int gid) {
   } else {
     assert(gid <= WORD_WIDTH && gid > 0);
     gflag = (1 << (gid- 1));
+    _allocated_gid |= gflag; //ARMANDO: Added this, because I think it was missing. 
+    						 //Either the code had a bug, or I just introduced one
+    						 //by adding this line.
   }
   ClauseIdx cid = add_clause(lits, n_lits, gflag);
   if (cid < 0) {
