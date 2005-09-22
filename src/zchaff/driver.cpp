@@ -50,7 +50,6 @@ class bitSwapSketchCheck{
 	    int result = SAT_Solve(mng);
 	    if (result != SATISFIABLE) 
 	    	return false;
-		SAT_Solve(mng);
 		for(int i=0; i<N; ++i){
 			int val = SAT_GetVarAsgnment(mng, IN+i+1);
 			if( val == 1) inv[i]= 1;
