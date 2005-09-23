@@ -128,7 +128,7 @@ typedef enum{LEFT, RIGHT} direction;
 
 inline void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const string& source, const string& shamt, direction shift){
 		int amtsize = dir.getArrSize(shamt);
-		cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<"("<<amtsize<<")"<<endl;
+		Dout( cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<"("<<amtsize<<")"<<endl);
 		int amtrange = 1;
 		for(int i=0; i<amtsize; ++i) amtrange *= 2;
 		
