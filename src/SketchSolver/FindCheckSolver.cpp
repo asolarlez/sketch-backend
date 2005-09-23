@@ -38,7 +38,7 @@ void FindCheckSolver::addDiffersClauses(SAT_Manager mng, varDir& dir){
 	// tmp2[i] = tmp2[i-1] | tmp[i]
 	for(int i=1; i<N; ++i){
 		Assert( dir.getVarCnt() == finIdx + i, "THIS SHOULD NOT HAPPEN");
-		addOrClause(mng, dir.newAnonymousVar() , finIdx + i-1, startIdx+1);
+		addOrClause(mng, dir.newAnonymousVar() , finIdx + i-1, startIdx+i);
 	}	
 	// assert tmp2[N-1];
 	setVarClause(mng, finIdx + N-1);
@@ -87,6 +87,7 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 			setVarClause(mngCheck, controls[jj%ctrlsize]*dirCheck.getArr(cname, i), 2);
 		}
 	}
+//	SAT_Reset(mngCheck);
     int result = SAT_Solve(mngCheck);
     if (result != SATISFIABLE) 
     	return false;
@@ -97,6 +98,7 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 		else input[i]= -1;
 	}
 	Dout( dirCheck.print() );
+	SAT_Reset(mngCheck);
 	return true;
 }
 		
@@ -166,9 +168,8 @@ void FindCheckSolver::solve(){
 	
 	int * ctrl = new int[ctrlSize];
 	
-
 	
-	{ int tmp[] = {-1, 1}; 	find(tmp, 2, ctrl); }
+	{ int tmp[] = {-1, -1}; 	find(tmp, 2, ctrl); }
 	int inputSize = getInSize();
 	int * input = new int[inputSize];
 	cout<<"inputSize = "<<inputSize<<endl;
@@ -191,8 +192,32 @@ void FindCheckSolver::solve(){
 	}while(isDone);
 	
 	delete [] ctrl;
-	delete [] input;
-	cout<<" GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;
+	delete [] input;	
+	cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;
+	
+/*	
+	SAT_Reset(mngCheck);
+	cout<<" NClauses= "<<SAT_NumClauses(mngCheck)<<endl;
+	int cl_idx;
+	for (cl_idx = SAT_GetFirstClause (mngCheck); cl_idx >= 0; 
+	          cl_idx = SAT_GetNextClause(mngCheck, cl_idx)) {
+	        int len = SAT_GetClauseNumLits(mngCheck, cl_idx);
+	        int * lits = new int[len+1];
+	        SAT_GetClauseLits( mngCheck, cl_idx, lits);
+	        int i;
+	        for (i=0; i< len; ++i) {
+	            int v_idx = lits[i] >> 1;
+	            int sign = lits[i] & 0x1;
+	            cout<<(sign>0?"":"-")<<v_idx<<", ";
+//	            int var_value = SAT_GetVarAsgnment( mng, v_idx);
+//	            if( (var_value == 1 && sign == 0) ||
+//	                (var_value == 0 && sign == 1) ) break;
+	        }
+	        cout<<endl;
+	        delete [] lits;
+	 }
+	 cout<<"---"<<cl_idx<<endl;
+*/
 }
 
 
