@@ -15,10 +15,22 @@
 #include "SAT.h"
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
-#define Dout( out ) out
+#define Dout( out ) //out
 
 
 using namespace std;
+
+//This function encodes x == a ? b:c;
+inline void addChoiceClause(SAT_Manager mng, int x, int a, int b, int c, int gid=0){
+	Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
+	{ int tmp[] = { -(x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { -(x), (c), (a) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { -(x), (c), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { (x), (a), -(c) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { (x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+}
+
+
 //This function encodes x == a xor b;
 inline void addXorClause(SAT_Manager mng, int x, int a, int b, int gid=0){
 	Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
@@ -93,14 +105,14 @@ public:
 	int getVarCnt(){ return varCnt; }
 	
 	void declareVar(const string& vname){
-		Dout( cout<<"declare "<<vname<<endl );
+		Dout( cout<<"declare "<<vname<<"  "<<varCnt<<endl );
 		varmap[vname]= varCnt;
 		++varCnt;
 		SAT_AddVariable(mng);
 	}
 	
 	void declareArr(const string& arName, int size){
-		Dout( cout<<"declare "<<arName<<"["<<size<<"]"<<endl );
+		Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<varCnt<<"-"<<(varCnt+size-1)<<endl );
 		varmap[arName] = varCnt;
 		arrsize[arName] = size;
 		varCnt += size;
