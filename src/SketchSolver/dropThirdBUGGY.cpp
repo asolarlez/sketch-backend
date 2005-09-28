@@ -8,10 +8,11 @@ class dropThird: public FindCheckSolver{
 	void defineSketch(SAT_Manager mng, varDir& dir);
 	void defineSpec(SAT_Manager mng, varDir& dir);
 	public:
-	dropThird(int N_p, int S_p){
+	dropThird(int N_p, int S_p, int NS_p){
 		N = N_p;
 		S = S_p;
 		declareControl("C", N*S);
+		nseeds = NS_p;
 	}
 };
 
@@ -74,7 +75,7 @@ int main(int argc, char ** argv)
 		cout<<"k ="<<k<<endl;
 	}	
 	cout<<tmp<<" STEPS"<<endl;
-	dropThird bswap(N, tmp);
+	dropThird bswap(N, tmp, atoi(argv[2]));
 	bswap.setup();
 	bswap.solve();
 
