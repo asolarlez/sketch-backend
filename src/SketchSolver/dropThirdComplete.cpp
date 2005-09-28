@@ -116,7 +116,7 @@ int main(int argc, char ** argv)
 		cout<<"k ="<<k<<endl;
 	}
 	cout<<tmp<<" STEPS"<<endl;
-	dropThird bswap(N, tmp-1, atoi(argv[2]));
+	dropThird bswap(N, tmp, atoi(argv[2]));
 	bswap.setup();
 	bswap.solve();
 
