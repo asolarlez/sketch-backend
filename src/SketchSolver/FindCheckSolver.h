@@ -15,7 +15,7 @@ class FindCheckSolver{
 	map<string, int> controlVars;
 	
 	protected:
-	
+	int nseeds;
 	//Reserved variable names.
 	const string IN;
 	const string OUT;
@@ -30,10 +30,11 @@ class FindCheckSolver{
 	virtual void addDiffersClauses(SAT_Manager mng, varDir& dir);
 
 	
-	virtual void setupCheck();		
+	virtual void setupCheck();
 	virtual bool check(int controls[], int ctrlsize, int input[]);
 		
 	virtual void setupFind();
+	virtual void addInputsToTestSet(int input[], int insize);
 	virtual bool find(int input[], int insize, int controls[]);
 	
 	public:

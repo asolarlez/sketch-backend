@@ -1,6 +1,10 @@
 #include "FindCheckSolver.h"
+#include <sys/time.h>
 
 
+#define Dtime( out ) out
+
+//#define WITH_RANDOMNESS 1
 
 FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFind(mngFind), dirCheck(mngCheck){
 	cout<<"CONSTRUCTING "<<IN<<", "<<SOUT<<", "<<OUT<<endl;
@@ -12,6 +16,7 @@ FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFin
 	SAT_SetNumVariables(mngCheck, 0);
 	dirCheck.setMng(mngCheck);
 	controlSize = 0;
+	nseeds = 1;
 }
 
 
@@ -119,11 +124,7 @@ void FindCheckSolver::declareControl(const string& ctrl, int size){
 
 
 
-
-
-
-
-bool FindCheckSolver::find(int input[], int insize, int controls[]){	
+void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 	Dout( cout<<"find()"<<endl );
 	defineSketch(mngFind, dirFind);
 	defineSpec(mngFind, dirFind);	
@@ -134,8 +135,18 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 //Set the values of the inputs from input[];
 	Dout( cout<<"____"<<endl );
 	for(int i=0; i<N; ++i){
-		setVarClause(mngFind, input[i%insize]*dirFind.getArr(IN, i));
+		setVarClause(mngFind,
+		#ifdef WITH_RANDOMNESS	 
+		((rand() & 0x7) > 0? 1 : -1)*
+		#endif 	
+		input[i%insize]*dirFind.getArr(IN, i));
 	}
+}
+
+
+
+bool FindCheckSolver::find(int input[], int insize, int controls[]){	
+	addInputsToTestSet(input, insize);
 //Solve
 	int result = SAT_Solve(mngFind);
     if (result != SATISFIABLE) 	//If solve is bad, return false.
@@ -168,32 +179,87 @@ void FindCheckSolver::solve(){
 	
 	int * ctrl = new int[ctrlSize];
 	
+	time_t tm;
 	
-	{ int tmp[] = {-1, -1}; 	find(tmp, 2, ctrl); }
+	srand(time(&tm));
+	bool fail = false;
+ 	bool isDone;
+	{ 
+		int tmp[ctrlSize];
+		for(int ns = 0; ns < nseeds; ++ns){
+			for(int i=0; i< ctrlSize; ++i){
+				tmp[i] = (rand() & 0x1) > 0? -1 : 1;
+				Dout( cout<<"seedInput["<<i<<"]=\t"<<tmp[i]<<"; "<<endl );
+			}
+			if( ns < nseeds-1 ){
+				addInputsToTestSet(tmp, ctrlSize);
+			}
+		}
+		{
+			struct timeval stime, endtime;
+			Dtime(gettimeofday(&stime, NULL) );
+		isDone = find(tmp, ctrlSize, ctrl);
+			Dtime(gettimeofday(&endtime, NULL) );
+			Dtime( unsigned long long tott = 1000000*(endtime.tv_sec - stime.tv_sec)+
+				   (endtime.tv_usec - stime.tv_usec) );
+	 		Dtime( printf(" *SETUP TIME %d   \n", tott/1000) );
+		}
+		if(!isDone){
+			cout<<"******** FAILED ********"<<endl;	
+			fail = true;
+		}
+	}
 	int inputSize = getInSize();
 	int * input = new int[inputSize];
 	cout<<"inputSize = "<<inputSize<<endl;
-	
+	Dtime( unsigned long long check_time=0 );
+	Dtime( unsigned long long find_time=0 );
 	int iterations = 0;
-	bool isDone;
-	do{
-		for(int i=0; i<ctrlSize; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl;
+	while(isDone){
+		unsigned long long l_f_time, l_c_time;
+		Dout( for(int i=0; i<ctrlSize; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl );
+		cout<<"+";
+		for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);
+		cout<<endl;
+		{
+			struct timeval stime, endtime;
+			Dtime(gettimeofday(&stime, NULL) );
 		isDone = check(ctrl, ctrlSize, input);
+			Dtime(gettimeofday(&endtime, NULL) );
+			Dtime( l_c_time =1000000*(endtime.tv_sec - stime.tv_sec)+
+				   (endtime.tv_usec - stime.tv_usec); check_time += l_c_time );
+		}		
+		
 		if(isDone){
 			Dout( for(int i=0; i<inputSize; ++i) cout<<"		input["<<i<<"]="<<input[i]<<endl; cout<<"-----------------------------"<<endl );
-			bool keepGoing = find(input, inputSize, ctrl);
+			bool keepGoing;
+			{
+				struct timeval stime, endtime;
+				Dtime(gettimeofday(&stime, NULL) );
+			 	keepGoing = find(input, inputSize, ctrl);
+				Dtime(gettimeofday(&endtime, NULL) );
+				Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
+				   (endtime.tv_usec - stime.tv_usec); find_time +=l_f_time );
+			}
 			if( !keepGoing){
 				cout<<"******** FAILED ********"<<endl;
+				fail = true;
 				break;
 			}
 		}
-		cout<<"********  "<<iterations<<endl;
+		cout<<"********  "<<iterations<<"\tftime="<<(l_f_time/1000.0)<<"\tctime="<<(l_c_time/1000.0)<<endl;
 		++iterations;
-	}while(isDone);
+	}
 	
 	delete [] ctrl;
 	delete [] input;	
-	cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;
+	if(!fail){
+		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;
+	}else{
+		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
+	}
+	
+	cout<<" *"<<"CHECK TIME "<<(check_time/1000)<<", FIND TIME "<<(find_time/1000)<<endl;
 	
 /*	
 	SAT_Reset(mngCheck);
