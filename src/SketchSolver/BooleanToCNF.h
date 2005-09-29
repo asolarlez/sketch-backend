@@ -15,10 +15,16 @@
 #include "SAT.h"
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
-#define Dout( out ) //out
+#define Dout( out ) out
 
 
 using namespace std;
+
+void SAT_AddClauseSigned(SAT_Manager          mng,
+                   int *                clause_lits,
+                   int                  num_lits,
+                   int                  gid = 0);
+
 
 //This function encodes x == a ? b:c;
 inline void addChoiceClause(SAT_Manager mng, int x, int a, int b, int c, int gid=0){
@@ -136,60 +142,100 @@ public:
 	}
 };
 
+
+class varRange{
+	public:
+	int varID;
+	int range;	
+	varRange(int vid, int r): varID(vid), range(r){};
+	varRange(const varRange& vr):varID(vr.varID), range(vr.range){};
+	varRange& operator=(const varRange& vr){varID=vr.varID; range=vr.range; return *this;};
+};
+
+
+
+inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, const string& switchvar){
+	int amtsize = dir.getArrSize(switchvar);
+	int amtrange = 1;
+	for(int i=0; i<amtsize; ++i) amtrange *= 2;		
+	
+	//////////////////////////////////////////////////////
+	int lastsize = 1;
+	int lastRoundVars = dir.getVarCnt();
+	addEqualsClause(mng,  dir.newAnonymousVar(), -dir.getArr(switchvar, amtsize-1));
+	addEqualsClause(mng,  dir.newAnonymousVar(), dir.getArr(switchvar, amtsize-1));
+	for(int i=1; i<amtsize; ++i){
+		lastsize = lastsize*2;
+		int roundVars = lastRoundVars;
+		lastRoundVars = dir.getVarCnt();
+		for(int j=0; j<lastsize; ++j){
+			int cvar = roundVars + j;
+			addAndClause(mng, dir.newAnonymousVar(), cvar, -dir.getArr(switchvar, amtsize-1-i));
+			addAndClause(mng, dir.newAnonymousVar(), cvar, dir.getArr(switchvar, amtsize-1-i));
+		}
+	}
+	lastsize = lastsize*2;
+	Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
+	int roundVars = lastRoundVars;
+	return varRange(roundVars, amtrange);
+	//////////////////////////////////////////////////////				
+}
+
+
+
+inline int select(SAT_Manager mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice){
+	int outvar = dir.getVarCnt();	
+	for(int i=0; i<bitsPerChoice; ++i){
+		dir.newAnonymousVar();
+	}	
+	for(int j=0; j<bitsPerChoice; ++j){
+		setVarClause(mng, -(dir.newAnonymousVar()));
+		for(int i=0; i<nchoices; ++i){
+			int cvar = dir.newAnonymousVar();
+			addAndClause(mng, cvar, control+i, choices[i]+j);
+			int cvar2 = dir.newAnonymousVar();
+			addOrClause(mng, cvar2, cvar, cvar-1);
+		}
+		addEqualsClause(mng, outvar+j, dir.getVarCnt()-1);
+	}
+	return outvar;
+}
+
+
+
+
 typedef enum{LEFT, RIGHT} direction;
 
 inline void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const string& source, const string& shamt, direction shift){
-		int amtsize = dir.getArrSize(shamt);
-		Dout( cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<"("<<amtsize<<")"<<endl);
-		int amtrange = 1;
-		for(int i=0; i<amtsize; ++i) amtrange *= 2;
+	int amtsize = dir.getArrSize(shamt);
+	Dout( cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<"("<<amtsize<<")"<<endl);
 		
-		Assert(dir.getArrSize(source) == dir.getArrSize(dest)
-				," Sizes don't match "<<dir.getArrSize(source)<<", "<<dir.getArrSize(dest));
-		int arsize = dir.getArrSize(source);
-		int switchVars;
-		{
-			//////////////////////////////////////////////////////
-			int lastsize = 1;
-			int lastRoundVars = dir.getVarCnt();
-			addEqualsClause(mng,  dir.newAnonymousVar(), -dir.getArr(shamt, amtsize-1));
-			addEqualsClause(mng,  dir.newAnonymousVar(), dir.getArr(shamt, amtsize-1));
-			for(int i=1; i<amtsize; ++i){
-				lastsize = lastsize*2;
-				int roundVars = lastRoundVars;
-				lastRoundVars = dir.getVarCnt();
-				for(int j=0; j<lastsize; ++j){
-					int cvar = roundVars + j;
-					addAndClause(mng, dir.newAnonymousVar(), cvar, -dir.getArr(shamt, amtsize-1-i));
-					addAndClause(mng, dir.newAnonymousVar(), cvar, dir.getArr(shamt, amtsize-1-i));
-				}
+	Assert(dir.getArrSize(source) == dir.getArrSize(dest)
+			," Sizes don't match "<<dir.getArrSize(source)<<", "<<dir.getArrSize(dest));
+	int arsize = dir.getArrSize(source);
+	varRange vr = getSwitchVars(mng, dir, shamt);
+	int switchVars = vr.varID;
+	int amtrange = vr.range;
+	
+	for(int aridx=0; aridx<arsize; ++aridx){
+		setVarClause(mng, -(dir.newAnonymousVar()));
+		for(int j=0; j<amtrange; ++j){
+			if( shift == LEFT && j+aridx<arsize){
+				int cvar = dir.newAnonymousVar();
+				addAndClause(mng, cvar, switchVars+j, dir.getArr(source, j+ aridx));
+				int cvar2 = dir.newAnonymousVar();
+				addOrClause(mng, cvar2, cvar, cvar-1);
 			}
-			lastsize = lastsize*2;
-			Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
-			int roundVars = lastRoundVars;
-			switchVars = roundVars;
-			//////////////////////////////////////////////////////				
-		}
-
-		for(int aridx=0; aridx<arsize; ++aridx){
-			setVarClause(mng, -(dir.newAnonymousVar()));
-			for(int j=0; j<amtrange; ++j){
-				if( shift == LEFT && j+aridx<arsize){
-					int cvar = dir.newAnonymousVar();
-					addAndClause(mng, cvar, switchVars+j, dir.getArr(source, j+ aridx));
-					int cvar2 = dir.newAnonymousVar();
-					addOrClause(mng, cvar2, cvar, cvar-1);
-				}
-				
-				if( shift == RIGHT && aridx - j>=0){
-					int cvar = dir.newAnonymousVar();
-					addAndClause(mng, cvar, switchVars+j, dir.getArr(source, aridx-j));
-					int cvar2 = dir.newAnonymousVar();
-					addOrClause(mng, cvar2, cvar, cvar-1);
-				}
+			
+			if( shift == RIGHT && aridx - j>=0){
+				int cvar = dir.newAnonymousVar();
+				addAndClause(mng, cvar, switchVars+j, dir.getArr(source, aridx-j));
+				int cvar2 = dir.newAnonymousVar();
+				addOrClause(mng, cvar2, cvar, cvar-1);
 			}
-			addEqualsClause(mng, dir.getArr(dest, aridx), dir.getVarCnt()-1);
 		}
+		addEqualsClause(mng, dir.getArr(dest, aridx), dir.getVarCnt()-1);
+	}
 }
 
 #endif /*BOOLEANTOCNF_H_*/
