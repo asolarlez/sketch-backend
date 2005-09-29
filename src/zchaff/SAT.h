@@ -185,12 +185,6 @@ void SAT_AddClause(SAT_Manager          mng,
                    int                  gid = 0);
 
 
-
-void SAT_AddClauseSigned(SAT_Manager          mng,
-                   int *                clause_lits,
-                   int                  num_lits,
-                   int                  gid = 0);
-
 // delete a clause group and learned clauses depending on them.
 void SAT_DeleteClauseGroup(SAT_Manager          mng,
                            int                  gid);
