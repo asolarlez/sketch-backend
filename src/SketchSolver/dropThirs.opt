@@ -4,7 +4,7 @@ dropThird() push 3 pop 3{
 	pop();
 }
 
-dropThird()push 3*WS pop 2*WS{
+dropThirdUnroll() push 3*WS pop * sketches dropThird{
 	while(*){
 		push(pop());
 		push(pop());
@@ -22,7 +22,7 @@ bit[*] logShift(input[*]){
 	return tmp;
 }
 
-bit [2*WS] dropThird(input[3*WS]){
+bit [2*WS] dropThird(input[3*WS]) sketches dropThirdUnroll{
 	tmp1(1:WS);
 	tmp2(1:WS);
 	tmp3(1:WS);
@@ -31,11 +31,6 @@ bit [2*WS] dropThird(input[3*WS]){
 	tmp1p = logShift(tmp1); 
 	tmp2p = logShift(tmp2); 
 	tmp3p = logShift(tmp3);
-	
-	tmp1q(1:2*WS) = tmp1p;
-	tmp2q(1:2*WS) = tmp2p;
-	tmp3q(1:2*WS) = tmp3p;
-	output = tmp1q o tmp2q>>* o tmp3q>>*;
 	
 	output = [tmp1p(*:*), tmp2p(*:*), tmp3p(*:*)];
 	return output;
