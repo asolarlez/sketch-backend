@@ -22,7 +22,7 @@ bit[*] logShift(input[*]){
 	return tmp;
 }
 
-bit [2*WS] dropThird(input[3*WS]) sketches dropThirdUnroll{
+bit [2*WS] dropThirdopt(input[3*WS]) sketches dropThirdUnroll{
 	tmp1(1:WS);
 	tmp2(1:WS);
 	tmp3(1:WS);
