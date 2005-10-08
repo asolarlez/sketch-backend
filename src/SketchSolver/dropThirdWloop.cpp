@@ -54,7 +54,7 @@ int dropThird::logShift(SAT_Manager mng, varDir& dir, const string& C, int start
 		curStage = dir.getVarCnt();		
 	}	
 	varRange vr = getSwitchVars(mng, dir, "loopvar");
-	return select(mng, dir, idxs, vr.varID ,S+1, end-start);
+	return selectMinGood(mng, dir, idxs, vr.varID ,S+1, end-start);
 }
 
 
