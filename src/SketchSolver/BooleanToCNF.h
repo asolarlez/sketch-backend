@@ -74,8 +74,6 @@ inline void setVarClause(SAT_Manager mng, int x, int gid=0){
 	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1, gid);}
 }
 
-
-
 class varDir{
 	map<string, int> varmap;
 	map<string, int> arrsize;
@@ -138,6 +136,7 @@ public:
 	}	
 	int newAnonymousVar(){
 		SAT_AddVariable(mng);
+		SAT_DisableVarBranch(mng, varCnt);
 		return varCnt++;
 	}
 };
@@ -154,53 +153,44 @@ class varRange{
 
 
 
-inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, const string& switchvar){
-	int amtsize = dir.getArrSize(switchvar);
+int assertVectorsDiffer(SAT_Manager mng, varDir& dir, int v1, int v2, int size);
+
+int select(SAT_Manager mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice);
+
+int selectMinGood(SAT_Manager mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice);
+
+int arbitraryPerm(SAT_Manager mng, varDir& dir, int input, int insize, int controls[], int ncontrols, int csize);
+
+inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, int switchID, int amtsize){
 	int amtrange = 1;
-	for(int i=0; i<amtsize; ++i) amtrange *= 2;		
-	
+	for(int i=0; i<amtsize; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
 	int lastsize = 1;
 	int lastRoundVars = dir.getVarCnt();
-	addEqualsClause(mng,  dir.newAnonymousVar(), -dir.getArr(switchvar, amtsize-1));
-	addEqualsClause(mng,  dir.newAnonymousVar(), dir.getArr(switchvar, amtsize-1));
+	addEqualsClause(mng,  dir.newAnonymousVar(), -(switchID+amtsize-1));
+	addEqualsClause(mng,  dir.newAnonymousVar(),  (switchID+ amtsize-1));
 	for(int i=1; i<amtsize; ++i){
 		lastsize = lastsize*2;
 		int roundVars = lastRoundVars;
 		lastRoundVars = dir.getVarCnt();
 		for(int j=0; j<lastsize; ++j){
 			int cvar = roundVars + j;
-			addAndClause(mng, dir.newAnonymousVar(), cvar, -dir.getArr(switchvar, amtsize-1-i));
-			addAndClause(mng, dir.newAnonymousVar(), cvar, dir.getArr(switchvar, amtsize-1-i));
+			addAndClause(mng, dir.newAnonymousVar(), cvar, -(switchID + amtsize-1-i));
+			addAndClause(mng, dir.newAnonymousVar(), cvar, (switchID + amtsize-1-i));
 		}
 	}
 	lastsize = lastsize*2;
 	Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
 	int roundVars = lastRoundVars;
 	return varRange(roundVars, amtrange);
-	//////////////////////////////////////////////////////				
+	//////////////////////////////////////////////////////					
 }
 
 
 
-inline int select(SAT_Manager mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice){
-	int outvar = dir.getVarCnt();	
-	for(int i=0; i<bitsPerChoice; ++i){
-		dir.newAnonymousVar();
-	}	
-	for(int j=0; j<bitsPerChoice; ++j){
-		setVarClause(mng, -(dir.newAnonymousVar()));
-		for(int i=0; i<nchoices; ++i){
-			int cvar = dir.newAnonymousVar();
-			addAndClause(mng, cvar, control+i, choices[i]+j);
-			int cvar2 = dir.newAnonymousVar();
-			addOrClause(mng, cvar2, cvar, cvar-1);
-		}
-		addEqualsClause(mng, outvar+j, dir.getVarCnt()-1);
-	}
-	return outvar;
+inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, const string& switchvar){
+	return getSwitchVars(mng, dir, dir.getArr(switchvar, 0), dir.getArrSize(switchvar));
 }
-
 
 
 
@@ -237,5 +227,47 @@ inline void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const
 		addEqualsClause(mng, dir.getArr(dest, aridx), dir.getVarCnt()-1);
 	}
 }
+
+
+class bitVector{
+	int size;
+	unsigned* data;
+	public:
+	bitVector(int s):size(s){
+		int sz = s/32 + ((s%32)==0?0:1);
+		data = new unsigned[sz];
+		for(int i=0; i<sz; ++i){
+			data[i] = 0;
+		}
+	}
+	bitVector(const bitVector& bv):size(bv.size){
+		int sz = size/32 + ((size%32)==0?0:1);
+		data = new unsigned[sz];
+		for(int i=0; i<sz; ++i){
+			data[i] = bv.data[i];	
+		}
+	}
+	inline void set(int s){
+		data[s/32] |= (0x1 << (s%32));
+	}
+	inline void set(int* s, int len){
+		int sz = len/32 + ((len%32)==0?0:1);
+		int jj=0;
+		for(int i=0; i<sz; ++i){
+			unsigned tmp=0;
+			for(int j=0; j<32; ++j, ++jj){
+				 tmp |= ((s[jj]==1)? 1:0)<<j;	
+			}
+			data[i] = tmp;
+		}
+	}
+	
+	inline bool get(int s){
+		return (data[s/32]>> (s%32) )>0;
+	}
+	virtual ~bitVector(){
+		delete [] data;	
+	}
+};
 
 #endif /*BOOLEANTOCNF_H_*/

@@ -29,24 +29,11 @@ void FindCheckSolver::addEqualsClauses(SAT_Manager mng, varDir& dir){
 	}
 }
 
+
 void FindCheckSolver::addDiffersClauses(SAT_Manager mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
-	int startIdx = dir.getVarCnt();
-	// tmp[i] = SOUT[i] != OUT[i];
-	for(int i=0; i<N; ++i){
-		addXorClause(mng, dir.newAnonymousVar(), dir.getArr(SOUT, i), dir.getArr(OUT ,i));
-	}
-	int finIdx = dir.getVarCnt();
-	// tmp2[0] = tmp[0];
-	addEqualsClause(mng, dir.newAnonymousVar(), startIdx);
-	
-	// tmp2[i] = tmp2[i-1] | tmp[i]
-	for(int i=1; i<N; ++i){
-		Assert( dir.getVarCnt() == finIdx + i, "THIS SHOULD NOT HAPPEN");
-		addOrClause(mng, dir.newAnonymousVar() , finIdx + i-1, startIdx+i);
-	}	
-	// assert tmp2[N-1];
-	setVarClause(mng, finIdx + N-1);
+	int status = assertVectorsDiffer(mng, dir, dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
+	setVarClause(mng, status);
 }
 
 
@@ -136,11 +123,9 @@ void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 	Dout( cout<<"____"<<endl );
 	for(int i=0; i<N; ++i){
 		setVarClause(mngFind,
-		#ifdef WITH_RANDOMNESS	 
-		((rand() & 0x7) > 0? 1 : -1)*
-		#endif 	
 		input[i%insize]*dirFind.getArr(IN, i));
 	}
+	Dout( cout<<"done adding inputs"<<flush<<endl);
 }
 
 

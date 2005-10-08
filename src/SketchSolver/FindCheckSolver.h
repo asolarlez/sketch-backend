@@ -13,7 +13,7 @@ class FindCheckSolver{
 	varDir dirCheck;
 	
 	map<string, int> controlVars;
-	
+	vector<bitVector> inputs;
 	protected:
 	int nseeds;
 	//Reserved variable names.
