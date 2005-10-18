@@ -49,22 +49,26 @@
 </profile>
 </item>
 <item id="org.eclipse.cdt.core.pathentry">
-<pathentry kind="src" path=""/>
+<pathentry excluding="SketchSolver/|zchaff/" kind="src" path=""/>
+<pathentry kind="src" path="SketchSolver"/>
+<pathentry kind="src" path="zchaff"/>
 <pathentry kind="out" path=""/>
 <pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
+<pathentry base-path="Zchaff" include="SketchSolver" kind="inc" path="" system="true"/>
+<pathentry base-path="Zchaff" include="zchaff" kind="inc" path="" system="true"/>
 </item>
 <item id="org.eclipse.cdt.make.core.buildtargets">
 <buildTargets>
 <target name="all" path="zchaff" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>all</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="zchaff" path="zchaff" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>zchaff</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
