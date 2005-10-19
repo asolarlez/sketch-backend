@@ -8,6 +8,7 @@
 %}
 
 %option lex-compat
+%option noyywrap
 
 Digit        ([0-9])
 Integer      ({Digit}+)
