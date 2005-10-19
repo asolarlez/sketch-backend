@@ -1,5 +1,6 @@
 #include "BasicError.h"
 #include "BooleanDAG.h"
+#include "InputReader.h"
 
 #include <fstream>
 #include <ctime>
@@ -53,5 +54,10 @@ int main(int argc, char** argv){
       Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
     }
 	return 0;
+    }catch(BasicError& be){
+      cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
+      exit(1);
+    }
 }
+
 
