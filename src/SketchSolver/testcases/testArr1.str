@@ -6,7 +6,7 @@ Filter testArr1
 
   }
 
-  foo (bit[3] A_idx_0_3L1_0 A_idx_1_3L2_0 A_idx_2_3L3_0,
+  foo (! bit[3] A_idx_0_3L1_0 A_idx_1_3L2_0 A_idx_2_3L3_0,
        bit[3] B_idx_0_3L5_0 B_idx_1_3L6_0 B_idx_2_3L7_0)
   {
 
@@ -17,7 +17,7 @@ Filter testArr1
   }
 
   main (bit[3] IN_idx_0_5L9_0 IN_idx_1_5L10_0 IN_idx_2_5L11_0,
-	bit[3] OUT_idx_0_5L13_0 OUT_idx_1_5L14_0 OUT_idx_2_5L15_0)
+	! bit[3] OUT_idx_0_5L13_0 OUT_idx_1_5L14_0 OUT_idx_2_5L15_0)
   {
 
     fu_idx_0_7L7_1 = IN_idx_0_5L9_0;

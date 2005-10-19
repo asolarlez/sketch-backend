@@ -50,10 +50,11 @@ int main(int argc, char** argv){
       msg += fname;
       msg += " in file ";
       msg += argv[input_idx];
-
+      cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
       for(map<string, BooleanDAG*>::iterator it = INp::functionMap.begin(); it != INp::functionMap.end(); ++it){
       	cout<<it->first<<endl;
+      	it->second->print(cout);
       }
     }
 	return 0;

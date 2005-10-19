@@ -100,11 +100,13 @@ MethodList: Method	{}
 
 InList: T_ident { currentBD->create_inputs(1, *$1); }
 | T_ident InList {
+	cout<<"INPUT "<<*$1<<endl;
 	currentBD->create_inputs(1, *$1);
 }
 
 OutList: T_ident { currentBD->create_outputs(1, *$1); }
 | T_ident OutList{
+	cout<<"OUTPUT "<<*$1<<endl;
 	currentBD->create_outputs(1, *$1);
 }
 
