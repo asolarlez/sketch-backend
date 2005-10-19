@@ -1,4 +1,4 @@
-Filter B
+Filter testArr1
 {
   INIT ()
   {
