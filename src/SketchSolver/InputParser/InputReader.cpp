@@ -1,11 +1,7 @@
-#include "Pipeline.h"
-#include "SplitJoin.h"
-#include "MatrixFilter.h"
-#include "TableFilter.h"
 #include "InputReader.h"
 #include "BooleanDAG.h"
-#include "NativeFilter.h"
-#include "SParameter.h"
+
+
 
 #define YYERROR_VERBOSE 1
 
