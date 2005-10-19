@@ -98,14 +98,14 @@ MethodList: Method	{}
 | MethodList Method	{}
 
 
-InList: T_ident { currentBD->create_inputs(1, $1); }
+InList: T_ident { currentBD->create_inputs(1, *$1); }
 | T_ident InList {
-	currentBD->create_inputs(1, $1);
+	currentBD->create_inputs(1, *$1);
 }
 
-OutList: T_ident { currentBD->create_outputs(1, $1); }
+OutList: T_ident { currentBD->create_outputs(1, *$1); }
 | T_ident OutList{
-	currentBD->create_outputs(1, $1);
+	currentBD->create_outputs(1, *$1);
 }
 
 
@@ -538,10 +538,7 @@ Ident: T_ident { $$=$1; }
 %%
 
 void Inityyparse(){
-	filterMap["Identity"] = new SIdentity();
-	filterMap["Identity"]->set_uniqid(++global_filterid);
-	filterMap["Parameter"] = new SParameter();
-	filterMap["Parameter"]->set_uniqid(++global_filterid);
+
 	 	
 }
 
