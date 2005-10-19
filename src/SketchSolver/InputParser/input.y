@@ -4,7 +4,6 @@
 
 using namespace std;
 
-stack<Filter*> currentFilter;
 BooleanDAG* currentBD;
 stack<bool> sgn_stack;
 stack<string> namestack;
@@ -55,7 +54,7 @@ stack<string> namestack;
 %token T_setJoiner
 
 %token T_eof
-
+%type<intConst> InitBody
 %type<intConst> Program
 %type<strConst> Ident
 %type<intConst> FilterList
@@ -66,7 +65,6 @@ stack<string> namestack;
 %type<intConst> ConstantExpr
 %type<intConst> ConstantTerm
 
-%type <iList> IntList
 
 
 %left '+'
@@ -101,8 +99,6 @@ FilterType: T_Filter { }
 
 
 MethodList: Method	{}
-| VarDecl {}
-| MethodList VarDecl {}
 | MethodList Method	{}
 
 
@@ -124,8 +120,16 @@ T_vartype T_ident '!'
 
 
 ParamList: ParamDecl 
-| ParamDecl ', ' ParamList 
+| ParamDecl ',' ParamList 
 
+
+InitBody:  { /* Empty */ }
+| InitBody InitStatement { /* */ }
+
+
+InitStatement:   ';' { /* */ }
+| T_InRate '=' T_int ';'
+| T_OutRate '=' T_int ';'
 
 Method: T_Init '(' ')' '{' InitBody '}' 
 | T_Work '(' ')' '{' 
@@ -156,11 +160,6 @@ Method: T_Init '(' ')' '{' InitBody '}'
 
 WorkBody:  { /* Empty */ }
 | WorkBody WorkStatement { /* */ }
-
-
-IntList: { $$ = new std::list<int>();}
-| T_int { $$ = new std::list<int>(); $$->push_back($1); }
-| IntList ',' T_int { $$ = $1; $1->push_back($3); }
 
 
 WorkStatement:  ';' {  $$=0;  /* */ }
