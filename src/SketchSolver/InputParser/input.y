@@ -86,11 +86,7 @@ FilterList: Filter  { }
 
 
 Filter: FilterType T_ident  {namestack.push(*$2); } '{' MethodList '}' { 
-				Filter* f = currentFilter.top();
-				
-				filterMap[namestack.top()] = currentFilter.top();				
-				currentFilter.top()->name = namestack.top();
-				namestack.pop(); currentFilter.pop();
+				namestack.pop();
 			}
 
 
@@ -151,6 +147,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 			delete currentBD;
 		}
 		currentBD = new BooleanDAG();
+		functionMap[$1] = currentBD;
 }
 '(' ParamList ')' '{' WorkBody '}'
 

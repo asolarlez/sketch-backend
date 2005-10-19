@@ -20,7 +20,7 @@ namespace INp{
 
 int isatty(int i);
 
-  map<string, BooleanDAG*> filterMap;
+  map<string, BooleanDAG*> functionMap;
   int global_filterid = 0;
 
 #include "InputLexer.c"
