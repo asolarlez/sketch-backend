@@ -7,6 +7,7 @@
 
 #include <string>
 #include <sstream>
+#include <stack>
 
 #include <list>
 
