@@ -7,7 +7,7 @@
 using std::ofstream;
 
 namespace INp{
-  map<string, BooleanDAG*> functionMap;
+extern  map<string, BooleanDAG*> functionMap;
 }
 
 int main(int argc, char** argv){
