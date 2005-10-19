@@ -135,10 +135,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 		}
 		currentBD = new BooleanDAG();
 	}
-	WorkBody '}' { BoolToMatrixConverter btm(*currentBD); 
-					Filter* fl = btm.get_filter(namestack.top());
-					fl->set_uniqid(++global_filterid);
-					currentFilter.push( fl );}
+	WorkBody '}' { }
 
 | T_ident 
 
