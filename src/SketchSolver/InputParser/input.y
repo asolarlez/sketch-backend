@@ -144,7 +144,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 			delete currentBD;
 		}
 		currentBD = new BooleanDAG();
-		functionMap[$1] = currentBD;
+		functionMap[*$1] = currentBD;
 }
 '(' ParamList ')' '{' WorkBody '}'
 
