@@ -109,7 +109,7 @@ void logBase2::defineSpec(SAT_Manager mng, varDir& dir){
 		setVarClause(mng, -dir.newAnonymousVar());
 	}
 	int val[Nout];
-	for(int i=0; i<Nout; ++i){ val[Nout] = ZERO; };
+	for(int i=0; i<Nout; ++i){ val[i] = ZERO; };
 	for(int i=0; i<N; ++i){
 		int lastv = currv;
 		currv = dir.getVarCnt();
