@@ -31,7 +31,7 @@ int main(int argc, char** argv){
       cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
       exit(1);
     }
-      context = "";
+
   
     {
       string fname(argv[input_idx]);
