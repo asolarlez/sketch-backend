@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include "InputReader.h"
 
-
 %}
 
 %option lex-compat

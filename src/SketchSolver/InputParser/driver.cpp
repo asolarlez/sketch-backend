@@ -52,6 +52,9 @@ int main(int argc, char** argv){
       msg += argv[input_idx];
 
       Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
+      for(map<string, BooleanDAG*>::iterator it = INp::functionMap.begin(); it != INp::functionMap.end(); ++it){
+      	cout<<it->first<<endl;
+      }
     }
 	return 0;
     }catch(BasicError& be){
