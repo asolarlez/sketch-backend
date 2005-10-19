@@ -10,6 +10,8 @@ namespace INp{
 extern  map<string, BooleanDAG*> functionMap;
 }
 
+string context;
+
 int main(int argc, char** argv){
   int input_idx = 1;
   try{
@@ -32,7 +34,7 @@ int main(int argc, char** argv){
       exit(1);
     }
 
-  
+  	context = " ";
     {
       string fname(argv[input_idx]);
       int x1 = fname.find_last_of("/");
