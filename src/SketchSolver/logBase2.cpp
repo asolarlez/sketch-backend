@@ -116,7 +116,7 @@ void logBase2::defineSpec(SAT_Manager mng, varDir& dir){
 		for(int j=0; j<Nout; ++j){
 			addChoiceClause(mng, dir.newAnonymousVar(), dir.getArr(IN, i), val[j], lastv+j);
 		}
-		int ov = val[0];
+		int ov = val[Nout-1];
 		val[Nout-1] = val[Nout-1] == ZERO? ONE : ZERO;
 		for(int j=1; j<Nout; ++j){
 			if(val[Nout-1-(j-1)]==ZERO && ov == ONE){
