@@ -3,23 +3,23 @@
 
 class logBase2: public FindCheckSolver{
 	int N;
-	int S;
+	int Nout;
 	protected:
 	void defineSketch(SAT_Manager mng, varDir& dir);
 	void defineSpec(SAT_Manager mng, varDir& dir);
 	
 	public:
-	logBase2(int N_p, int S_p, int NS_p){
+	logBase2(int N_p, int Nout_p, int NS_p){
 		N = N_p;
-		S = S_p;
+		Nout = Nout_p;
 		int k=1;
 		int size=0;
 		while(k<=N){
 			k=k*2;	
 			++size;
 		}
-		declareControl("C1", N*S);
-		declareControl("loopvar", size);
+		declareControl("C1", N*Nout);
+		declareControl("S1", Nout*Nout);
 		nseeds = NS_p;
 	}
 };
@@ -29,11 +29,95 @@ class logBase2: public FindCheckSolver{
 
 
 void logBase2::defineSketch(SAT_Manager mng, varDir& dir){
-
+	dir.declareArr(IN, N);
+	dir.declareArr(SOUT, Nout);
+	dir.declareArr(OUT, Nout);
+	
+	int ZERO = dir.getVarCnt() ; 
+	for(int i=0; i<N; ++i){
+		setVarClause(mng, -dir.newAnonymousVar());	
+	}
+	int currc = dir.getVarCnt() ; 
+	for(int i=0; i<Nout; ++i){
+		setVarClause(mng, -dir.newAnonymousVar());	
+	}
+	
+	int currv = dir.getVarCnt() ; 
+	for(int i=0; i<N; ++i){
+		addEqualsClause(mng, dir.newAnonymousVar(), dir.getArr(IN, i));
+	}
+	
+	
+	for(int k=0; k<Nout; ++k){
+		int tmp1 = dir.getVarCnt();
+		for(int i=0; i<N; ++i){
+			addAndClause(mng, dir.newAnonymousVar(), currv+i, dir.getArr("C1", k*N+i));			
+		}
+		int tmp2 = assertVectorsDiffer(mng, dir, tmp1, ZERO, N);
+		//tmp2 = v & b[i] == 0;
+		dir.declareArr("Stmp", Nout);
+		for(int i=0; i<Nout; ++i){
+			addEqualsClause(mng, dir.getArr("Stmp", i), dir.getArr("S1", k*Nout+i));	
+		}
+		dir.declareArr("vtmp", N);
+		dir.declareArr("currv", N);
+		for(int i=0; i<N; ++i){
+			addEqualsClause(mng, dir.getArr("currv", i), currv+i);	
+		}
+		shiftArrNdet(mng, dir, "vtmp", "currv", "Stmp", RIGHT);
+		int tmpc = dir.getVarCnt();
+		for(int i=0; i<Nout; ++i){
+			addOrClause(mng, dir.newAnonymousVar(), currc+i, dir.getArr("Stmp", i));	
+		}
+		int oldcurrv = currv;
+		currv = dir.getVarCnt();
+		for(int i=0; i<N; ++i){
+			addChoiceClause(mng, dir.newAnonymousVar(), -tmp2 ,dir.getArr("vtmp", i), oldcurrv+i);
+		}
+		int oldcurrc = currc;
+		currc = dir.getVarCnt();
+		for(int i=0; i<Nout; ++i){
+			addChoiceClause(mng, dir.newAnonymousVar(), -tmp2 , tmpc + i, oldcurrv+i);
+		}		
+	}
+	for(int i=0; i<Nout; ++i){	
+		addEqualsClause(mng, dir.getArr(SOUT, i), currc+i);	
+	}
 }
 
 void logBase2::defineSpec(SAT_Manager mng, varDir& dir){
+	int ONE = dir.getVarCnt();
+	setVarClause(mng, dir.newAnonymousVar());
 	
+	int ZERO = dir.getVarCnt();
+	setVarClause(mng, -dir.newAnonymousVar());
+	
+	int currv = dir.getVarCnt();
+	for(int i=0; i<Nout; ++i){
+		setVarClause(mng, -dir.newAnonymousVar());
+	}
+	int val[Nout];
+	for(int i=0; i<Nout; ++i){ val[Nout] = ZERO; };
+	for(int i=0; i<N; ++i){
+		int lastv = currv;			
+		currv = dir.getVarCnt();
+		for(int j=0; j<Nout; ++j){
+			addChoiceClause(mng, dir.newAnonymousVar(), dir.getArr(IN, i), val[j], lastv+j);
+		}
+		int ov = val[0];
+		val[0] = val[0] == ZERO? ONE : ZERO;
+		for(int j=1; j<Nout; ++j){			
+			if(val[j-1]==ZERO && ov == ONE){ 
+				ov = val[j];
+				val[j] = val[j] == ZERO? ONE:ZERO; 
+			}else{
+				ov = val[j];
+			}
+		}
+	}
+	for(int j=0; j<Nout; ++j){
+		addEqualsClause(mng, dir.getArr(OUT, j), currv+j);	
+	}
 }
 
 
@@ -53,7 +137,7 @@ int main(int argc, char ** argv)
 		cout<<"k ="<<k<<endl;
 	}	
 	cout<<2*tmp<<" STEPS"<<endl;
-	logBase2 bswap(N, 2*tmp, atoi(argv[2]));
+	logBase2 bswap(32, 5, atoi(argv[2]));
 	bswap.setup();
 	bswap.solve();
 	return 0;
