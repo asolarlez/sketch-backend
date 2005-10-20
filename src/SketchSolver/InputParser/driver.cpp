@@ -54,12 +54,10 @@ int main(int argc, char** argv){
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
       for(map<string, BooleanDAG*>::iterator it = INp::functionMap.begin(); it != INp::functionMap.end(); ++it){
       	cout<<it->first<<endl;
-      	it->second->cleanup();    
-	    it->second->sort_graph();
-	    it->second->layer_graph();
-    	it->second->add_passthrough();
       	it->second->print(cout);
       }
+      
+      SolveFromInput solver(*INp::functionMap.begin(), *INp::functionMap.begin(), 1);      
     }
 	return 0;
     }catch(BasicError& be){
