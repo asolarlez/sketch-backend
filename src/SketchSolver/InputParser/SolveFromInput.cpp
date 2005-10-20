@@ -2,14 +2,14 @@
 
 #include <map>
 
-void dropThird::defineSketch(SAT_Manager mng, varDir& dir){
+void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
 	dir.declareArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
 	translator(sketch, OUT);
 }
 
-void dropThird::defineSpec(SAT_Manager mng, varDir& dir){
+void SolveFromInput::defineSpec(SAT_Manager mng, varDir& dir){
 	Dout( cout<<"defineSpec()"<<endl );		
 	translator(spec, OUT);
 }
