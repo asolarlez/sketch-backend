@@ -160,7 +160,7 @@ WorkBody:  { /* Empty */ }
 
 
 WorkStatement:  ';' {  $$=0;  /* */ }
-| T_ident '=' Expression ';' {	if( $3 == NULL){
+| T_ident '=' Expression ';' { cout<<"ALIASINGYYY "<<*$1<<endl;	if( $3 == NULL){
 									currentBD->alias( *$1, sgn_stack.top(), "");
 								}else{
 									currentBD->alias( *$1, sgn_stack.top(), *$3);
