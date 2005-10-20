@@ -13,7 +13,7 @@ class SolveFromInput: public FindCheckSolver{
 	void defineSpec(SAT_Manager mng, varDir& dir);
 	void translator(const string& outname);
 	public:
-	dropThird(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1){
+	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1){
 		N = spec_p->get_n_inputs();
 		Nout = spec_p->get_n_outputs();
 		spec = spec_p;
