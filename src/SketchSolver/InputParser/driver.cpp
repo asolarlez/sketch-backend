@@ -1,6 +1,7 @@
 #include "BasicError.h"
 #include "BooleanDAG.h"
 #include "InputReader.h"
+#include "SolveFromInput.h"
 
 #include <fstream>
 #include <ctime>
