@@ -1,8 +1,9 @@
 #ifndef SOLVEFROMINPUT_H_
 #define SOLVEFROMINPUT_H_
 
-#include "FindCheckSolver.h"
 #include "BooleanDAG.h"
+#include "FindCheckSolver.h"
+
 
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* spec;
