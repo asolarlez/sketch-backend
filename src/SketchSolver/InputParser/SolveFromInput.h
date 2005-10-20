@@ -2,6 +2,7 @@
 #define SOLVEFROMINPUT_H_
 
 #include "FindCheckSolver.h"
+#include "BooleanDAG.h"
 
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* spec;
