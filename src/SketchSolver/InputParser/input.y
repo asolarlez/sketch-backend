@@ -133,7 +133,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 | T_Work '(' ')' '{' 
 	{
 		if( currentBD != NULL){
-			delete currentBD;
+			currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
 	}
@@ -143,9 +143,10 @@ Method: T_Init '(' ')' '{' InitBody '}'
 
 {
 		if( currentBD != NULL){
-			delete currentBD;
+			currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
+		cout<<"CREATING "<<*$1<<endl;
 		functionMap[*$1] = currentBD;
 }
 '(' ParamList ')' '{' WorkBody '}'
