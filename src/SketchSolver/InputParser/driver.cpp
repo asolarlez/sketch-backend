@@ -62,6 +62,7 @@ int main(int argc, char** argv){
       
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
+      	INp::functionMap[it->second]->print(cout);
       	it->first->print(cout);
       	SolveFromInput solver(INp::functionMap[it->second], it->first, 1);
 	  	solver.setup();
