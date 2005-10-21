@@ -18,6 +18,7 @@ class SolveFromInput: public FindCheckSolver{
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1){
 		N = spec_p->get_n_inputs();
 		Nout = spec_p->get_n_outputs();
+		cout<<"Nin = "<<N<<"   Nout = "<<Nout<<endl;
 		spec = spec_p;
 		sketch = sketch_p;
       	sketch->cleanup();
