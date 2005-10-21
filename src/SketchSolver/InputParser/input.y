@@ -45,6 +45,7 @@ stack<string> namestack;
 %token T_Native
 %token T_NativeMethod
 %token T_Work
+%token T_Sketches
 %token T_OutRate
 %token T_new
 %token T_InRate
@@ -136,6 +137,8 @@ Method: T_Init '(' ')' '{' InitBody '}'
 			currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
+		cout<<"CREATING work"<<endl;
+		functionMap["work"] = currentBD;
 	}
 	WorkBody '}' { }
 
@@ -148,6 +151,20 @@ Method: T_Init '(' ')' '{' InitBody '}'
 		currentBD = new BooleanDAG();
 		cout<<"CREATING "<<*$1<<endl;
 		functionMap[*$1] = currentBD;
+}
+'(' ParamList ')' '{' WorkBody '}'
+
+
+|T_ident T_Sketches T_ident 
+
+{
+		if( currentBD != NULL){
+			currentBD->print(cout);
+		}
+		currentBD = new BooleanDAG();
+		cout<<*$1<<" SKETCHES "<<*$3<<endl;
+		sketchMap[*$1] = currentBD;
+		sketches[currentBD] = *$3;
 }
 '(' ParamList ')' '{' WorkBody '}'
 

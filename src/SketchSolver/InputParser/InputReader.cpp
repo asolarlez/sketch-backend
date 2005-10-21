@@ -16,8 +16,9 @@ using namespace std;
 namespace INp{
 
 int isatty(int i);
-
   map<string, BooleanDAG*> functionMap;
+  map<string, BooleanDAG*> sketchMap;
+  map<BooleanDAG*, string> sketches;
   int global_filterid = 0;
 
 #include "InputLexer.c"

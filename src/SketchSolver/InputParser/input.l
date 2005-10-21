@@ -147,6 +147,10 @@ Comment      ("//"[^\n]*)
 "INIT"		{
 				return T_Init;
 			}
+			
+"SKETCHES"	{
+				return T_Sketches;
+			}
 
 "WORK"		{
 				return T_Work;

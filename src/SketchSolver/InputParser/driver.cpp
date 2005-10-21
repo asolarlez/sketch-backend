@@ -10,6 +10,8 @@ using std::ofstream;
 
 namespace INp{
 extern  map<string, BooleanDAG*> functionMap;
+extern  map<string, BooleanDAG*> sketchMap;
+extern  map<BooleanDAG*, string> sketches;
 }
 
 string context;
@@ -58,9 +60,14 @@ int main(int argc, char** argv){
       	it->second->print(cout);
       }
       
-      SolveFromInput solver(INp::functionMap.begin()->second, INp::functionMap.begin()->second, 1);
-	  solver.setup();
-	  solver.solve();
+      for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
+      	cout<<"PROCESSING SKETCH "<<it->second<<endl;
+      	it->first->print(cout);
+      	SolveFromInput solver(INp::functionMap[it->second], it->first, 1);
+	  	solver.setup();
+	  	solver.solve();
+      }
+
     }
 	return 0;
     }catch(BasicError& be){
