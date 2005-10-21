@@ -40,7 +40,7 @@ void FindCheckSolver::addDiffersClauses(SAT_Manager mng, varDir& dir){
 
 
 int FindCheckSolver::getInSize(){
-	return dirFind.getArrSize(IN);
+	return dirCheck.getArrSize(IN);
 }
 
 int FindCheckSolver::getCtrlSize(){
@@ -162,30 +162,31 @@ void FindCheckSolver::setup(){
 }
 
 void FindCheckSolver::solve(){
+	int inputSize = getInSize();
 	int ctrlSize = getCtrlSize();
 	
 	int * ctrl = new int[ctrlSize];
-	
+
 	time_t tm;
 	
 	srand(time(&tm));
 	bool fail = false;
  	bool isDone;
 	{ 
-		int tmp[Nin];
+		int tmp[inputSize];
 		for(int ns = 0; ns < nseeds; ++ns){
-			for(int i=0; i< Nin; ++i){
+			for(int i=0; i< inputSize; ++i){
 				tmp[i] = (rand() & 0x1) > 0? -1 : 1;
 				Dout( cout<<"seedInput["<<i<<"]=\t"<<tmp[i]<<"; "<<endl );
 			}
 			if( ns < nseeds-1 ){
-				addInputsToTestSet(tmp, Nin);
+				addInputsToTestSet(tmp, inputSize);
 			}
 		}
 		{
 			struct timeval stime, endtime;
 			Dtime(gettimeofday(&stime, NULL) );
-			isDone = find(tmp, Nin, ctrl);
+			isDone = find(tmp, inputSize, ctrl);
 			Dtime(gettimeofday(&endtime, NULL) );
 			Dtime( unsigned long long tott = 1000000*(endtime.tv_sec - stime.tv_sec)+
 				   (endtime.tv_usec - stime.tv_usec) );
@@ -196,8 +197,6 @@ void FindCheckSolver::solve(){
 			fail = true;
 		}
 	}
-	int inputSize = getInSize();
-	Assert( Nin == inputSize, "There is a missmatch between declared input size and actual input size");
 	int * input = new int[inputSize];
 	cout<<"inputSize = "<<inputSize<<endl;
 	Dtime( unsigned long long check_time=0 );
