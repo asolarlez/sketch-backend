@@ -72,7 +72,9 @@ void FindCheckSolver::setupCheck(){
 
 bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	Dout( cout<<"check()"<<endl );
-	SAT_DeleteClauseGroup(mngCheck, 2);
+	if(controlVars.size()>0){
+		SAT_DeleteClauseGroup(mngCheck, 2);
+	}
 	int jj=0;
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
