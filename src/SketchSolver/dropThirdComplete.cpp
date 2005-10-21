@@ -12,6 +12,8 @@ class dropThird: public FindCheckSolver{
 	dropThird(int N_p, int S_p, int NS_p){
 		N = N_p;
 		S = S_p;
+		Nin = N*3;
+		Nout = N*2;
 		declareControl("C1", N*S);
 		declareControl("C2", N*S);
 		declareControl("C3", N*S);
