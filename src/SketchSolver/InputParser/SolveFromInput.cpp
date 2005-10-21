@@ -11,12 +11,12 @@ void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
 
 void SolveFromInput::defineSpec(SAT_Manager mng, varDir& dir){
 	Dout( cout<<"defineSpec()"<<endl );		
-	translator(spec, OUT);
+	translator(mng, dir, spec, OUT);
 }
 
 
-void SolveFromInput::translator(BooleanDAG* bdag, const string& outname){
-	for(BooleanDAT::iterator node_it = bdag->begin(); node_it != bdag->end; ++node_it){
+void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname){
+	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end; ++node_it){
 		map<node*, int> node_ids;
 		switch((*node_it)->type){
 			case bool_node::AND:{

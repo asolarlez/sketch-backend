@@ -13,7 +13,7 @@ class SolveFromInput: public FindCheckSolver{
 	protected:
 	void defineSketch(SAT_Manager mng, varDir& dir);
 	void defineSpec(SAT_Manager mng, varDir& dir);
-	void translator(BooleanDAG* bdag, const string& outname);
+	void translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname);
 	public:
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1){
 		N = spec_p->get_n_inputs();
