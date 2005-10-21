@@ -57,3 +57,44 @@ Filter testArr1
 
 }
 
+Filter testArr2
+{
+
+
+  foo2 SKETCHES foo (! bit[3] A_idx_0_3L1_1 A_idx_1_3L2_1 A_idx_2_3L3_1,
+       bit[3] B_idx_0_3L5_0 B_idx_1_3L6_0 B_idx_2_3L7_0)
+  {
+
+    A_idx_0_3L1_1 = B_idx_1_3L6_0;
+    A_idx_1_3L2_1 = B_idx_2_3L7_0;
+    A_idx_2_3L3_1 = B_idx_0_3L5_0;
+
+  }
+
+  main2 SKETCHES main (bit[3] IN_idx_0_5L9_0 IN_idx_1_5L10_0 IN_idx_2_5L11_0,
+	! bit[3] OUT_idx_0_5L13_1 OUT_idx_1_5L14_1 OUT_idx_2_5L15_1)
+  {
+
+    fu_idx_0_7L7_1 = IN_idx_0_5L9_0;
+    fu_idx_1_7L8_1 = IN_idx_1_5L10_0;
+    fu_idx_2_7L9_1 = IN_idx_2_5L11_0;
+
+    B_idx_0_8L5_0 = fu_idx_0_7L7_1;
+    B_idx_1_8L6_0 = fu_idx_1_7L8_1;
+    B_idx_2_8L7_0 = fu_idx_2_7L9_1;
+
+
+    A_idx_0_8L1_1 = B_idx_1_8L6_0;
+    A_idx_1_8L2_1 = B_idx_2_8L7_0;
+    A_idx_2_8L3_1 = B_idx_0_8L5_0;
+
+    C_idx_0_7L3_1 = A_idx_0_8L1_1;
+    C_idx_1_7L4_1 = A_idx_1_8L2_1;
+    C_idx_2_7L5_1 = A_idx_2_8L3_1;
+    ;
+    OUT_idx_0_5L13_1 = C_idx_0_7L3_1;
+    OUT_idx_1_5L14_1 = C_idx_1_7L4_1;
+    OUT_idx_2_5L15_1 = C_idx_2_7L5_1;
+
+  }
+}
