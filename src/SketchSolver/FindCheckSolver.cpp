@@ -17,6 +17,8 @@ FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFin
 	dirCheck.setMng(mngCheck);
 	controlSize = 0;
 	nseeds = 1;
+	Nin = 0;
+	Nout = 0;
 }
 
 
@@ -170,20 +172,20 @@ void FindCheckSolver::solve(){
 	bool fail = false;
  	bool isDone;
 	{ 
-		int tmp[ctrlSize];
+		int tmp[Nin];
 		for(int ns = 0; ns < nseeds; ++ns){
-			for(int i=0; i< ctrlSize; ++i){
+			for(int i=0; i< Nin; ++i){
 				tmp[i] = (rand() & 0x1) > 0? -1 : 1;
 				Dout( cout<<"seedInput["<<i<<"]=\t"<<tmp[i]<<"; "<<endl );
 			}
 			if( ns < nseeds-1 ){
-				addInputsToTestSet(tmp, ctrlSize);
+				addInputsToTestSet(tmp, Nin);
 			}
 		}
 		{
 			struct timeval stime, endtime;
 			Dtime(gettimeofday(&stime, NULL) );
-		isDone = find(tmp, ctrlSize, ctrl);
+			isDone = find(tmp, Nin, ctrl);
 			Dtime(gettimeofday(&endtime, NULL) );
 			Dtime( unsigned long long tott = 1000000*(endtime.tv_sec - stime.tv_sec)+
 				   (endtime.tv_usec - stime.tv_usec) );
@@ -195,6 +197,7 @@ void FindCheckSolver::solve(){
 		}
 	}
 	int inputSize = getInSize();
+	Assert( Nin == inputSize, "There is a missmatch between declared input size and actual input size");
 	int * input = new int[inputSize];
 	cout<<"inputSize = "<<inputSize<<endl;
 	Dtime( unsigned long long check_time=0 );
@@ -244,31 +247,7 @@ void FindCheckSolver::solve(){
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
 	
-	cout<<" *"<<"CHECK TIME "<<(check_time/1000)<<", FIND TIME "<<(find_time/1000)<<endl;
-	
-/*	
-	SAT_Reset(mngCheck);
-	cout<<" NClauses= "<<SAT_NumClauses(mngCheck)<<endl;
-	int cl_idx;
-	for (cl_idx = SAT_GetFirstClause (mngCheck); cl_idx >= 0; 
-	          cl_idx = SAT_GetNextClause(mngCheck, cl_idx)) {
-	        int len = SAT_GetClauseNumLits(mngCheck, cl_idx);
-	        int * lits = new int[len+1];
-	        SAT_GetClauseLits( mngCheck, cl_idx, lits);
-	        int i;
-	        for (i=0; i< len; ++i) {
-	            int v_idx = lits[i] >> 1;
-	            int sign = lits[i] & 0x1;
-	            cout<<(sign>0?"":"-")<<v_idx<<", ";
-//	            int var_value = SAT_GetVarAsgnment( mng, v_idx);
-//	            if( (var_value == 1 && sign == 0) ||
-//	                (var_value == 0 && sign == 1) ) break;
-	        }
-	        cout<<endl;
-	        delete [] lits;
-	 }
-	 cout<<"---"<<cl_idx<<endl;
-*/
+	cout<<" *"<<"FIND TIME "<<(find_time/1000)<<", CHECK TIME "<<(check_time/1000)<<endl;
 }
 
 

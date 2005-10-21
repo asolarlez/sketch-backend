@@ -20,6 +20,8 @@ class FindCheckSolver{
 	const string IN;
 	const string OUT;
 	const string SOUT;
+	int Nin;
+	int Nout;
 	
 	
 	
