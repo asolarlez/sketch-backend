@@ -46,12 +46,14 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 			case bool_node::SRC:{
 				int iid = (*node_it)->ion_pos;
 				node_ids[*node_it] = dir.getArr(IN, iid);
+				cout<<"REGISTERING "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<endl;
 				break;
 			}
 			case bool_node::DST:{
 				int oid = (*node_it)->ion_pos;		
 				int nvar = dir.getArr(outname, oid);
 				int msign = (*node_it)->mother_sgn? 1 : -1;
+				cout<<outname<<"["<<oid<<"]="<<(*node_it)->mother->name<<" "<<node_ids[(*node_it)->mother]<<endl;
 				addEqualsClause(mng, nvar, msign*node_ids[(*node_it)->mother]);
 				break;
 			}
