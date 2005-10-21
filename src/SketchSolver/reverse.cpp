@@ -12,6 +12,8 @@ class bitReverse: public FindCheckSolver{
 	bitReverse(int N_p, int S_p, int NS_p){
 		N = N_p;
 		S = S_p;
+		Nin = N;
+		Nout = N;
 		int k=1;
 		int size=0;
 		while(k<=N){

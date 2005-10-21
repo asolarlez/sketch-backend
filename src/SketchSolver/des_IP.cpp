@@ -10,6 +10,8 @@ class desIP: public FindCheckSolver{
 
 	public:
 	desIP(int NS_p){
+		Nin = N;
+		Nout = N;
 		N = 64;
 		int k=1;
 		int size=0;

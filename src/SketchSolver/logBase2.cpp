@@ -3,7 +3,6 @@
 
 class logBase2: public FindCheckSolver{
 	int N;
-	int Nout;
 	protected:
 	void defineSketch(SAT_Manager mng, varDir& dir);
 	void defineSpec(SAT_Manager mng, varDir& dir);
@@ -11,6 +10,7 @@ class logBase2: public FindCheckSolver{
 	public:
 	logBase2(int N_p, int Nout_p, int NS_p){
 		N = N_p;
+		Nin = N;
 		Nout = Nout_p;
 		int k=1;
 		int size=0;

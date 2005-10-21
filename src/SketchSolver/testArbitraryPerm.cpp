@@ -11,6 +11,8 @@ class testA: public FindCheckSolver{
 	public:
 	testA(int NS_p){
 		N = 5;
+		Nin = N;
+		Nout = N;
 		int k=1;
 		int size=0;
 		while(k<(N)){
