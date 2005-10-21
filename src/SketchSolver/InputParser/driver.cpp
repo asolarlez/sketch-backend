@@ -59,6 +59,8 @@ int main(int argc, char** argv){
       }
       
       SolveFromInput solver(INp::functionMap.begin()->second, INp::functionMap.begin()->second, 1);
+	  solver.setup();
+	  solver.solve();
     }
 	return 0;
     }catch(BasicError& be){
