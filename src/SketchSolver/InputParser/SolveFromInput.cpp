@@ -66,3 +66,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 		}
 	}
 }
+
+
+
+
