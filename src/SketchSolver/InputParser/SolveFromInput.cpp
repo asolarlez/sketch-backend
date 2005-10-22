@@ -16,8 +16,8 @@ void SolveFromInput::defineSpec(SAT_Manager mng, varDir& dir){
 
 
 void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname){
+	map<bool_node*, int> node_ids;
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
-		map<bool_node*, int> node_ids;
 		switch((*node_it)->type){
 			case bool_node::AND:{
 				int nvar = dir.newAnonymousVar();
@@ -46,14 +46,14 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 			case bool_node::SRC:{
 				int iid = (*node_it)->ion_pos;
 				node_ids[*node_it] = dir.getArr(IN, iid);
-				cout<<"REGISTERING "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<endl;
+				cout<<"REGISTERING "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
 				break;
 			}
 			case bool_node::DST:{
 				int oid = (*node_it)->ion_pos;		
 				int nvar = dir.getArr(outname, oid);
 				int msign = (*node_it)->mother_sgn? 1 : -1;
-				cout<<outname<<"["<<oid<<"]="<<(*node_it)->mother->name<<" "<<node_ids[(*node_it)->mother]<<endl;
+				cout<<outname<<"["<<oid<<"]="<<(*node_it)->mother->name<<" "<<node_ids[(*node_it)->mother]<<"  "<<(*node_it)->mother<<endl;
 				addEqualsClause(mng, nvar, msign*node_ids[(*node_it)->mother]);
 				break;
 			}
