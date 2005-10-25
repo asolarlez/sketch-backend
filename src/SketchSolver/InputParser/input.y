@@ -129,6 +129,7 @@ InitBody:  { /* Empty */ }
 InitStatement:   ';' { /* */ }
 | T_InRate '=' T_int ';'
 | T_OutRate '=' T_int ';'
+| T_ident '(' T_ident '.' T_ident ',' T_ident '.' T_ident ')' ';'
 
 Method: T_Init '(' ')' '{' InitBody '}' 
 | T_Work '(' ')' '{' 
@@ -177,6 +178,7 @@ WorkBody:  { /* Empty */ }
 
 
 WorkStatement:  ';' {  $$=0;  /* */ }
+
 | T_ident '=' Expression ';' { cout<<"ALIASINGYYY "<<*$1<<endl;	if( $3 == NULL){
 									currentBD->alias( *$1, sgn_stack.top(), "");
 								}else{
@@ -535,7 +537,17 @@ Term: Constant {
 				sgn_stack.push( alias.second );  
 			} 
 		}
-
+| '<' Ident '>' {
+	cout<<"CONTROL "<<*$2<<endl;
+	currentBD->create_controls(-1, *$2);
+	if( !currentBD->has_alias(*$2) ){ 
+		$$ = $2;  sgn_stack.push(true); 
+	}else{ 
+		pair<string, bool> alias(currentBD->get_alias(*$2)); 
+		$$ = new string( alias.first ); 
+		sgn_stack.push( alias.second );  
+	} 
+}
 
 ConstantExpr: ConstantTerm { $$ = $1; }
 | ConstantExpr '+' ConstantTerm { $$ = $1 + $3; }
