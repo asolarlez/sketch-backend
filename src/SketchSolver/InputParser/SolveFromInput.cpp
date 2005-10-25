@@ -24,6 +24,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				node_ids[*node_it] = nvar;
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
+				cout<<"AND "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
 				addAndClause(mng, nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
 				break;
 			}
@@ -32,6 +33,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				node_ids[*node_it] = nvar;
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
+				cout<<"OR "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
 				addOrClause(mng, nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);				
 				break;
 			}
@@ -40,6 +42,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				node_ids[*node_it] = nvar;
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
+				cout<<"XOR "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
 				addXorClause(mng, nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
 				break;
 			}
@@ -47,6 +50,12 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				int iid = (*node_it)->ion_pos;
 				node_ids[*node_it] = dir.getArr(IN, iid);
 				cout<<"REGISTERING "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
+				break;
+			}
+			case bool_node::CTRL:{
+				int iid = (*node_it)->ion_pos;
+				node_ids[*node_it] = dir.getArr(CTRL, iid);
+				cout<<"CONTROL "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl;
 				break;
 			}
 			case bool_node::DST:{
@@ -63,6 +72,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				addEqualsClause(mng, nvar, msign*node_ids[(*node_it)->mother]);			
 				break;
 			}
+			
 		}
 	}
 }

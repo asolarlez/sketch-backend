@@ -8,6 +8,7 @@
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* spec;
 	BooleanDAG* sketch;
+	const string CTRL;
 	int N;
 	int Nout;
 	protected:
@@ -15,7 +16,7 @@ class SolveFromInput: public FindCheckSolver{
 	void defineSpec(SAT_Manager mng, varDir& dir);
 	void translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname);
 	public:
-	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1){
+	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1):CTRL("_C"){
 		N = spec_p->get_n_inputs();
 		Nout = spec_p->get_n_outputs();
 		spec = spec_p;
@@ -24,6 +25,7 @@ class SolveFromInput: public FindCheckSolver{
       	spec->cleanup();
 	    sketch->sort_graph();
 	    spec->sort_graph();
+		declareControl(CTRL, sketch->get_n_controls());
 		nseeds = NS_p;
 	}
 };
