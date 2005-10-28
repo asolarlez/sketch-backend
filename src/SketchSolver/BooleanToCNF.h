@@ -206,7 +206,7 @@ inline void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const
 	varRange vr = getSwitchVars(mng, dir, shamt);
 	int switchVars = vr.varID;
 	int amtrange = vr.range;
-	
+
 	for(int aridx=0; aridx<arsize; ++aridx){
 		setVarClause(mng, -(dir.newAnonymousVar()));
 		for(int j=0; j<amtrange; ++j){
@@ -215,8 +215,7 @@ inline void shiftArrNdet(SAT_Manager mng, varDir& dir, const string& dest, const
 				addAndClause(mng, cvar, switchVars+j, dir.getArr(source, j+ aridx));
 				int cvar2 = dir.newAnonymousVar();
 				addOrClause(mng, cvar2, cvar, cvar-1);
-			}
-			
+			}			
 			if( shift == RIGHT && aridx - j>=0){
 				int cvar = dir.newAnonymousVar();
 				addAndClause(mng, cvar, switchVars+j, dir.getArr(source, aridx-j));

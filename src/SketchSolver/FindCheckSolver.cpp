@@ -109,6 +109,7 @@ void FindCheckSolver::setupFind(){
 
 
 void FindCheckSolver::declareControl(const string& ctrl, int size){
+	Dout(cout<<"DECLARING CONTROL "<<ctrl<<" "<<size<<endl);
 	controlVars[ctrl] = size;
 	controlSize += size;
 }

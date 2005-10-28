@@ -15,6 +15,7 @@ class SolveFromInput: public FindCheckSolver{
 	void defineSketch(SAT_Manager mng, varDir& dir);
 	void defineSpec(SAT_Manager mng, varDir& dir);
 	void translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname);
+	void processArithNode(SAT_Manager mng, varDir& dir, arith_node* anode, 	map<bool_node*, int>& node_ids,  map<bool_node*, vector<int> >& num_ranges);
 	public:
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1):CTRL("_C"){
 		N = spec_p->get_n_inputs();
@@ -25,6 +26,7 @@ class SolveFromInput: public FindCheckSolver{
       	spec->cleanup();
 	    sketch->sort_graph();
 	    spec->sort_graph();
+	    cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl;
 		declareControl(CTRL, sketch->get_n_controls());
 		nseeds = NS_p;
 	}
