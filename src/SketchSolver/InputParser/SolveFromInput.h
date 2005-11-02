@@ -10,6 +10,7 @@ class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* sketch;
 	const string CTRL;
 	int N;
+	int YES;
 	int Nout;
 	protected:
 	void defineSketch(SAT_Manager mng, varDir& dir);
@@ -26,10 +27,11 @@ class SolveFromInput: public FindCheckSolver{
       	spec->cleanup();
 	    sketch->sort_graph();
 	    spec->sort_graph();
-	    cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl;
+	    Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 		declareControl(CTRL, sketch->get_n_controls());
 		nseeds = NS_p;
 	}
+	void output_control_map(ostream& out);
 };
 
 

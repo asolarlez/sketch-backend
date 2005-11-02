@@ -2,10 +2,13 @@
 
 #include <map>
 
+
 void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
 	dir.declareArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
+	YES = dir.newAnonymousVar();
+	setVarClause(mng, YES);
 	translator(mng, dir, sketch, SOUT);
 }
 
@@ -14,9 +17,19 @@ void SolveFromInput::defineSpec(SAT_Manager mng, varDir& dir){
 	translator(mng, dir, spec, OUT);
 }
 
-
+void SolveFromInput::output_control_map(ostream& out){
+	FindCheckSolver::ctrl_iterator ar = begin();
+	Assert( ar != NULL, "THIS CAN't HAPPEN");	
+	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
+		if((*node_it)->type == bool_node::CTRL){
+			int iid = (*node_it)->ion_pos;
+			out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;
+		}
+	}
+}
 void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname){
 	map<bool_node*, int> node_ids;
+	node_ids[NULL] = YES;
 	map<bool_node*, vector<int> > num_ranges;
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		switch((*node_it)->type){
@@ -174,10 +187,11 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			vector<int>& nrange = num_ranges[anode->mother];
 			int id = node_ids[anode->mother];
 			list<bool_node*>::iterator it = anode->multi_mother.begin();
+			list<int>::iterator signs = anode->multi_mother_sgn.begin();
 			vector<int> choices(anode->multi_mother.size());
-			for(int i=0; it != anode->multi_mother.end(); ++i, ++it){
-				Dout(cout<<"choice "<<i<<" = "<<node_ids[*it]<<endl);
-				choices[i] = node_ids[*it];				
+			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){				
+				choices[i] = ((*signs)==1?1:-1)*node_ids[*it];
+				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 			}
 			int cvar, cvar2;
 			cvar2 = dir.newAnonymousVar();

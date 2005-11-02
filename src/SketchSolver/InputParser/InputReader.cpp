@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 #include <stack>
-
+#include <vector>
 #include <list>
 
 using namespace std;

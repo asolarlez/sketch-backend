@@ -21,13 +21,13 @@ an->arith_type = atype;
 if(p1== NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
-	cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
+	//cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
 	Assert(p2 != NULL, "THIS CAN't Happen");
 	currentBD->new_node("", true, *p2, true, bool_node::ARITH, s1, an); 
 }else if(p2==NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
-	cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
+	//cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
 	Assert(p1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*p1, true, "", true, bool_node::ARITH, s1, an); 
 }else{
@@ -116,6 +116,9 @@ return new string(s1);
 %left '>'
 %left T_eq
 %left T_neq
+%right '?'
+%right ':'
+
 
 %%
 
@@ -175,10 +178,9 @@ Method: T_Init '(' ')' '{' InitBody '}'
 | T_Work '(' ')' '{' 
 	{
 		if( currentBD != NULL){
-			currentBD->print(cout);
+			//currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
-		cout<<"CREATING work"<<endl;
 		functionMap["work"] = currentBD;
 	}
 	WorkBody '}' { }
@@ -187,7 +189,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 
 {
 		if( currentBD != NULL){
-			currentBD->print(cout);
+			//currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
 		cout<<"CREATING "<<*$1<<endl;
@@ -200,7 +202,7 @@ Method: T_Init '(' ')' '{' InitBody '}'
 
 {
 		if( currentBD != NULL){
-			currentBD->print(cout);
+			//currentBD->print(cout);
 		}
 		currentBD = new BooleanDAG();
 		cout<<*$1<<" SKETCHES "<<*$3<<endl;
@@ -219,7 +221,7 @@ WorkBody:  { /* Empty */ }
 
 WorkStatement:  ';' {  $$=0;  /* */ }
 
-| T_ident '=' Expression ';' { cout<<"ALIASINGYYY "<<*$1<<endl;	if( $3 == NULL){
+| T_ident '=' Expression ';' { 	if( $3 == NULL){
 									currentBD->alias( *$1, 1==sgn_stack.top(), "");
 								}else{
 									currentBD->alias( *$1, 1==sgn_stack.top(), *$3);
@@ -477,15 +479,25 @@ string s1 = currentBD->new_name();
 	arith_node* an = new arith_node();
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
-	for(int i=0; i<childs->size(); ++i, ++it){
+	int bigN = childs->size();
+	vector<int> tempsgn(bigN);
+	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-		(*it)->children.push_back(an);
-		an->multi_mother_sgn.push_back(sgn_stack.top());
+		if(*it != NULL){
+			(*it)->children.push_back(an);
+		}
+		tempsgn[bigN-1-i] = sgn_stack.top();
 		sgn_stack.pop();
 	}
+	
+	for(int i=0; i<bigN; ++i){
+		an->multi_mother_sgn.push_back(tempsgn[i]);
+	}
 	an->arith_type = arith_node::ARRACC;
+	Assert($5 != NULL, "THIS CAN'T HAPPEN!!");
 	currentBD->new_node(*$5, b1, "", false, bool_node::ARITH, s1, an); 
 	$$ = new string(s1);  sgn_stack.push(true);
+	delete childs;
 }
 | Term '+' Term {
 int t2 = sgn_stack.top(); sgn_stack.pop();
@@ -496,13 +508,11 @@ an->arith_type = arith_node::PLUS;
 if($1== NULL){
 	an->mother_quant = t2;
 	an->father_quant = t1;
-	cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
 	Assert($3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
 }else if($3==NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
-	cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
 	Assert($1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
 }else{
@@ -520,13 +530,11 @@ an->arith_type = arith_node::PLUS;
 if($1== NULL){
 	an->mother_quant = -t2;
 	an->father_quant = t1;
-	cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
 	Assert($3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
 }else if($3==NULL){
 	an->mother_quant = t1;
 	an->father_quant = -t2;
-	cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
 	Assert($1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
 }else{
@@ -551,9 +559,12 @@ $$ = new string(s1);  sgn_stack.push(true);
 }
 
 
-| Expression '?' Expression ':' Expression { 	bool b3 = 1==sgn_stack.top(); sgn_stack.pop();
-							bool b2 = 1==sgn_stack.top(); sgn_stack.pop();
-							bool b1 = 1==sgn_stack.top(); sgn_stack.pop();							
+| Expression '?' Expression ':' Expression { 	
+							int i3 = sgn_stack.top(); sgn_stack.pop();
+							int i2 = sgn_stack.top(); sgn_stack.pop();
+							bool b3 = 1== i3;
+							bool b2 = 1== i2;
+							bool b1 = 1==sgn_stack.top(); sgn_stack.pop();
 							if( $1 != NULL && $3 != NULL && $5 != NULL){
 								string s1 = currentBD->new_name();			  
 								currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
@@ -639,12 +650,20 @@ $$ = new string(s1);  sgn_stack.push(true);
 
 varList: Term {
 	$$ = new list<bool_node*>();	
-	$$->push_back( currentBD->get_node(*$1) );
+	if($1 != NULL){
+		$$->push_back( currentBD->get_node(*$1) );
+	}else{
+		$$->push_back( NULL );
+	}
 }
 | Term varList{
 //The signs are already in the stack by default. All I have to do is not remove them.
-$2->push_back( currentBD->get_node(*$1) );
-$$ = $2;
+	if($1 != NULL){
+		$2->push_back( currentBD->get_node(*$1) );
+	}else{
+		$2->push_back( NULL );
+	}
+	$$ = $2;
 }
 
 
@@ -670,7 +689,6 @@ Term: Constant {
 			} 
 		}
 | '<' Ident '>' {
-	cout<<"CONTROL "<<*$2<<endl;
 	currentBD->create_controls(-1, *$2);
 	if( !currentBD->has_alias(*$2) ){ 
 		$$ = $2;  sgn_stack.push(true); 
@@ -681,7 +699,6 @@ Term: Constant {
 	} 
 }
 | '<' Ident Constant '>' {
-	cout<<"CONTROL "<<*$2<<"  "<<$3<<endl;
 	int N=currentBD->create_controls($3, *$2);
 	arith_node* an = new arith_node();
 	for(int i=0; i<$3; ++i){

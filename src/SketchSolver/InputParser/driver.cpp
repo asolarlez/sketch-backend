@@ -55,18 +55,17 @@ int main(int argc, char** argv){
       msg += argv[input_idx];
       cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
-      for(map<string, BooleanDAG*>::iterator it = INp::functionMap.begin(); it != INp::functionMap.end(); ++it){
-      	cout<<it->first<<endl;
-      	it->second->print(cout);
-      }
-      
+		ofstream out(argv[input_idx+1]);
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
-      	INp::functionMap[it->second]->print(cout);
-      	it->first->print(cout);
+      	Dout(INp::functionMap[it->second]->print(cout));
       	SolveFromInput solver(INp::functionMap[it->second], it->first, 1);
 	  	solver.setup();
-	  	solver.solve();
+	  	if( solver.solve() ){
+			solver.output_control_map(out);
+	  	}else{
+	  		return 1;	
+	  	}
       }
 
     }
