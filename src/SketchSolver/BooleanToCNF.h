@@ -15,7 +15,7 @@
 #include "SAT.h"
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
-#define Dout( out ) out
+#define Dout( out ) //out
 
 
 using namespace std;

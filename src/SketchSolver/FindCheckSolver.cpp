@@ -16,6 +16,7 @@ FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFin
 	SAT_SetNumVariables(mngCheck, 0);
 	dirCheck.setMng(mngCheck);
 	controlSize = 0;
+	ctrl = NULL;
 	nseeds = 1;
 	Nin = 0;
 	Nout = 0;
@@ -72,7 +73,8 @@ void FindCheckSolver::setupCheck(){
 
 bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	Dout( cout<<"check()"<<endl );
-	if(controlVars.size()>0){
+	if(controlSize>0){
+		Dout(cout<<"Control vars have size"<<controlSize<<endl);
 		SAT_DeleteClauseGroup(mngCheck, 2);
 	}
 	int jj=0;
@@ -164,11 +166,15 @@ void FindCheckSolver::setup(){
 	setupCheck();
 }
 
-void FindCheckSolver::solve(){
+bool FindCheckSolver::solve(){
 	int inputSize = getInSize();
 	int ctrlSize = getCtrlSize();
 	
-	int * ctrl = new int[ctrlSize];
+	if(ctrl != NULL){
+		delete [] ctrl;
+		ctrl = NULL;
+	}
+	ctrl = new int[ctrlSize];
 
 	time_t tm;
 	
@@ -241,15 +247,15 @@ void FindCheckSolver::solve(){
 		++iterations;
 	}
 	
-	delete [] ctrl;
 	delete [] input;	
 	if(!fail){
-		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;
+		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;		
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
 	
 	cout<<" *"<<"FIND TIME "<<(find_time/1000)<<", CHECK TIME "<<(check_time/1000)<<endl;
+	return !fail;
 }
 
 

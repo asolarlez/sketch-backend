@@ -14,6 +14,7 @@ class FindCheckSolver{
 	
 	map<string, int> controlVars;
 	vector<bitVector> inputs;
+	int * ctrl;	
 	protected:
 	int nseeds;
 	//Reserved variable names.
@@ -24,6 +25,15 @@ class FindCheckSolver{
 	int Nout;
 	
 	
+	typedef int const* ctrl_iterator;
+	
+	virtual ctrl_iterator begin()const{
+		return ctrl;	
+	}
+	
+	virtual ctrl_iterator end()const{
+		return ctrl + controlSize;
+	}
 	
 	virtual void defineSketch(SAT_Manager mng, varDir& dir)=0;
 	virtual void defineSpec(SAT_Manager mng, varDir& dir)=0;
@@ -47,7 +57,7 @@ class FindCheckSolver{
 	virtual int getInSize();	
 	virtual int getCtrlSize();
 	
-	virtual void solve();	
+	virtual bool solve();	
 	virtual void setup();
 };
 
