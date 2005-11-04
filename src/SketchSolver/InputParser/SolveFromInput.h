@@ -30,6 +30,7 @@ class SolveFromInput: public FindCheckSolver{
 	    Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 		declareControl(CTRL, sketch->get_n_controls());
 		nseeds = NS_p;
+		cout<<"Random seeds = "<<nseeds<<endl;
 	}
 	void output_control_map(ostream& out);
 };
