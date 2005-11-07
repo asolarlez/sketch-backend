@@ -1,0 +1,1992 @@
+// null
+Filter MAIN
+{
+INIT(){
+// {
+setIOTypes(Integer.TYPE, Integer.TYPE);
+ // }
+}
+
+sklog2 SKETCHES slog2( bit[16] in_idx_0_3L1_0  in_idx_1_3L2_0  in_idx_2_3L3_0  in_idx_3_3L4_0  in_idx_4_3L5_0  in_idx_5_3L6_0  in_idx_6_3L7_0  in_idx_7_3L8_0  in_idx_8_3L9_0  in_idx_9_3L10_0  in_idx_10_3L11_0  in_idx_11_3L12_0  in_idx_12_3L13_0  in_idx_13_3L14_0  in_idx_14_3L15_0  in_idx_15_3L16_0  , !  bit[16] _p__out_0_idx_0_3L19_0  _p__out_0_idx_1_3L21_0  _p__out_0_idx_2_3L23_0  _p__out_0_idx_3_3L25_0  _p__out_0_idx_4_3L27_0  _p__out_0_idx_5_3L29_0  _p__out_0_idx_6_3L31_0  _p__out_0_idx_7_3L33_0  _p__out_0_idx_8_3L35_0  _p__out_0_idx_9_3L37_0  _p__out_0_idx_10_3L39_0  _p__out_0_idx_11_3L41_0  _p__out_0_idx_12_3L43_0  _p__out_0_idx_13_3L45_0  _p__out_0_idx_14_3L47_0  _p__out_0_idx_15_3L49_0  )
+{
+// { 			// ../\streamBitFrontend\test\log2.sk:26
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+;
+// { 			// ../\streamBitFrontend\test\log2.sk:33
+// {
+_frv_1_idx_0_23L2_1 = (in_idx_0_3L1_0 & <_25L0>);
+ // }
+// {
+_frv_1_idx_1_23L3_1 = (in_idx_1_3L2_0 & <_26L0>);
+ // }
+// {
+_frv_1_idx_2_23L4_1 = (in_idx_2_3L3_0 & <_27L0>);
+ // }
+// {
+_frv_1_idx_3_23L5_1 = (in_idx_3_3L4_0 & <_28L0>);
+ // }
+// {
+_frv_1_idx_4_23L6_1 = (in_idx_4_3L5_0 & <_29L0>);
+ // }
+// {
+_frv_1_idx_5_23L7_1 = (in_idx_5_3L6_0 & <_30L0>);
+ // }
+// {
+_frv_1_idx_6_23L8_1 = (in_idx_6_3L7_0 & <_31L0>);
+ // }
+// {
+_frv_1_idx_7_23L9_1 = (in_idx_7_3L8_0 & <_32L0>);
+ // }
+// {
+_frv_1_idx_8_23L10_1 = (in_idx_8_3L9_0 & <_33L0>);
+ // }
+// {
+_frv_1_idx_9_23L11_1 = (in_idx_9_3L10_0 & <_34L0>);
+ // }
+// {
+_frv_1_idx_10_23L12_1 = (in_idx_10_3L11_0 & <_35L0>);
+ // }
+// {
+_frv_1_idx_11_23L13_1 = (in_idx_11_3L12_0 & <_36L0>);
+ // }
+// {
+_frv_1_idx_12_23L14_1 = (in_idx_12_3L13_0 & <_37L0>);
+ // }
+// {
+_frv_1_idx_13_23L15_1 = (in_idx_13_3L14_0 & <_38L0>);
+ // }
+// {
+_frv_1_idx_14_23L16_1 = (in_idx_14_3L15_0 & <_39L0>);
+ // }
+// {
+_frv_1_idx_15_23L17_1 = (in_idx_15_3L16_0 & <_40L0>);
+ // }
+;
+ in_idx_0_41L1_0 = _frv_1_idx_0_23L2_1;
+in_idx_1_41L2_0 = _frv_1_idx_1_23L3_1;
+in_idx_2_41L3_0 = _frv_1_idx_2_23L4_1;
+in_idx_3_41L4_0 = _frv_1_idx_3_23L5_1;
+in_idx_4_41L5_0 = _frv_1_idx_4_23L6_1;
+in_idx_5_41L6_0 = _frv_1_idx_5_23L7_1;
+in_idx_6_41L7_0 = _frv_1_idx_6_23L8_1;
+in_idx_7_41L8_0 = _frv_1_idx_7_23L9_1;
+in_idx_8_41L9_0 = _frv_1_idx_8_23L10_1;
+in_idx_9_41L10_0 = _frv_1_idx_9_23L11_1;
+in_idx_10_41L11_0 = _frv_1_idx_10_23L12_1;
+in_idx_11_41L12_0 = _frv_1_idx_11_23L13_1;
+in_idx_12_41L13_0 = _frv_1_idx_12_23L14_1;
+in_idx_13_41L14_0 = _frv_1_idx_13_23L15_1;
+in_idx_14_41L15_0 = _frv_1_idx_14_23L16_1;
+in_idx_15_41L16_0 = _frv_1_idx_15_23L17_1;
+// BEGIN CALL iszero
+// { 			// ../\streamBitFrontend\test\log2.sk:18
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_1 = (1 & !in_idx_0_41L1_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_2 = (res_42L0_1 & !in_idx_1_41L2_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_3 = (res_42L0_2 & !in_idx_2_41L3_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_4 = (res_42L0_3 & !in_idx_3_41L4_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_5 = (res_42L0_4 & !in_idx_4_41L5_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_6 = (res_42L0_5 & !in_idx_5_41L6_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_7 = (res_42L0_6 & !in_idx_6_41L7_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_8 = (res_42L0_7 & !in_idx_7_41L8_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_9 = (res_42L0_8 & !in_idx_8_41L9_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_10 = (res_42L0_9 & !in_idx_9_41L10_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_11 = (res_42L0_10 & !in_idx_10_41L11_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_12 = (res_42L0_11 & !in_idx_11_41L12_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_13 = (res_42L0_12 & !in_idx_12_41L13_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_14 = (res_42L0_13 & !in_idx_13_41L14_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_15 = (res_42L0_14 & !in_idx_14_41L15_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_42L0_16 = (res_42L0_15 & !in_idx_15_41L16_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:20
+_out_0_41L17_1 = res_42L0_16; 			// ../\streamBitFrontend\test\log2.sk:22
+ // }
+// END CALL iszero
+_frv_0_23L0_1 = _out_0_41L17_1;
+; 			// ../\streamBitFrontend\test\log2.sk:34
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+__sa10_61L0_1 = <_61L1  5>; 			// ../\streamBitFrontend\test\log2.sk:36
+// {
+in_idx_0_3L1_1 = (((0 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_0 in_idx_1_3L2_0 in_idx_2_3L3_0 in_idx_3_3L4_0 in_idx_4_3L5_0 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(0 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_1_3L2_1 = (((1 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_0 in_idx_2_3L3_0 in_idx_3_3L4_0 in_idx_4_3L5_0 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(1 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_2_3L3_1 = (((2 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_0 in_idx_3_3L4_0 in_idx_4_3L5_0 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(2 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_3_3L4_1 = (((3 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_0 in_idx_4_3L5_0 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(3 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_4_3L5_1 = (((4 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_0 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(4 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_5_3L6_1 = (((5 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_0 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(5 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_6_3L7_1 = (((6 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_0 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(6 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_7_3L8_1 = (((7 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_0 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(7 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_8_3L9_1 = (((8 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_0 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(8 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_9_3L10_1 = (((9 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_0 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(9 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_10_3L11_1 = (((10 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_0 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(10 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_11_3L12_1 = (((11 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_1 in_idx_11_3L12_0 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(11 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_12_3L13_1 = (((12 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_1 in_idx_11_3L12_1 in_idx_12_3L13_0 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(12 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_13_3L14_1 = (((13 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_1 in_idx_11_3L12_1 in_idx_12_3L13_1 in_idx_13_3L14_0 in_idx_14_3L15_0 in_idx_15_3L16_0$[(13 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_14_3L15_1 = (((14 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_1 in_idx_11_3L12_1 in_idx_12_3L13_1 in_idx_13_3L14_1 in_idx_14_3L15_0 in_idx_15_3L16_0$[(14 + __sa10_61L0_1)]) : 0);
+ // }
+// {
+in_idx_15_3L16_1 = (((15 + __sa10_61L0_1) < 16) ? ($ in_idx_0_3L1_1 in_idx_1_3L2_1 in_idx_2_3L3_1 in_idx_3_3L4_1 in_idx_4_3L5_1 in_idx_5_3L6_1 in_idx_6_3L7_1 in_idx_7_3L8_1 in_idx_8_3L9_1 in_idx_9_3L10_1 in_idx_10_3L11_1 in_idx_11_3L12_1 in_idx_12_3L13_1 in_idx_13_3L14_1 in_idx_14_3L15_1 in_idx_15_3L16_0$[(15 + __sa10_61L0_1)]) : 0);
+ // }
+;
+// {
+ret_idx_0_5L1_2 = (0 | <_80L0>);
+ // }
+// {
+ret_idx_1_5L2_2 = (0 | <_81L0>);
+ // }
+// {
+ret_idx_2_5L3_2 = (0 | <_82L0>);
+ // }
+// {
+ret_idx_3_5L4_2 = (0 | <_83L0>);
+ // }
+// {
+ret_idx_4_5L5_2 = (0 | <_84L0>);
+ // }
+// {
+ret_idx_5_5L6_2 = (0 | <_85L0>);
+ // }
+// {
+ret_idx_6_5L7_2 = (0 | <_86L0>);
+ // }
+// {
+ret_idx_7_5L8_2 = (0 | <_87L0>);
+ // }
+// {
+ret_idx_8_5L9_2 = (0 | <_88L0>);
+ // }
+// {
+ret_idx_9_5L10_2 = (0 | <_89L0>);
+ // }
+// {
+ret_idx_10_5L11_2 = (0 | <_90L0>);
+ // }
+// {
+ret_idx_11_5L12_2 = (0 | <_91L0>);
+ // }
+// {
+ret_idx_12_5L13_2 = (0 | <_92L0>);
+ // }
+// {
+ret_idx_13_5L14_2 = (0 | <_93L0>);
+ // }
+// {
+ret_idx_14_5L15_2 = (0 | <_94L0>);
+ // }
+// {
+ret_idx_15_5L16_2 = (0 | <_95L0>);
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:35
+ // }
+in_idx_12_3L13_2 = !_frv_0_23L0_1? in_idx_12_3L13_1 : in_idx_12_3L13_0; 
+in_idx_6_3L7_2 = !_frv_0_23L0_1? in_idx_6_3L7_1 : in_idx_6_3L7_0; 
+in_idx_5_3L6_2 = !_frv_0_23L0_1? in_idx_5_3L6_1 : in_idx_5_3L6_0; 
+ret_idx_14_5L15_3 = !_frv_0_23L0_1? ret_idx_14_5L15_2 : 0; 
+in_idx_13_3L14_2 = !_frv_0_23L0_1? in_idx_13_3L14_1 : in_idx_13_3L14_0; 
+in_idx_4_3L5_2 = !_frv_0_23L0_1? in_idx_4_3L5_1 : in_idx_4_3L5_0; 
+in_idx_14_3L15_2 = !_frv_0_23L0_1? in_idx_14_3L15_1 : in_idx_14_3L15_0; 
+ret_idx_1_5L2_3 = !_frv_0_23L0_1? ret_idx_1_5L2_2 : 0; 
+ret_idx_3_5L4_3 = !_frv_0_23L0_1? ret_idx_3_5L4_2 : 0; 
+in_idx_1_3L2_2 = !_frv_0_23L0_1? in_idx_1_3L2_1 : in_idx_1_3L2_0; 
+ret_idx_10_5L11_3 = !_frv_0_23L0_1? ret_idx_10_5L11_2 : 0; 
+in_idx_8_3L9_2 = !_frv_0_23L0_1? in_idx_8_3L9_1 : in_idx_8_3L9_0; 
+ret_idx_4_5L5_3 = !_frv_0_23L0_1? ret_idx_4_5L5_2 : 0; 
+ret_idx_0_5L1_3 = !_frv_0_23L0_1? ret_idx_0_5L1_2 : 0; 
+in_idx_9_3L10_2 = !_frv_0_23L0_1? in_idx_9_3L10_1 : in_idx_9_3L10_0; 
+ret_idx_13_5L14_3 = !_frv_0_23L0_1? ret_idx_13_5L14_2 : 0; 
+ret_idx_8_5L9_3 = !_frv_0_23L0_1? ret_idx_8_5L9_2 : 0; 
+in_idx_3_3L4_2 = !_frv_0_23L0_1? in_idx_3_3L4_1 : in_idx_3_3L4_0; 
+in_idx_2_3L3_2 = !_frv_0_23L0_1? in_idx_2_3L3_1 : in_idx_2_3L3_0; 
+ret_idx_7_5L8_3 = !_frv_0_23L0_1? ret_idx_7_5L8_2 : 0; 
+in_idx_11_3L12_2 = !_frv_0_23L0_1? in_idx_11_3L12_1 : in_idx_11_3L12_0; 
+ret_idx_9_5L10_3 = !_frv_0_23L0_1? ret_idx_9_5L10_2 : 0; 
+ret_idx_5_5L6_3 = !_frv_0_23L0_1? ret_idx_5_5L6_2 : 0; 
+ret_idx_2_5L3_3 = !_frv_0_23L0_1? ret_idx_2_5L3_2 : 0; 
+in_idx_10_3L11_2 = !_frv_0_23L0_1? in_idx_10_3L11_1 : in_idx_10_3L11_0; 
+in_idx_7_3L8_2 = !_frv_0_23L0_1? in_idx_7_3L8_1 : in_idx_7_3L8_0; 
+ret_idx_11_5L12_3 = !_frv_0_23L0_1? ret_idx_11_5L12_2 : 0; 
+in_idx_0_3L1_2 = !_frv_0_23L0_1? in_idx_0_3L1_1 : in_idx_0_3L1_0; 
+ret_idx_15_5L16_3 = !_frv_0_23L0_1? ret_idx_15_5L16_2 : 0; 
+in_idx_15_3L16_2 = !_frv_0_23L0_1? in_idx_15_3L16_1 : in_idx_15_3L16_0; 
+ret_idx_6_5L7_3 = !_frv_0_23L0_1? ret_idx_6_5L7_2 : 0; 
+ret_idx_12_5L13_3 = !_frv_0_23L0_1? ret_idx_12_5L13_2 : 0; 
+ 			// ../\streamBitFrontend\test\log2.sk:34
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:33
+// {
+_frv_1_idx_0_96L2_1 = (in_idx_0_3L1_2 & <_98L0>);
+ // }
+// {
+_frv_1_idx_1_96L3_1 = (in_idx_1_3L2_2 & <_99L0>);
+ // }
+// {
+_frv_1_idx_2_96L4_1 = (in_idx_2_3L3_2 & <_100L0>);
+ // }
+// {
+_frv_1_idx_3_96L5_1 = (in_idx_3_3L4_2 & <_101L0>);
+ // }
+// {
+_frv_1_idx_4_96L6_1 = (in_idx_4_3L5_2 & <_102L0>);
+ // }
+// {
+_frv_1_idx_5_96L7_1 = (in_idx_5_3L6_2 & <_103L0>);
+ // }
+// {
+_frv_1_idx_6_96L8_1 = (in_idx_6_3L7_2 & <_104L0>);
+ // }
+// {
+_frv_1_idx_7_96L9_1 = (in_idx_7_3L8_2 & <_105L0>);
+ // }
+// {
+_frv_1_idx_8_96L10_1 = (in_idx_8_3L9_2 & <_106L0>);
+ // }
+// {
+_frv_1_idx_9_96L11_1 = (in_idx_9_3L10_2 & <_107L0>);
+ // }
+// {
+_frv_1_idx_10_96L12_1 = (in_idx_10_3L11_2 & <_108L0>);
+ // }
+// {
+_frv_1_idx_11_96L13_1 = (in_idx_11_3L12_2 & <_109L0>);
+ // }
+// {
+_frv_1_idx_12_96L14_1 = (in_idx_12_3L13_2 & <_110L0>);
+ // }
+// {
+_frv_1_idx_13_96L15_1 = (in_idx_13_3L14_2 & <_111L0>);
+ // }
+// {
+_frv_1_idx_14_96L16_1 = (in_idx_14_3L15_2 & <_112L0>);
+ // }
+// {
+_frv_1_idx_15_96L17_1 = (in_idx_15_3L16_2 & <_113L0>);
+ // }
+;
+ in_idx_0_114L1_0 = _frv_1_idx_0_96L2_1;
+in_idx_1_114L2_0 = _frv_1_idx_1_96L3_1;
+in_idx_2_114L3_0 = _frv_1_idx_2_96L4_1;
+in_idx_3_114L4_0 = _frv_1_idx_3_96L5_1;
+in_idx_4_114L5_0 = _frv_1_idx_4_96L6_1;
+in_idx_5_114L6_0 = _frv_1_idx_5_96L7_1;
+in_idx_6_114L7_0 = _frv_1_idx_6_96L8_1;
+in_idx_7_114L8_0 = _frv_1_idx_7_96L9_1;
+in_idx_8_114L9_0 = _frv_1_idx_8_96L10_1;
+in_idx_9_114L10_0 = _frv_1_idx_9_96L11_1;
+in_idx_10_114L11_0 = _frv_1_idx_10_96L12_1;
+in_idx_11_114L12_0 = _frv_1_idx_11_96L13_1;
+in_idx_12_114L13_0 = _frv_1_idx_12_96L14_1;
+in_idx_13_114L14_0 = _frv_1_idx_13_96L15_1;
+in_idx_14_114L15_0 = _frv_1_idx_14_96L16_1;
+in_idx_15_114L16_0 = _frv_1_idx_15_96L17_1;
+// BEGIN CALL iszero
+// { 			// ../\streamBitFrontend\test\log2.sk:18
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_1 = (1 & !in_idx_0_114L1_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_2 = (res_115L0_1 & !in_idx_1_114L2_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_3 = (res_115L0_2 & !in_idx_2_114L3_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_4 = (res_115L0_3 & !in_idx_3_114L4_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_5 = (res_115L0_4 & !in_idx_4_114L5_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_6 = (res_115L0_5 & !in_idx_5_114L6_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_7 = (res_115L0_6 & !in_idx_6_114L7_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_8 = (res_115L0_7 & !in_idx_7_114L8_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_9 = (res_115L0_8 & !in_idx_8_114L9_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_10 = (res_115L0_9 & !in_idx_9_114L10_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_11 = (res_115L0_10 & !in_idx_10_114L11_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_12 = (res_115L0_11 & !in_idx_11_114L12_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_13 = (res_115L0_12 & !in_idx_12_114L13_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_14 = (res_115L0_13 & !in_idx_13_114L14_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_15 = (res_115L0_14 & !in_idx_14_114L15_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_115L0_16 = (res_115L0_15 & !in_idx_15_114L16_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:20
+_out_0_114L17_1 = res_115L0_16; 			// ../\streamBitFrontend\test\log2.sk:22
+ // }
+// END CALL iszero
+_frv_0_96L0_1 = _out_0_114L17_1;
+; 			// ../\streamBitFrontend\test\log2.sk:34
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+__sa10_134L0_1 = <_134L1  5>; 			// ../\streamBitFrontend\test\log2.sk:36
+// {
+in_idx_0_3L1_3 = (((0 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_2 in_idx_1_3L2_2 in_idx_2_3L3_2 in_idx_3_3L4_2 in_idx_4_3L5_2 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(0 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_1_3L2_3 = (((1 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_2 in_idx_2_3L3_2 in_idx_3_3L4_2 in_idx_4_3L5_2 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(1 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_2_3L3_3 = (((2 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_2 in_idx_3_3L4_2 in_idx_4_3L5_2 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(2 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_3_3L4_3 = (((3 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_2 in_idx_4_3L5_2 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(3 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_4_3L5_3 = (((4 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_2 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(4 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_5_3L6_3 = (((5 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_2 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(5 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_6_3L7_3 = (((6 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_2 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(6 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_7_3L8_3 = (((7 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_2 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(7 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_8_3L9_3 = (((8 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_2 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(8 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_9_3L10_3 = (((9 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_2 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(9 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_10_3L11_3 = (((10 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_2 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(10 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_11_3L12_3 = (((11 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_3 in_idx_11_3L12_2 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(11 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_12_3L13_3 = (((12 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_3 in_idx_11_3L12_3 in_idx_12_3L13_2 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(12 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_13_3L14_3 = (((13 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_3 in_idx_11_3L12_3 in_idx_12_3L13_3 in_idx_13_3L14_2 in_idx_14_3L15_2 in_idx_15_3L16_2$[(13 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_14_3L15_3 = (((14 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_3 in_idx_11_3L12_3 in_idx_12_3L13_3 in_idx_13_3L14_3 in_idx_14_3L15_2 in_idx_15_3L16_2$[(14 + __sa10_134L0_1)]) : 0);
+ // }
+// {
+in_idx_15_3L16_3 = (((15 + __sa10_134L0_1) < 16) ? ($ in_idx_0_3L1_3 in_idx_1_3L2_3 in_idx_2_3L3_3 in_idx_3_3L4_3 in_idx_4_3L5_3 in_idx_5_3L6_3 in_idx_6_3L7_3 in_idx_7_3L8_3 in_idx_8_3L9_3 in_idx_9_3L10_3 in_idx_10_3L11_3 in_idx_11_3L12_3 in_idx_12_3L13_3 in_idx_13_3L14_3 in_idx_14_3L15_3 in_idx_15_3L16_2$[(15 + __sa10_134L0_1)]) : 0);
+ // }
+;
+// {
+ret_idx_0_5L1_4 = (ret_idx_0_5L1_3 | <_153L0>);
+ // }
+// {
+ret_idx_1_5L2_4 = (ret_idx_1_5L2_3 | <_154L0>);
+ // }
+// {
+ret_idx_2_5L3_4 = (ret_idx_2_5L3_3 | <_155L0>);
+ // }
+// {
+ret_idx_3_5L4_4 = (ret_idx_3_5L4_3 | <_156L0>);
+ // }
+// {
+ret_idx_4_5L5_4 = (ret_idx_4_5L5_3 | <_157L0>);
+ // }
+// {
+ret_idx_5_5L6_4 = (ret_idx_5_5L6_3 | <_158L0>);
+ // }
+// {
+ret_idx_6_5L7_4 = (ret_idx_6_5L7_3 | <_159L0>);
+ // }
+// {
+ret_idx_7_5L8_4 = (ret_idx_7_5L8_3 | <_160L0>);
+ // }
+// {
+ret_idx_8_5L9_4 = (ret_idx_8_5L9_3 | <_161L0>);
+ // }
+// {
+ret_idx_9_5L10_4 = (ret_idx_9_5L10_3 | <_162L0>);
+ // }
+// {
+ret_idx_10_5L11_4 = (ret_idx_10_5L11_3 | <_163L0>);
+ // }
+// {
+ret_idx_11_5L12_4 = (ret_idx_11_5L12_3 | <_164L0>);
+ // }
+// {
+ret_idx_12_5L13_4 = (ret_idx_12_5L13_3 | <_165L0>);
+ // }
+// {
+ret_idx_13_5L14_4 = (ret_idx_13_5L14_3 | <_166L0>);
+ // }
+// {
+ret_idx_14_5L15_4 = (ret_idx_14_5L15_3 | <_167L0>);
+ // }
+// {
+ret_idx_15_5L16_4 = (ret_idx_15_5L16_3 | <_168L0>);
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:35
+ // }
+in_idx_12_3L13_4 = !_frv_0_96L0_1? in_idx_12_3L13_3 : in_idx_12_3L13_2; 
+in_idx_6_3L7_4 = !_frv_0_96L0_1? in_idx_6_3L7_3 : in_idx_6_3L7_2; 
+in_idx_5_3L6_4 = !_frv_0_96L0_1? in_idx_5_3L6_3 : in_idx_5_3L6_2; 
+ret_idx_14_5L15_5 = !_frv_0_96L0_1? ret_idx_14_5L15_4 : ret_idx_14_5L15_3; 
+in_idx_13_3L14_4 = !_frv_0_96L0_1? in_idx_13_3L14_3 : in_idx_13_3L14_2; 
+in_idx_4_3L5_4 = !_frv_0_96L0_1? in_idx_4_3L5_3 : in_idx_4_3L5_2; 
+in_idx_14_3L15_4 = !_frv_0_96L0_1? in_idx_14_3L15_3 : in_idx_14_3L15_2; 
+ret_idx_1_5L2_5 = !_frv_0_96L0_1? ret_idx_1_5L2_4 : ret_idx_1_5L2_3; 
+ret_idx_3_5L4_5 = !_frv_0_96L0_1? ret_idx_3_5L4_4 : ret_idx_3_5L4_3; 
+in_idx_1_3L2_4 = !_frv_0_96L0_1? in_idx_1_3L2_3 : in_idx_1_3L2_2; 
+ret_idx_10_5L11_5 = !_frv_0_96L0_1? ret_idx_10_5L11_4 : ret_idx_10_5L11_3; 
+in_idx_8_3L9_4 = !_frv_0_96L0_1? in_idx_8_3L9_3 : in_idx_8_3L9_2; 
+ret_idx_4_5L5_5 = !_frv_0_96L0_1? ret_idx_4_5L5_4 : ret_idx_4_5L5_3; 
+ret_idx_0_5L1_5 = !_frv_0_96L0_1? ret_idx_0_5L1_4 : ret_idx_0_5L1_3; 
+in_idx_9_3L10_4 = !_frv_0_96L0_1? in_idx_9_3L10_3 : in_idx_9_3L10_2; 
+ret_idx_13_5L14_5 = !_frv_0_96L0_1? ret_idx_13_5L14_4 : ret_idx_13_5L14_3; 
+ret_idx_8_5L9_5 = !_frv_0_96L0_1? ret_idx_8_5L9_4 : ret_idx_8_5L9_3; 
+in_idx_3_3L4_4 = !_frv_0_96L0_1? in_idx_3_3L4_3 : in_idx_3_3L4_2; 
+in_idx_2_3L3_4 = !_frv_0_96L0_1? in_idx_2_3L3_3 : in_idx_2_3L3_2; 
+ret_idx_7_5L8_5 = !_frv_0_96L0_1? ret_idx_7_5L8_4 : ret_idx_7_5L8_3; 
+in_idx_11_3L12_4 = !_frv_0_96L0_1? in_idx_11_3L12_3 : in_idx_11_3L12_2; 
+ret_idx_9_5L10_5 = !_frv_0_96L0_1? ret_idx_9_5L10_4 : ret_idx_9_5L10_3; 
+ret_idx_5_5L6_5 = !_frv_0_96L0_1? ret_idx_5_5L6_4 : ret_idx_5_5L6_3; 
+ret_idx_2_5L3_5 = !_frv_0_96L0_1? ret_idx_2_5L3_4 : ret_idx_2_5L3_3; 
+in_idx_10_3L11_4 = !_frv_0_96L0_1? in_idx_10_3L11_3 : in_idx_10_3L11_2; 
+in_idx_7_3L8_4 = !_frv_0_96L0_1? in_idx_7_3L8_3 : in_idx_7_3L8_2; 
+ret_idx_11_5L12_5 = !_frv_0_96L0_1? ret_idx_11_5L12_4 : ret_idx_11_5L12_3; 
+in_idx_0_3L1_4 = !_frv_0_96L0_1? in_idx_0_3L1_3 : in_idx_0_3L1_2; 
+ret_idx_15_5L16_5 = !_frv_0_96L0_1? ret_idx_15_5L16_4 : ret_idx_15_5L16_3; 
+in_idx_15_3L16_4 = !_frv_0_96L0_1? in_idx_15_3L16_3 : in_idx_15_3L16_2; 
+ret_idx_6_5L7_5 = !_frv_0_96L0_1? ret_idx_6_5L7_4 : ret_idx_6_5L7_3; 
+ret_idx_12_5L13_5 = !_frv_0_96L0_1? ret_idx_12_5L13_4 : ret_idx_12_5L13_3; 
+ 			// ../\streamBitFrontend\test\log2.sk:34
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:33
+// {
+_frv_1_idx_0_169L2_1 = (in_idx_0_3L1_4 & <_171L0>);
+ // }
+// {
+_frv_1_idx_1_169L3_1 = (in_idx_1_3L2_4 & <_172L0>);
+ // }
+// {
+_frv_1_idx_2_169L4_1 = (in_idx_2_3L3_4 & <_173L0>);
+ // }
+// {
+_frv_1_idx_3_169L5_1 = (in_idx_3_3L4_4 & <_174L0>);
+ // }
+// {
+_frv_1_idx_4_169L6_1 = (in_idx_4_3L5_4 & <_175L0>);
+ // }
+// {
+_frv_1_idx_5_169L7_1 = (in_idx_5_3L6_4 & <_176L0>);
+ // }
+// {
+_frv_1_idx_6_169L8_1 = (in_idx_6_3L7_4 & <_177L0>);
+ // }
+// {
+_frv_1_idx_7_169L9_1 = (in_idx_7_3L8_4 & <_178L0>);
+ // }
+// {
+_frv_1_idx_8_169L10_1 = (in_idx_8_3L9_4 & <_179L0>);
+ // }
+// {
+_frv_1_idx_9_169L11_1 = (in_idx_9_3L10_4 & <_180L0>);
+ // }
+// {
+_frv_1_idx_10_169L12_1 = (in_idx_10_3L11_4 & <_181L0>);
+ // }
+// {
+_frv_1_idx_11_169L13_1 = (in_idx_11_3L12_4 & <_182L0>);
+ // }
+// {
+_frv_1_idx_12_169L14_1 = (in_idx_12_3L13_4 & <_183L0>);
+ // }
+// {
+_frv_1_idx_13_169L15_1 = (in_idx_13_3L14_4 & <_184L0>);
+ // }
+// {
+_frv_1_idx_14_169L16_1 = (in_idx_14_3L15_4 & <_185L0>);
+ // }
+// {
+_frv_1_idx_15_169L17_1 = (in_idx_15_3L16_4 & <_186L0>);
+ // }
+;
+ in_idx_0_187L1_0 = _frv_1_idx_0_169L2_1;
+in_idx_1_187L2_0 = _frv_1_idx_1_169L3_1;
+in_idx_2_187L3_0 = _frv_1_idx_2_169L4_1;
+in_idx_3_187L4_0 = _frv_1_idx_3_169L5_1;
+in_idx_4_187L5_0 = _frv_1_idx_4_169L6_1;
+in_idx_5_187L6_0 = _frv_1_idx_5_169L7_1;
+in_idx_6_187L7_0 = _frv_1_idx_6_169L8_1;
+in_idx_7_187L8_0 = _frv_1_idx_7_169L9_1;
+in_idx_8_187L9_0 = _frv_1_idx_8_169L10_1;
+in_idx_9_187L10_0 = _frv_1_idx_9_169L11_1;
+in_idx_10_187L11_0 = _frv_1_idx_10_169L12_1;
+in_idx_11_187L12_0 = _frv_1_idx_11_169L13_1;
+in_idx_12_187L13_0 = _frv_1_idx_12_169L14_1;
+in_idx_13_187L14_0 = _frv_1_idx_13_169L15_1;
+in_idx_14_187L15_0 = _frv_1_idx_14_169L16_1;
+in_idx_15_187L16_0 = _frv_1_idx_15_169L17_1;
+// BEGIN CALL iszero
+// { 			// ../\streamBitFrontend\test\log2.sk:18
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_1 = (1 & !in_idx_0_187L1_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_2 = (res_188L0_1 & !in_idx_1_187L2_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_3 = (res_188L0_2 & !in_idx_2_187L3_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_4 = (res_188L0_3 & !in_idx_3_187L4_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_5 = (res_188L0_4 & !in_idx_4_187L5_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_6 = (res_188L0_5 & !in_idx_5_187L6_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_7 = (res_188L0_6 & !in_idx_6_187L7_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_8 = (res_188L0_7 & !in_idx_7_187L8_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_9 = (res_188L0_8 & !in_idx_8_187L9_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_10 = (res_188L0_9 & !in_idx_9_187L10_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_11 = (res_188L0_10 & !in_idx_10_187L11_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_12 = (res_188L0_11 & !in_idx_11_187L12_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_13 = (res_188L0_12 & !in_idx_12_187L13_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_14 = (res_188L0_13 & !in_idx_13_187L14_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_15 = (res_188L0_14 & !in_idx_14_187L15_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_188L0_16 = (res_188L0_15 & !in_idx_15_187L16_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:20
+_out_0_187L17_1 = res_188L0_16; 			// ../\streamBitFrontend\test\log2.sk:22
+ // }
+// END CALL iszero
+_frv_0_169L0_1 = _out_0_187L17_1;
+; 			// ../\streamBitFrontend\test\log2.sk:34
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+__sa10_207L0_1 = <_207L1  5>; 			// ../\streamBitFrontend\test\log2.sk:36
+// {
+in_idx_0_3L1_5 = (((0 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_4 in_idx_1_3L2_4 in_idx_2_3L3_4 in_idx_3_3L4_4 in_idx_4_3L5_4 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(0 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_1_3L2_5 = (((1 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_4 in_idx_2_3L3_4 in_idx_3_3L4_4 in_idx_4_3L5_4 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(1 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_2_3L3_5 = (((2 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_4 in_idx_3_3L4_4 in_idx_4_3L5_4 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(2 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_3_3L4_5 = (((3 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_4 in_idx_4_3L5_4 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(3 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_4_3L5_5 = (((4 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_4 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(4 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_5_3L6_5 = (((5 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_4 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(5 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_6_3L7_5 = (((6 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_4 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(6 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_7_3L8_5 = (((7 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_4 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(7 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_8_3L9_5 = (((8 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_4 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(8 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_9_3L10_5 = (((9 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_4 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(9 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_10_3L11_5 = (((10 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_4 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(10 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_11_3L12_5 = (((11 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_5 in_idx_11_3L12_4 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(11 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_12_3L13_5 = (((12 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_5 in_idx_11_3L12_5 in_idx_12_3L13_4 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(12 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_13_3L14_5 = (((13 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_5 in_idx_11_3L12_5 in_idx_12_3L13_5 in_idx_13_3L14_4 in_idx_14_3L15_4 in_idx_15_3L16_4$[(13 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_14_3L15_5 = (((14 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_5 in_idx_11_3L12_5 in_idx_12_3L13_5 in_idx_13_3L14_5 in_idx_14_3L15_4 in_idx_15_3L16_4$[(14 + __sa10_207L0_1)]) : 0);
+ // }
+// {
+in_idx_15_3L16_5 = (((15 + __sa10_207L0_1) < 16) ? ($ in_idx_0_3L1_5 in_idx_1_3L2_5 in_idx_2_3L3_5 in_idx_3_3L4_5 in_idx_4_3L5_5 in_idx_5_3L6_5 in_idx_6_3L7_5 in_idx_7_3L8_5 in_idx_8_3L9_5 in_idx_9_3L10_5 in_idx_10_3L11_5 in_idx_11_3L12_5 in_idx_12_3L13_5 in_idx_13_3L14_5 in_idx_14_3L15_5 in_idx_15_3L16_4$[(15 + __sa10_207L0_1)]) : 0);
+ // }
+;
+// {
+ret_idx_0_5L1_6 = (ret_idx_0_5L1_5 | <_226L0>);
+ // }
+// {
+ret_idx_1_5L2_6 = (ret_idx_1_5L2_5 | <_227L0>);
+ // }
+// {
+ret_idx_2_5L3_6 = (ret_idx_2_5L3_5 | <_228L0>);
+ // }
+// {
+ret_idx_3_5L4_6 = (ret_idx_3_5L4_5 | <_229L0>);
+ // }
+// {
+ret_idx_4_5L5_6 = (ret_idx_4_5L5_5 | <_230L0>);
+ // }
+// {
+ret_idx_5_5L6_6 = (ret_idx_5_5L6_5 | <_231L0>);
+ // }
+// {
+ret_idx_6_5L7_6 = (ret_idx_6_5L7_5 | <_232L0>);
+ // }
+// {
+ret_idx_7_5L8_6 = (ret_idx_7_5L8_5 | <_233L0>);
+ // }
+// {
+ret_idx_8_5L9_6 = (ret_idx_8_5L9_5 | <_234L0>);
+ // }
+// {
+ret_idx_9_5L10_6 = (ret_idx_9_5L10_5 | <_235L0>);
+ // }
+// {
+ret_idx_10_5L11_6 = (ret_idx_10_5L11_5 | <_236L0>);
+ // }
+// {
+ret_idx_11_5L12_6 = (ret_idx_11_5L12_5 | <_237L0>);
+ // }
+// {
+ret_idx_12_5L13_6 = (ret_idx_12_5L13_5 | <_238L0>);
+ // }
+// {
+ret_idx_13_5L14_6 = (ret_idx_13_5L14_5 | <_239L0>);
+ // }
+// {
+ret_idx_14_5L15_6 = (ret_idx_14_5L15_5 | <_240L0>);
+ // }
+// {
+ret_idx_15_5L16_6 = (ret_idx_15_5L16_5 | <_241L0>);
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:35
+ // }
+in_idx_12_3L13_6 = !_frv_0_169L0_1? in_idx_12_3L13_5 : in_idx_12_3L13_4; 
+in_idx_6_3L7_6 = !_frv_0_169L0_1? in_idx_6_3L7_5 : in_idx_6_3L7_4; 
+in_idx_5_3L6_6 = !_frv_0_169L0_1? in_idx_5_3L6_5 : in_idx_5_3L6_4; 
+ret_idx_14_5L15_7 = !_frv_0_169L0_1? ret_idx_14_5L15_6 : ret_idx_14_5L15_5; 
+in_idx_13_3L14_6 = !_frv_0_169L0_1? in_idx_13_3L14_5 : in_idx_13_3L14_4; 
+in_idx_4_3L5_6 = !_frv_0_169L0_1? in_idx_4_3L5_5 : in_idx_4_3L5_4; 
+in_idx_14_3L15_6 = !_frv_0_169L0_1? in_idx_14_3L15_5 : in_idx_14_3L15_4; 
+ret_idx_1_5L2_7 = !_frv_0_169L0_1? ret_idx_1_5L2_6 : ret_idx_1_5L2_5; 
+ret_idx_3_5L4_7 = !_frv_0_169L0_1? ret_idx_3_5L4_6 : ret_idx_3_5L4_5; 
+in_idx_1_3L2_6 = !_frv_0_169L0_1? in_idx_1_3L2_5 : in_idx_1_3L2_4; 
+ret_idx_10_5L11_7 = !_frv_0_169L0_1? ret_idx_10_5L11_6 : ret_idx_10_5L11_5; 
+in_idx_8_3L9_6 = !_frv_0_169L0_1? in_idx_8_3L9_5 : in_idx_8_3L9_4; 
+ret_idx_4_5L5_7 = !_frv_0_169L0_1? ret_idx_4_5L5_6 : ret_idx_4_5L5_5; 
+ret_idx_0_5L1_7 = !_frv_0_169L0_1? ret_idx_0_5L1_6 : ret_idx_0_5L1_5; 
+in_idx_9_3L10_6 = !_frv_0_169L0_1? in_idx_9_3L10_5 : in_idx_9_3L10_4; 
+ret_idx_13_5L14_7 = !_frv_0_169L0_1? ret_idx_13_5L14_6 : ret_idx_13_5L14_5; 
+ret_idx_8_5L9_7 = !_frv_0_169L0_1? ret_idx_8_5L9_6 : ret_idx_8_5L9_5; 
+in_idx_3_3L4_6 = !_frv_0_169L0_1? in_idx_3_3L4_5 : in_idx_3_3L4_4; 
+in_idx_2_3L3_6 = !_frv_0_169L0_1? in_idx_2_3L3_5 : in_idx_2_3L3_4; 
+ret_idx_7_5L8_7 = !_frv_0_169L0_1? ret_idx_7_5L8_6 : ret_idx_7_5L8_5; 
+in_idx_11_3L12_6 = !_frv_0_169L0_1? in_idx_11_3L12_5 : in_idx_11_3L12_4; 
+ret_idx_9_5L10_7 = !_frv_0_169L0_1? ret_idx_9_5L10_6 : ret_idx_9_5L10_5; 
+ret_idx_5_5L6_7 = !_frv_0_169L0_1? ret_idx_5_5L6_6 : ret_idx_5_5L6_5; 
+ret_idx_2_5L3_7 = !_frv_0_169L0_1? ret_idx_2_5L3_6 : ret_idx_2_5L3_5; 
+in_idx_10_3L11_6 = !_frv_0_169L0_1? in_idx_10_3L11_5 : in_idx_10_3L11_4; 
+in_idx_7_3L8_6 = !_frv_0_169L0_1? in_idx_7_3L8_5 : in_idx_7_3L8_4; 
+ret_idx_11_5L12_7 = !_frv_0_169L0_1? ret_idx_11_5L12_6 : ret_idx_11_5L12_5; 
+in_idx_0_3L1_6 = !_frv_0_169L0_1? in_idx_0_3L1_5 : in_idx_0_3L1_4; 
+ret_idx_15_5L16_7 = !_frv_0_169L0_1? ret_idx_15_5L16_6 : ret_idx_15_5L16_5; 
+in_idx_15_3L16_6 = !_frv_0_169L0_1? in_idx_15_3L16_5 : in_idx_15_3L16_4; 
+ret_idx_6_5L7_7 = !_frv_0_169L0_1? ret_idx_6_5L7_6 : ret_idx_6_5L7_5; 
+ret_idx_12_5L13_7 = !_frv_0_169L0_1? ret_idx_12_5L13_6 : ret_idx_12_5L13_5; 
+ 			// ../\streamBitFrontend\test\log2.sk:34
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:33
+// {
+_frv_1_idx_0_242L2_1 = (in_idx_0_3L1_6 & <_244L0>);
+ // }
+// {
+_frv_1_idx_1_242L3_1 = (in_idx_1_3L2_6 & <_245L0>);
+ // }
+// {
+_frv_1_idx_2_242L4_1 = (in_idx_2_3L3_6 & <_246L0>);
+ // }
+// {
+_frv_1_idx_3_242L5_1 = (in_idx_3_3L4_6 & <_247L0>);
+ // }
+// {
+_frv_1_idx_4_242L6_1 = (in_idx_4_3L5_6 & <_248L0>);
+ // }
+// {
+_frv_1_idx_5_242L7_1 = (in_idx_5_3L6_6 & <_249L0>);
+ // }
+// {
+_frv_1_idx_6_242L8_1 = (in_idx_6_3L7_6 & <_250L0>);
+ // }
+// {
+_frv_1_idx_7_242L9_1 = (in_idx_7_3L8_6 & <_251L0>);
+ // }
+// {
+_frv_1_idx_8_242L10_1 = (in_idx_8_3L9_6 & <_252L0>);
+ // }
+// {
+_frv_1_idx_9_242L11_1 = (in_idx_9_3L10_6 & <_253L0>);
+ // }
+// {
+_frv_1_idx_10_242L12_1 = (in_idx_10_3L11_6 & <_254L0>);
+ // }
+// {
+_frv_1_idx_11_242L13_1 = (in_idx_11_3L12_6 & <_255L0>);
+ // }
+// {
+_frv_1_idx_12_242L14_1 = (in_idx_12_3L13_6 & <_256L0>);
+ // }
+// {
+_frv_1_idx_13_242L15_1 = (in_idx_13_3L14_6 & <_257L0>);
+ // }
+// {
+_frv_1_idx_14_242L16_1 = (in_idx_14_3L15_6 & <_258L0>);
+ // }
+// {
+_frv_1_idx_15_242L17_1 = (in_idx_15_3L16_6 & <_259L0>);
+ // }
+;
+ in_idx_0_260L1_0 = _frv_1_idx_0_242L2_1;
+in_idx_1_260L2_0 = _frv_1_idx_1_242L3_1;
+in_idx_2_260L3_0 = _frv_1_idx_2_242L4_1;
+in_idx_3_260L4_0 = _frv_1_idx_3_242L5_1;
+in_idx_4_260L5_0 = _frv_1_idx_4_242L6_1;
+in_idx_5_260L6_0 = _frv_1_idx_5_242L7_1;
+in_idx_6_260L7_0 = _frv_1_idx_6_242L8_1;
+in_idx_7_260L8_0 = _frv_1_idx_7_242L9_1;
+in_idx_8_260L9_0 = _frv_1_idx_8_242L10_1;
+in_idx_9_260L10_0 = _frv_1_idx_9_242L11_1;
+in_idx_10_260L11_0 = _frv_1_idx_10_242L12_1;
+in_idx_11_260L12_0 = _frv_1_idx_11_242L13_1;
+in_idx_12_260L13_0 = _frv_1_idx_12_242L14_1;
+in_idx_13_260L14_0 = _frv_1_idx_13_242L15_1;
+in_idx_14_260L15_0 = _frv_1_idx_14_242L16_1;
+in_idx_15_260L16_0 = _frv_1_idx_15_242L17_1;
+// BEGIN CALL iszero
+// { 			// ../\streamBitFrontend\test\log2.sk:18
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_1 = (1 & !in_idx_0_260L1_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_2 = (res_261L0_1 & !in_idx_1_260L2_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_3 = (res_261L0_2 & !in_idx_2_260L3_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_4 = (res_261L0_3 & !in_idx_3_260L4_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_5 = (res_261L0_4 & !in_idx_4_260L5_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_6 = (res_261L0_5 & !in_idx_5_260L6_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_7 = (res_261L0_6 & !in_idx_6_260L7_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_8 = (res_261L0_7 & !in_idx_7_260L8_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_9 = (res_261L0_8 & !in_idx_8_260L9_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_10 = (res_261L0_9 & !in_idx_9_260L10_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_11 = (res_261L0_10 & !in_idx_10_260L11_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_12 = (res_261L0_11 & !in_idx_11_260L12_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_13 = (res_261L0_12 & !in_idx_12_260L13_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_14 = (res_261L0_13 & !in_idx_13_260L14_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_15 = (res_261L0_14 & !in_idx_14_260L15_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:21
+res_261L0_16 = (res_261L0_15 & !in_idx_15_260L16_0); 			// ../\streamBitFrontend\test\log2.sk:21
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:20
+_out_0_260L17_1 = res_261L0_16; 			// ../\streamBitFrontend\test\log2.sk:22
+ // }
+// END CALL iszero
+_frv_0_242L0_1 = _out_0_260L17_1;
+; 			// ../\streamBitFrontend\test\log2.sk:34
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+// { 			// ../\streamBitFrontend\test\log2.sk:35
+__sa10_280L0_1 = <_280L1  5>; 			// ../\streamBitFrontend\test\log2.sk:36
+// {
+in_idx_0_3L1_7 = (((0 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_6 in_idx_1_3L2_6 in_idx_2_3L3_6 in_idx_3_3L4_6 in_idx_4_3L5_6 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(0 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_1_3L2_7 = (((1 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_6 in_idx_2_3L3_6 in_idx_3_3L4_6 in_idx_4_3L5_6 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(1 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_2_3L3_7 = (((2 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_6 in_idx_3_3L4_6 in_idx_4_3L5_6 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(2 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_3_3L4_7 = (((3 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_6 in_idx_4_3L5_6 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(3 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_4_3L5_7 = (((4 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_6 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(4 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_5_3L6_7 = (((5 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_6 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(5 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_6_3L7_7 = (((6 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_6 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(6 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_7_3L8_7 = (((7 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_6 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(7 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_8_3L9_7 = (((8 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_6 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(8 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_9_3L10_7 = (((9 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_6 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(9 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_10_3L11_7 = (((10 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_6 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(10 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_11_3L12_7 = (((11 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_7 in_idx_11_3L12_6 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(11 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_12_3L13_7 = (((12 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_7 in_idx_11_3L12_7 in_idx_12_3L13_6 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(12 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_13_3L14_7 = (((13 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_7 in_idx_11_3L12_7 in_idx_12_3L13_7 in_idx_13_3L14_6 in_idx_14_3L15_6 in_idx_15_3L16_6$[(13 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_14_3L15_7 = (((14 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_7 in_idx_11_3L12_7 in_idx_12_3L13_7 in_idx_13_3L14_7 in_idx_14_3L15_6 in_idx_15_3L16_6$[(14 + __sa10_280L0_1)]) : 0);
+ // }
+// {
+in_idx_15_3L16_7 = (((15 + __sa10_280L0_1) < 16) ? ($ in_idx_0_3L1_7 in_idx_1_3L2_7 in_idx_2_3L3_7 in_idx_3_3L4_7 in_idx_4_3L5_7 in_idx_5_3L6_7 in_idx_6_3L7_7 in_idx_7_3L8_7 in_idx_8_3L9_7 in_idx_9_3L10_7 in_idx_10_3L11_7 in_idx_11_3L12_7 in_idx_12_3L13_7 in_idx_13_3L14_7 in_idx_14_3L15_7 in_idx_15_3L16_6$[(15 + __sa10_280L0_1)]) : 0);
+ // }
+;
+// {
+ret_idx_0_5L1_8 = (ret_idx_0_5L1_7 | <_299L0>);
+ // }
+// {
+ret_idx_1_5L2_8 = (ret_idx_1_5L2_7 | <_300L0>);
+ // }
+// {
+ret_idx_2_5L3_8 = (ret_idx_2_5L3_7 | <_301L0>);
+ // }
+// {
+ret_idx_3_5L4_8 = (ret_idx_3_5L4_7 | <_302L0>);
+ // }
+// {
+ret_idx_4_5L5_8 = (ret_idx_4_5L5_7 | <_303L0>);
+ // }
+// {
+ret_idx_5_5L6_8 = (ret_idx_5_5L6_7 | <_304L0>);
+ // }
+// {
+ret_idx_6_5L7_8 = (ret_idx_6_5L7_7 | <_305L0>);
+ // }
+// {
+ret_idx_7_5L8_8 = (ret_idx_7_5L8_7 | <_306L0>);
+ // }
+// {
+ret_idx_8_5L9_8 = (ret_idx_8_5L9_7 | <_307L0>);
+ // }
+// {
+ret_idx_9_5L10_8 = (ret_idx_9_5L10_7 | <_308L0>);
+ // }
+// {
+ret_idx_10_5L11_8 = (ret_idx_10_5L11_7 | <_309L0>);
+ // }
+// {
+ret_idx_11_5L12_8 = (ret_idx_11_5L12_7 | <_310L0>);
+ // }
+// {
+ret_idx_12_5L13_8 = (ret_idx_12_5L13_7 | <_311L0>);
+ // }
+// {
+ret_idx_13_5L14_8 = (ret_idx_13_5L14_7 | <_312L0>);
+ // }
+// {
+ret_idx_14_5L15_8 = (ret_idx_14_5L15_7 | <_313L0>);
+ // }
+// {
+ret_idx_15_5L16_8 = (ret_idx_15_5L16_7 | <_314L0>);
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:35
+ // }
+in_idx_12_3L13_8 = !_frv_0_242L0_1? in_idx_12_3L13_7 : in_idx_12_3L13_6; 
+in_idx_6_3L7_8 = !_frv_0_242L0_1? in_idx_6_3L7_7 : in_idx_6_3L7_6; 
+in_idx_5_3L6_8 = !_frv_0_242L0_1? in_idx_5_3L6_7 : in_idx_5_3L6_6; 
+ret_idx_14_5L15_9 = !_frv_0_242L0_1? ret_idx_14_5L15_8 : ret_idx_14_5L15_7; 
+in_idx_13_3L14_8 = !_frv_0_242L0_1? in_idx_13_3L14_7 : in_idx_13_3L14_6; 
+in_idx_4_3L5_8 = !_frv_0_242L0_1? in_idx_4_3L5_7 : in_idx_4_3L5_6; 
+in_idx_14_3L15_8 = !_frv_0_242L0_1? in_idx_14_3L15_7 : in_idx_14_3L15_6; 
+ret_idx_1_5L2_9 = !_frv_0_242L0_1? ret_idx_1_5L2_8 : ret_idx_1_5L2_7; 
+ret_idx_3_5L4_9 = !_frv_0_242L0_1? ret_idx_3_5L4_8 : ret_idx_3_5L4_7; 
+in_idx_1_3L2_8 = !_frv_0_242L0_1? in_idx_1_3L2_7 : in_idx_1_3L2_6; 
+ret_idx_10_5L11_9 = !_frv_0_242L0_1? ret_idx_10_5L11_8 : ret_idx_10_5L11_7; 
+in_idx_8_3L9_8 = !_frv_0_242L0_1? in_idx_8_3L9_7 : in_idx_8_3L9_6; 
+ret_idx_4_5L5_9 = !_frv_0_242L0_1? ret_idx_4_5L5_8 : ret_idx_4_5L5_7; 
+ret_idx_0_5L1_9 = !_frv_0_242L0_1? ret_idx_0_5L1_8 : ret_idx_0_5L1_7; 
+in_idx_9_3L10_8 = !_frv_0_242L0_1? in_idx_9_3L10_7 : in_idx_9_3L10_6; 
+ret_idx_13_5L14_9 = !_frv_0_242L0_1? ret_idx_13_5L14_8 : ret_idx_13_5L14_7; 
+ret_idx_8_5L9_9 = !_frv_0_242L0_1? ret_idx_8_5L9_8 : ret_idx_8_5L9_7; 
+in_idx_3_3L4_8 = !_frv_0_242L0_1? in_idx_3_3L4_7 : in_idx_3_3L4_6; 
+in_idx_2_3L3_8 = !_frv_0_242L0_1? in_idx_2_3L3_7 : in_idx_2_3L3_6; 
+ret_idx_7_5L8_9 = !_frv_0_242L0_1? ret_idx_7_5L8_8 : ret_idx_7_5L8_7; 
+in_idx_11_3L12_8 = !_frv_0_242L0_1? in_idx_11_3L12_7 : in_idx_11_3L12_6; 
+ret_idx_9_5L10_9 = !_frv_0_242L0_1? ret_idx_9_5L10_8 : ret_idx_9_5L10_7; 
+ret_idx_5_5L6_9 = !_frv_0_242L0_1? ret_idx_5_5L6_8 : ret_idx_5_5L6_7; 
+ret_idx_2_5L3_9 = !_frv_0_242L0_1? ret_idx_2_5L3_8 : ret_idx_2_5L3_7; 
+in_idx_10_3L11_8 = !_frv_0_242L0_1? in_idx_10_3L11_7 : in_idx_10_3L11_6; 
+in_idx_7_3L8_8 = !_frv_0_242L0_1? in_idx_7_3L8_7 : in_idx_7_3L8_6; 
+ret_idx_11_5L12_9 = !_frv_0_242L0_1? ret_idx_11_5L12_8 : ret_idx_11_5L12_7; 
+in_idx_0_3L1_8 = !_frv_0_242L0_1? in_idx_0_3L1_7 : in_idx_0_3L1_6; 
+ret_idx_15_5L16_9 = !_frv_0_242L0_1? ret_idx_15_5L16_8 : ret_idx_15_5L16_7; 
+in_idx_15_3L16_8 = !_frv_0_242L0_1? in_idx_15_3L16_7 : in_idx_15_3L16_6; 
+ret_idx_6_5L7_9 = !_frv_0_242L0_1? ret_idx_6_5L7_8 : ret_idx_6_5L7_7; 
+ret_idx_12_5L13_9 = !_frv_0_242L0_1? ret_idx_12_5L13_8 : ret_idx_12_5L13_7; 
+ 			// ../\streamBitFrontend\test\log2.sk:34
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:32
+// {
+_out_0_idx_0_3L18_1 = ret_idx_0_5L1_9;
+ // }
+// {
+_out_0_idx_1_3L20_1 = ret_idx_1_5L2_9;
+ // }
+// {
+_out_0_idx_2_3L22_1 = ret_idx_2_5L3_9;
+ // }
+// {
+_out_0_idx_3_3L24_1 = ret_idx_3_5L4_9;
+ // }
+// {
+_out_0_idx_4_3L26_1 = ret_idx_4_5L5_9;
+ // }
+// {
+_out_0_idx_5_3L28_1 = ret_idx_5_5L6_9;
+ // }
+// {
+_out_0_idx_6_3L30_1 = ret_idx_6_5L7_9;
+ // }
+// {
+_out_0_idx_7_3L32_1 = ret_idx_7_5L8_9;
+ // }
+// {
+_out_0_idx_8_3L34_1 = ret_idx_8_5L9_9;
+ // }
+// {
+_out_0_idx_9_3L36_1 = ret_idx_9_5L10_9;
+ // }
+// {
+_out_0_idx_10_3L38_1 = ret_idx_10_5L11_9;
+ // }
+// {
+_out_0_idx_11_3L40_1 = ret_idx_11_5L12_9;
+ // }
+// {
+_out_0_idx_12_3L42_1 = ret_idx_12_5L13_9;
+ // }
+// {
+_out_0_idx_13_3L44_1 = ret_idx_13_5L14_9;
+ // }
+// {
+_out_0_idx_14_3L46_1 = ret_idx_14_5L15_9;
+ // }
+// {
+_out_0_idx_15_3L48_1 = ret_idx_15_5L16_9;
+ // }
+;
+ // }
+_p__out_0_idx_0_3L19_0 = _out_0_idx_0_3L18_1;
+_p__out_0_idx_1_3L21_0 = _out_0_idx_1_3L20_1;
+_p__out_0_idx_2_3L23_0 = _out_0_idx_2_3L22_1;
+_p__out_0_idx_3_3L25_0 = _out_0_idx_3_3L24_1;
+_p__out_0_idx_4_3L27_0 = _out_0_idx_4_3L26_1;
+_p__out_0_idx_5_3L29_0 = _out_0_idx_5_3L28_1;
+_p__out_0_idx_6_3L31_0 = _out_0_idx_6_3L30_1;
+_p__out_0_idx_7_3L33_0 = _out_0_idx_7_3L32_1;
+_p__out_0_idx_8_3L35_0 = _out_0_idx_8_3L34_1;
+_p__out_0_idx_9_3L37_0 = _out_0_idx_9_3L36_1;
+_p__out_0_idx_10_3L39_0 = _out_0_idx_10_3L38_1;
+_p__out_0_idx_11_3L41_0 = _out_0_idx_11_3L40_1;
+_p__out_0_idx_12_3L43_0 = _out_0_idx_12_3L42_1;
+_p__out_0_idx_13_3L45_0 = _out_0_idx_13_3L44_1;
+_p__out_0_idx_14_3L47_0 = _out_0_idx_14_3L46_1;
+_p__out_0_idx_15_3L49_0 = _out_0_idx_15_3L48_1;
+}
+
+slog2( bit[16] in_idx_0_331L50_0  in_idx_1_331L50_0  in_idx_2_331L50_0  in_idx_3_331L50_0  in_idx_4_331L50_0  in_idx_5_331L50_0  in_idx_6_331L50_0  in_idx_7_331L50_0  in_idx_8_331L50_0  in_idx_9_331L50_0  in_idx_10_331L50_0  in_idx_11_331L50_0  in_idx_12_331L50_0  in_idx_13_331L50_0  in_idx_14_331L50_0  in_idx_15_331L50_0  , !  bit[16] _p__out_0_idx_0_331L50_0  _p__out_0_idx_1_331L50_0  _p__out_0_idx_2_331L50_0  _p__out_0_idx_3_331L50_0  _p__out_0_idx_4_331L50_0  _p__out_0_idx_5_331L50_0  _p__out_0_idx_6_331L50_0  _p__out_0_idx_7_331L50_0  _p__out_0_idx_8_331L50_0  _p__out_0_idx_9_331L50_0  _p__out_0_idx_10_331L50_0  _p__out_0_idx_11_331L50_0  _p__out_0_idx_12_331L50_0  _p__out_0_idx_13_331L50_0  _p__out_0_idx_14_331L50_0  _p__out_0_idx_15_331L50_0  )
+{
+// { 			// ../\streamBitFrontend\test\log2.sk:4
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+;
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+;
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+// {
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+done_367L34_2 = (!(1 && (in_idx_7_331L50_0 == 0)))? 1 : 0; 
+ret_idx_0_333L1_3 = (!(1 && (in_idx_7_331L50_0 == 0)))? 1 : 0; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_395L1_2 = ret_idx_0_333L1_3; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_4 = ((__sa4_395L1_2 ^ 1) ^ 0);
+__sa3_395L0_2 = ((1 & (__sa4_395L1_2 | 0)) | (__sa4_395L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_1_333L2_3 = (0 ^ __sa3_395L0_2);
+__sa3_395L0_3 = ((0 & (0 | __sa3_395L0_2)) | (0 & __sa3_395L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_2_333L3_3 = (0 ^ __sa3_395L0_3);
+__sa3_395L0_4 = ((0 & (0 | __sa3_395L0_3)) | (0 & __sa3_395L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_3_333L4_3 = (0 ^ __sa3_395L0_4);
+__sa3_395L0_5 = ((0 & (0 | __sa3_395L0_4)) | (0 & __sa3_395L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_4_333L5_3 = (0 ^ __sa3_395L0_5);
+__sa3_395L0_6 = ((0 & (0 | __sa3_395L0_5)) | (0 & __sa3_395L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_5_333L6_3 = (0 ^ __sa3_395L0_6);
+__sa3_395L0_7 = ((0 & (0 | __sa3_395L0_6)) | (0 & __sa3_395L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_6_333L7_3 = (0 ^ __sa3_395L0_7);
+__sa3_395L0_8 = ((0 & (0 | __sa3_395L0_7)) | (0 & __sa3_395L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_7_333L8_3 = (0 ^ __sa3_395L0_8);
+__sa3_395L0_9 = ((0 & (0 | __sa3_395L0_8)) | (0 & __sa3_395L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_8_333L9_3 = (0 ^ __sa3_395L0_9);
+__sa3_395L0_10 = ((0 & (0 | __sa3_395L0_9)) | (0 & __sa3_395L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_9_333L10_3 = (0 ^ __sa3_395L0_10);
+__sa3_395L0_11 = ((0 & (0 | __sa3_395L0_10)) | (0 & __sa3_395L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_10_333L11_3 = (0 ^ __sa3_395L0_11);
+__sa3_395L0_12 = ((0 & (0 | __sa3_395L0_11)) | (0 & __sa3_395L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_11_333L12_3 = (0 ^ __sa3_395L0_12);
+__sa3_395L0_13 = ((0 & (0 | __sa3_395L0_12)) | (0 & __sa3_395L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_12_333L13_3 = (0 ^ __sa3_395L0_13);
+__sa3_395L0_14 = ((0 & (0 | __sa3_395L0_13)) | (0 & __sa3_395L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_13_333L14_3 = (0 ^ __sa3_395L0_14);
+__sa3_395L0_15 = ((0 & (0 | __sa3_395L0_14)) | (0 & __sa3_395L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_14_333L15_3 = (0 ^ __sa3_395L0_15);
+__sa3_395L0_16 = ((0 & (0 | __sa3_395L0_15)) | (0 & __sa3_395L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+ret_idx_15_333L16_3 = (0 ^ __sa3_395L0_16);
+__sa3_395L0_17 = ((0 & (0 | __sa3_395L0_16)) | (0 & __sa3_395L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_5_333L6_3 : 0; 
+ret_idx_6_333L7_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_6_333L7_3 : 0; 
+ret_idx_12_333L13_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_12_333L13_3 : 0; 
+ret_idx_8_333L9_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_8_333L9_3 : 0; 
+ret_idx_7_333L8_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_7_333L8_3 : 0; 
+done_367L34_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? 1 : done_367L34_2; 
+ret_idx_11_333L12_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_11_333L12_3 : 0; 
+ret_idx_13_333L14_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_13_333L14_3 : 0; 
+ret_idx_4_333L5_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_4_333L5_3 : 0; 
+ret_idx_10_333L11_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_10_333L11_3 : 0; 
+ret_idx_3_333L4_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_3_333L4_3 : 0; 
+ret_idx_9_333L10_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_9_333L10_3 : 0; 
+ret_idx_1_333L2_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_1_333L2_3 : 0; 
+ret_idx_15_333L16_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_15_333L16_3 : 0; 
+ret_idx_14_333L15_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_14_333L15_3 : 0; 
+ret_idx_2_333L3_4 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_2_333L3_3 : 0; 
+ret_idx_0_333L1_5 = (!(!done_367L34_2 && (in_idx_6_331L50_0 == 0)))? ret_idx_0_333L1_4 : ret_idx_0_333L1_3; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_417L1_2 = ret_idx_0_333L1_5; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_6 = ((__sa4_417L1_2 ^ 1) ^ 0);
+__sa3_417L0_2 = ((1 & (__sa4_417L1_2 | 0)) | (__sa4_417L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_3 = ret_idx_1_333L2_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_1_333L2_5 = ((__sa4_417L1_3 ^ 0) ^ __sa3_417L0_2);
+__sa3_417L0_3 = ((0 & (__sa4_417L1_3 | __sa3_417L0_2)) | (__sa4_417L1_3 & __sa3_417L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_4 = ret_idx_2_333L3_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_2_333L3_5 = ((__sa4_417L1_4 ^ 0) ^ __sa3_417L0_3);
+__sa3_417L0_4 = ((0 & (__sa4_417L1_4 | __sa3_417L0_3)) | (__sa4_417L1_4 & __sa3_417L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_5 = ret_idx_3_333L4_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_3_333L4_5 = ((__sa4_417L1_5 ^ 0) ^ __sa3_417L0_4);
+__sa3_417L0_5 = ((0 & (__sa4_417L1_5 | __sa3_417L0_4)) | (__sa4_417L1_5 & __sa3_417L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_6 = ret_idx_4_333L5_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_4_333L5_5 = ((__sa4_417L1_6 ^ 0) ^ __sa3_417L0_5);
+__sa3_417L0_6 = ((0 & (__sa4_417L1_6 | __sa3_417L0_5)) | (__sa4_417L1_6 & __sa3_417L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_7 = ret_idx_5_333L6_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_5_333L6_5 = ((__sa4_417L1_7 ^ 0) ^ __sa3_417L0_6);
+__sa3_417L0_7 = ((0 & (__sa4_417L1_7 | __sa3_417L0_6)) | (__sa4_417L1_7 & __sa3_417L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_8 = ret_idx_6_333L7_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_6_333L7_5 = ((__sa4_417L1_8 ^ 0) ^ __sa3_417L0_7);
+__sa3_417L0_8 = ((0 & (__sa4_417L1_8 | __sa3_417L0_7)) | (__sa4_417L1_8 & __sa3_417L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_9 = ret_idx_7_333L8_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_7_333L8_5 = ((__sa4_417L1_9 ^ 0) ^ __sa3_417L0_8);
+__sa3_417L0_9 = ((0 & (__sa4_417L1_9 | __sa3_417L0_8)) | (__sa4_417L1_9 & __sa3_417L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_10 = ret_idx_8_333L9_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_8_333L9_5 = ((__sa4_417L1_10 ^ 0) ^ __sa3_417L0_9);
+__sa3_417L0_10 = ((0 & (__sa4_417L1_10 | __sa3_417L0_9)) | (__sa4_417L1_10 & __sa3_417L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_11 = ret_idx_9_333L10_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_9_333L10_5 = ((__sa4_417L1_11 ^ 0) ^ __sa3_417L0_10);
+__sa3_417L0_11 = ((0 & (__sa4_417L1_11 | __sa3_417L0_10)) | (__sa4_417L1_11 & __sa3_417L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_12 = ret_idx_10_333L11_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_10_333L11_5 = ((__sa4_417L1_12 ^ 0) ^ __sa3_417L0_11);
+__sa3_417L0_12 = ((0 & (__sa4_417L1_12 | __sa3_417L0_11)) | (__sa4_417L1_12 & __sa3_417L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_13 = ret_idx_11_333L12_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_11_333L12_5 = ((__sa4_417L1_13 ^ 0) ^ __sa3_417L0_12);
+__sa3_417L0_13 = ((0 & (__sa4_417L1_13 | __sa3_417L0_12)) | (__sa4_417L1_13 & __sa3_417L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_14 = ret_idx_12_333L13_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_12_333L13_5 = ((__sa4_417L1_14 ^ 0) ^ __sa3_417L0_13);
+__sa3_417L0_14 = ((0 & (__sa4_417L1_14 | __sa3_417L0_13)) | (__sa4_417L1_14 & __sa3_417L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_15 = ret_idx_13_333L14_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_13_333L14_5 = ((__sa4_417L1_15 ^ 0) ^ __sa3_417L0_14);
+__sa3_417L0_15 = ((0 & (__sa4_417L1_15 | __sa3_417L0_14)) | (__sa4_417L1_15 & __sa3_417L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_16 = ret_idx_14_333L15_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_14_333L15_5 = ((__sa4_417L1_16 ^ 0) ^ __sa3_417L0_15);
+__sa3_417L0_16 = ((0 & (__sa4_417L1_16 | __sa3_417L0_15)) | (__sa4_417L1_16 & __sa3_417L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_417L1_17 = ret_idx_15_333L16_4; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_15_333L16_5 = ((__sa4_417L1_17 ^ 0) ^ __sa3_417L0_16);
+__sa3_417L0_17 = ((0 & (__sa4_417L1_17 | __sa3_417L0_16)) | (__sa4_417L1_17 & __sa3_417L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_5_333L6_5 : ret_idx_5_333L6_4; 
+ret_idx_6_333L7_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_6_333L7_5 : ret_idx_6_333L7_4; 
+ret_idx_12_333L13_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_12_333L13_5 : ret_idx_12_333L13_4; 
+ret_idx_8_333L9_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_8_333L9_5 : ret_idx_8_333L9_4; 
+ret_idx_7_333L8_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_7_333L8_5 : ret_idx_7_333L8_4; 
+done_367L34_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? 1 : done_367L34_4; 
+ret_idx_11_333L12_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_11_333L12_5 : ret_idx_11_333L12_4; 
+ret_idx_13_333L14_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_13_333L14_5 : ret_idx_13_333L14_4; 
+ret_idx_4_333L5_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_4_333L5_5 : ret_idx_4_333L5_4; 
+ret_idx_10_333L11_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_10_333L11_5 : ret_idx_10_333L11_4; 
+ret_idx_3_333L4_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_3_333L4_5 : ret_idx_3_333L4_4; 
+ret_idx_9_333L10_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_9_333L10_5 : ret_idx_9_333L10_4; 
+ret_idx_1_333L2_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_1_333L2_5 : ret_idx_1_333L2_4; 
+ret_idx_15_333L16_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_15_333L16_5 : ret_idx_15_333L16_4; 
+ret_idx_14_333L15_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_14_333L15_5 : ret_idx_14_333L15_4; 
+ret_idx_2_333L3_6 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_2_333L3_5 : ret_idx_2_333L3_4; 
+ret_idx_0_333L1_7 = (!(!done_367L34_4 && (in_idx_5_331L50_0 == 0)))? ret_idx_0_333L1_6 : ret_idx_0_333L1_5; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_439L1_2 = ret_idx_0_333L1_7; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_8 = ((__sa4_439L1_2 ^ 1) ^ 0);
+__sa3_439L0_2 = ((1 & (__sa4_439L1_2 | 0)) | (__sa4_439L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_3 = ret_idx_1_333L2_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_1_333L2_7 = ((__sa4_439L1_3 ^ 0) ^ __sa3_439L0_2);
+__sa3_439L0_3 = ((0 & (__sa4_439L1_3 | __sa3_439L0_2)) | (__sa4_439L1_3 & __sa3_439L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_4 = ret_idx_2_333L3_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_2_333L3_7 = ((__sa4_439L1_4 ^ 0) ^ __sa3_439L0_3);
+__sa3_439L0_4 = ((0 & (__sa4_439L1_4 | __sa3_439L0_3)) | (__sa4_439L1_4 & __sa3_439L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_5 = ret_idx_3_333L4_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_3_333L4_7 = ((__sa4_439L1_5 ^ 0) ^ __sa3_439L0_4);
+__sa3_439L0_5 = ((0 & (__sa4_439L1_5 | __sa3_439L0_4)) | (__sa4_439L1_5 & __sa3_439L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_6 = ret_idx_4_333L5_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_4_333L5_7 = ((__sa4_439L1_6 ^ 0) ^ __sa3_439L0_5);
+__sa3_439L0_6 = ((0 & (__sa4_439L1_6 | __sa3_439L0_5)) | (__sa4_439L1_6 & __sa3_439L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_7 = ret_idx_5_333L6_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_5_333L6_7 = ((__sa4_439L1_7 ^ 0) ^ __sa3_439L0_6);
+__sa3_439L0_7 = ((0 & (__sa4_439L1_7 | __sa3_439L0_6)) | (__sa4_439L1_7 & __sa3_439L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_8 = ret_idx_6_333L7_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_6_333L7_7 = ((__sa4_439L1_8 ^ 0) ^ __sa3_439L0_7);
+__sa3_439L0_8 = ((0 & (__sa4_439L1_8 | __sa3_439L0_7)) | (__sa4_439L1_8 & __sa3_439L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_9 = ret_idx_7_333L8_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_7_333L8_7 = ((__sa4_439L1_9 ^ 0) ^ __sa3_439L0_8);
+__sa3_439L0_9 = ((0 & (__sa4_439L1_9 | __sa3_439L0_8)) | (__sa4_439L1_9 & __sa3_439L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_10 = ret_idx_8_333L9_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_8_333L9_7 = ((__sa4_439L1_10 ^ 0) ^ __sa3_439L0_9);
+__sa3_439L0_10 = ((0 & (__sa4_439L1_10 | __sa3_439L0_9)) | (__sa4_439L1_10 & __sa3_439L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_11 = ret_idx_9_333L10_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_9_333L10_7 = ((__sa4_439L1_11 ^ 0) ^ __sa3_439L0_10);
+__sa3_439L0_11 = ((0 & (__sa4_439L1_11 | __sa3_439L0_10)) | (__sa4_439L1_11 & __sa3_439L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_12 = ret_idx_10_333L11_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_10_333L11_7 = ((__sa4_439L1_12 ^ 0) ^ __sa3_439L0_11);
+__sa3_439L0_12 = ((0 & (__sa4_439L1_12 | __sa3_439L0_11)) | (__sa4_439L1_12 & __sa3_439L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_13 = ret_idx_11_333L12_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_11_333L12_7 = ((__sa4_439L1_13 ^ 0) ^ __sa3_439L0_12);
+__sa3_439L0_13 = ((0 & (__sa4_439L1_13 | __sa3_439L0_12)) | (__sa4_439L1_13 & __sa3_439L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_14 = ret_idx_12_333L13_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_12_333L13_7 = ((__sa4_439L1_14 ^ 0) ^ __sa3_439L0_13);
+__sa3_439L0_14 = ((0 & (__sa4_439L1_14 | __sa3_439L0_13)) | (__sa4_439L1_14 & __sa3_439L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_15 = ret_idx_13_333L14_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_13_333L14_7 = ((__sa4_439L1_15 ^ 0) ^ __sa3_439L0_14);
+__sa3_439L0_15 = ((0 & (__sa4_439L1_15 | __sa3_439L0_14)) | (__sa4_439L1_15 & __sa3_439L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_16 = ret_idx_14_333L15_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_14_333L15_7 = ((__sa4_439L1_16 ^ 0) ^ __sa3_439L0_15);
+__sa3_439L0_16 = ((0 & (__sa4_439L1_16 | __sa3_439L0_15)) | (__sa4_439L1_16 & __sa3_439L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_439L1_17 = ret_idx_15_333L16_6; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_15_333L16_7 = ((__sa4_439L1_17 ^ 0) ^ __sa3_439L0_16);
+__sa3_439L0_17 = ((0 & (__sa4_439L1_17 | __sa3_439L0_16)) | (__sa4_439L1_17 & __sa3_439L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_5_333L6_7 : ret_idx_5_333L6_6; 
+ret_idx_6_333L7_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_6_333L7_7 : ret_idx_6_333L7_6; 
+ret_idx_12_333L13_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_12_333L13_7 : ret_idx_12_333L13_6; 
+ret_idx_8_333L9_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_8_333L9_7 : ret_idx_8_333L9_6; 
+ret_idx_7_333L8_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_7_333L8_7 : ret_idx_7_333L8_6; 
+done_367L34_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? 1 : done_367L34_6; 
+ret_idx_11_333L12_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_11_333L12_7 : ret_idx_11_333L12_6; 
+ret_idx_13_333L14_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_13_333L14_7 : ret_idx_13_333L14_6; 
+ret_idx_4_333L5_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_4_333L5_7 : ret_idx_4_333L5_6; 
+ret_idx_10_333L11_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_10_333L11_7 : ret_idx_10_333L11_6; 
+ret_idx_3_333L4_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_3_333L4_7 : ret_idx_3_333L4_6; 
+ret_idx_9_333L10_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_9_333L10_7 : ret_idx_9_333L10_6; 
+ret_idx_1_333L2_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_1_333L2_7 : ret_idx_1_333L2_6; 
+ret_idx_15_333L16_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_15_333L16_7 : ret_idx_15_333L16_6; 
+ret_idx_14_333L15_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_14_333L15_7 : ret_idx_14_333L15_6; 
+ret_idx_2_333L3_8 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_2_333L3_7 : ret_idx_2_333L3_6; 
+ret_idx_0_333L1_9 = (!(!done_367L34_6 && (in_idx_4_331L50_0 == 0)))? ret_idx_0_333L1_8 : ret_idx_0_333L1_7; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_461L1_2 = ret_idx_0_333L1_9; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_10 = ((__sa4_461L1_2 ^ 1) ^ 0);
+__sa3_461L0_2 = ((1 & (__sa4_461L1_2 | 0)) | (__sa4_461L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_3 = ret_idx_1_333L2_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_1_333L2_9 = ((__sa4_461L1_3 ^ 0) ^ __sa3_461L0_2);
+__sa3_461L0_3 = ((0 & (__sa4_461L1_3 | __sa3_461L0_2)) | (__sa4_461L1_3 & __sa3_461L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_4 = ret_idx_2_333L3_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_2_333L3_9 = ((__sa4_461L1_4 ^ 0) ^ __sa3_461L0_3);
+__sa3_461L0_4 = ((0 & (__sa4_461L1_4 | __sa3_461L0_3)) | (__sa4_461L1_4 & __sa3_461L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_5 = ret_idx_3_333L4_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_3_333L4_9 = ((__sa4_461L1_5 ^ 0) ^ __sa3_461L0_4);
+__sa3_461L0_5 = ((0 & (__sa4_461L1_5 | __sa3_461L0_4)) | (__sa4_461L1_5 & __sa3_461L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_6 = ret_idx_4_333L5_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_4_333L5_9 = ((__sa4_461L1_6 ^ 0) ^ __sa3_461L0_5);
+__sa3_461L0_6 = ((0 & (__sa4_461L1_6 | __sa3_461L0_5)) | (__sa4_461L1_6 & __sa3_461L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_7 = ret_idx_5_333L6_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_5_333L6_9 = ((__sa4_461L1_7 ^ 0) ^ __sa3_461L0_6);
+__sa3_461L0_7 = ((0 & (__sa4_461L1_7 | __sa3_461L0_6)) | (__sa4_461L1_7 & __sa3_461L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_8 = ret_idx_6_333L7_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_6_333L7_9 = ((__sa4_461L1_8 ^ 0) ^ __sa3_461L0_7);
+__sa3_461L0_8 = ((0 & (__sa4_461L1_8 | __sa3_461L0_7)) | (__sa4_461L1_8 & __sa3_461L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_9 = ret_idx_7_333L8_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_7_333L8_9 = ((__sa4_461L1_9 ^ 0) ^ __sa3_461L0_8);
+__sa3_461L0_9 = ((0 & (__sa4_461L1_9 | __sa3_461L0_8)) | (__sa4_461L1_9 & __sa3_461L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_10 = ret_idx_8_333L9_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_8_333L9_9 = ((__sa4_461L1_10 ^ 0) ^ __sa3_461L0_9);
+__sa3_461L0_10 = ((0 & (__sa4_461L1_10 | __sa3_461L0_9)) | (__sa4_461L1_10 & __sa3_461L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_11 = ret_idx_9_333L10_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_9_333L10_9 = ((__sa4_461L1_11 ^ 0) ^ __sa3_461L0_10);
+__sa3_461L0_11 = ((0 & (__sa4_461L1_11 | __sa3_461L0_10)) | (__sa4_461L1_11 & __sa3_461L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_12 = ret_idx_10_333L11_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_10_333L11_9 = ((__sa4_461L1_12 ^ 0) ^ __sa3_461L0_11);
+__sa3_461L0_12 = ((0 & (__sa4_461L1_12 | __sa3_461L0_11)) | (__sa4_461L1_12 & __sa3_461L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_13 = ret_idx_11_333L12_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_11_333L12_9 = ((__sa4_461L1_13 ^ 0) ^ __sa3_461L0_12);
+__sa3_461L0_13 = ((0 & (__sa4_461L1_13 | __sa3_461L0_12)) | (__sa4_461L1_13 & __sa3_461L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_14 = ret_idx_12_333L13_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_12_333L13_9 = ((__sa4_461L1_14 ^ 0) ^ __sa3_461L0_13);
+__sa3_461L0_14 = ((0 & (__sa4_461L1_14 | __sa3_461L0_13)) | (__sa4_461L1_14 & __sa3_461L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_15 = ret_idx_13_333L14_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_13_333L14_9 = ((__sa4_461L1_15 ^ 0) ^ __sa3_461L0_14);
+__sa3_461L0_15 = ((0 & (__sa4_461L1_15 | __sa3_461L0_14)) | (__sa4_461L1_15 & __sa3_461L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_16 = ret_idx_14_333L15_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_14_333L15_9 = ((__sa4_461L1_16 ^ 0) ^ __sa3_461L0_15);
+__sa3_461L0_16 = ((0 & (__sa4_461L1_16 | __sa3_461L0_15)) | (__sa4_461L1_16 & __sa3_461L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_461L1_17 = ret_idx_15_333L16_8; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_15_333L16_9 = ((__sa4_461L1_17 ^ 0) ^ __sa3_461L0_16);
+__sa3_461L0_17 = ((0 & (__sa4_461L1_17 | __sa3_461L0_16)) | (__sa4_461L1_17 & __sa3_461L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_5_333L6_9 : ret_idx_5_333L6_8; 
+ret_idx_6_333L7_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_6_333L7_9 : ret_idx_6_333L7_8; 
+ret_idx_12_333L13_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_12_333L13_9 : ret_idx_12_333L13_8; 
+ret_idx_8_333L9_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_8_333L9_9 : ret_idx_8_333L9_8; 
+ret_idx_7_333L8_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_7_333L8_9 : ret_idx_7_333L8_8; 
+done_367L34_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? 1 : done_367L34_8; 
+ret_idx_11_333L12_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_11_333L12_9 : ret_idx_11_333L12_8; 
+ret_idx_13_333L14_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_13_333L14_9 : ret_idx_13_333L14_8; 
+ret_idx_4_333L5_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_4_333L5_9 : ret_idx_4_333L5_8; 
+ret_idx_10_333L11_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_10_333L11_9 : ret_idx_10_333L11_8; 
+ret_idx_3_333L4_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_3_333L4_9 : ret_idx_3_333L4_8; 
+ret_idx_9_333L10_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_9_333L10_9 : ret_idx_9_333L10_8; 
+ret_idx_1_333L2_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_1_333L2_9 : ret_idx_1_333L2_8; 
+ret_idx_15_333L16_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_15_333L16_9 : ret_idx_15_333L16_8; 
+ret_idx_14_333L15_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_14_333L15_9 : ret_idx_14_333L15_8; 
+ret_idx_2_333L3_10 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_2_333L3_9 : ret_idx_2_333L3_8; 
+ret_idx_0_333L1_11 = (!(!done_367L34_8 && (in_idx_3_331L50_0 == 0)))? ret_idx_0_333L1_10 : ret_idx_0_333L1_9; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_483L1_2 = ret_idx_0_333L1_11; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_12 = ((__sa4_483L1_2 ^ 1) ^ 0);
+__sa3_483L0_2 = ((1 & (__sa4_483L1_2 | 0)) | (__sa4_483L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_3 = ret_idx_1_333L2_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_1_333L2_11 = ((__sa4_483L1_3 ^ 0) ^ __sa3_483L0_2);
+__sa3_483L0_3 = ((0 & (__sa4_483L1_3 | __sa3_483L0_2)) | (__sa4_483L1_3 & __sa3_483L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_4 = ret_idx_2_333L3_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_2_333L3_11 = ((__sa4_483L1_4 ^ 0) ^ __sa3_483L0_3);
+__sa3_483L0_4 = ((0 & (__sa4_483L1_4 | __sa3_483L0_3)) | (__sa4_483L1_4 & __sa3_483L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_5 = ret_idx_3_333L4_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_3_333L4_11 = ((__sa4_483L1_5 ^ 0) ^ __sa3_483L0_4);
+__sa3_483L0_5 = ((0 & (__sa4_483L1_5 | __sa3_483L0_4)) | (__sa4_483L1_5 & __sa3_483L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_6 = ret_idx_4_333L5_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_4_333L5_11 = ((__sa4_483L1_6 ^ 0) ^ __sa3_483L0_5);
+__sa3_483L0_6 = ((0 & (__sa4_483L1_6 | __sa3_483L0_5)) | (__sa4_483L1_6 & __sa3_483L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_7 = ret_idx_5_333L6_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_5_333L6_11 = ((__sa4_483L1_7 ^ 0) ^ __sa3_483L0_6);
+__sa3_483L0_7 = ((0 & (__sa4_483L1_7 | __sa3_483L0_6)) | (__sa4_483L1_7 & __sa3_483L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_8 = ret_idx_6_333L7_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_6_333L7_11 = ((__sa4_483L1_8 ^ 0) ^ __sa3_483L0_7);
+__sa3_483L0_8 = ((0 & (__sa4_483L1_8 | __sa3_483L0_7)) | (__sa4_483L1_8 & __sa3_483L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_9 = ret_idx_7_333L8_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_7_333L8_11 = ((__sa4_483L1_9 ^ 0) ^ __sa3_483L0_8);
+__sa3_483L0_9 = ((0 & (__sa4_483L1_9 | __sa3_483L0_8)) | (__sa4_483L1_9 & __sa3_483L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_10 = ret_idx_8_333L9_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_8_333L9_11 = ((__sa4_483L1_10 ^ 0) ^ __sa3_483L0_9);
+__sa3_483L0_10 = ((0 & (__sa4_483L1_10 | __sa3_483L0_9)) | (__sa4_483L1_10 & __sa3_483L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_11 = ret_idx_9_333L10_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_9_333L10_11 = ((__sa4_483L1_11 ^ 0) ^ __sa3_483L0_10);
+__sa3_483L0_11 = ((0 & (__sa4_483L1_11 | __sa3_483L0_10)) | (__sa4_483L1_11 & __sa3_483L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_12 = ret_idx_10_333L11_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_10_333L11_11 = ((__sa4_483L1_12 ^ 0) ^ __sa3_483L0_11);
+__sa3_483L0_12 = ((0 & (__sa4_483L1_12 | __sa3_483L0_11)) | (__sa4_483L1_12 & __sa3_483L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_13 = ret_idx_11_333L12_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_11_333L12_11 = ((__sa4_483L1_13 ^ 0) ^ __sa3_483L0_12);
+__sa3_483L0_13 = ((0 & (__sa4_483L1_13 | __sa3_483L0_12)) | (__sa4_483L1_13 & __sa3_483L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_14 = ret_idx_12_333L13_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_12_333L13_11 = ((__sa4_483L1_14 ^ 0) ^ __sa3_483L0_13);
+__sa3_483L0_14 = ((0 & (__sa4_483L1_14 | __sa3_483L0_13)) | (__sa4_483L1_14 & __sa3_483L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_15 = ret_idx_13_333L14_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_13_333L14_11 = ((__sa4_483L1_15 ^ 0) ^ __sa3_483L0_14);
+__sa3_483L0_15 = ((0 & (__sa4_483L1_15 | __sa3_483L0_14)) | (__sa4_483L1_15 & __sa3_483L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_16 = ret_idx_14_333L15_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_14_333L15_11 = ((__sa4_483L1_16 ^ 0) ^ __sa3_483L0_15);
+__sa3_483L0_16 = ((0 & (__sa4_483L1_16 | __sa3_483L0_15)) | (__sa4_483L1_16 & __sa3_483L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_483L1_17 = ret_idx_15_333L16_10; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_15_333L16_11 = ((__sa4_483L1_17 ^ 0) ^ __sa3_483L0_16);
+__sa3_483L0_17 = ((0 & (__sa4_483L1_17 | __sa3_483L0_16)) | (__sa4_483L1_17 & __sa3_483L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_5_333L6_11 : ret_idx_5_333L6_10; 
+ret_idx_6_333L7_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_6_333L7_11 : ret_idx_6_333L7_10; 
+ret_idx_12_333L13_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_12_333L13_11 : ret_idx_12_333L13_10; 
+ret_idx_8_333L9_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_8_333L9_11 : ret_idx_8_333L9_10; 
+ret_idx_7_333L8_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_7_333L8_11 : ret_idx_7_333L8_10; 
+done_367L34_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? 1 : done_367L34_10; 
+ret_idx_11_333L12_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_11_333L12_11 : ret_idx_11_333L12_10; 
+ret_idx_13_333L14_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_13_333L14_11 : ret_idx_13_333L14_10; 
+ret_idx_4_333L5_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_4_333L5_11 : ret_idx_4_333L5_10; 
+ret_idx_10_333L11_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_10_333L11_11 : ret_idx_10_333L11_10; 
+ret_idx_3_333L4_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_3_333L4_11 : ret_idx_3_333L4_10; 
+ret_idx_9_333L10_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_9_333L10_11 : ret_idx_9_333L10_10; 
+ret_idx_1_333L2_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_1_333L2_11 : ret_idx_1_333L2_10; 
+ret_idx_15_333L16_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_15_333L16_11 : ret_idx_15_333L16_10; 
+ret_idx_14_333L15_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_14_333L15_11 : ret_idx_14_333L15_10; 
+ret_idx_2_333L3_12 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_2_333L3_11 : ret_idx_2_333L3_10; 
+ret_idx_0_333L1_13 = (!(!done_367L34_10 && (in_idx_2_331L50_0 == 0)))? ret_idx_0_333L1_12 : ret_idx_0_333L1_11; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+// { 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// { 			// ../\streamBitFrontend\test\log2.sk:10
+// {
+__sa4_505L1_2 = ret_idx_0_333L1_13; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_0_333L1_14 = ((__sa4_505L1_2 ^ 1) ^ 0);
+__sa3_505L0_2 = ((1 & (__sa4_505L1_2 | 0)) | (__sa4_505L1_2 & 0)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_3 = ret_idx_1_333L2_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_1_333L2_13 = ((__sa4_505L1_3 ^ 0) ^ __sa3_505L0_2);
+__sa3_505L0_3 = ((0 & (__sa4_505L1_3 | __sa3_505L0_2)) | (__sa4_505L1_3 & __sa3_505L0_2)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_4 = ret_idx_2_333L3_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_2_333L3_13 = ((__sa4_505L1_4 ^ 0) ^ __sa3_505L0_3);
+__sa3_505L0_4 = ((0 & (__sa4_505L1_4 | __sa3_505L0_3)) | (__sa4_505L1_4 & __sa3_505L0_3)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_5 = ret_idx_3_333L4_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_3_333L4_13 = ((__sa4_505L1_5 ^ 0) ^ __sa3_505L0_4);
+__sa3_505L0_5 = ((0 & (__sa4_505L1_5 | __sa3_505L0_4)) | (__sa4_505L1_5 & __sa3_505L0_4)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_6 = ret_idx_4_333L5_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_4_333L5_13 = ((__sa4_505L1_6 ^ 0) ^ __sa3_505L0_5);
+__sa3_505L0_6 = ((0 & (__sa4_505L1_6 | __sa3_505L0_5)) | (__sa4_505L1_6 & __sa3_505L0_5)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_7 = ret_idx_5_333L6_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_5_333L6_13 = ((__sa4_505L1_7 ^ 0) ^ __sa3_505L0_6);
+__sa3_505L0_7 = ((0 & (__sa4_505L1_7 | __sa3_505L0_6)) | (__sa4_505L1_7 & __sa3_505L0_6)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_8 = ret_idx_6_333L7_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_6_333L7_13 = ((__sa4_505L1_8 ^ 0) ^ __sa3_505L0_7);
+__sa3_505L0_8 = ((0 & (__sa4_505L1_8 | __sa3_505L0_7)) | (__sa4_505L1_8 & __sa3_505L0_7)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_9 = ret_idx_7_333L8_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_7_333L8_13 = ((__sa4_505L1_9 ^ 0) ^ __sa3_505L0_8);
+__sa3_505L0_9 = ((0 & (__sa4_505L1_9 | __sa3_505L0_8)) | (__sa4_505L1_9 & __sa3_505L0_8)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_10 = ret_idx_8_333L9_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_8_333L9_13 = ((__sa4_505L1_10 ^ 0) ^ __sa3_505L0_9);
+__sa3_505L0_10 = ((0 & (__sa4_505L1_10 | __sa3_505L0_9)) | (__sa4_505L1_10 & __sa3_505L0_9)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_11 = ret_idx_9_333L10_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_9_333L10_13 = ((__sa4_505L1_11 ^ 0) ^ __sa3_505L0_10);
+__sa3_505L0_11 = ((0 & (__sa4_505L1_11 | __sa3_505L0_10)) | (__sa4_505L1_11 & __sa3_505L0_10)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_12 = ret_idx_10_333L11_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_10_333L11_13 = ((__sa4_505L1_12 ^ 0) ^ __sa3_505L0_11);
+__sa3_505L0_12 = ((0 & (__sa4_505L1_12 | __sa3_505L0_11)) | (__sa4_505L1_12 & __sa3_505L0_11)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_13 = ret_idx_11_333L12_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_11_333L12_13 = ((__sa4_505L1_13 ^ 0) ^ __sa3_505L0_12);
+__sa3_505L0_13 = ((0 & (__sa4_505L1_13 | __sa3_505L0_12)) | (__sa4_505L1_13 & __sa3_505L0_12)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_14 = ret_idx_12_333L13_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_12_333L13_13 = ((__sa4_505L1_14 ^ 0) ^ __sa3_505L0_13);
+__sa3_505L0_14 = ((0 & (__sa4_505L1_14 | __sa3_505L0_13)) | (__sa4_505L1_14 & __sa3_505L0_13)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_15 = ret_idx_13_333L14_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_13_333L14_13 = ((__sa4_505L1_15 ^ 0) ^ __sa3_505L0_14);
+__sa3_505L0_15 = ((0 & (__sa4_505L1_15 | __sa3_505L0_14)) | (__sa4_505L1_15 & __sa3_505L0_14)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_16 = ret_idx_14_333L15_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_14_333L15_13 = ((__sa4_505L1_16 ^ 0) ^ __sa3_505L0_15);
+__sa3_505L0_16 = ((0 & (__sa4_505L1_16 | __sa3_505L0_15)) | (__sa4_505L1_16 & __sa3_505L0_15)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+// {
+__sa4_505L1_17 = ret_idx_15_333L16_12; 			// ../\streamBitFrontend\test\log2.sk:12
+ret_idx_15_333L16_13 = ((__sa4_505L1_17 ^ 0) ^ __sa3_505L0_16);
+__sa3_505L0_17 = ((0 & (__sa4_505L1_17 | __sa3_505L0_16)) | (__sa4_505L1_17 & __sa3_505L0_16)); 			// ../\streamBitFrontend\test\log2.sk:12
+ // }
+;
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:10
+ // }
+ret_idx_5_333L6_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_5_333L6_13 : ret_idx_5_333L6_12; 
+ret_idx_6_333L7_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_6_333L7_13 : ret_idx_6_333L7_12; 
+ret_idx_12_333L13_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_12_333L13_13 : ret_idx_12_333L13_12; 
+ret_idx_8_333L9_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_8_333L9_13 : ret_idx_8_333L9_12; 
+ret_idx_7_333L8_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_7_333L8_13 : ret_idx_7_333L8_12; 
+done_367L34_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? 1 : done_367L34_12; 
+ret_idx_11_333L12_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_11_333L12_13 : ret_idx_11_333L12_12; 
+ret_idx_13_333L14_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_13_333L14_13 : ret_idx_13_333L14_12; 
+ret_idx_4_333L5_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_4_333L5_13 : ret_idx_4_333L5_12; 
+ret_idx_10_333L11_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_10_333L11_13 : ret_idx_10_333L11_12; 
+ret_idx_3_333L4_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_3_333L4_13 : ret_idx_3_333L4_12; 
+ret_idx_9_333L10_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_9_333L10_13 : ret_idx_9_333L10_12; 
+ret_idx_1_333L2_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_1_333L2_13 : ret_idx_1_333L2_12; 
+ret_idx_15_333L16_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_15_333L16_13 : ret_idx_15_333L16_12; 
+ret_idx_14_333L15_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_14_333L15_13 : ret_idx_14_333L15_12; 
+ret_idx_2_333L3_14 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_2_333L3_13 : ret_idx_2_333L3_12; 
+ret_idx_0_333L1_15 = (!(!done_367L34_12 && (in_idx_1_331L50_0 == 0)))? ret_idx_0_333L1_14 : ret_idx_0_333L1_13; 
+ 			// ../\streamBitFrontend\test\log2.sk:9
+ // }
+; 			// ../\streamBitFrontend\test\log2.sk:8
+// {
+_out_0_idx_0_331L50_1 = ret_idx_0_333L1_15;
+ // }
+// {
+_out_0_idx_1_331L50_1 = ret_idx_1_333L2_14;
+ // }
+// {
+_out_0_idx_2_331L50_1 = ret_idx_2_333L3_14;
+ // }
+// {
+_out_0_idx_3_331L50_1 = ret_idx_3_333L4_14;
+ // }
+// {
+_out_0_idx_4_331L50_1 = ret_idx_4_333L5_14;
+ // }
+// {
+_out_0_idx_5_331L50_1 = ret_idx_5_333L6_14;
+ // }
+// {
+_out_0_idx_6_331L50_1 = ret_idx_6_333L7_14;
+ // }
+// {
+_out_0_idx_7_331L50_1 = ret_idx_7_333L8_14;
+ // }
+// {
+_out_0_idx_8_331L50_1 = ret_idx_8_333L9_14;
+ // }
+// {
+_out_0_idx_9_331L50_1 = ret_idx_9_333L10_14;
+ // }
+// {
+_out_0_idx_10_331L50_1 = ret_idx_10_333L11_14;
+ // }
+// {
+_out_0_idx_11_331L50_1 = ret_idx_11_333L12_14;
+ // }
+// {
+_out_0_idx_12_331L50_1 = ret_idx_12_333L13_14;
+ // }
+// {
+_out_0_idx_13_331L50_1 = ret_idx_13_333L14_14;
+ // }
+// {
+_out_0_idx_14_331L50_1 = ret_idx_14_333L15_14;
+ // }
+// {
+_out_0_idx_15_331L50_1 = ret_idx_15_333L16_14;
+ // }
+;
+ // }
+_p__out_0_idx_0_331L50_0 = _out_0_idx_0_331L50_1;
+_p__out_0_idx_1_331L50_0 = _out_0_idx_1_331L50_1;
+_p__out_0_idx_2_331L50_0 = _out_0_idx_2_331L50_1;
+_p__out_0_idx_3_331L50_0 = _out_0_idx_3_331L50_1;
+_p__out_0_idx_4_331L50_0 = _out_0_idx_4_331L50_1;
+_p__out_0_idx_5_331L50_0 = _out_0_idx_5_331L50_1;
+_p__out_0_idx_6_331L50_0 = _out_0_idx_6_331L50_1;
+_p__out_0_idx_7_331L50_0 = _out_0_idx_7_331L50_1;
+_p__out_0_idx_8_331L50_0 = _out_0_idx_8_331L50_1;
+_p__out_0_idx_9_331L50_0 = _out_0_idx_9_331L50_1;
+_p__out_0_idx_10_331L50_0 = _out_0_idx_10_331L50_1;
+_p__out_0_idx_11_331L50_0 = _out_0_idx_11_331L50_1;
+_p__out_0_idx_12_331L50_0 = _out_0_idx_12_331L50_1;
+_p__out_0_idx_13_331L50_0 = _out_0_idx_13_331L50_1;
+_p__out_0_idx_14_331L50_0 = _out_0_idx_14_331L50_1;
+_p__out_0_idx_15_331L50_0 = _out_0_idx_15_331L50_1;
+}
+
+}
