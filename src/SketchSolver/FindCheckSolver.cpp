@@ -87,6 +87,8 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	}
 //	SAT_Reset(mngCheck);
     int result = SAT_Solve(mngCheck);
+    cout<<"# CHECK DIAGNOSTICS"<<endl;
+	printDiagnostics(mngFind);
     if (result != SATISFIABLE) 
     	return false;
     int N = dirCheck.getArrSize(IN);
@@ -141,9 +143,12 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 	addInputsToTestSet(input, insize);
 //Solve
 	int result = SAT_Solve(mngFind);
+  	cout<<"# FIND DIAGNOSTICS"<<endl;
+	printDiagnostics(mngFind);
     if (result != SATISFIABLE) 	//If solve is bad, return false.
 	    	return false;
 	Dout( dirFind.print() );
+	
 //Get the values of the Controls.
 	int jj=0;
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
@@ -257,5 +262,34 @@ bool FindCheckSolver::solve(){
 	cout<<" *"<<"FIND TIME "<<(find_time/1000)<<", CHECK TIME "<<(check_time/1000)<<endl;
 	return !fail;
 }
+
+void FindCheckSolver::printDiagnostics(){
+	cout<<"# STATS FOR FINDER"<<endl;
+	printDiagnostics(this->mngFind);	
+	cout<<"# STATS FOR CHECKER"<<endl;
+	printDiagnostics(this->mngCheck);	
+}
+
+
+void FindCheckSolver::printDiagnostics(SAT_Manager mng){
+    cout << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
+    cout << "# Max Decision Level\t\t\t\t" << SAT_MaxDLevel(mng) << endl;
+    cout << "# Num. of Decisions\t\t\t\t" << SAT_NumDecisions(mng)<< endl;
+    cout << "# ( Stack + Vsids + Shrinking Decisions )\t\t" <<SAT_NumDecisionsStackConf(mng);
+    cout << "#  + " <<SAT_NumDecisionsVsids(mng)<<" + "<<SAT_NumDecisionsShrinking(mng)<<endl;
+    cout << "# Original Num Variables\t\t\t\t" << SAT_NumVariables(mng) << endl;
+    cout << "# Original Num Clauses\t\t\t\t" << SAT_InitNumClauses(mng) << endl;
+    cout << "# Original Num Literals\t\t\t\t" << SAT_InitNumLiterals(mng) << endl;
+    cout << "# Added Conflict Clauses\t\t\t\t" << SAT_NumAddedClauses(mng)- SAT_InitNumClauses(mng)<< endl;
+    cout << "# Num of Shrinkings\t\t\t\t" << SAT_NumShrinkings(mng)<< endl;
+    cout << "# Deleted Conflict Clauses\t\t\t" << SAT_NumDeletedClauses(mng)-SAT_NumDelOrigCls(mng) <<endl;
+    cout << "# Deleted Clauses\t\t\t\t\t" << SAT_NumDeletedClauses(mng) <<endl;
+    cout << "# Added Conflict Literals\t\t\t\t" << SAT_NumAddedLiterals(mng) - SAT_InitNumLiterals(mng) << endl;
+    cout << "# Deleted (Total) Literals\t\t\t" << SAT_NumDeletedLiterals(mng) <<endl;
+    cout << "# Number of Implication\t\t\t\t" << SAT_NumImplications(mng)<< endl;
+    //other statistics comes here
+    cout << "# Total Run Time\t\t\t\t\t" << SAT_GetCPUTime(mng) << endl;	
+}
+
 
 

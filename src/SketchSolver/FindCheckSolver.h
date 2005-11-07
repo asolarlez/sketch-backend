@@ -48,7 +48,8 @@ class FindCheckSolver{
 	virtual void setupFind();
 	virtual void addInputsToTestSet(int input[], int insize);
 	virtual bool find(int input[], int insize, int controls[]);
-	
+	virtual void printDiagnostics(SAT_Manager mng);
+	virtual void printDiagnostics();
 	public:
 	FindCheckSolver();
 	
