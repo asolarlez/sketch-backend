@@ -1,6 +1,9 @@
 #include "SolveFromInput.h"
 
 #include <map>
+#ifndef INTEGERBOUND
+#define INTEGERBOUND 8192
+#endif
 
 void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	int N = getInSize();
@@ -240,6 +243,7 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 				for(int i=0; i<nrange.size(); ++i){
 					for(int j=0; j<frange.size(); ++j){
 						int quant = comp(anode->mother_quant*nrange[i], anode->father_quant*frange[j]);
+						if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 						Dout(cout<<"QUANT = "<<quant<<"          "<<mid+i<<", "<<fid + j<<endl);
 						if(numbers.find(quant) != numbers.end()){
 							int cvar = dir.newAnonymousVar();		
@@ -251,7 +255,7 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 							int cvar = dir.newAnonymousVar();		
 							addAndClause(mng, cvar, mid+i, fid + j);
 							tmp.push_back(quant);
-							numbers[quant] = cvar;
+							numbers[quant] = cvar;							
 							++vals;	
 						}
 					}
