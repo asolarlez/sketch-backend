@@ -54,6 +54,20 @@ inline void addOrClause(SAT_Manager mng, int x, int a, int b, int gid=0){
 	{ int tmp[] = { -(x), (a), (b)}; SAT_AddClauseSigned(mng, tmp, 3, gid);}	
 }
 
+
+//This function encodes a[0] == a[1] or a[2] or ... a[size];
+inline void addBigOrClause(SAT_Manager mng, int* a, int size, int gid=0){
+	Dout( cout<<" "<<a[0]<<"= " );
+	for(int i=0; i<s; ++i){
+		Dout(cout<<a[i+1]<<" or ");
+		{ int tmp[] = { (a[0]), -(a[i+1])}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
+	}
+	Dout(cout<<"; "<<endl);
+	a[0] = -a[0];
+	{SAT_AddClauseSigned(mng, a, size+1, gid);}
+}
+
+
 //This function encodes x == a and b;
 inline void addAndClause(SAT_Manager mng, int x, int a, int b, int gid=0){
 	Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
