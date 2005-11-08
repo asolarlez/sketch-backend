@@ -88,7 +88,7 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 //	SAT_Reset(mngCheck);
     int result = SAT_Solve(mngCheck);
     cout<<"# CHECK DIAGNOSTICS"<<endl;
-	printDiagnostics(mngFind);
+	printDiagnostics(mngCheck);
     if (result != SATISFIABLE) 
     	return false;
     int N = dirCheck.getArrSize(IN);
@@ -139,8 +139,16 @@ void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 
 
 
-bool FindCheckSolver::find(int input[], int insize, int controls[]){	
+bool FindCheckSolver::find(int input[], int insize, int controls[]){
+		
+					unsigned long long l_f_time;
+					struct timeval stime, endtime;
+					Dtime(gettimeofday(&stime, NULL) );
 	addInputsToTestSet(input, insize);
+					Dtime(gettimeofday(&endtime, NULL) );
+					Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
+					   (endtime.tv_usec - stime.tv_usec) );
+					Dtime(cout<<"* TIME TO ADD INPUT "<<(l_f_time/1000.0)<<endl);
 //Solve
 	int result = SAT_Solve(mngFind);
   	cout<<"# FIND DIAGNOSTICS"<<endl;
@@ -224,11 +232,13 @@ bool FindCheckSolver::solve(){
 		cout<<endl;
 		{
 			struct timeval stime, endtime;
+			cout<<"BEG CHECK"<<endl;
 			Dtime(gettimeofday(&stime, NULL) );
 		isDone = check(ctrl, ctrlSize, input);
 			Dtime(gettimeofday(&endtime, NULL) );
 			Dtime( l_c_time =1000000*(endtime.tv_sec - stime.tv_sec)+
 				   (endtime.tv_usec - stime.tv_usec); check_time += l_c_time );
+			cout<<"END CHECK"<<endl;			
 		}		
 		
 		if(isDone){
@@ -236,11 +246,13 @@ bool FindCheckSolver::solve(){
 			bool keepGoing;
 			{
 				struct timeval stime, endtime;
+				cout<<"BEG FIND"<<endl;
 				Dtime(gettimeofday(&stime, NULL) );
 			 	keepGoing = find(input, inputSize, ctrl);
 				Dtime(gettimeofday(&endtime, NULL) );
 				Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
 				   (endtime.tv_usec - stime.tv_usec); find_time +=l_f_time );
+			   cout<<"END FIND"<<endl;
 			}
 			if( !keepGoing){
 				cout<<"******** FAILED ********"<<endl;
