@@ -505,18 +505,44 @@ int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
 arith_node* an = new arith_node();
 an->arith_type = arith_node::PLUS;
-if($1== NULL){
+if($1== NULL && $3 != NULL){
 	an->mother_quant = t2;
 	an->father_quant = t1;
 	Assert($3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
-}else if($3==NULL){
+}else if($3==NULL && $1 != NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert($1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
 }else{
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen");
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
+	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+}
+$$ = new string(s1);  sgn_stack.push(true);
+}
+| Term '*' Term {
+int t2 = sgn_stack.top(); sgn_stack.pop();
+int t1 = sgn_stack.top(); sgn_stack.pop();
+string s1 = currentBD->new_name();
+arith_node* an = new arith_node();
+an->arith_type = arith_node::TIMES;
+if($1== NULL && $3 != NULL){
+	an->mother_quant = t2;
+	an->father_quant = t1;
+	Assert($3 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+}else if($3==NULL && $1 != NULL){
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+}else{
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
 	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
 }
 $$ = new string(s1);  sgn_stack.push(true);
