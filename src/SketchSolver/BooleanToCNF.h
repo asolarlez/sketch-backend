@@ -15,7 +15,7 @@
 #include "SAT.h"
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
-#define Dout( out ) //out
+#define Dout( out ) // out
 
 
 using namespace std;
@@ -58,7 +58,7 @@ inline void addOrClause(SAT_Manager mng, int x, int a, int b, int gid=0){
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
 inline void addBigOrClause(SAT_Manager mng, int* a, int size, int gid=0){
 	Dout( cout<<" "<<a[0]<<"= " );
-	for(int i=0; i<s; ++i){
+	for(int i=0; i<size; ++i){
 		Dout(cout<<a[i+1]<<" or ");
 		{ int tmp[] = { (a[0]), -(a[i+1])}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
 	}

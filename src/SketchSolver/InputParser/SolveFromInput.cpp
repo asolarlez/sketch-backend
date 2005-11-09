@@ -5,6 +5,9 @@
 #define INTEGERBOUND 8192
 #endif
 
+
+vector<int> scratchpad(100);
+
 void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	int N = getInSize();
 	int k = 0;
@@ -194,25 +197,29 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 		mid = dir.newAnonymousVar();
 		setVarClause(mng, mid);
 	}			
-	int cvar, cvar2;
-	cvar2 = dir.newAnonymousVar();
-	setVarClause(mng, -cvar2);
+	int cvar;
 	COMP comp;
 	Dout(cout<<"SIZES = "<<mrange.size()<<", "<<frange.size()<<endl);
+	int orTerms = 0;
 	for(int i=0; i<mrange.size(); ++i){
 		for(int j=0; j<frange.size(); ++j){
 			Dout(cout<<"COMPARING "<<anode->mother_quant*mrange[i]<<", "<<anode->father_quant*frange[j]<<endl);
 			if(comp(anode->mother_quant*mrange[i], anode->father_quant*frange[j])){
 				cvar = dir.newAnonymousVar();
 				addAndClause(mng, cvar, mid + i, fid + j);
-				cvar2 = dir.newAnonymousVar();
-				addOrClause(mng, cvar2, cvar, cvar-1);
+//				cvar2 = dir.newAnonymousVar();
+//				addOrClause(mng, cvar2, cvar, cvar-1);
+				++orTerms;
+				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+				scratchpad[orTerms] = cvar;
 			}	
 		}
 	}
 	int result = dir.newAnonymousVar();
+	scratchpad[0] = result;
+	addBigOrClause(mng, &scratchpad[0], orTerms);
 	node_ids[anode] = result;
-	addEqualsClause(mng, result, cvar2);
+	
 	return;	
 }
 
@@ -339,20 +346,21 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			}
 			
 			if(!checkParentsChanged(anode, parentSame)){ break; }
-			int cvar, cvar2;
-			cvar2 = dir.newAnonymousVar();
-			setVarClause(mng, -cvar2);
+			int cvar;
+			int orTerms = 0;
 			for(int i=0; i<nrange.size(); ++i){
 				if( nrange[i] >= 0 && nrange[i] < choices.size() ){
 					cvar = dir.newAnonymousVar();
 					addAndClause(mng, cvar, choices[nrange[i]], id + i);
-					cvar2 = dir.newAnonymousVar();
-					addOrClause(mng, cvar2, cvar, cvar-1);
+					++orTerms;
+					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+					scratchpad[orTerms] = cvar;
 				}
 			}
 			int result = dir.newAnonymousVar();
 			node_ids[anode] = result;
-			addEqualsClause(mng, result, cvar2);
+			scratchpad[0] = result;
+			addBigOrClause(mng, &scratchpad[0], orTerms);			
 			return;
 		}
 	}
