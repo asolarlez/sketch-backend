@@ -158,8 +158,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 			case bool_node::DST:{				
 				int oid = (*node_it)->ion_pos;		
 				int nvar = dir.getArr(outname, oid);
-				int msign = (*node_it)->mother_sgn? 1 : -1;
-				Dout(cout<<outname<<"["<<oid<<"]="<<(*node_it)->mother->name<<" "<<node_ids[(*node_it)->mother]<<"  "<<(*node_it)->mother<<endl);
+				int msign = (*node_it)->mother_sgn? 1 : -1;				
 				addEqualsClause(mng, nvar, msign*node_ids[(*node_it)->mother]);
 				break;
 			}
@@ -316,14 +315,15 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 		case arith_node::ACTRL:{
 			int size = anode->multi_mother.size();
 			list<bool_node*>::iterator it = anode->multi_mother.begin();
-			int id = node_ids[*it];
+			list<int>::iterator signs = anode->multi_mother_sgn.begin();
 			bool parentSame = true;
-			for( ; it != anode->multi_mother.end(); ++it){
-				Assert(node_ids[*it]-id>=0 && node_ids[*it]-id<size, "THIS SHOULDN'T HAPPEN");
+			vector<int> ids(anode->multi_mother.size());
+			for(int i=0 ; it != anode->multi_mother.end(); ++it, ++i, ++signs){
+				ids[i]=((*signs)==1?1:-1)*node_ids[*it];
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}
 			if(!checkParentsChanged(anode, parentSame)){ break; }
-			varRange vr = getSwitchVars(mng,dir, id, size);
+			varRange vr = getSwitchVars(mng,dir, ids, size);
 			num_ranges[anode].resize(vr.range);
 			vector<int>& tmp = num_ranges[anode];
 			for(int i=0; i<vr.range; ++i){

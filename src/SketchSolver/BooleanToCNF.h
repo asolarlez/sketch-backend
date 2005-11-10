@@ -15,7 +15,7 @@
 #include "SAT.h"
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
-#define Dout( out ) // out
+#define Dout( out )  //out
 
 
 using namespace std;
@@ -200,7 +200,31 @@ inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, int switchID, int am
 	//////////////////////////////////////////////////////					
 }
 
-
+inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, vector<int> switchID, int amtsize){
+	Assert(switchID.size() == amtsize, "This should never happen");
+	int amtrange = 1;
+	for(int i=0; i<amtsize; ++i) amtrange *= 2;
+	//////////////////////////////////////////////////////
+	int lastsize = 1;
+	int lastRoundVars = dir.getVarCnt();
+	addEqualsClause(mng,  dir.newAnonymousVar(), -(switchID[amtsize-1]));
+	addEqualsClause(mng,  dir.newAnonymousVar(),  (switchID[amtsize-1]));
+	for(int i=1; i<amtsize; ++i){
+		lastsize = lastsize*2;
+		int roundVars = lastRoundVars;
+		lastRoundVars = dir.getVarCnt();
+		for(int j=0; j<lastsize; ++j){
+			int cvar = roundVars + j;
+			addAndClause(mng, dir.newAnonymousVar(), cvar, -(switchID[amtsize-1-i]));
+			addAndClause(mng, dir.newAnonymousVar(), cvar, (switchID[amtsize-1-i]));
+		}
+	}
+	lastsize = lastsize*2;
+	Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
+	int roundVars = lastRoundVars;
+	return varRange(roundVars, amtrange);
+	//////////////////////////////////////////////////////					
+}
 
 inline varRange getSwitchVars(SAT_Manager mng, varDir& dir, const string& switchvar){
 	return getSwitchVars(mng, dir, dir.getArr(switchvar, 0), dir.getArrSize(switchvar));

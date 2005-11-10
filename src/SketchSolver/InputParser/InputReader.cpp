@@ -20,7 +20,8 @@ int isatty(int i);
   map<string, BooleanDAG*> sketchMap;
   map<BooleanDAG*, string> sketches;
   int global_filterid = 0;
-
+  int NCTRLS=5;
+  bool overrideNCtrls=false;
 #include "InputLexer.c"
 #include "InputParser.c"
 

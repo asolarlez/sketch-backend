@@ -10,7 +10,6 @@ stack<string> namestack;
 
 
 
-
 string* comparisson(string* p1, string* p2, arith_node::AType atype){
 
 int t2 = sgn_stack.top(); sgn_stack.pop();
@@ -142,21 +141,21 @@ MethodList: Method	{}
 | MethodList Method	{}
 
 
-InList: T_ident { cout<<"INPUT "<<*$1<<endl; currentBD->create_inputs(-1, *$1); }
+InList: T_ident {  currentBD->create_inputs(-1, *$1); }
 | T_ident InList {
-	cout<<"INPUT "<<*$1<<endl;
+	
 	currentBD->create_inputs(-1, *$1);
 }
 
-OutList: T_ident { 	cout<<"OUTPUT "<<*$1<<endl; currentBD->create_outputs(-1, *$1); }
+OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 | T_ident OutList{
-	cout<<"OUTPUT "<<*$1<<endl;
+	
 	currentBD->create_outputs(-1, *$1);
 }
 
 
-ParamDecl: T_vartype T_ident { cout<<"INPUT "<<*$2<<endl; currentBD->create_inputs(-1, *$2); }
-| '!' T_vartype T_ident { 	cout<<"OUTPUT "<<*$3<<endl; currentBD->create_outputs(-1, *$3); }
+ParamDecl: T_vartype T_ident {  currentBD->create_inputs(-1, *$2); }
+| '!' T_vartype T_ident { 	 currentBD->create_outputs(-1, *$3); }
 | T_vartype '[' ConstantExpr ']' InList 
 | '!' T_vartype '[' ConstantExpr ']' OutList 
 
@@ -499,6 +498,32 @@ string s1 = currentBD->new_name();
 	$$ = new string(s1);  sgn_stack.push(true);
 	delete childs;
 }
+
+| '$''$' varList '$''$' {
+string s1 = currentBD->new_name();
+	arith_node* an = new arith_node();
+	list<bool_node*>* childs = $3;
+	list<bool_node*>::reverse_iterator it = childs->rbegin();
+	int bigN = childs->size();
+	vector<int> tempsgn(bigN);
+	for(int i=0; i<bigN; ++i, ++it){
+		an->multi_mother.push_back(*it);
+		if(*it != NULL){
+			(*it)->children.push_back(an);
+		}
+		tempsgn[bigN-1-i] = sgn_stack.top();
+		sgn_stack.pop();
+	}
+	
+	for(int i=0; i<bigN; ++i){
+		an->multi_mother_sgn.push_back(tempsgn[i]);
+	}
+	an->arith_type = arith_node::ACTRL;
+	currentBD->new_node("", false, "", false, bool_node::ARITH, s1, an); 
+	$$ = new string(s1);  sgn_stack.push(true);
+	delete childs;
+}
+
 | Term '+' Term {
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
@@ -725,6 +750,24 @@ Term: Constant {
 	} 
 }
 | '<' Ident Constant '>' {
+	int nctrls = $3;
+	if(overrideNCtrls){
+		nctrls = NCTRLS;
+	}
+	int N=currentBD->create_controls(nctrls, *$2);
+	arith_node* an = new arith_node();
+	for(int i=0; i<nctrls; ++i){
+		bool_node* tmp = (bool_node*)(*currentBD)[N-nctrls+i];
+		an->multi_mother.push_back(tmp);
+		tmp->children.push_back(an);		
+		an->multi_mother_sgn.push_back(true);
+	}
+	an->arith_type = arith_node::ACTRL;
+	currentBD->new_node("", false, "", false, bool_node::ARITH, *$2, an); 
+	$$ = $2;  sgn_stack.push(true); 
+
+}
+| '<' Ident Constant '*' '>' {
 	int N=currentBD->create_controls($3, *$2);
 	arith_node* an = new arith_node();
 	for(int i=0; i<$3; ++i){
