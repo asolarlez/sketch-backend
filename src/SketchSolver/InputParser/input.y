@@ -247,7 +247,7 @@ RateSet: T_InRate '=' T_int ';'	{ currentBD->create_inputs($3); }
 
 Expression: Term { $$ = $1; }
 | Term '&' Term { 	bool b2 = 1==sgn_stack.top(); sgn_stack.pop();
-					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();					
+					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();						
 					if( $1 != NULL && $3 != NULL){
 						if( *$1 == *$3){
 							if( b1 == b2){
@@ -330,7 +330,12 @@ Expression: Term { $$ = $1; }
 					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();
 
 					if( $1 != NULL && $3 != NULL){
-						string s = currentBD->new_name();					  
+						string s = currentBD->new_name();
+						if(s == "TMP_NAME_144____"){
+							cout<<"This is it 1"<<endl;
+							cout<<context<<endl;
+							cout<<*$1<<"  "<<*$3<<endl;
+						}					  
 						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::OR, s); 
 						sgn_stack.push( true );
 						$$ = new string(s);
@@ -359,7 +364,11 @@ Expression: Term { $$ = $1; }
 | Term T_or Term { 	bool b2 = 1==sgn_stack.top(); sgn_stack.pop();
 					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();					
 					if( $1 != NULL && $3 != NULL){
-						string s = currentBD->new_name();					  
+						string s = currentBD->new_name();
+						if(s == "TMP_NAME_144____"){
+							cout<<"This is it2"<<endl;
+							
+						}					  
 						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::OR, s); 
 						sgn_stack.push( true );
 						$$ = new string(s);
@@ -650,6 +659,10 @@ $$ = new string(s1);  sgn_stack.push(true);
 										//in this case, $5 == NULL
 										if( b3){
 											string s1 = currentBD->new_name();
+											if(s1 == "TMP_NAME_144____"){
+							cout<<"This is it 3"<<endl;
+							
+						}
 											currentBD->new_node(*$1, !b1, *$3, b2,  bool_node::OR, s1);
 											$$ = new string(s1);
 											sgn_stack.push(true);
@@ -664,6 +677,9 @@ $$ = new string(s1);  sgn_stack.push(true);
 										if( b2 ){
 											if( $5 != NULL){
 												string s1 = currentBD->new_name();
+												if(s1 == "TMP_NAME_144____"){
+							cout<<"This is it 4"<<endl;							
+						}
 												currentBD->new_node(*$1, b1, *$5, b3,  bool_node::OR, s1);
 												$$ = new string(s1);
 												sgn_stack.push( true );
@@ -735,7 +751,11 @@ Term: Constant {
 				$$ = $1;  sgn_stack.push(true); 
 			}else{ 
 				pair<string, bool> alias(currentBD->get_alias(*$1)); 
-				$$ = new string( alias.first ); 
+				if(alias.first == ""){
+					$$ = NULL;
+				}else{
+					$$ = new string( alias.first ); 
+				}
 				sgn_stack.push( alias.second );  
 			} 
 		}

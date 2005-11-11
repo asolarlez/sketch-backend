@@ -88,7 +88,7 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 //	SAT_Reset(mngCheck);
     int result = SAT_Solve(mngCheck);
     cout<<"# CHECK DIAGNOSTICS"<<endl;
-	printDiagnostics(mngCheck);
+	printDiagnostics(mngCheck, 'c');
     if (result != SATISFIABLE) 
     	return false;
     int N = dirCheck.getArrSize(IN);
@@ -152,7 +152,7 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 //Solve
 	int result = SAT_Solve(mngFind);
   	cout<<"# FIND DIAGNOSTICS"<<endl;
-	printDiagnostics(mngFind);
+	printDiagnostics(mngFind, 'f');
     if (result != SATISFIABLE) 	//If solve is bad, return false.
 	    	return false;
 	Dout( dirFind.print() );
@@ -227,7 +227,7 @@ bool FindCheckSolver::solve(){
 	while(isDone){
 		unsigned long long l_f_time, l_c_time;
 		Dout( for(int i=0; i<ctrlSize; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl );
-		cout<<"+";
+		cout<<"!+";
 		for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);
 		cout<<endl;
 		{
@@ -242,6 +242,9 @@ bool FindCheckSolver::solve(){
 		}		
 		
 		if(isDone){
+			cout<<"!%";
+			for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0);
+			cout<<endl;
 			Dout( for(int i=0; i<inputSize; ++i) cout<<"		input["<<i<<"]="<<input[i]<<endl; cout<<"-----------------------------"<<endl );
 			bool keepGoing;
 			{
@@ -277,30 +280,30 @@ bool FindCheckSolver::solve(){
 
 void FindCheckSolver::printDiagnostics(){
 	cout<<"# STATS FOR FINDER"<<endl;
-	printDiagnostics(this->mngFind);	
+	printDiagnostics(this->mngFind, 'f');	
 	cout<<"# STATS FOR CHECKER"<<endl;
-	printDiagnostics(this->mngCheck);	
+	printDiagnostics(this->mngCheck, 'c');	
 }
 
 
-void FindCheckSolver::printDiagnostics(SAT_Manager mng){
-    cout << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
-    cout << "# Max Decision Level\t\t\t\t" << SAT_MaxDLevel(mng) << endl;
-    cout << "# Num. of Decisions\t\t\t\t" << SAT_NumDecisions(mng)<< endl;
-    cout << "# ( Stack + Vsids + Shrinking Decisions )\t\t" <<SAT_NumDecisionsStackConf(mng);
-    cout << "#  + " <<SAT_NumDecisionsVsids(mng)<<" + "<<SAT_NumDecisionsShrinking(mng)<<endl;
-    cout << "# Original Num Variables\t\t\t\t" << SAT_NumVariables(mng) << endl;
-    cout << "# Original Num Clauses\t\t\t\t" << SAT_InitNumClauses(mng) << endl;
-    cout << "# Original Num Literals\t\t\t\t" << SAT_InitNumLiterals(mng) << endl;
-    cout << "# Added Conflict Clauses\t\t\t\t" << SAT_NumAddedClauses(mng)- SAT_InitNumClauses(mng)<< endl;
-    cout << "# Num of Shrinkings\t\t\t\t" << SAT_NumShrinkings(mng)<< endl;
-    cout << "# Deleted Conflict Clauses\t\t\t" << SAT_NumDeletedClauses(mng)-SAT_NumDelOrigCls(mng) <<endl;
-    cout << "# Deleted Clauses\t\t\t\t\t" << SAT_NumDeletedClauses(mng) <<endl;
-    cout << "# Added Conflict Literals\t\t\t\t" << SAT_NumAddedLiterals(mng) - SAT_InitNumLiterals(mng) << endl;
-    cout << "# Deleted (Total) Literals\t\t\t" << SAT_NumDeletedLiterals(mng) <<endl;
-    cout << "# Number of Implication\t\t\t\t" << SAT_NumImplications(mng)<< endl;
+void FindCheckSolver::printDiagnostics(SAT_Manager mng, char c){
+    cout << c << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
+    cout << c << "# Max Decision Level\t\t\t\t" << SAT_MaxDLevel(mng) << endl;
+    cout << c << "# Num. of Decisions\t\t\t\t" << SAT_NumDecisions(mng)<< endl;
+    cout << c << "# ( Stack + Vsids + Shrinking Decisions )\t\t" <<SAT_NumDecisionsStackConf(mng);
+    cout << c << "#  + " <<SAT_NumDecisionsVsids(mng)<<" + "<<SAT_NumDecisionsShrinking(mng)<<endl;
+    cout << c << "# Original Num Variables\t\t\t\t" << SAT_NumVariables(mng) << endl;
+    cout << c << "# Original Num Clauses\t\t\t\t" << SAT_InitNumClauses(mng) << endl;
+    cout << c << "# Original Num Literals\t\t\t\t" << SAT_InitNumLiterals(mng) << endl;
+    cout << c << "# Added Conflict Clauses\t\t\t\t" << SAT_NumAddedClauses(mng)- SAT_InitNumClauses(mng)<< endl;
+    cout << c << "# Num of Shrinkings\t\t\t\t" << SAT_NumShrinkings(mng)<< endl;
+    cout << c << "# Deleted Conflict Clauses\t\t\t" << SAT_NumDeletedClauses(mng)-SAT_NumDelOrigCls(mng) <<endl;
+    cout << c << "# Deleted Clauses\t\t\t\t\t" << SAT_NumDeletedClauses(mng) <<endl;
+    cout << c << "# Added Conflict Literals\t\t\t\t" << SAT_NumAddedLiterals(mng) - SAT_InitNumLiterals(mng) << endl;
+    cout << c << "# Deleted (Total) Literals\t\t\t" << SAT_NumDeletedLiterals(mng) <<endl;
+    cout << c << "# Number of Implication\t\t\t\t" << SAT_NumImplications(mng)<< endl;
     //other statistics comes here
-    cout << "# Total Run Time\t\t\t\t\t" << SAT_GetCPUTime(mng) << endl;	
+    cout << c << "# Total Run Time\t\t\t\t\t" << SAT_GetCPUTime(mng) << endl;	
 }
 
 
