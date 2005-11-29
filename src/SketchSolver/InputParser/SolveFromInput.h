@@ -14,6 +14,7 @@ class SolveFromInput: public FindCheckSolver{
 	int Nout;
 	bool firstTime;
 	map<bool_node*, int> node_ids;
+	map<bool_node*, int> node_values; // -1=false, 1=true, 0=unknown
 	map<bool_node*, vector<int> > num_ranges;
 	int* last_input;
 	protected:
@@ -22,8 +23,11 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void defineSketch(SAT_Manager mng, varDir& dir);
 	virtual void defineSpec(SAT_Manager mng, varDir& dir);
 	virtual void translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname);
-	virtual void processArithNode(SAT_Manager mng, varDir& dir, arith_node* anode, 	map<bool_node*, int>& node_ids,  map<bool_node*, vector<int> >& num_ranges);
-	virtual bool checkParentsChanged(bool_node* node, bool more);
+	virtual void processArithNode(SAT_Manager mng, varDir& dir, arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
+	virtual void doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
+	virtual bool checkParentsChanged(bool_node* node, bool more);	
+	template<typename COMP>
+	bool booleanPartialEval(bool_node* node);
 	public:
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1);
 	void output_control_map(ostream& out);

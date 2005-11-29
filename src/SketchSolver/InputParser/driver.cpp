@@ -21,7 +21,7 @@ string context;
 int main(int argc, char** argv){
   int input_idx = 1;
   int seedsize = 1;
-  
+  int seed = -1;
   for(int ii=0; ii<argc; ++ii){
     if( string(argv[ii]) == "-seedsize" ){
       Assert(ii<(argc-1), "-ws needs an extra parameter");
@@ -33,7 +33,12 @@ int main(int argc, char** argv){
       INp::NCTRLS= atoi(argv[ii+1]);
 	  INp::overrideNCtrls=true;
       input_idx = ii+2;      
-    }   
+    }  
+    if( string(argv[ii]) == "-seed" ){
+      Assert(ii<(argc-1), "-seed needs an extra parameter");
+      seed = atoi(argv[ii+1]);	  
+      input_idx = ii+2;
+    } 
   }
   
   
@@ -80,6 +85,10 @@ int main(int argc, char** argv){
       	Dout(INp::functionMap[it->second]->print(cout));
       	Dout(it->first->print(cout));
       	SolveFromInput solver(INp::functionMap[it->second], it->first, seedsize);
+      	if(seed >= 0){
+      		cout<<"SOLVER RAND SEED = "<<seed<<endl;
+      		solver.set_randseed(seed);
+      	}
 	  	solver.setup();
 	  	if( solver.solve() ){
 			solver.output_control_map(out);
