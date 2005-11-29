@@ -20,6 +20,7 @@ FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFin
 	nseeds = 1;
 	Nin = 0;
 	Nout = 0;
+	randseed = time(NULL);
 }
 
 
@@ -191,7 +192,7 @@ bool FindCheckSolver::solve(){
 
 	time_t tm;
 	
-	srand(time(&tm));
+	srand(randseed);
 	bool fail = false;
  	bool isDone;
 	{ 

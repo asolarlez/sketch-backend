@@ -11,6 +11,7 @@ class FindCheckSolver{
 	
 	SAT_Manager mngCheck;
 	varDir dirCheck;
+	int randseed;
 	
 	map<string, int> controlVars;
 	vector<bitVector> inputs;
@@ -57,9 +58,9 @@ class FindCheckSolver{
 	
 	virtual int getInSize();	
 	virtual int getCtrlSize();
-	
 	virtual bool solve();	
 	virtual void setup();
+	void set_randseed(int seed){ randseed = seed; };
 };
 
 #endif /*FINDCHECKSOLVER_H_*/

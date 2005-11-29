@@ -14,7 +14,7 @@
 #include <dirent.h>
 #include "SAT.h"
 
-#define Assert( in, msg) if(!(in)){cout<<msg<<endl;}
+#define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
 #define Dout( out )  //out
 
 
