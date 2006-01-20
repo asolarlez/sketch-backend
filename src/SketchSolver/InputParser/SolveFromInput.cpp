@@ -5,6 +5,7 @@
 #define INTEGERBOUND 8192
 #endif
 
+bool GLOfirstTime = true;
 
 vector<int> scratchpad(100);
 
@@ -277,7 +278,13 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 template<typename THEOP>
 void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	THEOP comp;
+	bool diag = anode->get_name() == "TMP_NAME_113______TIMES" ;
+	bool tmpbool = !diag && GLOfirstTime;
+	diag = diag && !GLOfirstTime;
+	GLOfirstTime = tmpbool;
+	diag = false;
 			if(anode->father == NULL){
+				//cout<<" IF "<<endl;
 				vector<int>& nrange = num_ranges[anode->mother];
 				int id = node_ids[anode->mother];			
 				num_ranges[anode].resize(nrange.size());
@@ -288,6 +295,7 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 				}
 				node_ids[anode] = id;
 			}else{
+				//cout<<" THEN "<<endl;
 				vector<int>& nrange = num_ranges[anode->mother];
 				vector<int>& frange = num_ranges[anode->father];
 				map<int, int> numbers;								
@@ -297,25 +305,35 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 				vector<int>& tmp = num_ranges[anode];
 				tmp.reserve(nrange.size()*frange.size());
 				Dout(cout<<"ADDING "<<anode->father_quant<<"  MULTIPLYIN  "<<anode->mother_quant<<endl);
+				Dout(cout<<"ADDING "<<anode->father->get_name()<<"  WITH  "<<anode->mother->get_name()<<endl);
 				int vals = 0;
+				//cout<<" BEFORE THE LOOPS"<<endl;
 				for(int i=0; i<nrange.size(); ++i){
 					for(int j=0; j<frange.size(); ++j){
-						int quant = comp(anode->mother_quant*nrange[i], anode->father_quant*frange[j]);
+						int quant = comp(anode->mother_quant*nrange[i], anode->father_quant*frange[j]);						
+						Dout(cout<<quant<<" = "<<anode->mother_quant*nrange[i]<<" * "<<anode->father_quant*frange[j]<<endl);
 						if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 						Dout(cout<<"QUANT = "<<quant<<"          "<<mid+i<<", "<<fid + j<<endl);
 						if(numbers.find(quant) != numbers.end()){
-							int cvar = dir.newAnonymousVar();		
+							if( diag ) cout<< "YES "<<endl;
+							int cvar = dir.newAnonymousVar();	
+							if( diag ) cout<<" cvar ="<<cvar<<endl;
 							addAndClause(mng, cvar, mid+i, fid + j);
+							if( diag ) cout<<" ADDED CLAUSE"<<endl;
 							int cvar2 = dir.newAnonymousVar();
+							if( diag ) cout<<" cvar2 ="<<cvar2<<endl;
 							addOrClause(mng, cvar2, cvar, numbers[quant]);
+							if( diag ) cout<<" ADDED OTHER CLAUSE"<<endl;
 							numbers[quant] = cvar2;
 						}else{
+							if( diag ) cout<< "NO "<<endl;
 							int cvar = dir.newAnonymousVar();		
 							addAndClause(mng, cvar, mid+i, fid + j);
 							tmp.push_back(quant);
 							numbers[quant] = cvar;							
 							++vals;	
 						}
+						//cout<<" ENDLOOP "<<endl;
 					}
 				}
 				Dout(cout<<"tmp size = "<<tmp.size()<<endl);
@@ -400,6 +418,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
 				int nvalue = node_values[*it];
+				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
@@ -419,7 +438,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			bool_node* mother = anode->mother;
 			int id = node_ids[mother];
 			Assert( mother != NULL, "This should never happen");
-			if(mother->type != bool_node::ARITH){
+			if( (num_ranges.find(mother) == num_ranges.end()) ){ //mother->type != bool_node::ARITH
 				int cvar = dir.newAnonymousVar();
 				if(choices.size()>=2){
 					addChoiceClause(mng, cvar , id , choices[1], choices[0]);

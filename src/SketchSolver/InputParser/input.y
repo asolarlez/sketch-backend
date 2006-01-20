@@ -624,7 +624,48 @@ $$ = new string(s1);  sgn_stack.push(true);
 							int i2 = sgn_stack.top(); sgn_stack.pop();
 							bool b3 = 1== i3;
 							bool b2 = 1== i2;
-							bool b1 = 1==sgn_stack.top(); sgn_stack.pop();
+							bool b1 = 1==sgn_stack.top(); sgn_stack.pop();							
+							bool isSparse = false;
+//							cout<<"---------------------------------"<<endl;
+							if( i3>1 || i3 < 0){ /*cout<<" i3 = "<<i3<<endl;*/ isSparse = true; }
+							if( i2>1 || i2 < 0){ /*cout<<" i2 = "<<i2<<endl;*/ isSparse = true; }
+							bool_node* yesChild=NULL;
+							bool_node* noChild=NULL;
+							if( $3 != NULL ){
+								bool_node* bn = currentBD->get_node(*$3);
+								yesChild = dynamic_cast<bool_node*>(bn);
+								if(!(bn != NULL && bn->type != bool_node::ARITH)){
+									isSparse = true;
+								}
+							}
+							if( $5 != NULL ){
+								bool_node* bn = currentBD->get_node(*$5);
+								noChild = dynamic_cast<bool_node*>(bn);
+								if(!(bn != NULL && bn->type != bool_node::ARITH)){
+									isSparse = true;
+								}
+							}
+							if(isSparse){
+								//cout<<" IS SPARSE "<<endl;
+								string s1 = currentBD->new_name();
+								arith_node* an = new arith_node();
+								an->multi_mother.push_back( noChild );
+								an->multi_mother.push_back( yesChild );
+								if(yesChild != NULL){
+									//cout<<" yesChild = "<<yesChild->get_name()<<endl;
+									yesChild->children.push_back(an);
+								}
+								if(noChild != NULL){
+									//cout<<" noChild = "<<noChild->get_name()<<endl;
+									noChild->children.push_back(an);
+								}								
+								an->multi_mother_sgn.push_back(i3);
+								an->multi_mother_sgn.push_back(i2);
+								$$ = new string(s1); sgn_stack.push(true);
+								an->arith_type = arith_node::ARRACC;
+								Assert($1 != NULL, "THIS CAN'T HAPPEN!!");
+								currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
+							}else
 							if( $1 != NULL && $3 != NULL && $5 != NULL){
 								string s1 = currentBD->new_name();			  
 								currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
@@ -660,7 +701,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 										if( b3){
 											string s1 = currentBD->new_name();
 											if(s1 == "TMP_NAME_144____"){
-							cout<<"This is it 3"<<endl;
+							//cout<<"This is it 3"<<endl;
 							
 						}
 											currentBD->new_node(*$1, !b1, *$3, b2,  bool_node::OR, s1);
@@ -678,7 +719,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 											if( $5 != NULL){
 												string s1 = currentBD->new_name();
 												if(s1 == "TMP_NAME_144____"){
-							cout<<"This is it 4"<<endl;							
+							//cout<<"This is it 4"<<endl;							
 						}
 												currentBD->new_node(*$1, b1, *$5, b3,  bool_node::OR, s1);
 												$$ = new string(s1);
@@ -712,7 +753,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 									}																		
 								}
 							}			  					  
-						}      
+						} 
 
 
 varList: Term {
