@@ -121,6 +121,74 @@ void SolveFromInput::output_control_map(ostream& out){
 	}
 }
 
+
+
+
+template<>
+bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
+	logical_or<bool> comp;
+	int fathval = node_values[node->father];
+	int mothval = node_values[node->mother];
+	int fsign = node->father_sgn? 1 : -1;
+	int msign = node->mother_sgn? 1 : -1;
+	if(fathval != 0 && mothval != 0){
+		int oldVal = node_values[node];
+		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
+		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
+		node_values[node] = newVal;
+		node->flag = newVal != oldVal;
+		node_ids[node] = newVal*YES;
+		return true;
+	}else{
+		if(fathval == 1 || mothval == 1){
+			int oldVal = node_values[node];
+			int newVal =  1;
+			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
+			node_values[node] = newVal;
+			node->flag = newVal != oldVal;
+			node_ids[node] = newVal*YES;
+			return true;
+		}
+	}
+	node_values[node] = 0;
+	return false;
+}
+
+
+
+
+template<>
+bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
+	logical_and<bool> comp;
+	int fathval = node_values[node->father];
+	int mothval = node_values[node->mother];
+	int fsign = node->father_sgn? 1 : -1;
+	int msign = node->mother_sgn? 1 : -1;
+	if(fathval != 0 && mothval != 0){
+		int oldVal = node_values[node];
+		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
+		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
+		node_values[node] = newVal;
+		node->flag = newVal != oldVal;
+		node_ids[node] = newVal*YES;
+		return true;
+	}else{
+		if(fathval == -1 || mothval == -1){
+			int oldVal = node_values[node];
+			int newVal =  -1;
+			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
+			node_values[node] = newVal;
+			node->flag = newVal != oldVal;
+			node_ids[node] = newVal*YES;
+			return true;
+		}	
+	}
+	node_values[node] = 0;
+	return false;
+}
+
+
+
 template<typename COMP>
 bool SolveFromInput::booleanPartialEval(bool_node* node){
 	COMP comp;
