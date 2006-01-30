@@ -125,6 +125,7 @@ void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 	Dout( cout<<"find()"<<endl );
 	defineSketch(mngFind, dirFind);
 	defineSpec(mngFind, dirFind);	
+	dirFind.makeArrNoBranch(IN);
 	Dout( cout<<"____"<<endl );
 	addEqualsClauses(mngFind, dirFind);
 	

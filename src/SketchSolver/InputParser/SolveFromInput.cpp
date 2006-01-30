@@ -99,6 +99,8 @@ void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
 	dir.declareArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
+	dir.makeArrNoBranch(SOUT);
+	dir.makeArrNoBranch(OUT);
 	YES = dir.newAnonymousVar();
 	Dout(cout<<"YES = "<<YES<<endl);
 	setVarClause(mng, YES);

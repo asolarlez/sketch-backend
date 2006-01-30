@@ -137,6 +137,12 @@ public:
 		for(int i=0; i<size; ++i) SAT_AddVariable(mng);
 	}
 	
+	void makeArrNoBranch(const string& arName){
+		int var = varmap[arName];
+		int sz = arrsize[arName];
+		for(int i=0; i<sz; ++i) SAT_DisableVarBranch(mng, var+i);
+	}
+	
 	int getVar(const string& vname){
 		return varmap[vname];
 	}
