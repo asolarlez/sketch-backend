@@ -480,6 +480,173 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			node_ids[anode] = vr.varID;
 			return;
 		}
+		
+		case arith_node::ARRASS: {
+			Dout(cout<<"             ARRASS:"<<endl);
+			// mother = index
+			// multi-mother[0] = old-value;
+			// multi-mother[1] = new-value;
+			bool_node* mother = anode->mother;
+			int id = node_ids[mother];
+			int quant = anode->mother_quant;
+			Dout(cout<<"quant = "<<quant<<endl);
+			list<bool_node*>::iterator it = anode->multi_mother.begin();
+			list<int>::iterator signs = anode->multi_mother_sgn.begin();
+			Assert( anode->multi_mother.size() == 2 , "THIS SHOULDN't HAPPEN");
+			vector<int> choices(2);
+			vector<bool_node*> mothers(2);
+			vector<int> factors(2);
+			bool parentSame = true;
+			bool isBoolean=true;
+			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
+				int nvalue = node_values[*it];
+				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
+				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
+					isBoolean = false;	
+				}
+				mothers[i] = *it;
+				factors[i] = *signs;
+				if( nvalue != 0 ){
+					choices[i]=nvalue*YES;
+				}else{
+					choices[i]=node_ids[*it];
+				}
+				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
+				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
+			}			
+			if(!checkParentsChanged(anode, parentSame)){ break; }			
+			int guard;						
+			if( (num_ranges.find(mother) == num_ranges.end()) ){
+				int sgn = anode->mother_sgn? 1: -1;
+				if(quant > 1){
+					guard = -YES;	
+				}else{
+					bool tmp = sgn * id;
+					guard = dir.newAnonymousVar();
+					addXorClause(mng, guard, tmp,  quant==0?YES:-YES);
+				}
+			}else{
+				guard = -YES;
+				vector<int>& nrange = num_ranges[mother];
+				for(int i=0; i<nrange.size(); ++i){
+					if( nrange[i] == quant){
+						guard = id + i;						
+						break;						
+					}					
+				}
+			}
+			Dout(cout<<" guard = "<<guard<<endl);
+			int factor0 = factors[0];
+			int factor1 = factors[1];
+			if(isBoolean){
+				Dout(cout<<" is boolean"<<endl);
+				if(guard == YES){
+					node_ids[anode] = choices[1]*(factor1==1?1:-1);
+					return;
+				}
+				if(guard == -YES){
+					node_ids[anode] = choices[0]*(factor0==1?1:-1);
+					return;	
+				}
+				int cvar = dir.newAnonymousVar();
+				addChoiceClause(mng, cvar , guard , choices[1]*(factor1==1?1:-1), choices[0]*(factor0==1?1:-1));
+				node_ids[anode] = cvar;
+				return;
+			}else{
+				Dout(cout<<" is not boolean"<<endl);
+				vector<int> tmprange(2);
+				tmprange[0] = 0;
+				tmprange[1] = 1;
+				int mid0 = choices[0];				
+				int mid1 = choices[1];
+				bool hasRange ;
+				hasRange = (num_ranges.find(mothers[1]) != num_ranges.end());
+				vector<int>& nr1 = hasRange? num_ranges[mothers[1]] : tmprange;				
+				if(!hasRange){
+					int cvar = dir.newAnonymousVar();
+					addEqualsClause(mng, cvar, -mid1);
+					int cvar2 = dir.newAnonymousVar();
+					addEqualsClause(mng, cvar2, mid1);
+					mid1 = cvar;
+				}
+				hasRange = (num_ranges.find(mothers[0]) != num_ranges.end());
+				vector<int>& nr0 = hasRange? num_ranges[mothers[0]] : tmprange;
+				if(!hasRange){
+					int cvar = dir.newAnonymousVar();
+					addEqualsClause(mng, cvar, -mid0);
+					int cvar2 = dir.newAnonymousVar();
+					addEqualsClause(mng, cvar2, mid0);
+					mid0 = cvar;
+				}				
+				if(guard == YES){
+					node_ids[anode] = choices[1];
+					num_ranges[anode] = nr1;
+					vector<int>& tmp = num_ranges[anode];
+					for(int i=0; i<tmp.size(); ++i){ tmp[i] = tmp[i] * factor1; }				
+					return;
+				}
+				if(guard == -YES){
+					node_ids[anode] = choices[0];
+					num_ranges[anode] = nr0;
+					vector<int>& tmp = num_ranges[anode];
+					for(int i=0; i<tmp.size(); ++i){ tmp[i] = tmp[i] * factor0; }
+					return;
+				}
+				int i=0, j=0;
+				vector<int> res;
+				res.reserve(nr0.size() + nr1.size());
+				vector<int>& out = num_ranges[anode];
+				out.reserve(nr0.size() + nr1.size());
+				while(i < nr0.size() || j< nr1.size()){
+					bool avi = i < nr0.size();
+					bool avj = j < nr1.size();
+					int curri = avi ? nr0[i] * factor0 : -1;
+					int currj = avj ? nr1[j] * factor1 : -1;
+					if( curri == currj && avi && avj){
+						Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+						int cvar1 = dir.newAnonymousVar();
+						addAndClause(mng, cvar1, mid0+i, -guard);
+						int cvar2 = dir.newAnonymousVar();
+						addAndClause(mng, cvar2, mid1+j, guard);
+						int cvar3 = dir.newAnonymousVar();
+						addOrClause(mng, cvar3, cvar2, cvar1);
+						out.push_back(curri);
+						res.push_back(cvar3);
+						i++;
+						j++;
+						continue;
+					}
+					if((curri < currj && avi) || !avj){
+						Dout(cout<<" curri = "<<curri<<endl);
+						int cvar = dir.newAnonymousVar();
+						addAndClause(mng, cvar, mid0+i, -guard);
+						out.push_back(curri);
+						res.push_back(cvar);
+						i++;
+						continue;
+					}
+					if( (currj < curri && avj) || !avi ){
+						Dout(cout<<" currj = "<<currj<<endl);
+						int cvar = dir.newAnonymousVar();
+						addAndClause(mng, cvar, mid1+j, guard);
+						out.push_back(currj);
+						res.push_back(cvar);
+						j++;
+						continue;
+					}
+					Assert(false, "Should never get here");
+				}
+				int newID = dir.getVarCnt();
+				for(int k=0; k<res.size(); ++k){
+					int val = res[k];
+					int cvar = dir.newAnonymousVar();
+					addEqualsClause(mng, cvar, val);
+				}
+				node_ids[anode] = newID;
+				return;
+			}
+		}
+		
 		case arith_node::ARRACC:{
 			list<bool_node*>::iterator it = anode->multi_mother.begin();
 			list<int>::iterator signs = anode->multi_mother_sgn.begin();
@@ -509,12 +676,13 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			int id = node_ids[mother];
 			Assert( mother != NULL, "This should never happen");
 			if( (num_ranges.find(mother) == num_ranges.end()) ){ //mother->type != bool_node::ARITH
+				int sgn = anode->mother_sgn? 1: -1;
 				int cvar = dir.newAnonymousVar();
 				if(choices.size()>=2){
-					addChoiceClause(mng, cvar , id , choices[1], choices[0]);
+					addChoiceClause(mng, cvar , sgn * id , choices[1], choices[0]);
 				}else{
 					if(choices.size()>=1){
-						addAndClause(mng, cvar , -id , choices[0]);
+						addAndClause(mng, cvar , sgn * -id , choices[0]);
 					}else{
 						addEqualsClause(mng, cvar, -YES);
 					}
@@ -585,15 +753,19 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 	}
 	vector<int>& nrange = isMulti ? num_ranges[mother] : tmprange ;
 	map<int, vector<int> > newVals;
+	int vsize = values.size();
 	for(int i=0; i<nrange.size(); ++i){
 		int factor = factors[ nrange[i] ];
-		vector<int>& cvalues = *values[nrange[i]];
-		Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  factors[x]="<<factor<<"    "<<cvalues.size()<<endl );
-		for(int j=0; j<cvalues.size(); ++j){
-			int cvar = dir.newAnonymousVar();
-			addAndClause(mng, cvar, id + i, choices[nrange[i]] + j);
-			newVals[ cvalues[j] * factor].push_back(cvar);
-			Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<"    x factor="<<cvalues[j] * factor<<endl );
+		if( nrange[i] < vsize && nrange[i] >= 0){
+			Assert( values[nrange[i]] != NULL , "This can't happen either");
+			vector<int>& cvalues = *values[nrange[i]];
+			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  factors[x]="<<factor<<"    "<<cvalues.size()<<endl );
+			for(int j=0; j<cvalues.size(); ++j){
+				int cvar = dir.newAnonymousVar();
+				addAndClause(mng, cvar, id + i, choices[nrange[i]] + j);
+				newVals[ cvalues[j] * factor].push_back(cvar);
+				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<"    x factor="<<cvalues[j] * factor<<endl );
+			}
 		}
 	}
 	node_ids[anode] = dir.getVarCnt();

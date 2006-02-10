@@ -54,6 +54,7 @@ return new string(s1);
 	double doubleConst;		
 	std::list<int>* iList;
 	list<bool_node*>* nList;
+	list<string*>* sList;
 	vartype variableType;
 }
 
@@ -105,6 +106,7 @@ return new string(s1);
 %type<intConst> ConstantExpr
 %type<intConst> ConstantTerm
 %type<nList> varList
+%type<sList> IdentList
 
 
 %left '+'
@@ -229,6 +231,67 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 								delete $3;
 								delete $1;
 							  }	
+							  
+							  
+							  
+| '$' IdentList '$''$' varList '$''[' Expression ']' '=' Expression ';' {
+	int rhsSgn = sgn_stack.top(); sgn_stack.pop();	
+	int ofstSgn = sgn_stack.top(); sgn_stack.pop();
+	
+	list<string*>* childs = $2;
+	list<string*>::reverse_iterator it = childs->rbegin();
+	
+	list<bool_node*>* oldchilds = $5;
+	list<bool_node*>::reverse_iterator oldit = oldchilds->rbegin();
+	
+	bool_node* rhs = NULL; 
+	if( $11 != NULL){
+		rhs = currentBD->get_node(*$11);
+	}
+	
+	int bigN = childs->size();
+	Assert( bigN == oldchilds->size(), "This can't happen");
+	vector<int> tempsgn(bigN);
+
+	
+	for(int i=0; i<bigN; ++i){
+		tempsgn[bigN-1-i] = sgn_stack.top();
+		sgn_stack.pop();
+	}
+
+	for(int i=0; i<bigN; ++i, ++it, ++oldit){
+		string s1 = currentBD->new_name();
+		arith_node* an = new arith_node();
+		an->multi_mother.push_back(*oldit);
+		if(*oldit != NULL){
+			(*oldit)->children.push_back(an);
+		}
+		an->multi_mother_sgn.push_back(tempsgn[i]);
+		
+		an->multi_mother.push_back(rhs);
+		if(rhs != NULL){
+			rhs->children.push_back(an);
+		}
+		an->multi_mother_sgn.push_back(rhsSgn);
+		
+		an->arith_type = arith_node::ARRASS;
+		Assert($8 != NULL, "THIS CAN'T HAPPEN!!");
+		currentBD->new_node(*$8, ofstSgn, "", false, bool_node::ARITH, s1, an);
+		currentBD->alias( *(*it), true, s1);
+		an->mother_quant = i;
+		delete *it;
+	}
+	delete childs;
+	delete oldchilds;
+	delete $8;
+	delete $11;
+}
+							  
+							  
+							  
+							  
+							  
+							  
 | RateSet {}
 | T_OutIdent '=' Expression ';' {
 								if( $3 == NULL){
@@ -774,7 +837,14 @@ varList: Term {
 	$$ = $2;
 }
 
-
+IdentList: T_ident {
+	$$ = new list<string*>();	
+	$$->push_back( $1);
+}
+| T_ident IdentList{
+	$$ = $2;
+	$$->push_back( $1);
+}
 
 Term: Constant {
 				 $$ = NULL; 
