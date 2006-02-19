@@ -226,9 +226,9 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 									currentBD->alias( *$1, 1==sgn_stack.top(), "");
 								}else{
 									currentBD->alias( *$1, 1==sgn_stack.top(), *$3);
+									delete $3;
 								}
 								sgn_stack.pop();
-								delete $3;
 								delete $1;
 							  }	
 							  
@@ -275,7 +275,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		an->multi_mother_sgn.push_back(rhsSgn);
 		
 		an->arith_type = arith_node::ARRASS;
-		Assert($8 != NULL, "THIS CAN'T HAPPEN!!");
+		Assert($8 != NULL, "1: THIS CAN'T HAPPEN!!");
 		currentBD->new_node(*$8, ofstSgn, "", false, bool_node::ARITH, s1, an);
 		currentBD->alias( *(*it), true, s1);
 		an->mother_quant = i;
@@ -545,6 +545,10 @@ Expression: Term { $$ = $1; }
 					} 
 				}
 | '$' varList '$' '[' Expression ']' {
+
+	bool isNull = ($5 == NULL);
+	int pushval = 0;
+
 bool b1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
 	arith_node* an = new arith_node();
@@ -554,21 +558,34 @@ string s1 = currentBD->new_name();
 	vector<int> tempsgn(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-		if(*it != NULL){
+		if(*it != NULL && !isNull){
 			(*it)->children.push_back(an);
 		}
 		tempsgn[bigN-1-i] = sgn_stack.top();
+		if(isNull && b1 == (bigN-1-i)){
+			if(*it != NULL){
+				$$ = new string( (*it)->name );
+			}else{
+				$$ = NULL;
+			}
+			pushval = sgn_stack.top();
+		}
 		sgn_stack.pop();
 	}
-	
-	for(int i=0; i<bigN; ++i){
-		an->multi_mother_sgn.push_back(tempsgn[i]);
+	if( !isNull ){
+		for(int i=0; i<bigN; ++i){
+			an->multi_mother_sgn.push_back(tempsgn[i]);
+		}
+		an->arith_type = arith_node::ARRACC;
+		Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");
+		currentBD->new_node(*$5, b1, "", false, bool_node::ARITH, s1, an); 
+		$$ = new string(s1);  sgn_stack.push(true);
+		delete childs;
+	}else{
+		sgn_stack.push(pushval);
+		delete an;
+		delete childs;
 	}
-	an->arith_type = arith_node::ARRACC;
-	Assert($5 != NULL, "THIS CAN'T HAPPEN!!");
-	currentBD->new_node(*$5, b1, "", false, bool_node::ARITH, s1, an); 
-	$$ = new string(s1);  sgn_stack.push(true);
-	delete childs;
 }
 
 | '$''$' varList '$''$' {
@@ -710,24 +727,34 @@ $$ = new string(s1);  sgn_stack.push(true);
 							}
 							if(isSparse){
 								//cout<<" IS SPARSE "<<endl;
-								string s1 = currentBD->new_name();
-								arith_node* an = new arith_node();
-								an->multi_mother.push_back( noChild );
-								an->multi_mother.push_back( yesChild );
-								if(yesChild != NULL){
-									//cout<<" yesChild = "<<yesChild->get_name()<<endl;
-									yesChild->children.push_back(an);
+								if($1 != NULL){
+									string s1 = currentBD->new_name();
+									arith_node* an = new arith_node();
+									an->multi_mother.push_back( noChild );
+									an->multi_mother.push_back( yesChild );
+									if(yesChild != NULL){
+										//cout<<" yesChild = "<<yesChild->get_name()<<endl;
+										yesChild->children.push_back(an);
+									}
+									if(noChild != NULL){
+										//cout<<" noChild = "<<noChild->get_name()<<endl;
+										noChild->children.push_back(an);
+									}								
+									an->multi_mother_sgn.push_back(i3);
+									an->multi_mother_sgn.push_back(i2);
+									$$ = new string(s1); sgn_stack.push(true);
+									an->arith_type = arith_node::ARRACC;									
+									Assert($1 != NULL, "3: THIS CAN'T HAPPEN!!");
+									currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
+								}else{
+									if( b1 == 0 ){
+										$$ = $5;
+										sgn_stack.push(i3);
+									}else{
+										$$ = $3;
+										sgn_stack.push(i2);									
+									}		
 								}
-								if(noChild != NULL){
-									//cout<<" noChild = "<<noChild->get_name()<<endl;
-									noChild->children.push_back(an);
-								}								
-								an->multi_mother_sgn.push_back(i3);
-								an->multi_mother_sgn.push_back(i2);
-								$$ = new string(s1); sgn_stack.push(true);
-								an->arith_type = arith_node::ARRACC;
-								Assert($1 != NULL, "THIS CAN'T HAPPEN!!");
-								currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
 							}else
 							if( $1 != NULL && $3 != NULL && $5 != NULL){
 								string s1 = currentBD->new_name();			  

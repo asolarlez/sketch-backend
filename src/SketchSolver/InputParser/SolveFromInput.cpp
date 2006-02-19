@@ -142,7 +142,7 @@ bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
 		node_ids[node] = newVal*YES;
 		return true;
 	}else{
-		if(fathval == 1 || mothval == 1){
+		if(fathval*fsign == 1 || mothval*msign == 1){
 			int oldVal = node_values[node];
 			int newVal =  1;
 			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
@@ -175,7 +175,7 @@ bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
 		node_ids[node] = newVal*YES;
 		return true;
 	}else{
-		if(fathval == -1 || mothval == -1){
+		if(fathval*fsign == -1 || mothval*msign == -1){
 			int oldVal = node_values[node];
 			int newVal =  -1;
 			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
@@ -300,33 +300,56 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 
 template<typename COMP>
 void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
-	vector<int> one(1,1);
+	vector<int> tmprange(2);
+	tmprange[0] = 0;
+	tmprange[1] = 1;
+
 	bool_node* mother = anode->mother;			
-	bool hasMother = (mother != NULL);
-	vector<int>& mrange = hasMother? num_ranges[mother] : one;
-	int mid = hasMother? node_ids[mother] : -1;
+	bool hasMother = (num_ranges.find(mother) != num_ranges.end() );
+	vector<int>& mrange = hasMother? num_ranges[mother] : tmprange;
+	int mid = node_ids[mother] ;
+	int mquant = anode->mother_quant;
+	if(!hasMother){
+		if(mother != NULL){
+			Assert( mquant == 1 || mquant == 0, "If mother is bool, the quant is either true or false");
+			mid = mid*(mquant?1:-1);
+			mquant = 1;
+		}
+		int cvar = dir.newAnonymousVar();
+		int cvar2 = dir.newAnonymousVar();
+		addEqualsClause(mng, cvar, -mid);
+		addEqualsClause(mng, cvar2, mid);
+		mid = cvar;
+	}
+	
 	
 	bool_node* father = anode->father;			
-	bool hasFather = (father != NULL);
-	vector<int>& frange = hasFather? num_ranges[father] : one;
-	int fid = hasFather? node_ids[father] : -1;
-	
-	if(fid == -1){
-		fid = dir.newAnonymousVar();
-		setVarClause(mng, fid);
+	bool hasFather = (num_ranges.find(father) != num_ranges.end() );
+	vector<int>& frange = hasFather? num_ranges[father] : tmprange;
+	int fid = node_ids[father];
+	int fquant = anode->father_quant;
+	if(!hasFather){
+		if(father != NULL){
+			Assert( fquant == 1 || fquant == 0, "If father is bool, the quant is either true or false");
+			fid = fid*(fquant?1:-1);
+			fquant = 1;
+		}
+		int cvar = dir.newAnonymousVar();
+		int cvar2 = dir.newAnonymousVar();
+		addEqualsClause(mng, cvar, -fid);
+		addEqualsClause(mng, cvar2, fid);
+		fid = cvar;		
 	}
-	if(mid == -1){
-		mid = dir.newAnonymousVar();
-		setVarClause(mng, mid);
-	}			
+	
+	
 	int cvar;
 	COMP comp;
 	Dout(cout<<"SIZES = "<<mrange.size()<<", "<<frange.size()<<endl);
 	int orTerms = 0;
 	for(int i=0; i<mrange.size(); ++i){
 		for(int j=0; j<frange.size(); ++j){
-			Dout(cout<<"COMPARING "<<anode->mother_quant*mrange[i]<<", "<<anode->father_quant*frange[j]<<endl);
-			if(comp(anode->mother_quant*mrange[i], anode->father_quant*frange[j])){
+			Dout(cout<<"COMPARING "<<mquant*mrange[i]<<", "<<fquant*frange[j]<<endl);
+			if(comp(mquant*mrange[i], fquant*frange[j])){
 				cvar = dir.newAnonymousVar();
 				addAndClause(mng, cvar, mid + i, fid + j);
 //				cvar2 = dir.newAnonymousVar();
@@ -355,17 +378,35 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 	diag = false;
 			if(anode->father == NULL){
 				//cout<<" IF "<<endl;
-				vector<int>& nrange = num_ranges[anode->mother];
-				int id = node_ids[anode->mother];			
+				bool hasRange = true;
+				vector<int> tmprange(2);
+				tmprange[0] = 0;
+				tmprange[1] = 1;
+				hasRange = (num_ranges.find(anode->mother) != num_ranges.end() );
+				vector<int>& nrange = hasRange? num_ranges[anode->mother] : tmprange;
+				int id = node_ids[anode->mother];
+				int mquant = anode->mother_quant;
+				if(!hasRange){
+					int sgn = mquant? 1 : -1;
+					int cvar = dir.newAnonymousVar();	
+					int cvar2 = dir.newAnonymousVar();	
+					addEqualsClause(mng, cvar, -sgn*id);
+					addEqualsClause(mng, cvar2, sgn*id);
+					id = cvar;
+					mquant = 1;
+				}
 				num_ranges[anode].resize(nrange.size());
 				vector<int>& tmp = num_ranges[anode];
-				Dout(cout<<"ADDING "<<anode->father_quant<<"  MULTIPLYIN  "<<anode->mother_quant<<endl);
+				Dout(cout<<"ADDING "<<anode->father_quant<<"  MULTIPLYIN  "<<mquant<<endl);
 				for(int i=0; i<nrange.size(); ++i){
-					tmp[i] = comp(anode->mother_quant*nrange[i], anode->father_quant);
+					tmp[i] = comp(mquant*nrange[i], anode->father_quant);
+					Dout(cout<<"  "<< mquant*nrange[i]<<" op "<<anode->father_quant<<"= "<<tmp[i]<<endl);
 				}
 				node_ids[anode] = id;
 			}else{
 				//cout<<" THEN "<<endl;
+				Assert( (num_ranges.find(anode->mother) != num_ranges.end() ), "Mother doesn't have stuff");
+				Assert( (num_ranges.find(anode->father) != num_ranges.end() ), "Father doesn't have stuff");
 				vector<int>& nrange = num_ranges[anode->mother];
 				vector<int>& frange = num_ranges[anode->father];
 				map<int, int> numbers;								
@@ -423,31 +464,37 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	switch(anode->arith_type){
 		case arith_node::GE:{
+			Dout( cout<<" GE "<<endl );
 			if(!checkParentsChanged(anode, true)){ break; }	
 			processComparissons<greater_equal<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::LT:{
+			Dout( cout<<" LT "<<endl );
 			if(!checkParentsChanged(anode, true)){ break; }	
 			processComparissons<less<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::LE:{
+			Dout( cout<<" LE "<<endl );			
 			if(!checkParentsChanged(anode, true)){ break; }	
 			processComparissons<less_equal<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::GT:{
+			Dout( cout<<" GT "<<endl );
 			if(!checkParentsChanged(anode, true)){ break; }	
 			processComparissons<greater<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::PLUS:{
+			Dout( cout<<" PLUS "<<endl );			
 			if(!checkParentsChanged(anode, true)){ break; }
 			processArith<plus<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::TIMES:{
+			Dout( cout<<" TIMES "<<endl );			
 			if(!checkParentsChanged(anode, true)){ break; }
 			processArith<multiplies<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
@@ -489,7 +536,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			bool_node* mother = anode->mother;
 			int id = node_ids[mother];
 			int quant = anode->mother_quant;
-			Dout(cout<<"quant = "<<quant<<endl);
+			Dout(cout<<" mother = "<<((mother != NULL)?mother->get_name():"NULL")<<"  mid = "<<id<<"  mquant = "<<quant<<endl);
 			list<bool_node*>::iterator it = anode->multi_mother.begin();
 			list<int>::iterator signs = anode->multi_mother_sgn.begin();
 			Assert( anode->multi_mother.size() == 2 , "THIS SHOULDN't HAPPEN");
@@ -500,12 +547,12 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
 				int nvalue = node_values[*it];
-				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
 				mothers[i] = *it;
 				factors[i] = *signs;
+				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  factor="<<*signs<<"  ");
 				if( nvalue != 0 ){
 					choices[i]=nvalue*YES;
 				}else{
@@ -521,7 +568,8 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 				if(quant > 1){
 					guard = -YES;	
 				}else{
-					bool tmp = sgn * id;
+					int tmp = sgn * id;
+					Dout(cout<<" sgn = "<<sgn<<"  id="<<id<<"  tmp="<<tmp<<endl);
 					guard = dir.newAnonymousVar();
 					addXorClause(mng, guard, tmp,  quant==0?YES:-YES);
 				}
@@ -655,7 +703,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
 				int nvalue = node_values[*it];
-				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
+				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
@@ -729,6 +777,11 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 		bool hasRanges = true;
 		if( num_ranges.find(*it) == num_ranges.end()){
 			hasRanges = false;
+			if(*it != NULL){
+				Assert( factors[i] == 1 || factors[i] ==0, "Wait, this is pretty bad");	
+				choices[i] = choices[i] * (factors[i]? 1:-1);
+				factors[i] = 1;
+			}
 			int cvar = dir.newAnonymousVar();
 			addEqualsClause(mng, cvar, -choices[i]);
 			int cvar2 = dir.newAnonymousVar();
@@ -740,6 +793,7 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 	}		
 			
 	bool_node* mother = anode->mother;
+	Assert( mother != NULL, "This case should be handled by the partial evaluator");
 	int id = node_ids[mother];
 	bool isMulti=true;
 	if( num_ranges.find(mother) == num_ranges.end() ){			
