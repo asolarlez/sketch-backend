@@ -20,11 +20,11 @@ class SolveFromInput: public FindCheckSolver{
 	protected:
 	virtual void setupCheck();
 	virtual void addInputsToTestSet(int input[], int insize);
-	virtual void defineSketch(SAT_Manager mng, varDir& dir);
-	virtual void defineSpec(SAT_Manager mng, varDir& dir);
-	virtual void translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname);
-	virtual void processArithNode(SAT_Manager mng, varDir& dir, arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
-	virtual void doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
+	virtual void defineSketch(SATSolver& mng, varDir& dir);
+	virtual void defineSpec(SATSolver& mng, varDir& dir);
+	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);
+	virtual void processArithNode(SATSolver& mng, varDir& dir, arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
+	virtual void doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
 	virtual bool checkParentsChanged(bool_node* node, bool more);	
 	template<typename COMP>
 	bool booleanPartialEval(bool_node* node);

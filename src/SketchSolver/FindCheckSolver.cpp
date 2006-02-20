@@ -6,15 +6,9 @@
 
 //#define WITH_RANDOMNESS 1
 
-FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFind(mngFind), dirCheck(mngCheck){
+FindCheckSolver::FindCheckSolver():	mngFind("find"), mngCheck("check"), IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFind(mngFind), dirCheck(mngCheck){
 	cout<<"CONSTRUCTING "<<IN<<", "<<SOUT<<", "<<OUT<<endl;
-	mngFind = SAT_InitManager();
-	SAT_SetNumVariables(mngFind, 0);		
-	dirFind.setMng(mngFind);	
 	////////////////////////////
-	mngCheck = SAT_InitManager();
-	SAT_SetNumVariables(mngCheck, 0);
-	dirCheck.setMng(mngCheck);
 	controlSize = 0;
 	ctrl = NULL;
 	nseeds = 1;
@@ -25,19 +19,19 @@ FindCheckSolver::FindCheckSolver():IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFin
 
 
 
-void FindCheckSolver::addEqualsClauses(SAT_Manager mng, varDir& dir){
+void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
 	Assert( N == dir.getArrSize(SOUT), "SIZE MISSMATCH "<<N );
 	for(int i=0; i<N; ++i){
-		addEqualsClause(mng, dir.getArr(SOUT, i), dir.getArr(OUT, i));	
+		mng.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
 	}
 }
 
 
-void FindCheckSolver::addDiffersClauses(SAT_Manager mng, varDir& dir){
+void FindCheckSolver::addDiffersClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
 	int status = assertVectorsDiffer(mng, dir, dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
-	setVarClause(mng, status);
+	mng.setVarClause(status);
 }
 
 
@@ -66,7 +60,7 @@ void FindCheckSolver::setupCheck(){
 		const string& cname = it->first;
 		int cnt = dirCheck.getArrSize(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
-			setVarClause(mngCheck, -dirCheck.getArr(cname, i), 2);
+			mngCheck.setVarClause( -dirCheck.getArr(cname, i), 2);
 		}
 	}
 }
@@ -76,30 +70,29 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	Dout( cout<<"check()"<<endl );
 	if(controlSize>0){
 		Dout(cout<<"Control vars have size"<<controlSize<<endl);
-		SAT_DeleteClauseGroup(mngCheck, 2);
+		mngCheck.deleteClauseGroup(2);
 	}
 	int jj=0;
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
 		int cnt = dirCheck.getArrSize(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
-			setVarClause(mngCheck, controls[jj%ctrlsize]*dirCheck.getArr(cname, i), 2);
+			mngCheck.setVarClause(controls[jj%ctrlsize]*dirCheck.getArr(cname, i), 2);
 		}
 	}
-//	SAT_Reset(mngCheck);
-    int result = SAT_Solve(mngCheck);
+    int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
     if (result != SATISFIABLE) 
     	return false;
     int N = dirCheck.getArrSize(IN);
 	for(int i=0; i<N; ++i){
-		int val = SAT_GetVarAsgnment(mngCheck, dirCheck.getArr(IN, i));
+		int val = mngCheck.getVarVal(dirCheck.getArr(IN, i));
 		if( val == 1) input[i]= 1;
 		else input[i]= -1;
 	}
 	Dout( dirCheck.print() );
-	SAT_Reset(mngCheck);
+	mngCheck.reset();
 	return true;
 }
 		
@@ -133,8 +126,7 @@ void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 //Set the values of the inputs from input[];
 	Dout( cout<<"____"<<endl );
 	for(int i=0; i<N; ++i){
-		setVarClause(mngFind,
-		input[i%insize]*dirFind.getArr(IN, i));
+		mngFind.setVarClause(input[i%insize]*dirFind.getArr(IN, i));
 	}
 	Dout( cout<<"done adding inputs"<<flush<<endl);
 }
@@ -152,7 +144,7 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 					   (endtime.tv_usec - stime.tv_usec) );
 					Dtime(cout<<"* TIME TO ADD INPUT "<<(l_f_time/1000.0)<<endl);
 //Solve
-	int result = SAT_Solve(mngFind);
+	int result = mngFind.solve();
   	cout<<"# FIND DIAGNOSTICS"<<endl;
 	printDiagnostics(mngFind, 'f');
     if (result != SATISFIABLE) 	//If solve is bad, return false.
@@ -166,12 +158,12 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 		int cnt = dirFind.getArrSize(cname);
 		Assert( cnt == it->second, "SIZE MISMATCH: "<<cnt<<" != "<<it->second<<endl);
 		for(int i=0; i<cnt; ++i, ++jj){
-			int val = SAT_GetVarAsgnment(mngFind, dirFind.getArr(cname, i));
+			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			if( val == 1) controls[jj]= 1;
 			else controls[jj]= -1;
 		}
 	}
-	SAT_Reset(mngFind);
+	mngFind.reset();
 	return true;
 //Return true.
 }
@@ -288,24 +280,8 @@ void FindCheckSolver::printDiagnostics(){
 }
 
 
-void FindCheckSolver::printDiagnostics(SAT_Manager mng, char c){
-    cout << c << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
-    cout << c << "# Max Decision Level\t\t\t\t" << SAT_MaxDLevel(mng) << endl;
-    cout << c << "# Num. of Decisions\t\t\t\t" << SAT_NumDecisions(mng)<< endl;
-    cout << c << "# ( Stack + Vsids + Shrinking Decisions )\t\t" <<SAT_NumDecisionsStackConf(mng);
-    cout << c << "#  + " <<SAT_NumDecisionsVsids(mng)<<" + "<<SAT_NumDecisionsShrinking(mng)<<endl;
-    cout << c << "# Original Num Variables\t\t\t\t" << SAT_NumVariables(mng) << endl;
-    cout << c << "# Original Num Clauses\t\t\t\t" << SAT_InitNumClauses(mng) << endl;
-    cout << c << "# Original Num Literals\t\t\t\t" << SAT_InitNumLiterals(mng) << endl;
-    cout << c << "# Added Conflict Clauses\t\t\t\t" << SAT_NumAddedClauses(mng)- SAT_InitNumClauses(mng)<< endl;
-    cout << c << "# Num of Shrinkings\t\t\t\t" << SAT_NumShrinkings(mng)<< endl;
-    cout << c << "# Deleted Conflict Clauses\t\t\t" << SAT_NumDeletedClauses(mng)-SAT_NumDelOrigCls(mng) <<endl;
-    cout << c << "# Deleted Clauses\t\t\t\t\t" << SAT_NumDeletedClauses(mng) <<endl;
-    cout << c << "# Added Conflict Literals\t\t\t\t" << SAT_NumAddedLiterals(mng) - SAT_InitNumLiterals(mng) << endl;
-    cout << c << "# Deleted (Total) Literals\t\t\t" << SAT_NumDeletedLiterals(mng) <<endl;
-    cout << c << "# Number of Implication\t\t\t\t" << SAT_NumImplications(mng)<< endl;
-    //other statistics comes here
-    cout << c << "# Total Run Time\t\t\t\t\t" << SAT_GetCPUTime(mng) << endl;	
+void FindCheckSolver::printDiagnostics(SATSolver& mng, char c){
+   mng.printDiagnostics(c);
 }
 
 

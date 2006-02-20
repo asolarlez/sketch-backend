@@ -6,10 +6,10 @@
 class FindCheckSolver{
 	private:
 	int controlSize;
-	SAT_Manager mngFind;
+	SATSolver mngFind;
 	varDir dirFind;	
 	
-	SAT_Manager mngCheck;
+	SATSolver mngCheck;
 	varDir dirCheck;
 	int randseed;
 	
@@ -36,11 +36,11 @@ class FindCheckSolver{
 		return ctrl + controlSize;
 	}
 	
-	virtual void defineSketch(SAT_Manager mng, varDir& dir)=0;
-	virtual void defineSpec(SAT_Manager mng, varDir& dir)=0;
+	virtual void defineSketch(SATSolver& mng, varDir& dir)=0;
+	virtual void defineSpec(SATSolver& mng, varDir& dir)=0;
 	
-	virtual void addEqualsClauses(SAT_Manager mng, varDir& dir);
-	virtual void addDiffersClauses(SAT_Manager mng, varDir& dir);
+	virtual void addEqualsClauses(SATSolver& mng, varDir& dir);
+	virtual void addDiffersClauses(SATSolver& mng, varDir& dir);
 
 	
 	virtual void setupCheck();
@@ -49,16 +49,16 @@ class FindCheckSolver{
 	virtual void setupFind();
 	virtual void addInputsToTestSet(int input[], int insize);
 	virtual bool find(int input[], int insize, int controls[]);
-	virtual void printDiagnostics(SAT_Manager mng, char c);
+	virtual void printDiagnostics(SATSolver& mng, char c);
 	virtual void printDiagnostics();
 	public:
 	FindCheckSolver();
 	
 	virtual void declareControl(const string& ctrl, int size);	
 	
-	virtual int getInSize();	
+	virtual int getInSize();
 	virtual int getCtrlSize();
-	virtual bool solve();	
+	virtual bool solve();
 	virtual void setup();
 	void set_randseed(int seed){ randseed = seed; };
 };

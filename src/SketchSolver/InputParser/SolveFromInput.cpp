@@ -95,7 +95,7 @@ void SolveFromInput::setupCheck(){
 }
 
 
-void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
+void SolveFromInput::defineSketch(SATSolver& mng, varDir& dir){
 	dir.declareArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
@@ -103,11 +103,11 @@ void SolveFromInput::defineSketch(SAT_Manager mng, varDir& dir){
 	dir.makeArrNoBranch(OUT);
 	YES = dir.newAnonymousVar();
 	Dout(cout<<"YES = "<<YES<<endl);
-	setVarClause(mng, YES);
+	mng.setVarClause(YES);
 	translator(mng, dir, sketch, SOUT);
 }
 
-void SolveFromInput::defineSpec(SAT_Manager mng, varDir& dir){
+void SolveFromInput::defineSpec(SATSolver& mng, varDir& dir){
 	Dout( cout<<"defineSpec()"<<endl );		
 	translator(mng, dir, spec, OUT);
 }
@@ -212,7 +212,7 @@ bool SolveFromInput::booleanPartialEval(bool_node* node){
 }
 
 
-void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, const string& outname){
+void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
 	node_ids[NULL] = YES;
 
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
@@ -227,7 +227,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				Dout(cout<<"AND "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl);
-				addAndClause(mng, nvar, fsign*fid, msign*mid);
+				mng.addAndClause( nvar, fsign*fid, msign*mid);
 				break;
 			}
 			case bool_node::OR:{
@@ -238,7 +238,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				Dout(cout<<"OR "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl);
-				addOrClause(mng, nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);				
+				mng.addOrClause( nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);				
 				break;
 			}
 			case bool_node::XOR:{
@@ -249,7 +249,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				Dout(cout<<"XOR "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl);
-				addXorClause(mng, nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
+				mng.addXorClause( nvar, fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
 				break;
 			}
 			case bool_node::SRC:{	
@@ -281,9 +281,9 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 				int nvalue = node_values[(*node_it)->mother];
 				if( nvalue != 0){
 					Dout(cout<<node_ids[(*node_it)->mother]<<"   "<< (*node_it)->mother <<"  nvalue = "<<nvalue<<"    msign="<<msign<<endl);
-					setVarClause(mng, nvalue*msign*nvar);
+					mng.setVarClause(nvalue*msign*nvar);
 				}else{	
-					addEqualsClause(mng, nvar, msign*node_ids[(*node_it)->mother]);
+					mng.addEqualsClause( nvar, msign*node_ids[(*node_it)->mother]);
 				}
 				break;
 			}
@@ -299,7 +299,7 @@ void SolveFromInput::translator(SAT_Manager mng, varDir& dir, BooleanDAG* bdag, 
 }
 
 template<typename COMP>
-void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
+void processComparissons(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	vector<int> tmprange(2);
 	tmprange[0] = 0;
 	tmprange[1] = 1;
@@ -317,8 +317,8 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 		}
 		int cvar = dir.newAnonymousVar();
 		int cvar2 = dir.newAnonymousVar();
-		addEqualsClause(mng, cvar, -mid);
-		addEqualsClause(mng, cvar2, mid);
+		mng.addEqualsClause( cvar, -mid);
+		mng.addEqualsClause( cvar2, mid);
 		mid = cvar;
 	}
 	
@@ -336,8 +336,8 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 		}
 		int cvar = dir.newAnonymousVar();
 		int cvar2 = dir.newAnonymousVar();
-		addEqualsClause(mng, cvar, -fid);
-		addEqualsClause(mng, cvar2, fid);
+		mng.addEqualsClause( cvar, -fid);
+		mng.addEqualsClause( cvar2, fid);
 		fid = cvar;		
 	}
 	
@@ -351,7 +351,7 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 			Dout(cout<<"COMPARING "<<mquant*mrange[i]<<", "<<fquant*frange[j]<<endl);
 			if(comp(mquant*mrange[i], fquant*frange[j])){
 				cvar = dir.newAnonymousVar();
-				addAndClause(mng, cvar, mid + i, fid + j);
+				mng.addAndClause( cvar, mid + i, fid + j);
 //				cvar2 = dir.newAnonymousVar();
 //				addOrClause(mng, cvar2, cvar, cvar-1);
 				++orTerms;
@@ -362,14 +362,14 @@ void processComparissons(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bo
 	}
 	int result = dir.newAnonymousVar();
 	scratchpad[0] = result;
-	addBigOrClause(mng, &scratchpad[0], orTerms);
+	mng.addBigOrClause( &scratchpad[0], orTerms);
 	node_ids[anode] = result;
 	
 	return;	
 }
 
 template<typename THEOP>
-void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
+void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	THEOP comp;
 	bool diag = anode->get_name() == "TMP_NAME_113______TIMES" ;
 	bool tmpbool = !diag && GLOfirstTime;
@@ -390,8 +390,8 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 					int sgn = mquant? 1 : -1;
 					int cvar = dir.newAnonymousVar();	
 					int cvar2 = dir.newAnonymousVar();	
-					addEqualsClause(mng, cvar, -sgn*id);
-					addEqualsClause(mng, cvar2, sgn*id);
+					mng.addEqualsClause( cvar, -sgn*id);
+					mng.addEqualsClause( cvar2, sgn*id);
 					id = cvar;
 					mquant = 1;
 				}
@@ -429,17 +429,17 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 							if( diag ) cout<< "YES "<<endl;
 							int cvar = dir.newAnonymousVar();	
 							if( diag ) cout<<" cvar ="<<cvar<<endl;
-							addAndClause(mng, cvar, mid+i, fid + j);
+							mng.addAndClause( cvar, mid+i, fid + j);
 							if( diag ) cout<<" ADDED CLAUSE"<<endl;
 							int cvar2 = dir.newAnonymousVar();
 							if( diag ) cout<<" cvar2 ="<<cvar2<<endl;
-							addOrClause(mng, cvar2, cvar, numbers[quant]);
+							mng.addOrClause( cvar2, cvar, numbers[quant]);
 							if( diag ) cout<<" ADDED OTHER CLAUSE"<<endl;
 							numbers[quant] = cvar2;
 						}else{
 							if( diag ) cout<< "NO "<<endl;
 							int cvar = dir.newAnonymousVar();		
-							addAndClause(mng, cvar, mid+i, fid + j);
+							mng.addAndClause( cvar, mid+i, fid + j);
 							tmp.push_back(quant);
 							numbers[quant] = cvar;							
 							++vals;	
@@ -453,7 +453,7 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 					int quant = tmp[i];
 					int cvar = dir.newAnonymousVar();
 					Dout(cout<<"quant = "<<quant<<endl);
-					addEqualsClause(mng, cvar, numbers[quant]);
+					mng.addEqualsClause(cvar, numbers[quant]);
 				}
 				node_ids[anode] = newID;
 			}
@@ -461,7 +461,7 @@ void processArith(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node
 
 
 
-void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
+void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	switch(anode->arith_type){
 		case arith_node::GE:{
 			Dout( cout<<" GE "<<endl );
@@ -571,7 +571,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 					int tmp = sgn * id;
 					Dout(cout<<" sgn = "<<sgn<<"  id="<<id<<"  tmp="<<tmp<<endl);
 					guard = dir.newAnonymousVar();
-					addXorClause(mng, guard, tmp,  quant==0?YES:-YES);
+					mng.addXorClause( guard, tmp,  quant==0?YES:-YES);
 				}
 			}else{
 				guard = -YES;
@@ -597,7 +597,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 					return;	
 				}
 				int cvar = dir.newAnonymousVar();
-				addChoiceClause(mng, cvar , guard , choices[1]*(factor1==1?1:-1), choices[0]*(factor0==1?1:-1));
+				mng.addChoiceClause( cvar , guard , choices[1]*(factor1==1?1:-1), choices[0]*(factor0==1?1:-1));
 				node_ids[anode] = cvar;
 				return;
 			}else{
@@ -612,18 +612,18 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 				vector<int>& nr1 = hasRange? num_ranges[mothers[1]] : tmprange;				
 				if(!hasRange){
 					int cvar = dir.newAnonymousVar();
-					addEqualsClause(mng, cvar, -mid1);
+					mng.addEqualsClause( cvar, -mid1);
 					int cvar2 = dir.newAnonymousVar();
-					addEqualsClause(mng, cvar2, mid1);
+					mng.addEqualsClause( cvar2, mid1);
 					mid1 = cvar;
 				}
 				hasRange = (num_ranges.find(mothers[0]) != num_ranges.end());
 				vector<int>& nr0 = hasRange? num_ranges[mothers[0]] : tmprange;
 				if(!hasRange){
 					int cvar = dir.newAnonymousVar();
-					addEqualsClause(mng, cvar, -mid0);
+					mng.addEqualsClause( cvar, -mid0);
 					int cvar2 = dir.newAnonymousVar();
-					addEqualsClause(mng, cvar2, mid0);
+					mng.addEqualsClause( cvar2, mid0);
 					mid0 = cvar;
 				}				
 				if(guard == YES){
@@ -653,11 +653,11 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 					if( curri == currj && avi && avj){
 						Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
 						int cvar1 = dir.newAnonymousVar();
-						addAndClause(mng, cvar1, mid0+i, -guard);
+						mng.addAndClause( cvar1, mid0+i, -guard);
 						int cvar2 = dir.newAnonymousVar();
-						addAndClause(mng, cvar2, mid1+j, guard);
+						mng.addAndClause( cvar2, mid1+j, guard);
 						int cvar3 = dir.newAnonymousVar();
-						addOrClause(mng, cvar3, cvar2, cvar1);
+						mng.addOrClause( cvar3, cvar2, cvar1);
 						out.push_back(curri);
 						res.push_back(cvar3);
 						i++;
@@ -667,7 +667,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 					if((curri < currj && avi) || !avj){
 						Dout(cout<<" curri = "<<curri<<endl);
 						int cvar = dir.newAnonymousVar();
-						addAndClause(mng, cvar, mid0+i, -guard);
+						mng.addAndClause( cvar, mid0+i, -guard);
 						out.push_back(curri);
 						res.push_back(cvar);
 						i++;
@@ -676,7 +676,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 					if( (currj < curri && avj) || !avi ){
 						Dout(cout<<" currj = "<<currj<<endl);
 						int cvar = dir.newAnonymousVar();
-						addAndClause(mng, cvar, mid1+j, guard);
+						mng.addAndClause( cvar, mid1+j, guard);
 						out.push_back(currj);
 						res.push_back(cvar);
 						j++;
@@ -688,7 +688,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 				for(int k=0; k<res.size(); ++k){
 					int val = res[k];
 					int cvar = dir.newAnonymousVar();
-					addEqualsClause(mng, cvar, val);
+					mng.addEqualsClause( cvar, val);
 				}
 				node_ids[anode] = newID;
 				return;
@@ -727,12 +727,12 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 				int sgn = anode->mother_sgn? 1: -1;
 				int cvar = dir.newAnonymousVar();
 				if(choices.size()>=2){
-					addChoiceClause(mng, cvar , sgn * id , choices[1], choices[0]);
+					mng.addChoiceClause( cvar , sgn * id , choices[1], choices[0]);
 				}else{
 					if(choices.size()>=1){
-						addAndClause(mng, cvar , sgn * -id , choices[0]);
+						mng.addAndClause( cvar , sgn * -id , choices[0]);
 					}else{
-						addEqualsClause(mng, cvar, -YES);
+						mng.addEqualsClause( cvar, -YES);
 					}
 				}
 				node_ids[anode] = cvar;
@@ -744,7 +744,7 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			for(int i=0; i<nrange.size(); ++i){
 				if( nrange[i] >= 0 && nrange[i] < choices.size() ){
 					cvar = dir.newAnonymousVar();
-					addAndClause(mng, cvar, choices[nrange[i]], id + i);
+					mng.addAndClause( cvar, choices[nrange[i]], id + i);
 					++orTerms;
 					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
 					scratchpad[orTerms] = cvar;
@@ -753,13 +753,13 @@ void SolveFromInput::processArithNode(SAT_Manager mng, varDir& dir,arith_node* a
 			int result = dir.newAnonymousVar();
 			node_ids[anode] = result;
 			scratchpad[0] = result;
-			addBigOrClause(mng, &scratchpad[0], orTerms);			
+			mng.addBigOrClause( &scratchpad[0], orTerms);			
 			return;
 		}
 	}
 }
 
-void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){	
+void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){	
 	Dout( cout<<" non boolean array "<<endl );
 	list<bool_node*>::iterator it = anode->multi_mother.begin();
 	list<int>::iterator signs = anode->multi_mother_sgn.begin();
@@ -783,9 +783,9 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 				factors[i] = 1;
 			}
 			int cvar = dir.newAnonymousVar();
-			addEqualsClause(mng, cvar, -choices[i]);
+			mng.addEqualsClause( cvar, -choices[i]);
 			int cvar2 = dir.newAnonymousVar();
-			addEqualsClause(mng, cvar2, choices[i]);
+			mng.addEqualsClause( cvar2, choices[i]);
 			choices[i] = cvar;
 			Dout( cout<<" creating new vec with vars "<< cvar << "  " << cvar2 << endl );
 		}
@@ -800,9 +800,9 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 		int sgn = anode->mother_sgn? 1: -1;
 		isMulti = false;
 		int cvar = dir.newAnonymousVar();
-		addEqualsClause(mng, cvar, sgn*-id);
+		mng.addEqualsClause( cvar, sgn*-id);
 		int cvar2 = dir.newAnonymousVar();
-		addEqualsClause(mng, cvar2, sgn*id);
+		mng.addEqualsClause( cvar2, sgn*id);
 		id = cvar;
 	}
 	vector<int>& nrange = isMulti ? num_ranges[mother] : tmprange ;
@@ -816,7 +816,7 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  factors[x]="<<factor<<"    "<<cvalues.size()<<endl );
 			for(int j=0; j<cvalues.size(); ++j){
 				int cvar = dir.newAnonymousVar();
-				addAndClause(mng, cvar, id + i, choices[nrange[i]] + j);
+				mng.addAndClause( cvar, id + i, choices[nrange[i]] + j);
 				newVals[ cvalues[j] * factor].push_back(cvar);
 				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<"    x factor="<<cvalues[j] * factor<<endl );
 			}
@@ -835,7 +835,7 @@ void SolveFromInput::doNonBoolArrAcc(SAT_Manager mng, varDir& dir,arith_node* an
 		}
 		int cvar = dir.newAnonymousVar();
 		scratchpad[0] = cvar;
-		addBigOrClause(mng, &scratchpad[0], orTerms);
+		mng.addBigOrClause( &scratchpad[0], orTerms);
 		result.push_back(it->first);
 	}
 }
