@@ -1,5 +1,8 @@
-BEGIN { print("BEGIN");  
-        
+BEGIN { 
+	procmode = "CHECK"; 
+
+	print ".model test"
+	print ".outputs OUT"
 	tmp = 1;
 	tmpnm = "tmpnm"tmp;
 }
@@ -77,9 +80,48 @@ BEGIN { print("BEGIN");
   }
 
 /SET / {
-
-	print $0 ;
+	print ".names "nm1;
+	print sgn1
 }
+
+
+/_C/ {
+	if( procmode == "FIND" ){	
+		printf(".inputs ");
+		lsz = split($0, ar);
+		for(i = 3; i<=lsz; i = i+1){
+			inx = ar[i];
+			printf("nm%d ", inx);
+		}
+		printf("\n");
+	}
+}
+
+/_IN/ {
+	if( procmode == "CHECK" ){	
+		printf(".inputs ");
+		lsz = split($0, ar);
+		for(i = 3; i<=lsz; i = i+1){
+			inx = ar[i];
+			printf("nm%d ", inx);
+		}
+		printf("\n");
+	}
+}
+
+
+/_OUT/{
+
+
+
+
+}
+
+/_SOUT/{
+
+
+}
+
 
 END { 
 	pla = "";	
@@ -93,6 +135,6 @@ END {
 	printf(" OUT\n");
 	print pla" 1";
 
-	print("DONE"); 
+	
 
 }

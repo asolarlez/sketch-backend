@@ -26,6 +26,8 @@ public:
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );		
 	 }
+	 void annotate(const string& msg);
+	 void annotateInput(const string& name, int i, int sz);
 	 void addChoiceClause(int x, int a, int b, int c, int gid=0);
 	 void addXorClause(int x, int a, int b, int gid=0);
 	 void addOrClause(int x, int a, int b, int gid=0);
@@ -56,7 +58,8 @@ public:
 		return result;
 	}
 	
-	inline void reset(){	
+	inline void reset(){
+		FileOutput(output<<"#  ======================================="<<endl);
 		SAT_Reset(mng);
 	}
 	
@@ -72,6 +75,21 @@ void SAT_AddClauseSigned(SAT_Manager          mng,
 
 
 
+inline void SATSolver::annotate(const string& msg){
+	Dout( cout<<msg );
+	FileOutput(output<<msg<<endl);
+}
+
+inline void SATSolver::annotateInput(const string& name, int i, int sz){
+	Dout( cout<<"x "<<name<<" ");
+	FileOutput(output<<"x "<<name<<" ");
+	for(int t=0; t<sz; ++t){
+		Dout( cout<<(i+sz)<<" ");
+		FileOutput(output<<(i+t)<<" ");
+	}
+	Dout(cout<<endl);
+	FileOutput(output<<endl);
+}
 
 //This function encodes x == a ? b:c;
 inline void SATSolver::addChoiceClause(int x, int a, int b, int c, int gid){

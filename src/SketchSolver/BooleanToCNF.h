@@ -54,6 +54,7 @@ public:
 	
 	void declareArr(const string& arName, int size){
 		Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<varCnt<<"-"<<(varCnt+size-1)<<endl );
+		mng.annotateInput(arName, varCnt, size);
 		varmap[arName] = varCnt;
 		arrsize[arName] = size;
 		varCnt += size;
