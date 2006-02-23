@@ -42,7 +42,7 @@ public:
 	 }
 	 
 	 inline int newVar(){
-		SAT_AddVariable(mng);
+		return SAT_AddVariable(mng);
 	 }
 	 
 	 inline void disableVarBranch(int i){
