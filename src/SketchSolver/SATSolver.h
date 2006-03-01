@@ -11,7 +11,7 @@ using namespace std;
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
 #define Dout( out )   /* out */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
-#define FileOutput( out ) out
+#define FileOutput( out ) /* out */
 
 
 class SATSolver{
@@ -36,6 +36,7 @@ public:
 	 void addEqualsClause(int x, int a, int gid=0);
 	 void addEquateClause(int x, int a, int gid=0);
 	 void setVarClause(int x, int gid=0);
+     void assertVarClause(int x, int gid=0);
 	 
 	 inline int getVarVal(int id){
 		 return SAT_GetVarAsgnment(mng, id);
@@ -173,6 +174,11 @@ inline void SATSolver::setVarClause(int x, int gid){
 }
 
 
+inline void SATSolver::assertVarClause(int x, int gid){
+	Dout( cout<<" assert "<<x<<";"<<endl );
+	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1, gid);}
+}
 
 inline void SATSolver::printDiagnostics(char c){
     cout << c << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
