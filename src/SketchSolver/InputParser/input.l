@@ -15,7 +15,7 @@ HexInteger   ("0x"{Integer})
 Double       ({Integer}"."{Digit}*("E"[\+\-]{Digit}+)?)
 String       ("\""[^\n\"]*"\"")
 Identifier   ([a-zA-Z_\#][a-zA-Z_0-9]*)
-Operator     ([\/\<\>\;\!\?\*\-\+\,\.\:\[\]\(\)\{\}\=\|\&\^\$])
+Operator     ([\%\/\<\>\;\!\?\*\-\+\,\.\:\[\]\(\)\{\}\=\|\&\^\$])
 WhiteSpace   ([ \t\n]*)
 Comment      ("//"[^\n]*)
 

@@ -23,17 +23,21 @@ if(p1== NULL){
 	//cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
 	Assert(p2 != NULL, "THIS CAN't Happen");
 	currentBD->new_node("", true, *p2, true, bool_node::ARITH, s1, an); 
+	delete p2;
 }else if(p2==NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	//cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
 	Assert(p1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*p1, true, "", true, bool_node::ARITH, s1, an); 
+	delete p1;
 }else{
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert(p1 != NULL && p2 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*p1, true, *p2, true, bool_node::ARITH, s1, an); 
+	delete p1;
+	delete p2;
 }
 sgn_stack.push(true);
 return new string(s1); 
@@ -320,6 +324,8 @@ Expression: Term { $$ = $1; }
 							}else{
 								sgn_stack.push(false);
 								$$ = NULL;
+								delete $3;
+								delete $1;
 							}
 						}else{
 							string s = currentBD->new_name();					  
@@ -360,6 +366,8 @@ Expression: Term { $$ = $1; }
 							}else{
 								sgn_stack.push(false);
 								$$ = NULL;
+								delete $1;
+								delete $3;
 							}
 						}else{
 							string s = currentBD->new_name();					  
@@ -393,12 +401,7 @@ Expression: Term { $$ = $1; }
 					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();
 
 					if( $1 != NULL && $3 != NULL){
-						string s = currentBD->new_name();
-						if(s == "TMP_NAME_144____"){
-							cout<<"This is it 1"<<endl;
-							cout<<context<<endl;
-							cout<<*$1<<"  "<<*$3<<endl;
-						}					  
+						string s = currentBD->new_name();			  
 						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::OR, s); 
 						sgn_stack.push( true );
 						$$ = new string(s);
@@ -428,10 +431,6 @@ Expression: Term { $$ = $1; }
 					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();					
 					if( $1 != NULL && $3 != NULL){
 						string s = currentBD->new_name();
-						if(s == "TMP_NAME_144____"){
-							cout<<"This is it2"<<endl;
-							
-						}					  
 						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::OR, s); 
 						sgn_stack.push( true );
 						$$ = new string(s);
@@ -581,6 +580,7 @@ string s1 = currentBD->new_name();
 		currentBD->new_node(*$5, b1, "", false, bool_node::ARITH, s1, an); 
 		$$ = new string(s1);  sgn_stack.push(true);
 		delete childs;
+		delete $5;
 	}else{
 		sgn_stack.push(pushval);
 		delete an;
@@ -624,19 +624,84 @@ if($1== NULL && $3 != NULL){
 	an->father_quant = t1;
 	Assert($3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+	delete $3;
 }else if($3==NULL && $1 != NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert($1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+	delete $1;
 }else{
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
 	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+	delete $1;
+	delete $3;
 }
 $$ = new string(s1);  sgn_stack.push(true);
 }
+
+
+| Term '/' Term {
+int t2 = sgn_stack.top(); sgn_stack.pop();
+int t1 = sgn_stack.top(); sgn_stack.pop();
+string s1 = currentBD->new_name();
+arith_node* an = new arith_node();
+an->arith_type = arith_node::DIV;
+if($1== NULL && $3 != NULL){
+	an->mother_quant = t2;
+	an->father_quant = t1;
+	Assert($3 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+	delete $3;
+}else if($3==NULL && $1 != NULL){
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+	delete $1;
+}else{
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
+	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+	delete $1;
+	delete $3;
+}
+$$ = new string(s1);  sgn_stack.push(true);
+}
+
+| Term '%' Term {
+int t2 = sgn_stack.top(); sgn_stack.pop();
+int t1 = sgn_stack.top(); sgn_stack.pop();
+string s1 = currentBD->new_name();
+arith_node* an = new arith_node();
+an->arith_type = arith_node::MOD;
+if($1== NULL && $3 != NULL){
+	an->mother_quant = t2;
+	an->father_quant = t1;
+	Assert($3 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+	delete $3;
+}else if($3==NULL && $1 != NULL){
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL, "THIS CAN't Happen");
+	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+	delete $1;
+
+}else{
+	an->mother_quant = t1;
+	an->father_quant = t2;
+	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
+	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+	delete $1;
+	delete $3;
+}
+$$ = new string(s1);  sgn_stack.push(true);
+}
+
 | Term '*' Term {
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
@@ -647,17 +712,22 @@ if($1== NULL && $3 != NULL){
 	an->mother_quant = t2;
 	an->father_quant = t1;
 	Assert($3 != NULL, "THIS CAN't Happen");
-	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an);
+	delete $3;
 }else if($3==NULL && $1 != NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert($1 != NULL, "THIS CAN't Happen");
-	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an);
+	delete $1;
+ 
 }else{
 	an->mother_quant = t1;
 	an->father_quant = t2;
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const + const should have been taken care of by frontend.");
 	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+	delete $1;
+	delete $3;
 }
 $$ = new string(s1);  sgn_stack.push(true);
 }
@@ -672,16 +742,21 @@ if($1== NULL){
 	an->father_quant = t1;
 	Assert($3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$3, true, "", true, bool_node::ARITH, s1, an); 
+	delete $3;
 }else if($3==NULL){
 	an->mother_quant = t1;
 	an->father_quant = -t2;
 	Assert($1 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, "", true, bool_node::ARITH, s1, an); 
+	delete $1;
+
 }else{
 	an->mother_quant = t1;
 	an->father_quant = -t2;
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen");
 	currentBD->new_node(*$1, true, *$3, true, bool_node::ARITH, s1, an); 
+	delete $1;
+	delete $3;
 }
 $$ = new string(s1);  sgn_stack.push(true);
 }
@@ -700,156 +775,161 @@ $$ = new string(s1);  sgn_stack.push(true);
 
 
 | Expression '?' Expression ':' Expression { 	
-							int i3 = sgn_stack.top(); sgn_stack.pop();
-							int i2 = sgn_stack.top(); sgn_stack.pop();
-							bool b3 = 1== i3;
-							bool b2 = 1== i2;
-							bool b1 = 1==sgn_stack.top(); sgn_stack.pop();							
-							bool isSparse = false;
-//							cout<<"---------------------------------"<<endl;
-							if( i3>1 || i3 < 0){ /*cout<<" i3 = "<<i3<<endl;*/ isSparse = true; }
-							if( i2>1 || i2 < 0){ /*cout<<" i2 = "<<i2<<endl;*/ isSparse = true; }
-							bool_node* yesChild=NULL;
-							bool_node* noChild=NULL;
-							if( $3 != NULL ){
-								bool_node* bn = currentBD->get_node(*$3);
-								yesChild = dynamic_cast<bool_node*>(bn);
-								if(!(bn != NULL && bn->type != bool_node::ARITH)){
-									isSparse = true;
-								}
-							}
-							if( $5 != NULL ){
-								bool_node* bn = currentBD->get_node(*$5);
-								noChild = dynamic_cast<bool_node*>(bn);
-								if(!(bn != NULL && bn->type != bool_node::ARITH)){
-									isSparse = true;
-								}
-							}
-							if(isSparse){
-								//cout<<" IS SPARSE "<<endl;
-								if($1 != NULL){
-									string s1 = currentBD->new_name();
-									arith_node* an = new arith_node();
-									an->multi_mother.push_back( noChild );
-									an->multi_mother.push_back( yesChild );
-									if(yesChild != NULL){
-										//cout<<" yesChild = "<<yesChild->get_name()<<endl;
-										yesChild->children.push_back(an);
-									}
-									if(noChild != NULL){
-										//cout<<" noChild = "<<noChild->get_name()<<endl;
-										noChild->children.push_back(an);
-									}								
-									an->multi_mother_sgn.push_back(i3);
-									an->multi_mother_sgn.push_back(i2);
-									$$ = new string(s1); sgn_stack.push(true);
-									an->arith_type = arith_node::ARRACC;									
-									Assert($1 != NULL, "3: THIS CAN'T HAPPEN!!");
-									currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
-								}else{
-									if( b1 == 0 ){
-										$$ = $5;
-										sgn_stack.push(i3);
-									}else{
-										$$ = $3;
-										sgn_stack.push(i2);									
-									}		
-								}
-							}else
-							if( $1 != NULL && $3 != NULL && $5 != NULL){
-								string s1 = currentBD->new_name();			  
-								currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
-								
-								string s2 = currentBD->new_name();
-								currentBD->new_node(*$1, !b1, *$5, b3,  bool_node::AND, s2);
-
-								string s3 = currentBD->new_name();
-								currentBD->new_node(s1, true, s2, true,  bool_node::OR, s3);
-
-								sgn_stack.push( true );
-								$$ = new string(s3);
-								delete $1;
-								delete $3;
-								delete $5;
-							}else{
-								if( $1 == NULL){									
-									if( $3 != NULL && b1){
-										if( $5 != NULL ) delete $5;
-										$$ = $3;
-									}else if($5 != NULL && !b1){
-										if( $3 != NULL ) delete $3;
-										$$ = $5;
-									}else{
-										$$ = NULL;
-										if( $3 != NULL ) delete $3;
-										if( $5 != NULL ) delete $5;
-									}
-									sgn_stack.push( (b1 && b2) || (!b1 && b3) );
-								}else{									
-									if( $3 != NULL){
-										//in this case, $5 == NULL
-										if( b3){
-											string s1 = currentBD->new_name();
-											if(s1 == "TMP_NAME_144____"){
+	int i3 = sgn_stack.top(); sgn_stack.pop();
+	int i2 = sgn_stack.top(); sgn_stack.pop();
+	bool b3 = 1== i3;
+	bool b2 = 1== i2;
+	bool b1 = 1==sgn_stack.top(); sgn_stack.pop();							
+	bool isSparse = false;
+//	cout<<"---------------------------------"<<endl;
+	if( i3>1 || i3 < 0){ /*cout<<" i3 = "<<i3<<endl;*/ isSparse = true; }
+	if( i2>1 || i2 < 0){ /*cout<<" i2 = "<<i2<<endl;*/ isSparse = true; }
+	bool_node* yesChild=NULL;
+	bool_node* noChild=NULL;
+	if( $3 != NULL ){
+		bool_node* bn = currentBD->get_node(*$3);
+		yesChild = dynamic_cast<bool_node*>(bn);
+		if(!(bn != NULL && bn->type != bool_node::ARITH)){
+			isSparse = true;
+		}
+	}
+	if( $5 != NULL ){
+		bool_node* bn = currentBD->get_node(*$5);
+		noChild = dynamic_cast<bool_node*>(bn);
+		if(!(bn != NULL && bn->type != bool_node::ARITH)){
+			isSparse = true;
+		}
+	}
+	if(isSparse){
+		//cout<<" IS SPARSE "<<endl;
+		if($1 != NULL){
+			string s1 = currentBD->new_name();
+			arith_node* an = new arith_node();
+			an->multi_mother.push_back( noChild );
+			an->multi_mother.push_back( yesChild );
+			if(yesChild != NULL){
+				//cout<<" yesChild = "<<yesChild->get_name()<<endl;
+				yesChild->children.push_back(an);
+			}
+			if(noChild != NULL){
+				//cout<<" noChild = "<<noChild->get_name()<<endl;
+				noChild->children.push_back(an);
+			}								
+			an->multi_mother_sgn.push_back(i3);
+			an->multi_mother_sgn.push_back(i2);
+			$$ = new string(s1); sgn_stack.push(true);
+			an->arith_type = arith_node::ARRACC;									
+			Assert($1 != NULL, "3: THIS CAN'T HAPPEN!!");
+			currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
+		}else{
+			if( b1 == 0 ){
+				$$ = $5;
+				sgn_stack.push(i3);
+			}else{
+				$$ = $3;
+				sgn_stack.push(i2);									
+			}		
+		}
+		if( $1 != NULL && $1 != $$){ delete $1; }
+		if( $3 != NULL && $3 != $$){ delete $3; }
+		if( $5 != NULL && $5 != $$){ delete $5; }
+	}else
+		if( $1 != NULL && $3 != NULL && $5 != NULL){
+			string s1 = currentBD->new_name();			  
+			currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
+			
+			string s2 = currentBD->new_name();
+			currentBD->new_node(*$1, !b1, *$5, b3,  bool_node::AND, s2);
+			
+			string s3 = currentBD->new_name();
+			currentBD->new_node(s1, true, s2, true,  bool_node::OR, s3);
+			
+			sgn_stack.push( true );
+			$$ = new string(s3);
+			delete $1;
+			delete $3;
+			delete $5;
+		}else{
+			if( $1 == NULL){									
+				if( $3 != NULL && b1){
+					if( $5 != NULL ) delete $5;
+					$$ = $3;
+				}else if($5 != NULL && !b1){
+					if( $3 != NULL ) delete $3;
+					$$ = $5;
+				}else{
+					$$ = NULL;
+					if( $3 != NULL ) delete $3;
+					if( $5 != NULL ) delete $5;
+				}
+				sgn_stack.push( (b1 && b2) || (!b1 && b3) );
+			}else{									
+				if( $3 != NULL){
+					//in this case, $5 == NULL
+					if( b3){
+						string s1 = currentBD->new_name();
+						if(s1 == "TMP_NAME_144____"){
 							//cout<<"This is it 3"<<endl;
 							
 						}
-											currentBD->new_node(*$1, !b1, *$3, b2,  bool_node::OR, s1);
-											$$ = new string(s1);
-											sgn_stack.push(true);
-										}else{
-											string s1 = currentBD->new_name();
-											currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
-											$$ = new string(s1);
-											sgn_stack.push(true);
-										}
-									}else{
-										//$5 may or may not equal null, but $3 is null and $1 is not.
-										if( b2 ){
-											if( $5 != NULL){
-												string s1 = currentBD->new_name();
-												if(s1 == "TMP_NAME_144____"){
-							//cout<<"This is it 4"<<endl;							
+						currentBD->new_node(*$1, !b1, *$3, b2,  bool_node::OR, s1);
+						$$ = new string(s1);
+						sgn_stack.push(true);
+					}else{
+						string s1 = currentBD->new_name();
+						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::AND, s1);
+						$$ = new string(s1);
+						sgn_stack.push(true);
+					}
+				}else{
+					//$5 may or may not equal null, but $3 is null and $1 is not.
+					if( b2 ){
+						if( $5 != NULL){
+							string s1 = currentBD->new_name();
+							if(s1 == "TMP_NAME_144____"){
+								//cout<<"This is it 4"<<endl;							
+							}
+							currentBD->new_node(*$1, b1, *$5, b3,  bool_node::OR, s1);
+							$$ = new string(s1);
+							sgn_stack.push( true );
+						}else{
+							if(  b3 ){
+								$$ = NULL;
+								sgn_stack.push( (b1 && b2) || (!b1 && b3) );
+							}else{
+								$$ = $1;
+								sgn_stack.push( (b1 && b2) || (!b1 && b3) );
+							}
 						}
-												currentBD->new_node(*$1, b1, *$5, b3,  bool_node::OR, s1);
-												$$ = new string(s1);
-												sgn_stack.push( true );
-											}else{
-												if(  b3 ){
-													$$ = NULL;
-													sgn_stack.push( (b1 && b2) || (!b1 && b3) );
-												}else{
-													$$ = $1;
-													sgn_stack.push( (b1 && b2) || (!b1 && b3) );
-												}
-											}
-										}else{
-											if( $5 != NULL){
-												string s1 = currentBD->new_name();
-												currentBD->new_node(*$1, !b1, *$5, b3,  bool_node::AND, s1);
-												$$ = new string(s1);
-												sgn_stack.push( true );
-											}else{
-												if(  !b3 ){
-													$$ = NULL;
-													sgn_stack.push( (b1 && b2) || (!b1 && b3) );
-												}else{
-													$$ = $1;
-													sgn_stack.push( (b1 && b2) || (!b1 && b3) );
-												}
-											}
-											
-										}
-									}																		
-								}
-							}			  					  
-						} 
+					}else{
+						if( $5 != NULL){
+							string s1 = currentBD->new_name();
+							currentBD->new_node(*$1, !b1, *$5, b3,  bool_node::AND, s1);
+							$$ = new string(s1);
+							sgn_stack.push( true );
+						}else{
+							if(  !b3 ){
+								$$ = NULL;
+								sgn_stack.push( (b1 && b2) || (!b1 && b3) );
+							}else{
+								$$ = $1;
+								sgn_stack.push( (b1 && b2) || (!b1 && b3) );
+							}
+						}
+						
+					}
+				}																		
+			}
+		}			  					  
+} 
+
 
 
 varList: Term {
 	$$ = new list<bool_node*>();	
 	if($1 != NULL){
 		$$->push_back( currentBD->get_node(*$1) );
+		delete $1;
 	}else{
 		$$->push_back( NULL );
 	}
@@ -858,6 +938,7 @@ varList: Term {
 //The signs are already in the stack by default. All I have to do is not remove them.
 	if($1 != NULL){
 		$2->push_back( currentBD->get_node(*$1) );
+		delete $1;
 	}else{
 		$2->push_back( NULL );
 	}
@@ -895,6 +976,7 @@ Term: Constant {
 					$$ = new string( alias.first ); 
 				}
 				sgn_stack.push( alias.second );  
+				delete $1;
 			} 
 		}
 | '<' Ident '>' {
@@ -905,6 +987,7 @@ Term: Constant {
 		pair<string, bool> alias(currentBD->get_alias(*$2)); 
 		$$ = new string( alias.first ); 
 		sgn_stack.push( alias.second );  
+		delete $2;
 	} 
 }
 | '<' Ident Constant '>' {

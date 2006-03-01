@@ -369,6 +369,35 @@ void processComparissons(SATSolver& mng, varDir& dir,arith_node* anode, 	map<boo
 }
 
 template<typename THEOP>
+inline int doArithExpr(SATSolver& mng, int quant1, int quant2, int id1, int id2, THEOP comp){
+	return comp(quant1, quant2);
+}
+
+
+
+template<>
+inline int doArithExpr<divides<int> >(SATSolver& mng, int quant1, int quant2, int id1, int id2, divides<int> comp){
+	if(quant2 == 0){
+		mng.assertVarClause(-id2);	
+		return 0;
+	}else{
+		return comp(quant1, quant2);
+	}
+}
+
+
+template<>
+inline int doArithExpr<modulus<int> >(SATSolver& mng, int quant1, int quant2, int id1, int id2, modulus<int> comp){
+	if(quant2 == 0){
+		mng.assertVarClause(-id2);
+		return 0;
+	}else{
+		return comp(quant1, quant2);
+	}
+}
+
+
+template<typename THEOP>
 void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges){
 	THEOP comp;
 	bool diag = anode->get_name() == "TMP_NAME_113______TIMES" ;
@@ -399,7 +428,8 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 				vector<int>& tmp = num_ranges[anode];
 				Dout(cout<<"ADDING "<<anode->father_quant<<"  MULTIPLYIN  "<<mquant<<endl);
 				for(int i=0; i<nrange.size(); ++i){
-					tmp[i] = comp(mquant*nrange[i], anode->father_quant);
+					//tmp[i] = comp(mquant*nrange[i], anode->father_quant);
+					tmp[i] = doArithExpr(mng, mquant*nrange[i], anode->father_quant, id+i, id+i, comp);
 					Dout(cout<<"  "<< mquant*nrange[i]<<" op "<<anode->father_quant<<"= "<<tmp[i]<<endl);
 				}
 				node_ids[anode] = id;
@@ -421,7 +451,8 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 				//cout<<" BEFORE THE LOOPS"<<endl;
 				for(int i=0; i<nrange.size(); ++i){
 					for(int j=0; j<frange.size(); ++j){
-						int quant = comp(anode->mother_quant*nrange[i], anode->father_quant*frange[j]);						
+						// int quant = comp(anode->mother_quant*nrange[i], anode->father_quant*frange[j]);						
+						int quant = doArithExpr(mng, anode->mother_quant*nrange[i], anode->father_quant*frange[j], mid+i, fid+j, comp);
 						Dout(cout<<quant<<" = "<<anode->mother_quant*nrange[i]<<" * "<<anode->father_quant*frange[j]<<endl);
 						if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 						Dout(cout<<"QUANT = "<<quant<<"          "<<mid+i<<", "<<fid + j<<endl);
@@ -497,6 +528,18 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			Dout( cout<<" TIMES "<<endl );			
 			if(!checkParentsChanged(anode, true)){ break; }
 			processArith<multiplies<int> >(mng, dir, anode, node_ids, num_ranges);
+			return;
+		}
+		case arith_node::DIV:{
+			Dout( cout<<" DIV "<<endl );			
+			if(!checkParentsChanged(anode, true)){ break; }
+			processArith<divides<int> >(mng, dir, anode, node_ids, num_ranges);
+			return;
+		}
+		case arith_node::MOD:{
+			Dout( cout<<" MOD "<<endl );			
+			if(!checkParentsChanged(anode, true)){ break; }
+			processArith<modulus<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::ACTRL:{
