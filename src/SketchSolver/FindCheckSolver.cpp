@@ -147,8 +147,15 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 	int result = mngFind.solve();
   	cout<<"# FIND DIAGNOSTICS"<<endl;
 	printDiagnostics(mngFind, 'f');
-    if (result != SATISFIABLE) 	//If solve is bad, return false.
-	    	return false;
+    if (result != SATISFIABLE){ 	//If solve is bad, return false.
+    	switch( result ){
+    	   	case UNDETERMINED: cout<<"UNDETERMINED"<<endl; break;
+    		case TIME_OUT: cout<<"TIME_OUT"<<endl; break;
+    		case MEM_OUT:  cout<<"MEM_OUT"<<endl; break;
+    		case ABORTED:  cout<<"ABORTED"<<endl; break;
+    	}
+    	return false;
+    }
 	Dout( dirFind.print() );
 	
 //Get the values of the Controls.
