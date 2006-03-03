@@ -9,7 +9,7 @@ using namespace std;
 
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
-#define Dout( out )   /* out */
+#define Dout( out )    /* out */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
 #define FileOutput( out ) /* out */
 
@@ -85,7 +85,7 @@ inline void SATSolver::annotateInput(const string& name, int i, int sz){
 	Dout( cout<<"x "<<name<<" ");
 	FileOutput(output<<"x "<<name<<" ");
 	for(int t=0; t<sz; ++t){
-		Dout( cout<<(i+sz)<<" ");
+		Dout( cout<<(i+t)<<" ");
 		FileOutput(output<<(i+t)<<" ");
 	}
 	Dout(cout<<endl);

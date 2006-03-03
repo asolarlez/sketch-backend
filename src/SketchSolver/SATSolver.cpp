@@ -29,6 +29,9 @@
    	if( clause_lits[i]>vars){
   		cout<<" INCORRECT STUFF "<<vars<<"  "<< clause_lits[i]<<"  "<<i<<endl;	
   	}
+  	if( clause_lits[i] == 1048575){
+  		cout<<"Now is the time!!"<<endl;
+  	}
    	clause_lits[i] = (clause_lits[i] << 1) + sign;
   }
 

@@ -130,30 +130,63 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, int switchID, int amt
 	//////////////////////////////////////////////////////					
 }
 
-inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int> switchID, int amtsize){
+inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID, int amtsize, vector<int>& vals, int YES){
 	Assert(switchID.size() == amtsize, "This should never happen");
 	int amtrange = 1;
 	for(int i=0; i<amtsize; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
+	vector<int> tmp(amtrange);
 	int lastsize = 1;
-	int lastRoundVars = dir.getVarCnt();
-	mng.addEqualsClause(dir.newAnonymousVar(), -(switchID[amtsize-1]));
-	mng.addEqualsClause(dir.newAnonymousVar(),  (switchID[amtsize-1]));
-	for(int i=1; i<amtsize; ++i){
-		lastsize = lastsize*2;
-		int roundVars = lastRoundVars;
-		lastRoundVars = dir.getVarCnt();
-		for(int j=0; j<lastsize; ++j){
-			int cvar = roundVars + j;
-			mng.addAndClause(dir.newAnonymousVar(), cvar, -(switchID[amtsize-1-i]));
-			mng.addAndClause(dir.newAnonymousVar(), cvar, (switchID[amtsize-1-i]));
+	int lastRoundVars = dir.getVarCnt();	
+	int valssz = 0;
+	vals.resize(1);
+	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
+		lastRoundVars = YES;
+		if( switchID[amtsize-1] > 0 ){
+			vals[0] = 1;
+		}else{
+			vals[0] = 0;
 		}
+		lastsize = 1;
+	}else{
+		vals.resize(2);
+		mng.addEqualsClause(dir.newAnonymousVar(), -(switchID[amtsize-1]));
+		mng.addEqualsClause(dir.newAnonymousVar(),  (switchID[amtsize-1]));			
+		vals[0] = 0;
+		vals[1] = 1;
+		lastsize = 2;
 	}
-	lastsize = lastsize*2;
-	Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
+	
+	
+	for(int i=1; i<amtsize; ++i){		
+		int curval = switchID[amtsize-1-i]; 
+		if( (-curval) == YES || curval == YES){
+			int v = (curval > 0)? 1:0;
+			for(int j=0; j<lastsize; ++j){
+				tmp[j] = vals[j]*2 + v;
+			}
+		}else{
+			int roundVars = lastRoundVars;
+			lastRoundVars = dir.getVarCnt();
+			for(int j=0; j<lastsize; ++j){
+				int cvar = roundVars + j;
+				mng.addAndClause(dir.newAnonymousVar(), cvar, -(curval));
+				mng.addAndClause(dir.newAnonymousVar(), cvar, (curval));
+				tmp[2*j] = vals[j]*2;
+				tmp[2*j+1] = vals[j]*2 + 1;
+			}
+			lastsize = lastsize*2;	
+		}
+		vals.resize(lastsize);
+		for(int j=0; j<lastsize; ++j){
+			vals[j] = tmp[j];	
+		}		
+	}	
+	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) "<<lastsize<<", "<<amtrange);
 	int roundVars = lastRoundVars;
-	return varRange(roundVars, amtrange);
-	//////////////////////////////////////////////////////					
+
+	return varRange(roundVars, lastsize);
+	//////////////////////////////////////////////////////
 }
 
 inline varRange getSwitchVars(SATSolver& mng, varDir& dir, const string& switchvar){

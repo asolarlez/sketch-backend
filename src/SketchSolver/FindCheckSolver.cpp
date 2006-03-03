@@ -147,12 +147,14 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 	int result = mngFind.solve();
   	cout<<"# FIND DIAGNOSTICS"<<endl;
 	printDiagnostics(mngFind, 'f');
-    if (result != SATISFIABLE){ 	//If solve is bad, return false.
-    	switch( result ){
-    	   	case UNDETERMINED: cout<<"UNDETERMINED"<<endl; break;
-    		case TIME_OUT: cout<<"TIME_OUT"<<endl; break;
-    		case MEM_OUT:  cout<<"MEM_OUT"<<endl; break;
-    		case ABORTED:  cout<<"ABORTED"<<endl; break;
+    if (result != SATISFIABLE){ 	//If solve is bad, return false.    	
+    	if( result != UNSATISFIABLE){
+	    	switch( result ){
+	    	   	case UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
+	    		case ABORTED:  throw new SolverException(result, "ABORTED"); break;
+	    	}    			
     	}
     	return false;
     }
