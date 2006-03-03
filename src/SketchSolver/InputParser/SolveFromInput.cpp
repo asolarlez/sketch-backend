@@ -561,12 +561,8 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}
 			if(!checkParentsChanged(anode, parentSame)){ break; }
-			varRange vr = getSwitchVars(mng,dir, ids, size);
-			num_ranges[anode].resize(vr.range);
 			vector<int>& tmp = num_ranges[anode];
-			for(int i=0; i<vr.range; ++i){
-				tmp[i] = i;
-			}
+			varRange vr = getSwitchVars(mng,dir, ids, size, tmp, YES);			
 			node_ids[anode] = vr.varID;
 			return;
 		}
