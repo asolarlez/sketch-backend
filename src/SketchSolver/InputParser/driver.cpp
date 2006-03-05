@@ -90,7 +90,14 @@ int main(int argc, char** argv){
       		solver.set_randseed(seed);
       	}
 	  	solver.setup();
-	  	if( solver.solve() ){
+	  	int solveCode = 0;
+	  	try{
+		  	solveCode = solver.solve();
+	  	}catch(SolverException* ex){
+	  		cout<<"ERROR: "<<ex->code<<"  "<<ex->msg<<endl;
+	  		return ex->code + 2;
+	  	}
+	  	if( solveCode ){
 			solver.output_control_map(out);
 	  	}else{
 	  		return 1;	
