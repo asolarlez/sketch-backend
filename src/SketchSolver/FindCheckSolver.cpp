@@ -227,6 +227,7 @@ bool FindCheckSolver::solve(){
 	Dtime( unsigned long long check_time=0 );
 	Dtime( unsigned long long find_time=0 );
 	int iterations = 0;
+	int itsSinceLastClean = 0;
 	while(isDone){
 		unsigned long long l_f_time, l_c_time;
 		Dout( for(int i=0; i<ctrlSize; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl );
@@ -266,8 +267,17 @@ bool FindCheckSolver::solve(){
 				break;
 			}
 		}
+		if( false && itsSinceLastClean > 3 ){
+			mngCheck.cleanupDatabase();
+			mngFind.cleanupDatabase();
+			mngFind.reset();
+			mngCheck.reset();
+			itsSinceLastClean = 0;
+			cout<<"* CLEANING UP"<<endl;
+		}
 		cout<<"********  "<<iterations<<"\tftime="<<(l_f_time/1000.0)<<"\tctime="<<(l_c_time/1000.0)<<endl;
 		++iterations;
+		++itsSinceLastClean;
 	}
 	
 	delete [] input;	

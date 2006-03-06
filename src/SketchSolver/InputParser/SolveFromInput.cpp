@@ -8,6 +8,8 @@
 bool GLOfirstTime = true;
 
 vector<int> scratchpad(100);
+vector<int> tmprange(2);
+vector<int> unirange(1);
 
 void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	int N = getInSize();
@@ -77,12 +79,15 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_
 	cout<<"Random seeds = "<<nseeds<<endl;	
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
 		(*node_it)->flag = true;
-		node_values[(*node_it)]=0;
 	}
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
 		(*node_it)->flag = true;
-		node_values[(*node_it)]=0;
 	}
+	
+	tmprange[0] = 0;
+	tmprange[1] = 1;
+	unirange[0] = 1;
+	
 	node_values[NULL] = 1;
 	firstTime=true;
 }
@@ -129,30 +134,33 @@ void SolveFromInput::output_control_map(ostream& out){
 template<>
 bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
 	logical_or<bool> comp;
-	int fathval = node_values[node->father];
-	int mothval = node_values[node->mother];
+	
+	int fid = node_ids[node->father];
+	int mid = node_ids[node->mother];
+	int yoid = node_ids[node];
+	
+	
+	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
+	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
 	int fsign = node->father_sgn? 1 : -1;
 	int msign = node->mother_sgn? 1 : -1;
 	if(fathval != 0 && mothval != 0){
-		int oldVal = node_values[node];
+		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
 		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
 		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-		node_values[node] = newVal;
 		node->flag = newVal != oldVal;
 		node_ids[node] = newVal*YES;
 		return true;
 	}else{
 		if(fathval*fsign == 1 || mothval*msign == 1){
-			int oldVal = node_values[node];
+			int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
 			int newVal =  1;
 			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-			node_values[node] = newVal;
 			node->flag = newVal != oldVal;
 			node_ids[node] = newVal*YES;
 			return true;
 		}
 	}
-	node_values[node] = 0;
 	return false;
 }
 
@@ -162,30 +170,33 @@ bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
 template<>
 bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
 	logical_and<bool> comp;
-	int fathval = node_values[node->father];
-	int mothval = node_values[node->mother];
+
+	int fid = node_ids[node->father];
+	int mid = node_ids[node->mother];
+	int yoid = node_ids[node];
+	
+	
+	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
+	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
 	int fsign = node->father_sgn? 1 : -1;
 	int msign = node->mother_sgn? 1 : -1;
 	if(fathval != 0 && mothval != 0){
-		int oldVal = node_values[node];
+		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
 		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
 		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-		node_values[node] = newVal;
 		node->flag = newVal != oldVal;
 		node_ids[node] = newVal*YES;
 		return true;
 	}else{
 		if(fathval*fsign == -1 || mothval*msign == -1){
-			int oldVal = node_values[node];
+			int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
 			int newVal =  -1;
 			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-			node_values[node] = newVal;
 			node->flag = newVal != oldVal;
 			node_ids[node] = newVal*YES;
 			return true;
 		}	
 	}
-	node_values[node] = 0;
 	return false;
 }
 
@@ -194,20 +205,23 @@ bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
 template<typename COMP>
 bool SolveFromInput::booleanPartialEval(bool_node* node){
 	COMP comp;
-	int fathval = node_values[node->father];
-	int mothval = node_values[node->mother];
+	int fid = node_ids[node->father];
+	int mid = node_ids[node->mother];
+	int yoid = node_ids[node];
+		
+	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
+	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
+	
 	int fsign = node->father_sgn? 1 : -1;
 	int msign = node->mother_sgn? 1 : -1;
 	if(fathval != 0 && mothval != 0){
-		int oldVal = node_values[node];
+		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
 		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
-		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-		node_values[node] = newVal;
+		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");		
 		node->flag = newVal != oldVal;
 		node_ids[node] = newVal*YES;
 		return true;
 	}
-	node_values[node] = 0;
 	return false;
 }
 
@@ -278,11 +292,7 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 				int oid = (*node_it)->ion_pos;		
 				int nvar = dir.getArr(outname, oid);
 				int msign = (*node_it)->mother_sgn? 1 : -1;		
-				int nvalue = node_values[(*node_it)->mother];
-				if( nvalue != 0){
-					Dout(cout<<node_ids[(*node_it)->mother]<<"   "<< (*node_it)->mother <<"  nvalue = "<<nvalue<<"    msign="<<msign<<endl);
-					mng.setVarClause(nvalue*msign*nvar);
-				}else{	
+				{	
 					mng.addEqualsClause( nvar, msign*node_ids[(*node_it)->mother]);
 				}
 				break;
@@ -300,11 +310,6 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 
 template<typename COMP>
 void processComparissons(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges, int YES){
-	vector<int> tmprange(2);
-	tmprange[0] = 0;
-	tmprange[1] = 1;
-	vector<int> unirange(1);
-	unirange[0] = 1;
 
 	bool_node* mother = anode->mother;			
 	bool hasMother = (num_ranges.find(mother) != num_ranges.end() );
@@ -436,9 +441,6 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 			if(anode->father == NULL){
 				//cout<<" IF "<<endl;
 				bool hasRange = true;
-				vector<int> tmprange(2);
-				tmprange[0] = 0;
-				tmprange[1] = 1;
 				hasRange = (num_ranges.find(anode->mother) != num_ranges.end() );
 				vector<int>& nrange = hasRange? num_ranges[anode->mother] : tmprange;
 				int id = node_ids[anode->mother];
@@ -577,11 +579,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			bool parentSame = true;
 			vector<int> ids(anode->multi_mother.size());
 			for(int i=0 ; it != anode->multi_mother.end(); ++it, ++i, ++signs){
-				int nvalue = node_values[*it];
-				if( nvalue != 0 ){
-					Dout( cout<<" ACTRL "<<*it<<" nvalue = "<<nvalue<<"  signs = "<<(*signs));
-					ids[i]=((*signs)==1?1:-1)*nvalue*YES;
-				}else{
+				{
 					Dout( cout<<" ACTRL "<<*it<<" nodeids = "<<node_ids[*it]<<"  signs = "<<(*signs));
 					ids[i]=((*signs)==1?1:-1)*node_ids[*it];
 				}
@@ -613,16 +611,14 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			bool parentSame = true;
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
-				int nvalue = node_values[*it];
+				
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
 				mothers[i] = *it;
 				factors[i] = *signs;
 				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  factor="<<*signs<<"  ");
-				if( nvalue != 0 ){
-					choices[i]=nvalue*YES;
-				}else{
+				{
 					choices[i]=node_ids[*it];
 				}
 				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
@@ -669,9 +665,6 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				return;
 			}else{
 				Dout(cout<<" is not boolean"<<endl);
-				vector<int> tmprange(2);
-				tmprange[0] = 0;
-				tmprange[1] = 1;
 				int mid0 = choices[0];				
 				int mid1 = choices[1];
 				bool hasRange ;
@@ -769,14 +762,12 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			bool parentSame = true;
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
-				int nvalue = node_values[*it];
+				
 				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
-				if( nvalue != 0 ){
-					choices[i]=((*signs)==1?1:-1)*nvalue*YES;
-				}else{
+				{
 					choices[i]=((*signs)==1?1:-1)*node_ids[*it];
 				}
 				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
@@ -811,7 +802,6 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			for(int i=0; i<nrange.size(); ++i){
 				if( nrange[i] >= 0 && nrange[i] < choices.size() ){
 					if( id+i == YES){
-						cout<<"SAVED 3"<<endl;
 						cvar = choices[nrange[i]];
 						++orTerms;
 						if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
@@ -829,7 +819,6 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			}
 			if( orTerms < 2){
 				node_ids[anode] = cvar;
-				cout<<"SAVED 2"<<endl;
 			}else{
 				int result = dir.newAnonymousVar();
 				node_ids[anode] = result;
@@ -849,13 +838,9 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 	vector<int> choices(N);
 	vector<int> factors(N);
 	vector<vector<int>* > values(N);
-	vector<int> tmprange(2);
-	tmprange[0] = 0;
-	tmprange[1] = 1;
-	vector<int> unirange(1);
-	unirange[0] = 1;
+
 	for(int i=0; i < N; ++i, ++it, ++signs){	
-		int nvalue = node_values[*it];
+		
 		choices[i] = node_ids[*it];
 		factors[i] = (*signs);
 		bool hasRanges = true;
@@ -875,7 +860,6 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 			}else{
 				Assert( choices[i] == YES , "This better be true, or else ...");
 				values[i] = &unirange;
-				cout<<"SAVED 4"<<endl;
 			}			
 		}else{
 			values[i] = &num_ranges[*it];
@@ -908,12 +892,10 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 			for(int j=0; j<cvalues.size(); ++j){
 				if( (id + i) == YES ){
 					newVals[ cvalues[j] * factor].push_back(choices[nrange[i]] + j);
-					cout<<"SAVED 3"<<endl;
 				}else{
 					int tmpid = choices[nrange[i]] + j;
 					if( tmpid == YES ){
 						newVals[ cvalues[j] * factor].push_back(id+i);
-						cout<<"SAVED 3"<<endl;
 					}else{
 						int cvar = dir.newAnonymousVar();
 						mng.addAndClause( cvar, id + i, choices[nrange[i]] + j);
@@ -938,7 +920,6 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 		}
 		if( orTerms == 1){
 			node_ids[anode] = vars[0];
-			cout<<"SAVED 2"<<endl;
 			result.push_back(it->first);
 		}else{
 			int cvar = dir.newAnonymousVar();

@@ -64,6 +64,11 @@ public:
 		SAT_Reset(mng);
 	}
 	
+	inline void cleanupDatabase(){
+		SAT_CleanUpDatabase(mng);
+	}
+	
+	
 	void printDiagnostics(char c);
 };
 
