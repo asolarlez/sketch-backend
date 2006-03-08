@@ -227,9 +227,10 @@ WorkBody:  { /* Empty */ }
 WorkStatement:  ';' {  $$=0;  /* */ }
 
 | T_ident '=' Expression ';' { 	if( $3 == NULL){
-									currentBD->alias( *$1, 1==sgn_stack.top(), "");
+									int tmpval = sgn_stack.top();
+									currentBD->alias( *$1, tmpval, "");
 								}else{
-									currentBD->alias( *$1, 1==sgn_stack.top(), *$3);
+									currentBD->alias( *$1, sgn_stack.top(), *$3);
 									delete $3;
 								}
 								sgn_stack.pop();
@@ -299,9 +300,9 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 | RateSet {}
 | T_OutIdent '=' Expression ';' {
 								if( $3 == NULL){
-									currentBD->new_node("", 1==sgn_stack.top(), "", true,  bool_node::DST, *$1);
+									currentBD->new_node("", sgn_stack.top(), "", true,  bool_node::DST, *$1);
 								}else{
-									currentBD->new_node(*$3, 1==sgn_stack.top(), "", true,  bool_node::DST, *$1);
+									currentBD->new_node(*$3, sgn_stack.top(), "", true,  bool_node::DST, *$1);
 								}
 								sgn_stack.pop();
 								delete $3;
@@ -548,7 +549,7 @@ Expression: Term { $$ = $1; }
 	bool isNull = ($5 == NULL);
 	int pushval = 0;
 
-bool b1 = sgn_stack.top(); sgn_stack.pop();
+int b1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
 	arith_node* an = new arith_node();
 	list<bool_node*>* childs = $2;
@@ -561,7 +562,7 @@ string s1 = currentBD->new_name();
 			(*it)->children.push_back(an);
 		}
 		tempsgn[bigN-1-i] = sgn_stack.top();
-		if(isNull && b1 == (bigN-1-i)){
+		if(isNull && b1 == i){
 			if(*it != NULL){
 				$$ = new string( (*it)->name );
 			}else{
@@ -801,7 +802,6 @@ $$ = new string(s1);  sgn_stack.push(true);
 		}
 	}
 	if(isSparse){
-		//cout<<" IS SPARSE "<<endl;
 		if($1 != NULL){
 			string s1 = currentBD->new_name();
 			arith_node* an = new arith_node();
@@ -969,7 +969,7 @@ Term: Constant {
 			if( !currentBD->has_alias(*$1) ){ 
 				$$ = $1;  sgn_stack.push(true); 
 			}else{ 
-				pair<string, bool> alias(currentBD->get_alias(*$1)); 
+				pair<string, int> alias(currentBD->get_alias(*$1)); 
 				if(alias.first == ""){
 					$$ = NULL;
 				}else{
