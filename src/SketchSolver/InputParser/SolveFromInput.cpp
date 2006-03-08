@@ -617,7 +617,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				}
 				mothers[i] = *it;
 				factors[i] = *signs;
-				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  factor="<<*signs<<"  ");
+				Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  factor="<<*signs<<"  ");
 				{
 					choices[i]=node_ids[*it];
 				}
@@ -763,7 +763,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 			bool isBoolean=true;
 			for(int i=0; it != anode->multi_mother.end(); ++i, ++it, ++signs){	
 				
-				Dout(cout<<" nval = "<<nvalue<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
+				Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
 				if( (*signs)>1 || (*signs)<0 || (num_ranges.find(*it) != num_ranges.end())){
 					isBoolean = false;	
 				}
