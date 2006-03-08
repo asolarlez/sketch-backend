@@ -83,8 +83,17 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
     int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
-    if (result != SATISFIABLE) 
+    if (result != SATISFIABLE){
+    	if( result != UNSATISFIABLE){
+	    	switch( result ){
+	    	   	case UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
+	    		case ABORTED:  throw new SolverException(result, "ABORTED"); break;
+	    	}
+    	}
     	return false;
+    }
     int N = dirCheck.getArrSize(IN);
 	for(int i=0; i<N; ++i){
 		int val = mngCheck.getVarVal(dirCheck.getArr(IN, i));
