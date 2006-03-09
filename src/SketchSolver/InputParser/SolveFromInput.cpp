@@ -159,6 +159,15 @@ bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
 			node->flag = newVal != oldVal;
 			node_ids[node] = newVal*YES;
 			return true;
+		}else{
+			if(fathval*fsign == -1){
+				node_ids[node] = msign * mid;
+				return true;
+			}
+			if(mothval*msign == -1){
+				node_ids[node] = fsign * fid;
+				return true;
+			}
 		}
 	}
 	return false;
@@ -195,11 +204,62 @@ bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
 			node->flag = newVal != oldVal;
 			node_ids[node] = newVal*YES;
 			return true;
-		}	
+		}else{
+			if(fathval*fsign == 1){
+				node_ids[node] = msign * mid;
+				return true;
+			}
+			if(mothval*msign == 1){
+				node_ids[node] = fsign * fid;
+				return true;
+			}
+		}
 	}
 	return false;
 }
 
+
+
+template<>
+bool SolveFromInput::booleanPartialEval<not_equal_to<bool> >(bool_node* node){
+	logical_and<bool> comp;
+
+	int fid = node_ids[node->father];
+	int mid = node_ids[node->mother];
+	int yoid = node_ids[node];
+	
+	
+	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
+	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
+	int fsign = node->father_sgn? 1 : -1;
+	int msign = node->mother_sgn? 1 : -1;
+	if(fathval != 0 && mothval != 0){
+		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
+		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
+		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
+		node->flag = newVal != oldVal;
+		node_ids[node] = newVal*YES;
+		return true;
+	}else{
+		if(fathval*fsign == 1){
+			node_ids[node] = -msign * mid;
+			return true;
+		}
+		if(mothval*msign == 1){
+			node_ids[node] = -fsign * fid;
+			return true;
+		}
+		if(fathval*fsign == -1){
+			node_ids[node] = msign * mid;
+			return true;
+		}
+		if(mothval*msign == -1){
+			node_ids[node] = fsign * fid;
+			return true;
+		}
+	}
+	return false;
+}
 
 
 template<typename COMP>
