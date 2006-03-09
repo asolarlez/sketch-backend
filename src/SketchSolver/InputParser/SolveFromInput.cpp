@@ -162,10 +162,12 @@ bool SolveFromInput::booleanPartialEval<logical_or<bool> >(bool_node* node){
 		}else{
 			if(fathval*fsign == -1){
 				node_ids[node] = msign * mid;
+				node->flag = yoid != msign * mid;
 				return true;
 			}
 			if(mothval*msign == -1){
 				node_ids[node] = fsign * fid;
+				node->flag = yoid != fsign * fid;
 				return true;
 			}
 		}
@@ -207,10 +209,12 @@ bool SolveFromInput::booleanPartialEval<logical_and<bool> >(bool_node* node){
 		}else{
 			if(fathval*fsign == 1){
 				node_ids[node] = msign * mid;
+				node->flag = yoid != msign * mid;
 				return true;
 			}
 			if(mothval*msign == 1){
 				node_ids[node] = fsign * fid;
+				node->flag = yoid != fsign * fid;
 				return true;
 			}
 		}
@@ -243,18 +247,22 @@ bool SolveFromInput::booleanPartialEval<not_equal_to<bool> >(bool_node* node){
 	}else{
 		if(fathval*fsign == 1){
 			node_ids[node] = -msign * mid;
+			node->flag = yoid != -msign * mid;
 			return true;
 		}
 		if(mothval*msign == 1){
 			node_ids[node] = -fsign * fid;
+			node->flag = yoid != -fsign * fid;
 			return true;
 		}
 		if(fathval*fsign == -1){
 			node_ids[node] = msign * mid;
+			node->flag = yoid != msign * mid;
 			return true;
 		}
 		if(mothval*msign == -1){
 			node_ids[node] = fsign * fid;
+			node->flag = yoid != fsign * fid;
 			return true;
 		}
 	}
