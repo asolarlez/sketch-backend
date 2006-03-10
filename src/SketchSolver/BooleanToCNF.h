@@ -23,9 +23,10 @@ class varDir{
 	int varCnt;
 	SATSolver& mng;
 public:
-	
+	int YES;
 	varDir(SATSolver& mng_p):mng(mng_p){
 		varCnt = 1;
+		YES = 0;
 	}
 	
 	void print(){
@@ -83,7 +84,136 @@ public:
 		mng.disableVarBranch(varCnt);
 		return varCnt++;
 	}
+	void setYes(int yes){
+		YES = yes;
+	}
+	int addChoiceClause(int a, int b, int c, int gid=0);
+ 	int addXorClause(int a, int b, int gid=0);
+	int addOrClause(int a, int b, int gid=0);
+	int addBigOrClause(int* a, int size, int gid=0);
+	int addAndClause(int a, int b, int gid=0);	
+	void addEquateClause(int x, int a, int gid=0);
 };
+
+inline int varDir::addChoiceClause(int a, int b, int c, int gid){
+	if( a == YES ){
+		return b;
+	}	
+	if( a == -YES ){
+		return c;
+	}
+	if( a == b){
+		return a;	
+	}
+	if( a == -b){
+		return addXorClause(a, -b);
+	}
+	int x = newAnonymousVar();
+	mng.addChoiceClause(x, a, b, c, gid);
+	return x;
+}
+inline int varDir::addXorClause(int a, int b, int gid){
+	if( b == YES ){
+		return -a;
+	}	
+	if( b == -YES ){
+		return a;
+	}
+	if( a == YES ){
+		return -b;
+	}	
+	if( a == -YES ){
+		return b;
+	}
+	if( a == b){
+		return -YES;	
+	}
+	if( a == -b){
+		return YES;
+	}
+	int x = newAnonymousVar();	
+	mng.addXorClause(x, a, b, gid);
+	return x;
+}
+inline int varDir::addOrClause(int a, int b, int gid){
+	if( b == YES ){
+		return YES;
+	}	
+	if( b == -YES ){
+		return a;
+	}
+	if( a == YES ){
+		return YES;
+	}	
+	if( a == -YES ){
+		return b;
+	}
+	if( a == b){
+		return a;	
+	}
+	if( a == -b){
+		return YES;
+	}
+	int x = newAnonymousVar();
+	mng.addOrClause(x, a, b, gid);
+	return x;
+}
+//This function encodes a[0] == a[1] or a[2] or ... a[size];
+// so a[0] is assumed to be empty initially.
+inline int varDir::addBigOrClause(int* a, int size, int gid){
+	int x = newAnonymousVar();
+	a[0] = x;
+	mng.addBigOrClause(a , size, gid);
+	return x;
+}
+
+inline int varDir::addAndClause(int a, int b, int gid){
+	if( b == YES ){
+		return a;
+	}	
+	if( b == -YES ){
+		return -YES;
+	}
+	if( a == YES ){
+		return b;
+	}	
+	if( a == -YES ){
+		return -YES;
+	}
+	if( a == b){
+		return a;	
+	}
+	if( a == -b){
+		return -YES;	
+	}	
+	int x = newAnonymousVar();
+	mng.addAndClause(x, a, b, gid);
+	return x;
+}
+
+
+inline void varDir::addEquateClause(int x, int a, int gid){	
+	if( x == a){
+		return;	
+	}
+	if( x == YES){
+		mng.assertVarClause(a);
+		return;
+	}
+	if( x == -YES){
+		mng.assertVarClause(-a);
+		return;
+	}
+	if( a == YES){
+		mng.assertVarClause(x);
+		return;
+	}
+	if( a == -YES){
+		mng.assertVarClause(-x);
+		return;
+	}
+	mng.addEquateClause(x, a, gid);	
+}
 
 
 class varRange{
@@ -104,31 +234,6 @@ int select(SATSolver& mng, varDir& dir, int choices[], int control, int nchoices
 int selectMinGood(SATSolver& mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice);
 
 int arbitraryPerm(SATSolver& mng, varDir& dir, int input, int insize, int controls[], int ncontrols, int csize);
-
-inline varRange getSwitchVars(SATSolver& mng, varDir& dir, int switchID, int amtsize){
-	int amtrange = 1;
-	for(int i=0; i<amtsize; ++i) amtrange *= 2;
-	//////////////////////////////////////////////////////
-	int lastsize = 1;
-	int lastRoundVars = dir.getVarCnt();
-	mng.addEqualsClause(dir.newAnonymousVar(), -(switchID+amtsize-1));
-	mng.addEqualsClause(dir.newAnonymousVar(),  (switchID+ amtsize-1));
-	for(int i=1; i<amtsize; ++i){
-		lastsize = lastsize*2;
-		int roundVars = lastRoundVars;
-		lastRoundVars = dir.getVarCnt();
-		for(int j=0; j<lastsize; ++j){
-			int cvar = roundVars + j;
-			mng.addAndClause(dir.newAnonymousVar(), cvar, -(switchID + amtsize-1-i));
-			mng.addAndClause(dir.newAnonymousVar(), cvar, (switchID + amtsize-1-i));
-		}
-	}
-	lastsize = lastsize*2;
-	Assert( lastsize == amtrange, "Sizes don't match: (lastsize != amtrange) "<<lastsize<<", "<<amtrange);			
-	int roundVars = lastRoundVars;
-	return varRange(roundVars, amtrange);
-	//////////////////////////////////////////////////////					
-}
 
 inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID, int amtsize, vector<int>& vals, int YES){
 	Assert(switchID.size() == amtsize, "This should never happen");
@@ -189,44 +294,9 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 	//////////////////////////////////////////////////////
 }
 
-inline varRange getSwitchVars(SATSolver& mng, varDir& dir, const string& switchvar){
-	return getSwitchVars(mng, dir, dir.getArr(switchvar, 0), dir.getArrSize(switchvar));
-}
-
-
 
 typedef enum{LEFT, RIGHT} direction;
 
-inline void shiftArrNdet(SATSolver& mng, varDir& dir, const string& dest, const string& source, const string& shamt, direction shift){
-	int amtsize = dir.getArrSize(shamt);
-	Dout( cout<<" "<<dest<<"= "<<source<<(shift == LEFT?" << ":" >> ")<<shamt<<"("<<amtsize<<")"<<endl);
-		
-	Assert(dir.getArrSize(source) == dir.getArrSize(dest)
-			," Sizes don't match "<<dir.getArrSize(source)<<", "<<dir.getArrSize(dest));
-	int arsize = dir.getArrSize(source);
-	varRange vr = getSwitchVars(mng, dir, shamt);
-	int switchVars = vr.varID;
-	int amtrange = vr.range;
-
-	for(int aridx=0; aridx<arsize; ++aridx){
-		mng.setVarClause(-(dir.newAnonymousVar()));
-		for(int j=0; j<amtrange; ++j){
-			if( shift == LEFT && j+aridx<arsize){
-				int cvar = dir.newAnonymousVar();
-				mng.addAndClause(cvar, switchVars+j, dir.getArr(source, j+ aridx));
-				int cvar2 = dir.newAnonymousVar();
-				mng.addOrClause(cvar2, cvar, cvar-1);
-			}			
-			if( shift == RIGHT && aridx - j>=0){
-				int cvar = dir.newAnonymousVar();
-				mng.addAndClause(cvar, switchVars+j, dir.getArr(source, aridx-j));
-				int cvar2 = dir.newAnonymousVar();
-				mng.addOrClause(cvar2, cvar, cvar-1);
-			}
-		}
-		mng.addEqualsClause(dir.getArr(dest, aridx), dir.getVarCnt()-1);
-	}
-}
 
 
 class bitVector{

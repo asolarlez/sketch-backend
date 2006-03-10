@@ -18,22 +18,16 @@ using namespace std;
 
 int assertVectorsDiffer(SATSolver& mng, varDir& dir, int v1, int v2, int size){
 	int N = size;
-	int startIdx = dir.getVarCnt();
-	// tmp[i] = SOUT[i] != OUT[i];
-	for(int i=0; i<N; ++i){
-		mng.addXorClause( dir.newAnonymousVar(), v1+i, v2+i);
+	int lastone = 0;
+	for(int i=0; i<N; ++i){		
+		int cur = dir.addXorClause(v1+i, v2+i);
+		if(lastone != 0){
+			lastone = dir.addOrClause(lastone, cur);
+		}else{
+			lastone = cur;
+		}		
 	}
-	int finIdx = dir.getVarCnt();
-	// tmp2[0] = tmp[0];
-	mng.addEqualsClause( dir.newAnonymousVar(), startIdx);
-	
-	// tmp2[i] = tmp2[i-1] | tmp[i]
-	for(int i=1; i<N; ++i){
-		Assert( dir.getVarCnt() == finIdx + i, "THIS SHOULD NOT HAPPEN");
-		mng.addOrClause(dir.newAnonymousVar() , finIdx + i-1, startIdx+i);
-	}	
-	// assert tmp2[N-1];
-	return finIdx + N-1;
+	return lastone;
 }
 
 

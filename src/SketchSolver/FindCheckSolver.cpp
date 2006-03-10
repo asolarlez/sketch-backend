@@ -23,7 +23,7 @@ void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
 	Assert( N == dir.getArrSize(SOUT), "SIZE MISSMATCH "<<N );
 	for(int i=0; i<N; ++i){
-		mng.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
+		dir.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
 	}
 }
 
@@ -31,7 +31,7 @@ void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 void FindCheckSolver::addDiffersClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
 	int status = assertVectorsDiffer(mng, dir, dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
-	mng.setVarClause(status);
+	mng.assertVarClause(status);
 }
 
 
