@@ -14,8 +14,14 @@ class SolveFromInput: public FindCheckSolver{
 	int Nout;
 	bool firstTime;
 	map<bool_node*, int> node_ids;
+	vector<int> c_node_ids;
+	vector<int> f_node_ids;
+	vector<bool> f_flags;
+	map<bool_node*, vector<int> > f_num_ranges;
+	
 	map<bool_node*, int> node_values; // -1=false, 1=true, 0=unknown
 	map<bool_node*, vector<int> > num_ranges;
+	
 	int* last_input;
 	protected:
 	virtual void setupCheck();
@@ -25,7 +31,8 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);
 	virtual void processArithNode(SATSolver& mng, varDir& dir, arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
 	virtual void doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
-	virtual bool checkParentsChanged(bool_node* node, bool more);	
+	virtual bool checkParentsChanged(bool_node* node, bool more);
+	virtual void setNewControls(int controls[], int ctrlsize);
 	template<typename COMP>
 	bool booleanPartialEval(bool_node* node);
 	public:

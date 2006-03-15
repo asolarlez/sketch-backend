@@ -29,6 +29,13 @@ public:
 		YES = 0;
 	}
 	
+	void reset(){
+			varmap.clear();
+			arrsize.clear();
+			varCnt = 1;
+			YES = 0;
+	};
+	
 	void print(){
 		for(map<string, int>::iterator it= varmap.begin(); it != varmap.end(); ++it){
 			if( arrsize.find( (it)->first ) !=  arrsize.end() ){
@@ -169,21 +176,27 @@ inline int varDir::addBigOrClause(int* a, int size, int gid){
 
 inline int varDir::addAndClause(int a, int b, int gid){
 	if( b == YES ){
+		Dout( cout<<" "<<a<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return a;
 	}	
 	if( b == -YES ){
+		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return -YES;
 	}
 	if( a == YES ){
+		Dout( cout<<" "<<b<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return b;
 	}	
 	if( a == -YES ){
+		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return -YES;
 	}
 	if( a == b){
+		Dout( cout<<" "<<a<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return a;	
 	}
 	if( a == -b){
+		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
 		return -YES;	
 	}	
 	int x = newAnonymousVar();

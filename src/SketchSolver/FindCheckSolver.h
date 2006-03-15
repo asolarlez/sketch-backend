@@ -50,13 +50,15 @@ class FindCheckSolver{
 	virtual void addEqualsClauses(SATSolver& mng, varDir& dir);
 	virtual void addDiffersClauses(SATSolver& mng, varDir& dir);
 
-	
+	virtual void buildChecker();
 	virtual void setupCheck();
+	virtual void setNewControls(int controls[], int ctrlsize);
 	virtual bool check(int controls[], int ctrlsize, int input[]);
 		
 	virtual void setupFind();
 	virtual void addInputsToTestSet(int input[], int insize);
 	virtual bool find(int input[], int insize, int controls[]);
+	
 	virtual void printDiagnostics(SATSolver& mng, char c);
 	virtual void printDiagnostics();
 	public:

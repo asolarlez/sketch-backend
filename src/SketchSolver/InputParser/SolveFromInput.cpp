@@ -11,12 +11,62 @@ vector<int> scratchpad(100);
 vector<int> tmprange(2);
 vector<int> unirange(1);
 
+
+void SolveFromInput::setNewControls(int controls[], int ctrlsize){
+	int idx = 0;	
+	node_values.clear();
+	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
+		f_node_ids[idx] = node_ids[(*node_it)];
+		node_ids[(*node_it)] = c_node_ids[idx];
+		f_flags[idx] = (*node_it)->flag;
+
+		if( num_ranges.find((*node_it)) != num_ranges.end() ){
+			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
+			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
+		}
+		
+		(*node_it)->flag = true;
+		if(	(*node_it)->type == bool_node::CTRL ){
+			int iid = (*node_it)->ion_pos;
+			Assert(controls[iid % ctrlsize] == 1 || controls[iid % ctrlsize]==-1, "This is bad, really bad");
+			node_values[(*node_it)]= controls[iid % ctrlsize];
+		}
+	}
+	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
+		f_node_ids[idx] = node_ids[(*node_it)];
+		node_ids[(*node_it)] = c_node_ids[idx];
+		f_flags[idx] = (*node_it)->flag;
+
+		if( num_ranges.find((*node_it)) != num_ranges.end() ){
+			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
+			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
+		}
+		(*node_it)->flag = true;
+	}
+	buildChecker();	
+}
+
+
+
+
 void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	int N = getInSize();
 	int k = 0;
 	int ctrl = 0;
 	int numRepeat = 0;
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
+	node_values.clear();
+	int idx = 0;
+	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
+		c_node_ids[idx] = node_ids[(*node_it)];
+		node_ids[(*node_it)] = f_node_ids[idx];		
+		(*node_it)->flag = f_flags[idx];
+		
+		if( f_num_ranges.find((*node_it)) != f_num_ranges.end() ){
+			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
+			num_ranges[(*node_it)] = f_num_ranges[(*node_it)];
+		}
+
+		Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)]<<"  "<<(*node_it)<<endl);	
 		if((*node_it)->type == bool_node::SRC){
 			int iid = (*node_it)->ion_pos;
 			Assert(input[iid % insize] == 1 || input[iid % insize]==-1, "This is bad, really bad");
@@ -42,7 +92,16 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
 	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);
 	k=0;
-	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
+	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
+		c_node_ids[idx] = node_ids[(*node_it)];
+		node_ids[(*node_it)] = f_node_ids[idx];		
+		(*node_it)->flag = f_flags[idx];
+
+		if( f_num_ranges.find((*node_it)) != f_num_ranges.end() ){
+			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
+			num_ranges[(*node_it)] = f_num_ranges[(*node_it)];
+		}
+
 		if((*node_it)->type == bool_node::SRC){
 			int iid = (*node_it)->ion_pos;
 			node_values[(*node_it)]= input[iid % insize];
@@ -76,6 +135,12 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 	declareControl(CTRL, sketch->get_n_controls());
 	nseeds = NS_p;
+	
+	int totSize = spec->size() + sketch->size();
+	c_node_ids.resize( totSize , 0 );
+	f_node_ids.resize( totSize , 0 );
+	f_flags.resize( totSize , true);
+	
 	cout<<"Random seeds = "<<nseeds<<endl;	
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
 		(*node_it)->flag = true;
@@ -566,10 +631,11 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				Dout( cout<<"   ids[i]="<<ids[i]<<endl);
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}
-			if(!checkParentsChanged(anode, parentSame)){ break; }
+			if(!checkParentsChanged(anode, parentSame)){Dout(cout<<"@ACTRL "<<anode->name<<"  "<<node_ids[anode]<<"  "<<num_ranges[anode].size()<<"   "<<anode<<endl);	 break; }
 			vector<int>& tmp = num_ranges[anode];
 			varRange vr = getSwitchVars(mng,dir, ids, size, tmp, YES);			
 			node_ids[anode] = vr.varID;
+			Dout(cout<<"&ACTRL "<<anode->name<<"  "<<node_ids[anode]<<"  "<<tmp.size()<<"   "<<anode<<endl);	
 			return;
 		}
 		
@@ -663,16 +729,18 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 					int cvar2 = dir.newAnonymousVar();
 					mng.addEqualsClause( cvar2, mid0);
 					mid0 = cvar;
-				}				
+				}
 				if(guard == YES){
-					node_ids[anode] = choices[1];
+					node_ids[anode] = mid1;
 					num_ranges[anode] = nr1;
 					vector<int>& tmp = num_ranges[anode];
-					for(int i=0; i<tmp.size(); ++i){ tmp[i] = tmp[i] * factor1; }				
+					Dout( cout<<"var "<< choices[1] <<"  val = ");
+					for(int i=0; i<tmp.size(); ++i){ tmp[i] = tmp[i] * factor1; Dout( cout<<tmp[i]<<", ");}
+					Dout(cout<<endl);
 					return;
 				}
 				if(guard == -YES){
-					node_ids[anode] = choices[0];
+					node_ids[anode] = mid0;
 					num_ranges[anode] = nr0;
 					vector<int>& tmp = num_ranges[anode];
 					for(int i=0; i<tmp.size(); ++i){ tmp[i] = tmp[i] * factor0; }
@@ -782,12 +850,6 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 						scratchpad[orTerms] = cvar;
 					}else{
 						if( id+i != -YES ){
-							if( abs(id + i) == 84 ){
-								cout<<mother->get_name()<<endl;	
-							}
-							if( abs(id + i) == 89 ){
-								cout<<mother->get_name()<<endl;	
-							}
 							cvar = dir.addAndClause( choices[nrange[i]], id + i);
 							++orTerms;
 							if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
@@ -802,6 +864,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				int result = dir.addBigOrClause( &scratchpad[0], orTerms);			
 				node_ids[anode] = result;
 			}
+			Dout(cout<<"ARRACC "<<anode->name<<"  "<<node_ids[anode]<<"   "<<anode<<endl);	
 			return;
 		}
 	}

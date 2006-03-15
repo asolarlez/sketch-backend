@@ -43,18 +43,23 @@ int FindCheckSolver::getCtrlSize(){
 	return controlSize;
 }
 
-
-
-void FindCheckSolver::setupCheck(){
-	Dout( cout<<"setupCheck()"<<endl );
-//Declare the control variables.
+void FindCheckSolver::buildChecker(){
+	mngCheck.clean();
+	dirCheck.reset();
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
 		dirCheck.declareArr(cname, it->second);
 	}
 	defineSketch(mngCheck, dirCheck);
 	defineSpec(mngCheck, dirCheck);
-	addDiffersClauses(mngCheck, dirCheck);			
+	addDiffersClauses(mngCheck, dirCheck);				
+}
+
+
+void FindCheckSolver::setupCheck(){
+	Dout( cout<<"setupCheck()"<<endl );
+//Declare the control variables.
+	buildChecker();
 	int jj=0;
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
@@ -65,9 +70,7 @@ void FindCheckSolver::setupCheck(){
 	}
 }
 
-
-bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
-	Dout( cout<<"check()"<<endl );
+void FindCheckSolver::setNewControls(int controls[], int ctrlsize){
 	if(controlSize>0){
 		Dout(cout<<"Control vars have size"<<controlSize<<endl);
 		mngCheck.deleteClauseGroup(2);
@@ -80,6 +83,12 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 			mngCheck.setVarClause(controls[jj%ctrlsize]*dirCheck.getArr(cname, i), 2);
 		}
 	}
+}
+
+
+bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
+	Dout( cout<<"check()"<<endl );
+	setNewControls(controls, ctrlsize);
     int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
