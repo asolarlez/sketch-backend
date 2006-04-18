@@ -12,7 +12,12 @@
 #include <set>
 #include <vector>
 #include <dirent.h>
+#ifdef ABCSAT
+#include "ABCSATSolver.h"
+#else
 #include "SATSolver.h"
+#endif
+
 
 using namespace std;
 
@@ -54,19 +59,51 @@ public:
 	int getVarCnt(){ return varCnt; }
 	
 	void declareVar(const string& vname){
-		Dout( cout<<"declare "<<vname<<"  "<<varCnt<<endl );
-		varmap[vname]= varCnt;
+		int idx = mng.newVar();
+		Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
+		varmap[vname]= idx;
 		++varCnt;
-		mng.newVar();
 	}
 	
-	void declareArr(const string& arName, int size){
-		Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<varCnt<<"-"<<(varCnt+size-1)<<endl );
-		mng.annotateInput(arName, varCnt, size);
-		varmap[arName] = varCnt;
+	void declareArr(const string& arName, int size){		
+		int i = 0;
+		int idx;
+		int frst = -1;
+		if( size > 0 ){
+			idx =  mng.newVar();
+			i++;
+			frst = idx;
+		}
+		for(; i<size; ++i){
+			idx =  mng.newVar();
+		}
+		Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
+		mng.annotateInput(arName, frst, size);
+		varmap[arName] = frst;
 		arrsize[arName] = size;
+		Assert( idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
 		varCnt += size;
-		for(int i=0; i<size; ++i) mng.newVar();
+	}
+	
+	
+	void declareInArr(const string& arName, int size){
+		int i = 0;
+		int idx;
+		int frst = -1;
+		if( size > 0 ){
+			idx =  mng.newInVar();
+			i++;
+			frst = idx;
+		}
+		for(; i<size; ++i){
+			idx =  mng.newInVar();
+		}
+		Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
+		mng.annotateInput(arName, frst, size);
+		varmap[arName] = frst;
+		arrsize[arName] = size;
+		Assert( idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+		varCnt += size;
 	}
 	
 	void makeArrNoBranch(const string& arName){
@@ -87,9 +124,9 @@ public:
 		return arrsize[arName];	
 	}	
 	int newAnonymousVar(){
-		mng.newVar();
+		int idx = mng.newVar();
 		mng.disableVarBranch(varCnt);
-		return varCnt++;
+		return idx;
 	}
 	void setYes(int yes){
 		YES = yes;

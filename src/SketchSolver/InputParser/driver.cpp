@@ -19,6 +19,7 @@ extern  bool overrideNCtrls;
 string context;
 
 int main(int argc, char** argv){
+  SolverStart();
   int input_idx = 1;
   int seedsize = 1;
   int seed = -1;
@@ -95,16 +96,19 @@ int main(int argc, char** argv){
 		  	solveCode = solver.solve();
 	  	}catch(SolverException* ex){
 	  		cout<<"ERROR: "<<ex->code<<"  "<<ex->msg<<endl;
+  		    SolverEnd();
 	  		return ex->code + 2;
 	  	}
 	  	if( solveCode ){
 			solver.output_control_map(out);
 	  	}else{
+			SolverEnd();
 	  		return 1;	
 	  	}
       }
 
     }
+    SolverEnd();
 	return 0;
     }catch(BasicError& be){
       cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;

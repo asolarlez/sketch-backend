@@ -7,8 +7,6 @@
 using namespace std;
 
 #include "BooleanToCNF.h"
-#include "zchaff_solver.h"
-#include "zchaff_clsgen.h"
 
 #ifndef SAT_Manager
 #define SAT_Manager void *

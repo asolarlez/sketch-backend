@@ -48,7 +48,7 @@ void FindCheckSolver::buildChecker(){
 	dirCheck.reset();
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
-		dirCheck.declareArr(cname, it->second);
+		dirCheck.declareInArr(cname, it->second);
 	}
 	defineSketch(mngCheck, dirCheck);
 	defineSpec(mngCheck, dirCheck);
@@ -113,13 +113,13 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	mngCheck.reset();
 	return true;
 }
-		
+
 void FindCheckSolver::setupFind(){
 	Dout( cout<<"setupFind()"<<endl );
 	//Declare the control variables.
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
 		const string& cname = it->first;
-		dirFind.declareArr(cname, it->second);
+		dirFind.declareInArr(cname, it->second);
 	}
 }
 

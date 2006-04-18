@@ -166,7 +166,7 @@ void SolveFromInput::setupCheck(){
 
 
 void SolveFromInput::defineSketch(SATSolver& mng, varDir& dir){
-	dir.declareArr(IN, N);
+	dir.declareInArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
 	dir.makeArrNoBranch(SOUT);
@@ -555,11 +555,14 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 				}
 				Dout(cout<<"tmp size = "<<tmp.size()<<endl);
 				int newID = dir.getVarCnt();
-				for(int i=0; i<vals; ++i){
-					int quant = tmp[i];
+				for(int i=0; i<vals; ++i){ 
 					int cvar = dir.newAnonymousVar();
+					Assert( cvar == newID + i, "SolveFromInput: bad stuff");
+				}
+				for(int i=0; i<vals; ++i){
+					int quant = tmp[i];					
 					Dout(cout<<"quant = "<<quant<<endl);
-					mng.addEqualsClause(cvar, numbers[quant]);
+					mng.addEqualsClause(newID + i, numbers[quant]);
 				}
 				node_ids[anode] = newID;
 			}
@@ -716,8 +719,8 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				vector<int>& nr1 = hasRange? num_ranges[mothers[1]] : tmprange;				
 				if(!hasRange){
 					int cvar = dir.newAnonymousVar();
-					mng.addEqualsClause( cvar, -mid1);
 					int cvar2 = dir.newAnonymousVar();
+					mng.addEqualsClause( cvar, -mid1);
 					mng.addEqualsClause( cvar2, mid1);
 					mid1 = cvar;
 				}
@@ -725,8 +728,8 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				vector<int>& nr0 = hasRange? num_ranges[mothers[0]] : tmprange;
 				if(!hasRange){
 					int cvar = dir.newAnonymousVar();
-					mng.addEqualsClause( cvar, -mid0);
 					int cvar2 = dir.newAnonymousVar();
+					mng.addEqualsClause( cvar, -mid0);
 					mng.addEqualsClause( cvar2, mid0);
 					mid0 = cvar;
 				}
@@ -788,9 +791,12 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				out.resize(res.size());
 				int newID = dir.getVarCnt();
 				for(int k=0; k<res.size(); ++k){
-					int val = res[k];
 					int cvar = dir.newAnonymousVar();
-					mng.addEqualsClause( cvar, val);
+					Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
+				}
+				for(int k=0; k<res.size(); ++k){
+					int val = res[k];					
+					mng.addEqualsClause( newID+k, val);
 				}
 				node_ids[anode] = newID;
 				return;
@@ -891,8 +897,8 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 				choices[i] = choices[i] * (factors[i]? 1:-1);
 				factors[i] = 1;
 				int cvar = dir.newAnonymousVar();
-				mng.addEqualsClause( cvar, -choices[i]);
 				int cvar2 = dir.newAnonymousVar();
+				mng.addEqualsClause( cvar, -choices[i]);
 				mng.addEqualsClause( cvar2, choices[i]);
 				choices[i] = cvar;					
 				values[i] = &tmprange;
@@ -915,8 +921,8 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 		int sgn = anode->mother_sgn? 1: -1;
 		isMulti = false;
 		int cvar = dir.newAnonymousVar();
-		mng.addEqualsClause( cvar, sgn*-id);
 		int cvar2 = dir.newAnonymousVar();
+		mng.addEqualsClause( cvar, sgn*-id);
 		mng.addEqualsClause( cvar2, sgn*id);
 		id = cvar;
 	}
@@ -966,8 +972,15 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 			node_ids[anode] = cvar;
 		}		
 	}else{
-		node_ids[anode] = dir.getVarCnt();
-		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it){
+		int newID = dir.getVarCnt();
+		node_ids[anode] = newID;
+		int k = 0;
+		for(k = 0; k< newVals.size(); ++k){
+			int cvar = dir.newAnonymousVar();
+			Assert( cvar == newID + k, "SolveFromInput3: cvar != newID + k ");
+		}
+		k = 0;
+		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it, ++k){
 			vector<int>& vars = it->second;
 			int orTerms = 0;
 			while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
@@ -975,8 +988,7 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 				++orTerms;
 				scratchpad[orTerms] = vars[i];
 			}
-			int cvar = dir.newAnonymousVar();
-			scratchpad[0] = cvar;
+			scratchpad[0] = newID + k;
 			mng.addBigOrClause( &scratchpad[0], orTerms);
 			result.push_back(it->first);
 		}

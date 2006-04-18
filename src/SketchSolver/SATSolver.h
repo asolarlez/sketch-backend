@@ -14,6 +14,11 @@ using namespace std;
 #define FileOutput( out ) /* out */
 
 
+inline void SolverStart(){ cout<<" STARTING SAT "<<endl; }
+inline void SolverEnd(){cout<<" ENDING SAT"<<endl;  }
+
+
+
 class SATSolver{
 protected:
 	SAT_Manager mng;
@@ -46,6 +51,10 @@ public:
 		return SAT_AddVariable(mng);
 	 }
 	 
+	 inline int newInVar(){
+		return SAT_AddVariable(mng);
+	 }
+	 	 
 	 inline void disableVarBranch(int i){
 	 	SAT_DisableVarBranch(mng, i);	
 	 }
