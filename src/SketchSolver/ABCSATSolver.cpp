@@ -26,13 +26,21 @@ int SATSolver::solve(){
        assert( Abc_NtkLatchNum(pNtk) == 0 );
        assert( Abc_NtkPoNum(pNtk) == 1 );
        
+       // make sure everything is okay with the network structure       
        if ( !Abc_NtkDoCheck( pNtk ) )
        {
            printf( "ABC_Check_Integrity: The internal network check has failed.\n" );
            return UNDETERMINED;
        }
+       // apply structural hashing to logic network and get an AIG
+  		Dout( cout<<" Before Strash"<<endl );
+       	pAig = Abc_NtkStrash( pNtk, 0, 1 );
+       	Abc_NtkDelete( pNtk );
+	   	pNtk = pAig;
+
+
    		Dout( cout<<" Did another check."<<endl );
-   	   if(false){
+   	   {
 	   		Vec_Int_t vec;
 	   		int nsize = Abc_NtkPiNum(pNtk);
 	   		vector<int> vals(nsize, -1);
@@ -57,6 +65,10 @@ int SATSolver::solve(){
    		}
 		Dout( cout<<" There are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
 		if( false && oldpNtk != NULL){
+			if ( !Abc_NtkDoCheck( oldpNtk ) ){
+			    printf( "ABC_Check_Integrity: The internal network check has failed.\n" );
+			    return UNDETERMINED;
+			}
 			Dout( cout<<" Anding with old miter"<<endl );
 			pNtk = Abc_NtkMiterAnd(pNtk , oldpNtk);
 		}
@@ -74,21 +86,11 @@ int SATSolver::solve(){
            }
        }
 */
-       // make sure everything is okay with the network structure
-       		Dout( cout<<" Before Integrity check"<<endl );
-       if ( !Abc_NtkDoCheck( pNtk ) )
-       {
-           printf( "ABC_Check_Integrity: The internal network check has failed.\n" );
-           return UNDETERMINED;
-       }
+       
+       	
        
        // at this point, we assume the ABC network is okay
 
-       // apply structural hashing to logic network and get an AIG
-  		Dout( cout<<" Before Strash"<<endl );
-       pAig = Abc_NtkStrash( pNtk, 0, 1 );
-       // Abc_NtkDelete( pNtk );
-	   // pNtk = pAig;
        // perform some synthesis on the AIG
        // This doesn't compile pAig = Abc_NtkRewrite( pAig ); // the same network is returned
 
@@ -115,3 +117,5 @@ int SATSolver::solve(){
        }
 
        }
+       
+       

@@ -101,6 +101,9 @@ public:
 	 	    //////////////
 		    Abc_Obj_t * pNode;
 		    pNode = Abc_NtkCreatePi( pNtk );
+		    if( oldpNtk != NULL){
+		    	Abc_NtkCreatePi( oldpNtk );
+		    }
 		    Dout( cout<<"Creating Pi: there are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
 		    return pNode->Id;
 		    //////////////		 	
@@ -124,9 +127,21 @@ public:
 
        inline void reset(){       			
    	           oldpNtk = pNtk;   	           
-   	           results.clear();
-   	           Dout( cout<<" reset "<<endl );
-               FileOutput(output<<"#  ======================================="<<endl);
+   	           results.clear();   	        
+   	           char* st = pNtk->pName;
+       		oldpNtk = pNtk;
+       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
+		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
+		    strcpy( pNtk->pName, st);
+            pOutputNode = Abc_NtkCreateNode( pNtk );
+           	out_cnt = 0;
+           	Abc_Obj_t * pNode;
+           	int i;
+           	Abc_NtkForEachPi( oldpNtk, pNode, i ){
+				Abc_NtkCreatePi( pNtk );
+	       	}           	
+            Dout( cout<<" reset "<<endl );
+            FileOutput(output<<"#  ======================================="<<endl);
        }
 
        inline void cleanupDatabase(){
