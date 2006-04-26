@@ -81,7 +81,7 @@ public:
 		mng.annotateInput(arName, frst, size);
 		varmap[arName] = frst;
 		arrsize[arName] = size;
-		Assert( idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+		Assert( size==0 || idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
 		varCnt += size;
 	}
 	
@@ -102,7 +102,7 @@ public:
 		mng.annotateInput(arName, frst, size);
 		varmap[arName] = frst;
 		arrsize[arName] = size;
-		Assert( idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+		Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
 		varCnt += size;
 	}
 	
@@ -146,10 +146,10 @@ inline int varDir::addChoiceClause(int a, int b, int c, int gid){
 	if( a == -YES ){
 		return c;
 	}
-	if( a == b){
-		return a;	
+	if( b == c){
+		return b;	
 	}
-	if( a == -b){
+	if( b == -c){
 		return addXorClause(a, -b);
 	}
 	int x = newAnonymousVar();
@@ -305,8 +305,11 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 		lastsize = 1;
 	}else{
 		vals.resize(2);
-		mng.addEqualsClause(dir.newAnonymousVar(), -(switchID[amtsize-1]));
-		mng.addEqualsClause(dir.newAnonymousVar(),  (switchID[amtsize-1]));			
+		lastRoundVars = dir.newAnonymousVar();
+		int tmp = dir.newAnonymousVar();
+		Assert( tmp == lastRoundVars+1, "BooleanToCNF1: This is bad");
+		mng.addEqualsClause(lastRoundVars, -(switchID[amtsize-1]));
+		mng.addEqualsClause(tmp,  (switchID[amtsize-1]));
 		vals[0] = 0;
 		vals[1] = 1;
 		lastsize = 2;
@@ -322,11 +325,16 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 			}
 		}else{
 			int roundVars = lastRoundVars;
-			lastRoundVars = dir.getVarCnt();
+			lastRoundVars = dir.newAnonymousVar();
+			dir.newAnonymousVar();			
+			for(int j=1; j<lastsize; ++j){
+				dir.newAnonymousVar();
+				dir.newAnonymousVar();
+			}
 			for(int j=0; j<lastsize; ++j){
 				int cvar = roundVars + j;
-				mng.addAndClause(dir.newAnonymousVar(), cvar, -(curval));
-				mng.addAndClause(dir.newAnonymousVar(), cvar, (curval));
+				mng.addAndClause(lastRoundVars + j*2, cvar, -(curval));
+				mng.addAndClause(lastRoundVars + j*2 + 1, cvar, (curval));
 				tmp[2*j] = vals[j]*2;
 				tmp[2*j+1] = vals[j]*2 + 1;
 			}
