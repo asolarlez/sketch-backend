@@ -13,6 +13,18 @@ int SATSolver::solve(){
        Abc_Obj_t * pObj;
        int i;
        int RetValue;
+       vector<int> namemap(Abc_NtkPiNum(pNtk));
+       
+       {
+       	Abc_Obj_t * pNode;	   		
+		   		Abc_NtkForEachPi( pNtk, pNode, i ){
+		   			namemap[i] = pNode->Id;
+		   			cout<<" name[i] = "<<pNode->Id<<endl;
+		   		}
+       }
+       
+       
+       
 
 		Dout( cout<<" Before Logic Store Name for Pi"<<endl );
 		Dout( cout<<" There are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
@@ -51,11 +63,12 @@ int SATSolver::solve(){
 		   		int i;
 	           Abc_Obj_t * pNode;	   		
 		   		Abc_NtkForEachPi( pNtk, pNode, i ){
-					if( results.find(pNode->Id) != results.end() ){
-						Dout( cout<<" setting value ["<<i<<"] = "<<results[pNode->Id]<<endl);
-						vals[i] = results[pNode->Id];
+					if( results.find(namemap[i]) != results.end() ){
+						Dout( cout<<" setting value ["<<namemap[i]<<"] = "<<results[namemap[i]]<<endl);
+						vals[i] = results[namemap[i]];
+						
 					}else{
-						Dout( cout<<" setting value ["<<i<<"] = "<<vals[i]<<endl);
+						Dout( cout<<" setting value b ["<<namemap[i]<<"] = "<<vals[i]<<endl);
 					}
 		   		}
 	   		}
@@ -64,29 +77,21 @@ int SATSolver::solve(){
 	   		Dout( cout<<" Done cofactor fanin"<<endl );
    		}
 		Dout( cout<<" There are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
-		if( false && oldpNtk != NULL){
-			if ( !Abc_NtkDoCheck( oldpNtk ) ){
-			    printf( "ABC_Check_Integrity: The internal network check has failed.\n" );
-			    return UNDETERMINED;
-			}
+		if(oldpNtk != NULL){
+//			if ( !Abc_NtkDoCheck( oldpNtk ) ){
+//			    printf( "ABC_Check_Integrity: The internal network check has failed.\n" );
+//			    return UNDETERMINED;
+//			}
 			Dout( cout<<" Anding with old miter"<<endl );
-			pNtk = Abc_NtkMiterAnd(pNtk , oldpNtk);
+			Dout( cout<<" Old miter has "<<Abc_NtkPiNum(oldpNtk)<<" Pis"<<endl);
+			
+			pAig = Abc_NtkMiterAnd(pNtk , oldpNtk);
+			Abc_NtkDelete( pNtk );
+		   	pNtk = pAig;
+			pAig = Abc_NtkStrash( pNtk, 0, 1 );
+	       	Abc_NtkDelete( pNtk );
+		   	pNtk = pAig;
 		}
-		
-       /*
-       // check that there are no dangling nodes
-       Abc_NtkForEachNode( pNtk, pObj, i )
-       {
-           if ( i == 0 )
-               continue;
-           if ( Abc_ObjFanoutNum(pObj) == 0 )
-           {
-               printf( "ABC_Check_Integrity: The network has dangling nodes.\n" );
-               return 0;
-           }
-       }
-*/
-       
        	
        
        // at this point, we assume the ABC network is okay
@@ -103,8 +108,9 @@ int SATSolver::solve(){
            // satisfiable and counter-example is in pAig->pModel, which gives 0/1 for each PI
            Abc_Obj_t * pNode;
            Abc_NtkForEachPi( pAig, pNode, i ){
-				results[pNode->Id] = pAig->pModel[i];
-           }           
+           		cout<<" produced result ["<<namemap[i]<<"] = "<<pAig->pModel[i]<<endl;
+				results[namemap[i]] = pAig->pModel[i];
+           }
 			return SATISFIABLE;
        }
        else if ( RetValue == 1 )
@@ -116,6 +122,6 @@ int SATSolver::solve(){
        		return UNDETERMINED;
        }
 
-       }
+   }
        
        

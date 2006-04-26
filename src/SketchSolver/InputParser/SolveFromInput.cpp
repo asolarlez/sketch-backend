@@ -554,8 +554,9 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 					}
 				}
 				Dout(cout<<"tmp size = "<<tmp.size()<<endl);
-				int newID = dir.getVarCnt();
-				for(int i=0; i<vals; ++i){ 
+				Assert( vals > 0, "This should not happen here");
+				int newID = dir.newAnonymousVar();
+				for(int i=1; i<vals; ++i){ 
 					int cvar = dir.newAnonymousVar();
 					Assert( cvar == newID + i, "SolveFromInput: bad stuff");
 				}
@@ -789,8 +790,9 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 					Assert(false, "Should never get here");
 				}
 				out.resize(res.size());
-				int newID = dir.getVarCnt();
-				for(int k=0; k<res.size(); ++k){
+				Assert( res.size() > 0, "This should not happen here2");
+				int newID = dir.newAnonymousVar();
+				for(int k=1; k<res.size(); ++k){
 					int cvar = dir.newAnonymousVar();
 					Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
 				}
@@ -804,6 +806,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 		}
 		
 		case arith_node::ARRACC:{
+			Dout(cout<<" ARRACC "<<endl);
 			list<bool_node*>::iterator it = anode->multi_mother.begin();
 			list<int>::iterator signs = anode->multi_mother_sgn.begin();
 			vector<int> choices(anode->multi_mother.size());
@@ -826,13 +829,16 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				doNonBoolArrAcc(mng, dir, anode, node_ids, 	num_ranges);
 				return;	
 			}
+			Dout(cout<<" is boolean"<<endl);
 			bool_node* mother = anode->mother;
 			int id = node_ids[mother];
+			Dout(cout<<" mother = "<<id<<"  signs = "<<anode->mother_sgn<<"  "<<endl);
 			Assert( mother != NULL, "This should never happen");
 			if( (num_ranges.find(mother) == num_ranges.end()) ){ //mother->type != bool_node::ARITH
 				int sgn = anode->mother_sgn? 1: -1;
 				int cvar;
 				if(choices.size()>=2){
+					Dout( cout<<" replacing with choice "<<sgn * id<<", "<<choices[1]<<", "<<choices[0]<<endl );
 					cvar = dir.addChoiceClause(sgn * id , choices[1], choices[0]);
 				}else{
 					if(choices.size()>=1){
@@ -842,6 +848,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 					}
 				}
 				node_ids[anode] = cvar;
+			Dout(cout<<"ARRACC "<<anode->name<<"  "<<node_ids[anode]<<"   "<<anode<<endl);	
 				return;
 			}
 			vector<int>& nrange = num_ranges[mother];
@@ -972,10 +979,11 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 			node_ids[anode] = cvar;
 		}		
 	}else{
-		int newID = dir.getVarCnt();
+		Assert( newVals.size() > 0, "This should not happen here2");
+		int newID = dir.newAnonymousVar();
 		node_ids[anode] = newID;
-		int k = 0;
-		for(k = 0; k< newVals.size(); ++k){
+		int k=1;
+		for(k = 1; k< newVals.size(); ++k){
 			int cvar = dir.newAnonymousVar();
 			Assert( cvar == newID + k, "SolveFromInput3: cvar != newID + k ");
 		}
@@ -997,6 +1005,7 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 
 
 bool SolveFromInput::checkParentsChanged(bool_node* node, bool more){
+	return true;
 	if(( node->father== NULL || !node->father->flag ) &&
 			( node->mother== NULL || !node->mother->flag )&&
 			more

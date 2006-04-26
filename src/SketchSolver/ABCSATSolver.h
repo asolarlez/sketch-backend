@@ -287,7 +287,7 @@ inline void SATSolver::addEqualsClause(int x, int a, int gid){
 
 //This function encodes x == a;
 inline void SATSolver::addEquateClause(int x, int a, int gid){
-       Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+       Dout( cout<<" "<<x<<" == "<<a<<"; "<<flush<<endl );
        FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
        Abc_Obj_t * pFanin0, * pFanin1;
        Abc_Obj_t * pNode;
@@ -313,7 +313,7 @@ inline void SATSolver::setVarClause(int x, int gid){
 		   }else{
 			   	results[pNode->Id] = 0;
 		   }
-		Dout( cout<<"Setting input"<<endl);
+		Dout( cout<<"Setting input "<<pNode->Id<<endl);
 	   }else{
    			Dout( cout<<"Setting other"<<endl);
 		   if( x > 0){
