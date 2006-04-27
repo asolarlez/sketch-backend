@@ -16,15 +16,7 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 	int idx = 0;	
 	node_values.clear();
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)];
 		node_ids[(*node_it)] = c_node_ids[idx];
-		f_flags[idx] = (*node_it)->flag;
-
-		if( num_ranges.find((*node_it)) != num_ranges.end() ){
-			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
-			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
-		}
-		
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
 			int iid = (*node_it)->ion_pos;
@@ -33,14 +25,7 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 		}
 	}
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)];
 		node_ids[(*node_it)] = c_node_ids[idx];
-		f_flags[idx] = (*node_it)->flag;
-
-		if( num_ranges.find((*node_it)) != num_ranges.end() ){
-			Dout( cout<<(*node_it)->get_name()<<" flaged"<<endl );
-			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
-		}
 		(*node_it)->flag = true;
 	}
 	buildChecker();	
@@ -120,6 +105,21 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	}
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
 	FindCheckSolver::addInputsToTestSet(input, insize);
+	idx = 0;
+	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
+		f_node_ids[idx] = node_ids[(*node_it)];
+		f_flags[idx] = (*node_it)->flag;
+		if( num_ranges.find((*node_it)) != num_ranges.end() ){
+			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
+		}
+	}
+	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
+		f_node_ids[idx] = node_ids[(*node_it)];
+		f_flags[idx] = (*node_it)->flag;
+		if( num_ranges.find((*node_it)) != num_ranges.end() ){
+			f_num_ranges[(*node_it)] = num_ranges[(*node_it)];
+		}
+	}
 }
 
 
@@ -561,7 +561,7 @@ void processArith(SATSolver& mng, varDir& dir,arith_node* anode, 	map<bool_node*
 					Assert( cvar == newID + i, "SolveFromInput: bad stuff");
 				}
 				for(int i=0; i<vals; ++i){
-					int quant = tmp[i];					
+					int quant = tmp[i];
 					Dout(cout<<"quant = "<<quant<<endl);
 					mng.addEqualsClause(newID + i, numbers[quant]);
 				}
@@ -797,7 +797,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 					Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
 				}
 				for(int k=0; k<res.size(); ++k){
-					int val = res[k];					
+					int val = res[k];
 					mng.addEqualsClause( newID+k, val);
 				}
 				node_ids[anode] = newID;
