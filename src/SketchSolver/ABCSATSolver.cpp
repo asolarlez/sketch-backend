@@ -1,6 +1,7 @@
 
 #include "ABCSATSolver.h"
 #include "timerclass.h"
+#include "fraig.h"
 
 extern "C" {
 extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose );
@@ -128,47 +129,11 @@ int SATSolver::solve(){
        {
 		 timerclass timer("SAT time total");
          timer.start();
-         int iter = 0;
-		 int timelimit = 10000;
-         while(true){
-         	timerclass rwtimer("rewrite "); rwtimer.start();
-	         Abc_NtkRewrite( pNtk, 0, 0, 0 );
-	         rwtimer.stop().print();
-   			 Abc_NtkPrintStats(stdout, pNtk, 0);
-    	     if ( (RetValue = Abc_NtkMiterIsConstant(pNtk)) >= 0 )
-        		break; 
-        		
-         	 timerclass rftimer("refactor "); rftimer.start();
-             Abc_NtkRefactor( pNtk, 10, 16, 0, 0, 0, 0 );
-             rftimer.stop().print();
-             Abc_NtkPrintStats(stdout, pNtk, 0);
-             if ( (RetValue = Abc_NtkMiterIsConstant(pNtk)) >= 0 )
-				break;
-				
-			if(timelimit < 50000){
-				timerclass bs0timer("base0 SAT "); bs0timer.start(); 
-				RetValue = Abc_NtkMiterSat( pNtk, timelimit , 0, 0, 0 );
-				bs0timer.stop().print();		
-	         	if( RetValue >= 0)
-		         	break;
-			}
-         	 timerclass rbtimer("rebalance "); rbtimer.start();
-         	 Abc_Ntk_t * pNtkTemp;
-             pNtk = Abc_NtkBalance( pNtkTemp = pNtk, 0, 0, 0 );  Abc_NtkDelete( pNtkTemp );
-             rbtimer.stop().print();
-             Abc_NtkPrintStats(stdout, pNtk, 0);
-             if ( (RetValue = Abc_NtkMiterIsConstant(pNtk)) >= 0 )
-				break;
-		
-			timerclass bstimer("base SAT "); bstimer.start(); 
-			RetValue = Abc_NtkMiterSat( pNtk, timelimit, 0, 0, 0 );
-			bstimer.stop().print();		
-         	if( RetValue >= 0)
-	         	break;
-         	timelimit = timelimit + (timelimit/3);
-         	cout<<" iter "<<iter<<" timelimit = "<<timelimit<<endl;
-         	++iter;
-         }                                                     
+       Prove_Params_t Params, * pParams = &Params;            
+        Prove_ParamsSetDefault( pParams );
+	    pParams->nItersMax = 5;
+	    pParams->fUseBdds = 0;
+	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
         
 		timer.stop().print();
        }
