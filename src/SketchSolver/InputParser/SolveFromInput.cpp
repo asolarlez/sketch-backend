@@ -1005,10 +1005,13 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 
 
 bool SolveFromInput::checkParentsChanged(bool_node* node, bool more){
+#ifdef ABCSAT	
 	return true;
+#else	
 	if(( node->father== NULL || !node->father->flag ) &&
 			( node->mother== NULL || !node->mother->flag )&&
 			more
 			){ node->flag =false; return false; }else{ node->flag = true; return true;}
+#endif			
 }
 

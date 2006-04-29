@@ -21,9 +21,9 @@ enum SAT_StatusT {
 
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
-#define Dout( out )      out 
+#define Dout( out )     /* out */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
-#define FileOutput( out )  out
+#define FileOutput( out ) /*  out */
 
 
 inline void SolverStart(){ cout<<" STARTING ABC "<<endl; Abc_Start(); }
@@ -43,6 +43,10 @@ protected:
 	int GetIntId(int val){
 		return (val);
 	}
+	
+	void closeMiter(Abc_Ntk_t * network);
+	Abc_Ntk_t * cofactor(Abc_Ntk_t * network, vector<int>& namemap);
+	
 	
 	Abc_Obj_t * getNode(int v){
 		Abc_Obj_t * pFanin0;
@@ -100,9 +104,13 @@ public:
 		 inline int newInVar(){
 	 	    //////////////
 		    Abc_Obj_t * pNode;
+		    char Buffer[100];
 		    pNode = Abc_NtkCreatePi( pNtk );
+   	    	sprintf( Buffer, "[%d]", pNode->Id );
+	        Abc_NtkLogicStoreName( pNode, Buffer );
 		    if( oldpNtk != NULL){
-		    	Abc_NtkCreatePi( oldpNtk );
+		    	Abc_Obj_t * pObj = Abc_NtkCreatePi( oldpNtk );		    	
+			    Abc_NtkLogicStoreName( pObj, Buffer );
 		    }
 		    Dout( cout<<"Creating Pi: there are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
 		    return pNode->Id;
@@ -132,13 +140,17 @@ public:
        		oldpNtk = pNtk;
        	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
-		    strcpy( pNtk->pName, st);
+
+		    strcpy( pNtk->pName, name.c_str());
+		               	
             pOutputNode = Abc_NtkCreateNode( pNtk );
            	out_cnt = 0;
            	Abc_Obj_t * pNode;
            	int i;
            	Abc_NtkForEachPi( oldpNtk, pNode, i ){
-				Abc_NtkCreatePi( pNtk );
+           		Abc_Obj_t * pObj;
+			    pObj = Abc_NtkCreatePi( pNtk );
+		        Abc_NtkLogicStoreName( pObj, Abc_ObjName(pNode) );
 	       	}           	
             Dout( cout<<" reset "<<endl );
             FileOutput(output<<"#  ======================================="<<endl);

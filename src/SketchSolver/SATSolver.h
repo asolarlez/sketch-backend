@@ -117,6 +117,7 @@ inline void SATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
 	{ int tmp[] = { -(x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
 	{ int tmp[] = { -(x), (c), (a) }; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
 	{ int tmp[] = { -(x), (c), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { (x), -(c), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);	CheckRepeats(tmp, 3);}
 	{ int tmp[] = { (x), (a), -(c) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
 	{ int tmp[] = { (x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
 }
