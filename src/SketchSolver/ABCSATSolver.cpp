@@ -8,7 +8,7 @@ extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, i
 extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, bool fUpdateLevel, bool fUseZeros, bool fUseDcs, bool fVerbose );
 }
 
-Abc_Ntk_t * SATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
+Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	Abc_Ntk_t * result;
     timerclass timer("Cofactor time 1");
      // apply structural hashing to logic network and get an AIG
@@ -38,7 +38,7 @@ Abc_Ntk_t * SATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
     return result;
 }
 
-void SATSolver::closeMiter(Abc_Ntk_t * network){
+void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
    pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );
    Abc_ObjAddFanin( Abc_NtkCreatePo(network), pOutputNode);              
   char Buffer[100];
@@ -57,7 +57,7 @@ void SATSolver::closeMiter(Abc_Ntk_t * network){
 
 
 
-int SATSolver::solve(){
+int ABCSATSolver::solve(){
 
        //////////
        // add names to the PIs/POs
@@ -132,7 +132,6 @@ int SATSolver::solve(){
        Prove_Params_t Params, * pParams = &Params;            
         Prove_ParamsSetDefault( pParams );
 	    pParams->nItersMax = 5;
-	    pParams->fUseBdds = 0;
 	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
         
 		timer.stop().print();
@@ -162,4 +161,261 @@ int SATSolver::solve(){
        }
    }
        
+       
+       
+         int ABCSATSolver::getVarVal(int id){
+        		Dout( cout<<"var val for ["<<id<<"] = "<<results[id]<<endl ) ;
+               return results[id];
+        }
+
+         int ABCSATSolver::newVar(){
+	        //////////////
+	        Abc_Obj_t * pNode;
+	        pNode = Abc_NtkCreateNode( pNtk );
+	        return pNode->Id;
+	        //////////////
+        }
+		 bool ABCSATSolver::ignoreOld(){
+		 	return true;	
+		}
+		  int ABCSATSolver::newInVar(){
+	 	    //////////////
+		    Abc_Obj_t * pNode;
+		    char Buffer[100];
+		    pNode = Abc_NtkCreatePi( pNtk );
+   	    	sprintf( Buffer, "[%d]", pNode->Id );
+	        Abc_NtkLogicStoreName( pNode, Buffer );
+		    if( oldpNtk != NULL){
+		    	Abc_Obj_t * pObj = Abc_NtkCreatePi( oldpNtk );		    	
+			    Abc_NtkLogicStoreName( pObj, Buffer );
+		    }
+		    Dout( cout<<"Creating Pi: there are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
+		    return pNode->Id;
+		    //////////////		 	
+		 }
+
+
+         void ABCSATSolver::disableVarBranch(int i){
+         // nothing to do anymore.
+        }
+
+        void ABCSATSolver::deleteClauseGroup(int i){
+       	Assert( false, "This should not happen");
+       }
+
+
+        void ABCSATSolver::reset(){       			
+   	           oldpNtk = pNtk;   	           
+   	           results.clear();   	        
+   	           char* st = pNtk->pName;
+       		oldpNtk = pNtk;
+       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
+		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
+
+		    strcpy( pNtk->pName, name.c_str());
+		               	
+            pOutputNode = Abc_NtkCreateNode( pNtk );
+           	out_cnt = 0;
+           	Abc_Obj_t * pNode;
+           	int i;
+           	Abc_NtkForEachPi( oldpNtk, pNode, i ){
+           		Abc_Obj_t * pObj;
+			    pObj = Abc_NtkCreatePi( pNtk );
+		        Abc_NtkLogicStoreName( pObj, Abc_ObjName(pNode) );
+	       	}           	
+            Dout( cout<<" reset "<<endl );
+            FileOutput(output<<"#  ======================================="<<endl);
+       }
+
+        void ABCSATSolver::cleanupDatabase(){
+			Assert(false, "This doesn't happen");
+       }
+
+        void ABCSATSolver::clean(){			
+       		results.clear();		
+       		char* st = pNtk->pName;
+       		oldpNtk = pNtk;
+       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
+		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
+		    strcpy( pNtk->pName, st);
+            pOutputNode = Abc_NtkCreateNode( pNtk );
+            Abc_NtkDelete( oldpNtk );
+            oldpNtk = NULL;
+            out_cnt = 0;
+       }
+       
+
+
+ void ABCSATSolver::annotate(const string& msg){
+       Dout( cout<<msg );
+       FileOutput(output<<msg<<endl);
+}
+
+
+ void ABCSATSolver::annotateInput(const string& name, int i, int sz){
+       Dout( cout<<"x "<<name<<" ");
+       FileOutput(output<<"x "<<name<<" ");
+       for(int t=0; t<sz; ++t){
+               Dout( cout<<(i+t)<<" ");
+               FileOutput(output<<(i+t)<<" ");
+       }
+       Dout(cout<<endl);
+       FileOutput(output<<endl);
+}
+
+
+//This function encodes x == a ? b:c;
+ void ABCSATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
+       Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
+       FileOutput( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
+   //////
+   Abc_Obj_t * pFanin0, * pFanin1, * pFaninC, * pMux;
+   Assert( x > 0, "This shouldn't happen choice");
+   pMux = Abc_NtkObj( pNtk, GetIntId(x) );
+   pFanin0 = getNode(b);
+   pFanin1 = getNode(c);
+   pFaninC = getNode(a);
+   Abc_ObjAddFanin( pMux, pFaninC );
+   Abc_ObjAddFanin( pMux, pFanin0 );
+   Abc_ObjAddFanin( pMux, pFanin1 );
+   pMux->pData = Abc_SopCreateMux( (Extra_MmFlex_t *) pNtk->pManFunc );
+   //////
+}
+
+
+//This function encodes x == a xor b;
+ void ABCSATSolver::addXorClause(int x, int a, int b, int gid){
+       Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
+       FileOutput( output<<x<<" XOR "<<a<<" "<<b<<endl );
+	   Assert( x > 0, "This shouldn't happen xor");
+	   Abc_Obj_t * pFanin0, * pFanin1, * pXor;
+	   pXor = Abc_NtkObj( pNtk, GetIntId(x) );
+	   pFanin0 = getNode(a);
+	   pFanin1 = getNode(b);
+	   Abc_ObjAddFanin( pXor, pFanin0 );
+	   Abc_ObjAddFanin( pXor, pFanin1 );
+	   pXor->pData = Abc_SopCreateXor( (Extra_MmFlex_t *) pNtk->pManFunc, 2);
+}
+
+//This function encodes x == a or b;
+ void ABCSATSolver::addOrClause(int x, int a, int b, int gid){
+       Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
+       FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
+   //////
+   Abc_Obj_t * pFanin0, * pFanin1, * pAnd;
+   Assert( x > 0, "This shouldn't happen");
+   pAnd = Abc_NtkObj( pNtk, GetIntId(x) );
+   pFanin0 = getNode(a);
+   pFanin1 = getNode(b);
+   Abc_ObjAddFanin( pAnd, pFanin0 );
+   Abc_ObjAddFanin( pAnd, pFanin1 );
+   pAnd->pData = Abc_SopCreateOr( (Extra_MmFlex_t *) pNtk->pManFunc, 2, NULL );
+}
+
+
+//This function encodes a[0] == a[1] or a[2] or ... a[size];
+ void ABCSATSolver::addBigOrClause(int* a, int size, int gid){
+       Dout( cout<<" "<<a[0]<<"= " );
+       FileOutput( output<<a[0]<<" BOR "<<size<<" " );
+   //////
+   Abc_Obj_t * pFanin0, * pOr;
+   Assert( a[0] > 0, "Bad a[0]");
+   pOr = Abc_NtkObj( pNtk, GetIntId(a[0]) );
+   for (int i = 0; i < size; i++ )
+   {
+       Dout(cout<<a[i+1]<<" or ");
+       FileOutput( output<<a[i+1]<<" " );
+       pFanin0 = getNode(a[i+1]);
+       Abc_ObjAddFanin( pOr, pFanin0 );
+   }
+   FileOutput( output<<endl );
+   Dout(cout<<"; "<<endl);
+   pOr->pData = Abc_SopCreateOr( (Extra_MmFlex_t *) pNtk->pManFunc, size, NULL );
+   //////
+
+}
+
+
+//This function encodes x == a and b;
+ void ABCSATSolver::addAndClause(int x, int a, int b, int gid){
+       Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
+       FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
+   //////
+   Abc_Obj_t * pFanin0, * pFanin1, * pAnd;
+   Assert( x > 0, "BAD X");
+   pAnd = Abc_NtkObj( pNtk, GetIntId(x) );
+   pFanin0 = getNode(a);
+   pFanin1 = getNode(b);
+   Abc_ObjAddFanin( pAnd, pFanin0 );
+   Abc_ObjAddFanin( pAnd, pFanin1 );
+   pAnd->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) pNtk->pManFunc, 2, NULL );
+   //////
+}
+
+//This function encodes x = a;
+ void ABCSATSolver::addEqualsClause(int x, int a, int gid){
+       Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+       FileOutput( output<<x<<" EQ "<<a<<endl );
+       Abc_Obj_t * pFanin0, * pAnd;
+       pAnd = Abc_NtkObj( pNtk, GetIntId(x) );
+       pFanin0 = getNode(a);
+       Abc_ObjAddFanin( pAnd, pFanin0 );
+       pAnd->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) pNtk->pManFunc, 1, NULL );   
+}
+
+
+//This function encodes x == a;
+ void ABCSATSolver::addEquateClause(int x, int a, int gid){
+       Dout( cout<<" "<<x<<" == "<<a<<"; "<<flush<<endl );
+       FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
+       Abc_Obj_t * pFanin0, * pFanin1;
+       Abc_Obj_t * pNode;
+       pNode = Abc_NtkCreateNode( pNtk );
+	   pFanin0 = getNode(x);
+	   pFanin1 = getNode(a);
+	   Abc_ObjAddFanin( pNode, pFanin0 );
+	   Abc_ObjAddFanin( pNode, pFanin1 );
+	   pNode->pData = Abc_SopCreateNxor( (Extra_MmFlex_t *) pNtk->pManFunc, 2 );
+	   Abc_ObjAddFanin( pOutputNode, pNode );
+	   out_cnt++;
+}
+
+
+ void ABCSATSolver::setVarClause(int x, int gid){
+       Dout( cout<<" set "<<x<<";"<<endl );
+       FileOutput( output<<"x SET "<<x<<" ;"<<endl );
+	   Abc_Obj_t * pNode;       
+	   pNode = Abc_NtkObj( pNtk, GetIntId( abs(x) ) );
+	   if( Abc_ObjIsPi(pNode)){
+		   if( x > 0){
+			   	results[pNode->Id] = 1;
+		   }else{
+			   	results[pNode->Id] = 0;
+		   }
+		Dout( cout<<"Setting input "<<pNode->Id<<endl);
+	   }else{
+   			Dout( cout<<"Setting other"<<endl);
+		   if( x > 0){
+		   	pNode->pData = Abc_SopCreateConst1( (Extra_MmFlex_t *) pNtk->pManFunc);
+		   }else{
+		   	pNode->pData = Abc_SopCreateConst0( (Extra_MmFlex_t *) pNtk->pManFunc);
+		   }
+		   Dout( cout<<"Done setting other"<<endl );
+	   }
+}
+
+
+ void ABCSATSolver::assertVarClause(int x, int gid){	
+       Dout( cout<<" assert "<<x<<";"<<endl );
+       FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+       Abc_Obj_t * pFanin0;
+	   pFanin0 = getNode(x);
+	   Abc_ObjAddFanin( pOutputNode, pFanin0 );
+	   out_cnt++;
+}
+
+ void ABCSATSolver::printDiagnostics(char c){
+   cout << c << "No diagnostics for now"<<endl;
+}
+
        
