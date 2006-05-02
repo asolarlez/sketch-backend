@@ -14,10 +14,10 @@ class SolverException{
 class FindCheckSolver{
 	private:
 	int controlSize;
-	SATSolver mngFind;
+	SATSolver& mngFind;
 	varDir dirFind;	
 	
-	SATSolver mngCheck;
+	SATSolver& mngCheck;
 	varDir dirCheck;
 	int randseed;
 	
@@ -62,7 +62,7 @@ class FindCheckSolver{
 	virtual void printDiagnostics(SATSolver& mng, char c);
 	virtual void printDiagnostics();
 	public:
-	FindCheckSolver();
+	FindCheckSolver(SATSolver& finder, SATSolver& checker);
 	
 	virtual void declareControl(const string& ctrl, int size);	
 	

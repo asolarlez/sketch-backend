@@ -12,11 +12,9 @@
 #include <set>
 #include <vector>
 #include <dirent.h>
-#ifdef ABCSAT
-#include "ABCSATSolver.h"
-#else
+
 #include "SATSolver.h"
-#endif
+
 
 
 using namespace std;

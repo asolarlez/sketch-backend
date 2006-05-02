@@ -6,7 +6,7 @@
 
 //#define WITH_RANDOMNESS 1
 
-FindCheckSolver::FindCheckSolver():	mngFind("find"), mngCheck("check"), IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFind(mngFind), dirCheck(mngCheck){
+FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(finder), mngCheck(checker), IN("_IN"), OUT("_OUT"), SOUT("_SOUT"), dirFind(finder), dirCheck(checker){
 	cout<<"CONSTRUCTING "<<IN<<", "<<SOUT<<", "<<OUT<<endl;
 	////////////////////////////
 	controlSize = 0;
@@ -92,13 +92,13 @@ bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
     int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
-    if (result != SATISFIABLE){
-    	if( result != UNSATISFIABLE){
+    if (result != SATSolver::SATISFIABLE){
+    	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
-	    	   	case UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case ABORTED:  throw new SolverException(result, "ABORTED"); break;
+	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
+	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
 	    	}
     	}
     	return false;
@@ -165,13 +165,13 @@ bool FindCheckSolver::find(int input[], int insize, int controls[]){
 	int result = mngFind.solve();
   	cout<<"# FIND DIAGNOSTICS"<<endl;
 	printDiagnostics(mngFind, 'f');
-    if (result != SATISFIABLE){ 	//If solve is bad, return false.    	
-    	if( result != UNSATISFIABLE){
+    if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
+    	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
-	    	   	case UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case ABORTED:  throw new SolverException(result, "ABORTED"); break;
+	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
+	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
 	    	}    			
     	}
     	return false;
@@ -222,6 +222,11 @@ bool FindCheckSolver::solve(){
 				tmp[i] = (rand() & 0x1) > 0? -1 : 1;
 				Dout( cout<<"seedInput["<<i<<"]=\t"<<tmp[i]<<"; "<<endl );
 			}
+			
+			cout<<"!%";
+			for(int i=0; i<inputSize; ++i) cout<<"\t"<<(tmp[i]==1?1:0);
+			cout<<endl;
+			
 			if( ns < nseeds-1 ){
 				addInputsToTestSet(tmp, inputSize);
 			}
