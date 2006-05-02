@@ -2,6 +2,8 @@
 #include "BooleanDAG.h"
 #include "InputReader.h"
 #include "SolveFromInput.h"
+#include "ABCSATSolver.h"
+#include "ZchaffSATSolver.h"
 
 #include <fstream>
 #include <ctime>
@@ -19,13 +21,13 @@ extern  bool overrideNCtrls;
 string context;
 
 int main(int argc, char** argv){
-  SolverStart();
+  ABCSolverStart();
   int input_idx = 1;
   int seedsize = 1;
   int seed = -1;
   for(int ii=0; ii<argc; ++ii){
     if( string(argv[ii]) == "-seedsize" ){
-      Assert(ii<(argc-1), "-ws needs an extra parameter");
+      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
       seedsize = atoi(argv[ii+1]);
       input_idx = ii+2;      
     }
@@ -85,7 +87,11 @@ int main(int argc, char** argv){
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
       	Dout(INp::functionMap[it->second]->print(cout));
       	Dout(it->first->print(cout));
-      	SolveFromInput solver(INp::functionMap[it->second], it->first, seedsize);
+      	
+      	ABCSATSolver finder("find");
+      	ZchaffSATSolver checker("check");
+      	
+      	SolveFromInput solver(INp::functionMap[it->second], it->first, finder, checker, seedsize);
       	if(seed >= 0){
       		cout<<"SOLVER RAND SEED = "<<seed<<endl;
       		solver.set_randseed(seed);
@@ -96,19 +102,19 @@ int main(int argc, char** argv){
 		  	solveCode = solver.solve();
 	  	}catch(SolverException* ex){
 	  		cout<<"ERROR: "<<ex->code<<"  "<<ex->msg<<endl;
-  		    SolverEnd();
+	        ABCSolverEnd();
 	  		return ex->code + 2;
 	  	}
 	  	if( solveCode ){
 			solver.output_control_map(out);
 	  	}else{
-			SolverEnd();
+		    ABCSolverEnd();
 	  		return 1;	
 	  	}
       }
 
     }
-    SolverEnd();
+    ABCSolverEnd();
 	return 0;
     }catch(BasicError& be){
       cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
