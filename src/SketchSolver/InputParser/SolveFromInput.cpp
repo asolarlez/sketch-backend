@@ -123,7 +123,7 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 }
 
 
-SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p):CTRL("_C"){
+SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker), CTRL("_C"){
 	N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
 	spec = spec_p;
@@ -301,7 +301,7 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 				int fid = node_ids[(*node_it)->father];
 				int mid = node_ids[(*node_it)->mother];
 				if( booleanPartialEval<logical_and<bool> >(*node_it) ){ Dout( cout<<"AND "<<endl  ); break; }
-				if(!checkParentsChanged(*node_it, true)){ Dout( cout<<fid<<" AND "<<mid<<" unchanged"<<endl  ); break; }
+				if(!checkParentsChanged(mng, *node_it, true)){ Dout( cout<<fid<<" AND "<<mid<<" unchanged"<<endl  ); break; }
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				int nvar = dir.addAndClause(fsign*fid, msign*mid);
@@ -311,7 +311,7 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 			}
 			case bool_node::OR:{
 				if( booleanPartialEval<logical_or<bool> >(*node_it) ){  Dout( cout<<"OR "<<endl  ); break; }
-				if(!checkParentsChanged(*node_it, true)){ Dout( cout<<"OR didn't change"<<endl  ); break; }
+				if(!checkParentsChanged(mng, *node_it, true)){ Dout( cout<<"OR didn't change"<<endl  ); break; }
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				int nvar = dir.addOrClause(fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
@@ -321,7 +321,7 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 			}
 			case bool_node::XOR:{
 				if( booleanPartialEval<not_equal_to<bool> >(*node_it) ){  Dout( cout<<"XOR "<<endl  ); break; }
-				if(!checkParentsChanged(*node_it, true)){ Dout( cout<<"XOR didn't change"<<endl  ); break; }			
+				if(!checkParentsChanged(mng, *node_it, true)){ Dout( cout<<"XOR didn't change"<<endl  ); break; }			
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
 				int nvar = dir.addXorClause(fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
@@ -575,49 +575,49 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 	switch(anode->arith_type){
 		case arith_node::GE:{
 			Dout( cout<<" GE "<<endl );
-			if(!checkParentsChanged(anode, true)){ break; }	
+			if(!checkParentsChanged(mng, anode, true)){ break; }	
 			processComparissons<greater_equal<int> >(mng, dir, anode, node_ids, num_ranges, YES);
 			return;
 		}
 		case arith_node::LT:{
 			Dout( cout<<" LT "<<endl );
-			if(!checkParentsChanged(anode, true)){ break; }	
+			if(!checkParentsChanged(mng, anode, true)){ break; }	
 			processComparissons<less<int> >(mng, dir, anode, node_ids, num_ranges, YES);
 			return;
 		}
 		case arith_node::LE:{
 			Dout( cout<<" LE "<<endl );			
-			if(!checkParentsChanged(anode, true)){ break; }	
+			if(!checkParentsChanged(mng, anode, true)){ break; }	
 			processComparissons<less_equal<int> >(mng, dir, anode, node_ids, num_ranges, YES);
 			return;
 		}
 		case arith_node::GT:{
 			Dout( cout<<" GT "<<endl );
-			if(!checkParentsChanged(anode, true)){ break; }	
+			if(!checkParentsChanged(mng, anode, true)){ break; }	
 			processComparissons<greater<int> >(mng, dir, anode, node_ids, num_ranges, YES);
 			return;
 		}
 		case arith_node::PLUS:{
 			Dout( cout<<" PLUS "<<endl );			
-			if(!checkParentsChanged(anode, true)){ break; }
+			if(!checkParentsChanged(mng, anode, true)){ break; }
 			processArith<plus<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::TIMES:{
 			Dout( cout<<" TIMES "<<endl );			
-			if(!checkParentsChanged(anode, true)){ break; }
+			if(!checkParentsChanged(mng, anode, true)){ break; }
 			processArith<multiplies<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::DIV:{
 			Dout( cout<<" DIV "<<endl );			
-			if(!checkParentsChanged(anode, true)){ break; }
+			if(!checkParentsChanged(mng, anode, true)){ break; }
 			processArith<divides<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
 		case arith_node::MOD:{
 			Dout( cout<<" MOD "<<endl );			
-			if(!checkParentsChanged(anode, true)){ break; }
+			if(!checkParentsChanged(mng, anode, true)){ break; }
 			processArith<modulus<int> >(mng, dir, anode, node_ids, num_ranges);
 			return;
 		}
@@ -635,7 +635,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				Dout( cout<<"   ids[i]="<<ids[i]<<endl);
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}
-			if(!checkParentsChanged(anode, parentSame)){Dout(cout<<"@ACTRL "<<anode->name<<"  "<<node_ids[anode]<<"  "<<num_ranges[anode].size()<<"   "<<anode<<endl);	 break; }
+			if(!checkParentsChanged(mng, anode, parentSame)){Dout(cout<<"@ACTRL "<<anode->name<<"  "<<node_ids[anode]<<"  "<<num_ranges[anode].size()<<"   "<<anode<<endl);	 break; }
 			vector<int>& tmp = num_ranges[anode];
 			varRange vr = getSwitchVars(mng,dir, ids, size, tmp, YES);			
 			node_ids[anode] = vr.varID;
@@ -674,7 +674,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}			
-			if(!checkParentsChanged(anode, parentSame)){ break; }			
+			if(!checkParentsChanged(mng, anode, parentSame)){ break; }			
 			int guard;						
 			if( (num_ranges.find(mother) == num_ranges.end()) ){
 				int sgn = anode->mother_sgn? 1: -1;
@@ -824,7 +824,7 @@ void SolveFromInput::processArithNode(SATSolver& mng, varDir& dir,arith_node* an
 				Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 				parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 			}			
-			if(!checkParentsChanged(anode, parentSame)){ break; }
+			if(!checkParentsChanged(mng, anode, parentSame)){ break; }
 			if(!isBoolean){
 				doNonBoolArrAcc(mng, dir, anode, node_ids, 	num_ranges);
 				return;	
@@ -1004,14 +1004,10 @@ void SolveFromInput::doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* ano
 }
 
 
-bool SolveFromInput::checkParentsChanged(bool_node* node, bool more){
-#ifdef ABCSAT	
-	return true;
-#else	
+bool SolveFromInput::checkParentsChanged(SATSolver& mng, bool_node* node, bool more){
 	if(( node->father== NULL || !node->father->flag ) &&
 			( node->mother== NULL || !node->mother->flag )&&
 			more
-			){ node->flag =false; return false; }else{ node->flag = true; return true;}
-#endif			
+			){ node->flag =false; return false || mng.ignoreOld(); }else{ node->flag = true; return true;}
 }
 

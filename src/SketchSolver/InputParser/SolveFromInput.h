@@ -31,12 +31,12 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);
 	virtual void processArithNode(SATSolver& mng, varDir& dir, arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
 	virtual void doNonBoolArrAcc(SATSolver& mng, varDir& dir,arith_node* anode, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
-	virtual bool checkParentsChanged(bool_node* node, bool more);
+	virtual bool checkParentsChanged(SATSolver& mng, bool_node* node, bool more);
 	virtual void setNewControls(int controls[], int ctrlsize);
 	template<typename COMP>
 	bool booleanPartialEval(bool_node* node);
 	public:
-	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, int NS_p=1);
+	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1);
 	void output_control_map(ostream& out);
 };
 
