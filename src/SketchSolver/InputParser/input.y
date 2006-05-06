@@ -230,7 +230,8 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 									int tmpval = sgn_stack.top();
 									currentBD->alias( *$1, tmpval, "");
 								}else{
-									currentBD->alias( *$1, sgn_stack.top(), *$3);
+									int tmpval = sgn_stack.top();
+									currentBD->alias( *$1, tmpval, *$3);
 									delete $3;
 								}
 								sgn_stack.pop();

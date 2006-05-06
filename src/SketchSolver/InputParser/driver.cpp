@@ -20,38 +20,79 @@ extern  bool overrideNCtrls;
 
 string context;
 
+class paramInterp{
+	public:
+	
+	typedef enum {ABC, ABCLIGHT, ZCHAFF} SolverType;
+  int input_idx;
+  int seedsize;
+  int seed;
+  SolverType synthtype, veriftype;
+  
+	paramInterp(int argc, char** argv){
+		input_idx = 1;
+		seedsize = 1;
+		seed = -1;
+		synthtype=ABC;
+		veriftype=ZCHAFF;
+		
+		
+	  for(int ii=0; ii<argc; ++ii){
+	    if( string(argv[ii]) == "-seedsize" ){
+	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
+	      seedsize = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+	    }
+	    if( string(argv[ii]) == "-overrideCtrls" ){
+	      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
+	      INp::NCTRLS= atoi(argv[ii+1]);
+		  INp::overrideNCtrls=true;
+	      input_idx = ii+2;      
+	    }  
+	    if( string(argv[ii]) == "-seed" ){
+	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+	      seed = atoi(argv[ii+1]);	  
+	      input_idx = ii+2;
+	    } 
+	    
+	    if( string(argv[ii]) == "-synth" ){
+	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+	      string synth(argv[ii+1]);	  
+		  if( synth == "ABC" ) synthtype = ABC;
+		  if( synth == "ABCLIGHT" ) synthtype = ABCLIGHT;
+		  if( synth == "ZCHAFF" ) synthtype = ZCHAFF;
+	      input_idx = ii+2;
+	    }
+	    
+	    if( string(argv[ii]) == "-verif" ){
+	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+   	      string verif(argv[ii+1]);
+		  if( verif == "ABC" ) veriftype = ABC;
+		  if( verif == "ABCLIGHT" ) veriftype = ABCLIGHT;
+		  if( verif == "ZCHAFF" ) veriftype = ZCHAFF;	      
+	      input_idx = ii+2;
+	    }        
+	  }		
+	}	
+	
+	
+};
+
+
+
+
 int main(int argc, char** argv){
   ABCSolverStart();
-  int input_idx = 1;
-  int seedsize = 1;
-  int seed = -1;
-  for(int ii=0; ii<argc; ++ii){
-    if( string(argv[ii]) == "-seedsize" ){
-      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
-      seedsize = atoi(argv[ii+1]);
-      input_idx = ii+2;      
-    }
-    if( string(argv[ii]) == "-overrideCtrls" ){
-      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
-      INp::NCTRLS= atoi(argv[ii+1]);
-	  INp::overrideNCtrls=true;
-      input_idx = ii+2;      
-    }  
-    if( string(argv[ii]) == "-seed" ){
-      Assert(ii<(argc-1), "-seed needs an extra parameter");
-      seed = atoi(argv[ii+1]);	  
-      input_idx = ii+2;
-    } 
-  }
   
+  paramInterp params(argc, argv);
   
   try{
 
     Assert( argc > 1, "The input file name must be passed as an argument");
   
-    cout<<"Reading Streamit Program in File "<<argv[input_idx]<<endl;
+    cout<<"Reading Streamit Program in File "<<argv[params.input_idx]<<endl;
 
-    INp::yyin = fopen(argv[input_idx], "r");
+    INp::yyin = fopen(argv[params.input_idx], "r");
     INp::Inityylex();
     INp::Inityyparse();
 
@@ -67,7 +108,7 @@ int main(int argc, char** argv){
 
   	context = " ";
     {
-      string fname(argv[input_idx]);
+      string fname(argv[params.input_idx]);
       int x1 = fname.find_last_of("/");
       int x2 = fname.find_last_of("\\");
       int x3 = fname.find_last_of(".");
@@ -79,22 +120,41 @@ int main(int argc, char** argv){
       string msg = "There is no filter ";
       msg += fname;
       msg += " in file ";
-      msg += argv[input_idx];
+      msg += argv[params.input_idx];
       cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
-		ofstream out(argv[input_idx+1]);
+		ofstream out(argv[params.input_idx+1]);
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
-      	Dout(INp::functionMap[it->second]->print(cout));
-      	Dout(it->first->print(cout));
+      	Dout(INp::functionMap[it->second]->print(cout)); //spec
+      	Dout(it->first->print(cout)); //sketch
       	
-      	ABCSATSolver finder("find");
-      	ZchaffSATSolver checker("check");
-      	
-      	SolveFromInput solver(INp::functionMap[it->second], it->first, finder, checker, seedsize);
-      	if(seed >= 0){
-      		cout<<"SOLVER RAND SEED = "<<seed<<endl;
-      		solver.set_randseed(seed);
+      	SATSolver* finder = NULL;
+      	if( params.synthtype ==  paramInterp::ABC ){
+      		finder = new ABCSATSolver("find", ABCSATSolver::FULL);
+      		cout<<" FIND = ABC"<<endl;
+      	}else if ( params.synthtype ==  paramInterp::ABCLIGHT ){
+      		finder = new ABCSATSolver("find", ABCSATSolver::BASICSAT);
+      		cout<<" FIND = ABC LIGHT"<<endl;
+      	}else if( params.synthtype ==  paramInterp::ZCHAFF){
+      		finder = new ZchaffSATSolver("find");
+     		cout<<" FIND = ZCHAFF"<<endl;
+      	}
+      	SATSolver* checker = NULL;
+      	if( params.veriftype ==  paramInterp::ABC ){
+      		checker = new ABCSATSolver("check", ABCSATSolver::FULL);
+     		cout<<" CHECK = ABC"<<endl;
+      	}else if ( params.veriftype ==  paramInterp::ABCLIGHT ){
+      		checker = new ABCSATSolver("check", ABCSATSolver::BASICSAT);
+     		cout<<" CHECK = ABC LIGHT"<<endl;
+      	}else if( params.veriftype ==  paramInterp::ZCHAFF){
+      		checker = new ZchaffSATSolver("check");
+     		cout<<" CHECK = ZCHAFF"<<endl;
+      	}
+      	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
+      	if(params.seed >= 0){
+      		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
+      		solver.set_randseed(params.seed);
       	}
 	  	solver.setup();
 	  	int solveCode = 0;
