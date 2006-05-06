@@ -8,12 +8,6 @@
 using namespace std;
 
 
-#define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
-#define Dout( out )     /* out */
-#define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
-#define FileOutput( out ) /* out */
-
-
 inline void ZSolverStart(){ cout<<" STARTING SAT "<<endl; }
 inline void ZSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 

@@ -17,6 +17,9 @@ inline void ABCSolverEnd(){cout<<" ENDING ABC "<<endl; Abc_Stop(); }
 
 
 class ABCSATSolver: public SATSolver{
+public:
+	typedef enum { BASICSAT, FULL } SolutionStrategy;
+	
 protected:       
        string name;
        FileOutput( ofstream output );
@@ -24,8 +27,8 @@ protected:
        Abc_Ntk_t * oldpNtk;
        Abc_Obj_t * pOutputNode;
        int out_cnt;
-		map<int, int> results;
-		
+	   map<int, int> results;
+	SolutionStrategy  strategy;
 	int GetIntId(int val){
 		return (val);
 	}
@@ -50,8 +53,9 @@ protected:
 	}
        
 public:
-        ABCSATSolver(const string& name_p):SATSolver(name_p){
+        ABCSATSolver(const string& name_p, SolutionStrategy strategy_p):SATSolver(name_p){
 		       /////////       
+		       strategy = strategy_p;
 		       pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		       pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 		       strcpy( pNtk->pName, name.c_str() );

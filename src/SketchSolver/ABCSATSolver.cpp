@@ -39,6 +39,7 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 }
 
 void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
+	Assert( Abc_ObjFaninNum(pOutputNode) == out_cnt, "This should never happen!");
    pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );
    Abc_ObjAddFanin( Abc_NtkCreatePo(network), pOutputNode);              
   char Buffer[100];
@@ -129,11 +130,16 @@ int ABCSATSolver::solve(){
        {
 		 timerclass timer("SAT time total");
          timer.start();
-       Prove_Params_t Params, * pParams = &Params;            
-        Prove_ParamsSetDefault( pParams );
-	    pParams->nItersMax = 5;
-	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
-        
+         if(strategy == FULL){
+         	cout<<"FULL"<<endl;
+			Prove_Params_t Params, * pParams = &Params;
+         	Prove_ParamsSetDefault( pParams );
+			pParams->nItersMax = 5;
+    	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
+         }else if(strategy == BASICSAT){
+         	cout<<"BASIC"<<endl;
+         	RetValue = Abc_NtkMiterSat( pNtk, 100000000, 0, 0, 0 );
+         }
 		timer.stop().print();
        }
        if ( RetValue == 0 )
@@ -354,6 +360,7 @@ int ABCSATSolver::solve(){
 
 //This function encodes x = a;
  void ABCSATSolver::addEqualsClause(int x, int a, int gid){
+ 	//should use buffer.
        Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
        FileOutput( output<<x<<" EQ "<<a<<endl );
        Abc_Obj_t * pFanin0, * pAnd;
@@ -395,6 +402,7 @@ int ABCSATSolver::solve(){
 		Dout( cout<<"Setting input "<<pNode->Id<<endl);
 	   }else{
    			Dout( cout<<"Setting other"<<endl);
+   			Assert( Abc_ObjFaninNum(pNode) == 0 , "This is a bug");
 		   if( x > 0){
 		   	pNode->pData = Abc_SopCreateConst1( (Extra_MmFlex_t *) pNtk->pManFunc);
 		   }else{

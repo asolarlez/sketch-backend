@@ -128,9 +128,15 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolv
 	Nout = spec_p->get_n_outputs();
 	spec = spec_p;
 	sketch = sketch_p;
-  	sketch->cleanup();
-  	spec->cleanup();
+	Dout( cout<<"before cleanup "<<endl);
+	Dout( sketch->print(cout) );
+  	sketch->cleanup(false);
+	Dout( cout<<"after cleanup "<<endl);
+	Dout( sketch->print(cout) );
+  	spec->cleanup(false);
     sketch->sort_graph();
+   	Dout( cout<<"after sort "<<endl);
+	Dout( sketch->print(cout) );
     spec->sort_graph();
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 	declareControl(CTRL, sketch->get_n_controls());
@@ -294,7 +300,6 @@ bool SolveFromInput::booleanPartialEval(bool_node* node){
 
 void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
 	node_ids[NULL] = YES;
-
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		switch((*node_it)->type){
 			case bool_node::AND:{
@@ -324,6 +329,7 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 				if(!checkParentsChanged(mng, *node_it, true)){ Dout( cout<<"XOR didn't change"<<endl  ); break; }			
 				int fsign = (*node_it)->father_sgn? 1 : -1;
 				int msign = (*node_it)->mother_sgn? 1 : -1;
+				Dout( cout<<" xor signs f=("<<(*node_it)->father_sgn<<", "<<fsign<<")  m=("<<(*node_it)->mother_sgn<<", "<<msign<<") "<<endl );
 				int nvar = dir.addXorClause(fsign*node_ids[(*node_it)->father], msign*node_ids[(*node_it)->mother]);
 				node_ids[*node_it] = nvar;
 				Dout(cout<<"XOR "<<(*node_it)->name<<"  "<<node_ids[*node_it]<<"  "<<*node_it<<endl);				

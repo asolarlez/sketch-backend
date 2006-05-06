@@ -168,9 +168,11 @@ inline int varDir::addXorClause(int a, int b, int gid){
 		return b;
 	}
 	if( a == b){
+		Dout( cout<<-YES<<"= "<<a<<" XORsc "<<b<<endl );
 		return -YES;	
 	}
 	if( a == -b){
+		Dout( cout<<YES<<"= "<<a<<" XORsc "<<b<<endl );
 		return YES;
 	}
 	int x = newAnonymousVar();	
