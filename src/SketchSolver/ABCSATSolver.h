@@ -20,15 +20,16 @@ class ABCSATSolver: public SATSolver{
 public:
 	typedef enum { BASICSAT, FULL } SolutionStrategy;
 	
-protected:       
-       string name;
+protected:
        FileOutput( ofstream output );
        Abc_Ntk_t * pNtk;
        Abc_Ntk_t * oldpNtk;
        Abc_Obj_t * pOutputNode;
        int out_cnt;
 	   map<int, int> results;
-	SolutionStrategy  strategy;
+		SolutionStrategy  strategy;
+		bool outputAIG;
+		int solvcnt;
 	int GetIntId(int val){
 		return (val);
 	}
@@ -62,6 +63,8 @@ public:
    	           pOutputNode = Abc_NtkCreateNode( pNtk );
    	           oldpNtk = NULL;
    	           out_cnt = 0;
+   	           outputAIG = false;
+   	           solvcnt = 0;
 		       ////////
         }
         virtual void annotate(const string& msg);
@@ -90,6 +93,7 @@ public:
        virtual void cleanupDatabase();
        virtual void clean();
        virtual void printDiagnostics(char c);
+       virtual void setOutputAIG();
 };
 
 

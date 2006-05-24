@@ -2,6 +2,7 @@
 #include "ABCSATSolver.h"
 #include "timerclass.h"
 #include "fraig.h"
+#include <sstream>
 
 extern "C" {
 extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose );
@@ -59,7 +60,7 @@ void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 
 
 int ABCSATSolver::solve(){
-
+		++solvcnt;
        //////////
        // add names to the PIs/POs
        Abc_Ntk_t * pAig;
@@ -124,7 +125,20 @@ int ABCSATSolver::solve(){
 
        // perform some synthesis on the AIG
        // This doesn't compile pAig = Abc_NtkRewrite( pAig ); // the same network is returned
-
+		
+		if( outputAIG ){
+			stringstream str;
+			str<<name<<"_";
+			str<<solvcnt<<".blif";
+			Abc_Ntk_t * pNetlist;
+		    pNetlist = Abc_NtkLogicToNetlist(pNtk,0);
+		    const char* nm = str.str().c_str();
+		    Io_WriteBlifNetlist( pNetlist, (char*) nm , 1 );
+		    Abc_NtkDelete( pNetlist );			
+		}
+		
+		
+		
        // call brute-force SAT (MiniSat-1.14)
        // have a look at src\base\abci\abcProve.c
        {
@@ -426,4 +440,9 @@ int ABCSATSolver::solve(){
    cout << c << "No diagnostics for now"<<endl;
 }
 
-       
+
+void ABCSATSolver::setOutputAIG(){
+	outputAIG = true;	
+}
+
+
