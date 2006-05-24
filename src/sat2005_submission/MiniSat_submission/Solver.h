@@ -50,7 +50,7 @@ class LitClauseUnion {
 
     bool        isLit             (void)     const { return ((unsigned long)data % 2) == 1; }
     bool        isNull            (void)     const { return data == NULL; }
-    Lit         getLit            (void)     const { return toLit(((int)data)>>1); }
+    Lit         getLit            (void)     const { return toLit(((long)data)>>1); }
     Clause*     getClause         (void)     const { return (Clause*)data; }
     bool        operator==(LitClauseUnion c) const { return data == c.data; }
     bool        operator!=(LitClauseUnion c) const { return data != c.data; }
