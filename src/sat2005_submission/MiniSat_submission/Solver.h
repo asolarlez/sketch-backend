@@ -46,9 +46,9 @@ class LitClauseUnion {
     LitClauseUnion(void* d) : data(d) {}
  public:
     friend LitClauseUnion makeLit    (Lit l)      { return LitClauseUnion((void*)((index(l)<<1) + 1)); }
-    friend LitClauseUnion makeClause (Clause* c)  { assert((unsigned int)c % 2 == 0); return LitClauseUnion((void*)c); }
+    friend LitClauseUnion makeClause (Clause* c)  { assert((unsigned long)c % 2 == 0); return LitClauseUnion((void*)c); }
 
-    bool        isLit             (void)     const { return ((unsigned int)data % 2) == 1; }
+    bool        isLit             (void)     const { return ((unsigned long)data % 2) == 1; }
     bool        isNull            (void)     const { return data == NULL; }
     Lit         getLit            (void)     const { return toLit(((int)data)>>1); }
     Clause*     getClause         (void)     const { return (Clause*)data; }
