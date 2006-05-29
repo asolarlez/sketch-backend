@@ -24,8 +24,8 @@ class varDir{
 	map<string, int> varmap;
 	map<string, int> arrsize;
 	int varCnt;
-	SATSolver& mng;
 public:
+	SATSolver& mng;
 	int YES;
 	varDir(SATSolver& mng_p):mng(mng_p){
 		varCnt = 1;
