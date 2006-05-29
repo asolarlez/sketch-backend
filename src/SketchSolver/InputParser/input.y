@@ -15,8 +15,7 @@ string* comparisson(string* p1, string* p2, arith_node::AType atype){
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = atype;
+arith_node* an = newArithNode(atype);
 if(p1== NULL){
 	an->mother_quant = t1;
 	an->father_quant = t2;
@@ -267,7 +266,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 
 	for(int i=0; i<bigN; ++i, ++it, ++oldit){
 		string s1 = currentBD->new_name();
-		arith_node* an = new arith_node();
+		arith_node* an = newArithNode(arith_node::ARRASS);
 		an->multi_mother.push_back(*oldit);
 		if(*oldit != NULL){
 			(*oldit)->children.push_back(an);
@@ -280,7 +279,6 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		}
 		an->multi_mother_sgn.push_back(rhsSgn);
 		
-		an->arith_type = arith_node::ARRASS;
 		Assert($8 != NULL, "1: THIS CAN'T HAPPEN!!");
 		currentBD->new_node(*$8, ofstSgn, "", false, bool_node::ARITH, s1, an);
 		currentBD->alias( *(*it), true, s1);
@@ -552,7 +550,7 @@ Expression: Term { $$ = $1; }
 
 int b1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-	arith_node* an = new arith_node();
+	arith_node* an = newArithNode(arith_node::ARRACC);
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
@@ -577,7 +575,6 @@ string s1 = currentBD->new_name();
 		for(int i=0; i<bigN; ++i){
 			an->multi_mother_sgn.push_back(tempsgn[i]);
 		}
-		an->arith_type = arith_node::ARRACC;
 		Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");
 		currentBD->new_node(*$5, b1, "", false, bool_node::ARITH, s1, an); 
 		$$ = new string(s1);  sgn_stack.push(true);
@@ -593,7 +590,7 @@ string s1 = currentBD->new_name();
 
 | '$''$' varList '$''$' {
 string s1 = currentBD->new_name();
-	arith_node* an = new arith_node();
+	arith_node* an = newArithNode(arith_node::ACTRL);
 	list<bool_node*>* childs = $3;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
@@ -610,7 +607,6 @@ string s1 = currentBD->new_name();
 	for(int i=0; i<bigN; ++i){
 		an->multi_mother_sgn.push_back(tempsgn[i]);
 	}
-	an->arith_type = arith_node::ACTRL;
 	currentBD->new_node("", false, "", false, bool_node::ARITH, s1, an); 
 	$$ = new string(s1);  sgn_stack.push(true);
 	delete childs;
@@ -620,8 +616,7 @@ string s1 = currentBD->new_name();
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = arith_node::PLUS;
+arith_node* an = newArithNode(arith_node::PLUS);
 if($3==NULL && $1 == NULL){
 	delete an;
 	$$ = NULL;
@@ -655,8 +650,8 @@ if($3==NULL && $1 == NULL){
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = arith_node::DIV;
+arith_node* an = newArithNode(arith_node::DIV);
+
 if($3==NULL && $1 == NULL){
 	delete an;
 	$$ = NULL;
@@ -690,8 +685,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = arith_node::MOD;
+arith_node* an = newArithNode(arith_node::MOD);
 if($3==NULL && $1 == NULL){
 	delete an;
 	$$ = NULL;
@@ -726,8 +720,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = arith_node::TIMES;
+arith_node* an = newArithNode(arith_node::TIMES);
 if($3==NULL && $1 == NULL){
 	delete an;
 	$$ = NULL;
@@ -761,8 +754,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 int t2 = sgn_stack.top(); sgn_stack.pop();
 int t1 = sgn_stack.top(); sgn_stack.pop();
 string s1 = currentBD->new_name();
-arith_node* an = new arith_node();
-an->arith_type = arith_node::PLUS;
+arith_node* an = newArithNode(arith_node::PLUS);
 if($1== NULL){
 	an->mother_quant = -t2;
 	an->father_quant = t1;
@@ -829,7 +821,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 	if(isSparse){
 		if($1 != NULL){
 			string s1 = currentBD->new_name();
-			arith_node* an = new arith_node();
+			arith_node* an = newArithNode(arith_node::ARRACC);
 			an->multi_mother.push_back( noChild );
 			an->multi_mother.push_back( yesChild );
 			if(yesChild != NULL){
@@ -842,8 +834,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 			}								
 			an->multi_mother_sgn.push_back(i3);
 			an->multi_mother_sgn.push_back(i2);
-			$$ = new string(s1); sgn_stack.push(true);
-			an->arith_type = arith_node::ARRACC;									
+			$$ = new string(s1); sgn_stack.push(true);												
 			Assert($1 != NULL, "3: THIS CAN'T HAPPEN!!");
 			currentBD->new_node(*$1, b1, "", false, bool_node::ARITH, s1, an); 
 		}else{
@@ -1021,28 +1012,26 @@ Term: Constant {
 		nctrls = NCTRLS;
 	}
 	int N=currentBD->create_controls(nctrls, *$2);
-	arith_node* an = new arith_node();
+	arith_node* an = newArithNode(arith_node::ACTRL);
 	for(int i=0; i<nctrls; ++i){
 		bool_node* tmp = (bool_node*)(*currentBD)[N-nctrls+i];
 		an->multi_mother.push_back(tmp);
 		tmp->children.push_back(an);		
 		an->multi_mother_sgn.push_back(true);
 	}
-	an->arith_type = arith_node::ACTRL;
 	currentBD->new_node("", false, "", false, bool_node::ARITH, *$2, an); 
 	$$ = $2;  sgn_stack.push(true); 
 
 }
 | '<' Ident Constant '*' '>' {
 	int N=currentBD->create_controls($3, *$2);
-	arith_node* an = new arith_node();
+	arith_node* an = newArithNode(arith_node::ACTRL);
 	for(int i=0; i<$3; ++i){
 		bool_node* tmp = (bool_node*)(*currentBD)[N-$3+i];
 		an->multi_mother.push_back(tmp);
 		tmp->children.push_back(an);		
 		an->multi_mother_sgn.push_back(true);
 	}
-	an->arith_type = arith_node::ACTRL;
 	currentBD->new_node("", false, "", false, bool_node::ARITH, *$2, an); 
 	$$ = $2;  sgn_stack.push(true); 
 

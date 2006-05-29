@@ -180,7 +180,7 @@ int main(int argc, char** argv){
       		checker = new ZchaffSATSolver("check");
      		cout<<" CHECK = ZCHAFF"<<endl;
       	}else if( params.veriftype ==  paramInterp::MINI){
-      		checker = new ZchaffSATSolver("check");
+      		checker = new MiniSATSolver("check");
      		cout<<" CHECK = MINI"<<endl;
       	}
       	
