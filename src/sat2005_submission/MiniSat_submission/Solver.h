@@ -180,7 +180,7 @@ public:
     //
     Var     newVar (void);
     int     nVars  (void)  { return assigns.size(); }
-    void    addUnit(Lit p) { if (ok) enqueue(p); }
+    void    addUnit(Lit p) {if (ok) ok = enqueue(p);  }
 
     void    addClause(const vec<Lit>& ps)        { if (ok){ Clause* c; ok = newClause(ps, false, c); if (c != NULL) clauses.push(c); } }
 
