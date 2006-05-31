@@ -1,107 +1,6 @@
 #include "NodesToSolver.h"
 
 
-bool GLOfirstTime = true;
-
-
-
-
-
-template<>
-bool NodesToSolver::booleanPartialEval<logical_or<bool> >(bool_node& node){
-	logical_or<bool> comp;
-	
-	int fid = node_ids[node.father];
-	int mid = node_ids[node.mother];
-	int yoid = node_ids[&node];
-	
-	
-	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
-	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
-	if(fathval != 0 && mothval != 0){
-		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
-		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
-		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-		node.flag = newVal != oldVal;
-		node_ids[&node] = newVal*YES;
-		return true;
-	}else{
-		if(fathval*fsign == 1 || mothval*msign == 1){
-			int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
-			int newVal =  1;
-			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-			node.flag = newVal != oldVal;
-			node_ids[&node] = newVal*YES;
-			return true;
-		}
-	}
-	return false;
-}
-
-
-
-
-template<>
-bool NodesToSolver::booleanPartialEval<logical_and<bool> >(bool_node& node){
-	logical_and<bool> comp;
-
-	int fid = node_ids[node.father];
-	int mid = node_ids[node.mother];
-	int yoid = node_ids[&node];
-	
-	
-	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
-	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
-	if(fathval != 0 && mothval != 0){
-		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
-		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
-		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-		node.flag = newVal != oldVal;
-		node_ids[&node] = newVal*YES;
-		return true;
-	}else{
-		if(fathval*fsign == -1 || mothval*msign == -1){
-			int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
-			int newVal =  -1;
-			Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");
-			node.flag = newVal != oldVal;
-			node_ids[&node] = newVal*YES;
-			return true;
-		}	
-	}
-	return false;
-}
-
-
-
-template<typename COMP>
-bool NodesToSolver::booleanPartialEval(bool_node& node){
-	COMP comp;
-	int fid = node_ids[node.father];
-	int mid = node_ids[node.mother];
-	int yoid = node_ids[&node];
-		
-	int fathval = (fid==YES)? 1 : ((fid==-YES)? -1 : 0);
-	int mothval = (mid==YES)? 1 : ((mid==-YES)? -1 : 0);
-	
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
-	if(fathval != 0 && mothval != 0){
-		int oldVal = (yoid==YES)? 1 : ((yoid==-YES)? -1 : 0);
-		int newVal = comp(fathval*fsign==1 , mothval*msign==1) ? 1 : -1;
-		Dout(cout<<fathval*fsign<<" op "<<mothval*msign<<" -> "<< newVal <<" ");		
-		node.flag = newVal != oldVal;
-		node_ids[&node] = newVal*YES;
-		return true;
-	}
-	return false;
-}
-
-
 
 template<typename COMP>
 void NodesToSolver::processComparissons(SATSolver& mng, varDir& dir,arith_node& node, 	map<bool_node*, int>& node_ids, 	map<bool_node*, vector<int> >& num_ranges, int YES){
@@ -305,91 +204,94 @@ void NodesToSolver::processArith(SATSolver& mng, varDir& dir,arith_node& node, 	
 
 
 
+void NodesToSolver::visit( AND_node& node ){
+			int fid = node_ids[node.father];
+			int mid = node_ids[node.mother];
+			if(!checkParentsChanged(mng, node, true)){ Dout( cout<<fid<<" AND "<<mid<<" unchanged"<<endl  ); return; }
+			int fsign = node.father_sgn? 1 : -1;
+			int msign = node.mother_sgn? 1 : -1;
+			int nvar = dir.addAndClause(fsign*fid, msign*mid);
+			int oldnvar = node_ids[&node];
+			node.flag = nvar != oldnvar;
+			node_ids[&node] = nvar;
+			Dout(cout<<"AND "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
+			return;
+		}
 
 
 void NodesToSolver::visit( OR_node& node ){
-				if( booleanPartialEval<logical_or<bool> >(node) ){  Dout( cout<<"OR "<<endl  ); return; }
-				if(!checkParentsChanged(mng, node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
-				int fsign = node.father_sgn? 1 : -1;
-				int msign = node.mother_sgn? 1 : -1;
-				int nvar = dir.addOrClause(fsign*node_ids[node.father], msign*node_ids[node.mother]);
-				node_ids[&node] = nvar;
-				Dout(cout<<"OR "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
-				return;
-			}
+			if(!checkParentsChanged(mng, node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
+			int fsign = node.father_sgn? 1 : -1;
+			int msign = node.mother_sgn? 1 : -1;
+			int nvar = dir.addOrClause(fsign*node_ids[node.father], msign*node_ids[node.mother]);
+			int oldnvar = node_ids[&node];
+			node.flag = nvar != oldnvar;
+			node_ids[&node] = nvar;
+			Dout(cout<<"OR "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
+			return;
+		}
 void NodesToSolver::visit( XOR_node& node ){
-				if( booleanPartialEval<not_equal_to<bool> >(node) ){  Dout( cout<<"XOR "<<endl  ); return; }
-				if(!checkParentsChanged(mng, node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }			
-				int fsign = node.father_sgn? 1 : -1;
-				int msign = node.mother_sgn? 1 : -1;
-				Dout( cout<<" xor signs f=("<<node.father_sgn<<", "<<fsign<<")  m=("<<node.mother_sgn<<", "<<msign<<") "<<endl );
-				int nvar = dir.addXorClause(fsign*node_ids[node.father], msign*node_ids[node.mother]);
-				node_ids[&node] = nvar;
-				Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);				
-				return;
-			}
+			if(!checkParentsChanged(mng, node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }			
+			int fsign = node.father_sgn? 1 : -1;
+			int msign = node.mother_sgn? 1 : -1;
+			Dout( cout<<" xor signs f=("<<node.father_sgn<<", "<<fsign<<")  m=("<<node.mother_sgn<<", "<<msign<<") "<<endl );
+			int nvar = dir.addXorClause(fsign*node_ids[node.father], msign*node_ids[node.mother]);
+			int oldnvar = node_ids[&node];
+			node.flag = nvar != oldnvar;
+			node_ids[&node] = nvar;
+			Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);				
+			return;
+		}
 void NodesToSolver::visit( SRC_node& node ){	
-				int iid = node.ion_pos;
-				if( node_values[(&node)] != 0){  
-					Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"  "<<(&node)<<endl  ); 
-					node_ids[&node] = node_values[(&node)]*YES;
-					return; 
-				}	
-				node_ids[&node] = dir.getArr(IN, iid);
-				Dout(cout<<"REGISTERING "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
+			int iid = node.ion_pos;
+			if( node_values[(&node)] != 0){  
+				Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"  "<<(&node)<<endl  ); 
+				node_ids[&node] = node_values[(&node)]*YES;
+				return; 
+			}	
+			node_ids[&node] = dir.getArr(IN, iid);
+			Dout(cout<<"REGISTERING "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
 				return;
 			}
 void NodesToSolver::visit( DST_node& node ){				
-				int oid = node.ion_pos;		
-				int nvar = dir.getArr(outname, oid);
-				int msign = node.mother_sgn? 1 : -1;		
-				{	
-					mng.addEqualsClause( nvar, msign*node_ids[node.mother]);
-				}
-				return;
+			int oid = node.ion_pos;		
+			int nvar = dir.getArr(outname, oid);
+			int msign = node.mother_sgn? 1 : -1;		
+			{	
+				mng.addEqualsClause( nvar, msign*node_ids[node.mother]);
+			}
+			return;
 }
 void NodesToSolver::visit( PT_node& node ){	
 				Assert(false, "The graph should not have this node");
 				return;
 }
 void NodesToSolver::visit( CTRL_node& node ){	
-				int iid = node.ion_pos;
-				if( node_values[(&node)] != 0){  					
-					node_ids[&node] = node_values[(&node)]*YES;
-					Dout( cout<< dir.getArr(CTRL, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[&node] <<endl  ); 
-					return; 
-				}	
-				node_ids[&node] = dir.getArr(CTRL, iid);
-				Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
-				return;
-			}
+			int iid = node.ion_pos;
+			if( node_values[(&node)] != 0){  					
+				node_ids[&node] = node_values[(&node)]*YES;
+				Dout( cout<< dir.getArr(CTRL, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[&node] <<endl  ); 
+				return; 
+			}	
+			node_ids[&node] = dir.getArr(CTRL, iid);
+			Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
+			return;
+}
 
 
-	void NodesToSolver::visit( AND_node& node ){
-				int fid = node_ids[node.father];
-				int mid = node_ids[node.mother];
-				if( booleanPartialEval<logical_and<bool> >(node) ){ Dout( cout<<"AND "<<endl  ); return; }
-				if(!checkParentsChanged(mng, node, true)){ Dout( cout<<fid<<" AND "<<mid<<" unchanged"<<endl  ); return; }
-				int fsign = node.father_sgn? 1 : -1;
-				int msign = node.mother_sgn? 1 : -1;
-				int nvar = dir.addAndClause(fsign*fid, msign*mid);
-				node_ids[&node] = nvar;
-				Dout(cout<<"AND "<<node.name<<"  "<<node_ids[&node]<<"  "<<&node<<endl);
-				return;
-			}
-	
-	void NodesToSolver::visit( PLUS_node& node ){
-			Dout( cout<<" PLUS "<<endl );			
-			if(!checkParentsChanged(mng, node, true)){ return; }
-			processArith<plus<int> >(mng, dir, node, node_ids, num_ranges);
-			return;
-	}
-	void NodesToSolver::visit( TIMES_node& node ){
-			Dout( cout<<" TIMES "<<endl );			
-			if(!checkParentsChanged(mng, node, true)){ return; }
-			processArith<multiplies<int> >(mng, dir, node, node_ids, num_ranges);
-			return;
-	}
+
+void NodesToSolver::visit( PLUS_node& node ){
+		Dout( cout<<" PLUS "<<endl );			
+		if(!checkParentsChanged(mng, node, true)){ return; }
+		processArith<plus<int> >(mng, dir, node, node_ids, num_ranges);
+		return;
+}
+void NodesToSolver::visit( TIMES_node& node ){
+		Dout( cout<<" TIMES "<<endl );			
+		if(!checkParentsChanged(mng, node, true)){ return; }
+		processArith<multiplies<int> >(mng, dir, node, node_ids, num_ranges);
+		return;
+}
 	void NodesToSolver::visit( ARRACC_node& node ){
 			Dout(cout<<" ARRACC "<<endl);
 			list<bool_node*>::iterator it = node.multi_mother.begin();
@@ -507,6 +409,7 @@ void NodesToSolver::visit( CTRL_node& node ){
 			// mother = index
 			// multi-mother[0] = old-value;
 			// multi-mother[1] = new-value;
+			// if( mother == quant ) return multi-mother[1]; else return multi-mother[0];
 			bool_node* mother = node.mother;
 			int id = node_ids[mother];
 			int quant = node.mother_quant;
@@ -538,7 +441,7 @@ void NodesToSolver::visit( CTRL_node& node ){
 			if( (num_ranges.find(mother) == num_ranges.end()) ){
 				int sgn = node.mother_sgn? 1: -1;
 				if(quant > 1){
-					guard = -YES;	
+					guard = -YES;
 				}else{
 					int tmp = sgn * id;
 					Dout(cout<<" sgn = "<<sgn<<"  id="<<id<<"  tmp="<<tmp<<endl);

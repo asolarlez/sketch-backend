@@ -8,25 +8,53 @@
 #define INTEGERBOUND 8192
 #endif
 
+
 class transfValue{
+	int _id;
 public:
 	typedef enum {BIT, BVECT, SPARSE} Type;
 	Type type;
-	int id;
 	int size;
-	vector<int> num_ranges;
-	transfValue(const transfValue& tv): type(tv.type), id(tv.id), size(tv.size), num_ranges(tv.num_ranges){};
-	transfValue(Type p_type, int p_id, int p_size): type(p_type), id(p_id), size(p_size){};
+	bool neg;
+	vector<int> num_ranges;	
+	transfValue(const transfValue& tv): 
+	type(tv.type), _id(tv._id), size(tv.size), num_ranges(tv.num_ranges),neg(tv.neg){
+		Assert( _id > 0 , "This can't happen ccjkjkh");
+	};
+	transfValue(Type p_type, int p_id, int p_size): type(p_type), _id(p_id), size(p_size),neg(false){
+		if( _id < 0){ neg = !neg; _id = -_id; }
+	};
+	transfValue(Type p_type, int p_id, int p_size, bool p_neg): type(p_type), _id(p_id), size(p_size),neg(p_neg){
+		if( _id < 0){ neg = !neg; _id = -_id; }
+	};
 	transfValue& operator=(const transfValue& tv){
 		type = (tv.type);
-		id = (tv.id);
+		_id = (tv._id);
 		size = (tv.size);
 		num_ranges = (tv.num_ranges);
+		neg = tv.neg;
 	}
-	transfValue makeBVect(varDir& dir){
+	
+	int id() const{
+		return neg? _id: -_id;	
+	}
+	
+	int id(int idx) const{
+		return neg? (_id+idx) : -(_id+idx);
+	}
+	
+	void bitAdjust(bool bit){
+		neg = bit;
+	}
+	
+	void intAdjust(int adj){
+		for(int i=0; i<num_ranges.size(); ++i){ num_ranges[i] = num_ranges[i]*adj; }
+	}
+	
+	transfValue makeBVect(varDir& dir) const{
 		switch(type){
 			case BVECT: Dout( cout<<"Converting from BitVector to BitVector"<<endl ); return *this;
-			case BIT: 	Dout( cout<<"Converting from Bit to BitVector"<<endl ); return transfValue(BVECT, id, 1);
+			case BIT: 	Dout( cout<<"Converting from Bit to BitVector"<<endl ); return transfValue(BVECT, _id, 1, neg);
 			case SPARSE:{
 				Dout( cout<<"Converting from Sparse to BitVector"<<endl );
 				vector<vector<int> > bit;
@@ -42,31 +70,32 @@ public:
 						if( val > 0){ 
 							more = true; 
 							if( (val & 1) != 0 ){
-								current.push_back( id + i );	
+								current.push_back( id(i) );
 							}
 						};
 					}			
 				}while(more);	
 				transfValue tv(BVECT, 0, bit.size());
 				if( bit.size() == 0){
-					tv.id = -dir.YES;
+					tv._id = dir.YES;
+					tv.neg = false;
 					tv.size = 1;
 					return tv;
 				}
-				tv.id = dir.newAnonymousVar();
+				tv._id = dir.newAnonymousVar();
 				for(int i=1; i<bit.size(); ++i){	
 					dir.newAnonymousVar();
 				}
 				for(int i=1; i<bit.size(); ++i){
 					vector<int>& current = bit[i];
-					current[0] = tv.id + i;
+					current[0] = tv._id + i;
 					dir.mng.addBigOrClause( &current[0], current.size()-1);
 				}
 				return tv;
 			}
 		}
 	}
-	transfValue makeSparse(varDir& dir){
+	transfValue makeSparse(varDir& dir) const{
 		switch(type){
 			case BVECT:{
 				 Dout( cout<<"Converting from BitVector to Sparse"<<endl ); 
@@ -74,10 +103,10 @@ public:
 				 vector<int>& tmp = tv.num_ranges;
 				 vector<int> ids(size);
 				 for(int i=0; i<size; ++i){
-				 	ids[i] = id + i;	
+				 	ids[i] = id(i);
 				 }
-				varRange vr = getSwitchVars(dir.mng,dir, ids, size, tmp, dir.YES);			
-				tv.id = vr.varID;
+				varRange vr = getSwitchVars(dir.mng,dir, ids, size, tmp, dir.YES);
+				tv._id = vr.varID;
 				tv.size = vr.range;
 				return tv;
 			}
@@ -86,10 +115,10 @@ public:
 				transfValue tv (SPARSE, 0, 2);
 				tv.num_ranges.push_back(0);
 				tv.num_ranges.push_back(1);
-				tv.id = dir.newAnonymousVar();
+				tv._id = dir.newAnonymousVar();
 				dir.newAnonymousVar();
-				dir.mng.addEqualsClause( tv.id, -id);
-				dir.mng.addEqualsClause( tv.id+1, id);
+				dir.mng.addEqualsClause( tv._id, -id());
+				dir.mng.addEqualsClause( tv._id+1, id());
 				return tv;
 			}
 			case SPARSE:
@@ -106,8 +135,7 @@ class NodesToSolver : public NodeVisitor{
 	map<bool_node*, int>& node_values; // -1=false, 1=true, 0=unknown
 	map<bool_node*, vector<int> >& num_ranges;
 	map<bool_node*, int>& node_ids;
-	template<typename COMP>
-	bool booleanPartialEval(bool_node& node);
+	
 	template<typename THEOP>
 	void processArith(SATSolver& mng, varDir& dir,arith_node& node, map<bool_node*, int>& node_ids, map<bool_node*, vector<int> >& num_ranges);
 	template<typename THEOP>

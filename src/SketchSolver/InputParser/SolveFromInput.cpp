@@ -15,6 +15,14 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 	node_ids[NULL] = YES;
 	NodesToSolver nts(mng, dir, outname, node_values, num_ranges, node_ids, YES, IN, CTRL);
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
+		if( (*node_it)->type == bool_node::ARITH){
+			if( dynamic_cast<arith_node*>(*node_it)->arith_type != arith_node::ARRACC 
+				&& dynamic_cast<arith_node*>(*node_it)->arith_type != arith_node::ARRASS 
+			){
+				Assert( (*node_it)->mother_sgn == true , "This is a bug" );	
+				Assert( (*node_it)->father_sgn == true , "This is a bug" );	
+			}
+		}
 		(*node_it)->accept(nts);
 	}
 }
@@ -25,8 +33,9 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 	int idx = 0;	
 	node_values.clear();
+	node_ids.clear();
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
-		node_ids[(*node_it)] = c_node_ids[idx];
+		//node_ids[(*node_it)] = c_node_ids[idx];
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
 			int iid = (*node_it)->ion_pos;
@@ -35,7 +44,7 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 		}
 	}
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		node_ids[(*node_it)] = c_node_ids[idx];
+		//node_ids[(*node_it)] = c_node_ids[idx];
 		(*node_it)->flag = true;
 	}
 	buildChecker();	
