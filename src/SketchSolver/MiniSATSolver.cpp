@@ -140,12 +140,12 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
  void MiniSATSolver::printDiagnostics(char c){
  	SolverStats& stats = s->stats;	
-	cout << c << "restarts              : "<<stats.starts<<endl;
-	cout << c << "conflicts             : "<<stats.conflicts<<endl;
-	cout << c << "decisions             : "<<stats.decisions<<endl; 
-	cout << c << "propagations          : "<<stats.propagations<<endl;
-	cout << c << "inspects              : "<<stats.inspects<<endl;
-	cout << c << "conflict literals     : "<<stats.tot_literals<<"    "<<
+	cout << c << "# restarts              : "<<stats.starts<<endl;
+	cout << c << "# conflicts             : "<<stats.conflicts<<endl;
+	cout << c << "# decisions             : "<<stats.decisions<<endl; 
+	cout << c << "# propagations          : "<<stats.propagations<<endl;
+	cout << c << "# inspects              : "<<stats.inspects<<endl;
+	cout << c << "# conflict literals     : "<<stats.tot_literals<<"    "<<
 	((stats.max_literals - stats.tot_literals)*100 / (double)stats.max_literals)<<" % "<<endl;
  }
 
@@ -181,12 +181,16 @@ bool MiniSATSolver::ignoreOld(){
 }
 
  int MiniSATSolver::solve(){
+ 	if( ! s->okay() ){ cout<<" NOT OKAY BEFORE"<<endl; }
  	s->simplifyDB();
- 	if( ! s->okay() ){ return UNSATISFIABLE; }
+ 	if( ! s->okay() ){ cout<<" NOT OKAY "<<endl; return UNSATISFIABLE; }
 	bool result = s->solve();
+ 	if( ! s->okay() ){ cout<<" NOT OKAY "<<endl; }	
 	if( result) {
+		cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
 	}else{
+		cout<<"Returned UNSAT"<<endl;
 		return UNSATISFIABLE;
 	}
 }
@@ -200,9 +204,11 @@ bool MiniSATSolver::ignoreOld(){
 }
 
  void MiniSATSolver::clean(){
+ 	Dout( cout<<" CLEANING UP "<<endl );
  	delete s;
  	s = new Solver();
+ 	s->newVar();
+ 	s->verbosity = 2;
 }
 
 
-	

@@ -19,9 +19,7 @@ protected:
 public:
 	 ZchaffSATSolver(const string& name_p):SATSolver(name_p){
 		mng = SAT_InitManager();
-		SAT_SetNumVariables(mng, 0);
-		FileOutput( string nm = name; nm += ".circuit"; );
-		FileOutput( output.open(nm.c_str()) );		
+		SAT_SetNumVariables(mng, 0);		
 	 }
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);
