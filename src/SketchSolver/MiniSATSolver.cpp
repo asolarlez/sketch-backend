@@ -139,6 +139,9 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
  void MiniSATSolver::printDiagnostics(char c){
+ 	cout << c <<"# assigns                : "<<s->nAssigns()<<endl;
+ 	cout << c <<"# clauses                : "<<s->nClauses()<<endl;
+   	cout << c <<"# learnts                : "<<s->nLearnts()<<endl;
  	SolverStats& stats = s->stats;	
 	cout << c << "# restarts              : "<<stats.starts<<endl;
 	cout << c << "# conflicts             : "<<stats.conflicts<<endl;

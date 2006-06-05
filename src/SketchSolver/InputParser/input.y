@@ -242,7 +242,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 | '$' IdentList '$''$' varList '$''[' Expression ']' '=' Expression ';' {
 	int rhsSgn = sgn_stack.top(); sgn_stack.pop();	
 	int ofstSgn = sgn_stack.top(); sgn_stack.pop();
-	
+	Assert( ofstSgn == 0 || ofstSgn == 1 , "This should never happen! oiegucvxiouo");
 	list<string*>* childs = $2;
 	list<string*>::reverse_iterator it = childs->rbegin();
 	
