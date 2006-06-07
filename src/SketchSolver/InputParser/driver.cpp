@@ -32,6 +32,7 @@ class paramInterp{
   int seed;
   SolverType synthtype, veriftype;
   bool outputAIG; 
+  int terminateafter;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -40,7 +41,7 @@ class paramInterp{
 		synthtype=MINI;
 		veriftype=MINI;
 		outputAIG =false;
-		
+		terminateafter = -1;
 		
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
@@ -63,7 +64,11 @@ class paramInterp{
 	      seed = atoi(argv[ii+1]);	  
 	      input_idx = ii+2;
 	    } 
-	    
+	    if( string(argv[ii]) == "-terminateafter" ){
+	      Assert(ii<(argc-1), "-terminateafter needs an extra parameter");
+	      terminateafter = atoi(argv[ii+1]);	  
+	      input_idx = ii+2;
+	    } 
 	    if( string(argv[ii]) == "-synth" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
 	      string synth(argv[ii+1]);	  
@@ -185,6 +190,7 @@ int main(int argc, char** argv){
       	}
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
+      	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
       	if(params.seed >= 0){
       		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
       		solver.set_randseed(params.seed);
