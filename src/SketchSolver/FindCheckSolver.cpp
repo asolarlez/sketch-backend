@@ -14,9 +14,14 @@ FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(
 	nseeds = 1;
 	Nin = 0;
 	Nout = 0;
+	iterlimit = -1;
 	randseed = time(NULL);
 }
 
+void FindCheckSolver::setIterLimit(int p_iterlimit){
+	iterlimit = p_iterlimit;
+	cout<<" terminate after "<<iterlimit<<" iterations no matter what. This option is mainly for debugging"<<endl;
+}
 
 
 void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
@@ -88,7 +93,15 @@ void FindCheckSolver::setNewControls(int controls[], int ctrlsize){
 
 bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	Dout( cout<<"check()"<<endl );
+					unsigned long long l_f_time;
+					struct timeval stime, endtime;
+					Dtime(gettimeofday(&stime, NULL) );
 	setNewControls(controls, ctrlsize);
+					Dtime(gettimeofday(&endtime, NULL) );
+					Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
+					   (endtime.tv_usec - stime.tv_usec) );
+					Dtime(cout<<"* TIME TO ADD CONTROLS "<<(l_f_time/1000.0)<<endl);
+	
     int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
@@ -301,6 +314,7 @@ bool FindCheckSolver::solve(){
 		cout<<"********  "<<iterations<<"\tftime="<<(l_f_time/1000.0)<<"\tctime="<<(l_c_time/1000.0)<<endl;
 		++iterations;
 		++itsSinceLastClean;
+		if( iterlimit > 0 && iterations > iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
 	
 	delete [] input;	

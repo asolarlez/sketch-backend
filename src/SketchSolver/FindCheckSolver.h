@@ -20,6 +20,7 @@ class FindCheckSolver{
 	SATSolver& mngCheck;
 	varDir dirCheck;
 	int randseed;
+	int iterlimit;
 	
 	map<string, int> controlVars;
 	vector<bitVector> inputs;
@@ -63,7 +64,7 @@ class FindCheckSolver{
 	virtual void printDiagnostics();
 	public:
 	FindCheckSolver(SATSolver& finder, SATSolver& checker);
-	
+	void setIterLimit(int p_iterlimit);
 	virtual void declareControl(const string& ctrl, int size);	
 	
 	virtual int getInSize();

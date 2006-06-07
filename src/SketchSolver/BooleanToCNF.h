@@ -285,12 +285,16 @@ int selectMinGood(SATSolver& mng, varDir& dir, int choices[], int control, int n
 
 int arbitraryPerm(SATSolver& mng, varDir& dir, int input, int insize, int controls[], int ncontrols, int csize);
 
+
+
+
+
 inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID, int amtsize, vector<int>& vals, int YES){
 	Assert(switchID.size() == amtsize, "This should never happen");
 	int amtrange = 1;
 	for(int i=0; i<amtsize; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
-	vector<int> tmp(amtrange);
+	vector<int> tmpVect(amtrange);
 	int lastsize = 1;
 	int lastRoundVars = dir.getVarCnt();	
 	int valssz = 0;
@@ -321,7 +325,7 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 		if( (-curval) == YES || curval == YES){
 			int v = (curval > 0)? 1:0;
 			for(int j=0; j<lastsize; ++j){
-				tmp[j] = vals[j]*2 + v;
+				tmpVect[j] = vals[j]*2 + v;
 			}
 		}else{
 			int roundVars = lastRoundVars;
@@ -335,14 +339,14 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 				int cvar = roundVars + j;
 				mng.addAndClause(lastRoundVars + j*2, cvar, -(curval));
 				mng.addAndClause(lastRoundVars + j*2 + 1, cvar, (curval));
-				tmp[2*j] = vals[j]*2;
-				tmp[2*j+1] = vals[j]*2 + 1;
+				tmpVect[2*j] = vals[j]*2;
+				tmpVect[2*j+1] = vals[j]*2 + 1;
 			}
 			lastsize = lastsize*2;	
 		}
 		vals.resize(lastsize);
 		for(int j=0; j<lastsize; ++j){
-			vals[j] = tmp[j];	
+			vals[j] = tmpVect[j];	
 		}		
 	}	
 	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) "<<lastsize<<", "<<amtrange);
