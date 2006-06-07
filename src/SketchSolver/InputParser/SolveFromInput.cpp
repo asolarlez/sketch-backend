@@ -1,11 +1,6 @@
 #include "SolveFromInput.h"
 #include "NodesToSolver.h"
 
-#include <map>
-
-
-
-
 
 
 
@@ -128,16 +123,19 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolv
 	Nout = spec_p->get_n_outputs();
 	spec = spec_p;
 	sketch = sketch_p;
-	Dout( cout<<"before cleanup "<<endl);
-	Dout( sketch->print(cout) );
+
   	sketch->cleanup(false);
-	Dout( cout<<"after cleanup "<<endl);
-	Dout( sketch->print(cout) );
   	spec->cleanup(false);
+  	  	
     sketch->sort_graph();
+    spec->sort_graph();
+    
+    spec->relabel();
+    sketch->relabel();
+
    	Dout( cout<<"after sort "<<endl);
 	Dout( sketch->print(cout) );
-    spec->sort_graph();
+	
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 	declareControl(CTRL, sketch->get_n_controls());
 	nseeds = NS_p;

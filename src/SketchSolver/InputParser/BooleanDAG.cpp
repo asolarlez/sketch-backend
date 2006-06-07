@@ -56,7 +56,7 @@ int arith_node::back_dfs(int idx){
   if(mother != NULL){
   	 idx = mother->back_dfs(idx);
   }
-  for(list<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
 	  	idx = (*it)->back_dfs(idx);
   	}
@@ -88,7 +88,7 @@ void bool_node::dislodge(){
 
 void arith_node::dislodge(){
 	bool_node::dislodge();
-	for(list<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
 	  	if(*it != NULL){
 	  		(*it)->remove_child(this);	
 	  	}

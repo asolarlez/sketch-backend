@@ -77,8 +77,8 @@ class arith_node: public bool_node{
 	int mother_quant;
 	int father_quant;
 	AType arith_type;
-	list<bool_node*> multi_mother;
-	list<int> multi_mother_sgn;	
+	vector<bool_node*> multi_mother;
+	vector<int> multi_mother_sgn;	
     virtual int back_dfs(int idx);
 	virtual void dislodge();
 	virtual string get_tname(){

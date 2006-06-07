@@ -1,5 +1,6 @@
 #include "NodesToSolver.h"
-
+#include <algorithm>
+#include "timerclass.h"
 
 template<typename COMP>
 void NodesToSolver::processComparissons(arith_node& node){
@@ -225,49 +226,92 @@ void NodesToSolver::visit( TIMES_node& node ){
 	return;
 }
 
+timerclass aracctimer("ARRACC TIMER");
+timerclass flooptimer("FIRST LOOP TIMER");
+timerclass nonbooltimer("NON BOOL TIMER");
+timerclass elooptimer("FINAL LOOP TIMER");
+
+
 void NodesToSolver::visit( ARRACC_node& node ){
+
 	Dout(cout<<" ARRACC "<<endl);
-	list<bool_node*>::iterator it = node.multi_mother.begin();
-	list<int>::iterator signs = node.multi_mother_sgn.begin();
+	vector<bool_node*>::iterator it = node.multi_mother.begin();
+	vector<int>::iterator signs = node.multi_mother_sgn.begin();
 	vector<Tvalue> choices(node.multi_mother.size());
 	bool parentSame = true;
 	bool parentSameBis = true;
 	bool isBoolean=true;
 	
 	Tvalue& omv = node_ids[node.mother] ;
-	vector<int>::iterator itbeg, itend;
+	vector<int>::iterator itbeg, itend, itfind;
 	itbeg = omv.num_ranges.begin();
 	itend = omv.num_ranges.end();
-	bool foundIt = true;
-	bool isSparse = omv.isSparse();
-	for(int i=0; it != node.multi_mother.end(); ++i, ++it, ++signs){	
+	bool isSparse = omv.isSparse();	
+	
+	if( isSparse && omv.id() == YES ){
+		int idx = omv.num_ranges[0];
 		
+		if( idx >= node.multi_mother.size()){
+			node_ids[&node] = -YES;
+			Dout( cout<<" SHORTCUT "<<omv<<" out of range"<<endl );
+			return;
+		} 
+		
+		bool_node* choice = node.multi_mother[idx];
+		int quant = node.multi_mother_sgn[idx];
+		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
+		node_ids[&node] = node_ids[choice];
+		Tvalue& cval = node_ids[&node];
+		if( !cval.isSparse() ){
+			if(quant==0 || quant==1){
+					cval.bitAdjust( quant==1 );					
+			}else{
+				cval.inPlaceMakeSparse(dir);
+				if( quant != 1){
+					cval.intAdjust(quant);	
+				}
+			}
+		}else{
+			if( quant != 1){
+				cval.intAdjust(quant);
+			}
+		}
+		Dout( cout<<" Shortcout = "<<cval<<endl );
+		return;		
+	}
+	
+	aracctimer.restart();	
+	flooptimer.restart();	
+	for(int i=0; it != node.multi_mother.end(); ++i, ++it, ++signs){
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
 		const Tvalue& cval = node_ids[*it];
 		if( (*signs)>1 || (*signs)<0 || cval.isSparse()){
 			isBoolean = false;	
 		}
 		{
-			choices[i] = cval;
+			choices[i].setID(cval.id());
 			if( !cval.isSparse()  ) choices[i].bitAdjust( (*signs)==1 );
 		}
-		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
-		if( isSparse ){
-			foundIt = (itend !=find(itbeg, itend, i));
-		}
-		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag || !foundIt);
-		parentSameBis = parentSameBis && ( (*it)== NULL || !(*it)->flag );
-	}			
-	if( parentSame != parentSameBis){ cout<<" saved a lot of operations "<<endl; }
-	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl); return; }
+		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);			
+	}
+	for( ; itbeg < itend; ++itbeg){
+		bool_node* cnode = node.multi_mother[*itbeg];
+		parentSame = parentSame && ( (cnode)== NULL || !cnode->flag);	
+	}
+	flooptimer.stop().print();
+	cout<<" FIRST LOOP mmsize ="<<node.multi_mother.size()<<" omv.num_ranges.size()="<<omv.num_ranges.size()<<endl;
+	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl); aracctimer.stop().print(); return; }
 	if(!isBoolean){
+		nonbooltimer.restart();
 		doNonBoolArrAcc(node);
+		nonbooltimer.stop().print();
+		aracctimer.stop().print();
 		return;
 	}
 	Dout(cout<<" is boolean"<<endl);	
 	bool_node* mother = node.mother;	
 	Tvalue mval = node_ids[mother] ;
-	Dout(cout<<" mother = "<<mval.id()<<"  signs = "<<node.mother_sgn<<"  "<<endl);
+	Dout(cout<<" mother = "<<mval<<"  signs = "<<node.mother_sgn<<"  "<<endl);
 	Assert( mother != NULL, "This should never happen");
 	if( !mval.isSparse() ){ //mother->type != bool_node::ARITH
 		mval.bitAdjust(node.mother_sgn);
@@ -284,8 +328,10 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		}
 		node_ids[&node] = cvar;
 		Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[&node]<<"   "<<&node<<endl);
+		aracctimer.stop().print();
 		return;
 	}
+	elooptimer.restart();
 	vector<int>& nrange = mval.num_ranges;
 	int cvar = -YES;
 	int orTerms = 0;
@@ -313,6 +359,8 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		node_ids[&node] = result;
 	}
 	Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[&node]<<"   "<<&node<<endl);	
+	elooptimer.stop().print();
+	aracctimer.stop().print();
 	return;
 }
 	void NodesToSolver::visit( DIV_node& node ){
@@ -362,8 +410,8 @@ void NodesToSolver::visit( ARRACC_node& node ){
 			Tvalue mval = node_ids[mother] ;
 			int quant = node.mother_quant;
 			Dout(cout<<" mother = "<<((mother != NULL)?mother->get_name():"NULL")<<"  mid = "<<mval<<"  mquant = "<<quant<<endl);
-			list<bool_node*>::iterator it = node.multi_mother.begin();
-			list<int>::iterator signs = node.multi_mother_sgn.begin();
+			vector<bool_node*>::iterator it = node.multi_mother.begin();
+			vector<int>::iterator signs = node.multi_mother_sgn.begin();
 			Assert( node.multi_mother.size() == 2 , "THIS SHOULDN't HAPPEN");
 			vector<Tvalue> choices(2);
 			vector<bool_node*> mothers(2);
@@ -507,8 +555,8 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	
 void NodesToSolver::visit( ACTRL_node& node ){
 	int size = node.multi_mother.size();
-	list<bool_node*>::iterator it = node.multi_mother.begin();
-	list<int>::iterator signs = node.multi_mother_sgn.begin();
+	vector<bool_node*>::iterator it = node.multi_mother.begin();
+	vector<int>::iterator signs = node.multi_mother_sgn.begin();
 	bool parentSame = true;
 	vector<int> ids(node.multi_mother.size());
 	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i, ++signs){
@@ -532,8 +580,8 @@ void NodesToSolver::visit( ACTRL_node& node ){
 
 void NodesToSolver::doNonBoolArrAcc(arith_node& node){	
 	Dout( cout<<" non boolean array "<<endl );
-	list<bool_node*>::iterator it = node.multi_mother.begin();
-	list<int>::iterator signs = node.multi_mother_sgn.begin();
+	vector<bool_node*>::iterator it = node.multi_mother.begin();
+	vector<int>::iterator signs = node.multi_mother_sgn.begin();
 	int N = node.multi_mother.size();
 	vector<Tvalue> choices(N);
 	for(int i=0; i < N; ++i, ++it, ++signs){
@@ -557,6 +605,9 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 				newVals[ cvalues[j] ].push_back(cvar);
 				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<endl );
 			}
+		}else{
+			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
+			mng.assertVarClause(-mval.id(i));
 		}
 	}
 	

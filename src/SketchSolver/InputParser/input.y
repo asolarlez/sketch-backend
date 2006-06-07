@@ -267,6 +267,8 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	for(int i=0; i<bigN; ++i, ++it, ++oldit){
 		string s1 = currentBD->new_name();
 		arith_node* an = newArithNode(arith_node::ARRASS);
+		an->multi_mother.reserve(2);
+		an->multi_mother_sgn.reserve(2);
 		an->multi_mother.push_back(*oldit);
 		if(*oldit != NULL){
 			(*oldit)->children.push_back(an);
@@ -555,6 +557,7 @@ string s1 = currentBD->new_name();
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
 	vector<int> tempsgn(bigN);
+	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
 		if(*it != NULL && !isNull){
@@ -572,6 +575,7 @@ string s1 = currentBD->new_name();
 		sgn_stack.pop();
 	}
 	if( !isNull ){
+		an->multi_mother_sgn.reserve(bigN);
 		for(int i=0; i<bigN; ++i){
 			an->multi_mother_sgn.push_back(tempsgn[i]);
 		}
@@ -595,6 +599,8 @@ string s1 = currentBD->new_name();
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
 	vector<int> tempsgn(bigN);
+	an->multi_mother.reserve(bigN);
+	an->multi_mother_sgn.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
 		if(*it != NULL){

@@ -5,6 +5,8 @@
 #include "FindCheckSolver.h"
 #include "Tvalue.h"
 
+
+
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* spec;
 	BooleanDAG* sketch;

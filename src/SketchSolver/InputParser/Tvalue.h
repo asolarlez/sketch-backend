@@ -43,14 +43,14 @@ public:
 	Tvalue(int p_id): type(BIT), _id(p_id), _size(0),neg(true){
 		if( _id < 0){ neg = !neg; _id = -_id; }
 	};
-	Tvalue& operator=(const Tvalue& tv){
+	inline Tvalue& operator=(const Tvalue& tv){
 		type = (tv.type);
 		_id = (tv._id);
 		_size = (tv._size);
 		num_ranges = (tv.num_ranges);
 		neg = tv.neg;
 	}
-	Tvalue& operator=(int p_id){
+	inline Tvalue& operator=(int p_id){
 		type = BIT;
 		_id = p_id;
 		neg = true;
@@ -59,52 +59,52 @@ public:
 		num_ranges.clear();
 	}
 	
-	void setID(int id){
+	inline void setID(int id){
 		_id = id;	
 		Assert( _id != 0 , "This can't happen lcx kfiug");
 		neg = true;
 		if( _id < 0){ neg = !neg; _id = -_id; }
 	}
 	
-	void setSparse(){
+	inline void setSparse(){
 		type = SPARSE;
 		_size = num_ranges.size();	
 	}
 	
-	int operator[](int idx)const{
+	inline int operator[](int idx)const{
 		Assert( type == SPARSE , "This should be sparse ");
 		return num_ranges[idx];	
 	}
 	
-	int size()const{
+	inline int size()const{
 		return _size;
 	}
 	
-	bool isNULL() const{
+	inline bool isNULL() const{
 		return _id == 0;
 	}
 	
-	int id() const{
+	inline int id() const{
 		Assert( _id != 0 , "This can't happen poqiu  "<<_id<<endl);
 		return neg? _id: -_id;	
 	}
 	
-	int id(int idx) const{
+	inline int id(int idx) const{
 		Assert( _id != 0 , "This can't happen klj dh "<<_id<<endl);
 		return neg? (_id+idx) : -(_id+idx);
 	}
 	
-	void bitAdjust(bool bit){
+	inline void bitAdjust(bool bit){
 		Assert( type != SPARSE , "can't bitadjust a sparse.");
 		if( !bit ) neg = !neg;
 	}
 	
-	void intAdjust(int adj){
+	inline void intAdjust(int adj){
 		Assert( type == SPARSE , "This is bad; uiego");
 		for(int i=0; i<num_ranges.size(); ++i){ num_ranges[i] = num_ranges[i]*adj; }
 	}
 	
-	bool isSparse() const{
+	inline bool isSparse() const{
 		return type == SPARSE;	
 	}	
 	
@@ -202,7 +202,7 @@ public:
 		}	
 	}
 	
-	Tvalue makeSparse(varDir& dir) const{
+	inline Tvalue makeSparse(varDir& dir) const{
 		Tvalue tv(*this);
 		tv.inPlaceMakeSparse(dir);
 		return tv;
