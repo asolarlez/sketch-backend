@@ -33,6 +33,10 @@ class paramInterp{
   SolverType synthtype, veriftype;
   bool outputAIG; 
   int terminateafter;
+  bool hasCpt;
+  string cptfile;
+  bool hasRestore;
+  string restorefile;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -42,6 +46,8 @@ class paramInterp{
 		veriftype=MINI;
 		outputAIG =false;
 		terminateafter = -1;
+		hasCpt = false;
+		hasRestore = false;
 		
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
@@ -59,6 +65,18 @@ class paramInterp{
 		  INp::overrideNCtrls=true;
 	      input_idx = ii+2;      
 	    }  
+	    if( string(argv[ii]) == "-checkpoint" ){
+	      Assert(ii<(argc-1), "-checkpoint needs an extra parameter");
+	      hasCpt = true;
+		  cptfile = argv[ii+1]; 
+	      input_idx = ii+2;      
+	    }
+	    if( string(argv[ii]) == "-restore" ){
+	      Assert(ii<(argc-1), "-restore needs an extra parameter");
+	      hasRestore = true;
+		  restorefile = argv[ii+1];
+	      input_idx = ii+2;
+	    }
 	    if( string(argv[ii]) == "-seed" ){
 	      Assert(ii<(argc-1), "-seed needs an extra parameter");
 	      seed = atoi(argv[ii+1]);	  
@@ -191,6 +209,7 @@ int main(int argc, char** argv){
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
       	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
+      	if( params.hasCpt ){ solver.setCheckpoint(params.cptfile); }
       	if(params.seed >= 0){
       		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
       		solver.set_randseed(params.seed);
@@ -198,7 +217,12 @@ int main(int argc, char** argv){
 	  	solver.setup();
 	  	int solveCode = 0;
 	  	try{
-		  	solveCode = solver.solve();
+	  		if(!params.hasRestore){
+			  	solveCode = solver.solve();
+	  		}else{
+	  			ifstream input(params.restorefile.c_str());
+	  			solveCode = solver.solveFromCheckpoint(input);
+	  		}
 	  	}catch(SolverException* ex){
 	  		cout<<"ERROR: "<<ex->code<<"  "<<ex->msg<<endl;
 	        ABCSolverEnd();

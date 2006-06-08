@@ -14,17 +14,23 @@ class SolverException{
 class FindCheckSolver{
 	private:
 	int controlSize;
+	int * ctrl;	
+	
 	SATSolver& mngFind;
 	varDir dirFind;	
 	
 	SATSolver& mngCheck;
 	varDir dirCheck;
+	
 	int randseed;
 	int iterlimit;
 	
+	ofstream cptfile;
+	bool doCheckpoint;
+	
 	map<string, int> controlVars;
-	vector<bitVector> inputs;
-	int * ctrl;	
+	//vector<bitVector> inputs;
+
 	protected:
 	int nseeds;
 	//Reserved variable names.
@@ -62,7 +68,12 @@ class FindCheckSolver{
 	
 	virtual void printDiagnostics(SATSolver& mng, char c);
 	virtual void printDiagnostics();
+	virtual void checkpoint(char nm, int * ar, int sz);
+	virtual bool solve(int * input, int inputSize);
 	public:
+	bool solveFromCheckpoint(istream& in);
+	virtual void setCheckpoint(const string& filename);
+	
 	FindCheckSolver(SATSolver& finder, SATSolver& checker);
 	void setIterLimit(int p_iterlimit);
 	virtual void declareControl(const string& ctrl, int size);	

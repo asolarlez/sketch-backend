@@ -211,7 +211,6 @@ bool MiniSATSolver::ignoreOld(){
  	delete s;
  	s = new Solver();
  	s->newVar();
- 	s->verbosity = 2;
 }
 
 

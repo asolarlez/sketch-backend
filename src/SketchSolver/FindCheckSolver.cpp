@@ -1,6 +1,6 @@
 #include "FindCheckSolver.h"
 #include <sys/time.h>
-
+#include "timerclass.h"
 
 #define Dtime( out ) out
 
@@ -16,6 +16,7 @@ FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(
 	Nout = 0;
 	iterlimit = -1;
 	randseed = time(NULL);
+	doCheckpoint = false;
 }
 
 void FindCheckSolver::setIterLimit(int p_iterlimit){
@@ -93,14 +94,10 @@ void FindCheckSolver::setNewControls(int controls[], int ctrlsize){
 
 bool FindCheckSolver::check(int controls[], int ctrlsize, int input[]){
 	Dout( cout<<"check()"<<endl );
-					unsigned long long l_f_time;
-					struct timeval stime, endtime;
-					Dtime(gettimeofday(&stime, NULL) );
+	timerclass tc("* TIME TO ADD CONTROLS ");
+	tc.start();				
 	setNewControls(controls, ctrlsize);
-					Dtime(gettimeofday(&endtime, NULL) );
-					Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
-					   (endtime.tv_usec - stime.tv_usec) );
-					Dtime(cout<<"* TIME TO ADD CONTROLS "<<(l_f_time/1000.0)<<endl);
+	tc.stop().print();
 	
     int result = mngCheck.solve();
     cout<<"# CHECK DIAGNOSTICS"<<endl;
@@ -166,14 +163,11 @@ void FindCheckSolver::addInputsToTestSet(int input[], int insize){
 
 bool FindCheckSolver::find(int input[], int insize, int controls[]){
 		
-					unsigned long long l_f_time;
-					struct timeval stime, endtime;
-					Dtime(gettimeofday(&stime, NULL) );
+	timerclass tc("* TIME TO ADD INPUT ");
+	tc.start();				
 	addInputsToTestSet(input, insize);
-					Dtime(gettimeofday(&endtime, NULL) );
-					Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
-					   (endtime.tv_usec - stime.tv_usec) );
-					Dtime(cout<<"* TIME TO ADD INPUT "<<(l_f_time/1000.0)<<endl);
+	tc.stop().print();
+	
 //Solve
 	int result = mngFind.solve();
   	cout<<"# FIND DIAGNOSTICS"<<endl;
@@ -213,120 +207,155 @@ void FindCheckSolver::setup(){
 	setupCheck();
 }
 
-bool FindCheckSolver::solve(){
+void  FindCheckSolver::checkpoint(char nm, int * ar, int sz){
+	if( doCheckpoint ){
+		cptfile<<nm;
+		for(int i=0; i<sz; ++i){
+			cptfile<<(ar[i]==1?1:0);
+		}
+		cptfile<<endl;
+	}
+}
+
+void FindCheckSolver::setCheckpoint(const string& filename){
+	cptfile.open(filename.c_str());
+	doCheckpoint = true;
+	cout<<"checkpointing to "<<filename<<endl;
+}
+
+bool FindCheckSolver::solveFromCheckpoint(istream& in){
+	timerclass ctimer("* CHECK TIME");
 	int inputSize = getInSize();
 	int ctrlSize = getCtrlSize();
-	
 	if(ctrl != NULL){
 		delete [] ctrl;
 		ctrl = NULL;
 	}
 	ctrl = new int[ctrlSize];
-
-	time_t tm;
-	
-	srand(randseed);
-	bool fail = false;
- 	bool isDone;
-	{ 
-		int tmp[inputSize];
-		for(int ns = 0; ns < nseeds; ++ns){
-			for(int i=0; i< inputSize; ++i){
-				tmp[i] = (rand() & 0x1) > 0? -1 : 1;
-				Dout( cout<<"seedInput["<<i<<"]=\t"<<tmp[i]<<"; "<<endl );
-			}
-			
-			cout<<"!%";
-			for(int i=0; i<inputSize; ++i) cout<<"\t"<<(tmp[i]==1?1:0);
-			cout<<endl;
-			
-			if( ns < nseeds-1 ){
-				addInputsToTestSet(tmp, inputSize);
-			}
-		}
-		{
-			struct timeval stime, endtime;
-			Dtime(gettimeofday(&stime, NULL) );
-			isDone = find(tmp, inputSize, ctrl);
-			Dtime(gettimeofday(&endtime, NULL) );
-			Dtime( unsigned long long tott = 1000000*(endtime.tv_sec - stime.tv_sec)+
-				   (endtime.tv_usec - stime.tv_usec) );
-	 		Dtime( printf(" *SETUP TIME %d   \n", tott/1000) );
-		}
-		if(!isDone){
-			cout<<"******** FAILED ********"<<endl;	
-			fail = true;
-		}
-	}
 	int * input = new int[inputSize];
-	cout<<"inputSize = "<<inputSize<<endl;
-	Dtime( unsigned long long check_time=0 );
-	Dtime( unsigned long long find_time=0 );
-	int iterations = 0;
-	int itsSinceLastClean = 0;
-	while(isDone){
-		unsigned long long l_f_time, l_c_time;
-		Dout( for(int i=0; i<ctrlSize; ++i) cout<<"		ctrl["<<i<<"]="<<ctrl[i]<<endl; cout<<"-----------------------------"<<endl );
-		cout<<"!+";
-		for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);
-		cout<<endl;
-		{
-			struct timeval stime, endtime;
-			cout<<"BEG CHECK"<<endl;
-			Dtime(gettimeofday(&stime, NULL) );
-		isDone = check(ctrl, ctrlSize, input);
-			Dtime(gettimeofday(&endtime, NULL) );
-			Dtime( l_c_time =1000000*(endtime.tv_sec - stime.tv_sec)+
-				   (endtime.tv_usec - stime.tv_usec); check_time += l_c_time );
-			cout<<"END CHECK"<<endl;			
-		}		
-		
-		if(isDone){
-			cout<<"!%";
-			for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0);
-			cout<<endl;
-			Dout( for(int i=0; i<inputSize; ++i) cout<<"		input["<<i<<"]="<<input[i]<<endl; cout<<"-----------------------------"<<endl );
-			bool keepGoing;
-			{
-				struct timeval stime, endtime;
-				cout<<"BEG FIND"<<endl;
-				Dtime(gettimeofday(&stime, NULL) );
-			 	keepGoing = find(input, inputSize, ctrl);
-				Dtime(gettimeofday(&endtime, NULL) );
-				Dtime( l_f_time =1000000*(endtime.tv_sec - stime.tv_sec)+
-				   (endtime.tv_usec - stime.tv_usec); find_time +=l_f_time );
-			   cout<<"END FIND"<<endl;
+	int maxSize = (ctrlSize>inputSize? ctrlSize : inputSize)+2;
+	char* buff = new char[maxSize];
+	char last = 'n';
+	bool unaddedInput = false;
+	while(in){
+		in.getline(buff, maxSize);
+		if( buff[0] == '\0' ) continue;
+		if(buff[0] == 'f'){
+			if( unaddedInput ){ addInputsToTestSet(input, inputSize); }
+			for(int i=0; i<inputSize; ++i){
+				Assert( buff[i+1] == '0' || buff[i+1] == '1' , "CORRUPTED FILE f "<<i<<" of "<<inputSize<<"  "<<buff[i+1]);
+				input[i] = buff[i+1]=='1'? 1 : -1;
 			}
-			if( !keepGoing){
-				cout<<"******** FAILED ********"<<endl;
+			unaddedInput = true;
+			last = 'f';
+		}else if(buff[0] == 'c'){
+			for(int i=0; i<ctrlSize; ++i){
+				Assert( buff[i+1] == '0' || buff[i+1] == '1' , "CORRUPTED FILE c "<<i<<" of "<<ctrlSize<<"  "<<buff[i+1]);
+				ctrl[i] = buff[i+1]=='1'? 1 : -1;
+			}
+			last = 'c';
+		}else Assert(false, "CORRUPTED FILE c "<<buff[0]);
+	}
+	bool succeeded ;
+	if( last == 'f' ){
+		Assert( unaddedInput , "This is not possible ");
+		succeeded = solve(input, inputSize);
+	}else if(last == 'c'){
+		if( unaddedInput ){ addInputsToTestSet(input, inputSize); }
+		bool doMore;
+		{ // Check
+			cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);	cout<<endl;
+			cout<<"BEG CHECK"<<endl; ctimer.restart();
+			doMore = check(ctrl, ctrlSize, input);
+			ctimer.stop(); cout<<"END CHECK"<<endl;
+			ctimer.print();
+		}
+		
+		if(doMore){
+			succeeded = solve(input, inputSize);
+		}else{
+			cout<<" *GOT THE CORRECT ANSWER IN 0 iterations."<<endl;		
+			succeeded = true;
+		}
+	}else Assert(false, "EMPTY FILE");
+	return succeeded;
+}
+
+
+bool FindCheckSolver::solve(int * input, int inputSize){
+	int ctrlSize = controlSize;
+	int iterations = 0;
+	bool fail = false;
+ 	bool doMore=true;
+	timerclass ftimer("* FIND TIME");
+	timerclass ctimer("* CHECK TIME");
+	while(doMore){
+		{// Find
+			cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0); cout<<endl;
+			checkpoint('f', input, inputSize);
+			cout<<"BEG FIND"<<endl; ftimer.restart();
+			doMore = find(input, inputSize, ctrl);
+			ftimer.stop(); cout<<"END FIND"<<endl;
+			if(!doMore){
+				cout<<"******** FAILED ********"<<endl;	
+				ftimer.print();	ctimer.print();
 				fail = true;
 				break;
 			}
 		}
-		if( false && itsSinceLastClean > 3 ){
-			mngCheck.cleanupDatabase();
-			mngFind.cleanupDatabase();
-			mngFind.reset();
-			mngCheck.reset();
-			itsSinceLastClean = 0;
-			cout<<"* CLEANING UP"<<endl;
+		
+		{ // Check
+			cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);	cout<<endl;
+			checkpoint('c', ctrl, ctrlSize);
+			cout<<"BEG CHECK"<<endl; ctimer.restart();
+			doMore = check(ctrl, ctrlSize, input);
+			ctimer.stop(); cout<<"END CHECK"<<endl;
 		}
-		cout<<"********  "<<iterations<<"\tftime="<<(l_f_time/1000.0)<<"\tctime="<<(l_c_time/1000.0)<<endl;
+		cout<<"********  "<<iterations<<"\tftime="<<ftimer.get_cur_ms() <<"\tctime="<<ctimer.get_cur_ms()<<endl;
 		++iterations;
-		++itsSinceLastClean;
-		if( iterlimit > 0 && iterations > iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
+		if( iterlimit > 0 && iterations >= iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
-	
-	delete [] input;	
+
 	if(!fail){
 		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;		
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
-	
-	cout<<" *"<<"FIND TIME "<<(find_time/1000)<<", CHECK TIME "<<(check_time/1000)<<endl;
+	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<", CHECK TIME "<<ctimer.get_tot_ms()<<endl;
 	return !fail;
 }
+
+
+bool FindCheckSolver::solve(){
+	int inputSize = getInSize();
+	int ctrlSize = getCtrlSize();
+	Assert( controlSize == ctrlSize, "This is crazy!!");
+	cout<<"inputSize = "<<inputSize<<"\tctrlSize = "<<ctrlSize<<endl;
+	if(ctrl != NULL){
+		delete [] ctrl;
+		ctrl = NULL;
+	}
+	ctrl = new int[ctrlSize];
+	int * input = new int[inputSize];
+	srand(randseed);
+	for(int i=0; i< inputSize; ++i){
+		input[i] = (rand() & 0x1) > 0? -1 : 1;
+	}
+	for(int ns = 0; ns < (nseeds-1); ++ns){			
+		cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0); cout<<endl;
+		checkpoint('f', input, inputSize);
+		addInputsToTestSet(input, inputSize);		
+		for(int i=0; i< inputSize; ++i){
+			input[i] = (rand() & 0x1) > 0? -1 : 1;			
+		}
+	}
+	
+	bool succeeded = solve(input, inputSize);
+	
+	delete [] input;	
+	return succeeded;
+}
+
 
 void FindCheckSolver::printDiagnostics(){
 	cout<<"# STATS FOR FINDER"<<endl;

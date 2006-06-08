@@ -7,7 +7,7 @@
 
 
 void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
-	node_ids[NULL] = YES;
+	//node_ids[NULL] = YES;
 	NodesToSolver nts(mng, dir, outname, node_values, node_ids, YES, IN, CTRL);
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		if( (*node_it)->type == bool_node::ARITH){
@@ -29,6 +29,7 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 	int idx = 0;	
 	node_values.clear();
 	node_ids.clear();
+	node_ids.resize( sketch->size() + spec->size() );
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
@@ -54,10 +55,10 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	node_values.clear();
 	int idx = 0;
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
-		node_ids[(*node_it)] = f_node_ids[idx];		
+		node_ids[(*node_it)->id] = f_node_ids[idx];		
 		(*node_it)->flag = f_flags[idx];
 		
-		Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)]<<"  "<<(*node_it)<<endl);	
+		Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
 		if((*node_it)->type == bool_node::SRC){
 			int iid = (*node_it)->ion_pos;
 			Assert(input[iid % insize] == 1 || input[iid % insize]==-1, "This is bad, really bad");
@@ -84,7 +85,7 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);
 	k=0;
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		node_ids[(*node_it)] = f_node_ids[idx];		
+		node_ids[(*node_it)->id] = f_node_ids[idx];		
 		(*node_it)->flag = f_flags[idx];
 
 
@@ -108,11 +109,11 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 	FindCheckSolver::addInputsToTestSet(input, insize);
 	idx = 0;
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)];
+		f_node_ids[idx] = node_ids[(*node_it)->id];
 		f_flags[idx] = (*node_it)->flag;
 	}
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)];
+		f_node_ids[idx] = node_ids[(*node_it)->id];
 		f_flags[idx] = (*node_it)->flag;
 	}
 }
@@ -145,13 +146,16 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolv
 	f_flags.resize( totSize , true);
 	
 	cout<<"Random seeds = "<<nseeds<<endl;	
+	cout<<"SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
 		(*node_it)->flag = true;
 	}
+	int specsize = spec->size();
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
 		(*node_it)->flag = true;
+		(*node_it)->id += specsize;
 	}
-	
+	node_ids.resize( totSize );
 	node_values[NULL] = 1;
 	firstTime=true;
 }

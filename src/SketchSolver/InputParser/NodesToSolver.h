@@ -16,7 +16,7 @@ class NodesToSolver : public NodeVisitor{
 	varDir& dir;
 	const string& outname;
 	map<bool_node*, int>& node_values; // -1=false, 1=true, 0=unknown
-	map<bool_node*, Tvalue>& node_ids;
+	vector<Tvalue>& node_ids;
 	
 	template<typename THEOP>
 	void processArith(arith_node& node);
@@ -28,18 +28,22 @@ class NodesToSolver : public NodeVisitor{
 	const int YES;
 	const string& IN;
 	const string& CTRL;
+	Tvalue tvYES;
 	
+	inline Tvalue& tval_lookup(bool_node* bn){
+			return bn == NULL? tvYES : node_ids[bn->id];
+	}
 vector<int> scratchpad;
 vector<int> tmprange;
 vector<int> unirange;
 	public:
 	NodesToSolver(SATSolver& p_mng, varDir& p_dir, const string& p_outname, 
 				 map<bool_node*,  int>& p_node_values,
-				map<bool_node*,  Tvalue>& p_node_ids, const int p_YES, const string& p_IN, const string& p_CTRL):
+				vector<Tvalue>& p_node_ids, const int p_YES, const string& p_IN, const string& p_CTRL):
 		mng(p_mng), dir(p_dir), 
 		outname(p_outname), node_values(p_node_values), 
 		node_ids(p_node_ids),
-		YES(p_YES), IN(p_IN), CTRL(p_CTRL), scratchpad(100),tmprange(2), unirange(1) {
+		YES(p_YES), IN(p_IN), CTRL(p_CTRL), scratchpad(100),tmprange(2), unirange(1), tvYES(p_YES) {
 				tmprange[0] = 0;
 	tmprange[1] = 1;
 	unirange[0] = 1;			

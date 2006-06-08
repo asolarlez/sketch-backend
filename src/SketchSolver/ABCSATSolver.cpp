@@ -81,7 +81,7 @@ int ABCSATSolver::solve(){
        
      
      
-     { 
+     if(doCheck){ 
        timerclass timer("Check time");  
        // make sure everything is okay with the network structure       
        timer.start();

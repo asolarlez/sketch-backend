@@ -30,6 +30,7 @@ protected:
 		SolutionStrategy  strategy;
 		bool outputAIG;
 		int solvcnt;
+		bool doCheck;
 	int GetIntId(int val){
 		return (val);
 	}
@@ -64,6 +65,7 @@ public:
    	           oldpNtk = NULL;
    	           out_cnt = 0;
    	           outputAIG = false;
+   	           doCheck = false;
    	           solvcnt = 0;
 		       ////////
         }

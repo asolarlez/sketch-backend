@@ -15,7 +15,7 @@ class SolveFromInput: public FindCheckSolver{
 	int YES;
 	int Nout;
 	bool firstTime;
-	map<bool_node*, Tvalue> node_ids;
+	vector<Tvalue> node_ids;
 	vector<Tvalue> f_node_ids;
 	vector<bool> f_flags;
 //	map<bool_node*, vector<int> > f_num_ranges;
