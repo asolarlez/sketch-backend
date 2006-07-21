@@ -212,6 +212,8 @@ Method: T_Init '(' ')' '{' InitBody '}'
 		cout<<*$1<<" SKETCHES "<<*$3<<endl;
 		sketchMap[*$1] = currentBD;
 		sketches[currentBD] = *$3;
+		delete $3;
+		delete $1;
 }
 '(' ParamList ')' '{' WorkBody '}'
 
