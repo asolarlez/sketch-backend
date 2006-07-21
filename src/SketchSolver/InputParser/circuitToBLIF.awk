@@ -1,5 +1,5 @@
 BEGIN { 
-	procmode = "CHECK"; 
+	procmode = PROCMODE; 
 
 	print ".model test"
 	print ".outputs OUT"
