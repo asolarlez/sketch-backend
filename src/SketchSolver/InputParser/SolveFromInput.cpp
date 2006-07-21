@@ -120,27 +120,28 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 
 
 SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker), CTRL("_C"){
+cout<<"START CONSTRUCTOR"<<endl;
 	N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
 	spec = spec_p;
 	sketch = sketch_p;
-
+cout<<"BEFORE CLEANUP"<<endl;
   	sketch->cleanup(false);
   	spec->cleanup(false);
-  	  	
+cout<<"BEFORE SORT"<<endl;  	  	
     sketch->sort_graph();
     spec->sort_graph();
-    
+cout<<"BEFORE RELABEL"<<endl;
     spec->relabel();
     sketch->relabel();
 
    	Dout( cout<<"after sort "<<endl);
 	Dout( sketch->print(cout) );
-	
+cout<<"BEFORE DC"<<endl;	
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 	declareControl(CTRL, sketch->get_n_controls());
 	nseeds = NS_p;
-	
+cout<<"BEFORE RES"<<endl;	
 	int totSize = spec->size() + sketch->size();
 	f_node_ids.resize( totSize , 0 );
 	f_flags.resize( totSize , true);

@@ -89,6 +89,7 @@ void NodesToSolver::processArith(arith_node& node){
 				map<int, int> numbers;
 				Tvalue& oval = node_ids[node.id];
 				vector<int>& tmp = oval.num_ranges;
+				tmp.clear();
 				tmp.reserve(mval.size()*fval.size());
 				Dout(cout<<"ARITHOP "<<mval<<"  OP  "<<fval<<endl);
 				Dout(cout<<"OPERATING "<<node.father->get_name()<<"  WITH  "<<node.mother->get_name()<<endl);

@@ -49,6 +49,7 @@ public:
 		_size = (tv._size);
 		num_ranges = (tv.num_ranges);
 		neg = tv.neg;
+		return *this;
 	}
 	inline Tvalue& operator=(int p_id){
 		type = BIT;
@@ -57,6 +58,7 @@ public:
 		if( _id < 0){ neg = !neg; _id = -_id; }
 		_size = 0;
 		num_ranges.clear();
+		return *this;
 	}
 	
 	inline void setID(int id){
@@ -152,6 +154,7 @@ public:
 				return tv;
 			}
 		}
+		return *this;
 	}
 	
 	void inPlaceMakeSparse(varDir& dir){
