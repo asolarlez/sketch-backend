@@ -11,7 +11,7 @@
 #include <string>
 #include <set>
 #include <vector>
-#include <dirent.h>
+//#include <dirent.h>
 
 #include "SATSolver.h"
 
@@ -292,7 +292,7 @@ int arbitraryPerm(SATSolver& mng, varDir& dir, int input, int insize, int contro
 inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID, int amtsize, vector<int>& vals, int YES){
 	Assert(switchID.size() == amtsize, "This should never happen");
 	int amtrange = 1;
-	for(int i=0; i<amtsize; ++i) amtrange *= 2;
+	for(int i=0; i<amtsize && i<12; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
 	vector<int> tmpVect(amtrange);
 	int lastsize = 1;
@@ -326,6 +326,7 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 			int v = (curval > 0)? 1:0;
 			for(int j=0; j<lastsize; ++j){
 				tmpVect[j] = vals[j]*2 + v;
+				Assert(j<amtrange, "This is out of range");
 			}
 		}else{
 			int roundVars = lastRoundVars;
@@ -341,6 +342,7 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 				mng.addAndClause(lastRoundVars + j*2 + 1, cvar, (curval));
 				tmpVect[2*j] = vals[j]*2;
 				tmpVect[2*j+1] = vals[j]*2 + 1;
+				Assert((2*j+1)<amtrange, "This is out of range");
 			}
 			lastsize = lastsize*2;	
 		}

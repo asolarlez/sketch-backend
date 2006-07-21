@@ -14,14 +14,14 @@ using namespace std;
 
 inline void ABCSolverStart(){ cout<<" STARTING ABC "<<endl; Abc_Start(); }
 inline void ABCSolverEnd(){cout<<" ENDING ABC "<<endl; Abc_Stop(); }
-
+#define FileOutputABC( out ) /* out */
 
 class ABCSATSolver: public SATSolver{
 public:
 	typedef enum { BASICSAT, FULL } SolutionStrategy;
 	
 protected:
-       FileOutput( ofstream output );
+       FileOutputABC( ofstream output );
        Abc_Ntk_t * pNtk;
        Abc_Ntk_t * oldpNtk;
        Abc_Obj_t * pOutputNode;
@@ -67,6 +67,8 @@ public:
    	           outputAIG = false;
    	           doCheck = false;
    	           solvcnt = 0;
+   	           FileOutputABC( string nm = name; nm += ".circuit"; );
+			   FileOutputABC( output.open(nm.c_str()) );	
 		       ////////
         }
         virtual void annotate(const string& msg);

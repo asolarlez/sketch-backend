@@ -244,7 +244,7 @@ int ABCSATSolver::solve(){
 		        Abc_NtkLogicStoreName( pObj, Abc_ObjName(pNode) );
 	       	}           	
             Dout( cout<<" reset "<<endl );
-            FileOutput(output<<"#  ======================================="<<endl);
+            FileOutputABC(output<<"#  ======================================="<<endl);
        }
 
         void ABCSATSolver::cleanupDatabase(){
@@ -268,26 +268,26 @@ int ABCSATSolver::solve(){
 
  void ABCSATSolver::annotate(const string& msg){
        Dout( cout<<msg );
-       FileOutput(output<<msg<<endl);
+       FileOutputABC(output<<msg<<endl);
 }
 
 
  void ABCSATSolver::annotateInput(const string& name, int i, int sz){
        Dout( cout<<"x "<<name<<" ");
-       FileOutput(output<<"x "<<name<<" ");
+       FileOutputABC(output<<"x "<<name<<" ");
        for(int t=0; t<sz; ++t){
                Dout( cout<<(i+t)<<" ");
-               FileOutput(output<<(i+t)<<" ");
+               FileOutputABC(output<<(i+t)<<" ");
        }
        Dout(cout<<endl);
-       FileOutput(output<<endl);
+       FileOutputABC(output<<endl);
 }
 
 
 //This function encodes x == a ? b:c;
  void ABCSATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
        Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
-       FileOutput( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
+       FileOutputABC( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
    //////
    Abc_Obj_t * pFanin0, * pFanin1, * pFaninC, * pMux;
    Assert( x > 0, "This shouldn't happen choice");
@@ -306,7 +306,7 @@ int ABCSATSolver::solve(){
 //This function encodes x == a xor b;
  void ABCSATSolver::addXorClause(int x, int a, int b, int gid){
        Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
-       FileOutput( output<<x<<" XOR "<<a<<" "<<b<<endl );
+       FileOutputABC( output<<x<<" XOR "<<a<<" "<<b<<endl );
 	   Assert( x > 0, "This shouldn't happen xor");
 	   Abc_Obj_t * pFanin0, * pFanin1, * pXor;
 	   pXor = Abc_NtkObj( pNtk, GetIntId(x) );
@@ -320,7 +320,7 @@ int ABCSATSolver::solve(){
 //This function encodes x == a or b;
  void ABCSATSolver::addOrClause(int x, int a, int b, int gid){
        Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
-       FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
+       FileOutputABC( output<<x<<" OR "<<a<<" "<<b<<endl );
    //////
    Abc_Obj_t * pFanin0, * pFanin1, * pAnd;
    Assert( x > 0, "This shouldn't happen");
@@ -336,7 +336,7 @@ int ABCSATSolver::solve(){
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
  void ABCSATSolver::addBigOrClause(int* a, int size, int gid){
        Dout( cout<<" "<<a[0]<<"= " );
-       FileOutput( output<<a[0]<<" BOR "<<size<<" " );
+       FileOutputABC( output<<a[0]<<" BOR "<<size<<" " );
    //////
    Abc_Obj_t * pFanin0, * pOr;
    Assert( a[0] > 0, "Bad a[0]");
@@ -344,11 +344,11 @@ int ABCSATSolver::solve(){
    for (int i = 0; i < size; i++ )
    {
        Dout(cout<<a[i+1]<<" or ");
-       FileOutput( output<<a[i+1]<<" " );
+       FileOutputABC( output<<a[i+1]<<" " );
        pFanin0 = getNode(a[i+1]);
        Abc_ObjAddFanin( pOr, pFanin0 );
    }
-   FileOutput( output<<endl );
+   FileOutputABC( output<<endl );
    Dout(cout<<"; "<<endl);
    pOr->pData = Abc_SopCreateOr( (Extra_MmFlex_t *) pNtk->pManFunc, size, NULL );
    //////
@@ -359,7 +359,7 @@ int ABCSATSolver::solve(){
 //This function encodes x == a and b;
  void ABCSATSolver::addAndClause(int x, int a, int b, int gid){
        Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
-       FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
+       FileOutputABC( output<<x<<" AND "<<a<<" "<<b<<endl );
    //////
    Abc_Obj_t * pFanin0, * pFanin1, * pAnd;
    Assert( x > 0, "BAD X");
@@ -376,7 +376,7 @@ int ABCSATSolver::solve(){
  void ABCSATSolver::addEqualsClause(int x, int a, int gid){
  	//should use buffer.
        Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
-       FileOutput( output<<x<<" EQ "<<a<<endl );
+       FileOutputABC( output<<x<<" EQ "<<a<<endl );
        Abc_Obj_t * pFanin0, * pAnd;
        pAnd = Abc_NtkObj( pNtk, GetIntId(x) );
        pFanin0 = getNode(a);
@@ -388,7 +388,7 @@ int ABCSATSolver::solve(){
 //This function encodes x == a;
  void ABCSATSolver::addEquateClause(int x, int a, int gid){
        Dout( cout<<" "<<x<<" == "<<a<<"; "<<flush<<endl );
-       FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
+       FileOutputABC( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
        Abc_Obj_t * pFanin0, * pFanin1;
        Abc_Obj_t * pNode;
        pNode = Abc_NtkCreateNode( pNtk );
@@ -404,7 +404,7 @@ int ABCSATSolver::solve(){
 
  void ABCSATSolver::setVarClause(int x, int gid){
        Dout( cout<<" set "<<x<<";"<<endl );
-       FileOutput( output<<"x SET "<<x<<" ;"<<endl );
+       FileOutputABC( output<<"x SET "<<x<<" ;"<<endl );
 	   Abc_Obj_t * pNode;       
 	   pNode = Abc_NtkObj( pNtk, GetIntId( abs(x) ) );
 	   if( Abc_ObjIsPi(pNode)){
@@ -429,7 +429,7 @@ int ABCSATSolver::solve(){
 
  void ABCSATSolver::assertVarClause(int x, int gid){	
        Dout( cout<<" assert "<<x<<";"<<endl );
-       FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+       FileOutputABC( output<<"x OUTASSERT "<<x<<" ;"<<endl );
        Abc_Obj_t * pFanin0;
 	   pFanin0 = getNode(x);
 	   Abc_ObjAddFanin( pOutputNode, pFanin0 );

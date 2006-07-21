@@ -8,7 +8,6 @@
 #include <string>
 #include <set>
 #include <vector>
-#include <dirent.h>
 #include <queue>
 #include "ZchaffSATSolver.h"
 #include "zchaff_solver.h"

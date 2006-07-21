@@ -1,6 +1,14 @@
 #include "FindCheckSolver.h"
-#include <sys/time.h>
 #include "timerclass.h"
+#include <ctime>
+
+#ifdef IN
+#undef IN
+#endif
+
+#ifdef OUT
+#undef OUT
+#endif
 
 #define Dtime( out ) out
 

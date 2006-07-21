@@ -63,6 +63,7 @@ class paramInterp{
 	      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
 	      INp::NCTRLS= atoi(argv[ii+1]);
 		  INp::overrideNCtrls=true;
+		  cout<<"Overriding controls with "<<INp::NCTRLS<<endl;
 	      input_idx = ii+2;      
 	    }  
 	    if( string(argv[ii]) == "-checkpoint" ){
@@ -159,9 +160,14 @@ int main(int argc, char** argv){
       msg += argv[params.input_idx];
       cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
-		ofstream out(argv[params.input_idx+1]);
+		ofstream out((argc>params.input_idx+1)?argv[params.input_idx+1]:"/dev/null");
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
+      	if( INp::functionMap.find(it->second)== INp::functionMap.end() ){
+      		cout<<"There is no function named "<<it->second<<" make sure it is not a sketch. Sketches can't be specs. "<<endl;
+      		ABCSolverEnd();
+	  		return 1;	 
+      	}
       	Dout(INp::functionMap[it->second]->print(cout)); //spec
       	Dout(it->first->print(cout)); //sketch
       	
@@ -209,7 +215,12 @@ int main(int argc, char** argv){
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
       	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
-      	if( params.hasCpt ){ solver.setCheckpoint(params.cptfile); }
+      	if( params.hasCpt ){ 
+      		string fname = params.cptfile;
+      		fname += "_";
+      		fname += it->second;
+      		solver.setCheckpoint(fname);
+      		}
       	if(params.seed >= 0){
       		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
       		solver.set_randseed(params.seed);
@@ -220,7 +231,10 @@ int main(int argc, char** argv){
 	  		if(!params.hasRestore){
 			  	solveCode = solver.solve();
 	  		}else{
-	  			ifstream input(params.restorefile.c_str());
+	  			string fname = params.restorefile;
+	      		fname += "_";
+	      		fname += it->second;
+	  			ifstream input(fname.c_str());
 	  			solveCode = solver.solveFromCheckpoint(input);
 	  		}
 	  	}catch(SolverException* ex){
