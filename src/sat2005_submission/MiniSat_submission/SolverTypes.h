@@ -37,11 +37,13 @@ public:
     friend bool sign (Lit p) { return p.x & 1; }
     friend int  var  (Lit p) { return p.x >> 1; }
     friend int  index(Lit p) { return p.x; }        // A "toInt" method that guarantees small, positive integers suitable for array indexing.
-    friend Lit  toLit(int i) { Lit p; p.x = i; return p; }
+    friend Lit  toLit(int i); // { Lit p; p.x = i; return p; }
 
     friend bool operator == (Lit p, Lit q) { return index(p) == index(q); }
     friend bool operator <  (Lit p, Lit q) { return index(p)  < index(q); }  // '<' guarantees that p, ~p are adjacent in the ordering.
 };
+
+inline Lit  toLit(int i) { Lit p; p.x = i; return p; }
 
 const Lit lit_Undef(var_Undef, false);  // }- Useful special constants.
 const Lit lit_Error(var_Undef, true );  // }

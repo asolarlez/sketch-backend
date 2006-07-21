@@ -386,37 +386,6 @@ bool Solver::removable(Lit l, unsigned int minl)
 }
 
 
-/*_________________________________________________________________________________________________
-|                                                                                                  
-|  enqueue : (p : Lit) (from : Clause*)  ->  [bool]                                                
-|                                                                                                  
-|  Description:                                                                                    
-|    Puts a new fact on the propagation queue as well as immediately updating the variable's value.
-|    Should a conflict arise, FALSE is returned.                                                   
-|                                                                                                  
-|  Input:                                                                                          
-|    p    - The fact to enqueue                                                                    
-|    from - [Optional] Fact propagated from this (currently) unit clause. Stored in 'reason[]'.    
-|           Default value is NULL (no reason).                                                     
-|                                                                                                  
-|  Output:                                                                                         
-|    TRUE if fact was enqueued without conflict, FALSE otherwise.                                  
-|________________________________________________________________________________________________@*/
-inline bool Solver::enqueue(Lit p, LitClauseUnion from)
-{
-    if (value(p) != l_Undef){
-        return value(p) != l_False;
-    }else{
-        //printf(L_IND"bind("L_LIT")\n", L_ind, L_lit(p));
-        // New fact -- store it.
-        assigns[var(p)] = toInt(lbool(!sign(p)));
-        level  [var(p)] = decisionLevel();
-        reason [var(p)] = from;
-        trail.push_(p);
-        return true;
-    }
-}
-
 
 /*_________________________________________________________________________________________________
 |                                                                                                  
@@ -700,15 +669,15 @@ bool Solver::solve(const vec<Lit>& assumps)
     root_level = decisionLevel();
 
     if (verbosity >= 1){
-        reportf("==================================[MINISAT]===================================\n");
-        reportf("| %-9s | %-16s | %-32s | %-8s |\n", "Conflicts", "Original", "Learnt", "Progress");
-        reportf("| %9s | %7s %8s | %7s %7s %8s %7s | %8s |\n","", "Clauses","Literals", "Max", "Clauses", "Literals", "LPC", "");
-        reportf("==============================================================================\n");
+        printf("c ==================================[MINISAT]===================================\n");
+        printf("c | %-9s | %-16s | %-32s | %-8s |\n", "Conflicts", "Original", "Learnt", "Progress");
+        printf("c | %9s | %7s %8s | %7s %7s %8s %7s | %8s |\n","", "Clauses","Literals", "Max", "Clauses", "Literals", "LPC", "");
+        printf("c ==============================================================================\n");
     }
 
     while (status == l_Undef){
         if (verbosity >= 1){
-            reportf("| %9d | %7d %8d | %7d %7d %8d %7.1f | %6.3f %% |\n",(int)stats.conflicts,(int)stats.clauses, (int)stats.clauses_literals,(int)nof_learnts, (int)stats.learnts, (int)stats.learnts_literals,(double)stats.learnts_literals / (double)stats.learnts,progress_estimate*100);
+            printf("c | %9d | %7d %8d | %7d %7d %8d %7.1f | %6.3f %% |\n",(int)stats.conflicts,(int)stats.clauses, (int)stats.clauses_literals,(int)nof_learnts, (int)stats.learnts, (int)stats.learnts_literals,(double)stats.learnts_literals / (double)stats.learnts,progress_estimate*100);
             fflush(stdout);
         }
         status = search((int)nof_conflicts, (int)nof_learnts, params);
@@ -716,7 +685,7 @@ bool Solver::solve(const vec<Lit>& assumps)
         nof_learnts   *= 1.1;
     }
     if (verbosity >= 1)
-        reportf("==============================================================================\n");
+        printf("c ==============================================================================\n");
 
     cancelUntil(0);
     return status == l_True;

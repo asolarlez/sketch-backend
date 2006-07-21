@@ -14,7 +14,7 @@ A simple Chaff-like SAT-solver with support for incremental SAT.
 
 namespace MSsolverNS{
 
-#define reportf(format, args...) ( printf("c "), printf(format , ## args), fflush(stdout) )
+//#define reportf(format, args...) ( printf("c "), printf(format , ## args), fflush(stdout) )
 
 
 //=================================================================================================
@@ -45,17 +45,19 @@ class LitClauseUnion {
     void* data;
     LitClauseUnion(void* d) : data(d) {}
  public:
-    friend LitClauseUnion makeLit    (Lit l)      { return LitClauseUnion((void*)((index(l)<<1) + 1)); }
-    friend LitClauseUnion makeClause (Clause* c)  { assert((unsigned long)c % 2 == 0); return LitClauseUnion((void*)c); }
+    friend LitClauseUnion makeLit    (Lit l); //      { return LitClauseUnion((void*)((index(l)<<1) + 1)); }
+    friend LitClauseUnion makeClause (Clause* c); //  { assert((unsigned long)c % 2 == 0); return LitClauseUnion((void*)c); }
 
     bool        isLit             (void)     const { return ((unsigned long)data % 2) == 1; }
     bool        isNull            (void)     const { return data == NULL; }
-    Lit         getLit            (void)     const { return toLit(((long)data)>>1); }
+    Lit         getLit            (void)     const { return MSsolverNS::toLit(((long)data)>>1); }
     Clause*     getClause         (void)     const { return (Clause*)data; }
     bool        operator==(LitClauseUnion c) const { return data == c.data; }
     bool        operator!=(LitClauseUnion c) const { return data != c.data; }
 };
 
+inline LitClauseUnion makeClause (Clause* c)  { assert((unsigned long)c % 2 == 0); return LitClauseUnion((void*)c); }
+inline LitClauseUnion makeLit    (Lit l)      { return LitClauseUnion((void*)((index(l)<<1) + 1)); }
 //=================================================================================================
 // Solver -- the main class:
 
@@ -114,7 +116,7 @@ protected:
 
     void        analyze      (Clause* confl, vec<Lit>& out_learnt, int& out_btlevel); // (bt = backtrack)
     bool        removable    (Lit l, unsigned int minl);
-inline    bool        enqueue      (Lit fact, LitClauseUnion from = makeClause(NULL));
+    bool        enqueue      (Lit fact, LitClauseUnion from = makeClause(NULL));
     Clause*     propagate    (void);
     void        reduceDB     (void);
     Lit         pickBranchLit(const SearchParams& params);
@@ -195,6 +197,39 @@ public:
     vec<lbool>  model;              // If problem is solved, this vector contains the model (if any).
     int         verbosity;          // Verbosity level. 0=silent, 1=some progress report, 2=everything
 };
+
+
+
+/*_________________________________________________________________________________________________
+|                                                                                                  
+|  enqueue : (p : Lit) (from : Clause*)  ->  [bool]                                                
+|                                                                                                  
+|  Description:                                                                                    
+|    Puts a new fact on the propagation queue as well as immediately updating the variable's value.
+|    Should a conflict arise, FALSE is returned.                                                   
+|                                                                                                  
+|  Input:                                                                                          
+|    p    - The fact to enqueue                                                                    
+|    from - [Optional] Fact propagated from this (currently) unit clause. Stored in 'reason[]'.    
+|           Default value is NULL (no reason).                                                     
+|                                                                                                  
+|  Output:                                                                                         
+|    TRUE if fact was enqueued without conflict, FALSE otherwise.                                  
+|________________________________________________________________________________________________@*/
+inline bool Solver::enqueue(Lit p, LitClauseUnion from)
+{
+    if (value(p) != l_Undef){
+        return value(p) != l_False;
+    }else{
+        //printf(L_IND"bind("L_LIT")\n", L_ind, L_lit(p));
+        // New fact -- store it.
+        assigns[var(p)] = toInt(lbool(!sign(p)));
+        level  [var(p)] = decisionLevel();
+        reason [var(p)] = from;
+        trail.push_(p);
+        return true;
+    }
+}
 
 }
 
