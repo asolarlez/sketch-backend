@@ -90,31 +90,50 @@ void NodesToSolver::processArith(arith_node& node){
 				Tvalue& oval = node_ids[node.id];
 				vector<int>& tmp = oval.num_ranges;
 				tmp.clear();
-				tmp.reserve(mval.size()*fval.size());
+				int ttt = mval.size()*fval.size();
+				ttt = ttt > INTEGERBOUND ? INTEGERBOUND : ttt;
+				tmp.reserve(ttt);
 				Dout(cout<<"ARITHOP "<<mval<<"  OP  "<<fval<<endl);
 				Dout(cout<<"OPERATING "<<node.father->get_name()<<"  WITH  "<<node.mother->get_name()<<endl);
 				int vals = 0;
 				//cout<<" BEFORE THE LOOPS"<<endl;
+//				timerclass atimer("TA");
+//				timerclass btimer("TB");
+//				timerclass ctimer("TC");
+//				timerclass dtimer("TD");
 				for(int i=0; i<mval.size(); ++i){
 					for(int j=0; j<fval.size(); ++j){
-						// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);						
+						// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
+//						atimer.restart();						
 						int quant = doArithExpr(mval[i], fval[j], mval.id(i), fval.id(j), comp);
+//						atimer.stop();
 						Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
 						if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 						Dout(cout<<"QUANT = "<<quant<<"          "<<mval.id(i)<<", "<<fval.id(j)<<endl);
-						if(numbers.find(quant) != numbers.end()){
+//						btimer.restart();
+						map<int, int>::iterator it = numbers.find(quant);
+//						btimer.stop();
+						if( it != numbers.end()){
+//							ctimer.restart();
 							int cvar = dir.addAndClause(mval.id(i),fval.id(j));							
-							int cvar2 = dir.addOrClause(cvar, numbers[quant]);
-							numbers[quant] = cvar2;
+							int cvar2 = dir.addOrClause(cvar, it->second);
+							it->second = cvar2;
+//							ctimer.stop();
 						}else{
+//							dtimer.restart();
 							int cvar = dir.addAndClause(mval.id(i), fval.id(j));
 							tmp.push_back(quant);
 							numbers[quant] = cvar;	
 							++vals;
+//							dtimer.stop();
 						}
 						//cout<<" ENDLOOP "<<endl;
 					}
 				}
+//				atimer.print();
+//				btimer.print();
+//				ctimer.print();
+//				dtimer.print();
 				Dout(cout<<"tmp size = "<<tmp.size()<<endl);
 				Assert( vals > 0, "This should not happen here");
 				int newID = dir.newAnonymousVar();

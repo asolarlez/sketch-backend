@@ -1,6 +1,6 @@
 #include "SolveFromInput.h"
 #include "NodesToSolver.h"
-
+#include "timerclass.h"
 
 
 
@@ -8,6 +8,7 @@
 
 void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
 	//node_ids[NULL] = YES;
+//	timerclass timer("translator");
 	NodesToSolver nts(mng, dir, outname, node_values, node_ids, YES, IN, CTRL);
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		if( (*node_it)->type == bool_node::ARITH){
@@ -18,7 +19,13 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 				Assert( (*node_it)->father_sgn == true , "This is a bug" );	
 			}
 		}
+//		timer.restart();
 		(*node_it)->accept(nts);
+//		timer.stop();
+//		if(timer.get_cur_ms() > 20.0){
+//			timer.print();
+//			cout<<(*node_it)->get_name()<<endl;
+//		}
 	}
 }
 
@@ -170,6 +177,8 @@ void SolveFromInput::setupCheck(){
 
 
 void SolveFromInput::defineSketch(SATSolver& mng, varDir& dir){
+	timerclass timer("defineSketch");
+	timer.start();
 	dir.declareInArr(IN, N);
 	dir.declareArr(SOUT, Nout);
 	dir.declareArr(OUT, Nout);
@@ -180,11 +189,15 @@ void SolveFromInput::defineSketch(SATSolver& mng, varDir& dir){
 	Dout(cout<<"YES = "<<YES<<endl);
 	mng.setVarClause(YES);
 	translator(mng, dir, sketch, SOUT);
+	timer.stop().print();
 }
 
 void SolveFromInput::defineSpec(SATSolver& mng, varDir& dir){
+		timerclass timer("defineSpec");
+	timer.start();
 	Dout( cout<<"defineSpec()"<<endl );		
 	translator(mng, dir, spec, OUT);
+	timer.stop().print();
 }
 
 void SolveFromInput::output_control_map(ostream& out){
