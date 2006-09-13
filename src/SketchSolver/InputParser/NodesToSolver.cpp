@@ -608,7 +608,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 void
 NodesToSolver::visit (ASSERT_node &node)
 {
-	assert (node.mother == NULL);
+	assert (node.mother && ! node.father);
 
 	Tvalue fval = tval_lookup (node.father);
 	if (! checkParentsChanged (node, true)) {
