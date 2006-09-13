@@ -125,6 +125,10 @@ Comment      ("//"[^\n]*)
 				return T_add;
 			}
 
+"assert" {
+    return T_assert;
+}
+
 "Filter"	{
 				
 				return T_Filter;

@@ -28,7 +28,7 @@ public:
   int id;
   int flag;
   int ion_pos;
-  typedef enum{AND, OR, XOR, SRC, DST, PT, CTRL, ARITH} Type;
+  typedef enum{AND, OR, XOR, SRC, DST, PT, CTRL, ARITH, ASSERT} Type;
   Type type;
   bool_node* mother;
   bool mother_sgn;
@@ -48,6 +48,7 @@ public:
     case DST: return "D";
     case PT: return "I";
     case CTRL: return "CTRL";
+    case ASSERT: return "ASSERT";
     }
     throw BasicError("Err", "Err");
   }
@@ -120,6 +121,7 @@ class LE_node;
 class EQ_node;
 class ARRASS_node;
 class ACTRL_node;
+class ASSERT_node;
 
 class NodeVisitor{
 	public:
@@ -142,6 +144,7 @@ class NodeVisitor{
 	virtual void visit( EQ_node& node )=0;
 	virtual void visit( ARRASS_node& node )=0;
 	virtual void visit( ACTRL_node& node )=0;
+	virtual void visit( ASSERT_node &node) = 0;
 };
 
 
@@ -237,6 +240,11 @@ class ACTRL_node: public arith_node{
 	public: ACTRL_node(){ arith_type = ACTRL; }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
 };
+class ASSERT_node: public bool_node {
+public:
+    ASSERT_node () { type = ASSERT; }
+    virtual void accept (NodeVisitor &visitor) { visitor.visit (*this); }
+};
 
 
 
@@ -250,6 +258,7 @@ inline bool_node* newBoolNode( bool_node::Type type){
 		case bool_node::PT: return new PT_node();
 		case bool_node::CTRL: return new CTRL_node();
 		case bool_node::ARITH: Assert( false, "This should not happen");		
+		case bool_node::ASSERT: return new ASSERT_node ();
 	}
 	return NULL;
 }

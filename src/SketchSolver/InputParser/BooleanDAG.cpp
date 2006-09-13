@@ -282,7 +282,9 @@ void BooleanDAG::cleanup(bool moveNots){
   {
     //for(int i=n_inputs-1; i >=0 ; --i){
     for(int i=0; i < nodes.size(); ++i){
-      if( nodes[i]->type == bool_node::DST){
+      if( nodes[i]->type == bool_node::DST
+          || nodes[i]->type == bool_node::ASSERT)
+      {
 	      idx = nodes[i]->back_dfs(idx);
       }
     }

@@ -605,6 +605,26 @@ void NodesToSolver::visit( ACTRL_node& node ){
 	return;
 }
 
+void
+NodesToSolver::visit (ASSERT_node &node)
+{
+	assert (node.mother == NULL);
+
+	Tvalue fval = tval_lookup (node.father);
+	if (! checkParentsChanged (node, true)) {
+		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
+		return;
+	}
+
+	int fsign = node.father_sgn ? 1 : -1;
+	dir.addAssertClause (fsign * fval.id ());
+
+	Dout (cout << "ASSERT " << node.name << " " << node_ids[node.id]
+		  << " " << &node << endl);
+
+	return;
+}
+
 
 
 void NodesToSolver::doNonBoolArrAcc(arith_node& node){	

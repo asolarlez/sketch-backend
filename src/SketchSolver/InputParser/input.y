@@ -97,6 +97,8 @@ return new string(s1);
 %token T_setSplitter
 %token T_setJoiner
 
+%token T_assert
+
 %token T_eof
 %type<intConst> InitBody
 %type<intConst> Program
@@ -311,6 +313,26 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 								delete $3;
 								delete $1;
 							  }
+
+| T_assert Expression ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+    cout << "Generating assertion node..." << endl;
+    string s = currentBD->new_name ();
+    currentBD->new_node (*$2, sgn_stack.top (), "", true, bool_node::ASSERT, s);
+    cout << "Assertion node created, name=" << s << endl;
+    delete $2;
+  }
+  else {
+    /* Asserting a constant, verify statically. */
+    if (! sgn_stack.top ()) {
+      cout << "Assertion failed on constant FALSE, aborting" << endl;
+      exit (1);  /* Assertion failed. */
+    }
+    cout << "Assertion verified on constant TRUE" << endl;
+  }
+  sgn_stack.pop();
+} 
 
 RateSet: T_InRate '=' T_int ';'	{ currentBD->create_inputs($3); }
 | T_OutRate '=' T_int ';'   { currentBD->create_outputs($3); }

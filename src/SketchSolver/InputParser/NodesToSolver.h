@@ -68,6 +68,7 @@ vector<int> unirange;
 	virtual void visit( EQ_node& node ){ };
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
+	virtual void visit( ASSERT_node &node );
 	
 	virtual void doNonBoolArrAcc(arith_node& node);
 	virtual bool checkParentsChanged(bool_node& node, bool more);
