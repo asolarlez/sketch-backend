@@ -135,6 +135,7 @@ public:
 	int addBigOrClause(int* a, int size, int gid=0);
 	int addAndClause(int a, int b, int gid=0);	
 	void addEquateClause(int x, int a, int gid=0);
+    void addAssertClause (int a, int gid = 0);
 };
 
 inline int varDir::addChoiceClause(int a, int b, int c, int gid){
@@ -263,6 +264,24 @@ inline void varDir::addEquateClause(int x, int a, int gid){
 		return;
 	}
 	mng.addEquateClause(x, a, gid);	
+}
+
+
+inline void
+varDir::addAssertClause (int a, int gid)
+{
+    /* Vacously true. */
+    if (a == YES)
+        return; 
+
+    /* Vacously false. */
+    if (a == -YES) {
+        cout << "Assertion cannot be valid, aborting solver" << endl;
+        exit (1);  /* FIXME arbitrary termination behavior, double check! */
+    }
+
+    /* Otherwise, assertion clause necessary. */
+    mng.assertVarClause (a);
 }
 
 
