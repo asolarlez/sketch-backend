@@ -610,7 +610,7 @@ NodesToSolver::visit (ASSERT_node &node)
 {
 	assert (node.mother && ! node.father);
 
-	Tvalue fval = tval_lookup (node.father);
+	Tvalue fval = tval_lookup (node.mother);
 	if (! checkParentsChanged (node, true)) {
 		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
 		return;

@@ -1,7 +1,5 @@
 %{
 
-
-
 using namespace std;
 
 BooleanDAG* currentBD;
@@ -9,43 +7,30 @@ stack<int> sgn_stack;
 stack<string> namestack;
 
 
+string *comparisson (string *p1, string *p2, arith_node::AType atype)
+{
+    Assert (p1 || p2, "Can't have both comparisson's children NULL");
 
-string* comparisson(string* p1, string* p2, arith_node::AType atype){
+    int t2 = sgn_stack.top();
+    sgn_stack.pop();
+    int t1 = sgn_stack.top();
+    sgn_stack.pop();
+    string s1 = currentBD->new_name();
+    arith_node *an = newArithNode(atype);
 
-int t2 = sgn_stack.top(); sgn_stack.pop();
-int t1 = sgn_stack.top(); sgn_stack.pop();
-string s1 = currentBD->new_name();
-arith_node* an = newArithNode(atype);
-if(p1== NULL){
-	an->mother_quant = t1;
-	an->father_quant = t2;
-	//cout<<"Mq = "<<t2<<"  FQ= "<<t1<<endl;
-	Assert(p2 != NULL, "THIS CAN't Happen");
-	currentBD->new_node("", true, *p2, true, bool_node::ARITH, s1, an); 
-	delete p2;
-}else if(p2==NULL){
-	an->mother_quant = t1;
-	an->father_quant = t2;
-	//cout<<"Mq = "<<t1<<"  FQ= "<<t2<<endl;
-	Assert(p1 != NULL, "THIS CAN't Happen");
-	currentBD->new_node(*p1, true, "", true, bool_node::ARITH, s1, an); 
+    an->mother_quant = t1;
+    an->father_quant = t2;
+    currentBD->new_node((p1 ? *p1 : ""), true,
+			(p2 ? *p2 : ""), true,
+			bool_node::ARITH, s1, an); 
+    if (p1)
 	delete p1;
-}else{
-	an->mother_quant = t1;
-	an->father_quant = t2;
-	Assert(p1 != NULL && p2 != NULL, "THIS CAN't Happen");
-	currentBD->new_node(*p1, true, *p2, true, bool_node::ARITH, s1, an); 
-	delete p1;
+    if (p2)
 	delete p2;
+
+    sgn_stack.push(true);
+    return new string(s1); 
 }
-sgn_stack.push(true);
-return new string(s1); 
-
-
-}
-
-
-
 
 %}
 
