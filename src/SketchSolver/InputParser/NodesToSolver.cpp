@@ -616,7 +616,7 @@ NodesToSolver::visit (ASSERT_node &node)
 		return;
 	}
 
-	int fsign = node.father_sgn ? 1 : -1;
+	int fsign = node.mother_sgn ? 1 : -1;
 	dir.addAssertClause (fsign * fval.id ());
 
 	Dout (cout << "ASSERT " << node.name << " " << node_ids[node.id]
