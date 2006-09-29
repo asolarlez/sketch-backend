@@ -78,6 +78,13 @@ public:
 		return num_ranges[idx];	
 	}
 	
+	inline int setSize(int sz){
+		Assert( type == BIT || type == BVECT, "Size should only be changed for bits or bitvectors");
+		type = BVECT;
+		_size = sz;
+		
+	}
+	
 	inline int size()const{
 		return _size;
 	}
@@ -108,7 +115,7 @@ public:
 	
 	inline bool isSparse() const{
 		return type == SPARSE;	
-	}	
+	}
 	
 	Tvalue makeBVect(varDir& dir) const{
 		Assert( _id != 0 , "This can't happen wo ej "<<_id<<endl);
@@ -231,7 +238,7 @@ public:
 		Dout( cout<<"quant ="<<quant<<" new val ="<<*this<<endl );
 	}
 	
-	friend ostream& operator<<(ostream& out, Tvalue tv){
+	friend ostream& operator<<(ostream& out, const Tvalue& tv) {
 		out<<"{";
 		out<< (tv.neg?tv._id : -tv._id);
 		if( tv.type == BVECT) out<< "   size="<<tv._size;

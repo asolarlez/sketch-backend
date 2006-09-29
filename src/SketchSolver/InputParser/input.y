@@ -32,6 +32,34 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
     return new string(s1); 
 }
 
+
+bool checkSpar(bool_node* bn){
+	if(bn == NULL){
+		return  true;
+	}
+	if(bn->type == bool_node::ARITH){
+		return  true;
+	}
+	
+	if(bn->type == bool_node::CTRL){
+		if( dynamic_cast<CTRL_node*>(bn)->get_nbits() > 1 ){
+			return  true;	
+		}	
+	}
+	
+	if(bn->type == bool_node::SRC){
+		if( dynamic_cast<SRC_node*>(bn)->get_nbits() > 1 ){
+			return  true;	
+		}	
+	}
+	
+	return false;
+}
+
+
+
+
+
 %}
 
 
@@ -325,7 +353,7 @@ RateSet: T_InRate '=' T_int ';'	{ currentBD->create_inputs($3); }
 
 Expression: Term { $$ = $1; }
 | Term '&' Term { 	bool b2 = 1==sgn_stack.top(); sgn_stack.pop();
-					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();						
+					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();
 					if( $1 != NULL && $3 != NULL){
 						if( *$1 == *$3){
 							if( b1 == b2){
@@ -808,6 +836,7 @@ $$ = new string(s1);  sgn_stack.push(true);
 
 
 | Expression '?' Expression ':' Expression { 	
+	cout<<" ?? Expr"<<endl;
 	int i3 = sgn_stack.top(); sgn_stack.pop();
 	int i2 = sgn_stack.top(); sgn_stack.pop();
 	bool b3 = 1== i3;
@@ -822,16 +851,14 @@ $$ = new string(s1);  sgn_stack.push(true);
 	if( $3 != NULL ){
 		bool_node* bn = currentBD->get_node(*$3);
 		yesChild = dynamic_cast<bool_node*>(bn);
-		if(!(bn != NULL && bn->type != bool_node::ARITH)){
-			isSparse = true;
-		}
+		isSparse = isSparse || checkSpar(bn);
+		cout<<"Checked sparseness1 "<<*$3<<"   "<<isSparse<<endl;
 	}
 	if( $5 != NULL ){
 		bool_node* bn = currentBD->get_node(*$5);
 		noChild = dynamic_cast<bool_node*>(bn);
-		if(!(bn != NULL && bn->type != bool_node::ARITH)){
-			isSparse = true;
-		}
+		isSparse = isSparse || checkSpar(bn);
+		cout<<"Checked sparseness2 "<<*$5<<"   "<<isSparse<<endl;
 	}
 	if(isSparse){
 		if($1 != NULL){
@@ -1015,6 +1042,7 @@ Term: Constant {
 	if( !currentBD->has_alias(*$2) ){ 
 		$$ = $2;  sgn_stack.push(true); 
 	}else{ 
+		Assert( false, "THIS SHOULD NEVER HAPPEN !!!!!!!!!!!!!!!!");
 		pair<string, bool> alias(currentBD->get_alias(*$2)); 
 		$$ = new string( alias.first ); 
 		sgn_stack.push( alias.second );  
@@ -1027,27 +1055,11 @@ Term: Constant {
 		nctrls = NCTRLS;
 	}
 	int N=currentBD->create_controls(nctrls, *$2);
-	arith_node* an = newArithNode(arith_node::ACTRL);
-	for(int i=0; i<nctrls; ++i){
-		bool_node* tmp = (bool_node*)(*currentBD)[N-nctrls+i];
-		an->multi_mother.push_back(tmp);
-		tmp->children.push_back(an);		
-		an->multi_mother_sgn.push_back(true);
-	}
-	currentBD->new_node("", true, "", true, bool_node::ARITH, *$2, an); 
 	$$ = $2;  sgn_stack.push(true); 
 
 }
 | '<' Ident Constant '*' '>' {
 	int N=currentBD->create_controls($3, *$2);
-	arith_node* an = newArithNode(arith_node::ACTRL);
-	for(int i=0; i<$3; ++i){
-		bool_node* tmp = (bool_node*)(*currentBD)[N-$3+i];
-		an->multi_mother.push_back(tmp);
-		tmp->children.push_back(an);		
-		an->multi_mother_sgn.push_back(true);
-	}
-	currentBD->new_node("", true, "", true, bool_node::ARITH, *$2, an); 
 	$$ = $2;  sgn_stack.push(true); 
 
 }

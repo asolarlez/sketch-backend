@@ -18,10 +18,9 @@ class SolveFromInput: public FindCheckSolver{
 	vector<Tvalue> node_ids;
 	vector<Tvalue> f_node_ids;
 	vector<bool> f_flags;
-//	map<bool_node*, vector<int> > f_num_ranges;
 	
 	map<bool_node*, int> node_values; // -1=false, 1=true, 0=unknown
-//	map<bool_node*, vector<int> > num_ranges;
+
 	
 	int* last_input;
 	protected:

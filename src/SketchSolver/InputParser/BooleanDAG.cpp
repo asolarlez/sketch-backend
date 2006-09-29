@@ -603,16 +603,7 @@ void BooleanDAG::create_inputs(int n, const string& gen_name){
 
 
 int BooleanDAG::create_controls(int n, const string& gen_name){
-  for(int i=0; i<n; ++i){
-    stringstream str;
-    str<<gen_name<<"_"<<i;
-    bool_node* tmp = newBoolNode(bool_node::CTRL);
-    tmp->ion_pos = n_controls;
-    nodes.push_back(tmp);
-    tmp->name = str.str();
-    named_nodes[str.str()] = tmp;
-    ++n_controls;
-  }
+
   if(n < 0){
     bool_node* tmp = newBoolNode(bool_node::CTRL);
     tmp->ion_pos = n_controls;
@@ -620,7 +611,17 @@ int BooleanDAG::create_controls(int n, const string& gen_name){
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
     ++n_controls;
+  }else{
+    bool_node* tmp = newBoolNode(bool_node::CTRL);
+    dynamic_cast<CTRL_node*>(tmp)->set_nbits(n);
+    tmp->ion_pos = n_controls;
+    nodes.push_back(tmp);
+    tmp->name = gen_name;
+    named_nodes[gen_name] = tmp;
+    n_controls += n;
   }
+  	
+  
   return nodes.size();
 }
 

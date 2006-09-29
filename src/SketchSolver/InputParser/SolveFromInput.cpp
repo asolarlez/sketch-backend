@@ -41,8 +41,27 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
 			int iid = (*node_it)->ion_pos;
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+			int nbits = ctrlnode->get_nbits();		
 			Assert(controls[iid % ctrlsize] == 1 || controls[iid % ctrlsize]==-1, "This is bad, really bad");
-			node_values[(*node_it)]= controls[iid % ctrlsize];
+			Assert( nbits > 0 , "This can not happen rdu;a");
+			Assert( iid+ nbits <= ctrlsize, "There should be a control entry for each iid");
+			if( nbits ==1 ){
+				node_values[(*node_it)]= controls[iid % ctrlsize];
+			}else{
+				int nval = 0;
+				Dout( cout<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
+				int t = 1;
+				for(int i=0; i<nbits; ++i){
+					Dout( cout<< controls[iid + i] << "  " );
+					if( controls[iid + i] > 0){
+						nval += t;	
+					}
+					t = t*2;
+				}
+				Dout( cout <<" > = "<<nval<< endl ) ;
+				node_values[(*node_it)] = nval;
+			}
 		}
 	}
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
@@ -82,7 +101,9 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 		}else{
 			if(	(*node_it)->type == bool_node::CTRL ){
 				(*node_it)->flag = firstTime;
-				++ctrl;
+				CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+				int nbits = ctrlnode->get_nbits();
+				ctrl += nbits;
 			}
 		}
 	}
@@ -206,7 +227,15 @@ void SolveFromInput::output_control_map(ostream& out){
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
 		if((*node_it)->type == bool_node::CTRL){
 			int iid = (*node_it)->ion_pos;
-			out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+			int nbits = ctrlnode->get_nbits();		
+			if( nbits > 1 ){
+				for(int i=0; i<nbits; ++i){
+					out<<(*node_it)->name<<"_"<< i << "\t"<<ar[iid+i]<<endl;
+				}
+			}else{
+				out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;
+			}
 		}
 	}
 }

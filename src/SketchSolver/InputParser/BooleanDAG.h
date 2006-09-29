@@ -50,6 +50,7 @@ public:
     case CTRL: return "CTRL";
     case ASSERT: return "ASSERT";
     }
+    cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
   string get_name(){
@@ -165,8 +166,11 @@ class XOR_node: public bool_node{
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	};
 class SRC_node: public bool_node{	
-	public: SRC_node(){ type = SRC; }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
+	int nbits;
+	public: SRC_node(){ type = SRC; nbits = 1;}  
+	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	int get_nbits() const { return nbits; }
+	void set_nbits(int n){ nbits = n; }	
 };
 class DST_node: public bool_node{	
 	public: 
@@ -179,9 +183,12 @@ class PT_node: public bool_node{
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
 class CTRL_node: public bool_node{	
+	int nbits;
 	public: 
-	CTRL_node(){ type = CTRL; }  
+	CTRL_node(){ type = CTRL; nbits = 1;}  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	int get_nbits() const { return nbits; }
+	void set_nbits(int n){ nbits = n; }	
 };
 class PLUS_node: public arith_node{	
 	public: PLUS_node(){ arith_type = PLUS; } 

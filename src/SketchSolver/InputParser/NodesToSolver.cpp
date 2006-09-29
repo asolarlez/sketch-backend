@@ -154,8 +154,8 @@ void NodesToSolver::processArith(arith_node& node){
 
 
 void NodesToSolver::visit( AND_node& node ){
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	const Tvalue& fval = tval_lookup(node.father);
+	const Tvalue& mval = tval_lookup(node.mother);
 	if(!checkParentsChanged(node, true)){ Dout( cout<<fval<<" AND "<<mval<<" unchanged"<<endl  ); return; }
 	int fsign = node.father_sgn? 1 : -1;
 	int msign = node.mother_sgn? 1 : -1;
@@ -170,8 +170,8 @@ void NodesToSolver::visit( AND_node& node ){
 
 void NodesToSolver::visit( OR_node& node ){
 	if(!checkParentsChanged( node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	const Tvalue& fval = tval_lookup(node.father);
+	const Tvalue& mval = tval_lookup(node.mother);
 	int fsign = node.father_sgn? 1 : -1;
 	int msign = node.mother_sgn? 1 : -1;
 	Tvalue oldnvar(node_ids[node.id]);
@@ -183,8 +183,8 @@ void NodesToSolver::visit( OR_node& node ){
 }
 void NodesToSolver::visit( XOR_node& node ){
 	if(!checkParentsChanged( node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }			
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	const Tvalue& fval = tval_lookup(node.father);
+	const Tvalue& mval = tval_lookup(node.mother);
 	int fsign = node.father_sgn? 1 : -1;
 	int msign = node.mother_sgn? 1 : -1;
 	Tvalue oldnvar(node_ids[node.id]);
@@ -196,7 +196,7 @@ void NodesToSolver::visit( XOR_node& node ){
 }
 void NodesToSolver::visit( SRC_node& node ){	
 	int iid = node.ion_pos;
-	if( node_values[(&node)] != 0){  
+	if( node_values.find(&node) != node_values.end() ){  
 		node_ids[node.id] = node_values[(&node)]*YES;
 		Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"  "<<(&node)<<"    "<<node_ids[node.id]<<endl  ); 
 		return; 
@@ -221,14 +221,25 @@ void NodesToSolver::visit( PT_node& node ){
 }
 void NodesToSolver::visit( CTRL_node& node ){	
 	int iid = node.ion_pos;
-	if( node_values[(&node)] != 0){  					
-		node_ids[node.id] = node_values[(&node)]*YES;
+	if(  node_values.find(&node) != node_values.end() ){  
+		if( node.get_nbits() > 1 ){
+			node_ids[node.id] = tvYES;
+			node_ids[node.id].ipMakeSparseCondAdjust(false,  node_values[(&node)], dir);
+		}else{
+			node_ids[node.id] = node_values[(&node)]*YES;	
+		}
 		Dout( cout<< dir.getArr(CTRL, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  ); 
 		return; 
-	}	
-	node_ids[node.id] = dir.getArr(CTRL, iid);
-	Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
-	return;
+	}else{
+		node_ids[node.id] = dir.getArr(CTRL, iid);
+		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
+			node_ids[node.id].setSize( node.get_nbits() );
+			Dout(cout<<"setting control nodes"<<node.name<<endl);
+			node_ids[node.id].inPlaceMakeSparse(dir); // In the future, I may want to make some of these holes not-sparse.
+		}
+		Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+		return;
+	}
 }
 
 
@@ -262,8 +273,8 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	bool parentSameBis = true;
 	bool isBoolean=true;
 	
-	Tvalue& omv = tval_lookup(node.mother) ;
-	vector<int>::iterator itbeg, itend, itfind;
+	const Tvalue& omv = tval_lookup(node.mother) ;
+	vector<int>::const_iterator itbeg, itend, itfind;
 	itbeg = omv.num_ranges.begin();
 	itend = omv.num_ranges.end();
 	bool isSparse = omv.isSparse();	
