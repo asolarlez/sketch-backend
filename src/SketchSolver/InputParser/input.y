@@ -174,8 +174,24 @@ OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 }
 
 
-ParamDecl: T_vartype T_ident {  currentBD->create_inputs(-1, *$2); }
-| '!' T_vartype T_ident { 	 currentBD->create_outputs(-1, *$3); }
+ParamDecl: T_vartype T_ident {  
+	if( $1 == INT){
+		cout<<" INPUT IS INT "<<*$2<<endl;
+		currentBD->create_inputs( NCTRLS , *$2); 
+	}else{
+		cout<<" INPUT IS BIT "<<*$2<<endl;
+		currentBD->create_inputs(-1, *$2); 
+	}	
+}
+| '!' T_vartype T_ident {
+ 	 if( $2 == INT){
+ 	 	cout<<" OUTPUT IS INT "<<*$3<<endl;
+		 currentBD->create_outputs(NCTRLS, *$3);
+ 	 }else{
+	 	 cout<<" OUTPUT IS BIT "<<*$3<<endl;
+	 	 currentBD->create_outputs(-1, *$3); 
+ 	 }
+ }
 | T_vartype '[' ConstantExpr ']' InList 
 | '!' T_vartype '[' ConstantExpr ']' OutList 
 
@@ -553,8 +569,40 @@ Expression: Term { $$ = $1; }
 						}
 					} 
 				}
-| Term T_eq Term { 	bool b2 = 1==sgn_stack.top(); sgn_stack.pop();
-					bool b1 = 1==sgn_stack.top(); sgn_stack.pop();					
+| Term T_eq Term { 	
+
+
+	int i2 = sgn_stack.top(); sgn_stack.pop();
+	int i1 = sgn_stack.top(); sgn_stack.pop();
+	bool b2 = 1== i2;
+	bool b1 = 1== i1;
+	bool isSparse = false;
+//	cout<<"---------------------------------"<<endl;
+	if( i2>1 || i2 < 0){ /*cout<<" i3 = "<<i3<<endl;*/ isSparse = true; }
+	if( i1>1 || i1 < 0){ /*cout<<" i2 = "<<i2<<endl;*/ isSparse = true; }
+	bool_node* lChild=NULL;
+	bool_node* rChild=NULL;
+	
+	if( $1 != NULL ){
+		bool_node* bn = currentBD->get_node(*$1);
+		lChild = dynamic_cast<bool_node*>(bn);
+		isSparse = isSparse || checkSpar(bn);
+//		cout<<"Checked sparseness1 "<<*$3<<"   "<<isSparse<<endl;
+	}
+	
+	if( $3 != NULL ){
+		bool_node* bn = currentBD->get_node(*$3);
+		rChild = dynamic_cast<bool_node*>(bn);
+		isSparse = isSparse || checkSpar(bn);
+//		cout<<"Checked sparseness2 "<<*$5<<"   "<<isSparse<<endl;
+	}
+
+
+	if(isSparse){
+		sgn_stack.push(i1);
+		sgn_stack.push(i2);
+		$$ = comparisson($1, $3, arith_node::EQ);
+	}else{	
 					if( $1 != NULL && $3 != NULL){
 						string s = currentBD->new_name();
 						currentBD->new_node(*$1, b1, *$3, b2,  bool_node::XOR, s);
@@ -581,7 +629,8 @@ Expression: Term { $$ = $1; }
 							sgn_stack.push(b1 == b2);
 						}
 					} 
-				}
+	}
+}
 | '$' varList '$' '[' Expression ']' {
 
 	bool isNull = ($5 == NULL);
@@ -836,7 +885,6 @@ $$ = new string(s1);  sgn_stack.push(true);
 
 
 | Expression '?' Expression ':' Expression { 	
-	cout<<" ?? Expr"<<endl;
 	int i3 = sgn_stack.top(); sgn_stack.pop();
 	int i2 = sgn_stack.top(); sgn_stack.pop();
 	bool b3 = 1== i3;
@@ -852,13 +900,13 @@ $$ = new string(s1);  sgn_stack.push(true);
 		bool_node* bn = currentBD->get_node(*$3);
 		yesChild = dynamic_cast<bool_node*>(bn);
 		isSparse = isSparse || checkSpar(bn);
-		cout<<"Checked sparseness1 "<<*$3<<"   "<<isSparse<<endl;
+//		cout<<"Checked sparseness1 "<<*$3<<"   "<<isSparse<<endl;
 	}
 	if( $5 != NULL ){
 		bool_node* bn = currentBD->get_node(*$5);
 		noChild = dynamic_cast<bool_node*>(bn);
 		isSparse = isSparse || checkSpar(bn);
-		cout<<"Checked sparseness2 "<<*$5<<"   "<<isSparse<<endl;
+//		cout<<"Checked sparseness2 "<<*$5<<"   "<<isSparse<<endl;
 	}
 	if(isSparse){
 		if($1 != NULL){

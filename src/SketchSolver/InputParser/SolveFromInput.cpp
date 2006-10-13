@@ -29,7 +29,20 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 	}
 }
 
-
+template<typename T>
+int intFromBV(T bv, int start, int nbits){
+	int nval = 0;	
+	int t = 1;
+	
+	for(int i=0; i<nbits; ++i){
+		Dout( cout<< bv[start + i] << "  " );
+		if( bv[start + i] > 0){
+			nval += t;	
+		}
+		t = t*2;
+	}
+	return nval;
+}
 
 
 void SolveFromInput::setNewControls(int controls[], int ctrlsize){
@@ -48,17 +61,9 @@ void SolveFromInput::setNewControls(int controls[], int ctrlsize){
 			Assert( iid+ nbits <= ctrlsize, "There should be a control entry for each iid");
 			if( nbits ==1 ){
 				node_values[(*node_it)]= controls[iid % ctrlsize];
-			}else{
-				int nval = 0;
+			}else{				
 				Dout( cout<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
-				int t = 1;
-				for(int i=0; i<nbits; ++i){
-					Dout( cout<< controls[iid + i] << "  " );
-					if( controls[iid + i] > 0){
-						nval += t;	
-					}
-					t = t*2;
-				}
+				int nval = intFromBV(controls, iid, nbits);				
 				Dout( cout <<" > = "<<nval<< endl ) ;
 				node_values[(*node_it)] = nval;
 			}
@@ -84,12 +89,33 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 		node_ids[(*node_it)->id] = f_node_ids[idx];		
 		(*node_it)->flag = f_flags[idx];
 		
-		Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
+		//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
 		if((*node_it)->type == bool_node::SRC){
 			int iid = (*node_it)->ion_pos;
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
+			int nbits = srcnode->get_nbits();	
 			Assert(input[iid % insize] == 1 || input[iid % insize]==-1, "This is bad, really bad");
-			node_values[(*node_it)]= input[iid % insize];
-			if(input[iid % insize] == last_input[iid]){
+			Assert( nbits > 0 , "This can not happen rdu;a");
+			Assert( iid+ nbits <= insize, "There should be a control entry for each iid");
+			
+			if( nbits ==1 ){
+				node_values[(*node_it)]= input[iid % insize];
+			}else{				
+				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
+				int nval = intFromBV(input, iid, nbits);				
+				Dout( cout <<" > = "<<nval<< endl ) ;
+				node_values[(*node_it)] = nval;
+			}
+			
+			bool changed = false;
+			
+			for(int i=0; i<nbits; ++i){
+				if(input[iid + i] != last_input[iid + i]){
+					changed = true;	
+				}
+			}
+			
+			if(!changed){
 				++numRepeat;
 				Dout(cout<<"input "<<iid<<" unchanged"<<endl);
 				(*node_it)->flag = false;
@@ -97,7 +123,7 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 				Dout(cout<<"input "<<iid<<" changed"<<endl);
 				(*node_it)->flag = true;
 			}
-			++k;
+			k+=nbits;
 		}else{
 			if(	(*node_it)->type == bool_node::CTRL ){
 				(*node_it)->flag = firstTime;
@@ -119,16 +145,38 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 
 		if((*node_it)->type == bool_node::SRC){
 			int iid = (*node_it)->ion_pos;
-			node_values[(*node_it)]= input[iid % insize];
-			if(input[iid % insize] == last_input[iid]){
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
+			int nbits = srcnode->get_nbits();	
+			Assert(input[iid % insize] == 1 || input[iid % insize]==-1, "This is bad, really bad");
+			Assert( nbits > 0 , "This can not happen rdu;a");
+			Assert( iid+ nbits <= insize, "There should be a control entry for each iid");
+			
+			if( nbits ==1 ){
+				node_values[(*node_it)]= input[iid % insize];
+			}else{				
+				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
+				int nval = intFromBV(input, iid, nbits);				
+				Dout( cout <<" > = "<<nval<< endl ) ;
+				node_values[(*node_it)] = nval;
+			}
+			
+			bool changed = false;
+			
+			for(int i=0; i<nbits; ++i){
+				if(input[iid + i] != last_input[iid + i]){
+					changed = true;	
+				}
+			}
+			
+			if(!changed){
+				++numRepeat;
 				Dout(cout<<"input "<<iid<<" unchanged"<<endl);
 				(*node_it)->flag = false;
-			}else{
+			}else{				
 				Dout(cout<<"input "<<iid<<" changed"<<endl);
-				last_input[iid] = input[iid % insize];
 				(*node_it)->flag = true;
 			}
-			++k;
+			k+=nbits;
 		}else{
 			Assert( (*node_it)->type != bool_node::CTRL, "Specs don't have unknowns!!");
 		}
@@ -164,6 +212,7 @@ cout<<"BEFORE RELABEL"<<endl;
     sketch->relabel();
 
    	Dout( cout<<"after sort "<<endl);
+	Dout( spec->print(cout) );
 	Dout( sketch->print(cout) );
 cout<<"BEFORE DC"<<endl;	
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );

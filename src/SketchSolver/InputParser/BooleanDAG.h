@@ -165,31 +165,41 @@ class XOR_node: public bool_node{
 		XOR_node(){ type = XOR; }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	};
-class SRC_node: public bool_node{	
-	int nbits;
-	public: SRC_node(){ type = SRC; nbits = 1;}  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+
+class INTER_node: public bool_node{	
+	protected: 
+		INTER_node(){nbits = 1;}
+		int nbits;
+	public:	
 	int get_nbits() const { return nbits; }
-	void set_nbits(int n){ nbits = n; }	
+	void set_nbits(int n){ nbits = n; }
 };
-class DST_node: public bool_node{	
+
+
+class SRC_node: public INTER_node{		
+	public: SRC_node(){ type = SRC; }  
+	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+};
+
+class DST_node: public INTER_node{		
 	public: 
 		DST_node(){ type = DST; }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
+
+
+class CTRL_node: public INTER_node{
+	public: 
+	CTRL_node(){ type = CTRL;}  
+	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
+};
+
 class PT_node: public bool_node{	
 	public: 
 	PT_node(){ type = PT; }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
-class CTRL_node: public bool_node{	
-	int nbits;
-	public: 
-	CTRL_node(){ type = CTRL; nbits = 1;}  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	int get_nbits() const { return nbits; }
-	void set_nbits(int n){ nbits = n; }	
-};
+
 class PLUS_node: public arith_node{	
 	public: PLUS_node(){ arith_type = PLUS; } 
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
@@ -330,6 +340,7 @@ class BooleanDAG
 public:
   void print(ostream& out);
   typedef vector<bool_node*>::iterator iterator;
+  void create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
   void create_inputs(int n, const string& gen_name=string("INPUT"));
   int create_controls(int n, const string& gen_name=string("CONTROL"));
   void create_outputs(int n, const string& gen_name=string("OUTPUT"));

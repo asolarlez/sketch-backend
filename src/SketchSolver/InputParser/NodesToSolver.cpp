@@ -194,24 +194,56 @@ void NodesToSolver::visit( XOR_node& node ){
 	Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);				
 	return;
 }
-void NodesToSolver::visit( SRC_node& node ){	
+void NodesToSolver::visit( SRC_node& node ){		
 	int iid = node.ion_pos;
-	if( node_values.find(&node) != node_values.end() ){  
-		node_ids[node.id] = node_values[(&node)]*YES;
-		Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"  "<<(&node)<<"    "<<node_ids[node.id]<<endl  ); 
+	if(  node_values.find(&node) != node_values.end() ){  
+		if( node.get_nbits() > 1 ){
+			node_ids[node.id] = tvYES;
+			node_ids[node.id].ipMakeSparseCondAdjust(false,  node_values[(&node)], dir);
+		}else{
+			node_ids[node.id] = node_values[(&node)]*YES;	
+		}
+		Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  ); 
 		return; 
-	}	
-	node_ids[node.id] = dir.getArr(IN, iid);
-	Dout(cout<<"REGISTERING "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+	}else{
+		node_ids[node.id] = dir.getArr(IN, iid);
+		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
+			node_ids[node.id].setSize( node.get_nbits() );
+			Dout(cout<<"setting input nodes"<<node.name<<endl);
+			node_ids[node.id].inPlaceMakeSparse(dir); // In the future, I may want to make some of these holes not-sparse.
+		}
+		Dout(cout<<"REGISTERING "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
+	}
 }
-void NodesToSolver::visit( DST_node& node ){				
+
+
+
+void NodesToSolver::visit( DST_node& node ){
+				
 	int oid = node.ion_pos;		
 	int nvar = dir.getArr(outname, oid);
-	int msign = node.mother_sgn? 1 : -1;		
-	{	
-		Dout(cout<<"DST = "<<tval_lookup(node.mother)<<"*"<<msign<<endl);
-		mng.addEqualsClause( nvar, msign*tval_lookup(node.mother).id());
+	int msign = node.mother_sgn? 1 : -1;
+	
+	Tvalue outv = tval_lookup(node.mother);
+	Dout(cout<<" output "<<outv<<endl);
+	if(outv.isSparse()){
+		Dout(cout<<"Making output sparse"<<endl);
+		outv = outv.makeBVect(dir);
+	}
+	
+	{
+		int szout = node.get_nbits();
+		int sztv = outv.size();
+		int minsz = szout<sztv?szout : sztv;
+		Dout(cout<<"minsz = "<<minsz<<" sztv="<<sztv<<"  szout="<<szout<<endl); 	
+		for(int i=0; i<minsz; ++i){
+			mng.addEqualsClause( nvar+i, msign*outv.id(i));		
+		}		
+		for(int i=minsz; i<szout; ++i){
+			mng.addEqualsClause( nvar+i, -YES);		
+		}		
+		Dout(cout<<"DST = "<<outv<<"*"<<msign<<endl);		
 	}
 	return;
 }
@@ -437,6 +469,13 @@ void NodesToSolver::visit( ARRACC_node& node ){
 			Dout( cout<<" LE "<<endl );			
 			if(!checkParentsChanged( node, true)){ return; }	
 			processComparissons<less_equal<int> >(node);
+			return;
+		}
+		
+		void NodesToSolver::visit( EQ_node& node ){
+			Dout( cout<<" EQ "<<endl );			
+			if(!checkParentsChanged( node, true)){ return; }	
+			processComparissons<equal_to<int> >(node);
 			return;
 		}
 

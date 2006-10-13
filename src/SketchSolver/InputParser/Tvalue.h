@@ -132,15 +132,19 @@ public:
 					vector<int>& current = bit[bit.size()-1];
 					current.push_back(0);
 					more = false;
+					Dout(cout<<" new vals=");
 					for(int i=0; i<num_ranges.size(); ++i){
 						int& val = nr[i];
+						Dout(cout<<", "<<val);
 						if( val > 0){ 
 							more = true; 
 							if( (val & 1) != 0 ){
 								current.push_back( id(i) );
 							}
 						};
+						val = val>>1;
 					}
+					Dout(cout<<endl);
 				}while(more);	
 				Tvalue tv(BVECT, 0, bit.size());
 				if( bit.size() == 0){
@@ -153,7 +157,7 @@ public:
 				for(int i=1; i<bit.size(); ++i){	
 					dir.newAnonymousVar();
 				}
-				for(int i=1; i<bit.size(); ++i){
+				for(int i=0; i<bit.size()-1; ++i){
 					vector<int>& current = bit[i];
 					current[0] = tv._id + i;
 					dir.mng.addBigOrClause( &current[0], current.size()-1);

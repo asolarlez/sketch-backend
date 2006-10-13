@@ -579,50 +579,46 @@ bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn,
   }
   return tmp;
 }
-void BooleanDAG::create_inputs(int n, const string& gen_name){
-  for(int i=0; i<n; ++i){
-    stringstream str;
-    str<<gen_name<<"_"<<i;
-    bool_node* tmp = newBoolNode(bool_node::SRC);
-    tmp->ion_pos = n_inputs;
-    nodes.push_back(tmp);
-    tmp->name = str.str();
-    named_nodes[str.str()] = tmp;
-    ++n_inputs;
-  }
+
+
+void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type){
+	//Create interface nodes, either source, dest, or ctrl.
+	
+	if( named_nodes.find(gen_name) != named_nodes.end() ){
+		//cout<< gen_name <<"This interface node already exists"<<endl;
+		return;	
+	}
+	
   if(n < 0){
-    bool_node* tmp = newBoolNode(bool_node::SRC);
-    tmp->ion_pos = n_inputs;
+    bool_node* tmp = newBoolNode(type);
+    tmp->ion_pos = counter;
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
-    ++n_inputs;
+    ++counter;
+  }else{
+  	bool_node* tmp = newBoolNode(type);
+    dynamic_cast<INTER_node*>(tmp)->set_nbits(n);
+    tmp->ion_pos = counter;
+    nodes.push_back(tmp);
+    tmp->name = gen_name;
+    named_nodes[gen_name] = tmp;
+    counter += n;
   }
 }
 
 
+void BooleanDAG::create_inputs(int n, const string& gen_name){
+	create_inter(n, gen_name, n_inputs, bool_node::SRC);
+}
 
 int BooleanDAG::create_controls(int n, const string& gen_name){
-
-  if(n < 0){
-    bool_node* tmp = newBoolNode(bool_node::CTRL);
-    tmp->ion_pos = n_controls;
-    nodes.push_back(tmp);
-    tmp->name = gen_name;
-    named_nodes[gen_name] = tmp;
-    ++n_controls;
-  }else{
-    bool_node* tmp = newBoolNode(bool_node::CTRL);
-    dynamic_cast<CTRL_node*>(tmp)->set_nbits(n);
-    tmp->ion_pos = n_controls;
-    nodes.push_back(tmp);
-    tmp->name = gen_name;
-    named_nodes[gen_name] = tmp;
-    n_controls += n;
-  }
-  	
-  
+  create_inter(n, gen_name, n_controls, bool_node::CTRL);  
   return nodes.size();
+}
+
+void BooleanDAG::create_outputs(int n, const string& gen_name){
+  create_inter(n, gen_name, n_outputs, bool_node::DST);
 }
 
 
@@ -645,27 +641,6 @@ void BooleanDAG::print(ostream& out){
 
   out<<"}"<<endl;
 }
-void BooleanDAG::create_outputs(int n, const string& gen_name){
-  for(int i=0; i<n; ++i){
-    stringstream str;
-    str<<gen_name<<"_"<<i;
-    bool_node* tmp = newBoolNode(bool_node::DST);
-    tmp->ion_pos = n_outputs;
-    nodes.push_back(tmp);
-    tmp->name = str.str();
-    named_nodes[str.str()] = tmp;
-    ++n_outputs;
-  }
-  if( n<0){
-    bool_node* tmp = newBoolNode(bool_node::DST);
-    tmp->ion_pos = n_outputs;
-    nodes.push_back(tmp);
-    tmp->name = gen_name;
-    named_nodes[gen_name] = tmp;
-    ++n_outputs;  	
-  }
-}
-
 
 bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother, bool mother_sgn, 
                                 bool_node* father, bool father_sgn, bool_node::Type t){
