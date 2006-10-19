@@ -9,7 +9,7 @@ class Tvalue{
 	int _size;
 	bool neg;
 public:
-	typedef enum {BIT, BVECT, SPARSE} Type;
+	typedef enum {BVECT, SPARSE} Type;
 	Type type;
 	vector<int> num_ranges;	
 	
@@ -27,7 +27,7 @@ public:
 		return false;
 	}
 	
-	Tvalue(): type(BIT), _id(0), _size(-1), neg(true){}
+	Tvalue(): type(BVECT), _id(0), _size(-1), neg(true){}
 
 	Tvalue(const Tvalue& tv): 
 	type(tv.type), _id(tv._id), _size(tv._size), num_ranges(tv.num_ranges),neg(tv.neg){
@@ -40,7 +40,7 @@ public:
 	Tvalue(Type p_type, int p_id, int p__size, bool p_neg): type(p_type), _id(p_id), _size(p__size),neg(p_neg){
 		if( _id < 0){ neg = !neg; _id = -_id; }
 	};
-	Tvalue(int p_id): type(BIT), _id(p_id), _size(0),neg(true){
+	Tvalue(int p_id): type(BVECT), _id(p_id), _size(1),neg(true){
 		if( _id < 0){ neg = !neg; _id = -_id; }
 	};
 	inline Tvalue& operator=(const Tvalue& tv){
@@ -52,11 +52,11 @@ public:
 		return *this;
 	}
 	inline Tvalue& operator=(int p_id){
-		type = BIT;
+		type = BVECT;
 		_id = p_id;
 		neg = true;
 		if( _id < 0){ neg = !neg; _id = -_id; }
-		_size = 0;
+		_size = 1;
 		num_ranges.clear();
 		return *this;
 	}
@@ -79,7 +79,7 @@ public:
 	}
 	
 	inline int setSize(int sz){
-		Assert( type == BIT || type == BVECT, "Size should only be changed for bits or bitvectors");
+		Assert(type == BVECT, "Size should only be changed for bits or bitvectors");
 		type = BVECT;
 		_size = sz;
 		
@@ -120,8 +120,7 @@ public:
 	Tvalue makeBVect(varDir& dir) const{
 		Assert( _id != 0 , "This can't happen wo ej "<<_id<<endl);
 		switch(type){
-			case BVECT: Dout( cout<<"Converting from BitVector to BitVector"<<endl ); return *this;
-			case BIT: 	Dout( cout<<"Converting from Bit to BitVector"<<endl ); return Tvalue(BVECT, _id, 1, neg);
+			case BVECT: Dout( cout<<"Converting from BitVector to BitVector"<<endl ); return *this;			
 			case SPARSE:{
 				Dout( cout<<"Converting from Sparse to BitVector"<<endl );
 				vector<vector<int> > bit;
@@ -172,6 +171,31 @@ public:
 		Assert( _id != 0 , "This can't happen oria um "<<_id<<endl);
 		switch(type){
 			case BVECT:{
+				if(_size == 1){
+					Dout( cout<<"Converting "<<*this<<" from Bit to Sparse"<<endl ); 
+					if( _id == dir.YES ){
+						if( neg ){
+							num_ranges.push_back(1);	
+							_size = 1;						
+						}else{
+							num_ranges.push_back(0);
+							_size = 1;
+							neg = true;
+						}
+					}else{
+						num_ranges.push_back(0);
+						num_ranges.push_back(1);
+						int tmp = dir.newAnonymousVar();
+						dir.newAnonymousVar();
+						dir.mng.addEqualsClause( tmp, -id());
+						dir.mng.addEqualsClause( tmp+1, id());
+						_id = tmp;
+						_size = 2;
+						neg = true;
+					}
+					type = SPARSE;
+					return;
+				}
 				 Dout( cout<<"Converting from BitVector to Sparse"<<endl ); 
 				 vector<int>& tmp = num_ranges;
 				 vector<int> ids(_size);
@@ -185,31 +209,6 @@ public:
 				neg = true;
 				type = SPARSE;
 				return ;
-			}
-			case BIT:{
-				Dout( cout<<"Converting "<<*this<<" from Bit to Sparse"<<endl ); 
-				if( _id == dir.YES ){
-					if( neg ){
-						num_ranges.push_back(1);	
-						_size = 1;						
-					}else{
-						num_ranges.push_back(0);
-						_size = 1;
-						neg = true;
-					}
-				}else{
-					num_ranges.push_back(0);
-					num_ranges.push_back(1);
-					int tmp = dir.newAnonymousVar();
-					dir.newAnonymousVar();
-					dir.mng.addEqualsClause( tmp, -id());
-					dir.mng.addEqualsClause( tmp+1, id());
-					_id = tmp;
-					_size = 2;
-					neg = true;
-				}
-				type = SPARSE;
-				return;
 			}
 			case SPARSE:
 				Dout( cout<<"Converting from Sparse to Sparse"<<endl );	return;
