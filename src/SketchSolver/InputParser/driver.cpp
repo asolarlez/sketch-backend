@@ -37,6 +37,7 @@ class paramInterp{
   string cptfile;
   bool hasRestore;
   string restorefile;
+  bool outputEuclid;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -45,6 +46,7 @@ class paramInterp{
 		synthtype=MINI;
 		veriftype=MINI;
 		outputAIG =false;
+		outputEuclid = false;
 		terminateafter = -1;
 		hasCpt = false;
 		hasRestore = false;
@@ -57,6 +59,10 @@ class paramInterp{
 	    }
 	    if( string(argv[ii]) == "-outputAIG" ){
 	    	outputAIG = true;
+	      input_idx = ii+1;      
+	    }
+	    if( string(argv[ii]) == "-outputEuclid" ){
+	    	outputEuclid = true;
 	      input_idx = ii+1;      
 	    }
 	    if( string(argv[ii]) == "-overrideCtrls" ){
@@ -214,6 +220,11 @@ int main(int argc, char** argv){
       	}
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
+      	if(params.outputEuclid){
+      		ofstream fout("bench.ucl");
+      		solver.outputEuclid(fout);
+      	}
+      	
       	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
       	if( params.hasCpt ){ 
       		string fname = params.cptfile;
