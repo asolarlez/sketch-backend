@@ -709,3 +709,8 @@ bool_node* BooleanDAG::new_node(bool_node* mother, bool mother_sgn,
   return tmp;
 }
 
+void NodeVisitor::process(BooleanDAG& bdag){
+	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+		(*node_it)->accept(*this);
+	}
+}

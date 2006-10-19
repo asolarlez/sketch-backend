@@ -123,6 +123,7 @@ class EQ_node;
 class ARRASS_node;
 class ACTRL_node;
 class ASSERT_node;
+class BooleanDAG;
 
 class NodeVisitor{
 	public:
@@ -145,7 +146,8 @@ class NodeVisitor{
 	virtual void visit( EQ_node& node )=0;
 	virtual void visit( ARRASS_node& node )=0;
 	virtual void visit( ACTRL_node& node )=0;
-	virtual void visit( ASSERT_node &node) = 0;
+	virtual void visit( ASSERT_node &node) = 0;	
+	virtual void process(BooleanDAG& bdag);
 };
 
 

@@ -203,6 +203,7 @@ void NodesToSolver::visit( SRC_node& node ){
 		}else{
 			node_ids[node.id] = node_values[(&node)]*YES;	
 		}
+		cout<<" input "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
 		Dout( cout<< dir.getArr(IN, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  ); 
 		return; 
 	}else{
@@ -228,6 +229,7 @@ void NodesToSolver::visit( DST_node& node ){
 	Tvalue outv = tval_lookup(node.mother);
 	Dout(cout<<" output "<<outv<<endl);
 	if(outv.isSparse()){
+		cout<<" output "<<node.get_name()<<" = "<<outv<<endl;
 		Dout(cout<<"Making output sparse"<<endl);
 		outv = outv.makeBVect(dir);
 	}
@@ -257,6 +259,7 @@ void NodesToSolver::visit( CTRL_node& node ){
 		if( node.get_nbits() > 1 ){
 			node_ids[node.id] = tvYES;
 			node_ids[node.id].ipMakeSparseCondAdjust(false,  node_values[(&node)], dir);
+			cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
 		}else{
 			node_ids[node.id] = node_values[(&node)]*YES;	
 		}
