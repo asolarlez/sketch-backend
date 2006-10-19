@@ -3,7 +3,7 @@
 #include "timerclass.h"
 
 
-
+#include "NodesToEuclid.h"
 
 
 void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
@@ -214,6 +214,9 @@ cout<<"BEFORE RELABEL"<<endl;
    	Dout( cout<<"after sort "<<endl);
 	Dout( spec->print(cout) );
 	Dout( sketch->print(cout) );
+	
+	
+	
 cout<<"BEFORE DC"<<endl;	
     Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
 	declareControl(CTRL, sketch->get_n_controls());
@@ -237,6 +240,18 @@ cout<<"BEFORE RES"<<endl;
 	node_values[NULL] = 1;
 	firstTime=true;
 }
+
+void SolveFromInput::outputEuclid(ostream& fout){
+		cout<<"BEFORE OUTPUTING STATE"<<endl;		
+		{
+			NodesToEuclid neuc(fout, "SPEC_");
+			neuc.process(*spec);
+		}
+		{
+			NodesToEuclid neuc(fout, "SKETCH_");
+			neuc.process(*spec);
+		}
+	}
 
 
 void SolveFromInput::setupCheck(){

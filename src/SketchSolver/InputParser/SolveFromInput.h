@@ -20,7 +20,6 @@ class SolveFromInput: public FindCheckSolver{
 	vector<bool> f_flags;
 	
 	map<bool_node*, int> node_values; // -1=false, 1=true, 0=unknown
-
 	
 	int* last_input;
 	protected:
@@ -30,9 +29,10 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void defineSpec(SATSolver& mng, varDir& dir);
 	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);	
 	virtual void setNewControls(int controls[], int ctrlsize);
-	public:
+	public:	
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1);
 	void output_control_map(ostream& out);
+	void outputEuclid(ostream& fout);
 };
 
 
