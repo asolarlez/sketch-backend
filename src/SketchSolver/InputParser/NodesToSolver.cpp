@@ -32,6 +32,7 @@ void NodesToSolver::processComparissons(arith_node& node){
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
 		node_ids[node.id] = result;
 	}
+	Dout( cout<<node.get_name()<<" :=  "<<node_ids[node.id]<<endl);
 	return;	
 }
 
@@ -78,6 +79,7 @@ void NodesToSolver::processArith(arith_node& node){
 					tmp[i] = doArithExpr( mval[i], node.father_quant, mval.id(i), mval.id(i), comp);
 					Dout(cout<<"  "<< mval.id(i)<<" op "<<node.father_quant<<"= "<<tmp[i]<<endl);
 				}
+				Dout( cout<<" := "<<node_ids[node.id]<<endl );
 			}else{
 				bool_node* mother = node.mother;	
 				Tvalue mval = tval_lookup(mother) ;
@@ -134,20 +136,43 @@ void NodesToSolver::processArith(arith_node& node){
 //				btimer.print();
 //				ctimer.print();
 //				dtimer.print();
+	
+	
 				Dout(cout<<"tmp size = "<<tmp.size()<<endl);
-				Assert( vals > 0, "This should not happen here");
-				int newID = dir.newAnonymousVar();
+				Assert( vals > 0, "This should not happen here");	
+				int newID = -1;		
+				{
+					int quant = tmp[0];
+					newID = numbers[quant];
+				}
+				for(int i=1; i<vals; ++i){
+					int quant = tmp[i];
+					if(newID + i !=  numbers[quant]){
+						newID = -1;
+						break;
+					}
+				}
+
+				if( newID != -1){
+					oval.setID(newID);
+					oval.setSparse();
+					Dout( cout<<" := "<<oval<<endl );
+					return;
+				}
+
+				
+				newID = dir.newAnonymousVar();
 				for(int i=1; i<vals; ++i){ 
 					int cvar = dir.newAnonymousVar();
 					Assert( cvar == newID + i, "SolveFromInput: bad stuff");
 				}
 				for(int i=0; i<vals; ++i){
-					int quant = tmp[i];
-					Dout(cout<<"quant = "<<quant<<endl);
+					int quant = tmp[i];					
 					mng.addEqualsClause(newID + i, numbers[quant]);
 				}
 				oval.setID(newID);
 				oval.setSparse();
+				Dout( cout<<" := "<<oval<<endl );
 			}
 }
 
@@ -319,7 +344,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		
 		if( idx >= node.multi_mother.size()){
 			node_ids[node.id] = -YES;
-			Dout( cout<<" SHORTCUT "<<omv<<" out of range"<<endl );
+			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
 			return;
 		} 
 		
@@ -342,7 +367,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 				cval.intAdjust(quant);
 			}
 		}
-		Dout( cout<<" Shortcout = "<<cval<<endl );
+		Dout( cout<<node.get_name()<<" Shortcout = "<<cval<<endl );
 		return;		
 	}
 	
@@ -381,6 +406,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		doNonBoolArrAcc(node);
 //		nonbooltimer.stop().print();
 //		aracctimer.stop().print();
+		Dout(cout<<node.get_name()<<"  "<<node_ids[node.id]<<endl);
 		return;
 	}
 	Dout(cout<<" is boolean"<<endl);	
