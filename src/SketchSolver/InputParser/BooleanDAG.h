@@ -396,7 +396,17 @@ public:
     ++new_names;
     return str.str();
   }
-
+ string new_name(string& base){
+ 	if(base.length() < 2){
+ 		return new_name();	
+ 	}else{
+	    stringstream str;
+	    str<<base.substr(0,4)<<new_names<<"____";
+	    ++new_names;
+	    return str.str();
+ 	}
+  }
+  
 	BooleanDAG();
 	virtual ~BooleanDAG();
 };

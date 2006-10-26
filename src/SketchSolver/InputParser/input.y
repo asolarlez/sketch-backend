@@ -599,9 +599,26 @@ Expression: Term { $$ = $1; }
 
 
 	if(isSparse){
-		sgn_stack.push(i1);
-		sgn_stack.push(i2);
-		$$ = comparisson($1, $3, arith_node::EQ);
+	
+		bool done = false;
+		if( $1 != NULL && $3 != NULL ){
+			if( *$1 == *$3 ){
+				$$ = NULL;
+				sgn_stack.push( i1 == i2  );
+				done = true;
+			}		
+		}		
+		if( $1 == NULL && $3 == NULL ){
+			$$ = NULL;
+			sgn_stack.push( i1 == i2  );
+			done = true;
+		}
+	
+		if( !done ){
+			sgn_stack.push(i1);
+			sgn_stack.push(i2);
+			$$ = comparisson($1, $3, arith_node::EQ);
+		}				
 	}else{	
 					if( $1 != NULL && $3 != NULL){
 						string s = currentBD->new_name();
@@ -871,16 +888,94 @@ if($1== NULL){
 $$ = new string(s1);  sgn_stack.push(true);
 }
 | Term '>' Term {
-	$$ = comparisson($1, $3, arith_node::GT);
+
+
+		int i2 = sgn_stack.top(); sgn_stack.pop();
+		int i1 = sgn_stack.top(); sgn_stack.pop();
+		bool done = false;
+		if( $1 != NULL && $3 != NULL ){
+			if( *$1 == *$3  && i1 == 1 & i2 == 1){
+				$$ = NULL;
+				sgn_stack.push( false  );
+				done = true;
+			}		
+		}
+		if( $1 == NULL && $3 == NULL ){
+			$$ = NULL;
+			sgn_stack.push( i1 > i2  );
+			done = true;
+		}	
+		if( !done ){
+			sgn_stack.push(i1);
+			sgn_stack.push(i2);
+			$$ = comparisson($1, $3, arith_node::GT);
+		}
 }
 | Term '<' Term {
-	$$ = comparisson($1, $3, arith_node::LT);
+		int i2 = sgn_stack.top(); sgn_stack.pop();
+		int i1 = sgn_stack.top(); sgn_stack.pop();
+		bool done = false;
+		if( $1 != NULL && $3 != NULL ){
+			if( *$1 == *$3  && i1 == 1 & i2 == 1){
+				$$ = NULL;
+				sgn_stack.push( false  );
+				done = true;
+			}		
+		}
+		if( $1 == NULL && $3 == NULL ){
+			$$ = NULL;
+			sgn_stack.push( i1 < i2  );
+			done = true;
+		}	
+		if( !done ){
+			sgn_stack.push(i1);
+			sgn_stack.push(i2);
+			$$ = comparisson($1, $3, arith_node::LT);
+		}
 }
 | Term T_ge Term {
-	$$ = comparisson($1, $3, arith_node::GE);
+		int i2 = sgn_stack.top(); sgn_stack.pop();
+		int i1 = sgn_stack.top(); sgn_stack.pop();
+		bool done = false;
+		if( $1 != NULL && $3 != NULL ){
+			if( *$1 == *$3  && i1 == 1 & i2 == 1){
+				$$ = NULL;
+				sgn_stack.push( true  );
+				done = true;
+			}		
+		}
+		if( $1 == NULL && $3 == NULL ){
+			$$ = NULL;
+			sgn_stack.push( i1 >= i2  );
+			done = true;
+		}	
+		if( !done ){
+			sgn_stack.push(i1);
+			sgn_stack.push(i2);
+			$$ = comparisson($1, $3, arith_node::GE);
+		}
 }
 | Term T_le Term {
-	$$ = comparisson($1, $3, arith_node::LE);
+		int i2 = sgn_stack.top(); sgn_stack.pop();
+		int i1 = sgn_stack.top(); sgn_stack.pop();
+		bool done = false;
+		if( $1 != NULL && $3 != NULL ){
+			if( *$1 == *$3  && i1 == 1 & i2 == 1){
+				$$ = NULL;
+				sgn_stack.push( true  );
+				done = true;
+			}		
+		}
+		if( $1 == NULL && $3 == NULL ){
+			$$ = NULL;
+			sgn_stack.push( i1 <= i2  );
+			done = true;
+		}	
+		if( !done ){
+			sgn_stack.push(i1);
+			sgn_stack.push(i2);
+			$$ = comparisson($1, $3, arith_node::LE);
+		}
 }
 
 

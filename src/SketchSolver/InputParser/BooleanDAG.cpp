@@ -274,7 +274,10 @@ void BooleanDAG::remove(int i){
 
 //This routine performs simple peephole optimizations
 //on the boolean function.
-void BooleanDAG::cleanup(bool moveNots){  
+void BooleanDAG::cleanup(bool moveNots){
+	
+
+  //The first optimization is to remove nodes that don't contribute to the output. 	  
   for(int i=0; i < nodes.size(); ++i){
     nodes[i]->flag = 0;
   }
@@ -308,11 +311,16 @@ void BooleanDAG::cleanup(bool moveNots){
   		++i;
   	}
   }
+  
+  
+  
+  
   for(int i=0; i< nodes.size(); ){
     {//This first optimization has as it's purpose to
       //move the negations as far down the tree as we can. 
       //This will guarantee that they bundle up in the same layer,
       //and we end up with less xor matrices, which boils down to less operations.
+      //It should not be done in the pressence of arithmetic nodes.
       if( nodes[i]->type == bool_node::XOR && moveNots){
         //move nots from the father to the children.
         
@@ -380,10 +388,10 @@ void BooleanDAG::cleanup(bool moveNots){
         break;
       default:
         ++i;
-      }
+      }// switch(nodes[i]->type)
     }else{
       ++i;
-    }    
+    }//  if( nodes[i]->father == nodes[i]->mother )    
   }
 }
 
