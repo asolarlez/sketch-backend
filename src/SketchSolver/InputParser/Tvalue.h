@@ -4,6 +4,22 @@
 #include <vector>
 using namespace std;
 
+/*
+ * Important things about the Tvalue.
+ * 
+ * The T value is either bit vector or sparse.
+ * In both cases, the _size variable indicates the size.
+ * 
+ * For both the sparse and the bitvector, there are k variables, and they are
+ * _id to (_id + _size-1)
+ * 
+ * 
+ * 
+ * 
+ * */
+
+
+
 class Tvalue{
 	int _id;
 	int _size;
