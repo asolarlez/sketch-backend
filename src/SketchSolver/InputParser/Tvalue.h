@@ -7,7 +7,7 @@ using namespace std;
 class Tvalue{
 	int _id;
 	int _size;
-	bool neg;
+	bool neg; // false means the number is negative.
 public:
 	typedef enum {BVECT, SPARSE} Type;
 	Type type;
@@ -126,7 +126,8 @@ public:
 				vector<vector<int> > bit;
 				vector<int> nr(num_ranges);
 				bool more = false;
-				do{
+				do{ // loop iterates over the bits in the BV representation.
+					// # of bits equals iterations - 1;
 					bit.push_back(vector<int>());
 					vector<int>& current = bit[bit.size()-1];
 					current.push_back(0);
@@ -145,15 +146,17 @@ public:
 					}
 					Dout(cout<<endl);
 				}while(more);	
-				Tvalue tv(BVECT, 0, bit.size());
-				if( bit.size() == 0){
+				//The last element in bit is all zeros, so we don't care about it.
+				Assert( bit.size() >= 1, "This is impossible!!!");
+				Tvalue tv(BVECT, 0, bit.size()-1);
+				if( bit.size()-1 == 0){
 					tv._id = dir.YES;
 					tv.neg = false;
 					tv._size = 1;
 					return tv;
 				}
 				tv._id = dir.newAnonymousVar();
-				for(int i=1; i<bit.size(); ++i){	
+				for(int i=1; i<bit.size()-1; ++i){	
 					dir.newAnonymousVar();
 				}
 				for(int i=0; i<bit.size()-1; ++i){
