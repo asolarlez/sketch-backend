@@ -249,7 +249,7 @@ void SolveFromInput::outputEuclid(ostream& fout){
 		}
 		{
 			NodesToEuclid neuc(fout, "SKETCH_");
-			neuc.process(*spec);
+			neuc.process(*sketch);
 		}
 	}
 
