@@ -89,7 +89,7 @@ public:
 		out<<"input "<<prefix<<node.get_name()<<endl;	
 	}
 	virtual void visit( DST_node& node ){
-		out<<"output "<<prefix<<node.get_name()<<" := "<<mother_name(node)<<endl;		
+		out<<"output "<<prefix<<node.get_name()<<" := "<<mother_name(node)<<"; "<<endl;		
 	}
 	virtual void visit( PT_node& node ){}
 	virtual void visit( CTRL_node& node ){
@@ -99,7 +99,7 @@ public:
 		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" +_16 "<<father_name(node)<<"; "<<endl;		
 	}
 	virtual void visit( TIMES_node& node ){
-		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" ^_16 "<<father_name(node)<<"; "<<endl;		
+		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" *_16 "<<father_name(node)<<"; "<<endl;		
 	}
 	virtual void visit( ARRACC_node& node ){
 		vector<bool_node*>& mmother = node.multi_mother;
@@ -110,9 +110,9 @@ public:
 		out<<" case ";
 		
 		if(node.mother_sgn==0){
-			out<<"!("<<node.mother->get_name()<<")";	
+			out<<"!("<<prefix<<node.mother->get_name()<<")";	
 		}else{
-			out<<"!"<<node.mother->get_name();
+			out<<prefix<<node.mother->get_name();
 		}
 		
 		out<<":";
@@ -120,7 +120,7 @@ public:
 		if( mmother[1]==NULL){
 			out<<node.multi_mother_sgn[1];
 		}else{
-			if( node.multi_mother_sgn[1] == 1){
+			if( node.multi_mother_sgn[1] == 0){
 				out<<"!("<<prefix<<mmother[1]->get_name()<<")";
 			}else{
 				out<<prefix<<mmother[1]->get_name();
@@ -130,7 +130,7 @@ public:
 		if( mmother[0]==NULL){
 			out<<node.multi_mother_sgn[0];
 		}else{
-			if( node.multi_mother_sgn[0] == 1){
+			if( node.multi_mother_sgn[0] == 0){
 				out<<"!("<<prefix<<mmother[0]->get_name()<<")";
 			}else{
 				out<<prefix<<mmother[0]->get_name();
@@ -159,7 +159,7 @@ public:
 		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" <= "<<father_name(node)<<"; "<<endl;		
 	}
 	virtual void visit( EQ_node& node ){
-		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" == "<<father_name(node)<<"; "<<endl;		
+		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" = "<<father_name(node)<<"; "<<endl;		
 	}
 	virtual void visit( ARRASS_node& node ){}
 	virtual void visit( ACTRL_node& node ){}
