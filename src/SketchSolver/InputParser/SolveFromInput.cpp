@@ -4,7 +4,7 @@
 
 
 #include "NodesToEuclid.h"
-
+#include "DagCSE.h"
 
 void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
 	//node_ids[NULL] = YES;
@@ -196,18 +196,18 @@ void SolveFromInput::addInputsToTestSet(int input[], int insize){
 
 
 SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker), CTRL("_C"){
-cout<<"START CONSTRUCTOR"<<endl;
+Dout( cout<<"START CONSTRUCTOR"<<endl );
 	N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
 	spec = spec_p;
 	sketch = sketch_p;
-cout<<"BEFORE CLEANUP"<<endl;
+Dout( cout<<"BEFORE CLEANUP"<<endl );
   	sketch->cleanup(false);
   	spec->cleanup(false);
-cout<<"BEFORE SORT"<<endl;  	  	
+Dout( cout<<"BEFORE SORT"<<endl );  	  	
     sketch->sort_graph();
     spec->sort_graph();
-cout<<"BEFORE RELABEL"<<endl;
+Dout( cout<<"BEFORE RELABEL"<<endl );
     spec->relabel();
     sketch->relabel();
 
@@ -215,6 +215,21 @@ cout<<"BEFORE RELABEL"<<endl;
 	Dout( spec->print(cout) );
 	Dout( sketch->print(cout) );
 	
+	cout<<"before CSE: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	
+	
+	{
+		DagCSE cse(*spec);	
+		cse.eliminateCSE();
+	}
+	{
+		DagCSE cse(*sketch);	
+		cse.eliminateCSE();
+	}
+	
+	Dout( cout<<" after removing common subexpressions"<<endl);
+	Dout( spec->print(cout) );
+	Dout( sketch->print(cout) );
 	
 	
 cout<<"BEFORE DC"<<endl;	
