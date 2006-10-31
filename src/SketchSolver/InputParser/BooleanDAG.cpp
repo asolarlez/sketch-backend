@@ -240,20 +240,78 @@ void BooleanDAG::layer_graph(){
   //before you.
 }
 
+
+
+void BooleanDAG::removeFromChildren(bool_node* parent, bool_node* toremove){
+	if( parent != NULL){
+		vector<bool_node*>& tmpv = parent->children;  
+		for(int k=0; k<tmpv.size();){
+			if( tmpv[k] == toremove ){
+			  tmpv.erase( tmpv.begin() + k );
+			}else{
+			  ++k;
+			}
+		}
+	}
+}
+
+
+void BooleanDAG::replace(int original, bool_node* replacement){
+	Assert( nodes[original]->type == replacement->type, "The two nodes should be essentially the same node (i.e. a common subexpression)");
+	Assert( nodes[original]->mother == replacement->mother, "The two nodes should be essentially the same node (i.e. a common subexpression)");
+	Assert( nodes[original]->father == replacement->father, "The two nodes should be essentially the same node (i.e. a common subexpression)");	
+	
+	int i = original;
+	bool_node* onode = nodes[i];
+	
+	
+	removeFromChildren(onode->father, onode);
+	removeFromChildren(onode->mother, onode);
+	
+	if( onode->type == bool_node::ARITH ){
+		arith_node * an = dynamic_cast<arith_node*>(onode);
+		for(int j=0; j<an->multi_mother.size(); ++j){
+			removeFromChildren(an->multi_mother[j], onode);
+		}	
+	}
+	
+	for(int k=0; k<onode->children.size(); ++k){
+		bool_node* cchild =  onode->children[k];
+		if(  cchild->father == onode ){
+		  cchild->father = replacement;
+		  replacement->children.push_back( cchild );
+		}
+		if(  cchild->mother == onode ){
+		  cchild->mother = replacement;
+		  replacement->children.push_back( cchild );
+		}
+		
+		if( cchild->type == bool_node::ARITH ){
+			arith_node * an = dynamic_cast<arith_node*>(cchild);
+			for(int j=0; j<an->multi_mother.size(); ++j){
+				if(  an->multi_mother[j] == onode ){
+				  an->multi_mother[j] = replacement;
+				  replacement->children.push_back( cchild );
+				}
+			}
+		}
+		
+	}
+	delete nodes[i];
+  	nodes[i] = NULL;
+  	nodes.erase( nodes.begin() + i);
+  	
+}
+
 void BooleanDAG::remove(int i){
   Assert( nodes[i]->father == nodes[i]->mother, "This must be true, otherwise, the compiler is wrong");
   Assert( nodes[i]->father_sgn == nodes[i]->mother_sgn, "This must be true, otherwise, the compiler is wrong");
   Assert( nodes[i]->father != NULL, "Can this happen? To me? Nah  ");
 
 	//Removing from the father's children list. Note we are assuming father==mother.
-  vector<bool_node*>& tmpv = nodes[i]->father->children;  
-  for(int k=0; k<tmpv.size(); ){
-    if( tmpv[k] == nodes[i] ){
-      tmpv.erase( tmpv.begin() + k );
-    }else{
-      ++k;
-    }
-  }
+	
+	removeFromChildren(nodes[i]->father, nodes[i]);
+ 
   for(int j=0; j<nodes[i]->children.size(); ++j){
     if(  nodes[i]->children[j]->father == nodes[i] ){
       nodes[i]->children[j]->father = nodes[i]->father;

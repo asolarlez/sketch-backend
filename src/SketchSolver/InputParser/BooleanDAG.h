@@ -338,10 +338,14 @@ class BooleanDAG
 
   bool_node* ps_for_parent(bool_node* parent, map<bool_node*, bool_node*>& parent_map, int my_layer);
   void compute_layer_sizes();
+  void removeFromChildren(bool_node* parent, bool_node* toremove);
   void remove(int i);
 public:
   void print(ostream& out);
   typedef vector<bool_node*>::iterator iterator;
+  
+  void replace(int i, bool_node* cse);
+  
   void create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
   void create_inputs(int n, const string& gen_name=string("INPUT"));
   int create_controls(int n, const string& gen_name=string("CONTROL"));
@@ -370,6 +374,7 @@ public:
 
 
   const bool_node* operator[](int idx)const{ return nodes[idx]; };
+  bool_node* operator[](int idx){ return nodes[idx]; };
   int size()const {return nodes.size();}
   int get_lsize(int layer){ return layer_sizes[layer];};
   void sort_graph();
