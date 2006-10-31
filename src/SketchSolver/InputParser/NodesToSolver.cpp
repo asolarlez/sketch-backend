@@ -67,7 +67,7 @@ inline int NodesToSolver::doArithExpr<modulus<int> >(int quant1, int quant2, int
 
 template<typename THEOP>
 void NodesToSolver::processArith(arith_node& node){
-	THEOP comp;
+	THEOP comp; // int op int
 			if(node.father == NULL){
 				bool_node* mother = node.mother;
 				node_ids[node.id] = tval_lookup(mother);
