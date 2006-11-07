@@ -121,10 +121,19 @@ public:
 	int getArrSize(const string& arName){
 		return arrsize[arName];	
 	}	
-	int newAnonymousVar(){
-		int idx = mng.newVar();
+	/* Allocate a block of variables (default is one), return first id. */
+	int newAnonymousVar (int n = 1) {
+	    Assert (n >= 1, "must allocate at least one variable");
+
+	    int ret = -1;
+	    do {
+		int tmp = mng.newVar ();
+		if (ret < 0)
+		    ret = tmp;
 		mng.disableVarBranch(varCnt);
-		return idx;
+	    } while (--n);
+	    
+	    return ret;
 	}
 	void setYes(int yes){
 		YES = yes;
