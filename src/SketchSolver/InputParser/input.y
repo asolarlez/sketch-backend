@@ -1159,10 +1159,19 @@ Term: Constant {
 				 $$ = NULL; 
 				sgn_stack.push($1); }
 | '!' Term { 
-				bool tmp = 1==sgn_stack.top(); 
-				sgn_stack.pop();  
-				sgn_stack.push(!tmp); 
-				$$ = $2;}
+    /* Check the Boolean coefficient of the term, being either 0 (false) or 1 (true). */
+    int top = sgn_stack.top ();
+    assert (top == 0 || top == 1);
+    bool sign = (bool) top;
+
+    /* Generate an alternating PT node, push a unit (true) coefficient. */
+    string s = currentBD->new_name ();
+    currentBD->new_node (*$2, ! sign, "", true, bool_node::PT, s);
+    sgn_stack.push (true); 
+    $$ = new string (s);
+    delete $2;
+}
+
 | '(' Expression ')' { 
 						$$ = $2; 
 						}
