@@ -35,92 +35,92 @@
 }
 
 //This function encodes x == a ? b:c;
- void ZchaffSATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
+ void ZchaffSATSolver::addChoiceClause(int x, int a, int b, int c){
 	Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
 	FileOutput( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
-	{ int tmp[] = { -(x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
-	{ int tmp[] = { -(x), (c), (a) }; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
-	{ int tmp[] = { -(x), (c), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);	CheckRepeats(tmp, 3);}
-	{ int tmp[] = { (x), -(c), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);	CheckRepeats(tmp, 3);}
-	{ int tmp[] = { (x), (a), -(c) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
-	{ int tmp[] = { (x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { -(x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3); 	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { -(x), (c), (a) }; SAT_AddClauseSigned(mng, tmp, 3); 	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { -(x), (c), (b) }; SAT_AddClauseSigned(mng, tmp, 3);	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { (x), -(c), -(b) }; SAT_AddClauseSigned(mng, tmp, 3);	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { (x), (a), -(c) }; SAT_AddClauseSigned(mng, tmp, 3);}
+	{ int tmp[] = { (x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3);}
 }
 
 
 //This function encodes x == a xor b;
- void ZchaffSATSolver::addXorClause(int x, int a, int b, int gid){
+ void ZchaffSATSolver::addXorClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" XOR "<<a<<" "<<b<<endl );
-	{ int tmp[] = { -(x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
-	{ int tmp[] = { -(x), (a), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
-	{ int tmp[] = { (x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
-	{ int tmp[] = { (x), (a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3, gid);}
+	{ int tmp[] = { -(x), -(a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3); 	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { -(x), (a), (b) }; SAT_AddClauseSigned(mng, tmp, 3);}
+	{ int tmp[] = { (x), -(a), (b) }; SAT_AddClauseSigned(mng, tmp, 3);}
+	{ int tmp[] = { (x), (a), -(b) }; SAT_AddClauseSigned(mng, tmp, 3);}
 }
 
 //This function encodes x == a or b;
- void ZchaffSATSolver::addOrClause(int x, int a, int b, int gid){
+ void ZchaffSATSolver::addOrClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
-	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { (x), -(b)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { -(x), (a), (b)}; SAT_AddClauseSigned(mng, tmp, 3, gid);	CheckRepeats(tmp, 3);}	
+	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { (x), -(b)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { -(x), (a), (b)}; SAT_AddClauseSigned(mng, tmp, 3);	CheckRepeats(tmp, 3);}	
 }
 
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
- void ZchaffSATSolver::addBigOrClause(int* a, int size, int gid){
+ void ZchaffSATSolver::addBigOrClause(int* a, int size){
 	Dout( cout<<" "<<a[0]<<"= " );
 	FileOutput( output<<a[0]<<" BOR "<<size<<" " );
 	for(int i=0; i<size; ++i){
 		Dout(cout<<a[i+1]<<" or ");
-		{ int tmp[] = { (a[0]), -(a[i+1])}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
+		{ int tmp[] = { (a[0]), -(a[i+1])}; SAT_AddClauseSigned(mng, tmp, 2);}
 		FileOutput( output<<a[i+1]<<" " );
 	}
 	FileOutput( output<<endl );
 	Dout(cout<<"; "<<endl);
 	a[0] = -a[0];
-	{SAT_AddClauseSigned(mng, a, size+1, gid); 	CheckRepeats(a, size+1);}
+	{SAT_AddClauseSigned(mng, a, size+1); 	CheckRepeats(a, size+1);}
 }
 
 
 //This function encodes x == a and b;
- void ZchaffSATSolver::addAndClause(int x, int a, int b, int gid){
+ void ZchaffSATSolver::addAndClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
-	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { -(x), (b)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { (x), -(a), -(b)}; SAT_AddClauseSigned(mng, tmp, 3, gid); 	CheckRepeats(tmp, 3);}
+	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { -(x), (b)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { (x), -(a), -(b)}; SAT_AddClauseSigned(mng, tmp, 3); 	CheckRepeats(tmp, 3);}
 }
 
 //This function encodes x = a;
- void ZchaffSATSolver::addEqualsClause(int x, int a, int gid){
+ void ZchaffSATSolver::addEqualsClause(int x, int a){
 	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
 	FileOutput( output<<x<<" EQ "<<a<<endl );
-	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2, gid); 	CheckRepeats(tmp, 2);}
+	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2); 	CheckRepeats(tmp, 2);}
 }
 
 
 //This function encodes x == a;
- void ZchaffSATSolver::addEquateClause(int x, int a, int gid){
+ void ZchaffSATSolver::addEquateClause(int x, int a){
 	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
 	FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
-	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2, gid);}
-	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2, gid); 	CheckRepeats(tmp, 2);}
+	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2);}
+	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2); 	CheckRepeats(tmp, 2);}
 }
 
 
- void ZchaffSATSolver::setVarClause(int x, int gid){
+ void ZchaffSATSolver::setVarClause(int x){
 	Dout( cout<<" set "<<x<<";"<<endl );
 	FileOutput( output<<"x SET "<<x<<" ;"<<endl );
-	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1, gid);}
+	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
 }
 
 
- void ZchaffSATSolver::assertVarClause(int x, int gid){
+ void ZchaffSATSolver::assertVarClause(int x){
 	Dout( cout<<" assert "<<x<<";"<<endl );
 	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1, gid);}
+	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
 }
 
  void ZchaffSATSolver::printDiagnostics(char c){
@@ -151,8 +151,7 @@
 
  void SAT_AddClauseSigned(SAT_Manager           mng,
                           int *                 clause_lits,
-                          int                   num_lits,
-                          int                   gid) {
+                          int                   num_lits) {
  
  	
   CSolver * solver = (CSolver*) mng;
@@ -166,7 +165,7 @@
    	clause_lits[i] = (clause_lits[i] << 1) + sign;
   }
 
-  solver->add_orig_clause(clause_lits, num_lits, gid);
+  solver->add_orig_clause(clause_lits, num_lits);
 }
 
 

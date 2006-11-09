@@ -41,7 +41,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 //This function encodes x == a ? b:c;
- void MiniSATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
+ void MiniSATSolver::addChoiceClause(int x, int a, int b, int c){
 	Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
 	FileOutput( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
 	vec<Lit> lits;
@@ -55,7 +55,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 //This function encodes x == a xor b;
- void MiniSATSolver::addXorClause(int x, int a, int b, int gid){
+ void MiniSATSolver::addXorClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" XOR "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
@@ -66,7 +66,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
 //This function encodes x == a or b;
- void MiniSATSolver::addOrClause(int x, int a, int b, int gid){
+ void MiniSATSolver::addOrClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
@@ -77,7 +77,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
- void MiniSATSolver::addBigOrClause(int* a, int size, int gid){
+ void MiniSATSolver::addBigOrClause(int* a, int size){
 	Dout( cout<<" "<<a[0]<<"= " );
 	FileOutput( output<<a[0]<<" BOR "<<size<<" " );
 	vec<Lit> lits;
@@ -94,7 +94,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 //This function encodes x == a and b;
- void MiniSATSolver::addAndClause(int x, int a, int b, int gid){
+ void MiniSATSolver::addAndClause(int x, int a, int b){
 	Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
@@ -104,7 +104,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
 //This function encodes x = a;
- void MiniSATSolver::addEqualsClause(int x, int a, int gid){
+ void MiniSATSolver::addEqualsClause(int x, int a){
 	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
 	FileOutput( output<<x<<" EQ "<<a<<endl );
 	vec<Lit> lits;	
@@ -114,7 +114,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 //This function encodes x == a;
- void MiniSATSolver::addEquateClause(int x, int a, int gid){
+ void MiniSATSolver::addEquateClause(int x, int a){
 	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
 	FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
 	vec<Lit> lits;	
@@ -123,7 +123,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
 
- void MiniSATSolver::setVarClause(int x, int gid){
+ void MiniSATSolver::setVarClause(int x){
 	Dout( cout<<" set "<<x<<";"<<endl );
 	FileOutput( output<<"x SET "<<x<<" ;"<<endl );
 	int var = abs(x);
@@ -131,7 +131,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
 
- void MiniSATSolver::assertVarClause(int x, int gid){
+ void MiniSATSolver::assertVarClause(int x){
 	Dout( cout<<" assert "<<x<<";"<<endl );
 	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
 	int var = abs(x);

@@ -285,7 +285,7 @@ int ABCSATSolver::solve(){
 
 
 //This function encodes x == a ? b:c;
- void ABCSATSolver::addChoiceClause(int x, int a, int b, int c, int gid){
+ void ABCSATSolver::addChoiceClause(int x, int a, int b, int c){
        Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
        FileOutputABC( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
    //////
@@ -304,7 +304,7 @@ int ABCSATSolver::solve(){
 
 
 //This function encodes x == a xor b;
- void ABCSATSolver::addXorClause(int x, int a, int b, int gid){
+ void ABCSATSolver::addXorClause(int x, int a, int b){
        Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
        FileOutputABC( output<<x<<" XOR "<<a<<" "<<b<<endl );
 	   Assert( x > 0, "This shouldn't happen xor");
@@ -318,7 +318,7 @@ int ABCSATSolver::solve(){
 }
 
 //This function encodes x == a or b;
- void ABCSATSolver::addOrClause(int x, int a, int b, int gid){
+ void ABCSATSolver::addOrClause(int x, int a, int b){
        Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
        FileOutputABC( output<<x<<" OR "<<a<<" "<<b<<endl );
    //////
@@ -334,7 +334,7 @@ int ABCSATSolver::solve(){
 
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
- void ABCSATSolver::addBigOrClause(int* a, int size, int gid){
+ void ABCSATSolver::addBigOrClause(int* a, int size){
        Dout( cout<<" "<<a[0]<<"= " );
        FileOutputABC( output<<a[0]<<" BOR "<<size<<" " );
    //////
@@ -357,7 +357,7 @@ int ABCSATSolver::solve(){
 
 
 //This function encodes x == a and b;
- void ABCSATSolver::addAndClause(int x, int a, int b, int gid){
+ void ABCSATSolver::addAndClause(int x, int a, int b){
        Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
        FileOutputABC( output<<x<<" AND "<<a<<" "<<b<<endl );
    //////
@@ -373,7 +373,7 @@ int ABCSATSolver::solve(){
 }
 
 //This function encodes x = a;
- void ABCSATSolver::addEqualsClause(int x, int a, int gid){
+ void ABCSATSolver::addEqualsClause(int x, int a){
  	//should use buffer.
        Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
        FileOutputABC( output<<x<<" EQ "<<a<<endl );
@@ -386,7 +386,7 @@ int ABCSATSolver::solve(){
 
 
 //This function encodes x == a;
- void ABCSATSolver::addEquateClause(int x, int a, int gid){
+ void ABCSATSolver::addEquateClause(int x, int a){
        Dout( cout<<" "<<x<<" == "<<a<<"; "<<flush<<endl );
        FileOutputABC( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
        Abc_Obj_t * pFanin0, * pFanin1;
@@ -402,7 +402,7 @@ int ABCSATSolver::solve(){
 }
 
 
- void ABCSATSolver::setVarClause(int x, int gid){
+ void ABCSATSolver::setVarClause(int x){
        Dout( cout<<" set "<<x<<";"<<endl );
        FileOutputABC( output<<"x SET "<<x<<" ;"<<endl );
 	   Abc_Obj_t * pNode;       
@@ -427,7 +427,7 @@ int ABCSATSolver::solve(){
 }
 
 
- void ABCSATSolver::assertVarClause(int x, int gid){	
+ void ABCSATSolver::assertVarClause(int x){	
        Dout( cout<<" assert "<<x<<";"<<endl );
        FileOutputABC( output<<"x OUTASSERT "<<x<<" ;"<<endl );
        Abc_Obj_t * pFanin0;

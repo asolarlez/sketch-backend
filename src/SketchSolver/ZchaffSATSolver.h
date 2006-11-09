@@ -23,15 +23,15 @@ public:
 	 }
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);
-	 virtual void addChoiceClause(int x, int a, int b, int c, int gid=0);
-	 virtual void addXorClause(int x, int a, int b, int gid=0);
-	 virtual void addOrClause(int x, int a, int b, int gid=0);
-	 virtual void addBigOrClause(int* a, int size, int gid=0);
-	 virtual void addAndClause(int x, int a, int b, int gid=0);
-	 virtual void addEqualsClause(int x, int a, int gid=0);
-	 virtual void addEquateClause(int x, int a, int gid=0);
-	 virtual void setVarClause(int x, int gid=0);
-     virtual void assertVarClause(int x, int gid=0);
+	 virtual void addChoiceClause(int x, int a, int b, int c);
+	 virtual void addXorClause(int x, int a, int b);
+	 virtual void addOrClause(int x, int a, int b);
+	 virtual void addBigOrClause(int* a, int size);
+	 virtual void addAndClause(int x, int a, int b);
+	 virtual void addEqualsClause(int x, int a);
+	 virtual void addEquateClause(int x, int a);
+	 virtual void setVarClause(int x);
+     virtual void assertVarClause(int x);
 	 
 	 virtual int getVarVal(int id);
 	 
@@ -57,8 +57,7 @@ public:
 
 void SAT_AddClauseSigned(SAT_Manager          mng,
                    int *                clause_lits,
-                   int                  num_lits,
-                   int                  gid = 0);
+                   int                  num_lits);
 
 
 #endif
