@@ -282,7 +282,7 @@ public:
 	    for (int i = 0; i < bit.size (); i++) {
 		vector<int> &current = bit[i];
 		current[0] = tv.id + i;
-		dir.mng.addBigOrClause (&current[0], current.size () - 1);
+		dir.addBigOrClause (&current[0], current.size () - 1);
 	    }
 
 	    return tv;
@@ -296,24 +296,30 @@ public:
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvectSigned)");
 
 	if (type == TVAL_BVECT) {
-	    Dout (cout << "Converting from BitVector to BitVectorSigned" << endl);
+	    Dout (cout << "toBvectSigned: converting from BitVector to BitVectorSigned" << endl);
 
 	    /* Allocate new variables sufficient for value bits + additional sign bit. */
+	    Dout (cout << "toBvectSigned: allocating " << size + 1 << " variables" << endl);
 	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (size + 1), size + 1);
 
 	    /* Unify value bits with previous ones. */
 	    int newId = tv.getId ();
+	    Dout (cout << "toBvectSigned: unifying new value bits (" << newId << "-"
+		  << newId + size - 1 << ") with previous ones (" << id << "-"
+		  << id + size - 1 << ")" << endl);
 	    for (int i = 0; i < size; i++)
-		dir.mng.addEqualsClause (id + i, newId + i);
+		dir.addEqualsClause (id + i, newId + i);
 
 	    /* Unify sign bit with "false". */
-	    dir.mng.addEqualsClause (newId + size, -dir.YES);
+	    Dout (cout << "toBvectSigned: unifying sign bit with false" << endl);
+	    dir.addEqualsClause (-dir.YES, newId + size);
 
+	    Dout (cout << "toBvectSigned: done" << endl);
 	    return tv;
 	} else if (type == TVAL_BVECT_SIGNED) {
 	    Dout (cout << "Converting from BitVectorSigned to BitVectorSigned (no-op)" << endl);
 	} else if (type == TVAL_SPARSE) {
-	    Dout (cout << "Converting from Sparse to BitVector" << endl);
+	    Dout (cout << "Converting from Sparse to BitVectorSigned" << endl);
 
 	    /* Construct bit-vector disjuncts by repeated iteration. */
 	    vector<vector<int> > bit;
@@ -364,7 +370,7 @@ public:
 	    for (int i = 0; i < bit.size (); i++) {
 		vector<int> &current = bit[i];
 		current[0] = tv.id + i;
-		dir.mng.addBigOrClause (&current[0], current.size () - 1);
+		dir.addBigOrClause (&current[0], current.size () - 1);
 	    }
 
 	    return tv;
@@ -390,8 +396,8 @@ public:
 		    num_ranges.push_back (0);
 		    num_ranges.push_back (1);
 		    int tmp = dir.newAnonymousVar (2);
-		    dir.mng.addEqualsClause (tmp, -id);
-		    dir.mng.addEqualsClause (tmp + 1, id);
+		    dir.addEqualsClause (-id, tmp);
+		    dir.addEqualsClause (id, tmp + 1);
 		    id = tmp;
 		    size = 2;
 		}
@@ -404,7 +410,7 @@ public:
 		vector<int> ids (size);
 		for (int i = 0; i < size; i++)
 		    ids[i] = getId (i);
-		varRange vr = getSwitchVars (dir.mng, dir, ids, size, tmp, dir.YES);
+		varRange vr = dir.getSwitchVars (ids, size, tmp);
 		id = vr.varID;
 		int oldsize = size;  /* save previous size (number of bits). */
 		size = vr.range;

@@ -70,8 +70,7 @@ inline int NodesToSolver::doArithExpr<modulus<int> >(int quant1, int quant2, int
 Tvalue
 NodesToSolver::intBvectAdd (Tvalue &lval, Tvalue &rval)
 {
-    /* FIXME debug print */
-    Dout (cout << ">>> intBvectAdd: 1" << endl);
+    Dout (cout << ">>> intBvectAdd: in" << endl);
 
     /* Compute result size from arguments' sizes. */
     int lsize = lval.getSize ();
@@ -98,30 +97,19 @@ NodesToSolver::intBvectAdd (Tvalue &lval, Tvalue &rval)
 	int r = (i < rsize ? rbase + i : -dir.YES);
 
 	/* - compute current output bit, being l ^ r ^ c */
-	int t = dir.newAnonymousVar ();
-	dir.mng.addXorClause (t, l, r);
-	dir.mng.addXorClause (res[i], t, c);
+	dir.addXorClause (dir.addXorClause (l, r), c, res[i]);
 
 	/* - compute next carry bit (if such exists), being (l && r) || (l && c) || (r && c) */
-	if (i < res_size - 1) {
-	    int t1 = dir.newAnonymousVar ();
-	    dir.mng.addAndClause (t1, l, r);
-	    int t2 = dir.newAnonymousVar ();
-	    dir.mng.addAndClause (t2, l, c);
-	    int t3 = dir.newAnonymousVar ();
-	    dir.mng.addAndClause (t3, r, c);
-	    int t4 = dir.newAnonymousVar ();
-	    dir.mng.addOrClause (t4, t1, t2);
-	    c = dir.newAnonymousVar ();
-	    dir.mng.addOrClause (c, t3, t4);
-	}
+	if (i < res_size - 1)
+	    c = dir.addOrClause (dir.addOrClause (dir.addAndClause (l, r),
+						  dir.addAndClause (l, c)),
+				 dir.addAndClause (r, c));
     }
 
     /* Create result value. */
     Tvalue oval (TVAL_BVECT, res[0], res_size);
 
-    /* FIXME debug print */
-    Dout (cout << ">>> intBvectAdd: 2" << endl);
+    Dout (cout << ">>> intBvectAdd: out" << endl);
 
     return oval;
 }
@@ -130,22 +118,25 @@ void
 NodesToSolver::intBvectPlus (arith_node &node)
 {
     /* FIXME debug print */
-    Dout (cout << ">>> intBvectPlus: 1" << endl);
+    Dout (cout << ">>> intBvectPlus: in" << endl);
 
     assert (node.father && node.mother);
 
     /* Get left and right arguments in bit-vector representation. */
+    Dout (cout << ">>> intBvectPlus: extracting arguments as signed bitvectors" << endl);
     Tvalue lval = tval_lookup (node.mother).toBvectSigned (dir);
     Tvalue rval = tval_lookup (node.father).toBvectSigned (dir);
 
     /* Compute addition. */
+    Dout (cout << ">>> intBvectPlus: generating addition" << endl);
     Tvalue oval = intBvectAdd (lval, rval);
 
     /* Set node's value. */
+    Dout (cout << ">>> intBvectPlus: storing result" << endl);
     node_ids[node.id] = oval;
 
     /* FIXME debug print */
-    Dout (cout << ">>> intBvectPlus: 2" << endl);
+    Dout (cout << ">>> intBvectPlus: out" << endl);
 }
 
 void
@@ -466,8 +457,8 @@ void NodesToSolver::visit( PLUS_node& node ){
 	if(!checkParentsChanged( node, true)){ return; }
 
 	/* FIXME hard-wired bit-vector arithmetics. */
-	//intBvectPlus (node);
-	processArith<plus<int> >(node);
+	intBvectPlus (node);
+	//processArith<plus<int> >(node);
 
 	return;
 }
@@ -838,7 +829,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 	}
 	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
 	vector<int>& tmp = node_ids[node.id].num_ranges;
-	varRange vr = getSwitchVars(mng,dir, ids, size, tmp, YES);
+	varRange vr = dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].setId(vr.varID);
 	node_ids[node.id].sparsify ();
 	Dout(cout<<"&ACTRL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);

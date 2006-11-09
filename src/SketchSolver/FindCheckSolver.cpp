@@ -44,7 +44,7 @@ void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 
 void FindCheckSolver::addDiffersClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
-	int status = assertVectorsDiffer(mng, dir, dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
+	int status = dir.assertVectorsDiffer(dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
 	mng.assertVarClause(status);
 }
 
@@ -79,7 +79,7 @@ void FindCheckSolver::setupCheck(){
 		const string& cname = it->first;
 		int cnt = dirCheck.getArrSize(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
-			mngCheck.setVarClause( -dirCheck.getArr(cname, i), 2);
+			mngCheck.setVarClause( -dirCheck.getArr(cname, i));
 		}
 	}
 }
@@ -94,7 +94,7 @@ void FindCheckSolver::setNewControls(int controls[], int ctrlsize){
 		const string& cname = it->first;
 		int cnt = dirCheck.getArrSize(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
-			mngCheck.setVarClause(controls[jj%ctrlsize]*dirCheck.getArr(cname, i), 2);
+			mngCheck.setVarClause(controls[jj%ctrlsize]*dirCheck.getArr(cname, i));
 		}
 	}
 }

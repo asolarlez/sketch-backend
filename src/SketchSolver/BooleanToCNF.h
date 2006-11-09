@@ -20,280 +20,6 @@
 using namespace std;
 
 
-class varDir{
-	map<string, int> varmap;
-	map<string, int> arrsize;
-	int varCnt;
-public:
-	SATSolver& mng;
-	int YES;
-	varDir(SATSolver& mng_p):mng(mng_p){
-		varCnt = 1;
-		YES = 0;
-	}
-	
-	void reset(){
-			varmap.clear();
-			arrsize.clear();
-			varCnt = 1;
-			YES = 0;
-	};
-	
-	void print(){
-		for(map<string, int>::iterator it= varmap.begin(); it != varmap.end(); ++it){
-			if( arrsize.find( (it)->first ) !=  arrsize.end() ){
-				int start = (it)->second;
-				int size = arrsize[(it)->first];
-				for(int i=0; i<size; ++i){
-					cout<<start+i<<"\t"<<(it)->first<<"["<<i<<"]=   "<<mng.getVarVal(start+i)<<endl;
-				}
-			}else{
-				cout<<(it)->second<<"\t"<<(it)->first<<"=   "<<mng.getVarVal((it)->second)<<endl;
-			}
-		}
-	}
-	
-	
-	int getVarCnt(){ return varCnt; }
-	
-	void declareVar(const string& vname){
-		int idx = mng.newVar();
-		Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
-		varmap[vname]= idx;
-		++varCnt;
-	}
-	
-	void declareArr(const string& arName, int size){		
-		int i = 0;
-		int idx;
-		int frst = -1;
-		if( size > 0 ){
-			idx =  mng.newVar();
-			i++;
-			frst = idx;
-		}
-		for(; i<size; ++i){
-			idx =  mng.newVar();
-		}
-		Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
-		mng.annotateInput(arName, frst, size);
-		varmap[arName] = frst;
-		arrsize[arName] = size;
-		Assert( size==0 || idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
-		varCnt += size;
-	}
-	
-	
-	void declareInArr(const string& arName, int size){
-		int i = 0;
-		int idx;
-		int frst = -1;
-		if( size > 0 ){
-			idx =  mng.newInVar();
-			i++;
-			frst = idx;
-		}
-		for(; i<size; ++i){
-			idx =  mng.newInVar();
-		}
-		Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
-		mng.annotateInput(arName, frst, size);
-		varmap[arName] = frst;
-		arrsize[arName] = size;
-		Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
-		varCnt += size;
-	}
-	
-	void makeArrNoBranch(const string& arName){
-		int var = varmap[arName];
-		int sz = arrsize[arName];
-		for(int i=0; i<sz; ++i) mng.disableVarBranch(var+i);
-	}
-	
-	int getVar(const string& vname){
-		return varmap[vname];
-	}
-	
-	int getArr(const string& arName, int idx){
-		return varmap[arName] + idx;
-	}
-	
-	int getArrSize(const string& arName){
-		return arrsize[arName];	
-	}	
-	/* Allocate a block of variables (default is one), return first id. */
-	int newAnonymousVar (int n = 1) {
-	    Assert (n >= 1, "must allocate at least one variable");
-
-	    int ret = -1;
-	    do {
-		int tmp = mng.newVar ();
-		if (ret < 0)
-		    ret = tmp;
-		mng.disableVarBranch(varCnt);
-	    } while (--n);
-	    
-	    return ret;
-	}
-	void setYes(int yes){
-		YES = yes;
-	}
-	int addChoiceClause(int a, int b, int c, int gid=0);
- 	int addXorClause(int a, int b, int gid=0);
-	int addOrClause(int a, int b, int gid=0);
-	int addBigOrClause(int* a, int size, int gid=0);
-	int addAndClause(int a, int b, int gid=0);	
-	void addEquateClause(int x, int a, int gid=0);
-    void addAssertClause (int a, int gid = 0);
-};
-
-inline int varDir::addChoiceClause(int a, int b, int c, int gid){
-	if( a == YES ){
-		return b;
-	}	
-	if( a == -YES ){
-		return c;
-	}
-	if( b == c){
-		return b;	
-	}
-	if( b == -c){
-		return addXorClause(a, -b);
-	}
-	int x = newAnonymousVar();
-	mng.addChoiceClause(x, a, b, c, gid);
-	return x;
-}
-inline int varDir::addXorClause(int a, int b, int gid){
-	if( b == YES ){
-		return -a;
-	}	
-	if( b == -YES ){
-		return a;
-	}
-	if( a == YES ){
-		return -b;
-	}	
-	if( a == -YES ){
-		return b;
-	}
-	if( a == b){
-		Dout( cout<<-YES<<"= "<<a<<" XORsc "<<b<<endl );
-		return -YES;	
-	}
-	if( a == -b){
-		Dout( cout<<YES<<"= "<<a<<" XORsc "<<b<<endl );
-		return YES;
-	}
-	int x = newAnonymousVar();	
-	mng.addXorClause(x, a, b, gid);
-	return x;
-}
-inline int varDir::addOrClause(int a, int b, int gid){
-	if( b == YES ){
-		return YES;
-	}	
-	if( b == -YES ){
-		return a;
-	}
-	if( a == YES ){
-		return YES;
-	}	
-	if( a == -YES ){
-		return b;
-	}
-	if( a == b){
-		return a;	
-	}
-	if( a == -b){
-		return YES;
-	}
-	int x = newAnonymousVar();
-	mng.addOrClause(x, a, b, gid);
-	return x;
-}
-//This function encodes a[0] == a[1] or a[2] or ... a[size];
-// so a[0] is assumed to be empty initially.
-inline int varDir::addBigOrClause(int* a, int size, int gid){
-	int x = newAnonymousVar();
-	a[0] = x;
-	mng.addBigOrClause(a , size, gid);
-	return x;
-}
-
-inline int varDir::addAndClause(int a, int b, int gid){
-	if( b == YES ){
-		Dout( cout<<" "<<a<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return a;
-	}	
-	if( b == -YES ){
-		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return -YES;
-	}
-	if( a == YES ){
-		Dout( cout<<" "<<b<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return b;
-	}	
-	if( a == -YES ){
-		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return -YES;
-	}
-	if( a == b){
-		Dout( cout<<" "<<a<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return a;	
-	}
-	if( a == -b){
-		Dout( cout<<" "<<-YES<<"= "<<a<<" and "<<b<<"; "<<endl );
-		return -YES;	
-	}	
-	int x = newAnonymousVar();
-	mng.addAndClause(x, a, b, gid);
-	return x;
-}
-
-
-inline void varDir::addEquateClause(int x, int a, int gid){	
-	if( x == a){
-		return;	
-	}
-	if( x == YES){
-		mng.assertVarClause(a);
-		return;
-	}
-	if( x == -YES){
-		mng.assertVarClause(-a);
-		return;
-	}
-	if( a == YES){
-		mng.assertVarClause(x);
-		return;
-	}
-	if( a == -YES){
-		mng.assertVarClause(-x);
-		return;
-	}
-	mng.addEquateClause(x, a, gid);	
-}
-
-
-inline void
-varDir::addAssertClause (int a, int gid)
-{
-    /* Vacously true. */
-    if (a == YES)
-        return; 
-
-    /* Vacously false. */
-    if (a == -YES) {
-        cout << "Assertion cannot be valid, aborting solver" << endl;
-        exit (1);  /* FIXME arbitrary termination behavior, double check! */
-    }
-
-    /* Otherwise, assertion clause necessary. */
-    mng.assertVarClause (a);
-}
-
-
 class varRange{
 	public:
 	int varID;
@@ -305,26 +31,338 @@ class varRange{
 
 
 
-int assertVectorsDiffer(SATSolver& mng, varDir& dir, int v1, int v2, int size);
+class varDir {
+    map<string, int> varmap;
+    map<string, int> arrsize;
+    int varCnt;
+    SATSolver& mng;
+public:
+    int YES;
+    varDir(SATSolver& mng_p):mng(mng_p) {
+	varCnt = 1;
+	YES = 0;
+    }
 
-int select(SATSolver& mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice);
+    void reset() {
+	varmap.clear();
+	arrsize.clear();
+	varCnt = 1;
+	YES = 0;
+    };
 
-int selectMinGood(SATSolver& mng, varDir& dir, int choices[], int control, int nchoices, int bitsPerChoice);
+    void print() {
+	for(map<string, int>::iterator it= varmap.begin(); it != varmap.end(); ++it) {
+	    if( arrsize.find( (it)->first ) !=  arrsize.end() ) {
+		int start = (it)->second;
+		int size = arrsize[(it)->first];
+		for(int i=0; i<size; ++i) {
+		    cout<<start+i<<"\t"<<(it)->first<<"["<<i<<"]=   "<<mng.getVarVal(start+i)<<endl;
+		}
+	    } else {
+		cout<<(it)->second<<"\t"<<(it)->first<<"=   "<<mng.getVarVal((it)->second)<<endl;
+	    }
+	}
+    }
 
-int arbitraryPerm(SATSolver& mng, varDir& dir, int input, int insize, int controls[], int ncontrols, int csize);
+
+    int getVarCnt() { return varCnt; }
+
+    void declareVar(const string& vname) {
+	int idx = mng.newVar();
+	Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
+	varmap[vname]= idx;
+	++varCnt;
+    }
+
+    void declareArr(const string& arName, int size) {		
+	int i = 0;
+	int idx;
+	int frst = -1;
+	if( size > 0 ) {
+	    idx =  mng.newVar();
+	    i++;
+	    frst = idx;
+	}
+	for(; i<size; ++i) {
+	    idx =  mng.newVar();
+	}
+	Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
+	mng.annotateInput(arName, frst, size);
+	varmap[arName] = frst;
+	arrsize[arName] = size;
+	Assert( size==0 || idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+	varCnt += size;
+    }
+
+
+    void declareInArr(const string& arName, int size) {
+	int i = 0;
+	int idx;
+	int frst = -1;
+	if( size > 0 ) {
+	    idx =  mng.newInVar();
+	    i++;
+	    frst = idx;
+	}
+	for(; i<size; ++i) {
+	    idx =  mng.newInVar();
+	}
+	Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
+	mng.annotateInput(arName, frst, size);
+	varmap[arName] = frst;
+	arrsize[arName] = size;
+	Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+	varCnt += size;
+    }
+
+    void makeArrNoBranch(const string& arName) {
+	int var = varmap[arName];
+	int sz = arrsize[arName];
+	for(int i=0; i<sz; ++i) mng.disableVarBranch(var+i);
+    }
+
+    int getVar(const string& vname) {
+	return varmap[vname];
+    }
+
+    int getArr(const string& arName, int idx) {
+	return varmap[arName] + idx;
+    }
+
+    int getArrSize(const string& arName) {
+	return arrsize[arName];	
+    } 	
+    /* Allocate a block of variables (default is one), return first id. */
+    int newAnonymousVar (int n = 1) {
+	Assert (n >= 1, "must allocate at least one variable");
+
+	int ret = -1;
+	do {
+	    int tmp = mng.newVar ();
+	    if (ret < 0)
+		ret = tmp;
+	    mng.disableVarBranch(varCnt);
+	} while (--n);
+
+	return ret;
+    }
+    void setYes(int yes) {
+	YES = yes;
+    }
+
+    int addEqualsClause (int a, int x = 0);
+    int addChoiceClause (int a, int b, int c, int x = 0);
+    int addXorClause (int a, int b, int x = 0);
+    int addOrClause (int a, int b, int x = 0);
+    int addBigOrClause (int* a, int size);
+    int addAndClause (int a, int b, int x = 0);	
+    void addEquateClause (int a, int b);
+    void addAssertClause (int a);
+
+
+    int assertVectorsDiffer (int v1, int v2, int size);
+    int select(int choices[], int control, int nchoices, int bitsPerChoice);
+    int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
+    int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
+    varRange getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals);
+};
+
+/*
+ * Methods for adding various clauses to the solver.
+ *
+ * Note the deployment of obvious minimization tricks in cases of fixed
+ * (true/false) arguments.
+ */
+inline int
+varDir::addEqualsClause (int a, int x)
+{
+    Assert (a != 0, "input id cannot be zero");
+
+    /* No left-value, return right-value. */
+    if (x == 0)
+	return a;
+
+    /* Add clause. */
+    mng.addEqualsClause (x, a);
+
+    return x;
+}
+
+inline int
+varDir::addChoiceClause (int a, int b, int c, int x)
+{
+    Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero");
+
+    /* Check for shortcut cases. */
+    if (a == YES || b == c)
+	return addEqualsClause (b, x);
+    if (a == -YES)
+	return addEqualsClause (c, x);
+    if (b == -c)
+	return addXorClause (a, -b, x);
+
+    /* Allocate fresh result variable as necessary. */
+    if (x == 0)
+	x = newAnonymousVar ();
+
+    /* Add clause. */
+    mng.addChoiceClause (x, a, b, c);
+
+    return x;
+}
+
+inline int
+varDir::addXorClause (int a, int b, int x)
+{
+    Assert (a != 0 && b != 0, "input ids cannot be zero");
+
+    /* Check for shortcut cases (prefer fixed results first). */
+    if (a == b)
+	return addEqualsClause (-YES, x);
+    if (a == -b)
+	return addEqualsClause (YES, x);
+    if (b == YES)
+	return addEqualsClause (-a, x);
+    if (b == -YES)
+	return addEqualsClause (a, x);
+    if (a == YES)
+	return addEqualsClause (-b, x);
+    if (a == -YES)
+	return addEqualsClause (b, x);
+
+    /* Allocate fresh result variable as necessary. */
+    if (x == 0)
+	x = newAnonymousVar ();
+
+    /* Add clause. */
+    mng.addXorClause (x, a, b);
+
+    return x;
+}
+
+inline int
+varDir::addOrClause (int a, int b, int x)
+{
+    Assert (a != 0 && b != 0, "input ids cannot be zero");
+
+    /* Check for shortcut cases (prefer fixed results first). */
+    if (a == YES || b == YES || a == -b)
+	return addEqualsClause (YES, x);
+    if (b == -YES || a == b)
+	return addEqualsClause (a, x);
+    if (a == -YES)
+	return addEqualsClause (b, x);
+
+    /* Allocate fresh result variable as necessary. */
+    if (x == 0)
+	x = newAnonymousVar ();
+
+    /* Add clause. */
+    mng.addOrClause (x, a, b);
+
+    return x;
+}
+
+/*
+ * This encodes a[0] == (a[1] OR a[2] OR ...  OR a[last]).
+ */
+inline int
+varDir::addBigOrClause (int *a, int last)
+{
+    Assert (a, "array of input ids cannot be null");
+
+    /* Allocate fresh result variable as necessary. */
+    if (a[0] == 0)
+	a[0] = newAnonymousVar ();
+
+    /* Add clause. */
+    mng.addBigOrClause (a, last);
+
+    return a[0];
+}
+
+inline int
+varDir::addAndClause (int a, int b, int x)
+{
+    Assert (a != 0 && b != 0, "input ids cannot be zero");
+
+    /* Check for shortcut cases (prefer fixed results first). */
+    if (a == -YES || b == -YES || a == -b)
+	return addEqualsClause (-YES, x);
+    if (b == YES || a == b)
+	return addEqualsClause (a, x);
+    if (a == YES)
+	return addEqualsClause (b, x);
+
+    /* Allocate fresh result variable as necessary. */
+    if (x == 0)
+	x = newAnonymousVar ();
+
+    /* Add clause. */
+    mng.addAndClause (x, a, b);
+
+    return x;
+}
+
+inline void
+varDir::addEquateClause (int a, int b)
+{
+    Assert (a != 0 && b != 0, "input ids cannot be zero");
+
+    /* Vacuously true. */
+    if (a == b)
+	return;
+
+    /* Vacuously false. */
+    if (a == -b) {
+	cout << "Equality cannot be satisfied, aborting solver" << endl;
+	exit (1);  /* FIXME arbitrary termination behavior, double check! */
+    }
+
+    /* Identify informed cases, or add an explicit equality clause. */
+    if (a == YES)
+	mng.assertVarClause (b);
+    else if (a == -YES)
+	mng.assertVarClause (-b);
+    else if (b == YES)
+	mng.assertVarClause (a);
+    else if (b == -YES)
+	mng.assertVarClause (-a);
+    else
+	mng.addEquateClause (a, b);
+}
+
+inline void
+varDir::addAssertClause (int a)
+{
+    Assert (a != 0, "input id cannot be zero");
+
+    /* Vacuously true. */
+    if (a == YES)
+        return; 
+
+    /* Vacuously false. */
+    if (a == -YES) {
+        cout << "Assertion cannot be valid, aborting solver" << endl;
+        exit (1);  /* FIXME arbitrary termination behavior, double check! */
+    }
+
+    /* Otherwise, assertion clause necessary. */
+    mng.assertVarClause (a);
+}
 
 
 
-
-
-inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID, int amtsize, vector<int>& vals, int YES){
+inline varRange
+varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
+{
 	Assert(switchID.size() == amtsize, "This should never happen");
 	int amtrange = 1;
 	for(int i=0; i<amtsize && i<12; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
 	vector<int> tmpVect(amtrange);
 	int lastsize = 1;
-	int lastRoundVars = dir.getVarCnt();	
+	int lastRoundVars = getVarCnt();	
 	int valssz = 0;
 	vals.resize(1);
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
@@ -337,8 +375,8 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 		lastsize = 1;
 	}else{
 		vals.resize(2);
-		lastRoundVars = dir.newAnonymousVar();
-		int tmp = dir.newAnonymousVar();
+		lastRoundVars = newAnonymousVar();
+		int tmp = newAnonymousVar();
 		Assert( tmp == lastRoundVars+1, "BooleanToCNF1: This is bad");
 		mng.addEqualsClause(lastRoundVars, -(switchID[amtsize-1]));
 		mng.addEqualsClause(tmp,  (switchID[amtsize-1]));
@@ -358,11 +396,11 @@ inline varRange getSwitchVars(SATSolver& mng, varDir& dir, vector<int>& switchID
 			}
 		}else{
 			int roundVars = lastRoundVars;
-			lastRoundVars = dir.newAnonymousVar();
-			dir.newAnonymousVar();			
+			lastRoundVars = newAnonymousVar();
+			newAnonymousVar();			
 			for(int j=1; j<lastsize; ++j){
-				dir.newAnonymousVar();
-				dir.newAnonymousVar();
+				newAnonymousVar();
+				newAnonymousVar();
 			}
 			for(int j=0; j<lastsize; ++j){
 				int cvar = roundVars + j;
