@@ -154,7 +154,7 @@ public:
     int addChoiceClause (int a, int b, int c, int x = 0);
     int addXorClause (int a, int b, int x = 0);
     int addOrClause (int a, int b, int x = 0);
-    int addBigOrClause (int* a, int size);
+    int addBigOrClause (int* a, int last);
     int addAndClause (int a, int b, int x = 0);	
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
@@ -270,6 +270,10 @@ inline int
 varDir::addBigOrClause (int *a, int last)
 {
     Assert (a, "array of input ids cannot be null");
+
+    /* Check for shortcut cases. */
+    if (last == 0)
+	return (a[0] = addEqualsClause (-YES, a[0]));
 
     /* Allocate fresh result variable as necessary. */
     if (a[0] == 0)

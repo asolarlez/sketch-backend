@@ -217,6 +217,75 @@ public:
 		num_ranges[i] = num_ranges[i] * adj;
     }
 
+private:
+    Tvalue sparseToBvectAny (varDir &dir, bool toSigned) const {
+	Assert (type == TVAL_SPARSE, "input invariant violated");
+
+	/* Construct bit-vector disjuncts by repeated iteration. */
+	vector<vector<int> > bit;
+	vector<int> nr (num_ranges);
+	bool more;
+	do {
+	    bit.push_back (vector<int> ());
+	    vector<int> &current = bit[bit.size () - 1];
+	    current.push_back (0);
+	    Dout (cout << " new vals=");
+
+	    /* Iterate over sparse values. */
+	    more = false;
+	    for (int i = 0; i < num_ranges.size (); i++) {
+		int &val = nr[i];
+		Dout (cout << (i ? "," : "") << val);
+
+		Assert (toSigned || val >= 0,
+			"cannot convert negative integer to unsigned bitvector");
+
+		/* Skip if current value is zero (no effect on output). */
+		if (val == 0)
+		    continue;
+
+		/* Require further iteration, only if not a -1 (signed shift fixpoint). */
+		if (val != -1)
+		    more = true;
+
+		/* If LSB is one, record corresponding variable. */
+		if (val & 0x1)
+		    current.push_back (getId (i));
+
+		/* Shift right the current value (note: this is a signed shift). */
+		val = val >> 1;
+	    }
+
+	    Dout (cout << endl);
+	} while (more);
+
+	/* Last element inserted holds variables affecting the sign bit. */
+	Assert (bit.size () > 0, "result must contain at least a sign bit");
+
+	/* If converting to unsigned, dispose of sign bit. */
+	if (! toSigned) {
+	    bit.pop_back ();
+
+	    /* An empty result implies a constant zero (special case). */
+	    if (bit.size () == 0)
+		return Tvalue (TVAL_BVECT, -dir.YES, 1);
+	}
+
+	/* Allocate bitvector of fresh variables for both value and sign. */
+	Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (bit.size ()), bit.size ());
+
+	/* Assign value/sign bits with conjunction of their corresponding
+	 * sparse variables. */
+	for (int i = 0; i < bit.size (); i++) {
+	    vector<int> &current = bit[i];
+	    current[0] = tv.id + i;
+	    dir.addBigOrClause (&current[0], current.size () - 1);
+	}
+
+	return tv;
+    }
+
+public:
     Tvalue toBvect (varDir &dir) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvect)");
 
@@ -229,63 +298,7 @@ public:
 	    Assert (0, "cannot convert from unsigned to signed bitvector");
 	} else if (type == TVAL_SPARSE) {
 	    Dout (cout << "Converting from Sparse to BitVector" << endl);
-
-	    /* Construct bit-vector disjuncts by repeated iteration. */
-	    vector<vector<int> > bit;
-	    vector<int> nr (num_ranges);
-	    bool more;
-	    do {
-		bit.push_back (vector<int> ());
-		vector<int> &current = bit[bit.size () - 1];
-		current.push_back (0);
-		Dout (cout << " new vals=");
-
-		/* Iterate over sparse values. */
-		more = false;
-		for (int i = 0; i < num_ranges.size (); i++) {
-		    int &val = nr[i];
-		    Dout (cout << ", " << val);
-
-		    Assert (val >= 0, "cannot convert negative integer to unsigned bitvector");
-
-		    /* Skip if current value is zero. */
-		    if (val == 0)
-			continue;
-
-		    /* Set flag for further iteration. */
-		    more = true;
-
-		    /* If LSB is one, record corresponding variable. */
-		    if ((val & 1) != 0)
-			current.push_back (getId (i));
-
-		    /* Shift right the current value. */
-		    val = val >> 1;
-		}
-
-		Dout (cout << endl);
-	    } while (more);
-
-	    /* Last element inserted is all zeros and can be disposed. */
-	    Assert (bit.size () > 0, "result must contain at least one zero bit");
-	    bit.pop_back ();
-
-	    /* An empty result is coalesced with "false". */
-	    if (bit.size () == 0)
-		return Tvalue (TVAL_BVECT, dir.YES, 1, false);
-
-	    /* Otherwise, generate a bitvector of fresh variables. */
-	    Tvalue tv (TVAL_BVECT, dir.newAnonymousVar (bit.size ()), bit.size ());
-
-	    /* Associate new bit variables with conjunction of their respective
-	     * sets of sparse variables. */
-	    for (int i = 0; i < bit.size (); i++) {
-		vector<int> &current = bit[i];
-		current[0] = tv.id + i;
-		dir.addBigOrClause (&current[0], current.size () - 1);
-	    }
-
-	    return tv;
+	    return sparseToBvectAny (dir, false);
 	} else
 	    assert (0);  /* Can't get here. */
 
@@ -320,60 +333,7 @@ public:
 	    Dout (cout << "Converting from BitVectorSigned to BitVectorSigned (no-op)" << endl);
 	} else if (type == TVAL_SPARSE) {
 	    Dout (cout << "Converting from Sparse to BitVectorSigned" << endl);
-
-	    /* Construct bit-vector disjuncts by repeated iteration. */
-	    vector<vector<int> > bit;
-	    vector<int> nr (num_ranges);
-	    bool more;
-	    do {
-		bit.push_back (vector<int> ());
-		vector<int> &current = bit[bit.size () - 1];
-		current.push_back (0);
-		Dout (cout << " new vals=");
-
-		/* Iterate over sparse values. */
-		more = false;
-		for (int i = 0; i < num_ranges.size (); i++) {
-		    int &val = nr[i];
-		    Dout (cout << ", " << val);
-
-		    /* Current value is non-zero. */
-		    if (val > 0) {
-			/* Set flag for further iteration. */
-			more = true;
-
-			/* If LSB is one, record corresponding variable. */
-			if ((val & 1) != 0)
-			    current.push_back (getId (i));
-
-			/* Shift right the current value. */
-			val = val >> 1;
-		    }
-		}
-
-		Dout (cout << endl);
-	    } while (more);
-
-	    /* Last element inserted is all zeros and can be disposed. */
-	    Assert (bit.size () > 0, "result must contain at least one zero bit");
-	    bit.pop_back ();
-
-	    /* An empty result is coalesced with "false". */
-	    if (bit.size () == 0)
-		return Tvalue (TVAL_BVECT, dir.YES, 1, false);
-
-	    /* Otherwise, generate a bitvector of fresh variables. */
-	    Tvalue tv (TVAL_BVECT, dir.newAnonymousVar (bit.size ()), bit.size ());
-
-	    /* Associate new bit variables with conjunction of their respective
-	     * sets of sparse variables. */
-	    for (int i = 0; i < bit.size (); i++) {
-		vector<int> &current = bit[i];
-		current[0] = tv.id + i;
-		dir.addBigOrClause (&current[0], current.size () - 1);
-	    }
-
-	    return tv;
+	    return sparseToBvectAny (dir, true);
 	} else
 	    assert (0);  /* Can't get here. */
 
