@@ -457,8 +457,8 @@ void NodesToSolver::visit( PLUS_node& node ){
 	if(!checkParentsChanged( node, true)){ return; }
 
 	/* FIXME hard-wired bit-vector arithmetics. */
-	intBvectPlus (node);
-	//processArith<plus<int> >(node);
+	//intBvectPlus (node);
+	processArith<plus<int> >(node);
 
 	return;
 }
