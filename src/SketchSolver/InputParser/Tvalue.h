@@ -218,7 +218,9 @@ public:
     }
 
 private:
-    Tvalue sparseToBvectAny (varDir &dir, bool toSigned) const {
+    Tvalue sparseToBvectAny (varDir &dir, unsigned padding,
+			     bool toSigned) const
+    {
 	Assert (type == TVAL_SPARSE, "input invariant violated");
 
 	/* Construct bit-vector disjuncts by repeated iteration. */
@@ -263,57 +265,74 @@ private:
 	Assert (bit.size () > 0, "result must contain at least a sign bit");
 
 	/* If converting to unsigned, dispose of sign bit. */
-	if (! toSigned) {
+	bool lastpad = true;
+	if (! (toSigned || padding > 0)) {
 	    bit.pop_back ();
+	    lastpad = false;
 
 	    /* An empty result implies a constant zero (special case). */
 	    if (bit.size () == 0)
 		return Tvalue (TVAL_BVECT, -dir.YES, 1);
-	}
+	} else if (! toSigned)
+	    padding--;
 
 	/* Allocate bitvector of fresh variables for both value and sign. */
-	Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (bit.size ()), bit.size ());
+	int paddedSize = bit.size () + padding;
+	Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (paddedSize), paddedSize);
 
 	/* Assign value/sign bits with conjunction of their corresponding
 	 * sparse variables. */
-	for (int i = 0; i < bit.size (); i++) {
-	    vector<int> &current = bit[i];
+	int idx = 0;
+	for (int i = 0; i < paddedSize; i++) {
+	    vector<int> &current = bit[idx];
 	    current[0] = tv.id + i;
 	    dir.addBigOrClause (&current[0], current.size () - 1);
+
+	    /* Advance to next (actual) bit if last one not reached. */
+	    if (idx < bit.size () - 1)
+		idx++;
 	}
 
 	return tv;
     }
 
 public:
-    Tvalue toBvect (varDir &dir) const {
+    Tvalue toBvect (varDir &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvect)");
 
 	if (type == TVAL_BVECT) {
-	    Dout (cout << "Converting from BitVector to BitVector (no-op)" << endl);
+	    Dout (cout << "Converting from BitVector to BitVector (padding="
+		  << padding << ")" << endl);
+
+	    /* TODO handle padding. */
+	    Assert (padding == 0, "padding not yet implemented for this conversion");
 	} else if (type == TVAL_BVECT_SIGNED) {
-	    Dout (cout << "Converting from BitVectorSigned to BitVector" << endl);
+	    Dout (cout << "Converting from BitVectorSigned to BitVector (padding="
+		  << padding << ")" << endl);
 
 	    /* This conversion is not allowed at the moment (requires dynamic assertion). */
 	    Assert (0, "cannot convert from unsigned to signed bitvector");
 	} else if (type == TVAL_SPARSE) {
-	    Dout (cout << "Converting from Sparse to BitVector" << endl);
-	    return sparseToBvectAny (dir, false);
+	    Dout (cout << "Converting from Sparse to BitVector (padding="
+		  << padding << ")" << endl);
+	    return sparseToBvectAny (dir, padding, false);
 	} else
 	    assert (0);  /* Can't get here. */
 
 	return *this;
     }
 
-    Tvalue toBvectSigned (varDir &dir) const {
+    Tvalue toBvectSigned (varDir &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvectSigned)");
 
 	if (type == TVAL_BVECT) {
-	    Dout (cout << "toBvectSigned: converting from BitVector to BitVectorSigned" << endl);
+	    Dout (cout << "toBvectSigned: converting from BitVector to BitVectorSigned (padding="
+		  << padding << ")" << endl);
 
-	    /* Allocate new variables sufficient for value bits + additional sign bit. */
-	    Dout (cout << "toBvectSigned: allocating " << size + 1 << " variables" << endl);
-	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (size + 1), size + 1);
+	    /* Allocate new variables sufficient for value bits + additional sign bit + padding. */
+	    int newSize = size + 1 + padding;
+	    Dout (cout << "toBvectSigned: allocating " << newSize << " variables" << endl);
+	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (newSize), newSize);
 
 	    /* Unify value bits with previous ones. */
 	    int newId = tv.getId ();
@@ -321,19 +340,26 @@ public:
 		  << newId + size - 1 << ") with previous ones (" << id << "-"
 		  << id + size - 1 << ")" << endl);
 	    for (int i = 0; i < size; i++)
-		dir.addEqualsClause (id + i, newId + i);
+		dir.addEqualsClause (id + i, newId++);
 
-	    /* Unify sign bit with "false". */
-	    Dout (cout << "toBvectSigned: unifying sign bit with false" << endl);
-	    dir.addEqualsClause (-dir.YES, newId + size);
+	    /* Unify sign and padding bits with "false". */
+	    Dout (cout << "toBvectSigned: unifying sign + padding bits with false" << endl);
+	    do {
+		dir.addEqualsClause (-dir.YES, newId++);
+	    } while (padding--);
 
 	    Dout (cout << "toBvectSigned: done" << endl);
 	    return tv;
 	} else if (type == TVAL_BVECT_SIGNED) {
-	    Dout (cout << "Converting from BitVectorSigned to BitVectorSigned (no-op)" << endl);
+	    Dout (cout << "Converting from BitVectorSigned to BitVectorSigned (padding="
+		  << padding << ")" << endl);
+
+	    /* TODO handle padding. */
+	    Assert (padding == 0, "padding not yet implemented for this conversion");
 	} else if (type == TVAL_SPARSE) {
-	    Dout (cout << "Converting from Sparse to BitVectorSigned" << endl);
-	    return sparseToBvectAny (dir, true);
+	    Dout (cout << "Converting from Sparse to BitVectorSigned (padding="
+		  << padding << ")" << endl);
+	    return sparseToBvectAny (dir, padding, true);
 	} else
 	    assert (0);  /* Can't get here. */
 

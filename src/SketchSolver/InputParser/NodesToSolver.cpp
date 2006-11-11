@@ -123,9 +123,10 @@ NodesToSolver::intBvectPlus (arith_node &node)
     assert (node.father && node.mother);
 
     /* Get left and right arguments in bit-vector representation. */
-    Dout (cout << ">>> intBvectPlus: extracting arguments as signed bitvectors" << endl);
-    Tvalue lval = tval_lookup (node.mother).toBvectSigned (dir);
-    Tvalue rval = tval_lookup (node.father).toBvectSigned (dir);
+    Dout (cout << ">>> intBvectPlus: extracting arguments as (padded) signed bitvectors"
+	  << endl);
+    Tvalue lval = tval_lookup (node.mother).toBvectSigned (dir, 1);
+    Tvalue rval = tval_lookup (node.father).toBvectSigned (dir, 1);
 
     /* Compute addition. */
     Dout (cout << ">>> intBvectPlus: generating addition" << endl);
