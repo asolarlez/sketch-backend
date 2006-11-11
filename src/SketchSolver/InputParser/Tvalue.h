@@ -217,10 +217,51 @@ public:
 		num_ranges[i] = num_ranges[i] * adj;
     }
 
+    /* Invert an integer value. */
+    inline Tvalue toComplement (varDir &dir) const {
+	Assert (id > 0, "id must be positive, instead it is " << id << " (complement)");
+
+	if (type == TVAL_BVECT) {
+	    Assert (0, "cannot complement an unsigned bitvector");
+	} else if (type == TVAL_BVECT_SIGNED) {
+	    Dout (cout << "toComplement: generating complement BitVectorSigned" << endl);
+
+	    /* Compute the two's complement. */
+	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (size), size);
+	    int newId = tv.getId ();
+	    int oneSeen = -dir.YES;
+	    for (int i = 0; i < size; i++) {
+		/* Bit is inverted if 1 encountered in some earlier bit. */
+		int curId = id + i;
+		dir.addXorClause (curId, oneSeen, newId++);
+
+		/* Track possibility of current bit being 1. */
+		if (i < size - 1) {
+		    int nextOneSeen = dir.newAnonymousVar ();
+		    dir.addOrClause (curId, oneSeen, nextOneSeen);
+		    oneSeen = nextOneSeen;
+		}
+	    }
+
+	    Dout (cout << "toComplement: done" << endl);
+	    return tv;
+	} else if (type == TVAL_SPARSE) {
+	    Dout (cout << "toComplement: generating inverted Sparse" << endl);
+
+	    /* Multiply by -1. */
+	    Tvalue tv (*this);
+	    tv.intAdjust (-1);
+	    return tv;
+	} else
+	    assert (0);  /* Can't get here. */
+
+	return *this;
+    }
+
 private:
-    Tvalue sparseToBvectAny (varDir &dir, unsigned padding,
-			     bool toSigned) const
-    {
+    /* Convert a sparse into unsigned / signed bit-vector, including padding bits. */
+    inline Tvalue sparseToBvectAny (varDir &dir, unsigned padding,
+	       			    bool toSigned) const {
 	Assert (type == TVAL_SPARSE, "input invariant violated");
 
 	/* Construct bit-vector disjuncts by repeated iteration. */
