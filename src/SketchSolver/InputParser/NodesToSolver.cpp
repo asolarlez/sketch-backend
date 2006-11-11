@@ -67,20 +67,28 @@ inline int NodesToSolver::doArithExpr<modulus<int> >(int quant1, int quant2, int
 }
 
 
+/*
+ * Generate bit-wise addition, no overflow semantics.
+ *
+ * This implementation handles both signed and unsigned variants.
+ * Overflow handling is assumed the responsibility of the user.
+ */
 Tvalue
 NodesToSolver::intBvectAdd (Tvalue &lval, Tvalue &rval)
 {
     Dout (cout << ">>> intBvectAdd: in" << endl);
 
     /* Compute result size from arguments' sizes. */
-    int lsize = lval.getSize ();
-    int rsize = rval.getSize ();
-    int res_size = (lsize > rsize ? lsize : rsize);
+    int lsize = lval.getSize () + (lval.isBvect () ? 1 : 0);
+    int rsize = rval.getSize () + (rval.isBvect () ? 1 : 0);
+    int osize = (lsize > rsize ? lsize : rsize);
+
+    /* Find sign bit of both arguments. */
+    int lsign = lval.getSignId (dir);
+    int rsign = rval.getSignId (dir);
 
     /* Initialize a vector of consecutive output bits (SAT variables). */
-    vector<int> res (res_size);
-    for (int i = 0; i < res_size; i++)
-	res[i] = dir.newAnonymousVar ();
+    int oid = dir.newAnonymousVar (osize);
 
     /* Compute addition:
      * - initialize first carry bit (zero)
@@ -91,23 +99,25 @@ NodesToSolver::intBvectAdd (Tvalue &lval, Tvalue &rval)
      */
     int lbase = lval.getId ();
     int rbase = rval.getId ();
-    for (int i = 0; i < res_size; i++) {
-	/* - get current arguments' bits, or false of exceeded either size */
-	int l = (i < lsize ? lbase + i : -dir.YES);
-	int r = (i < rsize ? rbase + i : -dir.YES);
+    lsize--;
+    rsize--;
+    for (int i = 0; i < osize; i++) {
+	/* - get current value bits, or sign bit if exceeded either size */
+	int l = (i < lsize ? lbase + i : lsign);
+	int r = (i < rsize ? rbase + i : rsign);
 
 	/* - compute current output bit, being l ^ r ^ c */
-	dir.addXorClause (dir.addXorClause (l, r), c, res[i]);
+	dir.addXorClause (dir.addXorClause (l, r), c, oid + i);
 
 	/* - compute next carry bit (if such exists), being (l && r) || (l && c) || (r && c) */
-	if (i < res_size - 1)
+	if (i < osize - 1)
 	    c = dir.addOrClause (dir.addOrClause (dir.addAndClause (l, r),
 						  dir.addAndClause (l, c)),
 				 dir.addAndClause (r, c));
     }
 
-    /* Create result value. */
-    Tvalue oval (TVAL_BVECT, res[0], res_size);
+    /* Create result value (signed). */
+    Tvalue oval (TVAL_BVECT_SIGNED, oid, osize);
 
     Dout (cout << ">>> intBvectAdd: out" << endl);
 
@@ -120,6 +130,7 @@ NodesToSolver::intBvectPlus (arith_node &node)
     /* FIXME debug print */
     Dout (cout << ">>> intBvectPlus: in" << endl);
 
+    /* TODO support constant arguments as well... */
     assert (node.father && node.mother);
 
     /* Get left and right arguments in bit-vector representation. */
@@ -127,6 +138,17 @@ NodesToSolver::intBvectPlus (arith_node &node)
 	  << endl);
     Tvalue lval = tval_lookup (node.mother).toBvectSigned (dir, 1);
     Tvalue rval = tval_lookup (node.father).toBvectSigned (dir, 1);
+
+    /* Apply coefficients.
+     * TODO this is currently restricted to non-null (i.e. non-constant) arguments,
+     * hence assumes 1/-1 coefficients only. Should be extended as well... */
+    Assert ((node.mother_quant == 1 || node.mother_quant == -1)
+	    && (node.father_quant == 1 || node.father_quant == -1),
+	    "currently support 1/-1 quants only");
+    if (node.mother_quant == -1)
+	lval = lval.toComplement (dir);
+    if (node.father_quant == -1)
+	rval = rval.toComplement (dir);
 
     /* Compute addition. */
     Dout (cout << ">>> intBvectPlus: generating addition" << endl);

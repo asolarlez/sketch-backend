@@ -43,6 +43,14 @@ public:
 
     inline int getSize (void) const { return size; }
 
+    inline bool isNull (void) const { return id == 0; }
+
+    inline bool isBvect (void) const { return type == TVAL_BVECT; }
+
+    inline bool isBvectSigned (void) const { return type == TVAL_BVECT_SIGNED; }
+
+    inline bool isSparse (void) const { return type == TVAL_SPARSE; }
+
 
     /*
      * Mutators.
@@ -69,13 +77,13 @@ public:
 
 	/* Assert that (1) id is positive, and (2) value is non-negated, unless
 	 * it is an (unsigned) bit-vector of size 1 (i.e. a single bit). */
-	Assert (id >= 0 && (! neg || type == TVAL_BVECT && size == 1),
+	Assert (id >= 0 && (! neg || isBvect () && size == 1),
 		"only single-bit vectors can be negated");
     }
 
     /* FIXME same as above. */
     inline int setSize (int a_size) {
-	Assert (type == TVAL_BVECT, "value type must be bitvector");
+	Assert (isBvect (), "value type must be bitvector");
 	size = a_size;
     }
 
@@ -138,7 +146,7 @@ public:
 
     /* Return the i-th value represented by a sparse. */
     inline int operator[] (int idx) const {
-	Assert (type == TVAL_SPARSE, "value type must be sparse (operator[])");
+	Assert (isSparse (), "value type must be sparse (operator[])");
 	return num_ranges[idx];	
     }
 
@@ -166,7 +174,7 @@ public:
     friend ostream &operator<< (ostream &out, const Tvalue &tv) {
 	out << "{" << (tv.neg ? -tv.id : tv.id);
 
-	if (tv.type == TVAL_SPARSE ){
+	if (tv.isSparse () ){
 	    out << " [ ";
 	    for (int i = 0; i < tv.size; i++)
 		out << tv.num_ranges[i] << ", ";
@@ -184,13 +192,11 @@ public:
     /*
      * Methods.
      */
-    inline bool isNull (void) const { return id == 0; }
-
-    inline bool isBvect (void) const { return type == TVAL_BVECT; }
-
-    inline bool isBvectSigned (void) const { return type == TVAL_BVECT_SIGNED; }
-
-    inline bool isSparse (void) const { return type == TVAL_SPARSE; }
+    /* Get variable corresponding to the sign bit of a bit-vector. */
+    inline int getSignId (varDir &dir) const {
+	Assert (isBvect () || isBvectSigned (), "no sign bit for sparse");
+	return (isBvect () ? -dir.YES : id + size - 1);
+    }
 
     /* Sparsify a value.
      * FIXME seems like a inconsistency pronating method... */
@@ -203,14 +209,14 @@ public:
      * FIXME we can generally only negate (=adjust?) a single-bit unsigned vector.
      * However I suspect that this might be called with *signed* bitvectors as well... */
     inline void bitAdjust (bool bit) {
-	Assert (type == TVAL_BVECT, "value type must be bitvector");
+	Assert (isBvect (), "value type must be bitvector");
 	if (! bit)
 	    neg = ! neg;
     }
 
     /* Multiply a sparse by some integer factor. */
     inline void intAdjust (int adj) {
-	Assert (type == TVAL_SPARSE, "value type must be sparse");
+	Assert (isSparse (), "value type must be sparse");
 
 	if (adj != 1)
 	    for (int i = 0; i < num_ranges.size (); i++)
@@ -221,9 +227,9 @@ public:
     inline Tvalue toComplement (varDir &dir) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (complement)");
 
-	if (type == TVAL_BVECT) {
+	if (isBvect ()) {
 	    Assert (0, "cannot complement an unsigned bitvector");
-	} else if (type == TVAL_BVECT_SIGNED) {
+	} else if (isBvectSigned ()) {
 	    Dout (cout << "toComplement: generating complement BitVectorSigned" << endl);
 
 	    /* Compute the two's complement. */
@@ -237,15 +243,21 @@ public:
 
 		/* Track possibility of current bit being 1. */
 		if (i < size - 1) {
-		    int nextOneSeen = dir.newAnonymousVar ();
-		    dir.addOrClause (curId, oneSeen, nextOneSeen);
+		    int nextOneSeen;
+
+		    if (i > 0) {
+			nextOneSeen = dir.newAnonymousVar ();
+			dir.addOrClause (curId, oneSeen, nextOneSeen);
+		    } else
+			nextOneSeen = curId;
+
 		    oneSeen = nextOneSeen;
 		}
 	    }
 
 	    Dout (cout << "toComplement: done" << endl);
 	    return tv;
-	} else if (type == TVAL_SPARSE) {
+	} else if (isSparse ()) {
 	    Dout (cout << "toComplement: generating inverted Sparse" << endl);
 
 	    /* Multiply by -1. */
@@ -262,7 +274,7 @@ private:
     /* Convert a sparse into unsigned / signed bit-vector, including padding bits. */
     inline Tvalue sparseToBvectAny (varDir &dir, unsigned padding,
 	       			    bool toSigned) const {
-	Assert (type == TVAL_SPARSE, "input invariant violated");
+	Assert (isSparse (), "input invariant violated");
 
 	/* Construct bit-vector disjuncts by repeated iteration. */
 	vector<vector<int> > bit;
@@ -341,19 +353,19 @@ public:
     Tvalue toBvect (varDir &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvect)");
 
-	if (type == TVAL_BVECT) {
+	if (isBvect ()) {
 	    Dout (cout << "Converting from BitVector to BitVector (padding="
 		  << padding << ")" << endl);
 
 	    /* TODO handle padding. */
 	    Assert (padding == 0, "padding not yet implemented for this conversion");
-	} else if (type == TVAL_BVECT_SIGNED) {
+	} else if (isBvectSigned ()) {
 	    Dout (cout << "Converting from BitVectorSigned to BitVector (padding="
 		  << padding << ")" << endl);
 
 	    /* This conversion is not allowed at the moment (requires dynamic assertion). */
 	    Assert (0, "cannot convert from unsigned to signed bitvector");
-	} else if (type == TVAL_SPARSE) {
+	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to BitVector (padding="
 		  << padding << ")" << endl);
 	    return sparseToBvectAny (dir, padding, false);
@@ -366,38 +378,37 @@ public:
     Tvalue toBvectSigned (varDir &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvectSigned)");
 
-	if (type == TVAL_BVECT) {
-	    Dout (cout << "toBvectSigned: converting from BitVector to BitVectorSigned (padding="
-		  << padding << ")" << endl);
+	if (isBvect () || isBvectSigned ()) {
+	    Dout (cout << "toBvectSigned: converting from BitVector"
+		  << (isBvectSigned () ? "Signed" : "")
+		  << " to BitVectorSigned (padding=" << padding << ")" << endl);
 
 	    /* Allocate new variables sufficient for value bits + additional sign bit + padding. */
-	    int newSize = size + 1 + padding;
+	    int valueSize = size - (isBvectSigned () ? 1 : 0);
+	    int newSize = valueSize + padding + 1;
 	    Dout (cout << "toBvectSigned: allocating " << newSize << " variables" << endl);
 	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (newSize), newSize);
+
+	    /* Find sign bit. */
+	    int signId = getSignId (dir);
 
 	    /* Unify value bits with previous ones. */
 	    int newId = tv.getId ();
 	    Dout (cout << "toBvectSigned: unifying new value bits (" << newId << "-"
-		  << newId + size - 1 << ") with previous ones (" << id << "-"
-		  << id + size - 1 << ")" << endl);
-	    for (int i = 0; i < size; i++)
+		  << newId + valueSize - 1 << ") with previous ones (" << id << "-"
+		  << id + valueSize - 1 << ")" << endl);
+	    for (int i = 0; i < valueSize; i++)
 		dir.addEqualsClause (id + i, newId++);
 
 	    /* Unify sign and padding bits with "false". */
-	    Dout (cout << "toBvectSigned: unifying sign + padding bits with false" << endl);
+	    Dout (cout << "toBvectSigned: unifying sign + padding bits" << endl);
 	    do {
-		dir.addEqualsClause (-dir.YES, newId++);
+		dir.addEqualsClause (signId, newId++);
 	    } while (padding--);
 
 	    Dout (cout << "toBvectSigned: done" << endl);
 	    return tv;
-	} else if (type == TVAL_BVECT_SIGNED) {
-	    Dout (cout << "Converting from BitVectorSigned to BitVectorSigned (padding="
-		  << padding << ")" << endl);
-
-	    /* TODO handle padding. */
-	    Assert (padding == 0, "padding not yet implemented for this conversion");
-	} else if (type == TVAL_SPARSE) {
+	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to BitVectorSigned (padding="
 		  << padding << ")" << endl);
 	    return sparseToBvectAny (dir, padding, true);
@@ -410,8 +421,8 @@ public:
     void makeSparse (varDir &dir, int adj = 1) {
 	Assert (id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
 
-	if (type == TVAL_BVECT || type == TVAL_BVECT_SIGNED) {
-	    if (size == 1 && type == TVAL_BVECT) {
+	if (isBvect () || isBvectSigned ()) {
+	    if (size == 1 && isBvect ()) {
 		/* Argument has a single bit (unsigned). */
 		Dout (cout << "Converting " << *this << " from Bit to Sparse" << endl); 
 
@@ -431,7 +442,7 @@ public:
 	    } else {
 		/* More than one bit. */
 		Dout (cout << "Converting from BitVector" <<
-		      (type == TVAL_BVECT_SIGNED ? "Signed" : "") << " to Sparse" << endl); 
+		      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
 
 		vector<int> &tmp = num_ranges;
 		vector<int> ids (size);
@@ -447,7 +458,7 @@ public:
 
 		/* If we generated values from a signed bitvector, we must adjust
 		 * them to properly represent full int-sized signed values. */
-		if (type == TVAL_BVECT_SIGNED) {
+		if (isBvectSigned ()) {
 		    /* Compute padding / testing bitmap. */
 		    unsigned int mask = ~((1 << oldsize) - 1);
 
@@ -462,7 +473,7 @@ public:
 	    }
 	    neg = false;
 	    type = TVAL_SPARSE;
-	} else if (type == TVAL_SPARSE) {
+	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to Sparse (no-op)" << endl);
 	} else
 	    assert (0);  /* Can't get here. */
