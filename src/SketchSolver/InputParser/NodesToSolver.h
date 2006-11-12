@@ -53,10 +53,15 @@ class NodesToSolver : public NodeVisitor {
     vector<int> tmprange;
     vector<int> unirange;
 
-    Tvalue intBvectAdd (Tvalue &, Tvalue &);
+    Tvalue intBvectComputeSum (Tvalue &, Tvalue &);
+    Tvalue intBvectAdd (Tvalue &, int, Tvalue &, int);
     void intBvectPlus (arith_node &);
-    void intBvectMinus (arith_node &);
     void intBvectMult (arith_node &);
+    void intBvectEq (arith_node &);
+    void intBvectLt (arith_node &);
+    void intBvectLe (arith_node &);
+    void intBvectGt (arith_node &);
+    void intBvectGe (arith_node &);
 
     void boolNodeUpdate (bool_node &, Tvalue &);
 
@@ -95,6 +100,7 @@ public:
     virtual void visit (EQ_node &node);
     virtual void visit (ARRASS_node &node);
     virtual void visit (ACTRL_node &node);
+
     virtual void visit (ASSERT_node &node);
 
     virtual void doNonBoolArrAcc (arith_node &node);

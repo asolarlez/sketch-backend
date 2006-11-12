@@ -351,6 +351,8 @@ varDir::addAssertClause (int a)
         exit (1);  /* FIXME arbitrary termination behavior, double check! */
     }
 
+    dout ("asserting " << a);
+
     /* Otherwise, assertion clause necessary. */
     mng.assertVarClause (a);
 }

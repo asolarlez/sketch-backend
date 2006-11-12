@@ -71,35 +71,37 @@ public:
 
 
 
-class arith_node: public bool_node{
-	protected:
-	arith_node():bool_node(){ type = ARITH; };
-	public:
-	typedef enum{PLUS, TIMES, ARRACC, DIV, MOD, GT, GE, LT, LE, EQ, ARRASS, ACTRL} AType;
-	int mother_quant;
-	int father_quant;
-	AType arith_type;
-	vector<bool_node*> multi_mother;
-	vector<int> multi_mother_sgn;	
-    virtual int back_dfs(int idx);
-	virtual void dislodge();
-	virtual string get_tname(){
-		switch(arith_type){
-			case PLUS: return "PLUS";
-			case TIMES: return "TIMES";
-			case DIV: return "DIV";
-			case MOD: return "MOD";
-			case ARRACC: return "ARRACC";
-			case GT: return "GT";
-			case GE: return "GE";
-			case LT: return "LT";
-			case LE: return "LE";
-			case ACTRL: return "ACTRL";
-			case ARRASS: return "ARRASS";
-			case EQ: return "EQ";
-		}
-		return "null";
+class arith_node : public bool_node {
+protected:
+    arith_node() : bool_node() { type = ARITH; };
+public:
+    typedef enum {
+	PLUS, TIMES, ARRACC, DIV, MOD, GT, GE, LT, LE, EQ, ARRASS, ACTRL
+    } AType;
+    int mother_quant;
+    int father_quant;
+    AType arith_type;
+    vector<bool_node *> multi_mother;
+    vector<int> multi_mother_sgn;	
+    virtual int back_dfs (int idx);
+    virtual void dislodge ();
+    virtual string get_tname () {
+	switch (arith_type) {
+	case PLUS: return "PLUS";
+	case TIMES: return "TIMES";
+	case DIV: return "DIV";
+	case MOD: return "MOD";
+	case ARRACC: return "ARRACC";
+	case GT: return "GT";
+	case GE: return "GE";
+	case LT: return "LT";
+	case LE: return "LE";
+	case ACTRL: return "ACTRL";
+	case ARRASS: return "ARRASS";
+	case EQ: return "EQ";
 	}
+	return "null";
+    }
 };
 
 
@@ -122,7 +124,9 @@ class LE_node;
 class EQ_node;
 class ARRASS_node;
 class ACTRL_node;
+
 class ASSERT_node;
+
 class BooleanDAG;
 
 class NodeVisitor{
