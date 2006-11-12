@@ -482,9 +482,9 @@ public:
 	intAdjust (adj);
     }
 
-    inline Tvalue toSparse (varDir &dir) const {
+    inline Tvalue toSparse (varDir &dir, int adj = 1) const {
 	Tvalue tv (*this);
-	tv.toSparse (dir);
+	tv.makeSparse (dir, adj);
 	return tv;
     }
 

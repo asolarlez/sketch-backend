@@ -136,21 +136,48 @@ Tvalue
 NodesToSolver::intBvectAdd (Tvalue &lval_arg, int lval_quant,
 			    Tvalue &rval_arg, int rval_quant)
 {
-    /* Get left and right values in padded bit-vector representation. */
-    dout ("extracting arguments as (padded) signed bitvectors");
-    Tvalue lval = lval_arg.toBvectSigned (dir, 1);
-    Tvalue rval = rval_arg.toBvectSigned (dir, 1);
+    /* Apply multipliers to values, transform to padded signed bit-vectors.
+     *
+     * FIXME this is an ugly way to handle constant values in the circuit,
+     * and is currently due to a limitation in the way we generate default
+     * values for null parent pointers. This needs to be fixed, and should
+     * generally be taken care of prior to getting here.
+     */
+    Tvalue lval;
+    Tvalue rval;
 
-    /* Apply coefficients.
-     * TODO this is currently restricted to non-null (i.e. non-constant) arguments,
-     * hence assumes 1/-1 coefficients only. Should be extended as well... */
-    Assert ((lval_quant == 1 || lval_quant == -1)
-	    && (rval_quant == 1 || rval_quant == -1),
-	    "currently supporting 1/-1 quants only");
-    if (lval_quant == -1)
-	lval = lval.toComplement (dir);
-    if (rval_quant == -1)
-	rval = rval.toComplement (dir);
+    dout ("extracting arguments as (padded) signed bitvectors");
+    if (! (lval_quant == 1 || lval_quant == -1)) {
+	/* Value must be "one". */
+	Assert (lval_arg.getId () == dir.YES && lval_arg.getSize () == 1,
+		"value must be a constant true bit");
+
+	dout ("lval corresponds to constant " << lval_quant);
+	lval = lval_arg.toSparse (dir, lval_quant).toBvectSigned (dir, 1);
+    } else {
+	lval = lval_arg.toBvectSigned (dir, 1);
+
+	if (lval_quant == -1) {
+	    dout ("negating lval");
+	    lval = lval.toComplement (dir);
+	}
+    }
+
+    if (! (rval_quant == 1 || rval_quant == -1)) {
+	/* Value must be "one". */
+	Assert (rval_arg.getId () == dir.YES && rval_arg.getSize () == 1,
+		"value must be a constant true bit");
+
+	dout ("rval corresponds to constant " << rval_quant);
+	rval = rval_arg.toSparse (dir, rval_quant).toBvectSigned (dir, 1);
+    } else {
+	rval = rval_arg.toBvectSigned (dir, 1);
+
+	if (rval_quant == -1) {
+	    dout ("negating rval");
+	    rval = rval.toComplement (dir);
+	}
+    }
 
     /* Compute addition. */
     dout ("generating addition");
@@ -163,9 +190,6 @@ NodesToSolver::intBvectAdd (Tvalue &lval_arg, int lval_quant,
 void
 NodesToSolver::intBvectPlus (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute addition of two parent node values. */
     dout ("generating addition");
     Tvalue oval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
@@ -184,9 +208,6 @@ NodesToSolver::intBvectPlus (arith_node &node)
 void
 NodesToSolver::intBvectEq (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
     Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
@@ -209,9 +230,6 @@ NodesToSolver::intBvectEq (arith_node &node)
 void
 NodesToSolver::intBvectLt (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
     Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
@@ -228,9 +246,6 @@ NodesToSolver::intBvectLt (arith_node &node)
 void
 NodesToSolver::intBvectLe (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute the reverse difference between operands. */
     dout ("computing (rhs - lhs)");
     Tvalue dval = intBvectAdd (tval_lookup (node.mother), -node.mother_quant,
@@ -247,9 +262,6 @@ NodesToSolver::intBvectLe (arith_node &node)
 void
 NodesToSolver::intBvectGt (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute the reverse difference between operands. */
     dout ("computing (rhs - lhs)");
     Tvalue dval = intBvectAdd (tval_lookup (node.mother), -node.mother_quant,
@@ -266,9 +278,6 @@ NodesToSolver::intBvectGt (arith_node &node)
 void
 NodesToSolver::intBvectGe (arith_node &node)
 {
-    /* TODO support constant arguments as well. */
-    assert (node.mother && node.father);
-
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
     Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
@@ -283,11 +292,10 @@ NodesToSolver::intBvectGe (arith_node &node)
 }
 
 
+#if 0
 void
 NodesToSolver::intBvectMult (arith_node &node)
 {
-    assert (node.father && node.mother);
-
     /* Get left and right arguments in bit-vector representation. */
     Tvalue lval = tval_lookup (node.mother).toBvect (dir);
     Tvalue rval = tval_lookup (node.father).toBvect (dir);
@@ -298,6 +306,7 @@ NodesToSolver::intBvectMult (arith_node &node)
     /* Set node's value. */
 
 }
+#endif
 
 template<typename THEOP> void
 NodesToSolver::processArith (arith_node &node)

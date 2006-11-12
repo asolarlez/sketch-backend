@@ -31,7 +31,8 @@ class NodesToSolver : public NodeVisitor {
     Tvalue tvOneSigned;
 
     /* Return the value indexed by given node, or a default value (of given type). */
-    inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT) {
+    inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
+				int quant = 1) {
 	if (node)
 	    return node_ids[node->id];
 
