@@ -469,6 +469,7 @@ void NodesToSolver::visit( XOR_node& node ){
 	Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
+
 void
 NodesToSolver::visit (SRC_node &node)
 {
@@ -477,7 +478,9 @@ NodesToSolver::visit (SRC_node &node)
     if (node_values.find (&node) != node_values.end ()) {
 	if (node.get_nbits () > 1) {
 	    node_ids[node.id] = tvYES;
+#ifndef HAVE_BVECTARITH
 	    node_ids[node.id].makeSparse (dir, node_values[(&node)]);
+#endif /* HAVE_BVECTARITH */
 	} else {
 	    node_ids[node.id] = node_values[(&node)]*YES;
 	}
@@ -490,8 +493,10 @@ NodesToSolver::visit (SRC_node &node)
 	if (node.get_nbits () > 1) {
 	    node_ids[node.id].setSize (node.get_nbits ());
 	    Dout (cout << "setting input nodes" << node.name << endl);
-	    node_ids[node.id].makeSparse (dir);
+#ifndef HAVE_BVECTARITH
 	    // In the future, I may want to make some of these holes not-sparse.
+	    node_ids[node.id].makeSparse (dir);
+#endif /* HAVE_BVECTARITH */
 	}
 	Dout (cout << "REGISTERING " << node.name << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
@@ -560,7 +565,9 @@ NodesToSolver::visit (CTRL_node &node)
     if(  node_values.find(&node) != node_values.end() ){
 	if( node.get_nbits() > 1 ){
 	    node_ids[node.id] = tvYES;
+#ifndef HAVE_BVECTARITH
 	    node_ids[node.id].makeSparse (dir, node_values[(&node)]);
+#endif /* HAVE_BVECTARITH */
 	    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
 	}else{
 	    node_ids[node.id] = node_values[(&node)]*YES;
@@ -572,7 +579,9 @@ NodesToSolver::visit (CTRL_node &node)
 	if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
 	    node_ids[node.id].setSize( node.get_nbits() );
 	    Dout(cout<<"setting control nodes"<<node.name<<endl);
+#ifndef HAVE_BVECTARITH
 	    node_ids[node.id].makeSparse(dir); // In the future, I may want to make some of these holes not-sparse.
+#endif /* HAVE_BVECTARITH */
 	}
 	Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
