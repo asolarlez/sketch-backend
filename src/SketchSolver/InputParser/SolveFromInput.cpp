@@ -212,8 +212,8 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
     sketch->relabel();
 
    	Dout( cout<<"after sort "<<endl);
-	Dout( spec->print(cout) );
-	Dout( sketch->print(cout) );
+	//Dout( spec->print(cout) );
+	//Dout( sketch->print(cout) );
 	
 	cout<<"before CSE: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
 	
