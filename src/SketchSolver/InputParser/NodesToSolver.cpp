@@ -486,10 +486,15 @@ NodesToSolver::visit (SRC_node &node)
 
     if (node_values.find (&node) != node_values.end ()) {
 	if (node.get_nbits () > 1) {
-	    node_ids[node.id] = tvYES;
-#ifndef HAVE_BVECTARITH
-	    node_ids[node.id].makeSparse (dir, node_values[(&node)]);
+	    Tvalue tmp = tvYES;
+	    tmp.makeSparse (dir, node_values[(&node)]);
+	    /* TODO we currently make a sparse value, then convert it to signed bitvec.
+	     * This sounds like bad engineering, since what we really should do
+	     * is construct a signed from the integer value, directly. */
+#ifdef HAVE_BVECTARITH
+	    tmp.makeBvectSigned (dir);
 #endif /* HAVE_BVECTARITH */
+	    node_ids[node.id] = tmp;
 	} else {
 	    node_ids[node.id] = node_values[(&node)]*YES;
 	}
@@ -573,10 +578,15 @@ NodesToSolver::visit (CTRL_node &node)
     int iid = node.ion_pos;
     if(  node_values.find(&node) != node_values.end() ){
 	if( node.get_nbits() > 1 ){
-	    node_ids[node.id] = tvYES;
-#ifndef HAVE_BVECTARITH
-	    node_ids[node.id].makeSparse (dir, node_values[(&node)]);
+	    Tvalue tmp = tvYES;
+	    tmp.makeSparse (dir, node_values[(&node)]);
+	    /* TODO we currently make a sparse value, then convert it to signed bitvec.
+	     * This sounds like bad engineering, since what we really should do
+	     * is construct a signed from the integer value, directly. */
+#ifdef HAVE_BVECTARITH
+	    tmp.makeBvectSigned (dir);
 #endif /* HAVE_BVECTARITH */
+	    node_ids[node.id] = tmp;
 	    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
 	}else{
 	    node_ids[node.id] = node_values[(&node)]*YES;
@@ -589,7 +599,8 @@ NodesToSolver::visit (CTRL_node &node)
 	    node_ids[node.id].setSize( node.get_nbits() );
 	    Dout(cout<<"setting control nodes"<<node.name<<endl);
 #ifndef HAVE_BVECTARITH
-	    node_ids[node.id].makeSparse(dir); // In the future, I may want to make some of these holes not-sparse.
+	    // In the future, I may want to make some of these holes not-sparse.
+	    node_ids[node.id].makeSparse(dir);
 #endif /* HAVE_BVECTARITH */
 	}
 	Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);

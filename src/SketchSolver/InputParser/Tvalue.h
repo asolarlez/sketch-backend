@@ -418,6 +418,11 @@ public:
 	return *this;
     }
 
+    void makeBvectSigned (varDir &dir, unsigned padding = 0) {
+	Tvalue tmp = toBvectSigned (dir, padding);
+	*this = tmp;
+    }
+
     void makeSparse (varDir &dir, int adj = 1) {
 	Assert (id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
 
