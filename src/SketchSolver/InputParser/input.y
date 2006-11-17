@@ -177,7 +177,7 @@ OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 ParamDecl: T_vartype T_ident {  
 	if( $1 == INT){
 		cout<<" INPUT IS INT "<<*$2<<endl;
-		currentBD->create_inputs( NCTRLS , *$2); 
+		currentBD->create_inputs( NINPUTS , *$2); 
 	}else{
 		cout<<" INPUT IS BIT "<<*$2<<endl;
 		currentBD->create_inputs(-1, *$2); 
@@ -186,7 +186,7 @@ ParamDecl: T_vartype T_ident {
 | '!' T_vartype T_ident {
  	 if( $2 == INT){
  	 	cout<<" OUTPUT IS INT "<<*$3<<endl;
-		 currentBD->create_outputs(NCTRLS, *$3);
+		 currentBD->create_outputs(NINPUTS, *$3);
  	 }else{
 	 	 cout<<" OUTPUT IS BIT "<<*$3<<endl;
 	 	 currentBD->create_outputs(-1, *$3); 
@@ -346,10 +346,10 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 | T_assert Expression ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
-    cout << "Generating assertion node..." << endl;
+//    cout << "Generating assertion node..." << endl;
     string s = currentBD->new_name ();
     currentBD->new_node (*$2, sgn_stack.top (), "", true, bool_node::ASSERT, s);
-    cout << "Assertion node created, name=" << s << endl;
+//    cout << "Assertion node created, name=" << s << endl;
     delete $2;
   }
   else {
