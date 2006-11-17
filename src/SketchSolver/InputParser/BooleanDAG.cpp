@@ -298,9 +298,28 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 		
 	}
 	delete nodes[i];
-  	nodes[i] = NULL;
-  	nodes.erase( nodes.begin() + i);
-  	
+  	nodes[i] = NULL;  	
+}
+
+
+void BooleanDAG::removeNullNodes(){
+	int nullnodes = 0;
+	for(vector<bool_node*>::iterator it = nodes.begin(); it != nodes.end(); ++it){
+		if(*it != NULL) nullnodes++;
+	} 
+	if( nullnodes < nodes.size()){
+		vector<bool_node*> newnodes(nullnodes);
+		nullnodes = 0;
+		for(vector<bool_node*>::iterator it = nodes.begin(); it != nodes.end(); ++it){
+			if(*it != NULL){
+				newnodes[nullnodes] = *it;
+				nullnodes++;
+			}
+		}
+		swap(newnodes, nodes);
+		Assert(nodes.size() == nullnodes, "If this fails, it means I don't know how to use STL");
+		cout<<"Removing "<<newnodes.size() - nodes.size()<<" nodes"<<endl;
+	}
 }
 
 void BooleanDAG::remove(int i){
@@ -325,8 +344,7 @@ void BooleanDAG::remove(int i){
     }
   }
   delete nodes[i];
-  nodes[i] = NULL;
-  nodes.erase( nodes.begin() + i);
+  nodes[i] = NULL;  
 }
 
 
@@ -432,14 +450,14 @@ void BooleanDAG::cleanup(bool moveNots){
       switch(nodes[i]->type){
       case bool_node::AND:         
         if( nodes[i]->father_sgn == nodes[i]->mother_sgn ){
-          remove(i);                  
+          remove(i); ++i;              
         }else{
           ++i;
         }
         break;
       case bool_node::OR:         
         if( nodes[i]->father_sgn == nodes[i]->mother_sgn ){
-          remove(i);           
+          remove(i); ++i;      
         }else{
           ++i;
         }
@@ -451,6 +469,7 @@ void BooleanDAG::cleanup(bool moveNots){
       ++i;
     }//  if( nodes[i]->father == nodes[i]->mother )    
   }
+  removeNullNodes();  
 }
 
 

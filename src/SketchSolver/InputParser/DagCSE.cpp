@@ -27,15 +27,16 @@ void DagCSE::eliminateCSE(){
 			//replace will remove the current element of the dag, so we don't
 			//have to increment either node_it or i.
 			bool_node * cse = cse_map[ccode];
-			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl );			
-			cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl;
-			dag.replace(i, cse); 	
+			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl );
+			dag.replace(i, cse); 
+			++i;
 		}else{
 			// if we don't find it, just add it.
 			cse_map[ccode] = dag[i];
 			++i;
 		}
 	}
+	dag.removeNullNodes();
 	dag.relabel();
 	Dout(cout<<" end cse "<<endl);
 }
@@ -187,4 +188,4 @@ void DagCSE::eliminateCSE(){
  	ccode = str.str();
  }
  
-
+ 	
