@@ -484,34 +484,36 @@ NodesToSolver::visit (SRC_node &node)
 {
     int iid = node.ion_pos;
 
+	Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
+		
     if (node_values.find (&node) != node_values.end ()) {
-	if (node.get_nbits () > 1) {
-	    Tvalue tmp = tvYES;
-	    tmp.makeSparse (dir, node_values[(&node)]);
-	    /* TODO we currently make a sparse value, then convert it to signed bitvec.
-	     * This sounds like bad engineering, since what we really should do
-	     * is construct a signed from the integer value, directly. */
+		if (node.get_nbits () > 1) {
+		    Tvalue tmp = tvYES;
+		    tmp.makeSparse (dir, node_values[(&node)]);
+		    /* TODO we currently make a sparse value, then convert it to signed bitvec.
+		     * This sounds like bad engineering, since what we really should do
+		     * is construct a signed from the integer value, directly. */
 #ifdef HAVE_BVECTARITH
-	    tmp.makeBvectSigned (dir);
+		    tmp.makeBvectSigned (dir);
 #endif /* HAVE_BVECTARITH */
-	    node_ids[node.id] = tmp;
-	} else {
-	    node_ids[node.id] = node_values[(&node)]*YES;
-	}
-	cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl;
-	Dout (cout << dir.getArr (IN, iid) << " has value " << node_values[(&node)]
+		    node_ids[node.id] = tmp;
+		} else {
+		    node_ids[node.id] = node_values[(&node)]*YES;
+		}
+		cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl;
+		Dout (cout << dir.getArr (node.get_name(), 0) << " has value " << node_values[(&node)]
 	      << "   " << (&node) << "    " << node_ids[node.id] << endl);
     } else {
-	node_ids[node.id] = dir.getArr (IN, iid);
-	//This could be removed. It's ok to setSize when get_nbits==1.
-	if (node.get_nbits () > 1) {
-	    node_ids[node.id].setSize (node.get_nbits ());
-	    Dout (cout << "setting input nodes" << node.name << endl);
+		node_ids[node.id] = dir.getArr (node.get_name(), 0);
+		//This could be removed. It's ok to setSize when get_nbits==1.		
+		if (node.get_nbits () > 1) {
+		    node_ids[node.id].setSize (node.get_nbits ());
+		    Dout (cout << "setting input nodes" << node.name << endl);
 #ifndef HAVE_BVECTARITH
-	    // In the future, I may want to make some of these holes not-sparse.
-	    node_ids[node.id].makeSparse (dir);
+		    // In the future, I may want to make some of these holes not-sparse.
+		    node_ids[node.id].makeSparse (dir);
 #endif /* HAVE_BVECTARITH */
-	}
+		}
 	Dout (cout << "REGISTERING " << node.name << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
@@ -576,35 +578,36 @@ void
 NodesToSolver::visit (CTRL_node &node)
 {
     int iid = node.ion_pos;
+    Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
     if(  node_values.find(&node) != node_values.end() ){
-	if( node.get_nbits() > 1 ){
-	    Tvalue tmp = tvYES;
-	    tmp.makeSparse (dir, node_values[(&node)]);
-	    /* TODO we currently make a sparse value, then convert it to signed bitvec.
-	     * This sounds like bad engineering, since what we really should do
-	     * is construct a signed from the integer value, directly. */
+		if( node.get_nbits() > 1 ){
+		    Tvalue tmp = tvYES;
+		    tmp.makeSparse (dir, node_values[(&node)]);
+		    /* TODO we currently make a sparse value, then convert it to signed bitvec.
+		     * This sounds like bad engineering, since what we really should do
+		     * is construct a signed from the integer value, directly. */
 #ifdef HAVE_BVECTARITH
-	    tmp.makeBvectSigned (dir);
+		    tmp.makeBvectSigned (dir);
 #endif /* HAVE_BVECTARITH */
-	    node_ids[node.id] = tmp;
-	    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
-	}else{
-	    node_ids[node.id] = node_values[(&node)]*YES;
-	}
-	Dout( cout<< dir.getArr(CTRL, iid)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  );
-	return;
+		    node_ids[node.id] = tmp;
+		    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
+		}else{
+		    node_ids[node.id] = node_values[(&node)]*YES;
+		}
+		Dout( cout<< dir.getArr(node.get_name(), 0)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  );
+		return;
     }else{
-	node_ids[node.id] = dir.getArr(CTRL, iid);
-	if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
-	    node_ids[node.id].setSize( node.get_nbits() );
-	    Dout(cout<<"setting control nodes"<<node.name<<endl);
+		node_ids[node.id] = dir.getArr(node.get_name(), 0);
+		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
+		    node_ids[node.id].setSize( node.get_nbits() );
+		    Dout(cout<<"setting control nodes"<<node.name<<endl);
 #ifndef HAVE_BVECTARITH
-	    // In the future, I may want to make some of these holes not-sparse.
-	    node_ids[node.id].makeSparse(dir);
+		    // In the future, I may want to make some of these holes not-sparse.
+		    node_ids[node.id].makeSparse(dir);
 #endif /* HAVE_BVECTARITH */
-	}
-	Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
-	return;
+		}
+		Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+		return;
     }
 }
 
@@ -689,6 +692,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	for(int i=0; it != node.multi_mother.end(); ++i, ++it, ++signs){
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
 		const Tvalue& cval = tval_lookup(*it);
+		cout<<"cval = "<<cval;
 		if( (*signs)>1 || (*signs)<0 || cval.isSparse()){
 			isBoolean = false;
 		}

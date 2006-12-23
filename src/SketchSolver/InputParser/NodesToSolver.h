@@ -24,8 +24,6 @@ class NodesToSolver : public NodeVisitor {
     template<typename COMP> void processComparissons (arith_node &node);
 
     const int YES;
-    const string &IN;
-    const string &CTRL;
     Tvalue tvYES;
     Tvalue tvOne;
     Tvalue tvOneSigned;
@@ -67,12 +65,26 @@ class NodesToSolver : public NodeVisitor {
     void boolNodeUpdate (bool_node &, Tvalue &);
 
 public:
-    NodesToSolver (SATSolver& p_mng, varDir& p_dir, const string& p_outname, 
-		   map<bool_node*,  int>& p_node_values, vector<Tvalue>& p_node_ids,
-		   const int p_YES, const string& p_IN, const string& p_CTRL) :
+   
+   /*
+    * p_mng is the wrapper for the sat solver.  
+    * p_dir is a SAT solver wrapper that provides a few additiona services for the SAT solver.
+    * p_outname is a name for this translation. It is used, for example, to name any output files produced.
+    * p_node_values contains values for either input or output nodes. 
+    * 
+    */
+   
+	    
+     NodesToSolver (
+	     SATSolver& p_mng, 
+	     varDir& p_dir, 
+	     const string& p_outname, 
+		 map<bool_node*,  int>& p_node_values, 
+		 vector<Tvalue>& p_node_ids
+	 ) :
 	mng(p_mng), dir(p_dir), outname(p_outname), node_values(p_node_values), 
-	node_ids(p_node_ids), YES(p_YES), IN(p_IN), CTRL(p_CTRL),
-	scratchpad(100),tmprange(2), unirange(1), tvYES(p_YES), tvOne (TVAL_SPARSE, p_YES, 1)
+	node_ids(p_node_ids), YES(p_dir.YES), 
+	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1)
     {
 	tmprange[0] = 0;
 	tmprange[1] = 1;
@@ -81,6 +93,9 @@ public:
 	/* Initialize the default "one" integer. */
 	tvOne.num_ranges.push_back (1);
     };
+    
+    
+    
 
     virtual void visit (AND_node &node);
     virtual void visit (OR_node &node);

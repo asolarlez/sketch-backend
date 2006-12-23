@@ -78,7 +78,7 @@ public:
 	/* Assert that (1) id is positive, and (2) value is non-negated, unless
 	 * it is an (unsigned) bit-vector of size 1 (i.e. a single bit). */
 	Assert (id >= 0 && (! neg || isBvect () && size == 1),
-		"only single-bit vectors can be negated");
+		"only single-bit vectors can be negated size="<<size<<"  and neg="<<neg<<"  isBvect()="<<isBvect()<<"  this="<<*this);
     }
 
     /* FIXME same as above. */

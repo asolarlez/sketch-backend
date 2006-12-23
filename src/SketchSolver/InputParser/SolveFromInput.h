@@ -10,10 +10,9 @@
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* spec;
 	BooleanDAG* sketch;
-	const string CTRL;
-	int N;
+		
 	int YES;
-	int Nout;
+	
 	bool firstTime;
 	vector<Tvalue> node_ids;
 	vector<Tvalue> f_node_ids;
@@ -24,11 +23,16 @@ class SolveFromInput: public FindCheckSolver{
 	int* last_input;
 	protected:
 	virtual void setupCheck();
-	virtual void addInputsToTestSet(int input[], int insize);
+	
+	
+	virtual void addInputsToTestSet(vector<int>& input);
+	virtual void setNewControls(vector<int>& controls);
+	
+	
 	virtual void defineSketch(SATSolver& mng, varDir& dir);
 	virtual void defineSpec(SATSolver& mng, varDir& dir);
 	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);	
-	virtual void setNewControls(int controls[], int ctrlsize);
+	
 	public:	
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1);
 	void output_control_map(ostream& out);
