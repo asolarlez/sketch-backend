@@ -666,6 +666,11 @@ bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn,
 }
 
 
+vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
+	return 	nodesByType[t];
+}
+
+
 void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type){
 	//Create interface nodes, either source, dest, or ctrl.
 	
@@ -676,6 +681,7 @@ void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool
 	
   if(n < 0){
     bool_node* tmp = newBoolNode(type);
+    nodesByType[type].push_back(tmp);
     tmp->ion_pos = counter;
     nodes.push_back(tmp);
     tmp->name = gen_name;
@@ -683,6 +689,7 @@ void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool
     ++counter;
   }else{
   	bool_node* tmp = newBoolNode(type);
+  	nodesByType[type].push_back(tmp);
     dynamic_cast<INTER_node*>(tmp)->set_nbits(n);
     tmp->ion_pos = counter;
     nodes.push_back(tmp);

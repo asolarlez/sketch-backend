@@ -330,7 +330,7 @@ class BooleanDAG
   vector<int> layer_sizes;
   map<string, bool_node*> named_nodes;
   map<string, pair<string, int> > aliasmap;
-
+  map<bool_node::Type, vector<bool_node*> > nodesByType;
 
   
 
@@ -375,6 +375,7 @@ public:
   int get_n_layers()const{ return layer_sizes.size(); };
 
 
+  vector<bool_node*>& getNodesByType(bool_node::Type t);
   const bool_node* operator[](int idx)const{ return nodes[idx]; };
   bool_node* operator[](int idx){ return nodes[idx]; };
   int size()const {return nodes.size();}

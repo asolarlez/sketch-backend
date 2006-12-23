@@ -442,6 +442,7 @@ int ABCSATSolver::solve(){
 
 
 void ABCSATSolver::setOutputAIG(){
+	cout<<"Setting up to output AIG"<<endl;
 	outputAIG = true;	
 }
 

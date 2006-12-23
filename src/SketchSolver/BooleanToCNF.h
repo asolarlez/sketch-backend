@@ -126,11 +126,13 @@ public:
     }
 
     int getArr(const string& arName, int idx) {
-	return varmap[arName] + idx;
+    	Assert( varmap.find(arName) != varmap.end(), "var "<<arName<<" not found");
+		return varmap[arName] + idx;
     }
 
     int getArrSize(const string& arName) {
-	return arrsize[arName];	
+    	Assert( arrsize.find(arName) != arrsize.end(), "var "<<arName<<" not found");
+		return arrsize[arName];	
     } 	
     /* Allocate a block of variables (default is one), return first id. */
     int newAnonymousVar (int n = 1) {

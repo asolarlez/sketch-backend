@@ -11,10 +11,26 @@ class SolverException{
 };
 
 
+
+class Checkpointer{
+	ofstream cptfile;
+	bool doCheckpoint;
+	public:
+	virtual void checkpoint(char nm, vector<int>& ar);
+	virtual void setCheckpoint(const string& filename);
+	virtual void resizeInput(const string& name, int newsz);
+	Checkpointer(){
+		doCheckpoint = false;
+	}
+};
+
+
+
+
 class FindCheckSolver{
 	private:
-	int controlSize;
-	int * ctrl;	
+	vector<int> ctrl;
+	vector<int> input;	
 	
 	SATSolver& mngFind;
 	varDir dirFind;	
@@ -24,31 +40,34 @@ class FindCheckSolver{
 	
 	int randseed;
 	int iterlimit;
-	
-	ofstream cptfile;
-	bool doCheckpoint;
+		
 	
 	map<string, int> controlVars;
+	map<string, int> inputVars;
+	map<string, int> inputStarts;
 	//vector<bitVector> inputs;
 
 	protected:
+	
+	Checkpointer cpt;
+	
 	int nseeds;
 	//Reserved variable names.
-	const string IN;
+	
 	const string OUT;
 	const string SOUT;
-	int Nin;
+	
 	int Nout;
 	
 	
-	typedef int const* ctrl_iterator;
+	typedef vector<int>::const_iterator ctrl_iterator;
 	
 	virtual ctrl_iterator begin()const{
-		return ctrl;	
+		return ctrl.begin();	
 	}
 	
 	virtual ctrl_iterator end()const{
-		return ctrl + controlSize;
+		return ctrl.end();
 	}
 	
 	virtual void defineSketch(SATSolver& mng, varDir& dir)=0;
@@ -57,26 +76,36 @@ class FindCheckSolver{
 	virtual void addEqualsClauses(SATSolver& mng, varDir& dir);
 	virtual void addDiffersClauses(SATSolver& mng, varDir& dir);
 
-	virtual void buildChecker();
+	virtual void buildChecker();	
 	virtual void setupCheck();
-	virtual void setNewControls(int controls[], int ctrlsize);
-	virtual bool check(int controls[], int ctrlsize, int input[]);
+	virtual void setNewControls(vector<int>& controls);
+	virtual bool check(vector<int>& controls, vector<int>& input);
 		
+	virtual void buildFinder();
 	virtual void setupFind();
-	virtual void addInputsToTestSet(int input[], int insize);
-	virtual bool find(int input[], int insize, int controls[]);
+	virtual void addInputsToTestSet(vector<int>& input);
+	virtual bool find(vector<int>&  input, vector<int>&  controls);
 	
 	virtual void printDiagnostics(SATSolver& mng, char c);
 	virtual void printDiagnostics();
-	virtual void checkpoint(char nm, int * ar, int sz);
-	virtual bool solve(int * input, int inputSize);
+	
+	
+	virtual bool solveCore();
+	
+	
+	
+	
 	public:
 	bool solveFromCheckpoint(istream& in);
 	virtual void setCheckpoint(const string& filename);
 	
 	FindCheckSolver(SATSolver& finder, SATSolver& checker);
 	void setIterLimit(int p_iterlimit);
-	virtual void declareControl(const string& ctrl, int size);	
+	virtual void declareControl(const string& cname, int size);
+	virtual void declareInput(const string& inname, int size);	
+	virtual int getInSize(const string& input);
+	virtual int getCtrlSize(const string& ctrl);
+	virtual int getInStart(const string& ctrl);
 	
 	virtual int getInSize();
 	virtual int getCtrlSize();
