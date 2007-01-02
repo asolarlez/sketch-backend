@@ -278,13 +278,16 @@ varDir::addBigOrClause (int *a, int last)
 	return (a[0] = addEqualsClause (-YES, a[0]));
 
     /* Allocate fresh result variable as necessary. */
-    if (a[0] == 0)
-	a[0] = newAnonymousVar ();
-
+    int x = a[0];
+    if (a[0] == 0){
+		a[0] = newAnonymousVar ();
+		x = a[0];
+    }
+	
     /* Add clause. */
     mng.addBigOrClause (a, last);
-
-    return a[0];
+	a[0] = x;
+    return x;
 }
 
 inline int

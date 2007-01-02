@@ -135,7 +135,7 @@ void BooleanDAG::sort_graph(){
   {
     //for(int i=n_inputs-1; i >=0 ; --i){
     for(int i=0; i < nodes.size(); ++i){
-      if( nodes[i]->type  == bool_node::SRC || nodes[i]->type  == bool_node::CTRL){
+      if( nodes[i]->type  == bool_node::SRC || nodes[i]->type  == bool_node::CTRL || (nodes[i]->father == NULL && nodes[i]->mother == NULL) ){
 	      idx = nodes[i]->do_dfs(idx);
       }
     }
@@ -323,8 +323,7 @@ void BooleanDAG::removeNullNodes(){
 }
 
 void BooleanDAG::remove(int i){
-  Assert( nodes[i]->father == nodes[i]->mother, "This must be true, otherwise, the compiler is wrong");
-  Assert( nodes[i]->father_sgn == nodes[i]->mother_sgn, "This must be true, otherwise, the compiler is wrong");
+  Assert( nodes[i]->father == nodes[i]->mother, "This must be true, otherwise, the compiler is wrong");  
   Assert( nodes[i]->father != NULL, "Can this happen? To me? Nah  ");
 
 	//Removing from the father's children list. Note we are assuming father==mother.
@@ -334,13 +333,11 @@ void BooleanDAG::remove(int i){
   for(int j=0; j<nodes[i]->children.size(); ++j){
     if(  nodes[i]->children[j]->father == nodes[i] ){
       nodes[i]->children[j]->father = nodes[i]->father;
-      nodes[i]->father->children.push_back( nodes[i]->children[j] );
-      nodes[i]->children[j]->father_sgn = nodes[i]->children[j]->father_sgn == nodes[i]->father_sgn;
+      nodes[i]->father->children.push_back( nodes[i]->children[j] );      
     }
     if(  nodes[i]->children[j]->mother == nodes[i] ){
       nodes[i]->children[j]->mother = nodes[i]->father;
       nodes[i]->father->children.push_back( nodes[i]->children[j] );
-      nodes[i]->children[j]->mother_sgn = nodes[i]->children[j]->mother_sgn == nodes[i]->father_sgn;
     }
   }
   delete nodes[i];
@@ -391,57 +388,7 @@ void BooleanDAG::cleanup(bool moveNots){
   
   
   
-  for(int i=0; i< nodes.size(); ){
-    {//This first optimization has as it's purpose to
-      //move the negations as far down the tree as we can. 
-      //This will guarantee that they bundle up in the same layer,
-      //and we end up with less xor matrices, which boils down to less operations.
-      //It should not be done in the pressence of arithmetic nodes.
-      if( nodes[i]->type == bool_node::XOR && moveNots){
-        //move nots from the father to the children.
-        
-        //But first, we will use the opportunity to remove duplicate entries from the children list.
-        //Otherwise, these will cause problems later.
-        for(int jj=0; jj< nodes[i]->children.size(); ++jj){
-        	for(int k=jj+1; k< nodes[i]->children.size(); ){
-        		if( nodes[i]->children[jj] == nodes[i]->children[k] ){
-        			nodes[i]->children.erase( nodes[i]->children.begin() + k );
-        		}else{
-        			++k;	
-        		}
-        	}        	        
-        }
-        
-        
-        if( !nodes[i]->father_sgn ){
-          for(int jj=0; jj< nodes[i]->children.size(); ++jj){
-            if( nodes[i]->children[jj]->father == nodes[i] ){
-              nodes[i]->children[jj]->father_sgn = ! nodes[i]->children[jj]->father_sgn;
-            }
-            if( nodes[i]->children[jj]->mother == nodes[i] ){
-              nodes[i]->children[jj]->mother_sgn = ! nodes[i]->children[jj]->mother_sgn;
-            }
-          }
-          nodes[i]->father_sgn = true;
-        }//if( nodes[i]->father_sgn )
-
-
-        //move nots from the mother to the children.
-        if( !nodes[i]->mother_sgn ){
-          nodes[i]->mother_sgn = true;
-          for(int jj=0; jj< nodes[i]->children.size(); ++jj){          	
-	            if( nodes[i]->children[jj]->father == nodes[i] ){
-	              nodes[i]->children[jj]->father_sgn = ! nodes[i]->children[jj]->father_sgn;
-	            }
-	            if( nodes[i]->children[jj]->mother == nodes[i] ){
-	              nodes[i]->children[jj]->mother_sgn = ! nodes[i]->children[jj]->mother_sgn;
-	            }
-          	
-          }
-        }// if( nodes[i]->mother_sgn )
-
-      }// if( nodes[i]->type == bool_node::XOR )
-    }
+  for(int i=0; i< nodes.size(); ){    
 
     //Now, this optimization will remove redundant 
     //ands and ors, taking advantage of the fact
@@ -449,17 +396,13 @@ void BooleanDAG::cleanup(bool moveNots){
     if( nodes[i]->father == nodes[i]->mother ){
       switch(nodes[i]->type){
       case bool_node::AND:         
-        if( nodes[i]->father_sgn == nodes[i]->mother_sgn ){
+        {
           remove(i); ++i;              
-        }else{
-          ++i;
         }
         break;
       case bool_node::OR:         
-        if( nodes[i]->father_sgn == nodes[i]->mother_sgn ){
+        {
           remove(i); ++i;      
-        }else{
-          ++i;
         }
         break;
       default:
@@ -472,58 +415,6 @@ void BooleanDAG::cleanup(bool moveNots){
   removeNullNodes();  
 }
 
-
-void BooleanDAG::add_passthrough(){
-  Assert(is_layered, "The graph must have been layered already");
-  map<bool_node*, bool_node*> parent_map;
-  for(int i=n_inputs; i < nodes.size() ; ++i){
-    bool_node& bn = *nodes[i];
-    bn.father = ps_for_parent(bn.father, parent_map, bn.layer);
-    bn.mother = ps_for_parent(bn.mother, parent_map, bn.layer);
-    Assert(bn.mother == NULL || bn.mother->layer == bn.layer-1, "This is a bug");
-    Assert(bn.father == NULL || bn.father->layer == bn.layer-1, "This is a bug");
-    bn.children.clear();
-  }
-  { for(int i=0; i<n_inputs; ++i){
-       bool_node& bn = *nodes[i];
-       bn.children.clear();
-    }
-  }
-
-  is_layered = false;
-  is_sorted = false;
-  //At these point, we have destroyed the layered property, since the passthrough nodes were added 
-  //at the end. This also destroyed the sorted property, because those whose parents are
-  //ps nodes will come before their parents. However, all nodes have their correct layer labels, 
-  //so we can reestablish both the layered and the sorted property by simply sorting by layer.
-  //Also, after this stage, all the children are gone, and should not be used.
-  sort(nodes.begin(), nodes.end(), comp_layer);
-  compute_layer_sizes();
-  is_layered = true;
-  is_sorted = true;
-  has_passthrough = true;
-}
-
-bool_node* BooleanDAG::ps_for_parent(bool_node* parent, map<bool_node*, bool_node*>& parent_map, int my_layer){
-  if(parent != NULL){
-    if(my_layer != parent->layer + 1){
-      //In this case, I need a pt node in all the layers
-      //between parent->layer and my_layer.
-      bool_node* pred = parent;
-      if( parent_map.find(parent) != parent_map.end() ){
-        //Someone already created a pt for my father, so I use that as my starting pt.
-        pred = parent_map[parent];
-      }
-      for(int j=pred->layer+1; j < my_layer; ++j){
-        pred = new_node(pred, true, NULL, true, bool_node::PT);
-        pred->layer = j;
-      }
-      parent_map[parent] = pred;
-      return pred;
-    }
-  }
-  return parent;
-}
 
 
 void BooleanDAG::change_father(const string& father, const string& son){
@@ -559,8 +450,8 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
 }
 
 
-bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn, 
-                                const string& father, bool father_sgn, bool_node::Type t, const string& name){
+bool_node* BooleanDAG::new_node(const string& mother, 
+                                const string& father, bool_node::Type t, const string& name){
   bool_node* fth;
   bool_node* mth;
   try{
@@ -597,12 +488,12 @@ bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn,
 
   bool_node* tmp;
   if( it == named_nodes.end() ){
-    tmp = new_node(mth, mother_sgn, fth, father_sgn, t);    
+    tmp = new_node(mth, fth, t);    
     tmp->name = name;
     named_nodes[name] = tmp;
   }else{
     tmp = it->second;
-    set_node(tmp, mth, mother_sgn, fth, father_sgn, t);
+    set_node(tmp, mth, fth, t);
   }
   return tmp;
 }
@@ -617,8 +508,8 @@ bool_node* BooleanDAG::get_node(const string& name){
   }
   return fth;
 }
-bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn, 
-                                const string& father, bool father_sgn, bool_node::Type t, const string& name, bool_node* thenode){
+bool_node* BooleanDAG::new_node(const string& mother, 
+                                const string& father, bool_node::Type t, const string& name, bool_node* thenode){
   bool_node* fth;
   bool_node* mth;
   try{
@@ -655,12 +546,12 @@ bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn,
 
   bool_node* tmp;
   if( it == named_nodes.end() ){
-    tmp = new_node(mth, mother_sgn, fth, father_sgn, t, thenode);    
+    tmp = new_node(mth, fth, t, thenode);    
     tmp->name = name;
     named_nodes[name] = tmp;
   }else{
     tmp = it->second;
-    set_node(tmp, mth, mother_sgn, fth, father_sgn, t);
+    set_node(tmp, mth, fth, t);
   }
   return tmp;
 }
@@ -668,6 +559,16 @@ bool_node* BooleanDAG::new_node(const string& mother, bool mother_sgn,
 
 vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
 	return 	nodesByType[t];
+}
+
+
+string BooleanDAG::create_const(int n){
+	CONST_node* c = new CONST_node(n);		
+	nodes.push_back(c);
+	string s = new_name();
+	named_nodes[s] = c;
+	c->name = s;
+	return s;
 }
 
 
@@ -686,6 +587,7 @@ void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
+    tmp->otype = bool_node::BOOL;
     ++counter;
   }else{
   	bool_node* tmp = newBoolNode(type);
@@ -695,6 +597,7 @@ void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
+    tmp->otype = bool_node::INT;
     counter += n;
   }
 }
@@ -719,11 +622,11 @@ void BooleanDAG::print(ostream& out){
   for(int i=0; i<nodes.size(); ++i){
     if( nodes[i]->father != NULL){
         out<<" "<<nodes[i]->father->get_name()<<" -> "<<
-          nodes[i]->get_name()<<" [label = \" "<<nodes[i]->father_sgn <<"  \"]; "<<endl;
+          nodes[i]->get_name()<<" ; "<<endl;
     }
     if( nodes[i]->mother != NULL){
           out<<" "<<nodes[i]->mother->get_name()<<" -> "<<
-          nodes[i]->get_name()<<" [label = \" "<<nodes[i]->mother_sgn <<"  \"]; "<<endl;
+          nodes[i]->get_name()<<" ; "<<endl;
     }
     for(int j=0; j< nodes[i]->children.size(); ++j){
           out<<" "<<nodes[i]->get_name()<<" -> "<<
@@ -734,13 +637,11 @@ void BooleanDAG::print(ostream& out){
   out<<"}"<<endl;
 }
 
-bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother, bool mother_sgn, 
-                                bool_node* father, bool father_sgn, bool_node::Type t){
+bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother,  
+                                bool_node* father, bool_node::Type t){
 
   tmp->father = father;
-  tmp->father_sgn = father_sgn;
-  tmp->mother = mother;
-  tmp->mother_sgn = mother_sgn;  
+  tmp->mother = mother;  
 
   if( t != tmp->type){
     if(t == bool_node::SRC){
@@ -766,16 +667,16 @@ bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother, bool mother_s
   return tmp;
 }
 
-  void BooleanDAG::alias(const string& ssource, int sgn, const string& starg){
+  void BooleanDAG::alias(const string& ssource,  const string& starg){
   	map<string, bool_node*>::iterator it = named_nodes.find(ssource);
   	if( it != named_nodes.end() ){
-		new_node(starg, sgn, "", true,  it->second->type, it->second->name);
+		new_node(starg, "",  it->second->type, it->second->name);
 	}else{
 		if( has_alias(starg) ){
-		    pair<string, int> p( get_alias(starg) );
-	      aliasmap[ssource] = make_pair( p.first, sgn != p.second);
+		   string p( get_alias(starg) );
+	      aliasmap[ssource] =  p;
 	    }else{
-	      aliasmap[ssource] = make_pair(starg, sgn);
+	      aliasmap[ssource] = starg;
 	    }
   	}
   }
@@ -783,20 +684,20 @@ bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother, bool mother_s
 
 
 
-bool_node* BooleanDAG::new_node(bool_node* mother, bool mother_sgn, 
-                                bool_node* father, bool father_sgn, bool_node::Type t){
+bool_node* BooleanDAG::new_node(bool_node* mother, 
+                                bool_node* father, bool_node::Type t){
                                 	
   bool_node* tmp = newBoolNode(t);
-  set_node(tmp, mother, mother_sgn, father, father_sgn, t);
+  set_node(tmp, mother,  father,  t);
   nodes.push_back(tmp);
   return tmp;
 }
 
 
-bool_node* BooleanDAG::new_node(bool_node* mother, bool mother_sgn, 
-                                bool_node* father, bool father_sgn, bool_node::Type t, bool_node* thenode){
+bool_node* BooleanDAG::new_node(bool_node* mother,  
+                                bool_node* father,  bool_node::Type t, bool_node* thenode){
   bool_node* tmp = thenode;
-  set_node(tmp, mother, mother_sgn, father, father_sgn, t);
+  set_node(tmp, mother, father, t);
   nodes.push_back(tmp);
   return tmp;
 }

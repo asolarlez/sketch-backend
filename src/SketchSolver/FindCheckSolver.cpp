@@ -267,6 +267,7 @@ bool FindCheckSolver::find(vector<int>& input, vector<int>& controls){
 		const string& cname = it->first;
 		int cnt = dirFind.getArrSize(cname);
 		Assert( cnt == it->second, "SIZE MISMATCH: "<<cnt<<" != "<<it->second<<endl);
+		jj = getCtrlStart(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
 			Assert( controls.size() > jj , "Out of bounds, BAD!!!");
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
@@ -307,14 +308,15 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
 		const string& cname = it->first;
 		int cnt = dirCheck.getArrSize(cname);
 		Assert( cnt == it->second, "SIZE MISMATCH: "<<cnt<<" != "<<it->second<<endl);
+		jj = getInStart(cname);
 		for(int i=0; i<cnt; ++i, ++jj){
-			Assert( input.size() > jj , "Out of bounds, BAD!!!");
+			Assert( input.size() > jj , "Out of bounds, BAD!!!");			 
 			int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
 			if( val == 1) input[jj]= 1;
 			else input[jj]= -1;
+			cout<<" input "<<cname<<"  has id "<<jj<<" and value "<<input[jj]<<endl;
 		}
-	}
-    Assert( input.size() == jj , "Size miematch !!!");
+	}    
 	Dout( dirCheck.print() );
 	mngCheck.reset();
 	return true;
@@ -471,6 +473,7 @@ void FindCheckSolver::declareControl(const string& cname, int size){
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
 	Assert( controlVars.find(cname) == controlVars.end(), "This control had already been declared!!");
 	controlVars[cname] = size;
+	controlStarts[cname] = ctrl.size();
 	ctrl.resize( ctrl.size() + size);	
 }
 
@@ -515,18 +518,21 @@ void FindCheckSolver::declareInput(const string& inname, int size){
 
 
 int FindCheckSolver::getInSize(const string& input){
-	Assert( inputVars.find(input) != inputVars.end(), "This input has not been declared!!");
+	Assert( inputVars.find(input) != inputVars.end(), "This input has not been declared!!"<< input);
 	return inputVars[input];
 }
 int FindCheckSolver::getCtrlSize(const string& ctrl){
-	Assert( controlVars.find(ctrl) != controlVars.end(), "This control has already been declared!!");
+	Assert( controlVars.find(ctrl) != controlVars.end(), "This control has already been declared!!"<< ctrl);
 	return controlVars[ctrl];
 }
 int FindCheckSolver::getInStart(const string& input){
-	Assert( inputStarts.find(input) != inputStarts.end(), "This input has not been declared!!");
+	Assert( inputStarts.find(input) != inputStarts.end(), "This input has not been declared!!"<< input);
 	return inputStarts[input];
 }
-
+int FindCheckSolver::getCtrlStart(const string& ctrl){
+	Assert( controlStarts.find(ctrl) != controlStarts.end(), "This input has not been declared!!" << ctrl);
+	return controlStarts[ctrl];
+}
 
 	
 void FindCheckSolver::setup(){

@@ -43,6 +43,7 @@ class FindCheckSolver{
 		
 	
 	map<string, int> controlVars;
+	map<string, int> controlStarts;
 	map<string, int> inputVars;
 	map<string, int> inputStarts;
 	//vector<bitVector> inputs;
@@ -106,7 +107,7 @@ class FindCheckSolver{
 	virtual int getInSize(const string& input);
 	virtual int getCtrlSize(const string& ctrl);
 	virtual int getInStart(const string& ctrl);
-	
+	virtual int getCtrlStart(const string& ctrl);
 	virtual int getInSize();
 	virtual int getCtrlSize();
 	virtual bool solve();

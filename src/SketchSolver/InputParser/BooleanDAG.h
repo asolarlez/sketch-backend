@@ -21,20 +21,23 @@ class NodeVisitor;
 
 class bool_node{
 protected:
-  bool_node():mother(NULL), mother_sgn(true), father(NULL), father_sgn(true), flag(0), id(-1), ion_pos(0){};	
+  bool_node():mother(NULL),  father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM){};	
 public:
   string name;
   int layer;
   int id;
   int flag;
   int ion_pos;
-  typedef enum{AND, OR, XOR, SRC, DST, PT, CTRL, ARITH, ASSERT} Type;
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL, ARITH, ASSERT} Type;
+  typedef enum{INT, BOOL, BOTTOM} OutType;
   Type type;
-  bool_node* mother;
-  bool mother_sgn;
+  OutType otype;
+  bool_node* mother;  
   bool_node* father;
-  bool father_sgn;
+  
   vector<bool_node*> children;
+  
+  
   virtual int do_dfs(int idx);
   virtual int back_dfs(int idx);
   virtual void remove_child(bool_node* bn);
@@ -46,7 +49,7 @@ public:
     case XOR: return "XOR";
     case SRC: return "S";
     case DST: return "D";
-    case PT: return "I";
+    case NOT: return "I";
     case CTRL: return "CTRL";
     case ASSERT: return "ASSERT";
     }
@@ -76,13 +79,12 @@ class arith_node: public bool_node{
 	arith_node():bool_node(){ type = ARITH; };
 	public:
     typedef enum {
-	PLUS, TIMES, ARRACC, DIV, MOD, GT, GE, LT, LE, EQ, ARRASS, ACTRL
+	PLUS, TIMES, ARRACC, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL
     } AType;
-	int mother_quant;
-	int father_quant;
+		
 	AType arith_type;
 	vector<bool_node*> multi_mother;
-	vector<int> multi_mother_sgn;	
+	
     virtual int back_dfs(int idx);
 	virtual void dislodge();
 	virtual string get_tname(){
@@ -91,6 +93,8 @@ class arith_node: public bool_node{
 			case TIMES: return "TIMES";
 			case DIV: return "DIV";
 			case MOD: return "MOD";
+			case NEG: return "NEG";
+			case CONST: return "CONST";
 			case ARRACC: return "ARRACC";
 			case GT: return "GT";
 			case GE: return "GE";
@@ -110,13 +114,15 @@ class OR_node;
 class XOR_node;
 class SRC_node;
 class DST_node;
-class PT_node;
+class NOT_node;
 class CTRL_node;
 class PLUS_node;
 class TIMES_node;
 class ARRACC_node;
 class DIV_node;
 class MOD_node;
+class NEG_node;
+class CONST_node;
 class GT_node;
 class GE_node;
 class LT_node;
@@ -134,13 +140,15 @@ class NodeVisitor{
 	virtual void visit( XOR_node& node )=0;
 	virtual void visit( SRC_node& node )=0;
 	virtual void visit( DST_node& node )=0;
-	virtual void visit( PT_node& node )=0;
+	virtual void visit( NOT_node& node )=0;
 	virtual void visit( CTRL_node& node )=0;
 	virtual void visit( PLUS_node& node )=0;
 	virtual void visit( TIMES_node& node )=0;
 	virtual void visit( ARRACC_node& node )=0;
 	virtual void visit( DIV_node& node )=0;
 	virtual void visit( MOD_node& node )=0;
+	virtual void visit( NEG_node& node )=0;
+	virtual void visit( CONST_node& node )=0;
 	virtual void visit( GT_node& node )=0;
 	virtual void visit( GE_node& node )=0;
 	virtual void visit( LT_node& node )=0;
@@ -198,9 +206,9 @@ class CTRL_node: public INTER_node{
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
 };
 
-class PT_node: public bool_node{	
+class NOT_node: public bool_node{	
 	public: 
-	PT_node(){ type = PT; }  
+	NOT_node(){ type = NOT; }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
 
@@ -227,6 +235,26 @@ class MOD_node: public arith_node{
 		MOD_node(){ arith_type = MOD; }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
+
+
+class NEG_node: public arith_node{	
+	
+	public: 
+		NEG_node(){ arith_type = NEG; }  
+		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+};
+
+
+class CONST_node: public arith_node{
+	int val;
+	public:
+		CONST_node(){ arith_type = CONST; val = -1;}
+		CONST_node(int n){ arith_type = CONST; val = n;}
+		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+		virtual void setVal(int v){ val = v; }
+		virtual int getVal(){ return val; }
+};
+
 class GT_node: public arith_node{	
 	public: 
 		GT_node(){ arith_type = GT; }  
@@ -252,9 +280,10 @@ class EQ_node: public arith_node{
 		EQ_node(){ arith_type = EQ; } 
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }		 
 };
-class ARRASS_node: public arith_node{	
+class ARRASS_node: public arith_node{		
 	public: 
-		ARRASS_node(){ arith_type = ARRASS; }  
+		int quant;
+		ARRASS_node(){ arith_type = ARRASS; quant = -1; }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
 class ACTRL_node: public arith_node{	
@@ -276,7 +305,7 @@ inline bool_node* newBoolNode( bool_node::Type type){
 		case bool_node::XOR: return new XOR_node();
 		case bool_node::SRC: return new SRC_node();
 		case bool_node::DST: return new DST_node();
-		case bool_node::PT: return new PT_node();
+		case bool_node::NOT: return new NOT_node();
 		case bool_node::CTRL: return new CTRL_node();
 		case bool_node::ARITH: Assert( false, "This should not happen");		
 		case bool_node::ASSERT: return new ASSERT_node ();
@@ -291,6 +320,8 @@ inline arith_node* newArithNode( arith_node::AType type){
 		case arith_node::ARRACC: return new ARRACC_node();
 		case arith_node::DIV: return new DIV_node();
 		case arith_node::MOD: return new MOD_node();
+		case arith_node::NEG: return new  NEG_node();
+		case arith_node::CONST: return new CONST_node();
 		case arith_node::GT: return new GT_node();
 		case arith_node::GE: return new GE_node();
 		case arith_node::LT: return new LT_node();
@@ -329,16 +360,15 @@ class BooleanDAG
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
   map<string, bool_node*> named_nodes;
-  map<string, pair<string, int> > aliasmap;
+  map<string, string > aliasmap;
   map<bool_node::Type, vector<bool_node*> > nodesByType;
 
   
 
   bool is_sorted; //The sorted property implies that everyone comes after their parents
   bool is_layered;  //The layered property implies that nodes are sorted by layer. is_layered implies is_sorted.
-  bool has_passthrough; //This property implies that PT nodes have been added.
+  bool has_passthrough; //This property implies that NOT nodes have been added.
 
-  bool_node* ps_for_parent(bool_node* parent, map<bool_node*, bool_node*>& parent_map, int my_layer);
   void compute_layer_sizes();
   void removeFromChildren(bool_node* parent, bool_node* toremove);
   void remove(int i);
@@ -348,23 +378,24 @@ public:
   void removeNullNodes();
   void replace(int i, bool_node* cse);
   
+  virtual string create_const(int n);
   void create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
   void create_inputs(int n, const string& gen_name=string("INPUT"));
   int create_controls(int n, const string& gen_name=string("CONTROL"));
   void create_outputs(int n, const string& gen_name=string("OUTPUT"));
 
-  bool_node* new_node(const string& mother, bool mother_sgn, 
-                      const string& father, bool father_sgn, bool_node::Type t, const string& name);
-  bool_node* new_node(bool_node* mother, bool mother_sgn, 
-                      bool_node* father, bool father_sgn, bool_node::Type t);
+  bool_node* new_node(const string& mother, 
+                      const string& father, bool_node::Type t, const string& name);
+  bool_node* new_node(bool_node* mother,  
+                      bool_node* father,  bool_node::Type t);
 
-  bool_node* new_node(const string& mother, bool mother_sgn, 
-                      const string& father, bool father_sgn, bool_node::Type t, const string& name, bool_node* thenode);
-  bool_node* new_node(bool_node* mother, bool mother_sgn, 
-                      bool_node* father, bool father_sgn, bool_node::Type t, bool_node* thenode);
+  bool_node* new_node(const string& mother, 
+                      const string& father, bool_node::Type t, const string& name, bool_node* thenode);
+  bool_node* new_node(bool_node* mother,  
+                      bool_node* father,  bool_node::Type t, bool_node* thenode);
 
-  bool_node* set_node(bool_node* tmp, bool_node* mother, bool mother_sgn, 
-                      bool_node* father, bool father_sgn, bool_node::Type t);
+  bool_node* set_node(bool_node* tmp, bool_node* mother, 
+                      bool_node* father,  bool_node::Type t);
 
   void change_father(const string& father, const string& son);
   void change_mother(const string& father, const string& son);
@@ -381,20 +412,19 @@ public:
   int size()const {return nodes.size();}
   int get_lsize(int layer){ return layer_sizes[layer];};
   void sort_graph();
-  void layer_graph();
-  void add_passthrough();
+  void layer_graph();  
   void relabel();
   void cleanup(bool moveNots=true);
   bool_node* get_node(const string& name);  
   iterator begin(){ return nodes.begin(); }
   iterator end(){ return nodes.end(); }
-  void alias(const string& ssource, int sgn, const string& starg);
+  void alias(const string& ssource,  const string& starg);
 
   bool has_alias(const string& s){
     return aliasmap.find(s) != aliasmap.end();
   }
 
-  pair<string, int> get_alias(const string& s){
+  string get_alias(const string& s){
     return aliasmap[s];
   }
 

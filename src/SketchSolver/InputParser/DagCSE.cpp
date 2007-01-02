@@ -41,27 +41,25 @@ void DagCSE::eliminateCSE(){
 	Dout(cout<<" end cse "<<endl);
 }
 
-
-
  void DagCSE::visit( AND_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id; 	
- 	str<<node.mother_sgn<<"*"<<mid<<"&"<<node.father_sgn<<"*"<<fid;
+ 	str<<mid<<"&"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( OR_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_sgn<<"*"<<mid<<"|"<<node.father_sgn<<"*"<<fid;
+ 	str<<mid<<"|"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( XOR_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_sgn<<"*"<<mid<<"xor"<<node.father_sgn<<"*"<<fid;
+ 	str<<mid<<"xor"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( SRC_node& node ){
@@ -74,9 +72,10 @@ void DagCSE::eliminateCSE(){
  	str<<node.id;
  	ccode = str.str();
  }
- void DagCSE::visit( PT_node& node ){
+ void DagCSE::visit( NOT_node& node ){
  	stringstream str;
- 	str<<node.id;
+ 	int mid = node.mother == NULL? -1: node.mother->id;
+ 	str<<"!"<<mid;
  	ccode = str.str();
  }
  void DagCSE::visit( CTRL_node& node ){
@@ -88,14 +87,14 @@ void DagCSE::eliminateCSE(){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"+"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"+"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( TIMES_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"*"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"*"<<fid;
  	ccode = str.str();
  }
  
@@ -103,59 +102,74 @@ void DagCSE::eliminateCSE(){
  	 stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"/"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"/"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( MOD_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"%"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"%"<<fid;
  	ccode = str.str();
  }
+ 
+ void DagCSE::visit( NEG_node& node ){
+ 	stringstream str;
+ 	int mid = node.mother == NULL? -1: node.mother->id; 	
+ 	str<<"-"<<mid;
+ 	ccode = str.str();
+ }
+ 
+  void DagCSE::visit( CONST_node& node ){
+ 	stringstream str; 	
+ 	str<<"$"<<node.getVal()<<"$";
+ 	ccode = str.str();
+ }
+ 
+ 
  void DagCSE::visit( GT_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<">"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<">"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( GE_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<">="<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<">="<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( LT_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"<"<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"<"<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( LE_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"<="<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"<="<<fid;
  	ccode = str.str();
  }
  void DagCSE::visit( EQ_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<node.mother_quant<<"*"<<mid<<"=="<<node.father_quant<<"*"<<fid;
+ 	str<<mid<<"=="<<fid;
  	ccode = str.str();
  }
  
  void DagCSE::visit( ARRACC_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
- 	str<<node.mother_sgn<<"*"<<mid<<"|";
+ 	str<<mid<<"|";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
- 		str<<node.multi_mother_sgn[i]<<"*"<<mmid<<",";
+ 		str<<mmid<<",";
  	}
  	ccode = str.str();
  }
@@ -163,10 +177,10 @@ void DagCSE::eliminateCSE(){
  void DagCSE::visit( ARRASS_node& node ){
 	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
- 	str<<node.mother_sgn<<"*"<<mid<<"="<<node.mother_quant<<"?";
+ 	str<<mid<<"="<<node.quant<<"?";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
- 		str<<node.multi_mother_sgn[i]<<"*"<<mmid<<":";
+ 		str<<mmid<<":";
  	}
  	ccode = str.str();
  }
@@ -174,7 +188,7 @@ void DagCSE::eliminateCSE(){
  	stringstream str;
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
- 		str<<node.multi_mother_sgn[i]<<"*"<<mmid<<",";
+ 		str<<mmid<<",";
  	}
  	ccode = str.str();
  }
