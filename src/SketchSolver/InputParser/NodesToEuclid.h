@@ -19,62 +19,15 @@ public:
 	
 	string mother_name(bool_node& node){
 		stringstream str;
-		if(node.mother != NULL){
-			if( node.mother_sgn==1 ){
-				str<<prefix<<node.mother->get_name();
-			}else{
-				str<<"!"<<prefix<<node.mother->get_name();
-			}
-		}else{
-			str<<node.mother_sgn;
-		}
-		return str.str();
-	}
-	
-	string mother_name(arith_node& node){
-		stringstream str;
-		if(node.mother != NULL){
-			if( node.mother_sgn==1 ){
-				str<<prefix<<node.mother->get_name();
-			}else{
-				str<<"!"<<prefix<<node.mother->get_name();
-			}
-		}else{
-			str<<node.mother_quant;
-		}
+		str<<prefix<<node.mother->get_name();		
 		return str.str();
 	}
 	
 	string father_name(bool_node& node){
 		stringstream str;
-		if(node.father != NULL){
-			if( node.father_sgn==1 ){
-				str<<prefix<<node.father->get_name();
-			}else{
-				str<<"!"<<prefix<<node.father->get_name();
-			}
-		}else{
-			str<<node.father_sgn;
-		}
+		str<<prefix<<node.father->get_name();
 		return str.str();
 	}
-	
-	string father_name(arith_node& node){
-		stringstream str;
-		if(node.father != NULL){
-			if( node.father_sgn==1 ){
-				str<<prefix<<node.father->get_name();
-			}else{
-				str<<"!"<<prefix<<node.father->get_name();
-			}
-		}else{
-			str<<node.father_quant;
-		}
-		return str.str();
-	}
-	
-	
-	
 	
 	virtual void visit( AND_node& node ){
 		out<<prefix<<node.get_name()<<" := "<<mother_name(node)<<" & "<<father_name(node)<<"; "<<endl;
@@ -91,7 +44,17 @@ public:
 	virtual void visit( DST_node& node ){
 		out<<"output "<<prefix<<node.get_name()<<" := "<<mother_name(node)<<"; "<<endl;		
 	}
-	virtual void visit( PT_node& node ){}
+	virtual void visit( NOT_node& node ){
+		out<<prefix<<node.get_name()<<" := !"<<mother_name(node)<<"; "<<endl;
+	}
+	virtual void visit( NEG_node& node ){
+		out<<prefix<<node.get_name()<<" := -"<<mother_name(node)<<"; "<<endl;
+	}
+	
+	virtual void visit( CONST_node& node ){
+		out<<prefix<<node.get_name()<<" := "<< node.getVal() <<"; "<<endl;
+	}
+	
 	virtual void visit( CTRL_node& node ){
 		out<<"control "<<prefix<<node.get_name()<<endl;	
 	}
@@ -103,40 +66,17 @@ public:
 	}
 	virtual void visit( ARRACC_node& node ){
 		vector<bool_node*>& mmother = node.multi_mother;
-		vector<int>::iterator signs = node.multi_mother_sgn.begin();
+		
 		Assert( mmother.size() == 2, " NYI; Can't produce Euclid file for this benchmark." );
 		
 		out<<prefix<<node.get_name()<<" := ";
-		out<<" case ";
+		out<<" case ";		
+		out<<mother_name(node)<<":";
 		
-		if(node.mother_sgn==0){
-			out<<"!("<<prefix<<node.mother->get_name()<<")";	
-		}else{
-			out<<prefix<<node.mother->get_name();
-		}
+		out<<prefix<<mmother[1]->get_name();
 		
-		out<<":";
-		
-		if( mmother[1]==NULL){
-			out<<node.multi_mother_sgn[1];
-		}else{
-			if( node.multi_mother_sgn[1] == 0){
-				out<<"!("<<prefix<<mmother[1]->get_name()<<")";
-			}else{
-				out<<prefix<<mmother[1]->get_name();
-			}
-		}
 		out<<"; default : ";
-		if( mmother[0]==NULL){
-			out<<node.multi_mother_sgn[0];
-		}else{
-			if( node.multi_mother_sgn[0] == 0){
-				out<<"!("<<prefix<<mmother[0]->get_name()<<")";
-			}else{
-				out<<prefix<<mmother[0]->get_name();
-			}
-		}
-		
+		out<<prefix<<mmother[0]->get_name();		
 		out<<"; esac; "<<endl;
 		
 	}

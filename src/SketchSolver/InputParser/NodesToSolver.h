@@ -102,13 +102,15 @@ public:
     virtual void visit (XOR_node &node);
     virtual void visit (SRC_node &node);
     virtual void visit (DST_node &node);
-    virtual void visit (PT_node &node);
+    virtual void visit (NOT_node &node);
     virtual void visit (CTRL_node &node);
     virtual void visit (PLUS_node &node);
     virtual void visit (TIMES_node &node);
     virtual void visit (ARRACC_node &node);
     virtual void visit (DIV_node &node);
+    virtual void visit (NEG_node &node);
     virtual void visit (MOD_node &node);
+    virtual void visit( CONST_node& node );
     virtual void visit (GT_node &node);
     virtual void visit (GE_node &node);
     virtual void visit (LT_node &node);

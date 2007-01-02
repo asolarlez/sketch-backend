@@ -122,14 +122,6 @@ void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, c
 //	timerclass timer("translator");
 	NodesToSolver nts(mng, dir, outname, node_values, node_ids);
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
-		if( (*node_it)->type == bool_node::ARITH){
-			if( dynamic_cast<arith_node*>(*node_it)->arith_type != arith_node::ARRACC 
-				&& dynamic_cast<arith_node*>(*node_it)->arith_type != arith_node::ARRASS 
-			){
-				Assert( (*node_it)->mother_sgn == true , "This is a bug" );	
-				Assert( (*node_it)->father_sgn == true , "This is a bug" );	
-			}
-		}
 //		timer.restart();
 		(*node_it)->accept(nts);
 //		timer.stop();
@@ -153,7 +145,7 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
-			int iid = (*node_it)->ion_pos;
+			int iid = getCtrlStart( (*node_it)->get_name() );
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
 			int nbits = ctrlnode->get_nbits();
 			Assert( nbits > 0 , "This can not happen rdu;a");
@@ -188,13 +180,18 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 		
 		//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
 		if((*node_it)->type == bool_node::SRC){
-			int iid = (*node_it)->ion_pos;
+			int iid = getInStart( (*node_it)->get_name() );
+			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
 			int nbits = srcnode->get_nbits();	
+			
+			Assert( nbits == getInSize( (*node_it)->get_name() ) , "Size missmatch for input "<<(*node_it)->get_name() );
 			
 			Assert( nbits > 0 , "This can not happen rdu;a");
 			Assert( iid+ nbits <= input.size(), "There should be a control entry for each iid b insize="<<input.size()<<"  iid+nbits="<<iid+nbits );
 			Assert(input[iid ] == 1 || input[iid]==-1, "This is bad, really bad");
+			
+			cout<<" input "<<(*node_it)->get_name()<<" starts "<<iid<<"  has value"<<input[iid]<<endl;
 			
 			if( nbits ==1 ){
 				node_values[(*node_it)]= input[iid];
@@ -242,10 +239,12 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 
 
 		if((*node_it)->type == bool_node::SRC){
-			int iid = (*node_it)->ion_pos;
+			int iid = getInStart( (*node_it)->get_name() );
+			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
 			int nbits = srcnode->get_nbits();	
 			
+			Assert( nbits == getInSize( (*node_it)->get_name() ) , "Size missmatch for input "<<(*node_it)->get_name() );									
 			Assert( nbits > 0 , "This can not happen rdu;a");
 			Assert( iid+ nbits <= input.size(), "There should be a control entry for each iid c");
 			Assert(input[iid] == 1 || input[iid]==-1, "This is bad, really bad");

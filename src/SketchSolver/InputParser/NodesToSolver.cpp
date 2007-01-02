@@ -14,30 +14,31 @@ NodesToSolver::processComparissons (arith_node& node)
 {
     bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-    mval.makeSparse (dir, node.mother_quant);
+    mval.makeSparse (dir);
 
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
-    fval.makeSparse (dir, node.father_quant);
+    fval.makeSparse (dir);
 
     int cvar = -YES;
     COMP comp;
     Dout(cout<<"SIZES = "<<mval.getSize ()<<", "<<fval.getSize ()<<endl);
     int orTerms = 0;
     for(int i=0; i<mval.getSize (); ++i){
-	for(int j=0; j<fval.getSize (); ++j){
-	    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
-	    if(comp(mval[i], fval[j])){
-		cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
-		++orTerms;
-		if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-		scratchpad[orTerms] = cvar;
-	    }
-	}
+		for(int j=0; j<fval.getSize (); ++j){
+		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
+		    if(comp(mval[i], fval[j])){
+			cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
+			++orTerms;
+			if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+			scratchpad[orTerms] = cvar;
+		    }
+		}
     }
     if( orTerms < 2 ){
 	node_ids[node.id] = cvar;
     }else{
+    scratchpad[0] = 0;
 	int result = dir.addBigOrClause( &scratchpad[0], orTerms);
 	node_ids[node.id] = result;
     }
@@ -192,8 +193,8 @@ NodesToSolver::intBvectPlus (arith_node &node)
 {
     /* Compute addition of two parent node values. */
     dout ("generating addition");
-    Tvalue oval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
-			       tval_lookup (node.father), node.father_quant);
+    Tvalue oval = intBvectAdd (tval_lookup (node.mother), 1,
+			       tval_lookup (node.father), 1);
 
     /* Set node's value. */
     dout ("storing result");
@@ -210,8 +211,8 @@ NodesToSolver::intBvectEq (arith_node &node)
 {
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
-			       tval_lookup (node.father), -node.father_quant);
+    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
+			       tval_lookup (node.father), -1);
 
     /* Assert it is (all bits) zero. */
     dout ("asserting result is zero");
@@ -232,8 +233,8 @@ NodesToSolver::intBvectLt (arith_node &node)
 {
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
-			       tval_lookup (node.father), -node.father_quant);
+    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
+			       tval_lookup (node.father), -1);
 
     /* Assert it is negative. */
     dout ("asserting result is negative");
@@ -248,8 +249,8 @@ NodesToSolver::intBvectLe (arith_node &node)
 {
     /* Compute the reverse difference between operands. */
     dout ("computing (rhs - lhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -node.mother_quant,
-			       tval_lookup (node.father), node.father_quant);
+    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -1,
+			       tval_lookup (node.father), 1);
 
     /* Assert it is non-negative. */
     dout ("asserting result is non-negative");
@@ -264,8 +265,8 @@ NodesToSolver::intBvectGt (arith_node &node)
 {
     /* Compute the reverse difference between operands. */
     dout ("computing (rhs - lhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -node.mother_quant,
-			       tval_lookup (node.father), node.father_quant);
+    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -1,
+			       tval_lookup (node.father), 1);
 
     /* Assert it is negative. */
     dout ("asserting result is negative");
@@ -280,8 +281,8 @@ NodesToSolver::intBvectGe (arith_node &node)
 {
     /* Compute the difference between operands. */
     dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), node.mother_quant,
-			       tval_lookup (node.father), -node.father_quant);
+    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
+			       tval_lookup (node.father), -1);
 
     /* Assert it is non-negative. */
     dout ("asserting result is non-negative");
@@ -313,26 +314,12 @@ NodesToSolver::processArith (arith_node &node)
 {
     THEOP comp; // int op int
 
-    if(node.father == NULL){
-	bool_node* mother = node.mother;
-	node_ids[node.id] = tval_lookup (mother, TVAL_SPARSE);
-	Tvalue& mval = node_ids[node.id];
-	mval.makeSparse (dir, node.mother_quant);
-
-	vector<int>& tmp = mval.num_ranges;
-	Dout(cout<<"ARITHOP "<<mval<<"  OP  "<<node.father_quant<<endl);
-	for(int i=0; i<mval.getSize (); ++i){
-	    tmp[i] = doArithExpr( mval[i], node.father_quant, mval.getId (i), mval.getId (i), comp);
-	    Dout(cout<<"  "<< mval.getId (i)<<" op "<<node.father_quant<<"= "<<tmp[i]<<endl);
-	}
-	Dout( cout<<" := "<<node_ids[node.id]<<endl );
-    }else{
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-	mval.makeSparse (dir, node.mother_quant);
+	mval.makeSparse (dir);
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
-	fval.makeSparse (dir, node.father_quant);
+	fval.makeSparse (dir);
 
 	map<int, int> numbers;
 	Tvalue& oval = node_ids[node.id];
@@ -419,7 +406,7 @@ NodesToSolver::processArith (arith_node &node)
 	oval.setId(newID);
 	oval.sparsify ();
 	Dout( cout<<" := "<<oval<<endl );
-    }
+    
 }
 
 
@@ -440,12 +427,10 @@ NodesToSolver::boolNodeUpdate (bool_node &node, Tvalue &nvar)
 void NodesToSolver::visit( AND_node& node ){
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
-	if(!checkParentsChanged(node, true)){ Dout( cout<<fval<<" AND "<<mval<<" unchanged"<<endl  ); return; }
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
+	if(!checkParentsChanged(node, true)){ Dout( cout<<fval<<" AND "<<mval<<" unchanged"<<endl  ); return; }	
 	Tvalue oldnvar(node_ids[node.id]);
 	Tvalue& nvar = node_ids[node.id];
-	nvar = dir.addAndClause(fsign*fval.getId (), msign*mval.getId ());
+	nvar = dir.addAndClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
 	Dout(cout<<"AND "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
@@ -456,11 +441,9 @@ void NodesToSolver::visit( OR_node& node ){
 	if(!checkParentsChanged( node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
 	Tvalue oldnvar(node_ids[node.id]);
 	Tvalue& nvar = node_ids[node.id];
-	nvar = dir.addOrClause(fsign*fval.getId (), msign*mval.getId ());
+	nvar = dir.addOrClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
 	Dout(cout<<"OR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
@@ -469,11 +452,9 @@ void NodesToSolver::visit( XOR_node& node ){
 	if(!checkParentsChanged( node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
-	int fsign = node.father_sgn? 1 : -1;
-	int msign = node.mother_sgn? 1 : -1;
 	Tvalue oldnvar(node_ids[node.id]);
 	Tvalue& nvar = node_ids[node.id];
-	nvar = dir.addXorClause(fsign*fval.getId (), msign*mval.getId ());
+	nvar = dir.addXorClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
 	Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
@@ -524,8 +505,7 @@ NodesToSolver::visit (SRC_node &node)
 void NodesToSolver::visit( DST_node& node ){
 
 	int oid = node.ion_pos;
-	int nvar = dir.getArr(outname, oid);
-	int msign = node.mother_sgn? 1 : -1;
+	int nvar = dir.getArr(outname, oid);	
 
 	Tvalue outv = tval_lookup(node.mother);
 	Dout(cout<<" output "<<outv<<endl);
@@ -541,38 +521,58 @@ void NodesToSolver::visit( DST_node& node ){
 		int minsz = szout<sztv?szout : sztv;
 		Dout(cout<<"minsz = "<<minsz<<" sztv="<<sztv<<"  szout="<<szout<<endl);
 		for(int i=0; i<minsz; ++i){
-			mng.addEqualsClause( nvar+i, msign*outv.getId (i));
+			mng.addEqualsClause( nvar+i, outv.getId (i));
 		}
 		for(int i=minsz; i<szout; ++i){
 			mng.addEqualsClause( nvar+i, -YES);
 		}
-		Dout(cout<<"DST = "<<outv<<"*"<<msign<<endl);
+		Dout(cout<<"DST = "<<outv<<endl);
 	}
 	return;
 }
 
 /*
- * PT node visitor.
+ * NOT node visitor.
  *
- * Depending on the sign of the parent link, generate a value that is either
- * the same as (true) or inverse of (false) the parent's value.
+ * 
  */
 void
-NodesToSolver::visit (PT_node &node)
+NodesToSolver::visit (NOT_node &node)
 {
-    Assert (node.mother && ! node.father, "PT node must have exactly one predecessor");
-
+    Assert (node.mother && ! node.father, "NOT node must have exactly one predecessor");	
     if (! checkParentsChanged (node, true)) {
-	Dout (cout << "PT unchanged" << endl);
-	return;
+		Dout (cout << "NOT unchanged" << endl);
+		return;
     }
 
     const Tvalue &mval = tval_lookup (node.mother);
-    Tvalue nvar = (node.mother_sgn ? mval.getId () : -mval.getId ());
+    Assert( mval.getType() == TVAL_BVECT && mval.getSize() == 1, "Bad Type for NOT");
+    Tvalue nvar = -mval.getId ();
     boolNodeUpdate (node, nvar);
 
     Dout (cout << "PT " << node.name << " " << nvar << " " << &node << endl);
 }
+
+
+void
+NodesToSolver::visit (NEG_node &node)
+{
+    Assert (node.mother && ! node.father, "NEG node must have exactly one predecessor");	
+    if (! checkParentsChanged (node, true)) {
+		Dout (cout << "NEG unchanged" << endl);
+		return;
+    }
+
+    const Tvalue &mval = tval_lookup (node.mother);
+    Tvalue nvar = mval.toComplement(dir);
+    boolNodeUpdate (node, nvar);
+
+    Dout (cout << "NEG " << node.name << " " << nvar << " " << &node << endl);
+}
+
+
+
+
 
 void
 NodesToSolver::visit (CTRL_node &node)
@@ -641,18 +641,9 @@ void NodesToSolver::visit( TIMES_node& node ){
 
 void NodesToSolver::visit( ARRACC_node& node ){
 
-	Dout(cout<<" ARRACC "<<endl);
-	vector<bool_node*>::iterator it = node.multi_mother.begin();
-	vector<int>::iterator signs = node.multi_mother_sgn.begin();
-	vector<Tvalue> choices(node.multi_mother.size());
-	bool parentSame = true;
-	bool parentSameBis = true;
-	bool isBoolean=true;
 
-	const Tvalue& omv = tval_lookup(node.mother) ;
-	vector<int>::const_iterator itbeg, itend, itfind;
-	itbeg = omv.num_ranges.begin();
-	itend = omv.num_ranges.end();
+	Dout(cout<<" ARRACC "<<endl);
+	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
 
 	if( isSparse && omv.getId () == YES ){
@@ -665,41 +656,34 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		}
 
 		bool_node* choice = node.multi_mother[idx];
-		int quant = node.multi_mother_sgn[idx];
+		
 		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
 		node_ids[node.id] = tval_lookup(choice);
 		Tvalue& cval = node_ids[node.id];
-		if( !cval.isSparse() ){
-			if(quant==0 || quant==1){
-					cval.bitAdjust( quant==1 );
-			}else{
-				cval.makeSparse(dir);
-				if( quant != 1){
-					cval.intAdjust(quant);
-				}
-			}
-		}else{
-			if( quant != 1){
-				cval.intAdjust(quant);
-			}
-		}
+		
 		Dout( cout<<node.get_name()<<" Shortcout = "<<cval<<endl );
 		return;
 	}
+	
+	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	vector<Tvalue> choices(node.multi_mother.size());
+	bool parentSame = true;
+	bool parentSameBis = true;
+	bool isBoolean=true;
+	vector<int>::const_iterator itbeg, itend, itfind;
+	itbeg = omv.num_ranges.begin();
+	itend = omv.num_ranges.end();
 
 //	aracctimer.restart();
 //	flooptimer.restart();
-	for(int i=0; it != node.multi_mother.end(); ++i, ++it, ++signs){
-		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  signs = "<<*signs<<"  ");
+	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
+		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
 		const Tvalue& cval = tval_lookup(*it);
 		cout<<"cval = "<<cval;
-		if( (*signs)>1 || (*signs)<0 || cval.isSparse()){
+		if( cval.isSparse() ){
 			isBoolean = false;
 		}
-		{
-			choices[i].setId(cval.getId ());
-			if( !cval.isSparse()  ) choices[i].bitAdjust( (*signs)==1 );
-		}
+		choices[i] = cval;
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
 	}
@@ -728,11 +712,10 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	}
 	Dout(cout<<" is boolean"<<endl);
 	bool_node* mother = node.mother;
-	Tvalue mval = tval_lookup(mother) ;
-	Dout(cout<<" mother = "<<mval<<"  signs = "<<node.mother_sgn<<"  "<<endl);
+	const Tvalue& mval = tval_lookup(mother) ;
+	Dout(cout<<" mother = "<<mval<<"   "<<endl);
 	Assert( mother != NULL, "This should never happen");
-	if( !mval.isSparse() ){ //mother->type != bool_node::ARITH
-		mval.bitAdjust(node.mother_sgn);
+	if( !mval.isSparse() ){ //mother->type != bool_node::ARITH		
 		int cvar;
 		if(choices.size()>=2){
 			Dout( cout<<" replacing with choice "<<mval<<", "<<choices[1]<<", "<<choices[0]<<endl );
@@ -750,7 +733,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		return;
 	}
 //	elooptimer.restart();
-	vector<int>& nrange = mval.num_ranges;
+	const vector<int>& nrange = mval.num_ranges;
 	int cvar = -YES;
 	int orTerms = 0;
 	for(int i=0; i<nrange.size(); ++i){
@@ -773,8 +756,9 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	if( orTerms < 2){
 		node_ids[node.id] = cvar;
 	}else{
+		scratchpad[0] = 0;
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
-		node_ids[node.id] = result;
+		node_ids[node.id] = result;		
 	}
 	Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
 //	elooptimer.stop().print();
@@ -863,146 +847,132 @@ void NodesToSolver::visit( ARRASS_node& node ){
     // multi-mother[1] = new-value;
     // if( mother == quant ) return multi-mother[1]; else return multi-mother[0];
     bool_node* mother = node.mother;
-    Tvalue mval = tval_lookup(mother) ;
-    int quant = node.mother_quant;
+    const Tvalue& mval = tval_lookup(mother) ;
+    int quant = node.quant;
     Dout(cout<<" mother = "<<((mother != NULL)?mother->get_name():"NULL")<<"  mid = "<<mval<<"  mquant = "<<quant<<endl);
-    vector<bool_node*>::iterator it = node.multi_mother.begin();
-    vector<int>::iterator signs = node.multi_mother_sgn.begin();
+    vector<bool_node*>::iterator it = node.multi_mother.begin();    
     Assert( node.multi_mother.size() == 2 , "THIS SHOULDN't HAPPEN");
     vector<Tvalue> choices(2);
     vector<bool_node*> mothers(2);
     bool parentSame = true;
     bool isBoolean=true;
-    for(int i=0; it != node.multi_mother.end(); ++i, ++it, ++signs){
-	const Tvalue& cval = tval_lookup(*it);
-	if( (*signs)>1 || (*signs)<0 || cval.isSparse()){
-	    isBoolean = false;
-	}
-	mothers[i] = *it;
-	Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  factor="<<*signs<<"  ");
-	{
-	    choices[i] = cval;
-	    if( choices[i].isSparse() ) {
-		choices[i].intAdjust( *signs );
-	    }else{
-		if( *it == NULL && !isBoolean ){
-		    choices[i].makeSparse(dir);
-		    choices[i].intAdjust( (*signs));
-		}else{
-		    choices[i].bitAdjust( (*signs)==1 );
+    for(int i=0; it != node.multi_mother.end(); ++i, ++it){
+		const Tvalue& cval = tval_lookup(*it);
+		if( cval.isSparse() ){
+		    isBoolean = false;
 		}
-	    }
-	}
-	Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
-	parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
+		mothers[i] = *it;
+		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"   ");
+		choices[i] = cval;
+		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
+		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
     }
     if(!checkParentsChanged( node, parentSame)){ return; }
     int guard;
     if( !mval.isSparse() ){
-	if(quant > 1){
-	    guard = -YES;
-	}else{
-	    mval.bitAdjust(node.mother_sgn);
-	    Dout(cout<<" mval = "<<mval<<endl);
-	    guard = dir.addXorClause(mval.getId (), quant==0?YES:-YES);
-	}
+		if(quant > 1){
+		    guard = -YES;
+		}else{	    
+		    Dout(cout<<" mval = "<<mval<<endl);
+		    guard = dir.addXorClause(mval.getId (), quant==0?YES:-YES);
+		}
     }else{
-	guard = -YES;
-	vector<int>& nrange = mval.num_ranges;
-	for(int i=0; i<nrange.size(); ++i){
-	    if( nrange[i] == quant){
-		guard = mval.getId (i);
-		break;
-	    }
-	}
+		guard = -YES;
+		const vector<int>& nrange = mval.num_ranges;
+		for(int i=0; i<nrange.size(); ++i){
+		    if( nrange[i] == quant){
+			guard = mval.getId (i);
+			break;
+		    }
+		}
     }
     Dout(cout<<" guard = "<<guard<<endl);
     if(isBoolean){
-	Dout(cout<<" is boolean"<<endl);
-	int cvar = dir.addChoiceClause(guard , choices[1].getId (), choices[0].getId ());
-	node.flag = node_ids[node.id].isNull() || node_ids[node.id].getId () != cvar;
-	if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
-	node_ids[node.id] = cvar;
-	return;
+		Dout(cout<<" is boolean"<<endl);
+		int cvar = dir.addChoiceClause(guard , choices[1].getId (), choices[0].getId ());
+		node.flag = node_ids[node.id].isNull() || node_ids[node.id].getId () != cvar;
+		if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
+		node_ids[node.id] = cvar;
+		return;
     }else{
-	Dout(cout<<" is not boolean"<<endl);
-	Tvalue& mid0 = choices[0];
-	Tvalue& mid1 = choices[1];
-	if( !mid0.isSparse() ){
-	    mid0.makeSparse(dir);
-	}
-	if( !mid1.isSparse() ){
-	    mid1.makeSparse(dir);
-	}
-	if(guard == YES){
-	    node.flag = node_ids[node.id] != mid1;
-	    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
-	    node_ids[node.id] = mid1;
-	    Dout( cout<<"var "<< mid1 <<endl);
-	    return;
-	}
-	if(guard == -YES){
-	    node.flag = node_ids[node.id] != mid0;
-	    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
-	    node_ids[node.id] = mid0;
-	    Dout( cout<<"var "<< mid0 <<endl);
-	    return;
-	}
-	int i=0, j=0;
-	vector<int>& nr0 = mid0.num_ranges;
-	vector<int>& nr1 = mid1.num_ranges;
-	vector<int> res;
-	res.reserve(nr0.size() + nr1.size());
-	vector<int>& out = node_ids[node.id].num_ranges;
-	out.reserve(nr0.size() + nr1.size());
-	while(i < nr0.size() || j< nr1.size()){
-	    bool avi = i < nr0.size();
-	    bool avj = j < nr1.size();
-	    int curri = avi ? nr0[i]  : -1;
-	    int currj = avj ? nr1[j]  : -1;
-	    if( curri == currj && avi && avj){
-		Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
-		int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
-		int cvar2 = dir.addAndClause( mid1.getId (j), guard);
-		int cvar3 = dir.addOrClause( cvar2, cvar1);
-		out.push_back(curri);
-		res.push_back(cvar3);
-		i++;
-		j++;
-		continue;
-	    }
-	    if((curri < currj && avi) || !avj){
-		Dout(cout<<" curri = "<<curri<<endl);
-		int cvar = dir.addAndClause( mid0.getId (i), -guard);
-		out.push_back(curri);
-		res.push_back(cvar);
-		i++;
-		continue;
-	    }
-	    if( (currj < curri && avj) || !avi ){
-		Dout(cout<<" currj = "<<currj<<endl);
-		int cvar = dir.addAndClause( mid1.getId (j), guard );
-		out.push_back(currj);
-		res.push_back(cvar);
-		j++;
-		continue;
-	    }
-	    Assert(false, "Should never get here");
-	}
-	out.resize(res.size ());
-	Assert( res.size () > 0, "This should not happen here2");
-	int newID = dir.newAnonymousVar();
-	for(int k=1; k<res.size(); ++k){
-	    int cvar = dir.newAnonymousVar();
-	    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
-	}
-	for(int k=0; k<res.size(); ++k){
-	    int val = res[k];
-	    mng.addEqualsClause( newID+k, val);
-	}
-	node_ids[node.id].setId(newID);
-	node_ids[node.id].sparsify ();
-	return;
+		Dout(cout<<" is not boolean"<<endl);
+		Tvalue& mid0 = choices[0];
+		Tvalue& mid1 = choices[1];
+		if( !mid0.isSparse() ){
+		    mid0.makeSparse(dir);
+		}
+		if( !mid1.isSparse() ){
+		    mid1.makeSparse(dir);
+		}
+		if(guard == YES){
+		    node.flag = node_ids[node.id] != mid1;
+		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
+		    node_ids[node.id] = mid1;
+		    Dout( cout<<"var "<< mid1 <<endl);
+		    return;
+		}
+		if(guard == -YES){
+		    node.flag = node_ids[node.id] != mid0;
+		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
+		    node_ids[node.id] = mid0;
+		    Dout( cout<<"var "<< mid0 <<endl);
+		    return;
+		}
+		int i=0, j=0;
+		vector<int>& nr0 = mid0.num_ranges;
+		vector<int>& nr1 = mid1.num_ranges;
+		vector<int> res;
+		res.reserve(nr0.size() + nr1.size());
+		vector<int>& out = node_ids[node.id].num_ranges;
+		out.reserve(nr0.size() + nr1.size());
+		while(i < nr0.size() || j< nr1.size()){
+		    bool avi = i < nr0.size();
+		    bool avj = j < nr1.size();
+		    int curri = avi ? nr0[i]  : -1;
+		    int currj = avj ? nr1[j]  : -1;
+		    if( curri == currj && avi && avj){
+				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
+				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
+				int cvar3 = dir.addOrClause( cvar2, cvar1);
+				out.push_back(curri);
+				res.push_back(cvar3);
+				i++;
+				j++;
+				continue;
+			}
+		    if((curri < currj && avi) || !avj){
+				Dout(cout<<" curri = "<<curri<<endl);
+				int cvar = dir.addAndClause( mid0.getId (i), -guard);
+				out.push_back(curri);
+				res.push_back(cvar);
+				i++;
+				continue;
+		    }
+		    if( (currj < curri && avj) || !avi ){
+				Dout(cout<<" currj = "<<currj<<endl);
+				int cvar = dir.addAndClause( mid1.getId (j), guard );
+				out.push_back(currj);
+				res.push_back(cvar);
+				j++;
+				continue;
+		    }
+		    Assert(false, "Should never get here");
+		}
+		out.resize(res.size ());
+		Assert( res.size () > 0, "This should not happen here2");
+		int newID = dir.newAnonymousVar();
+		for(int k=1; k<res.size(); ++k){
+		    int cvar = dir.newAnonymousVar();
+		    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
+		}
+		for(int k=0; k<res.size(); ++k){
+		    int val = res[k];
+		    mng.addEqualsClause( newID+k, val);
+		}
+		node_ids[node.id].setId(newID);
+		node_ids[node.id].sparsify ();
+		return;
     }
 }
 
@@ -1011,14 +981,13 @@ void NodesToSolver::visit( ARRASS_node& node ){
 
 void NodesToSolver::visit( ACTRL_node& node ){
 	int size = node.multi_mother.size();
-	vector<bool_node*>::iterator it = node.multi_mother.begin();
-	vector<int>::iterator signs = node.multi_mother_sgn.begin();
+	vector<bool_node*>::iterator it = node.multi_mother.begin();	
 	bool parentSame = true;
 	vector<int> ids(node.multi_mother.size());
-	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i, ++signs){
+	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
 		{
-			Dout( cout<<" ACTRL "<<*it<<" nodeids = "<<tval_lookup(*it)<<"  signs = "<<(*signs));
-			ids[i]=((*signs)==1?1:-1)*tval_lookup(*it).getId ();
+			Dout( cout<<" ACTRL "<<*it<<" nodeids = "<<tval_lookup(*it));
+			ids[i]=tval_lookup(*it).getId ();
 		}
 		Dout( cout<<"   ids[i]="<<ids[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
@@ -1043,8 +1012,7 @@ NodesToSolver::visit (ASSERT_node &node)
 		return;
 	}
 
-	int fsign = node.mother_sgn ? 1 : -1;
-	dir.addAssertClause (fsign * fval.getId ());
+	dir.addAssertClause (fval.getId ());
 
 	Dout (cout << "ASSERT " << node.name << " " << node_ids[node.id]
 		  << " " << &node << endl);
@@ -1053,20 +1021,36 @@ NodesToSolver::visit (ASSERT_node &node)
 }
 
 
+void
+NodesToSolver::visit (CONST_node &node)
+{	
+	
+	if( node.getVal() == 1 ){
+		node_ids[node.id] = tvYES;
+	}else if( node.getVal() == 0){
+		node_ids[node.id] = tvYES;
+		node_ids[node.id].bitAdjust(false);
+	}else{
+		node_ids[node.id] = tvOne;
+		node_ids[node.id].intAdjust(node.getVal());
+	}
+	Dout (cout << "CONST " << node.get_name() << " " << node_ids[node.id]<< endl);
+}
+
 
 void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 	Dout( cout<<" non boolean array "<<endl );
 	vector<bool_node*>::iterator it = node.multi_mother.begin();
-	vector<int>::iterator signs = node.multi_mother_sgn.begin();
+	
 	int N = node.multi_mother.size();
 	vector<Tvalue> choices(N);
-	for(int i=0; i < N; ++i, ++it, ++signs){
+	for(int i=0; i < N; ++i, ++it){
 		choices[i] = tval_lookup (*it, TVAL_SPARSE);
-		choices[i].makeSparse (dir, *signs);
+		choices[i].makeSparse (dir);
 	}
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-	mval.makeSparse (dir, node.mother_sgn);
+	mval.makeSparse (dir);
 
 	map<int, vector<int> > newVals;
 	int vsize = N;
@@ -1103,6 +1087,7 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 			result.push_back(it->first);
 			node_ids[node.id].sparsify ();
 		}else{
+			scratchpad[0] = 0;
 			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
 			result.push_back(it->first);
 			node_ids[node.id].setId(cvar);

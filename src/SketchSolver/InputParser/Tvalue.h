@@ -114,10 +114,9 @@ private:
      */
 public:
     bool operator== (const Tvalue &tv) const {
-	if (tv.id != id || tv.neg != neg || tv.size != size)
+	if (tv.id != id || tv.neg != neg || tv.size != size || tv.num_ranges.size() != num_ranges.size())
 	    return false;	
-
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < num_ranges.size(); i++)
 	    if (num_ranges[i] != tv.num_ranges[i])
 		return false;
 
@@ -227,8 +226,10 @@ public:
     inline Tvalue toComplement (varDir &dir) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (complement)");
 
-	if (isBvect ()) {
-	    Assert (0, "cannot complement an unsigned bitvector");
+	if (isBvect ()) {	    
+	    Tvalue tv (*this);
+	    tv.makeSparse(dir, -1);
+	    return tv;
 	} else if (isBvectSigned ()) {
 	    Dout (cout << "toComplement: generating complement BitVectorSigned" << endl);
 
@@ -439,8 +440,8 @@ public:
 		    num_ranges.push_back (0);
 		    num_ranges.push_back (1);
 		    int tmp = dir.newAnonymousVar (2);
-		    dir.addEqualsClause (-id, tmp);
-		    dir.addEqualsClause (id, tmp + 1);
+		    dir.addEqualsClause (-getId(), tmp);
+		    dir.addEqualsClause (getId(), tmp + 1);
 		    id = tmp;
 		    size = 2;
 		}
