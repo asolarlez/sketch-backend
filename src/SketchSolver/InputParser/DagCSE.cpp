@@ -23,9 +23,7 @@ void DagCSE::eliminateCSE(){
 		// look it up in the cse map.		
 		Dout(cout<<dag[i]->id<<"  "<<dag[i]->get_name()<<": "<<ccode<<endl) ;
 		if( cse_map.find(ccode) != cse_map.end() ){
-			// if we do find it, then remove the node and replace it with its cse.
-			//replace will remove the current element of the dag, so we don't
-			//have to increment either node_it or i.
+			// if we do find it, then remove the node and replace it with its cse.			
 			bool_node * cse = cse_map[ccode];
 			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl );
 			dag.replace(i, cse); 
