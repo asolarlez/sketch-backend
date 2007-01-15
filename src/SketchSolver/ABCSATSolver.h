@@ -55,7 +55,7 @@ protected:
 	}
        
 public:
-        ABCSATSolver(const string& name_p, SolutionStrategy strategy_p):SATSolver(name_p){
+        ABCSATSolver(const string& name_p, SolutionStrategy strategy_p, bool solveNegation_p):SATSolver(name_p, solveNegation_p){
 		       /////////       
 		       strategy = strategy_p;
 		       pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
@@ -68,7 +68,7 @@ public:
    	           doCheck = false;
    	           solvcnt = 0;
    	           FileOutputABC( string nm = name; nm += ".circuit"; );
-			   FileOutputABC( output.open(nm.c_str()) );	
+			   FileOutputABC( output.open(nm.c_str()) );
 		       ////////
         }
         virtual void annotate(const string& msg);

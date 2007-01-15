@@ -16,10 +16,11 @@ inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
 class MiniSATSolver : public SATSolver{
 protected:
+	vector<int> finalOr;
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 public:
-	 MiniSATSolver(const string& name_p):SATSolver(name_p){
+	 MiniSATSolver(const string& name_p,  bool solveNegation_p):SATSolver(name_p, solveNegation_p){
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	

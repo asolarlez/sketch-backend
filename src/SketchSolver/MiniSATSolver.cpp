@@ -115,11 +115,17 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes x == a;
  void MiniSATSolver::addEquateClause(int x, int a){
-	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
-	FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
-	vec<Lit> lits;	
-	{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
-	{ int tmp[] = { (x), -(a)}; addClause(tmp, 2, lits);}
+	if( !solveNegation  ){
+		Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+		FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
+		vec<Lit> lits;
+		{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
+		{ int tmp[] = { (x), -(a)}; addClause(tmp, 2, lits);}
+	}else{
+		int tmp = newVar ();
+		addXorClause(tmp, x, a);
+		finalOr.push_back(tmp);
+	}
 }
 
 
@@ -132,10 +138,14 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
  void MiniSATSolver::assertVarClause(int x){
-	Dout( cout<<" assert "<<x<<";"<<endl );
-	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-	int var = abs(x);
-	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+ 	if( !solveNegation  ){
+		Dout( cout<<" assert "<<x<<";"<<endl );
+		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+		int var = abs(x);
+		s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+	}else{	
+		finalOr.push_back(-x);
+	}
 }
 
  void MiniSATSolver::printDiagnostics(char c){
@@ -184,6 +194,10 @@ bool MiniSATSolver::ignoreOld(){
 }
 
  int MiniSATSolver::solve(){
+ 	if(solveNegation){
+ 		vec<Lit> lits;
+ 		addClause(&finalOr[0], finalOr.size(), lits);
+ 	} 
  	if( ! s->okay() ){ cout<<" NOT OKAY BEFORE"<<endl; }
  	s->simplifyDB();
  	if( ! s->okay() ){ cout<<" NOT OKAY "<<endl; return UNSATISFIABLE; }
@@ -199,14 +213,16 @@ bool MiniSATSolver::ignoreOld(){
 }
 
  void MiniSATSolver::reset(){
+ 	finalOr.clear();
 	Assert ( s->okay() , "This can't happen");
 }
 
  void MiniSATSolver::cleanupDatabase(){
-	
+	finalOr.clear();
 }
 
  void MiniSATSolver::clean(){
+ 	finalOr.clear();
  	Dout( cout<<" CLEANING UP "<<endl );
  	delete s;
  	s = new Solver();

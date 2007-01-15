@@ -15,9 +15,10 @@ inline void ZSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
 class ZchaffSATSolver : public SATSolver{
 protected:
+	vector<int> finalOr;
 	SAT_Manager mng;
 public:
-	 ZchaffSATSolver(const string& name_p):SATSolver(name_p){
+	 ZchaffSATSolver(const string& name_p, bool solveNegation_p):SATSolver(name_p, solveNegation_p){
 		mng = SAT_InitManager();
 		SAT_SetNumVariables(mng, 0);		
 	 }

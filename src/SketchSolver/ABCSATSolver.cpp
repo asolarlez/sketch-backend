@@ -41,12 +41,16 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 
 void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 	Assert( Abc_ObjFaninNum(pOutputNode) == out_cnt, "This should never happen!");
-   pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );
-   Abc_ObjAddFanin( Abc_NtkCreatePo(network), pOutputNode);              
-  char Buffer[100];
-  int i;
-  Abc_Obj_t * pObj;
-   Abc_NtkForEachPo( network, pObj, i ){
+	if(  solveNegation ){
+		pOutputNode->pData = Abc_SopCreateNand( (Extra_MmFlex_t *) network->pManFunc, out_cnt );
+	}else{
+		pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );
+	}
+	Abc_ObjAddFanin( Abc_NtkCreatePo(network), pOutputNode);              
+	char Buffer[100];
+	int i;
+	Abc_Obj_t * pObj;
+	Abc_NtkForEachPo( network, pObj, i ){
    	   sprintf( Buffer, "[%d]", pObj->Id );
        Abc_NtkLogicStoreName( pObj, Buffer );
    }

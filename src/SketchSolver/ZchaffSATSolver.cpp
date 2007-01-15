@@ -103,10 +103,16 @@
 
 //This function encodes x == a;
  void ZchaffSATSolver::addEquateClause(int x, int a){
-	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
-	FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
-	{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2);}
-	{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2); 	CheckRepeats(tmp, 2);}
+ 	if( !solveNegation  ){
+		Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+		FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
+		{ int tmp[] = { -(x), (a)}; SAT_AddClauseSigned(mng, tmp, 2);}
+		{ int tmp[] = { (x), -(a)}; SAT_AddClauseSigned(mng, tmp, 2); 	CheckRepeats(tmp, 2);}
+ 	}else{
+ 		int tmp = newVar ();
+		addXorClause(tmp, x, a);
+		finalOr.push_back(tmp);	
+ 	}
 }
 
 
@@ -118,9 +124,13 @@
 
 
  void ZchaffSATSolver::assertVarClause(int x){
-	Dout( cout<<" assert "<<x<<";"<<endl );
-	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
+ 	if( !solveNegation  ){
+		Dout( cout<<" assert "<<x<<";"<<endl );
+		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+		{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
+ 	}else{	
+		finalOr.push_back(-x);
+	}
 }
 
  void ZchaffSATSolver::printDiagnostics(char c){
@@ -194,20 +204,26 @@ int ZchaffSATSolver::getVarVal(int id){
 	}
 	
 	 int ZchaffSATSolver::solve(){
+	 	if(solveNegation){
+	 		{SAT_AddClauseSigned(mng, &finalOr[0], finalOr.size()); 	CheckRepeats(&finalOr[0], finalOr.size());}
+	 	}
 		int result = SAT_Solve(mng);
 		return result;
 	}
 	
 	 void ZchaffSATSolver::reset(){
+	 	finalOr.clear();
 		FileOutput(output<<"#  ======================================="<<endl);
 		SAT_Reset(mng);
 	}
 	
 	 void ZchaffSATSolver::cleanupDatabase(){
+	 	finalOr.clear();
 		SAT_CleanUpDatabase(mng);
 	}
 	
 	 void ZchaffSATSolver::clean(){
+	 	finalOr.clear();
 		SAT_ReleaseManager(mng);
 		mng =  SAT_InitManager();
 	}

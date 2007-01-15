@@ -143,7 +143,7 @@ public:
 	    int tmp = mng.newVar ();
 	    if (ret < 0)
 		ret = tmp;
-	    mng.disableVarBranch(varCnt);
+	    mng.disableVarBranch(tmp);
 	} while (--n);
 
 	return ret;

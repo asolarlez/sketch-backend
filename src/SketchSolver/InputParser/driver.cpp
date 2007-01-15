@@ -199,44 +199,46 @@ int main(int argc, char** argv){
       	Dout(it->first->print(cout)); //sketch
       	
       	SATSolver* finder = NULL;
+      	bool FINDER = false;
+      	bool CHECKER = true;
       	if( params.synthtype ==  paramInterp::ABC ){
-      		finder = new ABCSATSolver("find", ABCSATSolver::FULL);
+      		finder = new ABCSATSolver("find", ABCSATSolver::FULL, FINDER);
       		cout<<" FIND = ABC"<<endl;
       		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();	
      		}
       	}else if ( params.synthtype ==  paramInterp::ABCLIGHT ){
-      		finder = new ABCSATSolver("find", ABCSATSolver::BASICSAT);
+      		finder = new ABCSATSolver("find", ABCSATSolver::BASICSAT, FINDER);
       		cout<<" FIND = ABC LIGHT"<<endl;
       		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();
      		}
       	}else if( params.synthtype ==  paramInterp::ZCHAFF){
-      		finder = new ZchaffSATSolver("find");
+      		finder = new ZchaffSATSolver("find", FINDER);
      		cout<<" FIND = ZCHAFF"<<endl;
       	}else if( params.synthtype ==  paramInterp::MINI){
-      		finder = new MiniSATSolver("find");
+      		finder = new MiniSATSolver("find", FINDER);
      		cout<<" FIND = MINI"<<endl;
       	}
       	
       	SATSolver* checker = NULL;
       	if( params.veriftype ==  paramInterp::ABC ){
-      		checker = new ABCSATSolver("check", ABCSATSolver::FULL);
+      		checker = new ABCSATSolver("check", ABCSATSolver::FULL, CHECKER);
      		cout<<" CHECK = ABC"<<endl;
      		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
      		}
       	}else if ( params.veriftype ==  paramInterp::ABCLIGHT ){
-      		checker = new ABCSATSolver("check", ABCSATSolver::BASICSAT);
+      		checker = new ABCSATSolver("check", ABCSATSolver::BASICSAT, CHECKER);
      		cout<<" CHECK = ABC LIGHT"<<endl;
      		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
      		}
       	}else if( params.veriftype ==  paramInterp::ZCHAFF){
-      		checker = new ZchaffSATSolver("check");
+      		checker = new ZchaffSATSolver("check", CHECKER);
      		cout<<" CHECK = ZCHAFF"<<endl;
       	}else if( params.veriftype ==  paramInterp::MINI){
-      		checker = new MiniSATSolver("check");
+      		checker = new MiniSATSolver("check", CHECKER);
      		cout<<" CHECK = MINI"<<endl;
       	}
       	

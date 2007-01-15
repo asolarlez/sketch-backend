@@ -7,7 +7,7 @@ using namespace std;
 
 
 #define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
-#define Dout( out )      /* out */ 
+#define Dout( out )     out   
 #define dout(out)  /* (cout << "[" << __FUNCTION__ << ":" << __LINE__ << "] " << out << endl); */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
 #define FileOutput( out ) /* out */
@@ -18,6 +18,13 @@ class SATSolver {
 protected:
     string name;
     FileOutput( ofstream output );
+    
+    /**
+     * If this field is true, then instead of solving the problem that
+     * makes all asserts and equates true, we solve the problem that makes
+     * some assert or equate false.
+     */
+    const bool solveNegation;
 public:
     enum SATSolverResult{
 	UNDETERMINED,
@@ -28,7 +35,7 @@ public:
 	ABORTED
     };
 
-    SATSolver(const string& name_p):name(name_p){		
+    SATSolver(const string& name_p, bool solveNegation_p):name(name_p), solveNegation(solveNegation_p){		
 	FileOutput( string nm = name; nm += ".circuit"; );
 	FileOutput( output.open(nm.c_str()) );		
     }

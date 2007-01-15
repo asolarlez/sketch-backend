@@ -340,8 +340,10 @@ void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 
 void FindCheckSolver::addDiffersClauses(SATSolver& mng, varDir& dir){
 	int N = dir.getArrSize(OUT);
-	int status = dir.assertVectorsDiffer(dir.getArr(SOUT, 0), dir.getArr(OUT ,0), N);
-	mng.assertVarClause(status);
+	Assert( N == dir.getArrSize(SOUT), "SIZE MISSMATCH "<<N );
+	for(int i=0; i<N; ++i){
+		dir.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
+	}
 }
 
 
