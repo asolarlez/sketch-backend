@@ -679,7 +679,6 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
 		const Tvalue& cval = tval_lookup(*it);
-		cout<<"cval = "<<cval;
 		if( cval.isSparse() ){
 			isBoolean = false;
 		}
@@ -1014,7 +1013,7 @@ NodesToSolver::visit (ASSERT_node &node)
 
 	dir.addAssertClause (fval.getId ());
 
-	Dout (cout << "ASSERT " << node.name << " " << node_ids[node.id]
+	Dout (cout << "ASSERT " << node.get_name() << " " << fval
 		  << " " << &node << endl);
 
 	return;
