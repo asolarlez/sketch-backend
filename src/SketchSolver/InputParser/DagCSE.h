@@ -4,14 +4,13 @@
 #include "BooleanDAG.h"
 
 class DagCSE : public NodeVisitor
-{
-	map<string, bool_node*> cse_map;
+{	
 	BooleanDAG& dag;	
 	string ccode;
 public:
 	DagCSE(BooleanDAG& p_dag);
 	virtual ~DagCSE();	
-	
+	map<string, bool_node*> cse_map;
 	void eliminateCSE();
 	
 	virtual void visit( AND_node& node );

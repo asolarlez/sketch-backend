@@ -191,7 +191,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 			Assert( iid+ nbits <= input.size(), "There should be a control entry for each iid b insize="<<input.size()<<"  iid+nbits="<<iid+nbits );
 			Assert(input[iid ] == 1 || input[iid]==-1, "This is bad, really bad");
 			
-			cout<<" input "<<(*node_it)->get_name()<<" starts "<<iid<<"  has value"<<input[iid]<<endl;
+			Dout( cout<<" input "<<(*node_it)->get_name()<<" starts "<<iid<<"  has value"<<input[iid]<<endl );
 			
 			if( nbits ==1 ){
 				node_values[(*node_it)]= input[iid];
@@ -280,7 +280,8 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 		}
 	}
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
-	FindCheckSolver::addInputsToTestSet(input);
+	//FindCheckSolver::addInputsToTestSet(input);
+	buildFinder();
 	idx = 0;
 	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
 		f_node_ids[idx] = node_ids[(*node_it)->id];

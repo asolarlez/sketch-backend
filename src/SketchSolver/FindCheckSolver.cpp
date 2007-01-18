@@ -338,14 +338,6 @@ void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
 }
 
 
-void FindCheckSolver::addDiffersClauses(SATSolver& mng, varDir& dir){
-	int N = dir.getArrSize(OUT);
-	Assert( N == dir.getArrSize(SOUT), "SIZE MISSMATCH "<<N );
-	for(int i=0; i<N; ++i){
-		dir.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
-	}
-}
-
 
 int FindCheckSolver::getInSize(){
 	return input.size();
@@ -376,7 +368,7 @@ void FindCheckSolver::buildChecker(){
 	
 	defineSketch(mngCheck, dirCheck);
 	defineSpec(mngCheck, dirCheck);
-	addDiffersClauses(mngCheck, dirCheck);				
+	addEqualsClauses(mngCheck, dirCheck);				
 }
 
 

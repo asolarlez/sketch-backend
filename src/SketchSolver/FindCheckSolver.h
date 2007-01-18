@@ -73,9 +73,8 @@ class FindCheckSolver{
 	
 	virtual void defineSketch(SATSolver& mng, varDir& dir)=0;
 	virtual void defineSpec(SATSolver& mng, varDir& dir)=0;
-	
-	virtual void addEqualsClauses(SATSolver& mng, varDir& dir);
-	virtual void addDiffersClauses(SATSolver& mng, varDir& dir);
+			
+	virtual void addEqualsClauses(SATSolver& mng, varDir& dir);	
 
 	virtual void buildChecker();	
 	virtual void setupCheck();
@@ -92,8 +91,6 @@ class FindCheckSolver{
 	
 	
 	virtual bool solveCore();
-	
-	
 	
 	
 	public:

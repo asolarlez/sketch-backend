@@ -403,7 +403,7 @@ varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
 			int v = (curval > 0)? 1:0;
 			for(int j=0; j<lastsize; ++j){
 				tmpVect[j] = vals[j]*2 + v;
-				Assert(j<amtrange, "This is out of range");
+				Assert(j<amtrange, "This is out of range amtsize = "<<amtsize );
 			}
 		}else{
 			int roundVars = lastRoundVars;

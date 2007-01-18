@@ -6,7 +6,7 @@
  * Uncomment this to switch to bit-vector operators / comparators.
  * TODO switch to some other (dynamic) mechanism...
  */
-//#define HAVE_BVECTARITH
+// #define HAVE_BVECTARITH
 
 
 template<typename COMP> void
