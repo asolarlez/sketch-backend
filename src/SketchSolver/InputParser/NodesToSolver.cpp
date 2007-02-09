@@ -512,7 +512,7 @@ void NodesToSolver::visit( DST_node& node ){
 	if(outv.isSparse()){
 		cout<<" output "<<node.get_name()<<" = "<<outv<<endl;
 		Dout(cout<<"Making output sparse"<<endl);
-		outv = outv.toBvect(dir);
+		outv = outv.toBvectSigned(dir);
 	}
 
 	{
