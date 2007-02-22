@@ -250,6 +250,8 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		an->multi_mother.push_back(rhs);
 		if(rhs != NULL){
 			rhs->children.push_back(an);
+		}else{
+			Assert( false, "AAARRRGH This shouldn't happen !!");
 		}		
 		Assert($8 != NULL, "1: THIS CAN'T HAPPEN!!");
 		currentBD->new_node(*$8,  "",  bool_node::ARITH, s1, an);
@@ -496,6 +498,14 @@ IdentList: T_ident {
 Term: Constant {
 				 $$ = new string(currentBD->create_const($1));
 				 }
+| '-' Term {
+	string neg1 = currentBD->new_name();
+	arith_node* negn = newArithNode(arith_node::NEG);
+	currentBD->new_node(*$2, "", bool_node::ARITH, neg1, negn);
+	Assert($2 != NULL, "THIS CAN't Happen");	
+	delete $2;
+	$$ = new string(neg1);
+}
 | '!' Term { 
     /* Check the Boolean coefficient of the term, being either 0 (false) or 1 (true). */
     /* Generate an alternating NOT node, push a unit (true) coefficient. */
@@ -552,6 +562,7 @@ ConstantExpr: ConstantTerm { $$ = $1; }
 
 ConstantTerm: Constant { $$ = $1; }
 | '(' ConstantTerm ')' { $$ = $2; }
+| '-' ConstantTerm  { $$ = -$2; }
 | ConstantTerm '*' ConstantTerm { $$ = $1 * $3; } 
 | ConstantTerm '/' ConstantTerm { Assert( $3 != 0, "You are attempting to divide by zero !!");
 							      $$ = $1 / $3; } 
