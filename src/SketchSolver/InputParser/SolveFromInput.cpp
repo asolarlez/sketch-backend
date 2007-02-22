@@ -5,6 +5,7 @@
 
 #include "NodesToEuclid.h"
 #include "DagCSE.h"
+#include "DagOptim.h"
 
 template<typename T>
 int intFromBV(T bv, int start, int nbits){
@@ -44,15 +45,21 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 	//Dout( spec->print(cout) );
 	//Dout( sketch->print(cout) );
 	
-	cout<<"before CSE: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	cout<<"before  CSE: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;	
 	
 	{
-		DagCSE cse(*spec);	
-		cse.eliminateCSE();
+		//DagCSE cse(*spec);
+		//cse.eliminateCSE();
+		
+		DagOptim cse;	
+		cse.process(*spec);
 	}
+	
 	{
-		DagCSE cse(*sketch);	
-		cse.eliminateCSE();
+		//DagCSE cse(*sketch);
+		//cse.eliminateCSE();
+		DagOptim cse;	
+		cse.process(*sketch);
 	}
 	
 	Dout( cout<<" after removing common subexpressions"<<endl);
@@ -78,7 +85,7 @@ cout<<"BEFORE RES"<<endl;
 	f_flags.resize( totSize , true);
 	
 	cout<<"Random seeds = "<<nseeds<<endl;	
-	cout<<"SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	cout<<"after OPTIM: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;	
 	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
 		(*node_it)->flag = true;
 	}

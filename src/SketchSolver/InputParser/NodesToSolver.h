@@ -107,6 +107,7 @@ public:
     virtual void visit (PLUS_node &node);
     virtual void visit (TIMES_node &node);
     virtual void visit (ARRACC_node &node);
+    virtual void visit (UFUN_node &node);
     virtual void visit (DIV_node &node);
     virtual void visit (NEG_node &node);
     virtual void visit (MOD_node &node);

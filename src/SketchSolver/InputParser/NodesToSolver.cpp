@@ -57,7 +57,9 @@ inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, 
 template<>
 inline int NodesToSolver::doArithExpr<divides<int> >(int quant1, int quant2, int id1, int id2, divides<int> comp){
 	if(quant2 == 0){
-		mng.assertVarClause(-id2);
+		//mng.assertVarClause(-id2);
+		//Armando: Can't have this kind of assertions, because at this level we don't know whether this block
+		//will execute or not.
 		return 0;
 	}else{
 		return comp(quant1, quant2);
@@ -67,7 +69,9 @@ inline int NodesToSolver::doArithExpr<divides<int> >(int quant1, int quant2, int
 template<>
 inline int NodesToSolver::doArithExpr<modulus<int> >(int quant1, int quant2, int id1, int id2, modulus<int> comp){
 	if(quant2 == 0){
-		mng.assertVarClause(-id2);
+		//mng.assertVarClause(-id2);
+		//Armando: Can't have this kind of assertions, because at this level we don't know whether this block
+		//will execute or not.
 		return 0;
 	}else{
 		return comp(quant1, quant2);
@@ -633,6 +637,41 @@ void NodesToSolver::visit( TIMES_node& node ){
 	return;
 }
 
+
+void NodesToSolver::visit( UFUN_node& node ){
+	Assert(false, "NYI");
+/*
+	Tvalue in = xx; // input tvalue.
+	
+	// map<string, vector<Tvalue> > ufunPrevIns;
+	// map<string, vector<vector<Tvalue> > > ufunPrevArgs;
+	
+	vector<Tvalue>& prevInputs =  ufunPrevIns[node.name];
+	vector<vector<Tvalue> >& prevArgs =  ufunPrevArgs[node.name];
+	
+	Tvalue control;
+	// not = YES;
+	for(int i=0; i< prevInputs.size(); ++i){
+	
+		int tmp = equals( prevArgs[i], in);	
+		
+		// c[i] = tmp & not;
+		// not = not & !tmp;
+				
+	}
+		
+	*/
+	
+}
+
+
+
+
+
+
+
+
+
 //timerclass aracctimer("ARRACC TIMER");
 //timerclass flooptimer("FIRST LOOP TIMER");
 //timerclass nonbooltimer("NON BOOL TIMER");
@@ -1066,7 +1105,9 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 			}
 		}else{
 			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
-			mng.assertVarClause(-mval.getId (i));
+			//mng.assertVarClause(-mval.getId (i));
+			//Armando: Can't have this kind of assertions, because at this level we don't know whether this block
+			//will execute or not.
 		}
 	}
 
