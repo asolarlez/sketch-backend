@@ -106,6 +106,9 @@ public:
 	virtual void visit( ASSERT_node &node ){
 		out<<" assert "<<mother_name(node)<<"; "<<endl;		
 	}
+	virtual void visit (UFUN_node &node){
+		Assert(false, "NYI");	
+	}
 	
 };
 
