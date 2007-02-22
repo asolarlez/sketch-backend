@@ -42,22 +42,23 @@ void DagCSE::eliminateCSE(){
  void DagCSE::visit( AND_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
- 	int fid = node.father == NULL? -1: node.father->id; 	
- 	str<<mid<<"&"<<fid;
+ 	int fid = node.father == NULL? -1: node.father->id; 
+ 		
+ 	str<<min(mid, fid)<<"&"<<max(mid, fid);
  	ccode = str.str();
  }
  void DagCSE::visit( OR_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<mid<<"|"<<fid;
+ 	str<<min(mid, fid)<<"|"<<max(mid, fid); 	
  	ccode = str.str();
  }
  void DagCSE::visit( XOR_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<mid<<"xor"<<fid;
+ 	str<<min(mid, fid)<<"xor"<<max(mid, fid);
  	ccode = str.str();
  }
  void DagCSE::visit( SRC_node& node ){
@@ -82,17 +83,19 @@ void DagCSE::eliminateCSE(){
  	ccode = str.str();
  }
  void DagCSE::visit( PLUS_node& node ){
+ 	Assert( node.mother != NULL, "Null mother no longer allowed!!");
+ 	Assert( node.father != NULL, "Null father no longer allowed!!");
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<mid<<"+"<<fid;
+ 	str<<min(mid, fid)<<"+"<<max(mid, fid);
  	ccode = str.str();
  }
  void DagCSE::visit( TIMES_node& node ){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
- 	int fid = node.father == NULL? -1: node.father->id;
- 	str<<mid<<"*"<<fid;
+ 	int fid = node.father == NULL? -1: node.father->id; 	
+ 	str<<min(mid, fid)<<"*"<<max(mid, fid);
  	ccode = str.str();
  }
  
@@ -157,9 +160,23 @@ void DagCSE::eliminateCSE(){
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	str<<mid<<"=="<<fid;
+ 	str<<min(mid, fid)<<"=="<<max(mid, fid);
  	ccode = str.str();
  }
+
+
+ void DagCSE::visit( UFUN_node& node ){
+ 	stringstream str; 	
+ 	str<<node.get_name()<<"(";
+ 	for(int i=0; i<node.multi_mother.size(); ++i){
+ 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
+ 		str<<mmid<<",";
+ 	}
+ 	str<<")";
+ 	ccode = str.str();
+ }
+
+
  
  void DagCSE::visit( ARRACC_node& node ){
  	stringstream str;

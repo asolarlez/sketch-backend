@@ -40,8 +40,11 @@ public:
   
   virtual int do_dfs(int idx);
   virtual int back_dfs(int idx);
-  virtual void remove_child(bool_node* bn);
+  virtual void remove_child(bool_node* bn);  
   virtual void dislodge();
+  virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
+  virtual void outDagEntry(ostream& out);
+  
   virtual string get_tname(){
     switch(type){
     case AND: return "AND";
@@ -56,7 +59,7 @@ public:
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
-  string get_name(){
+  virtual string get_name(){
     stringstream str;
     if(name.size() > 0)
       str<<name<<"__"<<get_tname();
@@ -79,14 +82,15 @@ class arith_node: public bool_node{
 	arith_node():bool_node(){ type = ARITH; };
 	public:
     typedef enum {
-	PLUS, TIMES, ARRACC, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL
+	PLUS, TIMES, ARRACC, UFUN, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL
     } AType;
 		
 	AType arith_type;
-	vector<bool_node*> multi_mother;
-	
+	vector<bool_node*> multi_mother;	
     virtual int back_dfs(int idx);
 	virtual void dislodge();
+	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
+	virtual void outDagEntry(ostream& out);
 	virtual string get_tname(){
 		switch(arith_type){
 			case PLUS: return "PLUS";
@@ -96,6 +100,7 @@ class arith_node: public bool_node{
 			case NEG: return "NEG";
 			case CONST: return "CONST";
 			case ARRACC: return "ARRACC";
+			case UFUN: return "UFUN";
 			case GT: return "GT";
 			case GE: return "GE";
 			case LT: return "LT";
@@ -118,6 +123,7 @@ class NOT_node;
 class CTRL_node;
 class PLUS_node;
 class TIMES_node;
+class UFUN_node;
 class ARRACC_node;
 class DIV_node;
 class MOD_node;
@@ -144,6 +150,7 @@ class NodeVisitor{
 	virtual void visit( CTRL_node& node )=0;
 	virtual void visit( PLUS_node& node )=0;
 	virtual void visit( TIMES_node& node )=0;
+	virtual void visit( UFUN_node& node )=0;
 	virtual void visit( ARRACC_node& node )=0;
 	virtual void visit( DIV_node& node )=0;
 	virtual void visit( MOD_node& node )=0;
@@ -220,9 +227,38 @@ class TIMES_node: public arith_node{
 	public: TIMES_node(){ arith_type = TIMES; }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 };
+
+
+
+class UFUN_node: public arith_node{	
+	public: UFUN_node(){ arith_type = UFUN; }  
+	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	virtual void outDagEntry(ostream& out){
+    	int i=0;
+		for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+		  	if(*it != NULL){
+		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;	  		
+		  	}
+		}
+	}
+};
+
+
+
 class ARRACC_node: public arith_node{	
 	public: ARRACC_node(){ arith_type = ARRACC; }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	virtual void outDagEntry(ostream& out){
+		if( mother != NULL){
+          out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"idx\"] ; "<<endl;
+    	}		
+    	int i=0;
+		for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+		  	if(*it != NULL){
+		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;	  		
+		  	}
+		}
+	}
 };
 class DIV_node: public arith_node{	
 	public: 
@@ -253,6 +289,11 @@ class CONST_node: public arith_node{
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual void setVal(int v){ val = v; }
 		virtual int getVal(){ return val; }
+		string get_name(){
+		    stringstream str;
+		    str<<name<<"_C"<<val;		    
+		    return str.str();
+		}
 };
 
 class GT_node: public arith_node{	
@@ -318,6 +359,7 @@ inline arith_node* newArithNode( arith_node::AType type){
 		case arith_node::PLUS: return new PLUS_node();
 		case arith_node::TIMES: return new TIMES_node();
 		case arith_node::ARRACC: return new ARRACC_node();
+		case arith_node::UFUN: return new UFUN_node();
 		case arith_node::DIV: return new DIV_node();
 		case arith_node::MOD: return new MOD_node();
 		case arith_node::NEG: return new  NEG_node();
@@ -370,7 +412,7 @@ class BooleanDAG
   bool has_passthrough; //This property implies that NOT nodes have been added.
 
   void compute_layer_sizes();
-  void removeFromChildren(bool_node* parent, bool_node* toremove);
+  //void removeFromChildren(bool_node* parent, bool_node* toremove);
   void remove(int i);
 public:
   void print(ostream& out);
@@ -396,6 +438,10 @@ public:
 
   bool_node* set_node(bool_node* tmp, bool_node* mother, 
                       bool_node* father,  bool_node::Type t);
+                      
+                      
+  
+  void addNewNodes(vector<bool_node*>& v);
 
   void change_father(const string& father, const string& son);
   void change_mother(const string& father, const string& son);

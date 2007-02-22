@@ -6,8 +6,9 @@
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
-	string ccode;
+	
 public:
+	string ccode;
 	DagCSE(BooleanDAG& p_dag);
 	virtual ~DagCSE();	
 	map<string, bool_node*> cse_map;
@@ -22,6 +23,7 @@ public:
 	virtual void visit( CTRL_node& node );
 	virtual void visit( PLUS_node& node );
 	virtual void visit( TIMES_node& node );
+	virtual void visit( UFUN_node& node );
 	virtual void visit( ARRACC_node& node );
 	virtual void visit( DIV_node& node );
 	virtual void visit( MOD_node& node );

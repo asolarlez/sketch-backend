@@ -368,6 +368,7 @@ inline varRange
 varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
+	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
 	int amtrange = 1;
 	for(int i=0; i<amtsize && i<12; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
@@ -428,7 +429,7 @@ varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
 			vals[j] = tmpVect[j];	
 		}		
 	}	
-	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) "<<lastsize<<", "<<amtrange);
+	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);
 	int roundVars = lastRoundVars;
 
 	return varRange(roundVars, lastsize);

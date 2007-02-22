@@ -65,6 +65,8 @@ int arith_node::back_dfs(int idx){
   return idx-1;
 }
 
+
+
 void bool_node::remove_child(bool_node* bn){
 	vector<bool_node*>& tmpv = children;
 	for(int k=0; k<tmpv.size(); ){
@@ -73,6 +75,59 @@ void bool_node::remove_child(bool_node* bn){
 	  }else{
 	    ++k;
 	  }
+	}
+}
+
+
+void bool_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
+	Assert( oldpar != NULL, "oldpar can't be null");
+	Assert( newpar != NULL, "oldpar can't be null");
+	if(father == oldpar){
+  		father = newpar;
+  		//oldpar->remove_child(this);
+  		//we assume the old parent is going to be distroyed, so we don't
+  		//bother modifying it.
+  		newpar->children.push_back( this );
+  	}
+  	if(mother == oldpar){
+  		mother = newpar;
+  		//oldpar->remove_child(this);
+  		//we assume the old parent is going to be distroyed, so we don't
+  		//bother modifying it.
+  		newpar->children.push_back( this );
+  	}
+}
+
+
+void arith_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
+	bool_node::replace_parent(oldpar, newpar);
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+	  	if(*it == oldpar){
+	  		*it = newpar;
+	  		//oldpar->remove_child(this);
+  			newpar->children.push_back( this );
+	  	}
+	}
+}
+
+
+void bool_node::outDagEntry(ostream& out){
+	if( father != NULL){
+        out<<" "<<father->get_name()<<" -> "<<get_name()<<" ; "<<endl;
+    }
+    if( mother != NULL){
+          out<<" "<<mother->get_name()<<" -> "<<get_name()<<" ; "<<endl;
+    }
+}
+
+
+void arith_node::outDagEntry(ostream& out){
+	bool_node::outDagEntry(out);
+	int i=0;
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+	  	if(*it != NULL){
+	  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<" ; "<<endl;	  		
+	  	}
 	}
 }
 
@@ -242,63 +297,20 @@ void BooleanDAG::layer_graph(){
 
 
 
-void BooleanDAG::removeFromChildren(bool_node* parent, bool_node* toremove){
-	if( parent != NULL){
-		vector<bool_node*>& tmpv = parent->children;  
-		for(int k=0; k<tmpv.size();){
-			if( tmpv[k] == toremove ){
-			  tmpv.erase( tmpv.begin() + k );
-			}else{
-			  ++k;
-			}
-		}
-	}
-}
 
 
-void BooleanDAG::replace(int original, bool_node* replacement){
-	Assert( nodes[original]->type == replacement->type, "The two nodes should be essentially the same node (i.e. a common subexpression)");
-	Assert( nodes[original]->mother == replacement->mother, "The two nodes should be essentially the same node (i.e. a common subexpression)");
-	Assert( nodes[original]->father == replacement->father, "The two nodes should be essentially the same node (i.e. a common subexpression)");	
-	
+void BooleanDAG::replace(int original, bool_node* replacement){	
 	int i = original;
 	bool_node* onode = nodes[i];
 	
-	
-	removeFromChildren(onode->father, onode);
-	removeFromChildren(onode->mother, onode);
-	
-	if( onode->type == bool_node::ARITH ){
-		arith_node * an = dynamic_cast<arith_node*>(onode);
-		for(int j=0; j<an->multi_mother.size(); ++j){
-			removeFromChildren(an->multi_mother[j], onode);
-		}	
-	}
-	
-	for(int k=0; k<onode->children.size(); ++k){
+	onode->dislodge();
+	vector<bool_node*> tmpchild = onode->children;
+	for(int k=0; k<onode->children.size(); ++k){		
 		bool_node* cchild =  onode->children[k];
-		if(  cchild->father == onode ){
-		  cchild->father = replacement;
-		  replacement->children.push_back( cchild );
-		}
-		if(  cchild->mother == onode ){
-		  cchild->mother = replacement;
-		  replacement->children.push_back( cchild );
-		}
-		
-		if( cchild->type == bool_node::ARITH ){
-			arith_node * an = dynamic_cast<arith_node*>(cchild);
-			for(int j=0; j<an->multi_mother.size(); ++j){
-				if(  an->multi_mother[j] == onode ){
-				  an->multi_mother[j] = replacement;
-				  replacement->children.push_back( cchild );
-				}
-			}
-		}
-		
+		cchild->replace_parent(onode, replacement);
 	}
-	delete nodes[i];
-  	nodes[i] = NULL;  	
+//	delete nodes[i];
+  	nodes[i] = NULL;
 }
 
 
@@ -328,8 +340,8 @@ void BooleanDAG::remove(int i){
 
 	//Removing from the father's children list. Note we are assuming father==mother.
 	
-	removeFromChildren(nodes[i]->father, nodes[i]);
- 
+	nodes[i]->father->remove_child(nodes[i]);
+	
   for(int j=0; j<nodes[i]->children.size(); ++j){
     if(  nodes[i]->children[j]->father == nodes[i] ){
       nodes[i]->children[j]->father = nodes[i]->father;
@@ -449,6 +461,14 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
   named_nodes[mother]->children.push_back( named_nodes[son] );
 }
 
+
+
+	void BooleanDAG::addNewNodes(vector<bool_node*>& v){
+		//Assume all the nodes in v are already part of the network.
+		for(int i=0; i<v.size(); ++i){
+			nodes.push_back(v[i]);
+		}
+	}
 
 bool_node* BooleanDAG::new_node(const string& mother, 
                                 const string& father, bool_node::Type t, const string& name){
@@ -617,21 +637,14 @@ void BooleanDAG::create_outputs(int n, const string& gen_name){
 }
 
 
+
+
+
+
 void BooleanDAG::print(ostream& out){    
   out<<"digraph G{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
-    if( nodes[i]->father != NULL){
-        out<<" "<<nodes[i]->father->get_name()<<" -> "<<
-          nodes[i]->get_name()<<" ; "<<endl;
-    }
-    if( nodes[i]->mother != NULL){
-          out<<" "<<nodes[i]->mother->get_name()<<" -> "<<
-          nodes[i]->get_name()<<" ; "<<endl;
-    }
-    for(int j=0; j< nodes[i]->children.size(); ++j){
-          out<<" "<<nodes[i]->get_name()<<" -> "<<
-          nodes[i]->children[j]->get_name()<<"[ style = dotted]; "<<endl;
-    }
+  	nodes[i]->outDagEntry(out);    
   }
 
   out<<"}"<<endl;
