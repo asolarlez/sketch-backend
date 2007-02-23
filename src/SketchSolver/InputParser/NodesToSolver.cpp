@@ -1113,6 +1113,7 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 
 	vector<int>& result = node_ids[node.id].num_ranges;
 	result.clear();
+	Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
 	if(newVals.size() == 1){
 		map<int, vector<int> >::iterator it = newVals.begin();
 		vector<int>& vars = it->second;
@@ -1134,10 +1135,10 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 			node_ids[node.id].sparsify ();
 		}
 	}else{
-		if(newVals.size() == 0){
-			node_ids[node.id].setId(-YES);
-			result.push_back(0);
-			node_ids[node.id].sparsify ();
+		if(newVals.size() == 0){			
+			node_ids[node.id] = Tvalue( -YES );			
+			Dout(cout<<" after sparsification "<<node_ids[node.id]<<endl);
+			return;
 		}
 		//Assert( newVals.size() > 0, "This should not happen here3");
 		int newID = dir.newAnonymousVar();
