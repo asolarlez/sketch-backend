@@ -329,16 +329,6 @@ void FindCheckSolver::setIterLimit(int p_iterlimit){
 }
 
 
-void FindCheckSolver::addEqualsClauses(SATSolver& mng, varDir& dir){
-	int N = dir.getArrSize(OUT);
-	Assert( N == dir.getArrSize(SOUT), "SIZE MISSMATCH "<<N );
-	for(int i=0; i<N; ++i){
-		dir.addEquateClause(dir.getArr(SOUT, i), dir.getArr(OUT, i));
-	}
-}
-
-
-
 int FindCheckSolver::getInSize(){
 	return input.size();
 }
@@ -361,14 +351,7 @@ void FindCheckSolver::buildChecker(){
 		dirCheck.declareInArr(cname, it->second);
 	}
 	
-	dirCheck.declareArr(SOUT, Nout);
-	dirCheck.declareArr(OUT, Nout);
-	dirCheck.makeArrNoBranch(SOUT);
-	dirCheck.makeArrNoBranch(OUT);
-	
-	defineSketch(mngCheck, dirCheck);
-	defineSpec(mngCheck, dirCheck);
-	addEqualsClauses(mngCheck, dirCheck);				
+	defineProblem(mngCheck, dirCheck);
 }
 
 
@@ -376,18 +359,8 @@ void FindCheckSolver::buildFinder(){
 	for(map<string, int>::iterator it = inputVars.begin(); it !=inputVars.end(); ++it){
 		const string& cname = it->first;
 		dirFind.declareInArr(cname, it->second);
-	}
-	cout<<"** Nout="<<Nout<<endl;
-	dirFind.declareArr(SOUT, Nout);
-	dirFind.declareArr(OUT, Nout);
-	dirFind.makeArrNoBranch(SOUT);
-	dirFind.makeArrNoBranch(OUT);
-	
-		
-	defineSketch(mngFind, dirFind);
-	defineSpec(mngFind, dirFind);		
-	Dout( cout<<"____"<<endl );
-	addEqualsClauses(mngFind, dirFind);
+	}	
+	defineProblem(mngFind, dirFind);
 }
 
 
