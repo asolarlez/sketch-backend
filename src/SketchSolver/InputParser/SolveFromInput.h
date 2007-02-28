@@ -8,9 +8,8 @@
 
 
 class SolveFromInput: public FindCheckSolver{
-	BooleanDAG* spec;
-	BooleanDAG* sketch;
-		
+	BooleanDAG* problem;	
+	const string TIP_NAME;
 	int YES;
 	
 	bool firstTime;
@@ -29,9 +28,8 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void setNewControls(vector<int>& controls);
 	
 	
-	virtual void defineSketch(SATSolver& mng, varDir& dir);
-	virtual void defineSpec(SATSolver& mng, varDir& dir);
-	virtual void translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname);	
+	virtual void defineProblem(SATSolver& mng, varDir& dir);
+		
 	
 	public:	
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1);

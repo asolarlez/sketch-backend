@@ -24,87 +24,94 @@ int intFromBV(T bv, int start, int nbits){
 
 
 
-SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker){
+SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
-	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;
-	spec = spec_p;
-	sketch = sketch_p;
+	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;	
 Dout( cout<<"BEFORE CLEANUP"<<endl );
-  	sketch->cleanup(false);
-  	spec->cleanup(false);
+  	sketch_p->cleanup(false);
+  	spec_p->cleanup(false);
 Dout( cout<<"BEFORE SORT"<<endl );  	  	
-    sketch->sort_graph();
-    spec->sort_graph();
+    sketch_p->sort_graph();
+    spec_p->sort_graph();
 Dout( cout<<"BEFORE RELABEL"<<endl );
-    spec->relabel();
-    sketch->relabel();
-
-   	Dout( cout<<"after sort "<<endl);
-	//Dout( spec->print(cout) );
-	//Dout( sketch->print(cout) );
+    spec_p->relabel();
+    sketch_p->relabel();
 	
-	cout<<"before  CSE: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;	
+	cout<<"before  CSE: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
+	
+	{
+		Dout( cout<<"BEFORE Matching input names"<<endl );
+		vector<bool_node*>& specIn = spec_p->getNodesByType(bool_node::SRC);
+		vector<bool_node*>& sketchIn = sketch_p->getNodesByType(bool_node::SRC);
+		Assert(specIn.size() == sketchIn.size(), "The number of inputs in the spec_p and sketch must match");	
+		for(int i=0; i<specIn.size(); ++i){
+			sketch_p->rename(sketchIn[i]->name, specIn[i]->name);			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(sketchIn[i]);	
+			int nbits = srcnode->get_nbits();
+			declareInput(sketchIn[i]->get_name(), nbits);
+		}
+	}
+	
+	{
+		Dout( cout<<"BEFORE Matching output names"<<endl );
+		vector<bool_node*>& specDST = spec_p->getNodesByType(bool_node::DST);
+		vector<bool_node*>& sketchDST = sketch_p->getNodesByType(bool_node::DST);
+		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec_p and sketch must match");	
+		for(int i=0; i<sketchDST.size(); ++i){
+			sketch_p->rename(sketchDST[i]->name, specDST[i]->name);			
+		}
+	}
+	
+	
+	
+Dout( cout<<"BEFORE MAKING MITER"<<endl );	
+	sketch_p->makeMiter(*spec_p, TIP_NAME);
+	
+	problem = sketch_p;
+
+
+
+   	Dout( cout<<"after makeMiter "<<endl);
+	Dout( problem->print(cout) );	
+			
 	
 	{
 		//DagCSE cse(*spec);
 		//cse.eliminateCSE();
 		
 		DagOptim cse;	
-		cse.process(*spec);
+		cse.process(*problem);
 	}
-	
-	{
-		//DagCSE cse(*sketch);
-		//cse.eliminateCSE();
-		DagOptim cse;	
-		cse.process(*sketch);
-	}
-	
+		
 	Dout( cout<<" after removing common subexpressions"<<endl);
-	Dout( spec->print(cout) );
-	Dout( sketch->print(cout) );
+	Dout( problem->print(cout) );	
 	
 	
 cout<<"BEFORE DC"<<endl;	
-    Dout( cout<<"sketch->get_n_controls() = "<<sketch->get_n_controls()<<"  "<<sketch<<endl );
+    Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
-	    vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::CTRL);
-	    for(int i=0; i<sketchIn.size(); ++i){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(sketchIn[i]);	
+	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+	    for(int i=0; i<problemIn.size(); ++i){
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
-			declareControl(sketchIn[i]->get_name(), nbits);
+			declareControl(problemIn[i]->get_name(), nbits);
 		}
     }
     	
 	nseeds = NS_p;
 cout<<"BEFORE RES"<<endl;	
-	int totSize = spec->size() + sketch->size();
+	int totSize = problem->size();
 	f_node_ids.resize( totSize , 0 );
 	f_flags.resize( totSize , true);
 	
 	cout<<"Random seeds = "<<nseeds<<endl;	
-	cout<<"after OPTIM: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;	
-	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it){
+	cout<<"after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
 		(*node_it)->flag = true;
 	}
-	int specsize = spec->size();
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
-		(*node_it)->flag = true;
-		(*node_it)->id += specsize;
-	}
 	
-	vector<bool_node*>& specIn = spec->getNodesByType(bool_node::SRC);
-	vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
-	Assert(specIn.size() == sketchIn.size(), "The number of inputs in the spec and sketch must match");
-	
-	for(int i=0; i<specIn.size(); ++i){
-		sketchIn[i]->name = specIn[i]->name;	
-		SRC_node* srcnode = dynamic_cast<SRC_node*>(sketchIn[i]);	
-		int nbits = srcnode->get_nbits();
-		declareInput(sketchIn[i]->get_name(), nbits);
-	}
 	
 	
 	node_ids.resize( totSize );
@@ -124,23 +131,6 @@ void SolveFromInput::setupCheck(){
 
 
 
-void SolveFromInput::translator(SATSolver& mng, varDir& dir, BooleanDAG* bdag, const string& outname){
-	//node_ids[NULL] = YES;
-//	timerclass timer("translator");
-	NodesToSolver nts(mng, dir, outname, node_values, node_ids);
-	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
-//		timer.restart();
-		(*node_it)->accept(nts);
-//		timer.stop();
-//		if(timer.get_cur_ms() > 20.0){
-//			timer.print();
-//			cout<<(*node_it)->get_name()<<endl;
-//		}
-	}
-}
-
-
-
 
 
 
@@ -148,8 +138,8 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 	int idx = 0;	
 	node_values.clear();
 	node_ids.clear();
-	node_ids.resize( sketch->size() + spec->size() );
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
+	node_ids.resize( problem->size() );
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::CTRL ){
 			int iid = getCtrlStart( (*node_it)->get_name() );
@@ -168,9 +158,6 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 			}
 		}
 	}
-	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		(*node_it)->flag = true;
-	}
 	buildChecker();	
 }
 
@@ -181,7 +168,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 	int numRepeat = 0;
 	node_values.clear();
 	int idx = 0;
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
 		node_ids[(*node_it)->id] = f_node_ids[idx];		
 		(*node_it)->flag = f_flags[idx];
 		
@@ -238,63 +225,11 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 	firstTime = false;
 	cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl;
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
-	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);
-	k=0;
-	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
-		node_ids[(*node_it)->id] = f_node_ids[idx];		
-		(*node_it)->flag = f_flags[idx];
-
-
-		if((*node_it)->type == bool_node::SRC){
-			int iid = getInStart( (*node_it)->get_name() );
-			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
-			int nbits = srcnode->get_nbits();	
-			
-			Assert( nbits == getInSize( (*node_it)->get_name() ) , "Size missmatch for input "<<(*node_it)->get_name() );									
-			Assert( nbits > 0 , "This can not happen rdu;a");
-			Assert( iid+ nbits <= input.size(), "There should be a control entry for each iid c");
-			Assert(input[iid] == 1 || input[iid]==-1, "This is bad, really bad");
-			
-			if( nbits ==1 ){
-				node_values[(*node_it)]= input[iid];
-			}else{				
-				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
-				int nval = intFromBV(input, iid, nbits);				
-				Dout( cout <<" > = "<<nval<< endl ) ;
-				node_values[(*node_it)] = nval;
-			}
-			
-			bool changed = false;
-			
-			for(int i=0; i<nbits; ++i){
-				if(input[iid + i] != last_input[iid + i]){
-					changed = true;	
-				}
-			}
-			
-			if(!changed){
-				++numRepeat;
-				Dout(cout<<"input "<<iid<<" unchanged"<<endl);
-				(*node_it)->flag = false;
-			}else{				
-				Dout(cout<<"input "<<iid<<" changed"<<endl);
-				(*node_it)->flag = true;
-			}
-			k+=nbits;
-		}else{
-			Assert( (*node_it)->type != bool_node::CTRL, "Specs don't have unknowns!!");
-		}
-	}
-	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
+	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	//FindCheckSolver::addInputsToTestSet(input);
 	buildFinder();
 	idx = 0;
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)->id];
-		f_flags[idx] = (*node_it)->flag;
-	}
-	for(BooleanDAG::iterator node_it = spec->begin(); node_it != spec->end(); ++node_it, ++idx){
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
 		f_node_ids[idx] = node_ids[(*node_it)->id];
 		f_flags[idx] = (*node_it)->flag;
 	}
@@ -304,40 +239,37 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 void SolveFromInput::outputEuclid(ostream& fout){
 		cout<<"BEFORE OUTPUTING STATE"<<endl;		
 		{
-			NodesToEuclid neuc(fout, "SPEC_");
-			neuc.process(*spec);
-		}
-		{
-			NodesToEuclid neuc(fout, "SKETCH_");
-			neuc.process(*sketch);
-		}
+			NodesToEuclid neuc(fout, "PROBLEM_");
+			neuc.process(*problem);
+		}		
 	}
 
 
 
-void SolveFromInput::defineSketch(SATSolver& mng, varDir& dir){
-	timerclass timer("defineSketch");
-	timer.start();
-	
-	YES = dir.newAnonymousVar();
-	dir.setYes(YES);
-	Dout(cout<<"YES = "<<YES<<endl);
-	mng.setVarClause(YES);
-	translator(mng, dir, sketch, SOUT);
-	timer.stop().print();
-}
 
-void SolveFromInput::defineSpec(SATSolver& mng, varDir& dir){
-		timerclass timer("defineSpec");
-	timer.start();
-	Dout( cout<<"defineSpec()"<<endl );		
-	translator(mng, dir, spec, OUT);
-	timer.stop().print();
+
+void SolveFromInput::defineProblem(SATSolver& mng, varDir& dir){
+	{
+		timerclass timer("defineProblem");
+		timer.start();
+		YES = dir.newAnonymousVar();
+		dir.setYes(YES);
+		Dout(cout<<"YES = "<<YES<<endl);
+		mng.setVarClause(YES);
+		
+		NodesToSolver nts(mng, dir, "PROBLEM", node_values, node_ids);		
+		nts.process(*problem);		
+		bool_node* miterTip = problem->get_node(TIP_NAME);
+		Tvalue tv = node_ids[ miterTip->id ];
+		Assert( tv.isBvect() && tv.getSize()==1 , "This is very strange");
+		dir.addAssertClause(tv.getId());
+		timer.stop().print();
+	}
 }
 
 void SolveFromInput::output_control_map(ostream& out){
 	FindCheckSolver::ctrl_iterator ar = begin();	
-	for(BooleanDAG::iterator node_it = sketch->begin(); node_it != sketch->end(); ++node_it){
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
 		if((*node_it)->type == bool_node::CTRL){
 			int iid = (*node_it)->ion_pos;
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
