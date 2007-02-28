@@ -243,16 +243,9 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		string s1 = currentBD->new_name();
 		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newArithNode(arith_node::ARRASS));
 		an->multi_mother.reserve(2);
-		an->multi_mother.push_back(*oldit);
-		if(*oldit != NULL){
-			(*oldit)->children.push_back(an);
-		}		
+		an->multi_mother.push_back(*oldit);			
 		an->multi_mother.push_back(rhs);
-		if(rhs != NULL){
-			rhs->children.push_back(an);
-		}else{
-			Assert( false, "AAARRRGH This shouldn't happen !!");
-		}		
+		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
 		Assert($8 != NULL, "1: THIS CAN'T HAPPEN!!");
 		currentBD->new_node(*$8,  "",  bool_node::ARITH, s1, an);
 		currentBD->alias( *(*it), s1);
@@ -353,9 +346,6 @@ Expression: Term { $$ = $1; }
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-		if(*it != NULL){
-			(*it)->children.push_back(an);
-		}
 	}		
 	Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");
 	currentBD->new_node(*$5, "", bool_node::ARITH, s1, an); 
@@ -373,9 +363,6 @@ Expression: Term { $$ = $1; }
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-		if(*it != NULL){
-			(*it)->children.push_back(an);
-		}
 	}	
 	currentBD->new_node("", "",  bool_node::ARITH, s1, an); 
 	$$ = new string(s1);  
@@ -455,9 +442,7 @@ Expression: Term { $$ = $1; }
 	bool_node* noChild = currentBD->get_node(*$5);
 	an->multi_mother.push_back( noChild );
 	an->multi_mother.push_back( yesChild );
-	yesChild->children.push_back(an);
-	noChild->children.push_back(an);
-	$$ = new string(s1);	
+	$$ = new string(s1);
 	currentBD->new_node(*$1, "", bool_node::ARITH, s1, an); 
 	if( $1 != NULL && $1 != $$){ delete $1; }
 	if( $3 != NULL && $3 != $$){ delete $3; }

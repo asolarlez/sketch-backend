@@ -4,6 +4,7 @@
 
 #include "BooleanDAG.h"
 #include "BasicError.h"
+#include "SATSolver.h"
 
 #include <sstream>
 
@@ -431,7 +432,7 @@ void BooleanDAG::cleanup(bool moveNots){
 
 void BooleanDAG::change_father(const string& father, const string& son){
   try{
-    Assert( named_nodes.find(father) != named_nodes.end(), "The father name does not exist.", father);  
+    Assert( named_nodes.find(father) != named_nodes.end(), "The father name does not exist: "<<father);  
   }catch(BasicError& be){
     if(father.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -447,7 +448,7 @@ void BooleanDAG::change_father(const string& father, const string& son){
 
 void BooleanDAG::change_mother(const string& mother, const string& son){
   try{
-    Assert(named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist. ", mother);
+    Assert(named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist: "<<mother);
   }catch(BasicError& be){    
     if(mother.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -467,15 +468,16 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
 		//Assume all the nodes in v are already part of the network.
 		for(int i=0; i<v.size(); ++i){
 			nodes.push_back(v[i]);
+			named_nodes[v[i]->name] = v[i];
 		}
 	}
 
 bool_node* BooleanDAG::new_node(const string& mother, 
-                                const string& father, bool_node::Type t, const string& name){
+                                const string& father, bool_node::Type t, const string& p_name){	
   bool_node* fth;
   bool_node* mth;
   try{
-    Assert(father.size()==0 || named_nodes.find(father) != named_nodes.end(), "The father name does not exist.", father);
+    Assert(father.size()==0 || named_nodes.find(father) != named_nodes.end(), "The father name does not exist: "<<father);
   }catch(BasicError& be){
     if(father.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -484,7 +486,7 @@ bool_node* BooleanDAG::new_node(const string& mother,
     throw be;
   }
   try{
-    Assert(mother.size()==0 ||named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist. ", mother);
+    Assert(mother.size()==0 ||named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist: "<< mother);
   }catch(BasicError& be){    
     if(mother.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -504,6 +506,8 @@ bool_node* BooleanDAG::new_node(const string& mother,
     mth = named_nodes[mother];
   }
 
+	string name = p_name;
+	if(name.size() == 0){ name = new_name(); }
   map<string, bool_node*>::iterator it =  named_nodes.find(name);
 
   bool_node* tmp;
@@ -520,7 +524,7 @@ bool_node* BooleanDAG::new_node(const string& mother,
 
 bool_node* BooleanDAG::get_node(const string& name){
   bool_node* fth;
-  Assert(name.size()==0 || named_nodes.find(name) != named_nodes.end(), "name does not exist.", name);
+  Assert(name.size()==0 || named_nodes.find(name) != named_nodes.end(), "name does not exist: "<<name);
   if(name.size()==0){
     fth = NULL;
   }else{
@@ -533,7 +537,7 @@ bool_node* BooleanDAG::new_node(const string& mother,
   bool_node* fth;
   bool_node* mth;
   try{
-    Assert(father.size()==0 || named_nodes.find(father) != named_nodes.end(), "The father name does not exist.", father);
+    Assert(father.size()==0 || named_nodes.find(father) != named_nodes.end(), "The father name does not exist: "<<father);
   }catch(BasicError& be){
     if(father.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -542,7 +546,7 @@ bool_node* BooleanDAG::new_node(const string& mother,
     throw be;
   }
   try{
-    Assert(mother.size()==0 ||named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist. ", mother);
+    Assert(mother.size()==0 ||named_nodes.find(mother) != named_nodes.end(), "The mother name does not exist: "<<mother);
   }catch(BasicError& be){    
     if(mother.substr(0,5) == "INPUT"){
       cerr<<"It looks like you are trying peek beyond the "<<n_inputs<<" bits that you said you would"<<endl;
@@ -641,6 +645,74 @@ void BooleanDAG::create_outputs(int n, const string& gen_name){
 
 
 
+void arith_node::addToParents(){
+  bool_node::addToParents();
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+  	if(*it != NULL){
+	  	(*it)->children.push_back(this);
+  	}
+  }
+}
+
+
+void bool_node::addToParents(){
+  if(father != NULL){
+    father->children.push_back(this);
+  }
+  if(mother != NULL && father != mother){
+    mother->children.push_back(this);
+  }
+}
+
+
+
+void arith_node::redirectPointers(BooleanDAG& bdag){
+  bool_node::redirectPointers(bdag);
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+  	if(*it != NULL){
+	  	(*it) = bdag[(*it)->id];
+  	}
+  }
+}
+
+
+void arith_node::switchInputs(BooleanDAG& bdag){	
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+	  	if(*it != NULL){
+	  		if(  (*it)->type == bool_node::SRC )
+    			(*it) = bdag.get_node((*it)->name);
+	  	}
+  	}
+  	bool_node::switchInputs(bdag);
+}
+
+
+void bool_node::switchInputs(BooleanDAG& bdag){
+	if(father != NULL){
+		if(  father->type == bool_node::SRC )
+    		father = bdag.get_node(father->name);
+  	}
+	if(mother != NULL){
+		if(  mother->type == bool_node::SRC )
+			mother = bdag.get_node(mother->name);
+	}
+	addToParents();
+}
+
+
+void bool_node::redirectPointers(BooleanDAG& bdag){
+	if(father != NULL){
+    	father = bdag[father->id];
+  	}
+	if(mother != NULL){
+		mother = bdag[mother->id];
+	}
+	for(int i=0; i<children.size(); ++i){
+		children[i] = bdag[ children[i]->id ];	
+	}
+}
+
+
 void BooleanDAG::print(ostream& out){    
   out<<"digraph G{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
@@ -668,13 +740,9 @@ bool_node* BooleanDAG::set_node(bool_node* tmp, bool_node* mother,
     }
   }
 
-  if(father != NULL){
-    father->children.push_back(tmp);
-  }
 
-  if(mother != NULL && father != mother){
-    mother->children.push_back(tmp);
-  }
+  tmp->addToParents();
+    
 
   tmp->type = t;  
   return tmp;
@@ -720,3 +788,114 @@ void NodeVisitor::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 	}
 }
+
+
+void BooleanDAG::clearBackPointers(){
+	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+		(*node_it)->children.clear();				
+	}	
+}
+
+void BooleanDAG::resetBackPointers(){
+	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+		(*node_it)->children.clear();
+		(*node_it)->addToParents();
+	}
+}
+
+
+
+void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
+	bool_node* tip = NULL; 
+	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+		Dout( cout<<" adding "<<(*node_it)->get_name()<<endl );		
+		if( (*node_it)->type != bool_node::SRC && (*node_it)->type != bool_node::DST){ 
+			nodes.push_back( (*node_it) );
+			(*node_it)->switchInputs(*this);
+		}
+		if( (*node_it)->type == bool_node::CTRL){
+			nodesByType[(*node_it)->type].push_back((*node_it));
+		}
+		if( (*node_it)->type == bool_node::DST){
+			nodesByType[(*node_it)->type].push_back((*node_it));
+			bool_node* otherDst = named_nodes[(*node_it)->name];
+			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(*node_it)->name<<endl);
+			EQ_node* eq = new EQ_node();			
+			eq->father = otherDst->mother;
+			eq->mother = (*node_it)->mother;
+			eq->name = new_name();
+			named_nodes[eq->name] = eq;			
+			Dout(cout<<"           adding to parents "<<endl);
+			eq->addToParents();
+			Dout(cout<<"           switching inputs "<<endl);
+			eq->switchInputs(*this);
+			Dout(cout<<"           replacing "<<endl);
+			replace( otherDst->id, eq);	
+			nodes.push_back( eq );		
+			if( tip == NULL  ){
+				tip = eq;				
+			}else{
+				tip = new_node(tip->name, eq->name, bool_node::AND, new_name() );
+			}
+		}
+	}
+	Assert(tip != NULL, "This is not possible!!!");
+	create_outputs(1, tip_name);
+	Dout(cout<<"      Creating tip, connecting with  "<<tip->name<<endl);
+	bool_node* outnode = new_node(tip->name, "", bool_node::DST, tip_name);
+	nodesByType[bool_node::DST].clear();
+	nodesByType[bool_node::DST].push_back(outnode);
+	removeNullNodes();
+	sort_graph();
+	relabel();
+}
+
+
+
+
+void BooleanDAG::rename(const string& oldname,  const string& newname){
+	bool_node* node = named_nodes[oldname];
+	node->name = newname;
+	named_nodes.erase(oldname);
+	named_nodes[newname] = node;	
+}
+
+BooleanDAG* BooleanDAG::clone(){
+	BooleanDAG* bdag;
+	relabel();	
+	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+		bool_node* bn = (*node_it)->clone();
+		bdag->nodes.push_back( bn );
+		bn->redirectPointers(*bdag);	
+	}
+	bdag->n_controls = n_controls;
+	bdag->n_inputs = n_inputs;
+	bdag->n_outputs = n_outputs;
+	for(map<string, bool_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
+		bdag->named_nodes[it->first] = bdag->nodes[it->second->id];	
+	}
+	bdag->new_names = new_names;
+	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 
+					it != nodesByType.end(); ++it){
+		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
+		for(int i=0; i<it->second.size(); ++i){
+			tmp[i] = bdag->nodes[ it->second[i]->id ];	
+		}							
+	}
+	return bdag;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

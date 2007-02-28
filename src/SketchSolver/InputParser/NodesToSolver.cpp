@@ -507,11 +507,13 @@ NodesToSolver::visit (SRC_node &node)
 
 
 void NodesToSolver::visit( DST_node& node ){
-
+	node_ids[node.id] = tval_lookup(node.mother);
+	Dout(cout<<"DST = "<<node_ids[node.id]<<endl);
+	/*
 	int oid = node.ion_pos;
 	int nvar = dir.getArr(outname, oid);	
 
-	Tvalue outv = tval_lookup(node.mother);
+	Tvalue outv = 
 	Dout(cout<<" output "<<outv<<endl);
 	if(outv.isSparse()){
 		cout<<" output "<<node.get_name()<<" = "<<outv<<endl;
@@ -532,6 +534,7 @@ void NodesToSolver::visit( DST_node& node ){
 		}
 		Dout(cout<<"DST = "<<outv<<endl);
 	}
+	*/
 	return;
 }
 
@@ -636,6 +639,61 @@ void NodesToSolver::visit( TIMES_node& node ){
 	processArith<multiplies<int> >(node);
 	return;
 }
+
+/*
+class UFUN_store{
+	vector<Tvalue> symvalues;
+	vector<vector<Tvalue> > arguments;
+	BooleanDAG argComp;
+	int nargs;
+	public:
+	UFUN_store(int p_nargs):nargs(p_nargs){
+		bool_node* peq = NULL
+		for(int i=0; i<nargs; ++i){
+			string ina;
+			string inb;
+			{
+				stringstream str;
+				str<<"ina"<<i;
+				ina = str.str();
+				argComp.create_inputs(nargs, ina);
+			}
+			{
+				stringstream str;
+				str<<"inb"<<i;
+				inb = str.str();
+				argComp.create_inputs(nargs, inb);
+			}
+			EQ_node* eq = new EQ_node();
+			argComp.new_node(ina, inb, bool_node::ARITH, argComp.new_name(), eq);
+			if(peq != NULL){
+				peq = argComp.new_node(peq, eq , bool_node::AND, argComp.new_name());
+			}else{
+				peq = eq;
+			}
+		}
+		
+		peq = argComp.new_node(peq, NULL , bool_node::DST, "DST");
+		argComp.relabel();
+		argComp.sort_graph();		
+	}
+	public Tvalue newCall(Tvalue& symvalue, vector<Tvalue>& args, SATSolver& p_mng, varDir& p_dir,  const string& p_outname){
+		Assert( args.size() == nargs, "This is not correct ");
+		vector<bool_node>& innodes = argComp.getNodesByType(bool_node::SRC);
+		
+		 map<bool_node*,  int>& p_node_values, 
+		 vector<Tvalue>& p_node_ids
+		NodesToSolver nts(p_mng, p_dir, p_outname, 
+		for(int i=0; i<nargs; ++i){
+				
+			
+		}
+		
+	}
+	
+};
+
+*/
 
 
 void NodesToSolver::visit( UFUN_node& node ){
