@@ -8,7 +8,7 @@ using namespace std;
  * The T-value holds either a bit-vector (unsigned or signed) or
  * a sparse integer representation.  In both cases, the 'size' attribute
  * stands for the number of bits (bit-vector) or the number of integers
- * stored (sparse), respectively. Both representations use 'size - 1'
+ * stored (sparse), respectively. Both representations use 'size'
  * variables named 'id' to 'id + size - 1'.
  * 
  */
@@ -78,7 +78,8 @@ public:
 	/* Assert that (1) id is positive, and (2) value is non-negated, unless
 	 * it is an (unsigned) bit-vector of size 1 (i.e. a single bit). */
 	Assert (id >= 0 && (! neg || isBvect () && size == 1),
-		"only single-bit vectors can be negated size="<<size<<"  and neg="<<neg<<"  isBvect()="<<isBvect()<<"  this="<<*this);
+		"only single-bit vectors can be negated size=" << size << "  and neg="
+		<< neg << "  isBvect()=" << isBvect() << "  this=" << *this);
     }
 
     /* FIXME same as above. */
