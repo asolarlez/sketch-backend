@@ -72,6 +72,10 @@ Comment      ("//"[^\n]*)
 				return T_false;
 			}
 
+"\$\$"		{
+				return T_twoS;
+			}
+
 "--"		{
 				return T_mmns;
 			}
