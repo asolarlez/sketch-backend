@@ -12,9 +12,9 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
    
     string s1 = currentBD->new_name();
     arith_node *an = newArithNode(atype);
+    an->name = s1;
     currentBD->new_node((p1 ? *p1 : ""), 
-			(p2 ? *p2 : ""),
-			bool_node::ARITH, s1, an); 
+			(p2 ? *p2 : ""), an); 
     if (p1)
 	delete p1;
     if (p2)
@@ -47,6 +47,7 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
 %token<boolConst> T_true
 %token<boolConst> T_false
 %token<variableType> T_vartype
+%token T_twoS
 %token T_ppls
 %token T_mmns
 %token T_eq
@@ -83,6 +84,7 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
 %type<intConst> WorkStatement
 %type<strConst> Expression
 %type<strConst> Term
+%type<intConst> NegConstant
 %type<intConst> Constant
 %type<intConst> ConstantExpr
 %type<intConst> ConstantTerm
@@ -220,22 +222,21 @@ WorkBody:  { /* Empty */ }
 
 
 WorkStatement:  ';' {  $$=0;  /* */ }
-
 | T_ident '=' Expression ';' {
 	currentBD->alias( *$1, *$3);
 	delete $3;
 	delete $1;
 }							  
-| '$' IdentList '$''$' varList '$''[' Expression ']' '=' Expression ';' {
+| '$' IdentList T_twoS varList '$''[' Expression ']' '=' Expression ';' {
 
 	list<string*>* childs = $2;
 	list<string*>::reverse_iterator it = childs->rbegin();
 	
-	list<bool_node*>* oldchilds = $5;
+	list<bool_node*>* oldchilds = $4;
 	list<bool_node*>::reverse_iterator oldit = oldchilds->rbegin();
 	
 	bool_node* rhs;
-	rhs = currentBD->get_node(*$11);
+	rhs = currentBD->get_node(*$10);
 	int bigN = childs->size();
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
@@ -245,17 +246,18 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		an->multi_mother.reserve(2);
 		an->multi_mother.push_back(*oldit);			
 		an->multi_mother.push_back(rhs);
+		an->name = s1;
 		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
-		Assert($8 != NULL, "1: THIS CAN'T HAPPEN!!");
-		currentBD->new_node(*$8,  "",  bool_node::ARITH, s1, an);
+		Assert($7 != NULL, "1: THIS CAN'T HAPPEN!!");
+		currentBD->new_node(*$7,  "",  an);
 		currentBD->alias( *(*it), s1);
 		an->quant = i;
 		delete *it;
 	}
 	delete childs;
 	delete oldchilds;
-	delete $8;
-	delete $11;
+	delete $7;
+	delete $10;
 }
 | RateSet {}
 | T_OutIdent '=' Expression ';' {
@@ -348,23 +350,25 @@ Expression: Term { $$ = $1; }
 		an->multi_mother.push_back(*it);
 	}		
 	Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");
-	currentBD->new_node(*$5, "", bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$5, "",  an); 
 	$$ = new string(s1);
 	delete childs;
 	delete $5;
 }
 
-| '$''$' varList '$''$' {
+| T_twoS varList T_twoS {
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ACTRL);
-	list<bool_node*>* childs = $3;
+	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
 	}	
-	currentBD->new_node("", "",  bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node("", "", an); 
 	$$ = new string(s1);  
 	delete childs;
 }
@@ -373,7 +377,8 @@ Expression: Term { $$ = $1; }
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::PLUS);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	currentBD->new_node(*$1,  *$3,  bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$1,  *$3, an); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1); 
@@ -383,7 +388,8 @@ Expression: Term { $$ = $1; }
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::DIV);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	currentBD->new_node(*$1, *$3, bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$1, *$3, an); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1);
@@ -393,7 +399,8 @@ Expression: Term { $$ = $1; }
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::MOD);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	currentBD->new_node(*$1, *$3, bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$1, *$3, an); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1);
@@ -403,7 +410,8 @@ Expression: Term { $$ = $1; }
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::TIMES);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	currentBD->new_node(*$1, *$3, bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$1, *$3, an); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1);
@@ -412,10 +420,11 @@ Expression: Term { $$ = $1; }
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::PLUS);	
 	string neg1 = currentBD->new_name();
-	arith_node* negn = newArithNode(arith_node::NEG);		
-	currentBD->new_node(*$3, "", bool_node::ARITH, neg1, negn); 
-		
-	currentBD->new_node(*$1, neg1, bool_node::ARITH, s1, an); 
+	arith_node* negn = newArithNode(arith_node::NEG);	
+	negn->name = neg1;
+	currentBD->new_node(*$3, "", negn);
+	an->name = s1;
+	currentBD->new_node(*$1, neg1, an); 
 	
 	
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen");	
@@ -443,7 +452,8 @@ Expression: Term { $$ = $1; }
 	an->multi_mother.push_back( noChild );
 	an->multi_mother.push_back( yesChild );
 	$$ = new string(s1);
-	currentBD->new_node(*$1, "", bool_node::ARITH, s1, an); 
+	an->name = s1;
+	currentBD->new_node(*$1, "", an); 
 	if( $1 != NULL && $1 != $$){ delete $1; }
 	if( $3 != NULL && $3 != $$){ delete $3; }
 	if( $5 != NULL && $5 != $$){ delete $5; }		  					  
@@ -451,15 +461,7 @@ Expression: Term { $$ = $1; }
 
 
 
-varList: Term {
-	$$ = new list<bool_node*>();	
-	if($1 != NULL){
-		$$->push_back( currentBD->get_node(*$1) );
-		delete $1;
-	}else{
-		$$->push_back( NULL );
-	}
-}
+varList: { /* Empty */  	$$ = new list<bool_node*>();	}
 | Term varList{
 //The signs are already in the stack by default. All I have to do is not remove them.
 	if($1 != NULL){
@@ -482,11 +484,59 @@ IdentList: T_ident {
 
 Term: Constant {
 				 $$ = new string(currentBD->create_const($1));
-				 }
+				 }	 
+
+| T_ident '[' T_vartype ']' '(' varList  ')' {
+	
+	list<bool_node*>* params = $6;
+	cout<<" FUN CALL "<<*$1<<"  sz="<<params->size()<<endl;
+	if(params->size() == 0){
+		if( $3 == INT){
+			cout<<" INPUT IS INT "<<*$1<<endl;
+			currentBD->create_inputs( NINPUTS , *$1); 
+		}else{
+			cout<<" INPUT IS BIT "<<*$1<<endl;
+			currentBD->create_inputs(-1, *$1);
+		}
+		$$ = $1;
+	}else{	
+		string& fname = *$1;
+		list<bool_node*>::reverse_iterator parit = params->rbegin();
+		UFUN_node* ufun = new UFUN_node();
+		ufun->name = fname;
+		for( ; parit != params->rend(); ++parit){
+			ufun->multi_mother.push_back((*parit));
+		}
+		
+		if( $3 == INT){
+			ufun->set_nbits( NINPUTS  );
+		}else{
+	
+			ufun->set_nbits( 1  );
+		}
+		
+		
+		
+		string s1;
+		{
+			stringstream str;
+			str<<fname<<"_"<<currentBD->size();
+			s1 = str.str();
+		}
+		
+		currentBD->new_node(NULL, NULL, ufun, s1);
+		
+		$$ = new string(s1);
+		delete $1;
+	}
+	delete $6;
+}
+
 | '-' Term {
 	string neg1 = currentBD->new_name();
 	arith_node* negn = newArithNode(arith_node::NEG);
-	currentBD->new_node(*$2, "", bool_node::ARITH, neg1, negn);
+	negn->name = neg1;
+	currentBD->new_node(*$2, "", negn);
 	Assert($2 != NULL, "THIS CAN't Happen");	
 	delete $2;
 	$$ = new string(neg1);
@@ -545,16 +595,20 @@ ConstantExpr: ConstantTerm { $$ = $1; }
 | ConstantExpr '+' ConstantTerm { $$ = $1 + $3; }
 | ConstantExpr '-' ConstantTerm { $$ = $1 - $3; }
 
-ConstantTerm: Constant { $$ = $1; }
+ConstantTerm: NegConstant { $$ = $1; }
 | '(' ConstantTerm ')' { $$ = $2; }
-| '-' ConstantTerm  { $$ = -$2; }
 | ConstantTerm '*' ConstantTerm { $$ = $1 * $3; } 
 | ConstantTerm '/' ConstantTerm { Assert( $3 != 0, "You are attempting to divide by zero !!");
 							      $$ = $1 / $3; } 
 | ConstantTerm '%' ConstantTerm { Assert( $3 != 0, "You are attempting to mod by zero !!");
 							      $$ = $1 % $3; }
 
-Constant: T_int {  $$ = $1; }
+
+NegConstant: Constant {  $$ = $1; }
+| '-' Constant {  $$ = -$2; }
+
+Constant: 
+ T_int {  $$ = $1; }
 | T_true { $$ = 1; }
 | T_false { $$ = 0; }
 

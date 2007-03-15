@@ -1,19 +1,50 @@
-#ifndef DAGOPTIM_H_
-#define DAGOPTIM_H_
+#ifndef DAGELIMUFUN_H_
+#define DAGELIMUFUN_H_
+
 
 #include "BooleanDAG.h"
-#include "DagCSE.h"
+#include "SATSolver.h"
 
-class DagOptim : public NodeVisitor
+class SFunInfo{
+	public:
+	BooleanDAG* fun;
+	vector<bool_node* > actuals;
+	bool_node* symval;	
+	bool_node* outval;
+	int step;	
+	SFunInfo():
+	fun(NULL),
+	symval(NULL),
+	outval(NULL),
+	step(0)
+	{
+			 
+	}
+};
+
+
+
+class DagElimUFUN : public NodeVisitor
 {
-	int dagsize;
-	DagCSE cse;
-public:
+	
+	bool moreNewFuns;
+	bool oneMoreFun;
+	
+	
+	map<int, BooleanDAG> comparators;	
+	map<string, SFunInfo> functions;
+	BooleanDAG& getComparator(int sz);
 	
 	vector<bool_node*> newnodes;
 	bool_node* rvalue;
-	DagOptim(BooleanDAG& dag);
-	virtual ~DagOptim();
+	int dagsize;
+	vector<BooleanDAG> bdags;
+public:
+	DagElimUFUN();
+	virtual ~DagElimUFUN();
+	bool_node* produceNextSFunInfo( UFUN_node& node  );
+	
+	virtual void stopProducingFuns();
 	
 	virtual void visit( SRC_node& node );
 	virtual void visit( CTRL_node& node );
@@ -43,16 +74,8 @@ public:
 	
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
-	virtual void process(BooleanDAG& bdag);	
-	map<int, CONST_node*> cnmap;
-	virtual  CONST_node* getCnode(int c);
-	virtual  CONST_node* getCnode(bool val); 
-	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2); 
-	virtual bool isConst(bool_node* n1);
-	virtual bool getBval(bool_node* n1);
-	virtual int getIval(bool_node* n1);
+	
+	virtual void process(BooleanDAG& bdag);
 };
 
-
-
-#endif /*DAGOPTIM_H_*/
+#endif /*DAGELIMUFUN_H_*/

@@ -24,7 +24,10 @@ class BooleanDAG;
 class bool_node{
 protected:
   bool_node():mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM){};
-  bool_node(const bool_node& bn):mother(bn.mother), layer(bn.layer), name(bn.name), father(bn.father), flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), otype(bn.otype){};
+  bool_node(const bool_node& bn):mother(bn.mother), layer(bn.layer), 
+  								 name(bn.name), father(bn.father), 
+  								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
+  								 otype(bn.otype), type(bn.type), children(bn.children) {};
 public:
   string name;
   int layer;
@@ -48,7 +51,7 @@ public:
   virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
   virtual void outDagEntry(ostream& out);
   virtual void addToParents();
-  virtual void redirectPointers(BooleanDAG& bdag);
+  virtual void redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag);
   virtual void switchInputs(BooleanDAG& bdag);
   virtual string get_tname(){
     switch(type){
@@ -57,27 +60,18 @@ public:
     case XOR: return "XOR";
     case SRC: return "S";
     case DST: return "D";
-    case NOT: return "I";
+    case NOT: return "NOT";
     case CTRL: return "CTRL";
     case ASSERT: return "ASSERT";
     }
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
-  virtual string get_name(){
-    stringstream str;
-    if(name.size() > 0)
-      str<<name<<"__"<<get_tname();
-    else{      
-      str<<"name_"<<abs(id)<<"_"<<this<<"__"<<get_tname();
-      
-    }
-    str<<"_"<<this;
-    return str.str();
-  }
+  virtual string get_name();
   void set_layer();
   virtual void accept(NodeVisitor& visitor)=0;
   virtual bool_node* clone()=0;
+  virtual void printSubDAG(ostream& out);
 };
 
 
@@ -99,8 +93,9 @@ class arith_node: public bool_node{
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out);
 	virtual void addToParents();
-	virtual void redirectPointers(BooleanDAG& bdag);
+	virtual void redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag);
 	virtual void switchInputs(BooleanDAG& bdag);
+	virtual void printSubDAG(ostream& out);
 	virtual string get_tname(){
 		switch(arith_type){
 			case PLUS: return "PLUS";
@@ -215,6 +210,10 @@ class INTER_node: public bool_node{
 class SRC_node: public INTER_node{		
 	public: SRC_node(){ type = SRC; }  
 	SRC_node(const SRC_node& bn): INTER_node(bn){ }  
+	SRC_node(const string& nm){ 
+		type = SRC;
+		name = nm;
+	}
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new SRC_node(*this);  };
 };
@@ -259,9 +258,10 @@ class TIMES_node: public arith_node{
 
 
 
-class UFUN_node: public arith_node{	
-	public: UFUN_node(){ arith_type = UFUN; } 
-	UFUN_node(const UFUN_node& bn): arith_node(bn){ }  
+class UFUN_node: public arith_node{
+	int nbits;	
+	public: UFUN_node(){ arith_type = UFUN; nbits=1; } 
+	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out){
     	int i=0;
@@ -272,6 +272,8 @@ class UFUN_node: public arith_node{
 		}
 	}
 	virtual bool_node* clone(){return new UFUN_node(*this);  };
+	int get_nbits() const { return nbits; }
+	void set_nbits(int n){ nbits = n; }
 };
 
 
@@ -331,7 +333,11 @@ class CONST_node: public arith_node{
 		virtual int getVal(){ return val; }
 		string get_name(){
 		    stringstream str;
-		    str<<name<<"_C"<<val;		    
+		    str<<name<<"_C";
+		    if( val<0){
+		    	str<<"m";	
+		    }
+		    str<<abs(val);		    
 		    return str.str();
 		}
 		virtual bool_node* clone(){return new CONST_node(*this);  };
@@ -387,11 +393,14 @@ class ACTRL_node: public arith_node{
 	virtual bool_node* clone(){return new ACTRL_node(*this);  };
 };
 class ASSERT_node: public bool_node {
+	bool isHardAssert;
 public:
-    ASSERT_node () { type = ASSERT; }
-    ASSERT_node(const ASSERT_node& bn): bool_node(bn){ }  
+    ASSERT_node ():isHardAssert(false) { type = ASSERT; }
+    ASSERT_node(const ASSERT_node& bn): bool_node(bn){ isHardAssert = bn.isHardAssert; }  
     virtual void accept (NodeVisitor &visitor) { visitor.visit (*this); }
     virtual bool_node* clone(){return new ASSERT_node(*this);  };
+    virtual void makeHardAssert(){ isHardAssert = true; }
+    virtual bool isHard(){ return isHardAssert ; }
 };
 
 
@@ -493,15 +502,19 @@ public:
                       bool_node* father,  bool_node::Type t);
 
   bool_node* new_node(const string& mother, 
-                      const string& father, bool_node::Type t, const string& name, bool_node* thenode);
+                      const string& father, bool_node* thenode);
   bool_node* new_node(bool_node* mother,  
-                      bool_node* father,  bool_node::Type t, bool_node* thenode);
+                      bool_node* father, bool_node* thenode);
+
+ bool_node* new_node(bool_node* mother,  
+                      bool_node* father, bool_node* thenode, const string& name);
+
 
   bool_node* set_node(bool_node* tmp, bool_node* mother, 
                       bool_node* father,  bool_node::Type t);
                       
                       
-  
+  void addNewNode(bool_node* v);
   void addNewNodes(vector<bool_node*>& v);
 
 	void clearBackPointers();
@@ -530,6 +543,11 @@ public:
   void alias(const string& ssource,  const string& starg);
   void rename(const string& oldname,  const string& newname);
   void resetBackPointers();
+  
+  bool has_name(const string& s){
+  	return named_nodes.find(s) != named_nodes.end();
+  }
+  
   
   bool has_alias(const string& s){
     return aliasmap.find(s) != aliasmap.end();

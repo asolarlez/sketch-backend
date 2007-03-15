@@ -1,9 +1,9 @@
 #include "DagOptim.h"
 #include "SATSolver.h"
 
-DagOptim::DagOptim()
+DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 {
-	rvalue = NULL;
+	rvalue = NULL;	
 }
 
 DagOptim::~DagOptim()
@@ -334,6 +334,36 @@ void DagOptim::visit( ARRACC_node& node ){
 			return;	
 		}
 	}
+	
+	
+	if( node.multi_mother.size()==2  ){
+		if( typeid(*node.multi_mother[1]) == typeid(node)  ){
+			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);			
+			if( node.multi_mother[0] == mm1.multi_mother[0] ){
+				AND_node* an = new AND_node();
+				an->name = node.name;
+				an->name += "AND";
+				an->mother = node.mother;
+				an->father = mm1 .mother;
+				an->addToParents();
+				an->id = newnodes.size() + dagsize;
+				newnodes.push_back(an);
+				
+				an->accept(cse);
+				if(cse.cse_map.find(cse.ccode) != cse.cse_map.end()){
+					an = dynamic_cast<AND_node*>(cse.cse_map[cse.ccode]);		
+				}else{
+					cse.cse_map[cse.ccode] = an;
+				}
+				
+				node.dislodge();
+				node.mother = an;
+				node.multi_mother[1] = mm1.multi_mother[1];
+				node.addToParents();
+			}
+		}
+	}
+	
 	rvalue = &node;
 }
 void DagOptim::visit( ARRASS_node& node ){	
@@ -351,8 +381,7 @@ void DagOptim::visit( DST_node& node ){
 }
 
 void DagOptim::process(BooleanDAG& dag){
-	dagsize = dag.size();
-	DagCSE cse(dag);
+	dagsize = dag.size();	
 	int k=0;
 	for(int i=0; i<dag.size(); ++i ){
 		// Get the code for this node. 
@@ -378,8 +407,9 @@ void DagOptim::process(BooleanDAG& dag){
 		}
 	}
 	dag.removeNullNodes();
-	dag.addNewNodes(newnodes);
+	dag.addNewNodes(newnodes);	
 	dag.sort_graph();
+	dag.cleanup(false);
 	dag.relabel();
 	Dout(cout<<" end cse "<<endl);
 }

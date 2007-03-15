@@ -33,7 +33,8 @@ class paramInterp{
   int seedsize;
   int seed;
   SolverType synthtype, veriftype;
-  bool outputAIG; 
+  bool outputAIG;
+  bool output2QBF; 
   int terminateafter;
   bool hasCpt;
   string cptfile;
@@ -49,6 +50,7 @@ class paramInterp{
 		synthtype=MINI;
 		veriftype=MINI;
 		outputAIG =false;
+		output2QBF = false;
 		outputEuclid = false;
 		terminateafter = -1;
 		hasCpt = false;
@@ -61,6 +63,15 @@ class paramInterp{
 	      seedsize = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
 	    }
+	    
+	    
+	    if( string(argv[ii]) == "-output2QBF" ){
+	    	outputAIG = true;
+	    	output2QBF = true;
+	    	veriftype = ABC;
+	      input_idx = ii+1;      
+	    }
+	    
 	    if( string(argv[ii]) == "-outputAIG" ){
 	    	outputAIG = true;
 	      input_idx = ii+1;      
@@ -189,6 +200,13 @@ int main(int argc, char** argv){
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
 		ofstream out((argc>params.input_idx+1)?argv[params.input_idx+1]:"/dev/null");
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
+      	string sketchName = it->second;
+      	string findName = sketchName;
+      	findName += "_find";
+      	string checkName = sketchName;
+      	checkName += "_check";
+      	
+      	
       	cout<<"PROCESSING SKETCH "<<it->second<<endl;
       	if( INp::functionMap.find(it->second)== INp::functionMap.end() ){
       		cout<<"There is no function named "<<it->second<<" make sure it is not a sketch. Sketches can't be specs. "<<endl;
@@ -202,51 +220,61 @@ int main(int argc, char** argv){
       	bool FINDER = false;
       	bool CHECKER = true;
       	if( params.synthtype ==  paramInterp::ABC ){
-      		finder = new ABCSATSolver("find", ABCSATSolver::FULL, FINDER);
+      		finder = new ABCSATSolver(findName, ABCSATSolver::FULL, FINDER);
       		cout<<" FIND = ABC"<<endl;
       		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();	
      		}
       	}else if ( params.synthtype ==  paramInterp::ABCLIGHT ){
-      		finder = new ABCSATSolver("find", ABCSATSolver::BASICSAT, FINDER);
+      		finder = new ABCSATSolver(findName, ABCSATSolver::BASICSAT, FINDER);
       		cout<<" FIND = ABC LIGHT"<<endl;
       		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();
      		}
       	}else if( params.synthtype ==  paramInterp::ZCHAFF){
-      		finder = new ZchaffSATSolver("find", FINDER);
+      		finder = new ZchaffSATSolver(findName, FINDER);
      		cout<<" FIND = ZCHAFF"<<endl;
       	}else if( params.synthtype ==  paramInterp::MINI){
-      		finder = new MiniSATSolver("find", FINDER);
+      		finder = new MiniSATSolver(findName, FINDER);
      		cout<<" FIND = MINI"<<endl;
       	}
       	
       	SATSolver* checker = NULL;
       	if( params.veriftype ==  paramInterp::ABC ){
-      		checker = new ABCSATSolver("check", ABCSATSolver::FULL, CHECKER);
+      		checker = new ABCSATSolver(checkName, ABCSATSolver::FULL, CHECKER);
      		cout<<" CHECK = ABC"<<endl;
      		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
      		}
       	}else if ( params.veriftype ==  paramInterp::ABCLIGHT ){
-      		checker = new ABCSATSolver("check", ABCSATSolver::BASICSAT, CHECKER);
+      		checker = new ABCSATSolver(checkName, ABCSATSolver::BASICSAT, CHECKER);
      		cout<<" CHECK = ABC LIGHT"<<endl;
      		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
      		}
       	}else if( params.veriftype ==  paramInterp::ZCHAFF){
-      		checker = new ZchaffSATSolver("check", CHECKER);
+      		checker = new ZchaffSATSolver(checkName, CHECKER);
      		cout<<" CHECK = ZCHAFF"<<endl;
       	}else if( params.veriftype ==  paramInterp::MINI){
-      		checker = new MiniSATSolver("check", CHECKER);
+      		checker = new MiniSATSolver(checkName, CHECKER);
      		cout<<" CHECK = MINI"<<endl;
       	}
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
-      	if(params.outputEuclid){
+      	if(params.outputEuclid){      		
       		ofstream fout("bench.ucl");
       		solver.outputEuclid(fout);
       	}
+      	
+      	if(params.output2QBF){
+      		solver.setup2QBF();
+      		string fname = sketchName;
+      		fname += "_2qbf.blif";
+      		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
+      		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
+      		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
+      	}
+      	
       	
       	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
       	if( params.hasCpt ){ 
