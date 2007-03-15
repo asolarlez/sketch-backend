@@ -597,7 +597,7 @@ NodesToSolver::visit (CTRL_node &node)
 		    tmp.makeBvectSigned (dir);
 #endif /* HAVE_BVECTARITH */
 		    node_ids[node.id] = tmp;
-		    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<endl;
+		    cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<"    "<<node_values[(&node)]<<endl;
 		}else{
 		    node_ids[node.id] = node_values[(&node)]*YES;
 		}
@@ -1108,7 +1108,12 @@ NodesToSolver::visit (ASSERT_node &node)
 		return;
 	}
 
-	dir.addAssertClause (fval.getId ());
+	if( node.isHard()){
+		dir.addHardAssertClause (fval.getId ());
+	}else{
+		if(fval.getId() == -YES ) {  node.printSubDAG(cout); }
+		dir.addAssertClause (fval.getId ());
+	}
 
 	Dout (cout << "ASSERT " << node.get_name() << " " << fval
 		  << " " << &node << endl);
