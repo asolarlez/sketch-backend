@@ -6,6 +6,8 @@
 #include "NodesToEuclid.h"
 #include "DagCSE.h"
 #include "DagOptim.h"
+#include "DagElimUFUN.h"
+
 
 template<typename T>
 int intFromBV(T bv, int start, int nbits){
@@ -13,13 +15,23 @@ int intFromBV(T bv, int start, int nbits){
 	int t = 1;
 	
 	for(int i=0; i<nbits; ++i){
-		Dout( cout<< bv[start + i] << "  " );
+		( cout<< bv[start + i] << "  " );
 		if( bv[start + i] > 0){
 			nval += t;	
 		}
 		t = t*2;
 	}
 	return nval;
+}
+
+
+
+void SolveFromInput::setup2QBF(){
+	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
+		(*node_it)->flag = true;
+	}
+	buildChecker();
+	outputCheckVarmap(cout);
 }
 
 
@@ -39,7 +51,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
     spec_p->relabel();
     sketch_p->relabel();
 	
-	cout<<"before  CSE: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
+	cout<<"* before  CSE: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
 	
 	{
 		Dout( cout<<"BEFORE Matching input names"<<endl );
@@ -47,10 +59,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		vector<bool_node*>& sketchIn = sketch_p->getNodesByType(bool_node::SRC);
 		Assert(specIn.size() == sketchIn.size(), "The number of inputs in the spec_p and sketch must match");	
 		for(int i=0; i<specIn.size(); ++i){
-			sketch_p->rename(sketchIn[i]->name, specIn[i]->name);			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(sketchIn[i]);	
-			int nbits = srcnode->get_nbits();
-			declareInput(sketchIn[i]->get_name(), nbits);
+			sketch_p->rename(sketchIn[i]->name, specIn[i]->name);
 		}
 	}
 	
@@ -65,29 +74,83 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 	}
 	
 	
-	
-Dout( cout<<"BEFORE MAKING MITER"<<endl );	
-	sketch_p->makeMiter(*spec_p, TIP_NAME);
-	
-	problem = sketch_p;
-
-
-
-   	Dout( cout<<"after makeMiter "<<endl);
-	Dout( problem->print(cout) );	
+	if( false ){	
+		Dout( cout<<"BEFORE MAKING MITER"<<endl );	
+		sketch_p->makeMiter(*spec_p, TIP_NAME);
+		problem = sketch_p;
+	   	Dout( cout<<"after makeMiter "<<endl);
+		Dout( problem->print(cout) );	
+				
+		{
+			DagOptim cse(*problem);	
+			cse.process(*problem);
+		}
+		cout<<"after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+		Dout( problem->print(cout) );	
+		
 			
+		
+		{
+			DagElimUFUN eufun;	
+			eufun.process(*problem);			
+		}	
+		problem->cleanup(false);
+		problem->sort_graph();
+		problem->relabel();	
+		cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
+		
+			
+		{
+			DagOptim cse(*problem);	
+			cse.process(*problem);
+		}	
+		cout<<"* after Second optim: Problem nodes = "<<problem->size()<<endl;
+	}else{
+		{
+			DagElimUFUN eufun;	
+			eufun.process(*spec_p);
+			eufun.stopProducingFuns();
+			eufun.process(*sketch_p);
+		}
+		cout<<"Done with ElimUFUN "<<endl;
+		cout<<"Printing spec and sketch "<<endl;
+		Dout( spec_p->print(cout) );	
+		Dout( sketch_p->print(cout) );	
+		
+		spec_p->makeMiter(*sketch_p, TIP_NAME);
+		problem = spec_p;
+		cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
+		Dout( problem->print(cout) );				
+		{
+			DagOptim cse(*problem);	
+			cse.process(*problem);
+		}
+		problem->cleanup(false);
+		problem->sort_graph();
+		problem->relabel();	
+		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+		Dout( problem->print(cout) );
+		
+	}
+	
+	
+	
+	
+	
+	
 	
 	{
-		//DagCSE cse(*spec);
-		//cse.eliminateCSE();
-		
-		DagOptim cse;	
-		cse.process(*problem);
+		Dout( cout<<"BEFORE declaring input names"<<endl );
+		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);	
+		for(int i=0; i<specIn.size(); ++i){			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			declareInput(specIn[i]->get_name(), nbits);
+		}
 	}
-		
-	Dout( cout<<" after removing common subexpressions"<<endl);
-	Dout( problem->print(cout) );	
 	
+	
+	Dout( problem->print(cout) );	
 	
 cout<<"BEFORE DC"<<endl;	
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
@@ -107,7 +170,9 @@ cout<<"BEFORE RES"<<endl;
 	f_flags.resize( totSize , true);
 	
 	cout<<"Random seeds = "<<nseeds<<endl;	
-	cout<<"after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+
+	
+	
 	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
 		(*node_it)->flag = true;
 	}
@@ -151,9 +216,9 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 			if( nbits ==1 ){
 				node_values[(*node_it)]= controls[iid];
 			}else{				
-				Dout( cout<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
+				( cout<<(*node_it)->get_name()<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
 				int nval = intFromBV(controls, iid, nbits);				
-				Dout( cout <<" > = "<<nval<< endl ) ;
+				( cout <<" > = "<<nval<< endl ) ;
 				node_values[(*node_it)] = nval;
 			}
 		}
@@ -262,6 +327,7 @@ void SolveFromInput::defineProblem(SATSolver& mng, varDir& dir){
 		bool_node* miterTip = problem->get_node(TIP_NAME);
 		Tvalue tv = node_ids[ miterTip->id ];
 		Assert( tv.isBvect() && tv.getSize()==1 , "This is very strange");
+		if(tv.getId() == -YES ) {  cout<<" The last assert is statically unsatisfiable "<<endl; }
 		dir.addAssertClause(tv.getId());
 		timer.stop().print();
 	}
@@ -271,12 +337,13 @@ void SolveFromInput::output_control_map(ostream& out){
 	FindCheckSolver::ctrl_iterator ar = begin();	
 	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
 		if((*node_it)->type == bool_node::CTRL){
-			int iid = (*node_it)->ion_pos;
+			int iid = getCtrlStart( (*node_it)->get_name() );
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
 			int nbits = ctrlnode->get_nbits();		
 			if( nbits > 1 ){
 				for(int i=0; i<nbits; ++i){
 					out<<(*node_it)->name<<"_"<< i << "\t"<<ar[iid+i]<<endl;
+					cout<<(*node_it)->name<<"_"<< i <<"["<<(iid+i)<<"] = \t"<<ar[iid+i]<<endl;
 				}
 			}else{
 				out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;

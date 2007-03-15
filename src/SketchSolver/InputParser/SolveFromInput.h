@@ -35,6 +35,7 @@ class SolveFromInput: public FindCheckSolver{
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1);
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);
+	void setup2QBF();
 };
 
 
