@@ -38,6 +38,7 @@ public:
 	 virtual void addEquateClause(int x, int a);
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
+	 virtual void hardAssertVarClause(int x);
 	 
 	 virtual int getVarVal(int id);
 	 
