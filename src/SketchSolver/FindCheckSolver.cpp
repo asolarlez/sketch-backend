@@ -109,6 +109,8 @@ bool FindCheckSolver::solveCore(){
  	bool doMore=true;
 	timerclass ftimer("* FIND TIME");
 	timerclass ctimer("* CHECK TIME");
+	timerclass ttimer("* TOTAL TIME");
+	ttimer.start();
 	while(doMore){
 		{// Find
 			cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0); cout<<endl;
@@ -135,13 +137,13 @@ bool FindCheckSolver::solveCore(){
 		++iterations;
 		if( iterlimit > 0 && iterations >= iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
-
+	ttimer.stop();
 	if(!fail){
 		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;		
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
-	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<", CHECK TIME "<<ctimer.get_tot_ms()<<endl;
+	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<", CHECK TIME "<<ctimer.get_tot_ms()<<", TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
 	return !fail;
 }
 

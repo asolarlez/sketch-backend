@@ -43,8 +43,15 @@ void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 	Assert( Abc_ObjFaninNum(pOutputNode) == out_cnt, "This should never happen!");
 	if(  solveNegation ){
 		pOutputNode->pData = Abc_SopCreateNand( (Extra_MmFlex_t *) network->pManFunc, out_cnt );
+		if( pSuperOutputNode != NULL ){			
+			Abc_ObjAddFanin( pSuperOutputNode, pOutputNode );
+			Dout(cout<<" Super Fanin = "<<Abc_ObjFaninNum(pSuperOutputNode)<<endl );
+			pSuperOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, Abc_ObjFaninNum(pSuperOutputNode), NULL );
+			pOutputNode = pSuperOutputNode;
+		}
 	}else{
-		pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );
+		Assert( pSuperOutputNode == NULL, "This shouldn't happen. This is an invariant");
+		pOutputNode->pData = Abc_SopCreateAnd( (Extra_MmFlex_t *) network->pManFunc, out_cnt, NULL );		
 	}
 	Abc_ObjAddFanin( Abc_NtkCreatePo(network), pOutputNode);              
 	char Buffer[100];
@@ -60,11 +67,23 @@ void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 }
 
 
+void ABCSATSolver::outputToFile(const string& fname){	
+	Abc_Ntk_t * pNetlist;
+    pNetlist = Abc_NtkLogicToNetlist(pNtk,0);
+    const char* nm = fname.c_str();
+    Io_WriteBlifNetlist( pNetlist, (char*) nm , 1 );
+    Abc_NtkDelete( pNetlist );		
+}
+
+
+void ABCSATSolver::completeProblemSetup(){
+	
+	closeMiter(pNtk);
+}
 
 
 
-int ABCSATSolver::solve(){
-		++solvcnt;
+int ABCSATSolver::solve(){		
        //////////
        // add names to the PIs/POs
        Abc_Ntk_t * pAig;
@@ -73,7 +92,7 @@ int ABCSATSolver::solve(){
        int RetValue;
        vector<int> namemap(Abc_NtkPiNum(pNtk));
        
-       closeMiter(pNtk);
+       completeProblemSetup();
    
 	{
 	   	Abc_Obj_t * pNode;	   		
@@ -133,14 +152,12 @@ int ABCSATSolver::solve(){
 		if( outputAIG ){
 			stringstream str;
 			str<<name<<"_";
-			str<<solvcnt<<".blif";
-			Abc_Ntk_t * pNetlist;
-		    pNetlist = Abc_NtkLogicToNetlist(pNtk,0);
-		    const char* nm = str.str().c_str();
-		    Io_WriteBlifNetlist( pNetlist, (char*) nm , 1 );
-		    Abc_NtkDelete( pNetlist );			
+			str<<solvcnt<<".blif";			
+			outputToFile(str.str());	
 		}
 		
+		
+		++solvcnt;
 		
 		
        // call brute-force SAT (MiniSat-1.14)
@@ -239,6 +256,7 @@ int ABCSATSolver::solve(){
 		    strcpy( pNtk->pName, name.c_str());
 		               	
             pOutputNode = Abc_NtkCreateNode( pNtk );
+            pSuperOutputNode = NULL;
            	out_cnt = 0;
            	Abc_Obj_t * pNode;
            	int i;
@@ -263,6 +281,7 @@ int ABCSATSolver::solve(){
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 		    strcpy( pNtk->pName, st);
             pOutputNode = Abc_NtkCreateNode( pNtk );
+            pSuperOutputNode = NULL;
             Abc_NtkDelete( oldpNtk );
             oldpNtk = NULL;
             out_cnt = 0;
@@ -439,6 +458,25 @@ int ABCSATSolver::solve(){
 	   Abc_ObjAddFanin( pOutputNode, pFanin0 );
 	   out_cnt++;
 }
+
+
+
+ void ABCSATSolver::hardAssertVarClause(int x){	 	
+ 	if(!solveNegation){
+ 		assertVarClause(x);	
+ 	}else{
+ 		Dout( cout<<"hard assert "<<x<<";"<<endl );
+ 		if( pSuperOutputNode == NULL){
+ 			pSuperOutputNode = Abc_NtkCreateNode( pNtk );
+ 		}
+ 		Abc_Obj_t * pFanin0;
+ 		pFanin0 = getNode(x);
+	    Abc_ObjAddFanin( pSuperOutputNode, pFanin0 );
+ 	}
+      
+}
+
+
 
  void ABCSATSolver::printDiagnostics(char c){
    cout << c << "No diagnostics for now"<<endl;

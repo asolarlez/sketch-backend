@@ -92,6 +92,9 @@ class FindCheckSolver{
 	
 	
 	public:
+	void outputCheckVarmap(ostream& out){
+		dirCheck.outputVarMap(out);	
+	}
 	bool solveFromCheckpoint(istream& in);
 	virtual void setCheckpoint(const string& filename);
 	

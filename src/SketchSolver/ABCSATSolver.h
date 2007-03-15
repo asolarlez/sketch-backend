@@ -25,6 +25,7 @@ protected:
        Abc_Ntk_t * pNtk;
        Abc_Ntk_t * oldpNtk;
        Abc_Obj_t * pOutputNode;
+       Abc_Obj_t * pSuperOutputNode;
        int out_cnt;
 	   map<int, int> results;
 		SolutionStrategy  strategy;
@@ -34,8 +35,7 @@ protected:
 	int GetIntId(int val){
 		return (val);
 	}
-	
-	void closeMiter(Abc_Ntk_t * network);
+		
 	Abc_Ntk_t * cofactor(Abc_Ntk_t * network, vector<int>& namemap);
 	
 	
@@ -53,8 +53,16 @@ protected:
 	    	return pNode;
 		}
 	}
+    
+    void closeMiter(Abc_Ntk_t * network);
+    
        
 public:
+
+	
+	void completeProblemSetup();
+	
+
         ABCSATSolver(const string& name_p, SolutionStrategy strategy_p, bool solveNegation_p):SATSolver(name_p, solveNegation_p){
 		       /////////       
 		       strategy = strategy_p;
@@ -62,6 +70,7 @@ public:
 		       pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 		       strcpy( pNtk->pName, name.c_str() );
    	           pOutputNode = Abc_NtkCreateNode( pNtk );
+   	           pSuperOutputNode = NULL;
    	           oldpNtk = NULL;
    	           out_cnt = 0;
    	           outputAIG = false;
@@ -82,6 +91,8 @@ public:
         virtual void addEquateClause(int x, int a);
         virtual void setVarClause(int x);
         virtual void assertVarClause(int x);
+		virtual void hardAssertVarClause(int x);
+
 
         virtual int getVarVal(int id);
 
@@ -89,6 +100,8 @@ public:
 		virtual bool ignoreOld();
 		virtual int newInVar();
 
+
+		virtual void outputToFile(const string& fname);
 
        virtual void disableVarBranch(int i);
        virtual void deleteClauseGroup(int i);
