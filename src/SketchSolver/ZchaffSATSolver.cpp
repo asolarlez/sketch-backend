@@ -133,6 +133,12 @@
 	}
 }
 
+ void ZchaffSATSolver::hardAssertVarClause(int x){ 	
+	Dout( cout<<" assert "<<x<<";"<<endl );
+	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+	{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
+}
+
  void ZchaffSATSolver::printDiagnostics(char c){
     cout << c << "# Random Seed Used\t\t\t\t" << SAT_Random_Seed(mng) << endl;
     cout << c << "# Max Decision Level\t\t\t\t" << SAT_MaxDLevel(mng) << endl;
