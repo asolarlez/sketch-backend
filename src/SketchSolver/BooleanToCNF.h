@@ -74,6 +74,17 @@ public:
 	++varCnt;
     }
 
+
+	void outputVarMap(ostream& out){
+		cout<<" Outputing a map of size "<<varmap.size()<<endl;
+		for( map<string, int>::iterator it = varmap.begin(); it != varmap.end(); ++it){
+			const string& arName = it->first;
+			int frst = it->second;
+			int size = arrsize[arName]; 
+			out<<"* declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl;
+		}		
+	}
+
     void declareArr(const string& arName, int size) {		
 	int i = 0;
 	int idx;
@@ -160,7 +171,7 @@ public:
     int addAndClause (int a, int b, int x = 0);	
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
-
+    void addHardAssertClause(int a);
 
     int assertVectorsDiffer (int v1, int v2, int size);
     int select(int choices[], int control, int nchoices, int bitsPerChoice);
@@ -347,11 +358,11 @@ varDir::addAssertClause (int a)
 {
     Assert (a != 0, "input id cannot be zero");
 
-    /* Vacuously true. */
+     /* Vacuously true. */ 
     if (a == YES)
         return; 
 
-    /* Vacuously false. */
+    /* Vacuously false. */ 
     if (a == -YES) {
         cout << "Assertion cannot be valid, aborting solver" << endl;
         exit (1);  /* FIXME arbitrary termination behavior, double check! */
@@ -363,6 +374,16 @@ varDir::addAssertClause (int a)
     mng.assertVarClause (a);
 }
 
+inline void
+varDir::addHardAssertClause (int a)
+{
+    Assert (a != 0, "input id cannot be zero");
+
+    dout ("hard asserting " << a);
+
+    /* Otherwise, assertion clause necessary. */
+    mng.hardAssertVarClause (a);
+}
 
 
 inline varRange
