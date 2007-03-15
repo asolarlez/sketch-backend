@@ -5,9 +5,9 @@
 
 using namespace std;
 
+#include "BasicError.h"
 
-#define Assert( in, msg) if(!(in)){cout<<msg<<endl; exit(1); }
-#define Dout( out )    /* out */    
+#define Dout( out )      out 
 #define dout(out)  /* (cout << "[" << __FUNCTION__ << ":" << __LINE__ << "] " << out << endl); */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
 #define FileOutput( out ) /* out */
@@ -51,6 +51,21 @@ public:
     virtual void addEquateClause(int x, int a)=0;
     virtual void setVarClause(int x)=0;
     virtual void assertVarClause(int x)=0;
+    
+    /**
+     * The difference between assertVarClause and hardAssertVarClause is as follows.
+     * 
+     * assertVarClause expresses a property that the user expects to be true. 
+     * This means that when doing verification, the solver looks for a counterexample
+     * that either violates the EquateClauses, or violates the assert clauses. 
+     * 
+     * By contrast, a hard assert asserts something that we KNOW is always true no matter
+     * what. We don't trust users to provide these, but they are used internally by 
+     * the compiler to generate some redundant clauses that could speed up the search. 
+     * 
+     * 
+    */
+    virtual void hardAssertVarClause(int x)=0;
 
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
