@@ -148,6 +148,16 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	}
 }
 
+
+void MiniSATSolver::hardAssertVarClause(int x){
+	Dout( cout<<" assert "<<x<<";"<<endl );
+	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+	int var = abs(x);
+	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+}
+
+
+
  void MiniSATSolver::printDiagnostics(char c){
  	cout << c <<"# assigns                : "<<s->nAssigns()<<endl;
  	cout << c <<"# clauses                : "<<s->nClauses()<<endl;
