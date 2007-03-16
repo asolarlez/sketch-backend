@@ -736,130 +736,192 @@ void NodesToSolver::visit( UFUN_node& node ){
 //timerclass elooptimer("FINAL LOOP TIMER");
 
 
-void NodesToSolver::visit( ARRACC_node& node ){
+void
+NodesToSolver::visit (ARRACC_node &node)
+{
+    Dout (cout << " ARRACC " << endl);
 
+    /* Get index value. */
+    Assert (node.mother != NULL, "This should never happen");
+    Tvalue &mval = tval_lookup (node.mother);
 
-	Dout(cout<<" ARRACC "<<endl);
-	const Tvalue& omv = tval_lookup(node.mother) ;	
-	bool isSparse = omv.isSparse();
+    /* TODO this code is a shortcut for the general case, namely a sparse
+     * index with any number of values. We may comment it out in the case were
+     * we either (1) use ABC as a solver, or (2) implement non-consecutive
+     * Tvalue guards. */
+    /* Special case: index is a single (definite) value. */
+    if (mval.isSparse () && mval.getId () == YES) {
+        int idx = mval.num_ranges[0];
+        if (idx >= node.multi_mother.size ()) {
+            node_ids[node.id] = -YES;
+            Dout (cout << node.get_name () << " SHORTCUT " << mval
+                  << " out of range" << endl);
+            return;
+        }
 
-	if( isSparse && omv.getId () == YES ){
-		int idx = omv.num_ranges[0];
+        bool_node *choice = node.multi_mother[idx];
 
-		if( idx >= node.multi_mother.size()){
-			node_ids[node.id] = -YES;
-			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
-			return;
-		}
+        if (! checkParentsChanged (node, (choice == NULL || ! choice->flag))) {
+            Dout (cout << "Parents did not change " << endl);
+            return;
+        }
+        node_ids[node.id] = tval_lookup (choice);
+        Tvalue& cval = node_ids[node.id];
 
-		bool_node* choice = node.multi_mother[idx];
-		
-		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
-		node_ids[node.id] = tval_lookup(choice);
-		Tvalue& cval = node_ids[node.id];
-		
-		Dout( cout<<node.get_name()<<" Shortcout = "<<cval<<endl );
-		return;
-	}
-	
-	vector<bool_node*>::iterator it = node.multi_mother.begin();	
-	vector<Tvalue> choices(node.multi_mother.size());
-	bool parentSame = true;
-	bool parentSameBis = true;
-	bool isBoolean=true;
-	vector<int>::const_iterator itbeg, itend, itfind;
-	itbeg = omv.num_ranges.begin();
-	itend = omv.num_ranges.end();
+        Dout (cout << node.get_name () << " Shortcout = " << cval << endl);
+        return;
+    }
 
-//	aracctimer.restart();
-//	flooptimer.restart();
-	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
-		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
-		const Tvalue& cval = tval_lookup(*it);
-		if( cval.isSparse() ){
-			isBoolean = false;
-		}
-		choices[i] = cval;
-		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
-		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
-	}
-	if( omv.isSparse() ){
-		parentSame = true;
-		for( ; itbeg < itend; ++itbeg){
-			if( *itbeg < node.multi_mother.size() ){
-				bool_node* cnode = node.multi_mother[*itbeg];
-				parentSame = parentSame && ( (cnode)== NULL || !cnode->flag);
-				Dout(cout<<"Checking parents same "<<*itbeg<<" = "<<parentSame);
-			}
-		}
-	}
-//	flooptimer.stop().print();
-//	COUT<<" FIRST LOOP mmsize ="<<node.multi_mother.size()<<" omv.num_ranges.size()="<<omv.num_ranges.size()<<endl;
-	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl);
-												 //aracctimer.stop().print();
-												 return; }
-	if(!isBoolean){
-//		nonbooltimer.restart();
-		doNonBoolArrAcc(node);
-//		nonbooltimer.stop().print();
-//		aracctimer.stop().print();
-		Dout(cout<<node.get_name()<<"  "<<node_ids[node.id]<<endl);
-		return;
-	}
-	Dout(cout<<" is boolean"<<endl);
-	bool_node* mother = node.mother;
-	const Tvalue& mval = tval_lookup(mother) ;
-	Dout(cout<<" mother = "<<mval<<"   "<<endl);
-	Assert( mother != NULL, "This should never happen");
-	if( !mval.isSparse() ){ //mother->type != bool_node::ARITH		
-		int cvar;
-		if(choices.size()>=2){
-			Dout( cout<<" replacing with choice "<<mval<<", "<<choices[1]<<", "<<choices[0]<<endl );
-			cvar = dir.addChoiceClause(mval.getId () , choices[1].getId (), choices[0].getId ());
-		}else{
-			if(choices.size()>=1){
-				cvar = dir.addAndClause( mval.getId () , choices[0].getId ());
-			}else{
-				cvar = -YES;
-			}
-		}
-		node_ids[node.id] = cvar;
-		Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
-//		aracctimer.stop().print();
-		return;
-	}
-//	elooptimer.restart();
-	const vector<int>& nrange = mval.num_ranges;
-	int cvar = -YES;
-	int orTerms = 0;
-	for(int i=0; i<nrange.size(); ++i){
-		if( nrange[i] >= 0 && nrange[i] < choices.size() ){
-			if( mval.getId (i) == YES){
-				cvar = choices[nrange[i]].getId ();
-				++orTerms;
-				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-				scratchpad[orTerms] = cvar;
-			}else{
-				if( mval.getId (i) != -YES ){
-					cvar = dir.addAndClause( choices[nrange[i]].getId (), mval.getId (i) );
-					++orTerms;
-					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-					scratchpad[orTerms] = cvar;
-				}
-			}
-		}
-	}
-	if( orTerms < 2){
-		node_ids[node.id] = cvar;
-	}else{
-		scratchpad[0] = 0;
-		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
-		node_ids[node.id] = result;		
-	}
-	Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
-//	elooptimer.stop().print();
-//	aracctimer.stop().print();
-	return;
+#if 0
+    aracctimer.restart ();
+    flooptimer.restart ();
+#endif
+
+    /* Check whether anything has changed, otherwise quit. */
+    bool parentSame = true;
+    if (mval.isSparse ()) {
+        vector<int>::const_iterator itbeg, itend;
+        for (itbeg = mval.num_ranges.begin (), itend = mval.num_ranges.end ();
+             itbeg < itend; ++itbeg)
+        {
+            if (*itbeg < node.multi_mother.size ()) {
+                bool_node *cnode = node.multi_mother[*itbeg];
+                parentSame = parentSame && ((cnode) == NULL || ! cnode->flag);
+                Dout (cout << "Checking parents same " << *itbeg << " = "
+		      << parentSame << endl);
+
+		/* Break if false. */
+		if (! parentSame)
+		    break;
+            }
+        }
+    } else {
+        vector<bool_node *>::iterator it = node.multi_mother.begin ();
+        for (int i = 0; it != node.multi_mother.end (); ++i, ++it) {
+            Dout (cout << " parent = " << ((*it != NULL) ? (*it)->get_name () :"NULL")
+                  << "  ");
+            parentSame = parentSame && ((*it) == NULL || ! (*it)->flag);
+
+	    /* Break if false. */
+	    if (! parentSame)
+		break;
+        }
+    }
+#if 0
+    flooptimer.stop ().print ();
+    COUT << " FIRST LOOP mmsize =" << node.multi_mother.size () << " mval.num_ranges.size () ="
+        << mval.num_ranges.size () << endl;
+#endif
+    if (! checkParentsChanged (node, parentSame)) {
+        Dout (cout << "Parents did not change " << endl);
+        // aracctimer.stop ().print ();
+        return;
+    }
+
+    /* Extract choices into a value array, mark whether all are Boolean. */
+    vector<Tvalue> choices (node.multi_mother.size ());
+    bool isBoolean = true;
+    vector<bool_node *>::iterator it = node.multi_mother.begin ();
+    for (int i = 0; it != node.multi_mother.end (); ++i, ++it) {
+        Dout (cout << " parent = " << ((*it != NULL) ? (*it)->get_name () :"NULL") << "  ");
+        const Tvalue &cval = tval_lookup (*it);
+        if (cval.isSparse ())
+            isBoolean = false;
+        choices[i] = cval;
+        Dout (cout << "choice " << i << " = " << choices[i] << endl);
+    }
+
+    /* If not all choices are Boolean, switch to sparse output handling. */
+    if (! isBoolean) {
+#if 0
+        nonbooltimer.restart ();
+#endif
+        doNonBoolArrAcc (node);
+#if 0
+        nonbooltimer.stop () .print ();
+        aracctimer.stop () .print ();
+#endif
+        Dout (cout << node.get_name () << "  " << node_ids[node.id] << endl);
+        return;
+    }
+
+    /* Otherwise, it's all Boolean. */
+    Dout (cout << " is boolean" << endl);
+    Dout (cout << " mother = " << mval << "   " << endl);
+
+    /* Check if index is non-sparse. */
+    if (! mval.isSparse ()) {
+        Assert (mval.getSize () > 0, "index value must have at least one bit");
+
+        /* Optimize for single-bit index. */
+        if (mval.getSize () == 1) {
+            // mother->type != bool_node::ARITH
+            int cvar;
+            if (choices.size () >= 2) {
+                Dout (cout << " replacing with choice " << mval << ", " << choices[1]
+                      << ", " << choices[0] << endl);
+                cvar = dir.addChoiceClause (mval.getId (), choices[1].getId (),
+                                            choices[0].getId ());
+            } else if (choices.size () == 1)
+                cvar = dir.addAndClause (mval.getId (), choices[0].getId ());
+            else
+                cvar = -YES;
+
+            node_ids[node.id] = cvar;
+            Dout (cout << "ARRACC " << node.name << "  " << node_ids[node.id] << "   "
+                  << &node << endl);
+#if 0
+            aracctimer.stop ().print ();
+#endif
+            return;
+        }
+
+        /* Sparsify. */
+        mval.makeSparse (dir);
+    }
+
+#if 0
+    elooptimer.restart ();
+#endif
+    /* Iterate on index possible values, generate output clauses. */
+    const vector<int> &nrange = mval.num_ranges;
+    int cvar = -YES;
+    int orTerms = 0;
+    for (int i = 0; i < nrange.size (); ++i) {
+	int id = mval.getId (i);
+
+	/* False guard means the corresponding integer won't be used as index. */
+	if (id == -YES)
+	    continue;
+
+	/* Extract and handle index value. */
+	int n = nrange[i];
+        if (n >= 0 && n < choices.size ()) {
+	    cvar = (id == YES ?  choices[n].getId () :
+		    dir.addAndClause (choices[n].getId (), id));
+
+	    /* Remember choice variables. */
+	    ++orTerms;
+	    if (orTerms >= scratchpad.size ())
+		scratchpad.resize (scratchpad.size () * 2);
+	    scratchpad[orTerms] = cvar;
+        }
+    }
+
+    /* Form final output formula. */
+    scratchpad[0] = 0;
+    node_ids[node.id] = (orTerms == 0 ? -YES :
+			 (orTerms == 1 ? scratchpad[1] :
+			  dir.addBigOrClause (&scratchpad[0], orTerms)));
+
+    Dout (cout << "ARRACC " << node.name << "  " << node_ids[node.id] << "   "
+          << &node << endl);
+#if 0
+    elooptimer.stop ().print ();
+    aracctimer.stop ().print ();
+#endif
+
+    return;
 }
 
 void NodesToSolver::visit( DIV_node& node ){
@@ -1139,93 +1201,115 @@ NodesToSolver::visit (CONST_node &node)
 }
 
 
-void NodesToSolver::doNonBoolArrAcc(arith_node& node){
-	Dout( cout<<" non boolean array "<<endl );
-	vector<bool_node*>::iterator it = node.multi_mother.begin();
+void
+NodesToSolver::scratchpadRefit (size_t fit)
+{
+    size_t size = scratchpad.size();
+    while (size < fit)
+	size *= 2;
+    if (size != scratchpad.size())
+	scratchpad.resize (size);
+}
+
+void
+NodesToSolver::doNonBoolArrAcc (arith_node &node)
+{
+    Dout (cout << " non boolean array " << endl);
+    
+    /* Extract sparsified versions of array items and index. */
+    const vector<bool_node *> &inputs = node.multi_mother;
+    vector<Tvalue> items;
+    items.reserve (inputs.size());
+    for (vector<bool_node *>::const_iterator it = inputs.begin(); it != inputs.end(); it++) {
+	items.push_back (tval_lookup (*it, TVAL_SPARSE));
+	items.back().makeSparse (dir);
+    }
+    Tvalue index = tval_lookup (node.mother, TVAL_SPARSE);
+    index.makeSparse (dir);
+
+    /* Accumulate guard variables for all possible output values. */
+    map<int, vector<int> > result_val_vars;
+    const vector<int> &index_vals = index.num_ranges;
+    const int nitems = items.size ();
+    int i = 0;
+    for (vector<int>::const_iterator it = index_vals.begin();
+	 it != index_vals.end(); it++, i++)
+    {
+	const int index_val = *it;
+	if (index_val >= 0 && index_val < nitems) {
+	    Tvalue &item = items[index_val];
+	    vector<int> &item_vals = item.num_ranges;
+
+	    Dout (cout << "x=index_vals[" << i << "]=" << index_val << "  cvsize="
+		  << item_vals.size() << endl);
+
+	    int j = 0;
+	    for (vector<int>::iterator it = item_vals.begin();
+		 it != item_vals.end(); it++, j++)
+	    {
+		int item_val = *it;
+		int cvar = dir.addAndClause (index.getId (i), item.getId (j));
+		result_val_vars[item_val].push_back (cvar);
+		Dout (cout << " item_vals[" << j << "]=" << item_val << endl);
+	    }
+	} else
+	    Dout (cout << " x=index_vals[" << i << "]=" << index_val
+		  << " OUT OF RANGE" << endl);
+    }
+    Dout (cout << " result_val_vars.size()== " << result_val_vars.size() << endl);
+
+    /* Form result value, distinguish empty (false) from non-empty. */
+    Tvalue &result = node_ids[node.id];
+    size_t nvals = result_val_vars.size();
+    if (nvals == 0) {
+	result = Tvalue (-YES);
+	Dout (cout << " after sparsification " << result << endl);
+    } else {
+	/* Initialize output values. */
+	vector<int> &result_vals = result.num_ranges;
+	result_vals.clear();
+
+	const bool is_single_val = (nvals == 1);
+	bool is_allocated = false;
+
+	/* Compute OR guard clause for each possible output value. */
+	int k = 0;
+	for (map<int, vector<int> >::iterator it = result_val_vars.begin();
+	     it != result_val_vars.end(); it++, k++)
+	{
+	    const int val = it->first;
+	    const vector<int> &vars = it->second;
+	    size_t nvars = vars.size();
+
+	    /* Copy list of guard variables to scratch-pad, for OR clause generation. */
+	    scratchpadRefit (nvars + 1);
+	    int last_term_idx = 0;
+	    int last_var;
+	    for (int i = 0; i < nvars; i++)
+		scratchpad[++last_term_idx] = last_var = vars[i];
+
+	    /* Associate guard variable with current output value. */
+	    if (is_single_val && last_term_idx == 1)
+		result.setId (last_var);
+	    else {
+		/* Allocate fresh guard variables, if not done so far. */
+		if (! is_allocated) {
+		    result.setId (dir.newAnonymousVar (nvals));
+		    is_allocated = true;
+		}
+
+		/* Generate OR clause for current value's guard. */
+		scratchpad[0] = result.getId (k);
+		mng.addBigOrClause (&scratchpad[0], last_term_idx);
+	    }
+
+	    /* Store current output value. */
+	    result_vals.push_back (val);
+	}
 	
-	int N = node.multi_mother.size();
-	vector<Tvalue> choices(N);
-	for(int i=0; i < N; ++i, ++it){
-		choices[i] = tval_lookup (*it, TVAL_SPARSE);
-		choices[i].makeSparse (dir);
-	}
-	bool_node* mother = node.mother;
-	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-	mval.makeSparse (dir);
-
-	map<int, vector<int> > newVals;
-	int vsize = N;
-	vector<int>& nrange = mval.num_ranges;
-
-	for(int i=0; i<nrange.size(); ++i){
-		if( nrange[i] < vsize && nrange[i] >= 0){
-			vector<int>& cvalues = choices[nrange[i]].num_ranges;
-			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  cvsize="<<cvalues.size()<<endl );
-			for(int j=0; j<cvalues.size(); ++j){
-				int cvar = dir.addAndClause( mval.getId (i), choices[nrange[i]].getId (j) );
-				newVals[ cvalues[j] ].push_back(cvar);
-				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<endl );
-			}
-		}else{
-			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
-			//mng.assertVarClause(-mval.getId (i));
-			//Armando: Can't have this kind of assertions, because at this level we don't know whether this block
-			//will execute or not.
-		}
-	}
-
-	vector<int>& result = node_ids[node.id].num_ranges;
-	result.clear();
-	Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
-	if(newVals.size() == 1){
-		map<int, vector<int> >::iterator it = newVals.begin();
-		vector<int>& vars = it->second;
-		int orTerms = 0;
-		while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
-		for(int i=0; i<vars.size(); ++i){
-			++orTerms;
-			scratchpad[orTerms] = vars[i];
-		}
-		if( orTerms == 1){
-			node_ids[node.id].setId(vars[0]);
-			result.push_back(it->first);
-			node_ids[node.id].sparsify ();
-		}else{
-			scratchpad[0] = 0;
-			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
-			result.push_back(it->first);
-			node_ids[node.id].setId(cvar);
-			node_ids[node.id].sparsify ();
-		}
-	}else{
-		if(newVals.size() == 0){			
-			node_ids[node.id] = Tvalue( -YES );			
-			Dout(cout<<" after sparsification "<<node_ids[node.id]<<endl);
-			return;
-		}
-		//Assert( newVals.size() > 0, "This should not happen here3");
-		int newID = dir.newAnonymousVar();
-		node_ids[node.id].setId(newID);
-		int k=1;
-		for(k = 1; k< newVals.size(); ++k){
-			int cvar = dir.newAnonymousVar();
-			Assert( cvar == newID + k, "SolveFromInput3: cvar != newID + k ");
-		}
-		k = 0;
-		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it, ++k){
-			vector<int>& vars = it->second;
-			int orTerms = 0;
-			while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
-			for(int i=0; i<vars.size(); ++i){
-				++orTerms;
-				scratchpad[orTerms] = vars[i];
-			}
-			scratchpad[0] = newID + k;
-			mng.addBigOrClause( &scratchpad[0], orTerms);
-			result.push_back(it->first);
-		}
-		node_ids[node.id].sparsify ();
-	}
+	/* Sparsify output. */
+	result.sparsify();
+    }
 }
 
 

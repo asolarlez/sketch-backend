@@ -64,6 +64,8 @@ class NodesToSolver : public NodeVisitor {
 
     void boolNodeUpdate (bool_node &, Tvalue &);
 
+    void scratchpadRefit (size_t);
+
 public:
    
    /*
