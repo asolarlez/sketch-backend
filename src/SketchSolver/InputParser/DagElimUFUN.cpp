@@ -2,7 +2,6 @@
 
 DagElimUFUN::DagElimUFUN()
 {
-	moreNewFuns = true;
 	oneMoreFun = false;
 }
 
@@ -12,7 +11,6 @@ DagElimUFUN::~DagElimUFUN()
 
 
 void DagElimUFUN::stopProducingFuns(){
-	moreNewFuns = true;
 	oneMoreFun = true;
 	Dout(cout<<" NO MORE NEW FUNCTIONS WILL BE PRODUCED "<<endl);	
 }
@@ -391,7 +389,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 void DagElimUFUN::visit( UFUN_node& node ){
 	string& name = node.name;
-	if( moreNewFuns || ( functions.find(name) == functions.end()) ){	
+	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
 		Dout( cout<<"Replacing call to function "<< node.get_name() <<endl );
@@ -444,8 +442,9 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		Dout( cout<<" ADDING "<<(newnodes.size()-oldsize)<<" NODES"<<endl );
 	}	
-	if(oneMoreFun){ moreNewFuns = false; }
-	
+	if(oneMoreFun){
+		functions[name].moreNewFuns = false;
+	}
 }
 
 void DagElimUFUN::visit( ARRACC_node& node ){

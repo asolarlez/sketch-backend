@@ -12,11 +12,13 @@ class SFunInfo{
 	bool_node* symval;	
 	bool_node* outval;
 	int step;	
+	bool moreNewFuns;
 	SFunInfo():
 	fun(NULL),
 	symval(NULL),
 	outval(NULL),
-	step(0)
+	step(0),
+	moreNewFuns(true)
 	{
 			 
 	}
@@ -27,7 +29,6 @@ class SFunInfo{
 class DagElimUFUN : public NodeVisitor
 {
 	
-	bool moreNewFuns;
 	bool oneMoreFun;
 	
 	
