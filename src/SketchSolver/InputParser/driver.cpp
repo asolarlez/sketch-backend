@@ -302,10 +302,14 @@ int main(int argc, char** argv){
 	  			solveCode = solver.solveFromCheckpoint(input);
 	  		}
 	  	}catch(SolverException* ex){
-	  		cout<<"ERROR: "<<ex->code<<"  "<<ex->msg<<endl;
+	  		cout<<"ERROR "<<sketchName<<": "<<ex->code<<"  "<<ex->msg<<endl;
 	        ABCSolverEnd();
 	  		return ex->code + 2;
-	  	}
+	  	}catch(BasicError& be){
+		    cout<<"ERROR: "<<sketchName<<endl;
+		    ABCSolverEnd();
+	  		return 3;
+    	}
 	  	if( solveCode ){
 			solver.output_control_map(out);
 	  	}else{
