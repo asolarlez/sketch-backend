@@ -40,7 +40,8 @@ SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolv
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
-	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;	
+	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;
+	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;	
 Dout( cout<<"BEFORE CLEANUP"<<endl );
   	sketch_p->cleanup(false);
   	spec_p->cleanup(false);
