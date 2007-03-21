@@ -394,13 +394,16 @@ class ACTRL_node: public arith_node{
 };
 class ASSERT_node: public bool_node {
 	bool isHardAssert;
+	string msg;
 public:
     ASSERT_node ():isHardAssert(false) { type = ASSERT; }
-    ASSERT_node(const ASSERT_node& bn): bool_node(bn){ isHardAssert = bn.isHardAssert; }  
+    ASSERT_node(const ASSERT_node& bn): bool_node(bn){ isHardAssert = bn.isHardAssert;  msg = bn.msg; }  
     virtual void accept (NodeVisitor &visitor) { visitor.visit (*this); }
     virtual bool_node* clone(){return new ASSERT_node(*this);  };
     virtual void makeHardAssert(){ isHardAssert = true; }
     virtual bool isHard(){ return isHardAssert ; }
+    virtual void setMsg(const string& pmsg){ msg = pmsg; }
+    virtual string& getMsg(){ return msg; }
 };
 
 

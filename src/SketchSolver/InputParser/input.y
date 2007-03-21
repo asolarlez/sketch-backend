@@ -275,6 +275,19 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     delete $2;
   }
 } 
+| T_assert Expression ':' T_string ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+//    cout << "Generating assertion node..." << endl;
+    string s = currentBD->new_name ();
+    bool_node* bn = currentBD->new_node (*$2, "", bool_node::ASSERT, s);
+    dynamic_cast<ASSERT_node*>(bn)->setMsg(*$4);
+//    cout << "Assertion node created, name=" << s << endl;
+    delete $2;
+    delete $4;
+  }
+} 
+
 
 RateSet: T_InRate '=' T_int ';'	{ currentBD->create_inputs($3); }
 | T_OutRate '=' T_int ';'   { currentBD->create_outputs($3); }
@@ -489,7 +502,6 @@ Term: Constant {
 | T_ident '[' T_vartype ']' '(' varList  ')' {
 	
 	list<bool_node*>* params = $6;
-	cout<<" FUN CALL "<<*$1<<"  sz="<<params->size()<<endl;
 	if(params->size() == 0){
 		if( $3 == INT){
 			cout<<" INPUT IS INT "<<*$1<<endl;

@@ -364,8 +364,7 @@ varDir::addAssertClause (int a)
 
     /* Vacuously false. */ 
     if (a == -YES) {
-        cout << "Assertion cannot be valid, aborting solver" << endl;
-        exit (1);  /* FIXME arbitrary termination behavior, double check! */
+    	Assert(false, "Assertion cannot be valid, aborting solver");
     }
 
     dout ("asserting " << a);
