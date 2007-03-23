@@ -287,6 +287,10 @@ varDir::addBigOrClause (int *a, int last)
     /* Check for shortcut cases. */
     if (last == 0)
 	return (a[0] = addEqualsClause (-YES, a[0]));
+    else if (last == 1)
+	return (a[0] = addEqualsClause (a[1], a[0]));
+    else if (last == 2)
+	return (a[0] = addOrClause (a[1], a[2], a[0]));
 
     /* Allocate fresh result variable as necessary. */
     if (a[0] == 0)
