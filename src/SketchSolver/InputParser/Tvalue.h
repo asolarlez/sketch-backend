@@ -37,8 +37,16 @@ public:
 
     inline int getId (int idx = 0) const {
 	Assert (id >= 0, "id must be initialized");
+	Assert (idx < getSize (), "index must be in-bound");
+
 	int ret = id + idx;
 	return (neg ? -ret : ret);
+    }
+
+    /* Get an ID, even if exceeding the representation size of bit-vectors. */
+    inline int getIdExt (varDir &dir, int idx = 0) const {
+	Assert (id >= 0, "id must be initialized");
+	return (idx < getSize() ? getId (idx) : getSignId (dir));
     }
 
     inline int getSize (void) const { return size; }
@@ -172,13 +180,19 @@ public:
      * Friends.
      */
     friend ostream &operator<< (ostream &out, const Tvalue &tv) {
-	out << "{" << (tv.neg ? -tv.id : tv.id);
+	out << "{id=" << tv.getId();
 
-	if (tv.isSparse () ){
-	    out << " [ ";
-	    for (int i = 0; i < tv.size; i++)
-		out << tv.num_ranges[i] << ", ";
-	    out << " ] ";
+	if (tv.isSparse()) {
+	    out << " [";
+	    bool is_pred = false;
+	    for (int i = 0; i < tv.size; i++) {
+		if (is_pred)
+		    out << ", ";
+		else
+		    is_pred = true;
+		out << tv.num_ranges[i];
+	    }
+	    out << "]";
 	} else
 	    out << " size=" << tv.size;
 
@@ -359,8 +373,28 @@ public:
 	    Dout (cout << "Converting from BitVector to BitVector (padding="
 		  << padding << ")" << endl);
 
-	    /* TODO handle padding. */
-	    Assert (padding == 0, "padding not yet implemented for this conversion");
+	    int newSize = size + padding;
+	    if (newSize == size) {
+		Dout (cout << "size remains the same, nothing to do" << endl);
+		return *this;
+	    }
+
+	    Dout (cout << "toBvect: allocating " << newSize << " variables" << endl);
+	    int newId = dir.newAnonymousVar (newSize);
+	    Tvalue tv (TVAL_BVECT, newId, newSize);
+
+	    /* Embed old bits into new bits. */
+	    Dout (cout << "toBvect: embedding old bits into new bits" << endl);
+	    for (int i = 0; i < size; i++)
+		dir.addEqualsClause (getId (i), newId++);
+
+	    /* Unify padding bits with false. */
+	    Dout (cout << "toBVect: unifying padding bits with false" << endl);
+	    while (padding--)
+		dir.addEqualsClause (-dir.YES, newId++);
+
+	    Dout (cout << "toBvect: done" << endl);
+	    return tv;
 	} else if (isBvectSigned ()) {
 	    Dout (cout << "Converting from BitVectorSigned to BitVector (padding="
 		  << padding << ")" << endl);
@@ -385,9 +419,16 @@ public:
 		  << (isBvectSigned () ? "Signed" : "")
 		  << " to BitVectorSigned (padding=" << padding << ")" << endl);
 
-	    /* Allocate new variables sufficient for value bits + additional sign bit + padding. */
+	    /* Allocate new variables sufficient for value bits + additional
+	     * sign bit + padding. */
 	    int valueSize = size - (isBvectSigned () ? 1 : 0);
 	    int newSize = valueSize + padding + 1;
+	    if (newSize == size) {
+		Dout (cout << "toBvectSigned: size remains the same, nothing to do"
+		      << endl);
+		return *this;
+	    }
+
 	    Dout (cout << "toBvectSigned: allocating " << newSize << " variables" << endl);
 	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (newSize), newSize);
 
@@ -400,7 +441,7 @@ public:
 		  << newId + valueSize - 1 << ") with previous ones (" << id << "-"
 		  << id + valueSize - 1 << ")" << endl);
 	    for (int i = 0; i < valueSize; i++)
-		dir.addEqualsClause (id + i, newId++);
+		dir.addEqualsClause (getId (i), newId++);
 
 	    /* Unify sign and padding bits with "false". */
 	    Dout (cout << "toBvectSigned: unifying sign + padding bits" << endl);
@@ -418,6 +459,11 @@ public:
 	    assert (0);  /* Can't get here. */
 
 	return *this;
+    }
+
+    void makeBvect (varDir &dir, unsigned padding = 0) {
+	Tvalue tmp = toBvect (dir, padding);
+	*this = tmp;
     }
 
     void makeBvectSigned (varDir &dir, unsigned padding = 0) {
