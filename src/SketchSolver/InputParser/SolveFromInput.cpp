@@ -80,7 +80,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		sketch_p->makeMiter(*spec_p, TIP_NAME);
 		problem = sketch_p;
 	   	Dout( cout<<"after makeMiter "<<endl);
-		Dout( problem->print(cout) );	
+		//Dout( problem->print(cout) );	
 				
 		{
 			DagOptim cse(*problem);	
@@ -107,6 +107,19 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}	
 		cout<<"* after Second optim: Problem nodes = "<<problem->size()<<endl;
 	}else{
+		
+		if(sketch_p->size() > 1000){
+			{
+			DagOptim cse(*sketch_p);	
+			cse.process(*sketch_p);
+			}
+			{
+			DagOptim cse(*spec_p);	
+			cse.process(*spec_p);
+			}
+			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;	
+		}
+			
 		{
 			DagElimUFUN eufun;	
 			eufun.process(*spec_p);
@@ -115,13 +128,21 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}
 		cout<<"Done with ElimUFUN "<<endl;
 		cout<<"Printing spec and sketch "<<endl;
-		Dout( spec_p->print(cout) );	
-		Dout( sketch_p->print(cout) );	
+		//Dout( spec_p->print(cout) );	
+		//Dout( sketch_p->print(cout) );	
 		
 		spec_p->makeMiter(*sketch_p, TIP_NAME);
 		problem = spec_p;
 		cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
-		Dout( problem->print(cout) );				
+		//Dout( problem->print(cout) );				
+		{
+			DagOptim cse(*problem);	
+			cse.process(*problem);
+		}
+		problem->cleanup(false);
+		problem->sort_graph();
+		problem->relabel();
+		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;		
 		{
 			DagOptim cse(*problem);	
 			cse.process(*problem);
@@ -129,9 +150,9 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		problem->cleanup(false);
 		problem->sort_graph();
 		problem->relabel();	
-		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	
-		Dout( problem->print(cout) );
+		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;	
 		
+		Dout( problem->print(cout) );
 	}
 	
 	

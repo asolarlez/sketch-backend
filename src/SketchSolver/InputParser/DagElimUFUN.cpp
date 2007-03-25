@@ -484,7 +484,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
 	newnodes.clear();
 	dag.removeNullNodes();
 	Dout( cout<<" AFTER PROCESS "<<endl );
-	Dout( dag.print(cout) );	
+	//Dout( dag.print(cout) );	
 	Dout(cout<<" end ElimFun "<<endl);
 }
 

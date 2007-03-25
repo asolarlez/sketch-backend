@@ -19,7 +19,7 @@ string bool_node::get_name(){
       
     }    
     str<<"_"<<this;
-    //str<<":"<<id;
+    str<<":"<<id;
     Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
     return str.str();
   }
