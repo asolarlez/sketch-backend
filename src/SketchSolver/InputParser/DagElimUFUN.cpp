@@ -1,5 +1,8 @@
 #include "DagElimUFUN.h"
 
+
+bool WITH_RESTRICTIONS ;
+
 DagElimUFUN::DagElimUFUN()
 {
 	oneMoreFun = false;
@@ -404,11 +407,16 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			cclone->replace(inarg->id, node.multi_mother[i]);
 		}
 		
-		stringstream str;
-		str<< node.get_name() <<"_"<<sfi.step;
-		string curParamName = str.str() ;		
-		SRC_node* src =  new SRC_node( curParamName);
-		src->set_nbits( node.get_nbits() );
+		bool_node* src = NULL;
+		if(WITH_RESTRICTIONS){
+			src =  new CONST_node(0);			
+		}else{
+			stringstream str;
+			str<< node.get_name() <<"_"<<sfi.step;
+			string curParamName = str.str() ;		
+			src =  new SRC_node( curParamName);
+			dynamic_cast<SRC_node*>(src)->set_nbits( node.get_nbits() );
+		}
 		sfi.step++;		
 		cclone->addNewNode(src);		
 		Dout(cout<<" Adding parameter "<<src->get_name()<<endl);

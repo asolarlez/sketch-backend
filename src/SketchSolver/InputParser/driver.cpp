@@ -12,6 +12,7 @@
 
 using std::ofstream;
 
+extern bool WITH_RESTRICTIONS ;
 
 namespace INp{
 extern  map<string, BooleanDAG*> functionMap;
@@ -56,7 +57,7 @@ class paramInterp{
 		hasCpt = false;
 		hasRestore = false;
 	doBvectArith = false;
-		
+		WITH_RESTRICTIONS = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -76,6 +77,13 @@ class paramInterp{
 	    	outputAIG = true;
 	      input_idx = ii+1;      
 	    }
+	    
+	    if( string(argv[ii]) == "-withrestrictions" ){
+	    	WITH_RESTRICTIONS = true;
+	      input_idx = ii+1;      
+	    }
+	    
+	    
 	    if( string(argv[ii]) == "-outputEuclid" ){
 	    	outputEuclid = true;
 	      input_idx = ii+1;      
