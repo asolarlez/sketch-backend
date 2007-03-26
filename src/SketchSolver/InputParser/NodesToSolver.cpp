@@ -829,6 +829,25 @@ NodesToSolver::visit (ARRACC_node &node)
      * checking to see whether it may take a negative value. */
     bool is_signed = is_got_bvect && output_bvect.isBvectSigned ();
     if (is_got_bvect && is_got_sparse) {
+	/* FIXME temporary: exhaustive check for a negative integer in the set
+	 * of possible sparse values, in which case everything needs to be
+	 * converted to signed. Ideally, we'll have a constant time flag in
+	 * the sparse Tvalue that will tell us just that. */
+	if (! is_signed) {
+	    vector<int> &output_sparse_vals = output_sparse.num_ranges;
+	    for (vector<int>::const_iterator it = output_sparse_vals.begin();
+		 it < output_sparse_vals.end(); it++)
+	    {
+		if (*it < 0) {
+		    Dout (cout <<
+			  "found negative sparse value, forcing signed output" << endl);
+		    output_bvect.makeBvectSigned (dir);
+		    is_signed = true;
+		    break;
+		}
+	    }
+	}
+
 	Dout (cout << "converting sparse output to "
 	      << (is_signed ? "signed" : "unsigned") << " bvect" << endl);
 	if (is_signed)
@@ -853,7 +872,8 @@ NodesToSolver::visit (ARRACC_node &node)
 	}
 
 	int output_size = output_bvect.getSize ();
-	Dout (cout << "merging outputs into single " << output_size << "-bit output" << endl);
+	Dout (cout << "merging outputs into single " << output_size
+	      << "-bit output" << endl);
 	output = Tvalue ((is_signed ? TVAL_BVECT_SIGNED : TVAL_BVECT),
  			 dir.newAnonymousVar (output_size), output_size);
 	for (int i = 0; i < output_size; i++) {
