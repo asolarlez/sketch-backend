@@ -347,7 +347,8 @@ private:
 
 	/* Allocate bitvector of fresh variables for both value and sign. */
 	int paddedSize = bit.size () + padding;
-	Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (paddedSize), paddedSize);
+	Tvalue tv ((toSigned ? TVAL_BVECT_SIGNED : TVAL_BVECT),
+		   dir.newAnonymousVar (paddedSize), paddedSize);
 
 	/* Assign value/sign bits with conjunction of their corresponding
 	 * sparse variables. */
@@ -400,7 +401,7 @@ public:
 		  << padding << ")" << endl);
 
 	    /* This conversion is not allowed at the moment (requires dynamic assertion). */
-	    Assert (0, "cannot convert from unsigned to signed bitvector");
+	    Assert (0, "cannot convert from signed to unsigned bitvector");
 	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to BitVector (padding="
 		  << padding << ")" << endl);
@@ -423,7 +424,7 @@ public:
 	     * sign bit + padding. */
 	    int valueSize = size - (isBvectSigned () ? 1 : 0);
 	    int newSize = valueSize + padding + 1;
-	    if (newSize == size) {
+	    if (isBvectSigned() && newSize == size) {
 		Dout (cout << "toBvectSigned: size remains the same, nothing to do"
 		      << endl);
 		return *this;
