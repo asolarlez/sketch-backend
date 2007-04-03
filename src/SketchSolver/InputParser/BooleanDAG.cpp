@@ -453,21 +453,18 @@ void BooleanDAG::cleanup(bool moveNots){
 		nodes[i]->dislodge();  		
   	}
   }
-  for(int i=0; i < nodes.size(); ){
+  for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
   		nodes[i]->type != bool_node::SRC && 
   		nodes[i]->type != bool_node::CTRL){
   		delete nodes[i];
 		nodes[i] = NULL;
-		nodes.erase( nodes.begin() + i);
-  	}else{
-  		++i;
+		
   	}
   }
   
   
-  
-  
+  /*  
   for(int i=0; i< nodes.size(); ){    
 
     //Now, this optimization will remove redundant 
@@ -491,7 +488,9 @@ void BooleanDAG::cleanup(bool moveNots){
     }else{
       ++i;
     }//  if( nodes[i]->father == nodes[i]->mother )    
-  }
+  }  
+  */
+  
   removeNullNodes();  
 }
 
