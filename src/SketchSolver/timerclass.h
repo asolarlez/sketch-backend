@@ -4,6 +4,8 @@
 #ifndef  _MSC_VER
 #include <sys/time.h>
 
+using namespace std;
+
 class timerclass{
 	unsigned long long tottime;
 	unsigned long long ctime;
