@@ -142,7 +142,7 @@ OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 ParamDecl: T_vartype T_ident {  
 	if( $1 == INT){
 		cout<<" INPUT IS INT "<<*$2<<endl;
-		currentBD->create_inputs( NINPUTS , *$2); 
+		currentBD->create_inputs( 2 /*NINPUTS*/ , *$2); 
 	}else{
 		cout<<" INPUT IS BIT "<<*$2<<endl;
 		currentBD->create_inputs(-1, *$2); 
@@ -505,7 +505,7 @@ Term: Constant {
 	if(params->size() == 0){
 		if( $3 == INT){
 			cout<<" INPUT IS INT "<<*$1<<endl;
-			currentBD->create_inputs( NINPUTS , *$1); 
+			currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 		}else{
 			cout<<" INPUT IS BIT "<<*$1<<endl;
 			currentBD->create_inputs(-1, *$1);
@@ -521,7 +521,7 @@ Term: Constant {
 		}
 		
 		if( $3 == INT){
-			ufun->set_nbits( NINPUTS  );
+			ufun->set_nbits( 2 /*NINPUTS*/  );
 		}else{
 	
 			ufun->set_nbits( 1  );

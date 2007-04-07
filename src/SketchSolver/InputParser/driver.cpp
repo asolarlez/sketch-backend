@@ -268,7 +268,7 @@ int main(int argc, char** argv){
      		cout<<" CHECK = MINI"<<endl;
       	}
       	
-      	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize);
+      	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, params.seedsize, INp::NINPUTS);
       	if(params.outputEuclid){      		
       		ofstream fout("bench.ucl");
       		solver.outputEuclid(fout);
