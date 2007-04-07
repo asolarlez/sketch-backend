@@ -36,11 +36,12 @@ void SolveFromInput::setup2QBF(){
 
 
 
-SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"){
+SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
 	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;
+	cout<<"* NINPUTS = "<<NINPUTS<<endl;
 	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;	
 Dout( cout<<"BEFORE CLEANUP"<<endl );
   	sketch_p->cleanup(false);
@@ -150,6 +151,14 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		problem->cleanup(false);
 		problem->sort_graph();
 		problem->relabel();	
+		
+		{
+			DagCSE cse(*problem);
+			cse.eliminateCSE();
+			
+		}
+		
+		
 		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;	
 		
 		Dout( problem->print(cout) );
@@ -216,6 +225,41 @@ void SolveFromInput::setupCheck(){
 	for(int i=0; i<getInSize(); ++i){ last_input[i] = 0; };
 }
 
+
+
+
+
+bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
+	bool rv = FindCheckSolver::check(controls, input);
+	
+	while(!rv){
+	//this means it wasn't able to find a counterexample.
+		cout<<"* growing the inputs"<<endl;
+		bool keepGoing = false;
+		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);	
+		for(int i=0; i<specIn.size(); ++i){			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			if(nbits < NINPUTS  && nbits >= 2){				
+				declareInput(specIn[i]->get_name(), nbits+1);
+				srcnode->set_nbits(nbits+1);
+				cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
+				keepGoing = true;
+			}else{
+				cout<<"* input "<<srcnode->get_name()<<" doesn't need to grow its size is already"<<srcnode->get_nbits()<<endl;								
+			}
+		}
+		if(! keepGoing ){
+			cout<<"* Done growing inputs. All integer inputs have reached size "<<NINPUTS<<endl;
+			 break; 
+		}
+		
+		rv = FindCheckSolver::check(controls, input);		
+	}
+	
+	return rv;
+	
+}
 
 
 
