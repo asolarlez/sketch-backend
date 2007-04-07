@@ -15,6 +15,12 @@ public:
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();
 	
+	template<typename COMP, typename NTYPE>
+	bool compSymplification(NTYPE& node);
+	
+	template<typename COMP>
+	int staticCompare(bool_node* n1, int C , bool reverse );
+	
 	virtual void visit( SRC_node& node );
 	virtual void visit( CTRL_node& node );
 	virtual void visit( CONST_node& node );
@@ -47,7 +53,8 @@ public:
 	map<int, CONST_node*> cnmap;
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
-	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2); 
+	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);
+	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
 	virtual bool isConst(bool_node* n1);
 	virtual bool getBval(bool_node* n1);
 	virtual int getIval(bool_node* n1);

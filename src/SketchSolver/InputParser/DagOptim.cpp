@@ -26,7 +26,187 @@ CONST_node* DagOptim::getCnode(bool c){
 }
 
 
+
+
+
+
+
+
+
+/**
+ * return value: 
+ * 	1 : always true.
+ * -1 : always false.
+ */
+template<typename COMP>
+int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
+	COMP comp;	
+	
+	if(  isConst(n1) ){
+		bool cm = reverse? comp(C, getIval(n1)) : comp(getIval(n1), C);
+		return cm ? 1 : -1;	
+	} 	
+	
+	if(  typeid(*n1) == typeid(ARRACC_node) ){
+		ARRACC_node& ar = *dynamic_cast<ARRACC_node*>(n1);
+		int rv = -2;
+		for(int i=0; i<ar.multi_mother.size(); ++i){
+			int tmp = staticCompare<COMP>(ar.multi_mother[i], C, reverse);
+			if(rv != -2 && tmp != rv){
+				return 0;	
+			}	
+			rv = tmp;
+		}
+		if(rv == -2){ return 0; }
+		return rv;		
+	}
+	return 0;
+}
+
+
+
+
+template<typename COMP, typename NTYPE>
+bool DagOptim::compSymplification(NTYPE& node){
+
+	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
+		bool_node* momo = node.mother->mother;
+		bool_node* mofa = node.mother->father;
+		
+		bool_node* famo = node.father->mother;
+		bool_node* fafa = node.father->father;
+		if(momo == fafa){
+			bool_node* tmp = fafa;
+			fafa = famo;
+			famo = tmp;	
+		}
+		
+		if(mofa == famo){
+			bool_node* tmp = momo;
+			momo = mofa;
+			mofa = tmp;
+		}
+		
+		if(mofa == fafa){
+			bool_node* tmp = fafa;
+			fafa = famo;
+			famo = tmp;	
+			
+			tmp = momo;
+			momo = mofa;
+			mofa = tmp;	
+		}
+		
+		if(momo == famo){
+			//cout<<" EQUALITY REPLACEMENT"<<endl;
+			NTYPE* pnode = new NTYPE();
+			pnode->mother = mofa;
+			pnode->father = fafa;
+			pnode->addToParents();
+			pnode->id = newnodes.size() + dagsize;
+			newnodes.push_back(pnode);
+			rvalue  = pnode;
+			visit(*pnode);
+			return true;
+		}
+	}
+		
+	if( typeid(*node.mother) == typeid(PLUS_node) ){
+		
+		bool_node* momo = node.mother->mother;
+		bool_node* mofa = node.mother->father;
+		
+		if(mofa == node.father){
+			momo = 	node.mother->father;;
+			mofa = node.mother->mother;
+		}
+		//At this point, if any of the two is equal to node.father, it will be momo
+		
+		if(momo == node.father){
+			NTYPE* pnode = new NTYPE();
+			pnode->mother = mofa;
+			pnode->father = getCnode(0);
+			pnode->addToParents();
+			pnode->id = newnodes.size() + dagsize;
+			newnodes.push_back(pnode);
+			rvalue  = pnode;
+			visit(*pnode);			
+			return true;
+		}			
+	}
+		
+	if( typeid(*node.father) == typeid(PLUS_node) ){
+		
+		bool_node* momo = node.father->mother;
+		bool_node* mofa = node.father->father;
+		
+		if(mofa == node.mother){
+			momo = 	node.father->father;;
+			mofa = node.father->mother;
+		}
+		//At this point, if any of the two is equal to node.father, it will be momo
+		
+		if(momo == node.mother){
+			NTYPE* pnode = new NTYPE();
+			pnode->mother = mofa;
+			pnode->father = getCnode(0);
+			pnode->addToParents();
+			pnode->id = newnodes.size() + dagsize;
+			newnodes.push_back(pnode);
+			rvalue  = pnode;
+			visit(*pnode);			
+			return true;
+		}			
+	}
+		
+	if(isConst(node.mother)){
+		int tmp = staticCompare<COMP>(node.father, getIval(node.mother), true);
+		if(tmp == 1){
+			rvalue  = getCnode(1);
+			return 	true;
+		}
+		if(tmp == -1){
+			rvalue  = getCnode(0);
+			return true;	
+		}
+	}
+	
+	if(isConst(node.father)){
+		int tmp = staticCompare<COMP>(node.mother, getIval(node.father), false);
+		if(tmp == 1){
+			rvalue  = getCnode(1);
+			return 	true;
+		}
+		if(tmp == -1){
+			rvalue  = getCnode(0);
+			return true;	
+		}
+	}
+		
+	return false;
+}
+
+
+
+
 bool DagOptim::isNegOfEachOther(bool_node* n1, bool_node* n2){
+	if( typeid(*n1) == typeid(NEG_node) ){
+		if(  n1->mother == n2){
+			return true;	
+		}
+	}
+	
+	if(  typeid(*n2) == typeid(NEG_node) ){
+		if( n2->mother == n1){
+			return true;
+		}
+	}
+	return false;	
+}
+
+
+
+bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	if( n1->type == bool_node::NOT){
 		if( n1->mother == n2){
 			return true;	
@@ -86,24 +266,30 @@ void DagOptim::visit( AND_node& node ){
 		rvalue = node.father;
 		return;	
 	}
-	if( isNegOfEachOther(node.father, node.mother) ){ // x & !x == false
+	if( isNotOfEachOther(node.father, node.mother) ){ // x & !x == false
 		rvalue = getCnode(0);
 		return;	
 	}
 	if( isConst(node.father) ){
-		if( !getBval(node.father) ){ // x & false == false;
-			rvalue = getCnode(0);
-			return;
-		}		
 		if( isConst(node.mother) ){ // const prop
 			rvalue = getCnode ( getBval( node.father ) && getBval( node.mother ) );				
 			return;
 		}
+		if( !getBval(node.father) ){ // x & false == false;
+			rvalue = getCnode(0);
+			return;
+		}else{
+			rvalue = node.mother;
+			return;	
+		}		
 	}
 	if( isConst(node.mother) ){
 		if( ! getBval(node.mother)){ // false & x == false;
 			rvalue = getCnode(0);			
 			return;
+		}else{
+			rvalue = node.father;
+			return;	
 		}
 	}
 	rvalue = &node;
@@ -114,24 +300,30 @@ void DagOptim::visit( OR_node& node ){
 		rvalue = node.father;
 		return;	
 	}
-	if( isNegOfEachOther(node.father, node.mother) ){ // x | !x == true
+	if( isNotOfEachOther(node.father, node.mother) ){ // x | !x == true
 		rvalue = getCnode(1);
 		return;	
 	}
 	if( isConst(node.father) ){
-		if( getBval(node.father) ){ // x | true == true
-			rvalue = getCnode(1);			
-			return;
-		}
 		if( isConst(node.mother) ){ // const prop
 			rvalue = getCnode ( getBval( node.father ) || getBval( node.mother ) );				
 			return;
 		}
+		if( getBval(node.father) ){ // x | true == true
+			rvalue = getCnode(1);			
+			return;
+		}else{
+			rvalue = node.mother;
+			return;				
+		}		
 	}
 	if( isConst(node.mother) ){ // true | x == true
 		if( getBval(node.mother)){
 			rvalue = getCnode(1);			
 			return;
+		}else{
+			rvalue = node.father;
+			return;	
 		}
 	}
 	rvalue = &node;
@@ -143,7 +335,7 @@ void DagOptim::visit( XOR_node& node ){
 		rvalue = getCnode(0);
 		return;	
 	}
-	if( isNegOfEachOther(node.father, node.mother) ){ // x ^ !x == true
+	if( isNotOfEachOther(node.father, node.mother) ){ // x ^ !x == true
 		rvalue = getCnode(1);
 		return;	
 	}
@@ -230,6 +422,55 @@ void DagOptim::visit( PLUS_node& node ){
 	}
 	
 	rvalue = &node;
+	
+	
+	if( isNegOfEachOther(node.mother, node.father) ){
+		rvalue = getCnode(0);
+		return;
+	}
+	
+	if( typeid(*node.father) == typeid(node) ){
+		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father);
+		bool_node* tt1 = parent.father;
+		bool_node* tt2 = parent.mother;
+		bool_node* tt3 = node.mother;
+			
+		if(isNegOfEachOther( tt1 , tt2)){
+			rvalue = tt3;
+			return;	
+		}
+		if(isNegOfEachOther( tt1 , tt3)){
+			rvalue = tt2;
+			return;	
+		}
+		if(isNegOfEachOther( tt2 , tt3)){
+			rvalue = tt1;
+			return;	
+		}
+	}
+	
+	
+	if( typeid(*node.mother) == typeid(node) ){
+		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.mother);
+		bool_node* tt1 = parent.father;
+		bool_node* tt2 = parent.mother;
+		bool_node* tt3 = node.father;
+			
+		if(isNegOfEachOther( tt1 , tt2)){
+			rvalue = tt3;
+			return;	
+		}
+		if(isNegOfEachOther( tt1 , tt3)){
+			rvalue = tt2;
+			return;	
+		}
+		if(isNegOfEachOther( tt2 , tt3)){
+			rvalue = tt1;
+			return;	
+		}
+	}
+	
+	
 	
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
@@ -322,6 +563,8 @@ void DagOptim::visit( NEG_node& node ){
 	rvalue = &node;
 }
 	
+	
+		
 void DagOptim::visit( GT_node& node ){
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
@@ -337,48 +580,9 @@ void DagOptim::visit( GT_node& node ){
 	
 	
 	
-	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		bool_node* famo = node.father->mother;
-		bool_node* fafa = node.father->father;
-		if(momo == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-		}
-		
-		if(mofa == famo){
-			bool_node* tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(mofa == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-			
-			tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(momo == famo){
-			//cout<<" GT REPLACEMENT"<<endl;
-			GT_node* pnode = new GT_node();
-			pnode->mother = mofa;
-			pnode->father = fafa;
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			return;
-		}
+	if( compSymplification<greater<int> , GT_node>(node) ){
+		return;	
 	}
-	
 	
 	
 	rvalue = &node;
@@ -393,9 +597,16 @@ void DagOptim::visit( GE_node& node ){
 	if( node.mother == node.father ){
 		rvalue = getCnode(true);
 		return;
-	} 
+	}
+	
+	if( compSymplification<greater_equal<int> , GE_node>(node) ){
+		return;	
+	}
+	 
 	rvalue = &node;
 }
+
+
 void DagOptim::visit( LT_node& node ){
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
@@ -408,72 +619,9 @@ void DagOptim::visit( LT_node& node ){
 		return;
 	} 
 	
-	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		bool_node* famo = node.father->mother;
-		bool_node* fafa = node.father->father;
-		if(momo == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-		}
-		
-		if(mofa == famo){
-			bool_node* tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(mofa == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-			
-			tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(momo == famo){
-			//cout<<" LT REPLACEMENT"<<endl;
-			LT_node* pnode = new LT_node();
-			pnode->mother = mofa;
-			pnode->father = fafa;
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			return;
-		}
-	}
-	
-	
-		if( typeid(*node.mother) == typeid(PLUS_node) ){
-		
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		if(mofa == node.father){
-			momo = 	node.mother->father;;
-			mofa = node.mother->mother;
-		}
-		//At this point, if any of the two is equal to node.father, it will be momo
-		
-		if(momo == node.father){
-			LT_node* pnode = new LT_node();
-			pnode->mother = mofa;
-			pnode->father = getCnode(0);
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			return;
-		}				
-	}
+	if( compSymplification<less<int> , LT_node>(node) ){
+		return;	
+	}	
 	
 	rvalue = &node;
 }
@@ -491,86 +639,27 @@ void DagOptim::visit( LE_node& node ){
 	} 
 	
 	
-	
-	
-		if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		bool_node* famo = node.father->mother;
-		bool_node* fafa = node.father->father;
-		if(momo == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-		}
-		
-		if(mofa == famo){
-			bool_node* tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(mofa == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-			
-			tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(momo == famo){
-			//cout<<" LT REPLACEMENT"<<endl;
-			LE_node* pnode = new LE_node();
-			pnode->mother = mofa;
-			pnode->father = fafa;
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			return;
-		}
-	}
-	
-	
-		if( typeid(*node.mother) == typeid(PLUS_node) ){
-		
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		if(mofa == node.father){
-			momo = 	node.mother->father;;
-			mofa = node.mother->mother;
-		}
-		//At this point, if any of the two is equal to node.father, it will be momo
-		
-		if(momo == node.father){
-			cout<<" ABOUT TO REPLACE LE: "<<endl;
-			node.outDagEntry(cout);
-			cout<<"-----------"<<endl;
-			LE_node* pnode = new LE_node();
-			pnode->mother = mofa;
-			pnode->father = getCnode(0);
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			rvalue->outDagEntry(cout);
-			cout<<rvalue->get_name()<<endl;
-			cout<<"========"<<endl;
-			return;
-		}				
-	}
-	
+	if( compSymplification<less_equal<int> , LE_node>(node) ){
+		return;	
+	}	
 	
 	
 	
 	rvalue = &node;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 void DagOptim::visit( EQ_node& node ){
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
@@ -582,100 +671,10 @@ void DagOptim::visit( EQ_node& node ){
 		rvalue = getCnode(true);
 		return;
 	} 
-	
-	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
 		
-		bool_node* famo = node.father->mother;
-		bool_node* fafa = node.father->father;
-		if(momo == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-		}
-		
-		if(mofa == famo){
-			bool_node* tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(mofa == fafa){
-			bool_node* tmp = fafa;
-			fafa = famo;
-			famo = tmp;	
-			
-			tmp = momo;
-			momo = mofa;
-			mofa = tmp;	
-		}
-		
-		if(momo == famo){
-			//cout<<" EQUALITY REPLACEMENT"<<endl;
-			EQ_node* pnode = new EQ_node();
-			pnode->mother = mofa;
-			pnode->father = fafa;
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);
-			return;
-		}
-	}
-	
-	
-	if( typeid(*node.mother) == typeid(PLUS_node) ){
-		
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
-		
-		if(mofa == node.father){
-			momo = 	node.mother->father;;
-			mofa = node.mother->mother;
-		}
-		//At this point, if any of the two is equal to node.father, it will be momo
-		
-		if(momo == node.father){
-			EQ_node* pnode = new EQ_node();
-			pnode->mother = mofa;
-			pnode->father = getCnode(0);
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);			
-			return;
-		}			
-	}
-	
-	
-	if( typeid(*node.father) == typeid(PLUS_node) ){
-		
-		bool_node* momo = node.father->mother;
-		bool_node* mofa = node.father->father;
-		
-		if(mofa == node.mother){
-			momo = 	node.father->father;;
-			mofa = node.father->mother;
-		}
-		//At this point, if any of the two is equal to node.father, it will be momo
-		
-		if(momo == node.mother){
-			EQ_node* pnode = new EQ_node();
-			pnode->mother = mofa;
-			pnode->father = getCnode(0);
-			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			newnodes.push_back(pnode);
-			rvalue  = pnode;
-			visit(*pnode);			
-			return;
-		}			
-	}
-	
-	
+	if( compSymplification<equal_to<int> , EQ_node>(node) ){
+		return;	
+	}		
 	
 	rvalue = &node;
 }
@@ -724,10 +723,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				newnodes.push_back(an);
 				
 				an->accept(cse);
-				if(cse.cse_map.find(cse.ccode) != cse.cse_map.end()){
-					an = dynamic_cast<AND_node*>(cse.cse_map[cse.ccode]);		
+				if(cse.hasCSE(cse.ccode)){
+					an = dynamic_cast<AND_node*>(cse[cse.ccode]);		
 				}else{
-					cse.cse_map[cse.ccode] = an;
+					cse[cse.ccode] = an;
 				}
 				
 				node.dislodge();
@@ -760,10 +759,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				
 				
 				an->accept(cse);
-				if(cse.cse_map.find(cse.ccode) != cse.cse_map.end()){
-					an = dynamic_cast<AND_node*>(cse.cse_map[cse.ccode]);		
+				if(cse.find(cse.ccode) != cse.end()){
+					an = dynamic_cast<AND_node*>(cse[cse.ccode]);		
 				}else{
-					cse.cse_map[cse.ccode] = an;
+					cse[cse.ccode] = an;
 				}
 				
 				node.dislodge();
@@ -790,10 +789,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				newnodes.push_back(an);
 				
 				an->accept(cse);
-				if(cse.cse_map.find(cse.ccode) != cse.cse_map.end()){
-					an = dynamic_cast<OR_node*>(cse.cse_map[cse.ccode]);		
+				if(cse.hasCSE(cse.ccode)){
+					an = dynamic_cast<OR_node*>(cse[cse.ccode]);		
 				}else{
-					cse.cse_map[cse.ccode] = an;
+					cse[cse.ccode] = an;
 				}
 				
 				node.dislodge();
@@ -824,10 +823,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				newnodes.push_back(an);
 					
 				an->accept(cse);
-				if(cse.cse_map.find(cse.ccode) != cse.cse_map.end()){
-					an = dynamic_cast<OR_node*>(cse.cse_map[cse.ccode]);		
+				if(cse.find(cse.ccode) != cse.end()){
+					an = dynamic_cast<OR_node*>(cse[cse.ccode]);		
 				}else{
-					cse.cse_map[cse.ccode] = an;
+					cse[cse.ccode] = an;
 				}
 				
 				node.dislodge();
@@ -860,35 +859,56 @@ void DagOptim::visit( DST_node& node ){
 }
 
 void DagOptim::process(BooleanDAG& dag){
+	timerclass everything("everything");
+	timerclass opttimer("OPTIMIZATION");
+	timerclass identify("identify");
+	timerclass replace("replace");
+
+	everything.start();
+	opttimer.start();
 	dagsize = dag.size();	
 	int k=0;
 	for(int i=0; i<dag.size(); ++i ){
-		// Get the code for this node. 
+		// Get the code for this node.
+		identify.restart(); 
 		dag[i]->accept(*this);
-		bool_node* node = rvalue;
-		
+		bool_node* node = rvalue;		
 		node->accept(cse);
+		identify.stop();
 		
 		// look it up in the cse map.		
 		Dout(cout<<dag[i]->id<<"  "<<dag[i]->get_name()<<"("<< node->get_name() <<"): "<<cse.ccode<<endl) ;
-		if( cse.cse_map.find(cse.ccode) != cse.cse_map.end() ){
+		if( cse.hasCSE(cse.ccode) ){
 			// if we do find it, then remove the node and replace it with its cse.			
-			bool_node * csubexp = cse.cse_map[cse.ccode];
+			bool_node * csubexp = cse[cse.ccode];
 			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<csubexp->get_name()<<endl );
-			dag.replace(i, csubexp); 
+			replace.restart();
+			dag.replace(i, csubexp);
+			replace.stop(); 
 		}else{
 			// if we don't find it, just add it.
-			cse.cse_map[cse.ccode] = node;
+			cse[cse.ccode] = node;
 			if( dag[i] != node ){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				replace.restart();
 				dag.replace(i, node);
+				replace.stop();
 			}
 		}
 	}
+	opttimer.stop();
+	
+	
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
+	everything.stop();
+	everything.print();
+	opttimer.print();
+	identify.print();
+	replace.print();
+
 	Dout(cout<<" end cse "<<endl);
 }
