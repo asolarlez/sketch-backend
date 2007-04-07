@@ -23,7 +23,7 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 	if( comparators.find(sz) != comparators.end()){
 		BooleanDAG& argComp = comparators[sz];
 		Dout( cout<<" comparator already there "<<endl );
-		Dout( argComp.print(cout) );
+		//Dout( argComp.print(cout) );
 		return argComp;	
 	}else{
 		Dout( cout<<" comparator NOT already there "<<endl );		
@@ -58,7 +58,7 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 		peq = argComp.new_node(peq->name, "" , bool_node::DST, "OUT");
 		argComp.sort_graph();		
 		argComp.relabel();
-		Dout( argComp.print(cout) );
+		// Dout( argComp.print(cout) );
 		return argComp;
 	}	
 }
@@ -166,7 +166,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		sfi.fun->new_node("SVAR", "", bool_node::DST, "OUT"  );
 		// sfi.fun->sort_graph();		
 		// sfi.fun->relabel();
-		Dout(  sfi.fun->print(cout) );
+		// Dout(  sfi.fun->print(cout) );
 	}else{
 		BooleanDAG& comp = getComparator(node.multi_mother.size());
 		
@@ -174,7 +174,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		//As a first step, we get a comparator for the parameters, and we replace the 
 		//inb parameters with the actuals from the previous version of the function, encoded in the SFunInfo.		
 		BooleanDAG* cclone = comp.clone();
-		Dout( cclone->print(cout) );
+		// Dout( cclone->print(cout) );
 		Dout( cout<<" after clone "<<endl);		
 		SFunInfo& sfi = functions[name];				
 		for(int i=0; i< nargs ; ++i){
@@ -190,7 +190,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			//As we do this, we also update the actuals in sfi.
 			sfi.actuals[i] = node.multi_mother[i];
 		}
-		Dout( cclone->print(cout) );
+		// Dout( cclone->print(cout) );
 		Dout( cout<<" after replacing inputs "<<endl);	
 		bool_node* dst = cclone->get_node("OUT");
 		Assert( dst != NULL && dst->type == bool_node::DST, "This can't happen!asdpoiuy");  
@@ -224,7 +224,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		cclone->replace(dst->id, ch);	
 		dst=NULL;
 		Dout( cout<<" After replacement "<<endl  );
-		Dout( cclone->print(cout) );
+		// Dout( cclone->print(cout) );
 		Dout( cout<<" After adding mux "<<endl  );
 		//Now, sfi has a copy of the function from the last appearence, so we take this function, and we replace the 
 		//params with the current arguments.	
@@ -233,7 +233,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		
 		sfi.fun->resetBackPointers();		
 		Dout( cout<<" After rbp "<<endl  );
-		Dout( sfi.fun->print(cout) );
+		//Dout( sfi.fun->print(cout) );
 				
 		for(int i=0; i<nargs; ++i){
 			
@@ -249,7 +249,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			
 			sfi.fun->replace(inarg->id, tt);
 		}
-		Dout( sfi.fun->print(cout) );
+		// Dout( sfi.fun->print(cout) );
 		Dout(cout<<" After replacing PARAMs"<<endl);
 		
 		//The input SVAR is also replaced with the output of the MUX.
@@ -338,7 +338,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			}
 		}
 		
-		Dout( cclone->print(cout) );
+		// Dout( cclone->print(cout) );
 		Dout( cout<<" Almost fully integrated cclone. "<<endl  );
 		delete sfi.fun;
 		cclone->removeNullNodes();
@@ -363,7 +363,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			sfi.fun->replace(npar->id, par);
 		}
 		
-		Dout( cclone->print(cout) );
+		// Dout( cclone->print(cout) );
 		Dout( cout<<"fully integrated cclone. "<<endl  );
 		
 		{
@@ -383,7 +383,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		newnodes.insert(newnodes.end(), cclone->begin(), cclone->end());
 		sfi.fun->removeNullNodes();
 		sfi.fun->relabel();
-		Dout(  sfi.fun->print(cout) );
+		// Dout(  sfi.fun->print(cout) );
 		Dout( cout<<" DONE DONE DONE"<<endl );
 	}	
 	return rv;
@@ -429,7 +429,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
 		
-		Dout( cclone->print(cout); );
+		// Dout( cclone->print(cout); );
 		Dout( cout<<" FUNCTION CLONE TO BE ADDED "<<endl);
 		
 		bool_node* outn = cclone->get_node("OUT" );		
@@ -477,7 +477,7 @@ void DagElimUFUN::visit( DST_node& node ){
 void DagElimUFUN::process(BooleanDAG& dag){
 	dagsize = dag.size();	
 	int k=0;
-	Dout( dag.print(cout) );	
+	// Dout( dag.print(cout) );	
 	Dout( cout<<" BEFORE PROCESS "<<endl );
 	for(int i=0; i<dag.size(); ++i ){
 		// Get the code for this node. 
