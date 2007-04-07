@@ -2,17 +2,34 @@
 #define DAGCSE_H_
 
 #include "BooleanDAG.h"
+#include "timerclass.h"
 
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
-	
+	map<string, bool_node*> cse_map;
 public:
 	string ccode;
+	timerclass stimer;
+	timerclass maptimer;
 	DagCSE(BooleanDAG& p_dag);
 	virtual ~DagCSE();	
-	map<string, bool_node*> cse_map;
+	
 	void eliminateCSE();
+	
+	inline bool hasCSE(string& str){
+		maptimer.restart();
+		bool tmp = cse_map.find(str) != cse_map.end(); 		
+		maptimer.stop();	
+		return tmp;
+	}
+	
+	inline bool_node*& operator[](string& str){
+		maptimer.restart();
+		bool_node*& tmp = cse_map[str];
+		maptimer.stop();
+		return tmp;	
+	}  
 	
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
