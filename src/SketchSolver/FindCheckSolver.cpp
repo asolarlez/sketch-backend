@@ -293,6 +293,7 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
     cout<<"# CHECK DIAGNOSTICS"<<endl;
 	printDiagnostics(mngCheck, 'c');
     if (result != SATSolver::SATISFIABLE){
+    	mngCheck.reset();
     	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
 	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
@@ -450,7 +451,7 @@ void FindCheckSolver::declareControl(const string& cname, int size){
 
 void FindCheckSolver::declareInput(const string& inname, int size){
 	//Inputs can be redeclared to change their sizes, but not controls.
-	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
+	(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
 	cpt.resizeInput(inname, size);
 	if( inputVars.find(inname) == inputVars.end() ){
 		inputStarts[inname] = input.size();
@@ -460,10 +461,10 @@ void FindCheckSolver::declareInput(const string& inname, int size){
 	}else{
 		int oldsize = inputVars[inname];
 		int start = inputStarts[inname];
-		
+		inputVars[inname] = size;
 		if( oldsize < size){
 			input.resize( input.size() - oldsize + size);	
-			Dout( cout<<" increasing from "<<oldsize <<" to "<<size);		
+			( cout<<" increasing from "<<oldsize <<" to "<<size<<endl);		
 			for(int i=input.size()-1; i >= (start + size); --i){
 				input[i] = input[i-(size-oldsize)];					
 			}
