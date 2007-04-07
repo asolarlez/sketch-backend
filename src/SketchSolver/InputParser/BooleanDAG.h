@@ -14,6 +14,7 @@
 #include <list>
 #include <map>
 #include "BasicError.h"
+#include "timerclass.h"
 
 
 using namespace std;

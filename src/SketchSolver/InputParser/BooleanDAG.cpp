@@ -19,7 +19,7 @@ string bool_node::get_name(){
       
     }    
     str<<"_"<<this;
-    str<<":"<<id;
+    //str<<":"<<id;
     Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
     return str.str();
   }
@@ -86,14 +86,15 @@ int arith_node::back_dfs(int idx){
 
 
 void bool_node::remove_child(bool_node* bn){
-	vector<bool_node*>& tmpv = children;
-	for(int k=0; k<tmpv.size(); ){
-	  if( tmpv[k] == bn ){
-	    tmpv.erase( tmpv.begin() + k );
-	  }else{
-	    ++k;
-	  }
+	vector<bool_node*>& tmpv = children;	
+	vector<bool_node*>::iterator oit = tmpv.begin();
+	for(vector<bool_node*>::iterator init = tmpv.begin(); init < tmpv.end(); ++init){		
+		if( *init != bn ){
+			*oit = *init;
+			++oit;
+		}
 	}
+	tmpv.resize(oit - tmpv.begin());
 }
 
 
@@ -347,6 +348,7 @@ void BooleanDAG::layer_graph(){
 }
 
 
+
 void BooleanDAG::replace(int original, bool_node* replacement){	
 	int i = original;
 	Assert( i < nodes.size(), "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
@@ -354,16 +356,23 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	Assert( replacement->id != -22, "Why are you replacing with a corpse?");
 	bool_node* onode = nodes[i];
 	Assert( onode != NULL, "This can't happen");
+	
+	
 	onode->dislodge();
+	
 	vector<bool_node*> tmpchild = onode->children;
 	for(int k=0; k<onode->children.size(); ++k){		
 		bool_node* cchild =  onode->children[k];
 		cchild->replace_parent(onode, replacement);
 	}
+	
 	//
+	
 	if(named_nodes.find(onode->name) != named_nodes.end() && named_nodes[onode->name]==onode){
 		named_nodes.erase(onode->name);
 	}
+	
+	
 	
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL ){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
