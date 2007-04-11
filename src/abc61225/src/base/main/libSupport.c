@@ -88,7 +88,15 @@ void open_libs() {
                                       sizeof(char));
             sprintf(szPrefixed, "%s/", p);
             strcat(szPrefixed, dp->d_name);
-            libHandles[curr_lib] = dlopen(szPrefixed, RTLD_NOW | RTLD_LOCAL);
+
+
+#define CIGWIN
+#ifdef CIGWIN
+                libHandles[curr_lib] = dlopen(szPrefixed, RTLD_NOW );
+#else
+                libHandles[curr_lib] = dlopen(szPrefixed, RTLD_NOW | RTLD_LOCAL);
+#endif
+
             
             // did the load succeed?
             if (libHandles[curr_lib] != 0) {
