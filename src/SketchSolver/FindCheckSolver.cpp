@@ -440,7 +440,7 @@ void FindCheckSolver::setupFind(){
 
 
 void FindCheckSolver::declareControl(const string& cname, int size){
-	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
+	(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
 	Assert( controlVars.find(cname) == controlVars.end(), "This control had already been declared!!");
 	controlVars[cname] = size;
 	controlStarts[cname] = ctrl.size();
