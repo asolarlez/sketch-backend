@@ -230,7 +230,7 @@ void DagCSE::eliminateCSE(){
  void DagCSE::visit( UFUN_node& node ){
  	stimer.restart();
  	stringstream str; 	
- 	str<<node.name<<"(";
+ 	str<<node.get_ufname()<<"(";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
  		str<<mmid<<",";

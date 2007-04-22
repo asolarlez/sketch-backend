@@ -32,7 +32,7 @@ class SolveFromInput: public FindCheckSolver{
 		
 	protected:
 	virtual bool check(vector<int>& controls, vector<int>& input);
-	
+	virtual BooleanDAG* hardCodeControls(vector<int>& controls);
 	public:	
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1, int NINPUTS_p=3);
 	void output_control_map(ostream& out);

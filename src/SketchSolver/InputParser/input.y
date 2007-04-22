@@ -514,8 +514,8 @@ Term: Constant {
 	}else{	
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
-		UFUN_node* ufun = new UFUN_node();
-		ufun->name = fname;
+		UFUN_node* ufun = new UFUN_node(fname);
+
 		for( ; parit != params->rend(); ++parit){
 			ufun->multi_mother.push_back((*parit));
 		}
@@ -527,15 +527,15 @@ Term: Constant {
 			ufun->set_nbits( 1  );
 		}
 		
-		
-		
+				
 		string s1;
 		{
 			stringstream str;
 			str<<fname<<"_"<<currentBD->size();
 			s1 = str.str();
 		}
-		
+		ufun->name = s1;
+		cout<<" @ fname = "<<fname<<" __ "<<s1<<endl;
 		currentBD->new_node(NULL, NULL, ufun, s1);
 		
 		$$ = new string(s1);

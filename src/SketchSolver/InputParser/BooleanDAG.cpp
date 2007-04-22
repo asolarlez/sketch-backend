@@ -18,7 +18,7 @@ string bool_node::get_name(){
       str<<"name_"<<abs(id)<<"_"<<this<<"__"<<get_tname();
       
     }    
-    str<<"_"<<this;
+    //str<<"_"<<this;
     //str<<":"<<id;
     Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
     return str.str();
@@ -218,6 +218,17 @@ BooleanDAG::BooleanDAG()
   
 }
 
+
+void BooleanDAG::clear(){	
+  for(int i=0; i < nodes.size(); ++i){
+  	delete nodes[i];
+  	nodes[i] = NULL;
+  }
+  nodes.clear();
+  named_nodes.clear();
+}
+
+
 BooleanDAG::~BooleanDAG()
 {
   
@@ -412,24 +423,34 @@ void BooleanDAG::removeNullNodes(){
 }
 
 void BooleanDAG::remove(int i){
-  Assert( nodes[i]->father == nodes[i]->mother, "This must be true, otherwise, the compiler is wrong");  
-  Assert( nodes[i]->father != NULL, "Can this happen? To me? Nah  ");
+	
+  bool_node* onode = nodes[i];	
+	
+  Assert( onode->father == onode->mother, "This must be true, otherwise, the compiler is wrong");  
+  Assert( onode->father != NULL, "Can this happen? To me? Nah  ");
 
 	//Removing from the father's children list. Note we are assuming father==mother.
 	
-	nodes[i]->father->remove_child(nodes[i]);
+  onode->father->remove_child(onode);
 	
-  for(int j=0; j<nodes[i]->children.size(); ++j){
-    if(  nodes[i]->children[j]->father == nodes[i] ){
-      nodes[i]->children[j]->father = nodes[i]->father;
-      nodes[i]->father->children.push_back( nodes[i]->children[j] );      
+  for(int j=0; j<onode->children.size(); ++j){
+    if(  onode->children[j]->father == onode ){
+      onode->children[j]->father = onode->father;
+      onode->father->children.push_back( onode->children[j] );      
     }
-    if(  nodes[i]->children[j]->mother == nodes[i] ){
-      nodes[i]->children[j]->mother = nodes[i]->father;
-      nodes[i]->father->children.push_back( nodes[i]->children[j] );
+    if(  onode->children[j]->mother == onode ){
+      onode->children[j]->mother = onode->father;
+      onode->father->children.push_back( onode->children[j] );
     }
   }
-  delete nodes[i];
+  
+  if(named_nodes.find(onode->name) != named_nodes.end() && named_nodes[onode->name]==onode){
+	named_nodes.erase(onode->name);
+  }
+  
+  
+  
+  delete onode;
   nodes[i] = NULL;  
 }
 
@@ -466,6 +487,12 @@ void BooleanDAG::cleanup(bool moveNots){
   	if(nodes[i]->flag == 0 && 
   		nodes[i]->type != bool_node::SRC && 
   		nodes[i]->type != bool_node::CTRL){
+  		
+  		if(named_nodes.find(nodes[i]->name) != named_nodes.end() && named_nodes[nodes[i]->name]==nodes[i]){
+			named_nodes.erase(nodes[i]->name);
+		}
+  			
+  			
   		delete nodes[i];
 		nodes[i] = NULL;
 		
@@ -707,7 +734,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
 
 bool_node* BooleanDAG::new_node(bool_node* mother,  
                       bool_node* father, bool_node* thenode, const string& name){
-
+  
   named_nodes[name] = thenode;
   return new_node(mother, father, thenode);
                       	
@@ -1063,6 +1090,7 @@ BooleanDAG* BooleanDAG::clone(){
 	bdag->n_outputs = n_outputs;
 	for(map<string, bool_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
 		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );
+		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );
 		bdag->named_nodes[it->first] = bdag->nodes[it->second->id];	
 	}
 	bdag->new_names = new_names;

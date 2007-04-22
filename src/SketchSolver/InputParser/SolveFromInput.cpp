@@ -151,13 +151,13 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		problem->cleanup(false);
 		problem->sort_graph();
 		problem->relabel();	
-		
+		/*
 		{
 			DagCSE cse(*problem);
 			cse.eliminateCSE();
 			
 		}
-		
+		*/
 		
 		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;	
 		
@@ -187,6 +187,7 @@ cout<<"BEFORE DC"<<endl;
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
 	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+	    cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
@@ -231,7 +232,9 @@ void SolveFromInput::setupCheck(){
 
 bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 	bool rv = FindCheckSolver::check(controls, input);
-	
+	int iter = 0;
+	BooleanDAG* oriProblem = problem;
+	int gnbits = -1;
 	while(!rv){
 	//this means it wasn't able to find a counterexample.
 		cout<<"* growing the inputs"<<endl;
@@ -240,7 +243,8 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		for(int i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
-			if(nbits < NINPUTS  && nbits >= 2){				
+			if(nbits < NINPUTS  && nbits >= 2){
+				gnbits = gnbits < (nbits+1) ? (nbits+1) : gnbits;			
 				declareInput(specIn[i]->get_name(), nbits+1);
 				srcnode->set_nbits(nbits+1);
 				cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
@@ -254,12 +258,65 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 			 break; 
 		}
 		
-		rv = FindCheckSolver::check(controls, input);		
+		cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;		
+		if( iter > 2 || gnbits > 3){
+			if( problem == oriProblem){
+				problem = hardCodeControls(controls);
+			}
+		}
+		
+		rv = FindCheckSolver::check(controls, input);	
+		++iter;	
 	}
-	
+	if( problem != oriProblem){	
+		cout<<" * Cleaning up alternative problem"<<endl;	
+		problem->clear();
+		problem = oriProblem;	
+	}
 	return rv;
 	
 }
+
+
+
+BooleanDAG* SolveFromInput::hardCodeControls(vector<int>& controls){
+	BooleanDAG* newdag = problem->clone();
+	vector<bool_node*> specCtrl = newdag->getNodesByType(bool_node::CTRL);
+		
+	cout<<" * Specializing problem for controls"<<endl;
+	cout<<" * Before specialization: nodes = "<<newdag->size()<<endl;		
+	DagOptim cse(*newdag);			
+	cout<<"  # OF CONTROLS:    "<< specCtrl.size() <<endl;
+	for(int i=0; i<specCtrl.size(); ++i){
+		CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(specCtrl[i]);	
+		int iid = getCtrlStart( ctrlnode->get_name() );
+		int nbits = ctrlnode->get_nbits();
+		cout<<"  CONTROL:    "<< ctrlnode->get_name() <<endl;
+		Assert( nbits > 0 , "This can not happen rdu;a");
+		Assert( iid+ nbits <= controls.size(), "There should be a control entry for each iid a");		
+		Assert(controls[iid ] == 1 || controls[iid]==-1, "This is bad, really bad");
+		bool_node * repl=NULL;
+		if( nbits ==1 ){
+			repl = cse.getCnode( controls[iid] == 1 );						
+		}else{
+			int nval = intFromBV(controls, iid, nbits);	
+			repl = cse.getCnode( nval);							
+		}
+		
+		Assert( (*newdag)[ctrlnode->id] == ctrlnode , "The numbering is wrong!!");
+		newdag->replace(ctrlnode->id, repl);
+	}
+		
+	cout<<"  # OF CONTROLS:    "<< specCtrl.size() <<endl;
+	
+	cout<<" * After replacing nodes "<<endl;
+	newdag->removeNullNodes();
+	cse.process(*newdag);
+	Dout( newdag->print(cout) ); 
+	cout<<" * After specialization: nodes = "<<newdag->size()<<endl;
+	return newdag;
+}
+
 
 
 

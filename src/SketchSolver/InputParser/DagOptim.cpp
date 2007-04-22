@@ -159,6 +159,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 		}			
 	}
 		
+	
 	if(isConst(node.mother)){
 		int tmp = staticCompare<COMP>(node.father, getIval(node.mother), true);
 		if(tmp == 1){
@@ -182,7 +183,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			return true;	
 		}
 	}
-		
+	
 	return false;
 }
 
@@ -428,6 +429,7 @@ void DagOptim::visit( PLUS_node& node ){
 		rvalue = getCnode(0);
 		return;
 	}
+	
 	
 	if( typeid(*node.father) == typeid(node) ){
 		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father);

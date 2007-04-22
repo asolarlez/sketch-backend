@@ -261,7 +261,8 @@ class TIMES_node: public arith_node{
 
 class UFUN_node: public arith_node{
 	int nbits;	
-	public: UFUN_node(){ arith_type = UFUN; nbits=1; } 
+	string ufname;
+	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
 	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out){
@@ -274,6 +275,7 @@ class UFUN_node: public arith_node{
 	}
 	virtual bool_node* clone(){return new UFUN_node(*this);  };
 	int get_nbits() const { return nbits; }
+	string& get_ufname(){ return ufname; }
 	void set_nbits(int n){ nbits = n; }
 };
 
@@ -429,7 +431,7 @@ inline arith_node* newArithNode( arith_node::AType type){
 		case arith_node::PLUS: return new PLUS_node();
 		case arith_node::TIMES: return new TIMES_node();
 		case arith_node::ARRACC: return new ARRACC_node();
-		case arith_node::UFUN: return new UFUN_node();
+		case arith_node::UFUN: return new UFUN_node("NULL");
 		case arith_node::DIV: return new DIV_node();
 		case arith_node::MOD: return new MOD_node();
 		case arith_node::NEG: return new  NEG_node();
@@ -552,6 +554,7 @@ public:
   	return named_nodes.find(s) != named_nodes.end();
   }
   
+  void clear();
   
   bool has_alias(const string& s){
     return aliasmap.find(s) != aliasmap.end();

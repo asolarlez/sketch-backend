@@ -3,6 +3,18 @@
 
 bool WITH_RESTRICTIONS ;
 
+
+
+
+
+
+
+
+
+
+
+
+
 DagElimUFUN::DagElimUFUN()
 {
 	oneMoreFun = false;
@@ -133,8 +145,8 @@ void DagElimUFUN::visit( EQ_node& node ){
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	bool_node* rv = NULL;
 	
-	string& name = node.name;
-	Dout( cout<<"Replacing call to function "<< node.get_name() <<endl );
+	string& name = node.get_ufname();
+	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
 	int nargs = node.multi_mother.size();
 	if( functions.find(name) == functions.end() ){
 		//This means this is the first time we see
@@ -142,7 +154,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		//The symvalue has to be created first, though.
 		Dout( cout<<" First time for the function"<<endl );
 		stringstream str;
-		str<< node.get_name() <<"_0";
+		str<< node.get_ufname() <<"_0";
 		SRC_node* src =  new SRC_node( str.str() );
 		src->set_nbits( node.get_nbits() );
 		newnodes.push_back( src );
@@ -203,7 +215,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		ch->mother = dst->mother;
 		
 		stringstream str;
-		str<< node.get_name() <<"_"<<sfi.step;
+		str<< node.get_ufname() <<"_"<<sfi.step;
 		string curParamName = str.str() ;
 		SRC_node* src =  new SRC_node( curParamName);
 		src->set_nbits( node.get_nbits() );
@@ -391,11 +403,11 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 
 void DagElimUFUN::visit( UFUN_node& node ){
-	string& name = node.name;
+	string& name = node.get_ufname();
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
-		Dout( cout<<"Replacing call to function "<< node.get_name() <<endl );
+		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
 		int nargs = node.multi_mother.size();
 		SFunInfo& sfi = functions[name];
 		BooleanDAG* cclone = sfi.fun->clone();
@@ -408,11 +420,11 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
 		bool_node* src = NULL;
-		if(WITH_RESTRICTIONS){
+		if(true){
 			src =  new CONST_node(0);			
 		}else{
 			stringstream str;
-			str<< node.get_name() <<"_"<<sfi.step;
+			str<< node.get_ufname() <<"_"<<sfi.step;
 			string curParamName = str.str() ;		
 			src =  new SRC_node( curParamName);
 			dynamic_cast<SRC_node*>(src)->set_nbits( node.get_nbits() );
@@ -448,6 +460,50 @@ void DagElimUFUN::visit( UFUN_node& node ){
 				}
 			}
 		}
+		
+		
+		
+		t_node tn(src);
+		tnbuilder.tn_build(src, NULL, &tn);
+		
+		t_node tn2(rvalue);
+		tnbuilder.tn_build(&node, NULL, &tn2);
+		
+		
+		bool_node* cur = NULL;
+		
+		if(tn.children.size() > 0){
+			cur = tn.childDisjunct(newnodes);	
+		}
+		
+		if(tn2.children.size() > 0){
+			if(cur == NULL){
+				cur = tn2.childDisjunct(newnodes);
+			}else{
+				AND_node* anode = new AND_node();
+				anode->mother = cur;
+				anode->father = tn2.childDisjunct(newnodes);
+				anode->addToParents();
+				newnodes.push_back(anode);
+				cur = anode;					
+			}
+		}
+		
+		if( cur != NULL){
+			NOT_node* nn = new NOT_node();
+			nn->mother = cur;
+			nn->addToParents();
+			newnodes.push_back(nn);
+			
+			ASSERT_node* asn = new ASSERT_node();
+			asn->mother = nn;
+			asn->addToParents();
+			newnodes.push_back(asn);
+		}		
+		
+		//tn.print(cout);
+		//tn2.print(cout);
+		
 		Dout( cout<<" ADDING "<<(newnodes.size()-oldsize)<<" NODES"<<endl );
 	}	
 	if(oneMoreFun){
@@ -489,6 +545,8 @@ void DagElimUFUN::process(BooleanDAG& dag){
 		}
 	}
 	dag.addNewNodes(newnodes);
+	dag.addNewNodes( tnbuilder.store );
+	tnbuilder.store.clear();
 	newnodes.clear();
 	dag.removeNullNodes();
 	Dout( cout<<" AFTER PROCESS "<<endl );
