@@ -5,7 +5,7 @@
 #include <sstream>
 
 extern "C" {
-extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose );
+extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose , int a, int b);
 extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, bool fUpdateLevel, bool fUseZeros, bool fUseDcs, bool fVerbose );
 }
 
@@ -59,7 +59,7 @@ void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 	Abc_Obj_t * pObj;
 	Abc_NtkForEachPo( network, pObj, i ){
    	   sprintf( Buffer, "[%d]", pObj->Id );
-       Abc_NtkLogicStoreName( pObj, Buffer );
+       Abc_ObjAssignName( pObj, Buffer, NULL);
    }
    
    assert( Abc_NtkLatchNum(network) == 0 );
@@ -69,9 +69,9 @@ void ABCSATSolver::closeMiter(Abc_Ntk_t * network){
 
 void ABCSATSolver::outputToFile(const string& fname){	
 	Abc_Ntk_t * pNetlist;
-    pNetlist = Abc_NtkLogicToNetlist(pNtk,0);
+    pNetlist = Abc_NtkToNetlist(pNtk);
     const char* nm = fname.c_str();
-    Io_WriteBlifNetlist( pNetlist, (char*) nm , 1 );
+    Io_WriteBlif( pNetlist, (char*) nm , 1 );
     Abc_NtkDelete( pNetlist );		
 }
 
@@ -120,7 +120,7 @@ int ABCSATSolver::solve(){
      	 timerclass timer("Strash time 1");
        // apply structural hashing to logic network and get an AIG
         timer.start();
-       	pAig = Abc_NtkStrash( pNtk, 0, 1 );
+       	pAig = Abc_NtkStrash( pNtk, 0, 1 , 0);
        	Abc_NtkDelete( pNtk );
 	   	pNtk = pAig;
         timer.stop().print();
@@ -135,7 +135,7 @@ int ABCSATSolver::solve(){
 		if(oldpNtk != NULL){
 			 timerclass timer("And time 1");
              timer.start();
-			pAig = Abc_NtkMiterAnd(pNtk , oldpNtk);
+			pAig = Abc_NtkMiterAnd(pNtk , oldpNtk, 0, 0);
 			timer.stop().print();
 			Abc_NtkDelete( pNtk );
 			cout<<"After del "; timer.stop().print();
@@ -170,10 +170,11 @@ int ABCSATSolver::solve(){
 			Prove_Params_t Params, * pParams = &Params;
          	Prove_ParamsSetDefault( pParams );
 			pParams->nItersMax = 5;
-    	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
+    	    // RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
+    	    RetValue = Abc_NtkIvyProve( &pNtk, pParams );
          }else if(strategy == BASICSAT){
          	cout<<"BASIC"<<endl;
-         	RetValue = Abc_NtkMiterSat( pNtk, 100000000, 0, 0, 0, NULL, NULL );
+         	RetValue = Abc_NtkMiterSat( pNtk, 100000000, 0, 0,  NULL, NULL );
          }
 		timer.stop().print();
        }
@@ -225,10 +226,10 @@ int ABCSATSolver::solve(){
 		    char Buffer[100];
 		    pNode = Abc_NtkCreatePi( pNtk );
    	    	sprintf( Buffer, "[%d]", pNode->Id );
-	        Abc_NtkLogicStoreName( pNode, Buffer );
+	        Abc_ObjAssignName( pNode, Buffer, NULL );
 		    if( oldpNtk != NULL){
 		    	Abc_Obj_t * pObj = Abc_NtkCreatePi( oldpNtk );		    	
-			    Abc_NtkLogicStoreName( pObj, Buffer );
+			    Abc_ObjAssignName( pObj, Buffer, NULL );
 		    }
 		    Dout( cout<<"Creating Pi: there are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
 		    return pNode->Id;
@@ -250,7 +251,7 @@ int ABCSATSolver::solve(){
    	           results.clear();   	        
    	           char* st = pNtk->pName;
        		oldpNtk = pNtk;
-       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
+       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 
 		    strcpy( pNtk->pName, name.c_str());
@@ -263,7 +264,7 @@ int ABCSATSolver::solve(){
            	Abc_NtkForEachPi( oldpNtk, pNode, i ){
            		Abc_Obj_t * pObj;
 			    pObj = Abc_NtkCreatePi( pNtk );
-		        Abc_NtkLogicStoreName( pObj, Abc_ObjName(pNode) );
+		        Abc_ObjAssignName( pObj, Abc_ObjName(pNode), NULL );
 	       	}           	
             Dout( cout<<" reset "<<endl );
             FileOutputABC(output<<"#  ======================================="<<endl);
@@ -277,7 +278,7 @@ int ABCSATSolver::solve(){
        		results.clear();		
        		char* st = pNtk->pName;
        		oldpNtk = pNtk;
-       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
+       	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 		    strcpy( pNtk->pName, st);
             pOutputNode = Abc_NtkCreateNode( pNtk );
