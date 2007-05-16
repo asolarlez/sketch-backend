@@ -8,12 +8,15 @@ class DagOptim : public NodeVisitor
 {
 	int dagsize;
 	DagCSE cse;
+	bool ALTER_ARRACS;
 public:
 	
 	vector<bool_node*> newnodes;
-	bool_node* rvalue;
+	
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();
+	
+	void alterARRACS(){ ALTER_ARRACS = true; } 
 	
 	template<typename COMP, typename NTYPE>
 	bool compSymplification(NTYPE& node);
