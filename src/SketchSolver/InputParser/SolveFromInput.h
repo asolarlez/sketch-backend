@@ -26,15 +26,14 @@ class SolveFromInput: public FindCheckSolver{
 	
 	virtual void addInputsToTestSet(vector<int>& input);
 	virtual void setNewControls(vector<int>& controls);
-	
-	
 	virtual void defineProblem(SATSolver& mng, varDir& dir);
 		
 	protected:
 	virtual bool check(vector<int>& controls, vector<int>& input);
 	virtual BooleanDAG* hardCodeControls(vector<int>& controls);
-	public:	
-	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p=1, int NINPUTS_p=3);
+	public:
+	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker,
+	map<string, BooleanDAG*>& functionMap, int NS_p=1, int NINPUTS_p=3);
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);
 	void setup2QBF();
