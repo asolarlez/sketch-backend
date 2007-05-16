@@ -3,6 +3,7 @@
 
 DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 {
+	ALTER_ARRACS = false;
 	rvalue = NULL;	
 }
 
@@ -667,8 +668,57 @@ void DagOptim::visit( EQ_node& node ){
 		if( isConst(node.father) ){
 			rvalue  = getCnode( getIval( node.mother ) == getIval( node.father ) );
 			return;
-		}			
+		}
+		
+		if( node.father->getOtype() == bool_node::BOOL ){
+			int mvalue = getIval( node.mother );
+			
+			if(mvalue == 1){
+				rvalue = node.father;
+				return;	
+			}
+			
+			if(mvalue == 0){
+				NOT_node* nt = new NOT_node();
+				nt->name = node.name;
+				nt->name += "NOT";
+				nt->mother = node.father;
+				nt->addToParents();
+				nt->id = newnodes.size() + dagsize;
+				newnodes.push_back(nt);
+				nt->accept(*this);
+				return;	
+			}
+		}
 	}
+	
+	if( isConst(node.father) ){
+		if( node.mother->getOtype() == bool_node::BOOL ){
+			int mvalue = getIval( node.father );
+			
+			if(mvalue == 1){
+				rvalue = node.mother;
+				return;	
+			}
+			
+			if(mvalue == 0){
+				NOT_node* nt = new NOT_node();
+				nt->name = node.name;
+				nt->name += "NOT";
+				nt->mother = node.mother;
+				nt->addToParents();
+				nt->id = newnodes.size() + dagsize;
+				newnodes.push_back(nt);
+				nt->accept(*this);
+				return;	
+			}
+		}
+	}
+	
+	
+	
+	
+	
 	if( node.mother == node.father ){
 		rvalue = getCnode(true);
 		return;
@@ -711,7 +761,78 @@ void DagOptim::visit( ARRACC_node& node ){
 	}
 	
 	
-	if( node.multi_mother.size()==2  ){
+	if( node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL ){
+
+		if( isConst(node.multi_mother[0]) ){
+			int val0 = getIval( node.multi_mother[0] );
+			if( isConst(node.multi_mother[1]) ){
+				int val1 = getIval( node.multi_mother[1] );	
+				if( (val0 == 0 || val0 == 1) &&  (val1 == 0 || val1 == 1) ){
+				//We know val0 and val1 are different.
+					if(val0 == 0){
+						rvalue = node.mother;
+						return;
+					}else{
+						NOT_node* nt = new NOT_node();
+						nt->name = node.name;
+						nt->name += "NOT";
+						nt->mother = node.mother;
+						nt->addToParents();
+						nt->id = newnodes.size() + dagsize;
+						newnodes.push_back(nt);
+						nt->accept(*this);
+						return;
+					}
+				}
+			}
+			
+			if(val0 == 0 && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				AND_node* an = new AND_node();
+				an->name = node.name;
+				an->name += "AND";
+				an->mother = node.mother;
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				an->id = newnodes.size() + dagsize;
+				newnodes.push_back(an);
+				an->accept(*this);
+				return;
+			}
+		}
+
+		if( isConst(node.multi_mother[1]) ){
+			int val1 = getIval( node.multi_mother[1] );	
+			if(val1 == 1 && node.multi_mother[0]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				OR_node* an = new OR_node();
+				an->name = node.name;
+				an->name += "OR";
+				an->mother = node.mother;
+				an->father = node.multi_mother[0];
+				an->addToParents();
+				an->id = newnodes.size() + dagsize;
+				newnodes.push_back(an);
+				an->accept(*this);
+				return;
+			}
+		}
+		
+		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				AND_node* an = new AND_node();
+				an->name = node.name;
+				an->name += "AND";
+				an->mother = node.mother;
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				an->id = newnodes.size() + dagsize;
+				newnodes.push_back(an);
+				an->accept(*this);
+				return;
+		}
+		
+		
+		
+		
+		
 		if( typeid(*node.multi_mother[1]) == typeid(node)  ){			
 			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
 			if( node.multi_mother[0] == mm1.multi_mother[0] ){
@@ -750,6 +871,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				nt->name = node.name;
 				nt->name += "NOT";
 				nt->mother = mm1 .mother;
+				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
 				newnodes.push_back(nt);
 				
@@ -907,10 +1029,11 @@ void DagOptim::process(BooleanDAG& dag){
 	dag.cleanup(false);
 	dag.relabel();
 	everything.stop();
+	/*
 	everything.print();
 	opttimer.print();
 	identify.print();
 	replace.print();
-
+	*/
 	Dout(cout<<" end cse "<<endl);
 }
