@@ -66,7 +66,7 @@ public:
         ABCSATSolver(const string& name_p, SolutionStrategy strategy_p, bool solveNegation_p):SATSolver(name_p, solveNegation_p){
 		       /////////       
 		       strategy = strategy_p;
-		       pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
+		       pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		       pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 		       strcpy( pNtk->pName, name.c_str() );
    	           pOutputNode = Abc_NtkCreateNode( pNtk );
