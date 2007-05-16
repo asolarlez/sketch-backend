@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 
+
+#define Dout( out )     /* out */ 
+
+
 using std::string;
 
 extern string context;
