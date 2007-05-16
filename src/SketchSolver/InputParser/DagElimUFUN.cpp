@@ -4,17 +4,6 @@
 bool WITH_RESTRICTIONS ;
 
 
-
-
-
-
-
-
-
-
-
-
-
 DagElimUFUN::DagElimUFUN()
 {
 	oneMoreFun = false;
@@ -76,70 +65,6 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 }
 
 
-void DagElimUFUN::visit( SRC_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( CTRL_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( CONST_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( AND_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( OR_node& node ){
-	rvalue = &node;
-}
-
-
-void DagElimUFUN::visit( XOR_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( NOT_node& node ){
-	rvalue = &node;
-}
-
-
-void DagElimUFUN::visit( PLUS_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( TIMES_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( DIV_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( MOD_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( NEG_node& node ){
-	rvalue = &node;
-}
-	
-void DagElimUFUN::visit( GT_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( GE_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( LT_node& node ){
-	rvalue = &node;
-}
-
-void DagElimUFUN::visit( LE_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( EQ_node& node ){
-	rvalue = &node;
-}
 
 
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
@@ -498,6 +423,9 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			ASSERT_node* asn = new ASSERT_node();
 			asn->mother = nn;
 			asn->addToParents();
+			string msg = name;
+			msg += ": UFUN is being misused";
+			asn->setMsg(msg);
 			newnodes.push_back(asn);
 		}		
 		
@@ -510,24 +438,6 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		functions[name].moreNewFuns = false;
 	}
 }
-
-void DagElimUFUN::visit( ARRACC_node& node ){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( ARRASS_node& node ){	
-	rvalue = &node;	
-}
-void DagElimUFUN::visit( ACTRL_node& node ){
-	rvalue = &node;
-}
-	
-void DagElimUFUN::visit( ASSERT_node &node){
-	rvalue = &node;
-}
-void DagElimUFUN::visit( DST_node& node ){
-	rvalue = &node;
-}
-
 
 
 void DagElimUFUN::process(BooleanDAG& dag){

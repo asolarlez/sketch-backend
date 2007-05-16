@@ -15,10 +15,10 @@
 #include <map>
 #include "BasicError.h"
 #include "timerclass.h"
-
+#include "NodeVisitor.h"
 
 using namespace std;
-class NodeVisitor;
+
 class BooleanDAG;
 
 
@@ -36,7 +36,16 @@ public:
   int flag;
   int ion_pos;
   typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL, ARITH, ASSERT} Type;
-  typedef enum{INT, BOOL, BOTTOM} OutType;
+  typedef enum{BOTTOM, BOOL, INT} OutType;
+  OutType joinOtype(OutType t1, OutType t2){
+  	if(t1 == BOTTOM){ return t2; }
+  	if(t2 == BOTTOM){ return t1; }
+  	if( t2 == t1 ){ 
+  		return t1; 
+  	}else{ 
+  		return INT; 
+  	}
+  }
   Type type;
   OutType otype;
   bool_node* mother;  
@@ -73,6 +82,7 @@ public:
   virtual void accept(NodeVisitor& visitor)=0;
   virtual bool_node* clone()=0;
   virtual void printSubDAG(ostream& out);
+  virtual OutType getOtype();
 };
 
 
@@ -117,61 +127,9 @@ class arith_node: public bool_node{
 		}
 		return "null";
 	}
+	virtual OutType getOtype();
 };
 
-
-class AND_node;
-class OR_node;
-class XOR_node;
-class SRC_node;
-class DST_node;
-class NOT_node;
-class CTRL_node;
-class PLUS_node;
-class TIMES_node;
-class UFUN_node;
-class ARRACC_node;
-class DIV_node;
-class MOD_node;
-class NEG_node;
-class CONST_node;
-class GT_node;
-class GE_node;
-class LT_node;
-class LE_node;
-class EQ_node;
-class ARRASS_node;
-class ACTRL_node;
-class ASSERT_node;
-
-
-class NodeVisitor{
-	public:
-	virtual void visit( AND_node& node )=0;
-	virtual void visit( OR_node& node )=0;
-	virtual void visit( XOR_node& node )=0;
-	virtual void visit( SRC_node& node )=0;
-	virtual void visit( DST_node& node )=0;
-	virtual void visit( NOT_node& node )=0;
-	virtual void visit( CTRL_node& node )=0;
-	virtual void visit( PLUS_node& node )=0;
-	virtual void visit( TIMES_node& node )=0;
-	virtual void visit( UFUN_node& node )=0;
-	virtual void visit( ARRACC_node& node )=0;
-	virtual void visit( DIV_node& node )=0;
-	virtual void visit( MOD_node& node )=0;
-	virtual void visit( NEG_node& node )=0;
-	virtual void visit( CONST_node& node )=0;
-	virtual void visit( GT_node& node )=0;
-	virtual void visit( GE_node& node )=0;
-	virtual void visit( LT_node& node )=0;
-	virtual void visit( LE_node& node )=0;
-	virtual void visit( EQ_node& node )=0;
-	virtual void visit( ARRASS_node& node )=0;
-	virtual void visit( ACTRL_node& node )=0;
-	virtual void visit( ASSERT_node &node) = 0;	
-	virtual void process(BooleanDAG& bdag);
-};
 
 
 
@@ -205,6 +163,30 @@ class INTER_node: public bool_node{
 	public:	
 	int get_nbits() const { return nbits; }
 	void set_nbits(int n){ nbits = n; }
+	
+	OutType getOtype(){
+		if(otype != BOTTOM){
+			return otype;
+		}
+		if(nbits>1){
+			otype = INT;	
+		}else{
+			otype = BOOL;
+		}		
+		return otype;
+	}
+	
+	string get_name(){
+	    stringstream str;
+	    if(name.size() > 0)
+	      str<<name<<"__"<<get_tname();
+	    else{      
+	      str<<"name_"<<abs(id)<<"_"<<this<<"__"<<get_tname();
+	      
+	    }
+	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
+	    return str.str();
+	  }
 };
 
 
@@ -263,7 +245,7 @@ class UFUN_node: public arith_node{
 	int nbits;	
 	string ufname;
 	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
-	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits){ }  
+	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits), ufname(bn.ufname){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out){
     	int i=0;
@@ -277,6 +259,17 @@ class UFUN_node: public arith_node{
 	int get_nbits() const { return nbits; }
 	string& get_ufname(){ return ufname; }
 	void set_nbits(int n){ nbits = n; }
+	OutType getOtype(){
+		if(otype != BOTTOM){
+			return otype;
+		}
+		if(nbits>1){
+			otype = INT;	
+		}else{
+			otype = BOOL;
+		}
+		return otype;
+	}
 };
 
 
@@ -296,6 +289,15 @@ class ARRACC_node: public arith_node{
 		  	}
 		}
 	}
+	OutType getOtype(){
+			if(otype != BOTTOM){
+				return otype;
+			}
+			for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+				otype = joinOtype((*it)->getOtype(), otype);	
+			}			
+			return otype;
+		}
 	virtual bool_node* clone(){return new ARRACC_node(*this);  };
 };
 class DIV_node: public arith_node{	
@@ -344,6 +346,17 @@ class CONST_node: public arith_node{
 		    return str.str();
 		}
 		virtual bool_node* clone(){return new CONST_node(*this);  };
+		OutType getOtype(){
+			if(otype != BOTTOM){
+				return otype;
+			}
+			if(val != 0 && val != 1){
+				otype = INT;	
+			}else{
+				otype = BOOL;
+			}		
+			return otype;
+		}
 };
 
 class GT_node: public arith_node{	
@@ -352,6 +365,9 @@ class GT_node: public arith_node{
 		GT_node(const GT_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new GT_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 };
 class GE_node: public arith_node{	
 	public: 
@@ -359,6 +375,9 @@ class GE_node: public arith_node{
 		GE_node(const GE_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new GE_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 };
 class LT_node: public arith_node{	
 	public: 
@@ -366,6 +385,9 @@ class LT_node: public arith_node{
 		LT_node(const LT_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new LT_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 };
 class LE_node: public arith_node{	
 	public: 
@@ -373,13 +395,19 @@ class LE_node: public arith_node{
 		LE_node(const LE_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new LE_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 };
 class EQ_node: public arith_node{	
 	public: 
 		EQ_node(){ arith_type = EQ; } 
 		EQ_node(const EQ_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new EQ_node(*this);  };		 
+		virtual bool_node* clone(){return new EQ_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 };
 class ARRASS_node: public arith_node{		
 	public: 
@@ -388,12 +416,22 @@ class ARRASS_node: public arith_node{
 		ARRASS_node(const ARRASS_node& bn): arith_node(bn), quant(bn.quant){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new ARRASS_node(*this);  };
+		OutType getOtype(){
+			if(otype != BOTTOM){
+				return otype;
+			}
+			otype = joinOtype(multi_mother[0]->getOtype(), multi_mother[1]->getOtype());
+			return otype;
+		}
 };
 class ACTRL_node: public arith_node{	
 	public: ACTRL_node(){ arith_type = ACTRL; }  
 	ACTRL_node(const ACTRL_node& bn): arith_node(bn){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
 	virtual bool_node* clone(){return new ACTRL_node(*this);  };
+	OutType getOtype(){
+		return INT;
+	}	
 };
 class ASSERT_node: public bool_node {
 	bool isHardAssert;

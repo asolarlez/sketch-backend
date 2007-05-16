@@ -24,6 +24,13 @@ string bool_node::get_name(){
     return str.str();
   }
 
+bool_node::OutType bool_node::getOtype(){
+	return BOOL;
+}
+
+bool_node::OutType arith_node::getOtype(){
+	return INT;
+}
 
 void bool_node::set_layer(){
   layer = 0;
@@ -221,6 +228,7 @@ BooleanDAG::BooleanDAG()
 
 void BooleanDAG::clear(){	
   for(int i=0; i < nodes.size(); ++i){
+  	nodes[i]->id = -22;
   	delete nodes[i];
   	nodes[i] = NULL;
   }
@@ -449,7 +457,7 @@ void BooleanDAG::remove(int i){
   }
   
   
-  
+  onode->id = -22;
   delete onode;
   nodes[i] = NULL;  
 }
@@ -492,10 +500,9 @@ void BooleanDAG::cleanup(bool moveNots){
 			named_nodes.erase(nodes[i]->name);
 		}
   			
-  			
+  		nodes[i]->id = -22;	
   		delete nodes[i];
 		nodes[i] = NULL;
-		
   	}
   }
   
@@ -957,18 +964,6 @@ void BooleanDAG::print(ostream& out){
   }
 
 
-
-
-
-void NodeVisitor::process(BooleanDAG& bdag){
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-		try{
-		(*node_it)->accept(*this);
-		}catch(BasicError& be){
-			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
-    	}
-	}
-}
 
 
 void BooleanDAG::clearBackPointers(){
