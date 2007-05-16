@@ -7,6 +7,7 @@
 #include "DagCSE.h"
 #include "DagOptim.h"
 #include "DagElimUFUN.h"
+#include "DagFunctionInliner.h"
 
 
 template<typename T>
@@ -36,7 +37,8 @@ void SolveFromInput::setup2QBF(){
 
 
 
-SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, int NS_p, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
+SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, 
+map<string, BooleanDAG*>& functionMap, int NS_p, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
@@ -109,6 +111,17 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		cout<<"* after Second optim: Problem nodes = "<<problem->size()<<endl;
 	}else{
 		
+		
+		for(map<string, BooleanDAG*>::iterator it =  functionMap.begin();
+					it != functionMap.end(); ++it){
+			int sz1 = it->second->size(); 		
+			DagOptim cse(*it->second);
+			cse.process(*it->second);	
+			int sz2 = it->second->size(); 		
+			cout<<" optimizing "<<	it->first <<" went from size "<<sz1<<" to "<<sz2<<endl;
+		}
+		
+		/*
 		if(sketch_p->size() > 1000){
 			{
 			DagOptim cse(*sketch_p);	
@@ -120,6 +133,23 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			}
 			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;	
 		}
+		*/
+		
+		{
+			{
+				cout<<" Inlining functions in the sketch."<<endl;
+				DagFunctionInliner cse(*sketch_p, functionMap );	
+				cse.process(*sketch_p);
+			}
+			{
+				cout<<" Inlining functions in the spec."<<endl;
+				DagFunctionInliner cse(*spec_p, functionMap);	
+				cse.process(*spec_p);
+			}
+			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
+		}
+			
+			
 			
 		{
 			DagElimUFUN eufun;	
@@ -128,7 +158,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			eufun.process(*sketch_p);
 		}
 		cout<<"Done with ElimUFUN "<<endl;
-		cout<<"Printing spec and sketch "<<endl;
+		//cout<<"Printing spec and sketch "<<endl;
 		//Dout( spec_p->print(cout) );	
 		//Dout( sketch_p->print(cout) );	
 		
@@ -138,6 +168,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		//Dout( problem->print(cout) );				
 		{
 			DagOptim cse(*problem);	
+			cse.alterARRACS();
 			cse.process(*problem);
 		}
 		problem->cleanup(false);
@@ -146,11 +177,14 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;		
 		{
 			DagOptim cse(*problem);	
+			cse.alterARRACS();
 			cse.process(*problem);
 		}
+		/* 
 		problem->cleanup(false);
 		problem->sort_graph();
-		problem->relabel();	
+		problem->relabel();
+		*/	
 		/*
 		{
 			DagCSE cse(*problem);
@@ -183,7 +217,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 	
 	Dout( problem->print(cout) );	
 	
-cout<<"BEFORE DC"<<endl;	
+	
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
 	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
@@ -196,7 +230,7 @@ cout<<"BEFORE DC"<<endl;
     }
     	
 	nseeds = NS_p;
-cout<<"BEFORE RES"<<endl;	
+	//cout<<"BEFORE RES"<<endl;	
 	int totSize = problem->size();
 	f_node_ids.resize( totSize , 0 );
 	f_flags.resize( totSize , true);
@@ -339,9 +373,9 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 			if( nbits ==1 ){
 				node_values[(*node_it)]= controls[iid];
 			}else{				
-				( cout<<(*node_it)->get_name()<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
+				Dout( cout<<(*node_it)->get_name()<<" ctrl["<< iid <<"::"<< nbits <<"] = < ");
 				int nval = intFromBV(controls, iid, nbits);				
-				( cout <<" > = "<<nval<< endl ) ;
+				Dout( cout <<" > = "<<nval<< endl ) ;
 				node_values[(*node_it)] = nval;
 			}
 		}
