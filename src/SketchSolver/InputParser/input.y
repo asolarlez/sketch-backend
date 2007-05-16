@@ -535,7 +535,6 @@ Term: Constant {
 			s1 = str.str();
 		}
 		ufun->name = s1;
-		cout<<" @ fname = "<<fname<<" __ "<<s1<<endl;
 		currentBD->new_node(NULL, NULL, ufun, s1);
 		
 		$$ = new string(s1);
