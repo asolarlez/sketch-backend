@@ -744,7 +744,7 @@ NodesToSolver::visit (ARRACC_node &node)
 
     /* Get index value. */
     Assert (node.mother != NULL, "must have parent node");
-    const Tvalue &mval = tval_lookup (node.mother);
+    Tvalue &mval = tval_lookup (node.mother);
     Dout (cout << "index=" << node.mother->get_name() << " -> " << mval << endl);
 
 #if 0
