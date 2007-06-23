@@ -743,8 +743,8 @@ NodesToSolver::visit (ARRACC_node &node)
     Dout (cout << "arracc: begin " << node.get_name() << endl);
 
     /* Get index value. */
-    Assert (node.mother != NULL, "This should never happen");
-    Tvalue &mval = tval_lookup (node.mother);
+    Assert (node.mother != NULL, "must have parent node");
+    const Tvalue &mval = tval_lookup (node.mother);
     Dout (cout << "index=" << node.mother->get_name() << " -> " << mval << endl);
 
 #if 0
@@ -758,18 +758,17 @@ NodesToSolver::visit (ARRACC_node &node)
     vector<bool_node *> &parents = node.multi_mother;
     if (mval.isSparse()) {
 	/* Sparse index, check only affected parent nodes. */
-	vector<int> &index_vals = mval.num_ranges;
+	const vector<int> &index_vals = mval.num_ranges;
 	int nparent = parents.size();
         for (vector<int>::const_iterator it = index_vals.begin();
-             is_unchanged && it < index_vals.end(); it++)
+             is_unchanged && it != index_vals.end(); it++)
         {
 	    int index_val = *it;
             if (index_val >= 0 && index_val < nparent) {
                 bool_node *cnode = parents[index_val];
                 is_unchanged = is_unchanged && ! (cnode && cnode->flag);
                 Dout (cout << "parents[" << index_val << "]="
-		      << (cnode ? cnode->get_name() : "NULL") << " -> "
-		      << (is_unchanged ? "unchanged" : "changed") << endl);
+		      << (cnode ? cnode->get_name() : "NULL") << endl);
             }
         }
     } else {
@@ -780,8 +779,8 @@ NodesToSolver::visit (ARRACC_node &node)
 	{
 	    bool_node *cnode = *it;
             is_unchanged = is_unchanged && ! (cnode && cnode->flag);
-            Dout (cout << "parents[" << i << "]=" << (cnode ? cnode->get_name() :"NULL")
-                  << " -> " << (is_unchanged ? "unchanged" : "changed") << endl);
+            Dout (cout << "parents[" << i << "]="
+		  << (cnode ? cnode->get_name() :"NULL") << endl);
         }
     }
 #if 0
@@ -794,6 +793,7 @@ NodesToSolver::visit (ARRACC_node &node)
         // aracctimer.stop().print();
         return;
     }
+    Dout (cout << "parents changed" << endl);
 
     /* Extract choices into a sparse/bit-vector value subsets. */
     Dout (cout << "partitioning items to sparse/bvect subsets..." << endl);
