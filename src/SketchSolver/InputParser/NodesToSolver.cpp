@@ -880,6 +880,14 @@ NodesToSolver::visit (ARRACC_node &node)
 	    dir.addOrClause (output_sparse.getId (i), output_bvect.getId (i),
 			     output.getId (i));
 	}
+
+        /* FIXME this converts an output bitvector of more that 1 bit into
+         * a sparse; currently required to conform with dominant assumption
+         * made through the code, by which a bit-vector value is of size 1... */
+        if (output.getSize() > 1) {
+            Dout (cout << "(temporary) converting merged result into a sparse" << endl);
+            output.makeSparse (dir);
+        }
     } else if (is_got_bvect) {
 	Dout (cout << "using bvect output only (no sparse)" << endl);
 	output = output_bvect;
@@ -1043,7 +1051,7 @@ NodesToSolver::doArrAccBvect (Tvalue &output, Tvalue &index_orig,
     } else {
 	/* Initialize output object. */
 	Dout (cout << "building output bvect with new variables" << endl);
-	output = Tvalue ((is_signed ? TVAL_BVECT : TVAL_BVECT_SIGNED),
+	output = Tvalue ((is_signed ? TVAL_BVECT_SIGNED : TVAL_BVECT),
 			 dir.newAnonymousVar (nbit), nbit);
 
 	/* Iterate over bits, form disjunction.
@@ -1063,7 +1071,8 @@ NodesToSolver::doArrAccBvect (Tvalue &output, Tvalue &index_orig,
     elooptimer.stop();
 #endif
 
-    Dout (cout << "arracc: bvect subset complete, " << output << endl);
+    Dout (cout << "arracc: bvect subset complete, " << output << " ("
+          << (output.isBvect() ? "un" : "") << "signed)" << endl);
     return true;
 }
 
@@ -1112,7 +1121,7 @@ NodesToSolver::doArrAccSparse (Tvalue &output, Tvalue &index_orig,
 
 	Dout (cout << "processing " << item_vals.size() << " item value(s)..." << endl);
 
-	/* Accumulate guard conjuncts for all possibly output values. */
+	/* Accumulate guard conjuncts for all possible output values. */
 	int j = 0;
 	for (vector<int>::iterator it = item_vals.begin();
 	     it != item_vals.end(); it++, j++)
@@ -1156,9 +1165,11 @@ NodesToSolver::doArrAccSparse (Tvalue &output, Tvalue &index_orig,
 	    scratchpad[++last_term_idx] = last_var = vars[i];
 
 	/* Associate guard variable with current output value. */
-	if (is_single_val && last_term_idx == 1)
+	if (is_single_val && last_term_idx == 1) {
+	    /* Special case: single-value, single-variable guard. */
+	    output_vals.clear();
 	    output.setId (last_var);
-	else {
+	} else {
 	    /* Allocate fresh guard variables, if not done so far. */
 	    if (! is_allocated) {
 		output = Tvalue (TVAL_SPARSE, dir.newAnonymousVar (nval), nval);
@@ -1255,7 +1266,9 @@ NodesToSolver::visit (GE_node &node)
 #endif /* HAVE_BVECTARITH */
 }
 
-void NodesToSolver::visit( ARRASS_node& node ){
+void
+NodesToSolver::visit (ARRASS_node& node)
+{
     Dout(cout<<"             ARRASS:"<<endl);
     // mother = index
     // multi-mother[0] = old-value;
@@ -1272,122 +1285,124 @@ void NodesToSolver::visit( ARRASS_node& node ){
     bool parentSame = true;
     bool isBoolean=true;
     for(int i=0; it != node.multi_mother.end(); ++i, ++it){
-		const Tvalue& cval = tval_lookup(*it);
-		if( cval.isSparse() ){
-		    isBoolean = false;
-		}
-		mothers[i] = *it;
-		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"   ");
-		choices[i] = cval;
-		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
-		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
+        const Tvalue& cval = tval_lookup(*it);
+        if( cval.isSparse() ){
+            isBoolean = false;
+        }
+        mothers[i] = *it;
+        Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"   ");
+        choices[i] = cval;
+        Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
+        parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
     }
     if(!checkParentsChanged( node, parentSame)){ return; }
     int guard;
-    if( !mval.isSparse() ){
-		if(quant > 1){
-		    guard = -YES;
-		}else{	    
-		    Dout(cout<<" mval = "<<mval<<endl);
-		    guard = dir.addXorClause(mval.getId (), quant==0?YES:-YES);
-		}
-    }else{
-		guard = -YES;
-		const vector<int>& nrange = mval.num_ranges;
-		for(int i=0; i<nrange.size(); ++i){
-		    if( nrange[i] == quant){
-			guard = mval.getId (i);
-			break;
-		    }
-		}
+    if (! mval.isSparse()) {
+        Assert (mval.getSize() == 1, "assuming a single-bit bitvector value");
+
+        if (quant > 1) {
+            guard = -YES;
+        } else {      
+            Dout(cout<<" mval = "<<mval<<endl);
+            guard = dir.addXorClause(mval.getId (), quant==0?YES:-YES);
+        }
+    } else {
+        guard = -YES;
+        const vector<int>& nrange = mval.num_ranges;
+        for(int i=0; i<nrange.size(); ++i){
+            if( nrange[i] == quant){
+                guard = mval.getId (i);
+                break;
+            }
+        }
     }
     Dout(cout<<" guard = "<<guard<<endl);
     if(isBoolean){
-		Dout(cout<<" is boolean"<<endl);
-		int cvar = dir.addChoiceClause(guard , choices[1].getId (), choices[0].getId ());
-		node.flag = node_ids[node.id].isNull() || node_ids[node.id].getId () != cvar;
-		if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
-		node_ids[node.id] = cvar;
-		return;
+        Dout(cout<<" is boolean"<<endl);
+        int cvar = dir.addChoiceClause(guard , choices[1].getId (), choices[0].getId ());
+        node.flag = node_ids[node.id].isNull() || node_ids[node.id].getId () != cvar;
+        if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
+        node_ids[node.id] = cvar;
+        return;
     }else{
-		Dout(cout<<" is not boolean"<<endl);
-		Tvalue& mid0 = choices[0];
-		Tvalue& mid1 = choices[1];
-		if( !mid0.isSparse() ){
-		    mid0.makeSparse(dir);
-		}
-		if( !mid1.isSparse() ){
-		    mid1.makeSparse(dir);
-		}
-		if(guard == YES){
-		    node.flag = node_ids[node.id] != mid1;
-		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
-		    node_ids[node.id] = mid1;
-		    Dout( cout<<"var "<< mid1 <<endl);
-		    return;
-		}
-		if(guard == -YES){
-		    node.flag = node_ids[node.id] != mid0;
-		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
-		    node_ids[node.id] = mid0;
-		    Dout( cout<<"var "<< mid0 <<endl);
-		    return;
-		}
-		int i=0, j=0;
-		vector<int>& nr0 = mid0.num_ranges;
-		vector<int>& nr1 = mid1.num_ranges;
-		vector<int> res;
-		res.reserve(nr0.size() + nr1.size());
-		vector<int>& out = node_ids[node.id].num_ranges;
-		out.reserve(nr0.size() + nr1.size());
-		while(i < nr0.size() || j< nr1.size()){
-		    bool avi = i < nr0.size();
-		    bool avj = j < nr1.size();
-		    int curri = avi ? nr0[i]  : -1;
-		    int currj = avj ? nr1[j]  : -1;
-		    if( curri == currj && avi && avj){
-				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
-				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
-				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
-				int cvar3 = dir.addOrClause( cvar2, cvar1);
-				out.push_back(curri);
-				res.push_back(cvar3);
-				i++;
-				j++;
-				continue;
-			}
-		    if((curri < currj && avi) || !avj){
-				Dout(cout<<" curri = "<<curri<<endl);
-				int cvar = dir.addAndClause( mid0.getId (i), -guard);
-				out.push_back(curri);
-				res.push_back(cvar);
-				i++;
-				continue;
-		    }
-		    if( (currj < curri && avj) || !avi ){
-				Dout(cout<<" currj = "<<currj<<endl);
-				int cvar = dir.addAndClause( mid1.getId (j), guard );
-				out.push_back(currj);
-				res.push_back(cvar);
-				j++;
-				continue;
-		    }
-		    Assert(false, "Should never get here");
-		}
-		out.resize(res.size ());
-		Assert( res.size () > 0, "This should not happen here2");
-		int newID = dir.newAnonymousVar();
-		for(int k=1; k<res.size(); ++k){
-		    int cvar = dir.newAnonymousVar();
-		    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
-		}
-		for(int k=0; k<res.size(); ++k){
-		    int val = res[k];
-		    mng.addEqualsClause( newID+k, val);
-		}
-		node_ids[node.id].setId(newID);
-		node_ids[node.id].sparsify ();
-		return;
+        Dout(cout<<" is not boolean"<<endl);
+        Tvalue& mid0 = choices[0];
+        Tvalue& mid1 = choices[1];
+        if( !mid0.isSparse() ){
+            mid0.makeSparse(dir);
+        }
+        if( !mid1.isSparse() ){
+            mid1.makeSparse(dir);
+        }
+        if(guard == YES){
+            node.flag = node_ids[node.id] != mid1;
+            if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
+            node_ids[node.id] = mid1;
+            Dout( cout<<"var "<< mid1 <<endl);
+            return;
+        }
+        if(guard == -YES){
+            node.flag = node_ids[node.id] != mid0;
+            if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
+            node_ids[node.id] = mid0;
+            Dout( cout<<"var "<< mid0 <<endl);
+            return;
+        }
+        int i=0, j=0;
+        vector<int>& nr0 = mid0.num_ranges;
+        vector<int>& nr1 = mid1.num_ranges;
+        vector<int> res;
+        res.reserve(nr0.size() + nr1.size());
+        vector<int>& out = node_ids[node.id].num_ranges;
+        out.reserve(nr0.size() + nr1.size());
+        while(i < nr0.size() || j< nr1.size()){
+            bool avi = i < nr0.size();
+            bool avj = j < nr1.size();
+            int curri = avi ? nr0[i]  : -1;
+            int currj = avj ? nr1[j]  : -1;
+            if( curri == currj && avi && avj){
+                Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+                int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
+                int cvar2 = dir.addAndClause( mid1.getId (j), guard);
+                int cvar3 = dir.addOrClause( cvar2, cvar1);
+                out.push_back(curri);
+                res.push_back(cvar3);
+                i++;
+                j++;
+                continue;
+            }
+            if((curri < currj && avi) || !avj){
+                Dout(cout<<" curri = "<<curri<<endl);
+                int cvar = dir.addAndClause( mid0.getId (i), -guard);
+                out.push_back(curri);
+                res.push_back(cvar);
+                i++;
+                continue;
+            }
+            if( (currj < curri && avj) || !avi ){
+                Dout(cout<<" currj = "<<currj<<endl);
+                int cvar = dir.addAndClause( mid1.getId (j), guard );
+                out.push_back(currj);
+                res.push_back(cvar);
+                j++;
+                continue;
+            }
+            Assert(false, "Should never get here");
+        }
+        out.resize(res.size ());
+        Assert( res.size () > 0, "This should not happen here2");
+        int newID = dir.newAnonymousVar();
+        for(int k=1; k<res.size(); ++k){
+            int cvar = dir.newAnonymousVar();
+            Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
+        }
+        for(int k=0; k<res.size(); ++k){
+            int val = res[k];
+            mng.addEqualsClause( newID+k, val);
+        }
+        node_ids[node.id].setId(newID);
+        node_ids[node.id].sparsify ();
+        return;
     }
 }
 
