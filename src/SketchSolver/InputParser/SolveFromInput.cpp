@@ -121,6 +121,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			cout<<" optimizing "<<	it->first <<" went from size "<<sz1<<" to "<<sz2<<endl;
 		}
 		
+		
 		/*
 		if(sketch_p->size() > 1000){
 			{
@@ -148,9 +149,18 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			}
 			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
 		}
-			
-			
-			
+		/*
+		{
+			cout<<"SPEC: "<<endl;
+			DagCSE dcse(*spec_p);
+			dcse.eliminateCSE();
+		}
+		{
+			cout<<"SKETCH: "<<endl;
+			DagCSE dcse(*sketch_p);
+			dcse.eliminateCSE();
+		}
+		*/
 		{
 			DagElimUFUN eufun;	
 			eufun.process(*spec_p);
@@ -168,7 +178,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		//Dout( problem->print(cout) );				
 		{
 			DagOptim cse(*problem);	
-			cse.alterARRACS();
+			//cse.alterARRACS();
 			cse.process(*problem);
 		}
 		problem->cleanup(false);
@@ -177,7 +187,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;		
 		{
 			DagOptim cse(*problem);	
-			cse.alterARRACS();
+			//cse.alterARRACS();
 			cse.process(*problem);
 		}
 		/* 
@@ -295,7 +305,11 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;		
 		if( iter > 2 || gnbits > 3){
 			if( problem == oriProblem){
+				int* ttt = new int[9000];
 				problem = hardCodeControls(controls);
+				//ofstream outf("output.ucl");
+				//outputEuclid(outf);
+				delete ttt;
 			}
 		}
 		
@@ -304,7 +318,7 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 	}
 	if( problem != oriProblem){	
 		cout<<" * Cleaning up alternative problem"<<endl;	
-		problem->clear();
+		// problem->clear();
 		problem = oriProblem;	
 	}
 	return rv;
@@ -348,6 +362,10 @@ BooleanDAG* SolveFromInput::hardCodeControls(vector<int>& controls){
 	cse.process(*newdag);
 	Dout( newdag->print(cout) ); 
 	cout<<" * After specialization: nodes = "<<newdag->size()<<endl;
+	
+	
+	
+	
 	return newdag;
 }
 
