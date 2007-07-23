@@ -332,7 +332,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
-		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
+		( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
 		int nargs = node.multi_mother.size();
 		SFunInfo& sfi = functions[name];
 		BooleanDAG* cclone = sfi.fun->clone();
@@ -387,27 +387,20 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
 		
-		
-		t_node tn(src);
-		tnbuilder.tn_build(src, NULL, &tn);
-		
-		t_node tn2(rvalue);
-		tnbuilder.tn_build(&node, NULL, &tn2);
-		
+		bool_node* tn1 = tnbuilder.get_exe_cond(src, newnodes, false);
+		bool_node* tn2 = tnbuilder.get_exe_cond(&node, newnodes, false);
 		
 		bool_node* cur = NULL;
 		
-		if(tn.children.size() > 0){
-			cur = tn.childDisjunct(newnodes);	
-		}
+		cur = tn1;
 		
-		if(tn2.children.size() > 0){
+		if(tn2 != NULL){
 			if(cur == NULL){
-				cur = tn2.childDisjunct(newnodes);
+				cur = tn2;
 			}else{
 				AND_node* anode = new AND_node();
 				anode->mother = cur;
-				anode->father = tn2.childDisjunct(newnodes);
+				anode->father = tn2;
 				anode->addToParents();
 				newnodes.push_back(anode);
 				cur = anode;					
@@ -427,10 +420,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			msg += ": UFUN is being misused";
 			asn->setMsg(msg);
 			newnodes.push_back(asn);
-		}		
+		}
 		
-		//tn.print(cout);
-		//tn2.print(cout);
 		
 		Dout( cout<<" ADDING "<<(newnodes.size()-oldsize)<<" NODES"<<endl );
 	}	
