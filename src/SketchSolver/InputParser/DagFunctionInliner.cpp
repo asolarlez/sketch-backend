@@ -60,7 +60,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		rvalue = outputs[0]->mother;
 		
 		
-		t_node tn(NULL);
+		bool_node* tn = NULL;
 				
 		
 		int hasBuiltTN = false;
@@ -68,7 +68,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		for(int i=0; i<fun->size(); ++i){
 			bool_node* n = (*fun)[i];
-			if( n != NULL &&  n->type != bool_node::DST ){				
+			if( n != NULL &&  n->type != bool_node::DST ){			
 				if(n->type != bool_node::ASSERT){
 					newnodes.push_back(n);
 				}else{
@@ -77,7 +77,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						int szz1 = tnbuilder.store.size();
 						timerclass timer("         tnbuild  ");
 						timer.start();		
-						tnbuilder.tn_build(&node, NULL, &tn);
+						tn = tnbuilder.get_exe_cond(&node, newnodes);						
 						timer.stop();
 						int szz2 = tnbuilder.store.size();
 						cout<<" added "<<(szz2-szz1)<<" nodes"<<endl;		
@@ -85,10 +85,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}
 					
 					bool_node* cur = n->mother;
-					if(tn.children.size() > 0){						
+					if(tn != NULL){						
 						AND_node* anode = new AND_node();
 						anode->mother = cur;
-						anode->father = tn.childDisjunct(newnodes);
+						anode->father = tn;
 						anode->addToParents();
 						newnodes.push_back(anode);
 						cur = anode;				
