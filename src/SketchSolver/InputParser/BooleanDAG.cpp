@@ -95,13 +95,14 @@ int arith_node::back_dfs(int idx){
 void bool_node::remove_child(bool_node* bn){
 	vector<bool_node*>& tmpv = children;	
 	vector<bool_node*>::iterator oit = tmpv.begin();
-	for(vector<bool_node*>::iterator init = tmpv.begin(); init < tmpv.end(); ++init){		
+	vector<bool_node*>::iterator oldbegin = oit;
+	for(vector<bool_node*>::iterator init = oldbegin; init < tmpv.end(); ++init){		
 		if( *init != bn ){
 			*oit = *init;
 			++oit;
 		}
 	}
-	tmpv.resize(oit - tmpv.begin());
+	tmpv.resize(oit - oldbegin);
 }
 
 
@@ -366,9 +367,9 @@ void BooleanDAG::layer_graph(){
   //before you.
 }
 
+timerclass TTMMPP("");
 
-
-void BooleanDAG::replace(int original, bool_node* replacement){	
+void BooleanDAG::replace(int original, bool_node* replacement, timerclass& replacepar){	
 	int i = original;
 	Assert( i < nodes.size(), "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
 	Assert( replacement != NULL, "Why are you replacing with a null replacement");
@@ -376,14 +377,18 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	bool_node* onode = nodes[i];
 	Assert( onode != NULL, "This can't happen");
 	
-	
+	replacepar.restart();
 	onode->dislodge();
+	replacepar.stop();
 	
 	vector<bool_node*> tmpchild = onode->children;
-	for(int k=0; k<onode->children.size(); ++k){		
-		bool_node* cchild =  onode->children[k];
-		cchild->replace_parent(onode, replacement);
+	for(vector<bool_node*>::iterator it = onode->children.begin(); 
+										it !=onode->children.end(); ++it){
+		
+		(*it)->replace_parent(onode, replacement);
 	}
+	
+	
 	
 	//
 	

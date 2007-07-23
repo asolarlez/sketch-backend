@@ -501,6 +501,7 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
   return n1->layer < n2->layer || ( (n1->layer == n2->layer) && n1->ion_pos<n2->ion_pos );
 }
 
+extern timerclass TTMMPP;
 
 class BooleanDAG  
 {
@@ -532,7 +533,8 @@ public:
   void print(ostream& out);
   typedef vector<bool_node*>::iterator iterator;
   void removeNullNodes();
-  void replace(int i, bool_node* cse);
+  void replace(int original, bool_node* replacement, timerclass& replacepar=TTMMPP);
+  //void replace(int original, bool_node* cse);
   
   virtual string create_const(int n);
   void create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
