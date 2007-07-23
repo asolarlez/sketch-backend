@@ -149,8 +149,8 @@ bool DagOptim::compSymplification(NTYPE& node){
 		
 		if(momo == node.mother){
 			NTYPE* pnode = new NTYPE();
-			pnode->mother = mofa;
-			pnode->father = getCnode(0);
+			pnode->father = mofa;
+			pnode->mother = getCnode(0);
 			pnode->addToParents();
 			pnode->id = newnodes.size() + dagsize;
 			newnodes.push_back(pnode);
@@ -987,6 +987,8 @@ void DagOptim::process(BooleanDAG& dag){
 	timerclass opttimer("OPTIMIZATION");
 	timerclass identify("identify");
 	timerclass replace("replace");
+	
+	timerclass replacepar("dislodge");	
 
 	everything.start();
 	opttimer.start();
@@ -1007,7 +1009,7 @@ void DagOptim::process(BooleanDAG& dag){
 			bool_node * csubexp = cse[cse.ccode];
 			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<csubexp->get_name()<<endl );
 			replace.restart();
-			dag.replace(i, csubexp);
+			dag.replace(i, csubexp, replacepar);
 			replace.stop(); 
 		}else{
 			// if we don't find it, just add it.
@@ -1015,7 +1017,7 @@ void DagOptim::process(BooleanDAG& dag){
 			if( dag[i] != node ){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				replace.restart();
-				dag.replace(i, node);
+				dag.replace(i, node, replacepar);
 				replace.stop();
 			}
 		}
@@ -1029,11 +1031,11 @@ void DagOptim::process(BooleanDAG& dag){
 	dag.cleanup(false);
 	dag.relabel();
 	everything.stop();
-	/*
+	
 	everything.print();
 	opttimer.print();
 	identify.print();
 	replace.print();
-	*/
+	replacepar.print();
 	Dout(cout<<" end cse "<<endl);
 }

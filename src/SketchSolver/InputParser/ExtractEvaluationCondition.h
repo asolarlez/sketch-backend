@@ -8,21 +8,41 @@ using namespace std;
 
 
 /**
+ * 
+ * See info for ExtractEvaluationCondition before reading this comment.
+ * 
  * The boolean formula corresponding to the guard for a node 
  * is represented as a network of t-nodes.
+ * Each t-node corresponds to a clause of the form 'control==nidx'.
+ * In the rest of this comment I refer to this clause as tn.C(I) for a given t_node tn.
+ * Additionally, there is a function P(I) associated with each t_node under the following definition:
  * 
- * Each t-node corresponds to a clause of the form 'control==nidx'
+ * tn.P(I) :=  tn.C(I) & ( \exists tn' in children tn'.P(I) )
  * 
+ * In other words, tn.P(I) will be true if there is a path from n to the end of the dag 
+ * where all the C(I) along that path are true.
  * 
+ * for a given t_node, tn.P(I) is stored in the node field of the t_node, and it is a function of the 
+ * tn.P(I) of its children.
  * 
  */
 
 
 class t_node{
 	public:
+	
+	/**
+	 * tn.C(I) := control == nidx.
+	 * 
+	 */
 	bool_node* control;
 	int nidx;	
 	vector<t_node*> children;
+	
+	/**
+	 * node is a pointer to a bool_node corresponding to tn.P(I). 
+	 * 
+	 */
 	bool_node* node;
 	
 	
@@ -38,12 +58,21 @@ class t_node{
 	}
 	
 	string tostring(){
-		string tmp = control->get_name();
+		if(control == NULL) return "NULL";
+		stringstream str;
+		if(nidx == 0){
+			str<<" ! ";
+		}
+		str<<control->get_name()<<":";
+		str<<control->id;		
+    	return str.str();
+		/*
+		string tmp = control->get_name();		
 		tmp += "_";
 		if(nidx==0){
 			tmp += "_NOT";	
 		}			
-		return tmp;
+		return tmp; */
 	}
 	
 	void print(ostream& out, set<t_node*>& ts){
@@ -69,7 +98,14 @@ class t_node{
 		}
 	}
 	
-	
+	/**
+	 * 
+	 * childDisjunct returns a boolean node corresponding to the formula 
+	 * 
+	 * ( \exists tn' in children tn'.P(I) )
+	 * 
+	 * The store is a vector where we will push any new bool_nodes that get allocated by this function.
+	 */
 	bool_node* childDisjunct(vector<bool_node*>& store){
 		Assert( children.size() > 0 , "This function is being misused");
 		bool_node* cur = children[0]->node;
@@ -87,6 +123,15 @@ class t_node{
 		return cur;
 	}
 	
+	
+	/**
+	 * 
+	 * circuit returns a boolean node corresponding to the formula 
+	 * 
+	 * tn.C(I) & ( \exists tn' in children tn'.P(I) )
+	 * 
+	 * The store is a vector where we will push any new bool_nodes that get allocated by this function.
+	 */
 	bool_node* circuit(vector<bool_node*>& store){		
 		if( children.size() == 0){
 			node = guard(store);
@@ -110,10 +155,19 @@ class t_node{
  * such that P(I) is true iff the value of n can flow
  * to the output.  
  * 
- * To use it simply call t_build(n, parent, partn)
+ * 
+ * In order to determine flow, it looks only at ARRACC nodes, 
+ * so the circuit P(I) includes the branch conditions of all ARRACC nodes 
+ * that are reachable from node n. Note that because it looks at ARRACC nodes, 
+ * any transformation that replaces ARRACC nodes with, say, ANDs and ORs will make
+ * the resulting P(I) overly conservative.  
+ * 
+ * To use this class, simply call t_build(n, parent, partn)
  * where n is the node you are interested in. 
  * parent should be NULL (it is used internally when n is called).
- * And partn is 
+ * And partn is a fresh t_node.
+ * 
+ * Note: Need a cleaner interface.
  * 
  * 
  */
@@ -129,6 +183,7 @@ map<string, t_node*> visited;
 
 public:
 vector<bool_node*> store;
+vector<t_node*> garbage;
 map<bool_node* , t_node*> tvisited;
 
 int ivisit;
@@ -136,6 +191,9 @@ int ivisit;
 virtual void reset(){
 	for(map<string, t_node*>::iterator it = visited.begin(); it!= visited.end(); ++it){
 		delete it->second;
+	}
+	for(vector<t_node*>::iterator it = garbage.begin(); it!= garbage.end(); ++it){
+		delete *it;
 	}
 	visited.clear();
 	store.clear();
@@ -149,6 +207,33 @@ virtual ~ExtractEvaluationCondition(){
 }
 
 
+
+bool_node* get_exe_cond(bool_node* bn, vector<bool_node*>& newnodes, bool print_flag = false){
+	t_node* tn = new t_node(NULL);
+	tn_build(bn, NULL, tn);
+	bool_node* rv = NULL;
+	if(tn->children.size() > 0){ 
+		rv = tn->childDisjunct(newnodes);
+		if(print_flag){ tn->print(cout); } 
+	}
+	garbage.push_back(tn);
+	return rv;
+}
+
+
+/*
+ * Each ARRACC bn node that is a descendant of n will have associated with it 
+ * a set of t_nodes, one for each input of ARRACC into which n can flow.
+ * 
+ * tn build builds the t_node graph recursively. Initially it is called with 
+ * bn = n
+ * partn = a fresh t_node tn.
+ * parent = null.
+ * 
+ * After it terminates, the fresh t_node will now have tn.P(I) = P(I). In other
+ * words, the P(I) of tn will correspond to the P(I) for n.
+ * 
+ */
 void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
 	++ivisit;
 	if( typeid(*bn) == typeid(ARRACC_node) && parent != bn->mother  ){
@@ -163,7 +248,7 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
 					t_node* tn = visited[tmp];
 					partn->children.push_back(tn);
 					Assert( tn->node != NULL, "This can't be happening hgfrkj"<<tn<<", "<<tn->control);
-				}else{				
+				}else{			
 					t_node* tn = new t_node(an->mother);
 					tn->nidx = i;
 					partn->children.push_back(tn);
