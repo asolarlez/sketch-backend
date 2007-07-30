@@ -2,6 +2,7 @@
 #define __TVALUE_H
 
 #include <vector>
+#include <cassert>
 using namespace std;
 
 /*
