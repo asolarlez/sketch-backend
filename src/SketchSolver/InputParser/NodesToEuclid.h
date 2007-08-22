@@ -39,14 +39,14 @@ public:
 				SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 				int nbits = srcnode->get_nbits();
 				if(nbits == 1){
-					out<<node_name(*srcnode, false)<<" : TRUTH ; "<<endl;
+					out<<node_name(*srcnode, true)<<" : TRUTH ; "<<endl;
 				}else{
-					out<<node_name(*srcnode, false)<<" : BITVEC[16] ; "<<endl;
+					out<<node_name(*srcnode, true)<<" : BITVEC[16] ; "<<endl;
 				}
 			}
 		}
 		
-		
+		out<<"DEFINE"<<endl;
 		
 		int i=0;
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
@@ -66,8 +66,7 @@ public:
 		out<<";"<<endl;
 		
 		out<<" EXEC "<<endl;
-		out<<"decide("<<prefix<<"root);"<<endl;
-		
+		out<<"decide(~"<<prefix<<"root);"<<endl;
 	}
 	
 	virtual ~NodesToEuclid();
@@ -90,7 +89,11 @@ public:
 			}
 		}else{
 			stringstream str;
-			str<<prefix<<node.get_name()<<"_"<<node.id;		
+			if(node.getOtype()==bool_node::BOOL  && !isBool){
+				str<<"( case "<<prefix<<node.get_name()<<"_"<<node.id<<": 1; default : 0; esac; )";
+			}else{
+				str<<prefix<<node.get_name()<<"_"<<node.id;	
+			}
 			return str.str();
 		}
 	}
@@ -147,7 +150,7 @@ public:
 		
 		Assert( mmother.size() == 2, " NYI; Can't produce Euclid file for this benchmark." );
 		
-		out<<node_name(node, false)<<" := ";
+		out<<node_name(node, true)<<" := ";
 		out<<" case ";		
 		out<<mother_name(node, false)<<":";
 		
@@ -157,25 +160,25 @@ public:
 		out<<"; esac; "<<endl;
 	}
 	virtual void visit( DIV_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" /_16 "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" /_16 "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( MOD_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" %_16 "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" %_16 "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( GT_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" > "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" > "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( GE_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" >= "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" >= "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( LT_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" < "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" < "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( LE_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" <= "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" <= "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( EQ_node& node ){
-		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" = "<<father_name(node, false)<<"; "<<endl;		
+		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" = "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( ARRASS_node& node ){}
 	virtual void visit( ACTRL_node& node ){}
