@@ -681,7 +681,7 @@ void DagOptim::visit( EQ_node& node ){
 			if(mvalue == 0){
 				NOT_node* nt = new NOT_node();
 				nt->name = node.name;
-				nt->name += "NOT";
+				nt->name += "NOTa";
 				nt->mother = node.father;
 				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
@@ -704,7 +704,7 @@ void DagOptim::visit( EQ_node& node ){
 			if(mvalue == 0){
 				NOT_node* nt = new NOT_node();
 				nt->name = node.name;
-				nt->name += "NOT";
+				nt->name += "NOTb";
 				nt->mother = node.mother;
 				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
@@ -746,22 +746,33 @@ void DagOptim::visit( ARRACC_node& node ){
 		return;
 	}
 	bool tmp = true;
-	int i=0;
-	if( i<node.multi_mother.size() ){
-		bool_node* bn =  node.multi_mother[0];
-		for(i=1; i<node.multi_mother.size(); ++i){
-			if( bn != node.multi_mother[i] ){
-				tmp = false;
-			}
-		}
-		if( tmp ){
-			rvalue = bn;
-			return;	
-		}
-	}
+	
 	
 	
 	if( node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL ){
+
+		/* 
+		 * It may seem that the transformation inside the following if statement also applies to
+		 * ARRACC with non-bool mother. But this is not the case, because if the mother is non-bool, 
+		 * then the access could be out of bounds, and then, the result could be different to 
+		 * multi_mother[0] even if all multimothers are the same. (REMEMBER: out of bounds ARRACC evaluates to zero).
+		 * */
+		int i=0;
+		if( i<node.multi_mother.size() ){
+			bool_node* bn =  node.multi_mother[0];
+			for(i=1; i<node.multi_mother.size(); ++i){
+				if( bn != node.multi_mother[i] ){
+					tmp = false;
+				}
+			}
+			if( tmp ){
+				rvalue = bn;
+				return;	
+			}
+		}
+
+
+
 
 		if( isConst(node.multi_mother[0]) ){
 			int val0 = getIval( node.multi_mother[0] );
@@ -775,7 +786,7 @@ void DagOptim::visit( ARRACC_node& node ){
 					}else{
 						NOT_node* nt = new NOT_node();
 						nt->name = node.name;
-						nt->name += "NOT";
+						nt->name += "NOTc";
 						nt->mother = node.mother;
 						nt->addToParents();
 						nt->id = newnodes.size() + dagsize;
@@ -835,7 +846,7 @@ void DagOptim::visit( ARRACC_node& node ){
 		
 		if( typeid(*node.multi_mother[1]) == typeid(node)  ){			
 			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
-			if( node.multi_mother[0] == mm1.multi_mother[0] ){
+			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == bool_node::BOOL && mm1 .mother->getOtype() == bool_node::BOOL ){
 				AND_node* an = new AND_node();
 				an->name = node.name;
 				an->name += "AND";
@@ -869,7 +880,7 @@ void DagOptim::visit( ARRACC_node& node ){
 								
 				NOT_node* nt = new NOT_node();
 				nt->name = node.name;
-				nt->name += "NOT";
+				nt->name += "NOTc";
 				nt->mother = mm1 .mother;
 				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
@@ -936,7 +947,7 @@ void DagOptim::visit( ARRACC_node& node ){
 								
 				NOT_node* nt = new NOT_node();
 				nt->name = node.name;
-				nt->name += "NOT";
+				nt->name += "NOTd";
 				nt->mother = mm1 .mother;
 				nt->id = newnodes.size() + dagsize;
 				newnodes.push_back(nt);
@@ -996,6 +1007,8 @@ void DagOptim::process(BooleanDAG& dag){
 	int k=0;
 	for(int i=0; i<dag.size(); ++i ){
 		// Get the code for this node.
+		
+		
 		identify.restart(); 
 		dag[i]->accept(*this);
 		bool_node* node = rvalue;		
