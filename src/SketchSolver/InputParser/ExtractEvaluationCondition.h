@@ -89,6 +89,8 @@ class t_node{
 	bool_node* guard(vector<bool_node*>& store){
 		if( nidx == 0){
 			NOT_node* nn = new NOT_node();
+			nn->name = control->name;
+			nn->name += "FAFUFO";
 			nn->mother = control;
 			nn->addToParents();
 			store.push_back(nn);
@@ -238,33 +240,35 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
 	++ivisit;
 	if( typeid(*bn) == typeid(ARRACC_node) && parent != bn->mother  ){
 		ARRACC_node* an = dynamic_cast<ARRACC_node*>(bn);	
-		int found = 0;	
-		for(int i=0; i<an->multi_mother.size(); ++i){
-			if( an->multi_mother[i] == parent ){
-				++found;
-				sprintf(buf, "%dI%d", an, i);
-				string tmp(buf);
-				if(visited.find(tmp) != visited.end()){
-					t_node* tn = visited[tmp];
-					partn->children.push_back(tn);
-					Assert( tn->node != NULL, "This can't be happening hgfrkj"<<tn<<", "<<tn->control);
-				}else{			
-					t_node* tn = new t_node(an->mother);
-					tn->nidx = i;
-					partn->children.push_back(tn);
-					visited[tmp] = tn;					
-					for(int j=0; j<an->children.size(); ++j){						
-						tn_build(an->children[j], bn, tn);						
-					}
-					
-					tn->circuit(store);					
-					Assert( tn->node != NULL, "This can't be happening pm;askd");
-				}
-			}
-		}
 		
-		Assert( found > 0, "This is very strange; this shouldn't happen.");
-		return;
+		if( an->multi_mother.size() == 2 && an->mother->getOtype() == bool_node::BOOL ){
+			int found = 0;	
+			for(int i=0; i<an->multi_mother.size(); ++i){
+				if( an->multi_mother[i] == parent ){
+					++found;
+					sprintf(buf, "%dI%d", an, i);
+					string tmp(buf);
+					if(visited.find(tmp) != visited.end()){
+						t_node* tn = visited[tmp];
+						partn->children.push_back(tn);
+						Assert( tn->node != NULL, "This can't be happening hgfrkj"<<tn<<", "<<tn->control);
+					}else{			
+						t_node* tn = new t_node(an->mother);
+						tn->nidx = i;
+						partn->children.push_back(tn);
+						visited[tmp] = tn;					
+						for(int j=0; j<an->children.size(); ++j){						
+							tn_build(an->children[j], bn, tn);						
+						}
+						
+						tn->circuit(store);					
+						Assert( tn->node != NULL, "This can't be happening pm;askd");
+					}
+				}
+			}			
+			Assert( found > 0, "This is very strange; this shouldn't happen.");
+			return;
+		}
 	}
 	
 	if( tvisited[bn] == partn ){ 
