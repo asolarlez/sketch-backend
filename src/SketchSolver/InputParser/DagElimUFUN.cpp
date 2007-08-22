@@ -409,6 +409,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		
 		if( cur != NULL){
 			NOT_node* nn = new NOT_node();
+			nn->name = cur->name;
+			nn->name += "NOTfa";
 			nn->mother = cur;
 			nn->addToParents();
 			newnodes.push_back(nn);
