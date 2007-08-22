@@ -305,11 +305,11 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;		
 		if( iter > 2 || gnbits > 3){
 			if( problem == oriProblem){
-				int* ttt = new int[9000];
+				//int* ttt = new int[9000];
 				problem = hardCodeControls(controls);
 				//ofstream outf("output.ucl");
 				//outputEuclid(outf);
-				delete ttt;
+				//delete ttt;
 			}
 		}
 		
