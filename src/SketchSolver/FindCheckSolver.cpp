@@ -60,8 +60,7 @@ void Checkpointer::setCheckpoint(const string& filename){
 /////////  	FindCheckSolver
 ////////////////////////////////////////////////////////////
 
-
-FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(finder), mngCheck(checker),  OUT("_OUT"), SOUT("_SOUT"), dirFind(finder), dirCheck(checker){
+FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(finder), mngCheck(checker),  OUT("_OUT"), SOUT("_SOUT"), dirFind(finder), dirCheck(checker), printDiag(false){
 	cout<<"CONSTRUCTING "<<SOUT<<", "<<OUT<<endl;
 	////////////////////////////	
 	nseeds = 1;	
@@ -113,7 +112,7 @@ bool FindCheckSolver::solveCore(){
 	ttimer.start();
 	while(doMore){
 		{// Find
-			cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<"\t"<<(input[i]==1?1:0); cout<<endl;
+			cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			cpt.checkpoint('f', input);
 			cout<<"BEG FIND"<<endl; ftimer.restart();
 			doMore = find(input, ctrl);
@@ -127,7 +126,7 @@ bool FindCheckSolver::solveCore(){
 		}
 		
 		{ // Check
-			cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<"\t"<<(ctrl[i]==1?1:0);	cout<<endl;
+			cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<" "<<(ctrl[i]==1?1:0);	cout<<endl;
 			cpt.checkpoint('c', ctrl);
 			cout<<"BEG CHECK"<<endl; ctimer.restart();
 			doMore = check(ctrl, input);
@@ -504,7 +503,7 @@ int FindCheckSolver::getCtrlStart(const string& ctrl){
 	return controlStarts[ctrl];
 }
 
-	
+
 void FindCheckSolver::setup(){
 	setupFind();
 	setupCheck();
@@ -518,15 +517,19 @@ void FindCheckSolver::setCheckpoint(const string& filename){
 
 
 void FindCheckSolver::printDiagnostics(){
-	cout<<"# STATS FOR FINDER"<<endl;
-	printDiagnostics(this->mngFind, 'f');	
-	cout<<"# STATS FOR CHECKER"<<endl;
-	printDiagnostics(this->mngCheck, 'c');	
+	if(printDiag){
+		cout<<"# STATS FOR FINDER"<<endl;
+		printDiagnostics(this->mngFind, 'f');	
+		cout<<"# STATS FOR CHECKER"<<endl;
+		printDiagnostics(this->mngCheck, 'c');
+	}
 }
 
 
 void FindCheckSolver::printDiagnostics(SATSolver& mng, char c){
-   mng.printDiagnostics(c);
+	if(printDiag){
+   		mng.printDiagnostics(c);
+	}
 }
 
 
