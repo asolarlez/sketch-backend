@@ -123,11 +123,11 @@ int ABCSATSolver::solve(){
        	pAig = Abc_NtkStrash( pNtk, 0, 1 );
        	Abc_NtkDelete( pNtk );
 	   	pNtk = pAig;
-        timer.stop().print();
+        timer.stop(); //.print();
      }
 
 
-	Abc_NtkPrintStats(stdout, pNtk, 0);
+	//Abc_NtkPrintStats(stdout, pNtk, 0);
 	pNtk = cofactor(pNtk, namemap);
 
 
@@ -140,7 +140,7 @@ int ABCSATSolver::solve(){
 			Abc_NtkDelete( pNtk );
 			cout<<"After del "; timer.stop().print();
 		   	pNtk = pAig;
-			Abc_NtkPrintStats(stdout, pNtk, 0);			
+			//Abc_NtkPrintStats(stdout, pNtk, 0);			
 		}
        	
        
