@@ -43,6 +43,7 @@ class paramInterp{
   string restorefile;
   bool outputEuclid;
     bool doBvectArith;
+    bool printDiag;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -56,6 +57,7 @@ class paramInterp{
 		terminateafter = -1;
 		hasCpt = false;
 		hasRestore = false;
+		printDiag = false;
 	doBvectArith = false;
 		WITH_RESTRICTIONS = false;
 	  for(int ii=0; ii<argc; ++ii){
@@ -83,6 +85,10 @@ class paramInterp{
 	      input_idx = ii+1;      
 	    }
 	    
+	    if( string(argv[ii]) == "-printDiagnostics" ){
+	    	printDiag = true;
+	      input_idx = ii+1;      
+	    }
 	    
 	    if( string(argv[ii]) == "-outputEuclid" ){
 	    	outputEuclid = true;
@@ -270,6 +276,11 @@ int main(int argc, char** argv){
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
       						   params.seedsize, INp::NINPUTS);
+      						   
+      	if(params.printDiag){
+      		solver.activatePrintDiag();	
+      	}
+      	
       	if(params.outputEuclid){      		
       		ofstream fout("bench.ucl");
       		solver.outputEuclid(fout);
@@ -301,8 +312,7 @@ int main(int argc, char** argv){
 	  	try{
 	  		if(!params.hasRestore){
 			  	solveCode = solver.solve();
-	  		}else{
-	  			
+	  		}else{	  			
 	  			string fname = params.restorefile;
 	      		fname += "_";
 	      		fname += it->second;
