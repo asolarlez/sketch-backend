@@ -41,6 +41,7 @@ class FindCheckSolver{
 	int randseed;
 	int iterlimit;
 		
+	bool printDiag;
 	
 	map<string, int> controlVars;
 	map<string, int> controlStarts;
@@ -92,6 +93,11 @@ class FindCheckSolver{
 	
 	
 	public:
+	
+	void activatePrintDiag(){
+		printDiag = true;
+	}
+	
 	void outputCheckVarmap(ostream& out){
 		dirCheck.outputVarMap(out);	
 	}
