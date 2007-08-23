@@ -10,8 +10,8 @@ DagCSE::DagCSE(BooleanDAG& p_dag): dag(p_dag),stimer("string creation"), maptime
 
 DagCSE::~DagCSE()
 {
-	stimer.print();
-	maptimer.print();
+	//stimer.print();
+	//maptimer.print();
 	
 }
 

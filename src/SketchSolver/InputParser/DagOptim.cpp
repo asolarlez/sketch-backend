@@ -1046,9 +1046,9 @@ void DagOptim::process(BooleanDAG& dag){
 	everything.stop();
 	
 	everything.print();
-	opttimer.print();
-	identify.print();
-	replace.print();
-	replacepar.print();
+	//opttimer.print();
+	//identify.print();
+	//replace.print();
+	//replacepar.print();
 	Dout(cout<<" end cse "<<endl);
 }
