@@ -463,7 +463,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 		}
 	}
 	firstTime = false;
-	cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl;
+	Dout( cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl );
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
 	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	//FindCheckSolver::addInputsToTestSet(input);

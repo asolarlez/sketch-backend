@@ -195,6 +195,8 @@ int main(int argc, char** argv){
       exit(1);
     }
 
+	cout<<"FAFALAFALA"<<endl;
+
   	context = " ";
     {
       string fname(argv[params.input_idx]);
