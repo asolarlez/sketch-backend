@@ -109,8 +109,8 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
 Program: FilterList T_eof{ cout<<"Program"<<endl; $$=0; return 0;}
 
 
-FilterList: Filter  { }
-| FilterList Filter { $$ = 0; }
+FilterList:   { }
+| Filter FilterList { $$ = 0; }
 
 
 Filter: FilterType T_ident  {namestack.push(*$2); } '{' MethodList '}' { 
@@ -122,8 +122,8 @@ FilterType: T_Filter { }
 
 
 
-MethodList: Method	{}
-| MethodList Method	{}
+MethodList: {}
+| Method MethodList {}
 
 
 InList: T_ident {  currentBD->create_inputs(-1, *$1); }
