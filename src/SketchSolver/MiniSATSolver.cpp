@@ -208,11 +208,11 @@ bool MiniSATSolver::ignoreOld(){
  		vec<Lit> lits;
  		addClause(&finalOr[0], finalOr.size(), lits);
  	} 
- 	if( ! s->okay() ){ cout<<" NOT OKAY BEFORE"<<endl; }
+ 	if( ! s->okay() ){ cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; }
  	s->simplifyDB();
- 	if( ! s->okay() ){ cout<<" NOT OKAY "<<endl; return UNSATISFIABLE; }
+ 	if( ! s->okay() ){ cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; return UNSATISFIABLE; }
 	bool result = s->solve();
- 	if( ! s->okay() ){ cout<<" NOT OKAY "<<endl; }	
+ 	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
 	if( result) {
 		cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
@@ -223,8 +223,7 @@ bool MiniSATSolver::ignoreOld(){
 }
 
  void MiniSATSolver::reset(){
- 	finalOr.clear();
-	Assert ( s->okay() , "This can't happen");
+ 	finalOr.clear();	
 }
 
  void MiniSATSolver::cleanupDatabase(){

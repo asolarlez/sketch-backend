@@ -247,8 +247,10 @@ bool FindCheckSolver::find(vector<int>& input, vector<int>& controls){
 	
 //Solve
 	int result = mngFind.solve();
-  	cout<<"# FIND DIAGNOSTICS"<<endl;
-	printDiagnostics(mngFind, 'f');
+	if(printDiag){
+	  	cout<<"# FIND DIAGNOSTICS"<<endl;
+		printDiagnostics(mngFind, 'f');
+	}
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
     	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
@@ -289,8 +291,10 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
 	tc.stop().print();
 	
     int result = mngCheck.solve();
-    cout<<"# CHECK DIAGNOSTICS"<<endl;
-	printDiagnostics(mngCheck, 'c');
+    if(printDiag){
+	    cout<<"# CHECK DIAGNOSTICS"<<endl;
+		printDiagnostics(mngCheck, 'c');
+    }
     if (result != SATSolver::SATISFIABLE){
     	mngCheck.reset();
     	if( result != SATSolver::UNSATISFIABLE){
@@ -316,7 +320,7 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
 			int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
 			if( val == 1) input[jj]= 1;
 			else input[jj]= -1;
-			cout<<" input "<<cname<<"  has id "<<jj<<" and value "<<input[jj]<<endl;
+			Dout( cout<<" input "<<cname<<"  has id "<<jj<<" and value "<<input[jj]<<endl );
 		}
 	}    
 	Dout( dirCheck.print() );
