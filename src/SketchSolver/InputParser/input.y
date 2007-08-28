@@ -4,7 +4,7 @@ using namespace std;
 
 BooleanDAG* currentBD;
 stack<string> namestack;
-
+vartype Gvartype;
 
 string *comparisson (string *p1, string *p2, arith_node::AType atype)
 {
@@ -126,10 +126,26 @@ MethodList: {}
 | Method MethodList {}
 
 
-InList: T_ident {  currentBD->create_inputs(-1, *$1); }
+InList: T_ident {  
+
+    if( Gvartype == INT){
+		cout<<" INPUT IS INT "<<*$1<<endl;
+		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+	}else{
+		cout<<" INPUT IS BIT "<<*$1<<endl;
+		currentBD->create_inputs(-1, *$1); 
+	}	
+
+}
 | T_ident InList {
 	
-	currentBD->create_inputs(-1, *$1);
+    if( Gvartype == INT){
+		cout<<" INPUT IS INT "<<*$1<<endl;
+		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+	}else{
+		cout<<" INPUT IS BIT "<<*$1<<endl;
+		currentBD->create_inputs(-1, *$1); 
+	}	
 }
 
 OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
@@ -157,7 +173,10 @@ ParamDecl: T_vartype T_ident {
 	 	 currentBD->create_outputs(-1, *$3); 
  	 }
  }
-| T_vartype '[' ConstantExpr ']' InList 
+| T_vartype {
+Gvartype = $1;
+
+ } '[' ConstantExpr ']' InList 
 | '!' T_vartype '[' ConstantExpr ']' OutList 
 
 
