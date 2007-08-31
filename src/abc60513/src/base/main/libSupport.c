@@ -62,8 +62,13 @@ void open_libs() {
                 char* szPrefixed = malloc((strlen(dp->d_name) + 3) * sizeof(char));
                 strcpy(szPrefixed, "./");
                 strcat(szPrefixed, dp->d_name);
-
+				
+#define CIGWIN
+#ifdef CIGWIN
+				libHandles[curr_lib] = dlopen(szPrefixed, RTLD_NOW );
+#else
                 libHandles[curr_lib] = dlopen(szPrefixed, RTLD_NOW | RTLD_LOCAL);
+#endif
 
                 // did the load succeed?
                 if (libHandles[curr_lib] != 0) {
