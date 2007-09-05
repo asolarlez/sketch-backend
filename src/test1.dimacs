@@ -1,7 +1,0 @@
-c Example SAT sentence for: (A v B) ^ (~A v C)
-c p cnf #var #cl
-c 
-p cnf 3 2
-1 2 0
--1 3 0
-
