@@ -1,0 +1,2791 @@
+2007-09-06 16:33  arnold
+
+	* build (1.1): Updated build scripts: added separate script for
+	  solvers; top script now invokes build scripts in respective
+	  directories, and copies the solver executable.
+
+2007-09-05 10:59  arnold
+
+	* test1.dimacs (1.2): removed unnecessary file
+
+2007-09-05 10:56  arnold
+
+	* zchaff/: tmp (1.2), ttmp (1.2): removed temp files
+
+2007-09-05 10:53  arnold
+
+	* abc60513/: abc.dsp (1.2), abc.dsw (1.2), abc.rc (1.2), abclib.dsp
+	  (1.2), abclib.dsw (1.2), abctestlib.dsp (1.2), abctestlib.dsw
+	  (1.2), examples/apex4.pla (1.2), src/bdd/cudd/r7x8.1.mat (1.2):
+	  converted to ASCII mode
+
+2007-09-04 18:10  arnold
+
+	* SketchSolver/InputParser/input.y (1.48): converted to ASCII
+	  (keyword substitution)
+
+2007-08-30 20:03  asolar
+
+	* abc60513/src/base/main/libSupport.c (1.2): This change is
+	  necessary for building under cygwin.
+
+2007-08-30 18:58  asolar
+
+	* abc61225/abc61225, abc61225/regtest.script,
+	  abc61225/src/aig/mem/mem.c, abc61225/src/aig/mem/mem.h,
+	  abc61225/src/aig/mem/module.make, abc61225/src/base/abci/abc.c,
+	  abc61225/src/base/abci/abcAttach.c,
+	  abc61225/src/base/abci/abcAuto.c,
+	  abc61225/src/base/abci/abcBalance.c,
+	  abc61225/src/base/abci/abcBmc.c,
+	  abc61225/src/base/abci/abcClpBdd.c,
+	  abc61225/src/base/abci/abcClpSop.c,
+	  abc61225/src/base/abci/abcCut.c,
+	  abc61225/src/base/abci/abcDebug.c,
+	  abc61225/src/base/abci/abcDress.c,
+	  abc61225/src/base/abci/abcDsd.c,
+	  abc61225/src/base/abci/abcEspresso.c,
+	  abc61225/src/base/abci/abcExtract.c,
+	  abc61225/src/base/abci/abcFpga.c,
+	  abc61225/src/base/abci/abcFpgaFast.c,
+	  abc61225/src/base/abci/abcFraig.c,
+	  abc61225/src/base/abci/abcFxu.c, abc61225/src/base/abci/abcGen.c,
+	  abc61225/src/base/abci/abcIf.c, abc61225/src/base/abci/abcIvy.c,
+	  abc61225/src/base/abci/abcLut.c, abc61225/src/base/abci/abcMap.c,
+	  abc61225/src/base/abci/abcMini.c,
+	  abc61225/src/base/abci/abcMiter.c,
+	  abc61225/src/base/abci/abcMulti.c,
+	  abc61225/src/base/abci/abcMv.c,
+	  abc61225/src/base/abci/abcNtbdd.c,
+	  abc61225/src/base/abci/abcOrder.c,
+	  abc61225/src/base/abci/abcPga.c,
+	  abc61225/src/base/abci/abcPrint.c,
+	  abc61225/src/base/abci/abcProve.c,
+	  abc61225/src/base/abci/abcReconv.c,
+	  abc61225/src/base/abci/abcRefactor.c,
+	  abc61225/src/base/abci/abcRenode.c,
+	  abc61225/src/base/abci/abcReorder.c,
+	  abc61225/src/base/abci/abcRestruct.c,
+	  abc61225/src/base/abci/abcResub.c,
+	  abc61225/src/base/abci/abcRewrite.c,
+	  abc61225/src/base/abci/abcRr.c, abc61225/src/base/abci/abcSat.c,
+	  abc61225/src/base/abci/abcStrash.c,
+	  abc61225/src/base/abci/abcSweep.c,
+	  abc61225/src/base/abci/abcSymm.c,
+	  abc61225/src/base/abci/abcTiming.c,
+	  abc61225/src/base/abci/abcUnate.c,
+	  abc61225/src/base/abci/abcUnreach.c,
+	  abc61225/src/base/abci/abcVerify.c,
+	  abc61225/src/base/abci/abcXsim.c, abc61225/src/base/abci/abc_.c,
+	  abc61225/src/base/abci/module.make, abc61225/src/base/abci/while
+	  ( vTokens = Io_ReadBlifGetTokens(p) ).c,
+	  abc61225/src/bdd/cudd/cuBdd.make, abc61225/src/bdd/cudd/cudd.h,
+	  abc61225/src/bdd/cudd/cudd.make, abc61225/src/bdd/cudd/cuddAPI.c,
+	  abc61225/src/bdd/cudd/cuddAddAbs.c,
+	  abc61225/src/bdd/cudd/cuddAddApply.c,
+	  abc61225/src/bdd/cudd/cuddAddFind.c,
+	  abc61225/src/bdd/cudd/cuddAddInv.c,
+	  abc61225/src/bdd/cudd/cuddAddIte.c,
+	  abc61225/src/bdd/cudd/cuddAddNeg.c,
+	  abc61225/src/bdd/cudd/cuddAddWalsh.c,
+	  abc61225/src/bdd/cudd/cuddAndAbs.c,
+	  abc61225/src/bdd/cudd/cuddAnneal.c,
+	  abc61225/src/bdd/cudd/cuddApa.c,
+	  abc61225/src/bdd/cudd/cuddApprox.c,
+	  abc61225/src/bdd/cudd/cuddBddAbs.c,
+	  abc61225/src/bdd/cudd/cuddBddCorr.c,
+	  abc61225/src/bdd/cudd/cuddBddIte.c,
+	  abc61225/src/bdd/cudd/cuddBridge.c,
+	  abc61225/src/bdd/cudd/cuddCache.c,
+	  abc61225/src/bdd/cudd/cuddCheck.c,
+	  abc61225/src/bdd/cudd/cuddClip.c,
+	  abc61225/src/bdd/cudd/cuddCof.c,
+	  abc61225/src/bdd/cudd/cuddCompose.c,
+	  abc61225/src/bdd/cudd/cuddDecomp.c,
+	  abc61225/src/bdd/cudd/cuddEssent.c,
+	  abc61225/src/bdd/cudd/cuddExact.c,
+	  abc61225/src/bdd/cudd/cuddExport.c,
+	  abc61225/src/bdd/cudd/cuddGenCof.c,
+	  abc61225/src/bdd/cudd/cuddGenetic.c,
+	  abc61225/src/bdd/cudd/cuddGroup.c,
+	  abc61225/src/bdd/cudd/cuddHarwell.c,
+	  abc61225/src/bdd/cudd/cuddInit.c,
+	  abc61225/src/bdd/cudd/cuddInt.h,
+	  abc61225/src/bdd/cudd/cuddInteract.c,
+	  abc61225/src/bdd/cudd/cuddLCache.c,
+	  abc61225/src/bdd/cudd/cuddLevelQ.c,
+	  abc61225/src/bdd/cudd/cuddLinear.c,
+	  abc61225/src/bdd/cudd/cuddLiteral.c,
+	  abc61225/src/bdd/cudd/cuddMatMult.c,
+	  abc61225/src/bdd/cudd/cuddPriority.c,
+	  abc61225/src/bdd/cudd/cuddRead.c,
+	  abc61225/src/bdd/cudd/cuddRef.c,
+	  abc61225/src/bdd/cudd/cuddReorder.c,
+	  abc61225/src/bdd/cudd/cuddSat.c,
+	  abc61225/src/bdd/cudd/cuddSign.c,
+	  abc61225/src/bdd/cudd/cuddSolve.c,
+	  abc61225/src/bdd/cudd/cuddSplit.c,
+	  abc61225/src/bdd/cudd/cuddSubsetHB.c,
+	  abc61225/src/bdd/cudd/cuddSubsetSP.c,
+	  abc61225/src/bdd/cudd/cuddSymmetry.c,
+	  abc61225/src/bdd/cudd/cuddTable.c,
+	  abc61225/src/bdd/cudd/cuddUtil.c,
+	  abc61225/src/bdd/cudd/cuddWindow.c,
+	  abc61225/src/bdd/cudd/cuddZddCount.c,
+	  abc61225/src/bdd/cudd/cuddZddFuncs.c,
+	  abc61225/src/bdd/cudd/cuddZddGroup.c,
+	  abc61225/src/bdd/cudd/cuddZddIsop.c,
+	  abc61225/src/bdd/cudd/cuddZddLin.c,
+	  abc61225/src/bdd/cudd/cuddZddMisc.c,
+	  abc61225/src/bdd/cudd/cuddZddPort.c,
+	  abc61225/src/bdd/cudd/cuddZddReord.c,
+	  abc61225/src/bdd/cudd/cuddZddSetop.c,
+	  abc61225/src/bdd/cudd/cuddZddSymm.c,
+	  abc61225/src/bdd/cudd/cuddZddUtil.c,
+	  abc61225/src/bdd/cudd/module.make,
+	  abc61225/src/bdd/cudd/r7x8.1.mat,
+	  abc61225/src/bdd/cudd/testcudd.c, abc61225/src/map/fpga/fpga.c,
+	  abc61225/src/map/fpga/fpga.h, abc61225/src/map/fpga/fpgaCore.c,
+	  abc61225/src/map/fpga/fpgaCreate.c,
+	  abc61225/src/map/fpga/fpgaCut.c,
+	  abc61225/src/map/fpga/fpgaCutUtils.c,
+	  abc61225/src/map/fpga/fpgaFanout.c,
+	  abc61225/src/map/fpga/fpgaGENERIC.c,
+	  abc61225/src/map/fpga/fpgaInt.h, abc61225/src/map/fpga/fpgaLib.c,
+	  abc61225/src/map/fpga/fpgaMatch.c,
+	  abc61225/src/map/fpga/fpgaSwitch.c,
+	  abc61225/src/map/fpga/fpgaTime.c,
+	  abc61225/src/map/fpga/fpgaTruth.c,
+	  abc61225/src/map/fpga/fpgaUtils.c,
+	  abc61225/src/map/fpga/fpgaVec.c,
+	  abc61225/src/map/fpga/module.make,
+	  abc61225/src/misc/espresso/cofactor.c,
+	  abc61225/src/misc/espresso/cols.c,
+	  abc61225/src/misc/espresso/compl.c,
+	  abc61225/src/misc/espresso/contain.c,
+	  abc61225/src/misc/espresso/cubehack.c,
+	  abc61225/src/misc/espresso/cubestr.c,
+	  abc61225/src/misc/espresso/cvrin.c,
+	  abc61225/src/misc/espresso/cvrm.c,
+	  abc61225/src/misc/espresso/cvrmisc.c,
+	  abc61225/src/misc/espresso/cvrout.c,
+	  abc61225/src/misc/espresso/dominate.c,
+	  abc61225/src/misc/espresso/equiv.c,
+	  abc61225/src/misc/espresso/espresso.c,
+	  abc61225/src/misc/espresso/espresso.h,
+	  abc61225/src/misc/espresso/essen.c,
+	  abc61225/src/misc/espresso/exact.c,
+	  abc61225/src/misc/espresso/expand.c,
+	  abc61225/src/misc/espresso/gasp.c,
+	  abc61225/src/misc/espresso/gimpel.c,
+	  abc61225/src/misc/espresso/globals.c,
+	  abc61225/src/misc/espresso/hack.c,
+	  abc61225/src/misc/espresso/indep.c,
+	  abc61225/src/misc/espresso/irred.c,
+	  abc61225/src/misc/espresso/main.c,
+	  abc61225/src/misc/espresso/main.h,
+	  abc61225/src/misc/espresso/map.c,
+	  abc61225/src/misc/espresso/matrix.c,
+	  abc61225/src/misc/espresso/mincov.c,
+	  abc61225/src/misc/espresso/mincov.h,
+	  abc61225/src/misc/espresso/mincov_int.h,
+	  abc61225/src/misc/espresso/module.make,
+	  abc61225/src/misc/espresso/opo.c,
+	  abc61225/src/misc/espresso/pair.c,
+	  abc61225/src/misc/espresso/part.c,
+	  abc61225/src/misc/espresso/primes.c,
+	  abc61225/src/misc/espresso/reduce.c,
+	  abc61225/src/misc/espresso/rows.c,
+	  abc61225/src/misc/espresso/set.c,
+	  abc61225/src/misc/espresso/setc.c,
+	  abc61225/src/misc/espresso/sharp.c,
+	  abc61225/src/misc/espresso/sminterf.c,
+	  abc61225/src/misc/espresso/solution.c,
+	  abc61225/src/misc/espresso/sparse.c,
+	  abc61225/src/misc/espresso/sparse.h,
+	  abc61225/src/misc/espresso/sparse_int.h,
+	  abc61225/src/misc/espresso/unate.c,
+	  abc61225/src/misc/espresso/util_old.h,
+	  abc61225/src/misc/espresso/verify.c,
+	  abc61225/src/misc/extra/extra.h,
+	  abc61225/src/misc/extra/extraBddAuto.c,
+	  abc61225/src/misc/extra/extraBddKmap.c,
+	  abc61225/src/misc/extra/extraBddMisc.c,
+	  abc61225/src/misc/extra/extraBddSymm.c,
+	  abc61225/src/misc/extra/extraBddUnate.c,
+	  abc61225/src/misc/extra/extraUtilBitMatrix.c,
+	  abc61225/src/misc/extra/extraUtilCanon.c,
+	  abc61225/src/misc/extra/extraUtilFile.c,
+	  abc61225/src/misc/extra/extraUtilMemory.c,
+	  abc61225/src/misc/extra/extraUtilMisc.c,
+	  abc61225/src/misc/extra/extraUtilProgress.c,
+	  abc61225/src/misc/extra/extraUtilReader.c,
+	  abc61225/src/misc/extra/extraUtilTruth.c,
+	  abc61225/src/misc/extra/extraUtilUtil.c,
+	  abc61225/src/misc/extra/module.make,
+	  abc61225/src/sat/fraig/fraig.h,
+	  abc61225/src/sat/fraig/fraigApi.c,
+	  abc61225/src/sat/fraig/fraigCanon.c,
+	  abc61225/src/sat/fraig/fraigChoice.c,
+	  abc61225/src/sat/fraig/fraigFanout.c,
+	  abc61225/src/sat/fraig/fraigFeed.c,
+	  abc61225/src/sat/fraig/fraigInt.h,
+	  abc61225/src/sat/fraig/fraigMan.c,
+	  abc61225/src/sat/fraig/fraigMem.c,
+	  abc61225/src/sat/fraig/fraigNode.c,
+	  abc61225/src/sat/fraig/fraigPrime.c,
+	  abc61225/src/sat/fraig/fraigSat.c,
+	  abc61225/src/sat/fraig/fraigTable.c,
+	  abc61225/src/sat/fraig/fraigUtil.c,
+	  abc61225/src/sat/fraig/fraigVec.c,
+	  abc61225/src/sat/fraig/module.make, abc61225/Makefile,
+	  abc61225/abc.dsp, abc61225/abc.dsw, abc61225/abc.rc,
+	  abc61225/copyright.txt, abc61225/demo.c, abc61225/depends.sh,
+	  abc61225/readme, abc61225/regtest_output.txt, abc61225/todo.txt,
+	  abc61225/examples/C2670.blif, abc61225/examples/ac.v,
+	  abc61225/examples/apex4.pla, abc61225/examples/frg2.blif,
+	  abc61225/examples/i10.blif, abc61225/examples/pj1.blif,
+	  abc61225/examples/s38417.blif, abc61225/examples/s38584.bench,
+	  abc61225/examples/s444.blif, abc61225/examples/s5378.blif,
+	  abc61225/examples/s6669.blif, abc61225/src/aig/ec/module.make,
+	  abc61225/src/aig/ivy/attr.h, abc61225/src/aig/ivy/ivy.h,
+	  abc61225/src/aig/ivy/ivyBalance.c,
+	  abc61225/src/aig/ivy/ivyCanon.c, abc61225/src/aig/ivy/ivyCheck.c,
+	  abc61225/src/aig/ivy/ivyCut.c, abc61225/src/aig/ivy/ivyCutTrav.c,
+	  abc61225/src/aig/ivy/ivyDfs.c, abc61225/src/aig/ivy/ivyDsd.c,
+	  abc61225/src/aig/ivy/ivyFanout.c,
+	  abc61225/src/aig/ivy/ivyFastMap.c,
+	  abc61225/src/aig/ivy/ivyFraig.c, abc61225/src/aig/ivy/ivyHaig.c,
+	  abc61225/src/aig/ivy/ivyMan.c, abc61225/src/aig/ivy/ivyMem.c,
+	  abc61225/src/aig/ivy/ivyMulti.c,
+	  abc61225/src/aig/ivy/ivyMulti8.c, abc61225/src/aig/ivy/ivyObj.c,
+	  abc61225/src/aig/ivy/ivyOper.c, abc61225/src/aig/ivy/ivyResyn.c,
+	  abc61225/src/aig/ivy/ivyRwr.c, abc61225/src/aig/ivy/ivyRwrAlg.c,
+	  abc61225/src/aig/ivy/ivySeq.c, abc61225/src/aig/ivy/ivyShow.c,
+	  abc61225/src/aig/ivy/ivyTable.c, abc61225/src/aig/ivy/ivyUtil.c,
+	  abc61225/src/aig/ivy/ivy_.c, abc61225/src/aig/ivy/module.make,
+	  abc61225/src/base/abc/abc.h, abc61225/src/base/abc/abcAig.c,
+	  abc61225/src/base/abc/abcCheck.c, abc61225/src/base/abc/abcDfs.c,
+	  abc61225/src/base/abc/abcFanio.c,
+	  abc61225/src/base/abc/abcFunc.c, abc61225/src/base/abc/abcInt.h,
+	  abc61225/src/base/abc/abcLatch.c, abc61225/src/base/abc/abcLib.c,
+	  abc61225/src/base/abc/abcMinBase.c,
+	  abc61225/src/base/abc/abcNames.c,
+	  abc61225/src/base/abc/abcNetlist.c,
+	  abc61225/src/base/abc/abcNtk.c, abc61225/src/base/abc/abcObj.c,
+	  abc61225/src/base/abc/abcRefs.c, abc61225/src/base/abc/abcShow.c,
+	  abc61225/src/base/abc/abcSop.c, abc61225/src/base/abc/abcUtil.c,
+	  abc61225/src/base/abc/abc_.c, abc61225/src/base/abc/module.make,
+	  abc61225/src/base/io/io.c, abc61225/src/base/io/io.h,
+	  abc61225/src/base/io/ioInt.h, abc61225/src/base/io/ioReadAiger.c,
+	  abc61225/src/base/io/ioReadBaf.c,
+	  abc61225/src/base/io/ioReadBench.c,
+	  abc61225/src/base/io/ioReadBlif.c,
+	  abc61225/src/base/io/ioReadBlifAig.c,
+	  abc61225/src/base/io/ioReadEdif.c,
+	  abc61225/src/base/io/ioReadEqn.c,
+	  abc61225/src/base/io/ioReadPla.c,
+	  abc61225/src/base/io/ioReadVerilog.c,
+	  abc61225/src/base/io/ioUtil.c,
+	  abc61225/src/base/io/ioWriteAiger.c,
+	  abc61225/src/base/io/ioWriteBaf.c,
+	  abc61225/src/base/io/ioWriteBench.c,
+	  abc61225/src/base/io/ioWriteBlif.c,
+	  abc61225/src/base/io/ioWriteCnf.c,
+	  abc61225/src/base/io/ioWriteDot.c,
+	  abc61225/src/base/io/ioWriteEqn.c,
+	  abc61225/src/base/io/ioWriteGml.c,
+	  abc61225/src/base/io/ioWriteList.c,
+	  abc61225/src/base/io/ioWritePla.c,
+	  abc61225/src/base/io/ioWriteVer.c,
+	  abc61225/src/base/io/ioWriteVerAux.c, abc61225/src/base/io/io_.c,
+	  abc61225/src/base/io/module.make,
+	  abc61225/src/base/main/libSupport.c,
+	  abc61225/src/base/main/main.c, abc61225/src/base/main/main.h,
+	  abc61225/src/base/main/mainFrame.c,
+	  abc61225/src/base/main/mainInit.c,
+	  abc61225/src/base/main/mainInt.h,
+	  abc61225/src/base/main/mainUtils.c,
+	  abc61225/src/base/main/module.make,
+	  abc61225/src/base/ver/module.make, abc61225/src/base/ver/ver.h,
+	  abc61225/src/base/ver/verCore.c,
+	  abc61225/src/base/ver/verFormula.c,
+	  abc61225/src/base/ver/verParse.c,
+	  abc61225/src/base/ver/verStream.c,
+	  abc61225/src/base/ver/verWords.c, abc61225/src/base/ver/ver_.c,
+	  abc61225/src/map/if/if.h, abc61225/src/map/if/ifCore.c,
+	  abc61225/src/map/if/ifCut.c, abc61225/src/map/if/ifMan.c,
+	  abc61225/src/map/if/ifMap.c, abc61225/src/map/if/ifPrepro.c,
+	  abc61225/src/map/if/ifReduce.c, abc61225/src/map/if/ifSeq.c,
+	  abc61225/src/map/if/ifTime.c, abc61225/src/map/if/ifTruth.c,
+	  abc61225/src/map/if/ifUtil.c, abc61225/src/map/if/if_.c,
+	  abc61225/src/map/if/module.make,
+	  abc61225/src/map/mapper/mapper.c,
+	  abc61225/src/map/mapper/mapper.h,
+	  abc61225/src/map/mapper/mapperCanon.c,
+	  abc61225/src/map/mapper/mapperCore.c,
+	  abc61225/src/map/mapper/mapperCreate.c,
+	  abc61225/src/map/mapper/mapperCut.c,
+	  abc61225/src/map/mapper/mapperCutUtils.c,
+	  abc61225/src/map/mapper/mapperFanout.c,
+	  abc61225/src/map/mapper/mapperGENERIC.c,
+	  abc61225/src/map/mapper/mapperInt.h,
+	  abc61225/src/map/mapper/mapperLib.c,
+	  abc61225/src/map/mapper/mapperMatch.c,
+	  abc61225/src/map/mapper/mapperRefs.c,
+	  abc61225/src/map/mapper/mapperSuper.c,
+	  abc61225/src/map/mapper/mapperSwitch.c,
+	  abc61225/src/map/mapper/mapperTable.c,
+	  abc61225/src/map/mapper/mapperTime.c,
+	  abc61225/src/map/mapper/mapperTree.c,
+	  abc61225/src/map/mapper/mapperTruth.c,
+	  abc61225/src/map/mapper/mapperUtils.c,
+	  abc61225/src/map/mapper/mapperVec.c,
+	  abc61225/src/map/mapper/module.make, abc61225/src/map/mio/mio.c,
+	  abc61225/src/map/mio/mio.h, abc61225/src/map/mio/mioApi.c,
+	  abc61225/src/map/mio/mioFunc.c,
+	  abc61225/src/map/mio/mioGENERIC.c, abc61225/src/map/mio/mioInt.h,
+	  abc61225/src/map/mio/mioRead.c, abc61225/src/map/mio/mioUtils.c,
+	  abc61225/src/map/mio/module.make,
+	  abc61225/src/map/super/module.make,
+	  abc61225/src/map/super/super.c, abc61225/src/map/super/super.h,
+	  abc61225/src/map/super/superAnd.c,
+	  abc61225/src/map/super/superGENERIC.c,
+	  abc61225/src/map/super/superGate.c,
+	  abc61225/src/map/super/superInt.h,
+	  abc61225/src/map/super/superWrite.c,
+	  abc61225/src/misc/nm/module.make, abc61225/src/misc/nm/nm.h,
+	  abc61225/src/misc/nm/nmApi.c, abc61225/src/misc/nm/nmInt.h,
+	  abc61225/src/misc/nm/nmTable.c, abc61225/src/misc/st/module.make,
+	  abc61225/src/misc/st/st.c, abc61225/src/misc/st/st.h,
+	  abc61225/src/misc/st/stmm.c, abc61225/src/misc/st/stmm.h,
+	  abc61225/src/misc/util/leaks.h,
+	  abc61225/src/misc/util/util_hack.h,
+	  abc61225/src/opt/cut/abcCut.c, abc61225/src/opt/cut/cut.h,
+	  abc61225/src/opt/cut/cutApi.c, abc61225/src/opt/cut/cutCut.c,
+	  abc61225/src/opt/cut/cutExpand.c, abc61225/src/opt/cut/cutInt.h,
+	  abc61225/src/opt/cut/cutList.h, abc61225/src/opt/cut/cutMan.c,
+	  abc61225/src/opt/cut/cutMerge.c, abc61225/src/opt/cut/cutNode.c,
+	  abc61225/src/opt/cut/cutOracle.c,
+	  abc61225/src/opt/cut/cutPre22.c, abc61225/src/opt/cut/cutSeq.c,
+	  abc61225/src/opt/cut/cutTruth.c,
+	  abc61225/src/opt/cut/module.make, abc61225/src/opt/fxu/fxu.c,
+	  abc61225/src/opt/fxu/fxu.h, abc61225/src/opt/fxu/fxuCreate.c,
+	  abc61225/src/opt/fxu/fxuHeapD.c, abc61225/src/opt/fxu/fxuHeapS.c,
+	  abc61225/src/opt/fxu/fxuInt.h, abc61225/src/opt/fxu/fxuList.c,
+	  abc61225/src/opt/fxu/fxuMatrix.c, abc61225/src/opt/fxu/fxuPair.c,
+	  abc61225/src/opt/fxu/fxuPrint.c,
+	  abc61225/src/opt/fxu/fxuReduce.c,
+	  abc61225/src/opt/fxu/fxuSelect.c,
+	  abc61225/src/opt/fxu/fxuSingle.c,
+	  abc61225/src/opt/fxu/fxuUpdate.c,
+	  abc61225/src/opt/fxu/module.make, abc61225/src/opt/kit/kit.h,
+	  abc61225/src/opt/kit/kitBdd.c, abc61225/src/opt/kit/kitFactor.c,
+	  abc61225/src/opt/kit/kitGraph.c, abc61225/src/opt/kit/kitHop.c,
+	  abc61225/src/opt/kit/kitIsop.c, abc61225/src/opt/kit/kitSop.c,
+	  abc61225/src/opt/kit/kitTruth.c, abc61225/src/opt/kit/kit_.c,
+	  abc61225/src/opt/kit/module.make,
+	  abc61225/src/opt/ret/module.make, abc61225/src/opt/ret/retArea.c,
+	  abc61225/src/opt/ret/retCore.c, abc61225/src/opt/ret/retDelay.c,
+	  abc61225/src/opt/ret/retFlow.c, abc61225/src/opt/ret/retIncrem.c,
+	  abc61225/src/opt/ret/retInit.c, abc61225/src/opt/ret/retInt.h,
+	  abc61225/src/opt/ret/retLvalue.c, abc61225/src/opt/ret/ret_.c,
+	  abc61225/src/opt/sim/module.make, abc61225/src/opt/sim/sim.h,
+	  abc61225/src/opt/sim/simMan.c, abc61225/src/opt/sim/simSat.c,
+	  abc61225/src/opt/sim/simSeq.c, abc61225/src/opt/sim/simSupp.c,
+	  abc61225/src/opt/sim/simSwitch.c, abc61225/src/opt/sim/simSym.c,
+	  abc61225/src/opt/sim/simSymSat.c,
+	  abc61225/src/opt/sim/simSymSim.c,
+	  abc61225/src/opt/sim/simSymStr.c,
+	  abc61225/src/opt/sim/simUtils.c, abc61225/src/sat/asat/added.c,
+	  abc61225/src/sat/asat/asatmem.c, abc61225/src/sat/asat/asatmem.h,
+	  abc61225/src/sat/asat/jfront.c, abc61225/src/sat/asat/main.c,
+	  abc61225/src/sat/asat/module.make,
+	  abc61225/src/sat/asat/solver.c, abc61225/src/sat/asat/solver.h,
+	  abc61225/src/sat/asat/solver_vec.h,
+	  abc61225/src/sat/csat/csat_apis.c,
+	  abc61225/src/sat/csat/csat_apis.h,
+	  abc61225/src/sat/csat/module.make, test1.dimacs,
+	  SketchSolver/InputParser/NodesToSolver.cpp,
+	  SketchSolver/InputParser/NodesToSolver.h,
+	  SketchSolver/InputParser/Tvalue.h, abc61225/docs/blif.ps,
+	  abc61225/docs/blifmv.ps, abc61225/src/generic.c,
+	  abc61225/src/generic.h, abc61225/src/aig/deco/deco.h,
+	  abc61225/src/aig/deco/module.make,
+	  abc61225/src/aig/hop/.cvsignore, abc61225/src/aig/hop/cudd2.c,
+	  abc61225/src/aig/hop/cudd2.h, abc61225/src/aig/hop/hop.h,
+	  abc61225/src/aig/hop/hopBalance.c,
+	  abc61225/src/aig/hop/hopCheck.c, abc61225/src/aig/hop/hopDfs.c,
+	  abc61225/src/aig/hop/hopMan.c, abc61225/src/aig/hop/hopMem.c,
+	  abc61225/src/aig/hop/hopObj.c, abc61225/src/aig/hop/hopOper.c,
+	  abc61225/src/aig/hop/hopTable.c, abc61225/src/aig/hop/hopUtil.c,
+	  abc61225/src/aig/hop/hop_.c, abc61225/src/aig/hop/module.make,
+	  abc61225/src/aig/rwt/module.make, abc61225/src/aig/rwt/rwt.h,
+	  abc61225/src/aig/rwt/rwtDec.c, abc61225/src/aig/rwt/rwtMan.c,
+	  abc61225/src/aig/rwt/rwtUtil.c, abc61225/src/base/temp.c,
+	  abc61225/src/base/cmd/cmd.c, abc61225/src/base/cmd/cmd.h,
+	  abc61225/src/base/cmd/cmdAlias.c, abc61225/src/base/cmd/cmdApi.c,
+	  abc61225/src/base/cmd/cmdFlag.c, abc61225/src/base/cmd/cmdHist.c,
+	  abc61225/src/base/cmd/cmdInt.h, abc61225/src/base/cmd/cmdUtils.c,
+	  abc61225/src/base/cmd/module.make,
+	  abc61225/src/base/seq/module.make, abc61225/src/base/seq/seq.h,
+	  abc61225/src/base/seq/seqAigCore.c,
+	  abc61225/src/base/seq/seqAigIter.c,
+	  abc61225/src/base/seq/seqCreate.c,
+	  abc61225/src/base/seq/seqFpgaCore.c,
+	  abc61225/src/base/seq/seqFpgaIter.c,
+	  abc61225/src/base/seq/seqInt.h, abc61225/src/base/seq/seqLatch.c,
+	  abc61225/src/base/seq/seqMan.c,
+	  abc61225/src/base/seq/seqMapCore.c,
+	  abc61225/src/base/seq/seqMapIter.c,
+	  abc61225/src/base/seq/seqMaxMeanCycle.c,
+	  abc61225/src/base/seq/seqRetCore.c,
+	  abc61225/src/base/seq/seqRetIter.c,
+	  abc61225/src/base/seq/seqShare.c,
+	  abc61225/src/base/seq/seqUtil.c, abc61225/src/bdd/dsd/dsd.h,
+	  abc61225/src/bdd/dsd/dsdApi.c, abc61225/src/bdd/dsd/dsdCheck.c,
+	  abc61225/src/bdd/dsd/dsdInt.h, abc61225/src/bdd/dsd/dsdLocal.c,
+	  abc61225/src/bdd/dsd/dsdMan.c, abc61225/src/bdd/dsd/dsdProc.c,
+	  abc61225/src/bdd/dsd/dsdTree.c, abc61225/src/bdd/dsd/module.make,
+	  abc61225/src/bdd/epd/epd.c, abc61225/src/bdd/epd/epd.h,
+	  abc61225/src/bdd/epd/module.make,
+	  abc61225/src/bdd/mtr/module.make, abc61225/src/bdd/mtr/mtr.h,
+	  abc61225/src/bdd/mtr/mtrBasic.c, abc61225/src/bdd/mtr/mtrGroup.c,
+	  abc61225/src/bdd/mtr/mtrInt.h,
+	  abc61225/src/bdd/parse/module.make,
+	  abc61225/src/bdd/parse/parse.h,
+	  abc61225/src/bdd/parse/parseCore.c,
+	  abc61225/src/bdd/parse/parseEqn.c,
+	  abc61225/src/bdd/parse/parseInt.h,
+	  abc61225/src/bdd/parse/parseStack.c,
+	  abc61225/src/bdd/reo/module.make, abc61225/src/bdd/reo/reo.h,
+	  abc61225/src/bdd/reo/reoApi.c, abc61225/src/bdd/reo/reoCore.c,
+	  abc61225/src/bdd/reo/reoProfile.c,
+	  abc61225/src/bdd/reo/reoSift.c, abc61225/src/bdd/reo/reoSwap.c,
+	  abc61225/src/bdd/reo/reoTest.c,
+	  abc61225/src/bdd/reo/reoTransfer.c,
+	  abc61225/src/bdd/reo/reoUnits.c, abc61225/src/misc/hash/hash.h,
+	  abc61225/src/misc/hash/hashFlt.h,
+	  abc61225/src/misc/hash/hashInt.h,
+	  abc61225/src/misc/hash/hashPtr.h,
+	  abc61225/src/misc/hash/module.make,
+	  abc61225/src/misc/mvc/module.make, abc61225/src/misc/mvc/mvc.c,
+	  abc61225/src/misc/mvc/mvc.h, abc61225/src/misc/mvc/mvcApi.c,
+	  abc61225/src/misc/mvc/mvcCompare.c,
+	  abc61225/src/misc/mvc/mvcContain.c,
+	  abc61225/src/misc/mvc/mvcCover.c,
+	  abc61225/src/misc/mvc/mvcCube.c,
+	  abc61225/src/misc/mvc/mvcDivide.c,
+	  abc61225/src/misc/mvc/mvcDivisor.c,
+	  abc61225/src/misc/mvc/mvcList.c, abc61225/src/misc/mvc/mvcLits.c,
+	  abc61225/src/misc/mvc/mvcMan.c, abc61225/src/misc/mvc/mvcOpAlg.c,
+	  abc61225/src/misc/mvc/mvcOpBool.c,
+	  abc61225/src/misc/mvc/mvcPrint.c,
+	  abc61225/src/misc/mvc/mvcSort.c,
+	  abc61225/src/misc/mvc/mvcUtils.c,
+	  abc61225/src/misc/util/module.make,
+	  abc61225/src/misc/util/stdlib_hack.h,
+	  abc61225/src/misc/vec/module.make, abc61225/src/misc/vec/vec.h,
+	  abc61225/src/misc/vec/vecAtt.h, abc61225/src/misc/vec/vecFlt.h,
+	  abc61225/src/misc/vec/vecInt.h, abc61225/src/misc/vec/vecPtr.h,
+	  abc61225/src/misc/vec/vecStr.h, abc61225/src/misc/vec/vecVec.h,
+	  abc61225/src/opt/dec/dec.h, abc61225/src/opt/dec/decAbc.c,
+	  abc61225/src/opt/dec/decFactor.c, abc61225/src/opt/dec/decMan.c,
+	  abc61225/src/opt/dec/decPrint.c, abc61225/src/opt/dec/decUtil.c,
+	  abc61225/src/opt/dec/module.make,
+	  abc61225/src/opt/rwr/module.make, abc61225/src/opt/rwr/rwr.h,
+	  abc61225/src/opt/rwr/rwrDec.c, abc61225/src/opt/rwr/rwrEva.c,
+	  abc61225/src/opt/rwr/rwrExp.c, abc61225/src/opt/rwr/rwrLib.c,
+	  abc61225/src/opt/rwr/rwrMan.c, abc61225/src/opt/rwr/rwrPrint.c,
+	  abc61225/src/opt/rwr/rwrTemp.c, abc61225/src/opt/rwr/rwrUtil.c,
+	  abc61225/src/sat/bsat/module.make,
+	  abc61225/src/sat/bsat/satMem.c, abc61225/src/sat/bsat/satMem.h,
+	  abc61225/src/sat/bsat/satSolver.c,
+	  abc61225/src/sat/bsat/satSolver.h,
+	  abc61225/src/sat/bsat/satUtil.c, abc61225/src/sat/bsat/satVec.h,
+	  abc61225/src/sat/msat/module.make, abc61225/src/sat/msat/msat.h,
+	  abc61225/src/sat/msat/msatActivity.c,
+	  abc61225/src/sat/msat/msatClause.c,
+	  abc61225/src/sat/msat/msatClauseVec.c,
+	  abc61225/src/sat/msat/msatInt.h, abc61225/src/sat/msat/msatMem.c,
+	  abc61225/src/sat/msat/msatOrderH.c,
+	  abc61225/src/sat/msat/msatOrderJ.c,
+	  abc61225/src/sat/msat/msatQueue.c,
+	  abc61225/src/sat/msat/msatRead.c,
+	  abc61225/src/sat/msat/msatSolverApi.c,
+	  abc61225/src/sat/msat/msatSolverCore.c,
+	  abc61225/src/sat/msat/msatSolverIo.c,
+	  abc61225/src/sat/msat/msatSolverSearch.c,
+	  abc61225/src/sat/msat/msatSort.c, abc61225/src/sat/msat/msatVec.c
+	  (release_v_1p0.[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]):
+	  Files removed from the release.
+
+2007-08-28 02:45  tag Root_release_v_1p0
+
+2007-08-28 02:45  asolar
+
+	* SketchSolver/InputParser/input.y (1.47): Fixed a bug that
+	  affected benchmarks with integer-array inputs.
+
+2007-08-24 19:19  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.37), MiniSATSolver.cpp
+	  (1.8), InputParser/driver.cpp (1.40), InputParser/input.y (1.46),
+	  InputParser/SolveFromInput.cpp (1.64): small detail.
+
+2007-08-23 01:10  asolar
+
+	* SketchSolver/InputParser/: DagCSE.cpp (1.11), DagOptim.cpp (1.9),
+	  driver.cpp (1.39): Fixed some bugs.
+
+2007-08-23 01:09  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.18), FindCheckSolver.cpp
+	  (1.36), FindCheckSolver.h (1.20): [no log message]
+
+2007-08-21 23:19  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.63): removed some
+	  useless code.
+
+2007-08-21 23:19  asolar
+
+	* SketchSolver/InputParser/NodeVisitor.cpp (1.2): minor
+	  inconsequential change.
+
+2007-08-21 23:18  asolar
+
+	* SketchSolver/InputParser/NodesToEuclid.h (1.6): Fixed the uclid
+	  output routines.
+
+2007-08-21 23:17  asolar
+
+	* SketchSolver/InputParser/: DagElimUFUN.cpp (1.9), DagOptim.cpp
+	  (1.8), ExtractEvaluationCondition.h (1.3): Fixed a bug with the
+	  optimizer.
+
+2007-07-30 15:27  arnold
+
+	* SketchSolver/InputParser/Tvalue.h (1.22): minor: added include
+	  statement for cassert (assert.h)
+
+2007-07-23 01:49  asolar
+
+	* SketchSolver/InputParser/: NodesToEuclid.h (1.5),
+	  SolveFromInput.cpp (1.62): [no log message]
+
+2007-07-23 01:49  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.20), BooleanDAG.h
+	  (1.20), DagElimUFUN.cpp (1.8), DagFunctionInliner.cpp (1.2),
+	  DagOptim.cpp (1.7), ExtractEvaluationCondition.h (1.2): Fixed a
+	  handful of bugs.
+
+2007-06-25 16:41  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.40): bugfixes: (1)
+	  ARRACC could generate a bitvector output of more than 1 bit,
+	  whereas the rest of the code implicitly assumes that bitvector
+	  values are single-bitted; workaround is converting such outputs
+	  to sparses, but that'll have to be redone (if we want to leverage
+	  the advantages of bitvector representations); (2) switched
+	  signed/unsigned bitvector output generation; (3) uninitialized
+	  sparse values array in one occurrence; (4) related to #1 above,
+	  added an assertion in at least one place where an assumption of
+	  single-bit bitvectors is made (but not stated).
+
+2007-06-22 17:11  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.39): compilation
+	  error fix (introduced with last change).
+
+2007-06-22 17:09  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.38): few small
+	  fixes to array access visitor method
+
+2007-05-16 13:24  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.17), ABCSATSolver.h (1.14):
+	  [no log message]
+
+2007-05-16 13:24  asolar
+
+	* SketchSolver/: SATSolver.h (1.29), BasicError.h (1.2): Moved
+	  Dout, from SATSolver.h to BasicError.h
+
+2007-05-16 13:22  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.19), BooleanDAG.h
+	  (1.19), DagElimUFUN.cpp (1.7), DagElimUFUN.h (1.4),
+	  DagFunctionInliner.cpp (1.1), DagFunctionInliner.h (1.1),
+	  DagOptim.cpp (1.6), DagOptim.h (1.4),
+	  ExtractEvaluationCondition.h (1.1), driver.cpp (1.38): Lots of
+	  small changes.
+
+2007-05-16 13:21  asolar
+
+	* SketchSolver/InputParser/input.y (1.45): Eliminated some output.
+
+2007-05-16 13:20  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.61),
+	  SolveFromInput.h (1.29), NodeVisitor.cpp (1.1), NodeVisitor.h
+	  (1.1): Experimental. Handle with care.
+
+2007-05-16 13:20  asolar
+
+	* SketchSolver/InputParser/Makefile (1.27): [no log message]
+
+2007-04-30 19:34  asolar
+
+	* SketchSolver/InputParser/Makefile (1.26): Modified Makefile to
+	  work with latest version of ABC. However, the latest version of
+	  ABC is slower than the old one, so I will be reverting to the old
+	  version.
+
+2007-04-30 19:32  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.16), ABCSATSolver.h (1.13):
+	  The interfaces to ABC have been modified, so these wrapper was
+	  updated accordingly. However, the latest version of ABC is slower
+	  than the old one, so I will be reverting to the old version.
+
+2007-04-22 02:44  tag WORKING_VERSION_2_1
+
+2007-04-22 02:44  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.18), BooleanDAG.h
+	  (1.18), DagCSE.cpp (1.10), DagElimUFUN.cpp (1.6), DagElimUFUN.h
+	  (1.3), DagOptim.cpp (1.5), input.y (1.44), SolveFromInput.cpp
+	  (1.60), SolveFromInput.h (1.28): Added an optimization to make
+	  the final verification faster.
+
+2007-04-22 02:43  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.35): [no log message]
+
+2007-04-10 17:28  asolar
+
+	* abc61225/src/base/main/libSupport.c (1.2), abc60513/.cvsignore
+	  (1.1), abc61225/src/aig/hop/.cvsignore (1.1): [no log message]
+
+2007-04-10 17:03  asolar
+
+	* abc61225/: abc.rc (1.1), abc61225 (1.1), readme (1.1),
+	  regtest.script (1.1), regtest_output.txt (1.1),
+	  src/base/abci/abc.c (1.1), src/base/abci/abcAttach.c (1.1),
+	  src/base/abci/abcAuto.c (1.1), src/base/abci/abcBalance.c (1.1),
+	  src/base/abci/abcBmc.c (1.1), src/base/abci/abcClpBdd.c (1.1),
+	  src/base/abci/abcClpSop.c (1.1), src/base/abci/abcCut.c (1.1),
+	  src/base/abci/abcDebug.c (1.1), src/base/abci/abcDress.c (1.1),
+	  src/base/abci/abcDsd.c (1.1), src/base/abci/abcEspresso.c (1.1),
+	  src/base/abci/abcExtract.c (1.1), src/base/abci/abcFpga.c (1.1),
+	  src/base/abci/abcFpgaFast.c (1.1), src/base/abci/abcFraig.c
+	  (1.1), src/base/abci/abcFxu.c (1.1), src/base/abci/abcGen.c
+	  (1.1), src/base/abci/abcIf.c (1.1), src/base/abci/abcIvy.c (1.1),
+	  src/base/abci/abcLut.c (1.1), src/base/abci/abcMap.c (1.1),
+	  src/base/abci/abcMini.c (1.1), src/base/abci/abcMiter.c (1.1),
+	  src/base/abci/abcMulti.c (1.1), src/base/abci/abcMv.c (1.1),
+	  src/base/abci/abcNtbdd.c (1.1), src/base/abci/abcOrder.c (1.1),
+	  src/base/abci/abcPga.c (1.1), src/base/abci/abcPrint.c (1.1),
+	  src/base/abci/abcProve.c (1.1), src/base/abci/abcReconv.c (1.1),
+	  src/base/abci/abcRefactor.c (1.1), src/base/abci/abcRenode.c
+	  (1.1), src/base/abci/abcReorder.c (1.1),
+	  src/base/abci/abcRestruct.c (1.1), src/base/abci/abcResub.c
+	  (1.1), src/base/abci/abcRewrite.c (1.1), src/base/abci/abcRr.c
+	  (1.1), src/base/abci/abcSat.c (1.1), src/base/abci/abcStrash.c
+	  (1.1), src/base/abci/abcSweep.c (1.1), src/base/abci/abcSymm.c
+	  (1.1), src/base/abci/abcTiming.c (1.1), src/base/abci/abcUnate.c
+	  (1.1), src/base/abci/abcUnreach.c (1.1),
+	  src/base/abci/abcVerify.c (1.1), src/base/abci/abcXsim.c (1.1),
+	  src/base/abci/abc_.c (1.1), src/base/abci/module.make (1.1),
+	  src/base/abci/while ( vTokens = Io_ReadBlifGetTokens(p) ).c
+	  (1.1), src/base/ver/module.make (1.1), src/base/ver/ver.h (1.1),
+	  src/base/ver/verCore.c (1.1), src/base/ver/verFormula.c (1.1),
+	  src/base/ver/verParse.c (1.1), src/base/ver/verStream.c (1.1),
+	  src/base/ver/verWords.c (1.1), src/base/ver/ver_.c (1.1),
+	  src/opt/ret/module.make (1.1), src/opt/ret/retArea.c (1.1),
+	  src/opt/ret/retCore.c (1.1), src/opt/ret/retDelay.c (1.1),
+	  src/opt/ret/retFlow.c (1.1), src/opt/ret/retIncrem.c (1.1),
+	  src/opt/ret/retInit.c (1.1), src/opt/ret/retInt.h (1.1),
+	  src/opt/ret/retLvalue.c (1.1), src/opt/ret/ret_.c (1.1), Makefile
+	  (1.1), abc.dsp (1.1), abc.dsw (1.1), copyright.txt (1.1), demo.c
+	  (1.1), depends.sh (1.1), todo.txt (1.1), src/aig/hop/cudd2.c
+	  (1.1), src/aig/hop/cudd2.h (1.1), src/aig/hop/hop.h (1.1),
+	  src/aig/hop/hopBalance.c (1.1), src/aig/hop/hopCheck.c (1.1),
+	  src/aig/hop/hopDfs.c (1.1), src/aig/hop/hopMan.c (1.1),
+	  src/aig/hop/hopMem.c (1.1), src/aig/hop/hopObj.c (1.1),
+	  src/aig/hop/hopOper.c (1.1), src/aig/hop/hopTable.c (1.1),
+	  src/aig/hop/hopUtil.c (1.1), src/aig/hop/hop_.c (1.1),
+	  src/aig/hop/module.make (1.1), src/aig/ivy/attr.h (1.1),
+	  src/aig/ivy/ivy.h (1.1), src/aig/ivy/ivyBalance.c (1.1),
+	  src/aig/ivy/ivyCanon.c (1.1), src/aig/ivy/ivyCheck.c (1.1),
+	  src/aig/ivy/ivyCut.c (1.1), src/aig/ivy/ivyCutTrav.c (1.1),
+	  src/aig/ivy/ivyDfs.c (1.1), src/aig/ivy/ivyDsd.c (1.1),
+	  src/aig/ivy/ivyFanout.c (1.1), src/aig/ivy/ivyFastMap.c (1.1),
+	  src/aig/ivy/ivyFraig.c (1.1), src/aig/ivy/ivyHaig.c (1.1),
+	  src/aig/ivy/ivyMan.c (1.1), src/aig/ivy/ivyMem.c (1.1),
+	  src/aig/ivy/ivyMulti.c (1.1), src/aig/ivy/ivyMulti8.c (1.1),
+	  src/aig/ivy/ivyObj.c (1.1), src/aig/ivy/ivyOper.c (1.1),
+	  src/aig/ivy/ivyResyn.c (1.1), src/aig/ivy/ivyRwr.c (1.1),
+	  src/aig/ivy/ivyRwrAlg.c (1.1), src/aig/ivy/ivySeq.c (1.1),
+	  src/aig/ivy/ivyShow.c (1.1), src/aig/ivy/ivyTable.c (1.1),
+	  src/aig/ivy/ivyUtil.c (1.1), src/aig/ivy/ivy_.c (1.1),
+	  src/aig/ivy/module.make (1.1), src/base/abc/abc.h (1.1),
+	  src/base/abc/abcAig.c (1.1), src/base/abc/abcCheck.c (1.1),
+	  src/base/abc/abcDfs.c (1.1), src/base/abc/abcFanio.c (1.1),
+	  src/base/abc/abcFunc.c (1.1), src/base/abc/abcInt.h (1.1),
+	  src/base/abc/abcLatch.c (1.1), src/base/abc/abcLib.c (1.1),
+	  src/base/abc/abcMinBase.c (1.1), src/base/abc/abcNames.c (1.1),
+	  src/base/abc/abcNetlist.c (1.1), src/base/abc/abcNtk.c (1.1),
+	  src/base/abc/abcObj.c (1.1), src/base/abc/abcRefs.c (1.1),
+	  src/base/abc/abcShow.c (1.1), src/base/abc/abcSop.c (1.1),
+	  src/base/abc/abcUtil.c (1.1), src/base/abc/abc_.c (1.1),
+	  src/base/abc/module.make (1.1), src/base/cmd/cmd.c (1.1),
+	  src/base/cmd/cmd.h (1.1), src/base/cmd/cmdAlias.c (1.1),
+	  src/base/cmd/cmdApi.c (1.1), src/base/cmd/cmdFlag.c (1.1),
+	  src/base/cmd/cmdHist.c (1.1), src/base/cmd/cmdInt.h (1.1),
+	  src/base/cmd/cmdUtils.c (1.1), src/base/cmd/module.make (1.1),
+	  src/base/io/io.c (1.1), src/base/io/io.h (1.1),
+	  src/base/io/ioInt.h (1.1), src/base/io/ioReadAiger.c (1.1),
+	  src/base/io/ioReadBaf.c (1.1), src/base/io/ioReadBench.c (1.1),
+	  src/base/io/ioReadBlif.c (1.1), src/base/io/ioReadBlifAig.c
+	  (1.1), src/base/io/ioReadEdif.c (1.1), src/base/io/ioReadEqn.c
+	  (1.1), src/base/io/ioReadPla.c (1.1), src/base/io/ioReadVerilog.c
+	  (1.1), src/base/io/ioUtil.c (1.1), src/base/io/ioWriteAiger.c
+	  (1.1), src/base/io/ioWriteBaf.c (1.1), src/base/io/ioWriteBench.c
+	  (1.1), src/base/io/ioWriteBlif.c (1.1), src/base/io/ioWriteCnf.c
+	  (1.1), src/base/io/ioWriteDot.c (1.1), src/base/io/ioWriteEqn.c
+	  (1.1), src/base/io/ioWriteGml.c (1.1), src/base/io/ioWriteList.c
+	  (1.1), src/base/io/ioWritePla.c (1.1), src/base/io/ioWriteVer.c
+	  (1.1), src/base/io/ioWriteVerAux.c (1.1), src/base/io/io_.c
+	  (1.1), src/base/io/module.make (1.1), src/bdd/cudd/cuBdd.make
+	  (1.1), src/bdd/cudd/cudd.h (1.1), src/bdd/cudd/cudd.make (1.1),
+	  src/bdd/cudd/cuddAPI.c (1.1), src/bdd/cudd/cuddAddAbs.c (1.1),
+	  src/bdd/cudd/cuddAddApply.c (1.1), src/bdd/cudd/cuddAddFind.c
+	  (1.1), src/bdd/cudd/cuddAddInv.c (1.1), src/bdd/cudd/cuddAddIte.c
+	  (1.1), src/bdd/cudd/cuddAddNeg.c (1.1),
+	  src/bdd/cudd/cuddAddWalsh.c (1.1), src/bdd/cudd/cuddAndAbs.c
+	  (1.1), src/bdd/cudd/cuddAnneal.c (1.1), src/bdd/cudd/cuddApa.c
+	  (1.1), src/bdd/cudd/cuddApprox.c (1.1), src/bdd/cudd/cuddBddAbs.c
+	  (1.1), src/bdd/cudd/cuddBddCorr.c (1.1),
+	  src/bdd/cudd/cuddBddIte.c (1.1), src/bdd/cudd/cuddBridge.c (1.1),
+	  src/bdd/cudd/cuddCache.c (1.1), src/bdd/cudd/cuddCheck.c (1.1),
+	  src/bdd/cudd/cuddClip.c (1.1), src/bdd/cudd/cuddCof.c (1.1),
+	  src/bdd/cudd/cuddCompose.c (1.1), src/bdd/cudd/cuddDecomp.c
+	  (1.1), src/bdd/cudd/cuddEssent.c (1.1), src/bdd/cudd/cuddExact.c
+	  (1.1), src/bdd/cudd/cuddExport.c (1.1), src/bdd/cudd/cuddGenCof.c
+	  (1.1), src/bdd/cudd/cuddGenetic.c (1.1), src/bdd/cudd/cuddGroup.c
+	  (1.1), src/bdd/cudd/cuddHarwell.c (1.1), src/bdd/cudd/cuddInit.c
+	  (1.1), src/bdd/cudd/cuddInt.h (1.1), src/bdd/cudd/cuddInteract.c
+	  (1.1), src/bdd/cudd/cuddLCache.c (1.1), src/bdd/cudd/cuddLevelQ.c
+	  (1.1), src/bdd/cudd/cuddLinear.c (1.1),
+	  src/bdd/cudd/cuddLiteral.c (1.1), src/bdd/cudd/cuddMatMult.c
+	  (1.1), src/bdd/cudd/cuddPriority.c (1.1), src/bdd/cudd/cuddRead.c
+	  (1.1), src/bdd/cudd/cuddRef.c (1.1), src/bdd/cudd/cuddReorder.c
+	  (1.1), src/bdd/cudd/cuddSat.c (1.1), src/bdd/cudd/cuddSign.c
+	  (1.1), src/bdd/cudd/cuddSolve.c (1.1), src/bdd/cudd/cuddSplit.c
+	  (1.1), src/bdd/cudd/cuddSubsetHB.c (1.1),
+	  src/bdd/cudd/cuddSubsetSP.c (1.1), src/bdd/cudd/cuddSymmetry.c
+	  (1.1), src/bdd/cudd/cuddTable.c (1.1), src/bdd/cudd/cuddUtil.c
+	  (1.1), src/bdd/cudd/cuddWindow.c (1.1),
+	  src/bdd/cudd/cuddZddCount.c (1.1), src/bdd/cudd/cuddZddFuncs.c
+	  (1.1), src/bdd/cudd/cuddZddGroup.c (1.1),
+	  src/bdd/cudd/cuddZddIsop.c (1.1), src/bdd/cudd/cuddZddLin.c
+	  (1.1), src/bdd/cudd/cuddZddMisc.c (1.1),
+	  src/bdd/cudd/cuddZddPort.c (1.1), src/bdd/cudd/cuddZddReord.c
+	  (1.1), src/bdd/cudd/cuddZddSetop.c (1.1),
+	  src/bdd/cudd/cuddZddSymm.c (1.1), src/bdd/cudd/cuddZddUtil.c
+	  (1.1), src/bdd/cudd/module.make (1.1), src/bdd/cudd/r7x8.1.mat
+	  (1.1), src/bdd/cudd/testcudd.c (1.1), src/bdd/dsd/dsd.h (1.1),
+	  src/bdd/dsd/dsdApi.c (1.1), src/bdd/dsd/dsdCheck.c (1.1),
+	  src/bdd/dsd/dsdInt.h (1.1), src/bdd/dsd/dsdLocal.c (1.1),
+	  src/bdd/dsd/dsdMan.c (1.1), src/bdd/dsd/dsdProc.c (1.1),
+	  src/bdd/dsd/dsdTree.c (1.1), src/bdd/dsd/module.make (1.1),
+	  src/map/fpga/fpga.c (1.1), src/map/fpga/fpgaCore.c (1.1),
+	  src/map/fpga/fpgaCreate.c (1.1), src/map/fpga/fpgaGENERIC.c
+	  (1.1), src/map/fpga/fpgaLib.c (1.1), src/map/fpga/fpgaMatch.c
+	  (1.1), src/map/super/module.make (1.1), src/map/super/super.c
+	  (1.1), src/map/super/super.h (1.1), src/map/super/superAnd.c
+	  (1.1), src/map/super/superGENERIC.c (1.1),
+	  src/map/super/superGate.c (1.1), src/map/super/superInt.h (1.1),
+	  src/map/super/superWrite.c (1.1), src/misc/espresso/cofactor.c
+	  (1.1), src/misc/espresso/cols.c (1.1), src/misc/espresso/compl.c
+	  (1.1), src/misc/espresso/contain.c (1.1),
+	  src/misc/espresso/cubehack.c (1.1), src/misc/espresso/cubestr.c
+	  (1.1), src/misc/espresso/cvrin.c (1.1), src/misc/espresso/cvrm.c
+	  (1.1), src/misc/espresso/cvrmisc.c (1.1),
+	  src/misc/espresso/cvrout.c (1.1), src/misc/espresso/dominate.c
+	  (1.1), src/misc/espresso/equiv.c (1.1),
+	  src/misc/espresso/espresso.c (1.1), src/misc/espresso/espresso.h
+	  (1.1), src/misc/espresso/essen.c (1.1), src/misc/espresso/exact.c
+	  (1.1), src/misc/espresso/expand.c (1.1), src/misc/espresso/gasp.c
+	  (1.1), src/misc/espresso/gimpel.c (1.1),
+	  src/misc/espresso/globals.c (1.1), src/misc/espresso/hack.c
+	  (1.1), src/misc/espresso/indep.c (1.1), src/misc/espresso/irred.c
+	  (1.1), src/misc/espresso/main.c (1.1), src/misc/espresso/main.h
+	  (1.1), src/misc/espresso/map.c (1.1), src/misc/espresso/matrix.c
+	  (1.1), src/misc/espresso/mincov.c (1.1),
+	  src/misc/espresso/mincov.h (1.1), src/misc/espresso/mincov_int.h
+	  (1.1), src/misc/espresso/module.make (1.1),
+	  src/misc/espresso/opo.c (1.1), src/misc/espresso/pair.c (1.1),
+	  src/misc/espresso/part.c (1.1), src/misc/espresso/primes.c (1.1),
+	  src/misc/espresso/reduce.c (1.1), src/misc/espresso/rows.c (1.1),
+	  src/misc/espresso/set.c (1.1), src/misc/espresso/setc.c (1.1),
+	  src/misc/espresso/sharp.c (1.1), src/misc/espresso/sminterf.c
+	  (1.1), src/misc/espresso/solution.c (1.1),
+	  src/misc/espresso/sparse.c (1.1), src/misc/espresso/sparse.h
+	  (1.1), src/misc/espresso/sparse_int.h (1.1),
+	  src/misc/espresso/unate.c (1.1), src/misc/espresso/util_old.h
+	  (1.1), src/misc/espresso/verify.c (1.1), src/misc/extra/extra.h
+	  (1.1), src/misc/extra/extraBddAuto.c (1.1),
+	  src/misc/extra/extraBddKmap.c (1.1),
+	  src/misc/extra/extraBddMisc.c (1.1),
+	  src/misc/extra/extraBddSymm.c (1.1),
+	  src/misc/extra/extraBddUnate.c (1.1),
+	  src/misc/extra/extraUtilBitMatrix.c (1.1),
+	  src/misc/extra/extraUtilCanon.c (1.1),
+	  src/misc/extra/extraUtilFile.c (1.1),
+	  src/misc/extra/extraUtilMemory.c (1.1),
+	  src/misc/extra/extraUtilMisc.c (1.1),
+	  src/misc/extra/extraUtilProgress.c (1.1),
+	  src/misc/extra/extraUtilReader.c (1.1),
+	  src/misc/extra/extraUtilTruth.c (1.1),
+	  src/misc/extra/extraUtilUtil.c (1.1), src/misc/extra/module.make
+	  (1.1), src/misc/hash/hash.h (1.1), src/misc/hash/hashFlt.h (1.1),
+	  src/misc/hash/hashInt.h (1.1), src/misc/hash/hashPtr.h (1.1),
+	  src/misc/hash/module.make (1.1), src/misc/vec/module.make (1.1),
+	  src/misc/vec/vec.h (1.1), src/misc/vec/vecAtt.h (1.1),
+	  src/misc/vec/vecFlt.h (1.1), src/misc/vec/vecInt.h (1.1),
+	  src/misc/vec/vecPtr.h (1.1), src/misc/vec/vecStr.h (1.1),
+	  src/misc/vec/vecVec.h (1.1), src/opt/kit/kit.h (1.1),
+	  src/opt/kit/kitBdd.c (1.1), src/opt/kit/kitFactor.c (1.1),
+	  src/opt/kit/kitGraph.c (1.1), src/opt/kit/kitHop.c (1.1),
+	  src/opt/kit/kitIsop.c (1.1), src/opt/kit/kitSop.c (1.1),
+	  src/opt/kit/kitTruth.c (1.1), src/opt/kit/kit_.c (1.1),
+	  src/opt/kit/module.make (1.1), src/sat/fraig/fraig.h (1.1),
+	  src/sat/fraig/fraigApi.c (1.1), src/sat/fraig/fraigCanon.c (1.1),
+	  src/sat/fraig/fraigChoice.c (1.1), src/sat/fraig/fraigFanout.c
+	  (1.1), src/sat/fraig/fraigFeed.c (1.1), src/sat/fraig/fraigInt.h
+	  (1.1), src/sat/fraig/fraigMan.c (1.1), src/sat/fraig/fraigMem.c
+	  (1.1), src/sat/fraig/fraigNode.c (1.1),
+	  src/sat/fraig/fraigPrime.c (1.1), src/sat/fraig/fraigSat.c (1.1),
+	  src/sat/fraig/fraigTable.c (1.1), src/sat/fraig/fraigUtil.c
+	  (1.1), src/sat/fraig/fraigVec.c (1.1), src/sat/fraig/module.make
+	  (1.1), src/sat/msat/module.make (1.1), src/sat/msat/msat.h (1.1),
+	  src/sat/msat/msatActivity.c (1.1), src/sat/msat/msatClause.c
+	  (1.1), src/sat/msat/msatClauseVec.c (1.1), src/sat/msat/msatInt.h
+	  (1.1), src/sat/msat/msatMem.c (1.1), src/sat/msat/msatOrderH.c
+	  (1.1), src/sat/msat/msatOrderJ.c (1.1), src/sat/msat/msatQueue.c
+	  (1.1), src/sat/msat/msatRead.c (1.1),
+	  src/sat/msat/msatSolverApi.c (1.1), src/sat/msat/msatSolverCore.c
+	  (1.1), src/sat/msat/msatSolverIo.c (1.1),
+	  src/sat/msat/msatSolverSearch.c (1.1), src/sat/msat/msatSort.c
+	  (1.1), src/sat/msat/msatVec.c (1.1), docs/blif.ps (1.1),
+	  docs/blifmv.ps (1.1), examples/C2670.blif (1.1), examples/ac.v
+	  (1.1), examples/apex4.pla (1.1), examples/frg2.blif (1.1),
+	  examples/i10.blif (1.1), examples/pj1.blif (1.1),
+	  examples/s38417.blif (1.1), examples/s38584.bench (1.1),
+	  examples/s444.blif (1.1), examples/s5378.blif (1.1),
+	  examples/s6669.blif (1.1), src/generic.c (1.1), src/generic.h
+	  (1.1), src/aig/deco/deco.h (1.1), src/aig/deco/module.make (1.1),
+	  src/aig/ec/module.make (1.1), src/aig/mem/mem.c (1.1),
+	  src/aig/mem/mem.h (1.1), src/aig/mem/module.make (1.1),
+	  src/aig/rwt/module.make (1.1), src/aig/rwt/rwt.h (1.1),
+	  src/aig/rwt/rwtDec.c (1.1), src/aig/rwt/rwtMan.c (1.1),
+	  src/aig/rwt/rwtUtil.c (1.1), src/base/temp.c (1.1),
+	  src/base/main/libSupport.c (1.1), src/base/main/main.c (1.1),
+	  src/base/main/main.h (1.1), src/base/main/mainFrame.c (1.1),
+	  src/base/main/mainInit.c (1.1), src/base/main/mainInt.h (1.1),
+	  src/base/main/mainUtils.c (1.1), src/base/main/module.make (1.1),
+	  src/base/seq/module.make (1.1), src/base/seq/seq.h (1.1),
+	  src/base/seq/seqAigCore.c (1.1), src/base/seq/seqAigIter.c (1.1),
+	  src/base/seq/seqCreate.c (1.1), src/base/seq/seqFpgaCore.c (1.1),
+	  src/base/seq/seqFpgaIter.c (1.1), src/base/seq/seqInt.h (1.1),
+	  src/base/seq/seqLatch.c (1.1), src/base/seq/seqMan.c (1.1),
+	  src/base/seq/seqMapCore.c (1.1), src/base/seq/seqMapIter.c (1.1),
+	  src/base/seq/seqMaxMeanCycle.c (1.1), src/base/seq/seqRetCore.c
+	  (1.1), src/base/seq/seqRetIter.c (1.1), src/base/seq/seqShare.c
+	  (1.1), src/base/seq/seqUtil.c (1.1), src/bdd/epd/epd.c (1.1),
+	  src/bdd/epd/epd.h (1.1), src/bdd/epd/module.make (1.1),
+	  src/bdd/mtr/module.make (1.1), src/bdd/mtr/mtr.h (1.1),
+	  src/bdd/mtr/mtrBasic.c (1.1), src/bdd/mtr/mtrGroup.c (1.1),
+	  src/bdd/mtr/mtrInt.h (1.1), src/bdd/parse/module.make (1.1),
+	  src/bdd/parse/parse.h (1.1), src/bdd/parse/parseCore.c (1.1),
+	  src/bdd/parse/parseEqn.c (1.1), src/bdd/parse/parseInt.h (1.1),
+	  src/bdd/parse/parseStack.c (1.1), src/bdd/reo/module.make (1.1),
+	  src/bdd/reo/reo.h (1.1), src/bdd/reo/reoApi.c (1.1),
+	  src/bdd/reo/reoCore.c (1.1), src/bdd/reo/reoProfile.c (1.1),
+	  src/bdd/reo/reoSift.c (1.1), src/bdd/reo/reoSwap.c (1.1),
+	  src/bdd/reo/reoTest.c (1.1), src/bdd/reo/reoTransfer.c (1.1),
+	  src/bdd/reo/reoUnits.c (1.1), src/map/fpga/fpga.h (1.1),
+	  src/map/fpga/fpgaCut.c (1.1), src/map/fpga/fpgaCutUtils.c (1.1),
+	  src/map/fpga/fpgaFanout.c (1.1), src/map/fpga/fpgaInt.h (1.1),
+	  src/map/fpga/fpgaSwitch.c (1.1), src/map/fpga/fpgaTime.c (1.1),
+	  src/map/fpga/fpgaTruth.c (1.1), src/map/fpga/fpgaUtils.c (1.1),
+	  src/map/fpga/fpgaVec.c (1.1), src/map/fpga/module.make (1.1),
+	  src/map/if/if.h (1.1), src/map/if/ifCore.c (1.1),
+	  src/map/if/ifCut.c (1.1), src/map/if/ifMan.c (1.1),
+	  src/map/if/ifMap.c (1.1), src/map/if/ifPrepro.c (1.1),
+	  src/map/if/ifReduce.c (1.1), src/map/if/ifSeq.c (1.1),
+	  src/map/if/ifTime.c (1.1), src/map/if/ifTruth.c (1.1),
+	  src/map/if/ifUtil.c (1.1), src/map/if/if_.c (1.1),
+	  src/map/if/module.make (1.1), src/map/mapper/mapper.c (1.1),
+	  src/map/mapper/mapper.h (1.1), src/map/mapper/mapperCanon.c
+	  (1.1), src/map/mapper/mapperCore.c (1.1),
+	  src/map/mapper/mapperCreate.c (1.1), src/map/mapper/mapperCut.c
+	  (1.1), src/map/mapper/mapperCutUtils.c (1.1),
+	  src/map/mapper/mapperFanout.c (1.1),
+	  src/map/mapper/mapperGENERIC.c (1.1), src/map/mapper/mapperInt.h
+	  (1.1), src/map/mapper/mapperLib.c (1.1),
+	  src/map/mapper/mapperMatch.c (1.1), src/map/mapper/mapperRefs.c
+	  (1.1), src/map/mapper/mapperSuper.c (1.1),
+	  src/map/mapper/mapperSwitch.c (1.1), src/map/mapper/mapperTable.c
+	  (1.1), src/map/mapper/mapperTime.c (1.1),
+	  src/map/mapper/mapperTree.c (1.1), src/map/mapper/mapperTruth.c
+	  (1.1), src/map/mapper/mapperUtils.c (1.1),
+	  src/map/mapper/mapperVec.c (1.1), src/map/mapper/module.make
+	  (1.1), src/map/mio/mio.c (1.1), src/map/mio/mio.h (1.1),
+	  src/map/mio/mioApi.c (1.1), src/map/mio/mioFunc.c (1.1),
+	  src/map/mio/mioGENERIC.c (1.1), src/map/mio/mioInt.h (1.1),
+	  src/map/mio/mioRead.c (1.1), src/map/mio/mioUtils.c (1.1),
+	  src/map/mio/module.make (1.1), src/misc/mvc/module.make (1.1),
+	  src/misc/mvc/mvc.c (1.1), src/misc/mvc/mvc.h (1.1),
+	  src/misc/mvc/mvcApi.c (1.1), src/misc/mvc/mvcCompare.c (1.1),
+	  src/misc/mvc/mvcContain.c (1.1), src/misc/mvc/mvcCover.c (1.1),
+	  src/misc/mvc/mvcCube.c (1.1), src/misc/mvc/mvcDivide.c (1.1),
+	  src/misc/mvc/mvcDivisor.c (1.1), src/misc/mvc/mvcList.c (1.1),
+	  src/misc/mvc/mvcLits.c (1.1), src/misc/mvc/mvcMan.c (1.1),
+	  src/misc/mvc/mvcOpAlg.c (1.1), src/misc/mvc/mvcOpBool.c (1.1),
+	  src/misc/mvc/mvcPrint.c (1.1), src/misc/mvc/mvcSort.c (1.1),
+	  src/misc/mvc/mvcUtils.c (1.1), src/misc/nm/module.make (1.1),
+	  src/misc/nm/nm.h (1.1), src/misc/nm/nmApi.c (1.1),
+	  src/misc/nm/nmInt.h (1.1), src/misc/nm/nmTable.c (1.1),
+	  src/misc/st/module.make (1.1), src/misc/st/st.c (1.1),
+	  src/misc/st/st.h (1.1), src/misc/st/stmm.c (1.1),
+	  src/misc/st/stmm.h (1.1), src/misc/util/leaks.h (1.1),
+	  src/misc/util/module.make (1.1), src/misc/util/stdlib_hack.h
+	  (1.1), src/misc/util/util_hack.h (1.1), src/opt/cut/abcCut.c
+	  (1.1), src/opt/cut/cut.h (1.1), src/opt/cut/cutApi.c (1.1),
+	  src/opt/cut/cutCut.c (1.1), src/opt/cut/cutExpand.c (1.1),
+	  src/opt/cut/cutInt.h (1.1), src/opt/cut/cutList.h (1.1),
+	  src/opt/cut/cutMan.c (1.1), src/opt/cut/cutMerge.c (1.1),
+	  src/opt/cut/cutNode.c (1.1), src/opt/cut/cutOracle.c (1.1),
+	  src/opt/cut/cutPre22.c (1.1), src/opt/cut/cutSeq.c (1.1),
+	  src/opt/cut/cutTruth.c (1.1), src/opt/cut/module.make (1.1),
+	  src/opt/dec/dec.h (1.1), src/opt/dec/decAbc.c (1.1),
+	  src/opt/dec/decFactor.c (1.1), src/opt/dec/decMan.c (1.1),
+	  src/opt/dec/decPrint.c (1.1), src/opt/dec/decUtil.c (1.1),
+	  src/opt/dec/module.make (1.1), src/opt/fxu/fxu.c (1.1),
+	  src/opt/fxu/fxu.h (1.1), src/opt/fxu/fxuCreate.c (1.1),
+	  src/opt/fxu/fxuHeapD.c (1.1), src/opt/fxu/fxuHeapS.c (1.1),
+	  src/opt/fxu/fxuInt.h (1.1), src/opt/fxu/fxuList.c (1.1),
+	  src/opt/fxu/fxuMatrix.c (1.1), src/opt/fxu/fxuPair.c (1.1),
+	  src/opt/fxu/fxuPrint.c (1.1), src/opt/fxu/fxuReduce.c (1.1),
+	  src/opt/fxu/fxuSelect.c (1.1), src/opt/fxu/fxuSingle.c (1.1),
+	  src/opt/fxu/fxuUpdate.c (1.1), src/opt/fxu/module.make (1.1),
+	  src/opt/rwr/module.make (1.1), src/opt/rwr/rwr.h (1.1),
+	  src/opt/rwr/rwrDec.c (1.1), src/opt/rwr/rwrEva.c (1.1),
+	  src/opt/rwr/rwrExp.c (1.1), src/opt/rwr/rwrLib.c (1.1),
+	  src/opt/rwr/rwrMan.c (1.1), src/opt/rwr/rwrPrint.c (1.1),
+	  src/opt/rwr/rwrTemp.c (1.1), src/opt/rwr/rwrUtil.c (1.1),
+	  src/opt/sim/module.make (1.1), src/opt/sim/sim.h (1.1),
+	  src/opt/sim/simMan.c (1.1), src/opt/sim/simSat.c (1.1),
+	  src/opt/sim/simSeq.c (1.1), src/opt/sim/simSupp.c (1.1),
+	  src/opt/sim/simSwitch.c (1.1), src/opt/sim/simSym.c (1.1),
+	  src/opt/sim/simSymSat.c (1.1), src/opt/sim/simSymSim.c (1.1),
+	  src/opt/sim/simSymStr.c (1.1), src/opt/sim/simUtils.c (1.1),
+	  src/sat/asat/added.c (1.1), src/sat/asat/asatmem.c (1.1),
+	  src/sat/asat/asatmem.h (1.1), src/sat/asat/jfront.c (1.1),
+	  src/sat/asat/main.c (1.1), src/sat/asat/module.make (1.1),
+	  src/sat/asat/solver.c (1.1), src/sat/asat/solver.h (1.1),
+	  src/sat/asat/solver_vec.h (1.1), src/sat/bsat/module.make (1.1),
+	  src/sat/bsat/satMem.c (1.1), src/sat/bsat/satMem.h (1.1),
+	  src/sat/bsat/satSolver.c (1.1), src/sat/bsat/satSolver.h (1.1),
+	  src/sat/bsat/satUtil.c (1.1), src/sat/bsat/satVec.h (1.1),
+	  src/sat/csat/csat_apis.c (1.1), src/sat/csat/csat_apis.h (1.1),
+	  src/sat/csat/module.make (1.1): New version of ABC
+
+2007-04-06 21:56  asolar
+
+	* SketchSolver/timerclass.h (1.4): Fixed small compilation error.
+
+2007-04-06 21:56  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.34): Fixed a bug
+
+2007-04-06 21:56  asolar
+
+	* SketchSolver/InputParser/: DagOptim.cpp (1.4), DagOptim.h (1.3):
+	  Added some optimizations. May have caused a performance
+	  regression, though.
+
+2007-04-06 21:55  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.59),
+	  SolveFromInput.h (1.27): [no log message]
+
+2007-04-06 21:54  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.37), input.y (1.43):
+	  Made the number of bits for input integers adaptive.
+
+2007-04-06 21:54  asolar
+
+	* SketchSolver/InputParser/: DagCSE.cpp (1.9), DagCSE.h (1.5):
+	  Optimized string generation. Added timers.
+
+2007-04-06 21:53  asolar
+
+	* SketchSolver/InputParser/DagElimUFUN.cpp (1.5): Removed some
+	  print statements
+
+2007-04-06 21:52  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.17), BooleanDAG.h
+	  (1.17): Some optimization to the routine to remove children from
+	  a node.
+
+2007-04-02 18:46  tag PLDI_SUBMISSION_VERSION
+
+2007-04-02 18:46  asolar
+
+	* SketchSolver/InputParser/BooleanDAG.cpp (1.16): Optimized cleanup
+	  phase
+
+2007-03-25 18:50  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.37): bugfix: we now
+	  check whether conversion of the sparse subset of an ARRACC to
+	  bvect should be signed (that is, whether the sparse has some
+	  negative value); and some cosmetics.
+
+2007-03-25 18:49  arnold
+
+	* SketchSolver/InputParser/Tvalue.h (1.21): bugfix: conversion to
+	  unsigned bitvector could result in a signed bitvector in certain
+	  situation; minor cosmetics.
+
+2007-03-25 14:32  asolar
+
+	* SketchSolver/InputParser/: DagElimUFUN.cpp (1.4), driver.cpp
+	  (1.36): Added a new flag.
+
+2007-03-25 06:57  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.15), DagElimUFUN.cpp
+	  (1.3), DagOptim.cpp (1.3), SolveFromInput.cpp (1.58): Added some
+	  optimizations
+
+2007-03-23 09:15  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.36): (this time,
+	  including the CPP file...) handling of array access gates in the
+	  general setting: handles any type of index and array elements,
+	  including hybrid arrays. Note: this change requires a
+	  corresponding change to array assignment code (ARRASS), in order
+	  to work well for non-single-bit bvect-typed array items/index; it
+	  may cause some things not to more, until the latter is fixed
+
+2007-03-23 09:14  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.h (1.14): handling of
+	  array access gates in the general setting: handles any type of
+	  index and array elements, including hybrid arrays. Note: this
+	  change requires a corresponding change to array assignment code
+	  (ARRASS), in order to work well for non-single-bit bvect-typed
+	  array items/index; it may cause some things not to more, until
+	  the latter is fixed
+
+2007-03-23 09:11  arnold
+
+	* SketchSolver/InputParser/Tvalue.h (1.20): (1) now handling
+	  padding of bvect type; (2) new method to get "extended" bits of a
+	  bvect, including out-of-range bits; (3) bugfix with
+	  representation conversion; (4) some cosmetics.
+
+2007-03-23 09:07  arnold
+
+	* SketchSolver/BooleanToCNF.h (1.40): Two shortcut cases for adding
+	  an equals clause
+
+2007-03-21 14:57  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.57): Added output
+	  message.
+
+2007-03-21 14:56  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.35): Improved error
+	  messaging.
+
+2007-03-21 14:55  asolar
+
+	* SketchSolver/InputParser/: DagElimUFUN.cpp (1.2), DagElimUFUN.h
+	  (1.2): Fixed a big bug.
+
+2007-03-21 14:55  asolar
+
+	* SketchSolver/SATSolver.h (1.28): [no log message]
+
+2007-03-21 14:55  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.39), InputParser/BooleanDAG.h
+	  (1.16), InputParser/input.y (1.42): Give the ability to label
+	  assertions and track assertion failures.
+
+2007-03-16 11:47  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.35),
+	  NodesToSolver.h (1.13): Refurbished circuit generation for array
+	  access; this is a preliminary step before we generalize it for
+	  generic sparse/dense access.
+
+2007-03-15 15:14  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.38), InputParser/Makefile
+	  (1.25): [no log message]
+
+2007-03-15 15:11  asolar
+
+	* SketchSolver/InputParser/BasicError.h (1.2): Moved to the parent
+	  directory.
+
+2007-03-15 15:10  asolar
+
+	* SketchSolver/: InputParser/DagCSE.cpp (1.8), FindCheckSolver.cpp
+	  (1.33), FindCheckSolver.h (1.19), MiniSATSolver.cpp (1.7),
+	  MiniSATSolver.h (1.4), SATSolver.h (1.27), ZchaffSATSolver.cpp
+	  (1.5), ZchaffSATSolver.h (1.6), ABCSATSolver.cpp (1.15),
+	  ABCSATSolver.h (1.12), BasicError.h (1.1): [no log message]
+
+2007-03-15 15:05  asolar
+
+	* SketchSolver/InputParser/: DagElimUFUN.cpp (1.1), DagElimUFUN.h
+	  (1.1), DagOptim.cpp (1.2), DagOptim.h (1.2), driver.cpp (1.34),
+	  input.l (1.10), input.y (1.41), BooleanDAG.cpp (1.14),
+	  BooleanDAG.h (1.15): Added support for uninterpreted functions.
+
+2007-03-15 15:05  asolar
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.34): [no log
+	  message]
+
+2007-03-15 15:04  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.56),
+	  SolveFromInput.h (1.26): Changed the structure so that now
+	  instead of keeping a DAG for sketch and spec, we build a miter
+	  right away.
+
+2007-03-08 15:57  arnold
+
+	* SketchSolver/: BooleanToCNF.h (1.37), InputParser/DagCSE.cpp
+	  (1.7), InputParser/Tvalue.h (1.19): cosmetics
+
+2007-02-28 13:11  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.13), BooleanDAG.h
+	  (1.14), input.y (1.40), NodesToSolver.cpp (1.33): [no log
+	  message]
+
+2007-02-28 13:09  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.32), FindCheckSolver.h
+	  (1.18), SATSolver.h (1.26), InputParser/SolveFromInput.cpp
+	  (1.55), InputParser/SolveFromInput.h (1.25): Changed Solver so it
+	  now builds the miter upfront instead of keeping separate DAGs for
+	  spec and sketch.
+
+	  Armando.
+
+2007-02-22 17:20  asolar
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.32): Fixed bug.
+
+2007-02-21 18:22  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.31),
+	  NodesToSolver.h (1.12), SolveFromInput.cpp (1.54): [no log
+	  message]
+
+2007-02-21 18:20  asolar
+
+	* SketchSolver/InputParser/input.y (1.39): Fixed small parsing bug
+
+2007-02-21 18:20  asolar
+
+	* SketchSolver/InputParser/: DagOptim.cpp (1.1), DagOptim.h (1.1):
+	  Added an optimization phase.
+
+2007-02-21 18:19  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.36), SATSolver.h (1.25),
+	  InputParser/BooleanDAG.cpp (1.12), InputParser/BooleanDAG.h
+	  (1.13), InputParser/DagCSE.cpp (1.6), InputParser/DagCSE.h (1.4),
+	  InputParser/Makefile (1.24), InputParser/NodesToEuclid.h (1.4):
+	  Started adding uninterpreted function functionality
+
+2007-02-09 15:57  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.30): fixes a
+	  problem of unresolved sketches where the output might be a
+	  negative integer; converting to signed-bit-vector, instead of
+	  unsigned, does the trick.
+
+2007-01-18 14:51  tag WORKING_VERSION_2_0
+
+2007-01-18 14:51  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.35), FindCheckSolver.cpp (1.31),
+	  FindCheckSolver.h (1.17), SATSolver.h (1.24),
+	  InputParser/DagCSE.h (1.3), InputParser/NodesToSolver.cpp (1.29),
+	  InputParser/SolveFromInput.cpp (1.53): [no log message]
+
+2007-01-14 18:34  asolar
+
+	* SketchSolver/SATSolver.h (1.23): [no log message]
+
+2007-01-14 18:34  asolar
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.28): Cosmetic
+	  changes.
+
+2007-01-14 18:33  asolar
+
+	* SketchSolver/InputParser/DagCSE.cpp (1.5): Added comment.
+
+2007-01-14 18:33  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.14), ABCSATSolver.h (1.11),
+	  BooleanToCNF.h (1.34), FindCheckSolver.cpp (1.30),
+	  MiniSATSolver.cpp (1.6), MiniSATSolver.h (1.3), SATSolver.h
+	  (1.22), ZchaffSATSolver.cpp (1.4), ZchaffSATSolver.h (1.5),
+	  InputParser/driver.cpp (1.33): Fixed bug with assertions.
+
+2007-01-01 17:22  asolar
+
+	* SketchSolver/: InputParser/Tvalue.h (1.18),
+	  InputParser/NodesToEuclid.h (1.3), InputParser/NodesToSolver.cpp
+	  (1.27), InputParser/NodesToSolver.h (1.11),
+	  InputParser/SolveFromInput.cpp (1.52), SATSolver.h (1.21):
+	  Completed major refactoring. Got rid of the sign fields in the
+	  bool node. Also made it easier to change the widths of fields
+	  halfway through.
+
+2007-01-01 17:15  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.33), FindCheckSolver.cpp (1.29),
+	  FindCheckSolver.h (1.16), InputParser/BooleanDAG.cpp (1.11),
+	  InputParser/BooleanDAG.h (1.12), InputParser/DagCSE.cpp (1.4),
+	  InputParser/DagCSE.h (1.2), InputParser/input.y (1.38): Completed
+	  major refactoring. Got rid of the sign fields in the bool node.
+	  Also made it easier to change the widths of fields halfway
+	  through.
+
+2006-12-22 23:45  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.26),
+	  NodesToSolver.h (1.10), SolveFromInput.cpp (1.51),
+	  SolveFromInput.h (1.24), Tvalue.h (1.17): [no log message]
+
+2006-12-22 23:45  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.13), BooleanToCNF.h (1.32),
+	  FindCheckSolver.cpp (1.28), FindCheckSolver.h (1.15), SATSolver.h
+	  (1.20), InputParser/BooleanDAG.cpp (1.10),
+	  InputParser/BooleanDAG.h (1.11): Making some major reorganization
+	  and debugging. Code is currently unstable. Don't touch.
+
+2006-11-17 13:26  asolar
+
+	* SketchSolver/InputParser/: input.y (1.37), driver.cpp (1.32): [no
+	  log message]
+
+2006-11-17 13:19  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.9), BooleanDAG.h
+	  (1.10), DagCSE.cpp (1.3), input.l (1.9), InputReader.cpp (1.8),
+	  SolveFromInput.cpp (1.50): [no log message]
+
+2006-11-17 09:31  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.25), Tvalue.h
+	  (1.16): Bugfix: initialization of (signed) bitvector inputs now
+	  goes through sparse, while previously initialized erroneously.
+	  This however should be changed at some point, when Tvalue is
+	  better engineered for construction of any value type from integer
+	  contents.
+
+2006-11-12 23:09  arnold
+
+	* SketchSolver/InputParser/driver.cpp (1.31): Added command-line
+	  option for using bit-vector arithmetic, currently stub.
+
+2006-11-12 15:28  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.24),
+	  NodesToSolver.h (1.9), Tvalue.h (1.15): Bit-vector arithmetics
+	  now supports constants, although in a somewhat obfuscated (and
+	  yet to be fixed) manner; also fixed a bug in conversion to sparse
+	  code.
+
+2006-11-12 12:32  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.23): Conversion of
+	  source from bit-vector to sparse is not conditional by the same
+	  compile-time flag (HAVE_BVECTARITH), thus preventing redundant
+	  conversions due to arithmetic gates.
+
+2006-11-12 00:51  arnold
+
+	* SketchSolver/: BooleanToCNF.h (1.31), SATSolver.h (1.19),
+	  InputParser/BooleanDAG.h (1.9), InputParser/NodesToSolver.cpp
+	  (1.22), InputParser/NodesToSolver.h (1.8): (1) bit-vector
+	  comparators now work, including ==, <, <=, >, and >=; (2)
+	  bit-vector operations replace sparse based ones based on some
+	  #define in NodesToSolver.cpp (temporary solution, should switch
+	  to dynamic invocation).
+
+2006-11-11 02:31  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.21), Tvalue.h
+	  (1.14): More conversions of integer representations now work,
+	  including complements for both signed and unsigned and padded
+	  conversions; as a result, subtraction appears to work (under some
+	  restricting usage assumptions).
+
+2006-11-11 01:20  arnold
+
+	* SketchSolver/InputParser/Tvalue.h (1.13): Two's complement
+	  conversion is implemented; note that it doesn't use addition but
+	  rather manipulates bit directly, resulting in simpler conversion
+	  logic.
+
+2006-11-11 00:38  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.20), Tvalue.h
+	  (1.12): Conversion to bit-vector (signed or unsigned) now
+	  supports padding with extra sign-like bits; this should guarantee
+	  absense of overflows in bit-vector addition (hence probably with
+	  subtraction as well).
+
+2006-11-10 13:29  arnold
+
+	* SketchSolver/: BooleanToCNF.h (1.30), Makefile (1.2),
+	  InputParser/Tvalue.h (1.11): (1) addBigOrClause now returns false
+	  in case of an empty operand set; (2) refactored
+	  sparse-to-bitvector conversion, since signed and unsigned cases
+	  are mostly the same, which also makes the conversion work
+	  properly (i.e. generate a sign bit, etc); (3) minor fix to
+	  makefile.
+
+2006-11-10 12:49  arnold
+
+	* SketchSolver/: SATSolver.h (1.18), InputParser/NodesToSolver.cpp
+	  (1.19): Undoing a couple of experimental changes.
+
+2006-11-09 08:59  arnold
+
+	* SketchSolver/: ABCSATSolver.cpp (1.12), ABCSATSolver.h (1.10),
+	  BooleanToCNF.cpp (1.6), BooleanToCNF.h (1.29),
+	  FindCheckSolver.cpp (1.27), MiniSATSolver.cpp (1.5),
+	  MiniSATSolver.h (1.2), SATSolver.h (1.17), ZchaffSATSolver.cpp
+	  (1.3), ZchaffSATSolver.h (1.4), InputParser/NodesToSolver.cpp
+	  (1.18), InputParser/Tvalue.h (1.10):
+	  Some refactoring, including (1) changes to addXyzClause methods
+	  in varDir, such that to not take a gid argument (deprecated) and
+	  instead take an optional result variable argument, plus code
+	  refurbishing; (2) making the solver member of varDir private,
+	  hence regulating all access through wrappers; (3) making a few
+	  auxiliary functions members of varDir. Consequently, some changes
+	  take place in bit-vector operator code.
+
+2006-11-08 14:27  arnold
+
+	* SketchSolver/InputParser/: DagCSE.cpp (1.2), NodesToSolver.cpp
+	  (1.17), NodesToSolver.h (1.7), Tvalue.h (1.9), input.y (1.36):
+	  Extension of Tvalue to accomodate signed bit-vector values,
+	  including extensive refactoring and beautification of the code;
+	  changes to Boolean function generation, including (1) use of PT
+	  nodes to explicitly represent negation of Booleans (implies
+	  changes to parser + visitor code), (2) some extensions to default
+	  value generation (i.e. NULL parent handles) during translation to
+	  better support arithmetic operations with constants, (3) initial
+	  code for bit-vector operators, currently not being used, and (4)
+	  tons of cosmetic changes.
+
+2006-11-06 17:05  arnold
+
+	* SketchSolver/BooleanToCNF.h (1.28): Extended variable allocation
+	  method to allow bulk allocation of consecutive sequences (useful
+	  for creation of Tvalue guards).
+
+2006-10-30 19:49  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.49): Incorporated
+	  CSE pass.
+
+2006-10-30 19:48  asolar
+
+	* SketchSolver/InputParser/Makefile (1.23): Included DagCSE
+
+2006-10-30 19:48  asolar
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.16): Added a single
+	  comment.
+
+2006-10-30 19:47  asolar
+
+	* SketchSolver/InputParser/: DagCSE.cpp (1.1), DagCSE.h (1.1): Pass
+	  to do CSE on a BooleanDAG.
+
+2006-10-30 19:46  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.8), BooleanDAG.h
+	  (1.8): Added methods to support common subexpression elimination.
+
+2006-10-26 11:36  asolar
+
+	* SketchSolver/InputParser/Tvalue.h (1.8): Added some comments.
+
+2006-10-26 10:52  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.48): Changed
+	  output
+
+2006-10-26 10:52  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.15), Tvalue.h
+	  (1.7): Fixed big bug with integer output.
+
+2006-10-26 10:51  asolar
+
+	* SketchSolver/InputParser/NodesToEuclid.h (1.2): Fixed simple
+	  bugs.
+
+2006-10-26 10:51  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.7), BooleanDAG.h
+	  (1.7), input.y (1.35): Optimized away trivial equalities.
+
+2006-10-19 15:27  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.47),
+	  SolveFromInput.h (1.23): [no log message]
+
+2006-10-19 15:27  asolar
+
+	* SketchSolver/InputParser/: Makefile (1.22), NodesToEuclid.cpp
+	  (1.1), NodesToEuclid.h (1.1): Added new file to output problem in
+	  uclid's format.
+
+2006-10-19 15:26  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.30): Added flag to output
+	  benchmarks in euclid's format.
+
+2006-10-19 11:12  asolar
+
+	* SketchSolver/InputParser/Tvalue.h (1.6): Got rid of bit type. Now
+	  it's all BVECT.
+
+2006-10-19 11:11  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.6), BooleanDAG.h
+	  (1.6), NodesToSolver.cpp (1.14): [no log message]
+
+2006-10-13 16:01  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.5), BooleanDAG.h
+	  (1.5), NodesToSolver.cpp (1.13), NodesToSolver.h (1.6),
+	  SolveFromInput.cpp (1.46), Tvalue.h (1.5), input.y (1.34): Made
+	  lots of changes to: - Handle int inputs and ouptuts - Allow the
+	  same control variable to be used in many places (see
+	  create_inter).
+
+2006-09-28 20:22  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.4), BooleanDAG.h
+	  (1.4), NodesToSolver.cpp (1.12), SolveFromInput.cpp (1.45),
+	  SolveFromInput.h (1.22), Tvalue.h (1.4), input.y (1.33): Input
+	  and control nodes now have a field to specify number of bits so
+	  they can now be multibit entities. The handling of controls has
+	  been changed to account for this, but not the handling of inputs.
+
+2006-09-25 21:57  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.11): Addition to
+	  last bugfix.
+
+2006-09-25 13:22  arnold
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.10), input.y
+	  (1.32): (1) bugfix in assertion generation, used the wrong
+	  ancestor node for binding the assertion node... (2) cosmetic fix
+	  to comparator generator function in the parser.
+
+2006-09-22 12:55  arnold
+
+	* abc60513/depends.sh (1.3): re-adding depends.sh with correct
+	  permissions
+
+2006-09-22 12:54  arnold
+
+	* abc60513/depends.sh (1.2): temporarily remove depends.sh which
+	  has non-executable permission
+
+2006-09-22 12:52  arnold
+
+	* SketchSolver/InputParser/Makefile (1.21): Restored dependencies
+	  for lexer/parser files
+
+2006-09-13 15:47  arnold
+
+	* SketchSolver/InputParser/NodesToSolver.cpp (1.9): Bugfixing a
+	  faulty assertion.
+
+2006-09-13 15:39  arnold
+
+	* abc60513/src/: base/abc/.cvsignore (1.1), base/abci/.cvsignore
+	  (1.1), base/cmd/.cvsignore (1.1), base/io/.cvsignore (1.1),
+	  base/main/.cvsignore (1.1), base/seq/.cvsignore (1.1),
+	  bdd/cudd/.cvsignore (1.1), bdd/dsd/.cvsignore (1.1),
+	  bdd/epd/.cvsignore (1.1), bdd/mtr/.cvsignore (1.1),
+	  bdd/parse/.cvsignore (1.1), bdd/reo/.cvsignore (1.1),
+	  map/fpga/.cvsignore (1.1), map/mapper/.cvsignore (1.1),
+	  map/mio/.cvsignore (1.1), map/pga/.cvsignore (1.1),
+	  map/super/.cvsignore (1.1), misc/espresso/.cvsignore (1.1),
+	  misc/extra/.cvsignore (1.1), misc/mvc/.cvsignore (1.1),
+	  misc/nm/.cvsignore (1.1), misc/st/.cvsignore (1.1),
+	  opt/cut/.cvsignore (1.1), opt/dec/.cvsignore (1.1),
+	  opt/fxu/.cvsignore (1.1), opt/rwr/.cvsignore (1.1),
+	  opt/sim/.cvsignore (1.1), sat/asat/.cvsignore (1.1),
+	  sat/csat/.cvsignore (1.1), sat/fraig/.cvsignore (1.1): Bunch of
+	  cvsignores to clear out CVS output.
+
+2006-09-13 15:30  arnold
+
+	* SketchSolver/: .cvsignore (1.1), BooleanToCNF.h (1.27), Makefile
+	  (1.1), InputParser/.cvsignore (1.4), InputParser/BooleanDAG.cpp
+	  (1.3), InputParser/BooleanDAG.h (1.3), InputParser/Makefile
+	  (1.20), InputParser/NodesToSolver.cpp (1.8),
+	  InputParser/NodesToSolver.h (1.5), InputParser/input.l (1.8),
+	  InputParser/input.y (1.31): Adding assertions to the solver: (1)
+	  assert statements are parsed into the DAG; (2) translation
+	  converts this node into a CNF clause. Some minor fixes to
+	  makefiles and cvsignores.
+
+2006-09-13 15:20  arnold
+
+	* zchaff/.cvsignore (1.1): added cvsignore; updated libsat.a
+
+2006-09-11 13:34  arnold
+
+	* SketchSolver/InputParser/.cvsignore (1.3): another cvsignore
+	  update
+
+2006-09-11 13:33  arnold
+
+	* SketchSolver/InputParser/.cvsignore (1.2): cvsignore update
+
+2006-09-11 13:24  arnold
+
+	* SketchSolver/InputParser/: Makefile (1.19), Makefile.gcc (1.2),
+	  rules-gcc.mak (1.1), rules-icl.mak (1.1): Make revision: (1) auto
+	  dependencies go to a separate file depend.mak, whose construction
+	  is automatically invoked if it does not exist (this file is
+	  excluded from the repository); (2) GCC/ICL specifics are put into
+	  two separate files, rules-{gcc,icl}.mak respectively, so as to
+	  avoid maintaining two different makefiles; (3) Makefile includes
+	  rules.mak, which should be a softlink pointing to either of the
+	  above two files.  This whole change is aimed at giving a single
+	  makefile instance, and such that's not changed (with regard to
+	  repository copy) on each dependencies re-computation. It's been
+	  mildly tested on my environment.
+
+2006-09-06 18:56  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.7),
+	  SolveFromInput.cpp (1.44): [no log message]
+
+2006-09-06 13:41  asolar
+
+	* SketchSolver/InputParser/Makefile.gcc (1.1): [no log message]
+
+2006-07-21 11:33  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.6),
+	  SolveFromInput.cpp (1.43), Tvalue.h (1.3): [no log message]
+
+2006-07-21 11:29  asolar
+
+	* sat2005_submission/MiniSat_submission/Solver.C (1.3),
+	  sat2005_submission/MiniSat_submission/Solver.h (1.5),
+	  sat2005_submission/MiniSat_submission/SolverTypes.h (1.2),
+	  SketchSolver/ABCSATSolver.cpp (1.11), SketchSolver/ABCSATSolver.h
+	  (1.9), SketchSolver/BooleanToCNF.h (1.26),
+	  SketchSolver/FindCheckSolver.cpp (1.26),
+	  SketchSolver/ZchaffSATSolver.cpp (1.2), SketchSolver/timerclass.h
+	  (1.3), SketchSolver/InputParser/driver.cpp (1.29),
+	  SketchSolver/InputParser/circuitToBLIF.awk (1.3),
+	  SketchSolver/InputParser/input.y (1.30),
+	  SketchSolver/InputParser/Makefile (1.18): [no log message]
+
+2006-06-08 16:07  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.10), ABCSATSolver.h (1.8),
+	  FindCheckSolver.cpp (1.25), FindCheckSolver.h (1.14),
+	  MiniSATSolver.cpp (1.4), timerclass.h (1.2),
+	  InputParser/NodesToSolver.cpp (1.5), InputParser/NodesToSolver.h
+	  (1.4), InputParser/SolveFromInput.cpp (1.42),
+	  InputParser/SolveFromInput.h (1.21), InputParser/driver.cpp
+	  (1.28): Another major rewrite to improve performance, and also to
+	  add the ability to checkpoint a computation, and then restart it
+	  using a different set of solvers.
+
+2006-06-07 15:09  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.27): added flag.
+
+2006-06-07 15:09  asolar
+
+	* SketchSolver/InputParser/: BooleanDAG.cpp (1.2), BooleanDAG.h
+	  (1.2), input.y (1.29), NodesToSolver.cpp (1.4),
+	  SolveFromInput.cpp (1.41), SolveFromInput.h (1.20), Tvalue.h
+	  (1.2): A little of optimization
+
+2006-06-07 15:09  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.25), FindCheckSolver.cpp (1.24),
+	  FindCheckSolver.h (1.13): A little of optimization.
+
+2006-06-05 11:06  tag MINI_STABLE_2
+
+2006-06-05 11:06  asolar
+
+	* SketchSolver/: MiniSATSolver.cpp (1.3), InputParser/input.y
+	  (1.28), InputParser/NodesToSolver.cpp (1.3),
+	  InputParser/NodesToSolver.h (1.3), InputParser/SolveFromInput.cpp
+	  (1.40), InputParser/SolveFromInput.h (1.19), InputParser/Tvalue.h
+	  (1.1): Finished big refactoring.
+
+2006-05-31 12:18  tag MINI_STABLE_1
+
+2006-05-31 12:18  asolar
+
+	* SketchSolver/InputParser/input.y (1.27): Geting ready for another
+	  big change.
+
+2006-05-31 12:17  asolar
+
+	* SketchSolver/InputParser/: NodesToSolver.cpp (1.2),
+	  NodesToSolver.h (1.2), SolveFromInput.cpp (1.39): [no log
+	  message]
+
+2006-05-31 12:17  asolar
+
+	* SketchSolver/: MiniSATSolver.cpp (1.2), SATSolver.h (1.16),
+	  ZchaffSATSolver.h (1.3): Minor changes
+
+2006-05-31 12:17  asolar
+
+	* sat2005_submission/MiniSat_submission/: Solver.C (1.2), Solver.h
+	  (1.4): Fixed a bug in MiniSat (yes, that's right, a bug in
+	  MiniSat).
+
+2006-05-29 15:04  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.24), SATSolver.h (1.15): [no log
+	  message]
+
+2006-05-29 14:56  asolar
+
+	* abc60513/src/sat/msat/.cvsignore (1.1),
+	  SketchSolver/InputParser/BasicError.h (1.1),
+	  SketchSolver/InputParser/BooleanDAG.cpp (1.1),
+	  SketchSolver/InputParser/BooleanDAG.h (1.1),
+	  SketchSolver/InputParser/input.y (1.26),
+	  SketchSolver/InputParser/driver.cpp (1.26),
+	  SketchSolver/InputParser/Makefile (1.17),
+	  SketchSolver/InputParser/NodesToSolver.cpp (1.1),
+	  SketchSolver/InputParser/NodesToSolver.h (1.1),
+	  SketchSolver/InputParser/SolveFromInput.cpp (1.38),
+	  SketchSolver/InputParser/SolveFromInput.h (1.18): [no log
+	  message]
+
+2006-05-23 17:56  asolar
+
+	* sat2005_submission/MiniSat_submission/: Solver.h (1.2), Solver.h
+	  (1.3): Fixed potential 64 bit bug.
+
+2006-05-23 17:23  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.9), ABCSATSolver.h (1.7),
+	  MiniSATSolver.cpp (1.1), MiniSATSolver.h (1.1),
+	  InputParser/driver.cpp (1.25), InputParser/Makefile (1.16):
+	  Adding minisat as a possible solver.
+
+2006-05-23 17:22  asolar
+
+	* sat2005_submission/SatELite_submission/SatELiteGTI (1.1): [no log
+	  message]
+
+2006-05-23 17:13  asolar
+
+	* sat2005_submission/SatELite_submission/: MiniSatnik/Global.h
+	  (1.1), MiniSatnik/Heap.h (1.1), MiniSatnik/Main.C (1.1),
+	  MiniSatnik/Makefile (1.1), MiniSatnik/Solver.C (1.1),
+	  MiniSatnik/Solver.h (1.1), MiniSatnik/SolverTypes.h (1.1),
+	  MiniSatnik/Sort.h (1.1), MiniSatnik/VarOrder.h (1.1),
+	  SatELite/BcnfWriter.iC (1.1), SatELite/Heap.h (1.1),
+	  SatELite/Main.C (1.1), SatELite/Main.h (1.1),
+	  SatELite/Main_debug.C (1.1), SatELite/Makefile (1.1),
+	  SatELite/Profile.C (1.1), SatELite/Profile.h (1.1),
+	  SatELite/Queue.h (1.1), SatELite/Solver.C (1.1),
+	  SatELite/Solver.h (1.1), SatELite/SolverTypes.h (1.1),
+	  SatELite/Solver_clause.iC (1.1), SatELite/Solver_debug.C (1.1),
+	  SatELite/Solver_subsume.C (1.1), SatELite/TmpFiles.C (1.1),
+	  SatELite/TmpFiles.h (1.1), SatELite/VarOrder.h (1.1): Adding
+	  minisat as a possible solver.
+
+2006-05-23 17:11  asolar
+
+	* sat2005_submission/: SatELite_submission/build.sh (1.1),
+	  SatELite_submission/clean.sh (1.1),
+	  SatELite_submission/ForMani/Global/Global.C (1.1),
+	  SatELite_submission/ForMani/Global/Global.h (1.1),
+	  SatELite_submission/ForMani/Global/Makefile (1.1),
+	  SatELite_submission/ForMani/Global/String.C (1.1),
+	  SatELite_submission/ForMani/Global/String.h (1.1),
+	  MiniSat_submission/.cvsignore (1.1): [no log message]
+
+2006-05-23 17:09  asolar
+
+	* sat2005_submission/: MiniSat_submission/Global.h (1.1),
+	  MiniSat_submission/Heap.h (1.1), MiniSat_submission/Main.C (1.1),
+	  MiniSat_submission/Makefile (1.1), MiniSat_submission/build.sh
+	  (1.1), MiniSat_submission/clean.sh (1.1),
+	  MiniSat_submission/depend.mak (1.1), MiniSat_submission/Solver.C
+	  (1.1), MiniSat_submission/Solver.h (1.1),
+	  MiniSat_submission/SolverTypes.h (1.1), MiniSat_submission/Sort.h
+	  (1.1), MiniSat_submission/VarOrder.h (1.1),
+	  SatELite_submission/ForMani/options.mak (1.1),
+	  SatELite_submission/ForMani/standard.mak (1.1),
+	  SatELite_submission/ForMani/template.mak (1.1),
+	  SatELite_submission/ForMani/ADTs/FSet.h (1.1),
+	  SatELite_submission/ForMani/ADTs/File.C (1.1),
+	  SatELite_submission/ForMani/ADTs/File.h (1.1),
+	  SatELite_submission/ForMani/ADTs/Hash_standard.h (1.1),
+	  SatELite_submission/ForMani/ADTs/Makefile (1.1),
+	  SatELite_submission/ForMani/ADTs/Map.h (1.1),
+	  SatELite_submission/ForMani/ADTs/Set.h (1.1),
+	  SatELite_submission/ForMani/ADTs/Sort.h (1.1),
+	  SatELite_submission/ForMani/ADTs/StackAlloc.h (1.1),
+	  SatELite_submission/ForMani/ADTs/VecAlloc.h (1.1),
+	  SatELite_submission/ForMani/ADTs/VecMaps.h (1.1): Adding minisat
+	  as a possible solver.
+
+2006-05-20 22:42  asolar
+
+	* abc60513/src/base/main/main.c (1.2): [no log message]
+
+2006-05-20 21:32  asolar
+
+	* SketchSolver/ABCSATSolver.cpp (1.8): [no log message]
+
+2006-05-18 17:33  asolar
+
+	* abc60513/: examples/ac.v (1.1), examples/apex4.pla (1.1),
+	  examples/frg2.blif (1.1), examples/i10.blif (1.1),
+	  examples/s38584.bench (1.1), examples/s444.blif (1.1),
+	  examples/s5378.blif (1.1), examples/s6669.blif (1.1),
+	  src/base/abc/abc.h (1.1), src/base/abc/abcAig.c (1.1),
+	  src/base/abc/abcCheck.c (1.1), src/base/abc/abcDfs.c (1.1),
+	  src/base/abc/abcFanio.c (1.1), src/base/abc/abcFunc.c (1.1),
+	  src/base/abc/abcInt.h (1.1), src/base/abc/abcLatch.c (1.1),
+	  src/base/abc/abcMinBase.c (1.1), src/base/abc/abcNames.c (1.1),
+	  src/base/abc/abcNetlist.c (1.1), src/base/abc/abcNtk.c (1.1),
+	  src/base/abc/abcObj.c (1.1), src/base/abc/abcRefs.c (1.1),
+	  src/base/abc/abcShow.c (1.1), src/base/abc/abcSop.c (1.1),
+	  src/base/abc/abcUtil.c (1.1), src/base/abc/abc_.c (1.1),
+	  src/base/abc/module.make (1.1), src/base/abci/abc.c (1.1),
+	  src/base/abci/abcAttach.c (1.1), src/base/abci/abcAuto.c (1.1),
+	  src/base/abci/abcBalance.c (1.1), src/base/abci/abcClpBdd.c
+	  (1.1), src/base/abci/abcClpSop.c (1.1), src/base/abci/abcCut.c
+	  (1.1), src/base/abci/abcDsd.c (1.1), src/base/abci/abcEspresso.c
+	  (1.1), src/base/abci/abcFpga.c (1.1), src/base/abci/abcFraig.c
+	  (1.1), src/base/abci/abcFxu.c (1.1), src/base/abci/abcGen.c
+	  (1.1), src/base/abci/abcIvy.c (1.1), src/base/abci/abcMap.c
+	  (1.1), src/base/abci/abcMiter.c (1.1), src/base/abci/abcNewAig.c
+	  (1.1), src/base/abci/abcNtbdd.c (1.1), src/base/abci/abcPga.c
+	  (1.1), src/base/abci/abcPrint.c (1.1), src/base/abci/abcProve.c
+	  (1.1), src/base/abci/abcReconv.c (1.1),
+	  src/base/abci/abcRefactor.c (1.1), src/base/abci/abcRenode.c
+	  (1.1), src/base/abci/abcRestruct.c (1.1),
+	  src/base/abci/abcResub.c (1.1), src/base/abci/abcRewrite.c (1.1),
+	  src/base/abci/abcRr.c (1.1), src/base/abci/abcSat.c (1.1),
+	  src/base/abci/abcStrash.c (1.1), src/base/abci/abcSweep.c (1.1),
+	  src/base/abci/abcSymm.c (1.1), src/base/abci/abcTiming.c (1.1),
+	  src/base/abci/abcTrace.c (1.1), src/base/abci/abcUnate.c (1.1),
+	  src/base/abci/abcUnreach.c (1.1), src/base/abci/abcVanEijk.c
+	  (1.1), src/base/abci/abcVanImp.c (1.1), src/base/abci/abcVerify.c
+	  (1.1), src/base/abci/abc_.c (1.1), src/base/abci/module.make
+	  (1.1), src/base/io/io.c (1.1), src/base/io/io.h (1.1),
+	  src/base/io/ioInt.h (1.1), src/base/io/ioRead.c (1.1),
+	  src/base/io/ioReadBaf.c (1.1), src/base/io/ioReadBench.c (1.1),
+	  src/base/io/ioReadBlif.c (1.1), src/base/io/ioReadEdif.c (1.1),
+	  src/base/io/ioReadEqn.c (1.1), src/base/io/ioReadPla.c (1.1),
+	  src/base/io/ioReadVerilog.c (1.1), src/base/io/ioUtil.c (1.1),
+	  src/base/io/ioWriteBaf.c (1.1), src/base/io/ioWriteBench.c (1.1),
+	  src/base/io/ioWriteBlif.c (1.1), src/base/io/ioWriteCnf.c (1.1),
+	  src/base/io/ioWriteDot.c (1.1), src/base/io/ioWriteEqn.c (1.1),
+	  src/base/io/ioWriteGml.c (1.1), src/base/io/ioWriteList.c (1.1),
+	  src/base/io/ioWritePla.c (1.1), src/base/io/ioWriteVer.c (1.1),
+	  src/base/io/ioWriteVerAux.c (1.1), src/base/io/module.make (1.1),
+	  src/base/seq/module.make (1.1), src/base/seq/seq.h (1.1),
+	  src/base/seq/seqAigCore.c (1.1), src/base/seq/seqAigIter.c (1.1),
+	  src/base/seq/seqCreate.c (1.1), src/base/seq/seqFpgaCore.c (1.1),
+	  src/base/seq/seqFpgaIter.c (1.1), src/base/seq/seqInt.h (1.1),
+	  src/base/seq/seqLatch.c (1.1), src/base/seq/seqMan.c (1.1),
+	  src/base/seq/seqMapCore.c (1.1), src/base/seq/seqMapIter.c (1.1),
+	  src/base/seq/seqRetCore.c (1.1), src/base/seq/seqRetIter.c (1.1),
+	  src/base/seq/seqShare.c (1.1), src/base/seq/seqUtil.c (1.1),
+	  src/bdd/cudd/cuBdd.make (1.1), src/bdd/cudd/cudd.h (1.1),
+	  src/bdd/cudd/cudd.make (1.1), src/bdd/cudd/cuddAPI.c (1.1),
+	  src/bdd/cudd/cuddAddAbs.c (1.1), src/bdd/cudd/cuddAddApply.c
+	  (1.1), src/bdd/cudd/cuddAddFind.c (1.1),
+	  src/bdd/cudd/cuddAddInv.c (1.1), src/bdd/cudd/cuddAddIte.c (1.1),
+	  src/bdd/cudd/cuddAddNeg.c (1.1), src/bdd/cudd/cuddAddWalsh.c
+	  (1.1), src/bdd/cudd/cuddAndAbs.c (1.1), src/bdd/cudd/cuddAnneal.c
+	  (1.1), src/bdd/cudd/cuddApa.c (1.1), src/bdd/cudd/cuddApprox.c
+	  (1.1), src/bdd/cudd/cuddBddAbs.c (1.1),
+	  src/bdd/cudd/cuddBddCorr.c (1.1), src/bdd/cudd/cuddBddIte.c
+	  (1.1), src/bdd/cudd/cuddBridge.c (1.1), src/bdd/cudd/cuddCache.c
+	  (1.1), src/bdd/cudd/cuddCheck.c (1.1), src/bdd/cudd/cuddClip.c
+	  (1.1), src/bdd/cudd/cuddCof.c (1.1), src/bdd/cudd/cuddCompose.c
+	  (1.1), src/bdd/cudd/cuddDecomp.c (1.1), src/bdd/cudd/cuddEssent.c
+	  (1.1), src/bdd/cudd/cuddExact.c (1.1), src/bdd/cudd/cuddExport.c
+	  (1.1), src/bdd/cudd/cuddGenCof.c (1.1),
+	  src/bdd/cudd/cuddGenetic.c (1.1), src/bdd/cudd/cuddGroup.c (1.1),
+	  src/bdd/cudd/cuddHarwell.c (1.1), src/bdd/cudd/cuddInit.c (1.1),
+	  src/bdd/cudd/cuddInt.h (1.1), src/bdd/cudd/cuddInteract.c (1.1),
+	  src/bdd/cudd/cuddLCache.c (1.1), src/bdd/cudd/cuddLevelQ.c (1.1),
+	  src/bdd/cudd/cuddLinear.c (1.1), src/bdd/cudd/cuddLiteral.c
+	  (1.1), src/bdd/cudd/cuddMatMult.c (1.1),
+	  src/bdd/cudd/cuddPriority.c (1.1), src/bdd/cudd/cuddRead.c (1.1),
+	  src/bdd/cudd/cuddRef.c (1.1), src/bdd/cudd/cuddReorder.c (1.1),
+	  src/bdd/cudd/cuddSat.c (1.1), src/bdd/cudd/cuddSign.c (1.1),
+	  src/bdd/cudd/cuddSolve.c (1.1), src/bdd/cudd/cuddSplit.c (1.1),
+	  src/bdd/cudd/cuddSubsetHB.c (1.1), src/bdd/cudd/cuddSubsetSP.c
+	  (1.1), src/bdd/cudd/cuddSymmetry.c (1.1),
+	  src/bdd/cudd/cuddTable.c (1.1), src/bdd/cudd/cuddUtil.c (1.1),
+	  src/bdd/cudd/cuddWindow.c (1.1), src/bdd/cudd/cuddZddCount.c
+	  (1.1), src/bdd/cudd/cuddZddFuncs.c (1.1),
+	  src/bdd/cudd/cuddZddGroup.c (1.1), src/bdd/cudd/cuddZddIsop.c
+	  (1.1), src/bdd/cudd/cuddZddLin.c (1.1),
+	  src/bdd/cudd/cuddZddMisc.c (1.1), src/bdd/cudd/cuddZddPort.c
+	  (1.1), src/bdd/cudd/cuddZddReord.c (1.1),
+	  src/bdd/cudd/cuddZddSetop.c (1.1), src/bdd/cudd/cuddZddSymm.c
+	  (1.1), src/bdd/cudd/cuddZddUtil.c (1.1), src/bdd/cudd/module.make
+	  (1.1), src/bdd/cudd/r7x8.1.mat (1.1), src/bdd/cudd/testcudd.c
+	  (1.1), src/bdd/dsd/dsd.h (1.1), src/bdd/dsd/dsdApi.c (1.1),
+	  src/bdd/dsd/dsdCheck.c (1.1), src/bdd/dsd/dsdInt.h (1.1),
+	  src/bdd/dsd/dsdLocal.c (1.1), src/bdd/dsd/dsdMan.c (1.1),
+	  src/bdd/dsd/dsdProc.c (1.1), src/bdd/dsd/dsdTree.c (1.1),
+	  src/bdd/dsd/module.make (1.1), src/bdd/reo/module.make (1.1),
+	  src/bdd/reo/reo.h (1.1), src/bdd/reo/reoApi.c (1.1),
+	  src/bdd/reo/reoCore.c (1.1), src/bdd/reo/reoProfile.c (1.1),
+	  src/bdd/reo/reoSift.c (1.1), src/bdd/reo/reoSwap.c (1.1),
+	  src/bdd/reo/reoTest.c (1.1), src/bdd/reo/reoTransfer.c (1.1),
+	  src/bdd/reo/reoUnits.c (1.1), src/map/fpga/fpga.c (1.1),
+	  src/map/fpga/fpga.h (1.1), src/map/fpga/fpgaCore.c (1.1),
+	  src/map/fpga/fpgaCreate.c (1.1), src/map/fpga/fpgaCut.c (1.1),
+	  src/map/fpga/fpgaCutUtils.c (1.1), src/map/fpga/fpgaFanout.c
+	  (1.1), src/map/fpga/fpgaGENERIC.c (1.1), src/map/fpga/fpgaInt.h
+	  (1.1), src/map/fpga/fpgaLib.c (1.1), src/map/fpga/fpgaMatch.c
+	  (1.1), src/map/fpga/fpgaSwitch.c (1.1), src/map/fpga/fpgaTime.c
+	  (1.1), src/map/fpga/fpgaTruth.c (1.1), src/map/fpga/fpgaUtils.c
+	  (1.1), src/map/fpga/fpgaVec.c (1.1), src/map/fpga/module.make
+	  (1.1), src/map/mapper/mapper.c (1.1), src/map/mapper/mapper.h
+	  (1.1), src/map/mapper/mapperCanon.c (1.1),
+	  src/map/mapper/mapperCore.c (1.1), src/map/mapper/mapperCreate.c
+	  (1.1), src/map/mapper/mapperCut.c (1.1),
+	  src/map/mapper/mapperCutUtils.c (1.1),
+	  src/map/mapper/mapperFanout.c (1.1),
+	  src/map/mapper/mapperGENERIC.c (1.1), src/map/mapper/mapperInt.h
+	  (1.1), src/map/mapper/mapperLib.c (1.1),
+	  src/map/mapper/mapperMatch.c (1.1), src/map/mapper/mapperRefs.c
+	  (1.1), src/map/mapper/mapperSuper.c (1.1),
+	  src/map/mapper/mapperSwitch.c (1.1), src/map/mapper/mapperTable.c
+	  (1.1), src/map/mapper/mapperTime.c (1.1),
+	  src/map/mapper/mapperTree.c (1.1), src/map/mapper/mapperTruth.c
+	  (1.1), src/map/mapper/mapperUtils.c (1.1),
+	  src/map/mapper/mapperVec.c (1.1), src/map/mapper/module.make
+	  (1.1), src/misc/espresso/cofactor.c (1.1),
+	  src/misc/espresso/cols.c (1.1), src/misc/espresso/compl.c (1.1),
+	  src/misc/espresso/contain.c (1.1), src/misc/espresso/cubehack.c
+	  (1.1), src/misc/espresso/cubestr.c (1.1),
+	  src/misc/espresso/cvrin.c (1.1), src/misc/espresso/cvrm.c (1.1),
+	  src/misc/espresso/cvrmisc.c (1.1), src/misc/espresso/cvrout.c
+	  (1.1), src/misc/espresso/dominate.c (1.1),
+	  src/misc/espresso/equiv.c (1.1), src/misc/espresso/espresso.c
+	  (1.1), src/misc/espresso/espresso.h (1.1),
+	  src/misc/espresso/essen.c (1.1), src/misc/espresso/exact.c (1.1),
+	  src/misc/espresso/expand.c (1.1), src/misc/espresso/gasp.c (1.1),
+	  src/misc/espresso/gimpel.c (1.1), src/misc/espresso/globals.c
+	  (1.1), src/misc/espresso/hack.c (1.1), src/misc/espresso/indep.c
+	  (1.1), src/misc/espresso/irred.c (1.1), src/misc/espresso/main.c
+	  (1.1), src/misc/espresso/main.h (1.1), src/misc/espresso/map.c
+	  (1.1), src/misc/espresso/matrix.c (1.1),
+	  src/misc/espresso/mincov.c (1.1), src/misc/espresso/mincov.h
+	  (1.1), src/misc/espresso/mincov_int.h (1.1),
+	  src/misc/espresso/module.make (1.1), src/misc/espresso/opo.c
+	  (1.1), src/misc/espresso/pair.c (1.1), src/misc/espresso/part.c
+	  (1.1), src/misc/espresso/primes.c (1.1),
+	  src/misc/espresso/reduce.c (1.1), src/misc/espresso/rows.c (1.1),
+	  src/misc/espresso/set.c (1.1), src/misc/espresso/setc.c (1.1),
+	  src/misc/espresso/sharp.c (1.1), src/misc/espresso/sminterf.c
+	  (1.1), src/misc/espresso/solution.c (1.1),
+	  src/misc/espresso/sparse.c (1.1), src/misc/espresso/sparse.h
+	  (1.1), src/misc/espresso/sparse_int.h (1.1),
+	  src/misc/espresso/unate.c (1.1), src/misc/espresso/util_old.h
+	  (1.1), src/misc/espresso/verify.c (1.1), src/misc/nm/module.make
+	  (1.1), src/misc/nm/nm.h (1.1), src/misc/nm/nmApi.c (1.1),
+	  src/misc/nm/nmInt.h (1.1), src/misc/nm/nmTable.c (1.1),
+	  src/misc/util/leaks.h (1.1), src/misc/util/module.make (1.1),
+	  src/misc/util/stdlib_hack.h (1.1), src/misc/util/util_hack.h
+	  (1.1), src/opt/cut/Abc_NtkFindCi.c (1.1), src/opt/cut/cut.h
+	  (1.1), src/opt/cut/cutApi.c (1.1), src/opt/cut/cutCut.c (1.1),
+	  src/opt/cut/cutExpand.c (1.1), src/opt/cut/cutInt.h (1.1),
+	  src/opt/cut/cutList.h (1.1), src/opt/cut/cutMan.c (1.1),
+	  src/opt/cut/cutMerge.c (1.1), src/opt/cut/cutNode.c (1.1),
+	  src/opt/cut/cutOracle.c (1.1), src/opt/cut/cutPre22.c (1.1),
+	  src/opt/cut/cutSeq.c (1.1), src/opt/cut/cutTruth.c (1.1),
+	  src/opt/cut/module.make (1.1), src/opt/dec/dec.h (1.1),
+	  src/opt/dec/decAbc.c (1.1), src/opt/dec/decFactor.c (1.1),
+	  src/opt/dec/decMan.c (1.1), src/opt/dec/decPrint.c (1.1),
+	  src/opt/dec/decUtil.c (1.1), src/opt/dec/module.make (1.1),
+	  src/opt/fxu/fxu.c (1.1), src/opt/fxu/fxu.h (1.1),
+	  src/opt/fxu/fxuCreate.c (1.1), src/opt/fxu/fxuHeapD.c (1.1),
+	  src/opt/fxu/fxuHeapS.c (1.1), src/opt/fxu/fxuInt.h (1.1),
+	  src/opt/fxu/fxuList.c (1.1), src/opt/fxu/fxuMatrix.c (1.1),
+	  src/opt/fxu/fxuPair.c (1.1), src/opt/fxu/fxuPrint.c (1.1),
+	  src/opt/fxu/fxuReduce.c (1.1), src/opt/fxu/fxuSelect.c (1.1),
+	  src/opt/fxu/fxuSingle.c (1.1), src/opt/fxu/fxuUpdate.c (1.1),
+	  src/opt/fxu/module.make (1.1), src/opt/rwr/module.make (1.1),
+	  src/opt/rwr/rwr.h (1.1), src/opt/rwr/rwrDec.c (1.1),
+	  src/opt/rwr/rwrEva.c (1.1), src/opt/rwr/rwrExp.c (1.1),
+	  src/opt/rwr/rwrLib.c (1.1), src/opt/rwr/rwrMan.c (1.1),
+	  src/opt/rwr/rwrPrint.c (1.1), src/opt/rwr/rwrTemp.c (1.1),
+	  src/opt/rwr/rwrUtil.c (1.1), src/opt/sim/module.make (1.1),
+	  src/opt/sim/sim.h (1.1), src/opt/sim/simMan.c (1.1),
+	  src/opt/sim/simSat.c (1.1), src/opt/sim/simSeq.c (1.1),
+	  src/opt/sim/simSupp.c (1.1), src/opt/sim/simSwitch.c (1.1),
+	  src/opt/sim/simSym.c (1.1), src/opt/sim/simSymSat.c (1.1),
+	  src/opt/sim/simSymSim.c (1.1), src/opt/sim/simSymStr.c (1.1),
+	  src/opt/sim/simUtils.c (1.1), src/sat/aig/aig.h (1.1),
+	  src/sat/aig/aigBalance.c (1.1), src/sat/aig/aigCheck.c (1.1),
+	  src/sat/aig/aigFanout.c (1.1), src/sat/aig/aigMan.c (1.1),
+	  src/sat/aig/aigMem.c (1.1), src/sat/aig/aigNode.c (1.1),
+	  src/sat/aig/aigOper.c (1.1), src/sat/aig/aigReplace.c (1.1),
+	  src/sat/aig/aigTable.c (1.1), src/sat/aig/aigUtil.c (1.1),
+	  src/sat/aig/fraigClass.c (1.1), src/sat/aig/fraigCnf.c (1.1),
+	  src/sat/aig/fraigCore.c (1.1), src/sat/aig/fraigEngine.c (1.1),
+	  src/sat/aig/fraigProve.c (1.1), src/sat/aig/fraigSim.c (1.1),
+	  src/sat/aig/fraigSolver.c (1.1), src/sat/aig/fraigTrav.c (1.1),
+	  src/sat/aig/rwrMffc.c (1.1), src/sat/aig/rwrTruth.c (1.1),
+	  src/sat/aig/rwr_.c (1.1), src/sat/asat/added.c (1.1),
+	  src/sat/asat/asatmem.c (1.1), src/sat/asat/asatmem.h (1.1),
+	  src/sat/asat/jfront.c (1.1), src/sat/asat/main.c (1.1),
+	  src/sat/asat/module.make (1.1), src/sat/asat/solver.c (1.1),
+	  src/sat/asat/solver.h (1.1), src/sat/asat/solver_vec.h (1.1),
+	  src/sat/fraig/fraig.h (1.1), src/sat/fraig/fraigApi.c (1.1),
+	  src/sat/fraig/fraigCanon.c (1.1), src/sat/fraig/fraigFanout.c
+	  (1.1), src/sat/fraig/fraigFeed.c (1.1), src/sat/fraig/fraigInt.h
+	  (1.1), src/sat/fraig/fraigMan.c (1.1), src/sat/fraig/fraigMem.c
+	  (1.1), src/sat/fraig/fraigNode.c (1.1),
+	  src/sat/fraig/fraigPrime.c (1.1), src/sat/fraig/fraigSat.c (1.1),
+	  src/sat/fraig/fraigTable.c (1.1), src/sat/fraig/fraigUtil.c
+	  (1.1), src/sat/fraig/fraigVec.c (1.1), src/sat/fraig/module.make
+	  (1.1), Makefile (1.1), abc.dsp (1.1), abc.dsw (1.1), abc.rc
+	  (1.1), abclib.dsp (1.1), abclib.dsw (1.1), abctestlib.dsp (1.1),
+	  abctestlib.dsw (1.1), copyright.txt (1.1), demo.c (1.1),
+	  depends.sh (1.1), readme (1.1), regtest.script (1.1),
+	  regtest_output.txt (1.1), regtest_output2.txt (1.1), todo.txt
+	  (1.1), examples/C2670.blif (1.1), examples/pj1.blif (1.1),
+	  examples/s38417.blif (1.1), src/generic.c (1.1), src/generic.h
+	  (1.1), src/base/cmd/cmd.c (1.1), src/base/cmd/cmd.h (1.1),
+	  src/base/cmd/cmdAlias.c (1.1), src/base/cmd/cmdApi.c (1.1),
+	  src/base/cmd/cmdFlag.c (1.1), src/base/cmd/cmdHist.c (1.1),
+	  src/base/cmd/cmdInt.h (1.1), src/base/cmd/cmdUtils.c (1.1),
+	  src/base/cmd/module.make (1.1), src/base/main/libSupport.c (1.1),
+	  src/base/main/main.c (1.1), src/base/main/main.h (1.1),
+	  src/base/main/mainFrame.c (1.1), src/base/main/mainInit.c (1.1),
+	  src/base/main/mainInt.h (1.1), src/base/main/mainUtils.c (1.1),
+	  src/base/main/module.make (1.1), src/bdd/epd/epd.c (1.1),
+	  src/bdd/epd/epd.h (1.1), src/bdd/epd/module.make (1.1),
+	  src/bdd/mtr/module.make (1.1), src/bdd/mtr/mtr.h (1.1),
+	  src/bdd/mtr/mtrBasic.c (1.1), src/bdd/mtr/mtrGroup.c (1.1),
+	  src/bdd/mtr/mtrInt.h (1.1), src/bdd/parse/module.make (1.1),
+	  src/bdd/parse/parse.h (1.1), src/bdd/parse/parseCore.c (1.1),
+	  src/bdd/parse/parseInt.h (1.1), src/bdd/parse/parseStack.c (1.1),
+	  src/map/mio/mio.c (1.1), src/map/mio/mio.h (1.1),
+	  src/map/mio/mioApi.c (1.1), src/map/mio/mioFunc.c (1.1),
+	  src/map/mio/mioGENERIC.c (1.1), src/map/mio/mioInt.h (1.1),
+	  src/map/mio/mioRead.c (1.1), src/map/mio/mioUtils.c (1.1),
+	  src/map/mio/module.make (1.1), src/map/pga/module.make (1.1),
+	  src/map/pga/pga.h (1.1), src/map/pga/pgaCore.c (1.1),
+	  src/map/pga/pgaInt.h (1.1), src/map/pga/pgaMan.c (1.1),
+	  src/map/pga/pgaMatch.c (1.1), src/map/pga/pgaUtil.c (1.1),
+	  src/map/super/module.make (1.1), src/map/super/super.c (1.1),
+	  src/map/super/super.h (1.1), src/map/super/superAnd.c (1.1),
+	  src/map/super/superGENERIC.c (1.1), src/map/super/superGate.c
+	  (1.1), src/map/super/superInt.h (1.1), src/map/super/superWrite.c
+	  (1.1), src/misc/extra/extra.h (1.1),
+	  src/misc/extra/extraBddAuto.c (1.1),
+	  src/misc/extra/extraBddKmap.c (1.1),
+	  src/misc/extra/extraBddMisc.c (1.1),
+	  src/misc/extra/extraBddSymm.c (1.1),
+	  src/misc/extra/extraBddUnate.c (1.1), src/misc/extra/extraUtil.h
+	  (1.1), src/misc/extra/extraUtilBitMatrix.c (1.1),
+	  src/misc/extra/extraUtilCanon.c (1.1),
+	  src/misc/extra/extraUtilFile.c (1.1),
+	  src/misc/extra/extraUtilMemory.c (1.1),
+	  src/misc/extra/extraUtilMisc.c (1.1),
+	  src/misc/extra/extraUtilProgress.c (1.1),
+	  src/misc/extra/extraUtilReader.c (1.1),
+	  src/misc/extra/extraUtilTruth.c (1.1),
+	  src/misc/extra/extraUtilUtil.c (1.1), src/misc/extra/module.make
+	  (1.1), src/misc/mvc/module.make (1.1), src/misc/mvc/mvc.c (1.1),
+	  src/misc/mvc/mvc.h (1.1), src/misc/mvc/mvcApi.c (1.1),
+	  src/misc/mvc/mvcCompare.c (1.1), src/misc/mvc/mvcContain.c (1.1),
+	  src/misc/mvc/mvcCover.c (1.1), src/misc/mvc/mvcCube.c (1.1),
+	  src/misc/mvc/mvcDivide.c (1.1), src/misc/mvc/mvcDivisor.c (1.1),
+	  src/misc/mvc/mvcList.c (1.1), src/misc/mvc/mvcLits.c (1.1),
+	  src/misc/mvc/mvcMan.c (1.1), src/misc/mvc/mvcOpAlg.c (1.1),
+	  src/misc/mvc/mvcOpBool.c (1.1), src/misc/mvc/mvcPrint.c (1.1),
+	  src/misc/mvc/mvcSort.c (1.1), src/misc/mvc/mvcUtils.c (1.1),
+	  src/misc/st/module.make (1.1), src/misc/st/st.c (1.1),
+	  src/misc/st/st.h (1.1), src/misc/st/stmm.c (1.1),
+	  src/misc/st/stmm.h (1.1), src/misc/vec/module.make (1.1),
+	  src/misc/vec/vec.h (1.1), src/misc/vec/vecInt.h (1.1),
+	  src/misc/vec/vecPtr.h (1.1), src/misc/vec/vecStr.h (1.1),
+	  src/misc/vec/vecVec.h (1.1), src/sat/csat/csat_apis.c (1.1),
+	  src/sat/csat/csat_apis.h (1.1), src/sat/csat/module.make (1.1),
+	  src/sat/ivy/ivy.h (1.1), src/sat/ivy/ivyFanout.c (1.1),
+	  src/sat/ivy/ivyMan.c (1.1), src/sat/ivy/ivyObj.c (1.1),
+	  src/sat/ivy/ivyOper.c (1.1), src/sat/ivy/ivyTable.c (1.1),
+	  src/sat/ivy/ivyUtil.c (1.1), src/sat/ivy/ivy_.c (1.1),
+	  src/sat/msat/module.make (1.1), src/sat/msat/msat.h (1.1),
+	  src/sat/msat/msatActivity.c (1.1), src/sat/msat/msatClause.c
+	  (1.1), src/sat/msat/msatClauseVec.c (1.1), src/sat/msat/msatInt.h
+	  (1.1), src/sat/msat/msatMem.c (1.1), src/sat/msat/msatOrderH.c
+	  (1.1), src/sat/msat/msatOrderJ.c (1.1), src/sat/msat/msatQueue.c
+	  (1.1), src/sat/msat/msatRead.c (1.1),
+	  src/sat/msat/msatSolverApi.c (1.1), src/sat/msat/msatSolverCore.c
+	  (1.1), src/sat/msat/msatSolverIo.c (1.1),
+	  src/sat/msat/msatSolverSearch.c (1.1), src/sat/msat/msatSort.c
+	  (1.1), src/sat/msat/msatVec.c (1.1): Another copy of ABC. This
+	  one is 64 bit compliant.
+
+2006-05-05 19:26  tag ABC_STABLE_1
+
+2006-05-05 19:26  asolar
+
+	* SketchSolver/: InputParser/driver.cpp (1.24), InputParser/input.y
+	  (1.25), InputParser/SolveFromInput.cpp (1.37), ABCSATSolver.cpp
+	  (1.7), ABCSATSolver.h (1.6), BooleanToCNF.h (1.23), SATSolver.h
+	  (1.14), ZchaffSATSolver.h (1.2): Fixed a couple of bugs
+
+2006-05-02 00:25  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.6), ABCSATSolver.h (1.5),
+	  BooleanToCNF.h (1.22), FindCheckSolver.cpp (1.23),
+	  FindCheckSolver.h (1.12), SATSolver.cpp (1.4), SATSolver.h
+	  (1.13), ZchaffSATSolver.cpp (1.1), ZchaffSATSolver.h (1.1):
+	  Modified to use a pure-virtual class to allow asymetric
+	  synthesizer/verifier.
+
+2006-05-02 00:24  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.36),
+	  SolveFromInput.h (1.17): [no log message]
+
+2006-05-02 00:23  asolar
+
+	* SketchSolver/InputParser/input.y (1.24): Fixed a bug
+
+2006-05-02 00:23  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.23): Combined Zchaff/abc
+	  solver
+
+2006-04-28 19:21  asolar
+
+	* SketchSolver/ABCSATSolver.cpp (1.5): abc works
+
+2006-04-28 19:03  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.4), ABCSATSolver.h (1.4),
+	  SATSolver.h (1.12), timerclass.h (1.1), InputParser/Makefile
+	  (1.15), InputParser/SolveFromInput.cpp (1.35): abc works
+
+2006-04-26 17:09  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.34): [no log
+	  message]
+
+2006-04-26 16:41  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.21): Fixed a serious bug
+
+2006-04-26 16:41  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.3), ABCSATSolver.h (1.3),
+	  InputParser/SolveFromInput.cpp (1.33): [no log message]
+
+2006-04-24 18:32  asolar
+
+	* SketchSolver/InputParser/Makefile (1.14): Makefile for abc
+
+2006-04-24 18:31  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.2), ABCSATSolver.h (1.2): [no
+	  log message]
+
+2006-04-17 21:58  asolar
+
+	* SketchSolver/: BooleanToCNF.cpp (1.5), BooleanToCNF.h (1.20),
+	  FindCheckSolver.cpp (1.22), SATSolver.h (1.11),
+	  InputParser/driver.cpp (1.22), InputParser/SolveFromInput.cpp
+	  (1.32): Modified to ease interfacing with abc
+
+2006-04-17 21:58  asolar
+
+	* SketchSolver/: ABCSATSolver.cpp (1.1), ABCSATSolver.h (1.1):
+	  Interface to abc
+
+2006-03-15 20:00  asolar
+
+	* zchaff/: zchaff_dbase.cpp (1.2), zchaff_dbase.cpp (1.3): Fixed a
+	  bug
+
+2006-03-15 12:54  asolar
+
+	* SketchSolver/SATSolver.h (1.10): Major change to force the solver
+	  to rebuild the verifyer every time.
+
+2006-03-15 11:56  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.19), FindCheckSolver.cpp (1.21),
+	  FindCheckSolver.h (1.11), SATSolver.h (1.9),
+	  InputParser/SolveFromInput.cpp (1.31),
+	  InputParser/SolveFromInput.h (1.16): Major change to force the
+	  solver to rebuild the verifyer every time.
+
+2006-03-12 15:49  asolar
+
+	* SketchSolver/SATSolver.h (1.8): Added memory monitor
+
+2006-03-09 23:40  asolar
+
+	* SketchSolver/: BooleanToCNF.cpp (1.4), BooleanToCNF.h (1.18),
+	  FindCheckSolver.cpp (1.20), SATSolver.cpp (1.3), SATSolver.h
+	  (1.7), InputParser/SolveFromInput.cpp (1.30): [no log message]
+
+2006-03-08 18:40  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.29): Rolling back
+	  failed optimization
+
+2006-03-08 18:16  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.28): [no log
+	  message]
+
+2006-03-08 16:59  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.27): Experimental
+	  optimization of the code.
+
+2006-03-08 14:24  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.19): [no log message]
+
+2006-03-07 18:53  asolar
+
+	* SketchSolver/InputParser/input.y (1.23): Fixed a bug
+
+2006-03-07 18:53  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.26): [no log
+	  message]
+
+2006-03-05 19:28  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.18), SATSolver.h (1.6),
+	  InputParser/SolveFromInput.cpp (1.25): Optimizing it to produce
+	  much fewer CNF clauses.
+
+2006-03-04 17:32  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.24): Optimizing it
+	  to produce much fewer CNF clauses.
+
+2006-03-04 17:31  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.21): [no log message]
+
+2006-03-03 15:32  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.23): [no log
+	  message]
+
+2006-03-03 15:32  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.17), FindCheckSolver.cpp (1.17),
+	  FindCheckSolver.h (1.10), SATSolver.cpp (1.2), SATSolver.h (1.5):
+	  Improved constant propagation
+
+2006-03-02 01:17  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.16): [no log message]
+
+2006-02-28 19:04  asolar
+
+	* SketchSolver/InputParser/: input.l (1.7), input.y (1.22),
+	  SolveFromInput.cpp (1.22): Added support for MOD and DIV
+
+2006-02-28 19:04  asolar
+
+	* SketchSolver/SATSolver.h (1.4): [no log message]
+
+2006-02-22 23:08  asolar
+
+	* SketchSolver/SATSolver.h (1.3): [no log message]
+
+2006-02-22 12:15  asolar
+
+	* SketchSolver/: InputParser/circuitToBLIF.awk (1.2),
+	  BooleanToCNF.h (1.16), SATSolver.h (1.2): [no log message]
+
+2006-02-19 20:09  asolar
+
+	* SketchSolver/: InputParser/SolveFromInput.cpp (1.21),
+	  InputParser/SolveFromInput.h (1.15), BooleanToCNF.cpp (1.3),
+	  BooleanToCNF.h (1.15), FindCheckSolver.cpp (1.15),
+	  FindCheckSolver.h (1.9), SATSolver.cpp (1.1), SATSolver.h (1.1),
+	  InputParser/Makefile (1.13): Refactored code so it's easy to
+	  experiment with different SAT solvers.
+
+2006-02-19 20:08  asolar
+
+	* SketchSolver/InputParser/circuitToBLIF.awk (1.1): Convert the
+	  circuit output to BLIF format
+
+2006-02-18 20:40  tag VERSION_0_6_5
+
+2006-02-18 20:40  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.14): [no log message]
+
+2006-02-18 20:39  asolar
+
+	* SketchSolver/InputParser/: input.y (1.21), SolveFromInput.cpp
+	  (1.20): Fixed Lot's of bugs
+
+2006-02-10 13:52  asolar
+
+	* SketchSolver/InputParser/: input.y (1.20), SolveFromInput.cpp
+	  (1.19): Added new functionality
+
+2006-01-30 10:57  tag VERSION_0_6
+
+2006-01-30 10:57  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.13), FindCheckSolver.cpp (1.14),
+	  InputParser/SolveFromInput.cpp (1.18): Trying a new optimization.
+
+2006-01-27 17:30  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.17): Added an
+	  optimization to improve constant propagation.
+
+2006-01-19 16:06  asolar
+
+	* SketchSolver/InputParser/: input.y (1.19), SolveFromInput.cpp
+	  (1.16): Made it handle arrays of integers and integers that are
+	  assigned in branches. Also fixed some bugs
+
+2006-01-19 16:05  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.12): [no log message]
+
+2005-11-28 22:50  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.20), SolveFromInput.cpp
+	  (1.15), SolveFromInput.h (1.14): [no log message]
+
+2005-11-28 22:48  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.11), FindCheckSolver.cpp (1.13),
+	  FindCheckSolver.h (1.8): Added capability to support arrays of
+	  sparse integers.
+
+2005-11-11 07:51  tag MILESTONE_2_VERSION_FROM_PAPER
+
+2005-11-11 07:51  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.12), FindCheckSolver.h
+	  (1.7), InputParser/input.y (1.18): [no log message]
+
+2005-11-10 09:32  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.10), InputParser/driver.cpp
+	  (1.19), InputParser/input.y (1.17), InputParser/InputReader.cpp
+	  (1.7), InputParser/SolveFromInput.cpp (1.14): [no log message]
+
+2005-11-08 20:04  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.9),
+	  InputParser/SolveFromInput.cpp (1.13): [no log message]
+
+2005-11-08 15:43  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.12): Bounded the
+	  Big integers.
+
+2005-11-08 15:43  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.8): Added function to efficiently
+	  create disjunctions of more than two terms.
+
+2005-11-08 10:52  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.11),
+	  SolveFromInput.h (1.13): Optimize to make it reuse subexpressions
+	  when their inputs are the same.
+
+2005-11-08 10:51  asolar
+
+	* SketchSolver/InputParser/input.y (1.16): Added support for
+	  multiplication
+
+2005-11-08 10:51  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.11): Added timing and
+	  diagnostics
+
+2005-11-07 15:17  asolar
+
+	* SketchSolver/testcases/log2.sk.tmp (1.1): Another example.
+
+2005-11-07 15:06  asolar
+
+	* SketchSolver/testcases/logCountingSketch.sk.tmp (1.1): Input that
+	  doesn't scale.
+
+2005-11-07 15:05  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.10), FindCheckSolver.h
+	  (1.6): [no log message]
+
+2005-11-03 21:26  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.h (1.12), driver.cpp
+	  (1.18): [no log message]
+
+2005-11-02 00:20  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.17), input.y (1.15),
+	  InputReader.cpp (1.6), Makefile (1.12), SolveFromInput.cpp
+	  (1.10), SolveFromInput.h (1.11): [no log message]
+
+2005-11-02 00:20  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.7), FindCheckSolver.cpp (1.9),
+	  FindCheckSolver.h (1.5): Made it so it's easier to interface with
+	  the solver from java
+
+2005-10-27 17:40  tag MILESTONE_1_ALL_VECT_OPS_WORK
+
+2005-10-27 17:40  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.6), FindCheckSolver.cpp (1.8),
+	  ltmp (1.2), tmp (1.2), tmp2 (1.2), tmp3 (1.2), tururu (1.2),
+	  InputParser/Makefile (1.11), InputParser/SolveFromInput.cpp
+	  (1.9), InputParser/SolveFromInput.h (1.10),
+	  InputParser/.cvsignore (1.1), InputParser/input.l (1.6),
+	  InputParser/input.y (1.14): [no log message]
+
+2005-10-25 18:59  asolar
+
+	* SketchSolver/compile.sh (1.1): To run the hardcoded problems
+
+2005-10-25 16:59  asolar
+
+	* .cdtproject (1.3): [no log message]
+
+2005-10-24 19:58  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.8),
+	  SolveFromInput.h (1.9): This version works for input files
+	  without vectors.
+
+2005-10-24 19:57  asolar
+
+	* SketchSolver/InputParser/: input.l (1.5), input.y (1.13),
+	  Makefile (1.10): [no log message]
+
+2005-10-21 17:25  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.cpp (1.6),
+	  SolveFromInput.cpp (1.7): [no log message]
+
+2005-10-20 19:47  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.h (1.8): [no log message]
+
+2005-10-20 19:43  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.16), SolveFromInput.h
+	  (1.7): [no log message]
+
+2005-10-20 19:37  asolar
+
+	* SketchSolver/: testcases/testArr1.str (1.5),
+	  InputParser/InputReader.cpp (1.5), InputParser/driver.cpp (1.15),
+	  InputParser/input.l (1.4), InputParser/input.y (1.12): [no log
+	  message]
+
+2005-10-20 18:35  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.7): [no log message]
+
+2005-10-20 18:32  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.6): [no log message]
+
+2005-10-20 18:25  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.5), FindCheckSolver.h
+	  (1.4), des_IP.cpp (1.2), dropThird.cpp (1.2),
+	  dropThirdComplete.cpp (1.3), logBase2.cpp (1.7), reverse.cpp
+	  (1.2), testArbitraryPerm.cpp (1.2): [no log message]
+
+2005-10-20 17:32  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.5): [no log
+	  message]
+
+2005-10-20 17:19  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.14): [no log message]
+
+2005-10-20 17:16  asolar
+
+	* SketchSolver/InputParser/SolveFromInput.cpp (1.4): [no log
+	  message]
+
+2005-10-20 17:10  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.h (1.5),
+	  SolveFromInput.cpp (1.3), SolveFromInput.h (1.6): [no log
+	  message]
+
+2005-10-20 16:25  asolar
+
+	* SketchSolver/InputParser/: SolveFromInput.h (1.4),
+	  SolveFromInput.cpp (1.2): [no log message]
+
+2005-10-20 15:12  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.12), driver.cpp (1.13),
+	  SolveFromInput.h (1.3): [no log message]
+
+2005-10-20 15:05  asolar
+
+	* SketchSolver/InputParser/: Makefile (1.9), SolveFromInput.h
+	  (1.2): [no log message]
+
+2005-10-20 15:00  asolar
+
+	* SketchSolver/InputParser/: Makefile (1.8), SolveFromInput.cpp
+	  (1.1), SolveFromInput.h (1.1), driver.cpp (1.10), driver.cpp
+	  (1.11): [no log message]
+
+2005-10-19 19:59  asolar
+
+	* SketchSolver/InputParser/: Makefile (1.7), input.y (1.11): [no
+	  log message]
+
+2005-10-19 19:53  asolar
+
+	* SketchSolver/testcases/testArr1.str (1.4): [no log message]
+
+2005-10-19 19:05  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.9): [no log message]
+
+2005-10-19 17:45  asolar
+
+	* SketchSolver/InputParser/input.y (1.10): [no log message]
+
+2005-10-19 16:57  asolar
+
+	* SketchSolver/logBase2.cpp (1.6): [no log message]
+
+2005-10-19 16:48  asolar
+
+	* SketchSolver/logBase2.cpp (1.5): [no log message]
+
+2005-10-19 16:39  asolar
+
+	* SketchSolver/logBase2.cpp (1.4): [no log message]
+
+2005-10-19 16:18  asolar
+
+	* SketchSolver/logBase2.cpp (1.3): [no log message]
+
+2005-10-19 15:50  asolar
+
+	* SketchSolver/logBase2.cpp (1.2): [no log message]
+
+2005-10-19 00:02  asolar
+
+	* SketchSolver/InputParser/input.y (1.9): [no log message]
+
+2005-10-18 23:47  asolar
+
+	* SketchSolver/InputParser/input.y (1.8): [no log message]
+
+2005-10-18 23:43  asolar
+
+	* SketchSolver/: InputParser/driver.cpp (1.8), InputParser/input.y
+	  (1.7), testcases/testArr1.str (1.3): [no log message]
+
+2005-10-18 23:30  asolar
+
+	* SketchSolver/: testcases/testArr1.str (1.2),
+	  InputParser/driver.cpp (1.7): [no log message]
+
+2005-10-18 23:27  asolar
+
+	* SketchSolver/: InputParser/driver.cpp (1.6), InputParser/input.l
+	  (1.3), testcases/testArr1.str (1.1): [no log message]
+
+2005-10-18 22:59  asolar
+
+	* SketchSolver/InputParser/: driver.cpp (1.5), Makefile (1.6): [no
+	  log message]
+
+2005-10-18 22:55  asolar
+
+	* SketchSolver/InputParser/input.l (1.2): [no log message]
+
+2005-10-18 22:50  asolar
+
+	* SketchSolver/InputParser/: InputReader.cpp (1.4), driver.cpp
+	  (1.4): [no log message]
+
+2005-10-18 22:47  asolar
+
+	* SketchSolver/InputParser/InputReader.cpp (1.3): [no log message]
+
+2005-10-18 22:24  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.3): [no log message]
+
+2005-10-18 22:15  asolar
+
+	* SketchSolver/InputParser/driver.cpp (1.2): [no log message]
+
+2005-10-18 22:10  asolar
+
+	* SketchSolver/InputParser/: input.y (1.5), input.y (1.6): [no log
+	  message]
+
+2005-10-18 22:06  asolar
+
+	* SketchSolver/InputParser/Makefile (1.5): [no log message]
+
+2005-10-18 22:02  asolar
+
+	* SketchSolver/InputParser/input.y (1.4): [no log message]
+
+2005-10-18 21:11  asolar
+
+	* SketchSolver/InputParser/: Makefile (1.3), Makefile (1.4): [no
+	  log message]
+
+2005-10-18 21:08  asolar
+
+	* SketchSolver/InputParser/: InputReader.cpp (1.2), Makefile (1.2),
+	  driver.cpp (1.1), input.y (1.3): [no log message]
+
+2005-10-18 20:37  asolar
+
+	* SketchSolver/InputParser/: InputReader.cpp (1.1), InputReader.h
+	  (1.1), Makefile (1.1), input.l (1.1), input.y (1.2): [no log
+	  message]
+
+2005-10-18 09:32  asolar
+
+	* .cdtproject (1.2), .project (1.2), test1.dimacs (1.1),
+	  SketchSolver/logBase2.cpp (1.1), SketchSolver/ltmp (1.1),
+	  SketchSolver/tmp (1.1), SketchSolver/tmp2 (1.1),
+	  SketchSolver/tmp3 (1.1), SketchSolver/tururu (1.1),
+	  SketchSolver/InputParser/input.y (1.1), zchaff/tmp (1.1),
+	  zchaff/ttmp (1.1): [no log message]
+
+2005-10-07 18:57  asolar
+
+	* SketchSolver/testArbitraryPerm.cpp (1.1): A test for the
+	  arbitrary permutation functionality.
+
+2005-10-07 18:56  asolar
+
+	* SketchSolver/: BooleanToCNF.cpp (1.2), BooleanToCNF.h (1.5),
+	  FindCheckSolver.cpp (1.4), FindCheckSolver.h (1.3), des_IP.cpp
+	  (1.1), dropThirdWloop.cpp (1.2): [no log message]
+
+2005-10-03 12:50  asolar
+
+	* SketchSolver/reverse.cpp (1.1): logarithmic bit reversal within a
+	  word.
+
+2005-09-29 19:35  asolar
+
+	* SketchSolver/: dropThirs.opt (1.3), DES_IP.opt (1.1): [no log
+	  message]
+
+2005-09-29 19:14  asolar
+
+	* SketchSolver/dropThirs.opt (1.2): [no log message]
+
+2005-09-29 18:35  asolar
+
+	* SketchSolver/dropThirs.opt (1.1): Clean text
+
+2005-09-28 19:52  asolar
+
+	* SketchSolver/BooleanToCNF.cpp (1.1), SketchSolver/BooleanToCNF.h
+	  (1.4), zchaff/SAT.h (1.3), zchaff/zchaff_cpp_wrapper.cpp (1.3):
+	  [no log message]
+
+2005-09-28 19:51  asolar
+
+	* SketchSolver/dropThirdWloop.cpp (1.1): drop third with
+	  non-deterministic loops
+
+2005-09-28 11:05  asolar
+
+	* SketchSolver/dropThirdComplete.cpp (1.2): two stage drop third.
+
+2005-09-28 10:23  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp (1.3), FindCheckSolver.h
+	  (1.2): added varios enhancements and diagnostics
+
+2005-09-28 10:22  asolar
+
+	* SketchSolver/: dropThird.cpp (1.1), dropThirdBUGGY.cpp (1.2),
+	  dropThirdComplete.cpp (1.1): different flavors of dropThird
+
+2005-09-28 10:22  asolar
+
+	* SketchSolver/driver.cpp (1.2): Minor changes
+
+2005-09-28 10:22  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.3): Added method to handle the ?:
+	  operator
+
+2005-09-23 11:54  asolar
+
+	* SketchSolver/dropThirdBUGGY.cpp (1.1): A buggy version of drop
+	  third, to explore failure behavior. For 32*3 input size, fails
+	  after anywhere from 0 to 58 iterations.
+
+2005-09-22 17:35  asolar
+
+	* SketchSolver/BooleanToCNF.h (1.2): Removed some output
+
+2005-09-22 17:35  asolar
+
+	* SketchSolver/FindCheckSolver.cpp (1.2): Fixed a small bug
+
+2005-09-21 20:11  asolar
+
+	* SketchSolver/: BooleanToCNF.h (1.1), FindCheckSolver.cpp (1.1),
+	  FindCheckSolver.h (1.1), driver.cpp (1.1): New, more modular
+	  sketcher.
+
+2005-09-21 20:10  asolar
+
+	* zchaff/zchaff_solver.cpp (1.2): Committed a hack. Will probably
+	  have to remove it at some point, once I figure out how it's
+	  supposed to work.
+
+2005-09-21 20:10  asolar
+
+	* zchaff/: driver.cpp (1.4), driver2.cpp (1.5): Moved things to
+	  header files
+
+2005-09-20 21:34  asolar
+
+	* zchaff/driver2.cpp (1.4): Works correctly for the
+	  bit-swapping.Addressed the inefficiency in the encoding of the
+	  non-det shift.
+
+2005-09-20 21:06  asolar
+
+	* zchaff/driver2.cpp (1.3): Works correctly for the bit-swapping.
+	  Uses lots of memory (390Mb) because the sketched shift is encoded
+	  very very inefficiently. Also, when you run for N*3 bits, it
+	  takes about N iterations to converge.
+
+2005-09-20 19:59  asolar
+
+	* zchaff/driver2.cpp (1.2): Fixed a bug in the shift function.
+
+2005-09-20 18:32  asolar
+
+	* zchaff/driver2.cpp (1.1): Encoded the bit swapping, but this time
+	  using helper functions. Will be changed shortly to add sketch for
+	  undefined shift ammount.
+
+2005-09-19 12:30  asolar
+
+	* zchaff/driver.cpp (1.3): Encoded the full Find/Check loop.
+	  Performs really well.
+
+2005-09-17 15:56  asolar
+
+	* zchaff/: SAT.h (1.2), zchaff_cpp_wrapper.cpp (1.2): Added a
+	  helper method, SAT_AddClauseSigned, that takes care of modifying
+	  the negation format from (ID, -ID) to (ID*2, ID*2+1) which is
+	  used internally.
+
+2005-09-17 15:53  asolar
+
+	* zchaff/driver.cpp (1.2): Sketch for swapping 2nd and 3rd bit is
+	  hardcoded in this file.
+
+2005-09-16 16:37  asolar
+
+	* .cdtproject (1.1), .project (1.1), zchaff/Makefile (1.1),
+	  zchaff/README (1.1), zchaff/SAT.h (1.1), zchaff/SAT_C.h (1.1),
+	  zchaff/cnf_stats.cpp (1.1), zchaff/driver.cpp (1.1),
+	  zchaff/run_till_fix.pl (1.1), zchaff/sat_solver.cpp (1.1),
+	  zchaff/zchaff_base.cpp (1.1), zchaff/zchaff_base.h (1.1),
+	  zchaff/zchaff_c_wrapper.cpp (1.1), zchaff/zchaff_clsgen.h (1.1),
+	  zchaff/zchaff_cpp_wrapper.cpp (1.1), zchaff/zchaff_dbase.cpp
+	  (1.1), zchaff/zchaff_dbase.h (1.1), zchaff/zchaff_header.h (1.1),
+	  zchaff/zchaff_solver.cpp (1.1), zchaff/zchaff_solver.h (1.1),
+	  zchaff/zchaff_utils.cpp (1.1), zchaff/zchaff_version.h (1.1),
+	  zchaff/zchaff_wrapper.wrp (1.1), zchaff/zminimal.cpp (1.1),
+	  zchaff/zverify_df.cpp (1.1): [no log message]
+
