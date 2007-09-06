@@ -2,53 +2,33 @@
 
 # Go to root directory.
 #
-SKSAVE="$PWD"
 cd "${0%/*}"
 SKROOT="$PWD"
 
 function quit {
   echo "failed, aborting process"
-  cd "$SKSAVE"
   exit 1
 }
 
 # Build solver(s)
 #
-echo "Building solvers..."
-# - build ABC
-cd backend/abc60513
-make clean && make libabc.a || quit
-cd "$SKROOT"
-# - build MiniSAT
-cd backend/sat2005_submission/MiniSat_submission
-make clean && make Solver.o || quit
-cd "$SKROOT"
-# - build Zchaff
-cd backend/zchaff
-g++ -O3 -c zchaff*.cpp || quit
-cd "$SKROOT"
-echo "...done"
-# - build SBitII and copy executable
-cd backend/SketchSolver/InputParser
-[ -f rules.mak ] || ln -s rules-gcc.mak rules.mak
-make clean && make || quit
+cd "$SKROOT/backend"
+./build || quit
+
+# Install SBit executable(s)
+echo "installing sbit executable..."
+cd "$SKROOT/backend/SketchSolver/InputParser"
 for EXECFILE in SBitII{,.exe}; do
   [[ -x "$EXECFILE" && \
     ! -h "$SKROOT/frontend/sbin/$EXECFILE" ]] && \
-    cp -f "$EXECFILE" "$SKROOT/frontend/sbin/"
+    cp -f "$EXECFILE" "$SKROOT/frontend/sbin/" && \
+    echo " $EXECFILE"
 done
-cd "$SKROOT"
 echo "...done"
 
 # Build frontend.
 #
-echo "Building frontend..."
-cd frontend
+cd "$SKROOT/frontend"
 ./build || quit
-cd "$SKROOT"
 echo "...done"
-
-# Restore working directory.
-#
-cd "$SKSAVE"
 
