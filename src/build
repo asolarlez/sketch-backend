@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Go to root directory.
+#
+cd "${0%/*}"
+
+function quit {
+  echo "failed, aborting process"
+  exit 1
+}
+
+# Build ABC
+#
+echo "Building ABC..."
+cd ./abc60513
+make clean && make libabc.a || quit
+cd ..
+echo "...done"
+
+# Build MiniSAT
+#
+echo "Building MiniSat..."
+cd ./sat2005_submission/MiniSat_submission
+make clean && make Solver.o || quit
+cd ../..
+echo "...done"
+
+# Build Zchaff
+#
+echo "Building Zchaff..."
+cd ./zchaff
+g++ -O3 -c zchaff*.cpp || quit
+cd ..
+echo "...done"
+
+# Build SBitII
+#
+cd ./SketchSolver/InputParser
+[ -f rules.mak ] || ln -s rules-gcc.mak rules.mak
+make clean && make || quit
+cd ../..
+echo "...done"
+
