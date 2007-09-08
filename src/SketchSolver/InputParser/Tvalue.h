@@ -478,53 +478,56 @@ public:
 
 	if (isBvect () || isBvectSigned ()) {
 	    if (size == 1 && isBvect ()) {
-		/* Argument has a single bit (unsigned). */
-		Dout (cout << "Converting " << *this << " from Bit to Sparse" << endl); 
-
-		if (id == dir.YES ){
-		    /* Bit is aliases with "true" or "false". */
-		    num_ranges.push_back (neg ? 0 : 1);
-		} else {
-		    /* Generate values for assertion / negation of single id. */
-		    num_ranges.push_back (0);
-		    num_ranges.push_back (1);
-		    int tmp = dir.newAnonymousVar (2);
-		    dir.addEqualsClause (-getId(), tmp);
-		    dir.addEqualsClause (getId(), tmp + 1);
-		    id = tmp;
-		    size = 2;
-		}
+			/* Argument has a single bit (unsigned). */
+			Dout (cout << "Converting " << *this << " from Bit to Sparse" << endl); 
+			Assert( !isBvectSigned() , "This doesn't work if it is signed");
+			if (id == dir.YES ){
+			    /* Bit is aliases with "true" or "false". */
+			    num_ranges.push_back (neg ? 0 : 1);
+			} else {
+			    /* Generate values for assertion / negation of single id. */
+			    num_ranges.push_back (0);
+			    num_ranges.push_back (1);
+			    int tmp = dir.newAnonymousVar (2);
+			    dir.addEqualsClause (-getId(), tmp);
+			    dir.addEqualsClause (getId(), tmp + 1);
+			    id = tmp;
+			    size = 2;
+			}
 	    } else {
-		/* More than one bit. */
-		Dout (cout << "Converting from BitVector" <<
-		      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
-
-		vector<int> &tmp = num_ranges;
-		vector<int> ids (size);
-		for (int i = 0; i < size; i++)
-		    ids[i] = getId (i);
-		varRange vr = dir.getSwitchVars (ids, size, tmp);
-		id = vr.varID;
-		int oldsize = size;  /* save previous size (number of bits). */
-		size = vr.range;
-
-		Assert (size == num_ranges.size (),
-			"number of variables mismatches number of sparse values");
-
-		/* If we generated values from a signed bitvector, we must adjust
-		 * them to properly represent full int-sized signed values. */
-		if (isBvectSigned ()) {
-		    /* Compute padding / testing bitmap. */
-		    unsigned int mask = ~((1 << oldsize) - 1);
-
-		    /* Pad most significant bits of resulting numbers with the bit
-		     * corresponding to each value's "signed bit". */
-		    for (int i = 0; i < size; i++) {
-			int &x = num_ranges[i];
-			if (x & mask)
-			    x |= mask;
-		    }
-		}
+			/* More than one bit. */
+			Dout (cout << "Converting from BitVector" <<
+			      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
+	
+			vector<int> &tmp = num_ranges;
+			vector<int> ids (size);
+			for (int i = 0; i < size; i++)
+			    ids[i] = getId (i);
+			varRange vr = dir.getSwitchVars (ids, size, tmp);
+			id = vr.varID;
+			int oldsize = size;  /* save previous size (number of bits). */
+			size = vr.range;
+	
+			Assert (size == num_ranges.size (),
+				"number of variables mismatches number of sparse values");			
+			/* If we generated values from a signed bitvector, we must adjust
+			 * them to properly represent full int-sized signed values. */
+			if (isBvectSigned ()) {
+				Assert( oldsize > 1, "There must be at least one bit plus the sign bit if this is to be a signed value");
+				Dout(cout<<"It is signed, so we are padding"<<endl);
+			    /* Compute padding / testing bitmap. */
+			    unsigned int mask = ~((1 << oldsize-1) - 1);
+				Dout(cout<<"Old size = "<<oldsize<<" mask = "<<hex<<mask<<dec<<endl);
+			    /* Pad most significant bits of resulting numbers with the bit
+			     * corresponding to each value's "signed bit". */
+			    for (int i = 0; i < size; i++) {
+					int &x = num_ranges[i];
+					if (x & mask){
+					    x |= mask;
+					}
+				}
+				
+			}
 	    }
 	    neg = false;
 	    type = TVAL_SPARSE;
