@@ -406,6 +406,7 @@ Expression: Term { $$ = $1; }
 }
 
 | Term '+' Term {
+	currentBD->moveNNb();
 	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::PLUS);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
