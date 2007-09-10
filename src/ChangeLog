@@ -1,3 +1,21 @@
+2007-09-09 22:09  asolar
+
+	* SketchSolver/: FindCheckSolver.cpp, FindCheckSolver.h,
+	  InputParser/DagFunctionInliner.cpp, InputParser/DagOptim.cpp,
+	  InputParser/driver.cpp, InputParser/input.l, InputParser/input.y,
+	  InputParser/NodesToSolver.cpp, InputParser/SolveFromInput.cpp
+	  (release_v_1p0.[1,1,1,1,1,1,1,2,1]): Removed useless ouptut.
+
+2007-09-09 22:09  asolar
+
+	* abc60513/src/base/main/libSupport.c (release_v_1p0.1): This
+	  change is needed to compile under cygwin.
+
+2007-09-07 19:51  asolar
+
+	* SketchSolver/InputParser/Tvalue.h (1.23): Fixed a small bug that
+	  was causing a lot of trouble.
+
 2007-09-06 16:33  arnold
 
 	* build (1.1): Updated build scripts: added separate script for
