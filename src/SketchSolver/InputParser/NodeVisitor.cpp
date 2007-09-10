@@ -1,6 +1,7 @@
 #include "NodeVisitor.h"
 #include "BooleanDAG.h"
 
+
 NodeVisitor::NodeVisitor()
 {
 }
@@ -15,7 +16,7 @@ void NodeVisitor::process(BooleanDAG& bdag){
 	int i=0;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
-		//if(i>1000){ cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl; }
+		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		

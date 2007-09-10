@@ -181,7 +181,7 @@ class INTER_node: public bool_node{
 	    if(name.size() > 0)
 	      str<<name<<"__"<<get_tname();
 	    else{      
-	      str<<"name_"<<abs(id)<<"_"<<this<<"__"<<get_tname();
+	      str<<"name_"<<abs(id)<<"_"<<"__"<<get_tname();
 	      
 	    }
 	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
@@ -509,6 +509,7 @@ class BooleanDAG
   int n_outputs;
   int n_controls;
   int new_names;
+  int new_namesb;
 
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
@@ -604,9 +605,14 @@ public:
     return aliasmap[s];
   }
 
+  void moveNNb(){
+  	new_namesb++;
+  	new_names = 0;
+  }
+
   string new_name(){
     stringstream str;
-    str<<"TNM_"<<new_names<<"____";
+    str<<"TNM_"<<new_namesb<<"_"<<new_names<<"___";
     ++new_names;
     return str.str();
   }
@@ -615,7 +621,7 @@ public:
  		return new_name();	
  	}else{
 	    stringstream str;
-	    str<<base.substr(0,4)<<new_names<<"____";
+	    str<<base.substr(0,4)<<new_namesb<<"_"<<new_names<<"____";
 	    ++new_names;
 	    return str.str();
  	}

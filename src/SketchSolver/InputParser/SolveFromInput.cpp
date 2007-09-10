@@ -44,7 +44,8 @@ Dout( cout<<"START CONSTRUCTOR"<<endl );
 	Nout = spec_p->get_n_outputs();
 	cout<<"  Nout="<<Nout<<"  N="<<N<<endl;
 	cout<<"* NINPUTS = "<<NINPUTS<<endl;
-	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;	
+	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
+
 Dout( cout<<"BEFORE CLEANUP"<<endl );
   	sketch_p->cleanup(false);
   	spec_p->cleanup(false);
@@ -149,18 +150,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			}
 			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
 		}
-		/*
-		{
-			cout<<"SPEC: "<<endl;
-			DagCSE dcse(*spec_p);
-			dcse.eliminateCSE();
-		}
-		{
-			cout<<"SKETCH: "<<endl;
-			DagCSE dcse(*sketch_p);
-			dcse.eliminateCSE();
-		}
-		*/
+		
 		{
 			DagElimUFUN eufun;	
 			eufun.process(*spec_p);
@@ -189,22 +179,9 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			DagOptim cse(*problem);	
 			//cse.alterARRACS();
 			cse.process(*problem);
-		}
-		/* 
-		problem->cleanup(false);
-		problem->sort_graph();
-		problem->relabel();
-		*/	
-		/*
-		{
-			DagCSE cse(*problem);
-			cse.eliminateCSE();
-			
-		}
-		*/
+		}		
 		
-		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;	
-		
+		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;		
 		Dout( problem->print(cout) );
 	}
 	

@@ -13,9 +13,10 @@ DagOptim::~DagOptim()
 CONST_node* DagOptim::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
-		cnode->id = newnodes.size() + dagsize;
+		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[val] = cnode;
+		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
 		return cnode;
 	}else{
 		return cnmap[val];	
@@ -105,6 +106,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->father = fafa;
 			pnode->addToParents();
 			pnode->id = newnodes.size() + dagsize;
+			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 			newnodes.push_back(pnode);
 			rvalue  = pnode;
 			visit(*pnode);
@@ -129,6 +131,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->father = getCnode(0);
 			pnode->addToParents();
 			pnode->id = newnodes.size() + dagsize;
+			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 			newnodes.push_back(pnode);
 			rvalue  = pnode;
 			visit(*pnode);			
@@ -153,6 +156,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = getCnode(0);
 			pnode->addToParents();
 			pnode->id = newnodes.size() + dagsize;
+			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 			newnodes.push_back(pnode);
 			rvalue  = pnode;
 			visit(*pnode);			
@@ -400,6 +404,7 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
 					pnode->id = newnodes.size() + dagsize;
+					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 					newnodes.push_back(pnode);
 					rvalue  = pnode;
 					return;
@@ -413,6 +418,7 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->father = fathernode.father;
 					pnode->addToParents();
 					pnode->id = newnodes.size() + dagsize;
+					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 					newnodes.push_back(pnode);
 					rvalue  = pnode;
 					return;
@@ -494,6 +500,7 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
 					pnode->id = newnodes.size() + dagsize;
+					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
 					newnodes.push_back(pnode);
 				}
 			
@@ -685,6 +692,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->mother = node.father;
 				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
 				newnodes.push_back(nt);
 				nt->accept(*this);
 				return;	
@@ -708,6 +716,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->mother = node.mother;
 				nt->addToParents();
 				nt->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
 				newnodes.push_back(nt);
 				nt->accept(*this);
 				return;	
@@ -790,6 +799,7 @@ void DagOptim::visit( ARRACC_node& node ){
 						nt->mother = node.mother;
 						nt->addToParents();
 						nt->id = newnodes.size() + dagsize;
+						Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
 						newnodes.push_back(nt);
 						nt->accept(*this);
 						return;
@@ -805,6 +815,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->father = node.multi_mother[1];
 				an->addToParents();
 				an->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
 				newnodes.push_back(an);
 				an->accept(*this);
 				return;
@@ -821,6 +832,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->father = node.multi_mother[0];
 				an->addToParents();
 				an->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
 				newnodes.push_back(an);
 				an->accept(*this);
 				return;
@@ -835,6 +847,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->father = node.multi_mother[1];
 				an->addToParents();
 				an->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
 				newnodes.push_back(an);
 				an->accept(*this);
 				return;
@@ -854,6 +867,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->father = mm1 .mother;
 				an->addToParents();
 				an->id = newnodes.size() + dagsize;
+				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
 				newnodes.push_back(an);
 				
 				an->accept(cse);
@@ -922,7 +936,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->addToParents();
 				an->id = newnodes.size() + dagsize;
 				newnodes.push_back(an);
-				
+				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
 				an->accept(cse);
 				if(cse.hasCSE(cse.ccode)){
 					an = dynamic_cast<OR_node*>(cse[cse.ccode]);		

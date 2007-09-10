@@ -15,7 +15,7 @@ string bool_node::get_name(){
     if(name.size() > 0)
       str<<name<<"__"<<get_tname();
     else{      
-      str<<"name_"<<abs(id)<<"_"<<this<<"__"<<get_tname();
+      str<<"name_"<<abs(id)<<"__"<<get_tname();
       
     }    
     //str<<"_"<<this;
@@ -223,6 +223,7 @@ BooleanDAG::BooleanDAG()
   n_outputs = 0;
   n_controls = 0;
   new_names = 0;
+  new_namesb = 0;
   
 }
 
@@ -1094,6 +1095,7 @@ BooleanDAG* BooleanDAG::clone(){
 		bdag->named_nodes[it->first] = bdag->nodes[it->second->id];	
 	}
 	bdag->new_names = new_names;
+	bdag->new_namesb = new_namesb;
 	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 
 					it != nodesByType.end(); ++it){
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
