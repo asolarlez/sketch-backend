@@ -9,6 +9,7 @@
 // #define HAVE_BVECTARITH
 
 
+
 template<typename COMP> void
 NodesToSolver::processComparissons (arith_node& node)
 {
@@ -803,16 +804,16 @@ NodesToSolver::visit (ARRACC_node &node)
     for (vector<bool_node *>::iterator it = node.multi_mother.begin();
 	 it != node.multi_mother.end(); it++, i++)
     {
-	bool_node *cnode = *it;
+		bool_node *cnode = *it;
         const Tvalue &cval = tval_lookup (cnode);
         if (cval.isSparse())
-	    items_sparse[i] = cval;
-	else
-	    items_bvect[i] = cval;
-
-        Dout (cout << "item[" << i << "]=" << (cnode ? cnode->get_name() : "NULL")
-	      << " -> " << cval << " (" << (cval.isSparse() ? "sparse" : "bvect")
-	      << ")" << endl);
+		    items_sparse[i] = cval;
+		else
+		    items_bvect[i] = cval;
+	
+	        Dout (cout << "item[" << i << "]=" << (cnode ? cnode->get_name() : "NULL")
+		      << " -> " << cval << " (" << (cval.isSparse() ? "sparse" : "bvect")
+		      << ")" << endl);
     }
 
     /* Get choice for sparse/bit-vector subsets separately. */
@@ -1105,32 +1106,32 @@ NodesToSolver::doArrAccSparse (Tvalue &output, Tvalue &index_orig,
     for (vector<int>::const_iterator it = index_vals.begin();
 	 it != index_vals.end(); it++, i++)
     {
-	const int index_val = *it;
-	Dout (cout << "processing index_vals[" << i << "]=" << index_val << endl);
-
-	/* Ensure index points to existing value. */
-	if (! (items.count (index_val))) {
-	    Dout (cout << "no value exists, skipping" << endl);
-	    continue;
-	}
-
-	/* Extract index-pointed array item. */
-	Tvalue &item = items[index_val];
-	Assert (item.isSparse(), "item must be sparse");
-	vector<int> &item_vals = item.num_ranges;
-
-	Dout (cout << "processing " << item_vals.size() << " item value(s)..." << endl);
-
-	/* Accumulate guard conjuncts for all possible output values. */
-	int j = 0;
-	for (vector<int>::iterator it = item_vals.begin();
-	     it != item_vals.end(); it++, j++)
-	{
-	    int item_val = *it;
-	    int cvar = dir.addAndClause (index.getId (i), item.getId (j));
-	    output_val_vars[item_val].push_back (cvar);
-	    Dout (cout << "item_vals[" << j << "]=" << item_val << endl);
-	}
+		const int index_val = *it;
+		Dout (cout << "processing index_vals[" << i << "]=" << index_val << endl);
+	
+		/* Ensure index points to existing value. */
+		if (! (items.count (index_val))) {
+		    Dout (cout << "no value exists, skipping" << endl);
+		    continue;
+		}
+	
+		/* Extract index-pointed array item. */
+		Tvalue &item = items[index_val];
+		Assert (item.isSparse(), "item must be sparse");
+		vector<int> &item_vals = item.num_ranges;
+	
+		Dout (cout << "processing " << item_vals.size() << " item value(s)..." << endl);
+	
+		/* Accumulate guard conjuncts for all possible output values. */
+		int j = 0;
+		for (vector<int>::iterator it = item_vals.begin();
+		     it != item_vals.end(); it++, j++)
+		{
+		    int item_val = *it;
+		    int cvar = dir.addAndClause (index.getId (i), item.getId (j));
+		    output_val_vars[item_val].push_back (cvar);
+		    Dout (cout << "item_vals[" << j << "]=" << item_val << endl);
+		}
     }
 
     /* Check resulting values. */
@@ -1445,7 +1446,7 @@ NodesToSolver::visit (ASSERT_node &node)
 	if( node.isHard()){
 		dir.addHardAssertClause (fval.getId ());
 	}else{
-		if(fval.getId() == -YES ) {  node.printSubDAG(cout); }
+		if(fval.getId() == -YES ) {  cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; }
 		dir.addAssertClause (fval.getId ());
 	}
 
