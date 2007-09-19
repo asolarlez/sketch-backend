@@ -33,9 +33,13 @@ typedef long long   int64;
 #endif
 typedef const char  cchar;
 
-
+#ifndef min
 template<class T> static inline T min(T x, T y) { return (x < y) ? x : y; }
+#endif 
+
+#ifndef max
 template<class T> static inline T max(T x, T y) { return (x > y) ? x : y; }
+#endif
 
 template <bool> struct STATIC_ASSERTION_FAILURE;
 template <> struct STATIC_ASSERTION_FAILURE<true>{};
@@ -78,7 +82,7 @@ static inline int irand(double& seed, int size) {
 
 //=================================================================================================
 // Time:
-
+}
 
 #ifdef _MSC_VER
 #include <ctime>
@@ -93,7 +97,7 @@ static inline double cpuTime(void) {
     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
 #endif
 
-
+namespace MSsolverNS{
 //=================================================================================================
 // 'vec' -- automatically resizable arrays (via 'push()' method):
 
