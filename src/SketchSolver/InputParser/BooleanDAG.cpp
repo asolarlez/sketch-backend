@@ -7,6 +7,7 @@
 #include "SATSolver.h"
 
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -372,7 +373,7 @@ timerclass TTMMPP("");
 
 void BooleanDAG::replace(int original, bool_node* replacement, timerclass& replacepar){	
 	int i = original;
-	Assert( i < nodes.size(), "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
+	Assert( i < nodes.size() && i >= 0, "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
 	Assert( replacement != NULL, "Why are you replacing with a null replacement");
 	Assert( replacement->id != -22, "Why are you replacing with a corpse?");
 	bool_node* onode = nodes[i];
@@ -911,7 +912,7 @@ void arith_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
   for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
   		Assert( (*it)->id != -22, "This node should not exist anymore");
-  		if( (*it)->id < oribdag.size() && (*it)== oribdag[(*it)->id]){
+  		if( oribdag.checkNodePosition(*it) ){
 	  		(*it) = bdag[(*it)->id];
   		}
   	}
@@ -923,20 +924,20 @@ void arith_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
 void bool_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
 	if(father != NULL){
 		Assert( father->id != -22, "This node should not exist anymore");
-		if( father->id < oribdag.size() && father== oribdag[father->id]){
+		if( oribdag.checkNodePosition(father) ){
 			//If the father was from the original bdag, then we switch to the father in the new bdag.
 	    	father = bdag[father->id];
 		}
   	}
 	if(mother != NULL){
 		Assert( mother->id != -22, "This node should not exist anymore");
-		if( mother->id < oribdag.size() && mother== oribdag[mother->id]){
+		if( oribdag.checkNodePosition(mother)){
 			mother = bdag[mother->id];
 		}
 	}
 	for(int i=0; i<children.size(); ++i){
 		Assert( children[i]->id != -22, "This node should not exist anymore");
-		if( children[i]->id < oribdag.size() && children[i]== oribdag[children[i]->id]){
+		if( oribdag.checkNodePosition(children[i]) ){
 			children[i] = bdag[ children[i]->id ];
 		}	
 	}
@@ -984,8 +985,8 @@ void BooleanDAG::resetBackPointers(){
 			(*node_it)->children.clear();
 		}
 	}
-	
-	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
+	int i=0;
+	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it, ++i){
 		if( *node_it != NULL){
 			(*node_it)->addToParents();
 		}

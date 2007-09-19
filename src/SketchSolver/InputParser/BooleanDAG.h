@@ -87,15 +87,16 @@ public:
 
 
 
-
+#ifdef CONST
+#undef CONST
+#endif
 
 class arith_node: public bool_node{
 	protected:
 	arith_node():bool_node(){ type = ARITH; };
 	public:
-    typedef enum {
-	PLUS, TIMES, ARRACC, UFUN, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL
-    } AType;
+    typedef enum {  PLUS, TIMES, ARRACC, UFUN, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL  } AType;
+
 		
 	AType arith_type;
 	vector<bool_node*> multi_mother;	
@@ -573,6 +574,11 @@ public:
   int get_n_outputs()const{ return n_outputs; };
   int get_n_controls()const{ return n_controls; };
   int get_n_layers()const{ return layer_sizes.size(); };
+
+
+  bool checkNodePosition(bool_node* bn){
+	return bn->id < this->size() && bn->id >= 0 && bn == (*this)[bn->id];
+  }
 
 
   vector<bool_node*>& getNodesByType(bool_node::Type t);
