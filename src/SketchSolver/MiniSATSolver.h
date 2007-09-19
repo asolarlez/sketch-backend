@@ -5,7 +5,7 @@
 #include <iostream>
 using namespace std;
 
-#include "MiniSat_submission/Solver.h"
+#include "MiniSat_submission/MSolver.h"
 
 using namespace MSsolverNS;
 

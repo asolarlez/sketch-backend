@@ -24,7 +24,9 @@ class Checkpointer{
 	}
 };
 
-
+#ifdef OUT
+#undef OUT
+#endif
 
 
 class FindCheckSolver{

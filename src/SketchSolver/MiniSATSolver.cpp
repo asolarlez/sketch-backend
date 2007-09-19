@@ -8,7 +8,6 @@
 #include <string>
 #include <set>
 #include <vector>
-#include <dirent.h>
 #include <queue>
 #include "MiniSATSolver.h"
 
