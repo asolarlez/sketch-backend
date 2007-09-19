@@ -64,7 +64,9 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 	}	
 }
 
-
+/**
+SFIfun( PARAM, SVAL){ return SVAL if PARAM is different to the params of all previous iterations }.
+*/
 
 
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
@@ -113,7 +115,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		BooleanDAG* cclone = comp.clone();
 		// Dout( cclone->print(cout) );
 		Dout( cout<<" after clone "<<endl);		
-		SFunInfo& sfi = functions[name];				
+		SFunInfo& sfi = functions[name];	
+		//This loop replaces the inb parameters in the comparission with the last set of inputs.
 		for(int i=0; i< nargs ; ++i){
 			stringstream str;
 			str<<"inb_"<<i;
@@ -156,6 +159,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		Dout( cout<<" After raddNewNode src"<<endl  );
 		
 		cclone->addNewNode(ch);
+
 		Dout( cout<<" After raddNewNode ch"<<endl  );
 		Assert( (*cclone)[dst->id]==dst, "This is not correct. ");
 		cclone->replace(dst->id, ch);	
@@ -166,12 +170,14 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		//Now, sfi has a copy of the function from the last appearence, so we take this function, and we replace the 
 		//params with the current arguments.	
 		Assert(sfi.fun != NULL, "This is ridiculos, how could this ever happen!"<<endl);	
-		
+		//At this point, cclone compares ina with the last set of inputs. If they are the same, ch (which is the last node),
+		//will produce the previous symval. Otherwise, it will produce the current symval.
+
 		
 		sfi.fun->resetBackPointers();		
 		Dout( cout<<" After rbp "<<endl  );
 		//Dout( sfi.fun->print(cout) );
-				
+		//Now, we take sfi.fun and we replace the input parameters with ina from cclone.
 		for(int i=0; i<nargs; ++i){
 			
 			stringstream str1;
@@ -186,6 +192,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			
 			sfi.fun->replace(inarg->id, tt);
 		}
+
 		// Dout( sfi.fun->print(cout) );
 		Dout(cout<<" After replacing PARAMs"<<endl);
 		
@@ -201,58 +208,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 				
 		bool_node* outn = sfi.fun->get_node("OUT" );		
 		rv = outn->mother;
-		
-		
-		
-		///////////////////////////////////
-		/**
-		 * This set of gates is completely redundant, and can be safely 
-		 * left out. They are here because they should make propagation faster. 
-		 * This is a hypothesis, and needs to be tested out.
-		 */
-		
-		if(false){ //This code is incorrect. Needs to be fixed.
-			EQ_node* symEq = new EQ_node();
-			symEq->mother = src;
-			symEq->father = sfi.symval; 
-			symEq->addToParents();
-			
-			OR_node* or1 = new OR_node();
-			or1->mother = symEq;
-			or1->father = ch->mother;
-			or1->addToParents();
-			
-			EQ_node* outEq = new EQ_node();
-			outEq->mother = sfi.outval;
-			outEq->father = rv;
-			outEq->addToParents();
-			
-			NOT_node* notNode = new NOT_node();
-			notNode->mother = outEq;
-			notNode->addToParents();
-			
-			OR_node* or2 = new OR_node();
-			or2->mother = notNode;
-			or2->father = or1;
-			or2->addToParents();
-			
-			ASSERT_node* asrtNode = new ASSERT_node();
-			asrtNode->mother = or2;
-			asrtNode->addToParents();
-			asrtNode->makeHardAssert();
-			
-			cclone->addNewNode(symEq);	
-			cclone->addNewNode(or1);
-			cclone->addNewNode(outEq);
-			cclone->addNewNode(notNode);
-			cclone->addNewNode(or2);
-			cclone->addNewNode(asrtNode);	
-			cout<<"=========================== FOR FUN "<<node.get_name()<<endl;
-			asrtNode->printSubDAG(cout);	
-			cout<<"=========================== END FOR FUN "<<node.get_name()<<endl;
-		}
-		//////////////////////////////////
-		
+				
 		
 		
 		sfi.outval = rv;
@@ -386,7 +342,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			}
 		}
 		
-		
+		tnbuilder.ivisit = 0;
 		bool_node* tn1 = tnbuilder.get_exe_cond(src, newnodes, false);
 		bool_node* tn2 = tnbuilder.get_exe_cond(&node, newnodes, false);
 		
