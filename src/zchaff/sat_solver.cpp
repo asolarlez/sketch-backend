@@ -41,7 +41,9 @@
 
 #include <set>
 #include <vector>
+#ifndef WIN32
 #include <dirent.h>
+#endif
 #include "SAT.h"
 
 using namespace std;
