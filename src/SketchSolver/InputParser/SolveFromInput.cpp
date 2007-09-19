@@ -121,7 +121,10 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 			int sz2 = it->second->size(); 		
 			cout<<" optimizing "<<	it->first <<" went from size "<<sz1<<" to "<<sz2<<endl;
 		}
-		
+		{
+			DagOptim cse(*sketch_p);	
+			cse.process(*sketch_p);
+		}
 		
 		/*
 		if(sketch_p->size() > 1000){
@@ -295,11 +298,10 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 	}
 	if( problem != oriProblem){	
 		cout<<" * Cleaning up alternative problem"<<endl;	
-		// problem->clear();
+		problem->clear();
 		problem = oriProblem;	
 	}
-	return rv;
-	
+	return rv;	
 }
 
 
@@ -384,6 +386,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 	int ctrl = 0;
 	int numRepeat = 0;
 	node_values.clear();
+	node_ids.resize(problem->size());
 	int idx = 0;
 	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
 		node_ids[(*node_it)->id] = f_node_ids[idx];		

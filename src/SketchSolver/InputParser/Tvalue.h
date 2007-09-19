@@ -92,7 +92,7 @@ public:
     }
 
     /* FIXME same as above. */
-    inline int setSize (int a_size) {
+    inline void setSize (int a_size) {
 	Assert (isBvect (), "value type must be bitvector");
 	size = a_size;
     }
