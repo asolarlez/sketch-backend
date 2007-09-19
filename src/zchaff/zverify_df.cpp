@@ -33,14 +33,18 @@
 // of the possibility of those damages.
 // *********************************************************************
 
+#ifndef WIN32
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <unistd.h>
+#endif
+
 #include <vector>
 #include <set>
 #include <iostream>
 #include <fstream>
 #include <assert.h>
-#include <unistd.h>
+
 
 using namespace std;
 
@@ -54,12 +58,14 @@ int _peak_mem;
 bool _dump_core;
 
 double get_cpu_time(void) {
-  double res;
+  double res = 0.0;
+#ifndef WIN32
   struct rusage usage;
   getrusage(RUSAGE_SELF, &usage);
   res = usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
   res *= 1e-6;
   res += usage.ru_utime.tv_sec + usage.ru_stime.tv_sec;
+#endif
   return res;
 }
 
@@ -95,7 +101,7 @@ int get_mem_usage(void) {
   char buffer[128];
   char token[128];
   char filename[128];
-
+#ifndef WIN32
   int pid = getpid();
   snprintf(filename, sizeof(filename), "/proc/%i/status", pid);
   if ((fp = fopen(filename, "r")) == NULL) {
@@ -114,6 +120,7 @@ int get_mem_usage(void) {
   }
   cerr << "Error in get memeory usage" << endl;
   exit(1);
+#endif
   return 0;
 }
 

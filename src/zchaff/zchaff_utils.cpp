@@ -36,9 +36,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#endif
 
 int _global_debug_leveli = 0;
 
@@ -80,10 +82,14 @@ void warning(char * fun, char * file, int lineno, char * fmt, ...) {
 
 double get_cpu_time(void) {
   double res;
+#ifndef WIN32
   struct rusage usage;
   getrusage(RUSAGE_SELF, &usage);
   res = usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
   res *= 1e-6;
   res += usage.ru_utime.tv_sec + usage.ru_stime.tv_sec;
   return res;
+#else
+  return 0;
+#endif
 }
