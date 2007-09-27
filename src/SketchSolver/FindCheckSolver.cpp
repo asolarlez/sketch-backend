@@ -166,9 +166,11 @@ bool FindCheckSolver::solveFromCheckpoint(istream& in){
 	
 	queue<pair<string, int> > resizelist;
 	
-	while(in){
-		in.getline(buff, maxSize);
+	while(!in.eof() && in.good()){
+		//in.getline(buff, maxSize, '\n');
+		in>>buff;
 		if( buff[0] == '\0' ) continue;
+		cout<<" Read "<<buff<<endl;
 		if(buff[0] == 'f'){
 			if( unaddedInput ){ 
 				while(resizelist.size()>0){
