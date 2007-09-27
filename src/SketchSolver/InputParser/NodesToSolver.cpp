@@ -8,8 +8,6 @@
  */
 // #define HAVE_BVECTARITH
 
-
-
 template<typename COMP> void
 NodesToSolver::processComparissons (arith_node& node)
 {
@@ -818,9 +816,9 @@ NodesToSolver::visit (ARRACC_node &node)
 
     /* Get choice for sparse/bit-vector subsets separately. */
     Tvalue output_sparse, output_bvect;
-    bool is_got_sparse = doArrAccSparse (output_sparse, mval, items_sparse);
+    bool is_got_sparse = doArrAccSparse (output_sparse, mval, items_sparse, parents.size());
     bool is_got_bvect = doArrAccBvect (output_bvect, mval, items_bvect);
-
+	Assert( (items_sparse.size() + items_bvect.size() == parents.size()), "This is an invariant that is assumed in doArrAccSparse");
     /* Initialize overall output value. */
     Tvalue &output = node_ids[node.id];
 
@@ -1079,7 +1077,7 @@ NodesToSolver::doArrAccBvect (Tvalue &output, Tvalue &index_orig,
 
 bool
 NodesToSolver::doArrAccSparse (Tvalue &output, Tvalue &index_orig,
-			       map<int, Tvalue> &items)
+			       map<int, Tvalue> &items, int psize)
 {
     Dout (cout << "arracc: sparse subset, processing "
 	  << items.size() << " item(s)" << endl);
@@ -1109,6 +1107,12 @@ NodesToSolver::doArrAccSparse (Tvalue &output, Tvalue &index_orig,
 		const int index_val = *it;
 		Dout (cout << "processing index_vals[" << i << "]=" << index_val << endl);
 	
+		if(index_val < 0 || index_val >= psize){
+			output_val_vars[0].push_back (index.getId (i));
+			Dout(cout<<" pushing back for the zero value because of out of bounds"<<endl);
+		}
+
+
 		/* Ensure index points to existing value. */
 		if (! (items.count (index_val))) {
 		    Dout (cout << "no value exists, skipping" << endl);
@@ -1355,6 +1359,7 @@ NodesToSolver::visit (ARRASS_node& node)
         vector<int> res;
         res.reserve(nr0.size() + nr1.size());
         vector<int>& out = node_ids[node.id].num_ranges;
+		out.clear();
         out.reserve(nr0.size() + nr1.size());
         while(i < nr0.size() || j< nr1.size()){
             bool avi = i < nr0.size();
@@ -1390,6 +1395,7 @@ NodesToSolver::visit (ARRASS_node& node)
             }
             Assert(false, "Should never get here");
         }
+		Assert(out.size() == res.size(), "This is an invariant. It should never be violated.");
         out.resize(res.size ());
         Assert( res.size () > 0, "This should not happen here2");
         int newID = dir.newAnonymousVar();

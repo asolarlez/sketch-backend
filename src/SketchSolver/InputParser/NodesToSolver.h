@@ -125,7 +125,7 @@ public:
     virtual void visit (ASSERT_node &node);
 
 private:
-    bool doArrAccSparse (Tvalue &, Tvalue &, map<int, Tvalue> &);
+    bool doArrAccSparse (Tvalue &, Tvalue &, map<int, Tvalue> &, int);
     bool doArrAccBvect (Tvalue &, Tvalue &, map<int, Tvalue> &);
     virtual bool checkParentsChanged (bool_node &node, bool more);
 };
