@@ -12,7 +12,10 @@
 #include "MiniSATSolver.h"
 
 
- void MiniSATSolver::annotate(const string& msg){
+// #define Dout( out )      out 
+
+
+void MiniSATSolver::annotate(const string& msg){
 	Dout( cout<<msg );
 	FileOutput(output<<msg<<endl);
 }
@@ -205,7 +208,7 @@ bool MiniSATSolver::ignoreOld(){
  int MiniSATSolver::solve(){
  	if(solveNegation){
  		vec<Lit> lits;
- 		addClause(&finalOr[0], finalOr.size(), lits);
+		addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
  	} 
  	if( ! s->okay() ){ cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; }
  	s->simplifyDB();

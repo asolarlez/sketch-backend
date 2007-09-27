@@ -211,7 +211,7 @@ int ZchaffSATSolver::getVarVal(int id){
 	
 	 int ZchaffSATSolver::solve(){
 	 	if(solveNegation){
-	 		{SAT_AddClauseSigned(mng, &finalOr[0], finalOr.size()); 	CheckRepeats(&finalOr[0], finalOr.size());}
+	 		{SAT_AddClauseSigned(mng,finalOr.size() > 0 ? (&finalOr[0]) : NULL , finalOr.size()); 	CheckRepeats(&finalOr[0], finalOr.size());}
 	 	}
 		int result = SAT_Solve(mng);
 		return result;
