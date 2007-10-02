@@ -42,25 +42,39 @@ timerclass statcomp("static compare");
  */
 template<typename COMP>
 int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
-	COMP comp;	
+	COMP comp;
+	if( anv.count(n1) != 0 ){
+		return anv[n1].staticCompare<COMP>(C, reverse);
+	}
 	if(  isConst(n1) ){
+		anv[n1].init(getIval(n1));
 		bool cm = reverse? comp(C, getIval(n1)) : comp(getIval(n1), C);
 		return cm ? 1 : -1;	
-	} 	
+	}
 	
-	if(  typeid(*n1) == typeid(ARRACC_node) ){
-		ARRACC_node& ar = *dynamic_cast<ARRACC_node*>(n1);
+	if(  typeid(*n1) == typeid(ARRACC_node) || typeid(*n1) == typeid(ARRASS_node)){
+		arith_node& ar = *dynamic_cast<arith_node*>(n1);
 		int rv = -2;
+		AbstractNodeValue& nv = anv[n1];
 		for(int i=0; i<ar.multi_mother.size(); ++i){
-			int tmp = staticCompare<COMP>(ar.multi_mother[i], C, reverse);
+			bool_node* child = ar.multi_mother[i];
+			int tmp = 0;
+			if(anv.count(child)==0){
+				tmp = staticCompare<COMP>(child, C, reverse);
+			}else{
+				tmp = anv[child].staticCompare<COMP>(C, reverse);
+			}			
 			if(tmp == 0 || (rv != -2 && tmp != rv)){
+				anv[n1].makeTop();
 				return 0;	
-			}	
+			}
+			nv.insert( anv[child] );
 			rv = tmp;
 		}
-		if(rv == -2){return 0; }		
+		if(rv == -2){anv[n1].makeTop(); return 0; }		
 		return rv;		
 	}	
+
 	return 0;
 }
 
@@ -996,7 +1010,22 @@ void DagOptim::visit( ARRACC_node& node ){
 	
 	rvalue = &node;
 }
-void DagOptim::visit( ARRASS_node& node ){	
+void DagOptim::visit( ARRASS_node& node ){
+	if( isConst(node.mother) ){
+		int val = getIval( node.mother );
+		if(node.quant == val){
+			rvalue = node.multi_mother[1];
+		}else{
+			rvalue = node.multi_mother[0];
+		}
+		return;
+	}
+
+	if(node.multi_mother[1] == node.multi_mother[0]){
+		rvalue = node.multi_mother[0];
+		return;
+	}
+
 	rvalue = &node;	
 }
 void DagOptim::visit( ACTRL_node& node ){

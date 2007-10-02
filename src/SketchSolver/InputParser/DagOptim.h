@@ -3,6 +3,68 @@
 
 #include "BooleanDAG.h"
 #include "DagCSE.h"
+#include <set>
+
+using namespace std;
+
+class AbstractNodeValue{	
+	set<int> valSet;
+	int low;
+	int high;
+	bool isRange(){ return valSet.size() == 0 && low <= high; }
+	bool isTop(){ return low > high; }
+public:
+	AbstractNodeValue(){
+		makeTop();
+	}
+	AbstractNodeValue(int initValue){
+		valSet.insert(initValue);
+		low = initValue;
+		high = initValue;
+	}
+	void init(int initValue){
+		valSet.insert(initValue);
+		low = initValue;
+		high = initValue;
+	}
+	void makeTop(){
+		valSet.clear();
+		low = 0;
+		high = -1;
+	}
+	template<typename COMP>
+	int staticCompare(int C , bool reverse ){
+		COMP comp;
+		if(isTop()){ return 0; }
+		int rv = -2;
+		for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
+			bool cm = reverse? comp(C, *it) : comp(*it, C);
+			int tmp =  cm ? 1 : -1;
+			if((rv != -2 && tmp != rv)){
+				return 0;
+			}
+			rv = tmp;
+		}
+		if(rv == -2){return 0; }		
+		return rv;
+	}
+	void insert(int val){
+		if( val > high){ high = val; }
+		if(val < low){ low = val; }
+		valSet.insert(val);
+	}
+	void insert(AbstractNodeValue& anv){
+		valSet.insert(anv.valSet.begin(), anv.valSet.end());
+		int oldLow = low;
+		int oldHigh = high;
+		low = (*valSet.begin());
+		high = (*valSet.rbegin());
+		Assert( low<= oldLow && high >= oldHigh || (valSet.size()==anv.valSet.size() && oldLow==0 && oldHigh==-1), "This is an error. I missunderstood the interface low="<<low<<" oldLow = "<<oldLow<<" high=" <<high<<" oldHigh="<<oldHigh);
+	}
+
+};
+
+
 
 class DagOptim : public NodeVisitor
 {
@@ -10,7 +72,7 @@ class DagOptim : public NodeVisitor
 	DagCSE cse;
 	bool ALTER_ARRACS;
 public:
-	
+	map<bool_node*, AbstractNodeValue> anv;
 	vector<bool_node*> newnodes;
 	
 	DagOptim(BooleanDAG& dag);
