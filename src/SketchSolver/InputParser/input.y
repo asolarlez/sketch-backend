@@ -106,7 +106,7 @@ string *comparisson (string *p1, string *p2, arith_node::AType atype)
 
 %%
 
-Program: FilterList T_eof{ cout<<"Program"<<endl; $$=0; return 0;}
+Program: FilterList T_eof{  $$=0; return 0;}
 
 
 FilterList:   { }
@@ -129,10 +129,10 @@ MethodList: {}
 InList: T_ident {  
 
     if( Gvartype == INT){
-		cout<<" INPUT IS INT "<<*$1<<endl;
+
 		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 	}else{
-		cout<<" INPUT IS BIT "<<*$1<<endl;
+
 		currentBD->create_inputs(-1, *$1); 
 	}	
 
@@ -140,10 +140,10 @@ InList: T_ident {
 | T_ident InList {
 	
     if( Gvartype == INT){
-		cout<<" INPUT IS INT "<<*$1<<endl;
+
 		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 	}else{
-		cout<<" INPUT IS BIT "<<*$1<<endl;
+
 		currentBD->create_inputs(-1, *$1); 
 	}	
 }
@@ -157,19 +157,19 @@ OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 
 ParamDecl: T_vartype T_ident {  
 	if( $1 == INT){
-		cout<<" INPUT IS INT "<<*$2<<endl;
+
 		currentBD->create_inputs( 2 /*NINPUTS*/ , *$2); 
 	}else{
-		cout<<" INPUT IS BIT "<<*$2<<endl;
+
 		currentBD->create_inputs(-1, *$2); 
 	}	
 }
 | '!' T_vartype T_ident {
  	 if( $2 == INT){
- 	 	cout<<" OUTPUT IS INT "<<*$3<<endl;
+
 		 currentBD->create_outputs(NINPUTS, *$3);
  	 }else{
-	 	 cout<<" OUTPUT IS BIT "<<*$3<<endl;
+
 	 	 currentBD->create_outputs(-1, *$3); 
  	 }
  }
@@ -524,10 +524,10 @@ Term: Constant {
 	list<bool_node*>* params = $6;
 	if(params->size() == 0){
 		if( $3 == INT){
-			cout<<" INPUT IS INT "<<*$1<<endl;
+
 			currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 		}else{
-			cout<<" INPUT IS BIT "<<*$1<<endl;
+
 			currentBD->create_inputs(-1, *$1);
 		}
 		$$ = $1;

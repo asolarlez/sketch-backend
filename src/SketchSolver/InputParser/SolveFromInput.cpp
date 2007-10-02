@@ -15,8 +15,7 @@ int intFromBV(T bv, int start, int nbits){
 	int nval = 0;	
 	int t = 1;
 	
-	for(int i=0; i<nbits; ++i){
-		( cout<< bv[start + i] << "  " );
+	for(int i=0; i<nbits; ++i){		
 		if( bv[start + i] > 0){
 			nval += t;	
 		}
@@ -274,7 +273,7 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 				cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
 				keepGoing = true;
 			}else{
-				cout<<"* input "<<srcnode->get_name()<<" doesn't need to grow its size is already"<<srcnode->get_nbits()<<endl;								
+				Dout(cout<<"* input "<<srcnode->get_name()<<" doesn't need to grow its size is already"<<srcnode->get_nbits()<<endl);	
 			}
 		}
 		if(! keepGoing ){
