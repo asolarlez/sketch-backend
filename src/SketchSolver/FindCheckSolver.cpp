@@ -445,7 +445,7 @@ void FindCheckSolver::setupFind(){
 
 
 void FindCheckSolver::declareControl(const string& cname, int size){
-	(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
+	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
 	Assert( controlVars.find(cname) == controlVars.end(), "This control had already been declared!!");
 	controlVars[cname] = size;
 	controlStarts[cname] = ctrl.size();
@@ -456,7 +456,7 @@ void FindCheckSolver::declareControl(const string& cname, int size){
 
 void FindCheckSolver::declareInput(const string& inname, int size){
 	//Inputs can be redeclared to change their sizes, but not controls.
-	(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
+	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
 	cpt.resizeInput(inname, size);
 	if( inputVars.find(inname) == inputVars.end() ){
 		inputStarts[inname] = input.size();
