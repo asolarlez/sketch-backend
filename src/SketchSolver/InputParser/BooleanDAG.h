@@ -410,6 +410,12 @@ class EQ_node: public arith_node{
 			return BOOL;
 		}
 };
+
+/*!
+    multi-mother[0] = old-value;
+    multi-mother[1] = new-value;
+    if( mother == quant ) return multi-mother[1]; else return multi-mother[0];		
+*/
 class ARRASS_node: public arith_node{		
 	public: 
 		int quant;
