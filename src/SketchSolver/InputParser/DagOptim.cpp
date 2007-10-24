@@ -52,29 +52,57 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return cm ? 1 : -1;	
 	}
 	
+	if(typeid(*n1) == typeid(NOT_node)){
+		int rv = staticCompare<COMP>(n1->mother, C, reverse);
+		anv[n1] = anv[n1->mother];
+		return rv;
+	}
+
+	if(typeid(*n1) == typeid(SRC_node) || typeid(*n1) == typeid(CTRL_node)){
+		INTER_node* inode = dynamic_cast<INTER_node*>(n1);
+		if(inode->getOtype() == bool_node::BOOL){
+			anv[n1].init(0);	
+			anv[n1].insert(1);
+			return anv[n1].staticCompare<COMP>(C, reverse);
+		}
+	}
+
+
 	if(  typeid(*n1) == typeid(ARRACC_node) || typeid(*n1) == typeid(ARRASS_node)){
 		arith_node& ar = *dynamic_cast<arith_node*>(n1);
 		int rv = -2;
 		AbstractNodeValue& nv = anv[n1];
 		for(int i=0; i<ar.multi_mother.size(); ++i){
-			bool_node* child = ar.multi_mother[i];
+			bool_node* parent = ar.multi_mother[i];
 			int tmp = 0;
-			if(anv.count(child)==0){
-				tmp = staticCompare<COMP>(child, C, reverse);
+			if(anv.count(parent)==0){
+				tmp = staticCompare<COMP>(parent, C, reverse);
 			}else{
-				tmp = anv[child].staticCompare<COMP>(C, reverse);
+				tmp = anv[parent].staticCompare<COMP>(C, reverse);
 			}			
-			if(tmp == 0 || (rv != -2 && tmp != rv)){
-				anv[n1].makeTop();
-				return 0;	
+			if(tmp == 0 || (rv != -2 && tmp != rv)){				
+				rv = 0;	
 			}
-			nv.insert( anv[child] );
-			rv = tmp;
+			nv.insert( anv[parent] );
+			if(rv != 0){
+				rv = tmp;
+			}
 		}
-		if(rv == -2){anv[n1].makeTop(); return 0; }		
+		if( typeid(*n1) == typeid(ARRACC_node) && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
+			nv.insert(0);
+			bool cm = reverse? comp(C, 0) : comp(0, C);
+			int tmp = cm ? 1 : -1;	
+			if(tmp == 0 || (rv != -2 && tmp != rv)){				
+				rv = 0;	
+			}
+			if(rv != 0){
+				rv = tmp;
+			}
+		}
+		if(rv == -2){nv.makeTop(); return 0; }		
 		return rv;		
-	}	
-
+	}
+	anv[n1].makeTop();
 	return 0;
 }
 
@@ -1026,6 +1054,16 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
+	int sc = staticCompare<equal_to<int> >(node.mother, node.quant, true);
+	if(sc == 1){
+		rvalue = node.multi_mother[1];
+		return;
+	}
+	if(sc == -1){
+		rvalue = node.multi_mother[0];
+		return;
+	}
+
 	rvalue = &node;	
 }
 void DagOptim::visit( ACTRL_node& node ){
@@ -1046,6 +1084,12 @@ void DagOptim::process(BooleanDAG& dag){
 	timerclass replace("replace");	
 
 	timerclass replacepar("dislodge");	
+
+	dag.removeNullNodes();
+	dag.sort_graph();
+	dag.cleanup(false);
+	dag.relabel();
+
 
 	everything.start();
 	opttimer.start();
@@ -1073,7 +1117,7 @@ void DagOptim::process(BooleanDAG& dag){
 			// if we don't find it, just add it.
 			cse[cse.ccode] = node;
 			if( dag[i] != node ){
-				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				Dout(cout<<"replacing wnew "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				replace.restart();
 				dag.replace(i, node, replacepar);
 				replace.stop();

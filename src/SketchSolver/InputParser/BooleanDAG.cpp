@@ -607,6 +607,21 @@ void BooleanDAG::addNewNodes(vector<bool_node*>& v){
 }
 
 
+bool_node* BooleanDAG::unchecked_get_node(const string& name){
+  bool_node* fth;
+  if(name.size()==0){
+    fth = NULL;
+  }else{
+	  if(named_nodes.find(name) != named_nodes.end()){
+		fth = named_nodes[name];
+	  }else{
+		fth = NULL;
+	  }
+  }
+  return fth;
+}
+
+
 bool_node* BooleanDAG::get_node(const string& name){
   bool_node* fth;
   Assert(name.size()==0 || named_nodes.find(name) != named_nodes.end(), "name does not exist: "<<name);

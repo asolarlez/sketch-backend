@@ -284,7 +284,8 @@ void DagCSE::eliminateCSE(){
  void DagCSE::visit( ASSERT_node &node){
  	stimer.restart();
  	stringstream str;
- 	str<<node.id;
+	int mid = node.mother == NULL? -1: node.mother->id;
+	str<<"ass"<<mid<<":"<<node.getMsg();
  	ccode = str.str();
  	stimer.stop();
  }

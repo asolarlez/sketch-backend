@@ -198,6 +198,7 @@ virtual void reset(){
 		delete *it;
 	}
 	visited.clear();
+	garbage.clear();
 	store.clear();
 	tvisited.clear();
 		

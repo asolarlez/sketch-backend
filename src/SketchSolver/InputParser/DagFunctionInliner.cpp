@@ -29,6 +29,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		cout<<" inlining "<<name<<endl;
 		BooleanDAG* fun = functionMap[name]->clone();
 
+
 		vector<bool_node*> inputs  = fun->getNodesByType(bool_node::SRC);
 		
 		Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
@@ -46,10 +47,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		for(int i=0; i<controls.size(); ++i){			
 			bool_node* formal = controls[i];
-			bool_node* actual = dag.get_node( formal->name );		
-			Assert( actual != NULL, "Can't find node "<<formal->name<<endl);
-			Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
-			fun->replace(formal->id, actual);
+			bool_node* actual = dag.unchecked_get_node( formal->name );		
+			if(actual != NULL){
+				Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
+				fun->replace(formal->id, actual);
+			}
 		}
 		
 		
@@ -80,22 +82,27 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						tn = tnbuilder.get_exe_cond(&node, newnodes);						
 						timer.stop();
 						int szz2 = tnbuilder.store.size();
-						cout<<" added "<<(szz2-szz1)<<" nodes"<<endl;		
-						timer.print();	
+						//cout<<" added "<<(szz2-szz1)<<" nodes"<<endl;		
+						//timer.print();	
 					}
 					
 					bool_node* cur = n->mother;
-					if(tn != NULL){						
-						AND_node* anode = new AND_node();
-						anode->mother = cur;
-						anode->father = tn;
-						anode->addToParents();
-						newnodes.push_back(anode);
-						cur = anode;				
+					if(tn != NULL){		// !!! This should be OR NOT.
+						NOT_node* nnode = new NOT_node();
+						nnode->mother = tn;
+						nnode->addToParents();
+						newnodes.push_back(nnode);
+						OR_node* ornode = new OR_node();
+						ornode->mother = cur;
+						ornode->father = nnode;
+						ornode->addToParents();
+						newnodes.push_back(ornode);
+						cur = ornode;				
 					}
 					ASSERT_node* asn = new ASSERT_node();
 					asn->mother = cur;
 					asn->addToParents();
+					asn->setMsg( dynamic_cast<ASSERT_node*>(n)->getMsg() );
 					newnodes.push_back(asn);
 					
 					n->dislodge();
@@ -122,7 +129,7 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	int k=0;
 	// Dout( dag.print(cout) );	
 	newnodes.clear();
-	// dag.print(cout) ;	
+	//dag.print(cout) ;	
 	for(int i=0; i<dag.size(); ++i ){
 		// Get the code for this node. 
 		dag[i]->accept(*this);
@@ -138,10 +145,10 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	//( dag.print(cout) );
 	tnbuilder.reset();
 	newnodes.clear();	
-	dag.removeNullNodes();
-	
+
+	//cout<<"After adding nodes"<<endl;
 	{	
-		( cout<<" after inline, before optim dag.size()=="<<dag.size()<<endl);
+		Dout( cout<<" after inline, before optim dag.size()=="<<dag.size()<<endl);
 		DagOptim optim(dag);
 		optim.process(dag);
 	}
@@ -159,7 +166,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		optim.process(dag);
 	}
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 25000 && inlin < 5){
+	while(somethingChanged && dag.size() < 25000 && inlin < 20){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
@@ -238,12 +245,10 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 			
 		ASSERT_node* asn = new ASSERT_node();
 		asn->mother = nn;
-		asn->addToParents();
-		
-		string msg = name;
-		msg += ": didn't inline enough";
+		string msg = "function was not inlined enough ";
+		msg += node.get_name();
 		asn->setMsg(msg);
-		
+		asn->addToParents();				
 		newnodes.push_back(asn);	
 		
 		

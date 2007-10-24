@@ -8,34 +8,44 @@
 using namespace std;
 
 class AbstractNodeValue{	
+	typedef enum { BOTTOM, LIST, RANGE, TOP } State;
+	State state;
 	set<int> valSet;
 	int low;
 	int high;
-	bool isRange(){ return valSet.size() == 0 && low <= high; }
-	bool isTop(){ return low > high; }
+	bool isRange(){ return state == RANGE; }
+	bool isTop(){ return state==TOP; }
+	bool isBottom(){ return state==BOTTOM; }
 public:
 	AbstractNodeValue(){
-		makeTop();
+		valSet.clear();
+		low = 0;
+		high = -1;
+		state = BOTTOM;
 	}
 	AbstractNodeValue(int initValue){
 		valSet.insert(initValue);
 		low = initValue;
 		high = initValue;
+		state = LIST;
 	}
 	void init(int initValue){
 		valSet.insert(initValue);
 		low = initValue;
 		high = initValue;
+		state = LIST;
 	}
+
 	void makeTop(){
 		valSet.clear();
 		low = 0;
 		high = -1;
+		state = TOP;
 	}
 	template<typename COMP>
 	int staticCompare(int C , bool reverse ){
 		COMP comp;
-		if(isTop()){ return 0; }
+		if(state != LIST){ return 0; }
 		int rv = -2;
 		for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
 			bool cm = reverse? comp(C, *it) : comp(*it, C);
@@ -51,15 +61,31 @@ public:
 	void insert(int val){
 		if( val > high){ high = val; }
 		if(val < low){ low = val; }
-		valSet.insert(val);
+		if(state==LIST){
+			valSet.insert(val);
+		}
 	}
 	void insert(AbstractNodeValue& anv){
-		valSet.insert(anv.valSet.begin(), anv.valSet.end());
-		int oldLow = low;
-		int oldHigh = high;
-		low = (*valSet.begin());
-		high = (*valSet.rbegin());
-		Assert( low<= oldLow && high >= oldHigh || (valSet.size()==anv.valSet.size() && oldLow==0 && oldHigh==-1), "This is an error. I missunderstood the interface low="<<low<<" oldLow = "<<oldLow<<" high=" <<high<<" oldHigh="<<oldHigh);
+		if(anv.isTop()){
+			makeTop();
+			return;
+		}
+		if(isTop()){
+			return;
+		}
+		
+		if(this->isBottom()){
+			low = anv.low;
+			high = anv.high;
+			valSet = anv.valSet;
+			state = anv.state;			
+		}else{
+			low = low < anv.low ? low : anv.low;
+			high = high > anv.high? high : anv.high;
+			if(state == LIST){
+				valSet.insert(anv.valSet.begin(), anv.valSet.end());
+			}
+		}				
 	}
 
 };

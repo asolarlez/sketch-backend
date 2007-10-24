@@ -61,8 +61,9 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		Dout( cout<<"BEFORE Matching input names"<<endl );
 		vector<bool_node*>& specIn = spec_p->getNodesByType(bool_node::SRC);
 		vector<bool_node*>& sketchIn = sketch_p->getNodesByType(bool_node::SRC);
-		Assert(specIn.size() == sketchIn.size(), "The number of inputs in the spec_p and sketch must match");	
+		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec_p and sketch must match");	
 		for(int i=0; i<specIn.size(); ++i){
+			cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl;
 			sketch_p->rename(sketchIn[i]->name, specIn[i]->name);
 		}
 	}
@@ -83,7 +84,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		sketch_p->makeMiter(*spec_p, TIP_NAME);
 		problem = sketch_p;
 	   	Dout( cout<<"after makeMiter "<<endl);
-		//Dout( problem->print(cout) );	
+		Dout( problem->print(cout) );	
 				
 		{
 			DagOptim cse(*problem);	
@@ -114,7 +115,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		
 		for(map<string, BooleanDAG*>::iterator it =  functionMap.begin();
 					it != functionMap.end(); ++it){
-			int sz1 = it->second->size(); 		
+			int sz1 = it->second->size(); 				
 			DagOptim cse(*it->second);
 			cse.process(*it->second);	
 			int sz2 = it->second->size(); 		
@@ -123,6 +124,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		{
 			DagOptim cse(*sketch_p);	
 			cse.process(*sketch_p);
+			sketch_p->print(cout);
 		}
 		
 		/*
@@ -163,19 +165,18 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		//cout<<"Printing spec and sketch "<<endl;
 		//Dout( spec_p->print(cout) );	
 		//Dout( sketch_p->print(cout) );	
-		
+		spec_p->print(cout);
+		sketch_p->print(cout);
 		spec_p->makeMiter(*sketch_p, TIP_NAME);
 		problem = spec_p;
 		cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
+		// problem->print(cout);
 		//Dout( problem->print(cout) );				
 		{
 			DagOptim cse(*problem);	
 			//cse.alterARRACS();
 			cse.process(*problem);
-		}
-		problem->cleanup(false);
-		problem->sort_graph();
-		problem->relabel();
+		}		
 		cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;		
 		{
 			DagOptim cse(*problem);	

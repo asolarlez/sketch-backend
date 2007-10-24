@@ -140,6 +140,9 @@ class AND_node: public bool_node{
 		AND_node(){ type = AND; }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new AND_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 	};
 class OR_node: public bool_node{	
 	public: 
@@ -147,6 +150,9 @@ class OR_node: public bool_node{
 		OR_node(const OR_node& bn): bool_node(bn){ }   
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new OR_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 	};
 class XOR_node: public bool_node{	
 	public: 
@@ -154,6 +160,9 @@ class XOR_node: public bool_node{
 		XOR_node(const XOR_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new XOR_node(*this);  };
+		OutType getOtype(){
+			return BOOL;
+		}
 	};
 
 class INTER_node: public bool_node{	
@@ -225,6 +234,9 @@ class NOT_node: public bool_node{
 	NOT_node(const NOT_node& bn): bool_node(bn){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new NOT_node(*this);  };
+	OutType getOtype(){
+			return BOOL;
+	}
 };
 
 class PLUS_node: public arith_node{	
@@ -232,12 +244,18 @@ class PLUS_node: public arith_node{
 	PLUS_node(const PLUS_node& bn): arith_node(bn){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new PLUS_node(*this);  };
+	OutType getOtype(){
+			return INT;
+	}
 };
 class TIMES_node: public arith_node{	
 	public: TIMES_node(){ arith_type = TIMES; }  
 	TIMES_node(const TIMES_node& bn): arith_node(bn){ }    
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new TIMES_node(*this);  };
+	OutType getOtype(){
+		return INT;
+	}
 };
 
 
@@ -307,6 +325,9 @@ class DIV_node: public arith_node{
 		DIV_node(const DIV_node& bn): arith_node(bn){ }     
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new DIV_node(*this);  };
+		OutType getOtype(){
+			return INT;
+		}
 };
 class MOD_node: public arith_node{	
 	
@@ -315,6 +336,9 @@ class MOD_node: public arith_node{
 		MOD_node(const MOD_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new MOD_node(*this);  };
+		OutType getOtype(){
+			return INT;
+		}
 };
 
 
@@ -325,6 +349,9 @@ class NEG_node: public arith_node{
 		NEG_node(const NEG_node& bn): arith_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new NEG_node(*this);  };
+		OutType getOtype(){
+			return INT;
+		}
 };
 
 
@@ -423,6 +450,19 @@ class ARRASS_node: public arith_node{
 		ARRASS_node(const ARRASS_node& bn): arith_node(bn), quant(bn.quant){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new ARRASS_node(*this);  };
+		virtual void outDagEntry(ostream& out){
+			if( mother != NULL){
+			  out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"="<<quant<<"\"] ; "<<endl;
+    		}		
+    		int i=0;
+			
+	  		if(multi_mother[0] != NULL){
+	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
+	  		}
+			if(multi_mother[1] != NULL){
+	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
+	  		}
+		}
 		OutType getOtype(){
 			if(otype != BOTTOM){
 				return otype;
@@ -597,6 +637,7 @@ public:
   void relabel();
   void cleanup(bool moveNots=true);
   bool_node* get_node(const string& name);  
+  bool_node* unchecked_get_node(const string& name);
   iterator begin(){ return nodes.begin(); }
   iterator end(){ return nodes.end(); }
   void alias(const string& ssource,  const string& starg);

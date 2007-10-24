@@ -137,7 +137,7 @@ InList: T_ident {
 	}	
 
 }
-| T_ident InList {
+| T_ident {
 	
     if( Gvartype == INT){
 
@@ -146,7 +146,7 @@ InList: T_ident {
 
 		currentBD->create_inputs(-1, *$1); 
 	}	
-}
+} InList
 
 OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 | T_ident OutList{
