@@ -91,9 +91,20 @@ int arith_node::back_dfs(int idx){
   return idx-1;
 }
 
-
+map<string, pair<int, int> > sizes;
 
 void bool_node::remove_child(bool_node* bn){
+
+	if(sizes.count(typeid(*this).name()) > 0){
+		pair<int, int>& p = sizes[typeid(*this).name()];
+		p.first++;
+		p.second += children.size();
+	}else{
+		pair<int, int>& p = sizes[typeid(*this).name()];
+		p.first = 1;
+		p.second = children.size();
+	}
+
 	vector<bool_node*>& tmpv = children;	
 	vector<bool_node*>::iterator oit = tmpv.begin();
 	vector<bool_node*>::iterator oldbegin = oit;
@@ -371,14 +382,8 @@ void BooleanDAG::layer_graph(){
 
 timerclass TTMMPP("");
 
-void BooleanDAG::replace(int original, bool_node* replacement, timerclass& replacepar){	
-	int i = original;
-	Assert( i < nodes.size() && i >= 0, "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
-	Assert( replacement != NULL, "Why are you replacing with a null replacement");
-	Assert( replacement->id != -22, "Why are you replacing with a corpse?");
-	bool_node* onode = nodes[i];
-	Assert( onode != NULL, "This can't happen");
-	
+
+void BooleanDAG::neighbor_replace(bool_node* onode, bool_node* replacement, timerclass& replacepar){
 	replacepar.restart();
 	onode->dislodge();
 	replacepar.stop();
@@ -389,7 +394,19 @@ void BooleanDAG::replace(int original, bool_node* replacement, timerclass& repla
 		
 		(*it)->replace_parent(onode, replacement);
 	}
+
+}
+
+
+void BooleanDAG::replace(int original, bool_node* replacement, timerclass& replacepar){	
+	int i = original;
+	Assert( i < nodes.size() && i >= 0, "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
+	Assert( replacement != NULL, "Why are you replacing with a null replacement");
+	Assert( replacement->id != -22, "Why are you replacing with a corpse?");
+	bool_node* onode = nodes[i];
+	Assert( onode != NULL, "This can't happen");
 	
+	neighbor_replace(onode, replacement, replacepar);
 	
 	
 	//

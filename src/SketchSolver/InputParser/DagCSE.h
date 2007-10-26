@@ -8,14 +8,6 @@ class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
 	map<string, bool_node*> cse_map;
-public:
-	string ccode;
-	timerclass stimer;
-	timerclass maptimer;
-	DagCSE(BooleanDAG& p_dag);
-	virtual ~DagCSE();	
-	
-	void eliminateCSE();
 	
 	inline bool hasCSE(string& str){
 		maptimer.restart();
@@ -30,6 +22,31 @@ public:
 		maptimer.stop();
 		return tmp;	
 	}  
+public:
+	string ccode;
+	timerclass stimer;
+	timerclass maptimer;
+	DagCSE(BooleanDAG& p_dag);
+	virtual ~DagCSE();	
+	
+	void eliminateCSE();
+	
+
+	inline bool_node* computeCSE(bool_node* node){
+		node->accept(*this);
+		if(this->hasCSE(this->ccode)){
+			return (*this)[this->ccode];
+		}else{
+			(*this)[this->ccode] = node;
+			return node;
+		}
+	}
+
+
+	inline void clear(){
+		cse_map.clear();
+	}
+
 	
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );

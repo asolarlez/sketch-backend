@@ -41,7 +41,7 @@ class SFunInfo{
 
 
 
-class DagElimUFUN : public NodeVisitor
+class DagElimUFUN : public NodeVisitor, virtual NodeStore
 {
 	
 	bool oneMoreFun;
@@ -61,6 +61,8 @@ public:
 	virtual ~DagElimUFUN();
 	bool_node* produceNextSFunInfo( UFUN_node& node  );
 	
+	virtual void addNode(bool_node* node);
+
 	virtual void stopProducingFuns();
 	
 	virtual void visit( UFUN_node& node );

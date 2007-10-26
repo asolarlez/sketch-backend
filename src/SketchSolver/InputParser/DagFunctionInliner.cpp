@@ -1,9 +1,20 @@
 #include "DagFunctionInliner.h"
+#include "DagFunctionToAssertion.h"
 #include "timerclass.h"
 
 
 DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap):
-dag(p_dag),functionMap(p_functionMap) {
+dag(p_dag), 
+DagOptim(p_dag), 
+functionMap(p_functionMap),
+replTime(" replacement "),
+replTime2(" replacement internal"),
+tnbuildTime(" tnbuilding "),
+optimTime(" optim "),
+ufunAll(" ufun all"),
+optAll(" opt all ")
+
+{
 	somethingChanged = false;
 }
 
@@ -13,17 +24,10 @@ DagFunctionInliner::~DagFunctionInliner()
 
 
 
-DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap):
-dag(p_dag),functionMap(p_functionMap) {
-	
-}
-
-DagFunctionToAssertion::~DagFunctionToAssertion()
-{
-}
 
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
+	ufunAll.restart();
 	string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
 		cout<<" inlining "<<name<<endl;
@@ -39,7 +43,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			bool_node* actual = node.multi_mother[i];
 			//cout<<" replacing formal : " << formal->get_name() << " with actual "<<actual->get_name()<<endl;
 			Assert( (*fun)[formal->id] == formal, "ID is incorrect");
-			fun->replace(formal->id, actual);
+			replTime.restart();
+			fun->replace(formal->id, actual, replTime2);
+			replTime.stop();
 		}
 		
 
@@ -50,7 +56,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			bool_node* actual = dag.unchecked_get_node( formal->name );		
 			if(actual != NULL){
 				Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
-				fun->replace(formal->id, actual);
+				replTime.restart();
+				fun->replace(formal->id, actual, replTime2);
+				replTime.stop();
 			}
 		}
 		
@@ -59,7 +67,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		Assert( outputs.size() == 1, "The outputs are of the wrong size "<< outputs.size()<<"  "<< name);
 				
-		rvalue = outputs[0]->mother;
+		//rvalue = outputs[0]->mother;
 		
 		
 		bool_node* tn = NULL;
@@ -68,94 +76,134 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		int hasBuiltTN = false;
 		
 		
+		bool_node* output = NULL;
+
 		for(int i=0; i<fun->size(); ++i){
 			bool_node* n = (*fun)[i];
 			if( n != NULL &&  n->type != bool_node::DST ){			
 				if(n->type != bool_node::ASSERT){
-					newnodes.push_back(n);
+					if(typeid(*n) != typeid(UFUN_node)){
+						optimTime.restart();
+						bool_node* nnode = this->computeOptim(n);
+						optimTime.stop();
+
+						if(nnode == n){
+							this->addNode(n);
+						}else{
+							replTime.restart();
+							this->dag.neighbor_replace(n, nnode, replTime2);
+							replTime.stop();
+						}
+					}else{						
+						bool_node* nnode = cse.computeCSE(n);
+						if(nnode == n){
+							cout<<"    added fun "<<n->get_name()<<endl;
+							this->addNode(n);
+						}else{
+							replTime.restart();
+							this->dag.neighbor_replace(n, nnode, replTime2);
+							replTime.stop();
+						}
+					}
 				}else{
 					if(!hasBuiltTN){	
 						hasBuiltTN = true;					
-						int szz1 = tnbuilder.store.size();
-						timerclass timer("         tnbuild  ");
-						timer.start();		
-						tn = tnbuilder.get_exe_cond(&node, newnodes);						
-						timer.stop();
-						int szz2 = tnbuilder.store.size();
-						//cout<<" added "<<(szz2-szz1)<<" nodes"<<endl;		
-						//timer.print();	
+						int szz1 = newnodes.size();
+
+						tnbuildTime.start();		
+						tn = tnbuilder.get_exe_cond(&node, *this);
+						tnbuildTime.stop();
+						int szz2 = newnodes.size();
+							
 					}
 					
 					bool_node* cur = n->mother;
 					if(tn != NULL){		// !!! This should be OR NOT.
-						NOT_node* nnode = new NOT_node();
+						bool_node* nnode = new NOT_node();
 						nnode->mother = tn;
-						nnode->addToParents();
-						newnodes.push_back(nnode);
-						OR_node* ornode = new OR_node();
+						{
+							optimTime.restart();
+							bool_node* nnodep = this->computeOptim(nnode);
+							optimTime.stop();
+
+							if(nnodep == nnode){
+								nnode->addToParents();
+								this->addNode(nnode);							
+							}
+							nnode = nnodep;
+						}
+
+						bool_node* ornode = new OR_node();
 						ornode->mother = cur;
 						ornode->father = nnode;
-						ornode->addToParents();
-						newnodes.push_back(ornode);
+						{
+							optimTime.restart();
+							bool_node* ornodep = this->computeOptim(ornode);
+							optimTime.stop();
+
+							if(ornodep == ornode){
+								this->addNode(ornode);
+								ornode->addToParents();
+							}	
+							ornode = ornodep;
+						}
 						cur = ornode;				
 					}
 					ASSERT_node* asn = new ASSERT_node();
 					asn->mother = cur;
-					asn->addToParents();
 					asn->setMsg( dynamic_cast<ASSERT_node*>(n)->getMsg() );
-					newnodes.push_back(asn);
+					asn->addToParents();
+					this->addNode(asn);
 					
 					n->dislodge();
 					n->id = -22;
 					delete n;
 				}
-			}else{
+			}else{				
 				if( n!= NULL){
+					output = n->mother;
 					n->dislodge();
 					n->id = -22;
 					delete n;
 				}
 			}
 		}		
-		
+		rvalue = output;
 		somethingChanged = true;
 	}else{
 		rvalue = &node;
 	}
+	ufunAll.stop();
 }
 
 void DagFunctionInliner::immInline(BooleanDAG& dag){
-	
-	int k=0;
-	// Dout( dag.print(cout) );	
-	newnodes.clear();
-	//dag.print(cout) ;	
-	for(int i=0; i<dag.size(); ++i ){
-		// Get the code for this node. 
-		dag[i]->accept(*this);
-		bool_node* node = rvalue;
-		if( dag[i] != node ){
-			dag.replace(i, node);
+
+	initialize(dag);
+
+	for(int i=0; i<dag.size() ; ++i ){
+		// Get the code for this node.
+				
+		optAll.restart();
+		bool_node* node = computeOptim(dag[i]);
+		optAll.stop();
+
+		if(dag[i] != node){
+				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				replTime.restart();
+				dag.replace(i, node, replTime2);
+				replTime.stop();
+
 		}
 	}
-	
-	dag.addNewNodes(newnodes);
-	//( dag.print(cout) );	
-	dag.addNewNodes( tnbuilder.store );
-	//( dag.print(cout) );
+		
+	cleanup(dag);
 	tnbuilder.reset();
-	newnodes.clear();	
 
-	//cout<<"After adding nodes"<<endl;
-	{	
-		Dout( cout<<" after inline, before optim dag.size()=="<<dag.size()<<endl);
-		DagOptim optim(dag);
-		optim.process(dag);
-	}
 	Dout( cout<<" AFTER PROCESS "<<endl );
 	Dout(cout<<" end ElimFun "<<endl);
 }
 
+extern map<string, pair<int, int> > sizes;
 
 
 void DagFunctionInliner::process(BooleanDAG& dag){
@@ -165,6 +213,10 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		DagOptim optim(dag);
 		optim.process(dag);
 	}
+	
+	timerclass everything("everything");
+
+	everything.start();
 	int inlin = 0;
 	while(somethingChanged && dag.size() < 25000 && inlin < 20){
 		somethingChanged = false;
@@ -173,7 +225,20 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		//if(inlin==0){( dag.print(cout) );}
 		++inlin;
 	}
+	everything.stop();
+	everything.print();
+	ufunAll.print();
+	optAll.print();
+	replTime.print();
+	replTime2.print();
+	tnbuildTime.print();
+	optimTime.print();
 	
+	for(map<string, pair<int, int> >::iterator it = sizes.begin(); it != sizes.end(); ++it){
+		cout<<it->first<<" : "<< (it->second.second / it->second.first)<<"  "<<it->second.second<<"  "<<it->second.first<<endl;
+	}
+
+
 	( cout<<" after all inlining dag.size()=="<<dag.size()<<endl);
 	
 	
@@ -187,74 +252,3 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 }
 
 
-
-
-void DagFunctionToAssertion::process(BooleanDAG& dag){
-	
-	int k=0;
-	// Dout( dag.print(cout) );		
-	for(int i=0; i<dag.size(); ++i ){
-		// Get the code for this node. 
-		dag[i]->accept(*this);
-		bool_node* node = rvalue;
-		if( dag[i] != node ){
-			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
-			dag.replace(i, node);
-		}
-	}
-	dag.addNewNodes(newnodes);
-	dag.addNewNodes( tnbuilder.store );
-	tnbuilder.reset();
-	newnodes.clear();
-	dag.removeNullNodes();
-	Dout( cout<<" AFTER PROCESS "<<endl );
-	//Dout( dag.print(cout) );	
-	Dout(cout<<" end ElimFun "<<endl);
-}
-
-
-
-void DagFunctionToAssertion::visit( UFUN_node& node ){	
-	string& name = node.get_ufname();
-	if( functionMap.find(name) != functionMap.end() ){
-		cout<<" terminating inlining "<<name<<endl;
-				
-		t_node tn(NULL);
-		
-		int szz1 = tnbuilder.store.size();
-		timerclass timer("         tnbuild  ");
-		timer.start();	
-		tnbuilder.ivisit = 0;
-		tnbuilder.tvisited.clear();
-		tnbuilder.tn_build(&node, NULL, &tn);
-		
-		timer.stop();
-		int szz2 = tnbuilder.store.size();
-		cout<<" added "<<(szz2-szz1)<<" nodes visited "<<tnbuilder.ivisit<<endl;		
-		timer.print();				
-					
-		
-		Assert( tn.children.size() > 0, " This function should still be inlined !!! "<<node.get_name() );	
-		
-		bool_node* cur = tn.childDisjunct(newnodes); 
-		
-		NOT_node* nn = new NOT_node();
-		nn->mother = cur;
-		nn->addToParents();
-		newnodes.push_back(nn);
-			
-		ASSERT_node* asn = new ASSERT_node();
-		asn->mother = nn;
-		string msg = "function was not inlined enough ";
-		msg += node.get_name();
-		asn->setMsg(msg);
-		asn->addToParents();				
-		newnodes.push_back(asn);	
-		
-		
-		rvalue = new CONST_node(0);
-		newnodes.push_back(rvalue);
-	}else{
-		rvalue = &node;
-	}
-}

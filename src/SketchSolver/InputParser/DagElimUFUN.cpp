@@ -14,6 +14,16 @@ DagElimUFUN::~DagElimUFUN()
 }
 
 
+
+void DagElimUFUN::addNode(bool_node* node){
+	node->id = newnodes.size() + dagsize;
+	Dout(cout<<" add "<<node->id<<"  "<<node->get_name()<<endl);
+	newnodes.push_back(node);
+}
+
+
+
+
 void DagElimUFUN::stopProducingFuns(){
 	oneMoreFun = true;
 	Dout(cout<<" NO MORE NEW FUNCTIONS WILL BE PRODUCED "<<endl);	
@@ -343,8 +353,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
 		tnbuilder.ivisit = 0;
-		bool_node* tn1 = tnbuilder.get_exe_cond(src, newnodes, false);
-		bool_node* tn2 = tnbuilder.get_exe_cond(&node, newnodes, false);
+		bool_node* tn1 = tnbuilder.get_exe_cond(src, *this, false);
+		bool_node* tn2 = tnbuilder.get_exe_cond(&node, *this, false);
 		
 		bool_node* cur = NULL;
 		
@@ -404,8 +414,6 @@ void DagElimUFUN::process(BooleanDAG& dag){
 		}
 	}
 	dag.addNewNodes(newnodes);
-	dag.addNewNodes( tnbuilder.store );
-	tnbuilder.store.clear();
 	newnodes.clear();
 	dag.removeNullNodes();
 	Dout( cout<<" AFTER PROCESS "<<endl );

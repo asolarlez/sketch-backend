@@ -638,6 +638,7 @@ public:
   void cleanup(bool moveNots=true);
   bool_node* get_node(const string& name);  
   bool_node* unchecked_get_node(const string& name);
+  void neighbor_replace(bool_node* onode, bool_node* replacement, timerclass& replacepar);
   iterator begin(){ return nodes.begin(); }
   iterator end(){ return nodes.end(); }
   void alias(const string& ssource,  const string& starg);

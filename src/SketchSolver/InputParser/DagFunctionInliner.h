@@ -6,14 +6,19 @@
 #include "ExtractEvaluationCondition.h"
 
 
-class DagFunctionInliner : public NodeVisitor
+class DagFunctionInliner : public DagOptim
 {
 	
 	bool somethingChanged;
 	ExtractEvaluationCondition tnbuilder;
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;	
-	vector<bool_node*> newnodes;
+	timerclass replTime;
+	timerclass ufunAll;
+	timerclass optAll;
+	timerclass replTime2;
+	timerclass tnbuildTime;
+	timerclass optimTime;
 	virtual void immInline(BooleanDAG& dag);
 public:
 	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap);
@@ -23,24 +28,6 @@ public:
 	virtual void visit( UFUN_node& node );
 	
 };
-
-
-class DagFunctionToAssertion : public NodeVisitor
-{	
-	ExtractEvaluationCondition tnbuilder;
-	BooleanDAG& dag;
-	map<string, BooleanDAG*>& functionMap;	
-	vector<bool_node*> newnodes;
-	
-public:
-	DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap);
-	virtual ~DagFunctionToAssertion();
-	virtual void process(BooleanDAG& bdag);
-		
-	virtual void visit( UFUN_node& node );
-	
-};
-
 
 
 #endif /*DAGFUNCTIONINLINER_H_*/
