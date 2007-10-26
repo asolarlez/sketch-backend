@@ -2,6 +2,7 @@
 #define EXTRACTEVALUATIONCONDITION_H_
 
 #include "BooleanDAG.h"
+#include "NodeStore.h"
 #include <set>
 
 using namespace std;
@@ -86,14 +87,14 @@ class t_node{
 	}	
 	
 	
-	bool_node* guard(vector<bool_node*>& store){
+	bool_node* guard(NodeStore& store){
 		if( nidx == 0){
 			NOT_node* nn = new NOT_node();
 			nn->name = control->name;
 			nn->name += "FAFUFO";
 			nn->mother = control;
 			nn->addToParents();
-			store.push_back(nn);
+			store.addNode(nn);
 			return nn;
 		}else{
 			return control;	
@@ -108,7 +109,7 @@ class t_node{
 	 * 
 	 * The store is a vector where we will push any new bool_nodes that get allocated by this function.
 	 */
-	bool_node* childDisjunct(vector<bool_node*>& store){
+	bool_node* childDisjunct(NodeStore& store){
 		Assert( children.size() > 0 , "This function is being misused");
 		bool_node* cur = children[0]->node;
 		
@@ -120,7 +121,7 @@ class t_node{
 			Assert( on->father != NULL, "Father can't be null");
 			on->addToParents();
 			cur = on;
-			store.push_back(on);	
+			store.addNode(on);
 		}
 		return cur;
 	}
@@ -134,7 +135,7 @@ class t_node{
 	 * 
 	 * The store is a vector where we will push any new bool_nodes that get allocated by this function.
 	 */
-	bool_node* circuit(vector<bool_node*>& store){		
+	bool_node* circuit(NodeStore& store){		
 		if( children.size() == 0){
 			node = guard(store);
 		}else{
@@ -143,7 +144,7 @@ class t_node{
 			anode->mother = cur;
 			anode->father = guard(store);
 			anode->addToParents();
-			store.push_back(anode);
+			store.addNode(anode);
 			node = anode;
 		}
 		return node;
@@ -184,7 +185,7 @@ map<string, t_node*> visited;
 
 
 public:
-vector<bool_node*> store;
+
 vector<t_node*> garbage;
 map<bool_node* , t_node*> tvisited;
 
@@ -199,7 +200,6 @@ virtual void reset(){
 	}
 	visited.clear();
 	garbage.clear();
-	store.clear();
 	tvisited.clear();
 		
 }
@@ -211,12 +211,12 @@ virtual ~ExtractEvaluationCondition(){
 
 
 
-bool_node* get_exe_cond(bool_node* bn, vector<bool_node*>& newnodes, bool print_flag = false){
+bool_node* get_exe_cond(bool_node* bn, NodeStore& store, bool print_flag = false){
 	t_node* tn = new t_node(NULL);
-	tn_build(bn, NULL, tn);
+	tn_build(bn, NULL, tn, store);
 	bool_node* rv = NULL;
 	if(tn->children.size() > 0){ 
-		rv = tn->childDisjunct(newnodes);
+		rv = tn->childDisjunct(store);
 		if(print_flag){ tn->print(cout); } 
 	}
 	garbage.push_back(tn);
@@ -237,7 +237,7 @@ bool_node* get_exe_cond(bool_node* bn, vector<bool_node*>& newnodes, bool print_
  * words, the P(I) of tn will correspond to the P(I) for n.
  * 
  */
-void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
+void tn_build(bool_node* bn, bool_node* parent, t_node* partn, NodeStore& store){
 	++ivisit;
 	if( typeid(*bn) == typeid(ARRACC_node) && parent != bn->mother  ){
 		ARRACC_node* an = dynamic_cast<ARRACC_node*>(bn);	
@@ -259,7 +259,7 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
 						partn->children.push_back(tn);
 						visited[tmp] = tn;					
 						for(int j=0; j<an->children.size(); ++j){						
-							tn_build(an->children[j], bn, tn);						
+							tn_build(an->children[j], bn, tn, store);						
 						}
 						
 						tn->circuit(store);					
@@ -278,7 +278,7 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn){
 	tvisited[bn] = partn;
 	
 	for(int j=0; j<bn->children.size(); ++j){						
-		tn_build(bn->children[j], bn, partn);			
+		tn_build(bn->children[j], bn, partn, store);			
 	}
 }
 

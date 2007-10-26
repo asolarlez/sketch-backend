@@ -3,6 +3,8 @@
 
 #include "BooleanDAG.h"
 #include "DagCSE.h"
+#include "NodeStore.h"
+
 #include <set>
 
 using namespace std;
@@ -92,20 +94,28 @@ public:
 
 
 
-class DagOptim : public NodeVisitor
+class DagOptim : public NodeVisitor, public virtual NodeStore
 {
 	int dagsize;
-	DagCSE cse;
 	bool ALTER_ARRACS;
+protected:
+	DagCSE cse;
 public:
 	map<bool_node*, AbstractNodeValue> anv;
 	vector<bool_node*> newnodes;
-	
+	map<int, CONST_node*> cnmap;
+
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();
 	
 	void alterARRACS(){ ALTER_ARRACS = true; } 
-	
+
+
+	bool_node* computeOptim(bool_node* node);
+	virtual void addNode(bool_node* node);
+	void initialize(BooleanDAG& dag);
+	void cleanup(BooleanDAG& dag);
+
 	template<typename COMP, typename NTYPE>
 	bool compSymplification(NTYPE& node);
 	
@@ -141,7 +151,6 @@ public:
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
 	virtual void process(BooleanDAG& bdag);	
-	map<int, CONST_node*> cnmap;
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
 	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);

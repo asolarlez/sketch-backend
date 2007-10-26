@@ -5,6 +5,7 @@ DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 {
 	ALTER_ARRACS = false;
 	rvalue = NULL;	
+	initialize(dag);
 }
 
 DagOptim::~DagOptim()
@@ -29,7 +30,11 @@ CONST_node* DagOptim::getCnode(bool c){
 
 
 
-
+void DagOptim::addNode(bool_node* node){
+	node->id = newnodes.size() + dagsize;
+	Dout(cout<<" add "<<node->id<<"  "<<node->get_name()<<endl);
+	newnodes.push_back(node);
+}
 
 
 
@@ -146,9 +151,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = fafa;
 			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-			newnodes.push_back(pnode);
+			addNode(pnode);			
 			rvalue  = pnode;
 			visit(*pnode);
 			return true;
@@ -171,9 +174,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = getCnode(0);
 			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-			newnodes.push_back(pnode);
+			addNode(pnode);			
 			rvalue  = pnode;
 			visit(*pnode);			
 			return true;
@@ -196,9 +197,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->father = mofa;
 			pnode->mother = getCnode(0);
 			pnode->addToParents();
-			pnode->id = newnodes.size() + dagsize;
-			Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-			newnodes.push_back(pnode);
+			addNode(pnode);			
 			rvalue  = pnode;
 			visit(*pnode);			
 			return true;
@@ -448,9 +447,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
-					pnode->id = newnodes.size() + dagsize;
-					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-					newnodes.push_back(pnode);
+					addNode(pnode);					
 					rvalue  = pnode;
 					return;
 				}
@@ -462,9 +459,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.father), "This can't happen");
 					pnode->father = fathernode.father;
 					pnode->addToParents();
-					pnode->id = newnodes.size() + dagsize;
-					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-					newnodes.push_back(pnode);
+					addNode(pnode);	
 					rvalue  = pnode;
 					return;
 				}
@@ -544,9 +539,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
-					pnode->id = newnodes.size() + dagsize;
-					Dout(cout<<" add "<<pnode->id<<"  "<<pnode->get_name()<<endl);
-					newnodes.push_back(pnode);
+					addNode(pnode);
 				}
 			
 		}
@@ -736,9 +729,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->name += "NOTa";
 				nt->mother = node.father;
 				nt->addToParents();
-				nt->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
-				newnodes.push_back(nt);
+				addNode(nt);
 				nt->accept(*this);
 				return;	
 			}
@@ -760,9 +751,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->name += "NOTb";
 				nt->mother = node.mother;
 				nt->addToParents();
-				nt->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
-				newnodes.push_back(nt);
+				addNode(nt);
 				nt->accept(*this);
 				return;	
 			}
@@ -843,9 +832,7 @@ void DagOptim::visit( ARRACC_node& node ){
 						nt->name += "NOTc";
 						nt->mother = node.mother;
 						nt->addToParents();
-						nt->id = newnodes.size() + dagsize;
-						Dout(cout<<" add "<<nt->id<<"  "<<nt->get_name()<<endl);
-						newnodes.push_back(nt);
+						addNode(nt);
 						nt->accept(*this);
 						return;
 					}
@@ -859,9 +846,9 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
-				newnodes.push_back(an);
+
+				addNode(an);
+
 				an->accept(*this);
 				return;
 			}
@@ -876,9 +863,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[0];
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
-				newnodes.push_back(an);
+				addNode(an);
 				an->accept(*this);
 				return;
 			}
@@ -891,9 +876,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
-				newnodes.push_back(an);
+				addNode(an);
 				an->accept(*this);
 				return;
 		}
@@ -911,16 +894,9 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = mm1 .mother;
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
-				newnodes.push_back(an);
-				
-				an->accept(cse);
-				if(cse.hasCSE(cse.ccode)){
-					an = dynamic_cast<AND_node*>(cse[cse.ccode]);		
-				}else{
-					cse[cse.ccode] = an;
-				}
+				addNode(an);
+
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
 				
 				node.dislodge();
 				node.mother = an;
@@ -942,22 +918,19 @@ void DagOptim::visit( ARRACC_node& node ){
 				nt->name += "NOTc";
 				nt->mother = mm1 .mother;
 				nt->addToParents();
-				nt->id = newnodes.size() + dagsize;
-				newnodes.push_back(nt);
+				addNode(nt);
+
 				
 				
 				an->father = nt;
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				newnodes.push_back(an);
+				addNode(an);
+
 				
 				
-				an->accept(cse);
-				if(cse.find(cse.ccode) != cse.end()){
-					an = dynamic_cast<AND_node*>(cse[cse.ccode]);		
-				}else{
-					cse[cse.ccode] = an;
-				}
+
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				
 				
 				node.dislodge();
 				node.mother = an;
@@ -979,15 +952,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = mm1 .mother;
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				newnodes.push_back(an);
-				Dout(cout<<" add "<<an->id<<"  "<<an->get_name()<<endl);
-				an->accept(cse);
-				if(cse.hasCSE(cse.ccode)){
-					an = dynamic_cast<OR_node*>(cse[cse.ccode]);		
-				}else{
-					cse[cse.ccode] = an;
-				}
+				addNode(an);
+
+				an = dynamic_cast<OR_node*>( cse.computeCSE(an) );
+				
 				
 				node.dislodge();
 				node.mother = an;
@@ -1008,20 +976,15 @@ void DagOptim::visit( ARRACC_node& node ){
 				nt->name = node.name;
 				nt->name += "NOTd";
 				nt->mother = mm1 .mother;
-				nt->id = newnodes.size() + dagsize;
-				newnodes.push_back(nt);
-				
+				addNode(nt);
+
 				an->father = nt;
 				an->addToParents();
-				an->id = newnodes.size() + dagsize;
-				newnodes.push_back(an);
+				addNode(an);
+
 					
-				an->accept(cse);
-				if(cse.find(cse.ccode) != cse.end()){
-					an = dynamic_cast<OR_node*>(cse[cse.ccode]);		
-				}else{
-					cse[cse.ccode] = an;
-				}
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				
 				
 				node.dislodge();
 				node.mother = an;
@@ -1077,61 +1040,69 @@ void DagOptim::visit( DST_node& node ){
 	rvalue = &node;
 }
 
+
+void DagOptim::initialize(BooleanDAG& dag){
+	dag.removeNullNodes();
+	dag.sort_graph();
+	dag.cleanup(false);
+	dag.relabel();
+	dagsize = dag.size();	
+	anv.clear();
+	newnodes.clear();
+	cnmap.clear();
+	cse.clear();
+}
+
+bool_node* DagOptim::computeOptim(bool_node* node){
+	node->accept(*this);
+	node = rvalue;
+	node = cse.computeCSE(node);
+	return node;
+}
+
+
+void DagOptim::cleanup(BooleanDAG& dag){
+	dag.removeNullNodes();
+	dag.addNewNodes(newnodes);
+	newnodes.clear();
+	dag.sort_graph();
+	dag.cleanup(false);
+	dag.relabel();
+}
+
 void DagOptim::process(BooleanDAG& dag){
 	timerclass everything("everything");
 	timerclass opttimer("OPTIMIZATION");
 	timerclass identify("identify");
 	timerclass replace("replace");	
 
-	timerclass replacepar("dislodge");	
-
-	dag.removeNullNodes();
-	dag.sort_graph();
-	dag.cleanup(false);
-	dag.relabel();
-
+	timerclass replacepar("dislodge");		
 
 	everything.start();
 	opttimer.start();
-	dagsize = dag.size();	
+	
 	int k=0;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
 				
 		identify.restart(); 
-		dag[i]->accept(*this);
-		bool_node* node = rvalue;
-		node->accept(cse);
+
+		bool_node* node = computeOptim(dag[i]);
+
 		identify.stop();
-		
-		// look it up in the cse map.		
-		Dout(cout<<dag[i]->id<<"  "<<dag[i]->get_name()<<"("<< node->get_name() <<"): "<<cse.ccode<<endl) ;
-		if( cse.hasCSE(cse.ccode) ){
-			// if we do find it, then remove the node and replace it with its cse.			
-			bool_node * csubexp = cse[cse.ccode];
-			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<csubexp->get_name()<<endl );
-			replace.restart();
-			dag.replace(i, csubexp, replacepar);
-			replace.stop(); 
-		}else{
-			// if we don't find it, just add it.
-			cse[cse.ccode] = node;
-			if( dag[i] != node ){
-				Dout(cout<<"replacing wnew "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+
+		if(dag[i] != node){
+				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				replace.restart();
 				dag.replace(i, node, replacepar);
 				replace.stop();
-			}
 		}
 	}
 	opttimer.stop();
 	
 	
-	dag.removeNullNodes();
-	dag.addNewNodes(newnodes);
-	dag.sort_graph();
-	dag.cleanup(false);
-	dag.relabel();
+	cleanup(dag);
+
 	everything.stop();
 	
 	everything.print();
