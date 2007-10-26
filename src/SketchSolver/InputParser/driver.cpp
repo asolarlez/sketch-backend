@@ -44,6 +44,7 @@ class paramInterp{
   bool outputEuclid;
     bool doBvectArith;
     bool printDiag;
+	int inlineAmnt;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -60,6 +61,7 @@ class paramInterp{
 		printDiag = false;
 	doBvectArith = false;
 		WITH_RESTRICTIONS = false;
+		inlineAmnt = 20;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -67,6 +69,11 @@ class paramInterp{
 	      input_idx = ii+2;      
 	    }
 	    
+		 if( string(argv[ii]) == "-inlineamnt" ){
+	      Assert(ii<(argc-1), "-inlineamnt needs an extra parameter");
+	      inlineAmnt = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+	    }
 	    
 	    if( string(argv[ii]) == "-output2QBF" ){
 	    	outputAIG = true;
@@ -277,7 +284,7 @@ int main(int argc, char** argv){
       	}
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
-      						   params.seedsize, INp::NINPUTS);
+      						   params.seedsize, params.inlineAmnt, INp::NINPUTS);
       						   
       	if(params.printDiag){
       		solver.activatePrintDiag();	

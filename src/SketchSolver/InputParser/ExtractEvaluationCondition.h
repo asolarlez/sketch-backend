@@ -257,9 +257,9 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn, NodeStore& store)
 						t_node* tn = new t_node(an->mother);
 						tn->nidx = i;
 						partn->children.push_back(tn);
-						visited[tmp] = tn;					
-						for(int j=0; j<an->children.size(); ++j){						
-							tn_build(an->children[j], bn, tn, store);						
+						visited[tmp] = tn;				
+						for(child_iter child = an->children.begin(); child!=an->children.end(); ++child){						
+							tn_build(*child, bn, tn, store);
 						}
 						
 						tn->circuit(store);					
@@ -277,8 +277,8 @@ void tn_build(bool_node* bn, bool_node* parent, t_node* partn, NodeStore& store)
 	}
 	tvisited[bn] = partn;
 	
-	for(int j=0; j<bn->children.size(); ++j){						
-		tn_build(bn->children[j], bn, partn, store);			
+	for(child_iter child = bn->children.begin(); child!=bn->children.end(); ++child){
+		tn_build(*child, bn, partn, store);			
 	}
 }
 

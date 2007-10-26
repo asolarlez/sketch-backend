@@ -13,6 +13,7 @@ class DagFunctionInliner : public DagOptim
 	ExtractEvaluationCondition tnbuilder;
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;	
+	int inlineAmnt;
 	timerclass replTime;
 	timerclass ufunAll;
 	timerclass optAll;
@@ -21,7 +22,7 @@ class DagFunctionInliner : public DagOptim
 	timerclass optimTime;
 	virtual void immInline(BooleanDAG& dag);
 public:
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int inlineAmnt);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

@@ -3,7 +3,7 @@
 #include "timerclass.h"
 
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap):
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt):
 dag(p_dag), 
 DagOptim(p_dag), 
 functionMap(p_functionMap),
@@ -12,10 +12,12 @@ replTime2(" replacement internal"),
 tnbuildTime(" tnbuilding "),
 optimTime(" optim "),
 ufunAll(" ufun all"),
-optAll(" opt all ")
+optAll(" opt all "),
+inlineAmnt(p_inlineAmnt)
 
 {
 	somethingChanged = false;
+	cout<<" Inline amount = p_inlineAmnt"<<endl;
 }
 
 DagFunctionInliner::~DagFunctionInliner()
@@ -97,7 +99,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}else{						
 						bool_node* nnode = cse.computeCSE(n);
 						if(nnode == n){
-							cout<<"    added fun "<<n->get_name()<<endl;
 							this->addNode(n);
 						}else{
 							replTime.restart();
@@ -203,8 +204,9 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	Dout(cout<<" end ElimFun "<<endl);
 }
 
+/*
 extern map<string, pair<int, int> > sizes;
-
+*/
 
 void DagFunctionInliner::process(BooleanDAG& dag){
 	cout<<" funmap has size " << functionMap.size() << endl;
@@ -218,7 +220,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 25000 && inlin < 20){
+	while(somethingChanged && dag.size() < 25000 && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
@@ -233,11 +235,11 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	replTime2.print();
 	tnbuildTime.print();
 	optimTime.print();
-	
+	/*
 	for(map<string, pair<int, int> >::iterator it = sizes.begin(); it != sizes.end(); ++it){
 		cout<<it->first<<" : "<< (it->second.second / it->second.first)<<"  "<<it->second.second<<"  "<<it->second.first<<endl;
 	}
-
+*/
 
 	( cout<<" after all inlining dag.size()=="<<dag.size()<<endl);
 	

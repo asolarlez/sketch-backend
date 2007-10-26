@@ -37,7 +37,7 @@ void SolveFromInput::setup2QBF(){
 
 
 SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, 
-map<string, BooleanDAG*>& functionMap, int NS_p, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
+map<string, BooleanDAG*>& functionMap, int p_nseeds, int inlineAmnt, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
@@ -123,8 +123,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}
 		{
 			DagOptim cse(*sketch_p);	
-			cse.process(*sketch_p);
-			sketch_p->print(cout);
+			cse.process(*sketch_p);			
 		}
 		
 		/*
@@ -144,12 +143,12 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		{
 			{
 				cout<<" Inlining functions in the sketch."<<endl;
-				DagFunctionInliner cse(*sketch_p, functionMap );	
+				DagFunctionInliner cse(*sketch_p, functionMap, inlineAmnt );	
 				cse.process(*sketch_p);
 			}
 			{
 				cout<<" Inlining functions in the spec."<<endl;
-				DagFunctionInliner cse(*spec_p, functionMap);	
+				DagFunctionInliner cse(*spec_p, functionMap, inlineAmnt );	
 				cse.process(*spec_p);
 			}
 			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
@@ -165,8 +164,8 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		//cout<<"Printing spec and sketch "<<endl;
 		//Dout( spec_p->print(cout) );	
 		//Dout( sketch_p->print(cout) );	
-		spec_p->print(cout);
-		sketch_p->print(cout);
+		//spec_p->print(cout);
+		//sketch_p->print(cout);
 		spec_p->makeMiter(*sketch_p, TIP_NAME);
 		problem = spec_p;
 		cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
@@ -185,7 +184,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}		
 		
 		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;		
-		( problem->print(cout) );
+		Dout( problem->print(cout) );
 	}
 	
 	
@@ -219,7 +218,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}
     }
     	
-	nseeds = NS_p;
+	nseeds = p_nseeds;
 	//cout<<"BEFORE RES"<<endl;	
 	int totSize = problem->size();
 	f_node_ids.resize( totSize , 0 );

@@ -13,6 +13,7 @@
 #include <string>
 #include <list>
 #include <map>
+#include <set>
 #include "BasicError.h"
 #include "timerclass.h"
 #include "NodeVisitor.h"
@@ -21,6 +22,8 @@ using namespace std;
 
 class BooleanDAG;
 
+
+typedef set<bool_node*>::iterator child_iter;
 
 class bool_node{
 protected:
@@ -51,7 +54,7 @@ public:
   bool_node* mother;  
   bool_node* father;
   
-  vector<bool_node*> children;
+  set<bool_node*> children;
   
   
   virtual int do_dfs(int idx);
