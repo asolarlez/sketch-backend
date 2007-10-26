@@ -185,7 +185,7 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		}		
 		
 		cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;		
-		Dout( problem->print(cout) );
+		( problem->print(cout) );
 	}
 	
 	
@@ -339,7 +339,7 @@ BooleanDAG* SolveFromInput::hardCodeControls(vector<int>& controls){
 	cout<<" * After replacing nodes "<<endl;
 	newdag->removeNullNodes();
 	cse.process(*newdag);
-	Dout( newdag->print(cout) ); 
+	( newdag->print(cout) ); 
 	cout<<" * After specialization: nodes = "<<newdag->size()<<endl;
 	
 	
