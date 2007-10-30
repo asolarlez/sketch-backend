@@ -14,6 +14,9 @@ class DagFunctionInliner : public DagOptim
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;	
 	int inlineAmnt;
+	int divFactor;
+	int oldNfun;
+	bool mergeFunctions;
 	timerclass replTime;
 	timerclass ufunAll;
 	timerclass optAll;
@@ -21,12 +24,17 @@ class DagFunctionInliner : public DagOptim
 	timerclass tnbuildTime;
 	timerclass optimTime;
 	virtual void immInline(BooleanDAG& dag);
+	int argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2);
+	void mergeFuncalls(int first, int second);
 public:
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int inlineAmnt);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int inlineAmnt, bool p_mergeFunctions);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		
 	virtual void visit( UFUN_node& node );
+
+
+	virtual void unify();
 	
 };
 

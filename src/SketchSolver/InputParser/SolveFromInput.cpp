@@ -37,7 +37,7 @@ void SolveFromInput::setup2QBF(){
 
 
 SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, 
-map<string, BooleanDAG*>& functionMap, int p_nseeds, int inlineAmnt, int NINPUTS_p):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
+map<string, BooleanDAG*>& functionMap, int p_nseeds, int inlineAmnt, int NINPUTS_p, bool mergeFunctions):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
@@ -143,12 +143,12 @@ Dout( cout<<"BEFORE RELABEL"<<endl );
 		{
 			{
 				cout<<" Inlining functions in the sketch."<<endl;
-				DagFunctionInliner cse(*sketch_p, functionMap, inlineAmnt );	
+				DagFunctionInliner cse(*sketch_p, functionMap, inlineAmnt, mergeFunctions );	
 				cse.process(*sketch_p);
 			}
 			{
 				cout<<" Inlining functions in the spec."<<endl;
-				DagFunctionInliner cse(*spec_p, functionMap, inlineAmnt );	
+				DagFunctionInliner cse(*spec_p, functionMap, inlineAmnt, mergeFunctions  );	
 				cse.process(*spec_p);
 			}
 			cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec_p->size()<<"\t SKETCH nodes = "<<sketch_p->size()<<endl;
@@ -338,7 +338,7 @@ BooleanDAG* SolveFromInput::hardCodeControls(vector<int>& controls){
 	cout<<" * After replacing nodes "<<endl;
 	newdag->removeNullNodes();
 	cse.process(*newdag);
-	( newdag->print(cout) ); 
+	Dout( newdag->print(cout) ); 
 	cout<<" * After specialization: nodes = "<<newdag->size()<<endl;
 	
 	

@@ -580,7 +580,7 @@ public:
 
   BooleanDAG* clone();
 
-
+  void repOK();
   void print(ostream& out);
   typedef vector<bool_node*>::iterator iterator;
   void removeNullNodes();
@@ -631,8 +631,8 @@ public:
 
 
   vector<bool_node*>& getNodesByType(bool_node::Type t);
-  const bool_node* operator[](int idx)const{ return nodes[idx]; };
-  bool_node* operator[](int idx){ return nodes[idx]; };
+  bool_node* const & operator[](int idx)const{ return nodes[idx]; };
+  bool_node*& operator[](int idx){ return nodes[idx]; };
   int size()const {return nodes.size();}
   int get_lsize(int layer){ return layer_sizes[layer];};
   void sort_graph();

@@ -50,6 +50,7 @@ int bool_node::do_dfs(int idx){
   flag = 1;    
   for(child_iter child = children.begin(); child != children.end(); ++child){  	
     idx = (*child)->do_dfs(idx);
+	Assert(idx >= 0, "This shouldn't happen");
   }
   id = idx;
   return idx-1;
@@ -474,6 +475,58 @@ void BooleanDAG::remove(int i){
   delete onode;
   nodes[i] = NULL;  
 }
+
+
+
+void BooleanDAG::repOK(){
+
+	cout<<"*** DOING REPOK ****"<<endl;
+	//First, we check that the array doesn't contain any repeated nodes.
+	map<bool_node*, int> nodeset;
+	for(int i=0; i<nodes.size(); ++i){
+		if(nodes[i] != NULL){
+		Assert(nodeset.count(nodes[i]) == 0, "There is a repeated node!!! it's in pos "<<i<<" and "<<nodeset[nodes[i]] );		
+		nodeset[nodes[i]] = i;
+		}
+	}
+
+	//Now, we have to check whether all the node's predecessors are in the nodeset.
+	//We also check that each node is in the children of all its parents.
+	for(int i=0; i<nodes.size(); ++i){
+		bool_node* n = nodes[i];
+		if(n != NULL){
+			if(n->mother != NULL){
+				bool_node* par = n->mother;
+				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+				Assert( par->children.count(n) != 0, "My mother has disowned me "<<n->get_name()<<"  "<<i);
+			}
+			if(n->father != NULL){
+				bool_node* par = n->father;
+				Assert( nodeset.count(n->father)==1, "Father is not in dag "<<n->get_name()<<"  "<<i);
+				Assert( par->children.count(n) != 0, "My father has disowned me "<<n->get_name()<<"  "<<i);
+			}
+			if(n->type == bool_node::ARITH){
+				arith_node* an = dynamic_cast<arith_node*>(n);
+				for(int t=0; t<an->multi_mother.size(); ++t){
+					if(an->multi_mother[t] != NULL){
+						bool_node* par = an->multi_mother[t];
+						Assert( nodeset.count(par)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+						Assert( par->children.count(n) != 0, "My multimother has disowned me "<<n->get_name()<<"  "<<i);
+					}
+				}
+			}
+
+			for(child_iter child = n->children.begin(); child != n->children.end(); ++child){
+				Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
+			}
+
+		}
+	}
+}
+
+
+
+
 
 
 //This routine performs simple peephole optimizations
@@ -1040,7 +1093,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
 			}
 		}
 		
-		if( (*node_it)->type == bool_node::CTRL){
+		if( (*node_it)->type == bool_node::CTRL){//Shouldn't there be a nodes.push_back here???
 			nodesByType[(*node_it)->type].push_back((*node_it));
 		}
 		if( (*node_it)->type == bool_node::DST){
@@ -1061,7 +1114,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
 			Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
 			Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
 			replace( otherDst->id, eq);	
-			
+			(*node_it)->dislodge();
 			nodes.push_back( eq );		
 			if( tip == NULL  ){
 				tip = eq;				

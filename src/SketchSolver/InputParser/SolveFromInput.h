@@ -33,7 +33,7 @@ class SolveFromInput: public FindCheckSolver{
 	virtual BooleanDAG* hardCodeControls(vector<int>& controls);
 	public:
 	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker,
-	map<string, BooleanDAG*>& functionMap, int p_nseeds=1, int inlineAmnt = 20, int NINPUTS_p=3);
+	map<string, BooleanDAG*>& functionMap, int p_nseeds=1, int inlineAmnt = 20, int NINPUTS_p=3, bool mergeFunctions=false);
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);
 	void setup2QBF();

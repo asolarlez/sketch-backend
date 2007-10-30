@@ -14,7 +14,7 @@ DagFunctionToAssertion::~DagFunctionToAssertion()
 void DagFunctionToAssertion::visit( UFUN_node& node ){	
 	string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
-		cout<<" terminating inlining "<<name<<endl;
+		Dout(cout<<" terminating inlining "<<name<<endl);
 				
 		t_node tn(NULL);
 		
@@ -27,8 +27,8 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		
 		timer.stop();
 		int szz2 = newnodes.size();
-		cout<<" added "<<(szz2-szz1)<<" nodes visited "<<tnbuilder.ivisit<<endl;		
-		timer.print();				
+		Dout(cout<<" added "<<(szz2-szz1)<<" nodes visited "<<tnbuilder.ivisit<<endl);
+		Dout(timer.print());
 					
 		
 		Assert( tn.children.size() > 0, " This function should still be inlined !!! "<<node.get_name() );	
@@ -38,18 +38,18 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		NOT_node* nn = new NOT_node();
 		nn->mother = cur;
 		nn->addToParents();
-		newnodes.push_back(nn);
+		addNode(nn);
+
 			
 		ASSERT_node* asn = new ASSERT_node();
 		asn->mother = nn;
 		string msg = "function was not inlined enough ";
 		msg += node.get_name();
 		asn->setMsg(msg);
-		asn->addToParents();				
-		newnodes.push_back(asn);	
-		
-		rvalue = new CONST_node(0);
-		newnodes.push_back(rvalue);
+		asn->addToParents();
+		addNode(asn);
+
+		rvalue = this->getCnode(0);		
 	}else{
 		rvalue = &node;
 	}

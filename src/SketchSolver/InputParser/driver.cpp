@@ -45,6 +45,7 @@ class paramInterp{
     bool doBvectArith;
     bool printDiag;
 	int inlineAmnt;
+	bool mergeFunctions;
   
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
@@ -61,7 +62,8 @@ class paramInterp{
 		printDiag = false;
 	doBvectArith = false;
 		WITH_RESTRICTIONS = false;
-		inlineAmnt = 20;
+		inlineAmnt = 10;
+		mergeFunctions = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -101,6 +103,13 @@ class paramInterp{
 	    	outputEuclid = true;
 	      input_idx = ii+1;      
 	    }
+
+		if( string(argv[ii]) == "-mergeFunctions" ){
+	    	mergeFunctions = true;
+	      input_idx = ii+1;      
+	    }
+		
+
 	    if( string(argv[ii]) == "-overrideCtrls" ){
 	      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
 	      INp::NCTRLS= atoi(argv[ii+1]);
@@ -284,7 +293,7 @@ int main(int argc, char** argv){
       	}
       	
       	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
-      						   params.seedsize, params.inlineAmnt, INp::NINPUTS);
+			params.seedsize, params.inlineAmnt, INp::NINPUTS, params.mergeFunctions);
       						   
       	if(params.printDiag){
       		solver.activatePrintDiag();	
