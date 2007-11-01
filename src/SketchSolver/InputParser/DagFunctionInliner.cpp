@@ -16,6 +16,8 @@ tnbuildTime(" tnbuilding "),
 optimTime(" optim "),
 ufunAll(" ufun all"),
 optAll(" opt all "),
+cleanupTime("cleanup time"),
+unifyTime("unify time"),
 inlineAmnt(p_inlineAmnt),
 mergeFunctions(p_mergeFunctions),
 divFactor(32),
@@ -275,7 +277,7 @@ void DagFunctionInliner::unify(){
 		}
 	}	
 
-    
+    int nmerges = 0;
 
 	for(map<string, map<int, int> >::iterator it = lidToDagID.begin(); it != lidToDagID.end(); ++it){
 		string const & name = it->first;
@@ -313,10 +315,10 @@ void DagFunctionInliner::unify(){
 					if(dif == lowestDif){
 						lowestDifRows.insert(j);
 					}
-					cout<<" merged on  "<<dif<<endl;
+					// cout<<" merged on  "<<dif<<endl;
 				}else{
 					if(dif <= (avg*9)/10){
-						cout<<" almost but not "<<dif<<endl;
+						// cout<<" almost but not "<<dif<<endl;
 
 					}
 				}
@@ -344,16 +346,18 @@ void DagFunctionInliner::unify(){
 					eqClasses.push_back(s);
 					eqClassRepresentative.push_back(locToG[i]);
 					mergeFuncalls(locToG[i], locToG[j]);
+					++nmerges;
 				}else{
 					eqClasses[classID].insert(i);
 					mergeFuncalls(eqClassRepresentative[classID], locToG[i]);
+					++nmerges;
 				}
 				
 			}		
 		}
 
 	}
-
+	cout<<" merged "<<nmerges<<" calls"<<endl;
 	cleanup(dag);
 	tnbuilder.reset();
 }
@@ -383,8 +387,13 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 
 		}
 	}
-		
+
+	cout<<" added nodes = "<<newnodes.size()<<endl;
+
+
+	cleanupTime.restart();
 	cleanup(dag);
+	cleanupTime.stop();
 	tnbuilder.reset();
 	cout<<" nfuns = "<<nfuns<<endl;
 
@@ -404,7 +413,9 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 				cout<<"reducing divFactor "<<divFactor<<endl;
 			}
 		}
+		unifyTime.restart();
 		unify();
+		unifyTime.stop();
 	}
 
 	oldNfun = nfuns;
@@ -438,6 +449,8 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	cout<<" final dag.size()=="<<dag.size()<<endl;
 	everything.stop();
 	everything.print();
+	cleanupTime.print();
+	unifyTime.print();
 	ufunAll.print();
 	optAll.print();
 	replTime.print();

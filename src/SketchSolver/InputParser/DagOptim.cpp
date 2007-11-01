@@ -1064,11 +1064,12 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 void DagOptim::cleanup(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
-	dag.repOK();
+	//dag.repOK();
 	newnodes.clear();
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
+	statcomp.print();
 }
 
 void DagOptim::process(BooleanDAG& dag){
