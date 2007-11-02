@@ -184,12 +184,73 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	ufunAll.stop();
 }
 
+
+void collectSet(arith_node* an, set<bool_node*>& s, int lev){
+	s.insert(an);
+	if(lev <= 0){ return; }
+	for(int i=0; i<an->multi_mother.size(); ++i){
+		bool_node* bn = an->multi_mother[i];
+		if(typeid(*bn) == typeid(ARRACC_node)){
+			collectSet(dynamic_cast<arith_node*>(bn), s, lev-1);
+		}else{
+			s.insert(bn);
+		}
+	}
+}
+
+bool compareSet(arith_node* an, set<bool_node*>& s, int lev){
+	if(s.count(an) > 0){
+		return true;
+	}
+	if(lev <= 0){ return false; }
+	for(int i=0; i<an->multi_mother.size(); ++i){
+		bool_node* bn = an->multi_mother[i];
+		if(typeid(*bn) == typeid(ARRACC_node)){
+			bool tmp = compareSet(dynamic_cast<arith_node*>(bn), s, lev-1);
+			if(!tmp){
+				return false;
+			}
+		}else{
+			if(s.count(bn)==0){
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+
+int compareDifferent(bool_node* bn1, bool_node* bn2){
+		// If they are different, but they are equivalent ARRACCS differing only on their mothers, add 1.
+		//If they are just different symbolic values, add 2.
+	/*
+	if(typeid(*bn1) == typeid(ARRACC_node) && typeid(*bn2) == typeid(ARRACC_node)){
+		arith_node* an1 = dynamic_cast<arith_node*>(bn1);
+		arith_node* an2 = dynamic_cast<arith_node*>(bn2);
+		set<bool_node*> s;
+		collectSet(an1, s, 3);
+		bool tmp = compareSet(an2, s, 3);
+		if(tmp){
+			return 1;
+		}
+		return 2;
+	}
+	*/
+	//If one of them is a constant, add 3.	
+	if(typeid(*bn1) == typeid(CONST_node) || typeid(*bn2) == typeid(CONST_node)){
+		return 3;
+	}
+
+	return 2;
+}
+
+
 int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2){
 	int rv = 0;
 	Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
 	for(int i=0; i<arg1.size(); ++i){
 		if(arg1[i]->id != arg2[i]->id){
-			rv++;
+			rv+= compareDifferent(arg1[i], arg2[i]);
 		}
 	}
 	return rv;
@@ -200,7 +261,7 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 //Merges the function at id first with the function at id second. The resulting function will go to ID first.
 
 void DagFunctionInliner::mergeFuncalls(int first, int second){
-	cout<<" merging "<<first<<" and "<<second<<endl;
+	// cout<<" merging "<<first<<" and "<<second<<endl;
 	UFUN_node* fun1 = dynamic_cast<UFUN_node*>(dag[first]);
 	UFUN_node* fun2 = dynamic_cast<UFUN_node*>(dag[second]);
 
@@ -241,122 +302,86 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 
 }
 
+bool checkFunName(string& name){
 
+	return true;
+}
 
 void DagFunctionInliner::unify(){
 	initialize(dag);
-	map<string, vector<vector<bool_node*> > > argLists;
-	map<string, vector<vector<int> > > diffs;
-	map<string, map<int, int> > lidToDagID;
-	map<string, int> tot;
+	vector<vector<bool_node*> >  argLists;
+	vector<vector<int> >  diffs;
+	map<int, int>  locToG;
+	int tot;
+	map<int, vector<int> >  nfd;
+	map<int, int>  closestMatch;
 	int maxDif = -1;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
 			string& name = ufun->get_ufname();
-			//ufun->accept(cse);
-			//cout<<cse.ccode<<endl;
-			vector<vector<bool_node*> >& v = argLists[name];
+			if(checkFunName(name)){
+				vector<vector<bool_node*> >& v = argLists;	
+				int id = v.size();
+				vector<int> difRow;
+				locToG[id] = i;
+				tot = 0; 
+				int lowestDif = 100000;
+				int lowestDifID = -1;
+				for(int j=0; j<v.size(); j++){
+					int dif = argsCompare(v[j], ufun->multi_mother);
+					maxDif = dif > maxDif ? dif : maxDif;
+					tot += dif;
+					if(dif < lowestDif){ 
+						lowestDif = dif; 
+						lowestDifID = j;
+					}
+					//cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
+				}
+				cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
+				closestMatch[id] = lowestDifID;
+				nfd[lowestDif].push_back(id);
+				v.push_back(ufun->multi_mother);	
 
-			int id = v.size();
-			
-			vector<int> difRow;
-			lidToDagID[name][id] = i;
-			if(id==0){ tot[name] = 0; }
-			for(int j=0; j<v.size(); j++){
-				int sz = (ufun->multi_mother.size());
-				maxDif = sz > maxDif ? ufun->multi_mother.size() : maxDif;
-				int dif = argsCompare(v[j], ufun->multi_mother);
-				tot[name] += dif;
-				difRow.push_back(dif);
-				//cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
-			}
-			v.push_back(ufun->multi_mother);
-			diffs[name].push_back(difRow);
+			}			
 		}
 	}	
 
+
+
+
     int nmerges = 0;
-
-	for(map<string, map<int, int> >::iterator it = lidToDagID.begin(); it != lidToDagID.end(); ++it){
-		string const & name = it->first;
-		map<int, int>& locToG = it->second;
-		vector<vector<int> >& ldifs = diffs[name];
-		vector<vector<bool_node*> > & larglists = argLists[name];
-		int sz = larglists.size();
-		if(sz <= 1){ continue; }
-		int avg = (tot[name]*2 / ((sz)*(sz-1))) + 1;
-		cout<<"avg = "<<avg<<"   cutoff "<< ((avg*FRACTION)/divFactor) <<endl;
-		vector<set<int> > eqClasses;
-		vector<int>  eqClassRepresentative;
-		int i=0;
-		for(vector<vector<int> >::iterator rowIt = ldifs.begin(); rowIt != ldifs.end(); ++rowIt, ++i){
-			vector<int>& row = *rowIt;	
-
-			//In the loop below, we are going to look for the best possible match.
-			//The criteria for best match is as follows:
-			// 1. A match must have dif <= avg/3.
-			// 2. The best match has the lowest dif.
-			// 3. With two matches with identical dif, we pick the one that doesn't belong to any other equivalence class.
-			// 4. If all matches with lowest diff belong to different equivalence classes, we join those equivalence classes.
-
-
-			int lowestDif = maxDif;
-			set<int> lowestDifRows;
-			for(int j=0; j<row.size(); ++j){
-				int dif = row[j];
-				if(dif < (avg*FRACTION)/divFactor){
-					if(dif < lowestDif){
-						lowestDif = dif;
-						lowestDifRows.clear();
-						lowestDifRows.insert(j);
-					}
-					if(dif == lowestDif){
-						lowestDifRows.insert(j);
-					}
-					// cout<<" merged on  "<<dif<<endl;
-				}else{
-					if(dif <= (avg*9)/10){
-						// cout<<" almost but not "<<dif<<endl;
-
-					}
+	cout<<"  expectedNFuns="<<expectedNFuns<<endl;
+	int totFuns=0;
+	map<int, int> actualMatch;
+	for(map<int, vector<int> >::reverse_iterator it = nfd.rbegin(); it != nfd.rend(); ++it){
+		vector<int>& ids = it->second;
+		cout<<" ldiff = "<<it->first<<" size = "<<ids.size()<<endl;
+		if(totFuns >= expectedNFuns){
+			//If we are here, we've exhausted our quota of functions, so we'll start merging the remaining ones with their closest match.
+			for(int i=0; i<ids.size(); ++i){
+				int a = ids[i];
+				int b = closestMatch[a];
+				cout<<" merging function "<<a<<"("<< locToG[a] <<") with function "<<b<<"("<< locToG[b]<<")"<<endl;
+				Assert( b < a, "This is an invariant");
+				int bnew = b;
+				while(actualMatch.count(bnew) > 0){
+					cout<<"function "<<bnew<<"("<< locToG[bnew]<<") had already been merged into "<<actualMatch[bnew]<<endl;
+					int tmp = bnew;
+					bnew = actualMatch[bnew];
+					if(b != tmp){ actualMatch[b] = bnew; }
 				}
+				mergeFuncalls( locToG[bnew], locToG[a]);
+				++nmerges;
+				actualMatch[a] = bnew;
 			}
-			//For now I am taking a shortcut. I just merge with the first lowest 
-			//match I see. I'll fix this latter, but I want to test this first. 
-			//just to see how it works.
-			if(lowestDifRows.size() > 0){
-				int j = *lowestDifRows.begin();
-				//search for the eqclass to which j belongs.
-				//If it belongs to an eq class, merge i with the 
-				//current representative of the eq class. 
-				//otherwise, merge i with j and make them an equivalence class.
-				int classID=-1;
-				for(int t=0; t<eqClasses.size(); ++t){
-					if(eqClasses[t].count(j)>0){
-						classID = t;
-						break;
-					}
-				}
-				if(classID == -1){
-					set<int> s;
-					s.insert(i);
-					s.insert(j);
-					eqClasses.push_back(s);
-					eqClassRepresentative.push_back(locToG[i]);
-					mergeFuncalls(locToG[i], locToG[j]);
-					++nmerges;
-				}else{
-					eqClasses[classID].insert(i);
-					mergeFuncalls(eqClassRepresentative[classID], locToG[i]);
-					++nmerges;
-				}
-				
-			}		
 		}
-
+		totFuns += ids.size();
 	}
+
+
+
 	cout<<" merged "<<nmerges<<" calls"<<endl;
 	cleanup(dag);
 	tnbuilder.reset();
@@ -416,6 +441,7 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		unifyTime.restart();
 		unify();
 		unifyTime.stop();
+		expectedNFuns++;
 	}
 
 	oldNfun = nfuns;
@@ -434,7 +460,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		DagOptim optim(dag);
 		optim.process(dag);
 	}
-	
+	expectedNFuns = 2;
 	timerclass everything("everything");
 
 	everything.start();
