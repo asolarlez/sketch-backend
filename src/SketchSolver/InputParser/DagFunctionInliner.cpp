@@ -18,6 +18,7 @@ ufunAll(" ufun all"),
 optAll(" opt all "),
 cleanupTime("cleanup time"),
 unifyTime("unify time"),
+clonetime(" clone time"),
 inlineAmnt(p_inlineAmnt),
 mergeFunctions(p_mergeFunctions),
 divFactor(32),
@@ -40,8 +41,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
 		//cout<<" inlining "<<name<<endl;
+		clonetime.restart();
 		BooleanDAG* fun = functionMap[name]->clone();
-
+		clonetime.stop();
 
 		vector<bool_node*> inputs  = fun->getNodesByType(bool_node::SRC);
 		
@@ -399,10 +401,12 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			nfuns++;
 		}
-
+		timerclass& tc = optTimers[typeid(*dag[i]).name()];
+		tc.restart();
 		optAll.restart();
 		bool_node* node = computeOptim(dag[i]);
 		optAll.stop();		
+		tc.stop();
 
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
@@ -478,7 +482,14 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	cleanupTime.print();
 	unifyTime.print();
 	ufunAll.print();
+	clonetime.print();
 	optAll.print();
+
+	for(map<string, timerclass>::iterator it = optTimers.begin(); it != optTimers.end(); ++it){
+		cout<<"            "<<it->first;
+		it->second.print();
+	}
+
 	replTime.print();
 	replTime2.print();
 	tnbuildTime.print();

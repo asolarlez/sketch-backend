@@ -25,6 +25,8 @@ class DagFunctionInliner : public DagOptim
 	timerclass optimTime;
 	timerclass cleanupTime;
 	timerclass unifyTime;
+	timerclass clonetime;
+	map<string, timerclass> optTimers;
 	int expectedNFuns;
 	virtual void immInline(BooleanDAG& dag);
 	int argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2);
