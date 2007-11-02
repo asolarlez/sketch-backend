@@ -75,6 +75,7 @@ class timerclass{
         public:
         timerclass(){
                 tottime = 0;
+				QueryPerformanceFrequency((LARGE_INTEGER *)&units);
         }
         timerclass(const string& pname):name(pname){
                 tottime = 0;
