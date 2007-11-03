@@ -144,10 +144,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							optimTime.restart();
 							bool_node* nnodep = this->computeOptim(nnode);
 							optimTime.stop();
-
 							if(nnodep == nnode){
 								nnode->addToParents();
 								this->addNode(nnode);							
+							}else{
+								delete nnode;
 							}
 							nnode = nnodep;
 						}
@@ -159,11 +160,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							optimTime.restart();
 							bool_node* ornodep = this->computeOptim(ornode);
 							optimTime.stop();
-
 							if(ornodep == ornode){
 								this->addNode(ornode);
 								ornode->addToParents();
-							}	
+							}else{
+								delete ornode;
+							}
 							ornode = ornodep;
 						}
 						cur = ornode;				

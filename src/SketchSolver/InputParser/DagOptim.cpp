@@ -151,9 +151,15 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = fafa;
 			pnode->addToParents();
-			addNode(pnode);			
 			rvalue  = pnode;
 			visit(*pnode);
+			if(rvalue != pnode){
+				pnode->dislodge();
+				delete pnode;
+				cout<<"=================== saved 3"<<endl;
+			}else{
+				addNode(pnode);	
+			}
 			return true;
 		}
 	}
@@ -173,10 +179,16 @@ bool DagOptim::compSymplification(NTYPE& node){
 			NTYPE* pnode = new NTYPE();
 			pnode->mother = mofa;
 			pnode->father = getCnode(0);
-			pnode->addToParents();
-			addNode(pnode);			
+			pnode->addToParents();		
 			rvalue  = pnode;
-			visit(*pnode);			
+			visit(*pnode);		
+			if(rvalue != pnode){
+				pnode->dislodge();
+				delete pnode;
+				cout<<"=================== saved 3"<<endl;
+			}else{
+				addNode(pnode);	
+			}
 			return true;
 		}			
 	}
@@ -196,10 +208,16 @@ bool DagOptim::compSymplification(NTYPE& node){
 			NTYPE* pnode = new NTYPE();
 			pnode->father = mofa;
 			pnode->mother = getCnode(0);
-			pnode->addToParents();
-			addNode(pnode);			
+			pnode->addToParents();		
 			rvalue  = pnode;
-			visit(*pnode);			
+			visit(*pnode);
+			if(rvalue != pnode){
+				pnode->dislodge();
+				delete pnode;
+				cout<<"=================== saved 3"<<endl;
+			}else{
+				addNode(pnode);	
+			}
 			return true;
 		}			
 	}

@@ -659,6 +659,7 @@ void BooleanDAG::addNewNode(bool_node* node){
 
 void BooleanDAG::addNewNodes(vector<bool_node*>& v){
 	//Assume all the nodes in v are already part of the network, meaning all their parents and children are properly set.
+	nodes.reserve(nodes.size() + v.size());
 	for(int i=0; i<v.size(); ++i){
 		if(v[i] != NULL){
 			addNewNode(v[i]);
