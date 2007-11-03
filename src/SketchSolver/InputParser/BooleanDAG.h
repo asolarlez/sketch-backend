@@ -64,7 +64,7 @@ public:
   virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
   virtual void outDagEntry(ostream& out);
   virtual void addToParents();
-  virtual void redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag);
+  virtual void redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag);
   virtual void switchInputs(BooleanDAG& bdag);
   virtual string get_tname(){
     switch(type){
@@ -86,6 +86,7 @@ public:
   virtual bool_node* clone()=0;
   virtual void printSubDAG(ostream& out);
   virtual OutType getOtype();
+  void neighbor_replace(bool_node* replacement, timerclass& replacepar);
 };
 
 
@@ -108,7 +109,7 @@ class arith_node: public bool_node{
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out);
 	virtual void addToParents();
-	virtual void redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag);
+	virtual void redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag);
 	virtual void switchInputs(BooleanDAG& bdag);
 	virtual void printSubDAG(ostream& out);
 	virtual string get_tname(){
@@ -579,6 +580,7 @@ class BooleanDAG
 public:
 
   BooleanDAG* clone();
+  void clone_nodes(vector<bool_node*>& nstore);
 
   void repOK();
   void print(ostream& out);
@@ -641,7 +643,6 @@ public:
   void cleanup(bool moveNots=true);
   bool_node* get_node(const string& name);  
   bool_node* unchecked_get_node(const string& name);
-  void neighbor_replace(bool_node* onode, bool_node* replacement, timerclass& replacepar);
   iterator begin(){ return nodes.begin(); }
   iterator end(){ return nodes.end(); }
   void alias(const string& ssource,  const string& starg);

@@ -42,41 +42,46 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	if( functionMap.find(name) != functionMap.end() ){
 		//cout<<" inlining "<<name<<endl;
 		clonetime.restart();
-		BooleanDAG* fun = functionMap[name]->clone();
+		BooleanDAG* oldFun = functionMap[name];
+		oldFun->clone_nodes(clones);
 		clonetime.stop();
 
 		{
-			vector<bool_node*> inputs  = fun->getNodesByType(bool_node::SRC);
+			vector<bool_node*>& inputs  = oldFun->getNodesByType(bool_node::SRC);
 			
 			Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
 			
 			for(int i=0; i<inputs.size(); ++i){			
-				bool_node* formal = inputs[i];			
+				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
 				//cout<<" replacing formal : " << formal->get_name() << " with actual "<<actual->get_name()<<endl;
-				Assert( (*fun)[formal->id] == formal, "ID is incorrect");
+				Assert( clones[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
-				fun->replace(formal->id, actual, replTime2);
+				formal->neighbor_replace(actual, replTime2);
+				clones[formal->id] = NULL;
+				delete formal;
 				replTime.stop();
 			}
 		}
 		
 		{
-			vector<bool_node*> controls  = fun->getNodesByType(bool_node::CTRL);
+			vector<bool_node*>& controls  = oldFun->getNodesByType(bool_node::CTRL);
 			
 			for(int i=0; i<controls.size(); ++i){			
-				bool_node* formal = controls[i];
+				bool_node* formal = clones[controls[i]->id];
 				bool_node* actual = dag.unchecked_get_node( formal->name );		
 				if(actual != NULL){
-					Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
+					Assert( clones[formal->id] == formal, "ID is incorrect");	
 					replTime.restart();
-					fun->replace(formal->id, actual, replTime2);
+					formal->neighbor_replace(actual, replTime2);
+					clones[formal->id] = NULL;
+					delete formal;
 					replTime.stop();
 				}
 			}
 		}
 		
-		vector<bool_node*>& outputs  = fun->getNodesByType(bool_node::DST);
+		vector<bool_node*>& outputs  = oldFun->getNodesByType(bool_node::DST);
 		
 		Assert( outputs.size() == 1, "The outputs are of the wrong size "<< outputs.size()<<"  "<< name);
 				
@@ -91,8 +96,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		bool_node* output = NULL;
 
-		for(int i=0; i<fun->size(); ++i){
-			bool_node* n = (*fun)[i];
+		for(int i=0; i<clones.size(); ++i){
+			bool_node* n = clones[i];
 			if( n != NULL &&  n->type != bool_node::DST ){			
 				if(n->type != bool_node::ASSERT){
 					if(typeid(*n) != typeid(UFUN_node)){
@@ -104,7 +109,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							this->addNode(n);
 						}else{
 							replTime.restart();
-							this->dag.neighbor_replace(n, nnode, replTime2);
+							n->neighbor_replace(nnode, replTime2);
 							replTime.stop();
 							delete n;
 						}
@@ -114,8 +119,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							this->addNode(n);
 						}else{
 							replTime.restart();
-							this->dag.neighbor_replace(n, nnode, replTime2);
+							n->neighbor_replace(nnode, replTime2);
 							replTime.stop();
+							delete n;
 						}
 					}
 				}else{
@@ -182,7 +188,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}
 		}		
 		rvalue = output;
-		delete fun;
 		somethingChanged = true;
 	}else{
 		rvalue = &node;
@@ -300,8 +305,6 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 	funnew->addToParents();
 	dag.replace(fun1->id, funnew);
 	dag.replace(fun2->id, funnew);
-
-	
 
 
 	dag[first] = funnew;

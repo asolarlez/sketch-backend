@@ -375,7 +375,8 @@ void BooleanDAG::layer_graph(){
 timerclass TTMMPP("");
 
 
-void BooleanDAG::neighbor_replace(bool_node* onode, bool_node* replacement, timerclass& replacepar){
+void bool_node::neighbor_replace(bool_node* replacement, timerclass& replacepar){
+	bool_node* onode = this;
 	replacepar.restart();
 	onode->dislodge();
 	replacepar.stop();
@@ -397,7 +398,7 @@ void BooleanDAG::replace(int original, bool_node* replacement, timerclass& repla
 	bool_node* onode = nodes[i];
 	Assert( onode != NULL, "This can't happen");
 	
-	neighbor_replace(onode, replacement, replacepar);
+	onode->neighbor_replace(replacement, replacepar);
 	
 	
 	//
@@ -981,7 +982,7 @@ void bool_node::switchInputs(BooleanDAG& bdag){
 
 
 
-void arith_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
+void arith_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag){
   bool_node::redirectPointers(oribdag, bdag);
   for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
@@ -995,7 +996,7 @@ void arith_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
 
 
 
-void bool_node::redirectPointers(BooleanDAG& oribdag, BooleanDAG& bdag){
+void bool_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag){
 	if(father != NULL){
 		Assert( father->id != -22, "This node should not exist anymore");
 		if( oribdag.checkNodePosition(father) ){
@@ -1145,26 +1146,40 @@ void BooleanDAG::rename(const string& oldname,  const string& newname){
 	named_nodes[newname] = node;	
 }
 
-BooleanDAG* BooleanDAG::clone(){
-	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG();
-	relabel();
-	bdag->nodes.reserve(nodes.size());
+
+
+void BooleanDAG::clone_nodes(vector<bool_node*>& nstore){
+	nstore.resize(nodes.size());
+
 	Dout( cout<<" after relabel "<<endl );
+	int nnodes = 0;
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		
 			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
 			bool_node* bn = (*node_it)->clone();
 			Dout( cout<<" node "<<(*node_it)->get_name()<<" clones into "<<bn->get_name()<<endl );
-			bdag->nodes.push_back( bn );
+			nstore[nnodes] = bn;
+			nnodes++;
 		}else{
 			Assert( false, "The graph you are cloning should not have any null nodes.");
 		}
-	}	
-	Dout( cout<<" after indiv clone "<<endl );
-	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){		
-		(*node_it)->redirectPointers(*this, *bdag);	
 	}
+	Dout( cout<<" after indiv clone "<<endl );
+	nstore.resize(nnodes);
+	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it){		
+		(*node_it)->redirectPointers(*this, nstore);
+	}
+}
+
+
+
+BooleanDAG* BooleanDAG::clone(){
+	Dout( cout<<" begin clone "<<endl );
+	BooleanDAG* bdag = new BooleanDAG();
+	relabel();
+
+	clone_nodes(bdag->nodes);
+
 	Dout( cout<<" after redirectPointers "<<endl );
 	bdag->n_controls = n_controls;
 	bdag->n_inputs = n_inputs;
