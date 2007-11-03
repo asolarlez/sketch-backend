@@ -45,34 +45,36 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		BooleanDAG* fun = functionMap[name]->clone();
 		clonetime.stop();
 
-		vector<bool_node*> inputs  = fun->getNodesByType(bool_node::SRC);
-		
-		Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
-		
-		for(int i=0; i<inputs.size(); ++i){			
-			bool_node* formal = inputs[i];			
-			bool_node* actual = node.multi_mother[i];
-			//cout<<" replacing formal : " << formal->get_name() << " with actual "<<actual->get_name()<<endl;
-			Assert( (*fun)[formal->id] == formal, "ID is incorrect");
-			replTime.restart();
-			fun->replace(formal->id, actual, replTime2);
-			replTime.stop();
-		}
-		
-
-		vector<bool_node*> controls  = fun->getNodesByType(bool_node::CTRL);
-		
-		for(int i=0; i<controls.size(); ++i){			
-			bool_node* formal = controls[i];
-			bool_node* actual = dag.unchecked_get_node( formal->name );		
-			if(actual != NULL){
-				Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
+		{
+			vector<bool_node*> inputs  = fun->getNodesByType(bool_node::SRC);
+			
+			Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
+			
+			for(int i=0; i<inputs.size(); ++i){			
+				bool_node* formal = inputs[i];			
+				bool_node* actual = node.multi_mother[i];
+				//cout<<" replacing formal : " << formal->get_name() << " with actual "<<actual->get_name()<<endl;
+				Assert( (*fun)[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
 				fun->replace(formal->id, actual, replTime2);
 				replTime.stop();
 			}
 		}
 		
+		{
+			vector<bool_node*> controls  = fun->getNodesByType(bool_node::CTRL);
+			
+			for(int i=0; i<controls.size(); ++i){			
+				bool_node* formal = controls[i];
+				bool_node* actual = dag.unchecked_get_node( formal->name );		
+				if(actual != NULL){
+					Assert( (*fun)[formal->id] == formal, "ID is incorrect");	
+					replTime.restart();
+					fun->replace(formal->id, actual, replTime2);
+					replTime.stop();
+				}
+			}
+		}
 		
 		vector<bool_node*>& outputs  = fun->getNodesByType(bool_node::DST);
 		
@@ -104,6 +106,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							replTime.restart();
 							this->dag.neighbor_replace(n, nnode, replTime2);
 							replTime.stop();
+							delete n;
 						}
 					}else{						
 						bool_node* nnode = cse.computeCSE(n);
@@ -179,6 +182,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}
 		}		
 		rvalue = output;
+		delete fun;
 		somethingChanged = true;
 	}else{
 		rvalue = &node;

@@ -2,7 +2,21 @@
 #include "SATSolver.h"
 #include <sstream>
 
-char tmpbuf[50];
+char tmpbuf[10000];
+char tbl[32] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
+				'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
+				'U', 'V'};
+
+inline void writeInt(char* buf, unsigned val, int& p){
+	while(val != 0){
+		unsigned t = val & 0x1f;
+		buf[p] = tbl[t];
+		p = p+1;
+		val = val>>5;
+	}
+}
+
 
 DagCSE::DagCSE(BooleanDAG& p_dag): dag(p_dag),stimer("string creation"), maptimer("map lookup")
 {
@@ -149,7 +163,7 @@ void DagCSE::eliminateCSE(){
  
  void DagCSE::visit( NEG_node& node ){
  	stimer.restart();
- 	stringstream str;
+
  	int mid = node.mother == NULL? -1: node.mother->id; 	
  	
  	sprintf(tmpbuf, "-%d", mid );   	
@@ -244,6 +258,18 @@ void DagCSE::eliminateCSE(){
  
  void DagCSE::visit( ARRACC_node& node ){
  	stimer.restart();
+	int p = 0;
+	int mid = node.mother == NULL? -1: node.mother->id;
+	writeInt(tmpbuf, mid, p);
+	tmpbuf[p] = '|'; p++;
+	for(int i=0; i<node.multi_mother.size(); ++i){
+ 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
+		writeInt(tmpbuf, mmid, p);
+		tmpbuf[p] = ','; p++;
+ 	}
+	tmpbuf[p] = 0;
+	ccode = tmpbuf;
+	/*
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
  	str<<mid<<"|";
@@ -252,6 +278,7 @@ void DagCSE::eliminateCSE(){
  		str<<mmid<<",";
  	}
  	ccode = str.str();
+	*/
  	stimer.stop();
  }
  
@@ -259,12 +286,10 @@ void DagCSE::eliminateCSE(){
  	stimer.restart();
 	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
- 	str<<mid<<"="<<node.quant<<"?";
- 	for(int i=0; i<node.multi_mother.size(); ++i){
- 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
- 		str<<mmid<<":";
- 	}
- 	ccode = str.str();
+
+	sprintf(tmpbuf, "%d=%d?%d:%d",mid,node.quant,node.multi_mother[0]->id, node.multi_mother[1]->id);   	
+ 	ccode = tmpbuf;
+
  	stimer.stop();
  }
  void DagCSE::visit( ACTRL_node& node ){

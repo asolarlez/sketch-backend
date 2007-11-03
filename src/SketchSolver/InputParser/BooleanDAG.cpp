@@ -1149,6 +1149,7 @@ BooleanDAG* BooleanDAG::clone(){
 	Dout( cout<<" begin clone "<<endl );
 	BooleanDAG* bdag = new BooleanDAG();
 	relabel();
+	bdag->nodes.reserve(nodes.size());
 	Dout( cout<<" after relabel "<<endl );
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		

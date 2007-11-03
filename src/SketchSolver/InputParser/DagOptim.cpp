@@ -709,6 +709,13 @@ void DagOptim::visit( LE_node& node ){
 
 
 void DagOptim::visit( EQ_node& node ){
+
+	
+	if( node.mother == node.father ){
+		rvalue = getCnode(true);
+		return;
+	} 
+
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
 			rvalue  = getCnode( getIval( node.mother ) == getIval( node.father ) );
@@ -758,14 +765,6 @@ void DagOptim::visit( EQ_node& node ){
 		}
 	}
 	
-	
-	
-	
-	
-	if( node.mother == node.father ){
-		rvalue = getCnode(true);
-		return;
-	} 
 		
 	if( compSymplification<equal_to<int> , EQ_node>(node) ){
 		return;	
