@@ -55,10 +55,10 @@ void NodeVisitor::visit( CTRL_node& node ){
 	visitBool(node);	
 }
 void NodeVisitor::visit( PLUS_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( TIMES_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( UFUN_node& node ){
 	visitArith(node);	
@@ -67,31 +67,31 @@ void NodeVisitor::visit( ARRACC_node& node ){
 	visitArith(node);	
 }
 void NodeVisitor::visit( DIV_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( MOD_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( NEG_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( CONST_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( GT_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( GE_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( LT_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( LE_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( EQ_node& node ){
-	visitArith(node);	
+	visitBool(node);	
 }
 void NodeVisitor::visit( ARRASS_node& node ){
 	visitArith(node);	
