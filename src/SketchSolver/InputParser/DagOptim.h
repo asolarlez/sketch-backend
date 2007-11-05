@@ -115,7 +115,7 @@ public:
 	virtual void addNode(bool_node* node);
 	void initialize(BooleanDAG& dag);
 	void cleanup(BooleanDAG& dag);
-
+	void initLight(BooleanDAG& dag);
 	template<typename COMP, typename NTYPE>
 	bool compSymplification(NTYPE& node);
 	

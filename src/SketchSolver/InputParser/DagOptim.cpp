@@ -81,7 +81,9 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			bool_node* parent = ar.multi_mother[i];
 			int tmp = 0;
 			if(anv.count(parent)==0){
+				statcomp.restart();
 				tmp = staticCompare<COMP>(parent, C, reverse);
+				statcomp.stop();
 			}else{
 				tmp = anv[parent].staticCompare<COMP>(C, reverse);
 			}			
@@ -1034,7 +1036,9 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
+	statcomp.restart();
 	int sc = staticCompare<equal_to<int> >(node.mother, node.quant, true);
+	statcomp.stop();
 	if(sc == 1){
 		rvalue = node.multi_mother[1];
 		return;
@@ -1057,17 +1061,22 @@ void DagOptim::visit( DST_node& node ){
 	rvalue = &node;
 }
 
+void DagOptim::initLight(BooleanDAG& dag){
+	dagsize = dag.size();	
+	anv.clear();
+	newnodes.clear();
+	cnmap.clear();
+	cse.clear();
+}
+
+
 
 void DagOptim::initialize(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
-	dagsize = dag.size();	
-	anv.clear();
-	newnodes.clear();
-	cnmap.clear();
-	cse.clear();
+	initLight(dag);
 }
 
 bool_node* DagOptim::computeOptim(bool_node* node){

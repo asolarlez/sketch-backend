@@ -69,9 +69,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
 				string fn = formal->get_name();
-				if(false && specialInputs.count(i) > 0){
-					cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
-					cout<<"";
+				if(specialInputs.count(i) > 0){
+					//cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
+					//cout<<"";
 				}
 				Assert( clones[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
@@ -281,8 +281,8 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 	int rv = 0;
 	Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
 	for(int i=0; i<arg1.size(); ++i){
-		if(false && specialInputs.count(i) > 0){
-			cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
+		if(specialInputs.count(i) > 0){
+			//cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
 		}
 		if(arg1[i]->id != arg2[i]->id){
 			if(specialInputs.count(i) > 0){
@@ -315,6 +315,9 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 
 
 	for(int i=0; i<args1.size(); ++i){
+		if(specialInputs.count(i) > 0){
+			//cout<<i<<"=("<<args1[i]->get_name()<<", "<<args2[i]->get_name()<<")   ";
+		}
 		if(args1[i] == args2[i]){
 			nargs.push_back(args1[i]);
 		}else{
@@ -375,7 +378,7 @@ void DagFunctionInliner::unify(){
 						lowestDif = dif; 
 						lowestDifID = j;
 					}
-					// cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
+					 //cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
 				}
 				cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
@@ -384,7 +387,7 @@ void DagFunctionInliner::unify(){
 
 			}			
 		}
-	}	
+	}
 
 
 
@@ -428,7 +431,7 @@ void DagFunctionInliner::unify(){
 
 void DagFunctionInliner::immInline(BooleanDAG& dag){
 
-	initialize(dag);
+	initLight(dag);
 
 	int nfuns = 0;
 	for(int i=0; i<dag.size() ; ++i ){
@@ -508,7 +511,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 210000 && inlin < inlineAmnt){
+	while(somethingChanged && dag.size() < 310000 && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
