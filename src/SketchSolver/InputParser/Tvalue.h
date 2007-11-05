@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cassert>
+
 using namespace std;
 
 /*
@@ -38,16 +39,8 @@ public:
 
     inline int getId (int idx = 0) const {
 	Assert (id >= 0, "id must be initialized");
-	Assert (idx < getSize (), "index must be in-bound");
-
 	int ret = id + idx;
 	return (neg ? -ret : ret);
-    }
-
-    /* Get an ID, even if exceeding the representation size of bit-vectors. */
-    inline int getIdExt (varDir &dir, int idx = 0) const {
-	Assert (id >= 0, "id must be initialized");
-	return (idx < getSize() ? getId (idx) : getSignId (dir));
     }
 
     inline int getSize (void) const { return size; }
@@ -92,7 +85,7 @@ public:
     }
 
     /* FIXME same as above. */
-    inline void setSize (int a_size) {
+    inline int setSize (int a_size) {
 	Assert (isBvect (), "value type must be bitvector");
 	size = a_size;
     }
@@ -181,19 +174,13 @@ public:
      * Friends.
      */
     friend ostream &operator<< (ostream &out, const Tvalue &tv) {
-	out << "{id=" << tv.getId();
+	out << "{" << (tv.neg ? -tv.id : tv.id);
 
-	if (tv.isSparse()) {
-	    out << " [";
-	    bool is_pred = false;
-	    for (int i = 0; i < tv.size; i++) {
-		if (is_pred)
-		    out << ", ";
-		else
-		    is_pred = true;
-		out << tv.num_ranges[i];
-	    }
-	    out << "]";
+	if (tv.isSparse () ){
+	    out << " [ ";
+	    for (int i = 0; i < tv.size; i++)
+		out << tv.num_ranges[i] << ", ";
+	    out << " ] ";
 	} else
 	    out << " size=" << tv.size;
 
@@ -348,8 +335,7 @@ private:
 
 	/* Allocate bitvector of fresh variables for both value and sign. */
 	int paddedSize = bit.size () + padding;
-	Tvalue tv ((toSigned ? TVAL_BVECT_SIGNED : TVAL_BVECT),
-		   dir.newAnonymousVar (paddedSize), paddedSize);
+	Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (paddedSize), paddedSize);
 
 	/* Assign value/sign bits with conjunction of their corresponding
 	 * sparse variables. */
@@ -375,34 +361,14 @@ public:
 	    Dout (cout << "Converting from BitVector to BitVector (padding="
 		  << padding << ")" << endl);
 
-	    int newSize = size + padding;
-	    if (newSize == size) {
-		Dout (cout << "size remains the same, nothing to do" << endl);
-		return *this;
-	    }
-
-	    Dout (cout << "toBvect: allocating " << newSize << " variables" << endl);
-	    int newId = dir.newAnonymousVar (newSize);
-	    Tvalue tv (TVAL_BVECT, newId, newSize);
-
-	    /* Embed old bits into new bits. */
-	    Dout (cout << "toBvect: embedding old bits into new bits" << endl);
-	    for (int i = 0; i < size; i++)
-		dir.addEqualsClause (getId (i), newId++);
-
-	    /* Unify padding bits with false. */
-	    Dout (cout << "toBVect: unifying padding bits with false" << endl);
-	    while (padding--)
-		dir.addEqualsClause (-dir.YES, newId++);
-
-	    Dout (cout << "toBvect: done" << endl);
-	    return tv;
+	    /* TODO handle padding. */
+	    Assert (padding == 0, "padding not yet implemented for this conversion");
 	} else if (isBvectSigned ()) {
 	    Dout (cout << "Converting from BitVectorSigned to BitVector (padding="
 		  << padding << ")" << endl);
 
 	    /* This conversion is not allowed at the moment (requires dynamic assertion). */
-	    Assert (0, "cannot convert from signed to unsigned bitvector");
+	    Assert (0, "cannot convert from unsigned to signed bitvector");
 	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to BitVector (padding="
 		  << padding << ")" << endl);
@@ -421,16 +387,9 @@ public:
 		  << (isBvectSigned () ? "Signed" : "")
 		  << " to BitVectorSigned (padding=" << padding << ")" << endl);
 
-	    /* Allocate new variables sufficient for value bits + additional
-	     * sign bit + padding. */
+	    /* Allocate new variables sufficient for value bits + additional sign bit + padding. */
 	    int valueSize = size - (isBvectSigned () ? 1 : 0);
 	    int newSize = valueSize + padding + 1;
-	    if (isBvectSigned() && newSize == size) {
-		Dout (cout << "toBvectSigned: size remains the same, nothing to do"
-		      << endl);
-		return *this;
-	    }
-
 	    Dout (cout << "toBvectSigned: allocating " << newSize << " variables" << endl);
 	    Tvalue tv (TVAL_BVECT_SIGNED, dir.newAnonymousVar (newSize), newSize);
 
@@ -443,7 +402,7 @@ public:
 		  << newId + valueSize - 1 << ") with previous ones (" << id << "-"
 		  << id + valueSize - 1 << ")" << endl);
 	    for (int i = 0; i < valueSize; i++)
-		dir.addEqualsClause (getId (i), newId++);
+		dir.addEqualsClause (id + i, newId++);
 
 	    /* Unify sign and padding bits with "false". */
 	    Dout (cout << "toBvectSigned: unifying sign + padding bits" << endl);
@@ -463,11 +422,6 @@ public:
 	return *this;
     }
 
-    void makeBvect (varDir &dir, unsigned padding = 0) {
-	Tvalue tmp = toBvect (dir, padding);
-	*this = tmp;
-    }
-
     void makeBvectSigned (varDir &dir, unsigned padding = 0) {
 	Tvalue tmp = toBvectSigned (dir, padding);
 	*this = tmp;
@@ -478,56 +432,53 @@ public:
 
 	if (isBvect () || isBvectSigned ()) {
 	    if (size == 1 && isBvect ()) {
-			/* Argument has a single bit (unsigned). */
-			Dout (cout << "Converting " << *this << " from Bit to Sparse" << endl); 
-			Assert( !isBvectSigned() , "This doesn't work if it is signed");
-			if (id == dir.YES ){
-			    /* Bit is aliases with "true" or "false". */
-			    num_ranges.push_back (neg ? 0 : 1);
-			} else {
-			    /* Generate values for assertion / negation of single id. */
-			    num_ranges.push_back (0);
-			    num_ranges.push_back (1);
-			    int tmp = dir.newAnonymousVar (2);
-			    dir.addEqualsClause (-getId(), tmp);
-			    dir.addEqualsClause (getId(), tmp + 1);
-			    id = tmp;
-			    size = 2;
-			}
+		/* Argument has a single bit (unsigned). */
+		Dout (cout << "Converting " << *this << " from Bit to Sparse" << endl); 
+
+		if (id == dir.YES ){
+		    /* Bit is aliases with "true" or "false". */
+		    num_ranges.push_back (neg ? 0 : 1);
+		} else {
+		    /* Generate values for assertion / negation of single id. */
+		    num_ranges.push_back (0);
+		    num_ranges.push_back (1);
+		    int tmp = dir.newAnonymousVar (2);
+		    dir.addEqualsClause (-getId(), tmp);
+		    dir.addEqualsClause (getId(), tmp + 1);
+		    id = tmp;
+		    size = 2;
+		}
 	    } else {
-			/* More than one bit. */
-			Dout (cout << "Converting from BitVector" <<
-			      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
-	
-			vector<int> &tmp = num_ranges;
-			vector<int> ids (size);
-			for (int i = 0; i < size; i++)
-			    ids[i] = getId (i);
-			varRange vr = dir.getSwitchVars (ids, size, tmp);
-			id = vr.varID;
-			int oldsize = size;  /* save previous size (number of bits). */
-			size = vr.range;
-	
-			Assert (size == num_ranges.size (),
-				"number of variables mismatches number of sparse values");			
-			/* If we generated values from a signed bitvector, we must adjust
-			 * them to properly represent full int-sized signed values. */
-			if (isBvectSigned ()) {
-				Assert( oldsize > 1, "There must be at least one bit plus the sign bit if this is to be a signed value");
-				Dout(cout<<"It is signed, so we are padding"<<endl);
-			    /* Compute padding / testing bitmap. */
-			    unsigned int mask = ~((1 << oldsize-1) - 1);
-				Dout(cout<<"Old size = "<<oldsize<<" mask = "<<hex<<mask<<dec<<endl);
-			    /* Pad most significant bits of resulting numbers with the bit
-			     * corresponding to each value's "signed bit". */
-			    for (int i = 0; i < size; i++) {
-					int &x = num_ranges[i];
-					if (x & mask){
-					    x |= mask;
-					}
-				}
-				
-			}
+		/* More than one bit. */
+		Dout (cout << "Converting from BitVector" <<
+		      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
+
+		vector<int> &tmp = num_ranges;
+		vector<int> ids (size);
+		for (int i = 0; i < size; i++)
+		    ids[i] = getId (i);
+		varRange vr = dir.getSwitchVars (ids, size, tmp);
+		id = vr.varID;
+		int oldsize = size;  /* save previous size (number of bits). */
+		size = vr.range;
+
+		Assert (size == num_ranges.size (),
+			"number of variables mismatches number of sparse values");
+
+		/* If we generated values from a signed bitvector, we must adjust
+		 * them to properly represent full int-sized signed values. */
+		if (isBvectSigned ()) {
+		    /* Compute padding / testing bitmap. */
+		    unsigned int mask = ~((1 << oldsize) - 1);
+
+		    /* Pad most significant bits of resulting numbers with the bit
+		     * corresponding to each value's "signed bit". */
+		    for (int i = 0; i < size; i++) {
+			int &x = num_ranges[i];
+			if (x & mask)
+			    x |= mask;
+		    }
+		}
 	    }
 	    neg = false;
 	    type = TVAL_SPARSE;

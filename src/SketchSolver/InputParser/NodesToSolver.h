@@ -64,8 +64,6 @@ class NodesToSolver : public NodeVisitor {
 
     void boolNodeUpdate (bool_node &, Tvalue &);
 
-    void scratchpadRefit (size_t);
-
 public:
    
    /*
@@ -124,9 +122,7 @@ public:
 
     virtual void visit (ASSERT_node &node);
 
-private:
-    bool doArrAccSparse (Tvalue &, Tvalue &, map<int, Tvalue> &, int);
-    bool doArrAccBvect (Tvalue &, Tvalue &, map<int, Tvalue> &);
+    virtual void doNonBoolArrAcc (arith_node &node);
     virtual bool checkParentsChanged (bool_node &node, bool more);
 };
 
