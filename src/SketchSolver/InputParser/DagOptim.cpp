@@ -69,6 +69,9 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			anv[n1].init(0);	
 			anv[n1].insert(1);
 			return anv[n1].staticCompare<COMP>(C, reverse);
+		}else{
+			anv[n1].makeTop();
+			return 0;
 		}
 	}
 
@@ -81,12 +84,11 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			bool_node* parent = ar.multi_mother[i];
 			int tmp = 0;
 			if(anv.count(parent)==0){
-				statcomp.restart();
 				tmp = staticCompare<COMP>(parent, C, reverse);
-				statcomp.stop();
 			}else{
 				tmp = anv[parent].staticCompare<COMP>(C, reverse);
 			}			
+
 			if(tmp == 0 || (rv != -2 && tmp != rv)){				
 				rv = 0;	
 			}
@@ -291,11 +293,8 @@ bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	return false;
 }
 bool DagOptim::isConst(bool_node* n1){
-	if( n1->type == bool_node::ARITH ){
-		arith_node* an = dynamic_cast<arith_node*>(n1);
-		if( an->arith_type == arith_node::CONST ){
-			return true;	
-		}	
+	if( n1->type == bool_node::CONST ){
+		return true;
 	}	
 	return false;
 }
@@ -540,7 +539,7 @@ void DagOptim::visit( PLUS_node& node ){
 	}
 	
 	
-	
+	/*
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
 			rvalue  = getCnode( getIval( node.mother ) + getIval( node.father ) );
@@ -570,6 +569,7 @@ void DagOptim::visit( PLUS_node& node ){
 			return;
 		}	
 	}
+	*/
 	rvalue = &node;
 }
 

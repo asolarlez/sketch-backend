@@ -6,12 +6,12 @@ BooleanDAG* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
-string *comparisson (string *p1, string *p2, arith_node::AType atype)
+string *comparisson (string *p1, string *p2, bool_node::Type atype)
 {
     Assert (p1 || p2, "Can't have both comparisson's children NULL");
    
     string s1 = currentBD->new_name();
-    arith_node *an = newArithNode(atype);
+    bool_node *an = newBoolNode(atype);
     an->name = s1;
     currentBD->new_node((p1 ? *p1 : ""), 
 			(p2 ? *p2 : ""), an); 
@@ -355,7 +355,7 @@ Expression: Term { $$ = $1; }
 	lChild = dynamic_cast<bool_node*>(bn);
 	bn = currentBD->get_node(*$3);
 	rChild = dynamic_cast<bool_node*>(bn);			
-	string* tmp = comparisson($1, $3, arith_node::EQ);
+	string* tmp = comparisson($1, $3, bool_node::EQ);
     string s = currentBD->new_name ();
     currentBD->new_node (*tmp, "", bool_node::NOT, s);
     delete tmp;
@@ -368,7 +368,7 @@ Expression: Term { $$ = $1; }
 	lChild = dynamic_cast<bool_node*>(bn);
 	bn = currentBD->get_node(*$3);
 	rChild = dynamic_cast<bool_node*>(bn);			
-	$$ = comparisson($1, $3, arith_node::EQ);
+	$$ = comparisson($1, $3, bool_node::EQ);
 }
 | '$' varList '$' '[' Expression ']' {
 	int pushval = 0;
@@ -408,7 +408,7 @@ Expression: Term { $$ = $1; }
 | Term '+' Term {
 	currentBD->moveNNb();
 	string s1 = currentBD->new_name();
-	arith_node* an = newArithNode(arith_node::PLUS);
+	bool_node* an = newBoolNode(bool_node::PLUS);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
 	an->name = s1;
 	currentBD->new_node(*$1,  *$3, an); 
@@ -419,7 +419,7 @@ Expression: Term { $$ = $1; }
 
 | Term '/' Term {
 	string s1 = currentBD->new_name();
-	arith_node* an = newArithNode(arith_node::DIV);
+	bool_node* an = newBoolNode(bool_node::DIV);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
 	an->name = s1;
 	currentBD->new_node(*$1, *$3, an); 
@@ -430,7 +430,7 @@ Expression: Term { $$ = $1; }
 
 | Term '%' Term {
 	string s1 = currentBD->new_name();
-	arith_node* an = newArithNode(arith_node::MOD);
+	bool_node* an = newBoolNode(bool_node::MOD);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
 	an->name = s1;
 	currentBD->new_node(*$1, *$3, an); 
@@ -441,7 +441,7 @@ Expression: Term { $$ = $1; }
 
 | Term '*' Term {
 	string s1 = currentBD->new_name();
-	arith_node* an = newArithNode(arith_node::TIMES);
+	bool_node* an = newBoolNode(bool_node::TIMES);
 	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
 	an->name = s1;
 	currentBD->new_node(*$1, *$3, an); 
@@ -451,9 +451,9 @@ Expression: Term { $$ = $1; }
 }
 | Term '-' Term {
 	string s1 = currentBD->new_name();
-	arith_node* an = newArithNode(arith_node::PLUS);	
+	bool_node* an = newBoolNode(bool_node::PLUS);	
 	string neg1 = currentBD->new_name();
-	arith_node* negn = newArithNode(arith_node::NEG);	
+	bool_node* negn = newBoolNode(bool_node::NEG);	
 	negn->name = neg1;
 	currentBD->new_node(*$3, "", negn);
 	an->name = s1;
@@ -466,16 +466,16 @@ Expression: Term { $$ = $1; }
 	$$ = new string(s1);
 }
 | Term '>' Term {
-	$$ = comparisson($1, $3, arith_node::GT);
+	$$ = comparisson($1, $3, bool_node::GT);
 }
 | Term '<' Term {
-	$$ = comparisson($1, $3, arith_node::LT);
+	$$ = comparisson($1, $3, bool_node::LT);
 }
 | Term T_ge Term {
-	$$ = comparisson($1, $3, arith_node::GE);
+	$$ = comparisson($1, $3, bool_node::GE);
 }
 | Term T_le Term {
-	$$ = comparisson($1, $3, arith_node::LE);
+	$$ = comparisson($1, $3, bool_node::LE);
 }
 | Expression '?' Expression ':' Expression {
 	string s1 = currentBD->new_name();
@@ -565,7 +565,7 @@ Term: Constant {
 
 | '-' Term {
 	string neg1 = currentBD->new_name();
-	arith_node* negn = newArithNode(arith_node::NEG);
+	bool_node* negn = newBoolNode(bool_node::NEG);
 	negn->name = neg1;
 	currentBD->new_node(*$2, "", negn);
 	Assert($2 != NULL, "THIS CAN't Happen");	

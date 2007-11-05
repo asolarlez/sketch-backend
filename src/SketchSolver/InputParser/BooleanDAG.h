@@ -18,6 +18,12 @@
 #include "timerclass.h"
 #include "NodeVisitor.h"
 
+
+#ifdef CONST
+#undef CONST
+#endif
+
+
 using namespace std;
 
 class BooleanDAG;
@@ -38,7 +44,7 @@ public:
   int id;
   int flag;
   int ion_pos;
-  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL, ARITH, ASSERT} Type;
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ,ARITH, ASSERT} Type;
   typedef enum{BOTTOM, BOOL, INT} OutType;
   OutType joinOtype(OutType t1, OutType t2){
   	if(t1 == BOTTOM){ return t2; }
@@ -68,6 +74,12 @@ public:
   virtual void switchInputs(BooleanDAG& bdag);
   virtual string get_tname(){
     switch(type){
+	case PLUS: return "PLUS";
+	case TIMES: return "TIMES";
+	case DIV: return "DIV";
+	case MOD: return "MOD";
+	case NEG: return "NEG";
+	case CONST: return "CONST";
     case AND: return "AND";
     case OR: return "OR";
     case XOR: return "XOR";
@@ -75,6 +87,11 @@ public:
     case DST: return "D";
     case NOT: return "NOT";
     case CTRL: return "CTRL";
+	case GT: return "GT";
+	case GE: return "GE";
+	case LT: return "LT";
+	case LE: return "LE";
+	case EQ: return "EQ";
     case ASSERT: return "ASSERT";
     }
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
@@ -91,15 +108,12 @@ public:
 
 
 
-#ifdef CONST
-#undef CONST
-#endif
 
 class arith_node: public bool_node{
 	protected:
 	arith_node():bool_node(){ type = ARITH; };
 	public:
-    typedef enum {  PLUS, TIMES, ARRACC, UFUN, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ARRASS, ACTRL  } AType;
+    typedef enum {   ARRACC, UFUN, ARRASS, ACTRL  } AType;
 
 		
 	AType arith_type;
@@ -113,22 +127,11 @@ class arith_node: public bool_node{
 	virtual void switchInputs(BooleanDAG& bdag);
 	virtual void printSubDAG(ostream& out);
 	virtual string get_tname(){
-		switch(arith_type){
-			case PLUS: return "PLUS";
-			case TIMES: return "TIMES";
-			case DIV: return "DIV";
-			case MOD: return "MOD";
-			case NEG: return "NEG";
-			case CONST: return "CONST";
+		switch(arith_type){			
 			case ARRACC: return "ARRACC";
-			case UFUN: return "UFUN";
-			case GT: return "GT";
-			case GE: return "GE";
-			case LT: return "LT";
-			case LE: return "LE";
+			case UFUN: return "UFUN";			
 			case ACTRL: return "ACTRL";
 			case ARRASS: return "ARRASS";
-			case EQ: return "EQ";
 		}
 		return "null";
 	}
@@ -243,18 +246,18 @@ class NOT_node: public bool_node{
 	}
 };
 
-class PLUS_node: public arith_node{	
-	public: PLUS_node(){ arith_type = PLUS; } 
-	PLUS_node(const PLUS_node& bn): arith_node(bn){ }  
+class PLUS_node: public bool_node{	
+	public: PLUS_node(){ type = PLUS; } 
+	PLUS_node(const PLUS_node& bn): bool_node(bn){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new PLUS_node(*this);  };
 	OutType getOtype(){
 			return INT;
 	}
 };
-class TIMES_node: public arith_node{	
-	public: TIMES_node(){ arith_type = TIMES; }  
-	TIMES_node(const TIMES_node& bn): arith_node(bn){ }    
+class TIMES_node: public bool_node{	
+	public: TIMES_node(){ type = TIMES; }  
+	TIMES_node(const TIMES_node& bn): bool_node(bn){ }    
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 	virtual bool_node* clone(){return new TIMES_node(*this);  };
 	OutType getOtype(){
@@ -323,21 +326,21 @@ class ARRACC_node: public arith_node{
 		}
 	virtual bool_node* clone(){return new ARRACC_node(*this);  };
 };
-class DIV_node: public arith_node{	
+class DIV_node: public bool_node{	
 	public: 
-		DIV_node(){ arith_type = DIV; }
-		DIV_node(const DIV_node& bn): arith_node(bn){ }     
+		DIV_node(){ type = DIV; }
+		DIV_node(const DIV_node& bn): bool_node(bn){ }     
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new DIV_node(*this);  };
 		OutType getOtype(){
 			return INT;
 		}
 };
-class MOD_node: public arith_node{	
+class MOD_node: public bool_node{	
 	
 	public: 
-		MOD_node(){ arith_type = MOD; }  
-		MOD_node(const MOD_node& bn): arith_node(bn){ }  
+		MOD_node(){ type = MOD; }  
+		MOD_node(const MOD_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new MOD_node(*this);  };
 		OutType getOtype(){
@@ -346,11 +349,11 @@ class MOD_node: public arith_node{
 };
 
 
-class NEG_node: public arith_node{	
+class NEG_node: public bool_node{	
 	
 	public: 
-		NEG_node(){ arith_type = NEG; }
-		NEG_node(const NEG_node& bn): arith_node(bn){ }  
+		NEG_node(){ type = NEG; }
+		NEG_node(const NEG_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new NEG_node(*this);  };
 		OutType getOtype(){
@@ -359,12 +362,12 @@ class NEG_node: public arith_node{
 };
 
 
-class CONST_node: public arith_node{
+class CONST_node: public bool_node{
 	int val;
 	public:
-		CONST_node(){ arith_type = CONST; val = -1;}
-		CONST_node(int n){ arith_type = CONST; val = n;}
-		CONST_node(const CONST_node& bn): arith_node(bn), val(bn.val){ }  
+		CONST_node(){  type = CONST; val = -1;}
+		CONST_node(int n){  type = CONST; val = n;}
+		CONST_node(const CONST_node& bn): bool_node(bn), val(bn.val){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual void setVal(int v){ val = v; }
 		virtual int getVal(){ return val; }
@@ -391,50 +394,50 @@ class CONST_node: public arith_node{
 		}
 };
 
-class GT_node: public arith_node{	
+class GT_node: public bool_node{	
 	public: 
-		GT_node(){ arith_type = GT; }  
-		GT_node(const GT_node& bn): arith_node(bn){ }  
+		GT_node(){  type = GT; }  
+		GT_node(const GT_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new GT_node(*this);  };
 		OutType getOtype(){
 			return BOOL;
 		}
 };
-class GE_node: public arith_node{	
+class GE_node: public bool_node{	
 	public: 
-		GE_node(){ arith_type = GE; } 
-		GE_node(const GE_node& bn): arith_node(bn){ }  
+		GE_node(){  type = GE; } 
+		GE_node(const GE_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new GE_node(*this);  };
 		OutType getOtype(){
 			return BOOL;
 		}
 };
-class LT_node: public arith_node{	
+class LT_node: public bool_node{	
 	public: 
-		LT_node(){ arith_type = LT; }  
-		LT_node(const LT_node& bn): arith_node(bn){ }  
+		LT_node(){  type = LT; }  
+		LT_node(const LT_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new LT_node(*this);  };
 		OutType getOtype(){
 			return BOOL;
 		}
 };
-class LE_node: public arith_node{	
+class LE_node: public bool_node{	
 	public: 
-		LE_node(){ arith_type = LE; }  
-		LE_node(const LE_node& bn): arith_node(bn){ }  
+		LE_node(){  type = LE; }  
+		LE_node(const LE_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new LE_node(*this);  };
 		OutType getOtype(){
 			return BOOL;
 		}
 };
-class EQ_node: public arith_node{	
+class EQ_node: public bool_node{	
 	public: 
-		EQ_node(){ arith_type = EQ; } 
-		EQ_node(const EQ_node& bn): arith_node(bn){ }  
+		EQ_node(){  type = EQ; } 
+		EQ_node(const EQ_node& bn): bool_node(bn){ }  
 		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
 		virtual bool_node* clone(){return new EQ_node(*this);  };
 		OutType getOtype(){
@@ -511,25 +514,25 @@ inline bool_node* newBoolNode( bool_node::Type type){
 		case bool_node::CTRL: return new CTRL_node();
 		case bool_node::ARITH: Assert( false, "This should not happen");		
 		case bool_node::ASSERT: return new ASSERT_node ();
+		case bool_node::PLUS: return new PLUS_node();
+		case bool_node::TIMES: return new TIMES_node();
+		case bool_node::DIV: return new DIV_node();
+		case bool_node::MOD: return new MOD_node();
+		case bool_node::NEG: return new  NEG_node();
+		case bool_node::CONST: return new CONST_node();
+		case bool_node::GT: return new GT_node();
+		case bool_node::GE: return new GE_node();
+		case bool_node::LT: return new LT_node();
+		case bool_node::LE: return new LE_node();
+		case bool_node::EQ: return new EQ_node();
 	}
 	return NULL;
 }
 
 inline arith_node* newArithNode( arith_node::AType type){
-	switch(type){
-		case arith_node::PLUS: return new PLUS_node();
-		case arith_node::TIMES: return new TIMES_node();
+	switch(type){		
 		case arith_node::ARRACC: return new ARRACC_node();
 		case arith_node::UFUN: return new UFUN_node("NULL");
-		case arith_node::DIV: return new DIV_node();
-		case arith_node::MOD: return new MOD_node();
-		case arith_node::NEG: return new  NEG_node();
-		case arith_node::CONST: return new CONST_node();
-		case arith_node::GT: return new GT_node();
-		case arith_node::GE: return new GE_node();
-		case arith_node::LT: return new LT_node();
-		case arith_node::LE: return new LE_node();
-		case arith_node::EQ: return new EQ_node();
 		case arith_node::ARRASS: return new ARRASS_node();
 		case arith_node::ACTRL: return new ACTRL_node();		
 	}

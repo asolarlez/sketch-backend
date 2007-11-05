@@ -46,8 +46,8 @@ public:
 	}
 	template<typename COMP>
 	int staticCompare(int C , bool reverse ){
-		COMP comp;
 		if(state != LIST){ return 0; }
+		COMP comp;
 		int rv = -2;
 		for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
 			bool cm = reverse? comp(C, *it) : comp(*it, C);
