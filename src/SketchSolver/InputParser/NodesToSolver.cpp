@@ -10,7 +10,7 @@
 
 
 template<typename COMP> void
-NodesToSolver::processComparissons (arith_node& node)
+NodesToSolver::processComparissons (bool_node& node)
 {
     bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
@@ -314,7 +314,7 @@ NodesToSolver::intBvectMult (arith_node &node)
 #endif
 
 template<typename THEOP> void
-NodesToSolver::processArith (arith_node &node)
+NodesToSolver::processArith (bool_node &node)
 {
     THEOP comp; // int op int
 

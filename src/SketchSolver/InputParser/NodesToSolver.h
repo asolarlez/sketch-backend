@@ -18,10 +18,10 @@ class NodesToSolver : public NodeVisitor {
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown
     vector<Tvalue> &node_ids;
 
-    template<typename THEOP> void processArith (arith_node &node);
+    template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
-    template<typename COMP> void processComparissons (arith_node &node);
+    template<typename COMP> void processComparissons (bool_node &node);
 
     const int YES;
     Tvalue tvYES;
