@@ -33,7 +33,21 @@ DagFunctionInliner::~DagFunctionInliner()
 }
 
 
-
+void DagFunctionInliner::computeSpecialInputs(){
+	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+		BooleanDAG* fun = it->second;
+		vector<bool_node*>& inputs  = fun->getNodesByType(bool_node::SRC);
+		for(int i=0; i<inputs.size(); ++i){	
+			string fn = inputs[i]->get_name();
+			if(fn.find("PC") != -1 ){
+					specialInputs[i] = 50;
+			}
+			if(fn.find("count") != -1){
+					specialInputs[i] = 10;
+			}
+		}
+	}
+}
 
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
@@ -54,7 +68,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			for(int i=0; i<inputs.size(); ++i){			
 				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
-				//cout<<" replacing formal : " << formal->get_name() << " with actual "<<actual->get_name()<<endl;
+				string fn = formal->get_name();
+				if(false && specialInputs.count(i) > 0){
+					cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
+					cout<<"";
+				}
 				Assert( clones[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
 				formal->neighbor_replace(actual, replTime2);
@@ -63,7 +81,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				replTime.stop();
 			}
 		}
-		
+		//cout<<endl;
 		{
 			vector<bool_node*>& controls  = oldFun->getNodesByType(bool_node::CTRL);
 			
@@ -236,7 +254,7 @@ bool compareSet(arith_node* an, set<bool_node*>& s, int lev){
 int compareDifferent(bool_node* bn1, bool_node* bn2){
 		// If they are different, but they are equivalent ARRACCS differing only on their mothers, add 1.
 		//If they are just different symbolic values, add 2.
-	/*
+	
 	if(typeid(*bn1) == typeid(ARRACC_node) && typeid(*bn2) == typeid(ARRACC_node)){
 		arith_node* an1 = dynamic_cast<arith_node*>(bn1);
 		arith_node* an2 = dynamic_cast<arith_node*>(bn2);
@@ -248,12 +266,13 @@ int compareDifferent(bool_node* bn1, bool_node* bn2){
 		}
 		return 2;
 	}
-	*/
+	
 	//If one of them is a constant, add 3.	
+	
 	if(typeid(*bn1) == typeid(CONST_node) || typeid(*bn2) == typeid(CONST_node)){
 		return 3;
 	}
-
+	
 	return 2;
 }
 
@@ -262,10 +281,18 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 	int rv = 0;
 	Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
 	for(int i=0; i<arg1.size(); ++i){
+		if(false && specialInputs.count(i) > 0){
+			cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
+		}
 		if(arg1[i]->id != arg2[i]->id){
-			rv+= compareDifferent(arg1[i], arg2[i]);
+			if(specialInputs.count(i) > 0){
+				rv+= ( compareDifferent(arg1[i], arg2[i]) *  specialInputs[i]  );
+			}else{
+				rv+= compareDifferent(arg1[i], arg2[i]);
+			}
 		}
 	}
+	//cout<<endl;
 	return rv;
 }
 
@@ -348,7 +375,7 @@ void DagFunctionInliner::unify(){
 						lowestDif = dif; 
 						lowestDifID = j;
 					}
-					//cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
+					// cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
 				}
 				cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
@@ -473,6 +500,9 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		DagOptim optim(dag);
 		optim.process(dag);
 	}
+	
+	computeSpecialInputs();
+
 	expectedNFuns = 2;
 	timerclass everything("everything");
 

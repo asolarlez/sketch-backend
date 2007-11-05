@@ -28,6 +28,7 @@ class DagFunctionInliner : public DagOptim
 	timerclass clonetime;
 	map<string, timerclass> optTimers;
 	vector<bool_node*> clones;
+	map<int, int> specialInputs;
 	int expectedNFuns;
 	virtual void immInline(BooleanDAG& dag);
 	int argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2);
@@ -39,6 +40,7 @@ public:
 		
 	virtual void visit( UFUN_node& node );
 
+	virtual void computeSpecialInputs();
 
 	virtual void unify();
 	
