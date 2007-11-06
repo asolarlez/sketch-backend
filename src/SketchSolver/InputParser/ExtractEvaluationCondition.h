@@ -31,7 +31,10 @@ using namespace std;
 
 class t_node{
 	public:
-	
+	bool_node* m;
+	bool_node* f;
+
+
 	/**
 	 * tn.C(I) := control == nidx.
 	 * 
@@ -94,6 +97,7 @@ class t_node{
 			nn->name += "FAFUFO";
 			nn->mother = control;
 			nn->addToParents();
+			store.setTimestamp(nn);
 			store.addNode(nn);
 			return nn;
 		}else{
@@ -120,6 +124,7 @@ class t_node{
 			Assert( on->mother != NULL, "Mother can't be null");
 			Assert( on->father != NULL, "Father can't be null");
 			on->addToParents();
+			store.setTimestamp(on);
 			cur = on;
 			store.addNode(on);
 		}
@@ -144,6 +149,7 @@ class t_node{
 			anode->mother = cur;
 			anode->father = guard(store);
 			anode->addToParents();
+			store.setTimestamp(anode);
 			store.addNode(anode);
 			node = anode;
 		}
@@ -236,6 +242,9 @@ bool_node* get_exe_cond(bool_node* bn, NodeStore& store, bool print_flag = false
  * After it terminates, the fresh t_node will now have tn.P(I) = P(I). In other
  * words, the P(I) of tn will correspond to the P(I) for n.
  * 
+ *On recursive calls, the arguments have the following meaning:
+ * parent = the node that lead us to bn.
+ * partn is the tnode associated with parent.
  */
 void tn_build(bool_node* bn, bool_node* parent, t_node* partn, NodeStore& store){
 	++ivisit;
