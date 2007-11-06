@@ -29,7 +29,6 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		int szz2 = newnodes.size();
 		Dout(cout<<" added "<<(szz2-szz1)<<" nodes visited "<<tnbuilder.ivisit<<endl);
 		Dout(timer.print());
-					
 		
 		Assert( tn.children.size() > 0, " This function should still be inlined !!! "<<node.get_name() );	
 		
@@ -38,6 +37,7 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		NOT_node* nn = new NOT_node();
 		nn->mother = cur;
 		nn->addToParents();
+		setTimestamp(nn);
 		addNode(nn);
 
 			
@@ -47,6 +47,7 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		msg += node.get_name();
 		asn->setMsg(msg);
 		asn->addToParents();
+		setTimestamp(asn);
 		addNode(asn);
 
 		rvalue = this->getCnode(0);		

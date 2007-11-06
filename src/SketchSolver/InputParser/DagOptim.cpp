@@ -11,9 +11,13 @@ DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 DagOptim::~DagOptim()
 {
 }
+
+
+
 CONST_node* DagOptim::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
+		setTimestamp(cnode);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[val] = cnode;
@@ -49,7 +53,11 @@ template<typename COMP>
 int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	COMP comp;
 	if( anv.count(n1) != 0 ){
-		return anv[n1].staticCompare<COMP>(C, reverse);
+		if(anv[n1].timestamp == n1->layer){		
+			return anv[n1].staticCompare<COMP>(C, reverse);
+		}else{
+			anv.erase(n1);
+		}
 	}
 	if(  isConst(n1) ){
 		anv[n1].init(getIval(n1));
@@ -60,6 +68,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	if(typeid(*n1) == typeid(NOT_node)){
 		int rv = staticCompare<COMP>(n1->mother, C, reverse);
 		anv[n1] = anv[n1->mother];
+		anv[n1].timestamp = n1->layer;		
 		return rv;
 	}
 
@@ -68,9 +77,11 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		if(inode->getOtype() == bool_node::BOOL){
 			anv[n1].init(0);	
 			anv[n1].insert(1);
+			anv[n1].timestamp = n1->layer;
 			return anv[n1].staticCompare<COMP>(C, reverse);
 		}else{
 			anv[n1].makeTop();
+			anv[n1].timestamp = n1->layer;
 			return 0;
 		}
 	}
@@ -80,6 +91,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		arith_node& ar = *dynamic_cast<arith_node*>(n1);
 		int rv = -2;
 		AbstractNodeValue& nv = anv[n1];
+		anv[n1].timestamp = n1->layer;
 		for(int i=0; i<ar.multi_mother.size(); ++i){
 			bool_node* parent = ar.multi_mother[i];
 			int tmp = 0;
@@ -87,7 +99,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 				tmp = staticCompare<COMP>(parent, C, reverse);
 			}else{
 				tmp = anv[parent].staticCompare<COMP>(C, reverse);
-			}			
+			}		
 
 			if(tmp == 0 || (rv != -2 && tmp != rv)){				
 				rv = 0;	
@@ -112,6 +124,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return rv;		
 	}
 	anv[n1].makeTop();
+	anv[n1].timestamp = n1->layer;
 	return 0;
 }
 
@@ -155,6 +168,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = fafa;
 			pnode->addToParents();
+			setTimestamp(pnode);
 			rvalue  = pnode;
 			visit(*pnode);
 			if(rvalue != pnode){
@@ -184,6 +198,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = getCnode(0);
 			pnode->addToParents();		
+			setTimestamp(pnode);
 			rvalue  = pnode;
 			visit(*pnode);		
 			if(rvalue != pnode){
@@ -212,7 +227,8 @@ bool DagOptim::compSymplification(NTYPE& node){
 			NTYPE* pnode = new NTYPE();
 			pnode->father = mofa;
 			pnode->mother = getCnode(0);
-			pnode->addToParents();		
+			pnode->addToParents();	
+			setTimestamp(pnode);
 			rvalue  = pnode;
 			visit(*pnode);
 			if(rvalue != pnode){
@@ -296,6 +312,7 @@ bool DagOptim::isConst(bool_node* n1){
 	if( n1->type == bool_node::CONST ){
 		return true;
 	}	
+	Assert( typeid(*n1) != typeid(CONST_node), "What is this?");
 	return false;
 }
 
@@ -466,6 +483,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
+					setTimestamp(pnode);
 					addNode(pnode);					
 					rvalue  = pnode;
 					return;
@@ -478,6 +496,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.father), "This can't happen");
 					pnode->father = fathernode.father;
 					pnode->addToParents();
+					setTimestamp(pnode);
 					addNode(pnode);	
 					rvalue  = pnode;
 					return;
@@ -539,14 +558,16 @@ void DagOptim::visit( PLUS_node& node ){
 	}
 	
 	
-	/*
+	
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
 			rvalue  = getCnode( getIval( node.mother ) + getIval( node.father ) );
+			Assert(false, "Optim is useless");
 			return;
 		}	
 		if(  getIval( node.mother ) == 0 ){
 			rvalue  = node.father;
+			Assert(false, "Optim is useless");
 			return;
 		}		
 		if( typeid(*node.father) == typeid(node) ){
@@ -558,7 +579,9 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
+					setTimestamp(pnode);
 					addNode(pnode);
+					Assert(false, "Optim is useless");
 				}
 			
 		}
@@ -566,10 +589,11 @@ void DagOptim::visit( PLUS_node& node ){
 	if( isConst(node.father) ){
 		if(  getIval( node.father ) == 0 ){
 			rvalue  = node.mother;
+			Assert(false, "Optim is useless");
 			return;
 		}	
 	}
-	*/
+	
 	rvalue = &node;
 }
 
@@ -756,6 +780,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->name += "NOTa";
 				nt->mother = node.father;
 				nt->addToParents();
+				setTimestamp(nt);
 				addNode(nt);
 				nt->accept(*this);
 				return;	
@@ -778,6 +803,7 @@ void DagOptim::visit( EQ_node& node ){
 				nt->name += "NOTb";
 				nt->mother = node.mother;
 				nt->addToParents();
+				setTimestamp(nt);
 				addNode(nt);
 				nt->accept(*this);
 				return;	
@@ -851,6 +877,7 @@ void DagOptim::visit( ARRACC_node& node ){
 						nt->name += "NOTc";
 						nt->mother = node.mother;
 						nt->addToParents();
+						setTimestamp(nt);
 						addNode(nt);
 						nt->accept(*this);
 						return;
@@ -865,7 +892,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
-
+				setTimestamp(an);
 				addNode(an);
 
 				an->accept(*this);
@@ -882,6 +909,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[0];
 				an->addToParents();
+				setTimestamp(an);
 				addNode(an);
 				an->accept(*this);
 				return;
@@ -895,6 +923,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
+				setTimestamp(an);
 				addNode(an);
 				an->accept(*this);
 				return;
@@ -913,6 +942,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = mm1 .mother;
 				an->addToParents();
+				setTimestamp(an);
 				addNode(an);
 
 				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
@@ -921,6 +951,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				node.mother = an;
 				node.multi_mother[1] = mm1.multi_mother[1];
 				node.addToParents();
+				setTimestamp(&node);
 			}	
 			
 			
@@ -971,6 +1002,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->mother = node.mother;
 				an->father = mm1 .mother;
 				an->addToParents();
+				setTimestamp(an);
 				addNode(an);
 
 				an = dynamic_cast<OR_node*>( cse.computeCSE(an) );
@@ -980,6 +1012,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				node.mother = an;
 				node.multi_mother[0] = mm1.multi_mother[0];
 				node.addToParents();
+				setTimestamp(&node);
 			}
 			
 			
@@ -1063,7 +1096,6 @@ void DagOptim::visit( DST_node& node ){
 
 void DagOptim::initLight(BooleanDAG& dag){
 	dagsize = dag.size();	
-	anv.clear();
 	newnodes.clear();
 	cnmap.clear();
 	cse.clear();
@@ -1076,6 +1108,7 @@ void DagOptim::initialize(BooleanDAG& dag){
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
+	anv.clear();
 	initLight(dag);
 }
 
@@ -1121,6 +1154,7 @@ void DagOptim::process(BooleanDAG& dag){
 
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				setTimestampChildren(dag[i]);
 				replace.restart();
 				dag.replace(i, node, replacepar);
 				replace.stop();

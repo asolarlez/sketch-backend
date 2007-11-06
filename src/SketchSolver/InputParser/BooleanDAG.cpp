@@ -26,6 +26,7 @@ string bool_node::get_name(){
   }
 
 bool_node::OutType bool_node::getOtype(){
+	Assert(false, "This shouldn't get called");
 	return BOOL;
 }
 

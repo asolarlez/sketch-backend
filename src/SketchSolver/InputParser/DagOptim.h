@@ -9,7 +9,7 @@
 
 using namespace std;
 
-class AbstractNodeValue{	
+class AbstractNodeValue{		
 	typedef enum { BOTTOM, LIST, RANGE, TOP } State;
 	State state;
 	set<int> valSet;
@@ -19,6 +19,7 @@ class AbstractNodeValue{
 	bool isTop(){ return state==TOP; }
 	bool isBottom(){ return state==BOTTOM; }
 public:
+	int timestamp;
 	AbstractNodeValue(){
 		valSet.clear();
 		low = 0;
@@ -44,10 +45,22 @@ public:
 		high = -1;
 		state = TOP;
 	}
+
+	void print(ostream& out){
+		if(state != LIST){ 
+			out<<"BOTTOM"<<endl;
+		}else{
+			for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
+				out<<*it<<", ";
+			}
+			out<<endl;
+		}
+	}
+
 	template<typename COMP>
 	int staticCompare(int C , bool reverse ){
-		if(state != LIST){ return 0; }
 		COMP comp;
+		if(state != LIST){ return 0; }
 		int rv = -2;
 		for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
 			bool cm = reverse? comp(C, *it) : comp(*it, C);
@@ -97,9 +110,10 @@ public:
 class DagOptim : public NodeVisitor, public virtual NodeStore
 {
 	int dagsize;
-	bool ALTER_ARRACS;
+	bool ALTER_ARRACS;	
 protected:
-	DagCSE cse;
+	DagCSE cse;	
+	
 public:
 	map<bool_node*, AbstractNodeValue> anv;
 	vector<bool_node*> newnodes;

@@ -75,6 +75,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 				Assert( clones[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
+				setTimestampChildren(formal);
 				formal->neighbor_replace(actual, replTime2);
 				clones[formal->id] = NULL;
 				delete formal;
@@ -91,6 +92,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				if(actual != NULL){
 					Assert( clones[formal->id] == formal, "ID is incorrect");	
 					replTime.restart();
+					setTimestampChildren(formal);
 					formal->neighbor_replace(actual, replTime2);
 					clones[formal->id] = NULL;
 					delete formal;
@@ -127,6 +129,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							this->addNode(n);
 						}else{
 							replTime.restart();
+							setTimestampChildren(n);
 							n->neighbor_replace(nnode, replTime2);
 							replTime.stop();
 							delete n;
@@ -137,6 +140,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							this->addNode(n);
 						}else{
 							replTime.restart();
+							setTimestampChildren(n);
 							n->neighbor_replace(nnode, replTime2);
 							replTime.stop();
 							delete n;
@@ -164,6 +168,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							optimTime.stop();
 							if(nnodep == nnode){
 								nnode->addToParents();
+								setTimestamp(nnode);
 								this->addNode(nnode);							
 							}else{
 								delete nnode;
@@ -181,6 +186,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							if(ornodep == ornode){
 								this->addNode(ornode);
 								ornode->addToParents();
+								setTimestamp(ornode);
 							}else{
 								delete ornode;
 							}
@@ -192,6 +198,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					asn->mother = cur;
 					asn->setMsg( dynamic_cast<ASSERT_node*>(n)->getMsg() );
 					asn->addToParents();
+					setTimestamp(asn);
 					this->addNode(asn);
 					
 					n->dislodge();
@@ -326,6 +333,7 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 			an->multi_mother.push_back(args1[i]);
 			an->multi_mother.push_back(args2[i]);
 			an->addToParents();
+			setTimestamp(an);
 			this->addNode(an);
 			nargs.push_back(an);
 		}
@@ -335,6 +343,9 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 	funnew->multi_mother = nargs;
 	funnew->children.clear();
 	funnew->addToParents();
+	setTimestamp(funnew);
+	setTimestampChildren(fun1);
+	setTimestampChildren(fun2);
 	dag.replace(fun1->id, funnew);
 	dag.replace(fun2->id, funnew);
 
@@ -349,7 +360,7 @@ bool checkFunName(string& name){
 }
 
 void DagFunctionInliner::unify(){
-	initialize(dag);
+	initLight(dag);
 	vector<vector<bool_node*> >  argLists;
 	vector<vector<int> >  diffs;
 	map<int, int>  locToG;
@@ -380,7 +391,7 @@ void DagFunctionInliner::unify(){
 					}
 					 //cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
 				}
-				cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
+				//cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
 				nfd[lowestDif].push_back(id);
 				v.push_back(ufun->multi_mother);	
@@ -446,9 +457,9 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		bool_node* node = computeOptim(dag[i]);
 		optAll.stop();		
 		tc.stop();
-
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				setTimestampChildren(dag[i]);
 				replTime.restart();
 				dag.replace(i, node, replTime2);
 				replTime.stop();
@@ -511,7 +522,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 310000 && inlin < inlineAmnt){
+	while(somethingChanged && dag.size() < 510000 && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
