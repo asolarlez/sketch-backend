@@ -50,6 +50,7 @@ public:
 		if(state != LIST){ 
 			out<<"BOTTOM"<<endl;
 		}else{
+			Assert(valSet.size() > 0, "This is strange. This shouldn't happen");
 			for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
 				out<<*it<<", ";
 			}
@@ -94,9 +95,13 @@ public:
 		}
 		set<int> tmp = valSet;
 		tmp.insert(anv.valSet.begin(), anv.valSet.end());
-		int t1 = tmp.size() - valSet.size();
-		int t2 = tmp.size() - anv.valSet.size();
-		return t1> t2 ? t2 : t1;
+		int sz1 = valSet.size();
+		int sz2 = anv.valSet.size();
+		int szmax = sz1 > sz2 ?  sz1 : sz2;
+		int szmin = sz1 > sz2 ?  sz2 : sz1;
+		int sol = tmp.size() - szmax;
+		int dif = szmax - szmin;
+		return sol * 10 + dif;
 	}
 
 	void insert(AbstractNodeValue& anv){

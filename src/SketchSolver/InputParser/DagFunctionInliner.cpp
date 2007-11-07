@@ -420,7 +420,7 @@ void DagFunctionInliner::unify(){
 	}
 
 
-
+	if(expectedNFuns > 37){ expectedNFuns = 37; }
 
     int nmerges = 0;
 	cout<<"  expectedNFuns="<<expectedNFuns<<endl;
