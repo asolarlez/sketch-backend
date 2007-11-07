@@ -43,7 +43,7 @@ void DagFunctionInliner::computeSpecialInputs(){
 					specialInputs[i] = 50;
 			}
 			if(fn.find("count") != -1){
-					specialInputs[i] = 10;
+					specialInputs[i] = 5;
 			}
 		}
 	}
@@ -293,7 +293,18 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 		}
 		if(arg1[i]->id != arg2[i]->id){
 			if(specialInputs.count(i) > 0){
-				rv+= ( compareDifferent(arg1[i], arg2[i]) *  specialInputs[i]  );
+				bool_node* a1 = arg1[i];
+				bool_node* a2 = arg2[i];
+				//cout<<"  "<<a1<<"  "<<a2<<endl;
+				int t0 = staticCompare<equal_to<int> >(a1, 0, true);
+				int t1 = staticCompare<equal_to<int> >(a2, 0, true);
+				AbstractNodeValue& anv1 = anv[arg1[i]];
+				AbstractNodeValue& anv2 = anv[arg2[i]];
+				//anv1.print(cout);
+				//anv2.print(cout);
+				int dif = anv1.difference(anv2);
+				//cout<<"------ dif ="<<dif<<endl;
+				rv+= ( dif * 10 * specialInputs[i]  );
 			}else{
 				rv+= compareDifferent(arg1[i], arg2[i]);
 			}
@@ -323,6 +334,14 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 
 	for(int i=0; i<args1.size(); ++i){
 		if(specialInputs.count(i) > 0){
+			bool_node* arg1 = args1[i];
+			bool_node* arg2 = args2[i];
+			//cout<<"  "<<arg1<<"  "<<arg2<<endl;
+			int t1 = staticCompare<equal_to<int> >(arg1, 1, true);
+			int t2 = staticCompare<equal_to<int> >(arg2, 1, true);
+			anv[arg1].print(cout);
+			anv[arg2].print(cout);
+			cout<<"------"<<endl;
 			//cout<<i<<"=("<<args1[i]->get_name()<<", "<<args2[i]->get_name()<<")   ";
 		}
 		if(args1[i] == args2[i]){

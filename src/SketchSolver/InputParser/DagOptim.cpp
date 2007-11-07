@@ -52,15 +52,19 @@ timerclass statcomp("static compare");
 template<typename COMP>
 int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	COMP comp;
-	if( anv.count(n1) != 0 ){
-		if(anv[n1].timestamp == n1->layer){		
-			return anv[n1].staticCompare<COMP>(C, reverse);
-		}else{
-			anv.erase(n1);
+	{
+		map<bool_node*, AbstractNodeValue>::iterator it = anv.find(n1);
+		if( it != anv.end() ){
+			if(it->second.timestamp == n1->layer){		
+				return it->second.staticCompare<COMP>(C, reverse);
+			}else{
+				anv.erase(it);
+			}
 		}
 	}
 	if(  isConst(n1) ){
 		anv[n1].init(getIval(n1));
+		anv[n1].timestamp = n1->layer;	
 		bool cm = reverse? comp(C, getIval(n1)) : comp(getIval(n1), C);
 		return cm ? 1 : -1;	
 	}
@@ -74,14 +78,15 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 
 	if(typeid(*n1) == typeid(SRC_node) || typeid(*n1) == typeid(CTRL_node)){
 		INTER_node* inode = dynamic_cast<INTER_node*>(n1);
+		AbstractNodeValue& nv = anv[n1];
 		if(inode->getOtype() == bool_node::BOOL){
-			anv[n1].init(0);	
-			anv[n1].insert(1);
-			anv[n1].timestamp = n1->layer;
-			return anv[n1].staticCompare<COMP>(C, reverse);
+			nv.init(0);	
+			nv.insert(1);
+			nv.timestamp = n1->layer;
+			return nv.staticCompare<COMP>(C, reverse);
 		}else{
-			anv[n1].makeTop();
-			anv[n1].timestamp = n1->layer;
+			nv.makeTop();
+			nv.timestamp = n1->layer;
 			return 0;
 		}
 	}
@@ -91,14 +96,22 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		arith_node& ar = *dynamic_cast<arith_node*>(n1);
 		int rv = -2;
 		AbstractNodeValue& nv = anv[n1];
-		anv[n1].timestamp = n1->layer;
+		nv.timestamp = n1->layer;
 		for(int i=0; i<ar.multi_mother.size(); ++i){
 			bool_node* parent = ar.multi_mother[i];
 			int tmp = 0;
-			if(anv.count(parent)==0){
+			
+			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
+
+			if(it == anv.end()){
 				tmp = staticCompare<COMP>(parent, C, reverse);
 			}else{
-				tmp = anv[parent].staticCompare<COMP>(C, reverse);
+				if(it->second.timestamp == parent->layer){
+					tmp = it->second.staticCompare<COMP>(C, reverse);
+				}else{
+					anv.erase(it);
+					tmp = staticCompare<COMP>(parent, C, reverse);
+				}
 			}		
 
 			if(tmp == 0 || (rv != -2 && tmp != rv)){				

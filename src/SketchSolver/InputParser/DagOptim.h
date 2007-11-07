@@ -80,6 +80,25 @@ public:
 			valSet.insert(val);
 		}
 	}
+
+	int difference(AbstractNodeValue& anv){
+		if(anv.state != LIST){
+			if(state != LIST){
+				return 0;
+			}else{
+				return valSet.size();
+			}
+		}
+		if(state != LIST){
+			return anv.valSet.size();
+		}
+		set<int> tmp = valSet;
+		tmp.insert(anv.valSet.begin(), anv.valSet.end());
+		int t1 = tmp.size() - valSet.size();
+		int t2 = tmp.size() - anv.valSet.size();
+		return t1> t2 ? t2 : t1;
+	}
+
 	void insert(AbstractNodeValue& anv){
 		if(anv.isTop()){
 			makeTop();
