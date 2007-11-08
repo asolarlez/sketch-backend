@@ -306,7 +306,7 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 				//cout<<"------ dif ="<<dif<<endl;
 				rv+= ( dif * 10 * specialInputs[i]  );
 			}else{
-				rv+= compareDifferent(arg1[i], arg2[i]);
+				rv+= 0; // compareDifferent(arg1[i], arg2[i]);
 			}
 		}
 	}
@@ -383,7 +383,8 @@ void DagFunctionInliner::unify(){
 	vector<vector<bool_node*> >  argLists;
 	vector<vector<int> >  diffs;
 	map<int, int>  locToG;
-	int tot;
+	int tot = 0;
+	int N = 0;
 	map<int, vector<int> >  nfd;
 	map<int, int>  closestMatch;
 	int maxDif = -1;
@@ -397,13 +398,13 @@ void DagFunctionInliner::unify(){
 				int id = v.size();
 				vector<int> difRow;
 				locToG[id] = i;
-				tot = 0; 
 				int lowestDif = 100000;
 				int lowestDifID = -1;
 				for(int j=0; j<v.size(); j++){
 					int dif = argsCompare(v[j], ufun->multi_mother);
 					maxDif = dif > maxDif ? dif : maxDif;
 					tot += dif;
+					++N;
 					if(dif < lowestDif){ 
 						lowestDif = dif; 
 						lowestDifID = j;
@@ -420,16 +421,16 @@ void DagFunctionInliner::unify(){
 	}
 
 
-	if(expectedNFuns > 37){ expectedNFuns = 37; }
 
     int nmerges = 0;
-	cout<<"  expectedNFuns="<<expectedNFuns<<endl;
+	if(N == 0){ N = 1; }
+	cout<<"  expectedNFuns="<<expectedNFuns<<" average dif = "<< (tot / N) <<endl;
 	int totFuns=0;
 	map<int, int> actualMatch;
 	for(map<int, vector<int> >::reverse_iterator it = nfd.rbegin(); it != nfd.rend(); ++it){
 		vector<int>& ids = it->second;
 		cout<<" ldiff = "<<it->first<<" size = "<<ids.size()<<endl;
-		if(totFuns >= expectedNFuns){
+		if(totFuns >= expectedNFuns || it->first < 300){
 			//If we are here, we've exhausted our quota of functions, so we'll start merging the remaining ones with their closest match.
 			for(int i=0; i<ids.size(); ++i){
 				int a = ids[i];
