@@ -16,7 +16,7 @@ class SolveFromInput: public FindCheckSolver{
 	vector<Tvalue> node_ids;
 	vector<Tvalue> f_node_ids;
 	vector<bool> f_flags;
-	
+	ostream& out;
 	map<bool_node*, int> node_values; // -1=false, 1=true, 0=unknown
 	
 	int* last_input;
@@ -32,7 +32,7 @@ class SolveFromInput: public FindCheckSolver{
 	virtual bool check(vector<int>& controls, vector<int>& input);
 	virtual BooleanDAG* hardCodeControls(vector<int>& controls);
 	public:
-	SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker,
+	SolveFromInput(ostream& out_p/*big hack*/, BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker,
 	map<string, BooleanDAG*>& functionMap, int p_nseeds=1, int inlineAmnt = 20, int NINPUTS_p=3, bool mergeFunctions=false);
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);

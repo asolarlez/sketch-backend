@@ -173,7 +173,7 @@ int ABCSATSolver::solve(){
     	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
          }else if(strategy == BASICSAT){
          	cout<<"BASIC"<<endl;
-         	RetValue = Abc_NtkMiterSat( pNtk, 100000000, 0, 0, 0, NULL, NULL );
+         	RetValue = Abc_NtkMiterSat( pNtk, timeout, 0, 0, 0, NULL, NULL );
          }
 		timer.stop().print();
        }
@@ -489,3 +489,7 @@ void ABCSATSolver::setOutputAIG(){
 }
 
 
+void ABCSATSolver::setTimeout(int to){
+	timeout = to;
+	cout<<" set timeout to "<<to<<endl;
+}

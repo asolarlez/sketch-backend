@@ -36,8 +36,8 @@ void SolveFromInput::setup2QBF(){
 
 
 
-SolveFromInput::SolveFromInput(BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, 
-map<string, BooleanDAG*>& functionMap, int p_nseeds, int inlineAmnt, int NINPUTS_p, bool mergeFunctions):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p){
+SolveFromInput::SolveFromInput(ostream& out_p, BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker, 
+map<string, BooleanDAG*>& functionMap, int p_nseeds, int inlineAmnt, int NINPUTS_p, bool mergeFunctions):FindCheckSolver(finder, checker), TIP_NAME("MITER_TIP"), NINPUTS(NINPUTS_p), out(out_p){
 Dout( cout<<"START CONSTRUCTOR"<<endl );
 	int N = spec_p->get_n_inputs();
 	Nout = spec_p->get_n_outputs();
@@ -254,6 +254,7 @@ void SolveFromInput::setupCheck(){
 
 
 bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
+	this->output_control_map(out);
 	bool rv = FindCheckSolver::check(controls, input);
 	int iter = 0;
 	BooleanDAG* oriProblem = problem;
@@ -489,8 +490,8 @@ void SolveFromInput::defineProblem(SATSolver& mng, varDir& dir){
 
 void SolveFromInput::output_control_map(ostream& out){
 	FindCheckSolver::ctrl_iterator ar = begin();	
-	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
-		if((*node_it)->type == bool_node::CTRL){
+	vector<bool_node*>& controls = problem->getNodesByType(bool_node::CTRL);
+	for(BooleanDAG::iterator node_it = controls.begin(); node_it != controls.end(); ++node_it){		
 			int iid = getCtrlStart( (*node_it)->get_name() );
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
 			int nbits = ctrlnode->get_nbits();		
@@ -502,7 +503,7 @@ void SolveFromInput::output_control_map(ostream& out){
 			}else{
 				out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;
 			}
-		}
+		
 	}
 }
 

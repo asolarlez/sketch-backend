@@ -21,6 +21,7 @@ public:
 	typedef enum { BASICSAT, FULL } SolutionStrategy;
 	
 protected:
+	   int timeout;
        FileOutputABC( ofstream output );
        Abc_Ntk_t * pNtk;
        Abc_Ntk_t * oldpNtk;
@@ -78,6 +79,7 @@ public:
    	           solvcnt = 0;
    	           FileOutputABC( string nm = name; nm += ".circuit"; );
 			   FileOutputABC( output.open(nm.c_str()) );
+			   timeout = 100000000;
 		       ////////
         }
         virtual void annotate(const string& msg);
@@ -92,7 +94,7 @@ public:
         virtual void setVarClause(int x);
         virtual void assertVarClause(int x);
 		virtual void hardAssertVarClause(int x);
-
+		virtual void setTimeout(int to);
 
         virtual int getVarVal(int id);
 

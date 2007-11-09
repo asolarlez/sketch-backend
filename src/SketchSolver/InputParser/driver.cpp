@@ -46,7 +46,8 @@ class paramInterp{
     bool printDiag;
 	int inlineAmnt;
 	bool mergeFunctions;
-  
+  	bool hastimeout;
+	int timeout;
 	paramInterp(int argc, char** argv){
 		input_idx = 1;
 		seedsize = 1;
@@ -63,6 +64,8 @@ class paramInterp{
 	doBvectArith = false;
 		WITH_RESTRICTIONS = false;
 		inlineAmnt = 10;
+		hastimeout = false;
+		timeout = -1;
 		mergeFunctions = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
@@ -136,6 +139,14 @@ class paramInterp{
 		  restorefile = argv[ii+1];
 	      input_idx = ii+2;
 	    }
+
+		if( string(argv[ii]) == "-timeout" ){
+	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+	      timeout = atoi(argv[ii+1]);	  
+		  hastimeout=true;
+	      input_idx = ii+2;
+	    } 
+
 	    if( string(argv[ii]) == "-seed" ){
 	      Assert(ii<(argc-1), "-seed needs an extra parameter");
 	      seed = atoi(argv[ii+1]);	  
@@ -230,7 +241,8 @@ int main(int argc, char** argv){
       msg += argv[params.input_idx];
       cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
       //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
-		ofstream out((argc>params.input_idx+1)?argv[params.input_idx+1]:"/dev/null");
+	  string outname = (argc>params.input_idx+1)?argv[params.input_idx+1]:"/dev/null";
+	  ofstream out(outname.c_str());
       for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
       	string sketchName = it->second;
       	string findName = sketchName;
@@ -257,6 +269,10 @@ int main(int argc, char** argv){
       		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();	
      		}
+			if(params.hastimeout){
+				dynamic_cast<ABCSATSolver*>(finder)->setTimeout(params.timeout);
+			}
+
       	}else if ( params.synthtype ==  paramInterp::ABCLIGHT ){
       		finder = new ABCSATSolver(findName, ABCSATSolver::BASICSAT, FINDER);
       		cout<<" FIND = ABC LIGHT"<<endl;
@@ -278,6 +294,9 @@ int main(int argc, char** argv){
      		if( params.outputAIG){
      			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
      		}
+			if(params.hastimeout){
+				dynamic_cast<ABCSATSolver*>(checker)->setTimeout(params.timeout);
+			}
       	}else if ( params.veriftype ==  paramInterp::ABCLIGHT ){
       		checker = new ABCSATSolver(checkName, ABCSATSolver::BASICSAT, CHECKER);
      		cout<<" CHECK = ABC LIGHT"<<endl;
@@ -292,7 +311,7 @@ int main(int argc, char** argv){
      		cout<<" CHECK = MINI"<<endl;
       	}
       	
-      	SolveFromInput solver(INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
+      	SolveFromInput solver(out, INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
 			params.seedsize, params.inlineAmnt, INp::NINPUTS, params.mergeFunctions);
       						   
       	if(params.printDiag){
