@@ -630,8 +630,9 @@ public:
   int get_n_layers()const{ return layer_sizes.size(); };
 
 
-  bool checkNodePosition(bool_node* bn){
-	return bn->id < this->size() && bn->id >= 0 && bn == (*this)[bn->id];
+  inline bool checkNodePosition(bool_node* bn){
+	  int bid = bn->id;
+	return bid < this->size() && bid >= 0 && bn == nodes[bid];
   }
 
 

@@ -133,15 +133,8 @@ void bool_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 
 void arith_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 	bool_node::replace_parent(oldpar, newpar);
-	vector<bool_node*>::iterator beg = multi_mother.begin();
-	vector<bool_node*>::iterator end = multi_mother.end();
-	for(vector<bool_node*>::iterator it = beg; it != end; ++it){
-	  	if(*it == oldpar){
-	  		*it = newpar;
-	  		//oldpar->remove_child(this);
-  			newpar->children.insert( this );
-	  	}
-	}
+	replace<vector<bool_node*>::iterator, bool_node*>(multi_mother.begin(), multi_mother.end(), ( bool_node*)oldpar, newpar);
+	newpar->children.insert( this );	
 }
 
 
@@ -208,9 +201,11 @@ void bool_node::dislodge(){
 
 void arith_node::dislodge(){
 	bool_node::dislodge();
+	bool_node* tmp = NULL;
 	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
-	  	if(*it != NULL){
+	  	if(*it != NULL && *it != tmp){
 	  		(*it)->remove_child(this);	
+			tmp = *it;
 	  	}
 	}
 }
@@ -383,9 +378,9 @@ void bool_node::neighbor_replace(bool_node* replacement, timerclass& replacepar)
 	replacepar.restart();
 	onode->dislodge();
 	replacepar.stop();
-	
+	child_iter end = onode->children.end();
 	for(child_iter it = onode->children.begin(); 
-										it !=onode->children.end(); ++it){
+										it !=end; ++it){
 		
 		(*it)->replace_parent(onode, replacement);
 	}
@@ -990,7 +985,6 @@ void arith_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag)
   bool_node::redirectPointers(oribdag, bdag);
   for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
-  		Assert( (*it)->id != -22, "This node should not exist anymore");
   		if( oribdag.checkNodePosition(*it) ){
 	  		(*it) = bdag[(*it)->id];
   		}

@@ -68,7 +68,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			for(int i=0; i<inputs.size(); ++i){			
 				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
-				string fn = formal->get_name();
 				/*if(formal->children.size() == 2){
 					cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
 					//cout<<"";
