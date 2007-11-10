@@ -928,7 +928,8 @@ void DagOptim::visit( ARRACC_node& node ){
 				return;
 			}
 		}
-		
+
+
 		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
 				AND_node* an = new AND_node();
 				an->name = node.name;
@@ -965,8 +966,19 @@ void DagOptim::visit( ARRACC_node& node ){
 				node.multi_mother[1] = mm1.multi_mother[1];
 				node.addToParents();
 				setTimestamp(&node);
+				rvalue = &node;
+				return;
 			}	
-			
+
+			if(node.mother == mm1.mother){
+				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
+				node.dislodge();
+				node.multi_mother[1] = mm1.multi_mother[1];
+				node.addToParents();
+				setTimestamp(&node);
+				rvalue = &node;
+				return;
+			}
 			
 			/*
 			if( node.multi_mother[0] == mm1.multi_mother[1] && mm1.children.size() < 2){
@@ -1007,28 +1019,40 @@ void DagOptim::visit( ARRACC_node& node ){
 		}
 		
 		if( typeid(*node.multi_mother[0]) == typeid(node)  ){
-			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
-			if( node.multi_mother[1] == mm1.multi_mother[1] && mm1.children.size() < 2){
-				OR_node* an = new OR_node();
-				an->name = node.name;
-				an->name += "OR";
-				an->mother = node.mother;
-				an->father = mm1 .mother;
-				an->addToParents();
-				setTimestamp(an);
-				addNode(an);
+			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
+			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.children.size() < 2){
+				OR_node* on = new OR_node();
+				on->name = node.name;
+				on->name += "OR";
+				on->mother = node.mother;
+				on->father = mm0 .mother;
+				on->addToParents();
+				setTimestamp(on);
+				addNode(on);
 
-				an = dynamic_cast<OR_node*>( cse.computeCSE(an) );
+				on = dynamic_cast<OR_node*>( cse.computeCSE(on) );
 				
 				
 				node.dislodge();
-				node.mother = an;
-				node.multi_mother[0] = mm1.multi_mother[0];
+				node.mother = on;
+				node.multi_mother[0] = mm0.multi_mother[0];
 				node.addToParents();
 				setTimestamp(&node);
+				rvalue = &node;
+				return;
 			}
 			
 			
+			if(node.mother == mm0.mother){
+				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
+				node.dislodge();
+				node.multi_mother[0] = mm0.multi_mother[0];
+				node.addToParents();
+				setTimestamp(&node);
+				rvalue = &node;
+				return;
+			}
+
 			/*
 			if( node.multi_mother[1] == mm1.multi_mother[0] && mm1.children.size() < 2){
 				OR_node* an = new OR_node();
@@ -1101,6 +1125,13 @@ void DagOptim::visit( ACTRL_node& node ){
 }
 	
 void DagOptim::visit( ASSERT_node &node){
+	if(isConst(node.mother)){
+		int cv = this->getIval(node.mother);
+		if(cv == 1){
+			rvalue = this->getCnode(0);
+			return ;
+		}
+	}
 	rvalue = &node;
 }	
 void DagOptim::visit( DST_node& node ){

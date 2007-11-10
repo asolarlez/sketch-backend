@@ -69,10 +69,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
 				string fn = formal->get_name();
-				if(specialInputs.count(i) > 0){
-					//cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
+				/*if(formal->children.size() == 2){
+					cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
 					//cout<<"";
-				}
+				}*/
 				Assert( clones[formal->id] == formal, "ID is incorrect");
 				replTime.restart();
 				setTimestampChildren(formal);
@@ -100,10 +100,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 			}
 		}
-		
-		vector<bool_node*>& outputs  = oldFun->getNodesByType(bool_node::DST);
-		
-		Assert( outputs.size() == 1, "The outputs are of the wrong size "<< outputs.size()<<"  "<< name);
 				
 		//rvalue = outputs[0]->mother;
 		

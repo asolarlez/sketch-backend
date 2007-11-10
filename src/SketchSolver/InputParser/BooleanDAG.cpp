@@ -133,7 +133,9 @@ void bool_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 
 void arith_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 	bool_node::replace_parent(oldpar, newpar);
-	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+	vector<bool_node*>::iterator beg = multi_mother.begin();
+	vector<bool_node*>::iterator end = multi_mother.end();
+	for(vector<bool_node*>::iterator it = beg; it != end; ++it){
 	  	if(*it == oldpar){
 	  		*it = newpar;
 	  		//oldpar->remove_child(this);
