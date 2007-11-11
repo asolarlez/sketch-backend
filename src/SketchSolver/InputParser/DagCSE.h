@@ -4,28 +4,32 @@
 #include "BooleanDAG.h"
 #include "timerclass.h"
 
+#define Dtime(...) /*nothing*/
+
+
+
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
 	map<string, bool_node*> cse_map;
 	
 	inline bool hasCSE(string& str){
-		maptimer.restart();
+		Dtime(maptimer.restart();)
 		bool tmp = cse_map.find(str) != cse_map.end(); 		
-		maptimer.stop();	
+		Dtime(maptimer.stop();)
 		return tmp;
 	}
 	
 	inline bool_node*& operator[](string& str){
-		maptimer.restart();
+		Dtime(maptimer.restart();)
 		bool_node*& tmp = cse_map[str];
-		maptimer.stop();
+		Dtime(maptimer.stop();)
 		return tmp;	
 	}  
 public:
 	string ccode;
-	timerclass stimer;
-	timerclass maptimer;
+	Dtime(timerclass stimer;)
+	Dtime(timerclass maptimer;)
 	DagCSE(BooleanDAG& p_dag);
 	virtual ~DagCSE();	
 	

@@ -1200,7 +1200,7 @@ void DagOptim::process(BooleanDAG& dag){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				setTimestampChildren(dag[i]);
 				replace.restart();
-				dag.replace(i, node, replacepar);
+				dag.replace(i, node);
 				replace.stop();
 		}
 	}

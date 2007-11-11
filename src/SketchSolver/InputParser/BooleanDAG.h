@@ -103,7 +103,7 @@ public:
   virtual bool_node* clone()=0;
   virtual void printSubDAG(ostream& out);
   virtual OutType getOtype();
-  void neighbor_replace(bool_node* replacement, timerclass& replacepar);
+  void neighbor_replace(bool_node* replacement);
 };
 
 
@@ -589,7 +589,7 @@ public:
   void print(ostream& out);
   typedef vector<bool_node*>::iterator iterator;
   void removeNullNodes();
-  void replace(int original, bool_node* replacement, timerclass& replacepar=TTMMPP);
+  void replace(int original, bool_node* replacement);
   //void replace(int original, bool_node* cse);
   
   virtual string create_const(int n);

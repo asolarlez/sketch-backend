@@ -20,13 +20,12 @@ class DagFunctionInliner : public DagOptim
 	timerclass replTime;
 	timerclass ufunAll;
 	timerclass optAll;
-	timerclass replTime2;
 	timerclass tnbuildTime;
 	timerclass optimTime;
-	timerclass cleanupTime;
+
 	timerclass unifyTime;
 	timerclass clonetime;
-	map<string, timerclass> optTimers;
+
 	vector<bool_node*> clones;
 	map<int, int> specialInputs;
 	int expectedNFuns;

@@ -370,14 +370,10 @@ void BooleanDAG::layer_graph(){
   //before you.
 }
 
-timerclass TTMMPP("");
 
-
-void bool_node::neighbor_replace(bool_node* replacement, timerclass& replacepar){
+void bool_node::neighbor_replace(bool_node* replacement){
 	bool_node* onode = this;
-	replacepar.restart();
 	onode->dislodge();
-	replacepar.stop();
 	child_iter end = onode->children.end();
 	for(child_iter it = onode->children.begin(); 
 										it !=end; ++it){
@@ -388,7 +384,7 @@ void bool_node::neighbor_replace(bool_node* replacement, timerclass& replacepar)
 }
 
 
-void BooleanDAG::replace(int original, bool_node* replacement, timerclass& replacepar){	
+void BooleanDAG::replace(int original, bool_node* replacement){	
 	int i = original;
 	Assert( i < nodes.size() && i >= 0, "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
 	Assert( replacement != NULL, "Why are you replacing with a null replacement");
@@ -396,7 +392,7 @@ void BooleanDAG::replace(int original, bool_node* replacement, timerclass& repla
 	bool_node* onode = nodes[i];
 	Assert( onode != NULL, "This can't happen");
 	
-	onode->neighbor_replace(replacement, replacepar);
+	onode->neighbor_replace(replacement);
 	
 	
 	//
