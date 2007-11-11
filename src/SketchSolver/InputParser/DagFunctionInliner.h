@@ -17,10 +17,10 @@ class DagFunctionInliner : public DagOptim
 	int divFactor;
 	int oldNfun;
 	bool mergeFunctions;
-	timerclass replTime;
+
 	timerclass ufunAll;
 	timerclass optAll;
-	timerclass tnbuildTime;
+
 	timerclass optimTime;
 
 	timerclass unifyTime;
