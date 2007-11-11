@@ -10,8 +10,6 @@ DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG
 dag(p_dag), 
 DagOptim(p_dag), 
 functionMap(p_functionMap),
-replTime(" replacement "),
-tnbuildTime(" tnbuilding "),
 optimTime(" optim "),
 ufunAll(" ufun all"),
 optAll(" opt all "),
@@ -71,12 +69,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					//cout<<"";
 				}*/
 				Assert( clones[formal->id] == formal, "ID is incorrect");
-				replTime.restart();
+
 				setTimestampChildren(formal);
 				formal->neighbor_replace(actual);
 				clones[formal->id] = NULL;
 				delete formal;
-				replTime.stop();
+
 			}
 		}
 		//cout<<endl;
@@ -88,12 +86,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				bool_node* actual = dag.unchecked_get_node( formal->name );		
 				if(actual != NULL){
 					Assert( clones[formal->id] == formal, "ID is incorrect");	
-					replTime.restart();
+
 					setTimestampChildren(formal);
 					formal->neighbor_replace(actual);
 					clones[formal->id] = NULL;
 					delete formal;
-					replTime.stop();
+
 				}
 			}
 		}
@@ -121,10 +119,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						if(nnode == n){
 							this->addNode(n);
 						}else{
-							replTime.restart();
+
 							setTimestampChildren(n);
 							n->neighbor_replace(nnode);
-							replTime.stop();
+
 							delete n;
 						}
 					}else{						
@@ -132,10 +130,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						if(nnode == n){
 							this->addNode(n);
 						}else{
-							replTime.restart();
+
 							setTimestampChildren(n);
 							n->neighbor_replace(nnode);
-							replTime.stop();
+
 							delete n;
 						}
 					}
@@ -144,9 +142,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						hasBuiltTN = true;					
 						int szz1 = newnodes.size();
 
-						tnbuildTime.start();		
+		
 						tn = tnbuilder.get_exe_cond(&node, *this);
-						tnbuildTime.stop();
+
 						int szz2 = newnodes.size();
 							
 					}
@@ -473,9 +471,9 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				setTimestampChildren(dag[i]);
-				replTime.restart();
+
 				dag.replace(i, node);
-				replTime.stop();
+
 
 		}
 	}
@@ -550,10 +548,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	ufunAll.print();
 	clonetime.print();
 	optAll.print();
-
-
-	replTime.print();
-	tnbuildTime.print();
+	
 	optimTime.print();
 	/*
 	for(map<string, pair<int, int> >::iterator it = sizes.begin(); it != sizes.end(); ++it){
