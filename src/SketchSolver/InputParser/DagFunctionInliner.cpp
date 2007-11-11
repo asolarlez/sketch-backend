@@ -5,10 +5,15 @@
 
 int FRACTION = 8;
 
+#ifndef  _MSC_VER
+static const int MAX_NODES = 1000000;
+#else
+static const int MAX_NODES = 510000;
+#endif
 
 DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions):
-dag(p_dag), 
-DagOptim(p_dag), 
+dag(p_dag),
+DagOptim(p_dag),
 functionMap(p_functionMap),
 optimTime(" optim "),
 ufunAll(" ufun all"),
@@ -33,7 +38,7 @@ void DagFunctionInliner::computeSpecialInputs(){
 	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 		BooleanDAG* fun = it->second;
 		vector<bool_node*>& inputs  = fun->getNodesByType(bool_node::SRC);
-		for(int i=0; i<inputs.size(); ++i){	
+		for(int i=0; i<inputs.size(); ++i){
 			string fn = inputs[i]->get_name();
 			if(fn.find("PC") != -1 ){
 					specialInputs[i] = 50;
@@ -46,7 +51,7 @@ void DagFunctionInliner::computeSpecialInputs(){
 }
 
 
-void DagFunctionInliner::visit( UFUN_node& node ){	
+void DagFunctionInliner::visit( UFUN_node& node ){
 	ufunAll.restart();
 	string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
@@ -58,10 +63,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		{
 			vector<bool_node*>& inputs  = oldFun->getNodesByType(bool_node::SRC);
-			
+
 			Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
-			
-			for(int i=0; i<inputs.size(); ++i){			
+
+			for(int i=0; i<inputs.size(); ++i){
 				bool_node* formal = clones[inputs[i]->id];
 				bool_node* actual = node.multi_mother[i];
 				/*if(formal->children.size() == 2){
@@ -80,12 +85,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		//cout<<endl;
 		{
 			vector<bool_node*>& controls  = oldFun->getNodesByType(bool_node::CTRL);
-			
-			for(int i=0; i<controls.size(); ++i){			
+
+			for(int i=0; i<controls.size(); ++i){
 				bool_node* formal = clones[controls[i]->id];
-				bool_node* actual = dag.unchecked_get_node( formal->name );		
+				bool_node* actual = dag.unchecked_get_node( formal->name );
 				if(actual != NULL){
-					Assert( clones[formal->id] == formal, "ID is incorrect");	
+					Assert( clones[formal->id] == formal, "ID is incorrect");
 
 					setTimestampChildren(formal);
 					formal->neighbor_replace(actual);
@@ -95,21 +100,21 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 			}
 		}
-				
+
 		//rvalue = outputs[0]->mother;
-		
-		
+
+
 		bool_node* tn = NULL;
-				
-		
+
+
 		int hasBuiltTN = false;
-		
-		
+
+
 		bool_node* output = NULL;
 
 		for(int i=0; i<clones.size(); ++i){
 			bool_node* n = clones[i];
-			if( n != NULL &&  n->type != bool_node::DST ){			
+			if( n != NULL &&  n->type != bool_node::DST ){
 				if(n->type != bool_node::ASSERT){
 					if(typeid(*n) != typeid(UFUN_node)){
 						optimTime.restart();
@@ -125,7 +130,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 							delete n;
 						}
-					}else{						
+					}else{
 						bool_node* nnode = cse.computeCSE(n);
 						if(nnode == n){
 							this->addNode(n);
@@ -138,17 +143,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 					}
 				}else{
-					if(!hasBuiltTN){	
-						hasBuiltTN = true;					
+					if(!hasBuiltTN){
+						hasBuiltTN = true;
 						int szz1 = newnodes.size();
 
-		
+
 						tn = tnbuilder.get_exe_cond(&node, *this);
 
 						int szz2 = newnodes.size();
-							
+
 					}
-					
+
 					bool_node* cur = n->mother;
 					if(tn != NULL){		// !!! This should be OR NOT.
 						bool_node* nnode = new NOT_node();
@@ -160,7 +165,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							if(nnodep == nnode){
 								nnode->addToParents();
 								setTimestamp(nnode);
-								this->addNode(nnode);							
+								this->addNode(nnode);
 							}else{
 								delete nnode;
 							}
@@ -183,7 +188,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							}
 							ornode = ornodep;
 						}
-						cur = ornode;				
+						cur = ornode;
 					}
 					ASSERT_node* asn = new ASSERT_node();
 					asn->mother = cur;
@@ -191,12 +196,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					asn->addToParents();
 					setTimestamp(asn);
 					this->addNode(asn);
-					
+
 					n->dislodge();
 					n->id = -22;
 					delete n;
 				}
-			}else{				
+			}else{
 				if( n!= NULL){
 					output = n->mother;
 					n->dislodge();
@@ -204,7 +209,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					delete n;
 				}
 			}
-		}		
+		}
 		rvalue = output;
 		somethingChanged = true;
 	}else{
@@ -252,7 +257,7 @@ bool compareSet(arith_node* an, set<bool_node*>& s, int lev){
 int compareDifferent(bool_node* bn1, bool_node* bn2){
 		// If they are different, but they are equivalent ARRACCS differing only on their mothers, add 1.
 		//If they are just different symbolic values, add 2.
-	
+
 	if(typeid(*bn1) == typeid(ARRACC_node) && typeid(*bn2) == typeid(ARRACC_node)){
 		arith_node* an1 = dynamic_cast<arith_node*>(bn1);
 		arith_node* an2 = dynamic_cast<arith_node*>(bn2);
@@ -264,13 +269,13 @@ int compareDifferent(bool_node* bn1, bool_node* bn2){
 		}
 		return 2;
 	}
-	
-	//If one of them is a constant, add 3.	
-	
+
+	//If one of them is a constant, add 3.
+
 	if(typeid(*bn1) == typeid(CONST_node) || typeid(*bn2) == typeid(CONST_node)){
 		return 3;
 	}
-	
+
 	return 2;
 }
 
@@ -385,7 +390,7 @@ void DagFunctionInliner::unify(){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
 			string& name = ufun->get_ufname();
 			if(checkFunName(name)){
-				vector<vector<bool_node*> >& v = argLists;	
+				vector<vector<bool_node*> >& v = argLists;
 				int id = v.size();
 				vector<int> difRow;
 				locToG[id] = i;
@@ -396,8 +401,8 @@ void DagFunctionInliner::unify(){
 					maxDif = dif > maxDif ? dif : maxDif;
 					tot += dif;
 					++N;
-					if(dif < lowestDif){ 
-						lowestDif = dif; 
+					if(dif < lowestDif){
+						lowestDif = dif;
 						lowestDifID = j;
 					}
 					 //cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
@@ -405,9 +410,9 @@ void DagFunctionInliner::unify(){
 				//cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
 				nfd[lowestDif].push_back(id);
-				v.push_back(ufun->multi_mother);	
+				v.push_back(ufun->multi_mother);
 
-			}			
+			}
 		}
 	}
 
@@ -458,16 +463,16 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	int nfuns = 0;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
-				
+
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			nfuns++;
 		}
-		
-		
+
+
 		optAll.restart();
 		bool_node* node = computeOptim(dag[i]);
-		optAll.stop();		
-		
+		optAll.stop();
+
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				setTimestampChildren(dag[i]);
@@ -481,21 +486,21 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	cout<<" added nodes = "<<newnodes.size()<<endl;
 
 
-	
+
 	cleanup(dag);
-	
+
 	tnbuilder.reset();
 	cout<<" nfuns = "<<nfuns<<endl;
 
-	if(mergeFunctions){	
+	if(mergeFunctions){
 		if(oldNfun > 0){
 			if( (nfuns - oldNfun) > 3 && divFactor > (FRACTION + 1)){
 				divFactor--;
 				if( (nfuns - oldNfun) > 12 ){
-					divFactor-= 4;					
+					divFactor-= 4;
 				}
 				if( (nfuns - oldNfun) > 40 ){
-					divFactor-= 4;					
+					divFactor-= 4;
 				}
 				if(divFactor<(FRACTION + 1)){
 					divFactor = (FRACTION + 1);
@@ -525,7 +530,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		DagOptim optim(dag);
 		optim.process(dag);
 	}
-	
+
 	computeSpecialInputs();
 
 	expectedNFuns = 2;
@@ -533,10 +538,10 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 510000 && inlin < inlineAmnt){
+	while(somethingChanged && dag.size() < MAX_NODES && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
-		immInline(dag);	
+		immInline(dag);
 		//if(inlin==0){( dag.print(cout) );}
 		++inlin;
 	}
@@ -548,7 +553,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	ufunAll.print();
 	clonetime.print();
 	optAll.print();
-	
+
 	optimTime.print();
 	/*
 	for(map<string, pair<int, int> >::iterator it = sizes.begin(); it != sizes.end(); ++it){
@@ -557,15 +562,15 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 */
 
 	( cout<<" after all inlining dag.size()=="<<dag.size()<<endl);
-	
-	
+
+
 	// dag.print(cout);
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
 	}
-	
-	cout<<" After everything: dag.size()=="<<dag.size()<<endl;	
+
+	cout<<" After everything: dag.size()=="<<dag.size()<<endl;
 }
 
 
