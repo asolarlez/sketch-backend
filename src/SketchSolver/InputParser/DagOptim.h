@@ -142,6 +142,7 @@ public:
 	map<bool_node*, AbstractNodeValue> anv;
 	vector<bool_node*> newnodes;
 	map<int, CONST_node*> cnmap;
+	map<string, UFUN_node*> callMap;
 
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();

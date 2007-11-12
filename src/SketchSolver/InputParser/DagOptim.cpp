@@ -833,6 +833,61 @@ void DagOptim::visit( EQ_node& node ){
 }
 
 void DagOptim::visit( UFUN_node& node ){
+	if(isConst(node.mother)){
+		if(getIval( node.mother ) == 0){
+			rvalue = getCnode(0);
+			return;
+		}
+	}
+
+	stringstream str; 	
+ 	str<<node.get_ufname()<<"(";
+ 	for(int i=0; i<node.multi_mother.size(); ++i){
+ 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
+ 		str<<mmid<<",";
+ 	}
+	str<<")";
+
+ 	string tmp = str.str();
+	
+	map<string, UFUN_node*>::iterator bro =  callMap.find(tmp);
+	if(bro != callMap.end()){
+		UFUN_node* brother = bro->second;
+
+		if(brother->mother == node.mother){
+			rvalue = brother;
+			return;
+		}
+
+		brother->dislodge();
+		brother->mother->remove_child(brother);
+		bool_node* on = new OR_node();
+		on->mother = brother->mother;
+		on->father = node.mother;
+		
+		{
+			bool_node* onPr = this->computeOptim(on);
+			if(onPr == on){
+				on->addToParents();
+				setTimestamp(on);
+				addNode(on);
+			}else{
+				delete on;
+			}
+			on = onPr;
+		}
+		
+		brother->mother = on;
+		brother->addToParents();
+		rvalue = brother;
+		return;
+	}else{
+		callMap[tmp] = &node;
+		rvalue  = &node;
+		return;
+	}
+
+
 	rvalue = &node;	
 }
 
@@ -1143,6 +1198,7 @@ void DagOptim::initLight(BooleanDAG& dag){
 	newnodes.clear();
 	cnmap.clear();
 	cse.clear();
+	callMap.clear();
 }
 
 

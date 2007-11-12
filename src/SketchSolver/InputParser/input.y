@@ -519,7 +519,7 @@ Term: Constant {
 				 $$ = new string(currentBD->create_const($1));
 				 }	 
 
-| T_ident '[' T_vartype ']' '(' varList  ')' {
+| T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' {
 	
 	list<bool_node*>* params = $6;
 	if(params->size() == 0){
@@ -535,7 +535,6 @@ Term: Constant {
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
 		UFUN_node* ufun = new UFUN_node(fname);
-
 		for( ; parit != params->rend(); ++parit){
 			ufun->multi_mother.push_back((*parit));
 		}
@@ -555,12 +554,13 @@ Term: Constant {
 			s1 = str.str();
 		}
 		ufun->name = s1;
-		currentBD->new_node(NULL, NULL, ufun, s1);
+		currentBD->new_node(currentBD->get_node(*$9), NULL, ufun, s1);
 		
 		$$ = new string(s1);
 		delete $1;
 	}
 	delete $6;
+	delete $9;
 }
 
 | '-' Term {

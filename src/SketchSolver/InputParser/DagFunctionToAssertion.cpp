@@ -15,24 +15,8 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 	string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
-				
-		t_node tn(NULL);
 		
-		int szz1 = newnodes.size();
-		timerclass timer("         tnbuild  ");
-		timer.start();	
-		tnbuilder.ivisit = 0;
-		tnbuilder.tvisited.clear();
-		tnbuilder.tn_build(&node, NULL, &tn, *this);
-		
-		timer.stop();
-		int szz2 = newnodes.size();
-		Dout(cout<<" added "<<(szz2-szz1)<<" nodes visited "<<tnbuilder.ivisit<<endl);
-		Dout(timer.print());
-		
-		Assert( tn.children.size() > 0, " This function should still be inlined !!! "<<node.get_name() );	
-		
-		bool_node* cur = tn.childDisjunct(*this); 
+		bool_node* cur = node.mother;
 		
 		NOT_node* nn = new NOT_node();
 		nn->mother = cur;

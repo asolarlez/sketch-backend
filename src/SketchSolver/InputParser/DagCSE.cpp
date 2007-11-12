@@ -247,12 +247,13 @@ void DagCSE::eliminateCSE(){
  void DagCSE::visit( UFUN_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str; 	
- 	str<<node.get_ufname()<<"(";
+ 	str<<node.get_ufname()<<"("<<node.mother->id<<")(";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
  		str<<mmid<<",";
  	}
- 	str<<")";
+	str<<")";
+
  	ccode = str.str();
  	Dtime(stimer.stop();)
  }
