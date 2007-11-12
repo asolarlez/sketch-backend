@@ -546,7 +546,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < 510000 && inlin < inlineAmnt){
+	while(somethingChanged && dag.size() < MAX_NODES && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
