@@ -397,8 +397,9 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	
 	//
 	
-	if(named_nodes.find(onode->name) != named_nodes.end() && named_nodes[onode->name]==onode){
-		named_nodes.erase(onode->name);
+	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
+	if(it != named_nodes.end() && it->second==onode){
+		named_nodes.erase(it);
 	}
 	
 	
@@ -461,9 +462,11 @@ void BooleanDAG::remove(int i){
     }
   }
   
-  if(named_nodes.find(onode->name) != named_nodes.end() && named_nodes[onode->name]==onode){
-	named_nodes.erase(onode->name);
-  }
+
+	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
+	if(it != named_nodes.end() && it->second==onode){
+		named_nodes.erase(it);
+	}
   
   
   onode->id = -22;
@@ -553,16 +556,18 @@ void BooleanDAG::cleanup(bool moveNots){
   	}
   }
   for(int i=0; i < nodes.size(); ++i){
-  	if(nodes[i]->flag == 0 && 
-  		nodes[i]->type != bool_node::SRC && 
-  		nodes[i]->type != bool_node::CTRL){
-  		
-  		if(named_nodes.find(nodes[i]->name) != named_nodes.end() && named_nodes[nodes[i]->name]==nodes[i]){
-			named_nodes.erase(nodes[i]->name);
+	bool_node* onode = nodes[i];
+  	if(onode->flag == 0 && 
+  		onode->type != bool_node::SRC && 
+  		onode->type != bool_node::CTRL){
+  		  		
+		map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
+		if(it != named_nodes.end() && it->second==onode){
+			named_nodes.erase(it);
 		}
   			
-  		nodes[i]->id = -22;	
-  		delete nodes[i];
+  		onode->id = -22;	
+  		delete onode;
 		nodes[i] = NULL;
   	}
   }
@@ -918,6 +923,15 @@ void BooleanDAG::create_outputs(int n, const string& gen_name){
 
 
 
+
+void arith_node::addToParents(bool_node* only_thisone){
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+  	if(*it == only_thisone){
+	  	only_thisone->children.insert(this);
+		break;
+  	}
+  }
+}
 
 
 

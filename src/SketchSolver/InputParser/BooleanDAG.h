@@ -123,6 +123,7 @@ class arith_node: public bool_node{
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out);
 	virtual void addToParents();
+	virtual void addToParents(bool_node* only_thisone);
 	virtual void redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag);
 	virtual void switchInputs(BooleanDAG& bdag);
 	virtual void printSubDAG(ostream& out);
@@ -270,6 +271,7 @@ class TIMES_node: public bool_node{
 class UFUN_node: public arith_node{
 	int nbits;	
 	string ufname;
+	map<bool_node*, bool_node*> mothersToReplace;
 	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
 	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits), ufname(bn.ufname){ }  
 	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
@@ -281,6 +283,7 @@ class UFUN_node: public arith_node{
 		  	}
 		}
 	}
+
 	virtual bool_node* clone(){return new UFUN_node(*this);  };
 	int get_nbits() const { return nbits; }
 	string& get_ufname(){ return ufname; }
@@ -674,7 +677,7 @@ public:
 
   string new_name(){
     stringstream str;
-    str<<"TNM_"<<new_namesb<<"_"<<new_names<<"___";
+    str<<"t"<<hex<<new_namesb<<"_"<<new_names<<"_";
     ++new_names;
     return str.str();
   }
@@ -683,7 +686,7 @@ public:
  		return new_name();	
  	}else{
 	    stringstream str;
-	    str<<base.substr(0,4)<<new_namesb<<"_"<<new_names<<"____";
+	    str<<base.substr(0,4)<<new_namesb<<"_"<<new_names<<"__";
 	    ++new_names;
 	    return str.str();
  	}
