@@ -27,6 +27,7 @@ oldNfun(-1)
 {
 	somethingChanged = false;
 	cout<<" Inline amount = p_inlineAmnt"<<endl;
+	alterARRACS();
 }
 
 DagFunctionInliner::~DagFunctionInliner()
@@ -133,6 +134,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
+						bool_node* oldMother = ufun->mother;
 						ufun->mother->remove_child(ufun);
 						bool_node* andCond = new AND_node();
 						andCond->mother = ufun->mother;
@@ -151,7 +153,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 
 						ufun->mother = andCond;
-						ufun->addToParents();
+						ufun->mother->children.insert(ufun);
+						if(andCond != oldMother){
+							ufun->addToParents(oldMother);
+						}
 						DagOptim::visit(*ufun);
 						bool_node* nnode = rvalue;
 						if(nnode == n){
@@ -546,7 +551,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	everything.start();
 	int inlin = 0;
-	while(somethingChanged && dag.size() < MAX_NODES && inlin < inlineAmnt){
+	while(somethingChanged && dag.size() < 510000 && inlin < inlineAmnt){
 		somethingChanged = false;
 		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
 		immInline(dag);	
