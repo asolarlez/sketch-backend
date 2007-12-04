@@ -102,7 +102,6 @@ bool FindCheckSolver::solve(){
 //private
 bool FindCheckSolver::solveCore(){
 	int ctrlSize = ctrl.size();
-	int inputSize = input.size();
 	int iterations = 0;
 	bool fail = false;
  	bool doMore=true;
@@ -112,7 +111,7 @@ bool FindCheckSolver::solveCore(){
 	ttimer.start();
 	while(doMore){
 		{// Find
-			cout<<"!%";	for(int i=0; i<inputSize; ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
+			cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			cpt.checkpoint('f', input);
 			cout<<"BEG FIND"<<endl; ftimer.restart();
 			doMore = find(input, ctrl);
