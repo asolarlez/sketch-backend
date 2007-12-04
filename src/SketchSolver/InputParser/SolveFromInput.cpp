@@ -271,6 +271,11 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 				gnbits = gnbits < (nbits+1) ? (nbits+1) : gnbits;			
 				declareInput(specIn[i]->get_name(), nbits+1);
 				srcnode->set_nbits(nbits+1);
+				if(problem != oriProblem){
+					bool_node* tmpn = oriProblem->get_node(srcnode->name);
+					SRC_node* oriSrc = dynamic_cast<SRC_node*>(tmpn);
+					oriSrc->set_nbits(nbits+1);
+				}
 				cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
 				keepGoing = true;
 			}else{
