@@ -1099,6 +1099,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
 			if( !has_name((*node_it)->name) ){
 				nodes.push_back( (*node_it) );
 				nodesByType[(*node_it)->type].push_back((*node_it));	
+				named_nodes[(*node_it)->name] = (*node_it);
 			}
 		}
 		
