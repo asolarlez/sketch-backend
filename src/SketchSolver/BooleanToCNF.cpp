@@ -15,7 +15,7 @@ using namespace std;
 
 
 int
-varDir::assertVectorsDiffer (int v1, int v2, int size)
+SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 {
     int N = size;
     int lastone = 0;
@@ -31,7 +31,7 @@ varDir::assertVectorsDiffer (int v1, int v2, int size)
 }
 
 int
-varDir::select (int choices[], int control, int nchoices, int bitsPerChoice)
+SolverHelper::select (int choices[], int control, int nchoices, int bitsPerChoice)
 {
     int outvar = getVarCnt();	
     for(int i=0; i<bitsPerChoice; ++i){
@@ -51,7 +51,7 @@ varDir::select (int choices[], int control, int nchoices, int bitsPerChoice)
 }
 
 int
-varDir::selectMinGood (int choices[], int control, int nchoices, int bitsPerChoice)
+SolverHelper::selectMinGood (int choices[], int control, int nchoices, int bitsPerChoice)
 {
     int outvar = select(choices, control, nchoices, bitsPerChoice);	
     int differences = getVarCnt();	
@@ -70,7 +70,7 @@ varDir::selectMinGood (int choices[], int control, int nchoices, int bitsPerChoi
 }
 
 int
-varDir::arbitraryPerm (int input, int insize, int controls[], int ncontrols, int csize)
+SolverHelper::arbitraryPerm (int input, int insize, int controls[], int ncontrols, int csize)
 {
     // ncontrols = sizeof(controls);
     Assert( insize <= csize, "This is an error");

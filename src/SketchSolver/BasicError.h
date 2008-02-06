@@ -6,10 +6,11 @@
 #include <sstream>
 
 
-#define Dout( out )     /* out */ 
+#define Dout( out )     /* out */
 
 
 using std::string;
+using std::stringstream;
 
 extern string context;
 
@@ -30,6 +31,15 @@ inline void Warning(const string& msg){
 }
 
 #define Assert( in, msg) if(!(in)){ stringstream mstr; mstr<<msg;  throw BasicError(mstr.str(), "Error"); }
+
+
+
+inline string int2str(int i){
+	char tmp[30];
+	Assert( i < 999999999, "Went out of bounds");
+	sprintf(tmp, "%d", i);
+	return string(tmp);
+}
 
 #endif
 
