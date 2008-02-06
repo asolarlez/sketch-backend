@@ -405,7 +405,7 @@ NodesToSolver::processArith (bool_node &node)
 	}
 	for(int i=0; i<vals; ++i){
 	    int quant = tmp[i];
-	    mng.addEqualsClause(newID + i, numbers[quant]);
+	    dir.addEqualsClause(numbers[quant], newID + i);
 	}
 	oval.setId(newID);
 	oval.sparsify ();
@@ -813,7 +813,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 												 return; }
 	if(!isBoolean){
 //		nonbooltimer.restart();
-		doNonBoolArrAcc(node);
+		doNonBoolArrAcc(node, node_ids[node.id]);
 //		nonbooltimer.stop().print();
 //		aracctimer.stop().print();
 		Dout(cout<<node.get_name()<<"  "<<node_ids[node.id]<<endl);
@@ -949,6 +949,101 @@ NodesToSolver::visit (GE_node &node)
 #endif /* HAVE_BVECTARITH */
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag){
+		if( !mid0.isSparse() ){
+		    mid0.makeSparse(dir);
+		}
+		if( !mid1.isSparse() ){
+		    mid1.makeSparse(dir);
+		}
+		if(guard == YES){
+		    flag = output != mid1;
+		    if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
+		    output = mid1;
+		    Dout( cout<<"var "<< mid1 <<endl);
+		    return;
+		}
+		if(guard == -YES){
+		    flag = output != mid0;
+		    if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
+		    output = mid0;
+		    Dout( cout<<"var "<< mid0 <<endl);
+		    return;
+		}
+		int i=0, j=0;
+		vector<int>& nr0 = mid0.num_ranges;
+		vector<int>& nr1 = mid1.num_ranges;
+		vector<int> res;
+		res.reserve(nr0.size() + nr1.size());
+		vector<int>& out = output.num_ranges;
+		out.clear();
+		out.reserve(nr0.size() + nr1.size());
+		while(i < nr0.size() || j< nr1.size()){
+		    bool avi = i < nr0.size();
+		    bool avj = j < nr1.size();
+		    int curri = avi ? nr0[i]  : -1;
+		    int currj = avj ? nr1[j]  : -1;
+		    if( curri == currj && avi && avj){
+				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
+				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
+				int cvar3 = dir.addOrClause( cvar2, cvar1);
+				out.push_back(curri);
+				res.push_back(cvar3);
+				i++;
+				j++;
+				continue;
+			}
+		    if((curri < currj && avi) || !avj){
+				Dout(cout<<" curri = "<<curri<<endl);
+				int cvar = dir.addAndClause( mid0.getId (i), -guard);
+				out.push_back(curri);
+				res.push_back(cvar);
+				i++;
+				continue;
+		    }
+		    if( (currj < curri && avj) || !avi ){
+				Dout(cout<<" currj = "<<currj<<endl);
+				int cvar = dir.addAndClause( mid1.getId (j), guard );
+				out.push_back(currj);
+				res.push_back(cvar);
+				j++;
+				continue;
+		    }
+		    Assert(false, "Should never get here");
+		}
+		out.resize(res.size ());
+		Assert( res.size () > 0, "This should not happen here2");
+		int newID = dir.newAnonymousVar();
+		for(int k=1; k<res.size(); ++k){
+		    int cvar = dir.newAnonymousVar();
+		    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
+		}
+		for(int k=0; k<res.size(); ++k){
+		    int val = res[k];
+		    dir.addEqualsClause( val, newID+k);
+		}
+		output.setId(newID);
+		output.sparsify ();
+		return;
+}
+
+
+
+
+
 void NodesToSolver::visit( ARRASS_node& node ){
     Dout(cout<<"             ARRASS:"<<endl);
     // mother = index
@@ -1007,82 +1102,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		Dout(cout<<" is not boolean"<<endl);
 		Tvalue& mid0 = choices[0];
 		Tvalue& mid1 = choices[1];
-		if( !mid0.isSparse() ){
-		    mid0.makeSparse(dir);
-		}
-		if( !mid1.isSparse() ){
-		    mid1.makeSparse(dir);
-		}
-		if(guard == YES){
-		    node.flag = node_ids[node.id] != mid1;
-		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
-		    node_ids[node.id] = mid1;
-		    Dout( cout<<"var "<< mid1 <<endl);
-		    return;
-		}
-		if(guard == -YES){
-		    node.flag = node_ids[node.id] != mid0;
-		    if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
-		    node_ids[node.id] = mid0;
-		    Dout( cout<<"var "<< mid0 <<endl);
-		    return;
-		}
-		int i=0, j=0;
-		vector<int>& nr0 = mid0.num_ranges;
-		vector<int>& nr1 = mid1.num_ranges;
-		vector<int> res;
-		res.reserve(nr0.size() + nr1.size());
-		vector<int>& out = node_ids[node.id].num_ranges;
-		out.clear();
-		out.reserve(nr0.size() + nr1.size());
-		while(i < nr0.size() || j< nr1.size()){
-		    bool avi = i < nr0.size();
-		    bool avj = j < nr1.size();
-		    int curri = avi ? nr0[i]  : -1;
-		    int currj = avj ? nr1[j]  : -1;
-		    if( curri == currj && avi && avj){
-				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
-				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
-				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
-				int cvar3 = dir.addOrClause( cvar2, cvar1);
-				out.push_back(curri);
-				res.push_back(cvar3);
-				i++;
-				j++;
-				continue;
-			}
-		    if((curri < currj && avi) || !avj){
-				Dout(cout<<" curri = "<<curri<<endl);
-				int cvar = dir.addAndClause( mid0.getId (i), -guard);
-				out.push_back(curri);
-				res.push_back(cvar);
-				i++;
-				continue;
-		    }
-		    if( (currj < curri && avj) || !avi ){
-				Dout(cout<<" currj = "<<currj<<endl);
-				int cvar = dir.addAndClause( mid1.getId (j), guard );
-				out.push_back(currj);
-				res.push_back(cvar);
-				j++;
-				continue;
-		    }
-		    Assert(false, "Should never get here");
-		}
-		out.resize(res.size ());
-		Assert( res.size () > 0, "This should not happen here2");
-		int newID = dir.newAnonymousVar();
-		for(int k=1; k<res.size(); ++k){
-		    int cvar = dir.newAnonymousVar();
-		    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
-		}
-		for(int k=0; k<res.size(); ++k){
-		    int val = res[k];
-		    mng.addEqualsClause( newID+k, val);
-		}
-		node_ids[node.id].setId(newID);
-		node_ids[node.id].sparsify ();
-		return;
+		mergeTvalues(guard, mid0, mid1, node_ids[node.id], node.flag);
     }
 }
 
@@ -1122,9 +1142,8 @@ NodesToSolver::visit (ASSERT_node &node)
 		return;
 	}
 
-	if( node.isHard()){
-		dir.addHardAssertClause (fval.getId ());
-	}else{
+	Assert(!node.isHard(), "This functionality is depracted");
+	{
 		if(fval.getId() == -YES ) {  cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; }
 		dir.addAssertClause (fval.getId ());
 	}
@@ -1153,7 +1172,7 @@ NodesToSolver::visit (CONST_node &node)
 }
 
 
-void NodesToSolver::doNonBoolArrAcc(arith_node& node){
+void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 	Dout( cout<<" non boolean array "<<endl );
 	vector<bool_node*>::iterator it = node.multi_mother.begin();
 	
@@ -1189,7 +1208,7 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 		}
 	}
 
-	vector<int>& result = node_ids[node.id].num_ranges;
+	vector<int>& result = output.num_ranges;
 	result.clear();
 	Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
 	if(newVals.size() == 1){
@@ -1202,25 +1221,25 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 			scratchpad[orTerms] = vars[i];
 		}
 		if( orTerms == 1){
-			node_ids[node.id].setId(vars[0]);
+			output.setId(vars[0]);
 			result.push_back(it->first);
-			node_ids[node.id].sparsify ();
+			output.sparsify ();
 		}else{
 			scratchpad[0] = 0;
 			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
 			result.push_back(it->first);
-			node_ids[node.id].setId(cvar);
-			node_ids[node.id].sparsify ();
+			output.setId(cvar);
+			output.sparsify ();
 		}
 	}else{
 		if(newVals.size() == 0){			
-			node_ids[node.id] = Tvalue( -YES );			
-			Dout(cout<<" after sparsification "<<node_ids[node.id]<<endl);
+			output = Tvalue( -YES );			
+			Dout(cout<<" after sparsification "<<output<<endl);
 			return;
 		}
 		//Assert( newVals.size() > 0, "This should not happen here3");
 		int newID = dir.newAnonymousVar();
-		node_ids[node.id].setId(newID);
+		output.setId(newID);
 		int k=1;
 		for(k = 1; k< newVals.size(); ++k){
 			int cvar = dir.newAnonymousVar();
@@ -1236,10 +1255,10 @@ void NodesToSolver::doNonBoolArrAcc(arith_node& node){
 				scratchpad[orTerms] = vars[i];
 			}
 			scratchpad[0] = newID + k;
-			mng.addBigOrClause( &scratchpad[0], orTerms);
+			dir.addBigOrClause( &scratchpad[0], orTerms);
 			result.push_back(it->first);
 		}
-		node_ids[node.id].sparsify ();
+		output.sparsify ();
 	}
 }
 
@@ -1248,6 +1267,6 @@ bool NodesToSolver::checkParentsChanged(bool_node& node, bool more){
 	if(( node.father== NULL || !node.father->flag ) &&
 			( node.mother== NULL || !node.mother->flag )&&
 			more
-			){ node.flag =false; return false || mng.ignoreOld(); }else{ node.flag = true; return true;}
+			){ node.flag =false; return false || dir.ignoreOld(); }else{ node.flag = true; return true;}
 }
 
