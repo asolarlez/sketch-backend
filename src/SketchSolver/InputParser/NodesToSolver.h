@@ -12,22 +12,21 @@
 
 
 class NodesToSolver : public NodeVisitor {
-    SATSolver &mng;
-    varDir &dir;
     const string &outname;
-    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown
-    vector<Tvalue> &node_ids;
+    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown    
 
     template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
     template<typename COMP> void processComparissons (bool_node &node);
 
-    const int YES;
     Tvalue tvYES;
     Tvalue tvOne;
     Tvalue tvOneSigned;
-
+	const int YES;
+protected:
+	SolverHelper &dir;
+	vector<Tvalue> &node_ids;
     /* Return the value indexed by given node, or a default value (of given type). */
     inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
 				int quant = 1) {
@@ -76,13 +75,12 @@ public:
    
 	    
      NodesToSolver (
-	     SATSolver& p_mng, 
-	     varDir& p_dir, 
+	     SolverHelper& p_dir, 
 	     const string& p_outname, 
 		 map<bool_node*,  int>& p_node_values, 
 		 vector<Tvalue>& p_node_ids
 	 ) :
-	mng(p_mng), dir(p_dir), outname(p_outname), node_values(p_node_values), 
+	dir(p_dir), outname(p_outname), node_values(p_node_values), 
 	node_ids(p_node_ids), YES(p_dir.YES), 
 	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1)
     {
@@ -122,7 +120,8 @@ public:
 
     virtual void visit (ASSERT_node &node);
 
-    virtual void doNonBoolArrAcc (arith_node &node);
+	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
+    virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);
     virtual bool checkParentsChanged (bool_node &node, bool more);
 };
 
