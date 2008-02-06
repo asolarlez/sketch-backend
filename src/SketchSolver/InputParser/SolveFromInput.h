@@ -9,7 +9,6 @@
 
 class SolveFromInput: public FindCheckSolver{
 	BooleanDAG* problem;	
-	const string TIP_NAME;
 	int YES;
 	int NINPUTS;
 	bool firstTime;
@@ -26,14 +25,13 @@ class SolveFromInput: public FindCheckSolver{
 	
 	virtual void addInputsToTestSet(vector<int>& input);
 	virtual void setNewControls(vector<int>& controls);
-	virtual void defineProblem(SATSolver& mng, varDir& dir);
+	virtual void defineProblem(SATSolver& mng, SolverHelper& dir);
 		
 	protected:
 	virtual bool check(vector<int>& controls, vector<int>& input);
-	virtual BooleanDAG* hardCodeControls(vector<int>& controls);
+	virtual BooleanDAG* hardCodeControls(BooleanDAG* dag, vector<int>& controls);
 	public:
-	SolveFromInput(ostream& out_p/*big hack*/, BooleanDAG* spec_p, BooleanDAG* sketch_p, SATSolver& finder, SATSolver& checker,
-	map<string, BooleanDAG*>& functionMap, int p_nseeds=1, int inlineAmnt = 20, int NINPUTS_p=3, bool mergeFunctions=false);
+	SolveFromInput(ostream& out_p, BooleanDAG* miter, SATSolver& finder, SATSolver& checker, int p_nseeds=1, int NINPUTS_p=3);
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);
 	void setup2QBF();
