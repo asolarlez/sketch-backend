@@ -34,12 +34,6 @@ CONST_node* DagOptim::getCnode(bool c){
 
 
 
-void DagOptim::addNode(bool_node* node){
-	node->id = newnodes.size() + dagsize;
-	Dout(cout<<" add "<<node->id<<"  "<<node->get_name()<<endl);
-	newnodes.push_back(node);
-}
-
 
 
 timerclass statcomp("static compare");
@@ -1040,6 +1034,18 @@ void DagOptim::visit( ARRACC_node& node ){
 		}
 		
 		
+		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				OR_node* an = new OR_node();
+				an->mother = node.multi_mother[0];
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				setTimestamp(an);
+				addNode(an);
+				an->accept(*this);
+				cout<<" Savings and savings at galore"<<endl;
+				return;
+		}
+
 		
 		
 		
@@ -1260,7 +1266,7 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 void DagOptim::cleanup(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
-	//dag.repOK();
+	dag.repOK();
 	newnodes.clear();
 	dag.sort_graph();
 	dag.cleanup(false);

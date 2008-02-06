@@ -882,6 +882,7 @@ void BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool
 		//cout<< gen_name <<"This interface node already exists"<<endl;
 		return;	
 	}
+	 moveNNb();
 	
   if(n < 0){
     bool_node* tmp = newBoolNode(type);
@@ -1082,7 +1083,7 @@ void BooleanDAG::resetBackPointers(){
 
 
 
-void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
+void BooleanDAG::makeMiter(BooleanDAG& bdag){
 	bool_node* tip = NULL; 
 	relabel();
 	bdag.relabel();
@@ -1134,11 +1135,13 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag, const string& tip_name ){
 		}
 	}
 	Assert(tip != NULL, "This is not possible!!!");
-	create_outputs(1, tip_name);
-	Dout(cout<<"      Creating tip, connecting with  "<<tip->get_name()<<endl);
-	bool_node* outnode = new_node(tip->name, "", bool_node::DST, tip_name);
+	ASSERT_node* finalAssert = new ASSERT_node();
+	finalAssert->setMsg("The spec and sketch can not be made to be equal.");
+	finalAssert->mother = tip;
+	finalAssert->addToParents();
+	nodes.push_back(finalAssert);
+	
 	nodesByType[bool_node::DST].clear();
-	nodesByType[bool_node::DST].push_back(outnode);
 	
 	removeNullNodes();
 	sort_graph();

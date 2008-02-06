@@ -1,7 +1,6 @@
 #include "DagElimUFUN.h"
 
 
-bool WITH_RESTRICTIONS ;
 
 
 DagElimUFUN::DagElimUFUN()
@@ -13,13 +12,6 @@ DagElimUFUN::~DagElimUFUN()
 {
 }
 
-
-
-void DagElimUFUN::addNode(bool_node* node){
-	node->id = newnodes.size() + dagsize;
-	Dout(cout<<" add "<<node->id<<"  "<<node->get_name()<<endl);
-	newnodes.push_back(node);
-}
 
 
 

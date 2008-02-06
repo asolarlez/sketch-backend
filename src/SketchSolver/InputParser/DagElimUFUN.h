@@ -51,17 +51,12 @@ class DagElimUFUN : public NodeVisitor, virtual NodeStore
 	map<int, BooleanDAG> comparators;	
 	map<string, SFunInfo> functions;
 	BooleanDAG& getComparator(int sz);
-	
-	vector<bool_node*> newnodes;
-	
-	int dagsize;
+		
 	vector<BooleanDAG> bdags;
 public:
 	DagElimUFUN();
 	virtual ~DagElimUFUN();
 	bool_node* produceNextSFunInfo( UFUN_node& node  );
-	
-	virtual void addNode(bool_node* node);
 
 	virtual void stopProducingFuns();
 	

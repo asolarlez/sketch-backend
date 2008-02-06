@@ -463,8 +463,7 @@ class ARRASS_node: public arith_node{
 		virtual void outDagEntry(ostream& out){
 			if( mother != NULL){
 			  out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"="<<quant<<"\"] ; "<<endl;
-    		}		
-    		int i=0;
+    		}		    		
 			
 	  		if(multi_mother[0] != NULL){
 	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
@@ -693,7 +692,7 @@ public:
   }
   
 	BooleanDAG();
-	virtual void makeMiter(BooleanDAG& bdag, const string& tip_name );
+	virtual void makeMiter(BooleanDAG& bdag);
 	virtual ~BooleanDAG();
 };
 
