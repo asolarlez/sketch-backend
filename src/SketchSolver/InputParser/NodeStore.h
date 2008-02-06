@@ -6,6 +6,9 @@
 class NodeStore
 {
 	int timestamp;
+protected:
+	int dagsize;
+	vector<bool_node*> newnodes;
 public:
 	NodeStore(){
 		timestamp = 0;
@@ -20,6 +23,7 @@ public:
 		for(child_iter it = bn->children.begin(); it != bn->children.end(); ++it){
 			(*it)->layer = ++timestamp;
 		}
-	}
-	virtual void addNode(bool_node* node)= 0;
+	}		
+
+	virtual void addNode(bool_node* node);
 };
