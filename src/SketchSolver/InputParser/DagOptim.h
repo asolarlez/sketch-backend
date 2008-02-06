@@ -132,15 +132,14 @@ public:
 
 
 class DagOptim : public NodeVisitor, public virtual NodeStore
-{
-	int dagsize;
+{	
 	bool ALTER_ARRACS;	
 protected:
 	DagCSE cse;	
 	
 public:
 	map<bool_node*, AbstractNodeValue> anv;
-	vector<bool_node*> newnodes;
+	
 	map<int, CONST_node*> cnmap;
 	map<string, UFUN_node*> callMap;
 
@@ -151,7 +150,7 @@ public:
 
 
 	bool_node* computeOptim(bool_node* node);
-	virtual void addNode(bool_node* node);
+	
 	void initialize(BooleanDAG& dag);
 	void cleanup(BooleanDAG& dag);
 	void initLight(BooleanDAG& dag);
