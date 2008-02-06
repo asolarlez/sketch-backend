@@ -195,7 +195,7 @@ public:
      * Methods.
      */
     /* Get variable corresponding to the sign bit of a bit-vector. */
-    inline int getSignId (varDir &dir) const {
+    inline int getSignId (SolverHelper &dir) const {
 	Assert (isBvect () || isBvectSigned (), "no sign bit for sparse");
 	return (isBvect () ? -dir.YES : id + size - 1);
     }
@@ -226,7 +226,7 @@ public:
     }
 
     /* Invert an integer value. */
-    inline Tvalue toComplement (varDir &dir) const {
+    inline Tvalue toComplement (SolverHelper &dir) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (complement)");
 
 	if (isBvect ()) {	    
@@ -276,7 +276,7 @@ public:
 
 private:
     /* Convert a sparse into unsigned / signed bit-vector, including padding bits. */
-    inline Tvalue sparseToBvectAny (varDir &dir, unsigned padding,
+    inline Tvalue sparseToBvectAny (SolverHelper &dir, unsigned padding,
 	       			    bool toSigned) const {
 	Assert (isSparse (), "input invariant violated");
 
@@ -354,7 +354,7 @@ private:
     }
 
 public:
-    Tvalue toBvect (varDir &dir, unsigned padding = 0) const {
+    Tvalue toBvect (SolverHelper &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvect)");
 
 	if (isBvect ()) {
@@ -379,7 +379,7 @@ public:
 	return *this;
     }
 
-    Tvalue toBvectSigned (varDir &dir, unsigned padding = 0) const {
+    Tvalue toBvectSigned (SolverHelper &dir, unsigned padding = 0) const {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (toBvectSigned)");
 
 	if (isBvect () || isBvectSigned ()) {
@@ -422,12 +422,12 @@ public:
 	return *this;
     }
 
-    void makeBvectSigned (varDir &dir, unsigned padding = 0) {
+    void makeBvectSigned (SolverHelper &dir, unsigned padding = 0) {
 	Tvalue tmp = toBvectSigned (dir, padding);
 	*this = tmp;
     }
 
-    void makeSparse (varDir &dir, int adj = 1) {
+    void makeSparse (SolverHelper &dir, int adj = 1) {
 	Assert (id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
 
 	if (isBvect () || isBvectSigned ()) {
@@ -491,7 +491,7 @@ public:
 	intAdjust (adj);
     }
 
-    inline Tvalue toSparse (varDir &dir, int adj = 1) const {
+    inline Tvalue toSparse (SolverHelper &dir, int adj = 1) const {
 	Tvalue tv (*this);
 	tv.makeSparse (dir, adj);
 	return tv;
