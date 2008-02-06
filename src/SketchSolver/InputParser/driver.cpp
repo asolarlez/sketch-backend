@@ -1,388 +1,340 @@
-#include "BasicError.h"
-#include "BooleanDAG.h"
-#include "InputReader.h"
-#include "SolveFromInput.h"
-#include "ABCSATSolver.h"
-#include "ZchaffSATSolver.h"
-#include "MiniSATSolver.h"
-
-
-#include <fstream>
-#include <ctime>
-
-using std::ofstream;
-
-extern bool WITH_RESTRICTIONS ;
-
-namespace INp{
-extern  map<string, BooleanDAG*> functionMap;
-extern  map<string, BooleanDAG*> sketchMap;
-extern  map<BooleanDAG*, string> sketches;
-extern  int NCTRLS;
-extern  bool overrideNCtrls;
-extern  int NINPUTS;
-extern  bool overrideInputs;
-}
+#include "driver.h"
+#include "SFIOutputSeq.h"
+#include "DagOptimizeCommutAssoc.h"
 
 string context;
 
-class paramInterp{
-	public:
+Driver::Driver(CommandLineArgs& p_params):params(p_params){
 	
-	typedef enum {ABC, ABCLIGHT, ZCHAFF, MINI} SolverType;
-  int input_idx;
-  int seedsize;
-  int seed;
-  SolverType synthtype, veriftype;
-  bool outputAIG;
-  bool output2QBF; 
-  int terminateafter;
-  bool hasCpt;
-  string cptfile;
-  bool hasRestore;
-  string restorefile;
-  bool outputEuclid;
-    bool doBvectArith;
-    bool printDiag;
-	int inlineAmnt;
-	bool mergeFunctions;
-  	bool hastimeout;
-	int timeout;
-	paramInterp(int argc, char** argv){
-		input_idx = 1;
-		seedsize = 1;
-		seed = -1;
-		synthtype=MINI;
-		veriftype=MINI;
-		outputAIG =false;
-		output2QBF = false;
-		outputEuclid = false;
-		terminateafter = -1;
-		hasCpt = false;
-		hasRestore = false;
-		printDiag = false;
-	doBvectArith = false;
-		WITH_RESTRICTIONS = false;
-		inlineAmnt = 10;
-		hastimeout = false;
-		timeout = -1;
-		mergeFunctions = false;
-	  for(int ii=0; ii<argc; ++ii){
-	    if( string(argv[ii]) == "-seedsize" ){
-	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
-	      seedsize = atoi(argv[ii+1]);
-	      input_idx = ii+2;      
-	    }
-	    
-		 if( string(argv[ii]) == "-inlineamnt" ){
-	      Assert(ii<(argc-1), "-inlineamnt needs an extra parameter");
-	      inlineAmnt = atoi(argv[ii+1]);
-	      input_idx = ii+2;      
-	    }
-	    
-	    if( string(argv[ii]) == "-output2QBF" ){
-	    	outputAIG = true;
-	    	output2QBF = true;
-	    	veriftype = ABC;
-	      input_idx = ii+1;      
-	    }
-	    
-	    if( string(argv[ii]) == "-outputAIG" ){
-	    	outputAIG = true;
-	      input_idx = ii+1;      
-	    }
-	    
-	    if( string(argv[ii]) == "-withrestrictions" ){
-	    	WITH_RESTRICTIONS = true;
-	      input_idx = ii+1;      
-	    }
-	    
-	    if( string(argv[ii]) == "-printDiagnostics" ){
-	    	printDiag = true;
-	      input_idx = ii+1;      
-	    }
-	    
-	    if( string(argv[ii]) == "-outputEuclid" ){
-	    	outputEuclid = true;
-	      input_idx = ii+1;      
-	    }
 
-		if( string(argv[ii]) == "-mergeFunctions" ){
-	    	mergeFunctions = true;
-	      input_idx = ii+1;      
-	    }
-		
-
-	    if( string(argv[ii]) == "-overrideCtrls" ){
-	      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
-	      INp::NCTRLS= atoi(argv[ii+1]);
-		  INp::overrideNCtrls=true;
-		  cout<<"Overriding controls with "<<INp::NCTRLS<<endl;
-	      input_idx = ii+2;      
-	    }
-	    if( string(argv[ii]) == "-overrideInputs" ){
-	      Assert(ii<(argc-1), "-overrideInputs needs an extra parameter");
-	      INp::NINPUTS= atoi(argv[ii+1]);
-		  INp::overrideInputs=true;
-		  cout<<"Overriding inputs with "<<INp::NINPUTS<<endl;
-	      input_idx = ii+2;      
-	    }
-	    if( string(argv[ii]) == "-checkpoint" ){
-	      Assert(ii<(argc-1), "-checkpoint needs an extra parameter");
-	      hasCpt = true;
-		  cptfile = argv[ii+1]; 
-	      input_idx = ii+2;      
-	    }
-	    if( string(argv[ii]) == "-restore" ){
-	      Assert(ii<(argc-1), "-restore needs an extra parameter");
-	      hasRestore = true;
-		  restorefile = argv[ii+1];
-	      input_idx = ii+2;
-	    }
-
-		if( string(argv[ii]) == "-timeout" ){
-	      Assert(ii<(argc-1), "-seed needs an extra parameter");
-	      timeout = atoi(argv[ii+1]);	  
-		  hastimeout=true;
-	      input_idx = ii+2;
-	    } 
-
-	    if( string(argv[ii]) == "-seed" ){
-	      Assert(ii<(argc-1), "-seed needs an extra parameter");
-	      seed = atoi(argv[ii+1]);	  
-	      input_idx = ii+2;
-	    } 
-	    if( string(argv[ii]) == "-terminateafter" ){
-	      Assert(ii<(argc-1), "-terminateafter needs an extra parameter");
-	      terminateafter = atoi(argv[ii+1]);	  
-	      input_idx = ii+2;
-	    } 
-	    if( string(argv[ii]) == "-synth" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
-	      string synth(argv[ii+1]);	  
-		  if( synth == "ABC" ) synthtype = ABC;
-		  if( synth == "ABCLIGHT" ) synthtype = ABCLIGHT;
-  		  if( synth == "ZCHAFF" ) synthtype = ZCHAFF;	 
-		  if( synth == "MINI" ) synthtype = MINI;
-		  cout<<" synth = |"<<synth<<"|"<<endl;
-	      input_idx = ii+2;
-	    }
-	    if (string (argv[ii]) == "-bvectarith") {
-		doBvectArith = true;
-		input_idx = ii + 1;
-	    }
-	    
-	    if( string(argv[ii]) == "-verif" ){
-	      Assert(ii<(argc-1), "-verif needs an extra parameter");
-   	      string verif(argv[ii+1]);
-		  if( verif == "ABC" ) veriftype = ABC;
-		  if( verif == "ABCLIGHT" ) veriftype = ABCLIGHT;
-		  if( verif == "ZCHAFF" ) veriftype = ZCHAFF;	      
-  		  if( verif == "MINI" ) veriftype = MINI;	      
-  		  cout<<" verif = |"<<verif<<"|"<<endl;
-	      input_idx = ii+2;
-	    }        
-	  }
-	  
-	  
-	  
-	  
-	  
-	  		
-	}	
-	
-	
-};
-
-
-
-
-int main(int argc, char** argv){
-  ABCSolverStart();
-  
-  paramInterp params(argc, argv);
-  
-  try{
-
-    Assert( argc > 1, "The input file name must be passed as an argument");
-  
-    cout<<"Reading SKETCH Program in File "<<argv[params.input_idx]<<endl;
-
-    INp::yyin = fopen(argv[params.input_idx], "r");
-    INp::Inityylex();
-    INp::Inityyparse();
-
-    try{
-      if (INp::yyparse() != 0) {
-		    cerr<<"\n*** Rejected\n";
-		    exit(1);
-      }
-    }catch(BasicError& be){
-      cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
-      exit(1);
-    }
-
-	cout<<"FAFALAFALA"<<endl;
-
-  	context = " ";
-    {
-      string fname(argv[params.input_idx]);
-      int x1 = fname.find_last_of("/");
-      int x2 = fname.find_last_of("\\");
-      int x3 = fname.find_last_of(".");
-  
-      x1 = x1>x2? x1: x2;
-      x3 = x3 > 0? x3 : fname.size();
-      ++x1;
-      fname = fname.substr(x1, x3-x1);
-      string msg = "There is no filter ";
-      msg += fname;
-      msg += " in file ";
-      msg += argv[params.input_idx];
-      cout<<"XXXXXXXXXXXXXXXXXXXXXXX"<<endl;
-      //Assert( INp::functionMap.find(fname) != INp::functionMap.end(),  msg );
-	  string outname = (argc>params.input_idx+1)?argv[params.input_idx+1]:"/dev/null";
-	  ofstream out(outname.c_str());
-      for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
-      	string sketchName = it->second;
-      	string findName = sketchName;
-      	findName += "_find";
-      	string checkName = sketchName;
-      	checkName += "_check";
-      	
-      	
-      	cout<<"PROCESSING SKETCH "<<it->second<<endl;
-      	if( INp::functionMap.find(it->second)== INp::functionMap.end() ){
-      		cout<<"There is no function named "<<it->second<<" make sure it is not a sketch. Sketches can't be specs. "<<endl;
-      		ABCSolverEnd();
-	  		return 1;	 
-      	}
-      	Dout(INp::functionMap[it->second]->print(cout)); //spec
-      	Dout(it->first->print(cout)); //sketch
-      	
-      	SATSolver* finder = NULL;
-      	bool FINDER = false;
-      	bool CHECKER = true;
-      	if( params.synthtype ==  paramInterp::ABC ){
-      		finder = new ABCSATSolver(findName, ABCSATSolver::FULL, FINDER);
-      		cout<<" FIND = ABC"<<endl;
-      		if( params.outputAIG){
-     			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();	
-     		}
-			if(params.hastimeout){
-				dynamic_cast<ABCSATSolver*>(finder)->setTimeout(params.timeout);
-			}
-
-      	}else if ( params.synthtype ==  paramInterp::ABCLIGHT ){
-      		finder = new ABCSATSolver(findName, ABCSATSolver::BASICSAT, FINDER);
-      		cout<<" FIND = ABC LIGHT"<<endl;
-      		if( params.outputAIG){
-     			dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();
-     		}
-      	}else if( params.synthtype ==  paramInterp::ZCHAFF){
-      		finder = new ZchaffSATSolver(findName, FINDER);
-     		cout<<" FIND = ZCHAFF"<<endl;
-      	}else if( params.synthtype ==  paramInterp::MINI){
-      		finder = new MiniSATSolver(findName, FINDER);
-     		cout<<" FIND = MINI"<<endl;
-      	}
-      	
-      	SATSolver* checker = NULL;
-      	if( params.veriftype ==  paramInterp::ABC ){
-      		checker = new ABCSATSolver(checkName, ABCSATSolver::FULL, CHECKER);
-     		cout<<" CHECK = ABC"<<endl;
-     		if( params.outputAIG){
-     			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
-     		}
-			if(params.hastimeout){
-				dynamic_cast<ABCSATSolver*>(checker)->setTimeout(params.timeout);
-			}
-      	}else if ( params.veriftype ==  paramInterp::ABCLIGHT ){
-      		checker = new ABCSATSolver(checkName, ABCSATSolver::BASICSAT, CHECKER);
-     		cout<<" CHECK = ABC LIGHT"<<endl;
-     		if( params.outputAIG){
-     			dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
-     		}
-      	}else if( params.veriftype ==  paramInterp::ZCHAFF){
-      		checker = new ZchaffSATSolver(checkName, CHECKER);
-     		cout<<" CHECK = ZCHAFF"<<endl;
-      	}else if( params.veriftype ==  paramInterp::MINI){
-      		checker = new MiniSATSolver(checkName, CHECKER);
-     		cout<<" CHECK = MINI"<<endl;
-      	}
-      	
-      	SolveFromInput solver(out, INp::functionMap[it->second], it->first, *finder, *checker, INp::functionMap, 
-			params.seedsize, params.inlineAmnt, INp::NINPUTS, params.mergeFunctions);
-      						   
-      	if(params.printDiag){
-      		solver.activatePrintDiag();	
-      	}
-      	
-      	if(params.outputEuclid){      		
-      		ofstream fout("bench.ucl");
-      		solver.outputEuclid(fout);
-      	}
-      	
-      	if(params.output2QBF){
-      		solver.setup2QBF();
-      		string fname = sketchName;
-      		fname += "_2qbf.blif";
-      		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
-      		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
-      		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
-      	}
-      	
-      	
-      	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
-      	if( params.hasCpt ){ 
-      		string fname = params.cptfile;
-      		fname += "_";
-      		fname += it->second;
-      		solver.setCheckpoint(fname);
-      		}
-      	if(params.seed >= 0){
-      		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
-      		solver.set_randseed(params.seed);
-      	}
-	  	solver.setup();
-	  	int solveCode = 0;
-	  	try{
-	  		if(!params.hasRestore){
-			  	solveCode = solver.solve();
-	  		}else{	  			
-	  			string fname = params.restorefile;
-	      		fname += "_";
-	      		fname += it->second;
-	  			cout<<"restoring from "<<fname<<endl;
-	  			ifstream input(fname.c_str());
-	  			solveCode = solver.solveFromCheckpoint(input);
-	  		}
-	  	}catch(SolverException* ex){
-	  		cout<<"ERROR "<<sketchName<<": "<<ex->code<<"  "<<ex->msg<<endl;
-	        ABCSolverEnd();
-	  		return ex->code + 2;
-	  	}catch(BasicError& be){
-		    cout<<"ERROR: "<<sketchName<<endl;
-		    ABCSolverEnd();
-	  		return 3;
-    	}
-	  	if( solveCode ){
-			solver.output_control_map(out);
-	  	}else{
-	  		cout<<"** Outputing bad controls"<<endl;
-	  		solver.output_control_map(out);
-		    ABCSolverEnd();
-	  		return 1;	
-	  	}
-      }
-
-    }
-    ABCSolverEnd();
-	return 0;
-    }catch(BasicError& be){
-      cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
-      exit(1);
-    }
 }
 
+int Driver::resolveSketches(){
+	try{
+
+		context = " ";
+		{
+		  string fname = procFname(params.inputFname);			  
+		  string outname =  params.outputFname;
+		  ofstream out(outname.c_str());
+
+		  for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){
+  			string sketchName = it->second;
+  			string findName = sketchName;
+  			findName += "_find";
+  			string checkName = sketchName;
+  			checkName += "_check";
+	      	
+	      	
+  			cout<<"PROCESSING SKETCH "<<it->second<<endl;
+  			if( INp::functionMap.find(it->second)== INp::functionMap.end() ){
+  				cout<<"There is no function named "<<it->second<<" make sure it is not a sketch. Sketches can't be specs. "<<endl;
+  				ABCSolverEnd();
+  				return 1;	 
+  			}
+  			Dout(INp::functionMap[it->second]->print(cout)); //spec
+  			Dout(it->first->print(cout)); //sketch
+	      	
+  			SATSolver* finder;
+			finder = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName);
+			SATSolver* checker = NULL;      	
+			checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName);
+
+			if(typeid(*finder) == typeid(ABCSATSolver)){
+				if( params.outputAIG){
+ 					dynamic_cast<ABCSATSolver*>(finder)->setOutputAIG();	
+ 				}
+				if(params.hastimeout){
+					dynamic_cast<ABCSATSolver*>(finder)->setTimeout(params.timeout);
+				}
+			}
+
+			if(typeid(*checker) == typeid(ABCSATSolver)){
+				if( params.outputAIG){
+ 					dynamic_cast<ABCSATSolver*>(checker)->setOutputAIG();	
+ 				}
+				if(params.hastimeout){
+					dynamic_cast<ABCSATSolver*>(checker)->setTimeout(params.timeout);
+				}
+			}
+
+	      	int rv = solveSketch(out, INp::functionMap[it->second], it->first,INp::functionMap, finder, checker, sketchName);
+			if(rv != 0){ return rv; }
+		  }
+
+		}
+		ABCSolverEnd();
+		return 0;
+	}catch(BasicError& be){
+	  cerr<<"There was an error solving the problem. "<<endl<<"Exiting compiler"<<endl;
+	  exit(1);
+	}
+
+}
+
+
+int Driver::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, SATSolver* finder, SATSolver* checker, string& name){
+
+
+	BooleanDAG* miter = prepareMiter(spec, sketch, funMap, name);
+
+
+	SolveFromInput solver(out, miter, *finder, *checker, params.seedsize, INp::NINPUTS);
+  						   
+	if(params.printDiag){
+		solver.activatePrintDiag();	
+	}
+  	
+	if(params.outputEuclid){      		
+		ofstream fout("bench.ucl");
+		solver.outputEuclid(fout);
+	}
+  	
+	if(params.output2QBF){
+		solver.setup2QBF();
+		string fname = name;
+		fname += "_2qbf.blif";
+		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
+		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
+		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
+	}
+  	
+  	
+	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
+	if( params.hasCpt ){ 
+		string fname = params.cptfile;
+		fname += "_";
+		fname += name;
+		solver.setCheckpoint(fname);
+		}
+	if(params.seed >= 0){
+		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
+		solver.set_randseed(params.seed);
+	}
+	solver.setup();
+	int solveCode = 0;
+	try{
+		if(!params.hasRestore){
+  			solveCode = solver.solve();
+		}else{	  			
+			string fname = params.restorefile;
+			fname += "_";
+			fname += name;
+			cout<<"restoring from "<<fname<<endl;
+			ifstream input(fname.c_str());
+			solveCode = solver.solveFromCheckpoint(input);
+		}
+	}catch(SolverException* ex){
+		cout<<"ERROR "<<name<<": "<<ex->code<<"  "<<ex->msg<<endl;
+		ABCSolverEnd();
+		return ex->code + 2;
+	}catch(BasicError& be){
+		cout<<"ERROR: "<<name<<endl;
+		ABCSolverEnd();
+		return 3;
+	}
+	if( solveCode ){
+		solver.output_control_map(out);
+	}else{
+		cout<<"** Outputing bad controls"<<endl;
+		solver.output_control_map(out);
+		ABCSolverEnd();
+		return 1;	
+	}
+	return 0;
+}
+
+
+BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, string& name ){
+	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	
+	for(map<string, BooleanDAG*>::iterator it =  funMap.begin();
+				it != funMap.end(); ++it){
+		int sz1 = it->second->size(); 				
+		DagOptim cse(*it->second);
+		cse.process(*it->second);	
+		int sz2 = it->second->size(); 		
+		cout<<" optimizing "<<	it->first <<" went from size "<<sz1<<" to "<<sz2<<endl;
+	}
+	{
+		int sz1 = sketch->size();
+		DagOptim cse(*sketch);
+		cse.process(*sketch);
+		int sz2 = sketch->size();
+		cout<<" optimizing "<<	name <<" went from size "<<sz1<<" to "<<sz2<<endl;
+	}
+
+	{
+		Dout( cout<<"BEFORE Matching input names"<<endl );
+		vector<bool_node*>& specIn = spec->getNodesByType(bool_node::SRC);
+		vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
+		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");	
+		for(int i=0; i<specIn.size(); ++i){
+			cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl;
+			sketch->rename(sketchIn[i]->name, specIn[i]->name);
+		}
+	}
+
+	{
+		Dout( cout<<"BEFORE Matching output names"<<endl );
+		vector<bool_node*>& specDST = spec->getNodesByType(bool_node::DST);
+		vector<bool_node*>& sketchDST = sketch->getNodesByType(bool_node::DST);
+		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec and sketch must match");	
+		for(int i=0; i<sketchDST.size(); ++i){
+			sketch->rename(sketchDST[i]->name, specDST[i]->name);			
+		}
+	}
+
+	{
+		{
+			cout<<" Inlining functions in the sketch."<<endl;
+			DagFunctionInliner cse(*sketch, funMap, params.inlineAmnt, params.mergeFunctions );	
+			cse.process(*sketch);
+		}
+		{
+			cout<<" Inlining functions in the spec."<<endl;
+			DagFunctionInliner cse(*spec, funMap,  params.inlineAmnt, params.mergeFunctions  );	
+			cse.process(*spec);
+		}
+		cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	}
+
+	{
+		DagElimUFUN eufun;	
+		eufun.process(*spec);
+		eufun.stopProducingFuns();
+		eufun.process(*sketch);
+	}
+	cout<<"Done with ElimUFUN "<<endl;
+	
+	spec->makeMiter(*sketch);
+	BooleanDAG* problem = spec;
+	cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
+	
+	{
+		DagOptim cse(*problem);	
+		//cse.alterARRACS();
+		cse.process(*problem);
+	}
+	cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+
+	{
+		DagOptimizeCommutAssoc opt;
+		opt.process(*problem);
+	}
+
+	{
+		DagOptim cse(*problem);	
+		//cse.alterARRACS();
+		cse.process(*problem);
+	}
+	
+	cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;		
+	( problem->print(cout) );
+
+	return problem;
+}
+
+
+void Driver::parseInput(){
+	try{
+		cout<<"Reading SKETCH Program in File "<<params.inputFname<<endl;
+
+		INp::yyin = fopen(params.inputFname.c_str(), "r");
+		INp::Inityylex();
+		INp::Inityyparse();
+
+		
+		if (INp::yyparse() != 0) {
+			cerr<<"\n*** Rejected\n";
+			exit(1);
+		}
+	}catch(BasicError& be){
+		  cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
+		  exit(1);
+	}
+}
+
+
+
+
+int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, SATSolver* finder, SATSolver* checker, string& name){
+
+	BooleanDAG* skOri = sketch->clone();
+
+	BooleanDAG* miter = prepareMiter(spec, sketch, funMap, name);
+
+	BooleanDAG* rest = NULL;
+	for(map<string, BooleanDAG*>::iterator it = funMap.begin(); it != funMap.end(); ++it){
+		int rpos = it->first.find("rest");
+		if( rpos != -1){
+			rest = it->second;
+		}
+	}
+
+
+	SFIOutputSeq solver(out, miter, *finder, *checker, params.seedsize, INp::NINPUTS, rest, skOri);
+  						   
+	if(params.printDiag){
+		solver.activatePrintDiag();	
+	}
+  	
+	if(params.outputEuclid){      		
+		ofstream fout("bench.ucl");
+		solver.outputEuclid(fout);
+	}
+  	
+	if(params.output2QBF){
+		solver.setup2QBF();
+		string fname = name;
+		fname += "_2qbf.blif";
+		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
+		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
+		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
+	}
+  	
+  	
+	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
+	if( params.hasCpt ){ 
+		string fname = params.cptfile;
+		fname += "_";
+		fname += name;
+		solver.setCheckpoint(fname);
+		}
+	if(params.seed >= 0){
+		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
+		solver.set_randseed(params.seed);
+	}
+	solver.setup();
+	int solveCode = 0;
+	try{
+		if(!params.hasRestore){
+  			solveCode = solver.solve();
+		}else{	  			
+			string fname = params.restorefile;
+			fname += "_";
+			fname += name;
+			cout<<"restoring from "<<fname<<endl;
+			ifstream input(fname.c_str());
+			solveCode = solver.solveFromCheckpoint(input);
+		}
+	}catch(SolverException* ex){
+		cout<<"ERROR "<<name<<": "<<ex->code<<"  "<<ex->msg<<endl;
+		ABCSolverEnd();
+		return ex->code + 2;
+	}catch(BasicError& be){
+		cout<<"ERROR: "<<name<<endl;
+		ABCSolverEnd();
+		return 3;
+	}
+	if( solveCode ){
+		solver.output_control_map(out);
+	}else{
+		cout<<"** Outputing bad controls"<<endl;
+		solver.output_control_map(out);
+		ABCSolverEnd();
+		return 1;	
+	}
+	return 0;
+}
 
