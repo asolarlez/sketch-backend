@@ -35,10 +35,10 @@ class FindCheckSolver{
 	vector<int> input;	
 	
 	SATSolver& mngFind;
-	varDir dirFind;	
+	SolverHelper dirFind;	
 	
 	SATSolver& mngCheck;
-	varDir dirCheck;
+	SolverHelper dirCheck;
 	
 	int randseed;
 	int iterlimit;
@@ -74,7 +74,7 @@ class FindCheckSolver{
 		return ctrl.end();
 	}
 	
-	virtual void defineProblem(SATSolver& mng, varDir& dir)=0;
+	virtual void defineProblem(SATSolver& mng, SolverHelper& dir)=0;
 				
 
 	virtual void buildChecker();	
@@ -118,6 +118,8 @@ class FindCheckSolver{
 	virtual int getCtrlSize();
 	virtual bool solve();
 	virtual void setup();
+	virtual void declareInputs(SolverHelper& dir);
+	virtual void declareCtrlsAndInputs(SolverHelper& dir);
 	void set_randseed(int seed){ randseed = seed; };
 };
 
