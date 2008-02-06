@@ -31,14 +31,14 @@ class varRange{
 
 
 
-class varDir {
+class SolverHelper {
     map<string, int> varmap;
     map<string, int> arrsize;
     int varCnt;
     SATSolver& mng;
 public:
     int YES;
-    varDir(SATSolver& mng_p):mng(mng_p) {
+    SolverHelper(SATSolver& mng_p):mng(mng_p) {
 	varCnt = 1;
 	YES = 0;
     }
@@ -163,6 +163,11 @@ public:
 	YES = yes;
     }
 
+	void setYes() {
+		YES = newAnonymousVar();
+		mng.setVarClause(YES);
+    }
+
     int addEqualsClause (int a, int x = 0);
     int addChoiceClause (int a, int b, int c, int x = 0);
     int addXorClause (int a, int b, int x = 0);
@@ -171,8 +176,10 @@ public:
     int addAndClause (int a, int b, int x = 0);	
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
-    void addHardAssertClause(int a);
 
+	bool ignoreOld(){
+		return mng.ignoreOld();
+	}
     int assertVectorsDiffer (int v1, int v2, int size);
     int select(int choices[], int control, int nchoices, int bitsPerChoice);
     int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
@@ -187,7 +194,7 @@ public:
  * (true/false) arguments.
  */
 inline int
-varDir::addEqualsClause (int a, int x)
+SolverHelper::addEqualsClause (int a, int x)
 {
     Assert (a != 0, "input id cannot be zero");
 
@@ -202,7 +209,7 @@ varDir::addEqualsClause (int a, int x)
 }
 
 inline int
-varDir::addChoiceClause (int a, int b, int c, int x)
+SolverHelper::addChoiceClause (int a, int b, int c, int x)
 {
     Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero");
 
@@ -225,7 +232,7 @@ varDir::addChoiceClause (int a, int b, int c, int x)
 }
 
 inline int
-varDir::addXorClause (int a, int b, int x)
+SolverHelper::addXorClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
 
@@ -254,7 +261,7 @@ varDir::addXorClause (int a, int b, int x)
 }
 
 inline int
-varDir::addOrClause (int a, int b, int x)
+SolverHelper::addOrClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
 
@@ -280,7 +287,7 @@ varDir::addOrClause (int a, int b, int x)
  * This encodes a[0] == (a[1] OR a[2] OR ...  OR a[last]).
  */
 inline int
-varDir::addBigOrClause (int *a, int last)
+SolverHelper::addBigOrClause (int *a, int last)
 {
     Assert (a, "array of input ids cannot be null");
 
@@ -307,7 +314,7 @@ varDir::addBigOrClause (int *a, int last)
 }
 
 inline int
-varDir::addAndClause (int a, int b, int x)
+SolverHelper::addAndClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
 
@@ -330,7 +337,7 @@ varDir::addAndClause (int a, int b, int x)
 }
 
 inline void
-varDir::addEquateClause (int a, int b)
+SolverHelper::addEquateClause (int a, int b)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
 
@@ -358,7 +365,7 @@ varDir::addEquateClause (int a, int b)
 }
 
 inline void
-varDir::addAssertClause (int a)
+SolverHelper::addAssertClause (int a)
 {
     Assert (a != 0, "input id cannot be zero");
 
@@ -377,20 +384,11 @@ varDir::addAssertClause (int a)
     mng.assertVarClause (a);
 }
 
-inline void
-varDir::addHardAssertClause (int a)
-{
-    Assert (a != 0, "input id cannot be zero");
 
-    dout ("hard asserting " << a);
-
-    /* Otherwise, assertion clause necessary. */
-    mng.hardAssertVarClause (a);
-}
 
 
 inline varRange
-varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
+SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
@@ -399,8 +397,7 @@ varDir::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
 	//////////////////////////////////////////////////////
 	vector<int> tmpVect(amtrange);
 	int lastsize = 1;
-	int lastRoundVars = getVarCnt();	
-	int valssz = 0;
+	int lastRoundVars = getVarCnt();
 	vals.resize(1);
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
 		lastRoundVars = YES;

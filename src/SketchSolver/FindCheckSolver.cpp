@@ -344,29 +344,39 @@ int FindCheckSolver::getCtrlSize(){
 	return ctrl.size();
 }
 
+
+
+void FindCheckSolver::declareInputs(SolverHelper& dir){
+	for(map<string, int>::iterator it = inputVars.begin(); it !=inputVars.end(); ++it){
+		const string& cname = it->first;
+		dir.declareInArr(cname, it->second);
+	}
+}
+
+void FindCheckSolver::declareCtrlsAndInputs(SolverHelper& dir){
+	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
+		const string& cname = it->first;
+		dir.declareInArr(cname, it->second);
+	}
+	declareInputs(dir);
+}
+
+
 void FindCheckSolver::buildChecker(){
 	mngCheck.clean();
 	dirCheck.reset();
-	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){
-		const string& cname = it->first;
-		dirCheck.declareInArr(cname, it->second);
-	}
-	
-	
-	for(map<string, int>::iterator it = inputVars.begin(); it !=inputVars.end(); ++it){
-		const string& cname = it->first;
-		dirCheck.declareInArr(cname, it->second);
-	}
-	
+	declareCtrlsAndInputs(dirCheck);		
 	defineProblem(mngCheck, dirCheck);
 }
 
 
-void FindCheckSolver::buildFinder(){		
-	for(map<string, int>::iterator it = inputVars.begin(); it !=inputVars.end(); ++it){
-		const string& cname = it->first;
-		dirFind.declareInArr(cname, it->second);
-	}	
+/// Builds the Find problem. Calls defineProblem.
+// This function is called from:
+//		addInputsToTestSet.
+// This function calls:
+//		defineProblem.
+void FindCheckSolver::buildFinder(){	
+	declareInputs(dirFind);
 	defineProblem(mngFind, dirFind);
 }
 
