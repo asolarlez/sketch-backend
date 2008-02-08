@@ -24,8 +24,8 @@ int isatty(int i);
   bool overrideNCtrls=false;
   int NINPUTS=5;
   bool overrideInputs=false;
-#include "InputLexer.c"
-#include "InputParser.c"
+#include "InputLexer.cpp"
+#include "InputParser.cpp"
 
 }
 
