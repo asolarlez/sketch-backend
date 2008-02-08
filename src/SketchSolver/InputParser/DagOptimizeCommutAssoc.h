@@ -90,7 +90,7 @@ public:
 	bool_node* replacement(bool_node* bn);
 
 	void computeCommonSubs();
-	pair<int, int> CAoptimizer::selectPairToMerge(map<pair<int, int>, int>& distances);
+	pair<int, int> selectPairToMerge(map<pair<int, int>, int>& distances);
 
 };
 
