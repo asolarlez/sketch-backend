@@ -2,7 +2,7 @@
 #include "timerclass.h"
 #include <ctime>
 #include <queue>
-
+#include "CommandLineArgs.h"
 
 #ifdef IN
 #undef IN
@@ -16,6 +16,7 @@
 
 //#define WITH_RANDOMNESS 1
 
+extern CommandLineArgs* PARAMS;
 
 ////////////////////////////////////////////////////////////
 /////////  	Checkpointing
@@ -61,7 +62,7 @@ void Checkpointer::setCheckpoint(const string& filename){
 ////////////////////////////////////////////////////////////
 
 FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(finder), mngCheck(checker),  OUT("_OUT"), SOUT("_SOUT"), dirFind(finder), dirCheck(checker), printDiag(false){
-	cout<<"CONSTRUCTING "<<SOUT<<", "<<OUT<<endl;
+	//cout<<"CONSTRUCTING "<<SOUT<<", "<<OUT<<endl;
 	////////////////////////////	
 	nseeds = 1;	
 	Nout = 0;
@@ -111,11 +112,13 @@ bool FindCheckSolver::solveCore(){
 	ttimer.start();
 	while(doMore){
 		{// Find
-			cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
+			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			cpt.checkpoint('f', input);
-			cout<<"BEG FIND"<<endl; ftimer.restart();
+			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
+			ftimer.restart(); 
 			doMore = find(input, ctrl);
-			ftimer.stop(); cout<<"END FIND"<<endl;
+			ftimer.stop();
+			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
 			if(!doMore){
 				cout<<"******** FAILED ********"<<endl;	
 				ftimer.print();	ctimer.print();
@@ -125,13 +128,15 @@ bool FindCheckSolver::solveCore(){
 		}
 		
 		{ // Check
-			cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<" "<<(ctrl[i]==1?1:0);	cout<<endl;
+			// cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<" "<<(ctrl[i]==1?1:0);	cout<<endl;
 			cpt.checkpoint('c', ctrl);
-			cout<<"BEG CHECK"<<endl; ctimer.restart();
+			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
+			ctimer.restart(); 
 			doMore = check(ctrl, input);
-			ctimer.stop(); cout<<"END CHECK"<<endl;
+			 ctimer.stop();
+			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }
 		}
-		cout<<"********  "<<iterations<<"\tftime="<<ftimer.get_cur_ms() <<"\tctime="<<ctimer.get_cur_ms()<<endl;
+		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime="<<ftimer.get_cur_ms() <<"\tctime="<<ctimer.get_cur_ms()<<endl; }
 		++iterations;
 		if( iterlimit > 0 && iterations >= iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
@@ -244,7 +249,8 @@ bool FindCheckSolver::find(vector<int>& input, vector<int>& controls){
 	timerclass tc("* TIME TO ADD INPUT ");
 	tc.start();				
 	addInputsToTestSet(input);
-	tc.stop().print();
+	tc.stop();
+	if(PARAMS->verbosity > 2){ tc.print(); }
 	
 //Solve
 	int result = mngFind.solve();
@@ -289,7 +295,7 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
 	timerclass tc("* TIME TO ADD CONTROLS ");
 	tc.start();				
 	setNewControls(controls);
-	tc.stop().print();
+	if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
     int result = mngCheck.solve();
     if(printDiag){
@@ -478,7 +484,7 @@ void FindCheckSolver::declareInput(const string& inname, int size){
 		inputVars[inname] = size;
 		if( oldsize < size){
 			input.resize( input.size() - oldsize + size);	
-			( cout<<" increasing from "<<oldsize <<" to "<<size<<endl);		
+			Dout( cout<<" increasing from "<<oldsize <<" to "<<size<<endl);		
 			for(int i=input.size()-1; i >= (start + size); --i){
 				input[i] = input[i-(size-oldsize)];					
 			}
