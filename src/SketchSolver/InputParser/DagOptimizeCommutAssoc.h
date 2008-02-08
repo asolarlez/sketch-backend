@@ -8,7 +8,7 @@ using namespace std;
 
 class setComp{
 public:
-	bool operator()(set<int>* a, set<int>* b){
+	bool operator()(const set<int>* a, const set<int>* b) const{
 		return *a < *b;
 	}
 };
@@ -24,16 +24,20 @@ public:
 	map<int, int> distances;
 };
 
-inline int nodeDistance(inputNode& n1, inputNode& n2){
+inline int nodeDistance(const inputNode& n1, const inputNode& n2){
 
-	set<int>::iterator it1 = n1.interfs.begin();
-	set<int>::iterator it2 = n2.interfs.begin();
+	set<int>::const_iterator it1 = n1.interfs.begin();
+	set<int>::const_iterator it2 = n2.interfs.begin();
 	int cnt = 0;
 	while(true){
-
+		if(it1 == n1.interfs.end() || it2 == n2.interfs.end() ){
+				break;
+		}
 		if(*it1 == *it2){
 			++cnt;
-		}else{
+			++it1;
+			++it2;
+		}else{			
 			if(*it1 < *it2){
 				++it1;
 			}else{
