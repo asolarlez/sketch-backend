@@ -12,8 +12,8 @@
 
 using namespace std;
 
-inline void ABCSolverStart(){ cout<<" STARTING ABC "<<endl; Abc_Start(); }
-inline void ABCSolverEnd(){cout<<" ENDING ABC "<<endl; Abc_Stop(); }
+inline void ABCSolverStart(){  Abc_Start(); }
+inline void ABCSolverEnd(){ Abc_Stop(); }
 #define FileOutputABC( out ) /* out */
 
 class ABCSATSolver: public SATSolver{
