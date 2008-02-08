@@ -210,9 +210,9 @@ bool MiniSATSolver::ignoreOld(){
  		vec<Lit> lits;
 		addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
  	} 
- 	if( ! s->okay() ){ cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; }
+ 	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
  	s->simplifyDB();
- 	if( ! s->okay() ){ cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; return UNSATISFIABLE; }
+ 	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }
 	bool result = s->solve();
  	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
 	if( result) {
