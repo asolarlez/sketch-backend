@@ -1,2 +1,2 @@
-SRC +=  src/bdd/parse/parseCore.c \
-	src/bdd/parse/parseStack.c
+ABC_SRCS +=  $(ABC)/src/bdd/parse/parseCore.c \
+	$(ABC)/src/bdd/parse/parseStack.c

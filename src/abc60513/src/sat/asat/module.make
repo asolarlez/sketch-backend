@@ -1,4 +1,4 @@
-SRC +=  src/sat/asat/added.c \
-	src/sat/asat/asatmem.c \
-	src/sat/asat/jfront.c \
-	src/sat/asat/solver.c
+ABC_SRCS +=  $(ABC)/src/sat/asat/added.c \
+	$(ABC)/src/sat/asat/asatmem.c \
+	$(ABC)/src/sat/asat/jfront.c \
+	$(ABC)/src/sat/asat/solver.c

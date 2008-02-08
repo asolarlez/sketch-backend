@@ -1,16 +1,16 @@
-SRC +=  src/misc/mvc/mvc.c \
-	src/misc/mvc/mvcApi.c \
-	src/misc/mvc/mvcCompare.c \
-	src/misc/mvc/mvcContain.c \
-	src/misc/mvc/mvcCover.c \
-	src/misc/mvc/mvcCube.c \
-	src/misc/mvc/mvcDivide.c \
-	src/misc/mvc/mvcDivisor.c \
-	src/misc/mvc/mvcList.c \
-	src/misc/mvc/mvcLits.c \
-	src/misc/mvc/mvcMan.c \
-	src/misc/mvc/mvcOpAlg.c \
-	src/misc/mvc/mvcOpBool.c \
-	src/misc/mvc/mvcPrint.c \
-	src/misc/mvc/mvcSort.c \
-	src/misc/mvc/mvcUtils.c
+ABC_SRCS +=  $(ABC)/src/misc/mvc/mvc.c \
+	$(ABC)/src/misc/mvc/mvcApi.c \
+	$(ABC)/src/misc/mvc/mvcCompare.c \
+	$(ABC)/src/misc/mvc/mvcContain.c \
+	$(ABC)/src/misc/mvc/mvcCover.c \
+	$(ABC)/src/misc/mvc/mvcCube.c \
+	$(ABC)/src/misc/mvc/mvcDivide.c \
+	$(ABC)/src/misc/mvc/mvcDivisor.c \
+	$(ABC)/src/misc/mvc/mvcList.c \
+	$(ABC)/src/misc/mvc/mvcLits.c \
+	$(ABC)/src/misc/mvc/mvcMan.c \
+	$(ABC)/src/misc/mvc/mvcOpAlg.c \
+	$(ABC)/src/misc/mvc/mvcOpBool.c \
+	$(ABC)/src/misc/mvc/mvcPrint.c \
+	$(ABC)/src/misc/mvc/mvcSort.c \
+	$(ABC)/src/misc/mvc/mvcUtils.c

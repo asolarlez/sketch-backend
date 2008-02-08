@@ -1,5 +1,5 @@
-SRC +=  src/opt/dec/decAbc.c \
-        src/opt/dec/decFactor.c \
-        src/opt/dec/decMan.c \
-        src/opt/dec/decPrint.c \
-        src/opt/dec/decUtil.c 
+ABC_SRCS +=  $(ABC)/src/opt/dec/decAbc.c \
+        $(ABC)/src/opt/dec/decFactor.c \
+        $(ABC)/src/opt/dec/decMan.c \
+        $(ABC)/src/opt/dec/decPrint.c \
+        $(ABC)/src/opt/dec/decUtil.c 

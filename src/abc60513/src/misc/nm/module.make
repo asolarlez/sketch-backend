@@ -1,2 +1,2 @@
-SRC +=  src/misc/nm/nmApi.c \
-	src/misc/nm/nmTable.c
+ABC_SRCS +=  $(ABC)/src/misc/nm/nmApi.c \
+	$(ABC)/src/misc/nm/nmTable.c

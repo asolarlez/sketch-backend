@@ -1,7 +1,7 @@
-SRC +=	src/bdd/reo/reoApi.c \
-	src/bdd/reo/reoCore.c \
-	src/bdd/reo/reoProfile.c \
-	src/bdd/reo/reoSift.c \
-	src/bdd/reo/reoSwap.c \
-	src/bdd/reo/reoTransfer.c \
-	src/bdd/reo/reoUnits.c
+ABC_SRCS +=	$(ABC)/src/bdd/reo/reoApi.c \
+	$(ABC)/src/bdd/reo/reoCore.c \
+	$(ABC)/src/bdd/reo/reoProfile.c \
+	$(ABC)/src/bdd/reo/reoSift.c \
+	$(ABC)/src/bdd/reo/reoSwap.c \
+	$(ABC)/src/bdd/reo/reoTransfer.c \
+	$(ABC)/src/bdd/reo/reoUnits.c

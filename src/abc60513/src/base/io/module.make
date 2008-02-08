@@ -1,21 +1,21 @@
-SRC +=  src/base/io/io.c \
-	src/base/io/ioRead.c \
-	src/base/io/ioReadBaf.c \
-	src/base/io/ioReadBench.c \
-	src/base/io/ioReadBlif.c \
-	src/base/io/ioReadEdif.c \
-	src/base/io/ioReadEqn.c \
-	src/base/io/ioReadPla.c \
-	src/base/io/ioReadVerilog.c \
-	src/base/io/ioUtil.c \
-	src/base/io/ioWriteBaf.c \
-	src/base/io/ioWriteBench.c \
-	src/base/io/ioWriteBlif.c \
-	src/base/io/ioWriteCnf.c \
-	src/base/io/ioWriteDot.c \
-	src/base/io/ioWriteEqn.c \
-	src/base/io/ioWriteGml.c \
-	src/base/io/ioWriteList.c \
-	src/base/io/ioWritePla.c \
-	src/base/io/ioWriteVer.c \
-	src/base/io/ioWriteVerAux.c
+ABC_SRCS +=  $(ABC)/src/base/io/io.c \
+	$(ABC)/src/base/io/ioRead.c \
+	$(ABC)/src/base/io/ioReadBaf.c \
+	$(ABC)/src/base/io/ioReadBench.c \
+	$(ABC)/src/base/io/ioReadBlif.c \
+	$(ABC)/src/base/io/ioReadEdif.c \
+	$(ABC)/src/base/io/ioReadEqn.c \
+	$(ABC)/src/base/io/ioReadPla.c \
+	$(ABC)/src/base/io/ioReadVerilog.c \
+	$(ABC)/src/base/io/ioUtil.c \
+	$(ABC)/src/base/io/ioWriteBaf.c \
+	$(ABC)/src/base/io/ioWriteBench.c \
+	$(ABC)/src/base/io/ioWriteBlif.c \
+	$(ABC)/src/base/io/ioWriteCnf.c \
+	$(ABC)/src/base/io/ioWriteDot.c \
+	$(ABC)/src/base/io/ioWriteEqn.c \
+	$(ABC)/src/base/io/ioWriteGml.c \
+	$(ABC)/src/base/io/ioWriteList.c \
+	$(ABC)/src/base/io/ioWritePla.c \
+	$(ABC)/src/base/io/ioWriteVer.c \
+	$(ABC)/src/base/io/ioWriteVerAux.c

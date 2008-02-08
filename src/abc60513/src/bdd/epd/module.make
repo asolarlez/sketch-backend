@@ -1,1 +1,1 @@
-SRC +=  src/bdd/epd/epd.c
+ABC_SRCS +=  $(ABC)/src/bdd/epd/epd.c

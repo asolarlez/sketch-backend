@@ -1,5 +1,5 @@
-SRC +=  src/base/main/main.c \
-	src/base/main/mainFrame.c \
-	src/base/main/mainInit.c \
-	src/base/main/libSupport.c \
-	src/base/main/mainUtils.c
+ABC_SRCS +=  $(ABC)/src/base/main/main.c \
+	$(ABC)/src/base/main/mainFrame.c \
+	$(ABC)/src/base/main/mainInit.c \
+	$(ABC)/src/base/main/libSupport.c \
+	$(ABC)/src/base/main/mainUtils.c

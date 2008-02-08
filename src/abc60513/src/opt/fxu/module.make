@@ -1,12 +1,12 @@
-SRC +=  src/opt/fxu/fxu.c \
-	src/opt/fxu/fxuCreate.c \
-	src/opt/fxu/fxuHeapD.c \
-	src/opt/fxu/fxuHeapS.c \
-	src/opt/fxu/fxuList.c \
-	src/opt/fxu/fxuMatrix.c \
-	src/opt/fxu/fxuPair.c \
-	src/opt/fxu/fxuPrint.c \
-	src/opt/fxu/fxuReduce.c \
-	src/opt/fxu/fxuSelect.c \
-	src/opt/fxu/fxuSingle.c \
-	src/opt/fxu/fxuUpdate.c
+ABC_SRCS +=  $(ABC)/src/opt/fxu/fxu.c \
+	$(ABC)/src/opt/fxu/fxuCreate.c \
+	$(ABC)/src/opt/fxu/fxuHeapD.c \
+	$(ABC)/src/opt/fxu/fxuHeapS.c \
+	$(ABC)/src/opt/fxu/fxuList.c \
+	$(ABC)/src/opt/fxu/fxuMatrix.c \
+	$(ABC)/src/opt/fxu/fxuPair.c \
+	$(ABC)/src/opt/fxu/fxuPrint.c \
+	$(ABC)/src/opt/fxu/fxuReduce.c \
+	$(ABC)/src/opt/fxu/fxuSelect.c \
+	$(ABC)/src/opt/fxu/fxuSingle.c \
+	$(ABC)/src/opt/fxu/fxuUpdate.c
