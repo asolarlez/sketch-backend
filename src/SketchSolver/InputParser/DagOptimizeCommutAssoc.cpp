@@ -62,23 +62,30 @@ bool_node* CAoptimizer::mergeInputs(int input1, int input2, map<inputId, inputNo
 	}
 	bool erin1 = false;
 	bool erin2 = false;
-	if(in1.interfs.size() == 0){
-		inputToInterf.erase(input1);
+	if(in1.interfs.size() == 0){		
 		erin1 = true;
+		for(map<int, int>::iterator itb = in1.distances.begin(); itb != in1.distances.end(); ++itb){
+			distances.erase(make_pair(input1, itb->first));
+		}
+		inputToInterf.erase(input1);
 	}
-	if(in2.interfs.size() == 0){
-		inputToInterf.erase(input2);
+
+	if(in2.interfs.size() == 0){		
 		erin2 = true;
+		for(map<int, int>::iterator itb = in2.distances.begin(); itb != in2.distances.end(); ++itb){
+			distances.erase(make_pair(input2, itb->first));
+		}
+		inputToInterf.erase(input2);
 	}
 
 	if(mngDistances){
-
 		for(map<inputId, inputNode >::iterator it= inputToInterf.begin(); it != inputToInterf.end(); ++it){
 			inputNode& in = it->second;						
 
 			if(in.distances.count(input1)){
 				if(erin1){
 					in.distances.erase(input1);
+					distances.erase( make_pair(it->first, input1) );
 				}else{
 					int d = nodeDistance(in1, in);
 					if(d != 0){
@@ -86,6 +93,7 @@ bool_node* CAoptimizer::mergeInputs(int input1, int input2, map<inputId, inputNo
 						distances[make_pair(it->first, input1)] = d;
 					}else{
 						in.distances.erase(input1);
+						distances.erase( make_pair(it->first, input1) );
 					}
 				}
 			}
@@ -93,6 +101,7 @@ bool_node* CAoptimizer::mergeInputs(int input1, int input2, map<inputId, inputNo
 			if(in.distances.count(input2)){
 				if(erin2){
 					in.distances.erase(input2);
+					distances.erase( make_pair(it->first, input2) );
 				}else{
 					int d = nodeDistance(in2, in);
 					if(d != 0){
@@ -100,32 +109,48 @@ bool_node* CAoptimizer::mergeInputs(int input1, int input2, map<inputId, inputNo
 						distances[make_pair(it->first, input2)] = d;
 					}else{
 						in.distances.erase(input2);
+						distances.erase( make_pair(it->first, input2) );
 					}
 				}
 			}
 
 			if(it->first == input1 && !erin1){
-				map<inputId, inputNode >::iterator it2 = it;
-				for( ; it2 !=  inputToInterf.end(); ++it2){
-					inputNode& in1 = it->second;
-					int d = nodeDistance(in1, it2->second);
-					if(d != 0){
-						in1.distances[it2->first] = d;
-						distances[make_pair( it->first, it2->first)] = d;
+				for(map<int, int>::iterator itb = in1.distances.begin(); itb != in1.distances.end(); ++itb){
+					if(itb->first != input2){
+						inputNode& suc = inputToInterf[itb->first];
+						int d = nodeDistance(in1, suc);
+						if(d != 0){
+							itb->second = d;
+							distances[make_pair(input1, itb->first)] = d;
+						}else{
+							distances.erase( make_pair(input1, itb->first)  );
+						}
 					}
 				}
 			}
 
-
+			
 			if(it->first == input2 && !erin2){
-				map<inputId, inputNode >::iterator it2 = it;
-				for( ; it2 !=  inputToInterf.end(); ++it2){
-					inputNode& in1 = it->second;
-					int d = nodeDistance(in1, it2->second);
-					if(d != 0){
-						in1.distances[it2->first] = d;
-						distances[make_pair( it->first, it2->first)] = d;
+				for(map<int, int>::iterator itb = in2.distances.begin(); itb != in2.distances.end(); ++itb){
+					if(itb->first != input1){
+						inputNode& suc = inputToInterf[itb->first];
+						int d = nodeDistance(in2, suc);
+						if(d != 0){
+							itb->second = d;
+							distances[make_pair(input2, itb->first)] = d;
+						}else{
+							distances.erase( make_pair(input2, itb->first)  );
+						}
 					}
+				}
+			}
+
+			if(it->first != node->id){
+				Assert(it->first < node->id, "This should be true because the new node gets a bigger ID than all previous nodes");
+				int d = nodeDistance(in, out);
+				if(d!=0){
+					in.distances[node->id] = d;
+					distances[make_pair(it->first, node->id)] = d;
 				}
 			}
 
@@ -249,7 +274,7 @@ void CAoptimizer::computeCommonSubs(){
 
 pair<int, int> CAoptimizer::selectPairToMerge(map<pair<int, int>, int>& distances){
 	int m = 0;
-	pair<int, int> rv;
+	pair<int, int> rv(-1, -1);
 	for(map<pair<int, int>, int>::iterator it = distances.begin(); it != distances.end(); ++it){
 		
 		if(it->second > m){
@@ -257,7 +282,7 @@ pair<int, int> CAoptimizer::selectPairToMerge(map<pair<int, int>, int>& distance
 			rv = it->first;
 		}
 	}
-
+	distances.erase(rv);
 	return rv;
 }
 
@@ -413,18 +438,30 @@ void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
 		}
 	}
 
+	
+
 	for(map<bool_node::Type, CAoptimizer>::iterator it = optimizers.begin(); it != optimizers.end(); ++it){
 		it->second.computeCommonSubs();		
 	}
 
 	for(int i=0; i<bdag.size(); ++i){
-		bool_node::Type t = bdag[i]->type;
-		if(t == bool_node::AND || t == bool_node::OR){
-			bool_node* tmp = optimizers[t].replacement(bdag[i]);
-			if(tmp != bdag[i]){
-				bdag.replace(i, tmp);
+		if(bdag[i] != NULL){
+			bool_node::Type t = bdag[i]->type;
+			if(t == bool_node::AND || t == bool_node::OR){
+				bool_node* tmp = optimizers[t].replacement(bdag[i]);
+				if(tmp != bdag[i]){
+					bdag.replace(i, tmp);
+				}
 			}
 		}
 	}
 
+
+	bdag.removeNullNodes();
+	bdag.addNewNodes(newnodes);
+	bdag.repOK();
+	newnodes.clear();
+	bdag.sort_graph();
+	bdag.cleanup(false);
+	bdag.relabel();
 }
