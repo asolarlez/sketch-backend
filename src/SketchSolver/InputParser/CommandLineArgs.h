@@ -1,7 +1,7 @@
 #ifndef COMMANDLINEARGS_H
 #define COMMANDLINEARGS_H
 
-
+#include "SATSolver.h"
 
 
 namespace INp{
@@ -31,6 +31,8 @@ class CommandLineArgs{
   bool mergeFunctions;
   bool hastimeout;
   int timeout;
+  int verbosity;
+  bool showInputs;
 
   string inputFname;
   string outputFname;
@@ -54,6 +56,8 @@ class CommandLineArgs{
 		hastimeout = false;
 		timeout = -1;
 		mergeFunctions = false;
+		verbosity = 0;
+		showInputs = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -79,6 +83,10 @@ class CommandLineArgs{
 	      input_idx = ii+1;      
 	    }
 	    
+		if( string(argv[ii]) == "-showinputs" ){
+	    	showInputs = true;
+	      input_idx = ii+1;      
+	    }
 	    
 	    if( string(argv[ii]) == "-printDiagnostics" ){
 	    	printDiag = true;
@@ -124,11 +132,20 @@ class CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "-timeout" ){
-	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+	      Assert(ii<(argc-1), "-timeout needs an extra parameter");
 	      timeout = atoi(argv[ii+1]);	  
 		  hastimeout=true;
 	      input_idx = ii+2;
 	    } 
+
+
+		if( string(argv[ii]) == "-verbosity" ){
+	      Assert(ii<(argc-1), "-verbosity needs an extra parameter");
+	      verbosity = atoi(argv[ii+1]);	  
+		  hastimeout=true;
+	      input_idx = ii+2;
+	    } 
+
 
 	    if( string(argv[ii]) == "-seed" ){
 	      Assert(ii<(argc-1), "-seed needs an extra parameter");

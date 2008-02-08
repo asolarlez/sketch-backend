@@ -34,10 +34,6 @@ CONST_node* DagOptim::getCnode(bool c){
 
 
 
-
-
-timerclass statcomp("static compare");
-
 /**
  * return value: 
  * 	1 : always true.
@@ -251,9 +247,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 		
 	
 	if(isConst(node.mother)){
-		statcomp.restart();
+		
 		int tmp = staticCompare<COMP>(node.father, getIval(node.mother), true);
-		statcomp.stop();
+		
 		if(tmp == 1){
 			rvalue  = getCnode(1);
 			return 	true;
@@ -265,9 +261,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 	}
 	
 	if(isConst(node.father)){
-		statcomp.restart();
+		
 		int tmp = staticCompare<COMP>(node.mother, getIval(node.father), false);
-		statcomp.stop();
+		
 		if(tmp == 1){
 			rvalue  = getCnode(1);
 			return 	true;
@@ -1204,9 +1200,9 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
-	statcomp.restart();
+	
 	int sc = staticCompare<equal_to<int> >(node.mother, node.quant, true);
-	statcomp.stop();
+	
 	if(sc == 1){
 		rvalue = node.multi_mother[1];
 		return;
@@ -1266,44 +1262,40 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 void DagOptim::cleanup(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
-	dag.repOK();
+	// dag.repOK();
 	newnodes.clear();
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
-	statcomp.print();
+	
 }
 
 void DagOptim::process(BooleanDAG& dag){
 	timerclass everything("everything");
-	timerclass opttimer("OPTIMIZATION");
-	timerclass identify("identify");
-	timerclass replace("replace");	
 
-	timerclass replacepar("dislodge");		
 
 	everything.start();
-	opttimer.start();
+	
 	
 	int k=0;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
 				
-		identify.restart(); 
+
 
 		bool_node* node = computeOptim(dag[i]);
 
-		identify.stop();
+
 
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				setTimestampChildren(dag[i]);
-				replace.restart();
+				
 				dag.replace(i, node);
-				replace.stop();
+				
 		}
 	}
-	opttimer.stop();
+	
 	
 	
 	cleanup(dag);
@@ -1311,11 +1303,7 @@ void DagOptim::process(BooleanDAG& dag){
 	everything.stop();
 	
 
-	everything.print();
-	//statcomp.print();
-	//opttimer.print();
-	//identify.print();
-	//replace.print();
-	//replacepar.print();
+	Dout( everything.print(); )
+	
 	Dout(cout<<" end cse "<<endl);
 }

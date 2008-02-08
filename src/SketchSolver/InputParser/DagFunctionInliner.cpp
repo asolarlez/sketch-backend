@@ -1,9 +1,11 @@
 #include "DagFunctionInliner.h"
 #include "DagFunctionToAssertion.h"
 #include "timerclass.h"
-
+#include "CommandLineArgs.h"
 
 int FRACTION = 8;
+
+extern CommandLineArgs* PARAMS;
 
 #ifndef  _MSC_VER
 static const int MAX_NODES = 1000000;
@@ -25,8 +27,7 @@ mergeFunctions(p_mergeFunctions),
 divFactor(32),
 oldNfun(-1)
 {
-	somethingChanged = false;
-	cout<<" Inline amount = p_inlineAmnt"<<endl;
+	somethingChanged = false;	
 	alterARRACS();
 }
 
@@ -496,14 +497,14 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		}
 	}
 
-	cout<<" added nodes = "<<newnodes.size()<<endl;
+	// cout<<" added nodes = "<<newnodes.size()<<endl;
 
 
 	
 	cleanup(dag);
 	
 	tnbuilder.reset();
-	cout<<" nfuns = "<<nfuns<<endl;
+	if(nfuns != 0){ cout<<" Number of functions inlined = "<<nfuns<<endl; }
 
 	if(mergeFunctions){	
 		if(oldNfun > 0){
@@ -537,7 +538,7 @@ extern map<string, pair<int, int> > sizes;
 */
 
 void DagFunctionInliner::process(BooleanDAG& dag){
-	cout<<" funmap has size " << functionMap.size() << endl;
+	// cout<<" funmap has size " << functionMap.size() << endl;
 	somethingChanged = true;
 	{
 		DagOptim optim(dag);
@@ -553,37 +554,40 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	int inlin = 0;
 	while(somethingChanged && dag.size() < 510000 && inlin < inlineAmnt){
 		somethingChanged = false;
-		cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl;
+		if(inlin!=0){ cout<<inlin<<": inside the loop dag.size()=="<<dag.size()<<endl; }
 		immInline(dag);	
 		//if(inlin==0){( dag.print(cout) );}
 		++inlin;
 	}
-	cout<<" final dag.size()=="<<dag.size()<<endl;
-	everything.stop();
-	everything.print();
-
-	unifyTime.print();
-	ufunAll.print();
-	clonetime.print();
-	optAll.print();
 	
-	optimTime.print();
+	everything.stop();
+	if(inlin>1){
+		cout<<" final dag.size()=="<<dag.size()<<endl;
+		cout<<"inlin = "<<inlin<<endl;
+		everything.print();
+
+		unifyTime.print();
+		ufunAll.print();
+		clonetime.print();
+		optAll.print();
+		
+		optimTime.print();
+	}
 	/*
 	for(map<string, pair<int, int> >::iterator it = sizes.begin(); it != sizes.end(); ++it){
 		cout<<it->first<<" : "<< (it->second.second / it->second.first)<<"  "<<it->second.second<<"  "<<it->second.first<<endl;
 	}
 */
-
-	( cout<<" after all inlining dag.size()=="<<dag.size()<<endl);
-	
 	
 	// dag.print(cout);
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
 	}
-	
-	cout<<" After everything: dag.size()=="<<dag.size()<<endl;	
+
+	if(inlin>1){
+		cout<<" After everything: dag.size()=="<<dag.size()<<endl;	
+	}
 }
 
 
