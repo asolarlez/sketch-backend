@@ -7,8 +7,8 @@
 #include "SolveFromInput.h"
 #include "CommandLineArgs.h"
 #include "ABCSATSolver.h"
-#include "DAGOptim.h"
-#include "DAGFunctionInliner.h"
+#include "DagOptim.h"
+#include "DagFunctionInliner.h"
 #include "DagElimUFUN.h"
 
 
