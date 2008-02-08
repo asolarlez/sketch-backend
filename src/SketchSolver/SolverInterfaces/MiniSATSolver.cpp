@@ -216,10 +216,10 @@ bool MiniSATSolver::ignoreOld(){
 	bool result = s->solve();
  	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
 	if( result) {
-		cout<<" Returned SAT"<<endl;
+		//cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
 	}else{
-		cout<<"Returned UNSAT"<<endl;
+		//cout<<"Returned UNSAT"<<endl;
 		return UNSATISFIABLE;
 	}
 }
