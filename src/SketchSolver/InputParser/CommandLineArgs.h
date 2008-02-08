@@ -186,7 +186,9 @@ class CommandLineArgs{
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];
 	  outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
-	  
+	  if(verbosity > 4){
+			printDiag = true;
+	  }
 	}	
 	
 	

@@ -11,9 +11,9 @@ extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMa
 
 Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	Abc_Ntk_t * result;
-    timerclass timer("Cofactor time 1");
+    
      // apply structural hashing to logic network and get an AIG
-	timer.start();
+	
 	Vec_Int_t vec;
 	int nsize = Abc_NtkPiNum(network);
 	vector<int> vals(nsize, -1);
@@ -35,7 +35,7 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	}
 	result = Abc_NtkMiterCofactor(network, &vec);
    	//Abc_NtkDelete( network );	
-    timer.stop().print();
+    
     return result;
 }
 
@@ -138,7 +138,7 @@ int ABCSATSolver::solve(){
 			pAig = Abc_NtkMiterAnd(pNtk , oldpNtk);
 			timer.stop().print();
 			Abc_NtkDelete( pNtk );
-			cout<<"After del "; timer.stop().print();
+			//cout<<"After del "; timer.stop().print();
 		   	pNtk = pAig;
 			//Abc_NtkPrintStats(stdout, pNtk, 0);			
 		}
@@ -166,16 +166,16 @@ int ABCSATSolver::solve(){
 		 timerclass timer("SAT time total");
          timer.start();
          if(strategy == FULL){
-         	cout<<"FULL"<<endl;
+         	// cout<<"FULL"<<endl;
 			Prove_Params_t Params, * pParams = &Params;
          	Prove_ParamsSetDefault( pParams );
 			pParams->nItersMax = 5;
     	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
          }else if(strategy == BASICSAT){
-         	cout<<"BASIC"<<endl;
+         	// cout<<"BASIC"<<endl;
          	RetValue = Abc_NtkMiterSat( pNtk, timeout, 0, 0, 0, NULL, NULL );
          }
-		timer.stop().print();
+		timer.stop(); //.print();
        }
        if ( RetValue == 0 )
        {

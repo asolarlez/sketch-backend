@@ -139,7 +139,7 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		++iter;	
 	}
 	if( problem != oriProblem){	
-		cout<<" * Cleaning up alternative problem"<<endl;	
+		if(PARAMS->verbosity > 2){ cout<<" * Cleaning up alternative problem"<<endl;}
 		problem->clear();
 		problem = oriProblem;	
 	}
@@ -152,10 +152,10 @@ BooleanDAG* SolveFromInput::hardCodeControls(BooleanDAG* dag, vector<int>& contr
 	BooleanDAG* newdag = dag->clone();
 	vector<bool_node*> specCtrl = newdag->getNodesByType(bool_node::CTRL);
 		
-	cout<<" * Specializing problem for controls"<<endl;
-	cout<<" * Before specialization: nodes = "<<newdag->size()<<endl;		
+	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for controls"<<endl; }
+	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  specCtrl.size() <<endl;	}
 	DagOptim cse(*newdag);			
-	cout<<"  # OF CONTROLS:    "<< specCtrl.size() <<endl;
+	
 	for(int i=0; i<specCtrl.size(); ++i){
 		CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(specCtrl[i]);	
 		int iid = getCtrlStart( ctrlnode->get_name() );
@@ -174,15 +174,12 @@ BooleanDAG* SolveFromInput::hardCodeControls(BooleanDAG* dag, vector<int>& contr
 		Assert( (*newdag)[ctrlnode->id] == ctrlnode , "The numbering is wrong!!");
 		newdag->replace(ctrlnode->id, repl);
 	}
-		
-	cout<<"  # OF CONTROLS:    "<< specCtrl.size() <<endl;
-	
-	cout<<" * After replacing nodes "<<endl;
+			
 	newdag->removeNullNodes();
 	cse.process(*newdag);
 	Dout( newdag->print(cout) ); 
-	cout<<" * After specialization: nodes = "<<newdag->size()<<endl;
 	
+	if(PARAMS->verbosity > 2){ cout<<" * After replacing nodes size = "<<newdag->size()<<"CTRLS = "<< specCtrl.size() <<endl; }
 	
 	
 	
