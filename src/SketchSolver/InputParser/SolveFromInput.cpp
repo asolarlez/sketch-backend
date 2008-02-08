@@ -8,7 +8,9 @@
 #include "DagOptim.h"
 #include "DagElimUFUN.h"
 #include "DagFunctionInliner.h"
+#include "CommandLineArgs.h"
 
+extern CommandLineArgs* PARAMS;
 
 template<typename T>
 int intFromBV(T bv, int start, int nbits){
@@ -89,15 +91,14 @@ void SolveFromInput::setupCheck(){
 
 
 
-bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
-	this->output_control_map(out);
+bool SolveFromInput::check(vector<int>& controls, vector<int>& input){	
 	bool rv = FindCheckSolver::check(controls, input);
 	int iter = 0;
 	BooleanDAG* oriProblem = problem;
 	int gnbits = -1;
 	while(!rv){
 	//this means it wasn't able to find a counterexample.
-		cout<<"* growing the inputs"<<endl;
+		if(PARAMS->verbosity > 2){ cout<<"* growing the inputs"<<endl; }
 		bool keepGoing = false;
 		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);	
 		for(int i=0; i<specIn.size(); ++i){			
@@ -112,18 +113,18 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 					SRC_node* oriSrc = dynamic_cast<SRC_node*>(tmpn);
 					oriSrc->set_nbits(nbits+1);
 				}
-				cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
+				// cout<<"* growing "<<srcnode->get_name()<<" to "<<srcnode->get_nbits()<<endl;
 				keepGoing = true;
 			}else{
 				Dout(cout<<"* input "<<srcnode->get_name()<<" doesn't need to grow its size is already"<<srcnode->get_nbits()<<endl);	
 			}
 		}
 		if(! keepGoing ){
-			cout<<"* Done growing inputs. All integer inputs have reached size "<<NINPUTS<<endl;
+			if(PARAMS->verbosity > 2){ cout<<"* Done growing inputs. All integer inputs have reached size "<<NINPUTS<<endl; }
 			 break; 
 		}
 		
-		cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;		
+		if(PARAMS->verbosity > 2){ cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;	}	
 		if( iter > 2 || gnbits > 3){
 			if( problem == oriProblem){
 				//int* ttt = new int[9000];
@@ -158,8 +159,7 @@ BooleanDAG* SolveFromInput::hardCodeControls(BooleanDAG* dag, vector<int>& contr
 	for(int i=0; i<specCtrl.size(); ++i){
 		CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(specCtrl[i]);	
 		int iid = getCtrlStart( ctrlnode->get_name() );
-		int nbits = ctrlnode->get_nbits();
-		cout<<"  CONTROL:    "<< ctrlnode->get_name() <<endl;
+		int nbits = ctrlnode->get_nbits();		
 		Assert( nbits > 0 , "This can not happen rdu;a");
 		Assert( iid+ nbits <= controls.size(), "There should be a control entry for each iid a");		
 		Assert(controls[iid ] == 1 || controls[iid]==-1, "This is bad, really bad");
@@ -254,13 +254,19 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 			
 			if( nbits ==1 ){
 				node_values[(*node_it)]= input[iid];
+				char c='U';
+				if(input[iid] == -1){ c = '0'; }
+				if(input[iid] == 1){ c = '1'; }
+
+				if(PARAMS->showInputs){ cout<<" input "<<(*node_it)->get_name()<<" has value "<< c <<endl; }
 			}else{				
 				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
 				int nval = intFromBV(input, iid, nbits);				
 				Dout( cout <<" > = "<<nval<< endl ) ;
 				node_values[(*node_it)] = nval;
+				if(PARAMS->showInputs){ cout<<" input "<<(*node_it)->get_name()<<" has value "<<nval<<endl; }
 			}
-			( cout<<" input "<<(*node_it)->get_name()<<" has value "<<node_values[(*node_it)]<<endl );
+			
 			bool changed = false;
 			
 			for(int i=0; i<nbits; ++i){
@@ -324,7 +330,8 @@ void SolveFromInput::defineProblem(SATSolver& mng, SolverHelper& dir){
 		
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);		
 		nts.process(*problem);		
-		timer.stop().print();
+		timer.stop();
+		if(PARAMS->verbosity > 2){ timer.print(); }
 	}
 }
 
@@ -338,7 +345,7 @@ void SolveFromInput::output_control_map(ostream& out){
 			if( nbits > 1 ){
 				for(int i=0; i<nbits; ++i){
 					out<<(*node_it)->name<<"_"<< i << "\t"<<ar[iid+i]<<endl;
-					cout<<(*node_it)->name<<"_"<< i <<"["<<(iid+i)<<"] = \t"<<ar[iid+i]<<endl;
+					//cout<<(*node_it)->name<<"_"<< i <<"["<<(iid+i)<<"] = \t"<<ar[iid+i]<<endl;
 				}
 			}else{
 				out<<(*node_it)->name<<"\t"<<ar[iid]<<endl;

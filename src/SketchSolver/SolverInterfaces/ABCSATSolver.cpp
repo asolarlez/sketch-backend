@@ -479,7 +479,7 @@ int ABCSATSolver::solve(){
 
 
  void ABCSATSolver::printDiagnostics(char c){
-   cout << c << "No diagnostics for now"<<endl;
+   cout<< c <<" AIG Size = "<< Abc_NtkNodeNum(pNtk)<<endl;
 }
 
 

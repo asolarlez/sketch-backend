@@ -82,6 +82,7 @@ int Driver::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<
 	SolveFromInput solver(out, miter, *finder, *checker, params.seedsize, INp::NINPUTS);
   						   
 	if(params.printDiag){
+		cout<<" Printing Diagnostics "<<endl;
 		solver.activatePrintDiag();	
 	}
   	
@@ -146,22 +147,28 @@ int Driver::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<
 
 
 BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, string& name ){
-	cout<<"* before  EVERYTHING: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
-	
+	if(params.verbosity > 2){
+		cout<<"* before  EVERYTHING: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+	}
+
 	for(map<string, BooleanDAG*>::iterator it =  funMap.begin();
 				it != funMap.end(); ++it){
 		int sz1 = it->second->size(); 				
 		DagOptim cse(*it->second);
 		cse.process(*it->second);	
 		int sz2 = it->second->size(); 		
+		if(params.verbosity > 3){
 		cout<<" optimizing "<<	it->first <<" went from size "<<sz1<<" to "<<sz2<<endl;
+		}
 	}
 	{
 		int sz1 = sketch->size();
 		DagOptim cse(*sketch);
 		cse.process(*sketch);
 		int sz2 = sketch->size();
+		if(params.verbosity > 3){
 		cout<<" optimizing "<<	name <<" went from size "<<sz1<<" to "<<sz2<<endl;
+		}
 	}
 
 	{
@@ -170,7 +177,7 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
 		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");	
 		for(int i=0; i<specIn.size(); ++i){
-			cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl;
+			Dout( cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl );
 			sketch->rename(sketchIn[i]->name, specIn[i]->name);
 		}
 	}
@@ -186,17 +193,18 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	}
 
 	{
+		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
 		{
-			cout<<" Inlining functions in the sketch."<<endl;
+			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
 			DagFunctionInliner cse(*sketch, funMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
 		}
 		{
-			cout<<" Inlining functions in the spec."<<endl;
+			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
 			DagFunctionInliner cse(*spec, funMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
 		}
-		cout<<"* AFTER PREPROC SKETCH: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+		
 	}
 
 	{
@@ -205,23 +213,28 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		eufun.stopProducingFuns();
 		eufun.process(*sketch);
 	}
-	cout<<"Done with ElimUFUN "<<endl;
+
 	
 	spec->makeMiter(*sketch);
 	BooleanDAG* problem = spec;
-	cout<<"after Eliminating UFUNs: Problem nodes = "<<problem->size()<<endl;
+
+	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<problem->size()<<endl; }
 	
 	{
 		DagOptim cse(*problem);	
 		//cse.alterARRACS();
 		cse.process(*problem);
 	}
-	cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	
+	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	}
 
 	{
 		DagOptimizeCommutAssoc opt;
-		opt.process(*problem);
+		//opt.process(*problem);
 	}
+
+	//problem->print(cout) ;
+
+	// cout<<"* after CAoptim: Problem nodes = "<<problem->size()<<endl;
 
 	{
 		DagOptim cse(*problem);	
@@ -229,8 +242,8 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		cse.process(*problem);
 	}
 	
-	cout<<"* after OPTIM2: Problem nodes = "<<problem->size()<<endl;		
-	( problem->print(cout) );
+	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<problem->size()<<endl;	}
+	//( problem->print(cout) );
 
 	return problem;
 }
