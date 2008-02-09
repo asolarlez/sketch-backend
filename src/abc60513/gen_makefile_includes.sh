@@ -2,6 +2,7 @@
 
 SOURCES=modules.sources.mk
 INCLUDES=modules.includes.mk
+HEADERS=modules.headers.mk
 
 ## Generate the files:
 ##
@@ -15,6 +16,10 @@ INCLUDES=modules.includes.mk
 
 echo -n 'ABC_INCS = ' > $INCLUDES
 echo 'ABC_SRCS = ' > $SOURCES
+echo -n 'ABC_HDRS = ' > $HEADERS
+
+find src/ -name *.h -printf '$(ABC)/src/%P ' >> $HEADERS
+echo >> $HEADERS
 
 for mod in `cat modules.txt`; do
     echo -n "-I\$(ABC)/${mod} " >> $INCLUDES
