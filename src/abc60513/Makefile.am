@@ -2,7 +2,9 @@
 ABC = .
 include modules.sources.mk
 include modules.includes.mk
+include modules.headers.mk
 
 noinst_LIBRARIES = libabc.a
 libabc_a_CFLAGS = $(ABC_INCS)
 libabc_a_SOURCES = $(ABC_SRCS)
+noinst_HEADERS = $(ABC_HDRS)
