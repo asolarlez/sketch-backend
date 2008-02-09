@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(SKETCH, 2.0, arnold@cs.berkeley.edu)
+AC_INIT(SKETCH, 1.2, arnold@cs.berkeley.edu)
 AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
@@ -16,11 +16,12 @@ AC_PROG_CPP
 AC_PROG_LEX
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
+AC_CHECK_PROG([JAVA], [java], [java])
+AC_CHECK_PROG([M4], [m4], [m4])
 
 # Look for ant; if we have ant, we should have javac
 AC_CHECK_PROG([ANT], [ant], [ant])
 AM_CONDITIONAL([COMPILE_SKETCH], [test -n "$ANT"])
-
 
 # Checks for header files.
 AC_FUNC_ALLOCA
