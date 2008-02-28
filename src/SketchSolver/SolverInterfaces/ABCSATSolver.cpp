@@ -16,24 +16,28 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	
 	Vec_Int_t vec;
 	int nsize = Abc_NtkPiNum(network);
-	vector<int> vals(nsize, -1);
-	vec.nCap = vals.size();
-	vec.nSize = nsize;
-	vec.pArray = &vals[0];
-	{
-   		int i;
-       Abc_Obj_t * pNode;	   		
-   		Abc_NtkForEachPi( network, pNode, i ){
-			if( results.find(namemap[i]) != results.end() ){
-				Dout( cout<<" setting value ["<<namemap[i]<<"] = "<<results[namemap[i]]<<endl);
-				vals[i] = results[namemap[i]];
-				
-			}else{
-				Dout( cout<<" setting value b ["<<namemap[i]<<"] = "<<vals[i]<<endl);
-			}
-   		}
+	if(nsize > 0){
+		vector<int> vals(nsize, -1);
+		vec.nCap = vals.size();
+		vec.nSize = nsize;
+		vec.pArray = &vals[0];
+		{
+   			int i;
+		   Abc_Obj_t * pNode;	   		
+   			Abc_NtkForEachPi( network, pNode, i ){
+				if( results.find(namemap[i]) != results.end() ){
+					Dout( cout<<" setting value ["<<namemap[i]<<"] = "<<results[namemap[i]]<<endl);
+					vals[i] = results[namemap[i]];
+					
+				}else{
+					Dout( cout<<" setting value b ["<<namemap[i]<<"] = "<<vals[i]<<endl);
+				}
+   			}
+		}
+		result = Abc_NtkMiterCofactor(network, &vec);
+	}else{
+		result = network;
 	}
-	result = Abc_NtkMiterCofactor(network, &vec);
    	//Abc_NtkDelete( network );	
     
     return result;
