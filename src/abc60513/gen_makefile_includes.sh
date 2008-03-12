@@ -18,7 +18,14 @@ echo -n 'ABC_INCS = ' > $INCLUDES
 echo 'ABC_SRCS = ' > $SOURCES
 echo -n 'ABC_HDRS = ' > $HEADERS
 
-find src/ -name *.h -printf '$(ABC)/src/%P ' >> $HEADERS
+## For POSIX compatibility, we have to replace this nice line:
+##
+##   find src/ -name '*.h' -printf '$(ABC)/src/%P ' >> $HEADERS
+##
+## with what follows.
+for header in `find src/ -name '*.h'`; do
+    echo -n "\$(ABC)/${header} " >> $HEADERS
+done
 echo >> $HEADERS
 
 for mod in `cat modules.txt`; do
