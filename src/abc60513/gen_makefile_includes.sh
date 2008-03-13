@@ -14,9 +14,9 @@ HEADERS=modules.headers.mk
 ## of the ABC source directory.
 ##
 
-echo -n 'ABC_INCS = ' > $INCLUDES
+printf 'ABC_INCS = ' > $INCLUDES
 echo 'ABC_SRCS = ' > $SOURCES
-echo -n 'ABC_HDRS = ' > $HEADERS
+printf 'ABC_HDRS = ' > $HEADERS
 
 ## For POSIX compatibility, we have to replace this nice line:
 ##
@@ -24,11 +24,11 @@ echo -n 'ABC_HDRS = ' > $HEADERS
 ##
 ## with what follows.
 for header in `find src/ -name '*.h'`; do
-    echo -n "\$(ABC)/${header} " >> $HEADERS
+    printf '$%s/%s ' '(ABC)' ${header} >> $HEADERS
 done
 echo >> $HEADERS
 
 for mod in `cat modules.txt`; do
-    echo -n "-I\$(ABC)/${mod} " >> $INCLUDES
+    printf '%sI$%s/%s ' '-' '(ABC)' ${mod} >> $INCLUDES
     cat $mod/module.make >> $SOURCES
 done
