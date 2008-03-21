@@ -36,7 +36,7 @@ public:
 		}
 		Assert(srcrep->children.size() == 3, "This can't happen");
 		bool_node* schedRoot;
-		set<bool_node*>::iterator it= srcrep->children.begin();
+		child_iter it= srcrep->children.begin();
 		do{
 			schedRoot = *it;
 			++it;
@@ -66,8 +66,8 @@ public:
 				}else{					
 					seq->replace(bn[i]->id, badzero);
 					while(true){
-						set<bool_node*> tmpset = badzero->children;
-						set<bool_node*>::iterator it = tmpset.begin();
+						childset tmpset(badzero->children);
+						child_iter it = tmpset.begin();
 						bool foundsomething = false;
 						while(it != tmpset.end()){
 							if(typeid(**it)!=typeid(UFUN_node)){
@@ -83,7 +83,7 @@ public:
 		}
 		swap(nins, inufun->multi_mother);
 
-		set<bool_node*> nch = nsrc->children;
+		childset nch(nsrc->children);
 		it = nch.begin();
 		while(it != nch.end()){
 			if(typeid(**it)==typeid(UFUN_node)){
