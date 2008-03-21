@@ -14,6 +14,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include "FastSet.h"
 #include "BasicError.h"
 #include "timerclass.h"
 #include "NodeVisitor.h"
@@ -29,24 +30,48 @@ using namespace std;
 class BooleanDAG;
 
 
+//typedef set<bool_node*>::iterator child_iter;
+
+/*
+typedef set<bool_node*>::const_iterator child_citer;
 typedef set<bool_node*>::iterator child_iter;
+typedef set<bool_node*> childset;
+*/
+
+typedef FastSet<bool_node>::iterator child_citer;
+typedef FastSet<bool_node>::iterator child_iter;
+typedef FastSet<bool_node> childset;
+
+
 
 class bool_node{
 protected:
   bool_node():mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM){};
-  bool_node(const bool_node& bn):mother(bn.mother), layer(bn.layer), 
+  bool_node(const bool_node& bn, bool copyChildren):mother(bn.mother), layer(bn.layer), 
   								 name(bn.name), father(bn.father), 
   								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
-  								 otype(bn.otype), type(bn.type), children(bn.children) {};
+								 otype(bn.otype), type(bn.type) { if(copyChildren){ children = bn.children; }  };
 public:
+
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ,ARITH, ASSERT} Type;
+  typedef enum{BOTTOM, BOOL, INT} OutType;
+
   string name;
   int layer;
   int id;
-  int flag;
+  mutable int flag;
   int ion_pos;
-  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ,ARITH, ASSERT} Type;
-  typedef enum{BOTTOM, BOOL, INT} OutType;
-  OutType joinOtype(OutType t1, OutType t2){
+  
+  Type type;
+  mutable OutType otype;
+  bool_node* mother;  
+  bool_node* father;
+  
+  childset children;
+  
+
+  
+  OutType joinOtype(OutType t1, OutType t2) const{
   	if(t1 == BOTTOM){ return t2; }
   	if(t2 == BOTTOM){ return t1; }
   	if( t2 == t1 ){ 
@@ -55,24 +80,20 @@ public:
   		return INT; 
   	}
   }
-  Type type;
-  OutType otype;
-  bool_node* mother;  
-  bool_node* father;
-  
-  set<bool_node*> children;
-  
-  
+
   virtual int do_dfs(int idx);
   virtual int back_dfs(int idx);
   virtual void remove_child(bool_node* bn);  
   virtual void dislodge();
+  virtual void removeFromParents(bool_node* bn);
   virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
-  virtual void outDagEntry(ostream& out);
+  virtual void outDagEntry(ostream& out) const;
   virtual void addToParents();
-  virtual void redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag);
+   
+  virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
+  virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag);
   virtual void switchInputs(BooleanDAG& bdag);
-  virtual string get_tname(){
+  virtual string get_tname() const{
     switch(type){
 	case PLUS: return "PLUS";
 	case TIMES: return "TIMES";
@@ -97,14 +118,22 @@ public:
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
-  virtual string get_name();
+  virtual string get_name() const;
   void set_layer();
-  virtual void accept(NodeVisitor& visitor)=0;
-  virtual bool_node* clone()=0;
+  virtual void accept(NodeVisitor& visitor) =0;
+  virtual bool_node* clone(bool copyChildren = true)=0;
   virtual void printSubDAG(ostream& out);
-  virtual OutType getOtype();
+  virtual OutType getOtype() const;
+  virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
+  void replace_child(bool_node* ori, bool_node* replacement);
 };
+
+
+
+inline void bool_node::remove_child(bool_node* bn){
+	children.erase(bn);
+}
 
 
 
@@ -112,6 +141,7 @@ public:
 class arith_node: public bool_node{
 	protected:
 	arith_node():bool_node(){ type = ARITH; };
+	arith_node(const arith_node& an, bool copyChildren):bool_node(an, copyChildren), multi_mother(an.multi_mother), arith_type(an.arith_type){ type = ARITH; };
 	public:
     typedef enum {   ARRACC, UFUN, ARRASS, ACTRL  } AType;
 
@@ -120,14 +150,16 @@ class arith_node: public bool_node{
 	vector<bool_node*> multi_mother;	
     virtual int back_dfs(int idx);
 	virtual void dislodge();
+	virtual void removeFromParents(bool_node* bn);
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out);
 	virtual void addToParents();
 	virtual void addToParents(bool_node* only_thisone);
-	virtual void redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag);
+	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
+	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag);
 	virtual void printSubDAG(ostream& out);
-	virtual string get_tname(){
+	virtual string get_tname() const{
 		switch(arith_type){			
 			case ARRACC: return "ARRACC";
 			case UFUN: return "UFUN";			
@@ -136,7 +168,7 @@ class arith_node: public bool_node{
 		}
 		return "null";
 	}
-	virtual OutType getOtype();
+	virtual OutType getOtype()const;
 };
 
 
@@ -144,45 +176,45 @@ class arith_node: public bool_node{
 
 class AND_node: public bool_node{ 	
 	public: 
-		AND_node(const AND_node& bn): bool_node(bn){ }  
+		AND_node(const AND_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		AND_node(){ type = AND; }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new AND_node(*this);  };
-		OutType getOtype(){
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new AND_node(*this, copyChildren);  };
+		OutType getOtype() const{
 			return BOOL;
 		}
 	};
 class OR_node: public bool_node{	
 	public: 
 		OR_node(){ type = OR; } 
-		OR_node(const OR_node& bn): bool_node(bn){ }   
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new OR_node(*this);  };
-		OutType getOtype(){
+		OR_node(const OR_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }   
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new OR_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 	};
 class XOR_node: public bool_node{	
 	public: 
 		XOR_node(){ type = XOR; }  
-		XOR_node(const XOR_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new XOR_node(*this);  };
-		OutType getOtype(){
+		XOR_node(const XOR_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new XOR_node(*this, copyChildren);  };
+		OutType getOtype() const{
 			return BOOL;
 		}
 	};
 
 class INTER_node: public bool_node{	
 	protected: 
-	INTER_node(const INTER_node& bn): bool_node(bn), nbits(bn.nbits){ }  
+	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), nbits(bn.nbits){ }  
 		INTER_node(){nbits = 1;}
 		int nbits;
 	public:	
 	int get_nbits() const { return nbits; }
 	void set_nbits(int n){ nbits = n; }
 	
-	OutType getOtype(){
+	OutType getOtype() const {
 		if(otype != BOTTOM){
 			return otype;
 		}
@@ -194,7 +226,7 @@ class INTER_node: public bool_node{
 		return otype;
 	}
 	
-	string get_name(){
+	string get_name() const{
 	    stringstream str;
 	    if(name.size() > 0)
 	      str<<name<<"__"<<get_tname();
@@ -210,58 +242,58 @@ class INTER_node: public bool_node{
 
 class SRC_node: public INTER_node{		
 	public: SRC_node(){ type = SRC; }  
-	SRC_node(const SRC_node& bn): INTER_node(bn){ }  
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
 	SRC_node(const string& nm){ 
 		type = SRC;
 		name = nm;
 	}
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	virtual bool_node* clone(){return new SRC_node(*this);  };
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };
 };
 
 class DST_node: public INTER_node{		
 	public: 
 		DST_node(){ type = DST; }  
-		DST_node(const DST_node& bn): INTER_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new DST_node(*this);  };
+		DST_node(const DST_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new DST_node(*this, copyChildren);  };
 };
 
 
 class CTRL_node: public INTER_node{
 	public: 
 	CTRL_node(){ type = CTRL;} 
-	CTRL_node(const CTRL_node& bn): INTER_node(bn){ }   
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	virtual bool_node* clone(){return new CTRL_node(*this);  };	
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }   
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };	
 };
 
 class NOT_node: public bool_node{	
 	public: 
 	NOT_node(){ type = NOT; }  
-	NOT_node(const NOT_node& bn): bool_node(bn){ }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	virtual bool_node* clone(){return new NOT_node(*this);  };
-	OutType getOtype(){
+	NOT_node(const NOT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual bool_node* clone(bool copyChildren = true){return new NOT_node(*this, copyChildren);  };
+	OutType getOtype() const {
 			return BOOL;
 	}
 };
 
 class PLUS_node: public bool_node{	
 	public: PLUS_node(){ type = PLUS; } 
-	PLUS_node(const PLUS_node& bn): bool_node(bn){ }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	virtual bool_node* clone(){return new PLUS_node(*this);  };
-	OutType getOtype(){
+	PLUS_node(const PLUS_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual bool_node* clone(bool copyChildren = true){return new PLUS_node(*this, copyChildren);  };
+	OutType getOtype()const {
 			return INT;
 	}
 };
 class TIMES_node: public bool_node{	
 	public: TIMES_node(){ type = TIMES; }  
-	TIMES_node(const TIMES_node& bn): bool_node(bn){ }    
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-	virtual bool_node* clone(){return new TIMES_node(*this);  };
-	OutType getOtype(){
+	TIMES_node(const TIMES_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }    
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual bool_node* clone(bool copyChildren = true){return new TIMES_node(*this, copyChildren);  };
+	OutType getOtype()const {
 		return INT;
 	}
 };
@@ -273,8 +305,8 @@ class UFUN_node: public arith_node{
 	string ufname;
 	map<bool_node*, bool_node*> mothersToReplace;
 	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
-	UFUN_node(const UFUN_node& bn): arith_node(bn), nbits(bn.nbits), ufname(bn.ufname){ }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname){ }  
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out){
     	int i=0;
 		for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
@@ -284,11 +316,11 @@ class UFUN_node: public arith_node{
 		}
 	}
 
-	virtual bool_node* clone(){return new UFUN_node(*this);  };
+	virtual bool_node* clone(bool copyChildren = true){return new UFUN_node(*this, copyChildren);  };
 	int get_nbits() const { return nbits; }
-	string& get_ufname(){ return ufname; }
+	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
-	OutType getOtype(){
+	OutType getOtype()const {
 		if(otype != BOTTOM){
 			return otype;
 		}
@@ -305,8 +337,8 @@ class UFUN_node: public arith_node{
 
 class ARRACC_node: public arith_node{	
 	public: ARRACC_node(){ arith_type = ARRACC; }  
-	ARRACC_node(const ARRACC_node& bn): arith_node(bn){ }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out){
 		if( mother != NULL){
           out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"idx\"] ; "<<endl;
@@ -318,24 +350,24 @@ class ARRACC_node: public arith_node{
 		  	}
 		}
 	}
-	OutType getOtype(){
+	OutType getOtype()const {
 			if(otype != BOTTOM){
 				return otype;
 			}
-			for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
 				otype = joinOtype((*it)->getOtype(), otype);	
 			}			
 			return otype;
 		}
-	virtual bool_node* clone(){return new ARRACC_node(*this);  };
+	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
 };
 class DIV_node: public bool_node{	
 	public: 
 		DIV_node(){ type = DIV; }
-		DIV_node(const DIV_node& bn): bool_node(bn){ }     
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new DIV_node(*this);  };
-		OutType getOtype(){
+		DIV_node(const DIV_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }     
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new DIV_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return INT;
 		}
 };
@@ -343,10 +375,10 @@ class MOD_node: public bool_node{
 	
 	public: 
 		MOD_node(){ type = MOD; }  
-		MOD_node(const MOD_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new MOD_node(*this);  };
-		OutType getOtype(){
+		MOD_node(const MOD_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new MOD_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return INT;
 		}
 };
@@ -356,10 +388,10 @@ class NEG_node: public bool_node{
 	
 	public: 
 		NEG_node(){ type = NEG; }
-		NEG_node(const NEG_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new NEG_node(*this);  };
-		OutType getOtype(){
+		NEG_node(const NEG_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new NEG_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return INT;
 		}
 };
@@ -368,12 +400,16 @@ class NEG_node: public bool_node{
 class CONST_node: public bool_node{
 	int val;
 	public:
-		CONST_node(){  type = CONST; val = -1;}
-		CONST_node(int n){  type = CONST; val = n;}
-		CONST_node(const CONST_node& bn): bool_node(bn), val(bn.val){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
+		CONST_node(){  
+			type = CONST; val = -1;}
+		CONST_node(int n){  
+			type = CONST; val = n;}
+		CONST_node(const CONST_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), val(bn.val){
+			//if(val == 13){ cout<<" surprise"<<endl; }
+		}  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual void setVal(int v){ val = v; }
-		virtual int getVal(){ return val; }
+		virtual int getVal() const { return val; }
 		string get_name(){
 		    stringstream str;
 		    str<<name<<"_C";
@@ -383,8 +419,8 @@ class CONST_node: public bool_node{
 		    str<<abs(val);		    
 		    return str.str();
 		}
-		virtual bool_node* clone(){return new CONST_node(*this);  };
-		OutType getOtype(){
+		virtual bool_node* clone(bool copyChildren = true){return new CONST_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			if(otype != BOTTOM){
 				return otype;
 			}
@@ -400,50 +436,50 @@ class CONST_node: public bool_node{
 class GT_node: public bool_node{	
 	public: 
 		GT_node(){  type = GT; }  
-		GT_node(const GT_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new GT_node(*this);  };
-		OutType getOtype(){
+		GT_node(const GT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new GT_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 };
 class GE_node: public bool_node{	
 	public: 
 		GE_node(){  type = GE; } 
-		GE_node(const GE_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new GE_node(*this);  };
-		OutType getOtype(){
+		GE_node(const GE_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new GE_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 };
 class LT_node: public bool_node{	
 	public: 
 		LT_node(){  type = LT; }  
-		LT_node(const LT_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new LT_node(*this);  };
-		OutType getOtype(){
+		LT_node(const LT_node& bn,bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new LT_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 };
 class LE_node: public bool_node{	
 	public: 
 		LE_node(){  type = LE; }  
-		LE_node(const LE_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new LE_node(*this);  };
-		OutType getOtype(){
+		LE_node(const LE_node& bn,bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new LE_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 };
 class EQ_node: public bool_node{	
 	public: 
 		EQ_node(){  type = EQ; } 
-		EQ_node(const EQ_node& bn): bool_node(bn){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new EQ_node(*this);  };
-		OutType getOtype(){
+		EQ_node(const EQ_node& bn,bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new EQ_node(*this, copyChildren);  };
+		OutType getOtype()const {
 			return BOOL;
 		}
 };
@@ -457,9 +493,9 @@ class ARRASS_node: public arith_node{
 	public: 
 		int quant;
 		ARRASS_node(){ arith_type = ARRASS; quant = -1; }
-		ARRASS_node(const ARRASS_node& bn): arith_node(bn), quant(bn.quant){ }  
-		virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }
-		virtual bool_node* clone(){return new ARRASS_node(*this);  };
+		ARRASS_node(const ARRASS_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), quant(bn.quant){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new ARRASS_node(*this, copyChildren);  };
 		virtual void outDagEntry(ostream& out){
 			if( mother != NULL){
 			  out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"="<<quant<<"\"] ; "<<endl;
@@ -472,7 +508,7 @@ class ARRASS_node: public arith_node{
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
-		OutType getOtype(){
+		OutType getOtype()const {
 			if(otype != BOTTOM){
 				return otype;
 			}
@@ -482,10 +518,10 @@ class ARRASS_node: public arith_node{
 };
 class ACTRL_node: public arith_node{	
 	public: ACTRL_node(){ arith_type = ACTRL; }  
-	ACTRL_node(const ACTRL_node& bn): arith_node(bn){ }  
-	virtual void accept(NodeVisitor& visitor){ visitor.visit( *this ); }	
-	virtual bool_node* clone(){return new ACTRL_node(*this);  };
-	OutType getOtype(){
+	ACTRL_node(const ACTRL_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+	virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }	
+	virtual bool_node* clone(bool copyChildren = true){return new ACTRL_node(*this, copyChildren);  };
+	OutType getOtype()const {
 		return INT;
 	}	
 };
@@ -494,13 +530,13 @@ class ASSERT_node: public bool_node {
 	string msg;
 public:
     ASSERT_node ():isHardAssert(false) { type = ASSERT; }
-    ASSERT_node(const ASSERT_node& bn): bool_node(bn){ isHardAssert = bn.isHardAssert;  msg = bn.msg; }  
-    virtual void accept (NodeVisitor &visitor) { visitor.visit (*this); }
-    virtual bool_node* clone(){return new ASSERT_node(*this);  };
+    ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ isHardAssert = bn.isHardAssert;  msg = bn.msg; }  
+    virtual void accept (NodeVisitor &visitor)  { visitor.visit (*this); }
+    virtual bool_node* clone(bool copyChildren = true) {return new ASSERT_node(*this, copyChildren);  };
     virtual void makeHardAssert(){ isHardAssert = true; }
-    virtual bool isHard(){ return isHardAssert ; }
+    virtual bool isHard() const { return isHardAssert ; }
     virtual void setMsg(const string& pmsg){ msg = pmsg; }
-    virtual string& getMsg(){ return msg; }
+    virtual const string& getMsg()const{ return msg; }
 };
 
 
@@ -543,13 +579,15 @@ inline arith_node* newArithNode( arith_node::AType type){
 
 
 inline bool comp_id(bool_node* n1, bool_node* n2){
-  if(n1->id == -1){
+  int n1id = n1->id;
+  if(n1id == -1){
     return false;
   }
-  if(n2->id == -1){ //& n1->id != -1
-    return n1->id != n2->id;
+  int n2id = n2->id;
+  if(n2id == -1){ //& n1->id != -1
+    return n1id!= n2id;
   }
-  return n1->id < n2->id;
+  return n1id < n2id;
 }
 
 

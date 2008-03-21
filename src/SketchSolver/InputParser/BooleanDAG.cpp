@@ -11,7 +11,7 @@
 
 using namespace std;
 
-string bool_node::get_name(){
+string bool_node::get_name() const {
     stringstream str;
     if(name.size() > 0)
       str<<name<<"__"<<get_tname();
@@ -25,12 +25,12 @@ string bool_node::get_name(){
     return str.str();
   }
 
-bool_node::OutType bool_node::getOtype(){
+bool_node::OutType bool_node::getOtype() const{
 	Assert(false, "This shouldn't get called");
 	return BOOL;
 }
 
-bool_node::OutType arith_node::getOtype(){
+bool_node::OutType arith_node::getOtype() const{
 	return INT;
 }
 
@@ -92,23 +92,7 @@ int arith_node::back_dfs(int idx){
   id = idx;
   return idx-1;
 }
-/*
-map<string, pair<int, int> > sizes;
-*/
-void bool_node::remove_child(bool_node* bn){
-/*
-	if(sizes.count(typeid(*this).name()) > 0){
-		pair<int, int>& p = sizes[typeid(*this).name()];
-		p.first++;
-		p.second += children.size();
-	}else{
-		pair<int, int>& p = sizes[typeid(*this).name()];
-		p.first = 1;
-		p.second = children.size();
-	}*/
 
-	children.erase(bn);
-}
 
 
 void bool_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
@@ -163,7 +147,7 @@ void bool_node::printSubDAG(ostream& out){
 
 
 
-void bool_node::outDagEntry(ostream& out){
+void bool_node::outDagEntry(ostream& out) const{
 	if( father != NULL){
         out<<" "<<father->get_name()<<" -> "<<get_name()<<" ; "<<endl;
     }
@@ -173,7 +157,7 @@ void bool_node::outDagEntry(ostream& out){
     if(father == NULL && mother == NULL){
    // 	  Dout( out<<"// orphan node: "<<get_name()<<" ; "<<endl );
     }
-	for(child_iter child = children.begin(); child != children.end(); ++child){  	
+	for(child_citer child = children.begin(); child != children.end(); ++child){  	
     //	Dout( out<<"// "<<get_name()<<" -> "<<children[i]->get_name()<<" ; "<<endl );
     }
 }
@@ -187,6 +171,28 @@ void arith_node::outDagEntry(ostream& out){
 	  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<" ; "<<endl;	  		
 	  	}
 	}
+}
+
+
+void arith_node::removeFromParents(bool_node* bn){
+	bool_node::removeFromParents(bn);
+	bool_node* tmp = NULL;
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+	  	if(*it != NULL && *it != tmp){
+	  		(*it)->remove_child(bn);
+			tmp = *it;
+	  	}
+	}
+}
+
+
+void bool_node::removeFromParents(bool_node* bn){
+  if(father != NULL){
+  	 father->remove_child(bn);
+  }
+  if(mother != NULL){
+  	mother->remove_child(bn);
+  }
 }
 
 
@@ -368,6 +374,36 @@ void BooleanDAG::layer_graph(){
   //layering does not destroy the sorted property, because
   //even though now we have sorted by layer, this still guarantees that your parents come
   //before you.
+}
+
+
+void bool_node::replace_child(bool_node* ori, bool_node* replacement){
+	child_iter it = children.find(ori);
+	if(it != children.end() ){
+		children.erase(it);
+		children.insert(replacement);
+	}
+
+}
+
+
+
+
+void arith_node::replace_child_inParents(bool_node* ori, bool_node* replacement){
+	bool_node::replace_child_inParents(ori, replacement);
+	for(int i=0; i<multi_mother.size(); ++i){
+		multi_mother[i]->replace_child(ori, replacement);
+	}
+}
+
+
+void bool_node::replace_child_inParents(bool_node* ori, bool_node* replacement){
+	if(mother != NULL){
+		mother->replace_child(ori, replacement);
+	}
+	if(father != NULL){
+		father->replace_child(ori, replacement);
+	}
 }
 
 
@@ -992,12 +1028,56 @@ void bool_node::switchInputs(BooleanDAG& bdag){
 
 
 
-void arith_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag){
-  bool_node::redirectPointers(oribdag, bdag);
+void bool_node::redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert){
+	if(father != NULL){
+		Assert( father->id != -22, "This node should not exist anymore");
+		if( oribdag.checkNodePosition(father) ){
+			//If the father was from the original bdag, then we switch to the father in the new bdag.
+	    	father = (bool_node*) bdag[father->id];
+			if(setChildrn){
+				/*
+				child_iter it = father->children.find(childToInsert);
+				if(it != father->children.end() ){
+					father->children.erase(it);
+				}
+				*/
+				father->children.insert(this); 
+			}
+		}
+  	}
+	if(mother != NULL){
+		Assert( mother->id != -22, "This node should not exist anymore");
+		if( oribdag.checkNodePosition(mother)){
+			mother = (bool_node*) bdag[mother->id];
+			if(setChildrn){ 
+				/*
+				child_iter it = mother->children.find(childToInsert);
+				if(it != mother->children.end() ){
+					mother->children.erase(it);
+				}
+				*/
+				mother->children.insert(this); 
+			}
+		}
+	}
+}
+
+
+void arith_node::redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert){
+  bool_node::redirectParentPointers(oribdag, bdag, setChildrn, childToInsert);
   for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
   		if( oribdag.checkNodePosition(*it) ){
-	  		(*it) = bdag[(*it)->id];
+	  		(*it) = (bool_node*) bdag[(*it)->id];
+			if(setChildrn){ 
+				/*
+				child_iter ttt = (*it)->children.find(childToInsert);
+				if(ttt != (*it)->children.end() ){
+					(*it)->children.erase(ttt);
+				}
+				*/
+				(*it)->children.insert(this);
+			}
   		}
   	}
   }
@@ -1005,25 +1085,13 @@ void arith_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag)
 
 
 
-void bool_node::redirectPointers(BooleanDAG& oribdag, vector<bool_node*>& bdag){
-	if(father != NULL){
-		Assert( father->id != -22, "This node should not exist anymore");
-		if( oribdag.checkNodePosition(father) ){
-			//If the father was from the original bdag, then we switch to the father in the new bdag.
-	    	father = bdag[father->id];
-		}
-  	}
-	if(mother != NULL){
-		Assert( mother->id != -22, "This node should not exist anymore");
-		if( oribdag.checkNodePosition(mother)){
-			mother = bdag[mother->id];
-		}
-	}
-	set<bool_node*> bset;
+void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag){
+	redirectParentPointers(oribdag, bdag, false, NULL);
+	childset bset;
 	for(child_iter child = children.begin(); child != children.end(); ++child){
 		Assert( (*child)->id != -22, "This node should not exist anymore");
 		if( oribdag.checkNodePosition((*child)) ){
-			bset.insert( bdag[ (*child)->id ] );
+			bset.insert((bool_node*) bdag[ (*child)->id ] );
 		}else{
 			bset.insert(*child);
 		}
@@ -1179,7 +1247,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore){
 	Dout( cout<<" after indiv clone "<<endl );
 	nstore.resize(nnodes);
 	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it){		
-		(*node_it)->redirectPointers(*this, nstore);
+		(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore);
 	}
 }
 
