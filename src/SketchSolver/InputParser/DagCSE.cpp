@@ -6,18 +6,38 @@
 
 
 char tmpbuf[10000];
-char tbl[32] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
 				'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
-				'U', 'V'};
+				'U', 'V',
+				'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 
+                'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 
+				'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 
+				'@', '#'
+};
 
 inline void writeInt(char* buf, unsigned val, int& p){
 	while(val != 0){
-		unsigned t = val & 0x1f;
+		unsigned t = val & 0x3f;
 		buf[p] = tbl[t];
 		p = p+1;
-		val = val>>5;
+		val = val>>6;
 	}
+}
+
+
+
+void DagCSE::setStr(int id1, char op, int id2){
+	int p = 0;
+	writeInt(tmpbuf, id1, p);
+	tmpbuf[p] = op; p++;
+	writeInt(tmpbuf, id2, p);
+	tmpbuf[p] = 0;
+	ccode = tmpbuf;		
+	/*
+	sprintf(tmpbuf, "%d%c%d",id1, op,id2);   	
+ 	ccode = tmpbuf;
+	*/
 }
 
 
@@ -43,7 +63,7 @@ void DagCSE::eliminateCSE(){
 		(cout<<dag[i]->id<<"  "<<dag[i]->get_name()<<": "<<ccode<<endl) ;
 		if( hasCSE(ccode) ){
 			// if we do find it, then remove the node and replace it with its cse.			
-			bool_node * cse = cse_map[ccode];
+			bool_node * cse = (bool_node*)cse_map[ccode];
 			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl );
 			dag.replace(i, cse); 
 			++i;
@@ -58,47 +78,47 @@ void DagCSE::eliminateCSE(){
 	Dout(cout<<" end cse "<<endl);	
 }
 
- void DagCSE::visit( AND_node& node ){
+ void DagCSE::visit(  AND_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id; 
  		
- 	sprintf(tmpbuf, "%d&%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf;
+	setStr(min(mid, fid), '&' ,max(mid, fid));
+
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( OR_node& node ){
+ void DagCSE::visit(  OR_node& node ){
  	Dtime(stimer.restart();)
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	sprintf(tmpbuf, "%d|%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf; 	
+	setStr(min(mid, fid), '|' ,max(mid, fid));
+
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( XOR_node& node ){
+ void DagCSE::visit(  XOR_node& node ){
  	Dtime(stimer.restart();)
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
- 	sprintf(tmpbuf, "%dxor%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf;
+ 	setStr(min(mid, fid), '^' ,max(mid, fid));
+
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( SRC_node& node ){
+ void DagCSE::visit(  SRC_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str;
  	str<<node.id;
  	ccode = str.str();
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( DST_node& node ){
+ void DagCSE::visit(  DST_node& node ){
  	Dtime(stimer.restart();)
   	stringstream str;
  	str<<node.id;
  	ccode = str.str();
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( NOT_node& node ){
+ void DagCSE::visit(  NOT_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
@@ -108,14 +128,14 @@ void DagCSE::eliminateCSE(){
  	
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( CTRL_node& node ){
+ void DagCSE::visit(  CTRL_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str;
  	str<<node.id;
  	ccode = str.str();
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( PLUS_node& node ){
+ void DagCSE::visit(  PLUS_node& node ){
  	Dtime(stimer.restart();)
  	Assert( node.mother != NULL, "Null mother no longer allowed!!");
  	Assert( node.father != NULL, "Null father no longer allowed!!");
@@ -123,48 +143,46 @@ void DagCSE::eliminateCSE(){
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%d+%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf;
+ 	setStr(min(mid, fid), '+' ,max(mid, fid));
+
  	
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( TIMES_node& node ){
+ void DagCSE::visit(  TIMES_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id; 	
 	
-	sprintf(tmpbuf, "%d*%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf;
+	setStr(min(mid, fid), '*' ,max(mid, fid));
+
  	
  	Dtime(stimer.stop();)
  }
  
- void DagCSE::visit( DIV_node& node ){
+ void DagCSE::visit(  DIV_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%d/%d",mid,fid);   	
- 	ccode = tmpbuf;
+	setStr(min(mid, fid), '/' ,max(mid, fid));
+
  	
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( MOD_node& node ){
+ void DagCSE::visit(  MOD_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%dmod%d",mid,fid);   	
- 	ccode = tmpbuf;
- 	
+	setStr(mid, '%', fid);
  	
  	Dtime(stimer.stop();)
  }
  
- void DagCSE::visit( NEG_node& node ){
+ void DagCSE::visit(  NEG_node& node ){
  	Dtime(stimer.restart();)
 
  	int mid = node.mother == NULL? -1: node.mother->id; 	
@@ -175,7 +193,7 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.stop();)
  }
  
-  void DagCSE::visit( CONST_node& node ){
+  void DagCSE::visit(  CONST_node& node ){
   	Dtime(stimer.restart();)
   	
   	sprintf(tmpbuf, "$%d$", node.getVal() );   	
@@ -185,66 +203,64 @@ void DagCSE::eliminateCSE(){
  }
  
  
- void DagCSE::visit( GT_node& node ){
+ void DagCSE::visit(  GT_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
  	
- 	sprintf(tmpbuf, "%d>%d",mid,fid);   	
- 	ccode = tmpbuf;
+	setStr(mid, '>', fid);
  	
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( GE_node& node ){
- 	Dtime(stimer.restart();)
- 	
- 	int mid = node.mother == NULL? -1: node.mother->id;
- 	int fid = node.father == NULL? -1: node.father->id;
- 	sprintf(tmpbuf, "%d>=%d",mid,fid);   	
- 	ccode = tmpbuf;
- 	Dtime(stimer.stop();)
- }
- 
- void DagCSE::visit( LT_node& node ){
+ void DagCSE::visit(  GE_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%d<%d",mid,fid);   	
- 	ccode = tmpbuf;
- 	
+	setStr(mid, '}', fid);
+
  	Dtime(stimer.stop();)
  }
  
- 
- void DagCSE::visit( LE_node& node ){
+ void DagCSE::visit(  LT_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%d<=%d",mid,fid);   	
- 	ccode = tmpbuf;
+ 	setStr(mid, '<', fid);
  	
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( EQ_node& node ){
+ 
+ 
+ void DagCSE::visit(  LE_node& node ){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->id;
  	int fid = node.father == NULL? -1: node.father->id;
  	
- 	sprintf(tmpbuf, "%d==%d",min(mid, fid),max(mid, fid));   	
- 	ccode = tmpbuf;
+	setStr(mid, '{', fid);
+ 	
+ 	Dtime(stimer.stop();)
+ }
+ void DagCSE::visit(  EQ_node& node ){
+ 	Dtime(stimer.restart();)
+ 	
+ 	int mid = node.mother == NULL? -1: node.mother->id;
+ 	int fid = node.father == NULL? -1: node.father->id;
+ 	
+ 	
+	setStr(min(mid, fid), '=', max(mid, fid));
  	 	
  	Dtime(stimer.stop();)
  }
 
 
- void DagCSE::visit( UFUN_node& node ){
+ void DagCSE::visit(  UFUN_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str; 	
  	str<<node.get_ufname()<<"("<<node.mother->id<<")(";
@@ -260,12 +276,12 @@ void DagCSE::eliminateCSE(){
 
 
  
- void DagCSE::visit( ARRACC_node& node ){
+ void DagCSE::visit(  ARRACC_node& node ){
  	Dtime(stimer.restart();)
 	int p = 0;
 	int mid = node.mother == NULL? -1: node.mother->id;
 	writeInt(tmpbuf, mid, p);
-	tmpbuf[p] = '|'; p++;
+	tmpbuf[p] = '~'; p++;
 	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
 		writeInt(tmpbuf, mmid, p);
@@ -286,7 +302,7 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.stop();)
  }
  
- void DagCSE::visit( ARRASS_node& node ){
+ void DagCSE::visit(  ARRASS_node& node ){
  	Dtime(stimer.restart();)
 	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->id;
@@ -296,7 +312,8 @@ void DagCSE::eliminateCSE(){
 
  	Dtime(stimer.stop();)
  }
- void DagCSE::visit( ACTRL_node& node ){
+
+ void DagCSE::visit(  ACTRL_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str;
  	for(int i=0; i<node.multi_mother.size(); ++i){
@@ -310,7 +327,7 @@ void DagCSE::eliminateCSE(){
  
  
  
- void DagCSE::visit( ASSERT_node &node){
+ void DagCSE::visit(  ASSERT_node &node){
  	Dtime(stimer.restart();)
  	stringstream str;
 	int mid = node.mother == NULL? -1: node.mother->id;
