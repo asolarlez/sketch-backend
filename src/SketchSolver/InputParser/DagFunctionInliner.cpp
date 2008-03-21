@@ -53,97 +53,179 @@ void DagFunctionInliner::computeSpecialInputs(){
 }
 
 
+int space[100];
+ARRACC_node tmparrac;
+UFUN_node tmpufun("NULL");
+ARRASS_node tmparrass;
+ACTRL_node tmpactrl;
+
+
+
+int sizeForNode(bool_node* bn){
+
+	if(typeid(*bn) == typeid(SRC_node)){
+		return sizeof(SRC_node);
+	}
+	if(typeid(*bn) == typeid(CTRL_node)){
+		return sizeof(CTRL_node);
+	}	
+	if(typeid(*bn) == typeid(DST_node)){
+		return sizeof(CTRL_node);
+	}	
+	if(typeid(*bn) == typeid(CONST_node)){
+		return sizeof(CONST_node);
+	}
+	if(typeid(*bn) == typeid(ASSERT_node)){
+		return sizeof(CONST_node);
+	}
+	return sizeof(AND_node);
+}
+
+
+
+bool_node* tmpClone(bool_node* bn ){
+	bool_node* tmp;	
+	if(bn == NULL){ return NULL; }
+	if(bn->type == bool_node::ARITH){
+		arith_node* an = dynamic_cast<arith_node*>(bn);
+		switch(an->arith_type){
+			case arith_node::ARRACC: 
+				tmparrac = *dynamic_cast<ARRACC_node*>(an);
+				tmp = & tmparrac; break;
+			case arith_node::UFUN: 
+				tmpufun = *dynamic_cast<UFUN_node*>(an);
+				tmp = & tmpufun; 
+				break;
+			case arith_node::ARRASS:
+				tmparrass = *dynamic_cast<ARRASS_node*>(an);
+				tmp = & tmparrass; break;
+			case arith_node::ACTRL:
+				tmpactrl = *dynamic_cast<ACTRL_node*>(an);
+				tmp = & tmpactrl; break;		
+		}
+	}else{
+		tmp = (bool_node*) space;		
+		memcpy( tmp, bn, sizeForNode(bn) );
+	}	
+
+	return tmp;
+}
+
+
+
+
+
+
 void DagFunctionInliner::visit( UFUN_node& node ){	
 	ufunAll.restart();
-	string& name = node.get_ufname();
+	const string& name = node.get_ufname();
+
+	
+
+
+
 	if( functionMap.find(name) != functionMap.end() ){
 		//cout<<" inlining "<<name<<endl;
 		clonetime.restart();
-		BooleanDAG* oldFun = functionMap[name];
-		oldFun->clone_nodes(clones);
+		BooleanDAG& oldFun = *functionMap[name];
+		//oldFun->clone_nodes(clones);
 		clonetime.stop();
 		bool_node* condition = node.mother;
-
+		vector<const bool_node*> nmap;
+		nmap.resize( oldFun.size() );		
 		{
-			vector<bool_node*>& inputs  = oldFun->getNodesByType(bool_node::SRC);
+			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			
 			Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
 			
 			for(int i=0; i<inputs.size(); ++i){			
-				bool_node* formal = clones[inputs[i]->id];
+				
 				bool_node* actual = node.multi_mother[i];
-				/*if(formal->children.size() == 2){
-					cout<<i<<". formal : " << fn << " := "<<actual->get_name()<<endl;
-					//cout<<"";
-				}*/
-				Assert( clones[formal->id] == formal, "ID is incorrect");
-
-				setTimestampChildren(formal);
-				formal->neighbor_replace(actual);
-				clones[formal->id] = NULL;
-				delete formal;
-
+				nmap[inputs[i]->id] = actual;
+				actual->children.erase((bool_node*)&node);
+//				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
 			}
 		}
 		//cout<<endl;
 		{
-			vector<bool_node*>& controls  = oldFun->getNodesByType(bool_node::CTRL);
+			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
-			for(int i=0; i<controls.size(); ++i){			
-				bool_node* formal = clones[controls[i]->id];
-				bool_node* actual = dag.unchecked_get_node( formal->name );		
+			for(int i=0; i<controls.size(); ++i){				
+				bool_node* actual = dag.unchecked_get_node( controls[i]->name );
 				if(actual != NULL){
-					Assert( clones[formal->id] == formal, "ID is incorrect");	
-
-					setTimestampChildren(formal);
-					formal->neighbor_replace(actual);
-					clones[formal->id] = NULL;
-					delete formal;
-
+					nmap[controls[i]->id] = actual;
+					actual->children.erase((bool_node*)&node);
+//					actual->children.insert(controls[i]->children.begin(), controls[i]->children.end());
+				}else{
+					bool_node* tmp = controls[i]->clone(false);
+					setTimestamp(tmp);
+					addNode( tmp );
+					nmap[controls[i]->id] = tmp;
 				}
 			}
 		}
-				
-		//rvalue = outputs[0]->mother;
 		
-		
-		bool_node* tn = NULL;
-				
-		
-		int hasBuiltTN = false;
-		
+
+		/*
+			The idea is that we have a wavefront moving through the graph as we add more nodes.
+			n is going to be in the boundary of this wavefront. The parents of n will be good nodes,
+			but their children will still have pointers to oldFun. 
+
+		*/
+
+
+
 		
 		bool_node* output = NULL;
 
-		for(int i=0; i<clones.size(); ++i){
-			bool_node* n = clones[i];
+		for(int i=0; i<oldFun.size(); ++i){
+			bool_node::Type t = oldFun[i]->type;
+			if(t == bool_node::SRC || t == bool_node::CTRL) continue;
+			if(t == bool_node::CONST){
+				CONST_node* n =  dynamic_cast<CONST_node*>(oldFun[i]);
+				nmap[n->id] = getCnode(n->getVal());
+				continue;
+			}
+			bool_node* n =  oldFun[i]->clone(false);
+			//bool_node* of = oldFun[i];
+			n->redirectParentPointers(oldFun, nmap, true, oldFun[i]);			
+			int nodeId = n->id;
 			if( n != NULL &&  n->type != bool_node::DST ){			
 				if(n->type != bool_node::ASSERT){
 					if(typeid(*n) != typeid(UFUN_node)){
 						optimTime.restart();
+						
 						bool_node* nnode = this->computeOptim(n);
+						
 						optimTime.stop();
-
 						if(nnode == n){
-							this->addNode(n);
+							//bool_node* tmp = n->clone();
+							setTimestamp(n);													
+							this->addNode( n );
+							
+							nmap[nodeId] = n;
+							//tmp->replace_child_inParents(of, n); // maybe redundant.
+							// parentReplace(oldFun[i], tmp);
 						}else{
-
-							setTimestampChildren(n);
-							n->neighbor_replace(nnode);
-
+							n->dislodge();
+							//n->removeFromParents(of);
 							delete n;
+							nmap[nodeId] = nnode;
 						}
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
 						bool_node* oldMother = ufun->mother;
-						ufun->mother->remove_child(ufun);
+						ufun->mother->remove_child( n );
 						bool_node* andCond = new AND_node();
 						andCond->mother = ufun->mother;
 						andCond->father = condition;
 
 						{
+							
 							bool_node* andcondPrime = this->computeOptim(andCond);
+							
 							if(andcondPrime == andCond){
+								
 								this->addNode(andCond);
 								andCond->addToParents();
 								setTimestamp(andCond);
@@ -152,32 +234,47 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							}
 							andCond = andcondPrime;
 						}
-
 						ufun->mother = andCond;
-						ufun->mother->children.insert(ufun);
+						ufun->mother->children.insert(n);
 						if(andCond != oldMother){
-							ufun->addToParents(oldMother);
+							for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
+								if(*it == oldMother){
+  									oldMother->children.insert( n );
+									break;
+								}
+							  }
 						}
 						DagOptim::visit(*ufun);
-						bool_node* nnode = rvalue;
+						const bool_node* nnode = rvalue;
 						if(nnode == n){
-							this->addNode(n);
+							//bool_node* tmp = n->clone();
+							setTimestamp(n);
+							// cse.setCSE(tmp);
+							// replaceDummy(n, tmp);
+							
+							this->addNode( n );
+							nmap[nodeId] = n;							
 						}else{
-							setTimestampChildren(n);
-							n->neighbor_replace(nnode);
+							n->dislodge();
 							delete n;
+							//n->removeFromParents(of);
+							nmap[nodeId] = nnode;
 						}
 					}
 				}else{
-					n->mother->remove_child(n);
+					n->mother->remove_child( n );
+					if(isConst(n->mother) && getIval(n->mother) == 1){ continue; }
 					bool_node* nnode = new NOT_node();
 					nnode->mother = condition;					
 					{
+						
 						bool_node* nnodep = this->computeOptim(nnode);
+						
 						if(nnodep == nnode){
 							nnode->addToParents();
 							setTimestamp(nnode);
-							this->addNode(nnode);							
+							this->addNode(nnode);	
+							
 						}else{
 							delete nnode;
 						}
@@ -190,9 +287,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					ornode->mother = cur;
 					ornode->father = nnode;
 					{
+						
 						bool_node* ornodep = this->computeOptim(ornode);
+						
 						if(ornodep == ornode){
 							this->addNode(ornode);
+							
 							ornode->addToParents();
 							setTimestamp(ornode);
 						}else{
@@ -201,30 +301,36 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						ornode = ornodep;
 					}
 					cur = ornode;	
+					n->mother = cur;					
+
 					if(isConst(cur) && getIval(cur) == 1){
 						delete n;
+						//In this case, the assertion is just ignored.
+						// n->dislodge(); Not needed, since we removed from the mother already.
 					}else{
-						n->mother = cur;
-						n->addToParents();
+						n->mother->children.insert(n);						
+						// tmp->replace_child_inParents(of, tmp);
 						setTimestamp(n);
 						this->addNode(n);
+						
 					}
 				}
-			}else{				
+			}else{
 				if( n!= NULL){
 					output = n->mother;
 					n->dislodge();
-					n->id = -22;
 					delete n;
+
 				}
 			}
 		}		
+		
 		rvalue = output;
 		somethingChanged = true;
 	}else{
 		rvalue = &node;
 	}
-	ufunAll.stop();
+	ufunAll.stop();	
 }
 
 
@@ -294,13 +400,13 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 	Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
 	for(int i=0; i<arg1.size(); ++i){
 		if(specialInputs.count(i) > 0){
-			//cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
+			// cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
 		}
 		if(arg1[i]->id != arg2[i]->id){
 			if(specialInputs.count(i) > 0){
 				bool_node* a1 = arg1[i];
 				bool_node* a2 = arg2[i];
-				//cout<<"  "<<a1<<"  "<<a2<<endl;
+				// cout<<"  "<<a1<<"  "<<a2<<endl;
 				int t0 = staticCompare<equal_to<int> >(a1, 0, true);
 				int t1 = staticCompare<equal_to<int> >(a2, 0, true);
 				AbstractNodeValue& anv1 = anv[arg1[i]];
@@ -308,7 +414,7 @@ int DagFunctionInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> 
 				//anv1.print(cout);
 				//anv2.print(cout);
 				int dif = anv1.difference(anv2);
-				//cout<<"------ dif ="<<dif<<endl;
+				// cout<<"------ dif ="<<dif<<endl;
 				rv+= ( dif * 10 * specialInputs[i]  );
 			}else{
 				rv+= 0; // compareDifferent(arg1[i], arg2[i]);
@@ -367,7 +473,7 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 	setTimestamp(on);
 	addNode(on);
 
-	UFUN_node* funnew = new UFUN_node(*fun1);
+	UFUN_node* funnew = new UFUN_node(*fun1, false);
 	funnew->mother = on;
 	funnew->multi_mother = nargs;
 	funnew->children.clear();
@@ -383,7 +489,7 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 
 }
 
-bool checkFunName(string& name){
+bool checkFunName(const string& name){
 
 	return true;
 }
@@ -402,7 +508,7 @@ void DagFunctionInliner::unify(){
 		// Get the code for this node.
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			UFUN_node* ufun = dynamic_cast<UFUN_node*>(dag[i]);
-			string& name = ufun->get_ufname();
+			const string& name = ufun->get_ufname();
 			if(checkFunName(name)){
 				vector<vector<bool_node*> >& v = argLists;	
 				int id = v.size();
@@ -419,9 +525,9 @@ void DagFunctionInliner::unify(){
 						lowestDif = dif; 
 						lowestDifID = j;
 					}
-					 //cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
+					 // cout<<" ("<<id<<", "<<j<<")  "<<dif<<endl;
 				}
-				//cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
+				// cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
 				nfd[lowestDif].push_back(id);
 				v.push_back(ufun->multi_mother);	
@@ -499,10 +605,10 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;
 
-
 	
 	cleanup(dag);
 	
+
 	tnbuilder.reset();
 	if(nfuns != 0){ cout<<" Number of functions inlined = "<<nfuns<<endl; }
 
@@ -528,6 +634,7 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		expectedNFuns++;
 	}
 
+	cout<<" after all"<<endl;
 	oldNfun = nfuns;
 	Dout( cout<<" AFTER PROCESS "<<endl );
 	Dout(cout<<" end ElimFun "<<endl);
