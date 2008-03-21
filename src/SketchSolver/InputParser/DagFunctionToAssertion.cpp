@@ -12,7 +12,7 @@ DagFunctionToAssertion::~DagFunctionToAssertion()
 }
 
 void DagFunctionToAssertion::visit( UFUN_node& node ){	
-	string& name = node.get_ufname();
+	const string& name = node.get_ufname();
 	if( functionMap.find(name) != functionMap.end() ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
 		
