@@ -74,7 +74,7 @@ SFIfun( PARAM, SVAL){ return SVAL if PARAM is different to the params of all pre
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	bool_node* rv = NULL;
 	
-	string& name = node.get_ufname();
+	const string& name = node.get_ufname();
 	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
 	int nargs = node.multi_mother.size();
 	if( functions.find(name) == functions.end() ){
@@ -286,7 +286,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 
 void DagElimUFUN::visit( UFUN_node& node ){
-	string& name = node.get_ufname();
+	const string& name = node.get_ufname();
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
@@ -346,7 +346,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		
 		tnbuilder.ivisit = 0;
 		bool_node* tn1 = tnbuilder.get_exe_cond(src, *this, false);
-		bool_node* tn2 = tnbuilder.get_exe_cond(&node, *this, false);
+		bool_node* tn2 = node.mother; // tnbuilder.get_exe_cond(&node, *this, false);
 		
 		bool_node* cur = NULL;
 		
