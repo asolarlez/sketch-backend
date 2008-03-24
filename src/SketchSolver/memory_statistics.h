@@ -16,7 +16,7 @@
 
 #else
 
-#error "Can't get memory stats on this system"
+#warning "Can't get memory stats on this system.  They will show up as '0'."
 
 #endif
 
@@ -30,7 +30,7 @@ extern "C" {
  *
  * The values reported are as follows:
  *
- *  - total: 
+ *  - total:
  *  - resident:
  *  - shared:
  *  - code:
@@ -74,7 +74,7 @@ getMemoryStatistics (MemoryStatistics *ms)
         return -1;
 
     if (7 != fscanf (statFile, "%ld %ld %ld %ld %ld %ld %ld",
-                     &ms->total, 
+                     &ms->total,
                      &ms->resident, &ms->shared, &ms->code,
                      &ms->library, &ms->data, &ms->dirty))
         return -1;
@@ -100,7 +100,7 @@ getMemoryStatistics (MemoryStatistics *ms)
     memset (ms, 0, sizeof (*ms));
 
     myPID = GetCurrentProcessId ();
-    if (NULL == 
+    if (NULL ==
         (hProcess = OpenProcess (PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                                  FALSE, myPID)))
         return -1;
@@ -112,6 +112,10 @@ getMemoryStatistics (MemoryStatistics *ms)
     ms->total = pmc.PageFileUsage;
     ms->resident = pmc.WorkingSetSize;
     ms->shared = pmc.PageFileUsage - pmc.PrivateUsage;
+
+#else
+    assert (NULL != ms);
+    memset (ms, 0, sizeof (*ms));
 
 #endif
 
