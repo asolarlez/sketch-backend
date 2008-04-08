@@ -290,6 +290,20 @@ inline int
 SolverHelper::addBigOrClause (int *a, int last)
 {
     Assert (a, "array of input ids cannot be null");
+    
+	int nw = 1;
+	int ol = 1;
+	for(;ol <= last; ++ol){
+		if(a[ol] == YES){
+			return (a[0] = addEqualsClause (YES, a[0]));
+		}
+		if(a[ol] != -YES){
+			a[nw] = a[ol];
+			++nw;
+		}
+	}
+	last = nw-1;
+
 
     /* Check for shortcut cases. */
     if (last == 0)
@@ -300,12 +314,13 @@ SolverHelper::addBigOrClause (int *a, int last)
 	return (a[0] = addOrClause (a[1], a[2], a[0]));
 
     /* Allocate fresh result variable as necessary. */
-    if (a[0] == 0)
+
+	if (a[0] == 0)
 	a[0] = newAnonymousVar ();
 
     /* Store output variable. */
     int o = a[0];
-	
+
     /* Add clause. */
     mng.addBigOrClause (a, last);
 
