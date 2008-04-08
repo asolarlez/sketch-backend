@@ -26,7 +26,7 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void addInputsToTestSet(vector<int>& input);
 	virtual void setNewControls(vector<int>& controls);
 	virtual void defineProblem(SATSolver& mng, SolverHelper& dir);
-		
+	virtual void declareInput(const string& inname, int size);
 	protected:
 	virtual bool check(vector<int>& controls, vector<int>& input);
 	virtual BooleanDAG* hardCodeControls(BooleanDAG* dag, vector<int>& controls);

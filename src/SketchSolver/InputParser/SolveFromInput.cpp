@@ -40,6 +40,7 @@ void SolveFromInput::setup2QBF(){
 
 SolveFromInput::SolveFromInput(ostream& out_p, BooleanDAG* miter, SATSolver& finder, SATSolver& checker, int p_nseeds, int NINPUTS_p):
 FindCheckSolver(finder, checker), NINPUTS(NINPUTS_p), out(out_p), problem(miter){
+	last_input = NULL;
 	nseeds = p_nseeds;
 	{
 		Dout( cout<<"BEFORE declaring input names"<<endl );
@@ -270,6 +271,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 				if(input[iid + i] != last_input[iid + i]){
 					changed = true;	
 				}
+				last_input[iid + i] = input[iid + i];
 			}
 			
 			if(!changed){
@@ -291,7 +293,7 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 		}
 	}
 	firstTime = false;
-	Dout( cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl );
+	if(PARAMS->verbosity > 2){ cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl ; }
 	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
 	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	//FindCheckSolver::addInputsToTestSet(input);
@@ -302,6 +304,19 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 		f_flags[idx] = (*node_it)->flag==1;
 	}
 }
+
+
+
+void SolveFromInput::declareInput(const string& inname, int size){
+	FindCheckSolver::declareInput(inname, size);
+	if(last_input != NULL){
+		delete[] last_input;
+		last_input = new int[getInSize()];
+		for(int i=0; i<getInSize(); ++i){ last_input[i] = 0; };
+	}
+}
+
+
 
 
 void SolveFromInput::outputEuclid(ostream& fout){
