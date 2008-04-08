@@ -243,7 +243,9 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	}
 	
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<problem->size()<<endl;	}
-	//( problem->print(cout) );
+	if(params.showDAG){ 
+		problem->print(cout);
+	}
 
 	return problem;
 }

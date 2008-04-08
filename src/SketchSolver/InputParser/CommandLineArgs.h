@@ -33,7 +33,7 @@ class CommandLineArgs{
   int timeout;
   int verbosity;
   bool showInputs;
-
+  bool showDAG;
   string inputFname;
   string outputFname;
 
@@ -58,6 +58,7 @@ class CommandLineArgs{
 		mergeFunctions = false;
 		verbosity = 0;
 		showInputs = false;
+		showDAG = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -100,6 +101,11 @@ class CommandLineArgs{
 
 		if( string(argv[ii]) == "-mergeFunctions" ){
 	    	mergeFunctions = true;
+	      input_idx = ii+1;      
+	    }
+
+		if( string(argv[ii]) == "-showDAG" ){
+	    	showDAG = true;
 	      input_idx = ii+1;      
 	    }
 		
@@ -145,6 +151,8 @@ class CommandLineArgs{
 		  hastimeout=true;
 	      input_idx = ii+2;
 	    } 
+
+
 
 
 	    if( string(argv[ii]) == "-seed" ){
