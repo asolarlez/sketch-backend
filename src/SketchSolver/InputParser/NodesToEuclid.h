@@ -30,7 +30,7 @@ public:
 		out<<"EXTVAR"<<endl;
 		out<<"STOREVAR"<<endl;
 		out<<"VAR"<<endl<<endl;
-		
+		vector<string> intinputs;
 		out<<"CONST"<<endl;
 		{
 			Dout( cout<<"BEFORE declaring input names"<<endl );
@@ -41,7 +41,9 @@ public:
 				if(nbits == 1){
 					out<<node_name(*srcnode, true)<<" : TRUTH ; "<<endl;
 				}else{
-					out<<node_name(*srcnode, true)<<" : BITVEC[16] ; "<<endl;
+					string name = node_name(*srcnode, true);
+					intinputs.push_back(name);
+					out<<name<<" : BITVEC[16] ; "<<endl;
 				}
 			}
 		}
@@ -66,7 +68,19 @@ public:
 		out<<";"<<endl;
 		
 		out<<" EXEC "<<endl;
-		out<<"decide(~"<<prefix<<"root);"<<endl;
+		string precond ="";
+		if(intinputs.size() > 0){
+			for(int i=0; i<intinputs.size(); ++i){
+				if(i != 0){
+					precond += " & ";
+				}
+				precond += intinputs[i];
+				precond += ">= 0";				
+			}
+			out<<"decide( ("<<precond<<") => "<<prefix<<"root);"<<endl;
+		}else{
+			out<<"decide("<<prefix<<"root);"<<endl;
+		}
 	}
 	
 	virtual ~NodesToEuclid();
@@ -90,7 +104,7 @@ public:
 		}else{
 			stringstream str;
 			if(node.getOtype()==bool_node::BOOL  && !isBool){
-				str<<"( case "<<prefix<<node.get_name()<<"_"<<node.id<<": 1; default : 0; esac; )";
+				str<<"( case "<<prefix<<node.get_name()<<"_"<<node.id<<": 1; default : 0; esac )";
 			}else{
 				str<<prefix<<node.get_name()<<"_"<<node.id;	
 			}
@@ -152,13 +166,14 @@ public:
 		
 		out<<node_name(node, true)<<" := ";
 		out<<" case ";		
-		out<<mother_name(node, false)<<":";
+		out<<mother_name(node, true)<<":";
 		
-		out<<node_name(*mmother[1], mmother[1]->getOtype()==bool_node::BOOL);
+		out<<node_name(*mmother[1], node.getOtype()==bool_node::BOOL);
 		out<<"; default : ";
-		out<<node_name(*mmother[0], mmother[1]->getOtype()==bool_node::BOOL);
+		out<<node_name(*mmother[0], node.getOtype()==bool_node::BOOL);
 		out<<"; esac; "<<endl;
 	}
+
 	virtual void visit( DIV_node& node ){
 		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" /_16 "<<father_name(node, false)<<"; "<<endl;		
 	}
