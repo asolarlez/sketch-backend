@@ -11,8 +11,8 @@
 #include <sys/user.h>
 
 #elif defined (_MSC_VER)
-#include <psapi.h>
 #include <windows.h>
+#include <psapi.h>
 
 #else
 
@@ -30,7 +30,7 @@ extern "C" {
  *
  * The values reported are as follows:
  *
- *  - total:
+ *  - total: 
  *  - resident:
  *  - shared:
  *  - code:
@@ -74,7 +74,7 @@ getMemoryStatistics (MemoryStatistics *ms)
         return -1;
 
     if (7 != fscanf (statFile, "%ld %ld %ld %ld %ld %ld %ld",
-                     &ms->total,
+                     &ms->total, 
                      &ms->resident, &ms->shared, &ms->code,
                      &ms->library, &ms->data, &ms->dirty))
         return -1;
@@ -94,13 +94,13 @@ getMemoryStatistics (MemoryStatistics *ms)
 
     DWORD myPID;
     HANDLE hProcess;
-    PROCESS_MEMORY_COUNTERS_EX pmc;
+    PROCESS_MEMORY_COUNTERS pmc;
 
     assert (NULL != ms);
     memset (ms, 0, sizeof (*ms));
 
     myPID = GetCurrentProcessId ();
-    if (NULL ==
+    if (NULL == 
         (hProcess = OpenProcess (PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                                  FALSE, myPID)))
         return -1;
@@ -109,9 +109,9 @@ getMemoryStatistics (MemoryStatistics *ms)
     if (0 == CloseHandle (hProcess))
         return -1;
 
-    ms->total = pmc.PageFileUsage;
-    ms->resident = pmc.WorkingSetSize;
-    ms->shared = pmc.PageFileUsage - pmc.PrivateUsage;
+    ms->total = pmc.PeakPagefileUsage;
+    ms->resident = pmc.PeakWorkingSetSize;
+    ms->shared = 0; // pmc.PagefileUsage - pmc.PrivateUsage;
 
 #else
     assert (NULL != ms);
