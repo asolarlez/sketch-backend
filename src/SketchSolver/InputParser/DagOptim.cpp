@@ -852,6 +852,23 @@ void DagOptim::visit( EQ_node& node ){
 		}
 	}
 	
+
+	if(node.father->getOtype() == bool_node::BOOL && node.mother->getOtype() == bool_node::BOOL){
+		XOR_node* x = new XOR_node();
+		x->mother = node.mother;
+		x->father = node.father;
+		x->addToParents();
+		setTimestamp(x);
+		addNode(x);
+		NOT_node* n = new NOT_node();
+		n->mother = x;
+		n->addToParents();
+		setTimestamp(n);
+		addNode(n);
+		rvalue = n;
+		return;
+	}
+
 		
 	if( compSymplification<equal_to<int> , EQ_node>(node) ){
 		return;	
