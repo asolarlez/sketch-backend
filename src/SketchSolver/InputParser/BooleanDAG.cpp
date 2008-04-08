@@ -1194,21 +1194,16 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 			Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
 			replace( otherDst->id, eq);	
 			(*node_it)->dislodge();
-			nodes.push_back( eq );		
-			if( tip == NULL  ){
-				tip = eq;				
-			}else{
-				tip = new_node(tip->name, eq->name, bool_node::AND, new_name() );
-			}
+			nodes.push_back( eq );	
+
+			ASSERT_node* finalAssert = new ASSERT_node();
+			finalAssert->setMsg("The spec and sketch can not be made to be equal.");
+			finalAssert->mother = eq;
+			finalAssert->addToParents();
+			nodes.push_back(finalAssert);
 		}
 	}
-	Assert(tip != NULL, "This is not possible!!!");
-	ASSERT_node* finalAssert = new ASSERT_node();
-	finalAssert->setMsg("The spec and sketch can not be made to be equal.");
-	finalAssert->mother = tip;
-	finalAssert->addToParents();
-	nodes.push_back(finalAssert);
-	
+
 	nodesByType[bool_node::DST].clear();
 	
 	removeNullNodes();
