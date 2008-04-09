@@ -177,7 +177,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			if(rvalue != pnode){
 				pnode->dislodge();
 				delete pnode;
-				cout<<"=================== saved 3"<<endl;
+				
 			}else{
 				addNode(pnode);	
 			}
@@ -207,7 +207,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			if(rvalue != pnode){
 				pnode->dislodge();
 				delete pnode;
-				cout<<"=================== saved 3"<<endl;
+				//cout<<"=================== saved 3"<<endl;
 			}else{
 				addNode(pnode);	
 			}
@@ -237,7 +237,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			if(rvalue != pnode){
 				pnode->dislodge();
 				delete pnode;
-				cout<<"=================== saved 3"<<endl;
+				//cout<<"=================== saved 3"<<endl;
 			}else{
 				addNode(pnode);	
 			}
@@ -1055,7 +1055,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				setTimestamp(an);
 				addNode(an);
 				an->accept(*this);
-				cout<<" Savings and savings at galore"<<endl;
+				//cout<<" Savings and savings at galore"<<endl;
 				return;
 		}
 
