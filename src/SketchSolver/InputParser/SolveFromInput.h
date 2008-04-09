@@ -35,8 +35,8 @@ class SolveFromInput: public FindCheckSolver{
 	void output_control_map(ostream& out);
 	void outputEuclid(ostream& fout);
 	void setup2QBF();
+	virtual ~SolveFromInput();
 };
-
 
 
 

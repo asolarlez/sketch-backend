@@ -27,6 +27,12 @@ int intFromBV(T bv, int start, int nbits){
 }
 
 
+SolveFromInput::~SolveFromInput(){
+	if(last_input != NULL){
+		delete[] last_input;
+		last_input = NULL;
+	}
+}
 
 void SolveFromInput::setup2QBF(){
 	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){

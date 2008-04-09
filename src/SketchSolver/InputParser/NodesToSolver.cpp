@@ -1095,7 +1095,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		Dout(cout<<" is boolean"<<endl);
 		int cvar = dir.addChoiceClause(guard , choices[1].getId (), choices[0].getId ());
 		node.flag = node_ids[node.id].isNull() || node_ids[node.id].getId () != cvar;
-		if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
+		//if( node.flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES oirga;"<<endl; }
 		node_ids[node.id] = cvar;
 		return;
     }else{
