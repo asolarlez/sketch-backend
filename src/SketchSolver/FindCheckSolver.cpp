@@ -238,7 +238,9 @@ bool FindCheckSolver::solveFromCheckpoint(istream& in){
 			cout<<" *GOT THE CORRECT ANSWER IN 0 iterations."<<endl;		
 			succeeded = true;
 		}
-	}else Assert(false, "EMPTY FILE");
+	}else{		
+		succeeded = solve();		
+	}
 	return succeeded;
 }
 
