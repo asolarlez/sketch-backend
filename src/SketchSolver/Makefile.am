@@ -8,7 +8,7 @@ include SolverInterfaces/solvers.mk
 bin_PROGRAMS = SBitII
 SBitII_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
 SBitII_CFLAGS = $(SBitII_CXXFLAGS)
-SBitII_LDADD = $(SOLVER_LIBS) -ldl -lpthread -lrt
+SBitII_LDADD = $(SOLVER_LIBS) -ldl
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\
 	BasicError.h					\
