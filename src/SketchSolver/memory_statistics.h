@@ -9,6 +9,7 @@
 
 #if defined (__linux)
 #include <sys/user.h>
+#include <unistd.h>
 
 #elif defined (_MSC_VER)
 #include <windows.h>
@@ -30,7 +31,7 @@ extern "C" {
  *
  * The values reported are as follows:
  *
- *  - total: 
+ *  - total:
  *  - resident:
  *  - shared:
  *  - code:
@@ -74,7 +75,7 @@ getMemoryStatistics (MemoryStatistics *ms)
         return -1;
 
     if (7 != fscanf (statFile, "%ld %ld %ld %ld %ld %ld %ld",
-                     &ms->total, 
+                     &ms->total,
                      &ms->resident, &ms->shared, &ms->code,
                      &ms->library, &ms->data, &ms->dirty))
         return -1;
@@ -100,7 +101,7 @@ getMemoryStatistics (MemoryStatistics *ms)
     memset (ms, 0, sizeof (*ms));
 
     myPID = GetCurrentProcessId ();
-    if (NULL == 
+    if (NULL ==
         (hProcess = OpenProcess (PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                                  FALSE, myPID)))
         return -1;
