@@ -23,6 +23,10 @@ AC_CHECK_PROG([M4], [m4], [m4])
 AC_CHECK_PROG([ANT], [ant], [ant])
 AM_CONDITIONAL([COMPILE_SKETCH], [test -n "$ANT"])
 
+# Checks for libraries
+AC_SEARCH_LIBS([pthread_create], [pthread])
+AC_SEARCH_LIBS([clock_gettime], [rt])
+
 # Checks for header files.
 AC_FUNC_ALLOCA
 AC_HEADER_DIRENT
