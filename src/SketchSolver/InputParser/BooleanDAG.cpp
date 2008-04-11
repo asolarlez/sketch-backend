@@ -124,9 +124,9 @@ void arith_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 
 
 
-void arith_node::printSubDAG(ostream& out){	
+void arith_node::printSubDAG(ostream& out)const{	
 	int i=0;
-	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+	for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
 	  	if(*it != NULL){
 	  		(*it)->printSubDAG(out);  		
 	  	}
@@ -135,7 +135,7 @@ void arith_node::printSubDAG(ostream& out){
 }
 
 
-void bool_node::printSubDAG(ostream& out){
+void bool_node::printSubDAG(ostream& out)const{
 	if( father != NULL){
 			father->printSubDAG(out);
 	}	
@@ -163,10 +163,10 @@ void bool_node::outDagEntry(ostream& out) const{
 }
 
 
-void arith_node::outDagEntry(ostream& out){
+void arith_node::outDagEntry(ostream& out) const{
 	bool_node::outDagEntry(out);
 	int i=0;
-	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+	for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
 	  	if(*it != NULL){
 	  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<" ; "<<endl;	  		
 	  	}
@@ -1100,7 +1100,7 @@ void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_no
 }
 
 
-void BooleanDAG::print(ostream& out){    
+void BooleanDAG::print(ostream& out)const{    
   out<<"digraph G{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){

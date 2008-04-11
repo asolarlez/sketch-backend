@@ -122,7 +122,7 @@ public:
   void set_layer();
   virtual void accept(NodeVisitor& visitor) =0;
   virtual bool_node* clone(bool copyChildren = true)=0;
-  virtual void printSubDAG(ostream& out);
+  virtual void printSubDAG(ostream& out)const;
   virtual OutType getOtype() const;
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
@@ -152,13 +152,13 @@ class arith_node: public bool_node{
 	virtual void dislodge();
 	virtual void removeFromParents(bool_node* bn);
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
-	virtual void outDagEntry(ostream& out);
+	virtual void outDagEntry(ostream& out)const;
 	virtual void addToParents();
 	virtual void addToParents(bool_node* only_thisone);
 	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag);
-	virtual void printSubDAG(ostream& out);
+	virtual void printSubDAG(ostream& out)const;
 	virtual string get_tname() const{
 		switch(arith_type){			
 			case ARRACC: return "ARRACC";
@@ -307,9 +307,9 @@ class UFUN_node: public arith_node{
 	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
 	UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual void outDagEntry(ostream& out){
+	virtual void outDagEntry(ostream& out)const{
     	int i=0;
-		for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
 		  	if(*it != NULL){
 		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;	  		
 		  	}
@@ -339,12 +339,12 @@ class ARRACC_node: public arith_node{
 	public: ARRACC_node(){ arith_type = ARRACC; }  
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual void outDagEntry(ostream& out){
+	virtual void outDagEntry(ostream& out) const{
 		if( mother != NULL){
           out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"idx\"] ; "<<endl;
     	}		
     	int i=0;
-		for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
 		  	if(*it != NULL){
 		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;	  		
 		  	}
@@ -410,7 +410,7 @@ class CONST_node: public bool_node{
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual void setVal(int v){ val = v; }
 		virtual int getVal() const { return val; }
-		string get_name(){
+		string get_name() const{
 		    stringstream str;
 		    str<<name<<"_C";
 		    if( val<0){
@@ -496,7 +496,7 @@ class ARRASS_node: public arith_node{
 		ARRASS_node(const ARRASS_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), quant(bn.quant){ }  
 		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new ARRASS_node(*this, copyChildren);  };
-		virtual void outDagEntry(ostream& out){
+		virtual void outDagEntry(ostream& out) const{
 			if( mother != NULL){
 			  out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"="<<quant<<"\"] ; "<<endl;
     		}		    		
@@ -626,7 +626,7 @@ public:
   void clone_nodes(vector<bool_node*>& nstore);
 
   void repOK();
-  void print(ostream& out);
+  void print(ostream& out)const;
   typedef vector<bool_node*>::iterator iterator;
   void removeNullNodes();
   void replace(int original, bool_node* replacement);
