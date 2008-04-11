@@ -656,7 +656,12 @@ void DagOptim::visit( TIMES_node& node ){
 void DagOptim::visit( DIV_node& node ){
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) / getIval( node.father ) );
+			int c = getIval( node.father );
+			if(c != 0){
+				rvalue  = getCnode( getIval( node.mother ) / c );
+			}else{
+				rvalue  = getCnode( 0 );
+			}
 			return;
 		}			
 	}
@@ -665,7 +670,12 @@ void DagOptim::visit( DIV_node& node ){
 void DagOptim::visit( MOD_node& node ){
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) % getIval( node.father ) );
+			int c = getIval( node.father );
+			if(c != 0){
+				rvalue  = getCnode( getIval( node.mother ) % c );
+			}else{
+				rvalue  = getCnode( 0 );
+			}
 			return;
 		}			
 	}
