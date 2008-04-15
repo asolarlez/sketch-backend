@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(SKETCH, 1.2, arnold@cs.berkeley.edu)
+AC_INIT(SKETCH, 1.2.1, arnold@cs.berkeley.edu)
 AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
