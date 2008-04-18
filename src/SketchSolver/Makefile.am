@@ -26,6 +26,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/DagOptim.h				\
 	InputParser/DagOptimizeCommutAssoc.h		\
 	InputParser/ExtractEvaluationCondition.h	\
+	InputParser/FastSet.h				\
 	InputParser/InputReader.h			\
 	InputParser/NodeStore.h				\
 	InputParser/NodeVisitor.h			\
