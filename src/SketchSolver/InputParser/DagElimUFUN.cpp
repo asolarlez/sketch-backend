@@ -1,6 +1,6 @@
 #include "DagElimUFUN.h"
 
-
+#include "BooleanDAGCreator.h"
 
 
 DagElimUFUN::DagElimUFUN()
@@ -31,34 +31,36 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 	}else{
 		Dout( cout<<" comparator NOT already there "<<endl );		
 		BooleanDAG& argComp = comparators[sz];
+		
+
 		bool_node* peq = NULL;
 		int nargs = sz;
 		for(int i=0; i<nargs; ++i){
 			string ina;
 			string inb;
+			bool_node* inaNode;
+			bool_node* inbNode;
 			{
 				stringstream str;
 				str<<"ina_"<<i;
 				ina = str.str();
-				argComp.create_inputs(nargs, ina);
+				inaNode = argComp.create_inputs(nargs, ina);
 			}
 			{
 				stringstream str;
 				str<<"inb_"<<i;
 				inb = str.str();
-				argComp.create_inputs(nargs, inb);
+				inbNode = argComp.create_inputs(nargs, inb);
 			}
-			EQ_node* eq = new EQ_node();
-			eq->name = argComp.new_name();
-			argComp.new_node(ina, inb, eq);
+			bool_node* eq = argComp.new_node(inaNode, inbNode, bool_node::EQ);			
 			if(peq != NULL){
-				peq = argComp.new_node(peq->name, eq->name , bool_node::AND,argComp.new_name() );
+				peq = argComp.new_node(peq, eq , bool_node::AND);
 			}else{
 				peq = eq;
 			}
 		}
-		
-		peq = argComp.new_node(peq->name, "" , bool_node::DST, "OUT");
+
+		peq = argComp.create_outputs(nargs, peq, "OUT");
 		argComp.sort_graph();		
 		argComp.relabel();
 		// Dout( argComp.print(cout) );
@@ -94,20 +96,18 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		SFunInfo& sfi = functions[name];		
 		sfi.step = 1;
 		sfi.fun = new BooleanDAG();
-		sfi.fun->new_node("", "" , src->type, "SVAR"  );
+		bool_node* svar = sfi.fun->create_inputs(src->get_nbits(),  "SVAR");
 		
 		sfi.symval = src;
 		sfi.outval = rv;
 		for(int i=0; i<nargs; ++i){
 			stringstream str;
 			str<<"PARAM_"<<i;
-			bool_node* tmp = sfi.fun->new_node("", "", bool_node::SRC, str.str() );
+			sfi.fun->create_inputs(src->get_nbits(),  str.str());
 			sfi.actuals.push_back(node.multi_mother[i]);	
 		}
-		sfi.fun->new_node("SVAR", "", bool_node::DST, "OUT"  );
-		// sfi.fun->sort_graph();		
-		// sfi.fun->relabel();
-		// Dout(  sfi.fun->print(cout) );
+		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
+
 	}else{
 		BooleanDAG& comp = getComparator(node.multi_mother.size());
 		
@@ -251,8 +251,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			
 			stringstream parnm;
 			parnm<<"PARAM_"<<i;
-			bool_node* par =  new SRC_node( parnm.str() );	
-			sfi.fun->new_node(NULL, NULL, par);		
+			bool_node* par =  sfi.fun->create_inputs(node.get_nbits(), parnm.str());
 			
 			bool_node* npar = sfi.fun->get_node(str.str());
 			sfi.fun->replace(npar->id, par);
@@ -264,15 +263,12 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		{
 			bool_node* tmpbn = sfi.fun->get_node(curParamName);
 			Assert(tmpbn != NULL, "This is an abomination.");		
-			bool_node* nsvar = sfi.fun->new_node("", "" , bool_node::SRC, "SVAR"  );
+			bool_node* nsvar = sfi.fun->create_inputs(node.get_nbits(), "SVAR");
 			Dout( cout<<" replacing "<<tmpbn->get_name()<<":ch="<< tmpbn->children.size()  <<" with "<< nsvar->get_name() <<endl);
 			sfi.fun->replace(tmpbn->id, nsvar  );
 		}
 		
-		DST_node* dstn = new DST_node();
-		dstn->name = "OUT";
-		sfi.fun->new_node((*sfi.fun)[rv->id] , NULL, dstn  );
-		
+		bool_node* dstn = sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[rv->id], "OUT");
 				
 		Dout( cout<<" ADDING "<<cclone->size()<<" NODES"<<endl );
 		newnodes.insert(newnodes.end(), cclone->begin(), cclone->end());
