@@ -1,6 +1,6 @@
 #include "InputReader.h"
 #include "BooleanDAG.h"
-
+#include "BooleanDAGCreator.h"
 
 
 #define YYERROR_VERBOSE 1
