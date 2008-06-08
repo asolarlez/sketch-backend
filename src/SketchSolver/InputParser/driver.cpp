@@ -1,6 +1,7 @@
 #include "driver.h"
 #include "SFIOutputSeq.h"
 #include "DagOptimizeCommutAssoc.h"
+#include "BackwardsAnalysis.h"
 
 string context;
 
@@ -151,6 +152,8 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		cout<<"* before  EVERYTHING: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
 	}
 
+
+	/* These optimizations no longer necessary; dags are optimized online as they are created.
 	for(map<string, BooleanDAG*>::iterator it =  funMap.begin();
 				it != funMap.end(); ++it){
 		int sz1 = it->second->size(); 				
@@ -170,6 +173,7 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		cout<<" optimizing "<<	name <<" went from size "<<sz1<<" to "<<sz2<<endl;
 		}
 	}
+	*/
 
 	{
 		Dout( cout<<"BEFORE Matching input names"<<endl );
@@ -225,7 +229,13 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		//cse.alterARRACS();
 		cse.process(*problem);
 	}
+
 	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	}
+
+	{
+		BackwardsAnalysis opt;
+		opt.process(*problem);
+	}
 
 	{
 		DagOptimizeCommutAssoc opt;

@@ -512,7 +512,8 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
 					setTimestamp(pnode);
-					addNode(pnode);					
+					addNode(pnode);		
+					stillPrivate = pnode;
 					rvalue  = pnode;
 					return;
 				}
@@ -526,6 +527,7 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->addToParents();
 					setTimestamp(pnode);
 					addNode(pnode);	
+					stillPrivate = pnode;
 					rvalue  = pnode;
 					return;
 				}
@@ -875,6 +877,7 @@ void DagOptim::visit( EQ_node& node ){
 		n->addToParents();
 		setTimestamp(n);
 		addNode(n);
+		stillPrivate = n;
 		rvalue = n;
 		return;
 	}
@@ -1011,6 +1014,7 @@ void DagOptim::visit( ARRACC_node& node ){
 						nt->addToParents();
 						setTimestamp(nt);
 						addNode(nt);
+						stillPrivate = nt;
 						nt->accept(*this);
 						return;
 					}
@@ -1024,7 +1028,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->addToParents();
 				setTimestamp(an);
 				addNode(an);
-
+				stillPrivate = an;
 				an->accept(*this);
 				return;
 			}
@@ -1039,6 +1043,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->addToParents();
 				setTimestamp(an);
 				addNode(an);
+				stillPrivate = an;
 				an->accept(*this);
 				return;
 			}
@@ -1052,6 +1057,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->addToParents();
 				setTimestamp(an);
 				addNode(an);
+				stillPrivate = an;
 				an->accept(*this);
 				return;
 		}
@@ -1064,11 +1070,46 @@ void DagOptim::visit( ARRACC_node& node ){
 				an->addToParents();
 				setTimestamp(an);
 				addNode(an);
+				stillPrivate = an;
 				an->accept(*this);
 				//cout<<" Savings and savings at galore"<<endl;
 				return;
 		}
 
+
+		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
+				
+				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
+
+				if(isConst(eqmom->mother) || isConst(eqmom->father)){
+					bool_node* mother = NULL;
+					int C;
+					if(isConst(eqmom->mother)){
+						mother = eqmom->father;
+						C = this->getIval(eqmom->mother);
+					}else{
+						mother = eqmom->mother;
+						C = this->getIval(eqmom->father);
+					}
+					ARRASS_node* an = new ARRASS_node();
+					an->mother = mother;
+					int b = 0;
+					if(node.mother->type == bool_node::NOT){
+						b = 1;
+					}else{
+						b = 0;
+					}
+					an->multi_mother.push_back(node.multi_mother[b]);
+					an->multi_mother.push_back(node.multi_mother[1-b]);
+					an->addToParents();
+					an->quant = C;
+					addNode(an);
+					setTimestamp(an);
+					stillPrivate = an;
+					rvalue = an;
+					return;
+				}
+		}
 		
 		
 		
@@ -1174,6 +1215,10 @@ void DagOptim::visit( ARRACC_node& node ){
 				return;
 			}
 
+
+			
+
+
 			/*
 			if( node.multi_mother[1] == mm1.multi_mother[0] && mm1.children.size() < 2){
 				OR_node* an = new OR_node();
@@ -1204,7 +1249,6 @@ void DagOptim::visit( ARRACC_node& node ){
 			*/
 			
 		}
-		
 		
 		
 	}
@@ -1281,8 +1325,17 @@ void DagOptim::initialize(BooleanDAG& dag){
 bool_node* DagOptim::computeOptim(bool_node* node){
 	node->accept(*this);
 	node = rvalue;
-	node = cse.computeCSE(node);
-	return node;
+	bool_node* tmp = cse.computeCSE(node);
+	if(tmp != node){
+		if(newnodes.size() > 0 && node == stillPrivate && stillPrivate == *( newnodes.rbegin() )){
+			stillPrivate->dislodge();
+			newnodes.pop_back();
+			delete stillPrivate;
+			stillPrivate = NULL;
+			//cout<<"Saved a node"<<endl;
+		}
+	}
+	return tmp;
 }
 
 

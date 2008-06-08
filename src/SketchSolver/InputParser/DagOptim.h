@@ -136,7 +136,7 @@ class DagOptim : public NodeVisitor, public virtual NodeStore
 	bool ALTER_ARRACS;	
 protected:
 	DagCSE cse;	
-	
+	bool_node* stillPrivate;
 public:
 	map<bool_node*, AbstractNodeValue> anv;
 	
