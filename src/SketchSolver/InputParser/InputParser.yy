@@ -2,7 +2,7 @@
 
 using namespace std;
 
-BooleanDAG* currentBD;
+BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
@@ -11,10 +11,9 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
     Assert (p1 || p2, "Can't have both comparisson's children NULL");
    
     string s1 = currentBD->new_name();
-    bool_node *an = newBoolNode(atype);
-    an->name = s1;
+    
     currentBD->new_node((p1 ? *p1 : ""), 
-			(p2 ? *p2 : ""), an); 
+			(p2 ? *p2 : ""), atype, s1); 
     if (p1)
 	delete p1;
     if (p2)
@@ -77,7 +76,7 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 %token T_assert
 
 %token T_eof
-%type<intConst> InitBody
+
 %type<intConst> Program
 %type<strConst> Ident
 %type<intConst> FilterList
@@ -184,54 +183,37 @@ ParamList: ParamDecl
 | ParamDecl ',' ParamList 
 
 
-InitBody:  { /* Empty */ }
-| InitBody InitStatement { /* */ }
+Method:  T_ident 
 
-
-InitStatement:   ';' { /* */ }
-| T_InRate '=' T_int ';'
-| T_OutRate '=' T_int ';'
-| T_ident '(' T_ident '.' T_ident ',' T_ident '.' T_ident ')' ';'
-
-Method: T_Init '(' ')' '{' InitBody '}' 
-| T_Work '(' ')' '{' 
-	{
-		if( currentBD != NULL){
-			//currentBD->print(cout);
-		}
-		currentBD = new BooleanDAG();
-		functionMap["work"] = currentBD;
-	}
-	WorkBody '}' { }
-
-| T_ident 
-
-{
-		if( currentBD != NULL){
-			//currentBD->print(cout);
-		}
-		currentBD = new BooleanDAG();
+{		
+		BooleanDAG* tmp = new BooleanDAG();
 		cout<<"CREATING "<<*$1<<endl;
-		functionMap[*$1] = currentBD;
+		functionMap[*$1] = tmp;
+		if(currentBD!= NULL){
+			delete currentBD;
+		}
+		currentBD = new BooleanDAGCreator(tmp);
+		delete $1;
 }
-'(' ParamList ')' '{' WorkBody '}'
+'(' ParamList ')' '{' WorkBody '}' { 
+	currentBD->finalize();
+}
 
 
 |T_ident T_Sketches T_ident 
 
 {
-		if( currentBD != NULL){
-			//currentBD->print(cout);
-		}
-		currentBD = new BooleanDAG();
+		BooleanDAG* tmp = new BooleanDAG();
 		cout<<*$1<<" SKETCHES "<<*$3<<endl;
-		sketchMap[*$1] = currentBD;
-		sketches[currentBD] = *$3;
+		sketchMap[*$1] = tmp;
+		sketches[tmp] = *$3;
+		currentBD = new BooleanDAGCreator(tmp);
 		delete $3;
 		delete $1;
 }
-'(' ParamList ')' '{' WorkBody '}'
-
+'(' ParamList ')' '{' WorkBody '}'{ 
+	currentBD->finalize();
+}
 
 
 
@@ -260,7 +242,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
 	for(int i=0; i<bigN; ++i, ++it, ++oldit){
-		string s1 = currentBD->new_name();
+		string s1( currentBD->new_name() );
 		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newArithNode(arith_node::ARRASS));
 		an->multi_mother.reserve(2);
 		an->multi_mother.push_back(*oldit);			
@@ -268,9 +250,9 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 		an->name = s1;
 		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
 		Assert($7 != NULL, "1: THIS CAN'T HAPPEN!!");
+		an->quant = i;
 		currentBD->new_node(*$7,  "",  an);
 		currentBD->alias( *(*it), s1);
-		an->quant = i;
 		delete *it;
 	}
 	delete childs;
@@ -278,38 +260,34 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	delete $7;
 	delete $10;
 }
-| RateSet {}
 | T_OutIdent '=' Expression ';' {
-	currentBD->new_node(*$3,  "",  bool_node::DST, *$1);
+	currentBD->create_outputs(NINPUTS, currentBD->get_node(*$3), *$1);
 	delete $3;
 	delete $1;
 }
 | T_assert Expression ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
-//    cout << "Generating assertion node..." << endl;
+
     string s = currentBD->new_name ();
     currentBD->new_node (*$2, "", bool_node::ASSERT, s);
-//    cout << "Assertion node created, name=" << s << endl;
+
     delete $2;
   }
 } 
 | T_assert Expression ':' T_string ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
-//    cout << "Generating assertion node..." << endl;
-    string s = currentBD->new_name ();
-    bool_node* bn = currentBD->new_node (*$2, "", bool_node::ASSERT, s);
-    dynamic_cast<ASSERT_node*>(bn)->setMsg(*$4);
-//    cout << "Assertion node created, name=" << s << endl;
+
+    ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
+    bn->setMsg(*$4);
+    currentBD->new_node (*$2, "", bn);
+    
+
     delete $2;
     delete $4;
   }
 } 
-
-
-RateSet: T_InRate '=' T_int ';'	{ currentBD->create_inputs($3); }
-| T_OutRate '=' T_int ';'   { currentBD->create_outputs($3); }
 
 
 Expression: Term { $$ = $1; }
@@ -348,26 +326,14 @@ Expression: Term { $$ = $1; }
 	delete $1;
 	delete $3;
 }
-| Term T_neq Term{ 
-	bool_node* lChild=NULL;
-	bool_node* rChild=NULL;
-	bool_node* bn = currentBD->get_node(*$1);
-	lChild = dynamic_cast<bool_node*>(bn);
-	bn = currentBD->get_node(*$3);
-	rChild = dynamic_cast<bool_node*>(bn);			
+| Term T_neq Term{	
 	string* tmp = comparisson($1, $3, bool_node::EQ);
     string s = currentBD->new_name ();
     currentBD->new_node (*tmp, "", bool_node::NOT, s);
     delete tmp;
     $$ = new string(s);
 }
-| Term T_eq Term { 	
-	bool_node* lChild=NULL;
-	bool_node* rChild=NULL;
-	bool_node* bn = currentBD->get_node(*$1);
-	lChild = dynamic_cast<bool_node*>(bn);
-	bn = currentBD->get_node(*$3);
-	rChild = dynamic_cast<bool_node*>(bn);			
+| Term T_eq Term { 			
 	$$ = comparisson($1, $3, bool_node::EQ);
 }
 | '$' varList '$' '[' Expression ']' {
@@ -406,12 +372,8 @@ Expression: Term { $$ = $1; }
 }
 
 | Term '+' Term {
-	currentBD->moveNNb();
 	string s1 = currentBD->new_name();
-	bool_node* an = newBoolNode(bool_node::PLUS);
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	an->name = s1;
-	currentBD->new_node(*$1,  *$3, an); 
+	currentBD->new_node(*$1,  *$3, bool_node::PLUS, s1); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1); 
@@ -419,48 +381,32 @@ Expression: Term { $$ = $1; }
 
 | Term '/' Term {
 	string s1 = currentBD->new_name();
-	bool_node* an = newBoolNode(bool_node::DIV);
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	an->name = s1;
-	currentBD->new_node(*$1, *$3, an); 
+	currentBD->new_node(*$1,  *$3, bool_node::DIV, s1); 
 	delete $1;
 	delete $3;
-	$$ = new string(s1);
+	$$ = new string(s1); 
 }
 
 | Term '%' Term {
 	string s1 = currentBD->new_name();
-	bool_node* an = newBoolNode(bool_node::MOD);
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	an->name = s1;
-	currentBD->new_node(*$1, *$3, an); 
+	currentBD->new_node(*$1,  *$3, bool_node::MOD, s1); 
 	delete $1;
 	delete $3;
-	$$ = new string(s1);
+	$$ = new string(s1); 
 }
 
 | Term '*' Term {
 	string s1 = currentBD->new_name();
-	bool_node* an = newBoolNode(bool_node::TIMES);
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen, const * const should have been taken care of by frontend.");
-	an->name = s1;
-	currentBD->new_node(*$1, *$3, an); 
+	currentBD->new_node(*$1,  *$3, bool_node::TIMES, s1); 
 	delete $1;
 	delete $3;
-	$$ = new string(s1);
+	$$ = new string(s1); 
 }
 | Term '-' Term {
-	string s1 = currentBD->new_name();
-	bool_node* an = newBoolNode(bool_node::PLUS);	
 	string neg1 = currentBD->new_name();
-	bool_node* negn = newBoolNode(bool_node::NEG);	
-	negn->name = neg1;
-	currentBD->new_node(*$3, "", negn);
-	an->name = s1;
-	currentBD->new_node(*$1, neg1, an); 
-	
-	
-	Assert($1 != NULL && $3 != NULL, "THIS CAN't Happen");	
+	string s1 = currentBD->new_name();
+	currentBD->new_node(*$3, "", bool_node::NEG, neg1);
+	currentBD->new_node(*$1, neg1, bool_node::PLUS, s1); 
 	delete $1;
 	delete $3;
 	$$ = new string(s1);
@@ -487,9 +433,9 @@ Expression: Term { $$ = $1; }
 	$$ = new string(s1);
 	an->name = s1;
 	currentBD->new_node(*$1, "", an); 
-	if( $1 != NULL && $1 != $$){ delete $1; }
-	if( $3 != NULL && $3 != $$){ delete $3; }
-	if( $5 != NULL && $5 != $$){ delete $5; }		  					  
+	delete $1; 
+	delete $3; 
+	delete $5; 		  					  
 } 
 
 
@@ -516,15 +462,14 @@ IdentList: T_ident {
 }
 
 Term: Constant {
-				 $$ = new string(currentBD->create_const($1));
-				 }	 
+	$$ = new string(currentBD->create_const($1));
+}	 
 
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' {
 	
 	list<bool_node*>* params = $6;
 	if(params->size() == 0){
 		if( $3 == INT){
-
 			currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 		}else{
 
@@ -548,13 +493,11 @@ Term: Constant {
 		
 				
 		string s1;
-		{
-			stringstream str;
-			str<<fname<<"_"<<currentBD->size();
-			s1 = str.str();
+		{			
+			s1 = currentBD->new_name(fname);
 		}
 		ufun->name = s1;
-		currentBD->new_node(currentBD->get_node(*$9), NULL, ufun, s1);
+		currentBD->new_node(*$9, "", ufun);
 		
 		$$ = new string(s1);
 		delete $1;
@@ -564,11 +507,8 @@ Term: Constant {
 }
 
 | '-' Term {
-	string neg1 = currentBD->new_name();
-	bool_node* negn = newBoolNode(bool_node::NEG);
-	negn->name = neg1;
-	currentBD->new_node(*$2, "", negn);
-	Assert($2 != NULL, "THIS CAN't Happen");	
+	string neg1 = currentBD->new_name();	
+	currentBD->new_node(*$2, "", bool_node::NEG, neg1);	
 	delete $2;
 	$$ = new string(neg1);
 }
@@ -589,35 +529,26 @@ Term: Constant {
 				$$ = $1;
 			}else{ 
 				string alias(currentBD->get_alias(*$1)); 
-				if(alias == ""){
-					$$ = NULL;
-				}else{
-					$$ = new string( alias ); 
-				}  
+				Assert( alias != "", "You need to have an alias for "<<*$1);				
+				$$ = new string( alias ); 				  
 				delete $1;
 			} 
 		}
 | '<' Ident '>' {
 	currentBD->create_controls(-1, *$2);
-	if( !currentBD->has_alias(*$2) ){ 
-		$$ = $2;
-	}else{ 
-		Assert( false, "THIS SHOULD NEVER HAPPEN !!!!!!!!!!!!!!!!");
-		string alias(currentBD->get_alias(*$2)); 
-		$$ = new string( alias);
-		delete $2;
-	} 
+	Assert( !currentBD->has_alias(*$2), "THIS SHOULD NEVER HAPPEN !!!!!!!!!!!!!!!!");	
+	$$ = $2;	
 }
 | '<' Ident Constant '>' {
 	int nctrls = $3;
 	if(overrideNCtrls){
 		nctrls = NCTRLS;
 	}
-	int N=currentBD->create_controls(nctrls, *$2);
+	currentBD->create_controls(nctrls, *$2);
 	$$ = $2;
 }
 | '<' Ident Constant '*' '>' {
-	int N=currentBD->create_controls($3, *$2);
+	currentBD->create_controls($3, *$2);
 	$$ = $2;
 
 }

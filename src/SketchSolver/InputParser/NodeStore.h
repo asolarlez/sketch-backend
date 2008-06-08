@@ -25,5 +25,11 @@ public:
 		}
 	}		
 
+	inline void dagsizeSet(int i){
+		dagsize= i;
+	}
+	inline int newNodesSize(){
+		return newnodes.size();
+	}
 	virtual void addNode(bool_node* node);
 };
