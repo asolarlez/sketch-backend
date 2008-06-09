@@ -32,12 +32,24 @@ typedef FastSet<bool_node> childset;
 
 
 class bool_node{
+
+private:
+  /** The unique ID to be assigned to the next bool_node created. */
+  static int NEXT_GLOBAL_ID;
+
+
 protected:
-  bool_node():mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM){};
-  bool_node(const bool_node& bn, bool copyChildren):mother(bn.mother), layer(bn.layer), 
+  bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM)
+  { 
+  }
+  bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
   								 name(bn.name), father(bn.father), 
   								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
-								 otype(bn.otype), type(bn.type) { if(copyChildren){ children = bn.children; }  };
+								 otype(bn.otype), type(bn.type)
+  { 
+      if(copyChildren){ children = bn.children; }
+  }
+
 public:
 
   typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ,ARITH, ASSERT} Type;
@@ -45,6 +57,17 @@ public:
 
   string name;
   int layer;
+  /**
+   * The globally unique ID of this node.
+   *
+   * (Warning: limits number of nodes to 4Gi).
+   */
+  int globalId;
+  /** 
+   * The unique ID of this node within a DAG, not guaranteed to be globally unique.
+   * (Implementation detail: the DAG contains a vector of nodes, and this 'id' is
+   * this nodes position within that vector.
+   */
   int id;
   mutable int flag;
   int ion_pos;
@@ -116,6 +139,27 @@ public:
   void replace_child(bool_node* ori, bool_node* replacement);
 };
 
+
+/**
+ * Special FastSet hash function that hashes on the
+ * bool_node's ID (assumed unique) instead of its memory address.
+ */
+template<>
+struct FastSetTraits<bool_node>
+{
+    static inline unsigned
+    hash (bool_node *bn, int sz)
+    {
+        unsigned tmp = bn->globalId >> 2; // (unsigned) in>>2;  // (generic version)
+
+        tmp = tmp * (tmp + 4297);
+        tmp = tmp + (tmp >> 2) + (tmp >> 5) + (tmp >> 21) + (tmp >> 28);		
+		
+        unsigned m = 1 << sz;
+        m = m-1;
+        return (tmp & m)<<2;
+    }
+};
 
 
 inline void bool_node::remove_child(bool_node* bn){

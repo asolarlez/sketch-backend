@@ -42,10 +42,41 @@ public:
 
 };
 
+
+template<typename T>
+struct FastSetTraits
+{
+    static inline unsigned 
+    hash (T* in, int sz) 
+    {
+		/*
+		double fo = (((unsigned)in)>>2);
+		fo = sin(fo)*10000000;
+		unsigned tmp = fo;
+		unsigned m = 1 << sz;
+		m = m-1;
+		return (tmp & m)<<2;
+		*/
+
+		unsigned tmp = (unsigned) in>>2;
+		tmp = tmp * (tmp + 4297);
+		tmp = tmp + (tmp >> 2) + (tmp >> 5) + (tmp >> 21) + (tmp >> 28);		
+		
+		unsigned m = 1 << sz;
+		m = m-1;
+		return (tmp & m)<<2;
+    }
+};
+
+
+
+
+
 #define CNST 4
 template<typename T>
 class FastSet
 {
+    typedef FastSetTraits<T> traits;
 
 vector<T*> store;
 int sz;
@@ -53,6 +84,8 @@ int _size;
 fsiter<T> _end;
 
 
+
+#if 0
 	unsigned hash(T* in){
 		/*
 		double fo = (((unsigned)in)>>2);
@@ -72,6 +105,8 @@ fsiter<T> _end;
 		return (tmp & m)<<2;
 		
 	}
+#endif
+
 
 
 public:	
@@ -120,16 +155,17 @@ public:
 	}
 
 	void resize(){
-		++sz;
+		++this->sz;
 		// if(( store.size() / _size ) > 2){  cout<<" ration on resize "<<store.size()<<"/"<<_size<<"  "<<( store.size() / _size )<<endl; }
 		store.resize((CNST<<sz)+2, NULL);		
 		unsigned m = 3;
 		m = ~m;
-		unsigned sz = (store.size()/2) + 2;
+		unsigned sz = (store.size()/2) + 2;  // XXX/cgjones: probably not the best name ...
 		for(unsigned i=0; i<sz; ++i){
 			T* tmp = store[i];
 			if(tmp == NULL){ continue; }
-			unsigned loc = hash( tmp );
+			//unsigned loc = hash( tmp );
+                        unsigned loc = traits::hash (tmp, this->sz);
 			if(loc != (i & m)){ 
 				store[i]= NULL; 
 				int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
@@ -163,7 +199,8 @@ public:
 	}
 
 	int count(T* val){
-		unsigned loc = hash(val);
+		//unsigned loc = hash(val);
+            unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
 		bool t0 = store[l] == val;
 		bool t1 = store[lp1] == val;
@@ -175,7 +212,8 @@ public:
 	}
 
 	void erase(T* val){
-		unsigned loc = hash(val);
+		//unsigned loc = hash(val);
+            unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
 		bool t0 = store[l] == val;
 		bool t1 = store[lp1] == val;
@@ -212,7 +250,8 @@ public:
 	}
 
 	iterator find(T* val){
-		unsigned loc = hash(val);
+		//unsigned loc = hash(val);
+            unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
 		bool t0 = store[l] == val;
 		bool t1 = store[lp1] == val;
@@ -263,7 +302,8 @@ public:
 
 
 	void insert(T* val){
-		unsigned loc = hash(val);
+		//unsigned loc = hash(val);
+            unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
 		bool t0 = store[l] == val;
 		bool t1 = store[lp1] == val;

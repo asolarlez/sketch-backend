@@ -5,6 +5,9 @@
 #include <algorithm>
 
 
+int bool_node::NEXT_GLOBAL_ID = 0;
+
+
 void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 	child_iter it = children.find(ori);
 	if(it != children.end() ){
