@@ -17,7 +17,10 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_statistics.h				\
 	memory_sampler.h				\
 	timerclass.h					\
+	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
+	InputParser/BooleanDAGCreator.h			\
+	InputParser/BooleanNodes.h			\
 	InputParser/CommandLineArgs.h			\
 	InputParser/DagCSE.h				\
 	InputParser/DagElimUFUN.h			\
@@ -43,7 +46,10 @@ SBitII_SOURCES =				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
+	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
+	InputParser/BooleanDAGCreator.cpp	\
+	InputParser/BooleanNodes.cpp		\
 	InputParser/DagCSE.cpp			\
 	InputParser/DagElimUFUN.cpp		\
 	InputParser/DagFunctionInliner.cpp	\
