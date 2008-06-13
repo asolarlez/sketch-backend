@@ -465,7 +465,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   tmp->mother = mother;  
   tmp->addToParents();
   Assert( tmp->id != -22, "This node should not exist anymore");
-  tmp->id = nodes.size();
+  tmp->id = nodes.size() + offset;
   nodes.push_back(tmp);  
   if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL ){
   		nodesByType[t].push_back(tmp);
@@ -490,7 +490,7 @@ bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,
     bool_node* tmp = newBoolNode(type);
     nodesByType[type].push_back(tmp);
     tmp->ion_pos = counter;
-    tmp->id = nodes.size();
+    tmp->id = nodes.size() + offset;
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
@@ -502,7 +502,7 @@ bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,
   	nodesByType[type].push_back(tmp);
     dynamic_cast<INTER_node*>(tmp)->set_nbits(n);
     tmp->ion_pos = counter;
-    tmp->id = nodes.size();
+    tmp->id = nodes.size() + offset;
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
