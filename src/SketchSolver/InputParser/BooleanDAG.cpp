@@ -24,6 +24,7 @@ BooleanDAG::BooleanDAG()
   n_inputs = 0;
   n_outputs = 0;
   n_controls = 0;
+  offset = 0;
 }
 
 
