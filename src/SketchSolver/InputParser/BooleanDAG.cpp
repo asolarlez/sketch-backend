@@ -536,7 +536,15 @@ bool_node* BooleanDAG::create_outputs(int n, const string& gen_name){
 }
 
 
+void BooleanDAG::printSlice(bool_node* node, ostream& out)const{    
+	out<<"digraph G{"<<endl;
+	set<const bool_node* > s;
 
+	node->printSubDAG(out, s);
+	
+
+	out<<"}"<<endl;
+}
 
 
 

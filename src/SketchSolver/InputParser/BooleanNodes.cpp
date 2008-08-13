@@ -304,23 +304,25 @@ void arith_node::replace_parent(const bool_node * oldpar, bool_node* newpar){
 
 
 
-void arith_node::printSubDAG(ostream& out)const{	
+void arith_node::printSubDAG(ostream& out, set<const bool_node* >& s)const{	
 	int i=0;
+	s.insert(this);
 	for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
-	  	if(*it != NULL){
-	  		(*it)->printSubDAG(out);  		
+	  	if(*it != NULL && s.count(*it) == 0){
+	  		(*it)->printSubDAG(out, s);  		
 	  	}
 	}
-	bool_node::printSubDAG(out);
+	bool_node::printSubDAG(out, s);
 }
 
 
-void bool_node::printSubDAG(ostream& out)const{
-	if( father != NULL){
-			father->printSubDAG(out);
+void bool_node::printSubDAG(ostream& out, set<const bool_node* >& s)const{
+	s.insert(this);
+	if( father != NULL && s.count(father) == 0 ){
+			father->printSubDAG(out, s);
 	}	
-	if(mother != NULL){
-			mother->printSubDAG(out);
+	if(mother != NULL && s.count(mother) == 0){
+			mother->printSubDAG(out, s);
 	}
 	outDagEntry(out);	
 }

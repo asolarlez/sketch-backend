@@ -117,6 +117,7 @@ public:
   int get_n_controls()const{ return n_controls; };
   int get_n_layers()const{ return layer_sizes.size(); };
   void setOffset(int ofs){ offset = ofs; }
+  void printSlice(bool_node* node, ostream& out)const;
   
   ////////////////////////////////////////////////////////////////////////
   //Field Access methods.	
