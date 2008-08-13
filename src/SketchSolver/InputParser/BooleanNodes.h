@@ -4,6 +4,7 @@
 #include "FastSet.h"
 #include "NodeVisitor.h"
 #include <map>
+#include <set>
 
 
 #ifdef CONST
@@ -132,7 +133,7 @@ public:
   void set_layer();
   virtual void accept(NodeVisitor& visitor) =0;
   virtual bool_node* clone(bool copyChildren = true)=0;
-  virtual void printSubDAG(ostream& out)const;
+  virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
   virtual OutType getOtype() const;
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
@@ -189,7 +190,7 @@ class arith_node: public bool_node{
 	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag);
-	virtual void printSubDAG(ostream& out)const;
+	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
 	virtual string get_tname() const{
 		switch(arith_type){			
 			case ARRACC: return "ARRACC";
