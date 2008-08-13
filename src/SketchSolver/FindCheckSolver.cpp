@@ -272,7 +272,7 @@ bool FindCheckSolver::find(vector<int>& input, vector<int>& controls){
     	return false;
     }
 	Dout( dirFind.print() );
-	
+	//dirFind.printAllVars();
 //Get the values of the Controls.
 	int jj=0;
 	for(map<string, int>::iterator it = controlVars.begin(); it !=controlVars.end(); ++it){

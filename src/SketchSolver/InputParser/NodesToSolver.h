@@ -10,6 +10,7 @@
 # define INTEGERBOUND  8192
 #endif
 
+// #define Dout( msg ) msg
 
 class NodesToSolver : public NodeVisitor {
     const string &outname;

@@ -436,7 +436,7 @@ void NodesToSolver::visit( AND_node& node ){
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addAndClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
-	Dout(cout<<"AND "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+	Dout(cout<<"AND "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
 
@@ -449,7 +449,7 @@ void NodesToSolver::visit( OR_node& node ){
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addOrClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
-	Dout(cout<<"OR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+	Dout(cout<<"OR "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
 void NodesToSolver::visit( XOR_node& node ){
@@ -460,7 +460,7 @@ void NodesToSolver::visit( XOR_node& node ){
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addXorClause(fval.getId (), mval.getId ());
 	node.flag = oldnvar != nvar;
-	Dout(cout<<"XOR "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+	Dout(cout<<"XOR "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
 
@@ -496,13 +496,13 @@ NodesToSolver::visit (SRC_node &node)
 		//This could be removed. It's ok to setSize when get_nbits==1.		
 		if (node.get_nbits () > 1) {
 		    node_ids[node.id].setSize (node.get_nbits ());
-		    Dout (cout << "setting input nodes" << node.name << endl);
+		    Dout (cout << "setting input nodes" << node.get_name() << endl);
 #ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
 		    node_ids[node.id].makeSparse (dir);
 #endif /* HAVE_BVECTARITH */
 		}
-	Dout (cout << "REGISTERING " << node.name << "  " << node_ids[node.id]
+	Dout (cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
 }
@@ -570,7 +570,7 @@ NodesToSolver::visit (NOT_node &node)
     Tvalue nvar = -mval.getId ();
     boolNodeUpdate (node, nvar);
 
-    Dout (cout << "PT " << node.name << " " << nvar << " " << &node << endl);
+    Dout (cout << "PT " << node.get_name() << " " << nvar << " " << &node << endl);
 }
 
 
@@ -587,7 +587,7 @@ NodesToSolver::visit (NEG_node &node)
     Tvalue nvar = mval.toComplement(dir);
     boolNodeUpdate (node, nvar);
 
-    Dout (cout << "NEG " << node.name << " " << nvar << " " << &node << endl);
+    Dout (cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
 }
 
 
@@ -620,13 +620,13 @@ NodesToSolver::visit (CTRL_node &node)
 		node_ids[node.id] = dir.getArr(node.get_name(), 0);
 		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
 		    node_ids[node.id].setSize( node.get_nbits() );
-		    Dout(cout<<"setting control nodes"<<node.name<<endl);
+		    Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
 #ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
 		    node_ids[node.id].makeSparse(dir);
 #endif /* HAVE_BVECTARITH */
 		}
-		Dout(cout<<"CONTROL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
+		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
     }
 }
@@ -755,7 +755,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	Dout(cout<<" ARRACC "<<endl);
 	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
-
+    Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES ){
 		int idx = omv.num_ranges[0];
 
@@ -837,7 +837,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 			}
 		}
 		node_ids[node.id] = cvar;
-		Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
+		Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
 //		aracctimer.stop().print();
 		return;
 	}
@@ -869,7 +869,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
 		node_ids[node.id] = result;		
 	}
-	Dout(cout<<"ARRACC "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
+	Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
 //	elooptimer.stop().print();
 //	aracctimer.stop().print();
 	return;
@@ -990,9 +990,25 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		vector<int>& out = output.num_ranges;
 		out.clear();
 		out.reserve(nr0.size() + nr1.size());
+
+		int inci = 1;
+		int incj = 1;
+		// There is an assumption that the num_ranges are monotonic. 
+		// However, they could be monotonically increasing or monotonically decreasing.
+		// So we need to check.
+		if(nr0.size() > 1 && nr0[0] > nr0[1]){
+			inci = -1;
+			i = nr0.size() -1;
+		}
+		
+		if(nr1.size() > 1 && nr1[0] > nr1[1]){
+			incj = -1;
+			j = nr1.size() -1;
+		}
+
 		while(i < nr0.size() || j< nr1.size()){
-		    bool avi = i < nr0.size();
-		    bool avj = j < nr1.size();
+		    bool avi = i < nr0.size() && i >= 0;
+		    bool avj = j < nr1.size() && j >= 0;
 		    int curri = avi ? nr0[i]  : -1;
 		    int currj = avj ? nr1[j]  : -1;
 		    if( curri == currj && avi && avj){
@@ -1002,8 +1018,8 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 				int cvar3 = dir.addOrClause( cvar2, cvar1);
 				out.push_back(curri);
 				res.push_back(cvar3);
-				i++;
-				j++;
+				i = i + inci;
+				j = j + incj;
 				continue;
 			}
 		    if((curri < currj && avi) || !avj){
@@ -1011,7 +1027,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 				int cvar = dir.addAndClause( mid0.getId (i), -guard);
 				out.push_back(curri);
 				res.push_back(cvar);
-				i++;
+				i = i + inci;
 				continue;
 		    }
 		    if( (currj < curri && avj) || !avi ){
@@ -1019,7 +1035,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 				int cvar = dir.addAndClause( mid1.getId (j), guard );
 				out.push_back(currj);
 				res.push_back(cvar);
-				j++;
+				j = j + incj;
 				continue;
 		    }
 		    Assert(false, "Should never get here");
@@ -1045,7 +1061,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 
 
 void NodesToSolver::visit( ARRASS_node& node ){
-    Dout(cout<<"             ARRASS:"<<endl);
+	Dout(cout<<"             ARRASS: "<<node.get_name()<<endl);
     // mother = index
     // multi-mother[0] = old-value;
     // multi-mother[1] = new-value;
@@ -1122,12 +1138,12 @@ void NodesToSolver::visit( ACTRL_node& node ){
 		Dout( cout<<"   ids[i]="<<ids[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 	}
-	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.name<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
+	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
 	vector<int>& tmp = node_ids[node.id].num_ranges;
 	varRange vr = dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].setId(vr.varID);
 	node_ids[node.id].sparsify ();
-	Dout(cout<<"&ACTRL "<<node.name<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
+	Dout(cout<<"&ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
 	return;
 }
 
@@ -1144,9 +1160,20 @@ NodesToSolver::visit (ASSERT_node &node)
 
 	Assert(!node.isHard(), "This functionality is depracted");
 	{
-		if(fval.getId() == -YES ) {  cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; }
+		if(fval.getId() == -YES ) {  
+			cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
+			/*
+			set<const bool_node*> s;
+			cout<<"digraph G{"<<endl;
+			node.printSubDAG(cout, s);
+			cout<<"}"<<endl;
+			cout<<" slice size = "<<s.size()<<endl;
+			*/
+		}
 		dir.addAssertClause (fval.getId ());
 	}
+	//cout<<"|"<<node.getMsg()<<"|"<<endl;
+	
 
 	Dout (cout << "ASSERT " << node.get_name() << " " << fval
 		  << " " << &node << endl);

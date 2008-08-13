@@ -43,6 +43,15 @@ public:
 	YES = 0;
     }
 
+
+	void printAllVars(){
+		cout<<"@#@#@#@#@#@#     Outputing Var Map"<<endl;
+		int N = mng.newVar();
+		for(int i=1; i<N; ++i){
+			cout<<" var id = "<<i<<"\t "<<mng.getVarVal(i)<<endl;
+		}
+	}
+
     void reset() {
 	varmap.clear();
 	arrsize.clear();
