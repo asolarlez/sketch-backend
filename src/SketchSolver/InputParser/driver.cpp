@@ -175,15 +175,34 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	}
 	*/
 
+	if(params.verbosity > 2){
+		cout<<" INBITS = "<<INp::NINPUTS<<endl;
+		cout<<" CBITS  = "<<INp::NCTRLS<<endl;
+	}
+
 	{
 		Dout( cout<<"BEFORE Matching input names"<<endl );
 		vector<bool_node*>& specIn = spec->getNodesByType(bool_node::SRC);
 		vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
+
+		int inints = 0;
+		int inbits = 0;
+
 		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");	
 		for(int i=0; i<specIn.size(); ++i){
 			Dout( cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl );
 			sketch->rename(sketchIn[i]->name, specIn[i]->name);
+			if(sketchIn[i]->getOtype() == bool_node::BOOL){
+				inbits++;
+			}else{
+				inints++;
+			}
 		}
+
+		if(params.verbosity > 2){
+			cout<<" input_ints = "<<inints<<" \t input_bits = "<<inbits<<endl;
+		}
+
 	}
 
 	{
@@ -214,7 +233,7 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	{
 		DagElimUFUN eufun;	
 		eufun.process(*spec);
-		eufun.stopProducingFuns();
+		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
 		eufun.process(*sketch);
 	}
 

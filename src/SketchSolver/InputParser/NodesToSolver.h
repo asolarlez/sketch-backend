@@ -120,7 +120,7 @@ public:
     virtual void visit (ACTRL_node &node);
 
     virtual void visit (ASSERT_node &node);
-
+	// void process(BooleanDAG& bdag);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
     virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);
     virtual bool checkParentsChanged (bool_node &node, bool more);

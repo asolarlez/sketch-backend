@@ -667,6 +667,13 @@ void DagOptim::visit( DIV_node& node ){
 			return;
 		}			
 	}
+	if(node.mother->type == bool_node::MOD){
+		bool_node* mpar = node.mother;
+		if(mpar->father == node.father){
+			rvalue = getCnode(0);
+			return;
+		}
+	}
 	rvalue = &node;
 }
 void DagOptim::visit( MOD_node& node ){
@@ -680,6 +687,13 @@ void DagOptim::visit( MOD_node& node ){
 			}
 			return;
 		}			
+	}
+	if(node.mother->type == bool_node::MOD){
+		bool_node* mpar = node.mother;
+		if(mpar->father == node.father){
+			rvalue = mpar;
+			return;
+		}
 	}
 	rvalue = &node;
 }
@@ -1072,7 +1086,6 @@ void DagOptim::visit( ARRACC_node& node ){
 				addNode(an);
 				stillPrivate = an;
 				an->accept(*this);
-				//cout<<" Savings and savings at galore"<<endl;
 				return;
 		}
 

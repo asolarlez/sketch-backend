@@ -48,6 +48,11 @@ bool_node* BooleanDAGCreator::new_node(const string& mother,
 
   getMotherFather(mother, father, mth, fth);  
 
+
+  if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
+	  Assert( mth->getOtype() == bool_node::BOOL && (fth == NULL || fth->getOtype() == bool_node::BOOL), "The parents of a boolean operator must be boolean !!!"<<p_name);
+  }
+
   string name(p_name);
   if(name.size() == 0){ name = new_name(); }
   map<string, bool_node*>::iterator it =  named_nodes.find(name);

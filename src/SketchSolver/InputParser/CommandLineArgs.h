@@ -34,6 +34,7 @@ class CommandLineArgs{
   int verbosity;
   bool showInputs;
   bool showDAG;
+  bool ufunSymmetry;
   string inputFname;
   string outputFname;
 
@@ -59,6 +60,7 @@ class CommandLineArgs{
 		verbosity = 0;
 		showInputs = false;
 		showDAG = false;
+		ufunSymmetry = false;
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
@@ -84,6 +86,11 @@ class CommandLineArgs{
 	      input_idx = ii+1;      
 	    }
 	    
+		if( string(argv[ii]) == "-ufunSymmetry" ){
+	    	ufunSymmetry = true;
+			input_idx = ii+1;      
+	    }
+
 		if( string(argv[ii]) == "-showinputs" ){
 	    	showInputs = true;
 	      input_idx = ii+1;      

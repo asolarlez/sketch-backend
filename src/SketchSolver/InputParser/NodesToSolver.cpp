@@ -8,6 +8,27 @@
  */
 // #define HAVE_BVECTARITH
 
+// #define Dout(msg) msg
+// #define DebugOut( node, tval )  cout<<" NODE= "<<node.get_name()<<" \t"<<tval<<endl;
+
+
+/*
+
+void NodesToSolver::process(BooleanDAG& bdag){
+	int i=0;
+	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+		try{
+		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+		(*node_it)->accept(*this);
+		DebugOut((**node_it), node_ids[(*node_it)->id]);
+		}catch(BasicError& be){
+			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
+    	}
+	}
+}
+
+*/
+
 
 template<typename COMP> void
 NodesToSolver::processComparissons (bool_node& node)
@@ -634,7 +655,7 @@ NodesToSolver::visit (CTRL_node &node)
 
 
 void NodesToSolver::visit( PLUS_node& node ){
-	Dout( cout<<" PLUS "<<endl );
+	Dout( cout<<" PLUS: "<<node.get_name()<<endl );
 	if(!checkParentsChanged( node, true)){ return; }
 
 	/* FIXME hard-wired bit-vector arithmetics. */
@@ -647,7 +668,7 @@ void NodesToSolver::visit( PLUS_node& node ){
 	return;
 }
 void NodesToSolver::visit( TIMES_node& node ){
-	Dout( cout<<" TIMES "<<endl );
+	Dout( cout<<" TIMES: "<<node.get_name()<<endl );
 	if(!checkParentsChanged( node, true)){ return; }
 	processArith<multiplies<int> >(node);
 	return;
@@ -1157,6 +1178,15 @@ NodesToSolver::visit (ASSERT_node &node)
 		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
 		return;
 	}
+
+/*	if(node.id == 125){
+		set<const bool_node*> s;
+			cout<<"digraph G{"<<endl;
+			node.printSubDAG(cout, s);
+			cout<<"}"<<endl;
+			cout<<" slice size = "<<s.size()<<endl;
+	}
+	*/
 
 	Assert(!node.isHard(), "This functionality is depracted");
 	{
