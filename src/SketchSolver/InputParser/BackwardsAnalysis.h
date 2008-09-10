@@ -8,6 +8,24 @@
 
 using namespace std;
 
+
+/*!
+
+The goal of the backwards analysis is to compute, for each node in the dag, a set of conditions which are
+guaranteed to be true if the value of the node is to matter. 
+
+Each condition is of the form value(bool_node) == val. i.e. If for node n, there is only one condition of the form
+value(p) == 4. It means that the value of node n will only matter if node p evaluates to 4. This means that we can 
+simplify n to take advantage of the fact that we can assume p to have value 4.
+
+The conditions are stored in Datums. 
+
+For each node, we have an object of type Info, which contains a set of Datums. 
+The Info for an object is the intersection of what is known to be true through each of its children.
+
+
+*/
+
 class Datum{
 public:
 	bool_node* node;
