@@ -203,15 +203,15 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		node->accept(*this);
 		bool_node* tmp = rvalue;
 		if(tmp != node){
-			
-			bdag.replace(node->id, tmp);
+			node->neighbor_replace(tmp);
+			//bdag.replace(node->id, tmp);
 		}
 	}
 	bdag.removeNullNodes();
-	bdag.addNewNodes(newnodes);
-	// bdag.repOK();
+	bdag.addNewNodes(newnodes);	
 	newnodes.clear();
-	bdag.sort_graph();
 	bdag.cleanup(false);
+	bdag.sort_graph();	
+	bdag.repOK();
 	bdag.relabel();
 }
