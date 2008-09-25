@@ -461,12 +461,12 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& va
 				newAnonymousVar();
 			}
 			for(int j=0; j<lastsize; ++j){
+				Assert((2*j+1)<amtrange, "This is out of range");
 				int cvar = roundVars + j;
 				mng.addAndClause(lastRoundVars + j*2, cvar, -(curval));
 				mng.addAndClause(lastRoundVars + j*2 + 1, cvar, (curval));
 				tmpVect[2*j] = vals[j]*2;
 				tmpVect[2*j+1] = vals[j]*2 + 1;
-				Assert((2*j+1)<amtrange, "This is out of range");
 			}
 			lastsize = lastsize*2;	
 		}

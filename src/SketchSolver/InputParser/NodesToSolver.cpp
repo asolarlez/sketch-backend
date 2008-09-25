@@ -49,19 +49,23 @@ NodesToSolver::processComparissons (bool_node& node)
 		for(int j=0; j<fval.getSize (); ++j){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
 		    if(comp(mval[i], fval[j])){
-			cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
-			++orTerms;
-			if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-			scratchpad[orTerms] = cvar;
+				cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
+				++orTerms;
+				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+				scratchpad[orTerms] = cvar;
 		    }
 		}
     }
     if( orTerms < 2 ){
-	node_ids[node.id] = cvar;
+		node_ids[node.id] = cvar;
     }else{
-    scratchpad[0] = 0;
-	int result = dir.addBigOrClause( &scratchpad[0], orTerms);
-	node_ids[node.id] = result;
+		if(orTerms == mval.getSize() * fval.getSize()){
+			node_ids[node.id] = YES;
+		}else{
+			scratchpad[0] = 0;
+			int result = dir.addBigOrClause( &scratchpad[0], orTerms);
+			node_ids[node.id] = result;
+		}
     }
     Dout( cout<<node.get_name()<<" :=  "<<node_ids[node.id]<<endl);
     return;

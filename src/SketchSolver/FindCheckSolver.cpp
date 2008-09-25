@@ -128,7 +128,7 @@ bool FindCheckSolver::solveCore(){
 		}
 		
 		{ // Check
-			// cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<" "<<(ctrl[i]==1?1:0);	cout<<endl;
+			if(PARAMS->verbosity > 4){cout<<"!+";	for(int i=0; i<ctrlSize; ++i) cout<<" "<<(ctrl[i]==1?1:0);	cout<<endl; }
 			cpt.checkpoint('c', ctrl);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart(); 
@@ -136,7 +136,7 @@ bool FindCheckSolver::solveCore(){
 			 ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }
 		}
-		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime="<<ftimer.get_cur_ms() <<"\tctime="<<ctimer.get_cur_ms()<<endl; }
+		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
 		++iterations;
 		if( iterlimit > 0 && iterations >= iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
@@ -146,7 +146,7 @@ bool FindCheckSolver::solveCore(){
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
-	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<", CHECK TIME "<<ctimer.get_tot_ms()<<", TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
+	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" CHECK TIME "<<ctimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
 	return !fail;
 }
 
@@ -300,6 +300,7 @@ bool FindCheckSolver::check(vector<int>& controls, vector<int>& input){
 	if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
     int result = mngCheck.solve();
+	//dirCheck.printAllVars();
     if(printDiag){
 	    cout<<"# CHECK DIAGNOSTICS"<<endl;
 		printDiagnostics(mngCheck, 'c');

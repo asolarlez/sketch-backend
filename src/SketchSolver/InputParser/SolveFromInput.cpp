@@ -62,10 +62,20 @@ FindCheckSolver(finder, checker), NINPUTS(NINPUTS_p), out(out_p), problem(miter)
     {
 	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
 	    cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+		int cints = 0;
+		int cbits = 0;
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
+			if(ctrlnode->getOtype() == bool_node::BOOL){
+				cbits++;
+			}else{
+				cints++;
+			}
 			declareControl(problemIn[i]->get_name(), nbits);
+		}
+		if(PARAMS->verbosity > 2){
+			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
 		}
     }
 
