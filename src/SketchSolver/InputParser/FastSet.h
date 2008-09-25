@@ -160,6 +160,7 @@ public:
 		store.resize((CNST<<sz)+2, NULL);		
 		unsigned m = 3;
 		m = ~m;
+
 		unsigned sz = (store.size()/2) + 2;  // XXX/cgjones: probably not the best name ...
 		for(unsigned i=0; i<sz; ++i){
 			T* tmp = store[i];
@@ -194,7 +195,7 @@ public:
 				resize();
 				break;
 			}
-		}
+		}		
 		recompEnd();
 	}
 

@@ -215,7 +215,11 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		}
 	}
 
-	{
+	if(params.verbosity > 1){
+		cout<<" optimization level = "<<params.olevel<<endl;
+	}
+
+	if(params.olevel >= 3){
 		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
@@ -243,7 +247,7 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<problem->size()<<endl; }
 	
-	{
+	if(params.olevel >= 3){
 		DagOptim cse(*problem);	
 		//cse.alterARRACS();
 		cse.process(*problem);
@@ -251,23 +255,26 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 
 	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<problem->size()<<endl;	}
 
-	{
+	if(params.olevel >= 5){
 		BackwardsAnalysis opt;
 		opt.process(*problem);
 	}
 
-	{
+	if(params.olevel >= 6){
 		DagOptimizeCommutAssoc opt;
-		//opt.process(*problem);
+		opt.process(*problem);
 	}
 
 	//problem->print(cout) ;
 
 	// cout<<"* after CAoptim: Problem nodes = "<<problem->size()<<endl;
 
-	{
+	if(params.olevel >= 4){
 		DagOptim cse(*problem);	
-		//cse.alterARRACS();
+		if(params.alterARRACS){ 
+			cout<<" alterARRACS"<<endl;
+			cse.alterARRACS(); 
+		}
 		cse.process(*problem);
 	}
 	
