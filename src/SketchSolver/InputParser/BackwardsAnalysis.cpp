@@ -163,12 +163,13 @@ void BackwardsAnalysis::visit( ARRACC_node& node ){
 		
 		return;
 	}
-	
+
 	info[node.mother] += t;
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		t.push(Datum(node.mother, i));
 		info[node.multi_mother[i]] += t;
 		t.pop();
+		
 	}
 	rvalue = &node;
 	return;

@@ -151,7 +151,7 @@ struct FastSetTraits<bool_node>
     static inline unsigned
     hash (bool_node *bn, int sz)
     {
-        unsigned tmp = bn->globalId >> 2; // (unsigned) in>>2;  // (generic version)
+        unsigned tmp = bn->globalId; // (unsigned) in>>2;  // (generic version)
 
         tmp = tmp * (tmp + 4297);
         tmp = tmp + (tmp >> 2) + (tmp >> 5) + (tmp >> 21) + (tmp >> 28);		

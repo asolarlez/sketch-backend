@@ -1,4 +1,7 @@
 #include "BooleanDAGCreator.h"
+#include "CommandLineArgs.h"
+
+extern CommandLineArgs* PARAMS;
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 {
@@ -76,7 +79,17 @@ bool_node* BooleanDAGCreator::new_node(const string& mother,
 
 bool_node* BooleanDAGCreator::optimizeAndAdd(bool_node* node){
 	
-	bool_node* tmp = optim.computeOptim(node);
+	bool_node* tmp;
+
+	if(PARAMS->olevel == 0){
+		tmp = node;
+	}else{
+		if(PARAMS->olevel == 1){
+			tmp = optim.computeCSE(node);
+		}else{
+			tmp = optim.computeOptim(node);
+		}
+	}	
 	if(tmp == node){
 		node->addToParents();
 		optim.addNode(node);
