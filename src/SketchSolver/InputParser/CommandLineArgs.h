@@ -37,7 +37,8 @@ class CommandLineArgs{
   bool ufunSymmetry;
   string inputFname;
   string outputFname;
-
+  bool alterARRACS;
+  int olevel;
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -61,12 +62,28 @@ class CommandLineArgs{
 		showInputs = false;
 		showDAG = false;
 		ufunSymmetry = false;
+		alterARRACS = false;
+		olevel = 5;
+
+
+
 	  for(int ii=0; ii<argc; ++ii){
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
 	      seedsize = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
 	    }
+		if( string(argv[ii]) == "-alterARRACS" ){
+	    	alterARRACS = true;
+	      input_idx = ii+1;      
+	    }
+
+		if( string(argv[ii]) == "-olevel" ){
+	      Assert(ii<(argc-1), "-olevel needs an extra parameter");
+	      olevel = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+	    }
+
 	    
 		 if( string(argv[ii]) == "-inlineamnt" ){
 	      Assert(ii<(argc-1), "-inlineamnt needs an extra parameter");

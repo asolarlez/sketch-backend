@@ -210,7 +210,7 @@ void DagCSE::eliminateCSE(){
  	int fid = node.father == NULL? -1: node.father->globalId;
  	
  	
-	setStr(mid, '>', fid);
+	setStr(fid, '<', mid);
  	
  	Dtime(stimer.stop();)
  }
@@ -220,7 +220,7 @@ void DagCSE::eliminateCSE(){
  	int mid = node.mother == NULL? -1: node.mother->globalId;
  	int fid = node.father == NULL? -1: node.father->globalId;
  	
-	setStr(mid, '}', fid);
+	setStr(fid, '{', mid);
 
  	Dtime(stimer.stop();)
  }
