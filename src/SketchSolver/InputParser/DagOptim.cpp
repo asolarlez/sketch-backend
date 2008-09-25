@@ -1335,6 +1335,10 @@ void DagOptim::initialize(BooleanDAG& dag){
 	initLight(dag);
 }
 
+bool_node* DagOptim::computeCSE(bool_node* node){
+	return cse.computeCSE(node);
+}
+
 bool_node* DagOptim::computeOptim(bool_node* node){
 	node->accept(*this);
 	node = rvalue;

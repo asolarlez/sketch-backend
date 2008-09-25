@@ -150,6 +150,7 @@ public:
 
 
 	bool_node* computeOptim(bool_node* node);
+	bool_node* computeCSE(bool_node* node);
 	
 	void initialize(BooleanDAG& dag);
 	void cleanup(BooleanDAG& dag);
