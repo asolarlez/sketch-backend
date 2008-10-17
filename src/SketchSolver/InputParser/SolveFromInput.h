@@ -21,7 +21,7 @@ class SolveFromInput: public FindCheckSolver{
 	int* last_input;
 	protected:
 	virtual void setupCheck();
-	
+	int valueForINode(INTER_node* inode, vector<int>& values, int& nbits);
 	
 	virtual void addInputsToTestSet(vector<int>& input);
 	virtual void setNewControls(vector<int>& controls);
@@ -29,7 +29,7 @@ class SolveFromInput: public FindCheckSolver{
 	virtual void declareInput(const string& inname, int size);
 	protected:
 	virtual bool check(vector<int>& controls, vector<int>& input);
-	virtual BooleanDAG* hardCodeControls(BooleanDAG* dag, vector<int>& controls);
+	virtual BooleanDAG* hardCodeINode(BooleanDAG* dag, vector<int>& controls, bool_node::Type type);
 	public:
 	SolveFromInput(ostream& out_p, BooleanDAG* miter, SATSolver& finder, SATSolver& checker, int p_nseeds=1, int NINPUTS_p=3);
 	void output_control_map(ostream& out);
