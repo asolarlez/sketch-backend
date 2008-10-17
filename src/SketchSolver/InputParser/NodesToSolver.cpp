@@ -349,7 +349,7 @@ NodesToSolver::processArith (bool_node &node)
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 	fval.makeSparse (dir);
-
+	bool isSum = node.type == bool_node::PLUS;
 	map<int, int> numbers;
 	Tvalue& oval = node_ids[node.id];
 	vector<int>& tmp = oval.num_ranges;
@@ -379,9 +379,17 @@ NodesToSolver::processArith (bool_node &node)
 		//						btimer.stop();
 		if( it != numbers.end()){
 		    //							ctimer.restart();
+			if(isSum){
+				// Because the Tvalues have all their values unique,
+				//and because if i != j then a + i == b + j -> a != b
+				// and because only 1 id can be true in each Tvalue
+				//This optimization is sound.
+				it->second = dir.addChoiceClause(mval.getId (i),fval.getId (j), it->second);
+			}else{
 		    int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
 		    int cvar2 = dir.addOrClause(cvar, it->second);
 		    it->second = cvar2;
+			}
 		    //							ctimer.stop();
 		}else{
 		    //							dtimer.restart();
@@ -422,6 +430,7 @@ NodesToSolver::processArith (bool_node &node)
 	}
 
 	if( newID != -1){
+		if(vals == 1){ newID = YES; }
 	    oval.setId(newID);
 	    oval.sparsify ();
 	    Dout( cout<<" := "<<oval<<endl );
@@ -1046,9 +1055,12 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		    int currj = avj ? nr1[j]  : -1;
 		    if( curri == currj && avi && avj){
 				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+				/*
 				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
 				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
 				int cvar3 = dir.addOrClause( cvar2, cvar1);
+				*/
+				int cvar3 = dir.addChoiceClause(guard, mid1.getId (j), mid0.getId (i));
 				out.push_back(curri);
 				res.push_back(cvar3);
 				i = i + inci;
