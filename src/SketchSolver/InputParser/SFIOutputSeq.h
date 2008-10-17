@@ -110,8 +110,8 @@ public:
 	void setNewControls(vector<int>& controls){
 
 
-		BooleanDAG* seq = hardCodeControls(seqMiter, controls);
-		BooleanDAG* init = hardCodeControls(initializer, controls);
+		BooleanDAG* seq = hardCodeINode(seqMiter, controls, bool_node::CTRL);
+		BooleanDAG* init = hardCodeINode(initializer, controls, bool_node::CTRL);
 		UFUN_node* ufinit = fixSchedule(seq, init);
 
 		
