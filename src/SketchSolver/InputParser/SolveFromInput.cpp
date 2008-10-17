@@ -145,7 +145,7 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		if( iter > 2 || gnbits > 3){
 			if( problem == oriProblem){
 				//int* ttt = new int[9000];
-				problem = hardCodeControls(problem, controls);
+				problem = hardCodeINode(problem, controls, bool_node::CTRL);
 				//ofstream outf("output.ucl");
 				//outputEuclid(outf);
 				//delete ttt;
@@ -158,47 +158,44 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 	if( problem != oriProblem){	
 		if(PARAMS->verbosity > 2){ cout<<" * Cleaning up alternative problem"<<endl;}
 		problem->clear();
-		problem = oriProblem;	
+		delete problem;
+		problem = oriProblem;		
 	}
 	return rv;	
 }
 
 
 
-BooleanDAG* SolveFromInput::hardCodeControls(BooleanDAG* dag, vector<int>& controls){
+
+
+BooleanDAG* SolveFromInput::hardCodeINode(BooleanDAG* dag, vector<int>& values, bool_node::Type type){
 	BooleanDAG* newdag = dag->clone();
-	vector<bool_node*> specCtrl = newdag->getNodesByType(bool_node::CTRL);
+	vector<bool_node*> inodeList = newdag->getNodesByType(type);
 		
-	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for controls"<<endl; }
-	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  specCtrl.size() <<endl;	}
+	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
+	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
 	DagOptim cse(*newdag);			
 	
-	for(int i=0; i<specCtrl.size(); ++i){
-		CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(specCtrl[i]);	
-		int iid = getCtrlStart( ctrlnode->get_name() );
-		int nbits = ctrlnode->get_nbits();		
-		Assert( nbits > 0 , "This can not happen rdu;a");
-		Assert( iid+ nbits <= controls.size(), "There should be a control entry for each iid a");		
-		Assert(controls[iid ] == 1 || controls[iid]==-1, "This is bad, really bad");
+	for(int i=0; i<inodeList.size(); ++i){
+		INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
+		int nbits;
+		int t = valueForINode(inode, values, nbits);
 		bool_node * repl=NULL;
 		if( nbits ==1 ){
-			repl = cse.getCnode( controls[iid] == 1 );						
+			repl = cse.getCnode( t == 1 );						
 		}else{
-			int nval = intFromBV(controls, iid, nbits);	
-			repl = cse.getCnode( nval);							
+			repl = cse.getCnode( t);							
 		}
 		
-		Assert( (*newdag)[ctrlnode->id] == ctrlnode , "The numbering is wrong!!");
-		newdag->replace(ctrlnode->id, repl);
+		Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
+		newdag->replace(inode->id, repl);
 	}
 			
 	newdag->removeNullNodes();
 	cse.process(*newdag);
 	Dout( newdag->print(cout) ); 
 	
-	if(PARAMS->verbosity > 2){ cout<<" * After replacing nodes size = "<<newdag->size()<<"CTRLS = "<< specCtrl.size() <<endl; }
-	
-	
+	if(PARAMS->verbosity > 2){ cout<<" * After replacing nodes size = "<<newdag->size()<<" Ctrls = "<< inodeList.size() <<endl; }	
 	
 	return newdag;
 }
@@ -235,6 +232,38 @@ void SolveFromInput::setNewControls(vector<int>& controls){
 	buildChecker();	
 }
 
+
+int SolveFromInput::valueForINode(INTER_node* inode, vector<int>& values, int& nbits){
+			int retval = 0;
+
+			int iid = inode->type==bool_node::CTRL ? getCtrlStart((inode)->get_name()) : getInStart( (inode)->get_name() );
+			nbits = inode->get_nbits();	
+			
+			int tsz = inode->type==bool_node::CTRL ? getCtrlSize( inode->get_name() )  : getInSize( inode->get_name() );
+			Assert( nbits == tsz , "Size missmatch for input "<<inode->get_name() );
+			
+			Assert( nbits > 0 , "This can not happen rdu;a");
+			Assert( iid+ nbits <= values.size(), "There should be a control entry for each iid b insize="<<values.size()<<"  iid+nbits="<<iid+nbits );
+			Assert(values[iid ] == 1 || values[iid]==-1, "This is bad, really bad");
+									
+			if( nbits ==1 ){
+				retval = values[iid];
+				char c='U';
+				if(values[iid] == -1){ c = '0'; }
+				if(values[iid] == 1){ c = '1'; }
+
+				if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< c <<endl; }
+			}else{				
+				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
+				int nval = intFromBV(values, iid, nbits);				
+				Dout( cout <<" > = "<<nval<< endl ) ;
+				retval = nval;
+				if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<<nval<<endl; }
+			}
+			return retval;
+}
+
+
 /// Adds an input to the test set. This is the setup for the synthesis step.
 //  From this function we call:
 //		buildFinder
@@ -246,78 +275,66 @@ void SolveFromInput::addInputsToTestSet(vector<int>& input){
 	int ctrl = 0;
 	int numRepeat = 0;
 	node_values.clear();
-	node_ids.resize(problem->size());
-	int idx = 0;
-	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
-		node_ids[(*node_it)->id] = f_node_ids[idx];		
-		(*node_it)->flag = f_flags[idx];
-		
-		//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
-		if((*node_it)->type == bool_node::SRC){
-			int iid = getInStart( (*node_it)->get_name() );
+	bool specialize = PARAMS->olevel >= 7;
+	BooleanDAG* tmpproblem = NULL;
+	if(!specialize){
+		node_ids.resize(problem->size());
+		int idx = 0;
+		for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
+			node_ids[(*node_it)->id] = f_node_ids[idx];		
+			(*node_it)->flag = f_flags[idx];
 			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
-			int nbits = srcnode->get_nbits();	
-			
-			Assert( nbits == getInSize( (*node_it)->get_name() ) , "Size missmatch for input "<<(*node_it)->get_name() );
-			
-			Assert( nbits > 0 , "This can not happen rdu;a");
-			Assert( iid+ nbits <= input.size(), "There should be a control entry for each iid b insize="<<input.size()<<"  iid+nbits="<<iid+nbits );
-			Assert(input[iid ] == 1 || input[iid]==-1, "This is bad, really bad");
-						
-			
-			if( nbits ==1 ){
-				node_values[(*node_it)]= input[iid];
-				char c='U';
-				if(input[iid] == -1){ c = '0'; }
-				if(input[iid] == 1){ c = '1'; }
-
-				if(PARAMS->showInputs){ cout<<" input "<<(*node_it)->get_name()<<" has value "<< c <<endl; }
-			}else{				
-				Dout( cout<<" input["<< iid <<"::"<< nbits <<"] = < ");
-				int nval = intFromBV(input, iid, nbits);				
-				Dout( cout <<" > = "<<nval<< endl ) ;
-				node_values[(*node_it)] = nval;
-				if(PARAMS->showInputs){ cout<<" input "<<(*node_it)->get_name()<<" has value "<<nval<<endl; }
-			}
-			
-			bool changed = false;
-			
-			for(int i=0; i<nbits; ++i){
-				if(input[iid + i] != last_input[iid + i]){
-					changed = true;	
+			//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
+			if((*node_it)->type == bool_node::SRC){
+				SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
+				int nbits;
+				node_values[(*node_it)] = valueForINode(srcnode, input, nbits);
+				int iid = getInStart( (srcnode)->get_name() );
+				bool changed = false;
+				
+				for(int i=0; i<nbits; ++i){
+					if(input[iid + i] != last_input[iid + i]){
+						changed = true;	
+					}
+					last_input[iid + i] = input[iid + i];
 				}
-				last_input[iid + i] = input[iid + i];
-			}
-			
-			if(!changed){
-				++numRepeat;
-				Dout(cout<<"input "<<iid<<" unchanged"<<endl);
-				(*node_it)->flag = false;
-			}else{				
-				Dout(cout<<"input "<<iid<<" changed"<<endl);
-				(*node_it)->flag = true;
-			}
-			k+=nbits;
-		}else{
-			if(	(*node_it)->type == bool_node::CTRL ){
-				(*node_it)->flag = firstTime;
-				CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
-				int nbits = ctrlnode->get_nbits();
-				ctrl += nbits;
+				
+				if(!changed){ ++numRepeat;	}
+
+				Dout(cout<<"input "<<iid<<(chaged? " changed" :" unchanged")<<endl);
+				(*node_it)->flag = changed;
+
+				k+=nbits;
+			}else{
+				if(	(*node_it)->type == bool_node::CTRL ){
+					(*node_it)->flag = firstTime;
+					CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+					int nbits = ctrlnode->get_nbits();
+					ctrl += nbits;
+				}
 			}
 		}
+		firstTime = false;
+		if(PARAMS->verbosity > 2){ cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl ; }
+		Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
+		Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
+	}else{
+		tmpproblem = problem;
+		problem = hardCodeINode(problem, input, bool_node::SRC);
+		node_ids.resize(problem->size());
 	}
-	firstTime = false;
-	if(PARAMS->verbosity > 2){ cout<<"* RECYCLED "<<numRepeat<<" values out of "<<N<<endl ; }
-	Assert(k == N, "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
-	Assert(ctrl == getCtrlSize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	//FindCheckSolver::addInputsToTestSet(input);
 	buildFinder();
-	idx = 0;
-	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
-		f_node_ids[idx] = node_ids[(*node_it)->id];
-		f_flags[idx] = (*node_it)->flag==1;
+	if(specialize){
+		problem->clear();
+		delete problem;
+		problem = tmpproblem;
+	}else{
+		int idx = 0;
+		for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it, ++idx){
+			f_node_ids[idx] = node_ids[(*node_it)->id];
+			f_flags[idx] = (*node_it)->flag==1;
+		}
 	}
 }
 
