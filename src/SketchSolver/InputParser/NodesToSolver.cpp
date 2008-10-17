@@ -372,7 +372,7 @@ NodesToSolver::processArith (bool_node &node)
 		int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);
 		//						atimer.stop();
 		Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
-		if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
+		//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 		Dout(cout<<"QUANT = "<<quant<<"          "<<mval.getId (i)<<", "<<fval.getId (j)<<endl);
 		//						btimer.restart();
 		map<int, int>::iterator it = numbers.find(quant);
@@ -386,7 +386,7 @@ NodesToSolver::processArith (bool_node &node)
 		}else{
 		    //							dtimer.restart();
 		    int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
-		    tmp.push_back(quant);
+			Assert(numbers.size() < INTEGERBOUND, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
 		    numbers[quant] = cvar;
 		    ++vals;
 		    //							dtimer.stop();
@@ -401,15 +401,21 @@ NodesToSolver::processArith (bool_node &node)
 
 
 	Dout(cout<<"tmp size = "<<tmp.size ()<<endl);
-	Assert( vals > 0, "This should not happen here");
+	Assert( vals > 0 && vals == numbers.size(), "This should not happen here");
 	int newID = -1;
+	tmp.resize(vals);
+	map<int, int>::iterator it = numbers.begin();
+
 	{
-	    int quant = tmp[0];
-	    newID = numbers[quant];
+		int quant = it->first;		
+		newID = it->second;
+		tmp[0] = quant;
 	}
-	for(int i=1; i<vals; ++i){
-	    int quant = tmp[i];
-	    if(newID + i !=  numbers[quant]){
+	++it;
+	for(int i=1; i<vals; ++i, ++it){
+		int quant = it->first;
+		tmp[i] = quant;
+		if(newID + i !=  it->second){
 		newID = -1;
 		break;
 	    }
@@ -428,9 +434,11 @@ NodesToSolver::processArith (bool_node &node)
 	    int cvar = dir.newAnonymousVar();
 	    Assert( cvar == newID + i, "SolveFromInput: bad stuff");
 	}
-	for(int i=0; i<vals; ++i){
-	    int quant = tmp[i];
-	    dir.addEqualsClause(numbers[quant], newID + i);
+	it = numbers.begin();
+	for(int i=0; i<vals; ++i, ++it){
+		int quant = it->first;
+		tmp[i] = quant;
+		dir.addEqualsClause(it->second, newID + i);
 	}
 	oval.setId(newID);
 	oval.sparsify ();

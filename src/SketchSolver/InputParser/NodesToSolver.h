@@ -7,7 +7,7 @@
 
 
 #ifndef INTEGERBOUND
-# define INTEGERBOUND  8192
+# define INTEGERBOUND  8192*6
 #endif
 
 // #define Dout( msg ) msg
