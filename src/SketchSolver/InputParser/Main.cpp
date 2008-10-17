@@ -1,12 +1,14 @@
 #include <iostream>
-
+#include <cassert>
 #include "driver.h"
 #include "memory_sampler.h"
 #include "timerclass.h"
 
+#include <signal.h>
+
 using namespace std;
 
-using namespace statistics;
+//using namespace statistics;
 
 CommandLineArgs* PARAMS;
 
@@ -14,12 +16,12 @@ CommandLineArgs* PARAMS;
 timerclass totalElapsed;
 timerclass modelBuilding;
 timerclass solution;
-MemorySampler mem;
+statistics::MemorySampler mem;
 
 void
 printStats ()
 {
-    MemoryStatistics ms = mem.getMemStats ();
+    statistics::MemoryStatistics ms = mem.getMemStats ();
 
     cout << endl << "----- Statistics -----" << endl
          << "Total elapsed time (ms):  " << totalElapsed.get_cur_ms () << endl
@@ -32,11 +34,46 @@ printStats ()
         ;
 }
 
+
+void AssertionHandler(int signal){
+	cerr<<"Someone threw a C-style assertion."<<endl;
+	mem.stop ();
+    totalElapsed.stop ();
+    printStats ();
+	exit(3);
+}
+
+void CtrlCHandler(int signal){
+	cerr<<"I've been killed."<<endl;
+	mem.stop ();
+    totalElapsed.stop ();
+    printStats ();
+	exit(3);
+}
+
+void TerminationHandler(int signal){
+	cerr<<"I've been terminated."<<endl;
+	mem.stop ();
+    totalElapsed.stop ();
+    printStats ();
+	exit(3);
+}
+
+
 int
 main(int argc, char** argv)
 {
     totalElapsed.start ();
     mem.run ();
+	
+	int rv = 3;
+
+	try{
+
+	signal(SIGABRT, AssertionHandler);
+	signal(SIGINT, CtrlCHandler);
+	signal(SIGTERM, TerminationHandler);	
+
 
     ABCSolverStart();
   
@@ -48,9 +85,12 @@ main(int argc, char** argv)
     modelBuilding.stop ();
 
     solution.start ();
-    int rv = m.resolveSketches();
+    rv = m.resolveSketches();
     solution.stop ();
 
+	}catch(...){
+		cerr<<"Unusual Termination."<<endl;
+	}
     mem.stop ();
     totalElapsed.stop ();
 
