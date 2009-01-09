@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cassert>
+#include "guardedVal.h"
 
 using namespace std;
 
@@ -19,6 +20,8 @@ typedef enum {
     TVAL_BVECT, TVAL_BVECT_SIGNED, TVAL_SPARSE
 } valtype_t;
 
+
+
 class Tvalue {
     valtype_t type;
     int id;
@@ -28,7 +31,7 @@ class Tvalue {
 public:
     /* FIXME this member needs to be made private with proper mutators, thus
      * we can guarantee sanity of a manipulated value object. */
-    vector<int> num_ranges;	
+    vector<guardedVal> num_ranges;	
 
 
     /*
@@ -38,9 +41,13 @@ public:
     inline valtype_t getType (void) const { return type; }
 
     inline int getId (int idx = 0) const {
-	Assert (id >= 0, "id must be initialized");
-	int ret = id + idx;
-	return (neg ? -ret : ret);
+		if(isSparse()){
+			return num_ranges[idx].guard;
+		}else{
+			Assert (id >= 0, "id must be initialized");
+			int ret = id + idx;
+			return (neg ? -ret : ret);
+		}
     }
 
     inline int getSize (void) const { return size; }
@@ -86,8 +93,9 @@ public:
 
     /* FIXME same as above. */
     inline int setSize (int a_size) {
-	Assert (isBvect (), "value type must be bitvector");
-	size = a_size;
+		Assert (isBvect (), "value type must be bitvector");
+		size = a_size;
+		return size;
     }
 
 
@@ -149,7 +157,7 @@ public:
     /* Return the i-th value represented by a sparse. */
     inline int operator[] (int idx) const {
 	Assert (isSparse (), "value type must be sparse (operator[])");
-	return num_ranges[idx];	
+	return num_ranges[idx].value;	
     }
 
 
@@ -204,7 +212,9 @@ public:
      * FIXME seems like a inconsistency pronating method... */
     inline void sparsify (void) {
 	type = TVAL_SPARSE;
-	size = num_ranges.size ();	
+	size = num_ranges.size ();
+	id = 0;
+	neg = false;
     }
 
     /* Negate a bit-vector.
@@ -222,12 +232,12 @@ public:
 
 	if (adj != 1)
 	    for (int i = 0; i < num_ranges.size (); i++)
-		num_ranges[i] = num_ranges[i] * adj;
+		num_ranges[i].value *= adj;
     }
 
     /* Invert an integer value. */
     inline Tvalue toComplement (SolverHelper &dir) const {
-	Assert (id > 0, "id must be positive, instead it is " << id << " (complement)");
+	Assert (isSparse() || id > 0, "id must be positive, instead it is " << id << " (complement)");
 
 	if (isBvect ()) {	    
 	    Tvalue tv (*this);
@@ -282,7 +292,7 @@ private:
 
 	/* Construct bit-vector disjuncts by repeated iteration. */
 	vector<vector<int> > bit;
-	vector<int> nr (num_ranges);
+	vector<guardedVal> nr (num_ranges);
 	bool more;
 	do {
 	    bit.push_back (vector<int> ());
@@ -293,7 +303,7 @@ private:
 	    /* Iterate over sparse values. */
 	    more = false;
 	    for (int i = 0; i < num_ranges.size (); i++) {
-		int &val = nr[i];
+		int &val = nr[i].value;
 		Dout (cout << (i ? "," : "") << val);
 
 		Assert (toSigned || val >= 0,
@@ -342,7 +352,7 @@ private:
 	int idx = 0;
 	for (int i = 0; i < paddedSize; i++) {
 	    vector<int> &current = bit[idx];
-	    current[0] = tv.id + i;
+	    current[0] = tv.getId(i);
 	    dir.addBigOrClause (&current[0], current.size () - 1);
 
 	    /* Advance to next (actual) bit if last one not reached. */
@@ -428,7 +438,7 @@ public:
     }
 
     void makeSparse (SolverHelper &dir, int adj = 1) {
-	Assert (id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
+	Assert (isSparse() || id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
 
 	if (isBvect () || isBvectSigned ()) {
 	    if (size == 1 && isBvect ()) {
@@ -437,15 +447,11 @@ public:
 
 		if (id == dir.YES ){
 		    /* Bit is aliases with "true" or "false". */
-		    num_ranges.push_back (neg ? 0 : 1);
+		    num_ranges.push_back (guardedVal(id, neg ? 0 : 1));
 		} else {
 		    /* Generate values for assertion / negation of single id. */
-		    num_ranges.push_back (0);
-		    num_ranges.push_back (1);
-		    int tmp = dir.newAnonymousVar (2);
-		    dir.addEqualsClause (-getId(), tmp);
-		    dir.addEqualsClause (getId(), tmp + 1);
-		    id = tmp;
+		    num_ranges.push_back (guardedVal(-getId(), 0));
+		    num_ranges.push_back (guardedVal(getId(), 1));		    
 		    size = 2;
 		}
 	    } else {
@@ -453,17 +459,14 @@ public:
 		Dout (cout << "Converting from BitVector" <<
 		      (isBvectSigned () ? "Signed" : "") << " to Sparse" << endl); 
 
-		vector<int> &tmp = num_ranges;
+		
 		vector<int> ids (size);
 		for (int i = 0; i < size; i++)
 		    ids[i] = getId (i);
-		varRange vr = dir.getSwitchVars (ids, size, tmp);
-		id = vr.varID;
+		dir.getSwitchVars (ids, size, num_ranges);
+		id = num_ranges[0].guard;
 		int oldsize = size;  /* save previous size (number of bits). */
-		size = vr.range;
-
-		Assert (size == num_ranges.size (),
-			"number of variables mismatches number of sparse values");
+		size = num_ranges.size();
 
 		/* If we generated values from a signed bitvector, we must adjust
 		 * them to properly represent full int-sized signed values. */
@@ -474,7 +477,7 @@ public:
 		    /* Pad most significant bits of resulting numbers with the bit
 		     * corresponding to each value's "signed bit". */
 		    for (int i = 0; i < size; i++) {
-			int &x = num_ranges[i];
+			int &x = num_ranges[i].value;
 			if (x & mask)
 			    x |= mask;
 		    }

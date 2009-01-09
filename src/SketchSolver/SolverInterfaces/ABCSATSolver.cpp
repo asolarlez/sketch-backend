@@ -4,6 +4,8 @@
 #include "fraig.h"
 #include <sstream>
 
+// #define Dout(msg) msg
+
 extern "C" {
 extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose );
 extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, bool fUpdateLevel, bool fUseZeros, bool fUseDcs, bool fVerbose );
@@ -21,6 +23,7 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 		vec.nCap = vals.size();
 		vec.nSize = nsize;
 		vec.pArray = &vals[0];
+		bool some = false;
 		{
    			int i;
 		   Abc_Obj_t * pNode;	   		
@@ -28,13 +31,17 @@ Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 				if( results.find(namemap[i]) != results.end() ){
 					Dout( cout<<" setting value ["<<namemap[i]<<"] = "<<results[namemap[i]]<<endl);
 					vals[i] = results[namemap[i]];
-					
+					some = true;
 				}else{
 					Dout( cout<<" setting value b ["<<namemap[i]<<"] = "<<vals[i]<<endl);
 				}
    			}
+		}		
+		if(some){
+			result = Abc_NtkMiterCofactor(network, &vec);
+		}else{
+			result = network;
 		}
-		result = Abc_NtkMiterCofactor(network, &vec);
 	}else{
 		result = network;
 	}
@@ -135,7 +142,7 @@ int ABCSATSolver::solve(){
 	pNtk = cofactor(pNtk, namemap);
 
 
-		Dout( cout<<" There are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);
+		Dout( cout<<" There are "<<Abc_NtkPiNum(pNtk)<<" Pis"<<endl);		
 		if(oldpNtk != NULL){
 			 timerclass timer("And time 1");
              timer.start();
@@ -249,11 +256,16 @@ int ABCSATSolver::solve(){
        }
 
 
-        void ABCSATSolver::reset(){       			
-   	           oldpNtk = pNtk;   	           
-   	           results.clear();   	        
-   	           char* st = pNtk->pName;
-       		oldpNtk = pNtk;
+        void ABCSATSolver::reset(){
+			
+			if(oldpNtk != NULL){
+				Abc_NtkDelete( oldpNtk );
+				oldpNtk = NULL;
+			}
+   	        oldpNtk = pNtk;   	           
+   	        results.clear();   	        
+   	        char* st = pNtk->pName;
+       		
        	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
 
@@ -269,7 +281,7 @@ int ABCSATSolver::solve(){
 			    pObj = Abc_NtkCreatePi( pNtk );
 		        Abc_NtkLogicStoreName( pObj, Abc_ObjName(pNode) );
 	       	}           	
-            Dout( cout<<" reset "<<endl );
+            // cout<<"!!!!!!!!!!!!!!!!!!!!! reset "<<endl;
             FileOutputABC(output<<"#  ======================================="<<endl);
        }
 
@@ -280,6 +292,12 @@ int ABCSATSolver::solve(){
         void ABCSATSolver::clean(){			
        		results.clear();		
        		char* st = pNtk->pName;
+			
+			if(oldpNtk != NULL){
+				Abc_NtkDelete( oldpNtk );
+				oldpNtk = NULL;
+			}
+
        		oldpNtk = pNtk;
        	    pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		    pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );
@@ -288,6 +306,7 @@ int ABCSATSolver::solve(){
             pSuperOutputNode = NULL;
             Abc_NtkDelete( oldpNtk );
             oldpNtk = NULL;
+			// cout<<"!!!!!!!!!!!!!!!!!!!!! cleanup "<<endl;
             out_cnt = 0;
        }
        

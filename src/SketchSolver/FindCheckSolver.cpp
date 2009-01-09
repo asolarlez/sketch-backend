@@ -12,7 +12,7 @@
 #undef OUT
 #endif
 
-#define Dtime( out ) out
+//#define Dtime( out ) out
 
 //#define WITH_RANDOMNESS 1
 
@@ -77,9 +77,10 @@ FindCheckSolver::FindCheckSolver(SATSolver& finder, SATSolver& checker):mngFind(
 bool FindCheckSolver::solve(){
 	int inputSize = getInSize();
 	int ctrlSize = getCtrlSize();
-	
-	cout<<"inputSize = "<<inputSize<<"\tctrlSize = "<<ctrlSize<<endl;
-	
+	if(PARAMS->verbosity > 1){
+		cout<<"inputSize = "<<inputSize<<"\tctrlSize = "<<ctrlSize<<endl;
+	}
+
 	ctrl.resize(ctrlSize);
 	input.resize(inputSize);
 	srand(randseed);

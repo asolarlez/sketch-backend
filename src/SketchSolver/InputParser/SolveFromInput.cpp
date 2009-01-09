@@ -61,7 +61,9 @@ FindCheckSolver(finder, checker), NINPUTS(NINPUTS_p), out(out_p), problem(miter)
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
 	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
-	    cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+	    if(PARAMS->verbosity > 2){
+			cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+		}
 		int cints = 0;
 		int cbits = 0;
 	    for(int i=0; i<problemIn.size(); ++i){

@@ -14,7 +14,7 @@
 //#include <dirent.h>
 
 #include "SATSolver.h"
-
+#include "guardedVal.h"
 
 
 using namespace std;
@@ -193,7 +193,7 @@ public:
     int select(int choices[], int control, int nchoices, int bitsPerChoice);
     int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
-    varRange getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals);
+    void getSwitchVars (vector<int>& switchID, int amtsize, vector<guardedVal>& output);
 };
 
 /*
@@ -411,8 +411,8 @@ SolverHelper::addAssertClause (int a)
 
 
 
-inline varRange
-SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& vals)
+inline void
+SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guardedVal>& output )
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
@@ -422,7 +422,7 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& va
 	vector<int> tmpVect(amtrange);
 	int lastsize = 1;
 	int lastRoundVars = getVarCnt();
-	vals.resize(1);
+	vector<int> vals(1);	
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
 		lastRoundVars = YES;
 		if( switchID[amtsize-1] > 0 ){
@@ -477,8 +477,11 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize, vector<int>& va
 	}	
 	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);
 	int roundVars = lastRoundVars;
-
-	return varRange(roundVars, lastsize);
+	output.clear();
+	for(int i=0; i<lastsize; ++i){
+		output.push_back(guardedVal(roundVars+i, vals[i]));
+	}
+	return ;
 	//////////////////////////////////////////////////////
 }
 

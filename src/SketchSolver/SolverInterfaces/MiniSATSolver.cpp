@@ -36,8 +36,10 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	lits.clear();
 	for(int i=0; i<sz; ++i){	
 		int var = abs(tmp[i]);
+		// cout<<tmp[i]<<", ";
 		lits.push( (tmp[i] > 0) ? Lit(var) : ~Lit(var) );		
 	}	
+	// cout<<endl;
 	s->addClause(lits);
 } 
 
@@ -134,6 +136,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
  void MiniSATSolver::setVarClause(int x){
 	Dout( cout<<" set "<<x<<";"<<endl );
 	FileOutput( output<<"x SET "<<x<<" ;"<<endl );
+	//cout<<x<<endl;
 	int var = abs(x);
 	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
 }

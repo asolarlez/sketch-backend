@@ -24,13 +24,13 @@
 }
 
  void ZchaffSATSolver::annotateInput(const string& name, int i, int sz){
-	Dout( cout<<"x "<<name<<" ");
+	( cout<<"x "<<name<<" ");
 	FileOutput(output<<"x "<<name<<" ");
 	for(int t=0; t<sz; ++t){
-		Dout( cout<<(i+t)<<" ");
+		( cout<<(i+t)<<" ");
 		FileOutput(output<<(i+t)<<" ");
 	}
-	Dout(cout<<endl);
+	(cout<<endl);
 	FileOutput(output<<endl);
 }
 
@@ -124,8 +124,9 @@
 
 
  void ZchaffSATSolver::assertVarClause(int x){
+	 cout<<x<<" 0"<<endl;
  	if( !solveNegation  ){
-		Dout( cout<<" assert "<<x<<";"<<endl );
+		cout<<" assert "<<x<<";"<<endl ;
 		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
 		{ int tmp[] = { (x)}; SAT_AddClauseSigned(mng, tmp, 1);}
  	}else{	
@@ -174,13 +175,14 @@
   int vars = solver->num_variables();
    for(int i=0; i<num_lits; ++i){   
    	int sign=0;	
+	cout<<clause_lits[i]<<" ";
    	if( clause_lits[i] < 0){ clause_lits[i] = -clause_lits[i]; sign = 1;}
    	if( clause_lits[i]>vars){
   		cout<<" INCORRECT STUFF "<<vars<<"  "<< clause_lits[i]<<"  "<<i<<endl;	
   	}
-   	clause_lits[i] = (clause_lits[i] << 1) + sign;
+   	clause_lits[i] = (clause_lits[i] << 1) + sign;	
   }
-
+  cout<<"0"<<endl;
   solver->add_orig_clause(clause_lits, num_lits);
 }
 
