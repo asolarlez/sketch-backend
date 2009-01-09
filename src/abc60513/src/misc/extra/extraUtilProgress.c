@@ -60,7 +60,7 @@ ProgressBar * Extra_ProgressBarStart( FILE * pFile, int nItemsTotal )
     ProgressBar * p;
     extern int Abc_FrameShowProgress( void * p );
     extern void * Abc_FrameGetGlobalFrame();
-
+	/* Armando: Getting rid of progress bar*/ return NULL;
     if ( !Abc_FrameShowProgress(Abc_FrameGetGlobalFrame()) ) return NULL;
     p = ALLOC( ProgressBar, 1 );
     memset( p, 0, sizeof(ProgressBar) );

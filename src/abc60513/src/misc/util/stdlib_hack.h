@@ -258,7 +258,7 @@ _CRTIMP extern unsigned int _winminor;
 /* function prototypes */
 
 #if     _MSC_VER >= 1200
-_CRTIMP __declspec(noreturn) void   __cdecl abort(void);
+//_CRTIMP __declspec(noreturn) void   __cdecl abort(void);
 _CRTIMP __declspec(noreturn) void   __cdecl exit(int);
 #else
 _CRTIMP void   __cdecl abort(void);
