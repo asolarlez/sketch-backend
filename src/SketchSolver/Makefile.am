@@ -39,7 +39,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/SFIOutputSeq.h			\
 	InputParser/SolveFromInput.h			\
 	InputParser/Tvalue.h				\
-	InputParser/driver.h
+	InputParser/driver.h				\
+	InputParser/guardedVal.h			
 
 SBitII_SOURCES =				\
 	$(SOLVER_SRCS)				\
