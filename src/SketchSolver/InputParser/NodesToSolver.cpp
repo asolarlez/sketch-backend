@@ -11,7 +11,7 @@
 // #define Dout(msg) msg
 // #define DebugOut( node, tval )  cout<<" NODE= "<<node.get_name()<<" \t"<<tval<<endl;
 
-
+//#define Dout(msg) msg
 /*
 
 void NodesToSolver::process(BooleanDAG& bdag){
@@ -134,15 +134,13 @@ NodesToSolver::intBvectComputeSum (Tvalue &lval, Tvalue &rval)
     int c = -dir.YES;
 
     /* - generate values for output bits
-     */
-    int lbase = lval.getId ();
-    int rbase = rval.getId ();
+     */    
     lsize--;
     rsize--;
     for (int i = 0; i < osize; i++) {
 	/* - get current value bits, or sign bit if exceeded either size */
-	int l = (i < lsize ? lbase + i : lsign);
-	int r = (i < rsize ? rbase + i : rsign);
+		int l = (i < lsize ? lval.getId(i) : lsign);
+		int r = (i < rsize ? rval.getId(i) : rsign);
 
 	/* - compute current output bit, being l ^ r ^ c */
 	dir.addXorClause (dir.addXorClause (l, r), c, oid + i);
@@ -245,12 +243,12 @@ NodesToSolver::intBvectEq (arith_node &node)
 
     /* Assert it is (all bits) zero. */
     dout ("asserting result is zero");
-    int id = dval.getId ();
+    
     int nvars = dval.getSize () + 1;
     vector<int> dvars(nvars);
     int anybit = dvars[0] = dir.newAnonymousVar ();
     for (int i = 1; i < nvars; i++)
-	dvars[i] = id++;
+		dvars[i] = dval.getId(i-1);
     dir.addBigOrClause (&dvars[0], nvars - 1);
     node_ids[node.id] = -anybit;
 
@@ -352,7 +350,7 @@ NodesToSolver::processArith (bool_node &node)
 	bool isSum = node.type == bool_node::PLUS;
 	map<int, int> numbers;
 	Tvalue& oval = node_ids[node.id];
-	vector<int>& tmp = oval.num_ranges;
+	vector<guardedVal>& tmp = oval.num_ranges;
 	tmp.clear();
 	int ttt = mval.getSize ()*fval.getSize ();
 	ttt = ttt > INTEGERBOUND ? INTEGERBOUND : ttt;
@@ -408,7 +406,7 @@ NodesToSolver::processArith (bool_node &node)
 	//				dtimer.print();
 
 
-	Dout(cout<<"tmp size = "<<tmp.size ()<<endl);
+	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
 	Assert( vals > 0 && vals == numbers.size(), "This should not happen here");
 	int newID = -1;
 	tmp.resize(vals);
@@ -417,42 +415,14 @@ NodesToSolver::processArith (bool_node &node)
 	{
 		int quant = it->first;		
 		newID = it->second;
-		tmp[0] = quant;
+		tmp[0] = guardedVal(newID, quant);
 	}
 	++it;
-	for(int i=1; i<vals; ++i, ++it){
-		int quant = it->first;
-		tmp[i] = quant;
-		if(newID + i !=  it->second){
-		newID = -1;
-		break;
-	    }
+	for(int i=1; i<vals; ++i, ++it){		
+		tmp[i] = guardedVal(it->second, it->first);		
 	}
-
-	if( newID != -1){
-		if(vals == 1){ newID = YES; }
-	    oval.setId(newID);
-	    oval.sparsify ();
-	    Dout( cout<<" := "<<oval<<endl );
-	    return;
-	}
-
-
-	newID = dir.newAnonymousVar();
-	for(int i=1; i<vals; ++i){
-	    int cvar = dir.newAnonymousVar();
-	    Assert( cvar == newID + i, "SolveFromInput: bad stuff");
-	}
-	it = numbers.begin();
-	for(int i=0; i<vals; ++i, ++it){
-		int quant = it->first;
-		tmp[i] = quant;
-		dir.addEqualsClause(it->second, newID + i);
-	}
-	oval.setId(newID);
 	oval.sparsify ();
-	Dout( cout<<" := "<<oval<<endl );
-    
+	Dout( cout<<" := "<<oval<<endl );	    
 }
 
 
@@ -799,7 +769,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	bool isSparse = omv.isSparse();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES ){
-		int idx = omv.num_ranges[0];
+		int idx = omv.num_ranges[0].value;
 
 		if( idx >= node.multi_mother.size()){
 			node_ids[node.id] = -YES;
@@ -821,10 +791,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	vector<Tvalue> choices(node.multi_mother.size());
 	bool parentSame = true;
 	bool parentSameBis = true;
-	bool isBoolean=true;
-	vector<int>::const_iterator itbeg, itend, itfind;
-	itbeg = omv.num_ranges.begin();
-	itend = omv.num_ranges.end();
+	bool isBoolean=true;	
 
 //	aracctimer.restart();
 //	flooptimer.restart();
@@ -839,10 +806,13 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
 	}
 	if( omv.isSparse() ){
+		vector<guardedVal>::const_iterator itbeg, itend, itfind;
+		itbeg = omv.num_ranges.begin();
+		itend = omv.num_ranges.end();
 		parentSame = true;
 		for( ; itbeg < itend; ++itbeg){
-			if( *itbeg < node.multi_mother.size() ){
-				bool_node* cnode = node.multi_mother[*itbeg];
+			if( itbeg->value < node.multi_mother.size() ){
+				bool_node* cnode = node.multi_mother[itbeg->value];
 				parentSame = parentSame && ( (cnode)== NULL || !cnode->flag);
 				Dout(cout<<"Checking parents same "<<*itbeg<<" = "<<parentSame);
 			}
@@ -884,19 +854,19 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		return;
 	}
 //	elooptimer.restart();
-	const vector<int>& nrange = mval.num_ranges;
+	const vector<guardedVal>& nrange = mval.num_ranges;
 	int cvar = -YES;
 	int orTerms = 0;
 	for(int i=0; i<nrange.size(); ++i){
-		if( nrange[i] >= 0 && nrange[i] < choices.size() ){
+		if( nrange[i].value >= 0 && nrange[i].value < choices.size() ){
 			if( mval.getId (i) == YES){
-				cvar = choices[nrange[i]].getId ();
+				cvar = choices[nrange[i].value].getId ();
 				++orTerms;
 				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
 				scratchpad[orTerms] = cvar;
 			}else{
 				if( mval.getId (i) != -YES ){
-					cvar = dir.addAndClause( choices[nrange[i]].getId (), mval.getId (i) );
+					cvar = dir.addAndClause( choices[nrange[i].value].getId (), mval.getId (i) );
 					++orTerms;
 					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
 					scratchpad[orTerms] = cvar;
@@ -1025,11 +995,9 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		    return;
 		}
 		int i=0, j=0;
-		vector<int>& nr0 = mid0.num_ranges;
-		vector<int>& nr1 = mid1.num_ranges;
-		vector<int> res;
-		res.reserve(nr0.size() + nr1.size());
-		vector<int>& out = output.num_ranges;
+		vector<guardedVal>& nr0 = mid0.num_ranges;
+		vector<guardedVal>& nr1 = mid1.num_ranges;		
+		vector<guardedVal>& out = output.num_ranges;
 		out.clear();
 		out.reserve(nr0.size() + nr1.size());
 
@@ -1038,12 +1006,12 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		// There is an assumption that the num_ranges are monotonic. 
 		// However, they could be monotonically increasing or monotonically decreasing.
 		// So we need to check.
-		if(nr0.size() > 1 && nr0[0] > nr0[1]){
+		if(nr0.size() > 1 && nr0[0].value > nr0[1].value){
 			inci = -1;
 			i = nr0.size() -1;
 		}
 		
-		if(nr1.size() > 1 && nr1[0] > nr1[1]){
+		if(nr1.size() > 1 && nr1[0].value > nr1[1].value){
 			incj = -1;
 			j = nr1.size() -1;
 		}
@@ -1051,8 +1019,8 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		while(i < nr0.size() || j< nr1.size()){
 		    bool avi = i < nr0.size() && i >= 0;
 		    bool avj = j < nr1.size() && j >= 0;
-		    int curri = avi ? nr0[i]  : -1;
-		    int currj = avj ? nr1[j]  : -1;
+			int curri = avi ? nr0[i].value  : -1;
+			int currj = avj ? nr1[j].value  : -1;
 		    if( curri == currj && avi && avj){
 				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
 				/*
@@ -1061,8 +1029,8 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 				int cvar3 = dir.addOrClause( cvar2, cvar1);
 				*/
 				int cvar3 = dir.addChoiceClause(guard, mid1.getId (j), mid0.getId (i));
-				out.push_back(curri);
-				res.push_back(cvar3);
+				out.push_back(guardedVal(cvar3, curri));
+				
 				i = i + inci;
 				j = j + incj;
 				continue;
@@ -1070,33 +1038,20 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		    if((curri < currj && avi) || !avj){
 				Dout(cout<<" curri = "<<curri<<endl);
 				int cvar = dir.addAndClause( mid0.getId (i), -guard);
-				out.push_back(curri);
-				res.push_back(cvar);
+				out.push_back(guardedVal(cvar, curri));				
 				i = i + inci;
 				continue;
 		    }
 		    if( (currj < curri && avj) || !avi ){
 				Dout(cout<<" currj = "<<currj<<endl);
 				int cvar = dir.addAndClause( mid1.getId (j), guard );
-				out.push_back(currj);
-				res.push_back(cvar);
+				out.push_back(guardedVal(cvar, currj));
 				j = j + incj;
 				continue;
 		    }
 		    Assert(false, "Should never get here");
-		}
-		out.resize(res.size ());
-		Assert( res.size () > 0, "This should not happen here2");
-		int newID = dir.newAnonymousVar();
-		for(int k=1; k<res.size(); ++k){
-		    int cvar = dir.newAnonymousVar();
-		    Assert( cvar == newID + k, "SolveFromInput: cvar != newID + k");
-		}
-		for(int k=0; k<res.size(); ++k){
-		    int val = res[k];
-		    dir.addEqualsClause( val, newID+k);
-		}
-		output.setId(newID);
+		}		
+		Assert( out.size () > 0, "This should not happen here2");		
 		output.sparsify ();
 		return;
 }
@@ -1135,7 +1090,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
     if(!checkParentsChanged( node, parentSame)){ return; }
     int guard;
     if( !mval.isSparse() ){
-		if(quant > 1){
+		if(quant > 1 || quant < 0){
 		    guard = -YES;
 		}else{	    
 		    Dout(cout<<" mval = "<<mval<<endl);
@@ -1143,9 +1098,9 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		}
     }else{
 		guard = -YES;
-		const vector<int>& nrange = mval.num_ranges;
+		const vector<guardedVal>& nrange = mval.num_ranges;
 		for(int i=0; i<nrange.size(); ++i){
-		    if( nrange[i] == quant){
+			if( nrange[i].value == quant){
 			guard = mval.getId (i);
 			break;
 		    }
@@ -1184,9 +1139,8 @@ void NodesToSolver::visit( ACTRL_node& node ){
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 	}
 	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
-	vector<int>& tmp = node_ids[node.id].num_ranges;
-	varRange vr = dir.getSwitchVars(ids, size, tmp);
-	node_ids[node.id].setId(vr.varID);
+	vector<guardedVal>& tmp = node_ids[node.id].num_ranges;
+	dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].sparsify ();
 	Dout(cout<<"&ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
 	return;
@@ -1269,65 +1223,34 @@ void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 
 	map<int, vector<int> > newVals;
 	int vsize = N;
-	vector<int>& nrange = mval.num_ranges;
+	vector<guardedVal>& nrange = mval.num_ranges;
 
 	for(int i=0; i<nrange.size(); ++i){
-		if( nrange[i] < vsize && nrange[i] >= 0){
-			vector<int>& cvalues = choices[nrange[i]].num_ranges;
+		if( nrange[i].value < vsize && nrange[i].value >= 0){
+			Tvalue& curr = choices[nrange[i].value];
+			vector<guardedVal>& cvalues = curr.num_ranges;
 			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  cvsize="<<cvalues.size()<<endl );
 			for(int j=0; j<cvalues.size(); ++j){
-				int cvar = dir.addAndClause( mval.getId (i), choices[nrange[i]].getId (j) );
-				newVals[ cvalues[j] ].push_back(cvar);
+				int cvar = dir.addAndClause( mval.getId (i), curr.getId (j) );
+				newVals[ cvalues[j].value ].push_back(cvar);
 				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<endl );
 			}
 		}else{
 			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
-			newVals[ 0 ].push_back( mval.getId (i));
-			//mng.assertVarClause(-mval.getId (i));
-			//Armando: Can't have this kind of assertions, because at this level we don't know whether this block
-			//will execute or not.
+			newVals[ 0 ].push_back( mval.getId (i));			
 		}
 	}
 
-	vector<int>& result = output.num_ranges;
+	vector<guardedVal>& result = output.num_ranges;
 	result.clear();
 	Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
-	if(newVals.size() == 1){
-		map<int, vector<int> >::iterator it = newVals.begin();
-		vector<int>& vars = it->second;
-		int orTerms = 0;
-		while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
-		for(int i=0; i<vars.size(); ++i){
-			++orTerms;
-			scratchpad[orTerms] = vars[i];
-		}
-		if( orTerms == 1){
-			output.setId(vars[0]);
-			result.push_back(it->first);
-			output.sparsify ();
-		}else{
-			scratchpad[0] = 0;
-			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
-			result.push_back(it->first);
-			output.setId(cvar);
-			output.sparsify ();
-		}
-	}else{
+	{
 		if(newVals.size() == 0){			
 			output = Tvalue( -YES );			
 			Dout(cout<<" after sparsification "<<output<<endl);
 			return;
-		}
-		//Assert( newVals.size() > 0, "This should not happen here3");
-		int newID = dir.newAnonymousVar();
-		output.setId(newID);
-		int k=1;
-		for(k = 1; k< newVals.size(); ++k){
-			int cvar = dir.newAnonymousVar();
-			Assert( cvar == newID + k, "SolveFromInput3: cvar != newID + k ");
-		}
-		k = 0;
-		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it, ++k){
+		}		
+		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it){
 			vector<int>& vars = it->second;
 			int orTerms = 0;
 			while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
@@ -1335,9 +1258,9 @@ void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 				++orTerms;
 				scratchpad[orTerms] = vars[i];
 			}
-			scratchpad[0] = newID + k;
-			dir.addBigOrClause( &scratchpad[0], orTerms);
-			result.push_back(it->first);
+			scratchpad[0] = 0;
+			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
+			result.push_back(guardedVal(cvar, it->first));
 		}
 		output.sparsify ();
 	}

@@ -1327,10 +1327,12 @@ void DagOptim::initLight(BooleanDAG& dag){
 
 
 void DagOptim::initialize(BooleanDAG& dag){
+	/*
 	dag.removeNullNodes();
 	dag.sort_graph();
 	dag.cleanup(false);
 	dag.relabel();
+	*/
 	anv.clear();
 	initLight(dag);
 }
@@ -1385,7 +1387,7 @@ void DagOptim::process(BooleanDAG& dag){
 
 
 		if(dag[i] != node){
-				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				Dout(cout<<dag[i]->id<<" replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl) ;
 				setTimestampChildren(dag[i]);
 				
 				dag.replace(i, node);

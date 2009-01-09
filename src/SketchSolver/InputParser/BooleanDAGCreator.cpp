@@ -53,7 +53,7 @@ bool_node* BooleanDAGCreator::new_node(const string& mother,
 
 
   if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
-	  Assert( mth->getOtype() == bool_node::BOOL && (fth == NULL || fth->getOtype() == bool_node::BOOL), "The parents of a boolean operator must be boolean !!!"<<p_name);
+	  Assert( mth->getOtype() == bool_node::BOOL && (fth == NULL || fth->getOtype() == bool_node::BOOL), "The parents of a boolean operator must be boolean !!!"<<p_name<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
   }
 
   string name(p_name);

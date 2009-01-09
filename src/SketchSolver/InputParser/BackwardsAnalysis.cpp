@@ -213,6 +213,6 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	newnodes.clear();
 	bdag.cleanup(false);
 	bdag.sort_graph();	
-	bdag.repOK();
+	//bdag.repOK();
 	bdag.relabel();
 }

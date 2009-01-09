@@ -634,7 +634,7 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		expectedNFuns++;
 	}
 
-	cout<<" after all"<<endl;
+	//cout<<" after all"<<endl;
 	oldNfun = nfuns;
 	Dout( cout<<" AFTER PROCESS "<<endl );
 	Dout(cout<<" end ElimFun "<<endl);

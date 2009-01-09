@@ -38,10 +38,10 @@ NodesToSEQ::visit (SRC_node &node)
 			int cvar = dir.newAnonymousVar(sz);
 			node_ids[node.id] = cvar;
 		    node_ids[node.id].setSize(sz);
-			vector<int>& result = node_ids[node.id].num_ranges;
+			vector<guardedVal>& result = node_ids[node.id].num_ranges;
 			result.clear();
 			for(int i=0; i<sz; ++i){
-				result.push_back(i-1);
+				result.push_back(guardedVal(cvar+i, i-1));
 			}
 
 		    Dout (cout << "setting input nodes" << node.name << endl);
@@ -112,11 +112,11 @@ void NodesToSEQ::complete(vector<bool_node*>& initState){
 				bool hasin = false;
 				bool hasout = false;
 				if(iin< tvin.getSize()){
-					idxin = tvin.num_ranges[iin];
+					idxin = tvin.num_ranges[iin].value;
 					hasin = true;
 				}
 				if(iout < tvout.getSize()){
-					idxout = tvout.num_ranges[iout];
+					idxout = tvout.num_ranges[iout].value;
 					hasout = true;
 				}
 				if(hasin && hasout && idxin == idxout){

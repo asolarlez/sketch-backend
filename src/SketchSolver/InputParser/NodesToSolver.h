@@ -90,7 +90,7 @@ public:
 	unirange[0] = 1;
 
 	/* Initialize the default "one" integer. */
-	tvOne.num_ranges.push_back (1);
+	tvOne.num_ranges.push_back (guardedVal(p_dir.YES, 1));
     };
     
     
@@ -123,7 +123,7 @@ public:
 	// void process(BooleanDAG& bdag);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
     virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);
-    virtual bool checkParentsChanged (bool_node &node, bool more);
+    virtual bool checkParentsChanged (bool_node &node, bool more);	
 };
 
 #endif /* __NODESTOSOLVER_H */
