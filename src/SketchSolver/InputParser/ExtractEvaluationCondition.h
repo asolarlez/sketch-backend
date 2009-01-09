@@ -4,6 +4,7 @@
 #include "BooleanDAG.h"
 #include "NodeStore.h"
 #include <set>
+#include <typeinfo>
 
 using namespace std;
 

@@ -5,7 +5,7 @@
 #include "NodeVisitor.h"
 #include <map>
 #include <set>
-
+#include <cstdlib>
 
 #ifdef CONST
 #undef CONST

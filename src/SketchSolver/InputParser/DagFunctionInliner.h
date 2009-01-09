@@ -4,7 +4,7 @@
 #include "BooleanDAG.h"
 #include "DagOptim.h"
 #include "ExtractEvaluationCondition.h"
-
+#include <cstring>
 
 class DagFunctionInliner : public DagOptim
 {

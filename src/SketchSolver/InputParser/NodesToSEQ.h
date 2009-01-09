@@ -1,6 +1,7 @@
 #pragma once
 #include "NodesToSolver.h"
 #include "BLIFwriter.h"
+#include <typeinfo>
 
 class NextState{
 public:
