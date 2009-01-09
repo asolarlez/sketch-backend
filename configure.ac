@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(SKETCH, 1.2.1, arnold@cs.berkeley.edu)
+AC_INIT(SKETCH, 1.3.0, arnold@cs.berkeley.edu)
 AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
@@ -62,6 +62,7 @@ AC_FUNC_STRTOD
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit floor getpagesize gettimeofday mblen memchr memmove memset pow putenv select sqrt strchr strcspn strdup strerror strpbrk strrchr strspn strstr strtol strtoul])
 
+CFLAGS=-O3
 
 AC_OUTPUT(
     Makefile 
