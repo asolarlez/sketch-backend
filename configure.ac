@@ -74,5 +74,4 @@ AC_OUTPUT(
       backend/SketchSolver/Makefile
 
     frontend/Makefile
-    frontend/sbin/sketch
 )
