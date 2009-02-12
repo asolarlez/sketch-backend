@@ -21,7 +21,6 @@ bool_node* CAoptimizer::newNode(bool_node* mother, bool_node* father){
 	bn->father = father;
 
 	bn->addToParents();		
-	parent->setTimestamp(bn);
 
 	parent->addNode(bn);
 	return bn;

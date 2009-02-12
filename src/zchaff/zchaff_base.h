@@ -38,7 +38,7 @@
 #define __BASIC_CLASSES__
 
 #include <assert.h>
-
+#include <cstdlib>
 #include "zchaff_header.h"
 
 #define UNKNOWN           2

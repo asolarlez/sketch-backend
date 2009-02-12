@@ -81,6 +81,9 @@ public:
   childset children;
   
 
+  void resetId(){
+	globalId = NEXT_GLOBAL_ID++;
+  }
   
   OutType joinOtype(OutType t1, OutType t2) const{
   	if(t1 == BOTTOM){ return t2; }

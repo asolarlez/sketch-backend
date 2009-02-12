@@ -14,12 +14,24 @@ class AbstractNodeValue{
 	State state;
 	set<int> valSet;
 	int low;
-	int high;
-	bool isRange(){ return state == RANGE; }
-	bool isTop(){ return state==TOP; }
-	bool isBottom(){ return state==BOTTOM; }
+	int high;	
 public:
 	int timestamp;
+
+	bool isTop(){ return state==TOP; }
+	bool isRange(){ return state == RANGE; }
+	bool isBottom(){ return state==BOTTOM; }
+
+	int getHigh(){
+		Assert(state!= BOTTOM && state != TOP, "No bottom or top states");
+		return high;
+	}
+
+	int getLow(){
+		Assert(state!= BOTTOM && state != TOP, "No bottom or top states");
+		return low;
+	}
+
 	AbstractNodeValue(){
 		valSet.clear();
 		low = 0;
@@ -126,6 +138,36 @@ public:
 			}
 		}				
 	}
+
+	void add(AbstractNodeValue& anv){
+		if(anv.isTop()){
+			makeTop();
+			return;
+		}
+		if(isTop()){
+			return;
+		}
+		
+		if(this->isBottom()){
+			low = anv.low;
+			high = anv.high;
+			valSet = anv.valSet;
+			state = anv.state;			
+		}else{
+			low = low + anv.low;
+			high = high + anv.high;
+			if(state == LIST){
+				set<int> tmp;
+				for(set<int>::iterator it1 = valSet.begin(); it1 != valSet.end(); ++it1){
+					for(set<int>::iterator it2 = anv.valSet.begin(); it2 != anv.valSet.end(); ++it2){
+						tmp.insert(*it1 + *it2);
+					}
+				}
+				swap(tmp, valSet);
+			}
+		}				
+	}
+
 
 };
 

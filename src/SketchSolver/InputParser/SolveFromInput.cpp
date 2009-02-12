@@ -146,11 +146,10 @@ bool SolveFromInput::check(vector<int>& controls, vector<int>& input){
 		if(PARAMS->verbosity > 2){ cout<<" * iter = "<<iter<<"  gnbits = "<<gnbits<<endl;	}	
 		if( iter > 2 || gnbits > 3){
 			if( problem == oriProblem){
-				//int* ttt = new int[9000];
 				problem = hardCodeINode(problem, controls, bool_node::CTRL);
 				//ofstream outf("output.ucl");
 				//outputEuclid(outf);
-				//delete ttt;
+				
 			}
 		}
 		

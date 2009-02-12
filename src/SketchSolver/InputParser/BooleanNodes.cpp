@@ -67,7 +67,8 @@ void arith_node::addToParents(){
   bool_node::addToParents();
   for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
-	  	(*it)->children.insert(this);
+		bool_node* tmp = (*it);
+	  	tmp->children.insert(this);
   	}
   }
 }

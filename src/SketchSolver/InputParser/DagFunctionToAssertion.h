@@ -3,11 +3,9 @@
 
 
 #include "DagOptim.h"
-#include "ExtractEvaluationCondition.h"
 
 class DagFunctionToAssertion : public DagOptim
 {	
-	ExtractEvaluationCondition tnbuilder;
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;	
 	vector<bool_node*> newnodes;

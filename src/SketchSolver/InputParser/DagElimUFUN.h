@@ -4,7 +4,7 @@
 
 #include "BooleanDAG.h"
 #include "SATSolver.h"
-#include "ExtractEvaluationCondition.h"
+#include "DagOptim.h"
 #include <set>
 
 
@@ -47,7 +47,7 @@ class SFunInfo{
 	/**
 		These are the last actual parameters passed to fun. At the beginning of the substitution, this will equal PARAMS_i-1;
 	*/
-	vector<bool_node* > actuals;
+	vector<bool_node* > actuals;	
 	bool_node* symval;	
 	bool_node* outval;
 	int step;	
@@ -70,7 +70,6 @@ class DagElimUFUN : public NodeVisitor, virtual NodeStore
 	
 	bool oneMoreFun;
 	
-	ExtractEvaluationCondition tnbuilder;
 	
 	map<int, BooleanDAG> comparators;	
 	map<string, SFunInfo> functions;

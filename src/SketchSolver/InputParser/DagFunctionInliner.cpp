@@ -158,7 +158,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 //					actual->children.insert(controls[i]->children.begin(), controls[i]->children.end());
 				}else{
 					bool_node* tmp = controls[i]->clone(false);
-					setTimestamp(tmp);
 					addNode( tmp );
 					nmap[controls[i]->id] = tmp;
 				}
@@ -199,8 +198,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						
 						optimTime.stop();
 						if(nnode == n){
-							//bool_node* tmp = n->clone();
-							setTimestamp(n);													
+							//bool_node* tmp = n->clone();											
 							this->addNode( n );
 							
 							nmap[nodeId] = n;
@@ -228,7 +226,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 								
 								this->addNode(andCond);
 								andCond->addToParents();
-								setTimestamp(andCond);
 							}else{
 								delete andCond;
 							}
@@ -248,7 +245,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						const bool_node* nnode = rvalue;
 						if(nnode == n){
 							//bool_node* tmp = n->clone();
-							setTimestamp(n);
 							// cse.setCSE(tmp);
 							// replaceDummy(n, tmp);
 							
@@ -272,7 +268,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						
 						if(nnodep == nnode){
 							nnode->addToParents();
-							setTimestamp(nnode);
 							this->addNode(nnode);	
 							
 						}else{
@@ -294,7 +289,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							this->addNode(ornode);
 							
 							ornode->addToParents();
-							setTimestamp(ornode);
+
 						}else{
 							delete ornode;
 						}
@@ -310,7 +305,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}else{
 						n->mother->children.insert(n);						
 						// tmp->replace_child_inParents(of, tmp);
-						setTimestamp(n);
+
 						this->addNode(n);
 						
 					}
@@ -460,7 +455,6 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 			an->multi_mother.push_back(args1[i]);
 			an->multi_mother.push_back(args2[i]);
 			an->addToParents();
-			setTimestamp(an);
 			this->addNode(an);
 			nargs.push_back(an);
 		}
@@ -470,7 +464,6 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 	on->mother = fun1->mother;
 	on->father = fun2->mother;
 	on->addToParents();
-	setTimestamp(on);
 	addNode(on);
 
 	UFUN_node* funnew = new UFUN_node(*fun1, false);
@@ -478,9 +471,7 @@ void DagFunctionInliner::mergeFuncalls(int first, int second){
 	funnew->multi_mother = nargs;
 	funnew->children.clear();
 	funnew->addToParents();
-	setTimestamp(funnew);
-	setTimestampChildren(fun1);
-	setTimestampChildren(fun2);
+
 	dag.replace(fun1->id, funnew);
 	dag.replace(fun2->id, funnew);
 
@@ -572,7 +563,6 @@ void DagFunctionInliner::unify(){
 
 	cout<<" merged "<<nmerges<<" calls"<<endl;
 	cleanup(dag);
-	tnbuilder.reset();
 }
 
 
@@ -595,11 +585,7 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 		
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
-				setTimestampChildren(dag[i]);
-
 				dag.replace(i, node);
-
-
 		}
 	}
 
@@ -609,7 +595,6 @@ void DagFunctionInliner::immInline(BooleanDAG& dag){
 	cleanup(dag);
 	
 
-	tnbuilder.reset();
 	if(nfuns != 0){ cout<<" Number of functions inlined = "<<nfuns<<endl; }
 
 	if(mergeFunctions){	

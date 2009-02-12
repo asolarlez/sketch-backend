@@ -300,9 +300,11 @@ void BooleanDAG::repOK(){
 					}
 				}
 			}
-
+			set<bool_node*> seen;
 			for(child_iter child = n->children.begin(); child != n->children.end(); ++child){
 				Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
+				Assert(seen.count(*child)==0, "The children set has repeat nodes !!!");
+				seen.insert(*child);
 			}
 
 		}
@@ -638,6 +640,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 	nodesByType[bool_node::DST].clear();
 	
 	removeNullNodes();
+	cleanup(false);
 	sort_graph();
 	relabel();
 }

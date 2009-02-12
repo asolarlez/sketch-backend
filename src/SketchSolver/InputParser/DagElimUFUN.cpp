@@ -92,7 +92,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		rv = src;
 		
 		//Now, we have to build the first SFunInfo for the node.
-				
+		// This first SFunInfo will be equal to:
+		// F(SVAR, PARAM_0, PARAM_1, ..., PARAM_N) := SVAR;
 		SFunInfo& sfi = functions[name];		
 		sfi.step = 1;
 		sfi.fun = new BooleanDAG();
@@ -105,12 +106,15 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			str<<"PARAM_"<<i;
 			sfi.fun->create_inputs(src->get_nbits(),  str.str());
 			sfi.actuals.push_back(node.multi_mother[i]);	
-		}
+		}		
 		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
-
+		bool_node* C1 = new CONST_node(1);
+		sfi.fun->addNewNode(C1);
+		sfi.fun->create_outputs(1, C1, "RES");
 	}else{
 		BooleanDAG& comp = getComparator(node.multi_mother.size());
-		
+		//comp is now a comparator that will compare N inputs with N other inputs.
+		// comp(ina_0, ..., ina_N, inb_0, ..., inb_N) := and_(0<=i<=N)(ina_i == inb_i); 
 		Dout( cout<<" before clone "<<endl);
 		//As a first step, we get a comparator for the parameters, and we replace the 
 		//inb parameters with the actuals from the previous version of the function, encoded in the SFunInfo.		
@@ -207,12 +211,17 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		
 		Dout( sfi.fun->print(cout) );
 		Dout(cout<<" After replacing SVAR"<<endl);
-				
+		
+		bool_node* res = sfi.fun->get_node("RES" );	
+		OR_node* on = new OR_node();
+		on->mother = res->mother;
+		on->father = ch->mother;
+		cclone->addNewNode(on);
+		
+
 		bool_node* outn = sfi.fun->get_node("OUT" );		
 		rv = outn->mother;
-				
-		
-		
+								
 		sfi.outval = rv;
 		//The previous symvalue is replaced with the current one.
 		sfi.symval = src;
@@ -225,7 +234,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			if( n != NULL &&  n->type != bool_node::DST ){
 				cclone->addNewNode(n);	
 			}else{
-				Assert( n==NULL || n == outn, "I thought this was going to be the only DST node");
+				//Assert( n==NULL || n == outn, "I thought this was going to be the only DST node");
 				if( n!= NULL){
 					n->dislodge();
 					delete n;	
@@ -268,13 +277,14 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			sfi.fun->replace(tmpbn->id, nsvar  );
 		}
 		
-		bool_node* dstn = sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[rv->id], "OUT");
+		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[rv->id], "OUT");
+		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[on->id], "RES");
 				
 		Dout( cout<<" ADDING "<<cclone->size()<<" NODES"<<endl );
 		newnodes.insert(newnodes.end(), cclone->begin(), cclone->end());
 		sfi.fun->removeNullNodes();
 		sfi.fun->relabel();
-		// Dout(  sfi.fun->print(cout) );
+		Dout(  sfi.fun->print(cout) );
 		Dout( cout<<" DONE DONE DONE"<<endl );
 	}	
 	return rv;
@@ -286,6 +296,10 @@ void DagElimUFUN::visit( UFUN_node& node ){
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
+		//This branch is only taken if the user passes the -ufunSymmetry flag. This flag means that uninterpreted functions in the
+		//sketch are required to have the same parameters in the spec. This means that no new symbolic values need to be added 
+		//when evaluating uninterpreted functions in the sketch. (Except for the very first call, which needs a fresh symbolic value
+		//to distinguish it from the others; hence the moreNewFuns flag.).
 		( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
 		int nargs = node.multi_mother.size();
 		SFunInfo& sfi = functions[name];
@@ -325,14 +339,17 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		
 		bool_node* outn = cclone->get_node("OUT" );		
 		rvalue = outn->mother;
-		
+
+		bool_node* resn = cclone->get_node("RES" );
+		bool_node* rrn = resn->mother;
+
 		int oldsize = newnodes.size();
 		for(int i=0; i<cclone->size(); ++i){
 			bool_node* n = (*cclone)[i];
 			if( n != NULL &&  n->type != bool_node::DST ){
 				newnodes.push_back(n);	
 			}else{
-				Assert( n==NULL || n == outn, "I thought this was going to be the only DST node "<<n->get_name()<<" != "<<outn->get_name());
+				//Assert( n==NULL || n == outn, "I thought this was going to be the only DST node "<<n->get_name()<<" != "<<outn->get_name());
 				if( n!= NULL){
 					n->dislodge();
 					delete n;	
@@ -340,8 +357,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			}
 		}
 		
-		tnbuilder.ivisit = 0;
-		bool_node* tn1 = tnbuilder.get_exe_cond(src, *this, false);
+
+		bool_node* tn1 = rrn;
 		bool_node* tn2 = node.mother; // tnbuilder.get_exe_cond(&node, *this, false);
 		
 		bool_node* cur = NULL;
@@ -404,8 +421,13 @@ void DagElimUFUN::process(BooleanDAG& dag){
 	dag.addNewNodes(newnodes);
 	newnodes.clear();
 	dag.removeNullNodes();
+	/*
+	You don't want to do cleanup here, because when you eliminate ufun from the spec,
+	some nodes may no longer be used by the spec, but they will be used by the sketch, so you don't want to get rid of them yet.
+	dag.cleanup(false);
+	*/
 	Dout( cout<<" AFTER PROCESS "<<endl );
-	//Dout( dag.print(cout) );	
+	Dout( dag.print(cout) );	
 	Dout(cout<<" end ElimFun "<<endl);
 }
 

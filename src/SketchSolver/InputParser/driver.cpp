@@ -215,6 +215,11 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		}
 	}
 
+	
+	
+	spec->repOK();
+	sketch->repOK();
+
 	if(params.verbosity > 1){
 		cout<<" optimization level = "<<params.olevel<<endl;
 	}
@@ -234,19 +239,24 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 		
 	}
 
+	
+	spec->repOK();
+	sketch->repOK();
+	
+	spec->print(cout);
+
 	{
 		DagElimUFUN eufun;	
 		eufun.process(*spec);
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
 		eufun.process(*sketch);
 	}
-
-	
+	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
 	spec->makeMiter(*sketch);
 	BooleanDAG* problem = spec;
 
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<problem->size()<<endl; }
-	
+	problem->print(cout);
 	if(params.olevel >= 3){
 		DagOptim cse(*problem);	
 		//cse.alterARRACS();

@@ -8,6 +8,9 @@
 
 using namespace std;
 
+#ifdef CONST
+#undef CONST
+#endif
 
 /*!
 
@@ -49,6 +52,54 @@ public:
 		val = d.val;
 		return *this;
 	}
+	bool hasDerivedDatums() const{
+		if(node->type == bool_node::AND){
+			return val == 1;
+		}
+		if(node->type == bool_node::OR){
+			return val == 0;
+		}
+		if(node->type == bool_node::PLUS){
+			return node->mother->type == bool_node::CONST || node->father->type == bool_node::CONST;
+		}
+		return false;
+	}
+
+	void addDerivedDatums(set<Datum>& sd) const{
+		if(node->type == bool_node::AND && val == 1){
+			Datum d1(node->mother, 1);
+			Datum d2(node->father, 1);
+			sd.insert(d1);
+			d1.addDerivedDatums(sd);
+			sd.insert(d2);
+			d2.addDerivedDatums(sd);
+		}
+		if(node->type == bool_node::OR && val == 0){
+			Datum d1(node->mother, 0);
+			Datum d2(node->father, 0);
+			if(sd.count(d1)==0){
+				sd.insert(d1);
+				d1.addDerivedDatums(sd);
+			}
+			if(sd.count(d2)==0){
+				sd.insert(d2);
+				d2.addDerivedDatums(sd);
+			}
+		}
+		if(node->type == bool_node::PLUS && (node->mother->type == bool_node::CONST || node->father->type == bool_node::CONST)){			
+			if(node->mother->type == bool_node::CONST){
+				int C = dynamic_cast<CONST_node*>(node->mother)->getVal();
+				Datum d1(node->father, val - C);
+				sd.insert(d1);
+			}else{
+				int C = dynamic_cast<CONST_node*>(node->father)->getVal();
+				Datum d1(node->mother, val - C);
+				sd.insert(d1);
+			}
+			return ;
+		}
+	}
+
 };
 
 
@@ -137,15 +188,24 @@ public:
 				known = inf.known;
 				if(inf.hasD){
 					known.insert(inf.temp);
+					inf.temp.addDerivedDatums(known);
 				}
 			}
 		}else{
 			set<Datum> tmp;
-			bool contains = inf.hasD && known.count(inf.temp)>0;
-			set_intersection(known.begin(), known.end(), inf.known.begin(), inf.known.end(), inserter(tmp, tmp.begin()));
-			swap(tmp, known);
-			if(contains){
-				known.insert(inf.temp);
+			if(inf.hasD && inf.temp.hasDerivedDatums()){
+				set<Datum> sd = inf.known;
+				sd.insert(inf.temp);
+				inf.temp.addDerivedDatums(sd);
+				set_intersection(known.begin(), known.end(), sd.begin(), sd.end(), inserter(tmp, tmp.begin()));
+				swap(tmp, known);
+			}else{
+				bool contains = inf.hasD && known.count(inf.temp)>0;
+				set_intersection(known.begin(), known.end(), inf.known.begin(), inf.known.end(), inserter(tmp, tmp.begin()));
+				swap(tmp, known);
+				if(contains){
+					known.insert(inf.temp);
+				}
 			}
 			state = MIDDLE;
 		}

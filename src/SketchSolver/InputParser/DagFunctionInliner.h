@@ -3,14 +3,12 @@
 
 #include "BooleanDAG.h"
 #include "DagOptim.h"
-#include "ExtractEvaluationCondition.h"
 #include <cstring>
 
 class DagFunctionInliner : public DagOptim
 {
 	
 	bool somethingChanged;
-	ExtractEvaluationCondition tnbuilder;
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;	
 	int inlineAmnt;

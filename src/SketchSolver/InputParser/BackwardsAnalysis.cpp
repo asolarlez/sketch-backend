@@ -1,5 +1,7 @@
 #include "BackwardsAnalysis.h"
 
+
+
 BackwardsAnalysis::BackwardsAnalysis(void)
 {
 }
@@ -13,7 +15,6 @@ BackwardsAnalysis::~BackwardsAnalysis(void)
 CONST_node* BackwardsAnalysis::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
-		setTimestamp(cnode);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[val] = cnode;
