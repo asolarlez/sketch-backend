@@ -55,37 +55,6 @@ void BooleanDAG::relabel(){
 
 
 
-void BooleanDAG::sort_graph(){
-  for(int i=0; i < nodes.size(); ++i){
-    nodes[i]->flag = 0;
-  }
-  int idx=nodes.size()-1;
-  {
-    //for(int i=n_inputs-1; i >=0 ; --i){
-    for(int i=0; i < nodes.size(); ++i){
-      if( nodes[i]->type  == bool_node::SRC || nodes[i]->type  == bool_node::CTRL || (nodes[i]->father == NULL && nodes[i]->mother == NULL) ){
-	      idx = nodes[i]->do_dfs(idx);
-      }
-    }
-    //}
-  }
-  if( idx != -1){
-  	bool check=true;
-  	string msg = " ";
-    for(int i=0; i < nodes.size(); ++i){
-    	if(! (nodes[i]->flag == 1 || nodes[i]->type == bool_node::DST) ){
-	   		msg += "There are some nodes in the graph that are isolated ";
-	      	msg += nodes[i]->get_name();
-	      	msg += "\n";
-	      	check = false;
-    	}
-    }
-    Assert(check, msg);
-  }
-  sort(nodes.begin(), nodes.end(), comp_id);
-  is_sorted = true;
-}
-
 void BooleanDAG::compute_layer_sizes(){
   int plyr = 0;
   int lsize = 0;
@@ -109,7 +78,7 @@ void BooleanDAG::layer_graph(){
   int max_lyr=-1;
   {
     for(int i=0; i < nodes.size(); ++i){
-      nodes[i]->set_layer();
+      nodes[i]->set_layer(false);
       if(nodes[i]->layer > max_lyr){
         max_lyr = nodes[i]->layer;
       }
@@ -191,7 +160,7 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	
 	
 	
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL ){
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		for(int i=0; i<bnv.size(); ){
 			if( bnv[i] == onode ){
@@ -265,6 +234,17 @@ void BooleanDAG::remove(int i){
 
 void BooleanDAG::repOK(){
 
+	map<bool_node::Type, set<bool_node*> > tsets;
+	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin(); it != nodesByType.end(); ++it){
+		bool_node::Type type = it->first;
+		vector<bool_node*>& nv = it->second;
+		for(int i=0; i<nv.size(); ++i){
+			Assert(tsets[type].count(nv[i])==0, "You have a repeated node in the list");
+			tsets[type].insert(nv[i]);
+		}		
+	}
+
+
 	cout<<"*** DOING REPOK ****"<<endl;
 	//First, we check that the array doesn't contain any repeated nodes.
 	map<bool_node*, int> nodeset;
@@ -272,6 +252,9 @@ void BooleanDAG::repOK(){
 		if(nodes[i] != NULL){
 		Assert(nodeset.count(nodes[i]) == 0, "There is a repeated node!!! it's in pos "<<i<<" and "<<nodeset[nodes[i]] );		
 		nodeset[nodes[i]] = i;
+		}
+		if(tsets.count(nodes[i]->type)>0){
+			Assert( tsets[nodes[i]->type].count(nodes[i])==1 , "All the typed nodes should be accounted for in the nodesByType");
 		}
 	}
 
@@ -316,33 +299,38 @@ void BooleanDAG::repOK(){
 
 
 
-//This routine performs simple peephole optimizations
-//on the boolean function.
-void BooleanDAG::cleanup(bool moveNots){
-	
-
+//This routine removes nodes that do not flow to the output.
+void BooleanDAG::cleanup(){
   //The first optimization is to remove nodes that don't contribute to the output. 	  
   for(int i=0; i < nodes.size(); ++i){
     nodes[i]->flag = 0;
   }
-  int idx=nodes.size()-1;
+  int idx=0;
+
   {
-    //for(int i=n_inputs-1; i >=0 ; --i){
-    for(int i=0; i < nodes.size(); ++i){
-      if( nodes[i]->type == bool_node::DST
-          || nodes[i]->type == bool_node::ASSERT)
-      {
-	      idx = nodes[i]->back_dfs(idx);
-      }
-    }
-    //}
+	  vector<bool_node*>& vn = nodesByType[bool_node::DST];
+	  for(int i=0; i<vn.size(); ++i){
+		idx = vn[i]->back_dfs(idx);
+	  }
   }
+  {
+	  vector<bool_node*>& vn = nodesByType[bool_node::ASSERT];
+	  for(int i=0; i<vn.size(); ++i){
+		idx = vn[i]->back_dfs(idx);
+	  }
+  }
+
   for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
   		nodes[i]->type != bool_node::SRC && 
   		nodes[i]->type != bool_node::CTRL){
 		nodes[i]->dislodge();  		
-  	}
+	}else{
+		if(nodes[i]->flag == 0){
+			nodes[i]->id = idx;
+			++idx;
+		}
+	}
   }
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
@@ -359,9 +347,9 @@ void BooleanDAG::cleanup(bool moveNots){
   		delete onode;
 		nodes[i] = NULL;
   	}
-  }
-  
+  }  
   removeNullNodes();  
+  sort(nodes.begin(), nodes.end(), comp_id);
 }
 
 
@@ -410,7 +398,7 @@ void BooleanDAG::addNewNode(bool_node* node){
 		named_nodes[node->name] = node;
 	}
 		
-	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL ){
+	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT){
 		vector<bool_node*>& tmpv = nodesByType[node->type]; 
 		tmpv.push_back(node);			
 	}
@@ -470,7 +458,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   Assert( tmp->id != -22, "This node should not exist anymore");
   tmp->id = nodes.size() + offset;
   nodes.push_back(tmp);  
-  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL ){
+  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL || t == bool_node::ASSERT){
   		nodesByType[t].push_back(tmp);
   }
   return tmp;
@@ -597,6 +585,9 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 		if( (*node_it)->type != bool_node::SRC && (*node_it)->type != bool_node::DST){ 
 			nodes.push_back( (*node_it) );
 			(*node_it)->switchInputs(*this);
+			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT ){
+				nodesByType[(*node_it)->type].push_back((*node_it));
+			}
 		}
 		
 		if( (*node_it)->type == bool_node::SRC ){
@@ -606,10 +597,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 				named_nodes[(*node_it)->name] = (*node_it);
 			}
 		}
-		
-		if( (*node_it)->type == bool_node::CTRL){//Shouldn't there be a nodes.push_back here???
-			nodesByType[(*node_it)->type].push_back((*node_it));
-		}
+				
 		if( (*node_it)->type == bool_node::DST){
 			nodesByType[(*node_it)->type].push_back((*node_it));
 			bool_node* otherDst = named_nodes[(*node_it)->name];
@@ -634,14 +622,17 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 			finalAssert->mother = eq;
 			finalAssert->addToParents();
 			nodes.push_back(finalAssert);
+
+			nodesByType[finalAssert->type].push_back(finalAssert);
+
 		}
 	}
 
 	nodesByType[bool_node::DST].clear();
 	
 	removeNullNodes();
-	cleanup(false);
-	sort_graph();
+	cleanup();
+	//sort_graph();
 	relabel();
 }
 

@@ -91,9 +91,6 @@ public:
 	
   void nameNode(bool_node* node){ named_nodes[node->name] = node; }
 
-  void classifyNode(bool_node* node){
-	  nodesByType[node->type].push_back(node);
-  }
 
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph cleanup and refactoring.
@@ -105,10 +102,9 @@ public:
   void clearBackPointers();
   void change_father(const string& father, const string& son);
   void change_mother(const string& father, const string& son);
-  void sort_graph();
   void layer_graph();  
   void relabel();
-  void cleanup(bool moveNots=true);
+  void cleanup(); //Sorts and cleans up the graph.
   void clear();
   void rename(const string& oldname,  const string& newname);
   void resetBackPointers();
