@@ -133,7 +133,7 @@ public:
     throw BasicError("Err", "Err");
   }
   virtual string get_name() const;
-  void set_layer();
+  void set_layer(bool isRecursive);
   virtual void accept(NodeVisitor& visitor) =0;
   virtual bool_node* clone(bool copyChildren = true)=0;
   virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
@@ -188,6 +188,7 @@ class arith_node: public bool_node{
 	virtual void removeFromParents(bool_node* bn);
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out)const;
+	void set_layer(bool isRecursive);
 	virtual void addToParents();
 	virtual void addToParents(bool_node* only_thisone);
 	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);

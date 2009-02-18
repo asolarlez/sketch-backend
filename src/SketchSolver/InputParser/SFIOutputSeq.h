@@ -103,7 +103,7 @@ public:
 
 		seq->removeNullNodes();
 		seq->cleanup();
-		seq->sort_graph();
+		//seq->sort_graph();
 		return inufun;
 	}
 

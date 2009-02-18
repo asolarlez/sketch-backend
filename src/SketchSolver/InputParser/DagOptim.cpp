@@ -68,7 +68,6 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	if(typeid(*n1) == typeid(SRC_node) || typeid(*n1) == typeid(CTRL_node)){
 		INTER_node* inode = dynamic_cast<INTER_node*>(n1);
 		AbstractNodeValue& nv = anv[n1];
-		cout<<"SRCType = "<<n1->get_name()<<"  "<<(inode->getOtype() == bool_node::BOOL? "BOOL" : "NOT")<<endl;
 		if(inode->getOtype() == bool_node::BOOL){
 			nv.init(0);	
 			nv.insert(1);
@@ -1027,7 +1026,7 @@ void DagOptim::visit( ARRACC_node& node ){
 					rvalue = getCnode(0);
 					return;
 				}else{
-					cout<<"Added something"<<endl;
+					
 					LT_node* nt = new LT_node();
 					nt->mother = node.mother;
 					nt->father = this->getCnode((int) node.multi_mother.size());
@@ -1341,7 +1340,7 @@ void DagOptim::visit( ARRACC_node& node ){
 						ar->multi_mother.push_back(getCnode(0));
 					}
 				}
-				if(tflag){ cout<<" MISSED OPPORTUNITY"; 
+				if(tflag){ 
 					Assert(tmpnode != NULL, "This is an invariant");
 					delete ar;
 					rvalue = tmpnode;
@@ -1349,8 +1348,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				}else{
 					ar->addToParents();					
 					addNode(ar);
-					rvalue= ar;
-					cout<<"NOW WE ARE TALKING !! "<<node.multi_mother.size()<<"  --> "<< (h-l+1) <<endl;
+					rvalue= ar;					
 					return;
 				}
 				
@@ -1476,10 +1474,10 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 void DagOptim::cleanup(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
-	dag.repOK();
+	//dag.repOK();
 	newnodes.clear();
-	dag.sort_graph();
-	dag.cleanup(false);
+	//dag.sort_graph();
+	dag.cleanup();
 	dag.relabel();
 	
 }

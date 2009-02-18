@@ -61,7 +61,7 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 		}
 
 		peq = argComp.create_outputs(nargs, peq, "OUT");
-		argComp.sort_graph();		
+		argComp.cleanup();
 		argComp.relabel();
 		// Dout( argComp.print(cout) );
 		return argComp;

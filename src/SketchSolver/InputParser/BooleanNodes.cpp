@@ -215,15 +215,38 @@ bool_node::OutType arith_node::getOtype() const{
 	return INT;
 }
 
-void bool_node::set_layer(){
-  layer = 0;
+void bool_node::set_layer(bool isRecursive){
+	if(!isRecursive){ layer = 0;}
   if(mother != NULL){
-    layer = mother->layer + 1;
+	  if(isRecursive && mother->layer < 0){ mother->set_layer(isRecursive); }
+      layer = mother->layer + 1;
   }
-  if(father != NULL && father->layer >= layer){
-    layer = father->layer + 1;
+  if(father != NULL){
+	  if(isRecursive && father->layer < 0){
+		father->set_layer(isRecursive); 
+	  }
+	if(father->layer >= layer){
+		layer = father->layer + 1;
+	}
   }
 }
+
+
+void arith_node::set_layer(bool isRecursive){
+	bool_node::set_layer(isRecursive);
+
+	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		if(*it != NULL){
+			if(isRecursive && (*it)->layer < 0){
+			(*it)->set_layer(isRecursive); 
+			}
+			if((*it)->layer >= layer){
+			layer = (*it)->layer + 1;
+			}
+		}
+	}	
+}
+
 
 int bool_node::do_dfs(int idx){
 	Assert( id != -22, "This node should be dead (dfs) "<<this->get_name());
@@ -250,7 +273,7 @@ int bool_node::back_dfs(int idx){
   	 idx = mother->back_dfs(idx);
   }
   id = idx;
-  return idx-1;
+  return idx+1;
 }
 
 
@@ -271,7 +294,7 @@ int arith_node::back_dfs(int idx){
   	}
   }
   id = idx;
-  return idx-1;
+  return idx+1;
 }
 
 

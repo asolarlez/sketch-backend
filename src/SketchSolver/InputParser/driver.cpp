@@ -217,8 +217,8 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 
 	
 	
-	spec->repOK();
-	sketch->repOK();
+	//spec->repOK();
+	//sketch->repOK();
 
 	if(params.verbosity > 1){
 		cout<<" optimization level = "<<params.olevel<<endl;
@@ -240,10 +240,9 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	}
 
 	
-	spec->repOK();
-	sketch->repOK();
-	
-	spec->print(cout);
+	//spec->repOK();
+	//sketch->repOK();
+		
 
 	{
 		DagElimUFUN eufun;	
@@ -256,7 +255,8 @@ BooleanDAG* Driver::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<strin
 	BooleanDAG* problem = spec;
 
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<problem->size()<<endl; }
-	problem->print(cout);
+	
+
 	if(params.olevel >= 3){
 		DagOptim cse(*problem);	
 		//cse.alterARRACS();

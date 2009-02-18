@@ -460,7 +460,7 @@ void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
 	bdag.addNewNodes(newnodes);
 	//bdag.repOK();
 	newnodes.clear();
-	bdag.sort_graph();
-	bdag.cleanup(false);
+	//bdag.sort_graph();
+	bdag.cleanup();
 	bdag.relabel();
 }
