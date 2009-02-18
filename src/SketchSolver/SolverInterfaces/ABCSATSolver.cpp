@@ -1,4 +1,5 @@
 
+#include "CommandLineArgs.h"
 #include "ABCSATSolver.h"
 #include "timerclass.h"
 #include "fraig.h"
@@ -10,6 +11,9 @@ extern "C" {
 extern int  Abc_NtkRewrite( Abc_Ntk_t * pNtk, int fUpdateLevel, int fUseZeros, int fVerbose );
 extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, bool fUpdateLevel, bool fUseZeros, bool fUseDcs, bool fVerbose );
 }
+
+
+extern CommandLineArgs* PARAMS;
 
 Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	Abc_Ntk_t * result;
@@ -180,6 +184,11 @@ int ABCSATSolver::solve(){
          	// cout<<"FULL"<<endl;
 			Prove_Params_t Params, * pParams = &Params;
          	Prove_ParamsSetDefault( pParams );
+
+			if(PARAMS->printDiag){
+				pParams->fVerbose = 1;
+			}
+
 			pParams->nItersMax = 5;
     	    RetValue = Abc_NtkMiterProve( &pNtk, pParams );                          
          }else if(strategy == BASICSAT){
