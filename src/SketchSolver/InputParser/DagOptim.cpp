@@ -1348,8 +1348,12 @@ void DagOptim::visit( ARRACC_node& node ){
 				}else{
 					ar->addToParents();					
 					addNode(ar);
-					stillPrivate = ar;
-					ar->accept(*this);
+					if(ar->multi_mother.size() != node.multi_mother.size()){
+						stillPrivate = ar;
+						ar->accept(*this);
+					}else{
+						rvalue = ar;
+					}
 					return;
 				}
 				
