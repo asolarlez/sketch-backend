@@ -108,9 +108,9 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			sfi.actuals.push_back(node.multi_mother[i]);	
 		}		
 		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
-		bool_node* C1 = new CONST_node(1);
-		sfi.fun->addNewNode(C1);
-		sfi.fun->create_outputs(1, C1, "RES");
+		bool_node* C0 = new CONST_node(0);
+		sfi.fun->addNewNode(C0);
+		sfi.fun->create_outputs(1, C0, "RES");
 	}else{
 		BooleanDAG& comp = getComparator(node.multi_mother.size());
 		//comp is now a comparator that will compare N inputs with N other inputs.
@@ -358,42 +358,25 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
 
-		bool_node* tn1 = rrn;
-		bool_node* tn2 = node.mother; // tnbuilder.get_exe_cond(&node, *this, false);
-		
-		bool_node* cur = NULL;
-		
-		cur = tn1;
-		
-		if(tn2 != NULL){
-			if(cur == NULL){
-				cur = tn2;
-			}else{
-				AND_node* anode = new AND_node();
-				anode->mother = cur;
-				anode->father = tn2;
-				anode->addToParents();
-				newnodes.push_back(anode);
-				cur = anode;					
-			}
-		}
-		
-		if( cur != NULL){
-			NOT_node* nn = new NOT_node();
-			nn->name = cur->name;
-			nn->name += "NOTfa";
-			nn->mother = cur;
+			NOT_node* nn = new NOT_node();			
+			nn->name = "NOTfa";
+			nn->mother = node.mother;
 			nn->addToParents();
 			newnodes.push_back(nn);
+
+			OR_node* orode = new OR_node();
+			orode->mother = nn;
+			orode->father = rrn;
+			orode->addToParents();
+			newnodes.push_back(orode);
 			
 			ASSERT_node* asn = new ASSERT_node();
-			asn->mother = nn;
+			asn->mother = orode;
 			asn->addToParents();
 			string msg = name;
 			msg += ": UFUN is being misused";
 			asn->setMsg(msg);
 			newnodes.push_back(asn);
-		}
 		
 		
 		Dout( cout<<" ADDING "<<(newnodes.size()-oldsize)<<" NODES"<<endl );
