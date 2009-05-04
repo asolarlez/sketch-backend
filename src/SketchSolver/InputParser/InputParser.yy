@@ -34,6 +34,7 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 	list<bool_node*>* nList;
 	list<string*>* sList;
 	vartype variableType;
+	BooleanDAG* bdag;
 }
 
 %token <doubleConst> T_dbl
@@ -79,7 +80,6 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 
 %type<intConst> Program
 %type<strConst> Ident
-%type<intConst> FilterList
 %type<intConst> WorkStatement
 %type<strConst> Expression
 %type<strConst> Term
@@ -89,6 +89,8 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 %type<intConst> ConstantTerm
 %type<nList> varList
 %type<sList> IdentList
+%type<bdag> AssertionExpr
+
 
 
 %left '+'
@@ -105,24 +107,12 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 
 %%
 
-Program: FilterList T_eof{  $$=0; return 0;}
-
-
-FilterList:   { }
-| Filter FilterList { $$ = 0; }
-
-
-Filter: FilterType T_ident  {namestack.push(*$2); } '{' MethodList '}' { 
-				namestack.pop();
-			}
-
-
-FilterType: T_Filter { }
-
+Program: MethodList T_eof{  $$=0; return 0;}
 
 
 MethodList: {}
 | Method MethodList {}
+| HLAssertion MethodList {}
 
 
 InList: T_ident {  
@@ -186,13 +176,11 @@ ParamList: ParamDecl
 Method:  T_ident 
 
 {		
-		BooleanDAG* tmp = new BooleanDAG();
 		cout<<"CREATING "<<*$1<<endl;
-		functionMap[*$1] = tmp;
 		if(currentBD!= NULL){
 			delete currentBD;
 		}
-		currentBD = new BooleanDAGCreator(tmp);
+		currentBD = envt->newFunction(*$1);
 		delete $1;
 }
 '(' ParamList ')' '{' WorkBody '}' { 
@@ -200,19 +188,19 @@ Method:  T_ident
 }
 
 
-|T_ident T_Sketches T_ident 
 
+AssertionExpr: T_ident T_Sketches T_ident 
 {
-		BooleanDAG* tmp = new BooleanDAG();
-		cout<<*$1<<" SKETCHES "<<*$3<<endl;
-		sketchMap[*$1] = tmp;
-		sketches[tmp] = *$3;
-		currentBD = new BooleanDAGCreator(tmp);
-		delete $3;
-		delete $1;
+	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
 }
-'(' ParamList ')' '{' WorkBody '}'{ 
-	currentBD->finalize();
+
+HLAssertion: T_assert AssertionExpr ';'
+{
+	int tt = envt->assertDAG($2, std::cout);
+	envt->printControls("");
+	if(tt != 0){
+		return tt;
+	}
 }
 
 

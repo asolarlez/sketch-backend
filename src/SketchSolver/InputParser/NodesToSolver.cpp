@@ -479,12 +479,12 @@ void NodesToSolver::visit( XOR_node& node ){
 void
 NodesToSolver::visit (SRC_node &node)
 {
-    int iid = node.ion_pos;
+    
 
 	if( node.children.size() == 0){ return; }
 
 
-	Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
+	
 		
     if (node_values.find (&node) != node_values.end ()) {
 		if (node.get_nbits () > 1) {
@@ -501,9 +501,9 @@ NodesToSolver::visit (SRC_node &node)
 		    node_ids[node.id] = node_values[(&node)]*YES;
 		}
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
-		Dout (cout << dir.getArr (node.get_name(), 0) << " has value " << node_values[(&node)]
-	      << "   " << (&node) << "    " << node_ids[node.id] << endl);
+		
     } else {
+		Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
 		if (node.get_nbits () > 1) {
@@ -610,7 +610,7 @@ void
 NodesToSolver::visit (CTRL_node &node)
 {
     int iid = node.ion_pos;
-    Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
+    
     if(  node_values.find(&node) != node_values.end() ){
 		if( node.get_nbits() > 1 ){
 		    Tvalue tmp = tvYES;
@@ -625,10 +625,10 @@ NodesToSolver::visit (CTRL_node &node)
 		    Dout( cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<"    "<<node_values[(&node)]<<endl);
 		}else{
 		    node_ids[node.id] = node_values[(&node)]*YES;
-		}
-		Dout( cout<< dir.getArr(node.get_name(), 0)<<" has value "<<node_values[(&node)]<<"   "<< (&node) <<"    "<< node_ids[node.id] <<endl  );
+		}		
 		return;
     }else{
+		Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
 		node_ids[node.id] = dir.getArr(node.get_name(), 0);
 		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
 		    node_ids[node.id].setSize( node.get_nbits() );

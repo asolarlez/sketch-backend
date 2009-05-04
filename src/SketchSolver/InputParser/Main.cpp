@@ -66,7 +66,7 @@ main(int argc, char** argv)
     totalElapsed.start ();
     mem.run ();
 	
-	int rv = 3;
+	int rv = 0;
 
 	try{
 
@@ -85,11 +85,12 @@ main(int argc, char** argv)
     modelBuilding.stop ();
 
     solution.start ();
-    rv = m.resolveSketches();
+    //rv = m.resolveSketches();
     solution.stop ();
 
 	}catch(...){
 		cerr<<"Unusual Termination."<<endl;
+		rv = 3;
 	}
     mem.stop ();
     totalElapsed.stop ();

@@ -1,7 +1,7 @@
 #include "InputReader.h"
 #include "BooleanDAG.h"
 #include "BooleanDAGCreator.h"
-
+#include "InterpreterEnvironment.h"
 
 #define YYERROR_VERBOSE 1
 
@@ -16,9 +16,7 @@ using namespace std;
 namespace INp{
 
 int isatty(int i);
-  map<string, BooleanDAG*> functionMap;
-  map<string, BooleanDAG*> sketchMap;
-  map<BooleanDAG*, string> sketches;
+  InterpreterEnvironment* envt;
   int global_filterid = 0;
   int NCTRLS=5;
   bool overrideNCtrls=false;

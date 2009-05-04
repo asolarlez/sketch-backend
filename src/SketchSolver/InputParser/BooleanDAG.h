@@ -105,6 +105,7 @@ public:
   void layer_graph();  
   void relabel();
   void cleanup(); //Sorts and cleans up the graph.
+  void cleanUnshared();
   void clear();
   void rename(const string& oldname,  const string& newname);
   void resetBackPointers();
@@ -114,7 +115,9 @@ public:
   int get_n_layers()const{ return layer_sizes.size(); };
   void setOffset(int ofs){ offset = ofs; }
   void printSlice(bool_node* node, ostream& out)const;
-  
+  /*Both of these functions destroy their argument*/
+  virtual void makeMiter(BooleanDAG* bdag);  
+  virtual void andDag(BooleanDAG* bdag);
   ////////////////////////////////////////////////////////////////////////
   //Field Access methods.	
   ////////////////////////////////////////////////////////////////////////
@@ -159,7 +162,7 @@ public:
   
   
 	BooleanDAG();
-	virtual void makeMiter(BooleanDAG& bdag);
+
 	virtual ~BooleanDAG();
 };
 

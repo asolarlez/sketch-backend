@@ -2,10 +2,11 @@
 #include "SolveFromInput.h"
 #include "NodesToSEQ.h"
 #include "BLIFwriter.h"
+#include "CEGISSolver.h"
 
 
 class SFIOutputSeq :
-	public SolveFromInput
+	public CEGISSolver
 {
 public:
 	BooleanDAG* seqMiter;
@@ -13,8 +14,8 @@ public:
 	BooleanDAG* initializer;
 	int iter;
 
-	SFIOutputSeq(ostream& out_p, BooleanDAG* miter, SATSolver& finder, SATSolver& checker, int p_nseeds, int NINPUTS_p, BooleanDAG* seqMiter_p, BooleanDAG* initializer_p):
-	  SolveFromInput(out_p, miter, finder, checker, p_nseeds, NINPUTS_p)
+	SFIOutputSeq(ostream& out_p, BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, int p_nseeds, int NINPUTS_p, BooleanDAG* seqMiter_p, BooleanDAG* initializer_p):
+	  CEGISSolver(miter, finder, checker, p_nseeds, NINPUTS_p)
 	{
 		seqMiter = seqMiter_p;
 		initializer = initializer_p;
@@ -107,7 +108,7 @@ public:
 		return inufun;
 	}
 
-	void setNewControls(vector<int>& controls){
+	void setNewControls(VarStore& controls){
 
 
 		BooleanDAG* seq = hardCodeINode(seqMiter, controls, bool_node::CTRL);
@@ -149,7 +150,11 @@ public:
 		delete seq;
 		delete init;
 
-		SolveFromInput::setNewControls(controls);
+		CEGISSolver::setNewControls(controls);
+	}
+
+	void output_control_map(ostream& out){
+		Assert(false, "NYI");
 	}
 
 	virtual ~SFIOutputSeq(void)

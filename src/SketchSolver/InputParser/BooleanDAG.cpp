@@ -295,7 +295,26 @@ void BooleanDAG::repOK(){
 }
 
 
-
+void BooleanDAG::cleanUnshared(){
+  for(int i=0; i < nodes.size(); ++i){
+  	if(nodes[i]->flag == 0){
+		nodes[i]->dislodge();  		
+	}
+  }
+  for(int i=0; i < nodes.size(); ++i){
+	bool_node* onode = nodes[i];
+	if(onode->flag == 0 ){  		  		
+		map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
+		if(it != named_nodes.end() && it->second==onode){
+			named_nodes.erase(it);
+		}
+  		onode->id = -22;	
+  		delete onode;
+		nodes[i] = NULL;
+	}
+  }
+  removeNullNodes();  
+}
 
 
 
@@ -574,19 +593,65 @@ void BooleanDAG::resetBackPointers(){
 
 
 
-void BooleanDAG::makeMiter(BooleanDAG& bdag){
+void BooleanDAG::andDag(BooleanDAG* bdag){
+	relabel();
+	bdag->relabel();
+	map<bool_node*, bool_node*> replacements;	
+	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
+		Assert( (*node_it) != NULL, "Can't make a miter when you have null nodes.");
+		Assert((*node_it)->type != bool_node::DST, "This DAG should be a miter");
+		Dout( cout<<" adding "<<(*node_it)->get_name()<<endl );		
+			
+		if( (*node_it)->type != bool_node::CTRL ){ 
+			nodes.push_back( (*node_it) );
+			(*node_it)->switchInputs(*this, replacements);
+			if( (*node_it)->type == bool_node::ASSERT ||
+				(*node_it)->type == bool_node::SRC){
+				nodesByType[(*node_it)->type].push_back((*node_it));
+				if((*node_it)->type == bool_node::SRC){
+					while(has_name((*node_it)->name)){
+						(*node_it)->name += "_b";
+					}
+					named_nodes[(*node_it)->name] = (*node_it);
+				}
+			}
+		}else{
+			if( !has_name((*node_it)->name) ){
+				nodes.push_back( (*node_it) );
+				nodesByType[(*node_it)->type].push_back((*node_it));	
+				named_nodes[(*node_it)->name] = (*node_it);
+			}else{
+				replacements[(*node_it)] = get_node((*node_it)->name);
+				delete *node_it;
+			}
+		}
+	}
+	removeNullNodes();
+	cleanup();
+	delete bdag;
+	relabel();
+}
+
+
+void BooleanDAG::makeMiter(BooleanDAG* bdag){
 	bool_node* tip = NULL; 
 	relabel();
-	bdag.relabel();
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+	bdag->relabel();
+	map<bool_node*, bool_node*> replacements;	
+
+	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		Assert( (*node_it) != NULL, "Can't make a miter when you have null nodes.");
+		(*node_it)->flag = 0;
 		Dout( cout<<" adding "<<(*node_it)->get_name()<<endl );		
 				
 		if( (*node_it)->type != bool_node::SRC && (*node_it)->type != bool_node::DST){ 
 			nodes.push_back( (*node_it) );
-			(*node_it)->switchInputs(*this);
+			(*node_it)->switchInputs(*this, replacements);
 			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT ){
 				nodesByType[(*node_it)->type].push_back((*node_it));
+				if( (*node_it)->type == bool_node::CTRL ){
+					named_nodes[(*node_it)->name] = (*node_it);
+				}
 			}
 		}
 		
@@ -595,6 +660,9 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 				nodes.push_back( (*node_it) );
 				nodesByType[(*node_it)->type].push_back((*node_it));	
 				named_nodes[(*node_it)->name] = (*node_it);
+			}else{
+				replacements[*node_it] = this->get_node((*node_it)->name);
+				delete (*node_it);
 			}
 		}
 				
@@ -606,15 +674,18 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 			eq->father = otherDst->mother;
 			eq->mother = (*node_it)->mother;
 			
-			eq->addToParents();			
+			//eq->addToParents();			
 			
 			Dout(cout<<"           switching inputs "<<endl);
-			eq->switchInputs(*this);
+			eq->switchInputs(*this, replacements);
 			
 			Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
 			Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
 			replace( otherDst->id, eq);	
-			(*node_it)->dislodge();
+			if(replacements.count((*node_it)->mother)==0){
+				(*node_it)->dislodge();
+			}
+			delete (*node_it);
 			nodes.push_back( eq );	
 
 			ASSERT_node* finalAssert = new ASSERT_node();
@@ -632,6 +703,7 @@ void BooleanDAG::makeMiter(BooleanDAG& bdag){
 	
 	removeNullNodes();
 	cleanup();
+	delete bdag;
 	//sort_graph();
 	relabel();
 }

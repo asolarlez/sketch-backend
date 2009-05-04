@@ -106,7 +106,7 @@ public:
    
   virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
   virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag);
-  virtual void switchInputs(BooleanDAG& bdag);
+  virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
   virtual string get_tname() const{
     switch(type){
 	case PLUS: return "PLUS";
@@ -193,7 +193,7 @@ class arith_node: public bool_node{
 	virtual void addToParents(bool_node* only_thisone);
 	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
-	virtual void switchInputs(BooleanDAG& bdag);
+	virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
 	virtual string get_tname() const{
 		switch(arith_type){			

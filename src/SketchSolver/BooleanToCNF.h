@@ -16,6 +16,7 @@
 #include "SATSolver.h"
 #include "guardedVal.h"
 
+// #define Dout(msg) msg
 
 using namespace std;
 
@@ -42,6 +43,10 @@ public:
 	varCnt = 1;
 	YES = 0;
     }
+
+	SATSolver& getMng(){
+		return mng;
+	}
 
 
 	void printAllVars(){
@@ -116,23 +121,28 @@ public:
 
 
     void declareInArr(const string& arName, int size) {
-	int i = 0;
-	int idx;
-	int frst = -1;
-	if( size > 0 ) {
-	    idx =  mng.newInVar();
-	    i++;
-	    frst = idx;
-	}
-	for(; i<size; ++i) {
-	    idx =  mng.newInVar();
-	}
-	Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
-	mng.annotateInput(arName, frst, size);
-	varmap[arName] = frst;
-	arrsize[arName] = size;
-	Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
-	varCnt += size;
+		map<string, int>::iterator fit = arrsize.find(arName);
+		if(fit != arrsize.end()){
+			Assert(fit->second == size, "You declared the same array with a different name earlier!");
+		}else{
+			int i = 0;
+			int idx;
+			int frst = -1;
+			if( size > 0 ) {
+				idx =  mng.newInVar();
+				i++;
+				frst = idx;
+			}
+			for(; i<size; ++i) {
+				idx =  mng.newInVar();
+			}
+			Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
+			mng.annotateInput(arName, frst, size);
+			varmap[arName] = frst;
+			arrsize[arName] = size;
+			Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
+			varCnt += size;	
+		}	
     }
 
     void makeArrNoBranch(const string& arName) {

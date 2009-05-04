@@ -86,33 +86,27 @@ void bool_node::addToParents(){
 
 
 
-void arith_node::switchInputs(BooleanDAG& bdag){	
+void arith_node::switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements){	
 	for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
 	  	if(*it != NULL){
-	  		if(  (*it)->type == bool_node::SRC ){
-	  			if( bdag.has_name((*it)->name)){
-    				(*it) = bdag.get_node((*it)->name);
-	  			}
-	  		}
+			if( replacements.count(*it) > 0){
+				(*it) = replacements[*it];
+			}
 	  	}
   	}
-  	bool_node::switchInputs(bdag);
+  	bool_node::switchInputs(bdag, replacements);
 }
 
 
-void bool_node::switchInputs(BooleanDAG& bdag){
+void bool_node::switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements){
 	if(father != NULL){
-		if(  father->type == bool_node::SRC ){
-    		if( bdag.has_name(father->name )){
-    			father = bdag.get_node(father->name);
-    		}
-		}
+		if(replacements.count(father) > 0){
+			father = replacements[father];
+		}		
   	}
 	if(mother != NULL){
-		if(  mother->type == bool_node::SRC ){
-			if( bdag.has_name(mother->name )){
-				mother = bdag.get_node(mother->name);
-			}
+		if(replacements.count(mother) > 0){
+			mother = replacements[mother];
 		}
 	}
 	addToParents();

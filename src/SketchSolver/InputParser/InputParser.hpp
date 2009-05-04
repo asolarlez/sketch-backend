@@ -132,9 +132,10 @@ typedef union YYSTYPE
 	list<bool_node*>* nList;
 	list<string*>* sList;
 	vartype variableType;
+	BooleanDAG* bdag;
 }
 /* Line 1489 of yacc.c.  */
-#line 138 "InputParser.hpp"
+#line 139 "InputParser.hpp"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

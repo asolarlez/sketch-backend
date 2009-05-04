@@ -10,7 +10,7 @@
 #include "DagOptim.h"
 #include "DagFunctionInliner.h"
 #include "DagElimUFUN.h"
-
+#include "InterpreterEnvironment.h"
 
 #include <fstream>
 #include <ctime>
@@ -18,9 +18,7 @@
 using std::ofstream;
 
 namespace INp{
-	extern  map<string, BooleanDAG*> functionMap;
-	extern  map<string, BooleanDAG*> sketchMap;
-	extern  map<BooleanDAG*, string> sketches;
+	extern InterpreterEnvironment* envt;
 }
 
 class Driver{
@@ -44,9 +42,7 @@ public:
 	}
 
 
-	virtual BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, string& name );
 
-	virtual int solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, SATSolver* finder, SATSolver* checker, string& name);
 
 	virtual int resolveSketches();
 
