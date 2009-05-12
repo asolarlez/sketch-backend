@@ -7,6 +7,7 @@
 #include "DagOptim.h"
 #include "NodesToSolver.h"
 #include "NodesToEuclid.h"
+#include "NodeSlicer.h"
 
 extern CommandLineArgs* PARAMS;
 
@@ -148,6 +149,7 @@ bool CEGISSolver::solveCore(){
 			doMore = check(ctrlStore, inputStore);
 			 ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }
+			//if(doMore){ normalizeInputStore(); }
 		}
 		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
 		++iterations;
@@ -343,6 +345,19 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 	mngFind.reset();
 	return true;
 //Return true.
+}
+
+
+void CEGISSolver::normalizeInputStore(){
+	VarStore tmp = join(inputStore, ctrlStore);
+	map<string, BooleanDAG*> empty;
+	NodeSlicer slicer(empty, tmp);
+	slicer.process(*problem);
+	for(VarStore::iterator it = inputStore.begin(); it != inputStore.end(); ++it){
+		if(!slicer.isInfluential(it->name)){
+			it->setVal(last_input[it->name]);		
+		}
+	}
 }
 
 

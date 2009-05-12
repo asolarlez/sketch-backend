@@ -77,16 +77,16 @@ main(int argc, char** argv)
 
     ABCSolverStart();
   
-    modelBuilding.start ();     // too coarse of a timing?
+         // too coarse of a timing?
     CommandLineArgs params(argc, argv);
     PARAMS = &params;
     Driver m(params);
     m.parseInput();
-    modelBuilding.stop ();
+    
 
-    solution.start ();
+    
     //rv = m.resolveSketches();
-    solution.stop ();
+    
 
 	}catch(...){
 		cerr<<"Unusual Termination."<<endl;

@@ -12,6 +12,8 @@
 #include <list>
 
 using namespace std;
+extern timerclass solution;
+extern timerclass modelBuilding;
 
 namespace INp{
 
@@ -22,6 +24,7 @@ int isatty(int i);
   bool overrideNCtrls=false;
   int NINPUTS=5;
   bool overrideInputs=false;
+  
 #include "InputLexer.cpp"
 #include "InputParser.cpp"
 

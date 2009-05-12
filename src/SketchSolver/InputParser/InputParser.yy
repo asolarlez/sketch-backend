@@ -22,8 +22,17 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 }
 
 
+
+
+
+#define YYLEX_PARAM yyscanner
+#define YYPARSE_PARAM yyscanner
+#define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
+extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
+
 %}
 
+%pure_parser
 
 %union {
 	int intConst;
@@ -58,22 +67,16 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 %token T_ge
 %token T_le
 
-%token T_Table
-%token T_Pipeline
-%token T_SplitJoin
-%token T_Filter 
+
 %token T_Native
 %token T_NativeMethod
-%token T_Work
 %token T_Sketches
-%token T_OutRate
 %token T_new
-%token T_InRate
 %token T_add
 %token T_Init
-%token T_setSplitter
-%token T_setJoiner
 
+
+%token T_def
 %token T_assert
 
 %token T_eof
@@ -89,6 +92,7 @@ string *comparisson (string *p1, string *p2, bool_node::Type atype)
 %type<intConst> ConstantTerm
 %type<nList> varList
 %type<sList> IdentList
+%type<sList> TokenList
 %type<bdag> AssertionExpr
 
 
@@ -173,18 +177,17 @@ ParamList: ParamDecl
 | ParamDecl ',' ParamList 
 
 
-Method:  T_ident 
-
-{		
-		cout<<"CREATING "<<*$1<<endl;
+Method: T_def T_ident
+{		modelBuilding.restart ();
 		if(currentBD!= NULL){
 			delete currentBD;
 		}
-		currentBD = envt->newFunction(*$1);
-		delete $1;
+		currentBD = envt->newFunction(*$2);
+		delete $2;
 }
 '(' ParamList ')' '{' WorkBody '}' { 
 	currentBD->finalize();
+	modelBuilding.stop();
 }
 
 
@@ -194,16 +197,37 @@ AssertionExpr: T_ident T_Sketches T_ident
 	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
 }
 
-HLAssertion: T_assert AssertionExpr ';'
+HLAssertion: T_assert {solution.start();} AssertionExpr ';'
 {
-	int tt = envt->assertDAG($2, std::cout);
+	int tt = envt->assertDAG($3, std::cout);
 	envt->printControls("");
+	solution.stop();
+	cout<<"COMPLETED"<<endl;
 	if(tt != 0){
 		return tt;
 	}
 }
+| T_ident '(' TokenList ')' ';'
+{
+	int tt = envt->runCommand(*$1, *$3);
+	delete $1;
+	delete $3;
+	if(tt >= 0){
+		return tt;
+	}
+}
 
-
+TokenList:  {
+	$$ = new list<string*>();	
+}
+| T_ident TokenList{
+	$$ = $2;
+	$$->push_back( $1);
+}
+| T_string TokenList{
+	$$ = $2;
+	$$->push_back( $1);
+}
 
 
 WorkBody:  { /* Empty */ }

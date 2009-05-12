@@ -1,12 +1,20 @@
+%option reentrant
 %{
 
 #include "InputParser.hpp"
 #include <cstdlib>
 #include "InputReader.h"
 
+
+
+#define YYLEX_PARAM yyscanner
+#define YYPARSE_PARAM yyscanner
+#define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
+
 %}
 
-%option lex-compat
+
+
 %option noyywrap
 
 Digit        ([0-9])
@@ -31,34 +39,34 @@ Comment      ("//"[^\n]*)
 {Operator} {  return yytext[0]; }
 
 {Double}   {
-				yylval.doubleConst = atof(yytext);
+				yylval->doubleConst = atof(yytext);
 				return T_dbl;
 			}
 
 ("###NATIVE_CODE_BEGIN"[^\#]*"###NATIVE_CODE_END") { 				
 				string tmp(yytext);
 				tmp = tmp.substr(20, tmp.size() - ( 20 + 18 ) );
-				yylval.strConst = new string(tmp);
+				yylval->strConst = new string(tmp);
 				return T_NativeCode;
 			}
 
 {Integer}  {							
-				yylval.intConst = atoi(yytext); 				
+				yylval->intConst = atoi(yytext); 				
 				return T_int;
 			}
 {HexInteger}  {	
-				yylval.intConst = atoi(yytext); 
+				yylval->intConst = atoi(yytext); 
 				return T_int;
 			}
 
 "null"  {							
-				yylval.intConst = 0; 				
+				yylval->intConst = 0; 				
 				return T_int;
 			}
 {String}   {								
 				string tmp(yytext);
 				tmp = tmp.substr(1, tmp.size() -2);
-				yylval.strConst = new string(tmp);
+				yylval->strConst = new string(tmp);
 				return T_string;
 			}
 
@@ -104,16 +112,16 @@ Comment      ("//"[^\n]*)
 			}
 
 ("OUTPUT_"{Integer}) { 	
-						yylval.strConst = new string(yytext); 
+						yylval->strConst = new string(yytext); 
 						return T_OutIdent; }
 
 "int"	{
-				yylval.variableType = INT;
+				yylval->variableType = INT;
 				return T_vartype;
 		}
 		
 "bit"	{
-				yylval.variableType = BIT;
+				yylval->variableType = BIT;
 				return T_vartype;
 		}
 
@@ -133,26 +141,7 @@ Comment      ("//"[^\n]*)
     return T_assert;
 }
 
-"Filter"	{
-				
-				return T_Filter;
-			}
 
-"Pipeline" {
-				
-				return T_Pipeline;
-			}
-
-
-"SplitJoin" {
-				
-				return T_SplitJoin;
-			}
-
-"Table"		{
-				
-				return T_Table;
-			}
 
 "NativeFilter"	{				
 					return T_Native;
@@ -169,27 +158,13 @@ Comment      ("//"[^\n]*)
 			}
 						
 
-"WORK"		{
-				return T_Work;
+"def"		{
+				return T_def;
 			}
 
-"input_RATE" {
-				return T_InRate;
-			}
-
-"output_RATE" {
-				return T_OutRate;
-			}
-
-"setSplitter"	{
-					return T_setSplitter;
-				}
-"setJoiner"	{
-				return T_setJoiner;
-			}
 
 {Identifier} {
-	yylval.strConst = new string(yytext);
+	yylval->strConst = new string(yytext);
 	return T_ident;
 }
 

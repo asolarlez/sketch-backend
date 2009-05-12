@@ -10,7 +10,7 @@ extern FILE *yyin;
 void Inityylex(void);
 void Inityyparse(void);
 
-int yylex(void);
+// int yylex(void);
 
 extern int yylineno;
 extern char yytext[];
@@ -21,7 +21,13 @@ typedef enum{ INT, LONG, BIT} vartype;
 /*
  * This is from y.tab.c
  */
-int yyparse(void);
+// int yyparse(void);
+#define YY_NO_UNISTD_H 1
+
+int yyparse (void *yyscanner);
+int yylex_init (void** scanner);
+int yylex_destroy (void* scanner);
+void yyset_in (FILE *  in_str , void* yyscanner);
 
 void yyerror(char* );
 

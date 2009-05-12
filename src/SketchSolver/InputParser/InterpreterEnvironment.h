@@ -15,6 +15,9 @@
 
 #include <sstream>
 
+extern timerclass solution;
+extern timerclass modelBuilding;
+
 using namespace std;
 
 class InterpreterEnvironment
@@ -55,8 +58,8 @@ class InterpreterEnvironment
 		x1 = x1>x2? x1: x2;
 		x3 = x3 > 0? x3 : fname.size();
 		++x1;
-		fname = fname.substr(x1, x3-x1);
-		return fname;
+		
+		return fname.substr(x1, x3-x1);
 	}
 
 	BooleanDAG* runOptims(BooleanDAG* result){
@@ -122,6 +125,46 @@ public:
 		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
 			out<<it->first<<"\t"<<it->second<<endl;
 		}
+	}
+
+
+	int runCommand(const string& cmd, list<string*>& parlist){
+		if(cmd == "exit"){
+			return 0;
+		}
+		if(cmd == "print"){
+			if(parlist.size() > 0){
+				printControls(*parlist.front());
+				for(list<string*>::iterator it = parlist.begin(); it != parlist.end(); ++it){
+					delete *it;
+				}
+			}else{
+				printControls("");
+			}
+			return -1;
+		}
+		
+		if(cmd == "import"){
+						
+			string& fname = 	*parlist.front();
+			cout<<"Reading SKETCH Program in File "<<fname<<endl;
+			
+			
+			void* scanner;
+			INp::yylex_init(&scanner);
+			INp::yyset_in(fopen(fname.c_str(), "r"), scanner);			
+			int tmp = INp::yyparse(scanner);
+			INp::yylex_destroy(scanner);
+			cout<<"DONE INPUTING"<<endl;
+			for(list<string*>::iterator it = parlist.begin(); it != parlist.end(); ++it){
+				delete *it;
+			}
+			if(tmp != 0) return tmp;
+			return -1;			
+		}
+		
+		Assert(false, "NO SUCH COMMAND"<<cmd);
+		return 1;
 	}
 
 

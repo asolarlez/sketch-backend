@@ -38,6 +38,7 @@ class CommandLineArgs{
   string inputFname;
   string outputFname;
   bool alterARRACS;
+  bool interactive;
   int olevel;
 
 	CommandLineArgs(int argc, char** argv){
@@ -63,6 +64,7 @@ class CommandLineArgs{
 		showDAG = false;
 		ufunSymmetry = false;
 		alterARRACS = false;
+		interactive = false;
 		olevel = 5;
 
 
@@ -110,6 +112,11 @@ class CommandLineArgs{
 
 		if( string(argv[ii]) == "-showinputs" ){
 	    	showInputs = true;
+	      input_idx = ii+1;      
+	    }
+		
+		if( string(argv[ii]) == "-interactive" ){
+	    	interactive = true;
 	      input_idx = ii+1;      
 	    }
 	    

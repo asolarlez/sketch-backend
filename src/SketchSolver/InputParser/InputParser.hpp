@@ -59,23 +59,15 @@
      T_For = 275,
      T_ge = 276,
      T_le = 277,
-     T_Table = 278,
-     T_Pipeline = 279,
-     T_SplitJoin = 280,
-     T_Filter = 281,
-     T_Native = 282,
-     T_NativeMethod = 283,
-     T_Work = 284,
-     T_Sketches = 285,
-     T_OutRate = 286,
-     T_new = 287,
-     T_InRate = 288,
-     T_add = 289,
-     T_Init = 290,
-     T_setSplitter = 291,
-     T_setJoiner = 292,
-     T_assert = 293,
-     T_eof = 294
+     T_Native = 278,
+     T_NativeMethod = 279,
+     T_Sketches = 280,
+     T_new = 281,
+     T_add = 282,
+     T_Init = 283,
+     T_def = 284,
+     T_assert = 285,
+     T_eof = 286
    };
 #endif
 /* Tokens.  */
@@ -99,30 +91,22 @@
 #define T_For 275
 #define T_ge 276
 #define T_le 277
-#define T_Table 278
-#define T_Pipeline 279
-#define T_SplitJoin 280
-#define T_Filter 281
-#define T_Native 282
-#define T_NativeMethod 283
-#define T_Work 284
-#define T_Sketches 285
-#define T_OutRate 286
-#define T_new 287
-#define T_InRate 288
-#define T_add 289
-#define T_Init 290
-#define T_setSplitter 291
-#define T_setJoiner 292
-#define T_assert 293
-#define T_eof 294
+#define T_Native 278
+#define T_NativeMethod 279
+#define T_Sketches 280
+#define T_new 281
+#define T_add 282
+#define T_Init 283
+#define T_def 284
+#define T_assert 285
+#define T_eof 286
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 28 "InputParser.yy"
+#line 37 "InputParser.yy"
 {
 	int intConst;
 	bool boolConst;
@@ -135,12 +119,12 @@ typedef union YYSTYPE
 	BooleanDAG* bdag;
 }
 /* Line 1489 of yacc.c.  */
-#line 139 "InputParser.hpp"
+#line 123 "InputParser.hpp"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
 #endif
 
-extern YYSTYPE yylval;
+
 

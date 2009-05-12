@@ -63,12 +63,21 @@ void Driver::parseInput(){
 	try{
 		cout<<"Reading SKETCH Program in File "<<params.inputFname<<endl;
 
-		INp::yyin = fopen(params.inputFname.c_str(), "r");
+
 		INp::Inityylex();
 		INp::Inityyparse();
 		INp::envt = new InterpreterEnvironment(params);
-		
-		if (INp::yyparse() != 0) {
+		void* scanner;
+		INp::yylex_init(&scanner);
+		FILE* tmp = NULL;
+		if(params.interactive){
+			INp::yyset_in(stdin, scanner);			
+		}else{
+			tmp = fopen(params.inputFname.c_str(), "r");
+			INp::yyset_in(tmp, scanner);
+		}
+		if (INp::yyparse(scanner) != 0) {
+			INp::yylex_destroy(scanner);
 			cerr<<"\n*** Rejected\n";
 			exit(1);
 		}
