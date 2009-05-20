@@ -1,0 +1,2215 @@
+Terminals which are not used
+
+   T_dbl
+   T_bool
+   T_NativeCode
+   T_ppls
+   T_mmns
+   T_For
+   T_Table
+   T_Pipeline
+   T_SplitJoin
+   T_Native
+   T_NativeMethod
+   T_Work
+   T_OutRate
+   T_new
+   T_InRate
+   T_add
+   T_Init
+   T_setSplitter
+   T_setJoiner
+
+
+Grammar
+
+    0 $accept: Program $end
+
+    1 Program: FilterList T_eof
+
+    2 FilterList: /* empty */
+    3           | Filter FilterList
+
+    4 @1: /* empty */
+
+    5 Filter: FilterType T_ident @1 '{' MethodList '}'
+
+    6 FilterType: T_Filter
+
+    7 MethodList: /* empty */
+    8           | Method MethodList
+
+    9 InList: T_ident
+
+   10 @2: /* empty */
+
+   11 InList: T_ident @2 InList
+
+   12 OutList: T_ident
+   13        | T_ident OutList
+
+   14 ParamDecl: T_vartype T_ident
+   15          | '!' T_vartype T_ident
+
+   16 @3: /* empty */
+
+   17 ParamDecl: T_vartype @3 '[' ConstantExpr ']' InList
+   18          | '!' T_vartype '[' ConstantExpr ']' OutList
+
+   19 ParamList: ParamDecl
+   20          | ParamDecl ',' ParamList
+
+   21 @4: /* empty */
+
+   22 Method: T_ident @4 '(' ParamList ')' '{' WorkBody '}'
+
+   23 @5: /* empty */
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList ')' '{' WorkBody '}'
+
+   25 WorkBody: /* empty */
+   26         | WorkBody WorkStatement
+
+   27 WorkStatement: ';'
+   28              | T_ident '=' Expression ';'
+   29              | '$' IdentList T_twoS varList '$' '[' Expression ']' '=' Expression ';'
+   30              | T_OutIdent '=' Expression ';'
+   31              | T_assert Expression ';'
+   32              | T_assert Expression ':' T_string ';'
+
+   33 Expression: Term
+   34           | Term '&' Term
+   35           | Term T_and Term
+   36           | Term '|' Term
+   37           | Term T_or Term
+   38           | Term '^' Term
+   39           | Term T_neq Term
+   40           | Term T_eq Term
+   41           | '$' varList '$' '[' Expression ']'
+   42           | T_twoS varList T_twoS
+   43           | Term '+' Term
+   44           | Term '/' Term
+   45           | Term '%' Term
+   46           | Term '*' Term
+   47           | Term '-' Term
+   48           | Term '>' Term
+   49           | Term '<' Term
+   50           | Term T_ge Term
+   51           | Term T_le Term
+   52           | Expression '?' Expression ':' Expression
+
+   53 varList: /* empty */
+   54        | Term varList
+
+   55 IdentList: T_ident
+   56          | T_ident IdentList
+
+   57 Term: Constant
+   58     | T_ident '[' T_vartype ']' '(' varList ')' '(' Expression ')'
+   59     | '-' Term
+   60     | '!' Term
+   61     | '(' Expression ')'
+   62     | Ident
+   63     | '<' Ident '>'
+   64     | '<' Ident Constant '>'
+   65     | '<' Ident Constant '*' '>'
+
+   66 ConstantExpr: ConstantTerm
+   67             | ConstantExpr '+' ConstantTerm
+   68             | ConstantExpr '-' ConstantTerm
+
+   69 ConstantTerm: NegConstant
+   70             | '(' ConstantTerm ')'
+   71             | ConstantTerm '*' ConstantTerm
+   72             | ConstantTerm '/' ConstantTerm
+   73             | ConstantTerm '%' ConstantTerm
+
+   74 NegConstant: Constant
+   75            | '-' Constant
+
+   76 Constant: T_int
+   77         | T_true
+   78         | T_false
+
+   79 Ident: T_ident
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+'!' (33) 15 18 60
+'$' (36) 29 41
+'%' (37) 45 73
+'&' (38) 34
+'(' (40) 22 24 58 61 70
+')' (41) 22 24 58 61 70
+'*' (42) 46 65 71
+'+' (43) 43 67
+',' (44) 20
+'-' (45) 47 59 68 75
+'/' (47) 44 72
+':' (58) 32 52
+';' (59) 27 28 29 30 31 32
+'<' (60) 49 63 64 65
+'=' (61) 28 29 30
+'>' (62) 48 63 64 65
+'?' (63) 52
+'[' (91) 17 18 29 41 58
+']' (93) 17 18 29 41 58
+'^' (94) 38
+'{' (123) 5 22 24
+'|' (124) 36
+'}' (125) 5 22 24
+error (256)
+T_dbl (258)
+T_int (259) 76
+T_bool (260)
+T_ident (261) 5 9 11 12 13 14 15 22 24 28 55 56 58 79
+T_OutIdent (262) 30
+T_NativeCode (263)
+T_string (264) 32
+T_true (265) 77
+T_false (266) 78
+T_vartype (267) 14 15 17 18 58
+T_twoS (268) 29 42
+T_ppls (269)
+T_mmns (270)
+T_eq (271) 40
+T_neq (272) 39
+T_and (273) 35
+T_or (274) 37
+T_For (275)
+T_ge (276) 50
+T_le (277) 51
+T_Table (278)
+T_Pipeline (279)
+T_SplitJoin (280)
+T_Filter (281) 6
+T_Native (282)
+T_NativeMethod (283)
+T_Work (284)
+T_Sketches (285) 24
+T_OutRate (286)
+T_new (287)
+T_InRate (288)
+T_add (289)
+T_Init (290)
+T_setSplitter (291)
+T_setJoiner (292)
+T_assert (293) 31 32
+T_eof (294) 1
+
+
+Nonterminals, with rules where they appear
+
+$accept (63)
+    on left: 0
+Program (64)
+    on left: 1, on right: 0
+FilterList (65)
+    on left: 2 3, on right: 1 3
+Filter (66)
+    on left: 5, on right: 3
+@1 (67)
+    on left: 4, on right: 5
+FilterType (68)
+    on left: 6, on right: 5
+MethodList (69)
+    on left: 7 8, on right: 5 8
+InList (70)
+    on left: 9 11, on right: 11 17
+@2 (71)
+    on left: 10, on right: 11
+OutList (72)
+    on left: 12 13, on right: 13 18
+ParamDecl (73)
+    on left: 14 15 17 18, on right: 19 20
+@3 (74)
+    on left: 16, on right: 17
+ParamList (75)
+    on left: 19 20, on right: 20 22 24
+Method (76)
+    on left: 22 24, on right: 8
+@4 (77)
+    on left: 21, on right: 22
+@5 (78)
+    on left: 23, on right: 24
+WorkBody (79)
+    on left: 25 26, on right: 22 24 26
+WorkStatement (80)
+    on left: 27 28 29 30 31 32, on right: 26
+Expression (81)
+    on left: 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50
+    51 52, on right: 28 29 30 31 32 41 52 58 61
+varList (82)
+    on left: 53 54, on right: 29 41 42 54 58
+IdentList (83)
+    on left: 55 56, on right: 29 56
+Term (84)
+    on left: 57 58 59 60 61 62 63 64 65, on right: 33 34 35 36 37 38
+    39 40 43 44 45 46 47 48 49 50 51 54 59 60
+ConstantExpr (85)
+    on left: 66 67 68, on right: 17 18 67 68
+ConstantTerm (86)
+    on left: 69 70 71 72 73, on right: 66 67 68 70 71 72 73
+NegConstant (87)
+    on left: 74 75, on right: 69
+Constant (88)
+    on left: 76 77 78, on right: 57 64 65 74 75
+Ident (89)
+    on left: 79, on right: 62 63 64 65
+
+
+state 0
+
+    0 $accept: . Program $end
+
+    T_Filter  shift, and go to state 1
+
+    $default  reduce using rule 2 (FilterList)
+
+    Program     go to state 2
+    FilterList  go to state 3
+    Filter      go to state 4
+    FilterType  go to state 5
+
+
+state 1
+
+    6 FilterType: T_Filter .
+
+    $default  reduce using rule 6 (FilterType)
+
+
+state 2
+
+    0 $accept: Program . $end
+
+    $end  shift, and go to state 6
+
+
+state 3
+
+    1 Program: FilterList . T_eof
+
+    T_eof  shift, and go to state 7
+
+
+state 4
+
+    3 FilterList: Filter . FilterList
+
+    T_Filter  shift, and go to state 1
+
+    $default  reduce using rule 2 (FilterList)
+
+    FilterList  go to state 8
+    Filter      go to state 4
+    FilterType  go to state 5
+
+
+state 5
+
+    5 Filter: FilterType . T_ident @1 '{' MethodList '}'
+
+    T_ident  shift, and go to state 9
+
+
+state 6
+
+    0 $accept: Program $end .
+
+    $default  accept
+
+
+state 7
+
+    1 Program: FilterList T_eof .
+
+    $default  reduce using rule 1 (Program)
+
+
+state 8
+
+    3 FilterList: Filter FilterList .
+
+    $default  reduce using rule 3 (FilterList)
+
+
+state 9
+
+    5 Filter: FilterType T_ident . @1 '{' MethodList '}'
+
+    $default  reduce using rule 4 (@1)
+
+    @1  go to state 10
+
+
+state 10
+
+    5 Filter: FilterType T_ident @1 . '{' MethodList '}'
+
+    '{'  shift, and go to state 11
+
+
+state 11
+
+    5 Filter: FilterType T_ident @1 '{' . MethodList '}'
+
+    T_ident  shift, and go to state 12
+
+    $default  reduce using rule 7 (MethodList)
+
+    MethodList  go to state 13
+    Method      go to state 14
+
+
+state 12
+
+   22 Method: T_ident . @4 '(' ParamList ')' '{' WorkBody '}'
+   24       | T_ident . T_Sketches T_ident @5 '(' ParamList ')' '{' WorkBody '}'
+
+    T_Sketches  shift, and go to state 15
+
+    $default  reduce using rule 21 (@4)
+
+    @4  go to state 16
+
+
+state 13
+
+    5 Filter: FilterType T_ident @1 '{' MethodList . '}'
+
+    '}'  shift, and go to state 17
+
+
+state 14
+
+    8 MethodList: Method . MethodList
+
+    T_ident  shift, and go to state 12
+
+    $default  reduce using rule 7 (MethodList)
+
+    MethodList  go to state 18
+    Method      go to state 14
+
+
+state 15
+
+   24 Method: T_ident T_Sketches . T_ident @5 '(' ParamList ')' '{' WorkBody '}'
+
+    T_ident  shift, and go to state 19
+
+
+state 16
+
+   22 Method: T_ident @4 . '(' ParamList ')' '{' WorkBody '}'
+
+    '('  shift, and go to state 20
+
+
+state 17
+
+    5 Filter: FilterType T_ident @1 '{' MethodList '}' .
+
+    $default  reduce using rule 5 (Filter)
+
+
+state 18
+
+    8 MethodList: Method MethodList .
+
+    $default  reduce using rule 8 (MethodList)
+
+
+state 19
+
+   24 Method: T_ident T_Sketches T_ident . @5 '(' ParamList ')' '{' WorkBody '}'
+
+    $default  reduce using rule 23 (@5)
+
+    @5  go to state 21
+
+
+state 20
+
+   22 Method: T_ident @4 '(' . ParamList ')' '{' WorkBody '}'
+
+    T_vartype  shift, and go to state 22
+    '!'        shift, and go to state 23
+
+    ParamDecl  go to state 24
+    ParamList  go to state 25
+
+
+state 21
+
+   24 Method: T_ident T_Sketches T_ident @5 . '(' ParamList ')' '{' WorkBody '}'
+
+    '('  shift, and go to state 26
+
+
+state 22
+
+   14 ParamDecl: T_vartype . T_ident
+   17          | T_vartype . @3 '[' ConstantExpr ']' InList
+
+    T_ident  shift, and go to state 27
+
+    $default  reduce using rule 16 (@3)
+
+    @3  go to state 28
+
+
+state 23
+
+   15 ParamDecl: '!' . T_vartype T_ident
+   18          | '!' . T_vartype '[' ConstantExpr ']' OutList
+
+    T_vartype  shift, and go to state 29
+
+
+state 24
+
+   19 ParamList: ParamDecl .
+   20          | ParamDecl . ',' ParamList
+
+    ','  shift, and go to state 30
+
+    $default  reduce using rule 19 (ParamList)
+
+
+state 25
+
+   22 Method: T_ident @4 '(' ParamList . ')' '{' WorkBody '}'
+
+    ')'  shift, and go to state 31
+
+
+state 26
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' . ParamList ')' '{' WorkBody '}'
+
+    T_vartype  shift, and go to state 22
+    '!'        shift, and go to state 23
+
+    ParamDecl  go to state 24
+    ParamList  go to state 32
+
+
+state 27
+
+   14 ParamDecl: T_vartype T_ident .
+
+    $default  reduce using rule 14 (ParamDecl)
+
+
+state 28
+
+   17 ParamDecl: T_vartype @3 . '[' ConstantExpr ']' InList
+
+    '['  shift, and go to state 33
+
+
+state 29
+
+   15 ParamDecl: '!' T_vartype . T_ident
+   18          | '!' T_vartype . '[' ConstantExpr ']' OutList
+
+    T_ident  shift, and go to state 34
+    '['      shift, and go to state 35
+
+
+state 30
+
+   20 ParamList: ParamDecl ',' . ParamList
+
+    T_vartype  shift, and go to state 22
+    '!'        shift, and go to state 23
+
+    ParamDecl  go to state 24
+    ParamList  go to state 36
+
+
+state 31
+
+   22 Method: T_ident @4 '(' ParamList ')' . '{' WorkBody '}'
+
+    '{'  shift, and go to state 37
+
+
+state 32
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList . ')' '{' WorkBody '}'
+
+    ')'  shift, and go to state 38
+
+
+state 33
+
+   17 ParamDecl: T_vartype @3 '[' . ConstantExpr ']' InList
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantExpr  go to state 44
+    ConstantTerm  go to state 45
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 34
+
+   15 ParamDecl: '!' T_vartype T_ident .
+
+    $default  reduce using rule 15 (ParamDecl)
+
+
+state 35
+
+   18 ParamDecl: '!' T_vartype '[' . ConstantExpr ']' OutList
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantExpr  go to state 48
+    ConstantTerm  go to state 45
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 36
+
+   20 ParamList: ParamDecl ',' ParamList .
+
+    $default  reduce using rule 20 (ParamList)
+
+
+state 37
+
+   22 Method: T_ident @4 '(' ParamList ')' '{' . WorkBody '}'
+
+    $default  reduce using rule 25 (WorkBody)
+
+    WorkBody  go to state 49
+
+
+state 38
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList ')' . '{' WorkBody '}'
+
+    '{'  shift, and go to state 50
+
+
+state 39
+
+   76 Constant: T_int .
+
+    $default  reduce using rule 76 (Constant)
+
+
+state 40
+
+   77 Constant: T_true .
+
+    $default  reduce using rule 77 (Constant)
+
+
+state 41
+
+   78 Constant: T_false .
+
+    $default  reduce using rule 78 (Constant)
+
+
+state 42
+
+   70 ConstantTerm: '(' . ConstantTerm ')'
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 51
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 43
+
+   75 NegConstant: '-' . Constant
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+
+    Constant  go to state 52
+
+
+state 44
+
+   17 ParamDecl: T_vartype @3 '[' ConstantExpr . ']' InList
+   67 ConstantExpr: ConstantExpr . '+' ConstantTerm
+   68             | ConstantExpr . '-' ConstantTerm
+
+    '+'  shift, and go to state 53
+    ']'  shift, and go to state 54
+    '-'  shift, and go to state 55
+
+
+state 45
+
+   66 ConstantExpr: ConstantTerm .
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '*'  shift, and go to state 56
+    '/'  shift, and go to state 57
+    '%'  shift, and go to state 58
+
+    $default  reduce using rule 66 (ConstantExpr)
+
+
+state 46
+
+   69 ConstantTerm: NegConstant .
+
+    $default  reduce using rule 69 (ConstantTerm)
+
+
+state 47
+
+   74 NegConstant: Constant .
+
+    $default  reduce using rule 74 (NegConstant)
+
+
+state 48
+
+   18 ParamDecl: '!' T_vartype '[' ConstantExpr . ']' OutList
+   67 ConstantExpr: ConstantExpr . '+' ConstantTerm
+   68             | ConstantExpr . '-' ConstantTerm
+
+    '+'  shift, and go to state 53
+    ']'  shift, and go to state 59
+    '-'  shift, and go to state 55
+
+
+state 49
+
+   22 Method: T_ident @4 '(' ParamList ')' '{' WorkBody . '}'
+   26 WorkBody: WorkBody . WorkStatement
+
+    T_ident     shift, and go to state 60
+    T_OutIdent  shift, and go to state 61
+    T_assert    shift, and go to state 62
+    '}'         shift, and go to state 63
+    ';'         shift, and go to state 64
+    '$'         shift, and go to state 65
+
+    WorkStatement  go to state 66
+
+
+state 50
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList ')' '{' . WorkBody '}'
+
+    $default  reduce using rule 25 (WorkBody)
+
+    WorkBody  go to state 67
+
+
+state 51
+
+   70 ConstantTerm: '(' ConstantTerm . ')'
+   71             | ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '*'  shift, and go to state 56
+    '/'  shift, and go to state 57
+    '%'  shift, and go to state 58
+    ')'  shift, and go to state 68
+
+
+state 52
+
+   75 NegConstant: '-' Constant .
+
+    $default  reduce using rule 75 (NegConstant)
+
+
+state 53
+
+   67 ConstantExpr: ConstantExpr '+' . ConstantTerm
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 69
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 54
+
+   17 ParamDecl: T_vartype @3 '[' ConstantExpr ']' . InList
+
+    T_ident  shift, and go to state 70
+
+    InList  go to state 71
+
+
+state 55
+
+   68 ConstantExpr: ConstantExpr '-' . ConstantTerm
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 72
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 56
+
+   71 ConstantTerm: ConstantTerm '*' . ConstantTerm
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 73
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 57
+
+   72 ConstantTerm: ConstantTerm '/' . ConstantTerm
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 74
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 58
+
+   73 ConstantTerm: ConstantTerm '%' . ConstantTerm
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '('      shift, and go to state 42
+    '-'      shift, and go to state 43
+
+    ConstantTerm  go to state 75
+    NegConstant   go to state 46
+    Constant      go to state 47
+
+
+state 59
+
+   18 ParamDecl: '!' T_vartype '[' ConstantExpr ']' . OutList
+
+    T_ident  shift, and go to state 76
+
+    OutList  go to state 77
+
+
+state 60
+
+   28 WorkStatement: T_ident . '=' Expression ';'
+
+    '='  shift, and go to state 78
+
+
+state 61
+
+   30 WorkStatement: T_OutIdent . '=' Expression ';'
+
+    '='  shift, and go to state 79
+
+
+state 62
+
+   31 WorkStatement: T_assert . Expression ';'
+   32              | T_assert . Expression ':' T_string ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 87
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 63
+
+   22 Method: T_ident @4 '(' ParamList ')' '{' WorkBody '}' .
+
+    $default  reduce using rule 22 (Method)
+
+
+state 64
+
+   27 WorkStatement: ';' .
+
+    $default  reduce using rule 27 (WorkStatement)
+
+
+state 65
+
+   29 WorkStatement: '$' . IdentList T_twoS varList '$' '[' Expression ']' '=' Expression ';'
+
+    T_ident  shift, and go to state 91
+
+    IdentList  go to state 92
+
+
+state 66
+
+   26 WorkBody: WorkBody WorkStatement .
+
+    $default  reduce using rule 26 (WorkBody)
+
+
+state 67
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList ')' '{' WorkBody . '}'
+   26 WorkBody: WorkBody . WorkStatement
+
+    T_ident     shift, and go to state 60
+    T_OutIdent  shift, and go to state 61
+    T_assert    shift, and go to state 62
+    '}'         shift, and go to state 93
+    ';'         shift, and go to state 64
+    '$'         shift, and go to state 65
+
+    WorkStatement  go to state 66
+
+
+state 68
+
+   70 ConstantTerm: '(' ConstantTerm ')' .
+
+    $default  reduce using rule 70 (ConstantTerm)
+
+
+state 69
+
+   67 ConstantExpr: ConstantExpr '+' ConstantTerm .
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '*'  shift, and go to state 56
+    '/'  shift, and go to state 57
+    '%'  shift, and go to state 58
+
+    $default  reduce using rule 67 (ConstantExpr)
+
+
+state 70
+
+    9 InList: T_ident .
+   11       | T_ident . @2 InList
+
+    T_ident   reduce using rule 10 (@2)
+    $default  reduce using rule 9 (InList)
+
+    @2  go to state 94
+
+
+state 71
+
+   17 ParamDecl: T_vartype @3 '[' ConstantExpr ']' InList .
+
+    $default  reduce using rule 17 (ParamDecl)
+
+
+state 72
+
+   68 ConstantExpr: ConstantExpr '-' ConstantTerm .
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '*'  shift, and go to state 56
+    '/'  shift, and go to state 57
+    '%'  shift, and go to state 58
+
+    $default  reduce using rule 68 (ConstantExpr)
+
+
+state 73
+
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   71             | ConstantTerm '*' ConstantTerm .
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '/'  shift, and go to state 57
+    '%'  shift, and go to state 58
+
+    $default  reduce using rule 71 (ConstantTerm)
+
+
+state 74
+
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   72             | ConstantTerm '/' ConstantTerm .
+   73             | ConstantTerm . '%' ConstantTerm
+
+    '%'  shift, and go to state 58
+
+    $default  reduce using rule 72 (ConstantTerm)
+
+
+state 75
+
+   71 ConstantTerm: ConstantTerm . '*' ConstantTerm
+   72             | ConstantTerm . '/' ConstantTerm
+   73             | ConstantTerm . '%' ConstantTerm
+   73             | ConstantTerm '%' ConstantTerm .
+
+    $default  reduce using rule 73 (ConstantTerm)
+
+
+state 76
+
+   12 OutList: T_ident .
+   13        | T_ident . OutList
+
+    T_ident  shift, and go to state 76
+
+    $default  reduce using rule 12 (OutList)
+
+    OutList  go to state 95
+
+
+state 77
+
+   18 ParamDecl: '!' T_vartype '[' ConstantExpr ']' OutList .
+
+    $default  reduce using rule 18 (ParamDecl)
+
+
+state 78
+
+   28 WorkStatement: T_ident '=' . Expression ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 96
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 79
+
+   30 WorkStatement: T_OutIdent '=' . Expression ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 97
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 80
+
+   58 Term: T_ident . '[' T_vartype ']' '(' varList ')' '(' Expression ')'
+   79 Ident: T_ident .
+
+    '['  shift, and go to state 98
+
+    $default  reduce using rule 79 (Ident)
+
+
+state 81
+
+   42 Expression: T_twoS . varList T_twoS
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    $default  reduce using rule 53 (varList)
+
+    varList   go to state 99
+    Term      go to state 100
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 82
+
+   63 Term: '<' . Ident '>'
+   64     | '<' . Ident Constant '>'
+   65     | '<' . Ident Constant '*' '>'
+
+    T_ident  shift, and go to state 101
+
+    Ident  go to state 102
+
+
+state 83
+
+   60 Term: '!' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 103
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 84
+
+   61 Term: '(' . Expression ')'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 104
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 85
+
+   41 Expression: '$' . varList '$' '[' Expression ']'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    $default  reduce using rule 53 (varList)
+
+    varList   go to state 105
+    Term      go to state 100
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 86
+
+   59 Term: '-' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 106
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 87
+
+   31 WorkStatement: T_assert Expression . ';'
+   32              | T_assert Expression . ':' T_string ';'
+   52 Expression: Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ':'  shift, and go to state 108
+    ';'  shift, and go to state 109
+
+
+state 88
+
+   33 Expression: Term .
+   34           | Term . '&' Term
+   35           | Term . T_and Term
+   36           | Term . '|' Term
+   37           | Term . T_or Term
+   38           | Term . '^' Term
+   39           | Term . T_neq Term
+   40           | Term . T_eq Term
+   43           | Term . '+' Term
+   44           | Term . '/' Term
+   45           | Term . '%' Term
+   46           | Term . '*' Term
+   47           | Term . '-' Term
+   48           | Term . '>' Term
+   49           | Term . '<' Term
+   50           | Term . T_ge Term
+   51           | Term . T_le Term
+
+    T_eq   shift, and go to state 110
+    T_neq  shift, and go to state 111
+    T_and  shift, and go to state 112
+    T_or   shift, and go to state 113
+    T_ge   shift, and go to state 114
+    T_le   shift, and go to state 115
+    '+'    shift, and go to state 116
+    '*'    shift, and go to state 117
+    '/'    shift, and go to state 118
+    '%'    shift, and go to state 119
+    '<'    shift, and go to state 120
+    '>'    shift, and go to state 121
+    '&'    shift, and go to state 122
+    '|'    shift, and go to state 123
+    '^'    shift, and go to state 124
+    '-'    shift, and go to state 125
+
+    $default  reduce using rule 33 (Expression)
+
+
+state 89
+
+   57 Term: Constant .
+
+    $default  reduce using rule 57 (Term)
+
+
+state 90
+
+   62 Term: Ident .
+
+    $default  reduce using rule 62 (Term)
+
+
+state 91
+
+   55 IdentList: T_ident .
+   56          | T_ident . IdentList
+
+    T_ident  shift, and go to state 91
+
+    $default  reduce using rule 55 (IdentList)
+
+    IdentList  go to state 126
+
+
+state 92
+
+   29 WorkStatement: '$' IdentList . T_twoS varList '$' '[' Expression ']' '=' Expression ';'
+
+    T_twoS  shift, and go to state 127
+
+
+state 93
+
+   24 Method: T_ident T_Sketches T_ident @5 '(' ParamList ')' '{' WorkBody '}' .
+
+    $default  reduce using rule 24 (Method)
+
+
+state 94
+
+   11 InList: T_ident @2 . InList
+
+    T_ident  shift, and go to state 70
+
+    InList  go to state 128
+
+
+state 95
+
+   13 OutList: T_ident OutList .
+
+    $default  reduce using rule 13 (OutList)
+
+
+state 96
+
+   28 WorkStatement: T_ident '=' Expression . ';'
+   52 Expression: Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ';'  shift, and go to state 129
+
+
+state 97
+
+   30 WorkStatement: T_OutIdent '=' Expression . ';'
+   52 Expression: Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ';'  shift, and go to state 130
+
+
+state 98
+
+   58 Term: T_ident '[' . T_vartype ']' '(' varList ')' '(' Expression ')'
+
+    T_vartype  shift, and go to state 131
+
+
+state 99
+
+   42 Expression: T_twoS varList . T_twoS
+
+    T_twoS  shift, and go to state 132
+
+
+state 100
+
+   54 varList: Term . varList
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    $default  reduce using rule 53 (varList)
+
+    varList   go to state 133
+    Term      go to state 100
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 101
+
+   79 Ident: T_ident .
+
+    $default  reduce using rule 79 (Ident)
+
+
+state 102
+
+   63 Term: '<' Ident . '>'
+   64     | '<' Ident . Constant '>'
+   65     | '<' Ident . Constant '*' '>'
+
+    T_int    shift, and go to state 39
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '>'      shift, and go to state 134
+
+    Constant  go to state 135
+
+
+state 103
+
+   60 Term: '!' Term .
+
+    $default  reduce using rule 60 (Term)
+
+
+state 104
+
+   52 Expression: Expression . '?' Expression ':' Expression
+   61 Term: '(' Expression . ')'
+
+    '?'  shift, and go to state 107
+    ')'  shift, and go to state 136
+
+
+state 105
+
+   41 Expression: '$' varList . '$' '[' Expression ']'
+
+    '$'  shift, and go to state 137
+
+
+state 106
+
+   59 Term: '-' Term .
+
+    $default  reduce using rule 59 (Term)
+
+
+state 107
+
+   52 Expression: Expression '?' . Expression ':' Expression
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 138
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 108
+
+   32 WorkStatement: T_assert Expression ':' . T_string ';'
+
+    T_string  shift, and go to state 139
+
+
+state 109
+
+   31 WorkStatement: T_assert Expression ';' .
+
+    $default  reduce using rule 31 (WorkStatement)
+
+
+state 110
+
+   40 Expression: Term T_eq . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 140
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 111
+
+   39 Expression: Term T_neq . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 141
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 112
+
+   35 Expression: Term T_and . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 142
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 113
+
+   37 Expression: Term T_or . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 143
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 114
+
+   50 Expression: Term T_ge . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 144
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 115
+
+   51 Expression: Term T_le . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 145
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 116
+
+   43 Expression: Term '+' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 146
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 117
+
+   46 Expression: Term '*' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 147
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 118
+
+   44 Expression: Term '/' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 148
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 119
+
+   45 Expression: Term '%' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 149
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 120
+
+   49 Expression: Term '<' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 150
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 121
+
+   48 Expression: Term '>' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 151
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 122
+
+   34 Expression: Term '&' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 152
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 123
+
+   36 Expression: Term '|' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 153
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 124
+
+   38 Expression: Term '^' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 154
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 125
+
+   47 Expression: Term '-' . Term
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    Term      go to state 155
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 126
+
+   56 IdentList: T_ident IdentList .
+
+    $default  reduce using rule 56 (IdentList)
+
+
+state 127
+
+   29 WorkStatement: '$' IdentList T_twoS . varList '$' '[' Expression ']' '=' Expression ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    $default  reduce using rule 53 (varList)
+
+    varList   go to state 156
+    Term      go to state 100
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 128
+
+   11 InList: T_ident @2 InList .
+
+    $default  reduce using rule 11 (InList)
+
+
+state 129
+
+   28 WorkStatement: T_ident '=' Expression ';' .
+
+    $default  reduce using rule 28 (WorkStatement)
+
+
+state 130
+
+   30 WorkStatement: T_OutIdent '=' Expression ';' .
+
+    $default  reduce using rule 30 (WorkStatement)
+
+
+state 131
+
+   58 Term: T_ident '[' T_vartype . ']' '(' varList ')' '(' Expression ')'
+
+    ']'  shift, and go to state 157
+
+
+state 132
+
+   42 Expression: T_twoS varList T_twoS .
+
+    $default  reduce using rule 42 (Expression)
+
+
+state 133
+
+   54 varList: Term varList .
+
+    $default  reduce using rule 54 (varList)
+
+
+state 134
+
+   63 Term: '<' Ident '>' .
+
+    $default  reduce using rule 63 (Term)
+
+
+state 135
+
+   64 Term: '<' Ident Constant . '>'
+   65     | '<' Ident Constant . '*' '>'
+
+    '*'  shift, and go to state 158
+    '>'  shift, and go to state 159
+
+
+state 136
+
+   61 Term: '(' Expression ')' .
+
+    $default  reduce using rule 61 (Term)
+
+
+state 137
+
+   41 Expression: '$' varList '$' . '[' Expression ']'
+
+    '['  shift, and go to state 160
+
+
+state 138
+
+   52 Expression: Expression . '?' Expression ':' Expression
+   52           | Expression '?' Expression . ':' Expression
+
+    '?'  shift, and go to state 107
+    ':'  shift, and go to state 161
+
+
+state 139
+
+   32 WorkStatement: T_assert Expression ':' T_string . ';'
+
+    ';'  shift, and go to state 162
+
+
+state 140
+
+   40 Expression: Term T_eq Term .
+
+    $default  reduce using rule 40 (Expression)
+
+
+state 141
+
+   39 Expression: Term T_neq Term .
+
+    $default  reduce using rule 39 (Expression)
+
+
+state 142
+
+   35 Expression: Term T_and Term .
+
+    $default  reduce using rule 35 (Expression)
+
+
+state 143
+
+   37 Expression: Term T_or Term .
+
+    $default  reduce using rule 37 (Expression)
+
+
+state 144
+
+   50 Expression: Term T_ge Term .
+
+    $default  reduce using rule 50 (Expression)
+
+
+state 145
+
+   51 Expression: Term T_le Term .
+
+    $default  reduce using rule 51 (Expression)
+
+
+state 146
+
+   43 Expression: Term '+' Term .
+
+    $default  reduce using rule 43 (Expression)
+
+
+state 147
+
+   46 Expression: Term '*' Term .
+
+    $default  reduce using rule 46 (Expression)
+
+
+state 148
+
+   44 Expression: Term '/' Term .
+
+    $default  reduce using rule 44 (Expression)
+
+
+state 149
+
+   45 Expression: Term '%' Term .
+
+    $default  reduce using rule 45 (Expression)
+
+
+state 150
+
+   49 Expression: Term '<' Term .
+
+    $default  reduce using rule 49 (Expression)
+
+
+state 151
+
+   48 Expression: Term '>' Term .
+
+    $default  reduce using rule 48 (Expression)
+
+
+state 152
+
+   34 Expression: Term '&' Term .
+
+    $default  reduce using rule 34 (Expression)
+
+
+state 153
+
+   36 Expression: Term '|' Term .
+
+    $default  reduce using rule 36 (Expression)
+
+
+state 154
+
+   38 Expression: Term '^' Term .
+
+    $default  reduce using rule 38 (Expression)
+
+
+state 155
+
+   47 Expression: Term '-' Term .
+
+    $default  reduce using rule 47 (Expression)
+
+
+state 156
+
+   29 WorkStatement: '$' IdentList T_twoS varList . '$' '[' Expression ']' '=' Expression ';'
+
+    '$'  shift, and go to state 163
+
+
+state 157
+
+   58 Term: T_ident '[' T_vartype ']' . '(' varList ')' '(' Expression ')'
+
+    '('  shift, and go to state 164
+
+
+state 158
+
+   65 Term: '<' Ident Constant '*' . '>'
+
+    '>'  shift, and go to state 165
+
+
+state 159
+
+   64 Term: '<' Ident Constant '>' .
+
+    $default  reduce using rule 64 (Term)
+
+
+state 160
+
+   41 Expression: '$' varList '$' '[' . Expression ']'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 166
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 161
+
+   52 Expression: Expression '?' Expression ':' . Expression
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 167
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 162
+
+   32 WorkStatement: T_assert Expression ':' T_string ';' .
+
+    $default  reduce using rule 32 (WorkStatement)
+
+
+state 163
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' . '[' Expression ']' '=' Expression ';'
+
+    '['  shift, and go to state 168
+
+
+state 164
+
+   58 Term: T_ident '[' T_vartype ']' '(' . varList ')' '(' Expression ')'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '-'      shift, and go to state 86
+
+    $default  reduce using rule 53 (varList)
+
+    varList   go to state 169
+    Term      go to state 100
+    Constant  go to state 89
+    Ident     go to state 90
+
+
+state 165
+
+   65 Term: '<' Ident Constant '*' '>' .
+
+    $default  reduce using rule 65 (Term)
+
+
+state 166
+
+   41 Expression: '$' varList '$' '[' Expression . ']'
+   52           | Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ']'  shift, and go to state 170
+
+
+state 167
+
+   52 Expression: Expression . '?' Expression ':' Expression
+   52           | Expression '?' Expression ':' Expression .
+
+    $default  reduce using rule 52 (Expression)
+
+
+state 168
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' . Expression ']' '=' Expression ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 171
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 169
+
+   58 Term: T_ident '[' T_vartype ']' '(' varList . ')' '(' Expression ')'
+
+    ')'  shift, and go to state 172
+
+
+state 170
+
+   41 Expression: '$' varList '$' '[' Expression ']' .
+
+    $default  reduce using rule 41 (Expression)
+
+
+state 171
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' Expression . ']' '=' Expression ';'
+   52 Expression: Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ']'  shift, and go to state 173
+
+
+state 172
+
+   58 Term: T_ident '[' T_vartype ']' '(' varList ')' . '(' Expression ')'
+
+    '('  shift, and go to state 174
+
+
+state 173
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' Expression ']' . '=' Expression ';'
+
+    '='  shift, and go to state 175
+
+
+state 174
+
+   58 Term: T_ident '[' T_vartype ']' '(' varList ')' '(' . Expression ')'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 176
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 175
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' Expression ']' '=' . Expression ';'
+
+    T_int    shift, and go to state 39
+    T_ident  shift, and go to state 80
+    T_true   shift, and go to state 40
+    T_false  shift, and go to state 41
+    T_twoS   shift, and go to state 81
+    '<'      shift, and go to state 82
+    '!'      shift, and go to state 83
+    '('      shift, and go to state 84
+    '$'      shift, and go to state 85
+    '-'      shift, and go to state 86
+
+    Expression  go to state 177
+    Term        go to state 88
+    Constant    go to state 89
+    Ident       go to state 90
+
+
+state 176
+
+   52 Expression: Expression . '?' Expression ':' Expression
+   58 Term: T_ident '[' T_vartype ']' '(' varList ')' '(' Expression . ')'
+
+    '?'  shift, and go to state 107
+    ')'  shift, and go to state 178
+
+
+state 177
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' Expression ']' '=' Expression . ';'
+   52 Expression: Expression . '?' Expression ':' Expression
+
+    '?'  shift, and go to state 107
+    ';'  shift, and go to state 179
+
+
+state 178
+
+   58 Term: T_ident '[' T_vartype ']' '(' varList ')' '(' Expression ')' .
+
+    $default  reduce using rule 58 (Term)
+
+
+state 179
+
+   29 WorkStatement: '$' IdentList T_twoS varList '$' '[' Expression ']' '=' Expression ';' .
+
+    $default  reduce using rule 29 (WorkStatement)
