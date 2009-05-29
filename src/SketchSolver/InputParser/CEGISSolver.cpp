@@ -106,7 +106,10 @@ bool CEGISSolver::solve(){
 	inputStore.makeRandom();
 	for(int ns = 0; ns < (nseeds-1); ++ns){			
 		cout<<"!%";	inputStore.printBrief(cout); cout<<endl;
-		cpt.checkpoint('f', inputStore.serialize());
+                // NOTE - newer gcc (4.4) won't accept T --> T& if a variable isn't assigned
+                std::vector<int, std::allocator<int> > instore_serialized =
+                    inputStore.serialize();
+		cpt.checkpoint('f', instore_serialized);
 		addInputsToTestSet(inputStore);	
 		inputStore.makeRandom();		
 	}
@@ -127,7 +130,9 @@ bool CEGISSolver::solveCore(){
 	while(doMore){
 		{// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
-			cpt.checkpoint('f', inputStore.serialize());
+                        std::vector<int, std::allocator<int> > instore_serialized =
+                            inputStore.serialize();
+			cpt.checkpoint('f', instore_serialized);
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart(); 
 			doMore = find(inputStore, ctrlStore);
@@ -143,7 +148,8 @@ bool CEGISSolver::solveCore(){
 		
 		{ // Check
 			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
-			cpt.checkpoint('c', ctrlStore.serialize());
+                        std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
+			cpt.checkpoint('c', ctrlstore_serialized);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart(); 
 			doMore = check(ctrlStore, inputStore);
@@ -186,7 +192,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 				SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
 				int nbits;
 				node_values[(*node_it)] = valueForINode(srcnode, input, nbits);
-				string& name = srcnode->get_name();
+				string name = srcnode->get_name();
 				bool changed = true;
 				map<string, int>::iterator fit = last_input.find(name);
 				if( fit != last_input.end() &&  fit->second == input[name]){

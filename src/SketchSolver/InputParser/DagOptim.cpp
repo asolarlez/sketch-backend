@@ -1310,7 +1310,7 @@ void DagOptim::visit( ARRACC_node& node ){
 		
 		
 	}else{
-		staticCompare<less<int>>(node.mother, node.multi_mother.size(), false);
+		staticCompare<less<int> >(node.mother, node.multi_mother.size(), false);
 		AbstractNodeValue& val = anv[node.mother];
 		if(!val.isTop()){
 			int h = val.getHigh();

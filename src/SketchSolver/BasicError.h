@@ -1,6 +1,7 @@
 #ifndef BasicError_h
 #define BasicError_h
 
+#include <stdio.h> // sprintf
 #include <string>
 #include <iostream>
 #include <sstream>

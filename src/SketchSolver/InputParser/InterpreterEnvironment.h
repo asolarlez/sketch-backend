@@ -11,6 +11,7 @@
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
 #include "ABCSATSolver.h"
+#include "InputReader.h" // INp yylex_init, yyparse, etc.
 
 
 #include <sstream>

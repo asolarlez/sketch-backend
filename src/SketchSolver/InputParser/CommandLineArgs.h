@@ -1,6 +1,7 @@
 #ifndef COMMANDLINEARGS_H
 #define COMMANDLINEARGS_H
 
+#include <stdlib.h> // atoi
 #include "SATSolver.h"
 
 
