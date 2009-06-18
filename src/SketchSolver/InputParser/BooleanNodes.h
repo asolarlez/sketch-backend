@@ -337,10 +337,12 @@ class TIMES_node: public bool_node{
 
 
 class UFUN_node: public arith_node{
+	const int callsite;
+	static int CALLSITES;
 	int nbits;	
 	string ufname;	
-	public: UFUN_node(const string& p_ufname):ufname(p_ufname){ arith_type = UFUN; nbits=1; } 
-	UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname){ }  
+	public: UFUN_node(const string& p_ufname):ufname(p_ufname), callsite(CALLSITES++){ arith_type = UFUN; nbits=1; } 
+	UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out)const{
     	int i=0;
@@ -352,6 +354,7 @@ class UFUN_node: public arith_node{
 	}
 
 	virtual bool_node* clone(bool copyChildren = true){return new UFUN_node(*this, copyChildren);  };
+	int get_callsite()const{ return callsite; }
 	int get_nbits() const { return nbits; }
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
@@ -366,6 +369,18 @@ class UFUN_node: public arith_node{
 		}
 		return otype;
 	}
+	string get_name() const{
+	    
+		if(ufname.size() > 1){
+		  stringstream str;
+		  str<<ufname.substr(0, 5)<<id<<"__"<<get_tname();
+		  return str.str();
+		}else{
+			return arith_node::get_name();
+	      
+	    }
+	    
+	  }
 };
 
 

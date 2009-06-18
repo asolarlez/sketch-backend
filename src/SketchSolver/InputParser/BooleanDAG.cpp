@@ -16,7 +16,7 @@ using namespace std;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-BooleanDAG::BooleanDAG()
+BooleanDAG::BooleanDAG(const string& name_):name(name_)
 {
   has_passthrough=false;
   is_layered=false;
@@ -747,7 +747,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore){
 
 BooleanDAG* BooleanDAG::clone(){
 	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG();
+	BooleanDAG* bdag = new BooleanDAG(name);
 	relabel();
 
 	clone_nodes(bdag->nodes);

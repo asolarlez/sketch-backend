@@ -6,7 +6,7 @@
 
 
 int bool_node::NEXT_GLOBAL_ID = 0;
-
+int UFUN_node::CALLSITES = 0;
 
 void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 	child_iter it = children.find(ori);
@@ -355,7 +355,7 @@ void bool_node::outDagEntry(ostream& out) const{
           out<<" "<<mother->get_name()<<" -> "<<get_name()<<" ; "<<endl;
     }
     if(father == NULL && mother == NULL){
-   // 	  Dout( out<<"// orphan node: "<<get_name()<<" ; "<<endl );
+    	   out<<"// orphan node: "<<get_name()<<" ; "<<endl ;
     }
 	for(child_citer child = children.begin(); child != children.end(); ++child){  	
     //	Dout( out<<"// "<<get_name()<<" -> "<<children[i]->get_name()<<" ; "<<endl );

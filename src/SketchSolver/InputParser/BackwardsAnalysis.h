@@ -132,6 +132,10 @@ public:
 		hasD = false;
 	}
 
+	bool isBottom(){
+		return state == BOTTOM;
+	}
+
 	void makeTop(){
 		state = TOP;
 		known.clear();
@@ -149,7 +153,10 @@ public:
 	}
  
 	bool getValue(bool_node* node, int& out){
-		
+		if(hasD && temp.node == node){
+			out = temp.val;
+			return true;
+		}
 		set<Datum>::iterator iter = known.lower_bound(Datum(node, INT_MIN));
 		if(iter == known.end()){ return false; }
 		if(node->type == bool_node::NOT){
@@ -184,6 +191,7 @@ public:
 		Assert(!hasD, "This shouldn't happen");
 		if(state == BOTTOM || inf.state == BOTTOM){
 			if(inf.state != BOTTOM || inf.hasD){
+				Assert( (!inf.hasD) || state==BOTTOM, "This is a bug!!");
 				state = MIDDLE;
 				known = inf.known;
 				if(inf.hasD){
@@ -238,8 +246,13 @@ public:
 	virtual ~BackwardsAnalysis(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
-	
-	
+	bool_node* localModify(ARRASS_node* node, Info& t);
+	bool_node* localModify(ARRACC_node* node, Info& t);
+	bool_node* localModify(OR_node* node, Info& t);
+	bool_node* localModify(AND_node* node, Info& t);
+
+	bool_node* modifyNode(bool_node* node, Info& t);
+
 	virtual void visit( ARRACC_node& node );
 	
 	virtual void visit( ARRASS_node& node );

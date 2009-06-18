@@ -62,7 +62,7 @@ class BooleanDAG
 
   map<bool_node::Type, vector<bool_node*> > nodesByType;
 
-
+  const string name;
   bool is_sorted; //The sorted property implies that everyone comes after their parents
   bool is_layered;  //The layered property implies that nodes are sorted by layer. is_layered implies is_sorted.
   bool has_passthrough; //This property implies that NOT nodes have been added.
@@ -149,7 +149,9 @@ public:
   	return named_nodes.find(s) != named_nodes.end();
   }
   
-
+  const string& get_name()const{
+	return name;
+  }
   
   
   
@@ -161,7 +163,7 @@ public:
   void print(ostream& out)const;
   
   
-	BooleanDAG();
+   BooleanDAG(const string& name_="anon");
 
 	virtual ~BooleanDAG();
 };
