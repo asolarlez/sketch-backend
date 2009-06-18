@@ -28,7 +28,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 }
 
 */
-
+// #define Dout( out )      out 
 
 template<typename COMP> void
 NodesToSolver::processComparissons (bool_node& node)
@@ -344,6 +344,10 @@ NodesToSolver::processArith (bool_node &node)
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	mval.makeSparse (dir);
+	if( mval.getSize() > 200 ){ 
+		cout<<"sz = "<<mval.getSize()<<endl;
+		//tmpdag->printSlice(mother, cout);
+	}
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 	fval.makeSparse (dir);
@@ -1170,13 +1174,13 @@ NodesToSolver::visit (ASSERT_node &node)
 	{
 		if(fval.getId() == -YES ) {  
 			cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
-			/*
+			
 			set<const bool_node*> s;
 			cout<<"digraph G{"<<endl;
 			node.printSubDAG(cout, s);
 			cout<<"}"<<endl;
 			cout<<" slice size = "<<s.size()<<endl;
-			*/
+			
 		}
 		dir.addAssertClause (fval.getId ());
 	}

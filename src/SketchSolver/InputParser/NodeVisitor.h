@@ -34,7 +34,7 @@ class NodeVisitor{
 	virtual void visitArith(arith_node& node );
 	virtual void visitBool(bool_node& node );
 	bool_node* rvalue;
-	
+	BooleanDAG* tmpdag;
 	public:
 	
 	

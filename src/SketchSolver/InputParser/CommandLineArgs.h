@@ -56,7 +56,7 @@ class CommandLineArgs{
 		hasRestore = false;
 		printDiag = false;
 	doBvectArith = false;
-		inlineAmnt = 10;
+		inlineAmnt = 3;
 		hastimeout = false;
 		timeout = -1;
 		mergeFunctions = false;

@@ -96,7 +96,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		// F(SVAR, PARAM_0, PARAM_1, ..., PARAM_N) := SVAR;
 		SFunInfo& sfi = functions[name];		
 		sfi.step = 1;
-		sfi.fun = new BooleanDAG();
+		sfi.fun = new BooleanDAG("tmp");
 		bool_node* svar = sfi.fun->create_inputs(src->get_nbits(),  "SVAR");
 		
 		sfi.symval = src;
@@ -112,6 +112,10 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		sfi.fun->addNewNode(C0);
 		sfi.fun->create_outputs(1, C0, "RES");
 	}else{
+		if(node.multi_mother.size()==0){
+			return functions[name].symval;
+		}
+
 		BooleanDAG& comp = getComparator(node.multi_mother.size());
 		//comp is now a comparator that will compare N inputs with N other inputs.
 		// comp(ina_0, ..., ina_N, inb_0, ..., inb_N) := and_(0<=i<=N)(ina_i == inb_i); 
@@ -300,8 +304,16 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		//sketch are required to have the same parameters in the spec. This means that no new symbolic values need to be added 
 		//when evaluating uninterpreted functions in the sketch. (Except for the very first call, which needs a fresh symbolic value
 		//to distinguish it from the others; hence the moreNewFuns flag.).
-		( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
+		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
 		int nargs = node.multi_mother.size();
+		if(nargs == 0){			
+			if(oneMoreFun){
+				functions[name].moreNewFuns = false;
+			}
+			rvalue = functions[name].symval;
+			return;
+		}
+
 		SFunInfo& sfi = functions[name];
 		BooleanDAG* cclone = sfi.fun->clone();
 		for(int i=0; i<nargs; ++i){

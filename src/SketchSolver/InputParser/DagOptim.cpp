@@ -345,7 +345,7 @@ bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	}
 	return false;
 }
-bool DagOptim::isConst(bool_node* n1){
+bool DagOptim::isConst(const bool_node* n1){
 	if( n1->type == bool_node::CONST ){
 		return true;
 	}	
@@ -354,19 +354,23 @@ bool DagOptim::isConst(bool_node* n1){
 }
 
 
-bool DagOptim::getBval(bool_node* n1){
+bool DagOptim::getBval(const bool_node* n1){
 	return getIval(n1) != 0;
 }	
 
-int  DagOptim::getIval(bool_node* n1){
+int  DagOptim::getIval(const bool_node* n1){
 	Assert( isConst(n1), "This node is not a constant !!");
-	CONST_node * cn = dynamic_cast<CONST_node*>(n1);
+	const CONST_node * cn = dynamic_cast<const CONST_node*>(n1);
 	return cn->getVal()	;
 }
 
 
 void DagOptim::visit( SRC_node& node ){
 	Dout( cout<<" node "<<node.get_name()<<endl );
+	if(specialization.count(node.get_name())>0){
+		rvalue = getCnode(specialization[node.get_name()]);
+		return;
+	}
 	rvalue = &node;
 }
 
@@ -1189,7 +1193,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				node.multi_mother[1] = mm1.multi_mother[1];
 				node.resetId();
 				node.addToParents();				
-				rvalue = &node;
+				node.accept(*this);
 				return;
 			}	
 
@@ -1250,15 +1254,16 @@ void DagOptim::visit( ARRACC_node& node ){
 				on->addToParents();
 				addNode(on);
 
-				on = dynamic_cast<OR_node*>( cse.computeCSE(on) );
+				// on = dynamic_cast<OR_node*>( cse.computeCSE(on) );
 				
-				
+				bool_node* ton = this->computeOptim(on);
+
 				node.dislodge();
-				node.mother = on;
+				node.mother = ton;
 				node.multi_mother[0] = mm0.multi_mother[0];
 				node.resetId();
 				node.addToParents();
-				rvalue = &node;
+				node.accept(*this);
 				return;
 			}
 			
@@ -1459,10 +1464,10 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 	return cse.computeCSE(node);
 }
 
-bool_node* DagOptim::computeOptim(bool_node* node){
+bool_node* DagOptim::computeOptim(bool_node* node){	
 	node->accept(*this);
 	node = rvalue;
-	bool_node* tmp = cse.computeCSE(node);
+	bool_node* tmp = cse.computeCSE(node);	
 	if(tmp != node){
 		if(newnodes.size() > 0 && node == stillPrivate && stillPrivate == *( newnodes.rbegin() )){
 			stillPrivate->dislodge();

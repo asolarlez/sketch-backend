@@ -48,6 +48,7 @@ randseed(time(NULL))
 			}else{
 				cints++;
 			}
+			/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 			declareControl(problemIn[i]->get_name(), nbits);
 		}
 		if(PARAMS->verbosity > 2){

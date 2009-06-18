@@ -27,7 +27,7 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		ASSERT_node* asn = new ASSERT_node();
 		asn->mother = nn;
 		string msg = "function was not inlined enough ";
-		msg += node.get_name();
+		msg += node.get_ufname();
 		asn->setMsg(msg);
 		asn->addToParents();
 		addNode(asn);

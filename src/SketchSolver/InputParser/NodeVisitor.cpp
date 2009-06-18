@@ -14,6 +14,7 @@ NodeVisitor::~NodeVisitor()
 
 void NodeVisitor::process(BooleanDAG& bdag){
 	int i=0;
+	tmpdag = &bdag;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);

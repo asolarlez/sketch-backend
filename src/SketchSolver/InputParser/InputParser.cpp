@@ -2111,7 +2111,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     {
 	
 	list<bool_node*>* params = (yyvsp[(6) - (10)].nList);
-	if(params->size() == 0){
+	if(false && params->size() == 0){
 		if( (yyvsp[(3) - (10)].variableType) == INT){
 			currentBD->create_inputs( 2 /*NINPUTS*/ , *(yyvsp[(1) - (10)].strConst)); 
 		}else{

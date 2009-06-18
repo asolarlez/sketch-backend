@@ -480,7 +480,7 @@ Term: Constant {
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' {
 	
 	list<bool_node*>* params = $6;
-	if(params->size() == 0){
+	if(false && params->size() == 0){
 		if( $3 == INT){
 			currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 		}else{

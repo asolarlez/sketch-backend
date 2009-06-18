@@ -179,6 +179,7 @@ class DagOptim : public NodeVisitor, public virtual NodeStore
 protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
+	map<string, int> specialization;
 public:
 	map<bool_node*, AbstractNodeValue> anv;
 	
@@ -189,6 +190,14 @@ public:
 	virtual ~DagOptim();
 	
 	void alterARRACS(){ ALTER_ARRACS = true; } 
+
+	/*
+		When optimizing the dag, input name will be set to value
+		val. The input, however, will not be removed.
+	*/
+	void specializeInput(const string& name, int val){
+		specialization[name] = val;
+	}
 
 
 	bool_node* computeOptim(bool_node* node);
@@ -236,9 +245,9 @@ public:
 	virtual  CONST_node* getCnode(bool val); 
 	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);
 	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
-	virtual bool isConst(bool_node* n1);
-	virtual bool getBval(bool_node* n1);
-	virtual int getIval(bool_node* n1);
+	virtual bool isConst(const bool_node* n1);
+	virtual bool getBval(const bool_node* n1);
+	virtual int getIval(const bool_node* n1);
 };
 
 
