@@ -21,7 +21,11 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
 	InputParser/BooleanNodes.h			\
+	InputParser/CEGISSolver.h \
+	InputParser/CallGraphAnalysis.h \
+	InputParser/Checkpointer.h \
 	InputParser/CommandLineArgs.h			\
+	InputParser/ComplexInliner.h \
 	InputParser/DagCSE.h				\
 	InputParser/DagElimUFUN.h			\
 	InputParser/DagFunctionInliner.h		\
@@ -32,6 +36,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/FastSet.h				\
 	InputParser/InputReader.h			\
 	InputParser/InterpreterEnvironment.h \
+	InputParser/NodeEvaluator.h \
+	InputParser/NodeSlicer.h \
 	InputParser/NodeStore.h				\
 	InputParser/NodeVisitor.h			\
 	InputParser/NodesToEuclid.h			\
@@ -52,8 +58,10 @@ SBitII_SOURCES =				\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\
 	InputParser/BooleanNodes.cpp		\
-	InputParser/CEGISSolver.cpp \
+	InputParser/CEGISSolver.cpp	\
+	InputParser/CallGraphAnalysis.cpp \
 	InputParser/Checkpointer.cpp \
+	InputParser/ComplexInliner.cpp \
 	InputParser/DagCSE.cpp			\
 	InputParser/DagElimUFUN.cpp		\
 	InputParser/DagFunctionInliner.cpp	\
