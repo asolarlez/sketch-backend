@@ -418,7 +418,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		NodeEvaluator eval(empty, *dag);		
 		for(int i=0; i<40; ++i){
 			tmpin.makeRandom();
-			bool done = eval.run(hasCtrls? join(tmpin, controls)  : tmpin);
+			
+			bool done;
+			if(hasCtrls){
+				VarStore ta(join(tmpin, controls));
+				done= eval.run(ta);
+			}else{
+				done= eval.run(tmpin);
+			}
 			eval.trackChanges();
 			if(done){
 				tc.stop().print("found a cex");
@@ -429,7 +436,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		if(expensive.size()>0){
 			cout<<"adding expensive ones."<<endl;
 			for(int i=0; i<expensive.size(); ++i){
-				eval.run(hasCtrls? join(expensive[i], controls) : expensive[i]);
+				if(hasCtrls){
+					VarStore ta(join(expensive[i], controls));
+					eval.run(ta);
+				}else{
+					eval.run(expensive[i]);
+				}
 			}
 		}
 		while(true){
@@ -462,7 +474,13 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			delete an;
 			dag->relabel();
 			if(rv){
-				bool done = eval.run(hasCtrls? join(tmpin, controls)  : tmpin);
+				bool done;
+				if(hasCtrls){
+					VarStore ta(join(tmpin, controls));
+					done= eval.run(ta);
+				}else{
+					done= eval.run(tmpin);
+				}				
 				if(done){
 					tc.stop().print("found a cex");
 					popProblem();
