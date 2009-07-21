@@ -185,20 +185,6 @@ public:
 
 
 
-inline bool isDllnode(bool_node* bn){
-	return bn->type == bool_node::ASSERT || bn->type==bool_node::DST || typeid(*bn) == typeid(UFUN_node) ;
-}
-
-inline bool isUFUN(DllistNode* dn){
-	bool_node* t = dynamic_cast<bool_node*>(dn);
-	return t->type == bool_node::ARITH;
-}
-
-inline DllistNode* getDllnode(bool_node* bn){
-	return dynamic_cast<DllistNode*>(bn);
-}
-
-
 /**
  * Special FastSet hash function that hashes on the
  * bool_node's ID (assumed unique) instead of its memory address.
@@ -757,6 +743,20 @@ inline arith_node* newArithNode( arith_node::AType type){
 
 
 
+
+
+inline bool isDllnode(bool_node* bn){
+	return bn->type == bool_node::ASSERT || bn->type==bool_node::DST || typeid(*bn) == typeid(UFUN_node) ;
+}
+
+inline bool isUFUN(DllistNode* dn){
+	bool_node* t = dynamic_cast<bool_node*>(dn);
+	return t->type == bool_node::ARITH;
+}
+
+inline DllistNode* getDllnode(bool_node* bn){
+	return dynamic_cast<DllistNode*>(bn);
+}
 
 
 #endif
