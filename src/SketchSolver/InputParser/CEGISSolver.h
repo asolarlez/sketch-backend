@@ -6,11 +6,28 @@
 #include "Tvalue.h"
 #include "Checkpointer.h"
 #include "VarStore.h"
-
+#include <stack>
 
 class CEGISSolver
 {
-	BooleanDAG* problem;	
+
+	stack<BooleanDAG*> problemStack;
+	void pushProblem(BooleanDAG* p){
+		problemStack.push(p);
+	}
+	BooleanDAG* getProblem(){
+		return problemStack.top();
+	}
+	void popProblem(){
+		BooleanDAG* t = problemStack.top();
+		problemStack.pop();
+		t->clear();
+		delete t;
+	}
+	int problemLevel(){
+		return problemStack.size();
+	}
+
 	SolverHelper& dirFind;	
 	SolverHelper& dirCheck;
 
@@ -30,17 +47,16 @@ class CEGISSolver
 	int nseeds;
 
 	Checkpointer cpt;
-
-	vector<Tvalue> node_ids;
-	vector<Tvalue> f_node_ids;
-	vector<bool> f_flags;
+	BooleanDAG* lastFproblem;
+	vector<Tvalue> find_node_ids;
+	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;
 	bool firstTime;
 protected:
 	void declareControl(const string& cname, int size);
 	void declareInput(const string& cname, int size);
 	bool solveCore();
-
+	bool simulate(VarStore& controls, VarStore& input);
 	bool find(VarStore& input, VarStore& controls);
 	void addInputsToTestSet(VarStore& input);
 
@@ -49,20 +65,21 @@ protected:
 	void setNewControls(VarStore& controls);
 
 
-	void defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node*,  int>& node_values);
+	void defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
 
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
 	void normalizeInputStore();
-
+	void abstractProblem();
+	bool growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
 	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, int p_nseeds=1, int NINPUTS_p=3);
 	~CEGISSolver(void);
 
 	virtual bool solve();
-	
+	void print_control_map(ostream& out);
 
 	virtual void setup();
 

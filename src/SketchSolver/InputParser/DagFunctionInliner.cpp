@@ -28,13 +28,13 @@ DagFunctionInliner::~DagFunctionInliner()
 }
 
 
-
+/*
 int space[100];
 ARRACC_node tmparrac;
 UFUN_node tmpufun("NULL");
 ARRASS_node tmparrass;
 ACTRL_node tmpactrl;
-
+*/
 
 
 int sizeForNode(bool_node* bn){
@@ -64,14 +64,13 @@ int sizeForNode(bool_node* bn){
 
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
-	
+	Dllist tmpList;
 	const string& name = node.get_ufname();
 	
 	if(ictrl != NULL && !ictrl->checkInline(node)){
 		rvalue = &node;
 		return;
-	}
-
+	}	
 
 	ufunAll.restart();
 
@@ -135,6 +134,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		bool_node* output = NULL;
 
 		for(int i=0; i<oldFun.size(); ++i){
+			node.parent->repOK();
 			bool_node::Type t = oldFun[i]->type;
 			if(t == bool_node::SRC || t == bool_node::CTRL) continue;
 			if(t == bool_node::CONST){
@@ -169,6 +169,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
+						{							
+							DllistNode* tt = getDllnode(ufun);
+							tmpList.append(tt);
+						}	
 						bool_node * oldMother = ufun->mother;						
 						ufun->mother->remove_child( n );
 						bool_node* andCond = new AND_node();
@@ -256,8 +260,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						ornode = ornodep;
 					}
 					cur = ornode;	
-					n->mother = cur;					
-
+					n->mother = cur;		
+					{							
+						DllistNode* tt = getDllnode(n);
+						tmpList.append(tt);
+					}
 					if(isConst(cur) && getIval(cur) == 1){
 						delete n;
 						//In this case, the assertion is just ignored.
@@ -278,8 +285,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 				}
 			}
-		}		
-		
+		}	
+		node.add(&tmpList);
+		node.remove();
 		rvalue = output;
 		somethingChanged = true;
 	}else{
@@ -319,9 +327,10 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			lnfuns++;
 		}
-		
+		dag.assertions.repOK();
 				
 		bool_node* node = computeOptim(dag[i]);		
+		dag.assertions.repOK();
 		
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );

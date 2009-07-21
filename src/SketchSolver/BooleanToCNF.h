@@ -78,7 +78,9 @@ public:
 	}
     }
 
-
+	bool checkVar(const string& arName){
+		return arrsize.find(arName) != arrsize.end();
+	}
     int getVarCnt() { return varCnt; }
 
     void declareVar(const string& vname) {

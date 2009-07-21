@@ -17,11 +17,19 @@ class AbstractNodeValue{
 	int high;	
 public:
 	int timestamp;
-
+	bool isList(){ return state == LIST; }
 	bool isTop(){ return state==TOP; }
 	bool isRange(){ return state == RANGE; }
 	bool isBottom(){ return state==BOTTOM; }
-
+	set<int>::const_iterator vset_begin() const{
+		return valSet.begin();
+	}
+	bool contains(int i){
+		return valSet.count(i)>0;
+	}
+	set<int>::const_iterator vset_end()const{
+		return valSet.end();
+	}
 	int getHigh(){
 		Assert(state!= BOTTOM && state != TOP, "No bottom or top states");
 		return high;
@@ -89,8 +97,9 @@ public:
 	void insert(int val){
 		if( val > high){ high = val; }
 		if(val < low){ low = val; }
-		if(state==LIST){
+		if(state==LIST || state==BOTTOM){
 			valSet.insert(val);
+			state = LIST;
 		}
 	}
 
@@ -212,6 +221,9 @@ public:
 	template<typename COMP>
 	int staticCompare(bool_node* n1, int C , bool reverse );
 	
+	template<typename COMP>
+	void helper(bool_node* parent, int C, int reverse, int& rv, AbstractNodeValue& nv);
+
 	virtual void visit( SRC_node& node );
 	virtual void visit( CTRL_node& node );
 	virtual void visit( CONST_node& node );

@@ -3,6 +3,7 @@
 
 #include "FastSet.h"
 #include "NodeVisitor.h"
+#include "Dllist.h"
 #include <map>
 #include <set>
 #include <cstdlib>
@@ -31,25 +32,21 @@ typedef FastSet<bool_node> childset;
 
 #endif
 
+//#define SCHECKMEM
+
 
 class bool_node{
 
 private:
   /** The unique ID to be assigned to the next bool_node created. */
   static int NEXT_GLOBAL_ID;
-
+#ifdef SCHECKMEM
+	static set<bool_node*> allocated;
+#endif
 
 protected:
-  bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM)
-  { 
-  }
-  bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
-  								 name(bn.name), father(bn.father), 
-  								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
-								 otype(bn.otype), type(bn.type)
-  { 
-      if(copyChildren){ children = bn.children; }
-  }
+  bool_node();
+  bool_node(const bool_node& bn, bool copyChildren);
 
 public:
 
@@ -79,7 +76,7 @@ public:
   bool_node* father;
   
   childset children;
-  
+  virtual ~bool_node();
 
   void resetId(){
 	globalId = NEXT_GLOBAL_ID++;
@@ -132,6 +129,48 @@ public:
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
+  virtual string get_sym() const{
+    switch(type){
+	case PLUS: return "+";
+	case TIMES: return "*";
+	case DIV: return "/";
+	case MOD: return "%";
+	case NEG: return "-";
+	case CONST: return "C";
+    case AND: return "&";
+    case OR: return "|";
+    case XOR: return "^";
+    case SRC: return "S";
+    case DST: return "D";
+    case NOT: return "!";
+    case CTRL: return "CTRL";
+	case GT: return ">";
+	case GE: return ">=";
+	case LT: return "<";
+	case LE: return "<=";
+	case EQ: return "==";
+    case ASSERT: return "ASSERT";
+    }
+    cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
+    throw BasicError("Err", "Err");
+  }
+  virtual string lprint(){
+		stringstream str;
+		str<<id<<"= ";
+		if(mother != NULL){
+			str<<mother->lid()<<" ";
+		}
+		str<<get_sym()<<" ";
+		if(father != NULL){
+			str<<father->lid()<<" ";
+		}
+		return str.str();
+  }
+  virtual string lid(){
+		stringstream str;
+		str<<id;
+		return str.str();
+  }
   virtual string get_name() const;
   void set_layer(bool isRecursive);
   virtual void accept(NodeVisitor& visitor) =0;
@@ -142,6 +181,22 @@ public:
   void neighbor_replace(bool_node* replacement);
   void replace_child(bool_node* ori, bool_node* replacement);
 };
+
+
+
+
+inline bool isDllnode(bool_node* bn){
+	return bn->type == bool_node::ASSERT || bn->type==bool_node::DST || typeid(*bn) == typeid(UFUN_node) ;
+}
+
+inline bool isUFUN(DllistNode* dn){
+	bool_node* t = dynamic_cast<bool_node*>(dn);
+	return t->type == bool_node::ARITH;
+}
+
+inline DllistNode* getDllnode(bool_node* bn){
+	return dynamic_cast<DllistNode*>(bn);
+}
 
 
 /**
@@ -176,6 +231,7 @@ inline void bool_node::remove_child(bool_node* bn){
 class arith_node: public bool_node{
 	protected:
 	arith_node():bool_node(){ type = ARITH; };
+	virtual ~arith_node(){}
 	arith_node(const arith_node& an, bool copyChildren):bool_node(an, copyChildren), multi_mother(an.multi_mother), arith_type(an.arith_type){ type = ARITH; };
 	public:
     typedef enum {   ARRACC, UFUN, ARRASS, ACTRL  } AType;
@@ -247,6 +303,7 @@ class INTER_node: public bool_node{
 		INTER_node(){nbits = 1;}
 		int nbits;
 	public:	
+	virtual ~INTER_node(){}
 	int get_nbits() const { return nbits; }
 	void set_nbits(int n){ nbits = n; }
 	
@@ -273,6 +330,12 @@ class INTER_node: public bool_node{
 	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
 	    return str.str();
 	  }
+	virtual string lprint(){
+		return name;
+	}
+	virtual string lid(){
+		return name;
+	}
 };
 
 
@@ -284,15 +347,16 @@ class SRC_node: public INTER_node{
 		name = nm;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };
+	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };	
 };
 
-class DST_node: public INTER_node{		
+class DST_node: public INTER_node, public DllistNode{
 	public: 
 		DST_node(){ type = DST; }  
 		DST_node(const DST_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new DST_node(*this, copyChildren);  };
+		virtual ~DST_node(){}
 };
 
 
@@ -313,6 +377,11 @@ class NOT_node: public bool_node{
 	OutType getOtype() const {
 			return BOOL;
 	}
+	virtual string lid(){
+		stringstream str;
+		str<<"(!"<<mother->lid()<<")";
+		return str.str();
+    }
 };
 
 class PLUS_node: public bool_node{	
@@ -336,7 +405,7 @@ class TIMES_node: public bool_node{
 
 
 
-class UFUN_node: public arith_node{
+class UFUN_node: public arith_node, public DllistNode{
 	const int callsite;
 	static int CALLSITES;
 	int nbits;	
@@ -369,6 +438,8 @@ class UFUN_node: public arith_node{
 		}
 		return otype;
 	}
+	virtual ~UFUN_node(){ 
+	}
 	string get_name() const{
 	    
 		if(ufname.size() > 1){
@@ -381,6 +452,17 @@ class UFUN_node: public arith_node{
 	    }
 	    
 	  }
+	virtual string lprint(){
+		stringstream str;
+		str<<id<<"= "<<ufname.substr(0, 5)<<"["<<mother->lid()<<"](";
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  	if(*it != NULL){
+		  		str<<(*it)->lid()<<", ";	  		
+		  	}
+		}
+		str<<")";
+		return str.str();
+	}
 };
 
 
@@ -409,6 +491,17 @@ class ARRACC_node: public arith_node{
 			}			
 			return otype;
 		}
+	virtual string lprint(){
+		stringstream str;
+		str<<id<<"= "<<"["<<mother->lid()<<"]$";
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  	if(*it != NULL){
+		  		str<<(*it)->lid()<<", ";	  		
+		  	}
+		}
+		str<<"$";
+		return str.str();
+	}
 	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
 };
 class DIV_node: public bool_node{	
@@ -468,6 +561,16 @@ class CONST_node: public bool_node{
 		    }
 		    str<<abs(val);		    
 		    return str.str();
+		}
+		  virtual string lid(){
+				stringstream str;
+				str<<"(" << val << ")";
+				return str.str();
+		  }
+		virtual string lprint(){
+			stringstream str;
+			str<<id<<"= "<<"(" << val << ")";
+			return str.str();
 		}
 		virtual bool_node* clone(bool copyChildren = true){return new CONST_node(*this, copyChildren);  };
 		OutType getOtype()const {
@@ -558,6 +661,11 @@ class ARRASS_node: public arith_node{
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
+		virtual string lprint(){
+			stringstream str;
+			str<<id<<"= "<<mother->lid()<<"=="<<quant<<" ? "<<multi_mother[1]->lid()<<":"<<multi_mother[0]->lid();
+			return str.str();
+		}
 		OutType getOtype()const {
 			if(otype != BOTTOM){
 				return otype;
@@ -574,8 +682,19 @@ class ACTRL_node: public arith_node{
 	OutType getOtype()const {
 		return INT;
 	}	
+	virtual string lprint(){
+		stringstream str;
+		str<<id<<"= "<<"$$";
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  	if(*it != NULL){
+		  		str<<(*it)->lid()<<", ";	  		
+		  	}
+		}
+		str<<"$$";
+		return str.str();
+	}
 };
-class ASSERT_node: public bool_node {
+class ASSERT_node: public bool_node, virtual public DllistNode{
 	bool isHardAssert;
 	string msg;
 public:
@@ -587,6 +706,15 @@ public:
     virtual bool isHard() const { return isHardAssert ; }
     virtual void setMsg(const string& pmsg){ msg = pmsg; }
     virtual const string& getMsg()const{ return msg; }
+	virtual ~ASSERT_node(){ 
+	}
+	  virtual string lprint(){
+		stringstream str;
+		str<<id<<"= ASSERT";
+		
+		str<<mother->lid()<<" : "<<msg;		
+		return str.str();
+  }
 };
 
 

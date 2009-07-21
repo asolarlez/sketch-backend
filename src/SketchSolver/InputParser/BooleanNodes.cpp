@@ -8,6 +8,11 @@
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
 
+#ifdef SCHECKMEM
+set<bool_node*> bool_node::allocated;
+#endif 
+
+
 void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 	child_iter it = children.find(ori);
 	if(it != children.end() ){
@@ -17,6 +22,28 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 }
 
+bool_node::bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM)
+  { 
+#ifdef SCHECKMEM
+  allocated.insert(this);
+#endif
+  }  
+  bool_node::bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
+  								 name(bn.name), father(bn.father), 
+  								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
+								 otype(bn.otype), type(bn.type)
+  { 
+      if(copyChildren){ children = bn.children; }
+#ifdef SCHECKMEM
+  allocated.insert(this);
+#endif
+  }
+
+  bool_node::~bool_node(){
+#ifdef SCHECKMEM
+	allocated.erase(this);
+#endif
+  }
 
 
 

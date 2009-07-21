@@ -41,6 +41,7 @@ class CommandLineArgs{
   bool alterARRACS;
   bool interactive;
   int olevel;
+  bool assumebcheck;
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -66,6 +67,7 @@ class CommandLineArgs{
 		ufunSymmetry = false;
 		alterARRACS = false;
 		interactive = false;
+		assumebcheck = false;
 		olevel = 5;
 
 
@@ -80,7 +82,11 @@ class CommandLineArgs{
 	    	alterARRACS = true;
 	      input_idx = ii+1;      
 	    }
-
+		if( string(argv[ii]) == "-assumebcheck" ){
+	    	assumebcheck = true;
+			cout<<"assuming  bounds checks"<<endl;
+	      input_idx = ii+1;      
+	    }
 		if( string(argv[ii]) == "-olevel" ){
 	      Assert(ii<(argc-1), "-olevel needs an extra parameter");
 	      olevel = atoi(argv[ii+1]);

@@ -4,7 +4,6 @@
 
 
 
-
 char tmpbuf[10000];
 char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
@@ -15,16 +14,6 @@ char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 				'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 
 				'@', '#'
 };
-
-inline void writeInt(char* buf, unsigned val, int& p){
-	while(val != 0){
-		unsigned t = val & 0x3f;
-		buf[p] = tbl[t];
-		p = p+1;
-		val = val>>6;
-	}
-}
-
 
 
 void DagCSE::setStr(int id1, char op, int id2){
@@ -331,8 +320,7 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.restart();)
  	stringstream str;
 	int mid = node.mother == NULL? -1: node.mother->globalId;
-	str<<"ass"<<mid<<":"<<node.getMsg();
- 	ccode = str.str();
+	setStr(0, 'A', mid);
  	Dtime(stimer.stop();)
  }
  

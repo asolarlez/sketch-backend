@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <set>
 #include <climits>
+#include "DeriveImplications.h"
 
 using namespace std;
 
@@ -131,7 +132,13 @@ public:
 		state = BOTTOM;
 		hasD = false;
 	}
-
+	string lprint(){
+		stringstream str;
+		for(set<Datum>::iterator it = known.begin(); it != known.end(); ++it){
+			str<<it->node->lprint()<<"\t== "<<it->val<<endl;
+		}
+		return str.str();
+	}
 	bool isBottom(){
 		return state == BOTTOM;
 	}
@@ -237,10 +244,11 @@ class BackwardsAnalysis :
 private:
 	map<bool_node*, Info> info;
 	map<int, CONST_node*> cnmap;
+	// DeriveImplications dimp;
 protected:
 	virtual void visitArith(arith_node& node );
 	virtual void visitBool(bool_node& node );
-
+	// bool check(Info& t, bool_node* n, int& v);
 public:
 	BackwardsAnalysis(void);
 	virtual ~BackwardsAnalysis(void);

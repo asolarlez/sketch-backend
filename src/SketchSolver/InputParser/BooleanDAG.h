@@ -19,7 +19,7 @@
 #include "BasicError.h"
 #include "timerclass.h"
 #include "NodeVisitor.h"
-
+#include "Dllist.h"
 
 
 #ifdef CONST
@@ -27,7 +27,7 @@
 #endif
 
 using namespace std;
-
+// #define SCHECKMEM
 
 inline bool comp_id(bool_node* n1, bool_node* n2){
   int n1id = n1->id;
@@ -50,17 +50,22 @@ extern timerclass TTMMPP;
 
 class BooleanDAG  
 {
+#ifdef SCHECKMEM
+	static set<BooleanDAG*> allocated;
+#endif
+
   int n_inputs;
   int n_outputs;
   int n_controls;
   int offset;
-
+  bool ownsNodes;
 
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
   map<string, bool_node*> named_nodes;
 
   map<bool_node::Type, vector<bool_node*> > nodesByType;
+  
 
   const string name;
   bool is_sorted; //The sorted property implies that everyone comes after their parents
@@ -69,11 +74,11 @@ class BooleanDAG
 
   void compute_layer_sizes();
 
-  void remove(int i);
+  void shareparent_remove(int i);
   bool_node* create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
 
 public:
-
+Dllist assertions;
 	typedef vector<bool_node*>::iterator iterator;
 	typedef vector<bool_node*>::reverse_iterator reverse_iterator;
   ////////////////////////////////////////////////////////////////////////
@@ -97,6 +102,7 @@ public:
   ////////////////////////////////////////////////////////////////////////
   void removeNullNodes();
   void replace(int original, bool_node* replacement);
+  void remove(int i);
   void addNewNode(bool_node* v);
   void addNewNodes(vector<bool_node*>& v);
   void clearBackPointers();
@@ -153,15 +159,18 @@ public:
 	return name;
   }
   
+  void registerOutputs();
   
+  void sliceH(bool_node* n, BooleanDAG* bd);
+  BooleanDAG* slice(int i, ASSERT_node*& out);
   
   void repOK();
 
   BooleanDAG* clone();
-  void clone_nodes(vector<bool_node*>& nstore);
+  void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=NULL);
 
   void print(ostream& out)const;
-  
+  void lprint(ostream& out);
   
    BooleanDAG(const string& name_="anon");
 

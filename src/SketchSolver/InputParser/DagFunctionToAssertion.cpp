@@ -31,7 +31,8 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		asn->setMsg(msg);
 		asn->addToParents();
 		addNode(asn);
-
+		node.add(getDllnode(asn));
+		node.remove();
 		rvalue = this->getCnode(0);		
 	}else{
 		rvalue = &node;

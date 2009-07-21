@@ -6,7 +6,6 @@
 class BooleanDAGCreator
 {
 	map<string, bool_node*> named_nodes;
-	map<string, string > aliasmap;
 	int new_names;
 	int new_namesb;
 
@@ -22,7 +21,7 @@ public:
 	virtual ~BooleanDAGCreator(void);
 
 	
-  virtual string create_const(int n);
+  virtual bool_node* create_const(int n);
 
   bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
   bool_node* create_controls(int n, const string& gen_name=string("CONTROL"));
@@ -40,42 +39,44 @@ public:
 
 
 
-  /* Associates the name source to the node associated with the name starg.
+  /* Associates the name source to the node  starg.
   */
-  void alias(const string& ssource,  const string& starg);
+  void alias(const string& ssource,  bool_node* starg);
 
   /**
 	Create a new node from the string names of its parents.
   */
-  bool_node* new_node(const string& mother, 
-                      const string& father, bool_node::Type t, const string& name);
+  bool_node* new_node(bool_node* mother, 
+                      bool_node* father, bool_node::Type t);
 
   /* Used during initialization when creating ARITH nodes and ASSERT nodes. thenode will always be an ARITH node or an ASSERT node.	
       The node thenode should not be used after calls to this function, because this function may optimize it 
 	  away and deallocate it; so one must be very very careful to always use the return value instead.
 	  Also, all the fields of the arith node should already be initialized. Otherwise, you'll get wrong behavior.
 	*/
-  bool_node* new_node(const string& mother, 
-                      const string& father, bool_node* thenode);
+  bool_node* new_node(bool_node* mother, 
+                      bool_node* father, bool_node* thenode);
 
   /*-------------------------------------*/
 
   bool_node* optimizeAndAdd(bool_node* node);
   
   bool has_alias(const string& s){
-    return aliasmap.find(s) != aliasmap.end();
+    return named_nodes.find(s) != named_nodes.end();
   }
 
-  string get_alias(const string& s){
-    return aliasmap[s];
+  bool_node* get_alias(const string& s){
+    return get_node(s);
   }
   
 
   string new_name(){
-    stringstream str;
-    str<<"t"<<hex<<new_names<<"_";
-    ++new_names;
-    return str.str();
+	 int p = 0;
+	tmpbuf[p] = 't'; p++;
+	writeInt(tmpbuf, new_names, p);
+	++new_names;
+	tmpbuf[p] = 0;
+    return tmpbuf;
   }
  string new_name(string& base){
  	if(base.length() < 2){
@@ -90,6 +91,7 @@ public:
 
 
  void finalize(){
+	dag->registerOutputs();
 	 optim.cleanup(*dag);
  }
 

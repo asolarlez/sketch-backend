@@ -8,6 +8,18 @@
 
 
 
+extern char tmpbuf[10000];
+extern char tbl[64];
+
+inline void writeInt(char* buf, unsigned val, int& p){
+	while(val != 0){
+		unsigned t = val & 0x3f;
+		buf[p] = tbl[t];
+		p = p+1;
+		val = val>>6;
+	}
+}
+
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	

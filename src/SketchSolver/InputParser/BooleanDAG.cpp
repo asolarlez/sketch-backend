@@ -16,6 +16,10 @@ using namespace std;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+#ifdef SCHECKMEM
+set<BooleanDAG*> BooleanDAG::allocated;
+#endif 
+
 BooleanDAG::BooleanDAG(const string& name_):name(name_)
 {
   has_passthrough=false;
@@ -25,15 +29,62 @@ BooleanDAG::BooleanDAG(const string& name_):name(name_)
   n_outputs = 0;
   n_controls = 0;
   offset = 0;
+  ownsNodes = true;
+#ifdef SCHECKMEM
+  cout<<"Checking allocation"<<endl;
+  allocated.insert(this);
+#endif
 }
 
 
+void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
+	if(n->flag == 0){
+		n->flag = 1;
+		if(n->mother != NULL){
+			sliceH(n->mother, bd);
+		}
+		if(n->father != NULL){
+			sliceH(n->father, bd);
+		}
+		if(n->type==bool_node::ARITH){
+			arith_node* an = dynamic_cast<arith_node*>(n);
+			for(int i=0; i<an->multi_mother.size(); ++i){
+				sliceH(an->multi_mother[i], bd);
+			}
+		}
+		bd->addNewNode(n);
+	}
+}
+BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out){
+	for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
+		(*it)->flag = 0;
+	}
+	BooleanDAG* bd = new BooleanDAG(this->name);
+	bd->ownsNodes = false;
+	bd->sliceH(nodes[i], bd);
+	if(out->mother != NULL){
+		out->mother->mother = nodes[i];		
+		if(out->mother->father != NULL){
+			bd->addNewNode(out->mother->father);
+		}
+		bd->addNewNode(out->mother);
+	}else{
+		out->mother = nodes[i];
+	}
+	bd->addNewNode(out);
+	return bd;
+}
+
+
+
 void BooleanDAG::clear(){	
-  for(int i=0; i < nodes.size(); ++i){
-  	nodes[i]->id = -22;
-  	delete nodes[i];
-  	nodes[i] = NULL;
-  }
+	if(ownsNodes){
+	  for(int i=0; i < nodes.size(); ++i){
+  		nodes[i]->id = -22;
+  		delete nodes[i];
+  		nodes[i] = NULL;
+	  }
+	}
   nodes.clear();
   named_nodes.clear();
 }
@@ -41,7 +92,9 @@ void BooleanDAG::clear(){
 
 BooleanDAG::~BooleanDAG()
 {
-  
+#ifdef SCHECKMEM
+	allocated.erase(this);
+#endif
 }
 
 void BooleanDAG::relabel(){
@@ -196,8 +249,28 @@ void BooleanDAG::removeNullNodes(){
 		Dout( cout<<"Removing "<<newnodes.size() - nodes.size()<<" nodes"<<endl );
 	}
 }
-
 void BooleanDAG::remove(int i){
+	bool_node* onode = nodes[i];	
+	onode->dislodge();
+	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
+	if(it != named_nodes.end() && it->second==onode){
+		named_nodes.erase(it);
+	}
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
+		vector<bool_node*>& bnv = nodesByType[onode->type];
+		for(int t=0; t<bnv.size(); ){
+			if( bnv[t] == onode ){
+				bnv.erase( bnv.begin() + t);
+				break;
+			}else{
+				++t;	
+			}
+		}	
+	}
+	nodes[i] = NULL;
+	delete onode;
+}
+void BooleanDAG::shareparent_remove(int i){
 	
   bool_node* onode = nodes[i];	
 	
@@ -241,6 +314,7 @@ void BooleanDAG::repOK(){
 		for(int i=0; i<nv.size(); ++i){
 			Assert(tsets[type].count(nv[i])==0, "You have a repeated node in the list");
 			tsets[type].insert(nv[i]);
+			Assert(nv[i]->type >= 0, "This is corrupted!!");
 		}		
 	}
 
@@ -257,12 +331,25 @@ void BooleanDAG::repOK(){
 			Assert( tsets[nodes[i]->type].count(nodes[i])==1 , "All the typed nodes should be accounted for in the nodesByType");
 		}
 	}
-
+	DllistNode* cur = this->assertions.head;
+	DllistNode* last=NULL;
+	while(cur != NULL && isUFUN(cur)){ last = cur; cur = cur->next; }	
 	//Now, we have to check whether all the node's predecessors are in the nodeset.
 	//We also check that each node is in the children of all its parents.
 	for(int i=0; i<nodes.size(); ++i){
 		bool_node* n = nodes[i];
 		if(n != NULL){
+			if( isDllnode(n) ){
+//				cout<<"  "<<n->get_name()<<"  "<<dynamic_cast<bool_node*>(cur)->get_name()<<endl;
+				if(n->type != bool_node::ARITH){
+					Assert(getDllnode(n) == cur, "You are skipping a node");
+					
+					do{
+						last = cur; 
+						cur = cur->next; 
+					}while(cur != NULL && isUFUN(cur));
+				}
+			}
 			if(n->mother != NULL){
 				bool_node* par = n->mother;
 				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
@@ -292,6 +379,7 @@ void BooleanDAG::repOK(){
 
 		}
 	}
+	Assert(last == this->assertions.tail, "Missing nodes" );
 }
 
 
@@ -324,20 +412,22 @@ void BooleanDAG::cleanup(){
   for(int i=0; i < nodes.size(); ++i){
     nodes[i]->flag = 0;
   }
-  int idx=0;
-
-  {
-	  vector<bool_node*>& vn = nodesByType[bool_node::DST];
-	  for(int i=0; i<vn.size(); ++i){
-		idx = vn[i]->back_dfs(idx);
-	  }
-  }
+  int idx=0;  
   {
 	  vector<bool_node*>& vn = nodesByType[bool_node::ASSERT];
-	  for(int i=0; i<vn.size(); ++i){
-		idx = vn[i]->back_dfs(idx);
+	  {
+		  DllistNode* cur = assertions.head;
+		  while(cur != NULL){
+			  if(typeid(*cur) == typeid(ASSERT_node) || typeid(*cur) == typeid(DST_node)){
+				  idx = 
+					  dynamic_cast<bool_node*>(cur)->back_dfs(idx);
+			  }
+			  cur = cur->next;
+		  }
+		  sort(vn.begin(), vn.end(), comp_id);
 	  }
   }
+  
 
   for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
@@ -568,7 +658,16 @@ void BooleanDAG::print(ostream& out)const{
   out<<"}"<<endl;
 }
 
+void BooleanDAG::lprint(ostream& out){    
+  out<<"dag{"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		out<<nodes[i]->lprint()<<endl;
+  	}    
+  }
 
+  out<<"}"<<endl;
+}
 
 
 void BooleanDAG::clearBackPointers(){
@@ -604,6 +703,11 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 			
 		if( (*node_it)->type != bool_node::CTRL ){ 
 			nodes.push_back( (*node_it) );
+			if(isDllnode(*node_it)){
+				DllistNode* dln = getDllnode(*node_it);
+				dln->remove();
+				assertions.append(dln);
+			}
 			(*node_it)->switchInputs(*this, replacements);
 			if( (*node_it)->type == bool_node::ASSERT ||
 				(*node_it)->type == bool_node::SRC){
@@ -652,6 +756,11 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 				if( (*node_it)->type == bool_node::CTRL ){
 					named_nodes[(*node_it)->name] = (*node_it);
 				}
+				if( (*node_it)->type == bool_node::ASSERT ){
+					DllistNode* tt = getDllnode((*node_it));
+					tt->remove();
+					assertions.append( tt );
+				}
 			}
 		}
 		
@@ -695,7 +804,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			nodes.push_back(finalAssert);
 
 			nodesByType[finalAssert->type].push_back(finalAssert);
-
+			assertions.append( getDllnode(finalAssert) );
 		}
 	}
 
@@ -720,7 +829,7 @@ void BooleanDAG::rename(const string& oldname,  const string& newname){
 
 
 
-void BooleanDAG::clone_nodes(vector<bool_node*>& nstore){
+void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	nstore.resize(nodes.size());
 
 	Dout( cout<<" after relabel "<<endl );
@@ -729,6 +838,11 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore){
 		if( (*node_it) != NULL ){		
 			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
 			bool_node* bn = (*node_it)->clone();
+			
+			if( dl != NULL && isDllnode(bn) ){
+				dl->append(getDllnode(bn));
+			}
+
 			Dout( cout<<" node "<<(*node_it)->get_name()<<" clones into "<<bn->get_name()<<endl );
 			nstore[nnodes] = bn;
 			nnodes++;
@@ -750,7 +864,7 @@ BooleanDAG* BooleanDAG::clone(){
 	BooleanDAG* bdag = new BooleanDAG(name);
 	relabel();
 
-	clone_nodes(bdag->nodes);
+	clone_nodes(bdag->nodes, &bdag->assertions);
 
 	Dout( cout<<" after redirectPointers "<<endl );
 	bdag->n_controls = n_controls;
@@ -777,7 +891,12 @@ BooleanDAG* BooleanDAG::clone(){
 
 
 
-
+void BooleanDAG::registerOutputs(){
+	 vector<bool_node*>& vn = getNodesByType(bool_node::DST);
+	 for(int i=0; i<vn.size(); ++i){
+		assertions.append( getDllnode(vn[i]) );
+	 }
+}
 
 
 

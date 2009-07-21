@@ -1,5 +1,6 @@
 #include "DagOptim.h"
 #include "SATSolver.h"
+#include "CommandLineArgs.h"
 
 DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 {
@@ -12,7 +13,7 @@ DagOptim::~DagOptim()
 {
 }
 
-
+extern CommandLineArgs* PARAMS;
 
 CONST_node* DagOptim::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
@@ -63,6 +64,14 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		anv[n1] = anv[n1->mother];
 		anv[n1].timestamp = n1->globalId;		
 		return rv;
+	}
+
+	if(n1->getOtype() == bool_node::BOOL){
+		AbstractNodeValue& nv = anv[n1];
+		nv.init(0);	
+		nv.insert(1);
+		nv.timestamp = n1->globalId;
+		return nv.staticCompare<COMP>(C, reverse);
 	}
 
 	if(typeid(*n1) == typeid(SRC_node) || typeid(*n1) == typeid(CTRL_node)){
@@ -124,43 +133,57 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		int rv = -2;
 		AbstractNodeValue& nv = anv[n1];
 		nv.timestamp = n1->globalId;
-		for(int i=0; i<ar.multi_mother.size(); ++i){
-			bool_node* parent = ar.multi_mother[i];
-			int tmp = 0;
-			
-			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
-
-			if(it == anv.end()){
-				tmp = staticCompare<COMP>(parent, C, reverse);
-			}else{
-				if(it->second.timestamp == parent->globalId){
-					tmp = it->second.staticCompare<COMP>(C, reverse);
-				}else{
-					anv.erase(it);
-					tmp = staticCompare<COMP>(parent, C, reverse);
+		map<bool_node*, AbstractNodeValue>::iterator mot = anv.find(ar.mother);
+		bool tata = false;
+		if(mot == anv.end() || mot->second.timestamp != ar.mother->globalId){
+			staticCompare<COMP>(ar.mother, C, reverse);
+			tata = true;
+		}
+		AbstractNodeValue& mnv = tata? anv[ar.mother] : mot->second;
+		if(mnv.isTop() ||  typeid(*n1) == typeid(ARRASS_node)){
+			for(int i=0; i<ar.multi_mother.size(); ++i){
+				bool_node* parent = ar.multi_mother[i];
+				helper<COMP>(parent, C, reverse, rv, nv);
+			}
+			if((!PARAMS->assumebcheck) &&  typeid(*n1) == typeid(ARRACC_node) && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
+				nv.insert(0);
+				bool cm = reverse? comp(C, 0) : comp(0, C);
+				int tmp = cm ? 1 : -1;	
+				if(tmp == 0 || (rv != -2 && tmp != rv)){				
+					rv = 0;	
 				}
-			}		
-
-			if(tmp == 0 || (rv != -2 && tmp != rv)){				
-				rv = 0;	
+				if(rv != 0){
+					rv = tmp;
+				}
 			}
-			nv.insert( anv[parent] );
-			if(rv != 0){
-				rv = tmp;
+		}else{
+			set<int>::const_iterator end = mnv.vset_end();
+			int sz = ar.multi_mother.size();
+			bool didZero = PARAMS->assumebcheck;
+			for(set<int>::const_iterator it = mnv.vset_begin(); it != end; ++it){
+				if((*it)>=0 && (*it)<sz){
+					bool_node* parent = ar.multi_mother[(*it)];
+					helper<COMP>(parent, C, reverse, rv, nv);
+				}else{
+					if(!didZero){
+						nv.insert(0);
+						bool cm = reverse? comp(C, 0) : comp(0, C);
+						int tmp = cm ? 1 : -1;	
+						if(tmp == 0 || (rv != -2 && tmp != rv)){				
+							rv = 0;	
+						}
+						if(rv != 0){
+							rv = tmp;
+						}
+						didZero = true;
+					}
+				}
 			}
 		}
-		if( typeid(*n1) == typeid(ARRACC_node) && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
-			nv.insert(0);
-			bool cm = reverse? comp(C, 0) : comp(0, C);
-			int tmp = cm ? 1 : -1;	
-			if(tmp == 0 || (rv != -2 && tmp != rv)){				
-				rv = 0;	
-			}
-			if(rv != 0){
-				rv = tmp;
-			}
-		}
-		if(rv == -2){nv.makeTop(); return 0; }		
+		if(rv == -2){
+			nv.makeTop(); 
+			return 0; 
+		}		
 		return rv;		
 	}
 	anv[n1].makeTop();
@@ -168,7 +191,31 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	return 0;
 }
 
+template<typename COMP>
+void DagOptim::helper(bool_node* parent, int C, int reverse, int& rv, AbstractNodeValue& nv){
+				int tmp = 0;
+				
+				map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
 
+				if(it == anv.end()){
+					tmp = staticCompare<COMP>(parent, C, reverse);
+				}else{
+					if(it->second.timestamp == parent->globalId){
+						tmp = it->second.staticCompare<COMP>(C, reverse);
+					}else{
+						anv.erase(it);
+						tmp = staticCompare<COMP>(parent, C, reverse);
+					}
+				}		
+
+				if(tmp == 0 || (rv != -2 && tmp != rv)){				
+					rv = 0;	
+				}
+				nv.insert( anv[parent] );
+				if(rv != 0){
+					rv = tmp;
+				}
+}
 
 
 template<typename COMP, typename NTYPE>
@@ -1016,7 +1063,7 @@ void DagOptim::visit( ARRACC_node& node ){
 			}
 		}
 		if( tmp ){
-			if( node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL ){
+			if( (node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL) || PARAMS->assumebcheck ){
 				/* 
 				 * It may seem that the transformation inside the following if statement also applies to
 				 * ARRACC with non-bool mother. But this is not the case, because if the mother is non-bool, 
@@ -1331,9 +1378,9 @@ void DagOptim::visit( ARRACC_node& node ){
 				int size = (h+1) < node.multi_mother.size() ? (h+1) : node.multi_mother.size();
 				ar->multi_mother.reserve(size);
 				bool_node* tmpnode = NULL;
-				bool tflag =  h < node.multi_mother.size() && l >= 0;
+				bool tflag =  (h < node.multi_mother.size() && l >= 0) || PARAMS->assumebcheck;
 				for(int i=0; i<size; ++i){
-					if(i >= l){
+					if(i >= l && !(val.isList() && !val.contains(i))){
 						bool_node* x = node.multi_mother[i];
 						if(tmpnode ==NULL){
 							tmpnode = x;
@@ -1344,6 +1391,10 @@ void DagOptim::visit( ARRACC_node& node ){
 					}else{
 						ar->multi_mother.push_back(getCnode(0));
 					}
+				}
+				if(size == 0){
+					rvalue = getCnode(0);
+					return;
 				}
 				if(tflag){ 
 					Assert(tmpnode != NULL, "This is an invariant");
@@ -1489,7 +1540,9 @@ void DagOptim::cleanup(BooleanDAG& dag){
 	//dag.sort_graph();
 	dag.cleanup();
 	dag.relabel();
-	
+#ifdef _DEBUG
+	dag.repOK();
+#endif
 }
 
 void DagOptim::process(BooleanDAG& dag){
