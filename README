@@ -1,1 +1,28 @@
 See http://sketch.cs.berkeley.edu.
+
+If you are using windows, start by running 
+
+bash convertScripts.sh
+If you checked out the distribution from CVS and you want to create a 
+streamlined distribution package, you can run the following commands:
+
+./autogen.sh
+./configure
+make dist
+
+To actually build the executable, you should do 
+
+./autogen.sh
+./configure
+make 
+make install
+
+Note: If you are using cygwin on Vista, perl 5.10 will crash. Use 5.8 instead.
+
+If you get a sketch distribution, simply run
+
+./configure && make && sudo make install
+
+
+
+ 
