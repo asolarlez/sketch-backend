@@ -46,7 +46,7 @@ public:
 	FileOutput( string nm = name; nm += ".circuit"; );
 	FileOutput( output.open(nm.c_str()) );		
     }
-
+	virtual ~SATSolver(){};
     virtual void annotate(const string& msg)=0;
     virtual void annotateInput(const string& name, int i, int sz)=0;
     virtual void addChoiceClause(int x, int a, int b, int c)=0;
