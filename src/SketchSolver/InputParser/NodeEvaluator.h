@@ -11,10 +11,13 @@ class NodeEvaluator :
 	public NodeVisitor
 {
 	map<UFUN_node*, NodeEvaluator> recursives;
-	map<string, BooleanDAG*> functionMap;
+	map<string, BooleanDAG*>& functionMap;
+	BooleanDAG& bdag;
 	vector<int> values;
-	VarStore inputs;
-	
+	vector<bool> changes;
+	VarStore* inputs;
+	bool failedAssert;
+	bool trackChange;
 	int i(bool_node& bn){
 		return values[bn.id];
 	}
@@ -23,15 +26,21 @@ class NodeEvaluator :
 		return values[bn.id] == 1;
 	}
 	void setbn(bool_node& bn, int i){
-		values[bn.id] = i;
+		if(trackChange){
+			int id = bn.id;
+			int& t = values[id];
+			changes[id] = changes[id] || (t!=i);
+			t = i;
+		}else{
+			values[bn.id] = i;
+		}
 	}
 
 	void setbn(bool_node& bn, bool c){
-		values[bn.id] = c ? 1 : 0;
+		setbn(bn, c ? 1 : 0);
 	}
 public:
-	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, VarStore& inputs_p);
-	NodeEvaluator();
+	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p);
 	~NodeEvaluator(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
@@ -56,8 +65,11 @@ public:
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ASSERT_node &node);		
-	void process(BooleanDAG& bdag);
-
+	bool run(VarStore& inputs_p);
+	int scoreNodes();
+	void trackChanges(){
+		trackChange = true;
+	}
 	int getValue(bool_node& bn){
 		return i(bn);
 	}

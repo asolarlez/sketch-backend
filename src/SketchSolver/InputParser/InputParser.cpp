@@ -141,19 +141,10 @@ BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
-string *comparisson (string *p1, string *p2, bool_node::Type atype)
+bool_node *comparisson (bool_node *p1, bool_node *p2, bool_node::Type atype)
 {
-    Assert (p1 || p2, "Can't have both comparisson's children NULL");
-   
-    string s1 = currentBD->new_name();
-    
-    currentBD->new_node((p1 ? *p1 : ""), 
-			(p2 ? *p2 : ""), atype, s1); 
-    if (p1)
-	delete p1;
-    if (p2)
-	delete p2;
-    return new string(s1); 
+    Assert (p1 || p2, "Can't have both comparisson's children NULL");   
+    return currentBD->new_node(p1, p2, atype);     
 }
 
 
@@ -187,7 +178,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 37 "InputParser.yy"
+#line 28 "InputParser.yy"
 {
 	int intConst;
 	bool boolConst;
@@ -198,9 +189,10 @@ typedef union YYSTYPE
 	list<string*>* sList;
 	vartype variableType;
 	BooleanDAG* bdag;
+	bool_node* bnode;
 }
 /* Line 187 of yacc.c.  */
-#line 204 "InputParser.cpp"
+#line 196 "InputParser.cpp"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -213,7 +205,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 217 "InputParser.cpp"
+#line 209 "InputParser.cpp"
 
 #ifdef short
 # undef short
@@ -534,15 +526,15 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   114,   114,   117,   118,   119,   122,   133,   133,   144,
-     145,   151,   160,   169,   169,   173,   176,   177,   181,   180,
-     195,   200,   200,   210,   220,   223,   227,   233,   234,   237,
-     238,   243,   275,   280,   290,   305,   306,   313,   320,   327,
-     334,   341,   348,   351,   370,   386,   394,   402,   410,   417,
-     426,   429,   432,   435,   438,   455,   456,   467,   471,   476,
-     480,   521,   527,   536,   539,   549,   554,   562,   568,   569,
-     570,   572,   573,   574,   575,   577,   581,   582,   585,   586,
-     587,   589
+       0,   106,   106,   109,   110,   111,   114,   125,   125,   136,
+     137,   143,   152,   161,   161,   165,   168,   169,   173,   172,
+     187,   192,   192,   202,   212,   215,   219,   225,   226,   229,
+     230,   234,   262,   266,   273,   285,   286,   289,   292,   295,
+     298,   301,   305,   308,   323,   336,   340,   344,   348,   351,
+     355,   358,   361,   364,   367,   378,   379,   389,   393,   398,
+     402,   434,   437,   441,   444,   449,   453,   461,   467,   468,
+     469,   471,   472,   473,   474,   476,   480,   481,   484,   485,
+     486,   488
 };
 #endif
 
@@ -1568,27 +1560,27 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 114 "InputParser.yy"
+#line 106 "InputParser.yy"
     {  (yyval.intConst)=0; return 0;}
     break;
 
   case 3:
-#line 117 "InputParser.yy"
+#line 109 "InputParser.yy"
     {}
     break;
 
   case 4:
-#line 118 "InputParser.yy"
+#line 110 "InputParser.yy"
     {}
     break;
 
   case 5:
-#line 119 "InputParser.yy"
+#line 111 "InputParser.yy"
     {}
     break;
 
   case 6:
-#line 122 "InputParser.yy"
+#line 114 "InputParser.yy"
     {  
 
     if( Gvartype == INT){
@@ -1603,7 +1595,7 @@ yyreduce:
     break;
 
   case 7:
-#line 133 "InputParser.yy"
+#line 125 "InputParser.yy"
     {
 	
     if( Gvartype == INT){
@@ -1617,12 +1609,12 @@ yyreduce:
     break;
 
   case 9:
-#line 144 "InputParser.yy"
+#line 136 "InputParser.yy"
     { 	 currentBD->create_outputs(-1, *(yyvsp[(1) - (1)].strConst)); }
     break;
 
   case 10:
-#line 145 "InputParser.yy"
+#line 137 "InputParser.yy"
     {
 	
 	currentBD->create_outputs(-1, *(yyvsp[(1) - (2)].strConst));
@@ -1630,7 +1622,7 @@ yyreduce:
     break;
 
   case 11:
-#line 151 "InputParser.yy"
+#line 143 "InputParser.yy"
     {  
 	if( (yyvsp[(1) - (2)].variableType) == INT){
 
@@ -1643,7 +1635,7 @@ yyreduce:
     break;
 
   case 12:
-#line 160 "InputParser.yy"
+#line 152 "InputParser.yy"
     {
  	 if( (yyvsp[(2) - (3)].variableType) == INT){
 
@@ -1656,7 +1648,7 @@ yyreduce:
     break;
 
   case 13:
-#line 169 "InputParser.yy"
+#line 161 "InputParser.yy"
     {
 Gvartype = (yyvsp[(1) - (1)].variableType);
 
@@ -1664,7 +1656,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 18:
-#line 181 "InputParser.yy"
+#line 173 "InputParser.yy"
     {		modelBuilding.restart ();
 		if(currentBD!= NULL){
 			delete currentBD;
@@ -1675,7 +1667,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 19:
-#line 188 "InputParser.yy"
+#line 180 "InputParser.yy"
     { 
 	currentBD->finalize();
 	modelBuilding.stop();
@@ -1683,19 +1675,19 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 20:
-#line 196 "InputParser.yy"
+#line 188 "InputParser.yy"
     {
 	(yyval.bdag) = envt->prepareMiter(envt->getCopy(*(yyvsp[(3) - (3)].strConst)),  envt->getCopy(*(yyvsp[(1) - (3)].strConst)));
 }
     break;
 
   case 21:
-#line 200 "InputParser.yy"
-    {solution.start();}
+#line 192 "InputParser.yy"
+    {solution.restart();}
     break;
 
   case 22:
-#line 201 "InputParser.yy"
+#line 193 "InputParser.yy"
     {
 	int tt = envt->assertDAG((yyvsp[(3) - (4)].bdag), std::cout);
 	envt->printControls("");
@@ -1708,7 +1700,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 23:
-#line 211 "InputParser.yy"
+#line 203 "InputParser.yy"
     {
 	int tt = envt->runCommand(*(yyvsp[(1) - (5)].strConst), *(yyvsp[(3) - (5)].sList));
 	delete (yyvsp[(1) - (5)].strConst);
@@ -1720,14 +1712,14 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 24:
-#line 220 "InputParser.yy"
+#line 212 "InputParser.yy"
     {
 	(yyval.sList) = new list<string*>();	
 }
     break;
 
   case 25:
-#line 223 "InputParser.yy"
+#line 215 "InputParser.yy"
     {
 	(yyval.sList) = (yyvsp[(2) - (2)].sList);
 	(yyval.sList)->push_back( (yyvsp[(1) - (2)].strConst));
@@ -1735,7 +1727,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 26:
-#line 227 "InputParser.yy"
+#line 219 "InputParser.yy"
     {
 	(yyval.sList) = (yyvsp[(2) - (2)].sList);
 	(yyval.sList)->push_back( (yyvsp[(1) - (2)].strConst));
@@ -1743,31 +1735,30 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 27:
-#line 233 "InputParser.yy"
+#line 225 "InputParser.yy"
     { /* Empty */ }
     break;
 
   case 28:
-#line 234 "InputParser.yy"
+#line 226 "InputParser.yy"
     { /* */ }
     break;
 
   case 29:
-#line 237 "InputParser.yy"
+#line 229 "InputParser.yy"
     {  (yyval.intConst)=0;  /* */ }
     break;
 
   case 30:
-#line 238 "InputParser.yy"
+#line 230 "InputParser.yy"
     {
-	currentBD->alias( *(yyvsp[(1) - (4)].strConst), *(yyvsp[(3) - (4)].strConst));
-	delete (yyvsp[(3) - (4)].strConst);
+	currentBD->alias( *(yyvsp[(1) - (4)].strConst), (yyvsp[(3) - (4)].bnode));
 	delete (yyvsp[(1) - (4)].strConst);
 }
     break;
 
   case 31:
-#line 243 "InputParser.yy"
+#line 234 "InputParser.yy"
     {
 
 	list<string*>* childs = (yyvsp[(2) - (11)].sList);
@@ -1777,154 +1768,118 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
 	list<bool_node*>::reverse_iterator oldit = oldchilds->rbegin();
 	
 	bool_node* rhs;
-	rhs = currentBD->get_node(*(yyvsp[(10) - (11)].strConst));
+	rhs = (yyvsp[(10) - (11)].bnode);
 	int bigN = childs->size();
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
-	for(int i=0; i<bigN; ++i, ++it, ++oldit){
-		string s1( currentBD->new_name() );
+	for(int i=0; i<bigN; ++i, ++it, ++oldit){		
 		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newArithNode(arith_node::ARRASS));
 		an->multi_mother.reserve(2);
 		an->multi_mother.push_back(*oldit);			
 		an->multi_mother.push_back(rhs);
-		an->name = s1;
 		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
-		Assert((yyvsp[(7) - (11)].strConst) != NULL, "1: THIS CAN'T HAPPEN!!");
-		an->quant = i;
-		currentBD->new_node(*(yyvsp[(7) - (11)].strConst),  "",  an);
-		currentBD->alias( *(*it), s1);
+		Assert((yyvsp[(7) - (11)].bnode) != NULL, "1: THIS CAN'T HAPPEN!!");
+		an->quant = i;		
+		currentBD->alias( *(*it), currentBD->new_node((yyvsp[(7) - (11)].bnode),  NULL,  an) );
 		delete *it;
 	}
 	delete childs;
-	delete oldchilds;
-	delete (yyvsp[(7) - (11)].strConst);
-	delete (yyvsp[(10) - (11)].strConst);
+	delete oldchilds;	
 }
     break;
 
   case 32:
-#line 275 "InputParser.yy"
+#line 262 "InputParser.yy"
     {
-	currentBD->create_outputs(NINPUTS, currentBD->get_node(*(yyvsp[(3) - (4)].strConst)), *(yyvsp[(1) - (4)].strConst));
-	delete (yyvsp[(3) - (4)].strConst);
+	currentBD->create_outputs(NINPUTS, (yyvsp[(3) - (4)].bnode), *(yyvsp[(1) - (4)].strConst));
 	delete (yyvsp[(1) - (4)].strConst);
 }
     break;
 
   case 33:
-#line 280 "InputParser.yy"
+#line 266 "InputParser.yy"
     {
-  if ((yyvsp[(2) - (3)].strConst)) {
+  if ((yyvsp[(2) - (3)].bnode)) {
     /* Asserting an expression, construct assert node. */
-
-    string s = currentBD->new_name ();
-    currentBD->new_node (*(yyvsp[(2) - (3)].strConst), "", bool_node::ASSERT, s);
-
-    delete (yyvsp[(2) - (3)].strConst);
+    
+    currentBD->new_node ((yyvsp[(2) - (3)].bnode), NULL, bool_node::ASSERT);
   }
 }
     break;
 
   case 34:
-#line 290 "InputParser.yy"
+#line 273 "InputParser.yy"
     {
-  if ((yyvsp[(2) - (5)].strConst)) {
+  if ((yyvsp[(2) - (5)].bnode)) {
     /* Asserting an expression, construct assert node. */
 
     ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
     bn->setMsg(*(yyvsp[(4) - (5)].strConst));
-    currentBD->new_node (*(yyvsp[(2) - (5)].strConst), "", bn);
-    
-
-    delete (yyvsp[(2) - (5)].strConst);
+    currentBD->new_node ((yyvsp[(2) - (5)].bnode), NULL, bn);
     delete (yyvsp[(4) - (5)].strConst);
   }
 }
     break;
 
   case 35:
-#line 305 "InputParser.yy"
-    { (yyval.strConst) = (yyvsp[(1) - (1)].strConst); }
+#line 285 "InputParser.yy"
+    { (yyval.bnode) = (yyvsp[(1) - (1)].bnode); }
     break;
 
   case 36:
-#line 306 "InputParser.yy"
+#line 286 "InputParser.yy"
     {
-	string s = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::AND, s);
-	(yyval.strConst) = new string(s);
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);	  					  
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::AND);	
 }
     break;
 
   case 37:
-#line 313 "InputParser.yy"
+#line 289 "InputParser.yy"
     {
-	string s = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::AND, s);
-	(yyval.strConst) = new string(s);
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);	  					  
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::AND);
 }
     break;
 
   case 38:
-#line 320 "InputParser.yy"
+#line 292 "InputParser.yy"
     {
-	string s = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::OR, s);
-	(yyval.strConst) = new string(s);
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);		  					  
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::OR);	
 }
     break;
 
   case 39:
-#line 327 "InputParser.yy"
+#line 295 "InputParser.yy"
     { 	
-	string s = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::OR, s);
-	(yyval.strConst) = new string(s);
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::OR);	
 }
     break;
 
   case 40:
-#line 334 "InputParser.yy"
+#line 298 "InputParser.yy"
     {	
-	string s = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::XOR, s);
-	(yyval.strConst) = new string(s);
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::XOR);	
 }
     break;
 
   case 41:
-#line 341 "InputParser.yy"
+#line 301 "InputParser.yy"
     {	
-	string* tmp = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::EQ);
-    string s = currentBD->new_name ();
-    currentBD->new_node (*tmp, "", bool_node::NOT, s);
-    delete tmp;
-    (yyval.strConst) = new string(s);
+	bool_node* tmp = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::EQ);
+	(yyval.bnode) = currentBD->new_node (tmp, NULL, bool_node::NOT);	
 }
     break;
 
   case 42:
-#line 348 "InputParser.yy"
+#line 305 "InputParser.yy"
     { 			
-	(yyval.strConst) = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::EQ);
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::EQ);
 }
     break;
 
   case 43:
-#line 351 "InputParser.yy"
+#line 308 "InputParser.yy"
     {
 	int pushval = 0;
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ARRACC);
 	list<bool_node*>* childs = (yyvsp[(2) - (6)].nList);
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
@@ -1933,19 +1888,15 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
 	}		
-	Assert((yyvsp[(5) - (6)].strConst) != NULL, "2: THIS CAN'T HAPPEN!!");
-	an->name = s1;
-	currentBD->new_node(*(yyvsp[(5) - (6)].strConst), "",  an); 
-	(yyval.strConst) = new string(s1);
-	delete childs;
-	delete (yyvsp[(5) - (6)].strConst);
+	Assert((yyvsp[(5) - (6)].bnode) != NULL, "2: THIS CAN'T HAPPEN!!");	
+	(yyval.bnode) = currentBD->new_node((yyvsp[(5) - (6)].bnode), NULL,  an);
+	delete childs;	
 }
     break;
 
   case 44:
-#line 370 "InputParser.yy"
+#line 323 "InputParser.yy"
     {
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ACTRL);
 	list<bool_node*>* childs = (yyvsp[(2) - (3)].nList);
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
@@ -1953,129 +1904,99 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-	}	
-	an->name = s1;
-	currentBD->new_node("", "", an); 
-	(yyval.strConst) = new string(s1);  
+	}		
+	(yyval.bnode) = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
 }
     break;
 
   case 45:
-#line 386 "InputParser.yy"
+#line 336 "InputParser.yy"
     {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::PLUS, s1); 
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
-	(yyval.strConst) = new string(s1); 
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::PLUS); 	
 }
     break;
 
   case 46:
-#line 394 "InputParser.yy"
-    {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::DIV, s1); 
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
-	(yyval.strConst) = new string(s1); 
+#line 340 "InputParser.yy"
+    {	
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::DIV); 	
 }
     break;
 
   case 47:
-#line 402 "InputParser.yy"
-    {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::MOD, s1); 
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
-	(yyval.strConst) = new string(s1); 
+#line 344 "InputParser.yy"
+    {	
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::MOD); 	
 }
     break;
 
   case 48:
-#line 410 "InputParser.yy"
+#line 348 "InputParser.yy"
     {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst),  *(yyvsp[(3) - (3)].strConst), bool_node::TIMES, s1); 
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
-	(yyval.strConst) = new string(s1); 
+	(yyval.bnode)= currentBD->new_node((yyvsp[(1) - (3)].bnode),  (yyvsp[(3) - (3)].bnode), bool_node::TIMES);
 }
     break;
 
   case 49:
-#line 417 "InputParser.yy"
+#line 351 "InputParser.yy"
     {
-	string neg1 = currentBD->new_name();
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*(yyvsp[(3) - (3)].strConst), "", bool_node::NEG, neg1);
-	currentBD->new_node(*(yyvsp[(1) - (3)].strConst), neg1, bool_node::PLUS, s1); 
-	delete (yyvsp[(1) - (3)].strConst);
-	delete (yyvsp[(3) - (3)].strConst);
-	(yyval.strConst) = new string(s1);
+	bool_node* neg1 = currentBD->new_node((yyvsp[(3) - (3)].bnode), NULL, bool_node::NEG);
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (3)].bnode), neg1, bool_node::PLUS); 	
 }
     break;
 
   case 50:
-#line 426 "InputParser.yy"
+#line 355 "InputParser.yy"
     {
-	(yyval.strConst) = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::GT);
+	(yyval.bnode) = comparisson((yyvsp[(1) - (3)].bnode), (yyvsp[(3) - (3)].bnode), bool_node::GT);
 }
     break;
 
   case 51:
-#line 429 "InputParser.yy"
+#line 358 "InputParser.yy"
     {
-	(yyval.strConst) = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::LT);
+	(yyval.bnode) = comparisson((yyvsp[(1) - (3)].bnode), (yyvsp[(3) - (3)].bnode), bool_node::LT);
 }
     break;
 
   case 52:
-#line 432 "InputParser.yy"
+#line 361 "InputParser.yy"
     {
-	(yyval.strConst) = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::GE);
+	(yyval.bnode) = comparisson((yyvsp[(1) - (3)].bnode), (yyvsp[(3) - (3)].bnode), bool_node::GE);
 }
     break;
 
   case 53:
-#line 435 "InputParser.yy"
+#line 364 "InputParser.yy"
     {
-	(yyval.strConst) = comparisson((yyvsp[(1) - (3)].strConst), (yyvsp[(3) - (3)].strConst), bool_node::LE);
+	(yyval.bnode) = comparisson((yyvsp[(1) - (3)].bnode), (yyvsp[(3) - (3)].bnode), bool_node::LE);
 }
     break;
 
   case 54:
-#line 438 "InputParser.yy"
+#line 367 "InputParser.yy"
     {
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ARRACC);
-	bool_node* yesChild = currentBD->get_node(*(yyvsp[(3) - (5)].strConst));
-	bool_node* noChild = currentBD->get_node(*(yyvsp[(5) - (5)].strConst));
+	bool_node* yesChild =((yyvsp[(3) - (5)].bnode));
+	bool_node* noChild = ((yyvsp[(5) - (5)].bnode));
 	an->multi_mother.push_back( noChild );
-	an->multi_mother.push_back( yesChild );
-	(yyval.strConst) = new string(s1);
-	an->name = s1;
-	currentBD->new_node(*(yyvsp[(1) - (5)].strConst), "", an); 
-	delete (yyvsp[(1) - (5)].strConst); 
-	delete (yyvsp[(3) - (5)].strConst); 
-	delete (yyvsp[(5) - (5)].strConst); 		  					  
+	an->multi_mother.push_back( yesChild );	
+	(yyval.bnode) = currentBD->new_node((yyvsp[(1) - (5)].bnode), NULL, an); 	
 }
     break;
 
   case 55:
-#line 455 "InputParser.yy"
+#line 378 "InputParser.yy"
     { /* Empty */  	(yyval.nList) = new list<bool_node*>();	}
     break;
 
   case 56:
-#line 456 "InputParser.yy"
+#line 379 "InputParser.yy"
     {
 //The signs are already in the stack by default. All I have to do is not remove them.
-	if((yyvsp[(1) - (2)].strConst) != NULL){
-		(yyvsp[(2) - (2)].nList)->push_back( currentBD->get_node(*(yyvsp[(1) - (2)].strConst)) );
-		delete (yyvsp[(1) - (2)].strConst);
+	if((yyvsp[(1) - (2)].bnode) != NULL){
+		(yyvsp[(2) - (2)].nList)->push_back( (yyvsp[(1) - (2)].bnode) );
 	}else{
 		(yyvsp[(2) - (2)].nList)->push_back( NULL );
 	}
@@ -2084,7 +2005,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 57:
-#line 467 "InputParser.yy"
+#line 389 "InputParser.yy"
     {
 	(yyval.sList) = new list<string*>();	
 	(yyval.sList)->push_back( (yyvsp[(1) - (1)].strConst));
@@ -2092,7 +2013,7 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 58:
-#line 471 "InputParser.yy"
+#line 393 "InputParser.yy"
     {
 	(yyval.sList) = (yyvsp[(2) - (2)].sList);
 	(yyval.sList)->push_back( (yyvsp[(1) - (2)].strConst));
@@ -2100,25 +2021,24 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
     break;
 
   case 59:
-#line 476 "InputParser.yy"
+#line 398 "InputParser.yy"
     {
-	(yyval.strConst) = new string(currentBD->create_const((yyvsp[(1) - (1)].intConst)));
+	(yyval.bnode) = currentBD->create_const((yyvsp[(1) - (1)].intConst));
 }
     break;
 
   case 60:
-#line 480 "InputParser.yy"
+#line 402 "InputParser.yy"
     {
 	
 	list<bool_node*>* params = (yyvsp[(6) - (10)].nList);
 	if(false && params->size() == 0){
 		if( (yyvsp[(3) - (10)].variableType) == INT){
-			currentBD->create_inputs( 2 /*NINPUTS*/ , *(yyvsp[(1) - (10)].strConst)); 
+			(yyval.bnode) = currentBD->create_inputs( 2 /*NINPUTS*/ , *(yyvsp[(1) - (10)].strConst)); 
 		}else{
-
-			currentBD->create_inputs(-1, *(yyvsp[(1) - (10)].strConst));
+			(yyval.bnode) = currentBD->create_inputs(-1, *(yyvsp[(1) - (10)].strConst));
 		}
-		(yyval.strConst) = (yyvsp[(1) - (10)].strConst);
+		delete (yyvsp[(1) - (10)].strConst);
 	}else{	
 		string& fname = *(yyvsp[(1) - (10)].strConst);
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
@@ -2133,171 +2053,149 @@ Gvartype = (yyvsp[(1) - (1)].variableType);
 	
 			ufun->set_nbits( 1  );
 		}
-		
 				
-		string s1;
-		{			
-			s1 = currentBD->new_name(fname);
-		}
-		ufun->name = s1;
-		currentBD->new_node(*(yyvsp[(9) - (10)].strConst), "", ufun);
-		
-		(yyval.strConst) = new string(s1);
+		ufun->name = (currentBD->new_name(fname));
+		(yyval.bnode) = currentBD->new_node((yyvsp[(9) - (10)].bnode), NULL, ufun);
 		delete (yyvsp[(1) - (10)].strConst);
 	}
 	delete (yyvsp[(6) - (10)].nList);
-	delete (yyvsp[(9) - (10)].strConst);
 }
     break;
 
   case 61:
-#line 521 "InputParser.yy"
-    {
-	string neg1 = currentBD->new_name();	
-	currentBD->new_node(*(yyvsp[(2) - (2)].strConst), "", bool_node::NEG, neg1);	
-	delete (yyvsp[(2) - (2)].strConst);
-	(yyval.strConst) = new string(neg1);
+#line 434 "InputParser.yy"
+    {	
+	(yyval.bnode) = currentBD->new_node((yyvsp[(2) - (2)].bnode), NULL, bool_node::NEG);		
 }
     break;
 
   case 62:
-#line 527 "InputParser.yy"
+#line 437 "InputParser.yy"
     { 
-    /* Check the Boolean coefficient of the term, being either 0 (false) or 1 (true). */
-    /* Generate an alternating NOT node, push a unit (true) coefficient. */
-    string s = currentBD->new_name ();
-    currentBD->new_node (*(yyvsp[(2) - (2)].strConst), "", bool_node::NOT, s);
-    (yyval.strConst) = new string (s);
-    delete (yyvsp[(2) - (2)].strConst);
+	(yyval.bnode) = currentBD->new_node((yyvsp[(2) - (2)].bnode), NULL, bool_node::NOT);		    
 }
     break;
 
   case 63:
-#line 536 "InputParser.yy"
+#line 441 "InputParser.yy"
     { 
-						(yyval.strConst) = (yyvsp[(2) - (3)].strConst); 
+						(yyval.bnode) = (yyvsp[(2) - (3)].bnode); 
 						}
     break;
 
   case 64:
-#line 539 "InputParser.yy"
-    { 
-			if( !currentBD->has_alias(*(yyvsp[(1) - (1)].strConst)) ){ 
-				(yyval.strConst) = (yyvsp[(1) - (1)].strConst);
-			}else{ 
-				string alias(currentBD->get_alias(*(yyvsp[(1) - (1)].strConst))); 
-				Assert( alias != "", "You need to have an alias for "<<*(yyvsp[(1) - (1)].strConst));				
-				(yyval.strConst) = new string( alias ); 				  
-				delete (yyvsp[(1) - (1)].strConst);
-			} 
+#line 444 "InputParser.yy"
+    { 			
+			(yyval.bnode) = currentBD->get_node(*(yyvsp[(1) - (1)].strConst));
+			delete (yyvsp[(1) - (1)].strConst);				
+			 
 		}
     break;
 
   case 65:
-#line 549 "InputParser.yy"
-    {
-	currentBD->create_controls(-1, *(yyvsp[(2) - (3)].strConst));
-	Assert( !currentBD->has_alias(*(yyvsp[(2) - (3)].strConst)), "THIS SHOULD NEVER HAPPEN !!!!!!!!!!!!!!!!");	
-	(yyval.strConst) = (yyvsp[(2) - (3)].strConst);	
+#line 449 "InputParser.yy"
+    {		
+	(yyval.bnode) = currentBD->create_controls(-1, *(yyvsp[(2) - (3)].strConst));
+	delete (yyvsp[(2) - (3)].strConst);
 }
     break;
 
   case 66:
-#line 554 "InputParser.yy"
+#line 453 "InputParser.yy"
     {
 	int nctrls = (yyvsp[(3) - (4)].intConst);
 	if(overrideNCtrls){
 		nctrls = NCTRLS;
 	}
-	currentBD->create_controls(nctrls, *(yyvsp[(2) - (4)].strConst));
-	(yyval.strConst) = (yyvsp[(2) - (4)].strConst);
+	(yyval.bnode) = currentBD->create_controls(nctrls, *(yyvsp[(2) - (4)].strConst));
+	delete (yyvsp[(2) - (4)].strConst);
 }
     break;
 
   case 67:
-#line 562 "InputParser.yy"
+#line 461 "InputParser.yy"
     {
-	currentBD->create_controls((yyvsp[(3) - (5)].intConst), *(yyvsp[(2) - (5)].strConst));
-	(yyval.strConst) = (yyvsp[(2) - (5)].strConst);
+	(yyval.bnode) = currentBD->create_controls((yyvsp[(3) - (5)].intConst), *(yyvsp[(2) - (5)].strConst));
+	delete (yyvsp[(2) - (5)].strConst);
 
 }
     break;
 
   case 68:
-#line 568 "InputParser.yy"
+#line 467 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(1) - (1)].intConst); }
     break;
 
   case 69:
-#line 569 "InputParser.yy"
+#line 468 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(1) - (3)].intConst) + (yyvsp[(3) - (3)].intConst); }
     break;
 
   case 70:
-#line 570 "InputParser.yy"
+#line 469 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(1) - (3)].intConst) - (yyvsp[(3) - (3)].intConst); }
     break;
 
   case 71:
-#line 572 "InputParser.yy"
+#line 471 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(1) - (1)].intConst); }
     break;
 
   case 72:
-#line 573 "InputParser.yy"
+#line 472 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(2) - (3)].intConst); }
     break;
 
   case 73:
-#line 574 "InputParser.yy"
+#line 473 "InputParser.yy"
     { (yyval.intConst) = (yyvsp[(1) - (3)].intConst) * (yyvsp[(3) - (3)].intConst); }
     break;
 
   case 74:
-#line 575 "InputParser.yy"
+#line 474 "InputParser.yy"
     { Assert( (yyvsp[(3) - (3)].intConst) != 0, "You are attempting to divide by zero !!");
 							      (yyval.intConst) = (yyvsp[(1) - (3)].intConst) / (yyvsp[(3) - (3)].intConst); }
     break;
 
   case 75:
-#line 577 "InputParser.yy"
+#line 476 "InputParser.yy"
     { Assert( (yyvsp[(3) - (3)].intConst) != 0, "You are attempting to mod by zero !!");
 							      (yyval.intConst) = (yyvsp[(1) - (3)].intConst) % (yyvsp[(3) - (3)].intConst); }
     break;
 
   case 76:
-#line 581 "InputParser.yy"
+#line 480 "InputParser.yy"
     {  (yyval.intConst) = (yyvsp[(1) - (1)].intConst); }
     break;
 
   case 77:
-#line 582 "InputParser.yy"
+#line 481 "InputParser.yy"
     {  (yyval.intConst) = -(yyvsp[(2) - (2)].intConst); }
     break;
 
   case 78:
-#line 585 "InputParser.yy"
+#line 484 "InputParser.yy"
     {  (yyval.intConst) = (yyvsp[(1) - (1)].intConst); }
     break;
 
   case 79:
-#line 586 "InputParser.yy"
+#line 485 "InputParser.yy"
     { (yyval.intConst) = 1; }
     break;
 
   case 80:
-#line 587 "InputParser.yy"
+#line 486 "InputParser.yy"
     { (yyval.intConst) = 0; }
     break;
 
   case 81:
-#line 589 "InputParser.yy"
+#line 488 "InputParser.yy"
     { (yyval.strConst)=(yyvsp[(1) - (1)].strConst); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2301 "InputParser.cpp"
+#line 2199 "InputParser.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2511,7 +2409,7 @@ yyreturn:
 }
 
 
-#line 591 "InputParser.yy"
+#line 490 "InputParser.yy"
 
 
 

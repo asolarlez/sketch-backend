@@ -6,6 +6,14 @@
 
 InterpreterEnvironment::~InterpreterEnvironment(void)
 {
+	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+		it->second->clear();
+		delete it->second;
+	}
+	bgproblem->clear();
+	delete bgproblem;
+	delete finder;
+	delete _pfind;
 }
 
 int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist){
@@ -159,7 +167,9 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	OneCallPerCSiteInliner fin;
 	DagFunctionInliner dfi(dag, functionMap, &fin);	
 	int oldSize = -1;
+	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
+		int t = 0;
 		do{
 			dfi.process(dag);
 			set<string>& dones = dfi.getFunsInlined();
@@ -171,9 +181,11 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				}				
 			}
 			oldSize = dag.size();
+			++t;
 		}while(dfi.changed());
 		// fin.ctt.printCtree(cout, dag);
 		fin.clear();
+		if(t==1){ break; }
 	}
 	{		
 		DagFunctionToAssertion makeAssert(dag, functionMap);
@@ -195,12 +207,16 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 			bgproblem->andDag(dag->clone());			
 			//bgproblem = runOptims(bgproblem);
 		}else{
+			bgproblem->repOK();
+			dag->repOK();
 			bgproblem->andDag(dag);
+			bgproblem->repOK();
 			bgproblem = runOptims(bgproblem);
+			bgproblem->repOK();
 			problem = bgproblem;
 		}
 	}
-
+	problem->repOK();
 	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
 	SolverHelper check(*checker);
 	CEGISSolver solver(problem, *finder, check, params.seedsize, INp::NINPUTS);
@@ -280,9 +296,10 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		//cse.alterARRACS();
 		cse.process(*result);
 	}
+	result->repOK();
 
 	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<result->size()<<endl;	}
-
+	// result->lprint(cout);
 	if(params.olevel >= 5){
 		BackwardsAnalysis opt;
 		//cout<<"BEFORE: "<<endl;
@@ -291,12 +308,12 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		// cout<<"AFTER: "<<endl;
 		// result->print(cout);
 	}
-
+	result->repOK();
 	if(params.olevel >= 8){
 		DagOptimizeCommutAssoc opt;
 		opt.process(*result);
 	}
-
+	result->repOK();
 	//result->print(cout) ;
 
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
@@ -309,7 +326,8 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		}
 		cse.process(*result);
 	}
-	
+	result->repOK();
+	// result->lprint(cout);
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}
 	if(params.showDAG){ 
 		result->print(cout);

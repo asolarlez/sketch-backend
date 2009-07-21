@@ -106,7 +106,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 37 "InputParser.yy"
+#line 28 "InputParser.yy"
 {
 	int intConst;
 	bool boolConst;
@@ -117,9 +117,10 @@ typedef union YYSTYPE
 	list<string*>* sList;
 	vartype variableType;
 	BooleanDAG* bdag;
+	bool_node* bnode;
 }
 /* Line 1489 of yacc.c.  */
-#line 123 "InputParser.hpp"
+#line 124 "InputParser.hpp"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

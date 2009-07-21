@@ -30,7 +30,7 @@ class InterpreterEnvironment
 	map<string, int> currentControls;
 	BooleanDAG * bgproblem;
 	SolverHelper* finder;
-
+	SATSolver* _pfind;
 	int assertionStep;
 	string sessionName;
 	string findName(){
@@ -67,7 +67,8 @@ class InterpreterEnvironment
 
 public:
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
-		finder = new SolverHelper(*SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName()));
+		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
+		finder = new SolverHelper(*_pfind);
 		sessionName = procFname(params.inputFname);			  
 	}
 	
@@ -78,6 +79,9 @@ public:
 	BooleanDAGCreator* newFunction(const string& name){
 		BooleanDAG* tmp = new BooleanDAG(name);
 		cout<<"CREATING "<<name<<endl;
+		if(functionMap.count(name)>0){
+			delete functionMap[name];
+		}
 		functionMap[name] = tmp;
 		return new BooleanDAGCreator(tmp);		
 	}

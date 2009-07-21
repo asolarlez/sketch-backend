@@ -24,9 +24,9 @@ printStats ()
     statistics::MemoryStatistics ms = mem.getMemStats ();
 
     cout << endl << "----- Statistics -----" << endl
-         << "Total elapsed time (ms):  " << totalElapsed.get_cur_ms () << endl
-         << "Model building time (ms): " << modelBuilding.get_cur_ms () << endl
-         << "Solution time (ms):       " << solution.get_cur_ms () << endl
+         << "Total elapsed time (ms):  " << totalElapsed.get_tot_ms () << endl
+         << "Model building time (ms): " << modelBuilding.get_tot_ms () << endl
+         << "Solution time (ms):       " << solution.get_tot_ms () << endl
         // we might get more memory stats, but these are most interesting
          << "Max virtual mem (bytes):  " << ms.total << endl
          << "Max resident mem (bytes): " << ms.resident << endl

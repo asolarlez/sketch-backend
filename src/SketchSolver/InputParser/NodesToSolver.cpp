@@ -1275,6 +1275,10 @@ bool NodesToSolver::checkParentsChanged(bool_node& node, bool more){
 	if(( node.father== NULL || !node.father->flag ) &&
 			( node.mother== NULL || !node.mother->flag )&&
 			more
-			){ node.flag =false; return false || dir.ignoreOld(); }else{ node.flag = true; return true;}
+			){ 
+				node.flag =false; return false || dir.ignoreOld(); 
+	}else{ 
+		node.flag = true; return true;
+	}
 }
 

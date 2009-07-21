@@ -6,19 +6,10 @@ BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
-string *comparisson (string *p1, string *p2, bool_node::Type atype)
+bool_node *comparisson (bool_node *p1, bool_node *p2, bool_node::Type atype)
 {
-    Assert (p1 || p2, "Can't have both comparisson's children NULL");
-   
-    string s1 = currentBD->new_name();
-    
-    currentBD->new_node((p1 ? *p1 : ""), 
-			(p2 ? *p2 : ""), atype, s1); 
-    if (p1)
-	delete p1;
-    if (p2)
-	delete p2;
-    return new string(s1); 
+    Assert (p1 || p2, "Can't have both comparisson's children NULL");   
+    return currentBD->new_node(p1, p2, atype);     
 }
 
 
@@ -44,6 +35,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 	list<string*>* sList;
 	vartype variableType;
 	BooleanDAG* bdag;
+	bool_node* bnode;
 }
 
 %token <doubleConst> T_dbl
@@ -84,8 +76,8 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %type<intConst> Program
 %type<strConst> Ident
 %type<intConst> WorkStatement
-%type<strConst> Expression
-%type<strConst> Term
+%type<bnode> Expression
+%type<bnode> Term
 %type<intConst> NegConstant
 %type<intConst> Constant
 %type<intConst> ConstantExpr
@@ -197,7 +189,7 @@ AssertionExpr: T_ident T_Sketches T_ident
 	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
 }
 
-HLAssertion: T_assert {solution.start();} AssertionExpr ';'
+HLAssertion: T_assert {solution.restart();} AssertionExpr ';'
 {
 	int tt = envt->assertDAG($3, std::cout);
 	envt->printControls("");
@@ -236,8 +228,7 @@ WorkBody:  { /* Empty */ }
 
 WorkStatement:  ';' {  $$=0;  /* */ }
 | T_ident '=' Expression ';' {
-	currentBD->alias( *$1, *$3);
-	delete $3;
+	currentBD->alias( *$1, $3);
 	delete $1;
 }							  
 | '$' IdentList T_twoS varList '$''[' Expression ']' '=' Expression ';' {
@@ -249,42 +240,34 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	list<bool_node*>::reverse_iterator oldit = oldchilds->rbegin();
 	
 	bool_node* rhs;
-	rhs = currentBD->get_node(*$10);
+	rhs = $10;
 	int bigN = childs->size();
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
-	for(int i=0; i<bigN; ++i, ++it, ++oldit){
-		string s1( currentBD->new_name() );
+	for(int i=0; i<bigN; ++i, ++it, ++oldit){		
 		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newArithNode(arith_node::ARRASS));
 		an->multi_mother.reserve(2);
 		an->multi_mother.push_back(*oldit);			
 		an->multi_mother.push_back(rhs);
-		an->name = s1;
 		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
 		Assert($7 != NULL, "1: THIS CAN'T HAPPEN!!");
-		an->quant = i;
-		currentBD->new_node(*$7,  "",  an);
-		currentBD->alias( *(*it), s1);
+		an->quant = i;		
+		currentBD->alias( *(*it), currentBD->new_node($7,  NULL,  an) );
 		delete *it;
 	}
 	delete childs;
-	delete oldchilds;
-	delete $7;
-	delete $10;
+	delete oldchilds;	
 }
+
 | T_OutIdent '=' Expression ';' {
-	currentBD->create_outputs(NINPUTS, currentBD->get_node(*$3), *$1);
-	delete $3;
+	currentBD->create_outputs(NINPUTS, $3, *$1);
 	delete $1;
 }
 | T_assert Expression ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
-
-    string s = currentBD->new_name ();
-    currentBD->new_node (*$2, "", bool_node::ASSERT, s);
-
-    delete $2;
+    
+    currentBD->new_node ($2, NULL, bool_node::ASSERT);
   }
 } 
 | T_assert Expression ':' T_string ';' {
@@ -293,10 +276,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 
     ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
     bn->setMsg(*$4);
-    currentBD->new_node (*$2, "", bn);
-    
-
-    delete $2;
+    currentBD->new_node ($2, NULL, bn);
     delete $4;
   }
 } 
@@ -304,53 +284,29 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 
 Expression: Term { $$ = $1; }
 | Term '&' Term {
-	string s = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::AND, s);
-	$$ = new string(s);
-	delete $1;
-	delete $3;	  					  
+	$$ = currentBD->new_node($1,  $3, bool_node::AND);	
 }
 | Term T_and Term{
-	string s = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::AND, s);
-	$$ = new string(s);
-	delete $1;
-	delete $3;	  					  
+	$$ = currentBD->new_node($1,  $3, bool_node::AND);
 }
 | Term '|' Term {
-	string s = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::OR, s);
-	$$ = new string(s);
-	delete $1;
-	delete $3;		  					  
+	$$ = currentBD->new_node($1,  $3, bool_node::OR);	
 }
 | Term T_or Term { 	
-	string s = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::OR, s);
-	$$ = new string(s);
-	delete $1;
-	delete $3;
+	$$ = currentBD->new_node($1,  $3, bool_node::OR);	
 }
 | Term '^' Term{	
-	string s = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::XOR, s);
-	$$ = new string(s);
-	delete $1;
-	delete $3;
+	$$ = currentBD->new_node($1,  $3, bool_node::XOR);	
 }
 | Term T_neq Term{	
-	string* tmp = comparisson($1, $3, bool_node::EQ);
-    string s = currentBD->new_name ();
-    currentBD->new_node (*tmp, "", bool_node::NOT, s);
-    delete tmp;
-    $$ = new string(s);
+	bool_node* tmp = currentBD->new_node($1,  $3, bool_node::EQ);
+	$$ = currentBD->new_node (tmp, NULL, bool_node::NOT);	
 }
 | Term T_eq Term { 			
-	$$ = comparisson($1, $3, bool_node::EQ);
+	$$ = currentBD->new_node($1,  $3, bool_node::EQ);
 }
 | '$' varList '$' '[' Expression ']' {
 	int pushval = 0;
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ARRACC);
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
@@ -359,16 +315,12 @@ Expression: Term { $$ = $1; }
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
 	}		
-	Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");
-	an->name = s1;
-	currentBD->new_node(*$5, "",  an); 
-	$$ = new string(s1);
-	delete childs;
-	delete $5;
+	Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");	
+	$$ = currentBD->new_node($5, NULL,  an);
+	delete childs;	
 }
 
 | T_twoS varList T_twoS {
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ACTRL);
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
@@ -376,52 +328,29 @@ Expression: Term { $$ = $1; }
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-	}	
-	an->name = s1;
-	currentBD->new_node("", "", an); 
-	$$ = new string(s1);  
+	}		
+	$$ = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
 }
 
 | Term '+' Term {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::PLUS, s1); 
-	delete $1;
-	delete $3;
-	$$ = new string(s1); 
+	$$ = currentBD->new_node($1,  $3, bool_node::PLUS); 	
 }
 
-| Term '/' Term {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::DIV, s1); 
-	delete $1;
-	delete $3;
-	$$ = new string(s1); 
+| Term '/' Term {	
+	$$ = currentBD->new_node($1,  $3, bool_node::DIV); 	
 }
 
-| Term '%' Term {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::MOD, s1); 
-	delete $1;
-	delete $3;
-	$$ = new string(s1); 
+| Term '%' Term {	
+	$$ = currentBD->new_node($1,  $3, bool_node::MOD); 	
 }
 
 | Term '*' Term {
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*$1,  *$3, bool_node::TIMES, s1); 
-	delete $1;
-	delete $3;
-	$$ = new string(s1); 
+	$$= currentBD->new_node($1,  $3, bool_node::TIMES);
 }
 | Term '-' Term {
-	string neg1 = currentBD->new_name();
-	string s1 = currentBD->new_name();
-	currentBD->new_node(*$3, "", bool_node::NEG, neg1);
-	currentBD->new_node(*$1, neg1, bool_node::PLUS, s1); 
-	delete $1;
-	delete $3;
-	$$ = new string(s1);
+	bool_node* neg1 = currentBD->new_node($3, NULL, bool_node::NEG);
+	$$ = currentBD->new_node($1, neg1, bool_node::PLUS); 	
 }
 | Term '>' Term {
 	$$ = comparisson($1, $3, bool_node::GT);
@@ -436,18 +365,12 @@ Expression: Term { $$ = $1; }
 	$$ = comparisson($1, $3, bool_node::LE);
 }
 | Expression '?' Expression ':' Expression {
-	string s1 = currentBD->new_name();
 	arith_node* an = newArithNode(arith_node::ARRACC);
-	bool_node* yesChild = currentBD->get_node(*$3);
-	bool_node* noChild = currentBD->get_node(*$5);
+	bool_node* yesChild =($3);
+	bool_node* noChild = ($5);
 	an->multi_mother.push_back( noChild );
-	an->multi_mother.push_back( yesChild );
-	$$ = new string(s1);
-	an->name = s1;
-	currentBD->new_node(*$1, "", an); 
-	delete $1; 
-	delete $3; 
-	delete $5; 		  					  
+	an->multi_mother.push_back( yesChild );	
+	$$ = currentBD->new_node($1, NULL, an); 	
 } 
 
 
@@ -456,8 +379,7 @@ varList: { /* Empty */  	$$ = new list<bool_node*>();	}
 | Term varList{
 //The signs are already in the stack by default. All I have to do is not remove them.
 	if($1 != NULL){
-		$2->push_back( currentBD->get_node(*$1) );
-		delete $1;
+		$2->push_back( $1 );
 	}else{
 		$2->push_back( NULL );
 	}
@@ -474,7 +396,7 @@ IdentList: T_ident {
 }
 
 Term: Constant {
-	$$ = new string(currentBD->create_const($1));
+	$$ = currentBD->create_const($1);
 }	 
 
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' {
@@ -482,12 +404,11 @@ Term: Constant {
 	list<bool_node*>* params = $6;
 	if(false && params->size() == 0){
 		if( $3 == INT){
-			currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+			$$ = currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
 		}else{
-
-			currentBD->create_inputs(-1, *$1);
+			$$ = currentBD->create_inputs(-1, *$1);
 		}
-		$$ = $1;
+		delete $1;
 	}else{	
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
@@ -502,66 +423,44 @@ Term: Constant {
 	
 			ufun->set_nbits( 1  );
 		}
-		
 				
-		string s1;
-		{			
-			s1 = currentBD->new_name(fname);
-		}
-		ufun->name = s1;
-		currentBD->new_node(*$9, "", ufun);
-		
-		$$ = new string(s1);
+		ufun->name = (currentBD->new_name(fname));
+		$$ = currentBD->new_node($9, NULL, ufun);
 		delete $1;
 	}
 	delete $6;
-	delete $9;
 }
 
-| '-' Term {
-	string neg1 = currentBD->new_name();	
-	currentBD->new_node(*$2, "", bool_node::NEG, neg1);	
-	delete $2;
-	$$ = new string(neg1);
+| '-' Term {	
+	$$ = currentBD->new_node($2, NULL, bool_node::NEG);		
 }
 | '!' Term { 
-    /* Check the Boolean coefficient of the term, being either 0 (false) or 1 (true). */
-    /* Generate an alternating NOT node, push a unit (true) coefficient. */
-    string s = currentBD->new_name ();
-    currentBD->new_node (*$2, "", bool_node::NOT, s);
-    $$ = new string (s);
-    delete $2;
+	$$ = currentBD->new_node($2, NULL, bool_node::NOT);		    
 }
 
 | '(' Expression ')' { 
 						$$ = $2; 
 						}
-| Ident { 
-			if( !currentBD->has_alias(*$1) ){ 
-				$$ = $1;
-			}else{ 
-				string alias(currentBD->get_alias(*$1)); 
-				Assert( alias != "", "You need to have an alias for "<<*$1);				
-				$$ = new string( alias ); 				  
-				delete $1;
-			} 
+| Ident { 			
+			$$ = currentBD->get_node(*$1);
+			delete $1;				
+			 
 		}
-| '<' Ident '>' {
-	currentBD->create_controls(-1, *$2);
-	Assert( !currentBD->has_alias(*$2), "THIS SHOULD NEVER HAPPEN !!!!!!!!!!!!!!!!");	
-	$$ = $2;	
+| '<' Ident '>' {		
+	$$ = currentBD->create_controls(-1, *$2);
+	delete $2;
 }
 | '<' Ident Constant '>' {
 	int nctrls = $3;
 	if(overrideNCtrls){
 		nctrls = NCTRLS;
 	}
-	currentBD->create_controls(nctrls, *$2);
-	$$ = $2;
+	$$ = currentBD->create_controls(nctrls, *$2);
+	delete $2;
 }
 | '<' Ident Constant '*' '>' {
-	currentBD->create_controls($3, *$2);
-	$$ = $2;
+	$$ = currentBD->create_controls($3, *$2);
+	delete $2;
 
 }
 

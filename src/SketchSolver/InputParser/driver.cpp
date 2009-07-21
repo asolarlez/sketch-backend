@@ -81,6 +81,7 @@ void Driver::parseInput(){
 			cerr<<"\n*** Rejected\n";
 			exit(1);
 		}
+		delete INp::envt;
 	}catch(BasicError& be){
 		  cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
 		  exit(1);
