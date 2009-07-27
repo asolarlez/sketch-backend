@@ -139,10 +139,12 @@ void BackwardsAnalysis::visit( AND_node& node ){
 
 	t.push(Datum(node.mother));
 	bool_node* ffather = modifyNode(node.father, t);
-	t.pop();
+	set<Datum> info;
+	t.pop(info);
 	
 	
 	t.push(Datum(node.father));
+	t.filter(info);
 	bool_node* fmother = modifyNode(node.mother, t);
 	t.pop();
 
@@ -229,10 +231,12 @@ void BackwardsAnalysis::visit( OR_node& node ){
 
 	t.push(Datum(node.mother, 0));
 	bool_node* ffather = modifyNode(node.father, t);
-	t.pop();
+	set<Datum> info;
+	t.pop(info);
 
 
 	t.push(Datum(node.father, 0));
+	t.filter(info);
 	bool_node* fmother = modifyNode(node.mother, t);
 	t.pop();
 

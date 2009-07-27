@@ -125,7 +125,7 @@ class Info{
 	typedef enum{ BOTTOM, MIDDLE, TOP} State;
 	State state;
 	int hasD;
-	Datum temp;
+	set<Datum> temp;
 
 public:
 	Info(){
@@ -150,22 +150,47 @@ public:
 
 	void push(const Datum& d){
 		Assert(!hasD, "Only one datum can be pushed at a time");
-		temp = d;
+		temp.insert(d);
+		if(d.hasDerivedDatums()){
+			d.addDerivedDatums(temp);
+		}
 		hasD = true;
 	}
 
 	void pop(){
 		Assert(hasD, "Only one datum can be pushed at a time");
 		hasD = false;
+		temp.clear();
 	}
- 
-	bool getValue(bool_node* node, int& out){
-		if(hasD && temp.node == node){
-			out = temp.val;
-			return true;
+
+	void filter(set<Datum>& filter){
+		Assert(hasD, "This is to filter temp, so hadD must be true");
+		set<Datum>::iterator fit = filter.begin();
+		set<Datum>::iterator tit = temp.begin();
+		while(tit != temp.end()){
+			while(fit != filter.end() &&  fit->node->id < tit->node->id){
+				++fit;
+			}
+			if(fit == filter.end()){ return; }
+			while(tit != temp.end() && fit->node->id == tit->node->id){
+				temp.erase(tit++);
+			}
+			while(tit != temp.end() && fit->node->id > tit->node->id){
+				++tit;
+			}
 		}
-		set<Datum>::iterator iter = known.lower_bound(Datum(node, INT_MIN));
-		if(iter == known.end()){ return false; }
+	}
+
+	void pop(set<Datum>& out){
+		Assert(hasD, "Only one datum can be pushed at a time");
+		Assert(out.size()==0, "The out should be empty");
+		hasD = false;
+		swap(out, temp);
+	}
+
+	bool seek(bool_node* node, set<Datum>& ds, int& out){
+		set<Datum>::iterator iter = ds.lower_bound(Datum(node, INT_MIN));
+		if(iter == ds.end()){ return false; }
 		if(node->type == bool_node::NOT){
 				if(iter->node == node->mother){ 
 					out = iter->val; 
@@ -180,7 +205,14 @@ public:
 		}
 		return false;
 	}
-
+ 
+	bool getValue(bool_node* node, int& out){
+		if(hasD && seek(node, temp, out)){			
+			return true;
+		}
+		return seek(node, known, out);		
+	}
+	/*
 	Info& add(bool_node* node, int val){
 		int tmp;
 		Assert(!getValue(node, tmp), "Node should not already be here");
@@ -192,35 +224,29 @@ public:
 		Assert(!getValue(node, tmp), "Node should not already be here");
 		known.insert(Datum(node));
 	}
-
+	*/
 
 	Info& operator+=(const Info& inf){
 		Assert(!hasD, "This shouldn't happen");
-		if(state == BOTTOM || inf.state == BOTTOM){
+		if(state==BOTTOM){
 			if(inf.state != BOTTOM || inf.hasD){
 				Assert( (!inf.hasD) || state==BOTTOM, "This is a bug!!");
 				state = MIDDLE;
 				known = inf.known;
 				if(inf.hasD){
-					known.insert(inf.temp);
-					inf.temp.addDerivedDatums(known);
+					known.insert(inf.temp.begin(), inf.temp.end());
 				}
 			}
 		}else{
 			set<Datum> tmp;
-			if(inf.hasD && inf.temp.hasDerivedDatums()){
+			if(inf.hasD){
 				set<Datum> sd = inf.known;
-				sd.insert(inf.temp);
-				inf.temp.addDerivedDatums(sd);
+				sd.insert(inf.temp.begin(), inf.temp.end());
 				set_intersection(known.begin(), known.end(), sd.begin(), sd.end(), inserter(tmp, tmp.begin()));
 				swap(tmp, known);
-			}else{
-				bool contains = inf.hasD && known.count(inf.temp)>0;
+			}else{				
 				set_intersection(known.begin(), known.end(), inf.known.begin(), inf.known.end(), inserter(tmp, tmp.begin()));
-				swap(tmp, known);
-				if(contains){
-					known.insert(inf.temp);
-				}
+				swap(tmp, known);				
 			}
 			state = MIDDLE;
 		}
