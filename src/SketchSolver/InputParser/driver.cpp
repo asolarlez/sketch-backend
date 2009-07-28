@@ -107,11 +107,9 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 
 	SolverHelper f(*finder);
 	SolverHelper ch(*checker);
-	SFIOutputSeq solver(out, miter, f, ch, params.seedsize, INp::NINPUTS, rest, skOri);
+	SFIOutputSeq solver(out, miter, f, ch, params, rest, skOri);
   						   
-	if(params.printDiag){
-		solver.activatePrintDiag();	
-	}
+	
   	
 	if(params.outputEuclid){      		
 		ofstream fout("bench.ucl");
@@ -128,17 +126,12 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 	}
   	
   	
-	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
 	if( params.hasCpt ){ 
 		string fname = params.cptfile;
 		fname += "_";
 		fname += name;
 		solver.setCheckpoint(fname);
 		}
-	if(params.seed >= 0){
-		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
-		solver.set_randseed(params.seed);
-	}
 	solver.setup();
 	int solveCode = 0;
 	try{

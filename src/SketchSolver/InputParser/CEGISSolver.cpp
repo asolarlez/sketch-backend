@@ -1,6 +1,5 @@
 #include "CEGISSolver.h"
 #include "timerclass.h"
-#include <ctime>
 #include <queue>
 #include "CommandLineArgs.h"
 #include "Tvalue.h"
@@ -12,17 +11,13 @@
 
 extern CommandLineArgs* PARAMS;
 
-CEGISSolver::CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, int p_nseeds, int NINPUTS_p):
+CEGISSolver::CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args):
 dirFind(finder), 
 dirCheck(checker), 
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
-printDiag(false),
-nseeds(p_nseeds),
-NINPUTS(NINPUTS_p),
-iterlimit(-1),
-randseed(time(NULL))
+params(args)
 {
 	problemStack.push(miter);
 	BooleanDAG* problem = miter;
@@ -66,7 +61,7 @@ void CEGISSolver::setup(){
 	BooleanDAG* problem = getProblem();
 	int totSize = problem->size();
 	
-	cout<<"Random seeds = "<<nseeds<<endl;	
+	cout<<"Random seeds = "<<params.nseeds<<endl;	
 	
 	for(BooleanDAG::iterator node_it = problem->begin(); node_it != problem->end(); ++node_it){
 		(*node_it)->flag = true;
@@ -105,9 +100,9 @@ bool CEGISSolver::solve(){
 		cout<<"inputSize = "<<inputStore.getBitsize()<<"\tctrlSize = "<<ctrlStore.getBitsize()<<endl;
 	}
 	
-	srand(randseed);
+	srand(params.randseed);
 	inputStore.makeRandom();
-	for(int ns = 0; ns < (nseeds-1); ++ns){			
+	for(int ns = 0; ns < (params.nseeds-1); ++ns){			
 		cout<<"!%";	inputStore.printBrief(cout); cout<<endl;
                 // NOTE - newer gcc (4.4) won't accept T --> T& if a variable isn't assigned
                 std::vector<int, std::allocator<int> > instore_serialized =
@@ -148,7 +143,7 @@ bool CEGISSolver::solveCore(){
 				break;
 			}
 		}
-		print_control_map(cout);
+		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
 			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
@@ -158,11 +153,11 @@ bool CEGISSolver::solveCore(){
 			doMore = check(ctrlStore, inputStore);
 			 ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }
-			if(doMore && PARAMS->olevel >= 7){ abstractProblem(); }
+			if(doMore && params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 		}
 		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
 		++iterations;
-		if( iterlimit > 0 && iterations >= iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
+		if( params.iterlimit > 0 && iterations >= params.iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 	}
 	ttimer.stop();
 	if(!fail){
@@ -178,7 +173,7 @@ bool CEGISSolver::solveCore(){
 
 void CEGISSolver::addInputsToTestSet(VarStore& input){
 	map<bool_node*,  int> node_values;
-	bool specialize = PARAMS->olevel >= 7;
+	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
 	if(!specialize){
 		bool sameProblem = getProblem() == lastFproblem;//indicates whether this is the same problem as last time.
@@ -294,7 +289,7 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		mng.setVarClause(YES);
 		
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);		
-		nts.process(*getProblem());		
+		nts.process(*getProblem());				
 		timer.stop();
 		if(PARAMS->verbosity > 2){ timer.print(); }
 	}
@@ -328,7 +323,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 	
 //Solve
 	int result = mngFind.solve();
-	if(printDiag){
+	if(params.printDiag){
 	  	cout<<"# FIND DIAGNOSTICS"<<endl;
 		printDiagnostics(mngFind, 'f');
 	}
@@ -505,7 +500,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				break;
 			}
 		}
-	}while(iter < 4);
+	}while(iter < params.simiters);
 	tc.stop().print("didn't find a cex");	
 	{
 		BackwardsAnalysis ba;
@@ -543,7 +538,7 @@ bool CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag){
 	for(int i=0; i<specIn.size(); ++i){			
 		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 		int nbits = srcnode->get_nbits();
-		if(nbits < NINPUTS  && nbits >= 2){
+		if(nbits < params.NINPUTS  && nbits >= 2){
 			gnbits = gnbits < (nbits+1) ? (nbits+1) : gnbits;			
 			declareInput(specIn[i]->get_name(), nbits+1);
 			srcnode->set_nbits(nbits+1);
@@ -568,23 +563,32 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	BooleanDAG* oriProblem = getProblem();
 	bool dot = true;
 	bool pushedNewP = false;
-	/*while(problemLevel() != 1){
-		if(PARAMS->verbosity > 2){ 
-			cout<<" * Cleaning up alternative problem level "<<problemLevel()<<endl;
+	if(input.getBitsize()==0){
+		cout<<"no cex"<<endl;
+		return false;
+	}
+	if(params.simplifycex==CEGISparams::SIMSIM){
+		while(problemLevel() != 1){
+			if(PARAMS->verbosity > 2){ 
+				cout<<" * Cleaning up alternative problem level "<<problemLevel()<<endl;
+			}
+			popProblem();
 		}
-		popProblem();
-	}*/
+	}
 	int plevel = problemLevel();
 	do{		
-		if(PARAMS->olevel >= 7 && dot){
+		if(PARAMS->olevel >= 6 && dot){
 			oriProblem = getProblem();
 			pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));
 			//getProblem()->lprint(cout);
 			pushedNewP = true;
 			dot = false;
 		}
-		rv = simulate(controls, input);	
-		//rv = baseCheck(controls, input);		
+		if(params.simulate){
+			rv = simulate(controls, input);	
+		}else{
+			rv = baseCheck(controls, input);
+		}
 		if(!rv){			
 			if(plevel == 1){
 				//In this case, we are at the top, so if it succeeds we grow.							
@@ -595,7 +599,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 						popProblem();
 						dot =true;
 					}
-					if(PARAMS->verbosity > 2){ cout<<"* Done growing inputs. All integer inputs have reached size "<<NINPUTS<<endl; }
+					if(PARAMS->verbosity > 2){ cout<<"* Done growing inputs. All integer inputs have reached size "<<params.NINPUTS<<endl; }
 					 return false;
 				}				
 			}else{
@@ -636,7 +640,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	
     int result = mngCheck.solve();
 	//dirCheck.printAllVars();
-    if(printDiag){
+    if(params.printDiag){
 	    cout<<"# CHECK DIAGNOSTICS"<<endl;
 		printDiagnostics(mngCheck, 'c');
     }
@@ -709,7 +713,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 	
 	cout<<"inputSize = "<<inputSize<<"\tctrlSize = "<<ctrlSize<<endl;
 	
-	srand(randseed);
+	srand(params.randseed);
 	int maxSize = (ctrlSize>inputSize? ctrlSize : inputSize)+2;
 
 	char* buff = new char[maxSize];
@@ -796,19 +800,15 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 
 
 void CEGISSolver::printDiagnostics(){
-	if(printDiag){
 		cout<<"# STATS FOR FINDER"<<endl;
 		printDiagnostics(this->mngFind, 'f');	
 		cout<<"# STATS FOR CHECKER"<<endl;
-		printDiagnostics(this->mngCheck, 'c');
-	}
+		printDiagnostics(this->mngCheck, 'c');	
 }
 
 
 void CEGISSolver::printDiagnostics(SATSolver& mng, char c){
-	if(printDiag){
    		mng.printDiagnostics(c);
-	}
 }
 
 void CEGISSolver::print_control_map(ostream& out){

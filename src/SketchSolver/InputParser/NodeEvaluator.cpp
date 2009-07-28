@@ -138,6 +138,13 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	return failedAssert;
 }
 
+void NodeEvaluator::display(ostream& out){
+	for(int i=0; i<values.size(); ++i){
+		cout<<"AVALS= "<<bdag[i]->lprint()<<"	v="<<values[i]<<endl;
+	}
+}
+
+
 int NodeEvaluator::scoreNodes(){
 	int i=0;
 	int maxcount = -10;

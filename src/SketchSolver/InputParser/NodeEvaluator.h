@@ -66,6 +66,7 @@ public:
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ASSERT_node &node);		
 	bool run(VarStore& inputs_p);
+	void display(ostream& out);
 	int scoreNodes();
 	void trackChanges(){
 		trackChange = true;

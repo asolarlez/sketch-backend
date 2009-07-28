@@ -8,7 +8,6 @@
 namespace INp{
 extern  int NCTRLS;
 extern  bool overrideNCtrls;
-extern  int NINPUTS;
 extern  bool overrideInputs;
 }
 
@@ -34,6 +33,7 @@ class CommandLineArgs{
   int timeout;
   int verbosity;
   bool showInputs;
+  bool showControls;
   bool showDAG;
   bool ufunSymmetry;
   string inputFname;
@@ -42,6 +42,10 @@ class CommandLineArgs{
   bool interactive;
   int olevel;
   bool assumebcheck;
+  int NINPUTS;
+  bool simulate;
+  int simiters;
+  string simplifycex;
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -63,16 +67,37 @@ class CommandLineArgs{
 		mergeFunctions = false;
 		verbosity = 0;
 		showInputs = false;
+		showControls = false;
 		showDAG = false;
 		ufunSymmetry = false;
 		alterARRACS = false;
 		interactive = false;
 		assumebcheck = false;
-		olevel = 5;
-
-
+		olevel = 6;
+		NINPUTS = 5;
+		simulate = true;
+		simiters = 3;
+		string simplifycex = "RECSYM";
 
 	  for(int ii=0; ii<argc; ++ii){
+	    if( string(argv[ii]) == "-nosim" ){	      
+	      simulate = false;
+	      input_idx = ii+1;
+	    }
+		if( string(argv[ii]) == "-simiters" ){
+	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
+	      simiters = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+	    }
+
+		if( string(argv[ii]) == "-simplifycex" ){
+	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      simplifycex = argv[ii+1];	  
+		  Assert(simplifycex == "NOSYM" || simplifycex == "SYMSYM" || simplifycex=="RECSYM", 
+			  "The argument to simplifycex should be one of \n NOSYM = no simplify \n SIMSIM = simple simplify \n RECSIM = recursive simplify ");
+	      input_idx = ii+2;
+	    }
+
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
 	      seedsize = atoi(argv[ii+1]);
@@ -121,7 +146,10 @@ class CommandLineArgs{
 	    	showInputs = true;
 	      input_idx = ii+1;      
 	    }
-		
+		if( string(argv[ii]) == "-showctrls" ){
+	    	showControls = true;
+	      input_idx = ii+1;      
+	    }
 		if( string(argv[ii]) == "-interactive" ){
 	    	interactive = true;
 	      input_idx = ii+1;      
@@ -157,9 +185,9 @@ class CommandLineArgs{
 	    }
 	    if( string(argv[ii]) == "-overrideInputs" ){
 	      Assert(ii<(argc-1), "-overrideInputs needs an extra parameter");
-	      INp::NINPUTS= atoi(argv[ii+1]);
+	      NINPUTS= atoi(argv[ii+1]);
 		  INp::overrideInputs=true;
-		  cout<<"Overriding inputs with "<<INp::NINPUTS<<endl;
+		  cout<<"Overriding inputs with "<<NINPUTS<<endl;
 	      input_idx = ii+2;      
 	    }
 	    if( string(argv[ii]) == "-checkpoint" ){

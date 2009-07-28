@@ -6,7 +6,60 @@
 #include "Tvalue.h"
 #include "Checkpointer.h"
 #include "VarStore.h"
+#include "CommandLineArgs.h"
 #include <stack>
+#include <ctime>
+
+
+class CEGISparams{
+public:
+	int randseed;
+	int iterlimit;
+	bool printDiag;
+	int NINPUTS;
+	int nseeds;
+
+	bool simulate;
+	int simiters;
+
+	typedef enum{ NOSIM /*no simplify*/, SIMSIM/*simple simplify*/, RECSIM/*recursive simplify*/} simtype;
+	simtype simplifycex;
+
+	CEGISparams(CommandLineArgs& args):
+		printDiag(false),
+		nseeds(1),
+		NINPUTS(3),
+		iterlimit(-1),
+		randseed(time(NULL)),
+		simulate(true),
+		simiters(3),
+		simplifycex(RECSIM)
+	{
+		printDiag = args.printDiag;
+		nseeds = args.seedsize;		
+		NINPUTS = args.NINPUTS;
+		if(args.terminateafter > 0){
+			iterlimit = args.terminateafter;
+		}
+		if(args.seed >= 0){
+			randseed = args.seed;			
+		}
+		cout<<"SOLVER RAND SEED = "<<randseed<<endl;
+		simulate = args.simulate;
+		simiters = args.simiters;
+		if(args.simplifycex == "NOSIM"){ simplifycex = NOSIM; }
+		if(args.simplifycex == "SIMSIM"){ simplifycex = SIMSIM; }
+		if(args.simplifycex == "RECSIM"){ simplifycex = RECSIM; }
+	}
+
+	void activatePrintDiag(){
+		printDiag = true;
+	}	
+	void set_randseed(int seed){ randseed = seed; };
+	void setIterLimit(int p_iterlimit){iterlimit = p_iterlimit; };
+
+};
+
 
 class CEGISSolver
 {
@@ -37,15 +90,8 @@ class CEGISSolver
 	VarStore ctrlStore;
 	VarStore inputStore;
 
-	int randseed;
-	int iterlimit;
-
-	bool printDiag;
-
-	int NINPUTS;
-
-	int nseeds;
-
+	CEGISparams params;
+	
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;
 	vector<Tvalue> find_node_ids;
@@ -75,7 +121,7 @@ protected:
 	void abstractProblem();
 	bool growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
-	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, int p_nseeds=1, int NINPUTS_p=3);
+	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args);
 	~CEGISSolver(void);
 
 	virtual bool solve();
@@ -92,18 +138,12 @@ public:
 	void printDiagnostics();
 
 
-
-	void set_randseed(int seed){ randseed = seed; };
-	void setIterLimit(int p_iterlimit){iterlimit = p_iterlimit; };
+	
 
 	void get_control_map(map<string, int>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF();
 
-	void activatePrintDiag(){
-		printDiag = true;
-	}
-	
 	void outputCheckVarmap(ostream& out){
 		dirCheck.outputVarMap(out);	
 	}

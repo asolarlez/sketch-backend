@@ -10,8 +10,10 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 		it->second->clear();
 		delete it->second;
 	}
-	bgproblem->clear();
-	delete bgproblem;
+	if(bgproblem != NULL){
+		bgproblem->clear();
+		delete bgproblem;
+	}
 	delete finder;
 	delete _pfind;
 }
@@ -61,7 +63,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	}
 
 	if(params.verbosity > 2){
-		cout<<" INBITS = "<<INp::NINPUTS<<endl;
+		cout<<" INBITS = "<<params.NINPUTS<<endl;
 		cout<<" CBITS  = "<<INp::NCTRLS<<endl;
 	}
 
@@ -116,8 +118,8 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		cout<<"spec:"<<endl;
 		cga.process(*spec, functionMap);
 	}
-
-	if(params.olevel >= 3){
+	
+ 	if(params.olevel >= 3){
 		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
@@ -197,6 +199,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	Assert(status==READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 	BooleanDAG* problem;
+	
 	if(bgproblem == NULL){
 		problem = dag;
 		bgproblem = dag;
@@ -207,23 +210,20 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 			bgproblem->andDag(dag->clone());			
 			//bgproblem = runOptims(bgproblem);
 		}else{
-			bgproblem->repOK();
-			dag->repOK();
+			//bgproblem->repOK();
+			//dag->repOK();
 			bgproblem->andDag(dag);
-			bgproblem->repOK();
+			//bgproblem->repOK();
 			bgproblem = runOptims(bgproblem);
-			bgproblem->repOK();
+			//bgproblem->repOK();
 			problem = bgproblem;
 		}
 	}
-	problem->repOK();
+	// problem->repOK();
 	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
 	SolverHelper check(*checker);
-	CEGISSolver solver(problem, *finder, check, params.seedsize, INp::NINPUTS);
-	if(params.printDiag){
-		cout<<" Printing Diagnostics "<<endl;
-		solver.activatePrintDiag();	
-	}
+	CEGISSolver solver(problem, *finder, check, params);
+	
   	
 	if(params.outputEuclid){      		
 		ofstream fout("bench.ucl");
@@ -239,18 +239,13 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
 	}
   	
-  	
-	if( params.terminateafter > 0 ){ solver.setIterLimit( params.terminateafter ); }
+  		
 	if( params.hasCpt ){ 
 		string fname = params.cptfile;
 		fname += "_";
 		fname += basename();
 		solver.setCheckpoint(fname);
-		}
-	if(params.seed >= 0){
-		cout<<"SOLVER RAND SEED = "<<params.seed<<endl;
-		solver.set_randseed(params.seed);
-	}
+		}	
 
 	int solveCode = 0;
 	try{
@@ -290,16 +285,23 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 
 }
 
-BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
+BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
+	
 	if(params.olevel >= 3){
 		DagOptim cse(*result);	
 		//cse.alterARRACS();
 		cse.process(*result);
 	}
-	result->repOK();
+	// result->repOK();
 
 	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<result->size()<<endl;	}
-	// result->lprint(cout);
+	/*{
+		DagOptim op(*result);
+		result->replace(5598, op.getCnode(1));
+		op.process(*result);
+	}*/
+
+	
 	if(params.olevel >= 5){
 		BackwardsAnalysis opt;
 		//cout<<"BEFORE: "<<endl;
@@ -308,12 +310,12 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		// cout<<"AFTER: "<<endl;
 		// result->print(cout);
 	}
-	result->repOK();
-	if(params.olevel >= 8){
+	// result->repOK();
+	if(params.olevel >= 7){
 		DagOptimizeCommutAssoc opt;
 		opt.process(*result);
 	}
-	result->repOK();
+	// result->repOK();
 	//result->print(cout) ;
 
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
@@ -326,12 +328,10 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		}
 		cse.process(*result);
 	}
-	result->repOK();
-	// result->lprint(cout);
+	// result->repOK();	
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}
 	if(params.showDAG){ 
-		result->print(cout);
-	}
-
+		result->lprint(cout);		
+	}		
 	return result;
 }

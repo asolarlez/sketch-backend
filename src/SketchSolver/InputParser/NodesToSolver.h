@@ -31,8 +31,9 @@ protected:
     /* Return the value indexed by given node, or a default value (of given type). */
     inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
 				int quant = 1) {
-	if (node)
+	if (node){		
 	    return node_ids[node->id];
+	}
 
 	switch (default_type) {
 	case TVAL_BVECT:

@@ -152,7 +152,7 @@ ParamDecl: T_vartype T_ident {
 | '!' T_vartype T_ident {
  	 if( $2 == INT){
 
-		 currentBD->create_outputs(NINPUTS, *$3);
+		 currentBD->create_outputs(2 /* NINPUTS */, *$3);
  	 }else{
 
 	 	 currentBD->create_outputs(-1, *$3); 
@@ -260,7 +260,8 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 }
 
 | T_OutIdent '=' Expression ';' {
-	currentBD->create_outputs(NINPUTS, $3, *$1);
+	Assert(false, "UNREACHABLE");
+	currentBD->create_outputs(2 /*NINPUTS*/, $3, *$1);
 	delete $1;
 }
 | T_assert Expression ';' {

@@ -41,12 +41,13 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	}	
 	// cout<<endl;
 	s->addClause(lits);
+	++clauseCount;
 } 
 
 
 //This function encodes x == a ? b:c;
  void MiniSATSolver::addChoiceClause(int x, int a, int b, int c){
-	Dout( cout<<" "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
+	Dout( cout<<"@ "<<x<<"= "<<a<<" ? "<<b<<":"<<c<<";"<<endl );
 	FileOutput( output<<x<<" CHOICE "<<a<<" "<<b<<" "<<c<<endl );
 	vec<Lit> lits;
 	{ int tmp[] = { -(x), -(a), (b) }; addClause(tmp, 3, lits);}
@@ -60,7 +61,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes x == a xor b;
  void MiniSATSolver::addXorClause(int x, int a, int b){
-	Dout( cout<<" "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
+	Dout( cout<<"@ "<<x<<"= "<<a<<" xor "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" XOR "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
 	{ int tmp[] = { -(x), -(a), -(b) }; addClause(tmp, 3, lits);}
@@ -71,7 +72,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes x == a or b;
  void MiniSATSolver::addOrClause(int x, int a, int b){
-	Dout( cout<<" "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
+	Dout( cout<<"@ "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
 	{ int tmp[] = { (x), -(a)}; addClause(tmp, 2, lits);}
@@ -82,7 +83,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];
  void MiniSATSolver::addBigOrClause(int* a, int size){
-	Dout( cout<<" "<<a[0]<<"= " );
+	Dout( cout<<"@ "<<a[0]<<"= " );
 	FileOutput( output<<a[0]<<" BOR "<<size<<" " );
 	vec<Lit> lits;
 	for(int i=0; i<size; ++i){
@@ -99,7 +100,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes x == a and b;
  void MiniSATSolver::addAndClause(int x, int a, int b){
-	Dout( cout<<" "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
+	Dout( cout<<"@ "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
 	vec<Lit> lits;	
 	{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
@@ -109,7 +110,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 //This function encodes x = a;
  void MiniSATSolver::addEqualsClause(int x, int a){
-	Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+	Dout( cout<<"@ "<<x<<"= "<<a<<"; "<<flush<<endl );
 	FileOutput( output<<x<<" EQ "<<a<<endl );
 	vec<Lit> lits;	
 	{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
@@ -120,7 +121,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 //This function encodes x == a;
  void MiniSATSolver::addEquateClause(int x, int a){
 	if( !solveNegation  ){
-		Dout( cout<<" "<<x<<"= "<<a<<"; "<<flush<<endl );
+		Dout( cout<<"@ "<<x<<"= "<<a<<"; "<<flush<<endl );
 		FileOutput( output<<"x OUTXOR "<<x<<" "<<-a<<endl );
 		vec<Lit> lits;
 		{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
@@ -134,7 +135,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
  void MiniSATSolver::setVarClause(int x){
-	Dout( cout<<" set "<<x<<";"<<endl );
+	Dout( cout<<"@ set "<<x<<";"<<endl );
 	FileOutput( output<<"x SET "<<x<<" ;"<<endl );
 	//cout<<x<<endl;
 	int var = abs(x);
@@ -144,7 +145,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
  void MiniSATSolver::assertVarClause(int x){
  	if( !solveNegation  ){
-		Dout( cout<<" assert "<<x<<";"<<endl );
+		Dout( cout<<"@ assert "<<x<<";"<<endl );
 		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
 		int var = abs(x);
 		s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
@@ -155,7 +156,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 
 void MiniSATSolver::hardAssertVarClause(int x){
-	Dout( cout<<" assert "<<x<<";"<<endl );
+	Dout( cout<<"@ assert "<<x<<";"<<endl );
 	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
 	int var = abs(x);
 	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
@@ -229,10 +230,14 @@ bool MiniSATSolver::ignoreOld(){
 
  void MiniSATSolver::reset(){
  	finalOr.clear();	
+	//cout<<"clause count = "<<clauseCount<<endl;
+	clauseCount=0;
 }
 
  void MiniSATSolver::cleanupDatabase(){
 	finalOr.clear();
+	//cout<<"clause count = "<<clauseCount<<endl;
+	clauseCount=0;
 }
 
  void MiniSATSolver::clean(){
@@ -241,6 +246,11 @@ bool MiniSATSolver::ignoreOld(){
  	delete s;
  	s = new Solver();
  	s->newVar();
+	cout<<"clause count = "<<clauseCount<<endl;
+	clauseCount=0;
 }
 
+ MiniSATSolver::~MiniSATSolver(){
+	delete s;
+ }
 

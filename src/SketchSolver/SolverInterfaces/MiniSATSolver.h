@@ -19,14 +19,16 @@ protected:
 	vector<int> finalOr;
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
+	int clauseCount;
 public:
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
+		clauseCount=0;
 	 }
-	 
+	 virtual ~MiniSATSolver();
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);
 	 virtual void addChoiceClause(int x, int a, int b, int c);

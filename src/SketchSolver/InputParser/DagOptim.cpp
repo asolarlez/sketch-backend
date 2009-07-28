@@ -1397,9 +1397,12 @@ void DagOptim::visit( ARRACC_node& node ){
 					return;
 				}
 				if(tflag){ 
-					Assert(tmpnode != NULL, "This is an invariant");
 					delete ar;
-					rvalue = tmpnode;
+					if(tmpnode == NULL){
+						rvalue = getCnode(0);
+					}else{
+						rvalue = tmpnode;
+					}
 					return;
 				}else{
 					ar->addToParents();					
@@ -1557,16 +1560,17 @@ void DagOptim::process(BooleanDAG& dag){
 		// Get the code for this node.
 				
 
+		if(dag[i] != NULL){
+			bool_node* node = computeOptim(dag[i]);
 
-		bool_node* node = computeOptim(dag[i]);
 
 
-
-		if(dag[i] != node){
-				Dout(cout<<dag[i]->id<<" replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl) ;
-				
-				dag.replace(i, node);
-				
+			if(dag[i] != node){
+					Dout(cout<<dag[i]->id<<" replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl) ;
+					
+					dag.replace(i, node);
+					
+			}
 		}
 	}
 	

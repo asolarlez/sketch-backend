@@ -21,8 +21,7 @@ int isatty(int i);
   InterpreterEnvironment* envt;
   int global_filterid = 0;
   int NCTRLS=5;
-  bool overrideNCtrls=false;
-  int NINPUTS=5;
+  bool overrideNCtrls=false;  
   bool overrideInputs=false;
   
 #include "InputLexer.cpp"
