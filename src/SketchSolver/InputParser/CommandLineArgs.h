@@ -93,8 +93,8 @@ class CommandLineArgs{
 		if( string(argv[ii]) == "-simplifycex" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
 	      simplifycex = argv[ii+1];	  
-		  Assert(simplifycex == "NOSYM" || simplifycex == "SYMSYM" || simplifycex=="RECSYM", 
-			  "The argument to simplifycex should be one of \n NOSYM = no simplify \n SIMSIM = simple simplify \n RECSIM = recursive simplify ");
+		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 
+			  "The argument to simplifycex should be one of \n NOSIM = no simplify \n SIMSIM = simple simplify \n RECSIM = recursive simplify ");
 	      input_idx = ii+2;
 	    }
 
