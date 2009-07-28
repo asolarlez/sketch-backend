@@ -134,7 +134,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		bool_node* output = NULL;
 
 		for(int i=0; i<oldFun.size(); ++i){
-			node.parent->repOK();
+			
 			bool_node::Type t = oldFun[i]->type;
 			if(t == bool_node::SRC || t == bool_node::CTRL) continue;
 			if(t == bool_node::CONST){
@@ -327,10 +327,10 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		if(typeid(*dag[i]) == typeid(UFUN_node)){
 			lnfuns++;
 		}
-		dag.assertions.repOK();
+		
 				
 		bool_node* node = computeOptim(dag[i]);		
-		dag.assertions.repOK();
+		
 		
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
