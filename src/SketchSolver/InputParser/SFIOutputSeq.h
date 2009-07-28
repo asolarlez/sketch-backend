@@ -3,7 +3,7 @@
 #include "NodesToSEQ.h"
 #include "BLIFwriter.h"
 #include "CEGISSolver.h"
-
+#include "CommandLineArgs.h"
 
 class SFIOutputSeq :
 	public CEGISSolver
@@ -14,8 +14,8 @@ public:
 	BooleanDAG* initializer;
 	int iter;
 
-	SFIOutputSeq(ostream& out_p, BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, int p_nseeds, int NINPUTS_p, BooleanDAG* seqMiter_p, BooleanDAG* initializer_p):
-	  CEGISSolver(miter, finder, checker, p_nseeds, NINPUTS_p)
+	SFIOutputSeq(ostream& out_p, BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args, BooleanDAG* seqMiter_p, BooleanDAG* initializer_p):
+	  CEGISSolver(miter, finder, checker, args)
 	{
 		seqMiter = seqMiter_p;
 		initializer = initializer_p;
