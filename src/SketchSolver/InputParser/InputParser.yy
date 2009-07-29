@@ -165,7 +165,8 @@ Gvartype = $1;
 | '!' T_vartype '[' ConstantExpr ']' OutList 
 
 
-ParamList: ParamDecl 
+ParamList: /*empty*/ 
+| ParamDecl
 | ParamDecl ',' ParamList 
 
 
