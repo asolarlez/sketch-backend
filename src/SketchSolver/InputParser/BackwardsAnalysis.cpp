@@ -1,5 +1,5 @@
 #include "BackwardsAnalysis.h"
-
+#include <typeinfo>
 
 
 BackwardsAnalysis::BackwardsAnalysis(void)

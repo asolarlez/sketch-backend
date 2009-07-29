@@ -7,6 +7,8 @@
 #include <map>
 #include <set>
 #include <cstdlib>
+#include <typeinfo>
+
 
 #ifdef CONST
 #undef CONST
