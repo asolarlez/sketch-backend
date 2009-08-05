@@ -45,21 +45,14 @@ Dtime(maptimer.print();)
 
 void DagCSE::eliminateCSE(){
 	int k=0;
-	for(int i=0; i<dag.size(); ){
+	for(int i=0; i<dag.size(); ++i){
 		// Get the code for this node. 		
-		dag[i]->accept(*this);
-		// look it up in the cse map.		
-		(cout<<dag[i]->globalId<<"  "<<dag[i]->get_name()<<": "<<ccode<<endl) ;
-		if( hasCSE(ccode) ){
-			// if we do find it, then remove the node and replace it with its cse.			
-			bool_node * cse = (bool_node*)cse_map[ccode];
+		bool_node* node = dag[i]; 
+
+		bool_node* cse = computeCSE(node);
+		if(cse != node){
 			Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<cse->get_name()<<endl );
 			dag.replace(i, cse); 
-			++i;
-		}else{
-			// if we don't find it, just add it.
-			cse_map[ccode] = dag[i];
-			++i;
 		}
 	}
 	dag.removeNullNodes();

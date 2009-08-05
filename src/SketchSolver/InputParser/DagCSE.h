@@ -3,6 +3,8 @@
 
 #include "BooleanDAG.h"
 #include "timerclass.h"
+#include "StringHTable.h"
+
 
 #define Dtime(...) /*nothing*/
 
@@ -23,24 +25,25 @@ inline void writeInt(char* buf, unsigned val, int& p){
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
-	map<string,  bool_node*> cse_map;
+	StringHTable<bool_node*> cse_map;
 	
+	/*
 	inline bool hasCSE(string& str){
 		Dtime(maptimer.restart();)
 		bool tmp = cse_map.find(str) != cse_map.end(); 		
 		Dtime(maptimer.stop();)
 		return tmp;
-	}
+	}*/
 	
-	inline  bool_node*& operator[](const string& str){
+	inline  bool_node* operator[](const string& str)const{
 		Dtime(maptimer.restart();)
-		 bool_node*& tmp = cse_map[str];
+		 bool_node* tmp;
+		cse_map.get(str.c_str(), tmp);
 		Dtime(maptimer.stop();)
 		return tmp;	
 	}  
 public:
-	string last;
-	 bool_node* lastNode;
+
 	string ccode;
 	Dtime(timerclass stimer;)
 	Dtime(timerclass maptimer;)
@@ -48,38 +51,25 @@ public:
 	virtual ~DagCSE();	
 	
 	void eliminateCSE();
-	
+	/*
 	inline void setCSE(bool_node* node){
 		node->accept(*this);
 		(*this)[this->ccode] = node;
 	}
+	*/
 
 	inline  bool_node* computeCSE( bool_node* node){
 		node->accept(*this);
 		//cout<<node<<" ccode = "<<ccode<<endl;
 		
-		if(this->ccode == last){ 			
-			return lastNode; 
-		}
-		
-		map<string,  bool_node*>::iterator it = cse_map.lower_bound(this->ccode);
-		if(it != cse_map.end() && it->first == this->ccode ){
-			last = this->ccode;
-			lastNode = it->second; 
-			return it->second;
-		}else{
-			last = this->ccode;
-			lastNode = node; 
-			cse_map.insert(it, make_pair(this->ccode, node));
-			return node;
-		}
+		bool_node* rv;
+		cse_map.condAdd(this->ccode.c_str(), node, rv);
+		return rv;
 	}
 
 
 	inline void clear(){
 		cse_map.clear();
-		last = "";
-		lastNode = NULL;
 	}
 
 	void setStr(int id1, char op, int id2);
