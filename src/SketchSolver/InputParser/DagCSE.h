@@ -25,7 +25,7 @@ inline void writeInt(char* buf, unsigned val, int& p){
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	
-	StringHTable<bool_node*> cse_map;
+	StringHTable2<bool_node*> cse_map;
 	
 	/*
 	inline bool hasCSE(string& str){
@@ -34,14 +34,15 @@ class DagCSE : public NodeVisitor
 		Dtime(maptimer.stop();)
 		return tmp;
 	}*/
-	
+	/*
 	inline  bool_node* operator[](const string& str)const{
 		Dtime(maptimer.restart();)
 		 bool_node* tmp;
 		cse_map.get(str.c_str(), tmp);
 		Dtime(maptimer.stop();)
 		return tmp;	
-	}  
+	} 
+	*/
 public:
 
 	string ccode;
@@ -63,7 +64,7 @@ public:
 		//cout<<node<<" ccode = "<<ccode<<endl;
 		
 		bool_node* rv;
-		cse_map.condAdd(this->ccode.c_str(), node, rv);
+		cse_map.condAdd(this->ccode.c_str(), this->ccode.size(), node, rv);
 		return rv;
 	}
 
