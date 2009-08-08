@@ -12,6 +12,11 @@ config.*
 *Makefile.in
 *.Tpo
 Makefile
+src/Makefile
+src/MiniSat/Makefile
+src/SketchSolver/Makefile
+src/abc60513/Makefile
+src/zchaff/Makefile
 compile
 configure
 install-sh
