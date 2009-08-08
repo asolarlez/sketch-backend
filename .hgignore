@@ -1,0 +1,26 @@
+syntax: glob
+*.o
+*.a
+*.Po
+*.so
+*SBitII
+INSTALL
+aclocal.m4
+autom4te.cache/*
+config.*
+*~
+*Makefile.in
+*.Tpo
+Makefile
+compile
+configure
+install-sh
+missing
+depcomp
+stamp-h1
+src/abc60513/*.mk
+src/SketchSolver/InputLexer.cpp
+src/SketchSolver/InputParser.cpp
+src/SketchSolver/InputParser.hpp
+src/SketchSolver/InputParser.output
+src/SketchSolver/cegis
