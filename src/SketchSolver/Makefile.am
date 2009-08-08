@@ -5,10 +5,10 @@ SOLVER = -DABCSAT
 include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
-bin_PROGRAMS = SBitII
-SBitII_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
-SBitII_CFLAGS = $(SBitII_CXXFLAGS)
-SBitII_LDADD = $(SOLVER_LIBS) -ldl
+bin_PROGRAMS = cegis
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+cegis_CFLAGS = $(cegis_CXXFLAGS)
+cegis_LDADD = $(SOLVER_LIBS) -ldl
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\
 	BasicError.h					\
@@ -50,7 +50,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/driver.h				\
 	InputParser/guardedVal.h			
 
-SBitII_SOURCES =				\
+cegis_SOURCES =				\
 	$(SOLVER_SRCS)				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\

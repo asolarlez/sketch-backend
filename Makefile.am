@@ -1,3 +1,3 @@
 ACLOCAL_AMFLAGS =
-SUBDIRS = backend frontend
+SUBDIRS = src
 EXTRA_DIST = autogen.sh
