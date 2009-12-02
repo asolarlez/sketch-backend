@@ -104,7 +104,7 @@ public:
 		return h;
 	}
 
-	StringHTable2(void):table(1024, NULL),mask(0x3FF),store(5000){
+	StringHTable2(void):table(1024, (bucket<T>*) NULL),mask(0x3FF),store(5000){
 		
 	}
 	~StringHTable2(void){
