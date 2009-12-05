@@ -1,28 +1,26 @@
-See http://sketch.cs.berkeley.edu.
+Name: sketch-backend
+Project: SKETCH CEGIS solver
+Institution: UC Berkeley
+Authors: Armando Solar-Lezama et al.
 
-If you are using windows, start by running 
+=== Readme first ===
+    * See http://sketch.cs.berkeley.edu/wiki/index.php/Development
+        for more (updated) information about building from source.
+    * Please read http://sketch.cs.berkeley.edu/wiki/index.php/Download
+        for instructions to install binary distributions.
 
-bash convertScripts.sh
-If you checked out the distribution from CVS and you want to create a 
-streamlined distribution package, you can run the following commands:
+=== Building ===
 
-./autogen.sh
-./configure
-make dist
+If you are using windows, start by running
+    >>> bash convertScripts.sh
 
-To actually build the executable, you should do 
-
-./autogen.sh
-./configure
-make 
-make install
+Then, configure and make SKETCH
+    >>> ./autogen.sh
+    >>> ./configure
+    >>> make
 
 Note: If you are using cygwin on Vista, perl 5.10 will crash. Use 5.8 instead.
 
-If you get a sketch distribution, simply run
+=== Distributing ===
 
-./configure && make && sudo make install
-
-
-
- 
+The frontend project, sketch-frontend, now handles building of all binary jar's (jar's which will extract the CEGIS backend automatically).
