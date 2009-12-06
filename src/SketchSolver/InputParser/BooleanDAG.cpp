@@ -30,10 +30,25 @@ BooleanDAG::BooleanDAG(const string& name_):name(name_)
   n_controls = 0;
   offset = 0;
   ownsNodes = true;
+  intSize = 2;
 #ifdef SCHECKMEM
   cout<<"Checking allocation"<<endl;
   allocated.insert(this);
 #endif
+}
+
+
+void BooleanDAG::growInputIntSizes(){
+	vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
+	++intSize;
+	for(int i=0; i<specIn.size(); ++i){	
+		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+		int nbits = srcnode->get_nbits();
+		if(nbits >= 2){			
+			srcnode->set_nbits(nbits+1);			
+			Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
+		}
+	}
 }
 
 
@@ -837,7 +852,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		
 			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
-			bool_node* bn = (*node_it)->clone();
+			bool_node* bn = (*node_it)->clone(false);
 			
 			if( dl != NULL && isDllnode(bn) ){
 				dl->append(getDllnode(bn));
@@ -852,8 +867,9 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	}
 	Dout( cout<<" after indiv clone "<<endl );
 	nstore.resize(nnodes);
-	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it){		
-		(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore);
+	BooleanDAG::iterator old_it = begin();
+	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it, ++old_it){
+		(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore, (*old_it)->children);
 	}
 }
 
@@ -870,6 +886,8 @@ BooleanDAG* BooleanDAG::clone(){
 	bdag->n_controls = n_controls;
 	bdag->n_inputs = n_inputs;
 	bdag->n_outputs = n_outputs;
+	bdag->intSize = intSize;
+
 	for(map<string, bool_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
 		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );
 		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );

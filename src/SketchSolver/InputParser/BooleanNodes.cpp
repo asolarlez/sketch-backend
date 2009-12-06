@@ -198,18 +198,17 @@ void arith_node::redirectParentPointers(BooleanDAG& oribdag, const vector<const 
 
 
 
-void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag){
+void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild){
 	redirectParentPointers(oribdag, bdag, false, NULL);
-	childset bset;
-	for(child_iter child = children.begin(); child != children.end(); ++child){
+	
+	for(child_iter child = tchild.begin(); child != tchild.end(); ++child){
 		Assert( (*child)->id != -22, "This node should not exist anymore");
 		if( oribdag.checkNodePosition((*child)) ){
-			bset.insert((bool_node*) bdag[ (*child)->id ] );
+			children.insert((bool_node*) bdag[ (*child)->id ] );
 		}else{
-			bset.insert(*child);
+			children.insert(*child);
 		}
 	}
-	swap(bset, children);
 }
 
 

@@ -58,6 +58,7 @@ class BooleanDAG
   int n_outputs;
   int n_controls;
   int offset;
+  int intSize;
   bool ownsNodes;
 
   vector<bool_node*> nodes;
@@ -86,6 +87,13 @@ Dllist assertions;
   ////////////////////////////////////////////////////////////////////////
   bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
   bool_node* create_controls(int n, const string& gen_name=string("CONTROL"));
+
+  void growInputIntSizes();
+
+  int getIntSize(){
+	return intSize;
+  }
+
   /**
 	Creates an N-bit output named gen_name, connected to internal node nodeToOutput.
   */

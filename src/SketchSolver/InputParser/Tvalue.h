@@ -465,8 +465,10 @@ public:
 		    ids[i] = getId (i);
 		dir.getSwitchVars (ids, size, num_ranges);
 		id = num_ranges[0].guard;
+		if(id < 0){ id = -id; }
 		int oldsize = size;  /* save previous size (number of bits). */
 		size = num_ranges.size();
+
 
 		/* If we generated values from a signed bitvector, we must adjust
 		 * them to properly represent full int-sized signed values. */

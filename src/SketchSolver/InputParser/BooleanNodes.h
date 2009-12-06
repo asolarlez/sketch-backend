@@ -104,7 +104,7 @@ public:
   virtual void addToParents();
    
   virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
-  virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag);
+  virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild);
   virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
   virtual string get_tname() const{
     switch(type){

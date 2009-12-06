@@ -69,6 +69,7 @@ public:
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
+		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
 		sessionName = procFname(params.inputFname);			  
 	}
 	

@@ -59,6 +59,9 @@ public:
     virtual void setVarClause(int x)=0;
     virtual void assertVarClause(int x)=0;
 
+	virtual void addHelperClause(int c[], int size)=0;
+	virtual int isValKnown(int i){return 0; }
+
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
 

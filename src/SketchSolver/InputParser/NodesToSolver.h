@@ -20,7 +20,7 @@ class NodesToSolver : public NodeVisitor {
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
     template<typename COMP> void processComparissons (bool_node &node);
-
+	vector<int> lgv;
     Tvalue tvYES;
     Tvalue tvOne;
     Tvalue tvOneSigned;
@@ -94,7 +94,13 @@ public:
 	tvOne.num_ranges.push_back (guardedVal(p_dir.YES, 1));
     };
     
-    
+	int lastGoodVal(int id){
+		if(id > lgv.size()){
+			return 0;
+		}else{
+			return lgv[id-1];
+		}
+	}
     
 
     virtual void visit (AND_node &node);

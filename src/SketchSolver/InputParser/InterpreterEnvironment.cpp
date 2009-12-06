@@ -222,6 +222,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	// problem->repOK();
 	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
 	SolverHelper check(*checker);
+	check.setMemo(params.setMemo && params.veriftype == SATSolver::MINI);
 	CEGISSolver solver(problem, *finder, check, params);
 	
   	
@@ -267,6 +268,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		if(problem != bgproblem){ problem->clear(); delete problem; }
 		return ex->code + 2;
 	}catch(BasicError& be){
+		solver.get_control_map(currentControls);
 		cout<<"ERROR: "<<basename()<<endl;
 		status=UNSAT;
 		delete checker;

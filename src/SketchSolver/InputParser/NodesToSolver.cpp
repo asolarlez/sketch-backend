@@ -2,6 +2,10 @@
 #include <algorithm>
 #include "timerclass.h"
 
+#include "CommandLineArgs.h"
+
+extern CommandLineArgs* PARAMS;
+
 /* 
  * Uncomment this to switch to bit-vector operators / comparators.
  * TODO switch to some other (dynamic) mechanism...
@@ -40,23 +44,28 @@ NodesToSolver::processComparissons (bool_node& node)
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
     fval.makeSparse (dir);
-
     int cvar = -YES;
     COMP comp;
     Dout(cout<<"SIZES = "<<mval.getSize ()<<", "<<fval.getSize ()<<endl);
     int orTerms = 0;
+	vector<char> mc(mval.getSize(), 'n');
+	vector<char> fc(fval.getSize(), 'n');
     for(int i=0; i<mval.getSize (); ++i){
 		for(int j=0; j<fval.getSize (); ++j){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
 		    if(comp(mval[i], fval[j])){
 				cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
+				mc[i] = 'y';
+				fc[j] = 'y';
 				++orTerms;
 				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
 				scratchpad[orTerms] = cvar;
-		    }
+			}
 		}
     }
     if( orTerms < 2 ){
+		for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
+		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
 		node_ids[node.id] = cvar;
     }else{
 		if(orTerms == mval.getSize() * fval.getSize()){
@@ -64,6 +73,8 @@ NodesToSolver::processComparissons (bool_node& node)
 		}else{
 			scratchpad[0] = 0;
 			int result = dir.addBigOrClause( &scratchpad[0], orTerms);
+			for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
+			for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
 			node_ids[node.id] = result;
 		}
     }
@@ -772,7 +783,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
-	if( isSparse && omv.getId () == YES ){
+	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
 		int idx = omv.num_ranges[0].value;
 
 		if( idx >= node.multi_mother.size()){
@@ -1186,6 +1197,15 @@ NodesToSolver::visit (ASSERT_node &node)
 	}
 	//cout<<"|"<<node.getMsg()<<"|"<<endl;
 	
+	if(PARAMS->debug){
+		cout<<"ASSERTING "<<node.getMsg()<<endl;
+		int res = dir.getMng().solve();
+		Assert(res == SATSolver::SATISFIABLE, "Failed assertion!");
+		lgv.clear();
+		for(int i=1; i < dir.getVarCnt(); ++i){
+			lgv.push_back( dir.getMng().getVarVal(i) );
+		}
+	}
 
 	Dout (cout << "ASSERT " << node.get_name() << " " << fval
 		  << " " << &node << endl);

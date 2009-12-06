@@ -15,6 +15,7 @@
 
 #include "SATSolver.h"
 #include "guardedVal.h"
+#include "StringHTable.h"
 
 // #define Dout(msg) msg
 
@@ -33,35 +34,94 @@ class varRange{
 
 
 class SolverHelper {
+	StringHTable2<int> memoizer;
+	bool doMemoization;
     map<string, int> varmap;
     map<string, int> arrsize;
     int varCnt;
+	int lastVar;
     SATSolver& mng;
+	vector<char> tmpbuf;
+	
+
+	int setStr(int id1, char op, int id2){
+		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
+		id2 = id2>0 ? (id2<<1) : ((-id2)<<1 | 0x1);
+		int p = 0;
+		char* tch = &tmpbuf[0];
+		writeInt(tch, id1, p);
+		tch[p] = op; p++;
+		writeInt(tch, id2, p);
+		tch[p] = 0;		
+		return p;
+	}
+
+	int setStrBO(int* a, int last){
+		int p = 0;
+		if(last*10 > tmpbuf.size()){ tmpbuf.resize(last * 11); }
+		char* tch = &tmpbuf[0];
+		for(int ol = 1; ol <= last; ++ol){
+			int tt = a[ol];
+			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
+			writeInt(tch, tt, p);
+			tch[p] = '|'; p++;
+		}
+		tch[p-1] = 0;
+		return p-1;
+	}
+
+	int setStrChoice(int a, int b, int c){
+		a = a>0 ? (a<<1) : ((-a)<<1 | 0x1);
+		b = b>0 ? (b<<1) : ((-b)<<1 | 0x1);
+		c = c>0 ? (c<<1) : ((-c)<<1 | 0x1);
+		int p = 0;
+		char* tch = &tmpbuf[0];
+		writeInt(tch, a, p);
+		tch[p] = '?'; p++;
+		writeInt(tch, b, p);
+		tch[p] = ':'; p++;
+		writeInt(tch, c, p);
+		tch[p] = 0;		
+		return p;
+	}
+
 public:
     int YES;
-    SolverHelper(SATSolver& mng_p):mng(mng_p) {
+    SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
 	varCnt = 1;
 	YES = 0;
+	lastVar = -1;
+	doMemoization = true;
     }
+
+	void setMemo(bool b){
+		doMemoization = b;
+	}
 
 	SATSolver& getMng(){
 		return mng;
 	}
 
+	void nextIteration(){
+		memoizer.nextIter();
+	}
 
+	void getStats(){
+		memoizer.stats(cout);
+	}
 	void printAllVars(){
-		cout<<"@#@#@#@#@#@#     Outputing Var Map"<<endl;
-		int N = mng.newVar();
-		for(int i=1; i<N; ++i){
+		cout<<"@#@#@#@#@#@#     Outputing Var Map"<<endl;				
+		for(int i=1; i<=lastVar; ++i){
 			cout<<" var id = "<<i<<"\t "<<mng.getVarVal(i)<<endl;
 		}
 	}
 
     void reset() {
-	varmap.clear();
-	arrsize.clear();
-	varCnt = 1;
-	YES = 0;
+		memoizer.clear();
+		varmap.clear();
+		arrsize.clear();
+		varCnt = 1;
+		YES = 0;
     };
 
     void print() {
@@ -85,6 +145,7 @@ public:
 
     void declareVar(const string& vname) {
 	int idx = mng.newVar();
+	lastVar = idx;
 	Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
 	varmap[vname]= idx;
 	++varCnt;
@@ -113,6 +174,7 @@ public:
 	for(; i<size; ++i) {
 	    idx =  mng.newVar();
 	}
+	lastVar = idx;
 	Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
 	mng.annotateInput(arName, frst, size);
 	varmap[arName] = frst;
@@ -173,6 +235,7 @@ public:
 	int ret = -1;
 	do {
 	    int tmp = mng.newVar ();
+		lastVar = tmp;
 	    if (ret < 0)
 		ret = tmp;
 	    mng.disableVarBranch(tmp);
@@ -206,6 +269,7 @@ public:
     int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, vector<guardedVal>& output);
+	void addHelperC(int l1, int l2);
 };
 
 /*
@@ -243,8 +307,20 @@ SolverHelper::addChoiceClause (int a, int b, int c, int x)
 	return addXorClause (a, -b, x);
 
     /* Allocate fresh result variable as necessary. */
-    if (x == 0)
-	x = newAnonymousVar ();
+	if (x == 0){
+		if(doMemoization){
+			int l = this->setStrChoice(a,b,c);
+			int rv;
+			int tt = lastVar+1;
+			if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
+				int xx = mng.isValKnown(rv);
+				if(xx != 0){  return xx*YES; }
+				return rv;
+			}		
+		}
+		x = newAnonymousVar ();
+		// Assert(tt == x, "This is an invariant that shouldn't be violated");
+	}
 
     /* Add clause. */
     mng.addChoiceClause (x, a, b, c);
@@ -272,8 +348,20 @@ SolverHelper::addXorClause (int a, int b, int x)
 	return addEqualsClause (b, x);
 
     /* Allocate fresh result variable as necessary. */
-    if (x == 0)
-	x = newAnonymousVar ();
+   	if (x == 0){
+		if(doMemoization){
+			int l = this->setStr(min(a,b), '^' ,max(a,b));
+			int rv;
+			int tt = lastVar+1;
+			if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
+				int xx = mng.isValKnown(rv);
+				if(xx != 0){  return xx*YES; }
+				return rv;
+			}		
+		}
+		x = newAnonymousVar ();
+		//Assert(tt == x, "This is an invariant that shouldn't be violated");
+	}
 
     /* Add clause. */
     mng.addXorClause (x, a, b);
@@ -295,8 +383,21 @@ SolverHelper::addOrClause (int a, int b, int x)
 	return addEqualsClause (b, x);
 
     /* Allocate fresh result variable as necessary. */
-    if (x == 0)
-	x = newAnonymousVar ();
+	if (x == 0){
+		if(doMemoization){
+			int l = this->setStr(min(a,b), '|' ,max(a,b));
+			int rv;
+			int tt = lastVar+1;
+			if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
+				int xx = mng.isValKnown(rv);
+				if(xx != 0){  return xx*YES; }
+				return rv;
+			}		
+		}
+		x = newAnonymousVar ();
+		//Assert(tt == x, "This is an invariant that shouldn't be violated");
+	}
+
 
     /* Add clause. */
     mng.addOrClause (x, a, b);
@@ -336,8 +437,19 @@ SolverHelper::addBigOrClause (int *a, int last)
 
     /* Allocate fresh result variable as necessary. */
 
-	if (a[0] == 0)
-	a[0] = newAnonymousVar ();
+	if (a[0] == 0){
+		if(doMemoization){
+			int l = this->setStrBO(a, last);
+			int rv;
+			int tt = lastVar+1;
+			if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
+				int xx = mng.isValKnown(rv);
+				if(xx != 0){  rv = xx*YES; }
+				return (a[0] = rv);
+			}		
+		}
+		a[0] = newAnonymousVar ();		
+	}
 
     /* Store output variable. */
     int o = a[0];
@@ -363,8 +475,19 @@ SolverHelper::addAndClause (int a, int b, int x)
 	return addEqualsClause (b, x);
 
     /* Allocate fresh result variable as necessary. */
-    if (x == 0)
-	x = newAnonymousVar ();
+	if (x == 0){
+		if(doMemoization){
+			int l = this->setStr(min(a,b), '&' ,max(a,b));
+			int rv;
+			if(this->memoizer.condAdd(&tmpbuf[0], l, lastVar+1, rv)){
+				int xx = mng.isValKnown(rv);
+				if(xx != 0){  return xx*YES; }
+				return rv;
+			}
+		}
+		x = newAnonymousVar ();
+
+	}
 
     /* Add clause. */
     mng.addAndClause (x, a, b);
@@ -431,27 +554,24 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	int amtrange = 1;
 	for(int i=0; i<amtsize && i<12; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
-	vector<int> tmpVect(amtrange);
+	vector<guardedVal> tmpVect(amtrange);
 	int lastsize = 1;
-	int lastRoundVars = getVarCnt();
-	vector<int> vals(1);	
+	//int lastRoundVars = getVarCnt();
+	vector<guardedVal> vals(1);	
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
-		lastRoundVars = YES;
+		vals[0].guard = YES;
 		if( switchID[amtsize-1] > 0 ){
-			vals[0] = 1;
+			vals[0].value = 1;
 		}else{
-			vals[0] = 0;
+			vals[0].value = 0;
 		}
 		lastsize = 1;
 	}else{
 		vals.resize(2);
-		lastRoundVars = newAnonymousVar();
-		int tmp = newAnonymousVar();
-		Assert( tmp == lastRoundVars+1, "BooleanToCNF1: This is bad");
-		mng.addEqualsClause(lastRoundVars, -(switchID[amtsize-1]));
-		mng.addEqualsClause(tmp,  (switchID[amtsize-1]));
-		vals[0] = 0;
-		vals[1] = 1;
+		vals[0].value = 0;
+		vals[0].guard = -(switchID[amtsize-1]);
+		vals[1].value = 1;
+		vals[1].guard = (switchID[amtsize-1]);
 		lastsize = 2;
 	}
 	
@@ -461,38 +581,37 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 		if( (-curval) == YES || curval == YES){
 			int v = (curval > 0)? 1:0;
 			for(int j=0; j<lastsize; ++j){
-				tmpVect[j] = vals[j]*2 + v;
+				tmpVect[j].value = vals[j].value*2 + v;
+				tmpVect[j].guard = vals[j].guard;
 				Assert(j<amtrange, "This is out of range amtsize = "<<amtsize );
 			}
-		}else{
-			int roundVars = lastRoundVars;
-			lastRoundVars = newAnonymousVar();
-			newAnonymousVar();			
-			for(int j=1; j<lastsize; ++j){
-				newAnonymousVar();
-				newAnonymousVar();
-			}
+		}else{			
 			for(int j=0; j<lastsize; ++j){
 				Assert((2*j+1)<amtrange, "This is out of range");
-				int cvar = roundVars + j;
-				mng.addAndClause(lastRoundVars + j*2, cvar, -(curval));
-				mng.addAndClause(lastRoundVars + j*2 + 1, cvar, (curval));
-				tmpVect[2*j] = vals[j]*2;
-				tmpVect[2*j+1] = vals[j]*2 + 1;
+				tmpVect[2*j].value = vals[j].value*2;
+				tmpVect[2*j].guard = this->addAndClause(vals[j].guard, -curval);
+				tmpVect[2*j+1].value= vals[j].value*2 + 1;
+				tmpVect[2*j+1].guard = this->addAndClause(vals[j].guard, curval);
 			}
 			lastsize = lastsize*2;	
 		}
 		vals.resize(lastsize);
 		for(int j=0; j<lastsize; ++j){
-			vals[j] = tmpVect[j];	
-		}		
-	}	
-	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);
-	int roundVars = lastRoundVars;
-	output.clear();
-	for(int i=0; i<lastsize; ++i){
-		output.push_back(guardedVal(roundVars+i, vals[i]));
+			vals[j] = tmpVect[j];
+		}
 	}
+	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);	
+	output.clear();
+	for(vector<guardedVal>::iterator it = vals.begin(); it != vals.end(); ++it){
+		if(it->guard != -YES){
+			output.push_back(*it);
+		}
+		if(it->guard == YES){
+			output.clear();
+			output.push_back(*it);
+			return;
+		}
+	}	
 	return ;
 	//////////////////////////////////////////////////////
 }

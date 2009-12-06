@@ -19,6 +19,10 @@ void BLIFwriter::annotate(const string& msg){
 	FileOutput(output<<msg<<endl);
 }
 
+void BLIFwriter::addHelperClause(int c[], int size){
+	
+}
+
 void BLIFwriter::annotateInput(const string& name, int i, int sz){
 	/*
 	output<<"x "<<name<<" ";

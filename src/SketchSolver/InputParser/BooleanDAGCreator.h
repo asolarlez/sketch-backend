@@ -72,6 +72,7 @@ public:
 
   string new_name(){
 	 int p = 0;
+	char tmpbuf[200];
 	tmpbuf[p] = 't'; p++;
 	writeInt(tmpbuf, new_names, p);
 	++new_names;
