@@ -8,20 +8,14 @@
 
 Name: sketch-cegis
 Summary: CEGIS backend for UC Berkeley's SKETCH
-Version: 1.5.0SNAPSHOT
-Release: 1
+Version: {{ version }}
+Release: {{ release_number }}
 Url: http://sketch.cs.berkeley.edu/
-Source0: sketch-cegis-1.5.0SNAPSHOT.tar.lzma
+Source0: {{ sourcefile }}
 License: different modules under different licenses (BSD and LGPL)
 Group: Development/Tools
 BuildRoot: %{_tmppath}/%{name}-%{version}-build
-
-# TODO -- delete me
-Requires: java-1.6.0-openjdk
 BuildRequires: lzma gcc gzip gcc-c++ binutils glibc-devel libstdc++-devel libstdc++ make bison flex
-# for sketch-frontend
-# Requires: java-1_6_0-openjdk
-# BuildRequires: java-1_6_0-openjdk-devel
 
 %description
 SKETCH is a software synthesis tool that allows for rapid development of highly tuned bug-free algorithm implementations. To do this, the programmer develops a sketch, or partial implementation, and a separate specification of the desired functionality. The synthesizer then completes the sketch to behave like the specification. The correctness of the synthesized implementation is guaranteed by the compiler.
@@ -46,3 +40,4 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(755, root, root)
 /usr/bin/cegis
+
