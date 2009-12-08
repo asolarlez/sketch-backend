@@ -18,13 +18,6 @@ except:
     raise ImportError("please install gatoatigrado's utility library from "
             "bitbucket.org/gatoatigrado/gatoatigrado_lib")
 
-# TODO -- delete me
-# Requires: java-1.6.0-openjdk
-# BuildRequires: lzma gcc gzip gcc-c++ binutils glibc-devel libstdc++-devel libstdc++ make bison flex
-# for sketch-frontend
-# Requires: java-1_6_0-openjdk
-# BuildRequires: java-1_6_0-openjdk-devel
-
 def get_release_version(conf_path, no_inc_release):
     release_number = conf_path.subpath("release_number")
     release_number_v = int(release_number.read().strip())
@@ -48,7 +41,7 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
         osc_commit, commit_msg, upload_to_cobol):
 
     proj_path, conf_path, tmpdir = Path(proj_path), Path(conf_path), Path(tmpdir)
-    assert proj_path.subpath(".hg").isdir(), "please run in base sketch-backend directory"
+    assert proj_path.subpath(".hg").isdir(), "please run in base directory (with .hg)"
     check_modified()
 
     version = get_sketch_version(proj_path) if version is None else version
@@ -83,6 +76,7 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
             SubProc(["osc", "co", "home:gatoatigrado1", name]).start_wait()
             [v.copy(repopath.subpath(v.basename())) for v in tmppath.files()]
             with ExecuteIn(repopath):
+                SubProc(["osc", "add"] + [v for v in Path(".").listdir() if v != ".osc"]).start_wait()
                 SubProc(["osc", "commit"] + (["-m", commit_msg]
                     if commit_msg else [])).start_wait()
 
