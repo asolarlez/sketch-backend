@@ -15,6 +15,10 @@ bool_node *comparisson (bool_node *p1, bool_node *p2, bool_node::Type atype)
 
 
 
+#ifdef CONST
+#undef CONST
+#endif
+
 
 #define YYLEX_PARAM yyscanner
 #define YYPARSE_PARAM yyscanner
@@ -275,10 +279,11 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 | T_assert Expression ':' T_string ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
-
-    ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
-    bn->setMsg(*$4);
-    currentBD->new_node ($2, NULL, bn);
+	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
+		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
+		bn->setMsg(*$4);
+		currentBD->new_node ($2, NULL, bn);
+	}    
     delete $4;
   }
 } 
@@ -434,7 +439,11 @@ Term: Constant {
 }
 
 | '-' Term {	
-	$$ = currentBD->new_node($2, NULL, bool_node::NEG);		
+	if($2->type == bool_node::CONST){
+		$$ = currentBD->create_const(-dynamic_cast<CONST_node*>($2)->getVal());
+	}else{
+		$$ = currentBD->new_node($2, NULL, bool_node::NEG);		
+	}	
 }
 | '!' Term { 
 	$$ = currentBD->new_node($2, NULL, bool_node::NOT);		    

@@ -59,7 +59,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return cm ? 1 : -1;	
 	}
 	
-	if(typeid(*n1) == typeid(NOT_node)){
+	if(n1->type == bool_node::NOT){
 		int rv = staticCompare<COMP>(n1->mother, C, reverse);
 		anv[n1] = anv[n1->mother];
 		anv[n1].timestamp = n1->globalId;		
@@ -74,7 +74,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return nv.staticCompare<COMP>(C, reverse);
 	}
 
-	if(typeid(*n1) == typeid(SRC_node) || typeid(*n1) == typeid(CTRL_node)){
+	if(n1->type == bool_node::SRC ||  n1->type == bool_node::CTRL){
 		INTER_node* inode = dynamic_cast<INTER_node*>(n1);
 		AbstractNodeValue& nv = anv[n1];
 		if(inode->getOtype() == bool_node::BOOL){
@@ -90,7 +90,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	}
 
 
-	if(  typeid(*n1) == typeid(PLUS_node)){
+	if( n1->type == bool_node::PLUS){
 		AbstractNodeValue& nv = anv[n1];
 		nv.timestamp = n1->globalId;
 		{
@@ -140,12 +140,12 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			tata = true;
 		}
 		AbstractNodeValue& mnv = tata? anv[ar.mother] : mot->second;
-		if(mnv.isTop() ||  typeid(*n1) == typeid(ARRASS_node)){
+		if(mnv.isTop() || ar.arith_type == arith_node::ARRASS /*typeid(*n1) == typeid(ARRASS_node)*/){
 			for(int i=0; i<ar.multi_mother.size(); ++i){
 				bool_node* parent = ar.multi_mother[i];
 				helper<COMP>(parent, C, reverse, rv, nv);
 			}
-			if((!PARAMS->assumebcheck) &&  typeid(*n1) == typeid(ARRACC_node) && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
+			if((!PARAMS->assumebcheck) && ar.arith_type == arith_node::ARRACC  && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
 				nv.insert(0);
 				bool cm = reverse? comp(C, 0) : comp(0, C);
 				int tmp = cm ? 1 : -1;	
@@ -199,19 +199,21 @@ void DagOptim::helper(bool_node* parent, int C, int reverse, int& rv, AbstractNo
 
 				if(it == anv.end()){
 					tmp = staticCompare<COMP>(parent, C, reverse);
+					nv.insert( anv[parent] );
 				}else{
 					if(it->second.timestamp == parent->globalId){
 						tmp = it->second.staticCompare<COMP>(C, reverse);
+						nv.insert(it->second);
 					}else{
 						anv.erase(it);
 						tmp = staticCompare<COMP>(parent, C, reverse);
+						nv.insert( anv[parent] );
 					}
-				}		
+				}
 
 				if(tmp == 0 || (rv != -2 && tmp != rv)){				
 					rv = 0;	
-				}
-				nv.insert( anv[parent] );
+				}				
 				if(rv != 0){
 					rv = tmp;
 				}
@@ -396,7 +398,6 @@ bool DagOptim::isConst(const bool_node* n1){
 	if( n1->type == bool_node::CONST ){
 		return true;
 	}	
-	Assert( typeid(*n1) != typeid(CONST_node), "What is this?");
 	return false;
 }
 
@@ -1423,6 +1424,17 @@ void DagOptim::visit( ARRACC_node& node ){
 	
 	rvalue = &node;
 }
+
+void checkArrass(vector<bool_node*>&  vv,  bool_node* mot, ARRASS_node& node, int lev){
+	vv.push_back(node.multi_mother[1]);
+	ARRASS_node* dc = dynamic_cast<ARRASS_node*>(node.multi_mother[0]);
+	if(dc != NULL && dc->quant == lev + 1 && dc->mother == mot){
+		checkArrass(vv ,mot, *dc, lev+1);
+	}else{
+		vv.push_back(node.multi_mother[0]);
+	}
+}
+
 void DagOptim::visit( ARRASS_node& node ){
 	if( isConst(node.mother) ){
 		int val = getIval( node.mother );
@@ -1438,6 +1450,34 @@ void DagOptim::visit( ARRASS_node& node ){
 		rvalue = node.multi_mother[0];
 		return;
 	}
+
+	if(false && node.quant == 0){
+		vector<bool_node*>  vv;		
+		checkArrass(vv, node.mother, node, 0);
+		if(vv.size()>2){
+			ARRACC_node* an = new ARRACC_node();
+			an->mother = node.mother;
+			an->multi_mother.swap(vv);
+			an->addToParents();
+			addNode(an);
+			int sz = an->multi_mother.size();
+			LT_node* ltn = new LT_node();
+			ltn->mother = node.mother;
+			ltn->father = this->getCnode(sz);
+			ltn->addToParents();
+			addNode(ltn);
+
+			ARRACC_node* an2 = new ARRACC_node();
+			an2->mother = ltn;
+			an2->multi_mother.push_back(an->multi_mother[sz-1]);
+			an2->multi_mother.push_back(an);
+			an2->addToParents();
+			addNode(an2);
+			rvalue = an2;
+			return;
+		}
+	}
+
 
 	if(typeid(*node.mother) == typeid(PLUS_node) && (isConst(node.mother->mother) || isConst(node.mother->father)  )){
 		bool_node* n1 = node.mother;		

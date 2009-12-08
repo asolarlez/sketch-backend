@@ -4,7 +4,7 @@
 
 
 
-char tmpbuf[10000];
+
 char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
 				'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
@@ -18,11 +18,12 @@ char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
 void DagCSE::setStr(int id1, char op, int id2){
 	int p = 0;
-	writeInt(tmpbuf, id1, p);
-	tmpbuf[p] = op; p++;
-	writeInt(tmpbuf, id2, p);
-	tmpbuf[p] = 0;
-	ccode = tmpbuf;		
+	char* tch = &tmpbuf[0];
+	writeInt(tch, id1, p);
+	tch[p] = op; p++;
+	writeInt(tch, id2, p);
+	tch[p] = 0;
+	ccode = tch;		
 	/*
 	sprintf(tmpbuf, "%d%c%d",id1, op,id2);   	
  	ccode = tmpbuf;
@@ -30,7 +31,7 @@ void DagCSE::setStr(int id1, char op, int id2){
 }
 
 
-DagCSE::DagCSE(BooleanDAG& p_dag): dag(p_dag) Dtime(,stimer("string creation"), maptimer("map lookup"))
+DagCSE::DagCSE(BooleanDAG& p_dag): dag(p_dag), tmpbuf(1000) Dtime(,stimer("string creation"), maptimer("map lookup"))
 {
 }
 
@@ -104,9 +105,12 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.restart();)
  	
  	int mid = node.mother == NULL? -1: node.mother->globalId;
- 	
- 	sprintf(tmpbuf, "!%d", mid );   	
- 	ccode = tmpbuf;
+ 	char* tch = &tmpbuf[0];
+ 	int p = 0;
+	tch[p] = '!'; p++;
+	writeInt(tch, mid, p);	
+	tch[p]=0;
+ 	ccode = tch;
  	
  	Dtime(stimer.stop();)
  }
@@ -168,18 +172,25 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.restart();)
 
  	int mid = node.mother == NULL? -1: node.mother->globalId; 	
- 	
- 	sprintf(tmpbuf, "-%d", mid );   	
- 	ccode = tmpbuf;
+ 	char* tch = &tmpbuf[0];
+	int p = 0;
+	tch[p] = '-'; p++;
+	writeInt(tch, mid, p);	
+	tch[p]=0;
+ 	ccode = tch;
  	
  	Dtime(stimer.stop();)
  }
  
   void DagCSE::visit(  CONST_node& node ){
   	Dtime(stimer.restart();)
-  	
-  	sprintf(tmpbuf, "$%d$", node.getVal() );   	
- 	ccode = tmpbuf;
+  	char* tch = &tmpbuf[0];
+	int p = 0;
+	tch[p] = '$'; p++;
+	writeInt(tch, node.getVal(), p);	
+	tch[p] = '$'; p++;
+	tch[p]=0;  	
+ 	ccode = tch;
   	
  	Dtime(stimer.stop();)
  }
@@ -262,15 +273,18 @@ void DagCSE::eliminateCSE(){
  	Dtime(stimer.restart();)
 	int p = 0;
 	int mid = node.mother == NULL? -1: node.mother->globalId;
-	writeInt(tmpbuf, mid, p);
-	tmpbuf[p] = '~'; p++;
-	for(int i=0; i<node.multi_mother.size(); ++i){
+	int mmsize = node.multi_mother.size();
+	if(mmsize * 20 > tmpbuf.size()){ tmpbuf.resize(mmsize * 22  );}
+	char* tch = &tmpbuf[0];
+	writeInt(tch, mid, p);
+	tch[p] = '~'; p++;
+	for(int i=0; i<mmsize; ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->globalId;
-		writeInt(tmpbuf, mmid, p);
-		tmpbuf[p] = ','; p++;
+		writeInt(tch, mmid, p);
+		tch[p] = ','; p++;
  	}
-	tmpbuf[p] = 0;
-	ccode = tmpbuf;
+	tch[p] = 0;
+	ccode = tch;
 	/*
  	stringstream str;
  	int mid = node.mother == NULL? -1: node.mother->globalId;
@@ -285,12 +299,19 @@ void DagCSE::eliminateCSE(){
  }
  
  void DagCSE::visit(  ARRASS_node& node ){
- 	Dtime(stimer.restart();)
-	stringstream str;
+ 	Dtime(stimer.restart();)	
  	int mid = node.mother == NULL? -1: node.mother->globalId;
-
-	sprintf(tmpbuf, "%d=%d?%d:%d",mid,node.quant,node.multi_mother[0]->globalId, node.multi_mother[1]->globalId);   	
- 	ccode = tmpbuf;
+	char* tch = &tmpbuf[0];
+	int p = 0;
+	writeInt(tch, mid, p);
+	tch[p] = '='; p++;
+	writeInt(tch, node.quant, p);
+	tch[p] = '?'; p++;
+	writeInt(tch, node.multi_mother[0]->globalId, p);
+	tch[p] = ':'; p++;
+	writeInt(tch, node.multi_mother[1]->globalId, p);
+	tch[p] = 0;
+ 	ccode = tch;
 
  	Dtime(stimer.stop();)
  }
@@ -311,7 +332,6 @@ void DagCSE::eliminateCSE(){
  
  void DagCSE::visit(  ASSERT_node &node){
  	Dtime(stimer.restart();)
- 	stringstream str;
 	int mid = node.mother == NULL? -1: node.mother->globalId;
 	setStr(0, 'A', mid);
  	Dtime(stimer.stop();)

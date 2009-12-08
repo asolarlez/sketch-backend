@@ -46,6 +46,8 @@ class CommandLineArgs{
   bool simulate;
   int simiters;
   string simplifycex;
+  bool setMemo;
+  bool debug;
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -77,11 +79,20 @@ class CommandLineArgs{
 		NINPUTS = 5;
 		simulate = true;
 		simiters = 3;
-		string simplifycex = "RECSYM";
-
+		simplifycex = "RECSYM";
+		setMemo = true;
+		debug = false;
 	  for(int ii=0; ii<argc; ++ii){
+		if( string(argv[ii]) == "-debug" ){	      
+	      debug = true;
+	      input_idx = ii+1;
+	    }
 	    if( string(argv[ii]) == "-nosim" ){	      
 	      simulate = false;
+	      input_idx = ii+1;
+	    }
+		if( string(argv[ii]) == "-nomemo" ){	      
+	      setMemo = false;
 	      input_idx = ii+1;
 	    }
 		if( string(argv[ii]) == "-simiters" ){
@@ -93,6 +104,7 @@ class CommandLineArgs{
 		if( string(argv[ii]) == "-simplifycex" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
 	      simplifycex = argv[ii+1];	  
+		  cout<<"simplifycex = "<<simplifycex<<endl;
 		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 
 			  "The argument to simplifycex should be one of \n NOSIM = no simplify \n SIMSIM = simple simplify \n RECSIM = recursive simplify ");
 	      input_idx = ii+2;

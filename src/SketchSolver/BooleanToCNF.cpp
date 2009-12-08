@@ -30,6 +30,16 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
     return lastone;
 }
 
+
+void SolverHelper::addHelperC(int l1, int l2){
+	int l = this->setStr(min(l1,l2), ':' ,max(l1,l2));
+	int rv;
+	if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){		
+		int tmp[] = {l1, l2};
+		mng.addHelperClause( tmp, 2);
+	}
+}
+
 int
 SolverHelper::select (int choices[], int control, int nchoices, int bitsPerChoice)
 {

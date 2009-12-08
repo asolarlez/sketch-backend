@@ -165,6 +165,9 @@ void MiniSATSolver::hardAssertVarClause(int x){
 
 
  void MiniSATSolver::printDiagnostics(char c){
+/*	 if(c=='f'){
+		s->printSmallLearnts();
+	 }*/
  	cout << c <<"# assigns                : "<<s->nAssigns()<<endl;
  	cout << c <<"# clauses                : "<<s->nClauses()<<endl;
    	cout << c <<"# learnts                : "<<s->nLearnts()<<endl;
@@ -216,7 +219,7 @@ bool MiniSATSolver::ignoreOld(){
  	} 
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
  	s->simplifyDB();
- 	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }
+ 	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	bool result = s->solve();
  	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
 	if( result) {

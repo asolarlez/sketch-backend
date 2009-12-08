@@ -28,6 +28,17 @@ public:
 		s->newVar();
 		clauseCount=0;
 	 }
+	 virtual void addHelperClause(int c[], int sz){
+		vec<Lit> lits;
+		addClause(c, sz, lits);
+	 }
+
+	 virtual int isValKnown(int i){
+		 if(s->value(i) != l_Undef){
+			 return (s->value(i)==l_True) ? 1 : -1;
+		 }
+		 return 0; 
+	 }
 	 virtual ~MiniSATSolver();
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);

@@ -304,43 +304,51 @@ public:
 
 	void insert(T* val){
 		//unsigned loc = hash(val);
-            unsigned loc = traits::hash(val, sz);
+       unsigned loc = traits::hash(val, sz);
+	   
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
-		bool t0 = store[l] == val;
-		bool t1 = store[lp1] == val;
-		bool t2 = store[lp2] == val;
-		bool t3 = store[lp3] == val;
-		bool t4 = store[lp4] == val;
-		bool t5 = store[lp5] == val;
+		T*& sl = store[l];
+		T*& slp1 = store[lp1];
+		T*& slp2 = store[lp2];
+		T*& slp3 = store[lp3];
+		T*& slp4 = store[lp4];
+		T*& slp5 = store[lp5];
+	   
+		bool t0 = sl == val;
+		bool t1 = slp1 == val;
+		bool t2 = slp2 == val;
+		bool t3 = slp3 == val;
+		bool t4 = slp4 == val;
+		bool t5 = slp5 == val;
 
 		if(!(t0 || t1 || t2 || t3 || t4 || t5)){
 
 
-			if(store[lp2] == NULL){
+			if(slp2 == NULL){
 				++_size;
-				store[lp2] = val; return;
+				slp2 = val; return;
 			}
-			if(store[lp3] == NULL){
+			if(slp3 == NULL){
 				++_size;
-				store[lp3] = val; return;
+				slp3 = val; return;
 			}
 
-			if(store[loc] == NULL){
+			if(sl == NULL){
 				++_size;
-				store[loc] = val; return;
+				sl = val; return;
 			}
-			if(store[lp1] == NULL){
+			if(slp1 == NULL){
 				++_size;
-				store[lp1] = val; return;
+				slp1 = val; return;
 			}
 			
-			if(store[lp4] == NULL){
+			if(slp4 == NULL){
 				++_size;
-				store[lp4] = val; return;
+				slp4 = val; return;
 			}
-			if(store[lp5] == NULL){
+			if(slp5 == NULL){
 				++_size;
-				store[lp5] = val; return;
+				slp5 = val; return;
 			}
 			resize();
 			insert(val);

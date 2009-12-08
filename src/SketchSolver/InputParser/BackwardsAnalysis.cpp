@@ -394,7 +394,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		if(tprev != NULL){
 			Info& p = info[tprev];
 			//cout<<"T = "<<tprev->mother->lprint()<<endl;
-			if(tprev->mother->children.size()>1){
+			if(tprev->mother->children.size()>1  || tprev->mother->type == bool_node::AND){
 //				dimp.checkImplications(tprev->mother);
 				p.push(Datum(tprev->mother));			
 				c += p;

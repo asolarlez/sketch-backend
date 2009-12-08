@@ -19,7 +19,7 @@ inline void ABCSolverEnd(){ Abc_Stop(); }
 class ABCSATSolver: public SATSolver{
 public:
 	typedef enum { BASICSAT, FULL } SolutionStrategy;
-	
+
 protected:
 	   int timeout;
        FileOutputABC( ofstream output );
@@ -36,10 +36,10 @@ protected:
 	int GetIntId(int val){
 		return (val);
 	}
-		
+
 	Abc_Ntk_t * cofactor(Abc_Ntk_t * network, vector<int>& namemap);
-	
-	
+
+
 	Abc_Obj_t * getNode(int v){
 		Abc_Obj_t * pFanin0;
 		if( v > 0 ){
@@ -54,18 +54,18 @@ protected:
 	    	return pNode;
 		}
 	}
-    
+
     void closeMiter(Abc_Ntk_t * network);
-    
-       
+
+
 public:
 
-	
+	virtual void addHelperClause(int c[], int size){}
 	void completeProblemSetup();
-	
+
 
         ABCSATSolver(const string& name_p, SolutionStrategy strategy_p, SolverMode smode):SATSolver(name_p, smode){
-		       /////////       
+		       /////////
 		       strategy = strategy_p;
 		       pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP );
 		       pNtk->pName = ALLOC( char, strlen(name.c_str()) + 1 );

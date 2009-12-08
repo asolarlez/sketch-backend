@@ -119,7 +119,7 @@ protected:
 
 	void normalizeInputStore();
 	void abstractProblem();
-	bool growInputs(BooleanDAG* dag, BooleanDAG* oridag);
+	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
 	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args);
 	~CEGISSolver(void);
@@ -137,7 +137,7 @@ public:
 	void printDiagnostics(SATSolver& mng, char c);
 	void printDiagnostics();
 
-
+	void redeclareInputs(BooleanDAG* dag);
 	
 
 	void get_control_map(map<string, int>& values);
