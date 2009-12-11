@@ -37,28 +37,49 @@ def check_modified():
         warn("modified files in local directory; copying modified "
             "versions (but not new untracked files)")
 
+def run_osc_commit(name, tmppath, commit_msg):
+    repopath = Path("home:gatoatigrado1/%s" % (name))
+    SubProc(["osc", "co", "home:gatoatigrado1", name]).start_wait()
+    [v.copy(repopath.subpath(v.basename())) for v in tmppath.files()]
+    with ExecuteIn(repopath):
+        SubProc(["osc", "add"] + [v for v in Path(".").listdir() if v != ".osc"]).start_wait()
+        SubProc(["osc", "commit"] + (["-m", commit_msg]
+            if commit_msg else [])).start_wait()
+
+def run_jinja2(files, tmppath, name, version, sourcefile, release_number_v):
+    def output(fname, text):
+        fname = fname.basename().replace(".jinja2", "")
+        if fname.endswith("dsc"):
+            fname = fname[:-4] + "-" + version + ".dsc"
+        tmppath.subpath(fname).write(text)
+        print("\n\n\n%s\n%s" %(fname, text), end="")
+
+    process_jinja2(glbls={
+        "name": name,
+        "version": version,
+        "sourcefile": sourcefile,
+        "release_number": release_number_v
+        }, output_fcn=output).values()
+
 def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_install,
-        osc_commit, commit_msg, upload_to_cobol):
+        osc_commit, commit_msg, upload_to_cobol, additional_path):
 
     proj_path, conf_path, tmpdir = Path(proj_path), Path(conf_path), Path(tmpdir)
     assert proj_path.subpath(".hg").isdir(), "please run in base directory (with .hg)"
     check_modified()
 
     version = get_sketch_version(proj_path) if version is None else version
-    sourcefile = "%s-%s.tar.lzma" % (name, version)
+    # NOTE -- need to use gz instead of lzma for Debian compatibility
+    sourcefile = "%s-%s.tar.gz" % (name, version)
     release_number_v = get_release_version(conf_path, no_inc_release)
-
-    spec = get_singleton(process_jinja2(files=[conf_path.subpath("%s.spec.jinja2" % (name))], glbls={
-        "version": version,
-        "sourcefile": sourcefile,
-        "release_number": release_number_v
-        }, output_fcn=None).values())
-    print(spec)
 
     tmppath = tmpdir.subpath("%s-%s" % (name, version))
     tmppath.makenewdir()
 
-    tmppath.subpath("%s.spec" % (name)).write(spec)
+    files = [conf_path.subpath("%s.spec.jinja2" % (name))]
+    with ExecuteIn(conf_path):
+        run_jinja2(files, tmppath, name, version, sourcefile, release_number_v)
+
     srcpath = tmppath.subpath("%s-%s" % (name, version))
     proj_path.copytree(srcpath)
 
@@ -66,19 +87,19 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
         assert (Path(".") != proj_path)
         SubProc(["zsh", "-c", r"rm -rf $(hg stat -uin) .hg*"]).start_wait()
 
+    if additional_path:
+        additional_path = Path(additional_path)
+        final_path = srcpath.subpath(additional_path.basename())
+        final_path.rmtree()
+        additional_path.copytree(final_path)
+
     with ExecuteIn(tmppath):
         SubProc(["tar", "cfa", sourcefile, srcpath.basename()]).start_wait()
         srcpath.rmtree()
         if run_local_install:
             SubProc(["build"]).start_wait()
-        repopath = Path("home:gatoatigrado1/%s" % (name))
         if osc_commit:
-            SubProc(["osc", "co", "home:gatoatigrado1", name]).start_wait()
-            [v.copy(repopath.subpath(v.basename())) for v in tmppath.files()]
-            with ExecuteIn(repopath):
-                SubProc(["osc", "add"] + [v for v in Path(".").listdir() if v != ".osc"]).start_wait()
-                SubProc(["osc", "commit"] + (["-m", commit_msg]
-                    if commit_msg else [])).start_wait()
+            run_osc_commit(name, tmppath, commit_msg)
 
     if upload_to_cobol:
         with ExecuteIn(tmpdir):
@@ -100,6 +121,8 @@ def add_generic_opts(cmdline):
         help="commit to the opensuse build service")
     cmdopts.add_option("--upload_to_cobol", action="store_true",
         help="upload an archive of the files to cobol")
+    cmdopts.add_option("--additional_path",
+        help="copy an additional directory tree to the expanded files")
 
 if __name__ == "__main__":
     import optparse

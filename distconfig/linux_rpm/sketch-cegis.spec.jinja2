@@ -6,8 +6,10 @@
 # not use this file except in compliance with the License. You may obtain a
 # copy of the License at http://www.apache.org/licenses/LICENSE-2.0 .
 
-Name: sketch-cegis
-Summary: CEGIS backend for UC Berkeley's SKETCH
+{% import "jinja2_macros.txt" as macros %}
+
+Name: {{ name }}
+Summary: {{ macros.summary }}
 Version: {{ version }}
 Release: {{ release_number }}
 Url: http://sketch.cs.berkeley.edu/
@@ -18,7 +20,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-build
 BuildRequires: lzma gcc gzip gcc-c++ binutils glibc-devel libstdc++-devel libstdc++ make bison flex
 
 %description
-SKETCH is a software synthesis tool that allows for rapid development of highly tuned bug-free algorithm implementations. To do this, the programmer develops a sketch, or partial implementation, and a separate specification of the desired functionality. The synthesizer then completes the sketch to behave like the specification. The correctness of the synthesized implementation is guaranteed by the compiler.
+{{ macros.description() }}
 
 %doc README COPYING AUTHORS
 
