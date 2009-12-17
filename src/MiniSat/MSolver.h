@@ -35,6 +35,12 @@ public:
     Lit     operator [] (int index) const { return data[index]; }
     Lit&    operator [] (int index)       { return data[index]; }
     float&  activity    (void)      const { return *((float*)&data[size()]); }
+	void resize(int nsize){
+		float tac;
+		if (size_learnt & 1) tac = activity(); 
+		size_learnt = (nsize << 1) | (size_learnt & 1);
+		if (size_learnt & 1) activity()=tac;
+	}
 };
 
 
@@ -93,6 +99,7 @@ protected:
                         watches;        // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 
     vec<char>           assigns;        // The current assignments (lbool:s stored as char:s).
+	vec<char>           lastassigns;        // The current assignments (lbool:s stored as char:s).
     vec<Lit>            trail;          // List of assignments made.
     vec<int>            trail_lim;      // Separator indices for different decision levels in 'trail'.
     vec<LitClauseUnion> reason;         // 'reason[var]' is the clause that implied the variables current value, or 'NULL' if none.
@@ -117,10 +124,12 @@ protected:
     void        analyze      (Clause* confl, vec<Lit>& out_learnt, int& out_btlevel); // (bt = backtrack)
     bool        removable    (Lit l, unsigned int minl);
     bool        enqueue      (Lit fact, LitClauseUnion from = makeClause(NULL));
+public:
     Clause*     propagate    (void);
+protected:
     void        reduceDB     (void);
     Lit         pickBranchLit(const SearchParams& params);
-    lbool       search       (int nof_conflicts, int nof_learnts, const SearchParams& params);
+    lbool       search       (int nof_conflicts, int nof_learnts, const SearchParams& params, bool& frstConflict);
     double      progressEstimate(void);
 
     // Activity:
@@ -140,7 +149,7 @@ protected:
     void    claBumpActivity (Clause* c) { if ( (c->activity() += cla_inc) > 1e20 ) claRescaleActivity(); }
     void    remove(Clause* c, bool just_dealloc = false);
     bool    locked          (const Clause* c) const { LitClauseUnion r = reason[var((*c)[0])]; return !(r.isLit()) && (r.getClause() == c); }
-    bool    simplify        (Clause* c) const;
+    bool    simplify        (Clause* c) ;
 
     int     decisionLevel(void) const { return trail_lim.size(); }
 
@@ -177,6 +186,9 @@ public:
     // Statistics: (read-only member variable)
     //
     SolverStats stats;
+
+	void printSmallLearnts();
+	void printKnownAssigns();
 
     // Problem specification:
     //
@@ -223,7 +235,13 @@ inline bool Solver::enqueue(Lit p, LitClauseUnion from)
     }else{
         //printf(L_IND"bind("L_LIT")\n", L_ind, L_lit(p));
         // New fact -- store it.
+		int t = toInt(lbool(!sign(p)));
         assigns[var(p)] = toInt(lbool(!sign(p)));
+		if(!(from == makeClause(NULL))){
+			if(t == -1 || lastassigns[var(p)] == 0){
+				lastassigns[var(p)] = t;
+			}
+		}
         level  [var(p)] = decisionLevel();
         reason [var(p)] = from;
         trail.push_(p);
