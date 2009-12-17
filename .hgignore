@@ -29,3 +29,5 @@ src/SketchSolver/InputParser.cpp
 src/SketchSolver/InputParser.hpp
 src/SketchSolver/InputParser.output
 src/SketchSolver/cegis
+glob:src\SketchSolver\InputParser\InputLexer.cpp
+glob:src\SketchSolver\InputParser\InputParser.cpp

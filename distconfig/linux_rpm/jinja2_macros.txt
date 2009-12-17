@@ -1,0 +1,6 @@
+{% set maintainer = "Armando Solar-Lezama <asolar@csail.mit.edu>"%}
+{% set summary = "CEGIS backend for UC Berkeley's SKETCH" %}
+{% set deb_build_deps = "debhelper (>= 4.1.16), gcc, gzip, gcc-c++, binutils, glibc-source, libstdc++6-4.3-dev, libstdc++6, make, bison, flex" %}
+{% macro description() %}
+SKETCH is a software synthesis tool that allows for rapid development of highly tuned bug-free algorithm implementations. To do this, the programmer develops a sketch, or partial implementation, and a separate specification of the desired functionality. The synthesizer then completes the sketch to behave like the specification. The correctness of the synthesized implementation is guaranteed by the compiler.
+{% endmacro %}

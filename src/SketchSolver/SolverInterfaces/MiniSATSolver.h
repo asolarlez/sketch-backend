@@ -31,8 +31,8 @@ public:
 	 virtual void addHelperClause(int c[], int sz);
 
 	 virtual int isValKnown(int i){
-		 if(s->value(i) != l_Undef){
-			 return (s->value(i)==l_True) ? 1 : -1;
+		 if(s->value(i) != MSsolverNS::l_Undef){
+			 return (s->value(i)==MSsolverNS::l_True) ? 1 : -1;
 		 }
 		 return 0; 
 	 }
