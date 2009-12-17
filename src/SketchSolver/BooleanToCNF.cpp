@@ -7,6 +7,7 @@
 using namespace std;
 
 #include "BooleanToCNF.h"
+#include "Tvalue.h"
 
 #ifndef SAT_Manager
 #define SAT_Manager void *
@@ -28,7 +29,31 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 	}		
     }
     return lastone;
+
 }
+
+
+void SolverHelper::addHelperC(Tvalue& tv){
+	
+	vector<guardedVal>& gv = tv.num_ranges;
+	if(tv.isSparse() &&  gv.size() > 1){
+		addHelperC(-gv[0].guard, -gv[1].guard);
+		if(gv.size()>2){
+			int t = addOrClause(gv[0].guard, gv[1].guard);
+			for(int i=2; i<gv.size()-1; ++i){
+				addHelperC(-t, -gv[i].guard);
+				t = addOrClause(t, gv[i].guard);
+			}
+			addHelperC(-t, -gv[gv.size()-1].guard);
+		}
+	}
+	
+}
+
+
+
+
+
 
 
 void SolverHelper::addHelperC(int l1, int l2){

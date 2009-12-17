@@ -28,10 +28,7 @@ public:
 		s->newVar();
 		clauseCount=0;
 	 }
-	 virtual void addHelperClause(int c[], int sz){
-		vec<Lit> lits;
-		addClause(c, sz, lits);
-	 }
+	 virtual void addHelperClause(int c[], int sz);
 
 	 virtual int isValKnown(int i){
 		 if(s->value(i) != l_Undef){

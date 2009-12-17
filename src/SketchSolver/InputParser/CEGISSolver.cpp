@@ -287,10 +287,7 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 	{
 		timerclass timer("defineProblem");
 		timer.start();
-		int YES = dir.newAnonymousVar();
-		dir.setYes(YES);
-		Dout(cout<<"YES = "<<YES<<endl);
-		mng.setVarClause(YES);
+		int YES = dir.newYES();
 		
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
 		try{

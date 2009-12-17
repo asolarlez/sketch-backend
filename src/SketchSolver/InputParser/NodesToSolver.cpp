@@ -6,6 +6,8 @@
 
 extern CommandLineArgs* PARAMS;
 
+// #define Dout(msg) msg
+
 /* 
  * Uncomment this to switch to bit-vector operators / comparators.
  * TODO switch to some other (dynamic) mechanism...
@@ -437,6 +439,7 @@ NodesToSolver::processArith (bool_node &node)
 		tmp[i] = guardedVal(it->second, it->first);		
 	}
 	oval.sparsify ();
+	dir.addHelperC(oval);
 	Dout( cout<<" := "<<oval<<endl );	    
 }
 

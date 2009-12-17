@@ -7,7 +7,7 @@ A simple Chaff-like SAT-solver with support for incremental SAT.
 **************************************************************************************************/
 #include <cmath>
 
-
+#include <iostream>
 
 #include "MSolver.h"
 #include "Sort.h"
@@ -28,9 +28,37 @@ namespace MSsolverNS{
 inline void check(bool expr) { assert(expr); }
 
 
+
+void Solver::printSmallLearnts(){
+	for(int i=0; i< learnts.size(); ++i){
+		Clause* cc = learnts[i];
+
+		if(cc->size() < 3){
+			std::cout<<cc->size();
+			for(int t=0; t<cc->size(); ++t){
+				std::cout<<(sign((*cc)[t])?"-":"+")<< var((*cc)[t])  <<", ";
+			}
+			std::cout<<std::endl;
+		}
+	}
+}
+
+
+
+
+
+
+
 //=================================================================================================
 // Helpers:
 
+
+void swapWatch(vec<LitClauseUnion>& ws, LitClauseUnion elem, LitClauseUnion newelem)
+{
+    int j = 0;
+    for (; ws[j] != elem  ; j++) assert(j < ws.size());
+	if(j < ws.size()){ ws[j] = newelem; }    
+}
 
 void removeWatch(vec<LitClauseUnion>& ws, LitClauseUnion elem)
 {
@@ -39,7 +67,13 @@ void removeWatch(vec<LitClauseUnion>& ws, LitClauseUnion elem)
     for (; j < ws.size()-1; j++) ws[j] = ws[j+1];
     ws.pop();
 }
-
+void Solver::printKnownAssigns(){
+	for(int i=0; i<assigns.size(); ++i){
+		if(toLbool(assigns[i]) != l_Undef){
+			std::cout<<"var "<<i<<"="<<(toLbool(assigns[i])==l_True? 't' : 'f')<<std::endl;
+		}
+	}
+}
 
 //=================================================================================================
 // Operations on clauses:
@@ -154,14 +188,34 @@ void Solver::remove(Clause* c, bool just_dealloc)
 // the clause is binary and satisfied, in which case the first literal is true)
 // Returns True if clause is satisfied (will be removed), False otherwise.
 //
-bool Solver::simplify(Clause* c) const
+bool Solver::simplify(Clause* c) 
 {
     assert(decisionLevel() == 0);
-    for (int i = 0; i < c->size(); i++){
-        if (value((*c)[i]) == l_True)
-            return true;
-    }
-    return false;
+	int oldsz = c->size();
+	Lit* ll = &(*c)[0];
+	Lit* end = ll + c->size();
+	Lit c0 = ~(*c)[0];
+	Lit c1 = ~(*c)[1];
+	for(Lit* tt = ll ; tt < end; ){
+		if (value(*tt) == l_True)
+			return true;
+		if (value(*tt) != l_False){			
+			*ll = *tt;
+			++ll;
+		}
+		++tt;
+	}
+    int sz = ll - &(*c)[0];
+	assert(sz >= 2);
+	if(sz != oldsz){
+		c->resize(sz);
+		if(sz == 2 && oldsz != 2){
+			swapWatch(watches[index(c0)], makeClause(c), makeLit((*c)[1]));
+			swapWatch(watches[index(c1)], makeClause(c), makeLit((*c)[0]));
+
+		}
+	}
+	return false;
 }
 
 
@@ -181,6 +235,7 @@ Var Solver::newVar(void)
     watches .push();          // (list for negative literal)
     reason  .push(makeClause(NULL));
     assigns .push(toInt(l_Undef));
+	lastassigns .push(toInt(l_Undef));
     level   .push(-1);
     activity.push(0);
     order   .newVar();
@@ -281,7 +336,17 @@ void Solver::analyze(Clause* _confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (confl.isLit()){
             Lit q = confl.getLit();
-            ANALYZE_LIT(p);
+            //ANALYZE_LIT(p);
+			if (!seen[var(q)] && level[var(q)] > 0){                
+                varBumpActivity(q);                                 
+                seen[var(q)] = 1;                                   
+                if (level[var(q)] == decisionLevel())               
+                    pathC++;                                        
+                else{                                               
+                    out_learnt.push(q);                             
+                    out_btlevel = max(out_btlevel, level[var(q)]);  
+                }                                                   
+            }
         }else{
             Clause& c = *confl.getClause();
             if (c.learnt())
@@ -289,7 +354,17 @@ void Solver::analyze(Clause* _confl, vec<Lit>& out_learnt, int& out_btlevel)
 
             for (int j = p == lit_Undef ? 0 : 1; j < c.size(); j++){
                 Lit q = c[j];
-                ANALYZE_LIT(p);
+                // ANALYZE_LIT(p);
+				if (!seen[var(q)] && level[var(q)] > 0){                
+					varBumpActivity(q);                                 
+					seen[var(q)] = 1;                                   
+					if (level[var(q)] == decisionLevel())               
+						pathC++;                                        
+					else{                                               
+						out_learnt.push(q);                             
+						out_btlevel = max(out_btlevel, level[var(q)]);  
+					}                                                   
+				}
             }
         }
 
@@ -410,6 +485,7 @@ Clause* Solver::propagate(void)
         for (;;) {
         next:
             if (i == end) break;
+//			std::cout<<" propagate "<<std::endl;
             if (i->isLit()){
                 if (!enqueue(i->getLit(),makeLit(p))){
                     confl = tmp_binary;
@@ -533,6 +609,13 @@ void Solver::simplifyDB(void)
     }
 }
 
+/*
+Solver::buildMinModel(){
+
+
+}
+*/
+
 
 /*_________________________________________________________________________________________________
 |                                                                                                  
@@ -548,25 +631,26 @@ void Solver::simplifyDB(void)
 |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
 |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached. 
 |________________________________________________________________________________________________@*/
-lbool Solver::search(int nof_conflicts, int nof_learnts, const SearchParams& params)
+lbool Solver::search(int nof_conflicts, int nof_learnts, const SearchParams& params, bool& frstConflict)
 {
     if (!ok) return l_False;    // GUARD (public method)
     assert(root_level == decisionLevel());
-
+	int varId = 1;
     stats.starts++;
     int     conflictC = 0;
     var_decay = 1 / params.var_decay;
     cla_decay = 1 / params.clause_decay;
     model.clear();
-
+	vec<Lit>    learnt_clause;
     for (;;){
         Clause* confl = propagate();
         if (confl != NULL){
+			frstConflict = false;
             // CONFLICT
-
+//			std::cout<<" conflict "<<std::endl;
             //if (verbosity >= 2) printf(L_IND"**CONFLICT**\n", L_ind);
-            stats.conflicts++; conflictC++;
-            vec<Lit>    learnt_clause;
+            stats.conflicts++; conflictC++;            
+			learnt_clause.shrink_(learnt_clause.size());
             int         backtrack_level;
             if (decisionLevel() == root_level)
                 return l_False;
@@ -594,17 +678,36 @@ lbool Solver::search(int nof_conflicts, int nof_learnts, const SearchParams& par
 
             // New variable decision:
             stats.decisions++;
-            Var next = order.select(params.random_var_freq);
+            Var next;
+			if(frstConflict){
 
+				next = varId; varId++;
+				if(next == assigns.size()){ 
+					next = var_Undef; 
+				}else{
+					while(toLbool(assigns[next]) != l_Undef){
+						next = varId; varId++;
+						if(next == assigns.size()){ next = var_Undef; break; }
+					}
+				}
+			}else{
+				next = order.select(params.random_var_freq);
+			}
+//			std::cout<<"next = "<<next<<std::endl;
             if (next == var_Undef){
                 // Model found:
                 model.growTo(nVars());
-                for (int i = 0; i < nVars(); i++) model[i] = value(i);
+				for (int i = 0; i < nVars(); i++){ model[i] = value(i); lastassigns[i] = assigns[i]; }
                 cancelUntil(root_level);
                 return l_True;
             }
-
-            check(assume(~Lit(next)));
+			lbool tt = toLbool(lastassigns[next]);
+			if(tt == l_Undef){
+				check(assume(~Lit(next)));
+			}else{
+				//std::cout<<next<<" q="<<toInt(tt)<<std::endl;
+				check(assume( tt == l_True ? Lit(next) : ~Lit(next)));
+			}
         }
     }
 }
@@ -674,13 +777,13 @@ bool Solver::solve(const vec<Lit>& assumps)
         printf("c | %9s | %7s %8s | %7s %7s %8s %7s | %8s |\n","", "Clauses","Literals", "Max", "Clauses", "Literals", "LPC", "");
         printf("c ==============================================================================\n");
     }
-
+	bool fstConflict = true;
     while (status == l_Undef){
         if (verbosity >= 1){
             printf("c | %9d | %7d %8d | %7d %7d %8d %7.1f | %6.3f %% |\n",(int)stats.conflicts,(int)stats.clauses, (int)stats.clauses_literals,(int)nof_learnts, (int)stats.learnts, (int)stats.learnts_literals,(double)stats.learnts_literals / (double)stats.learnts,progress_estimate*100);
             fflush(stdout);
         }
-        status = search((int)nof_conflicts, (int)nof_learnts, params);
+        status = search((int)nof_conflicts, (int)nof_learnts, params, fstConflict);
         nof_conflicts *= 1.5;
         nof_learnts   *= 1.1;
     }

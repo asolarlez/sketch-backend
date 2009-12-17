@@ -21,6 +21,7 @@
 
 using namespace std;
 
+class Tvalue;
 
 class varRange{
 	public:
@@ -87,12 +88,37 @@ class SolverHelper {
 
 public:
     int YES;
+
+	int sval(int var){
+		int t = 0;
+		if(var != YES && var != -YES){
+			if(var>0){ t = mng.isValKnown(var); }
+			else{ t = -mng.isValKnown(-var); }
+			if(t != 0){ 
+				t = YES*t; 
+			}else{ t = var; }
+		}else{
+			t = var;
+		}		 
+	    return t;
+	}
+
     SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
 	varCnt = 1;
 	YES = 0;
 	lastVar = -1;
 	doMemoization = true;
     }
+	void addHelperC(Tvalue& tv);
+	int newYES(){
+		if(YES == 0 || !doMemoization){
+			YES = newAnonymousVar();		
+			mng.setVarClause(YES);
+		}else{
+			cout<<"Repeating yes = "<<YES<<endl;
+		}
+		return YES;
+	}
 
 	void setMemo(bool b){
 		doMemoization = b;
@@ -297,7 +323,7 @@ inline int
 SolverHelper::addChoiceClause (int a, int b, int c, int x)
 {
     Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero");
-
+	a = sval(a); b = sval(b); c = sval(c);
     /* Check for shortcut cases. */
     if (a == YES || b == c)
 	return addEqualsClause (b, x);
@@ -305,6 +331,12 @@ SolverHelper::addChoiceClause (int a, int b, int c, int x)
 	return addEqualsClause (c, x);
     if (b == -c)
 	return addXorClause (a, -b, x);
+
+	if(b == YES)
+	return addOrClause(a, c, x);
+	
+	if(c == -YES)
+	return addAndClause(a, b, x);
 
     /* Allocate fresh result variable as necessary. */
 	if (x == 0){
@@ -332,7 +364,7 @@ inline int
 SolverHelper::addXorClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
-
+	a = sval(a); b = sval(b); 
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == b)
 	return addEqualsClause (-YES, x);
@@ -373,7 +405,7 @@ inline int
 SolverHelper::addOrClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
-
+	a = sval(a); b = sval(b); 
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == YES || b == YES || a == -b)
 	return addEqualsClause (YES, x);
@@ -416,10 +448,11 @@ SolverHelper::addBigOrClause (int *a, int last)
 	int nw = 1;
 	int ol = 1;
 	for(;ol <= last; ++ol){
-		if(a[ol] == YES){
+		int sva = sval(a[ol]); 
+		if(sva == YES){
 			return (a[0] = addEqualsClause (YES, a[0]));
 		}
-		if(a[ol] != -YES){
+		if(sva != -YES){
 			a[nw] = a[ol];
 			++nw;
 		}
@@ -465,7 +498,7 @@ inline int
 SolverHelper::addAndClause (int a, int b, int x)
 {
     Assert (a != 0 && b != 0, "input ids cannot be zero");
-
+	a = sval(a); b = sval(b);
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == -YES || b == -YES || a == -b)
 	return addEqualsClause (-YES, x);

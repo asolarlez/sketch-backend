@@ -12,7 +12,7 @@
 #include "MiniSATSolver.h"
 
 
-// #define Dout( out )      out 
+//#define Dout( out )      out 
 
 
 void MiniSATSolver::annotate(const string& msg){
@@ -30,6 +30,14 @@ void MiniSATSolver::annotate(const string& msg){
 	Dout(cout<<endl);
 	FileOutput(output<<endl);
 }
+
+void MiniSATSolver::addHelperClause(int c[], int sz){
+	vec<Lit> lits;
+	Dout(cout<<"@ helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
+	addClause(c, sz, lits);
+ }
+
+
 
 
 void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
@@ -149,6 +157,9 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
 		int var = abs(x);
 		s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+		if(s->propagate() != NULL){
+			Assert(false, "I just found an unsat assertion!!");
+		}
 	}else{	
 		finalOr.push_back(-x);
 	}
