@@ -48,6 +48,10 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
                                 bool_node* father, bool_node::Type t){	
   bool_node* fth=father;
   bool_node* mth=mother;
+
+  bool_node* trv = this->optim.quickcse(mth != NULL? mth->globalId: -1, fth != NULL ? fth->globalId : -1, t);
+  if(trv != NULL){ return trv; }
+
   Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
   Assert(t != bool_node::SRC && t != bool_node::DST && t != bool_node::CTRL, "You can only use new_node to create internal nodes, you can not use it for either SRC, DST, or CTRL");
 
@@ -60,7 +64,7 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
   bool_node* tmp;
 
-  tmp = dag->new_node(mth, fth, t);    
+//  tmp = dag->new_node(mth, fth, t);    ARMANDO: This is a big performance bug.
 
   tmp = newBoolNode(t);
   tmp->father = fth;

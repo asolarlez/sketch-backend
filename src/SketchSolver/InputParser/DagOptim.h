@@ -198,6 +198,10 @@ public:
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();
 	
+	bool_node* quickcse(int idmom, int idpop, bool_node::Type t){
+		return cse.quickcse(idmom, idpop, t);
+	}
+
 	void alterARRACS(){ ALTER_ARRACS = true; } 
 
 	/*

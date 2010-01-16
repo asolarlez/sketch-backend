@@ -203,8 +203,37 @@ public:
 		Assert(false, "NYI");
 	}
 
-	bool get(const char* key, int len, T& out)const{
-		Assert(false, "NYI");
+	bool get(const char* key, int len, T& out){
+		unsigned idx = hash(key, len);
+		int tidx = (idx)& mask;
+		bucket<T>*& t = table[tidx];
+		if(t==NULL){			
+			return false;
+		}else{
+			bucket<T>* tt = t;
+			while(tt != NULL){
+				if(tt->hash < idx){
+					if(tt->left == NULL){										
+						return false;
+					}else{
+						tt = tt->left;
+					}
+				}else{
+					if(tt->hash == idx && compare_eq(key, tt->label)){						
+						out = tt->value;
+						++(tt->count);
+						++hits;
+						return true;
+					}else{
+						if(tt->right == NULL){							
+							return false;
+						}else{
+							tt = tt->right;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	void gchelperA(bucket<T>* b, vector<bucket<T>* >& v){

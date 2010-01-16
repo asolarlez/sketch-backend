@@ -1451,7 +1451,7 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
-	if(false && node.quant == 0){
+	if(false && node.quant == 0){ // EXPERIMENTAL OPTIM.
 		vector<bool_node*>  vv;		
 		checkArrass(vv, node.mother, node, 0);
 		if(vv.size()>2){

@@ -16,6 +16,21 @@ char tbl[64] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 };
 
 
+int DagCSE::cheapStr(int id1, char op, int id2){
+	int p = 0;
+	char* tch = &tmpbuf[0];
+	writeInt(tch, id1, p);
+	tch[p] = op; p++;
+	writeInt(tch, id2, p);
+	tch[p] = 0;		
+	return p;
+	/*
+	sprintf(tmpbuf, "%d%c%d",id1, op,id2);   	
+ 	ccode = tmpbuf;
+	*/
+}
+
+
 void DagCSE::setStr(int id1, char op, int id2){
 	int p = 0;
 	char* tch = &tmpbuf[0];
@@ -44,6 +59,8 @@ Dtime(maptimer.print();)
 
 
 
+
+
 void DagCSE::eliminateCSE(){
 	int k=0;
 	for(int i=0; i<dag.size(); ++i){
@@ -59,6 +76,36 @@ void DagCSE::eliminateCSE(){
 	dag.removeNullNodes();
 	dag.relabel();
 	Dout(cout<<" end cse "<<endl);	
+}
+
+bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){		
+	bool_node* rv;
+	switch(t){
+		case bool_node::AND:{
+		int len = cheapStr(min(mid, fid), '&' ,max(mid, fid));
+		if(cse_map.get(&tmpbuf[0], len, rv)){ return rv; }else{ return NULL; }
+		}
+		case bool_node::OR:{
+		int len = cheapStr(min(mid, fid), '|' ,max(mid, fid));
+		if(cse_map.get(&tmpbuf[0], len, rv)){ return rv; }else{ return NULL; }
+		}
+		case bool_node::XOR:{
+		int len = cheapStr(min(mid, fid), '^' ,max(mid, fid));
+		if(cse_map.get(&tmpbuf[0], len, rv)){ return rv; }else{ return NULL; }
+		}
+		case bool_node::NOT:
+			{
+				char* tch = &tmpbuf[0];
+ 				int p = 0;
+				tch[p] = '!'; p++;
+				writeInt(tch, mid, p);	
+				tch[p]=0;
+				if(cse_map.get(tch, p, rv)){ return rv; }else{ return NULL; }
+			}
+
+		default:
+			return NULL;
+	}
 }
 
  void DagCSE::visit(  AND_node& node ){

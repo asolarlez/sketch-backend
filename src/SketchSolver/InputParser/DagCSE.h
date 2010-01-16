@@ -37,7 +37,7 @@ public:
 	Dtime(timerclass maptimer;)
 	DagCSE(BooleanDAG& p_dag);
 	virtual ~DagCSE();	
-	
+	int cheapStr(int id1, char op, int id2);
 	void eliminateCSE();
 	/*
 	inline void setCSE(bool_node* node){
@@ -45,6 +45,8 @@ public:
 		(*this)[this->ccode] = node;
 	}
 	*/
+
+	bool_node* quickcse(int idmom, int idpop, bool_node::Type t);
 
 	inline  bool_node* computeCSE( bool_node* node){
 		node->accept(*this);
