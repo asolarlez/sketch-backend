@@ -8,15 +8,10 @@
 # copy of the License at http://www.apache.org/licenses/LICENSE-2.0 .
 from __future__ import division, print_function
 from collections import namedtuple
+from gatoatigrado_lib import (ExecuteIn, Path, SubProc, dict, get_singleton,
+    list, memoize_file, pprint, process_jinja2, set, sort_asc, sort_desc)
 from warnings import warn
-import re
-
-try:
-    from gatoatigrado_lib import (ExecuteIn, Path, SubProc, dict, get_singleton,
-        list, memoize_file, pprint, process_jinja2, set, sort)
-except:
-    raise ImportError("please install gatoatigrado's utility library from "
-            "bitbucket.org/gatoatigrado/gatoatigrado_lib")
+import re, sys
 
 def get_release_version(conf_path, no_inc_release):
     release_number = conf_path.subpath("release_number")
@@ -39,25 +34,44 @@ def check_modified():
 
 def run_osc_commit(name, tmppath, commit_msg):
     repopath = Path("home:gatoatigrado1/%s" % (name))
-    SubProc(["osc", "co", "home:gatoatigrado1", name]).start_wait()
+    skip = False
+    if Path("home:gatoatigrado1").exists():
+        with ExecuteIn(Path("home:gatoatigrado1")):
+            skip = list(SubProc(["osc", "status"]).exec_lines()) == []
+    if not skip:
+        try:
+            SubProc(["osc", "co", "home:gatoatigrado1", name]).start_wait()
+        except OSError:
+            print("\n\n\nosc not found in path; install with 'sudo zypper -n in osc'", file=sys.stderr)
+    else:
+        print("skipping already checked out source.")
     [v.copy(repopath.subpath(v.basename())) for v in tmppath.files()]
     with ExecuteIn(repopath):
         SubProc(["osc", "add"] + [v for v in Path(".").listdir() if v != ".osc"]).start_wait()
         SubProc(["osc", "commit"] + (["-m", commit_msg]
             if commit_msg else [])).start_wait()
 
-def run_jinja2(files, tmppath, name, version, sourcefile, release_number_v):
+def run_jinja2(files, tmppath, name, version, sourcefile, release_number_v, pathmap):
     def output(fname, text):
         fname = fname.basename().replace(".jinja2", "")
         if fname.endswith("dsc"):
             fname = fname[:-4] + "-" + version + ".dsc"
-        tmppath.subpath(fname).write(text)
-        print("\n\n\n%s\n%s" %(fname, text), end="")
+        if fname in pathmap:
+            pathmap[fname].write(text)
+        else:
+            tmppath.subpath(fname).write(text)
+        print("\n\n\n%s\n>>> %s" %(fname, text.strip().replace("\n", "\n>>> ")))
+
+    src_archive = tmppath.subpath(sourcefile)
+    md5sum = src_archive.md5sum() if src_archive.exists() else "file doesn't exist"
+    size = src_archive.getsize() if src_archive.exists() else "file doesn't exist"
 
     process_jinja2(glbls={
         "name": name,
         "version": version,
         "sourcefile": sourcefile,
+        "md5sum": md5sum,
+        "size": size,
         "release_number": release_number_v
         }, output_fcn=output).values()
 
@@ -74,18 +88,25 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
     release_number_v = get_release_version(conf_path, no_inc_release)
 
     tmppath = tmpdir.subpath("%s-%s" % (name, version))
-    tmppath.makenewdir()
-
-    files = [conf_path.subpath("%s.spec.jinja2" % (name))]
-    with ExecuteIn(conf_path):
-        run_jinja2(files, tmppath, name, version, sourcefile, release_number_v)
+    tmppath.makedirs()
 
     srcpath = tmppath.subpath("%s-%s" % (name, version))
     proj_path.copytree(srcpath)
 
+    pathmap = { "debian.control": srcpath.subpath("debian/control"),
+        "debian.rules": srcpath.subpath("debian/rules"),
+        "debian.changelog": srcpath.subpath("debian/changelog") }
+
     with ExecuteIn(srcpath):
         assert (Path(".") != proj_path)
         SubProc(["zsh", "-c", r"rm -rf $(hg stat -uin) .hg*"]).start_wait()
+
+    files = [conf_path.subpath("%s.spec.jinja2" % (name))]
+    nondsc_files = [v for v in files if not "dsc" in v]
+    dsc_files = [v for v in files if "dsc" in v]
+    with ExecuteIn(conf_path):
+        run_jinja2(nondsc_files, tmppath, name, version,
+            sourcefile, release_number_v, pathmap)
 
     if additional_path:
         additional_path = Path(additional_path)
@@ -96,6 +117,12 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
     with ExecuteIn(tmppath):
         SubProc(["tar", "cfa", sourcefile, srcpath.basename()]).start_wait()
         srcpath.rmtree()
+
+    with ExecuteIn(conf_path):
+        run_jinja2(dsc_files, tmppath, name, version,
+            sourcefile, release_number_v, pathmap)
+
+    with ExecuteIn(tmppath):
         if run_local_install:
             SubProc(["build"]).start_wait()
         if osc_commit:
