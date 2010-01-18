@@ -303,7 +303,7 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  void DagCSE::visit(  UFUN_node& node ){
  	Dtime(stimer.restart();)
  	stringstream str; 	
- 	str<<node.get_ufname()<<"("<<node.mother->globalId<<")(";
+ 	str<<node.get_ufname()<<"."<<node.outname<<"("<<node.mother->globalId<<")(";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->globalId;
  		str<<mmid<<",";

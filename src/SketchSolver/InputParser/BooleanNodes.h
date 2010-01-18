@@ -398,8 +398,12 @@ class UFUN_node: public arith_node, public DllistNode{
 	static int CALLSITES;
 	int nbits;	
 	string ufname;	
-	public: UFUN_node(const string& p_ufname):ufname(p_ufname), callsite(CALLSITES++){ arith_type = UFUN; nbits=1; } 
-	UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite){ }  
+	public: 
+	string outname;
+	int fgid;
+		
+		UFUN_node(const string& p_ufname):ufname(p_ufname), callsite(CALLSITES++){ arith_type = UFUN; nbits=1; } 
+		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out)const{
     	int i=0;

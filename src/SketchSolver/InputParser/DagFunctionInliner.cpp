@@ -76,6 +76,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 
 	if( functionMap.find(name) != functionMap.end() ){
+		if(mpcontroller.count(node.fgid) > 0){
+			bool_node* rv = mpcontroller[node.fgid][node.outname];
+			rvalue = rv;
+			return;
+		}
+
+
 		funsInlined.insert(name);
 		if(ictrl != NULL){ ictrl->registerInline(node); }
 		//cout<<" inlining "<<name<<endl;
@@ -279,13 +286,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 			}else{
 				if( n!= NULL){
-					output = n->mother;
+					DST_node* dn = dynamic_cast<DST_node*>(n);
+					bool_node* ttv = n->mother;
+					mpcontroller[node.fgid][dn->name] = ttv;
+					if(dn->name == node.outname){
+						output = ttv;
+					}
 					n->dislodge();
 					delete n;
-
 				}
 			}
-		}	
+		}
 		node.add(&tmpList);
 		node.remove();
 		rvalue = output;
@@ -319,7 +330,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		}
 	}
 
-	
+	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
