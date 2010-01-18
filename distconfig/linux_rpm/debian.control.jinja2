@@ -1,13 +1,14 @@
 {% import "jinja2_macros.txt" as macros %}
-Source: {{ sourcefile.replace(".tar.gz", "") }}
-Section: Development
+Source: {{ name }}
+Section: devel
 Priority: optional
 Maintainer: {{ macros.maintainer }}
 Build-Depends: {{ macros.deb_build_deps }}
-Package: {{ name }}-{{ version }}
-Architecture: any
+
+Package: {{ name }}
+Architecture: all
 Depends: shlibs:Depends
 Description: {{ macros.summary }}
-{% filter indent(1) -%}
+{% filter indent(1) %}{{ "" }}
 {{ macros.description() }}
 {% endfilter %}

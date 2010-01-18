@@ -6,11 +6,11 @@
 # copy of the License at http://www.apache.org/licenses/LICENSE-2.0 .
 {% import "jinja2_macros.txt" as macros %}
 Format: 1.0
-Source: {{ name }}-{{ version }}
-Version: {{ version }}
-Binary: {{ name }}-{{ version }}
+Source: {{ name }}
+Version: {{ version }}-{{ release_number }}
+Binary: {{ name }}
 Maintainer: {{ macros.maintainer }}
-Architecture: any
+Architecture: all
 Build-Depends: {{ macros.deb_build_deps }}
 Files:
- 0 0 {{ sourcefile }}
+ {{ md5sum }} {{ size }} {{ sourcefile }}
