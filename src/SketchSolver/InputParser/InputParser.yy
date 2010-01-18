@@ -421,9 +421,14 @@ Term: Constant {
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
 		UFUN_node* ufun = new UFUN_node(fname);
 		ufun->outname = *$12;
-		ufun->fgid = $14;
-		for( ; parit != params->rend(); ++parit){
-			ufun->multi_mother.push_back((*parit));
+		int fgid = $14;
+		ufun->fgid = fgid;		
+		if(currentBD->methdparams.count(fgid)>0){
+			ufun->multi_mother = currentBD->methdparams[fgid];
+		}else{
+			for( ; parit != params->rend(); ++parit){
+				ufun->multi_mother.push_back((*parit));
+			}
 		}
 		
 		if( $3 == INT){
@@ -432,9 +437,14 @@ Term: Constant {
 	
 			ufun->set_nbits( 1  );
 		}
-				
+		if(currentBD->methdparams.count(fgid)==0){
+			currentBD->methdparams[fgid] = ufun->multi_mother;
+		}		
 		ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node($9, NULL, ufun);
+		
+		
+		
 		delete $1;
 		delete $12;
 	}
