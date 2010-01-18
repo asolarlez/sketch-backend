@@ -206,8 +206,8 @@ class DagFunctionInliner : public DagOptim
 	vector<bool_node*> clones;
 
 	map<string, bool_node*> seenControls;
-
-	
+	map<int, map<string, bool_node*> > mpcontroller;
+	int uidcount;
 		
 
 	set<string> funsInlined;

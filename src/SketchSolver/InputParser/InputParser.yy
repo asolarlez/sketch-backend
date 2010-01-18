@@ -406,7 +406,7 @@ Term: Constant {
 	$$ = currentBD->create_const($1);
 }	 
 
-| T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' {
+| T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' '[' T_ident ',' Constant ']' {
 	
 	list<bool_node*>* params = $6;
 	if(false && params->size() == 0){
@@ -420,8 +420,15 @@ Term: Constant {
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
 		UFUN_node* ufun = new UFUN_node(fname);
-		for( ; parit != params->rend(); ++parit){
-			ufun->multi_mother.push_back((*parit));
+		ufun->outname = *$12;
+		int fgid = $14;
+		ufun->fgid = fgid;		
+		if(currentBD->methdparams.count(fgid)>0){
+			ufun->multi_mother = currentBD->methdparams[fgid];
+		}else{
+			for( ; parit != params->rend(); ++parit){
+				ufun->multi_mother.push_back((*parit));
+			}
 		}
 		
 		if( $3 == INT){
@@ -430,10 +437,16 @@ Term: Constant {
 	
 			ufun->set_nbits( 1  );
 		}
-				
+		if(currentBD->methdparams.count(fgid)==0){
+			currentBD->methdparams[fgid] = ufun->multi_mother;
+		}		
 		ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node($9, NULL, ufun);
+		
+		
+		
 		delete $1;
+		delete $12;
 	}
 	delete $6;
 }
@@ -474,6 +487,7 @@ Term: Constant {
 	delete $2;
 
 }
+
 
 ConstantExpr: ConstantTerm { $$ = $1; }
 | ConstantExpr '+' ConstantTerm { $$ = $1 + $3; }

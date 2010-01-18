@@ -992,7 +992,7 @@ void DagOptim::visit( UFUN_node& node ){
 	}
 
 	stringstream str; 	
- 	str<<node.get_ufname()<<"(";
+	str<<node.get_ufname()<<"."<<node.outname<<"(";
  	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
  		str<<mmid<<",";
