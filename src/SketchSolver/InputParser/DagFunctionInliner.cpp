@@ -66,7 +66,8 @@ int sizeForNode(bool_node* bn){
 void DagFunctionInliner::visit( UFUN_node& node ){	
 	Dllist tmpList;
 	const string& name = node.get_ufname();
-	
+	map<int, int> oldToNew;
+
 	if(ictrl != NULL && !ictrl->checkInline(node)){
 		rvalue = &node;
 		return;
@@ -180,6 +181,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							DllistNode* tt = getDllnode(ufun);
 							tmpList.append(tt);
 						}	
+						{
+							if(oldToNew.count(ufun->fgid)>0){
+								ufun->fgid = oldToNew[ufun->fgid];
+							}else{
+								++uidcount;
+								oldToNew[ufun->fgid] = uidcount;
+								ufun->fgid = uidcount;
+							}
+						}
+
+
 						bool_node * oldMother = ufun->mother;						
 						ufun->mother->remove_child( n );
 						bool_node* andCond = new AND_node();
@@ -329,7 +341,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			}
 		}
 	}
-
+	uidcount = 0;
 	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){
