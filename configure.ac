@@ -1,4 +1,4 @@
-#                                               -*- Autoconf -*-
+# -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
@@ -7,15 +7,31 @@ AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
 
+
+
 # Checks for programs.
 AC_PROG_CXX
+if test "$CXX" = "no"; then
+   AC_MSG_ERROR([You must install a C++ compiler, e.g. gcc4])
+fi
+
 AC_PROG_YACC
+if test "$YACC" = "no"; then
+   AC_MSG_ERROR([You must install Bison])
+fi
+
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_LEX
+if test "$LEX" = "no"; then
+   AC_MSG_ERROR([You must install Flex])
+fi
+
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
+
+
 
 # Checks for libraries
 AC_SEARCH_LIBS([pthread_create], [pthread])
