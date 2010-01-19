@@ -11,12 +11,12 @@ AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CXX
-if test "$CXX" = "no"; then
+if test "$CXX" = ":"; then
    AC_MSG_ERROR([You must install a C++ compiler, e.g. gcc4])
 fi
 
 AC_PROG_YACC
-if test "$YACC" = "no"; then
+if test "$YACC" = ":"; then
    AC_MSG_ERROR([You must install Bison])
 fi
 
@@ -24,7 +24,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_LEX
-if test "$LEX" = "no"; then
+if test "$LEX" = ":"; then
    AC_MSG_ERROR([You must install Flex])
 fi
 
