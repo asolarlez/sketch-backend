@@ -433,10 +433,10 @@ void BooleanDAG::cleanup(){
 	  {
 		  DllistNode* cur = assertions.head;
 		  while(cur != NULL){
-			  if(typeid(*cur) == typeid(ASSERT_node) || typeid(*cur) == typeid(DST_node)){
+			  //if(typeid(*cur) == typeid(ASSERT_node) || typeid(*cur) == typeid(DST_node)){
 				  idx = 
 					  dynamic_cast<bool_node*>(cur)->back_dfs(idx);
-			  }
+			  //}
 			  cur = cur->next;
 		  }
 		  sort(vn.begin(), vn.end(), comp_id);
@@ -805,6 +805,10 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			
 			Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
 			Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
+
+			string mm = "The spec and sketch can not be made to be equal. ";
+			mm += otherDst->name;
+
 			replace( otherDst->id, eq);	
 			if(replacements.count((*node_it)->mother)==0){
 				(*node_it)->dislodge();
@@ -812,8 +816,8 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			delete (*node_it);
 			nodes.push_back( eq );	
 
-			ASSERT_node* finalAssert = new ASSERT_node();
-			finalAssert->setMsg("The spec and sketch can not be made to be equal.");
+			ASSERT_node* finalAssert = new ASSERT_node();			
+			finalAssert->setMsg( mm );
 			finalAssert->mother = eq;
 			finalAssert->addToParents();
 			nodes.push_back(finalAssert);
