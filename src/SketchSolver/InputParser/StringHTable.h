@@ -23,7 +23,7 @@ inline void writeInt(char* buf, unsigned val, int& p){
 
 template<typename T>
 class Ostore{
-	int PAGESIZE;
+	int pagesize;
 	vector<T*> stringStore;
 	int pos;
 	int newobjs;
@@ -31,13 +31,13 @@ public:
 	int newObjs(){ return newobjs; }
 	int pages(){ return stringStore.size(); }
 	Ostore(){
-		PAGESIZE= 1000; 
-		pos = PAGESIZE;
+		pagesize = 1000; 
+		pos = PAGE_SIZE;
 		newobjs = 0;
 	}
 	Ostore(int sz){
-		PAGESIZE= sz;
-		pos = PAGESIZE;
+		pagesize = sz;
+		pos = PAGE_SIZE;
 		newobjs = 0;
 	}
 	~Ostore(){
@@ -48,7 +48,7 @@ public:
 	T* newObj(int size=1){
 		++newobjs;
 		Assert(size > 0, "Neg size doesn't make sense; ");
-		if(size > PAGESIZE){
+		if(size > pagesize){
 			T* rv = new T[size];
 			if(stringStore.size()>0){
 				T* tt = stringStore.back();
@@ -59,8 +59,8 @@ public:
 			}
 			return rv;
 		}else{
-			if(pos + size > PAGESIZE){
-				stringStore.push_back( new T[PAGESIZE] );
+			if(pos + size > PAGE_SIZE){
+				stringStore.push_back( new T[PAGE_SIZE] );
 				pos = 0;
 			}	
 		}
@@ -73,11 +73,11 @@ public:
 		for(typename vector<T*>::iterator it = stringStore.begin(); it != stringStore.end(); ++it){
 			delete[] *it;
 		}
-		pos = PAGESIZE;
+		pos = pagesize;
 		stringStore.clear();
 	}
 	void swap(Ostore<T>& t1){
-		std::swap<int>(PAGESIZE, t1.PAGESIZE);
+		std::swap<int>(pagesize, t1.pagesize);
 		stringStore.swap(t1.stringStore);
 		std::swap<int>(pos, t1.pos);
 		std::swap<int>(newobjs, t1.newobjs);
