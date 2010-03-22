@@ -32,12 +32,12 @@ public:
 	int pages(){ return stringStore.size(); }
 	Ostore(){
 		pagesize = 1000; 
-		pos = PAGE_SIZE;
+		pos = pagesize;
 		newobjs = 0;
 	}
 	Ostore(int sz){
 		pagesize = sz;
-		pos = PAGE_SIZE;
+		pos = pagesize;
 		newobjs = 0;
 	}
 	~Ostore(){
@@ -59,8 +59,8 @@ public:
 			}
 			return rv;
 		}else{
-			if(pos + size > PAGE_SIZE){
-				stringStore.push_back( new T[PAGE_SIZE] );
+			if(pos + size > pagesize){
+				stringStore.push_back( new T[pagesize] );
 				pos = 0;
 			}	
 		}
