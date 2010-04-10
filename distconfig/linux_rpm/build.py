@@ -88,6 +88,11 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
     release_number_v = get_release_version(conf_path, no_inc_release)
 
     tmppath = tmpdir.subpath("%s-%s" % (name, version))
+    if tmppath.exists():
+        print("temporary directory exists; delete it? ", end="")
+        sys.stdout.flush()
+        if "y" in raw_input():
+            tmppath.rmtree()
     tmppath.makedirs()
 
     srcpath = tmppath.subpath("%s-%s" % (name, version))
