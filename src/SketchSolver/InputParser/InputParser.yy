@@ -438,7 +438,7 @@ Term: Constant {
 			ufun->set_nbits( 1  );
 		}
 		if(currentBD->methdparams.count(fgid)==0){
-			currentBD->methdparams[fgid] = ufun->multi_mother;
+			currentBD->methdparams[fgid].push_back($$);
 		}		
 		ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node($9, NULL, ufun);
