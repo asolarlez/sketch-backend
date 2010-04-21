@@ -312,6 +312,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		node.add(&tmpList);
 		node.remove();
 		rvalue = output;
+		if(rvalue == NULL){
+			rvalue = getCnode(0);
+		}
 		somethingChanged = true;
 	}else{
 		DagOptim::visit(node);
