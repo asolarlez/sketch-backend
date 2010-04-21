@@ -437,11 +437,13 @@ Term: Constant {
 	
 			ufun->set_nbits( 1  );
 		}
+
+		ufun->name = (currentBD->new_name(fname));
+		$$ = currentBD->new_node($9, NULL, ufun);
+
 		if(currentBD->methdparams.count(fgid)==0){
 			currentBD->methdparams[fgid].push_back($$);
 		}		
-		ufun->name = (currentBD->new_name(fname));
-		$$ = currentBD->new_node($9, NULL, ufun);
 		
 		
 		
