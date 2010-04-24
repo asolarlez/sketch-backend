@@ -194,6 +194,7 @@ public:
 	int frst = -1;
 	if( size > 0 ) {
 	    idx =  mng.newVar();
+		Assert( idx == lastVar +1, "This is ridiculous!");
 	    i++;
 	    frst = idx;
 	}
@@ -213,7 +214,7 @@ public:
     void declareInArr(const string& arName, int size) {
 		map<string, int>::iterator fit = arrsize.find(arName);
 		if(fit != arrsize.end()){
-			Assert(fit->second == size, "You declared the same array with a different name earlier!");
+			Assert(fit->second == size, "You declared the same array with a different size earlier!");
 		}else{
 			int i = 0;
 			int idx;
@@ -226,6 +227,7 @@ public:
 			for(; i<size; ++i) {
 				idx =  mng.newInVar();
 			}
+			lastVar = idx;
 			Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
 			mng.annotateInput(arName, frst, size);
 			varmap[arName] = frst;
@@ -261,6 +263,7 @@ public:
 	int ret = -1;
 	do {
 	    int tmp = mng.newVar ();
+		Assert(tmp == lastVar +1 , "Oh no, what have I done!!");
 		lastVar = tmp;
 	    if (ret < 0)
 		ret = tmp;
