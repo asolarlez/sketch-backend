@@ -354,6 +354,9 @@ class CTRL_node: public INTER_node{
 	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }   
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };	
+	string get_name() const {
+		return name;
+	}
 };
 
 class NOT_node: public bool_node{	

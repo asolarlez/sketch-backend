@@ -95,6 +95,7 @@ class CEGISSolver
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;
 	vector<Tvalue> find_node_ids;
+	
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;
 	bool firstTime;
@@ -115,12 +116,16 @@ protected:
 
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
-	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
+	
 
 	void normalizeInputStore();
 	void abstractProblem();
 	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
+	
+	
+	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
+
 	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args);
 	~CEGISSolver(void);
 

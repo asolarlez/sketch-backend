@@ -89,6 +89,14 @@ class SolverHelper {
 public:
     int YES;
 
+	map<string, int>::const_iterator arrsize_begin(){
+		return arrsize.begin();
+	}
+
+	map<string, int>::const_iterator arrsize_end(){
+		return arrsize.end();
+	}
+
 	int sval(int var){
 		int t = 0;
 		if(var != YES && var != -YES){
@@ -106,7 +114,7 @@ public:
     SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
 	varCnt = 1;
 	YES = 0;
-	lastVar = -1;
+	lastVar = 0;
 	doMemoization = true;
     }
 	void addHelperC(Tvalue& tv);
@@ -146,6 +154,7 @@ public:
 		memoizer.clear();
 		varmap.clear();
 		arrsize.clear();
+		lastVar = 0;
 		varCnt = 1;
 		YES = 0;
     };
@@ -187,29 +196,6 @@ public:
 			out<<"* declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl;
 		}		
 	}
-
-    void declareArr(const string& arName, int size) {		
-	int i = 0;
-	int idx;
-	int frst = -1;
-	if( size > 0 ) {
-	    idx =  mng.newVar();
-		Assert( idx == lastVar +1, "This is ridiculous!");
-	    i++;
-	    frst = idx;
-	}
-	for(; i<size; ++i) {
-	    idx =  mng.newVar();
-	}
-	lastVar = idx;
-	Dout( cout<<"declare "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
-	mng.annotateInput(arName, frst, size);
-	varmap[arName] = frst;
-	arrsize[arName] = size;
-	Assert( size==0 || idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
-	varCnt += size;
-    }
-
 
     void declareInArr(const string& arName, int size) {
 		map<string, int>::iterator fit = arrsize.find(arName);
@@ -263,7 +249,7 @@ public:
 	int ret = -1;
 	do {
 	    int tmp = mng.newVar ();
-		Assert(tmp == lastVar +1 , "Oh no, what have I done!!");
+		Assert(tmp == lastVar +1 , "Oh no, what have I done!! lastVar="<<lastVar<<" tmp="<<tmp);
 		lastVar = tmp;
 	    if (ret < 0)
 		ret = tmp;

@@ -53,6 +53,13 @@ params(args)
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
 		}
     }
+	for(map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it){
+		if(!ctrlStore.contains(it->first)){
+			cout<<"Declaring Foreigner"<<endl;
+			ctrlStore.newVar(it->first, it->second);
+		}
+	}
+
 	setup();
 }
 
@@ -228,6 +235,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
 	defineProblem(mngFind, dirFind, node_values, find_node_ids);
+	
 	dirFind.nextIteration();
 	if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
 	if(specialize){
@@ -367,6 +375,8 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			
 		}
+		cout<<" VARSAS = "<<cname<< " = "<<it->getInt()<<endl;
+
 	}
 	mngFind.reset();
 	return true;
@@ -961,9 +971,8 @@ void CEGISSolver::print_control_map(ostream& out){
 
 
 void CEGISSolver::get_control_map(map<string, int>& values){
-	vector<bool_node*>& controls = getProblem()->getNodesByType(bool_node::CTRL);
-	for(BooleanDAG::iterator node_it = controls.begin(); node_it != controls.end(); ++node_it){		
-		values[(*node_it)->name] = ctrlStore[(*node_it)->get_name()];
+	for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+		values[it->name] = it->getInt();
 	}
 }
 
