@@ -991,15 +991,21 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 	}
 
-	stringstream str; 	
-	str<<node.get_ufname()<<"."<<node.outname<<"(";
- 	for(int i=0; i<node.multi_mother.size(); ++i){
- 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
- 		str<<mmid<<",";
- 	}
-	str<<")";
+	string tmp = node.get_ufname();
+	tmp += ".";
+	tmp += node.outname;
+	tmp += "(";
 
- 	string tmp = str.str();
+	for(int i=0; i<node.multi_mother.size(); ++i){
+ 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
+		char tmpbo[256];
+		itoa(mmid, tmpbo, 10);
+		tmp += tmpbo;
+ 		tmp += ",";
+ 	}
+
+	tmp +=")";
+
 	
 	map<string, UFUN_node*>::iterator bro =  callMap.find(tmp);
 	if(bro != callMap.end()){

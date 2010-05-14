@@ -55,7 +55,6 @@ params(args)
     }
 	for(map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it){
 		if(!ctrlStore.contains(it->first)){
-			cout<<"Declaring Foreigner"<<endl;
 			ctrlStore.newVar(it->first, it->second);
 		}
 	}
@@ -135,6 +134,7 @@ bool CEGISSolver::solveCore(){
 	while(doMore){
 		{// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
+			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > instore_serialized =
                             inputStore.serialize();
 			cpt.checkpoint('f', instore_serialized);
@@ -236,6 +236,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	lastFproblem = getProblem();	
 	defineProblem(mngFind, dirFind, node_values, find_node_ids);
 	
+	if( params.superChecks ){ find_history = find_node_ids; }
 	dirFind.nextIteration();
 	if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
 	if(specialize){
@@ -375,7 +376,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			
 		}
-		cout<<" VARSAS = "<<cname<< " = "<<it->getInt()<<endl;
+		
 
 	}
 	mngFind.reset();
@@ -384,6 +385,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 }
 
 void CEGISSolver::abstractProblem(){
+	if(inputStore.getBitsize() == 0) return;
 	VarStore tmp = join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;	
 	BooleanDAG* dag = getProblem()->clone();

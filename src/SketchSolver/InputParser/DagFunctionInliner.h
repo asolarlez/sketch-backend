@@ -20,9 +20,15 @@ class CallTreeTracker{
 	map<int, string> cname;
 
 	string funName(const UFUN_node& fun){
-		stringstream s;		
-		s<<fun.get_ufname().substr(0, 9)<<"_"<<fun.get_callsite()<<"_"<<fun.globalId;
-		return s.str();
+		string s = fun.get_ufname().substr(0, 9);
+		s += "_";
+		char tmpbo[256];
+		//itoa(fun.get_callsite(), tmpbo, 10);
+		//s += tmpbo;
+		//s += "_";
+		itoa(fun.globalId, tmpbo, 10);
+		s += tmpbo;		
+		return s;
 	}
 
 	void regName(const UFUN_node& fun){

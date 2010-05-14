@@ -136,16 +136,24 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  }
  void DagCSE::visit(  SRC_node& node ){
  	Dtime(stimer.restart();)
- 	stringstream str;
- 	str<<node.globalId;
- 	ccode = str.str();
+	int p=0;
+	char* tch = &tmpbuf[0];
+	tch[p] = '.'; p++;
+	writeInt(tch, node.globalId, p);
+	tch[p] = '.'; p++;		
+	tch[p] = 0;
+	ccode = tch;
  	Dtime(stimer.stop();)
  }
  void DagCSE::visit(  DST_node& node ){
  	Dtime(stimer.restart();)
-  	stringstream str;
- 	str<<node.globalId;
- 	ccode = str.str();
+  	int p=0;
+	char* tch = &tmpbuf[0];
+	tch[p] = '.'; p++;
+	writeInt(tch, node.globalId, p);
+	tch[p] = '.'; p++;		
+	tch[p] = 0;
+	ccode = tch;
  	Dtime(stimer.stop();)
  }
  void DagCSE::visit(  NOT_node& node ){
@@ -163,9 +171,13 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  }
  void DagCSE::visit(  CTRL_node& node ){
  	Dtime(stimer.restart();)
- 	stringstream str;
- 	str<<node.globalId;
- 	ccode = str.str();
+ 	int p=0;
+	char* tch = &tmpbuf[0];
+	tch[p] = '.'; p++;
+	writeInt(tch, node.globalId, p);
+	tch[p] = '.'; p++;		
+	tch[p] = 0;
+	ccode = tch;
  	Dtime(stimer.stop();)
  }
  void DagCSE::visit(  PLUS_node& node ){
@@ -302,15 +314,38 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
 
  void DagCSE::visit(  UFUN_node& node ){
  	Dtime(stimer.restart();)
- 	stringstream str; 	
- 	str<<node.get_ufname()<<"."<<node.outname<<"("<<node.mother->globalId<<")(";
- 	for(int i=0; i<node.multi_mother.size(); ++i){
- 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->globalId;
- 		str<<mmid<<",";
- 	}
-	str<<")";
 
- 	ccode = str.str();
+	int p = 0;
+
+	const string& tst = node.get_ufname();
+	int mxsz = tst.size() + node.outname.size() + node.multi_mother.size() * 8 + 10;
+	if(tmpbuf.size() < mxsz){
+		tmpbuf.resize(mxsz);
+	}
+
+	char* tch = &tmpbuf[0];
+	
+	memcpy(tch, tst.c_str(), tst.size());
+	p+= tst.size();
+	tch[p] = '.'; p++;
+	memcpy(tch+p, node.outname.c_str(), node.outname.size());
+	p+=node.outname.size();
+	tch[p] = '('; p++;
+	writeInt(tch, node.mother->globalId, p);
+	tch[p] = ')'; p++;
+	tch[p] = '('; p++;
+	int mmsize = node.multi_mother.size();
+	for(int i=0; i<mmsize; ++i){
+ 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->globalId;
+		writeInt(tch, mmid, p);
+		tch[p] = ','; p++;
+
+ 	}
+	tch[p] = ')'; p++;
+	Assert(p < mxsz , "Strange!!!!");
+	tch[p] = 0;
+	ccode = tch;
+ 	
  	Dtime(stimer.stop();)
  }
 
@@ -380,7 +415,7 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  void DagCSE::visit(  ASSERT_node &node){
  	Dtime(stimer.restart();)
 	int mid = node.mother == NULL? -1: node.mother->globalId;
-	setStr(0, 'A', mid);
+	setStr(0, ';', mid);
  	Dtime(stimer.stop();)
  }
  

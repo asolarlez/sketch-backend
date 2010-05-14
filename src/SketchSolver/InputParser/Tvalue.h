@@ -187,7 +187,7 @@ public:
 	if (tv.isSparse () ){
 	    out << " [ ";
 	    for (int i = 0; i < tv.size; i++)
-		out << tv.num_ranges[i] << ", ";
+			out << tv.num_ranges[i] << ", ";
 	    out << " ] ";
 	} else
 	    out << " size=" << tv.size;
@@ -196,6 +196,57 @@ public:
 
 	return out;
     }
+
+	int eval(SATSolver* solv){
+		if ( isSparse () ){
+			int tq = 0;
+			bool found = false;
+			for (int i = 0; i < size; i++){
+				int g;
+				if(num_ranges[i].guard > 0){
+					g = solv->getVarVal(num_ranges[i].guard);
+				}else{
+					g = (-solv->getVarVal(-num_ranges[i].guard));
+				}
+				if(g > 0){
+					tq = num_ranges[i].value;
+					found = true;
+				}
+			}			
+			Assert(found, "What !!??");
+			return tq;
+		} else{
+			int tt = ((neg? (-1):1 ) * solv->getVarVal(id));
+			return (tt==-1 ? 0 : 1);
+		}
+	}
+
+
+	void print(ostream &out, SATSolver* solv){
+		
+		if ( isSparse () ){
+			
+			int tq = 0;
+			bool found = false;
+			for (int i = 0; i < size; i++){
+				int g;
+				if(num_ranges[i].guard > 0){
+					g = solv->getVarVal(num_ranges[i].guard);
+				}else{
+					g = (-solv->getVarVal(-num_ranges[i].guard));
+				}
+				if(g > 0){
+					tq = num_ranges[i].value;
+					found = true;
+				}
+			}
+			out << "{0:("<< tq  <<")}";
+			Assert(found, "What !!??");
+		} else{
+			int tt = ((neg? (-1):1 ) * solv->getVarVal(id));
+			out << "{" << (neg ? -id : id)<<":("<< (tt==-1 ? 0 : 1)<<")}";
+		}
+	}
 
 
 
@@ -208,6 +259,17 @@ public:
 	return (isBvect () ? -dir.YES : id + size - 1);
     }
 
+	inline void markInput(SolverHelper& dir){
+		if(isSparse()){
+			SATSolver& sol = dir.getMng();
+			for(int i=0; i<num_ranges.size(); ++i){
+				sol.markInput(num_ranges[i].guard);
+			}
+		}else{
+			dir.getMng().markInput(id);
+		}
+	}
+
     /* Sparsify a value.
      * FIXME seems like a inconsistency pronating method... */
     inline void sparsify (void) {
@@ -216,6 +278,9 @@ public:
 	id = 0;
 	neg = false;
     }
+
+
+
 
     /* Negate a bit-vector.
      * FIXME we can generally only negate (=adjust?) a single-bit unsigned vector.

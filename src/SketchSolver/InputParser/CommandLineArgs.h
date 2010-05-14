@@ -48,6 +48,7 @@ class CommandLineArgs{
   string simplifycex;
   bool setMemo;
   bool debug;
+  bool superChecks;
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -82,9 +83,14 @@ class CommandLineArgs{
 		simplifycex = "RECSYM";
 		setMemo = true;
 		debug = false;
+		superChecks = false;
 	  for(int ii=0; ii<argc; ++ii){
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
+	      input_idx = ii+1;
+	    }
+		if( string(argv[ii]) == "-superChecks" ){	      
+	      superChecks = true;
 	      input_idx = ii+1;
 	    }
 	    if( string(argv[ii]) == "-nosim" ){	      

@@ -33,6 +33,11 @@ class InterpreterEnvironment
 	SATSolver* _pfind;
 	int assertionStep;
 	string sessionName;
+
+	/*Debug state: */
+	vector<BooleanDAG*> history;
+	vector<vector<Tvalue> > statehistory;
+
 	string findName(){
 		stringstream s;
 		s<<sessionName;

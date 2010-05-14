@@ -24,6 +24,7 @@ public:
 
 	typedef enum{ NOSIM /*no simplify*/, SIMSIM/*simple simplify*/, RECSIM/*recursive simplify*/} simtype;
 	simtype simplifycex;
+	bool superChecks;
 
 	CEGISparams(CommandLineArgs& args):
 		printDiag(false),
@@ -33,7 +34,8 @@ public:
 		randseed(time(NULL)),
 		simulate(true),
 		simiters(3),
-		simplifycex(RECSIM)
+		simplifycex(RECSIM),
+		superChecks(false)
 	{
 		printDiag = args.printDiag;
 		nseeds = args.seedsize;		
@@ -47,6 +49,7 @@ public:
 		cout<<"SOLVER RAND SEED = "<<randseed<<endl;
 		simulate = args.simulate;
 		simiters = args.simiters;
+		superChecks = args.superChecks;
 		if(args.simplifycex == "NOSIM"){ simplifycex = NOSIM; }
 		if(args.simplifycex == "SIMSIM"){ simplifycex = SIMSIM; }
 		if(args.simplifycex == "RECSIM"){ simplifycex = RECSIM; }
@@ -87,15 +90,15 @@ class CEGISSolver
 	SATSolver& mngFind;
 	SATSolver& mngCheck;
 
-	VarStore ctrlStore;
+	
 	VarStore inputStore;
 
 	CEGISparams params;
 	
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;
-	vector<Tvalue> find_node_ids;
 	
+	vector<Tvalue> find_node_ids;
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;
 	bool firstTime;
@@ -122,8 +125,8 @@ protected:
 	void abstractProblem();
 	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
-	
-	
+	vector<Tvalue> find_history;
+	VarStore ctrlStore;
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
 	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args);

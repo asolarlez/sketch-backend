@@ -63,7 +63,7 @@ public:
 		}
 		void printBit(ostream& out) const{
 			for(int i=0; i<vals.size(); ++i){
-				out<<vals[i];
+				out<<(vals[i]==1?1:0);
 			}
 		}
 		void makeRandom(){

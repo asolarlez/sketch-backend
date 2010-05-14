@@ -4,6 +4,87 @@
 #include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
 
+
+
+#ifdef CONST
+#undef CONST
+#endif
+
+
+
+class Strudel{
+	vector<Tvalue>& vals;
+	SATSolver* solver;
+public:
+	Strudel(vector<Tvalue>& vtv, SATSolver* solv):vals(vtv), solver(solv){
+		cout<<"This is strange size="<<vtv.size()<<endl;
+	}
+
+
+int valueForINode(INTER_node* inode, VarStore& values, int& nbits){
+	Tvalue& tv = vals[inode->id];
+	int retval = tv.eval(solver);
+	{ cout<<" input "<<inode->get_name()<<" has value "<< retval <<endl; }
+	return retval;
+}
+
+	void checker(BooleanDAG* dag, VarStore& values, bool_node::Type type){
+		cout<<"Entering ~!"<<endl;
+		BooleanDAG* newdag = dag->clone();
+		vector<bool_node*> inodeList = newdag->getNodesByType(type);
+			
+		cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; 
+		cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	
+		{
+			DagOptim cse(*newdag);			
+			
+			BooleanDAG* cl = newdag->clone();
+			for(int i=0; i<newdag->size() ; ++i ){ 
+				// Get the code for this node.				
+				if((*newdag)[i] != NULL){
+					if((*newdag)[i]->type == bool_node::CTRL){
+						INTER_node* inode = dynamic_cast<INTER_node*>((*newdag)[i]);	
+						int nbits;
+						int t = valueForINode(inode, values, nbits);
+						bool_node * repl=NULL;
+						if( nbits ==1 ){
+							repl = cse.getCnode( t == 1 );						
+						}else{
+							repl = cse.getCnode( t);							
+						}
+						Tvalue& tv = vals[i];
+						cout<<"ctrl=";
+						tv.print(cout, solver);
+						cout<<endl;
+						Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
+						newdag->replace(inode->id, repl);
+					}else{
+						bool_node* node = cse.computeOptim((*newdag)[i]);
+						Tvalue& tv = vals[i];
+						cout<<" old = "<<(*cl)[i]->lprint()<<" new "<<node->lprint()<<"  ";
+						tv.print(cout, solver);
+						if(node->type == bool_node::CONST && cse.getIval( node )==tv.eval(solver)){
+							cout<<" good";
+						}else{
+							cout<<" bad";
+						}
+						cout<<endl;
+						
+						if((*newdag)[i] != node){														
+								newdag->replace(i, node);							
+						}
+					}
+				}
+			}
+		}
+	}
+
+};
+
+
+
+
+
 InterpreterEnvironment::~InterpreterEnvironment(void)
 {
 	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
@@ -59,7 +140,8 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
 
 BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch){
 	if(params.verbosity > 2){
-		cout<<"* before  EVERYTHING: SPEC nodes = "<<spec->size()<<"\t SKETCH nodes = "<<sketch->size()<<endl;
+		
+		cout<<"* before  EVERYTHING: "<< spec->get_name() <<"::SPEC nodes = "<<spec->size()<<"\t "<< sketch->get_name() <<"::SKETCH nodes = "<<sketch->size()<<endl;
 	}
 
 	if(params.verbosity > 2){
@@ -155,8 +237,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	spec->makeMiter(sketch);
 	BooleanDAG* result = spec;
 	
-
-
+	
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
 	
 
@@ -195,6 +276,8 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	}
 }
 
+
+
 int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	Assert(status==READY, "You can't do this if you are UNSAT");
 	++assertionStep;
@@ -219,6 +302,11 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 			problem = bgproblem;
 		}
 	}
+
+	if(params.superChecks){
+		history.push_back(problem->clone());	
+	}
+
 	// problem->repOK();
 	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
 	SolverHelper check(*checker);
@@ -281,11 +369,28 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		if(problem != bgproblem){ problem->clear(); delete problem; }
 		return 1;	
 	}
+
+	if(params.superChecks){
+		statehistory.push_back(solver.find_history);
+
+		for(int i=0; i<history.size(); ++i){
+			cout<<" ~~~ Order = "<<i<<endl;
+			BooleanDAG* bd = solver.hardCodeINode(history[i], solver.ctrlStore, bool_node::CTRL);
+			int sz = bd->getNodesByType(bool_node::ASSERT).size();
+			cout<<" ++ Order = "<<i<<" size = "<<sz<<endl;
+			if(sz > 0){
+				Strudel st(statehistory[i], &finder->getMng());
+				st.checker(history[i] , solver.ctrlStore, bool_node::CTRL);
+			}
+		}
+	}
+
 	delete checker;
 	if(problem != bgproblem){ problem->clear(); delete problem; }
 	return 0;
 
 }
+
 
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
 	
