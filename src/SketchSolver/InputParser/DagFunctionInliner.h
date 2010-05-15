@@ -26,7 +26,8 @@ class CallTreeTracker{
 		//itoa(fun.get_callsite(), tmpbo, 10);
 		//s += tmpbo;
 		//s += "_";
-		itoa(fun.globalId, tmpbo, 10);
+		//itoa(fun.globalId, tmpbo, 10);
+                sprintf(tmpbo, "%d", fun.globalId);
 		s += tmpbo;		
 		return s;
 	}
