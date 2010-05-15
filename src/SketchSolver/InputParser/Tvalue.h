@@ -260,6 +260,7 @@ public:
     }
 
 	inline void markInput(SolverHelper& dir){
+/* This functionality is experimental
 		if(isSparse()){
 			SATSolver& sol = dir.getMng();
 			for(int i=0; i<num_ranges.size(); ++i){
@@ -267,7 +268,7 @@ public:
 			}
 		}else{
 			dir.getMng().markInput(id);
-		}
+		} */
 	}
 
     /* Sparsify a value.
