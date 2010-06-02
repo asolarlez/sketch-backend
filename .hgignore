@@ -32,3 +32,4 @@ src/SketchSolver/cegis
 glob:src\SketchSolver\InputParser\InputLexer.cpp
 glob:src\SketchSolver\InputParser\InputParser.cpp
 glob:src/tags
+relre:tags
