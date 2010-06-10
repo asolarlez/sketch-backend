@@ -41,6 +41,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/FastSet.h				\
 	InputParser/InputReader.h			\
 	InputParser/InterpreterEnvironment.h \
+	InputParser/Main.h \
 	InputParser/NodeEvaluator.h \
 	InputParser/NodeSlicer.h \
 	InputParser/NodeStore.h				\

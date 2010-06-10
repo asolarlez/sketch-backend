@@ -3,6 +3,8 @@ syntax: glob
 *.a
 *.Po
 *.so
+*.lo
+*.Plo
 *SBitII
 INSTALL
 aclocal.m4
