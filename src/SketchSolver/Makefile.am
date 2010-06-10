@@ -6,9 +6,14 @@ include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
+lib_LTLIBRARIES = libcegis.la
 cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
-cegis_CFLAGS = $(cegis_CXXFLAGS)
-cegis_LDADD = $(SOLVER_LIBS) -ldl
+#cegis_CFLAGS = $(cegis_CXXFLAGS)
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
+cegis_LDADD = libcegis.la
+libcegis_la_LIBADD = ../abc60513/libabc.la ../MiniSat/libminisat.la ../zchaff/libzchaff.la -ldl
+libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\
 	BasicError.h					\
@@ -50,7 +55,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/driver.h				\
 	InputParser/guardedVal.h			
 
-cegis_SOURCES =				\
+libcegis_la_SOURCES =				\
 	$(SOLVER_SRCS)				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
@@ -63,6 +68,7 @@ cegis_SOURCES =				\
 	InputParser/CallGraphAnalysis.cpp \
 	InputParser/Checkpointer.cpp \
 	InputParser/ComplexInliner.cpp \
+	InputParser/CommandLineArgs.cpp \
 	InputParser/DagCSE.cpp			\
 	InputParser/DagElimUFUN.cpp		\
 	InputParser/DagFunctionInliner.cpp	\
@@ -72,7 +78,6 @@ cegis_SOURCES =				\
 	InputParser/driver.cpp			\
 	InputParser/InputReader.cpp		\
 	InputParser/InterpreterEnvironment.cpp \
-	InputParser/Main.cpp			\
 	InputParser/NodeEvaluator.cpp \
 	InputParser/NodeStore.cpp		\
 	InputParser/NodeSlicer.cpp \
@@ -81,6 +86,9 @@ cegis_SOURCES =				\
 	InputParser/NodesToEuclid.cpp		\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp
+
+
+cegis_SOURCES =	InputParser/Main.cpp			
 
 ## Hackery to put the lex/bison generated parser into a C++ namespace
 

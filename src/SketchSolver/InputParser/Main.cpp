@@ -10,13 +10,13 @@ using namespace std;
 
 //using namespace statistics;
 
-CommandLineArgs* PARAMS;
+//CommandLineArgs* PARAMS;
 
 // Statistics -- could print these periodically
-timerclass totalElapsed;
-timerclass modelBuilding;
-timerclass solution;
-statistics::MemorySampler mem;
+extern timerclass totalElapsed;
+extern timerclass modelBuilding;
+extern timerclass solution;
+extern statistics::MemorySampler mem;
 
 void
 printStats ()

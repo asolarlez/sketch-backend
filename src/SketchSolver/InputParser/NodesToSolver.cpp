@@ -4,7 +4,7 @@
 
 #include "CommandLineArgs.h"
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 // #define Dout(msg) msg
 

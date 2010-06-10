@@ -46,7 +46,7 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
   return n1->layer < n2->layer || ( (n1->layer == n2->layer) && n1->ion_pos<n2->ion_pos );
 }
 
-extern timerclass TTMMPP;
+//extern timerclass TTMMPP;
 
 class BooleanDAG  
 {

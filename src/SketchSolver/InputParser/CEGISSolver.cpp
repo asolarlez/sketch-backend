@@ -9,7 +9,7 @@
 #include "NodeSlicer.h"
 #include "BackwardsAnalysis.h"
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 CEGISSolver::CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args):
 dirFind(finder), 

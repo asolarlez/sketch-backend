@@ -5,7 +5,7 @@
 
 
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 #ifndef  _MSC_VER
 static const int MAX_NODES = 1000000;

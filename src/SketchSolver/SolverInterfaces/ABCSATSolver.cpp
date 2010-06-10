@@ -13,7 +13,7 @@ extern int  Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMa
 }
 
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 Abc_Ntk_t * ABCSATSolver::cofactor(Abc_Ntk_t * network, vector<int>& namemap){
 	Abc_Ntk_t * result;

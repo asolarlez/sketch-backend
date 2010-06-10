@@ -1,8 +1,10 @@
 #include "InterpreterEnvironment.h"
+#include "ABCSATSolver.h"
 #include "InputReader.h"
 #include "CallGraphAnalysis.h"
 #include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
+#include "InputReader.h" // INp yylex_init, yyparse, etc.
 
 
 

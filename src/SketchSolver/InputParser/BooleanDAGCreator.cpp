@@ -1,7 +1,7 @@
 #include "BooleanDAGCreator.h"
 #include "CommandLineArgs.h"
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 {

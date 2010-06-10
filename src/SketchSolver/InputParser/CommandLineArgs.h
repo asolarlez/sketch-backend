@@ -286,7 +286,7 @@ class CommandLineArgs{
 	
 };
 
-
+extern CommandLineArgs* PARAMS;
 
 
 #endif

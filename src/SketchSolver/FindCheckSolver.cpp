@@ -16,7 +16,7 @@
 
 //#define WITH_RANDOMNESS 1
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 
 
