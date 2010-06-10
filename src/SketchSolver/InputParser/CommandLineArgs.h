@@ -3,6 +3,8 @@
 
 #include <stdlib.h> // atoi
 #include "SATSolver.h"
+#include <vector>
+#include <string>
 
 
 namespace INp{
@@ -10,6 +12,10 @@ extern  int NCTRLS;
 extern  bool overrideNCtrls;
 extern  bool overrideInputs;
 }
+
+
+class CommandLineArgs;
+extern CommandLineArgs* PARAMS;
 
 class CommandLineArgs{
 	public:		
@@ -49,6 +55,15 @@ class CommandLineArgs{
   bool setMemo;
   bool debug;
   bool superChecks;
+
+	CommandLineArgs(vector<string> args){
+		char** argv = (char**)malloc(sizeof(char*) * args.size());
+		for(int i = 0; i < args.size(); i++) {
+			argv[i] = (char*)malloc(sizeof(char) * args[i].length());
+			argv[i] = (char*)args[i].c_str();
+		}
+		CommandLineArgs(args.size(), argv);
+	}
 
 	CommandLineArgs(int argc, char** argv){
 		input_idx = 1;
@@ -283,10 +298,12 @@ class CommandLineArgs{
 	  }
 	}	
 	
+	void setPARAMS() {
+		PARAMS = this;
+	}
 	
 };
 
-extern CommandLineArgs* PARAMS;
 
 
 #endif
