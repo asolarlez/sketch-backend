@@ -6,6 +6,7 @@
 #include "NodeStore.h"
 #include <typeinfo>
 #include <set>
+#include <stack>
 
 using namespace std;
 
@@ -189,6 +190,11 @@ protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
+
+
+	void checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*>& bnmap);
+	bool checkPrecedence(bool_node* dest, bool_node* src);
+
 public:
 	map<bool_node*, AbstractNodeValue> anv;
 	
