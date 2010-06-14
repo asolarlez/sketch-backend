@@ -66,9 +66,9 @@ public:
 				out<<(vals[i]==1?1:0);
 			}
 		}
-		void makeRandom(){
+		void makeRandom(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
-				vals[i] = (rand() & 0x1) > 0? -1 : 1;
+				vals[i] = (rand() & 0x3) > 0? -1 : 1;
 			}
 		}
 	};
