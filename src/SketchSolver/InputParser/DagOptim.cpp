@@ -983,6 +983,47 @@ void DagOptim::visit( EQ_node& node ){
 	rvalue = &node;
 }
 
+
+void DagOptim::checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*>& bnmap){
+	if(bn != NULL && bnmap.count(bn)==0){
+		bnmap.insert(bn);		
+		sd.push(bn);
+	}
+}
+
+
+/* Is dest reachable from src? 
+* 
+*/
+bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
+	stack<bool_node*> sd;
+	set<bool_node*> bnmap;
+	sd.push(dest);	
+	int cnt = 0;
+	while(!sd.empty()){
+		++cnt;
+		bool_node* bn = sd.top();
+		sd.pop();
+		if(bn == src){
+			cout<<"##BAD = "<<cnt<<endl;
+			return true;
+		}
+		checkAndPush(bn->mother, sd, bnmap);
+		checkAndPush(bn->father, sd, bnmap);
+		if(bn->type == bool_node::ARITH){
+			arith_node* an = dynamic_cast<arith_node*>(bn);
+			for(int i=0; i<an->multi_mother.size(); ++i){
+				checkAndPush(an->multi_mother[i], sd, bnmap);
+			}
+		}
+	}
+	cout<<"##GOOD = "<<cnt<<endl;
+	return false;
+}
+
+
+
+
 void DagOptim::visit( UFUN_node& node ){
 	if(isConst(node.mother)){
 		if(getIval( node.mother ) == 0){
@@ -998,7 +1039,7 @@ void DagOptim::visit( UFUN_node& node ){
 
 	for(int i=0; i<node.multi_mother.size(); ++i){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
-		char tmpbo[256];
+		char tmpbo[256];		
 		// itoa(mmid, tmpbo, 10);
 		sprintf(tmpbo,"%d", mmid);
 		tmp += tmpbo;
@@ -1017,28 +1058,43 @@ void DagOptim::visit( UFUN_node& node ){
 			return;
 		}
 
-		brother->dislodge();
-		brother->mother->remove_child(brother);
-		bool_node* on = new OR_node();
-		on->mother = brother->mother;
-		on->father = node.mother;
-		
-		{
-			bool_node* onPr = this->computeOptim(on);
-			if(onPr == on){
-				on->addToParents();
-				addNode(on);
-			}else{
-				delete on;
+		if(!checkPrecedence(node.mother, brother)){
+			brother->dislodge();
+			brother->mother->remove_child(brother);
+			bool_node* on = new OR_node();
+			on->mother = brother->mother;
+			on->father = node.mother;
+			
+			{
+				bool_node* onPr = this->computeOptim(on);
+				if(onPr == on){
+					on->addToParents();
+					addNode(on);
+				}else{
+					delete on;
+				}
+				on = onPr;
 			}
-			on = onPr;
+			
+			brother->mother = on;
+			brother->resetId();
+			brother->addToParents();
+			rvalue = brother;
+			return;
+		}else{
+			child_iter end = node.children.end();
+			for(child_iter it = node.children.begin(); 
+												it !=end; ++it){
+				
+				(*it)->replace_parent(&node, brother);
+			}
+			node.children.clear();
+			rvalue = &node;
+			return;
 		}
+
+
 		
-		brother->mother = on;
-		brother->resetId();
-		brother->addToParents();
-		rvalue = brother;
-		return;
 	}else{
 		callMap[tmp] = &node;
 		rvalue  = &node;
