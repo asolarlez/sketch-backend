@@ -23,10 +23,8 @@ class InterpreterEnvironment
 {
 	typedef enum {READY, UNSAT} STATUS;
 	STATUS status;
-	CommandLineArgs& params;
 	map<string, BooleanDAG*> functionMap;
-	map<string, int> currentControls;
-	BooleanDAG * bgproblem;
+	CommandLineArgs& params;
 	SolverHelper* finder;
 	SATSolver* _pfind;
 	int assertionStep;
@@ -69,6 +67,8 @@ class InterpreterEnvironment
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:
+	map<string, int> currentControls;
+	BooleanDAG * bgproblem;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
@@ -123,6 +123,10 @@ public:
 		dag will be useless, and possibly deallocated.
 	*/
 	int assertDAG(BooleanDAG* dag, ostream& out);
+
+	void set_function(const string& s, BooleanDAG* dag) {
+		functionMap[s] = dag;
+	}
 
 	virtual ~InterpreterEnvironment(void);
 };

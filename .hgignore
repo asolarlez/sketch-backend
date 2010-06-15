@@ -5,6 +5,11 @@ syntax: glob
 *.so
 *.lo
 *.Plo
+*.m4
+*.la
+.libs/*
+libtool
+ltmain.sh
 *SBitII
 INSTALL
 aclocal.m4

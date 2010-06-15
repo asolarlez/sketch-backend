@@ -7,6 +7,7 @@
 #include "SATSolver.h"
 
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 
 
@@ -684,7 +685,53 @@ void BooleanDAG::lprint(ostream& out){
   out<<"}"<<endl;
 }
 
+void BooleanDAG::print_wrapper()const{    
+  ostream& out = std::cout;
+  out<<"digraph G{"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		nodes[i]->outDagEntry(out);
+  	}    
+  }
 
+  out<<"}"<<endl;
+}
+
+void BooleanDAG::lprint_wrapper(){
+  ostream& out = std::cout;    
+  out<<"dag{"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		out<<nodes[i]->lprint()<<endl;
+  	}    
+  }
+
+  out<<"}"<<endl;
+}
+
+void BooleanDAG::print_wrapper(const char* fileName)const{    
+  std::ofstream out(fileName, ios_base::out);
+  out<<"digraph G{"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		nodes[i]->outDagEntry(out);
+  	}    
+  }
+
+  out<<"}"<<endl;
+}
+
+void BooleanDAG::lprint_wrapper(const char* fileName){
+  std::ofstream out(fileName, ios_base::out);    
+  out<<"dag{"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		out<<nodes[i]->lprint()<<endl;
+  	}    
+  }
+
+  out<<"}"<<endl;
+}
 void BooleanDAG::clearBackPointers(){
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		(*node_it)->children.clear();				
