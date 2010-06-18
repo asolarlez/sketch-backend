@@ -1005,7 +1005,7 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 		bool_node* bn = sd.top();
 		sd.pop();
 		if(bn == src){
-			cout<<"##BAD = "<<cnt<<endl;
+			//cout<<"##BAD = "<<cnt<<endl;
 			return true;
 		}
 		checkAndPush(bn->mother, sd, bnmap);
@@ -1017,7 +1017,7 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 			}
 		}
 	}
-	cout<<"##GOOD = "<<cnt<<endl;
+	//cout<<"##GOOD = "<<cnt<<endl;
 	return false;
 }
 

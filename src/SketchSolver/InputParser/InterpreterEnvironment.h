@@ -123,6 +123,8 @@ public:
 		dag will be useless, and possibly deallocated.
 	*/
 	int assertDAG(BooleanDAG* dag, ostream& out);
+	int assertDAG_wrapper(BooleanDAG* dag);
+	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 
 	void set_function(const string& s, BooleanDAG* dag) {
 		functionMap[s] = dag;
