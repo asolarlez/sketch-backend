@@ -89,14 +89,21 @@ public:
 		functionMap[name] = tmp;
 		return new BooleanDAGCreator(tmp);		
 	}
-
-
+	
 	void printControls(ostream& out){
 		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
 			out<<it->first<<"\t"<<it->second<<endl;
 		}
 	}
+	
+	void printControls_wrapper() {
+		ostream& out = std::cout;
+		printControls(out);
+	}
 
+	void printControls_wrapper(const string& s) {
+		printControls(s);
+	}
 
 	int runCommand(const string& cmd, list<string*>& parlist);
 
