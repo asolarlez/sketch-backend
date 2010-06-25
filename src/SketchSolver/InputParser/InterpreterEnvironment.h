@@ -21,8 +21,6 @@ using namespace std;
 
 class InterpreterEnvironment
 {
-	typedef enum {READY, UNSAT} STATUS;
-	STATUS status;
 	map<string, BooleanDAG*> functionMap;
 	CommandLineArgs& params;
 	SolverHelper* finder;
@@ -67,6 +65,8 @@ class InterpreterEnvironment
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:
+	typedef enum {READY, UNSAT} STATUS;
+	STATUS status;
 	map<string, int> currentControls;
 	BooleanDAG * bgproblem;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){

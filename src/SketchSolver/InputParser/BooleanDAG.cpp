@@ -633,8 +633,10 @@ bool_node* BooleanDAG::create_inputs(int n, const string& gen_name){
 	return create_inter(n, gen_name, n_inputs, bool_node::SRC);
 }
 
-bool_node* BooleanDAG::create_controls(int n, const string& gen_name){
-  return create_inter(n, gen_name, n_controls, bool_node::CTRL);  
+bool_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
+  bool_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
+  dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
+  return tmp;
 }
 
 bool_node* BooleanDAG::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){

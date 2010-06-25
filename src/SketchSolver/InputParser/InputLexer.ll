@@ -162,6 +162,9 @@ Comment      ("//"[^\n]*)
 				return T_def;
 			}
 
+"MINVAR"	{
+				return T_Min;
+			}
 
 {Identifier} {
 	yylval->strConst = new string(yytext);

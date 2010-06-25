@@ -349,13 +349,20 @@ class DST_node: public INTER_node, public DllistNode{
 
 
 class CTRL_node: public INTER_node{
+	bool toMinimize;
 	public: 
-	CTRL_node(){ type = CTRL;} 
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }   
+	CTRL_node(bool toMinimize = false){ type = CTRL; this->toMinimize = toMinimize;} 
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true, bool toMinimize = false): INTER_node(bn, copyChildren){ this->toMinimize = toMinimize;}   
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };	
+	virtual bool_node* clone(bool copyChildren = true){bool_node* tmp = new CTRL_node(*this, copyChildren); dynamic_cast<CTRL_node*>(tmp)->toMinimize = this->toMinimize; return tmp; };	
 	string get_name() const {
 		return name;
+	}
+	bool get_toMinimize() const {
+		return toMinimize;
+	}
+	void set_toMinimize(bool toMinimize) {
+		this->toMinimize = toMinimize;
 	}
 };
 
