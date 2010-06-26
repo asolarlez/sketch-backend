@@ -169,8 +169,8 @@ int NodeEvaluator::scoreNodes(){
 			}
 		}
 	}
-	cout<<"nconstants  = "<<nconsts<<"max count = "<<maxcount<<" highest = "<<highest<<endl;
-	cout<<bdag[highest]->lprint()<<endl;
+	Dout (cout<<"nconstants  = "<<nconsts<<"max count = "<<maxcount<<" highest = "<<highest<<endl;)
+	Dout (cout<<bdag[highest]->lprint()<<endl;)
 	/*
 	for(child_iter cit = bdag[highest]->children.begin(); cit != bdag[highest]->children.end(); ++cit){
 		cout<<(*cit)->lprint()<<endl;

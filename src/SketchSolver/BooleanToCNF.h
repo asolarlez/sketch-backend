@@ -123,7 +123,7 @@ public:
 			YES = newAnonymousVar();		
 			mng.setVarClause(YES);
 		}else{
-			cout<<"Repeating yes = "<<YES<<endl;
+			Dout(cout<<"Repeating yes = "<<YES<<endl;)
 		}
 		return YES;
 	}

@@ -260,7 +260,7 @@ bool MiniSATSolver::ignoreOld(){
  	delete s;
  	s = new Solver();
  	s->newVar();
-	cout<<"clause count = "<<clauseCount<<endl;
+	Dout(cout<<"clause count = "<<clauseCount<<endl;)
 	clauseCount=0;
 }
 

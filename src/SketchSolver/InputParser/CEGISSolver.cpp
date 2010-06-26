@@ -182,7 +182,8 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	map<bool_node*,  int> node_values;
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
-	cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl;
+	if(PARAMS->verbosity < 0) {Dout(cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl;)}
+	else {cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl;}
 	if(!specialize){
 		bool sameProblem = getProblem() == lastFproblem;//indicates whether this is the same problem as last time.
 		if(find_node_ids.size() != getProblem()->size()){
@@ -458,7 +459,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	vector<VarStore> expensive;
 	BooleanDAG* dag =getProblem();
 	if(dag->getNodesByType(bool_node::ASSERT).size()==0){
-		tc.stop().print("no cex");
+		tc.stop();
+		if(PARAMS->verbosity < 0) {Dout(tc.print("no cex");)}
+		else {tc.print("no cex");}
 		return false;
 	}
 	bool hasCtrls = dag->getNodesByType(bool_node::CTRL).size()!=0;
@@ -479,7 +482,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			eval.trackChanges();
 			if(done){
-				tc.stop().print("found a cex");
+				tc.stop();
+				if(PARAMS->verbosity < 0) {Dout(tc.print("found a cex");)}
+				else {tc.print("found a cex");}
 				popProblem();
 				return true;
 			}
@@ -515,7 +520,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			timerclass tc("check time");
 			tc.start();
 			bool rv = baseCheck(controls, tmpin);
-			tc.stop().print();
+			tc.stop();
+			if(PARAMS->verbosity < 0) {Dout(tc.print();)}
+			else {tc.print();}
 			popProblem();
 			if(am>0){
 				if(am==2){ delete an->mother->father; }
@@ -532,7 +539,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					done= eval.run(tmpin);
 				}				
 				if(done){
-					tc.stop().print("found a cex");
+					tc.stop();
+					if(PARAMS->verbosity < 0) {Dout(tc.print("found a cex");)}
+					else {tc.print("found a cex");}
 					popProblem();
 					return true;
 				}else{
@@ -545,9 +554,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					dag->replace(h, cse.getCnode(eval.getValue((*dag)[h])));
 					dag->removeNullNodes();
 					cse.process(*dag);
-					cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl;
+					if(PARAMS->verbosity < 0) {Dout(cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl;)}
+					else {cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl;}
 					if(dag->getNodesByType(bool_node::ASSERT).size()==0){
-						tc.stop().print("no cex");
+						tc.stop();
+						if(PARAMS->verbosity < 0) {Dout(tc.print("no cex");)}
+						else {tc.print("no cex");}
 						popProblem();
 						return false;
 					}
@@ -556,7 +568,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}
 	}while(iter < params.simiters);
-	tc.stop().print("didn't find a cex");	
+	tc.stop();
+	if(PARAMS->verbosity < 0) {Dout(tc.print("didn't find a cex");)}
+	else {tc.print("didn't find a cex");}
 	{
 		BackwardsAnalysis ba;
 		ba.process(*dag);
@@ -665,7 +679,8 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			case CheckControl::POP_LEVEL:{
 				BooleanDAG* tbd = getProblem();
 				popProblem();
-				cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;
+				if(PARAMS->verbosity < 0) {Dout(cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;)}
+				else {cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;}
 				if(hardcode){
 					tbd = getProblem();
 					popProblem();
@@ -689,7 +704,8 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				return false;
 			}
 			case CheckControl::GROW_IN:{
-				cout<<"CONTROL: Growing Input"<<problemLevel()<<endl;
+				if(PARAMS->verbosity < 0) {Dout(cout<<"CONTROL: Growing Input"<<problemLevel()<<endl;)}
+				else {cout<<"CONTROL: Growing Input"<<problemLevel()<<endl;}
 				growInputs(getProblem(), oriProblem);
 				continue;
 			}
