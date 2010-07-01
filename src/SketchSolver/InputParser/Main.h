@@ -1,7 +1,7 @@
 #include "driver.h"
 
 void runDriver() {
-	Driver m(*PARAMS);
+	PyDriver m(*PARAMS);
 	m.parseInput();
 }
 

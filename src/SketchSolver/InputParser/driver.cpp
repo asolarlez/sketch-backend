@@ -80,8 +80,35 @@ void Driver::parseInput(){
 			cerr<<"\n*** Rejected\n";
 			exit(1);
 		}
-		//XXX: Introduce a flag to control the delete of the envt variable.
-		//delete INp::envt;
+		delete INp::envt;
+	}catch(BasicError& be){
+		  cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
+		  exit(1);
+	}
+}
+
+void PyDriver::parseInput(){
+	try{
+		cout<<"Reading SKETCH Program in File "<<params.inputFname<<endl;
+
+
+		INp::Inityylex();
+		INp::Inityyparse();
+		INp::envt = new InterpreterEnvironment(params);
+		void* scanner;
+		INp::yylex_init(&scanner);
+		FILE* tmp = NULL;
+		if(params.interactive){
+			INp::yyset_in(stdin, scanner);			
+		}else{
+			tmp = fopen(params.inputFname.c_str(), "r");
+			INp::yyset_in(tmp, scanner);
+		}
+		if (INp::yyparse(scanner) != 0) {
+			INp::yylex_destroy(scanner);
+			cerr<<"\n*** Rejected\n";
+			exit(1);
+		}
 	}catch(BasicError& be){
 		  cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
 		  exit(1);
