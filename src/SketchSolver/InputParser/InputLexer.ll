@@ -133,9 +133,6 @@ Comment      ("//"[^\n]*)
 "new"		{				
 				return T_new;
 			}
-"add"		{
-				return T_add;
-			}
 
 "assert" {
     return T_assert;
@@ -149,9 +146,7 @@ Comment      ("//"[^\n]*)
 "NATIVE_METHOD" { 				
 					return T_NativeMethod;
 				}
-"INIT"		{
-				return T_Init;
-			}
+
 			
 "SKETCHES"	{
 				return T_Sketches;
