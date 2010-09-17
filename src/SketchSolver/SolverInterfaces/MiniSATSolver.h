@@ -20,6 +20,7 @@ protected:
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
+	SearchParams params;
 public:
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
 	 	s = new Solver();
@@ -27,6 +28,7 @@ public:
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
 		clauseCount=0;
+		params = SearchParams(0.95, 0.9, 0.10);
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
@@ -67,6 +69,10 @@ public:
 	
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
+	
+	 void setSearchParams(double var_decay, double cla_decay, double random_var_freq) {
+		 params = SearchParams(var_decay, cla_decay, random_var_freq);	 
+	 }
 	 
 };
 

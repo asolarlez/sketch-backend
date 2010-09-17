@@ -202,8 +202,8 @@ public:
     //
     bool    okay(void) { return ok; }
     void    simplifyDB(void);
-    bool    solve(const vec<Lit>& assumps);
-    bool    solve(void) { vec<Lit> tmp; return solve(tmp); }
+    bool    solve(const vec<Lit>& assumps, const SearchParams& params);
+    bool    solve(const SearchParams& params) { vec<Lit> tmp; return solve(tmp, params); }
 
     double      progress_estimate;  // Set by 'search()'.
     vec<lbool>  model;              // If problem is solved, this vector contains the model (if any).

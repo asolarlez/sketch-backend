@@ -755,12 +755,13 @@ void Solver::claRescaleActivity(void)
 |    'simplifyDB()' first to see that no top-level conflict is present (which would put the solver 
 |    in an undefined state).                                                                       
 |________________________________________________________________________________________________@*/
-bool Solver::solve(const vec<Lit>& assumps)
+bool Solver::solve(const vec<Lit>& assumps, const SearchParams& params)
 {
     simplifyDB();
     if (!ok) return false;
-
-    SearchParams    params(0.95, 0.999, 0.02);
+	
+	//Default SearchParams provided by MiniSat
+    //SearchParams    params(0.95, 0.999, 0.02);
     double  nof_conflicts = 100;
     double  nof_learnts   = nClauses() / 3;
     lbool   status        = l_Undef;
