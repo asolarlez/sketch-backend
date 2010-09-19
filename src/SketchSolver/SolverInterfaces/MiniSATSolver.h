@@ -28,7 +28,7 @@ public:
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
 		clauseCount=0;
-		params = SearchParams(0.95, 0.9, 0.10);
+		params = SearchParams(strtod(slvParams[0].c_str(), NULL), strtod(slvParams[1].c_str(), NULL), strtod(slvParams[2].c_str(), NULL));
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 

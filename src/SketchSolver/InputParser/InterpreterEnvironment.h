@@ -70,7 +70,7 @@ public:
 	map<string, int> currentControls;
 	BooleanDAG * bgproblem;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
-		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
+		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName(), params.slvParams);
 		finder = new SolverHelper(*_pfind);
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
 		sessionName = procFname(params.inputFname);			  
