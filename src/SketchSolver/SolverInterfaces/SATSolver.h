@@ -2,6 +2,7 @@
 #define SATSOLVER_H
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -29,7 +30,7 @@ public:
 	typedef enum {ABC, ABCLIGHT, ZCHAFF, MINI} SolverType;
 	typedef enum {FINDER, CHECKER} SolverMode;
 	
-	static SATSolver* solverCreate(SolverType t, SolverMode m, string name);
+	static SATSolver* solverCreate(SolverType t, SolverMode m, string name, vector<string> params);
 
 
 

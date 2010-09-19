@@ -22,7 +22,7 @@ protected:
 	int clauseCount;
 	SearchParams params;
 public:
-	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
+	 MiniSATSolver(const string& name_p,  SolverMode smode, vector<string> slvParams):SATSolver(name_p, smode){
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	

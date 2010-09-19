@@ -54,6 +54,7 @@ class CommandLineArgs{
   bool setMemo;
   bool debug;
   bool superChecks;
+  //vector<string> slvParams;
 
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
@@ -75,6 +76,8 @@ class CommandLineArgs{
 		seed = -1;
 		synthtype=SATSolver::MINI;
 		veriftype=SATSolver::MINI;
+		//default values for MiniSat
+		//slvParams.push_back("0.95"); slvParams.push_back("0.999"); slvParams.push_back("0.002");
 		outputAIG =false;
 		output2QBF = false;
 		outputEuclid = false;
@@ -293,6 +296,16 @@ class CommandLineArgs{
   		  cout<<" verif = |"<<verif<<"|"<<endl;
 	      input_idx = ii+2;
 	    }        
+//	    if (string (argv[ii]) == "-slvParams") {
+//			slvParams.clear();
+//			char* pch;
+//			pch = strtok(argv[ii+1], " ");
+//			while (pch != NULL) {
+//				slvParams.push_back(string(pch));
+//				pch = strtok(NULL, " ");
+//			}
+//			input_idx = ii + 2;
+//	    }
 	  }
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];

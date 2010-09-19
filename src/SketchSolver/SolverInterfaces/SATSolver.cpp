@@ -3,7 +3,7 @@
 #include "MiniSATSolver.h"
 #include "ZchaffSATSolver.h"
 
-SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
+SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name, vector<string> params){
 		SATSolver* solver = NULL;
 		if( t ==  ABC ){
       		solver = new ABCSATSolver(name, ABCSATSolver::FULL, m);
@@ -15,7 +15,7 @@ SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
       		solver = new ZchaffSATSolver(name, m);
      		cout<<name<<" = ZCHAFF"<<endl;
       	}else if( t ==  MINI){
-      		solver = new MiniSATSolver(name, m);
+      		solver = new MiniSATSolver(name, m, params);
      		cout<<name<<" = MINI"<<endl;
       	}
 		return solver;
