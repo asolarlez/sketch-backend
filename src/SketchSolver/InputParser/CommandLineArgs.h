@@ -55,7 +55,8 @@ class CommandLineArgs{
   bool setMemo;
   bool debug;
   bool superChecks;
-  vector<string> slvParams;
+  vector<string> synthParams;
+  vector<string> verifParams;
 
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
@@ -78,7 +79,8 @@ class CommandLineArgs{
 		synthtype=SATSolver::MINI;
 		veriftype=SATSolver::MINI;
 		//default values for MiniSat
-		slvParams.push_back("0.95"); slvParams.push_back("0.999"); slvParams.push_back("0.002");
+		synthParams.push_back("0.95"); synthParams.push_back("0.999"); synthParams.push_back("0.002");
+		verifParams.push_back("0.95"); verifParams.push_back("0.999"); verifParams.push_back("0.002");
 		outputAIG =false;
 		output2QBF = false;
 		outputEuclid = false;
@@ -297,12 +299,22 @@ class CommandLineArgs{
   		  cout<<" verif = |"<<verif<<"|"<<endl;
 	      input_idx = ii+2;
 	    }        
-	    if (string (argv[ii]) == "-slvParams") {
-			slvParams.clear();
+	    if (string (argv[ii]) == "-synthParams") {
+			synthParams.clear();
 			char* pch;
 			pch = strtok(argv[ii+1], " ");
 			while (pch != NULL) {
-				slvParams.push_back(string(pch));
+				synthParams.push_back(string(pch));
+				pch = strtok(NULL, " ");
+			}
+			input_idx = ii + 2;
+	    }
+	    if (string (argv[ii]) == "-verifParams") {
+			verifParams.clear();
+			char* pch;
+			pch = strtok(argv[ii+1], " ");
+			while (pch != NULL) {
+				verifParams.push_back(string(pch));
 				pch = strtok(NULL, " ");
 			}
 			input_idx = ii + 2;

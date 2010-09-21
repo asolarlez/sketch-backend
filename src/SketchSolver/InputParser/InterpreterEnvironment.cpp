@@ -310,7 +310,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	}
 
 	// problem->repOK();
-	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName(), params.slvParams);
+	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName(), params.verifParams);
 	SolverHelper check(*checker);
 	check.setMemo(params.setMemo && params.veriftype == SATSolver::MINI);
 	CEGISSolver solver(problem, *finder, check, params);
