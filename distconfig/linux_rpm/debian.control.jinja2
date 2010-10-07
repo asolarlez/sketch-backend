@@ -8,7 +8,8 @@ Build-Depends: {{ macros.deb_build_deps }}
 Package: {{ name }}
 Architecture: all
 Depends: shlibs:Depends
-Description: {{ macros.summary }}
+Description: {{ macros.summary -}}
 {% filter indent(1) %}{{ "" }}
 {{ macros.description() }}
-{% endfilter %}
+{%- endfilter %}
+

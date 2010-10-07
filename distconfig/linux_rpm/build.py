@@ -84,7 +84,7 @@ def main(name, version, proj_path, conf_path, no_inc_release, tmpdir, run_local_
 
     version = get_sketch_version(proj_path) if version is None else version
     # NOTE -- need to use gz instead of lzma for Debian compatibility
-    sourcefile = "%s-%s.tar.gz" % (name, version)
+    sourcefile = "%s_%s.orig.tar.gz" % (name, version)
     release_number_v = get_release_version(conf_path, no_inc_release)
 
     tmppath = tmpdir.subpath("%s-%s" % (name, version))
