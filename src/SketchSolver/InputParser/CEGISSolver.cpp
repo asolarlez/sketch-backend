@@ -1016,7 +1016,10 @@ void CEGISSolver::setup2QBF(ostream& out){
 	}
 	check_node_ids.resize(getProblem()->size());
 	map<bool_node*,  int> node_values;
-	dynamic_cast<MiniSATSolver&>(mngCheck).debugout = &out;
+	MiniSATSolver& ms = dynamic_cast<MiniSATSolver&>(mngCheck);
+	ms.debugout = &out;
 	defineProblem(mngCheck, dirCheck, node_values, check_node_ids);
+	ms.finish();
+	ms.debugout = NULL;
 	outputCheckVarmap(cout);
 }

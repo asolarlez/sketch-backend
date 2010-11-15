@@ -70,6 +70,12 @@ public:
 	 virtual void reset();
 	 virtual void cleanupDatabase();
 	
+	 virtual void finish(){
+		if(solveNegation){
+			MSsolverNS::vec<Lit> lits;
+			addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
+		}
+	 }
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
 	 
