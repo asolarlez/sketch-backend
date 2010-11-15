@@ -532,6 +532,7 @@ NodesToSolver::visit (SRC_node &node)
 		    node_ids[node.id].makeSparse (dir);
 #endif /* HAVE_BVECTARITH */
 		}
+		node_ids[node.id].markInput(dir);
 	Dout (cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
@@ -656,6 +657,7 @@ NodesToSolver::visit (CTRL_node &node)
 		    node_ids[node.id].makeSparse(dir);
 #endif /* HAVE_BVECTARITH */
 		}
+		node_ids[node.id].markInput(dir);
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
     }

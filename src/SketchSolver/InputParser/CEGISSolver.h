@@ -150,7 +150,7 @@ public:
 
 	void get_control_map(map<string, int>& values);
 	void outputEuclid(ostream& fout);
-	void setup2QBF();
+	void setup2QBF(ostream& out);
 
 	void outputCheckVarmap(ostream& out){
 		dirCheck.outputVarMap(out);	

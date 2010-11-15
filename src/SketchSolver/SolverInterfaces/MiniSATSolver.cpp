@@ -12,8 +12,14 @@
 #include "MiniSATSolver.h"
 
 
-//#define Dout( out )      out 
+// #define Dout( out )      out 
 
+
+void MiniSATSolver::markInput(int id){
+	if(!solveNegation){
+		s->regInput(abs(id));
+	}
+}
 
 void MiniSATSolver::annotate(const string& msg){
 	Dout( cout<<msg );
@@ -43,11 +49,15 @@ void MiniSATSolver::addHelperClause(int c[], int sz){
 void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	lits.clear();
 	for(int i=0; i<sz; ++i){	
-		int var = abs(tmp[i]);
-		// cout<<tmp[i]<<", ";
+		int var = abs(tmp[i]);		
 		lits.push( (tmp[i] > 0) ? Lit(var) : ~Lit(var) );		
 	}	
-	// cout<<endl;
+	if(debugout!=NULL){ 
+		for(int i=0; i<sz; ++i){	
+			if(debugout!=NULL){ (*debugout)<<tmp[i]<<" "; }
+		}		
+		(*debugout)<<"0"<<endl; 
+	}
 	s->addClause(lits);
 	++clauseCount;
 } 
@@ -146,8 +156,8 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	Dout( cout<<"@ set "<<x<<";"<<endl );
 	FileOutput( output<<"x SET "<<x<<" ;"<<endl );
 	//cout<<x<<endl;
-	int var = abs(x);
-	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+	vec<Lit> lits;
+	{ int tmp[] = { x }; addClause(tmp, 1, lits);}
 }
 
 
@@ -155,11 +165,8 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
  	if( !solveNegation  ){
 		Dout( cout<<"@ assert "<<x<<";"<<endl );
 		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-		int var = abs(x);
-		s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
-		if(s->propagate() != NULL){
-			Assert(false, "I just found an unsat assertion!!");
-		}
+		vec<Lit> lits;
+		{ int tmp[] = { x }; addClause(tmp, 1, lits);}		
 	}else{	
 		finalOr.push_back(-x);
 	}
@@ -168,9 +175,9 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 void MiniSATSolver::hardAssertVarClause(int x){
 	Dout( cout<<"@ assert "<<x<<";"<<endl );
-	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-	int var = abs(x);
-	s->addUnit( (x > 0) ? Lit(var) : ~Lit(var) );
+	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );	
+	vec<Lit> lits;
+	{ int tmp[] = { x }; addClause(tmp, 1, lits);}	
 }
 
 
@@ -181,15 +188,11 @@ void MiniSATSolver::hardAssertVarClause(int x){
 	 }*/
  	cout << c <<"# assigns                : "<<s->nAssigns()<<endl;
  	cout << c <<"# clauses                : "<<s->nClauses()<<endl;
-   	cout << c <<"# learnts                : "<<s->nLearnts()<<endl;
- 	SolverStats& stats = s->stats;	
-	cout << c << "# restarts              : "<<stats.starts<<endl;
-	cout << c << "# conflicts             : "<<stats.conflicts<<endl;
-	cout << c << "# decisions             : "<<stats.decisions<<endl; 
-	cout << c << "# propagations          : "<<stats.propagations<<endl;
-	cout << c << "# inspects              : "<<stats.inspects<<endl;
-	cout << c << "# conflict literals     : "<<stats.tot_literals<<"    "<<
-	((stats.max_literals - stats.tot_literals)*100 / (double)stats.max_literals)<<" % "<<endl;
+   	cout << c <<"# learnts                : "<<s->nLearnts()<<endl; 	
+	cout << c << "# restarts              : "<<s->starts<<endl;
+	cout << c << "# decisions             : "<<s->decisions<<endl; 
+	cout << c << "# propagations          : "<<s->propagations<<endl;	
+	cout << c << "# conflict literals     : "<<s->tot_literals<<endl;
  }
 
 
@@ -229,7 +232,7 @@ bool MiniSATSolver::ignoreOld(){
 		addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
  	} 
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
- 	s->simplifyDB();
+ 	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	bool result = s->solve();
  	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	

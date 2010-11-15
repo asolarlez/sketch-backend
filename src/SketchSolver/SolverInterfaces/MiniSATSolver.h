@@ -21,18 +21,20 @@ protected:
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
 public:
+	ostream* debugout;
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
 		clauseCount=0;
+		debugout = NULL;
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
 	 virtual int isValKnown(int i){
-		 if(s->value(i) != MSsolverNS::l_Undef){
-			 return (s->value(i)==MSsolverNS::l_True) ? 1 : -1;
+		 if(s->value(i) != l_Undef){
+			 return (s->value(i)==l_True) ? 1 : -1;
 		 }
 		 return 0; 
 	 }
@@ -50,6 +52,8 @@ public:
      virtual void assertVarClause(int x);
 	 virtual void hardAssertVarClause(int x);
 	 
+	 virtual void markInput(int id);
+
 	 virtual int getVarVal(int id);
 	 
 	 virtual int newVar();
@@ -69,5 +73,7 @@ public:
 	 virtual void printDiagnostics(char c);
 	 
 };
+
+
 
 #endif

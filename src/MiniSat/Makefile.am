@@ -1,3 +1,5 @@
 noinst_LIBRARIES = libminisat.a
-noinst_HEADERS = Global.h Heap.h MSolver.h Solver.h SolverTypes.h Sort.h VarOrder.h
-libminisat_a_SOURCES = Solver.cpp
+noinst_HEADERS = core/MSolver.h      mtl/Alg.h        mtl/BoxedVec.h  mtl/Map.h    mtl/Sort.h core/SolverTypes.h  mtl/BasicHeap.h  mtl/Heap.h      mtl/Queue.h  mtl/Vec.h
+
+
+libminisat_a_SOURCES = core/Solver.cpp

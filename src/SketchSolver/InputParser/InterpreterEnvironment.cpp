@@ -320,12 +320,12 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	}
   	
 	if(params.output2QBF){
-		solver.setup2QBF();
 		string fname = basename();
-		fname += "_2qbf.blif";
+		fname += "_2qbf.cnf";
+		ofstream out(fname.c_str());
 		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
-		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
-		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
+		solver.setup2QBF(out);
+		
 	}
   	
   		
