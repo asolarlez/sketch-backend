@@ -37,7 +37,7 @@ SOLVER_HDRS	+= $(SOLVERS)/ABCSATSolver.h
 
 ## MiniSat
 SOLVER_LIBS	+= ../MiniSat/libminisat.a
-SOLVER_INCS	+= -I../MiniSat
+SOLVER_INCS	+= -I../MiniSat/core -I../MiniSat/mtl
 SOLVER_SRCS	+= $(SOLVERS)/MiniSATSolver.cpp
 SOLVER_HDRS	+= $(SOLVERS)/MiniSATSolver.h
 
