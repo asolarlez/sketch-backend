@@ -6,8 +6,8 @@ Maintainer: {{ macros.maintainer }}
 Build-Depends: {{ macros.deb_build_deps }}
 
 Package: {{ name }}
-Architecture: all
-Depends: shlibs:Depends
+Architecture: any
+Depends: ${shlibs:Depends}
 Description: {{ macros.summary -}}
 {% filter indent(1) %}{{ "" }}
 {{ macros.description() }}
