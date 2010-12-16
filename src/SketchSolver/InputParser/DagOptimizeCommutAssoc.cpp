@@ -1,6 +1,7 @@
 #include "DagOptimizeCommutAssoc.h"
 
 #include <algorithm>
+#include <iterator>
 
 DagOptimizeCommutAssoc::DagOptimizeCommutAssoc(void)
 {

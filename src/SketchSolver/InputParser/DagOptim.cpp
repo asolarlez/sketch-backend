@@ -157,28 +157,25 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 				}
 			}
 		}else{
-			set<int>::const_iterator end = mnv.vset_end();
+			
 			int sz = ar.multi_mother.size();
 			bool didZero = PARAMS->assumebcheck;
-			for(set<int>::const_iterator it = mnv.vset_begin(); it != end; ++it){
-				if((*it)>=0 && (*it)<sz){
-					bool_node* parent = ar.multi_mother[(*it)];
-					helper<COMP>(parent, C, reverse, rv, nv);
-				}else{
-					if(!didZero){
-						nv.insert(0);
-						bool cm = reverse? comp(C, 0) : comp(0, C);
-						int tmp = cm ? 1 : -1;	
-						if(tmp == 0 || (rv != -2 && tmp != rv)){				
-							rv = 0;	
-						}
-						if(rv != 0){
-							rv = tmp;
-						}
-						didZero = true;
-					}
-				}
+			AbstractNodeValue::ANVIterator ait = mnv.getIter(sz);
+			while( ait.next() ){
+				bool_node* parent = ar.multi_mother[(*ait)];
+				helper<COMP>(parent, C, reverse, rv, nv);
 			}
+			if(!PARAMS->assumebcheck && ait.dropped){
+				nv.insert(0);
+				bool cm = reverse? comp(C, 0) : comp(0, C);
+				int tmp = cm ? 1 : -1;	
+				if(tmp == 0 || (rv != -2 && tmp != rv)){				
+					rv = 0;	
+				}
+				if(rv != 0){
+					rv = tmp;
+				}
+			}			
 		}
 		if(rv == -2){
 			nv.makeTop(); 
@@ -1005,7 +1002,6 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 		bool_node* bn = sd.top();
 		sd.pop();
 		if(bn == src){
-			cout<<"##BAD = "<<cnt<<endl;
 			return true;
 		}
 		checkAndPush(bn->mother, sd, bnmap);
@@ -1017,7 +1013,6 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 			}
 		}
 	}
-	cout<<"##GOOD = "<<cnt<<endl;
 	return false;
 }
 
@@ -1057,7 +1052,19 @@ void DagOptim::visit( UFUN_node& node ){
 			rvalue = brother;
 			return;
 		}
-
+		//This is a little tricky. 
+		//What's happening here is that we have found a function node (brother) 
+		//that takes the same inputs as node, so in principle, we should be able to 
+		//remove node, and replace all it with brother everywhere it's used, since
+		//node is just a function of it's inputs. But consider the following case:
+		// x = foo(a,b); if(x){ y=foo(a,b); }
+		// In principle, we could replace both calls to foo(a,b) with a single call, 
+		//but there is a dependency between the output of the first foo and the 
+		//condition for the second foo; if we replace them with a single call, 
+		//we will get a circular dependency.
+		//So at this point, we want to check whether there is a dependency between 
+		//brother and node; if there is not, then we merge the two calls, but if there is, 
+		//we need to keep the old call in place.
 		if(!checkPrecedence(node.mother, brother)){
 			brother->dislodge();
 			brother->mother->remove_child(brother);

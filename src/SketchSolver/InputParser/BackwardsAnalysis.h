@@ -3,6 +3,7 @@
 #include "NodeVisitor.h"
 #include "NodeStore.h"
 #include <algorithm>
+#include <iterator>
 #include <set>
 #include <climits>
 #include "DeriveImplications.h"
