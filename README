@@ -14,6 +14,10 @@ Authors: Armando Solar-Lezama et al.
 If you are using windows, start by running
     >>> bash convertScripts.sh
 
+If you are using OpenSuSE 11.3, to work around gcc 4.5 incompatibilities, install gcc43 and gcc43-cpp, and run (prior to configuring)
+    >>> export CC=gcc-4.3
+    >>> export CXX=g++-4.3
+
 Then, configure and make SKETCH
     >>> ./autogen.sh
     >>> ./configure
