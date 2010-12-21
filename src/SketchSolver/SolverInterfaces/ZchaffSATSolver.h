@@ -22,6 +22,7 @@ public:
 		mng = SAT_InitManager();
 		SAT_SetNumVariables(mng, 0);		
 	 }
+	 virtual void markInput(int id){}
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);
 	 virtual void addChoiceClause(int x, int a, int b, int c);

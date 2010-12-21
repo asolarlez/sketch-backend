@@ -38,7 +38,7 @@ extern "C" {
 #include "cuddInt.h"
 #include "extra.h"
 #include "solver.h"
-#include "vec.h"
+#include "../vec/vec.h"
 #include "stmm.h"
 #include "nm.h"
 

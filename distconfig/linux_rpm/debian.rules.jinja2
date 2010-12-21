@@ -21,7 +21,7 @@ build-stamp:
 
 	./autogen.sh
 	./configure --prefix=/usr
-	make
+	make -j4
 
 	touch build-stamp
 
@@ -42,7 +42,7 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	make install DESTDIR=/usr/src/packages/BUILD/debian/ace
+	make install DESTDIR=/usr/src/packages/BUILD/debian/sketch-cegis
 
 
 # Build architecture-independent files here.

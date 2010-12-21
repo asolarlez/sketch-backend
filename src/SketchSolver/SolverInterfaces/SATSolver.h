@@ -69,6 +69,8 @@ public:
     virtual int newInVar()=0;
     virtual void disableVarBranch(int i)=0;
 
+	virtual void markInput(int id)=0;
+
     virtual bool ignoreOld()=0;
 
     virtual void deleteClauseGroup(int i)=0;

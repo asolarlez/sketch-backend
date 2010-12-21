@@ -39,7 +39,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\vec;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\sat2005_submission;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\sat2005_submission\MiniSat_submission;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\abc70930\src\sat\msat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\fraig&quot;;&quot;$(SolutionDir)\abc70930\src\sat\ivy&quot;;&quot;$(SolutionDir)\abc70930\src\sat\asat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\csat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\aig&quot;;&quot;$(SolutionDir)\abc70930\src\misc\vec&quot;;&quot;$(SolutionDir)\abc70930\src\misc\util&quot;;&quot;$(SolutionDir)\abc70930\src\misc\st&quot;;&quot;$(SolutionDir)\abc70930\src\misc\nm&quot;;&quot;$(SolutionDir)\abc70930\src\misc\mvc&quot;;&quot;$(SolutionDir)\abc70930\src\misc\extra&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\epd&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\reo&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\parse&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\mtr&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\cudd&quot;;&quot;$(SolutionDir)\abc70930\src\base\main&quot;;&quot;$(SolutionDir)\abc70930\src\base\io&quot;;&quot;$(SolutionDir)\abc70930\src\base\cmd&quot;;&quot;$(SolutionDir)\abc70930\src\base\abci&quot;;&quot;$(SolutionDir)\sat2005_submission&quot;;&quot;$(SolutionDir)\SketchSolver\InputParser&quot;;&quot;$(SolutionDir)\SketchSolver&quot;;&quot;$(SolutionDir)\SketchSolver\SolverInterfaces&quot;;&quot;$(SolutionDir)\MiniSat2\core&quot;;&quot;$(SolutionDir)\zchaff&quot;;&quot;$(SolutionDir)\abc70930\src\base\abc&quot;;&quot;$(SolutionDir)\abc70930\src\aig\hop&quot;;&quot;$(SolutionDir)\MiniSat2\mtl&quot;"
 				PreprocessorDefinitions="WIN32, _HAS_ITERATOR_DEBUGGING, _DEBUG"
 				GeneratePreprocessedFile="0"
 				BasicRuntimeChecks="3"
@@ -58,7 +58,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(SolutionDir)\abc60513\abclib\abclib_debug.lib psapi.lib"
+				AdditionalOptions="/fixed:no"
+				AdditionalDependencies="$(SolutionDir)\abc70930\abclib\abclib_debug.lib psapi.lib"
 				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames=""
@@ -114,10 +115,16 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\vec;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\sat2005_submission;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\sat2005_submission\MiniSat_submission;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\abc70930\src\sat\msat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\fraig&quot;;&quot;$(SolutionDir)\abc70930\src\sat\ivy&quot;;&quot;$(SolutionDir)\abc70930\src\sat\asat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\csat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\aig&quot;;&quot;$(SolutionDir)\abc70930\src\misc\vec&quot;;&quot;$(SolutionDir)\abc70930\src\misc\util&quot;;&quot;$(SolutionDir)\abc70930\src\misc\st&quot;;&quot;$(SolutionDir)\abc70930\src\misc\nm&quot;;&quot;$(SolutionDir)\abc70930\src\misc\mvc&quot;;&quot;$(SolutionDir)\abc70930\src\misc\extra&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\epd&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\reo&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\parse&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\mtr&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\cudd&quot;;&quot;$(SolutionDir)\abc70930\src\base\main&quot;;&quot;$(SolutionDir)\abc70930\src\base\io&quot;;&quot;$(SolutionDir)\abc70930\src\base\cmd&quot;;&quot;$(SolutionDir)\abc70930\src\base\abci&quot;;&quot;$(SolutionDir)\SketchSolver\InputParser&quot;;&quot;$(SolutionDir)\SketchSolver&quot;;&quot;$(SolutionDir)\SketchSolver\SolverInterfaces&quot;;&quot;$(SolutionDir)\MiniSat2\core&quot;;&quot;$(SolutionDir)\zchaff&quot;;&quot;$(SolutionDir)\abc70930\src\base\abc&quot;;&quot;$(SolutionDir)\abc70930\src\aig\hop&quot;;&quot;$(SolutionDir)\MiniSat2\mtl&quot;"
 				PreprocessorDefinitions="WIN32"
+				StringPooling="true"
 				EnableEnhancedInstructionSet="2"
-				DebugInformationFormat="1"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -130,7 +137,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(SolutionDir)\abc60513\abclib\abclib_release.lib psapi.lib"
+				AdditionalOptions="/fixed:no"
+				AdditionalDependencies="$(SolutionDir)\abc70930\abclib\abclib_release.lib psapi.lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				LinkTimeCodeGeneration="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -179,11 +190,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\vec;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\sat2005_submission;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\sat2005_submission\MiniSat_submission;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc"
+				Optimization="3"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\abc70930\src\sat\msat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\fraig&quot;;&quot;$(SolutionDir)\abc70930\src\sat\ivy&quot;;&quot;$(SolutionDir)\abc70930\src\sat\asat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\csat&quot;;&quot;$(SolutionDir)\abc70930\src\sat\aig&quot;;&quot;$(SolutionDir)\abc70930\src\misc\vec&quot;;&quot;$(SolutionDir)\abc70930\src\misc\util&quot;;&quot;$(SolutionDir)\abc70930\src\misc\st&quot;;&quot;$(SolutionDir)\abc70930\src\misc\nm&quot;;&quot;$(SolutionDir)\abc70930\src\misc\mvc&quot;;&quot;$(SolutionDir)\abc70930\src\misc\extra&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\epd&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\reo&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\parse&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\mtr&quot;;&quot;$(SolutionDir)\abc70930\src\bdd\cudd&quot;;&quot;$(SolutionDir)\abc70930\src\base\main&quot;;&quot;$(SolutionDir)\abc70930\src\base\io&quot;;&quot;$(SolutionDir)\abc70930\src\base\cmd&quot;;&quot;$(SolutionDir)\abc70930\src\base\abci&quot;;&quot;$(SolutionDir)\sat2005_submission&quot;;&quot;$(SolutionDir)\SketchSolver\InputParser&quot;;&quot;$(SolutionDir)\SketchSolver&quot;;&quot;$(SolutionDir)\SketchSolver\SolverInterfaces&quot;;&quot;$(SolutionDir)\sat2005_submission\MiniSat_submission&quot;;&quot;$(SolutionDir)\zchaff&quot;;&quot;$(SolutionDir)\abc70930\src\base\abc&quot;;&quot;$(SolutionDir)\abc70930\src\aig\hop&quot;"
 				PreprocessorDefinitions="WIN32"
 				BasicRuntimeChecks="0"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -196,7 +207,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(SolutionDir)\abc60513\abclib\abclib_release.lib psapi.lib"
+				AdditionalOptions="/fixed:no"
+				AdditionalDependencies="$(SolutionDir)\abc70930\abclib\abclib_debug.lib psapi.lib"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -277,6 +289,22 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SketchSolver\InputParser\CallGraphAnalysis.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\CEGISSolver.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\Checkpointer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\ComplexInliner.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\DagCSE.cpp"
 				>
 			</File>
@@ -317,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SketchSolver\InputParser\DeriveImplications.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\driver.cpp"
 				>
 			</File>
@@ -341,6 +373,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SketchSolver\InputParser\InterpreterEnvironment.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\Main.cpp"
 				>
 			</File>
@@ -354,6 +390,14 @@
 			</File>
 			<File
 				RelativePath=".\SketchSolver\SolverInterfaces\MiniSATSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\NodeEvaluator.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\NodeSlicer.cpp"
 				>
 			</File>
 			<File
@@ -405,7 +449,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\Solver.cpp"
+				RelativePath=".\MiniSat2\core\Solver.cpp"
 				>
 			</File>
 			<File
@@ -455,7 +499,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\MiniSat2\mtl\Alg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\BackwardsAnalysis.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MiniSat2\mtl\BasicHeap.h"
 				>
 			</File>
 			<File
@@ -471,7 +523,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MiniSat2\mtl\BoxedVec.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\CallGraphAnalysis.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\CEGISSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\Checkpointer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\CommandLineArgs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\ComplexInliner.h"
 				>
 			</File>
 			<File
@@ -483,6 +555,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SketchSolver\InputParser\DeriveImplications.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\Dllist.h"
+				>
+			</File>
+			<File
 				RelativePath=".\SketchSolver\InputParser\driver.h"
 				>
 			</File>
@@ -491,19 +571,31 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\Global.h"
-				>
-			</File>
-			<File
 				RelativePath=".\SketchSolver\InputParser\guardedVal.h"
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\Heap.h"
+				RelativePath=".\MiniSat2\mtl\Heap.h"
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\MSolver.h"
+				RelativePath=".\SketchSolver\InputParser\InterpreterEnvironment.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MiniSat2\mtl\Map.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MiniSat2\core\MSolver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\NodeEvaluator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\NodeSlicer.h"
 				>
 			</File>
 			<File
@@ -512,6 +604,10 @@
 			</File>
 			<File
 				RelativePath=".\SketchSolver\InputParser\NodesToSEQ.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MiniSat2\mtl\Queue.h"
 				>
 			</File>
 			<File
@@ -527,15 +623,23 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\SolverTypes.h"
+				RelativePath=".\MiniSat2\core\SolverTypes.h"
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\Sort.h"
+				RelativePath=".\MiniSat2\mtl\Sort.h"
 				>
 			</File>
 			<File
-				RelativePath=".\sat2005_submission\MiniSat_submission\VarOrder.h"
+				RelativePath=".\SketchSolver\InputParser\StringHTable.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SketchSolver\InputParser\VarStore.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MiniSat2\mtl\Vec.h"
 				>
 			</File>
 			<File
@@ -571,6 +675,10 @@
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\glucose_1.0\sources\glucose\mtl\template.mk"
 			>
 		</File>
 	</Files>

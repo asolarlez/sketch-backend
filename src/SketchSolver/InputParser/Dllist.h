@@ -49,12 +49,15 @@ public:
 		if(next == NULL){
 			next = n;
 			n->prev = this;
+			Assert(parent->tail == this, "What !?");
+			parent->tail = n;
 		}else{
 			n->next = next;
 			next->prev = n;
 			next = n;
 			n->prev = this;
 		}
+		
 		n->parent = parent;
 	}
 	void add(Dllist* dl){

@@ -46,7 +46,7 @@ typedef struct Abc_Frame_t_      Abc_Frame_t;
 
 // data structure packages
 #include "extra.h"
-#include "vec.h"
+#include "../vec/vec.h"
 #include "st.h"
 
 // core packages

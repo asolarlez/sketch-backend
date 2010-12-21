@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <cstring>
+#include <utility>
 
 using namespace std;
 
@@ -77,10 +78,10 @@ public:
 		stringStore.clear();
 	}
 	void swap(Ostore<T>& t1){
-		std::swap<int>(pagesize, t1.pagesize);
+		std::swap(pagesize, t1.pagesize);
 		stringStore.swap(t1.stringStore);
-		std::swap<int>(pos, t1.pos);
-		std::swap<int>(newobjs, t1.newobjs);
+		std::swap(pos, t1.pos);
+		std::swap(newobjs, t1.newobjs);
 	}
 };
 

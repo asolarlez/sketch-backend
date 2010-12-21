@@ -76,6 +76,7 @@ public:
     virtual void reset();
     virtual void cleanupDatabase();
 
+	virtual void markInput(int){  }
     virtual void clean();	
     virtual void printDiagnostics(char c);	
 public:

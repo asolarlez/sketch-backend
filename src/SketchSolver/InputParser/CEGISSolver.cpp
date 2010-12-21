@@ -8,6 +8,7 @@
 #include "NodesToEuclid.h"
 #include "NodeSlicer.h"
 #include "BackwardsAnalysis.h"
+#include "MiniSATSolver.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -1010,17 +1011,31 @@ void CEGISSolver::outputEuclid(ostream& fout){
 	}
 
 
-void CEGISSolver::setup2QBF(){
+void CEGISSolver::setup2QBF(ostream& out){
+	mngCheck.clean();
+	dirCheck.reset();
 	for(BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it){
 		(*node_it)->flag = true;
 		if(	(*node_it)->type == bool_node::SRC || (*node_it)->type == bool_node::CTRL ){
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);	
 			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits());
+			int base = dirCheck.getVar(srcnode->get_name());
+			int n = dirCheck.getArrSize(srcnode->get_name());
+			for(int i=0; i<n; ++i){
+				if(	(*node_it)->type == bool_node::SRC ){
+					out<<"EV "<<(i+base)<<endl;
+				}else{
+					out<<"UV "<<(i+base)<<endl;
+				}
+			}
 		}
 	}
-	mngCheck.clean();
-	dirCheck.reset();
+	check_node_ids.resize(getProblem()->size());
 	map<bool_node*,  int> node_values;
+	MiniSATSolver& ms = dynamic_cast<MiniSATSolver&>(mngCheck);
+	ms.debugout = &out;
 	defineProblem(mngCheck, dirCheck, node_values, check_node_ids);
+	ms.finish();
+	ms.debugout = NULL;
 	outputCheckVarmap(cout);
 }

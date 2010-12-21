@@ -168,11 +168,9 @@ class CommandLineArgs{
 	      input_idx = ii+2;      
 	    }
 	    
-	    if( string(argv[ii]) == "-output2QBF" ){
-	    	outputAIG = true;
+	    if( string(argv[ii]) == "-output2QBF" ){	    	
 	    	output2QBF = true;
-	    	veriftype = SATSolver::ABC;
-	      input_idx = ii+1;      
+			input_idx = ii+1;
 	    }
 	    
 	    if( string(argv[ii]) == "-outputAIG" ){

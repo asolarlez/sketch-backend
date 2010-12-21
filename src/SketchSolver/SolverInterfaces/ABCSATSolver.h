@@ -113,6 +113,7 @@ public:
        virtual void clean();
        virtual void printDiagnostics(char c);
        virtual void setOutputAIG();
+	virtual void markInput(int){ }
 };
 
 

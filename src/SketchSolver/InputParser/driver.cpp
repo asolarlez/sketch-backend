@@ -144,7 +144,7 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 	}
   	
 	if(params.output2QBF){
-		solver.setup2QBF();
+		solver.setup2QBF(cout);
 		string fname = name;
 		fname += "_2qbf.blif";
 		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;

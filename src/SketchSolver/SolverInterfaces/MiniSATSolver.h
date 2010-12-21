@@ -2,6 +2,7 @@
 #define MINISATSOLVER_H
 
 #include "SATSolver.h"
+#include <vector>
 #include <iostream>
 using namespace std;
 
@@ -23,12 +24,14 @@ protected:
 	SearchParams params;
 public:
 	 MiniSATSolver(const string& name_p,  SolverMode smode, vector<string> slvParams):SATSolver(name_p, smode){
+        ostream* debugout;
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
 		clauseCount=0;
 		params = SearchParams(strtod(slvParams[0].c_str(), NULL), strtod(slvParams[1].c_str(), NULL), strtod(slvParams[2].c_str(), NULL));
+		debugout = NULL;
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
@@ -52,6 +55,8 @@ public:
      virtual void assertVarClause(int x);
 	 virtual void hardAssertVarClause(int x);
 	 
+	 virtual void markInput(int id);
+
 	 virtual int getVarVal(int id);
 	 
 	 virtual int newVar();
@@ -67,6 +72,12 @@ public:
 	 virtual void reset();
 	 virtual void cleanupDatabase();
 	
+	 virtual void finish(){
+		if(solveNegation){
+			MSsolverNS::vec<Lit> lits;
+			addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
+		}
+	 }
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
 	
@@ -75,5 +86,7 @@ public:
 	 }
 	 
 };
+
+
 
 #endif

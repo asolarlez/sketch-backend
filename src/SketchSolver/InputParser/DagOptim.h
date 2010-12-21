@@ -10,27 +10,104 @@
 
 using namespace std;
 
+
+
+
+
 class AbstractNodeValue{		
+public:
 	typedef enum { BOTTOM, LIST, RANGE, TOP } State;
+
+class ANVIterator{
+	set<int>::const_iterator bgit;
+	set<int>::const_iterator qit;
+	set<int>::const_iterator eit;
+	int i;
+	AbstractNodeValue::State state;
+	int limit; //Never return a value greater than this.	
+public:
+	bool dropped;
+	ANVIterator(set<int>::const_iterator beg, set<int>::const_iterator end,  int lim){
+		bgit = beg;
+		qit = beg;
+		eit = end;
+		state = AbstractNodeValue::LIST;
+		limit = lim;
+		dropped = false;				
+	}
+	ANVIterator(int start, int end, int lim){
+		i = max(start, 0);
+		limit = min(end+1, lim);
+		if(start < 0 || end >= lim){
+			dropped = true;
+		}
+		i = i-1;
+		state = AbstractNodeValue::RANGE;
+	}
+	int operator*(){
+		if(state==AbstractNodeValue::LIST){
+			return *bgit;
+		}
+		return i;
+	}
+	bool next(){
+		if(state==AbstractNodeValue::LIST){
+			bgit = qit;
+			while(bgit != eit && (*bgit<0 || *bgit >= limit)){
+				++bgit;
+				dropped = true;
+			}			
+			if(bgit == eit){
+				return false;
+			}
+			qit = bgit; ++qit;
+			return true;
+		}
+		if(state == AbstractNodeValue::RANGE){
+			++i;
+			if(i >= limit){
+				return false;
+			}			
+			return true;
+		}
+	}	
+};
+
+private:
 	State state;
 	set<int> valSet;
 	int low;
 	int high;	
-public:
-	int timestamp;
-	bool isList(){ return state == LIST; }
-	bool isTop(){ return state==TOP; }
-	bool isRange(){ return state == RANGE; }
-	bool isBottom(){ return state==BOTTOM; }
 	set<int>::const_iterator vset_begin() const{
 		return valSet.begin();
-	}
-	bool contains(int i){
-		return valSet.count(i)>0;
 	}
 	set<int>::const_iterator vset_end()const{
 		return valSet.end();
 	}
+public:
+	int timestamp;
+	ANVIterator getIter(int lim){
+		if(state==LIST){
+			return ANVIterator(valSet.begin(), valSet.end(), lim);
+		}
+		if(state==RANGE){
+			return ANVIterator(low, high, lim);
+		}
+	}
+	bool isList(){ return state == LIST; }
+	bool isTop(){ return state==TOP; }
+	bool isRange(){ return state == RANGE; }
+	bool isBottom(){ return state==BOTTOM; }
+	
+	bool contains(int i){
+		switch(state){
+			case LIST: return valSet.count(i)>0;
+			case RANGE: return i>=low && i <= high; 
+			case TOP: return true;
+			default: return false;
+		}
+	}
+
 	int getHigh(){
 		Assert(state!= BOTTOM && state != TOP, "No bottom or top states");
 		return high;
@@ -68,33 +145,49 @@ public:
 	}
 
 	void print(ostream& out){
-		if(state != LIST){ 
-			out<<"BOTTOM"<<endl;
-		}else{
-			Assert(valSet.size() > 0, "This is strange. This shouldn't happen");
-			for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
-				out<<*it<<", ";
-			}
-			out<<endl;
-		}
+		switch(state){
+			case LIST:{
+						Assert(valSet.size() > 0, "This is strange. This shouldn't happen");
+						for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
+							out<<*it<<", ";
+						}
+						out<<endl;
+						break;
+					  }
+			case RANGE:{ out<<"["<<low<<", "<<high<<"]"<<endl; break; }
+			default:out<<"BOTTOM"<<endl;
+		}		
 	}
 
+	/**
+	return 1 means I know for sure the comparison is true;
+	return -1 means I know for sure it is false;
+	return 0 means I don't know.
+	*/
 	template<typename COMP>
 	int staticCompare(int C , bool reverse ){
 		COMP comp;
-		if(state != LIST){ return 0; }
-		int rv = -2;
-		for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
-			bool cm = reverse? comp(C, *it) : comp(*it, C);
-			int tmp =  cm ? 1 : -1;
-			if((rv != -2 && tmp != rv)){
-				return 0;
+		if(state == LIST){
+			int rv = -2;
+			for(set<int>::iterator it = valSet.begin(); it != valSet.end(); ++it){	
+				bool cm = reverse? comp(C, *it) : comp(*it, C);
+				int tmp =  cm ? 1 : -1;
+				if((rv != -2 && tmp != rv)){
+					return 0;
+				}
+				rv = tmp;
 			}
-			rv = tmp;
+			if(rv == -2){return 0; }		
+			return rv;
 		}
-		if(rv == -2){return 0; }		
-		return rv;
+		if(state == RANGE){
+			return specializedComp(C, reverse, comp);
+		}
+		return 0; 
 	}
+
+
+
 	void insert(int val){
 		if( val > high){ high = val; }
 		if(val < low){ low = val; }
@@ -102,6 +195,71 @@ public:
 			valSet.insert(val);
 			state = LIST;
 		}
+	}
+		
+	int specializedComp(int C , bool reverse, less<int>& tt ){
+		int rv = 0;
+		if(reverse){			
+			if(C < low) rv = 1;
+			if(C >= high) rv = -1;
+			return rv;
+		}else{
+			if(high < C) rv = 1;
+			if(C <= low) rv = -1;
+			return rv;
+		}
+	}
+
+	
+	int specializedComp(int C , bool reverse, greater<int>& tt ){
+		int rv = 0;
+		if(reverse){			
+			if(high < C) rv = 1;
+			if(C <= low) rv = -1;
+			return rv;
+		}else{
+			if(C < low) rv = 1;
+			if(C >= high) rv = -1;
+			return rv;			
+		}
+	}
+
+	
+	int specializedComp(int C , bool reverse, less_equal<int>& tt ){
+		int rv = 0;
+		if(reverse){			
+			if(C <= low) rv = 1;
+			if(C > high) rv = -1;
+			return rv;
+		}else{
+			if(high <= C) rv = 1;
+			if(C < low) rv = -1;
+			return rv;
+		}
+	}
+
+	
+	int specializedComp(int C , bool reverse, greater_equal<int>& tt ){
+		int rv = 0;
+		if(reverse){			
+			if(high <= C) rv = 1;
+			if(C < low) rv = -1;
+			return rv;
+		}else{
+			if(C <= low) rv = 1;
+			if(C > high) rv = -1;
+			return rv;			
+		}
+	}
+
+
+	
+	int specializedComp(int C , bool reverse, equal_to<int>& tt ){
+		int rv = 0;
+		
+		if(C == low && C == high) rv = 1;
+		if(C > high || C < low) rv = -1;
+		return rv;
 	}
 
 	int difference(AbstractNodeValue& anv){
@@ -144,7 +302,14 @@ public:
 			low = low < anv.low ? low : anv.low;
 			high = high > anv.high? high : anv.high;
 			if(state == LIST){
-				valSet.insert(anv.valSet.begin(), anv.valSet.end());
+				if(anv.state == LIST){
+					valSet.insert(anv.valSet.begin(), anv.valSet.end());
+				}else{
+					if(anv.state == RANGE){
+						valSet.clear();
+						state = RANGE;
+					}
+				}
 			}
 		}				
 	}
@@ -167,6 +332,11 @@ public:
 			low = low + anv.low;
 			high = high + anv.high;
 			if(state == LIST){
+				if(valSet.size()*anv.valSet.size() > 10){
+					state = RANGE;
+					valSet.clear();
+					return;
+				}
 				set<int> tmp;
 				for(set<int>::iterator it1 = valSet.begin(); it1 != valSet.end(); ++it1){
 					for(set<int>::iterator it2 = anv.valSet.begin(); it2 != anv.valSet.end(); ++it2){
@@ -175,7 +345,12 @@ public:
 				}
 				swap(tmp, valSet);
 			}
-		}				
+			if(anv.state == RANGE){
+				state = RANGE;
+				valSet.clear();
+				return;
+			}
+		}
 	}
 
 
