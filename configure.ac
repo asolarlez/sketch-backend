@@ -6,6 +6,7 @@ AC_INIT(SKETCH, 1.4.0, arnold@cs.berkeley.edu)
 AC_CONFIG_HEADER([config.h])
 LT_INIT([disable-static])
 AM_INIT_AUTOMAKE
+AC_PREFIX_DEFAULT(/usr)
 
 
 

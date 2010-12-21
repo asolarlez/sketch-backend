@@ -234,7 +234,7 @@ bool MiniSATSolver::ignoreOld(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
  	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
-	bool result = s->solve(params);
+	bool result = s->solve();
  	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
 	if( result) {
 		//cout<<" Returned SAT"<<endl;

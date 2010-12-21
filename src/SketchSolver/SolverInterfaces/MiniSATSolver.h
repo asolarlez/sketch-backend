@@ -21,16 +21,16 @@ protected:
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
-	SearchParams params;
+	// SearchParams params;
 public:
+    ostream* debugout;
 	 MiniSATSolver(const string& name_p,  SolverMode smode, vector<string> slvParams):SATSolver(name_p, smode){
-        ostream* debugout;
 	 	s = new Solver();
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();
 		clauseCount=0;
-		params = SearchParams(strtod(slvParams[0].c_str(), NULL), strtod(slvParams[1].c_str(), NULL), strtod(slvParams[2].c_str(), NULL));
+		// params = SearchParams(strtod(slvParams[0].c_str(), NULL), strtod(slvParams[1].c_str(), NULL), strtod(slvParams[2].c_str(), NULL));
 		debugout = NULL;
 	 }
 	 virtual void addHelperClause(int c[], int sz);
@@ -81,9 +81,9 @@ public:
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
 	
-	 void setSearchParams(double var_decay, double cla_decay, double random_var_freq) {
-		 params = SearchParams(var_decay, cla_decay, random_var_freq);	 
-	 }
+	 // void setSearchParams(double var_decay, double cla_decay, double random_var_freq) {
+	 //     params = SearchParams(var_decay, cla_decay, random_var_freq);	 
+	 // }
 	 
 };
 
