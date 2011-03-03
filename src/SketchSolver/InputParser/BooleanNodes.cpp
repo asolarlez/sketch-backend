@@ -24,6 +24,7 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 bool_node::bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM)
   { 
+	  layer = 0;
 #ifdef SCHECKMEM
   allocated.insert(this);
 #endif
@@ -369,6 +370,32 @@ void bool_node::printSubDAG(ostream& out, set<const bool_node* >& s)const{
 			mother->printSubDAG(out, s);
 	}
 	outDagEntry(out);	
+}
+
+
+void bool_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{
+	s.insert(this);
+	if( father != NULL && s.count(father) == 0 ){
+			father->lprintSubDAG(out, s);
+	}	
+	if(mother != NULL && s.count(mother) == 0){
+			mother->lprintSubDAG(out, s);
+	}
+	out<<lprint()<<endl;	
+}
+
+
+
+
+void arith_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{	
+	int i=0;
+	s.insert(this);
+	for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+	  	if(*it != NULL && s.count(*it) == 0){
+	  		(*it)->lprintSubDAG(out, s);  		
+	  	}
+	}
+	bool_node::lprintSubDAG(out, s);
 }
 
 

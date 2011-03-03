@@ -20,7 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MSolver.h"
 #include "Sort.h"
 #include <cmath>
-
+#include <iostream>
 
 namespace MSsolverNS{
 
@@ -421,6 +421,7 @@ Clause* Solver::propagate()
 
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+		// std::cout<<(sign(p)?var(p):-var(p))<<std::endl;
         vec<Clause*>&  ws  = watches[toInt(p)];
         Clause         **i, **j, **end;
         num_props++;

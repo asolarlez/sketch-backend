@@ -249,7 +249,7 @@ public:
 	int ret = -1;
 	do {
 	    int tmp = mng.newVar ();
-		Assert(tmp == lastVar +1 , "Oh no, what have I done!! lastVar="<<lastVar<<" tmp="<<tmp);
+		Assert(!doMemoization || tmp == lastVar +1 , "Oh no, what have I done!! lastVar="<<lastVar<<" tmp="<<tmp);
 		lastVar = tmp;
 	    if (ret < 0)
 		ret = tmp;

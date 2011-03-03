@@ -156,7 +156,7 @@ public:
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
-  virtual string lprint(){
+  virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= ";
 		if(mother != NULL){
@@ -178,6 +178,17 @@ public:
   virtual void accept(NodeVisitor& visitor) =0;
   virtual bool_node* clone(bool copyChildren = true)=0;
   virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
+  virtual void printSubDAG(ostream& out)const{
+	  set<const bool_node* > s;
+	  printSubDAG(out, s);
+  }
+
+  virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
+  virtual void lprintSubDAG(ostream& out)const{
+	  set<const bool_node* > s;
+	  lprintSubDAG(out, s);
+  }
+
   virtual OutType getOtype() const;
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
@@ -239,6 +250,7 @@ class arith_node: public bool_node{
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
+	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
 	virtual string get_tname() const{
 		switch(arith_type){			
 			case ARRACC: return "ARRACC";
@@ -318,7 +330,7 @@ class INTER_node: public bool_node{
 	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
 	    return str.str();
 	  }
-	virtual string lprint(){
+	virtual string lprint()const{
 		return name;
 	}
 	virtual string lid(){
@@ -447,7 +459,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	    }
 	    
 	  }
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<ufname.substr(0, 5)<<"["<<mother->lid()<<"](";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -486,7 +498,7 @@ class ARRACC_node: public arith_node{
 			}			
 			return otype;
 		}
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<"["<<mother->lid()<<"]$";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -562,7 +574,7 @@ class CONST_node: public bool_node{
 				str<<"(" << val << ")";
 				return str.str();
 		  }
-		virtual string lprint(){
+		virtual string lprint()const{
 			stringstream str;
 			str<<id<<"= "<<"(" << val << ")";
 			return str.str();
@@ -656,7 +668,7 @@ class ARRASS_node: public arith_node{
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
-		virtual string lprint(){
+		virtual string lprint()const{
 			stringstream str;
 			str<<id<<"= "<<mother->lid()<<"=="<<quant<<" ? "<<multi_mother[1]->lid()<<":"<<multi_mother[0]->lid();
 			return str.str();
@@ -677,7 +689,7 @@ class ACTRL_node: public arith_node{
 	OutType getOtype()const {
 		return INT;
 	}	
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<"$$";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -703,9 +715,9 @@ public:
     virtual const string& getMsg()const{ return msg; }
 	virtual ~ASSERT_node(){ 
 	}
-	  virtual string lprint(){
+	  virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= ASSERT";
+		str<<id<<"= ASSERT ";
 		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();
