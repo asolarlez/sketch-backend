@@ -14,7 +14,9 @@
 #undef CONST
 #endif
 
-
+/* @TODO: Probably just keep EQ and LT nodes and get rid of other relational
+ * nodes -- it may help in recognizing more common sub-expressions.
+ */
 
 using namespace std;
 
@@ -297,6 +299,7 @@ class XOR_node: public bool_node{
 		}
 	};
 
+/* Interface nodes, it includes input, output and control */
 class INTER_node: public bool_node{	
 	protected: 
 	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), nbits(bn.nbits){ }  
@@ -338,7 +341,7 @@ class INTER_node: public bool_node{
 	}
 };
 
-
+/* Input nodes */
 class SRC_node: public INTER_node{		
 	public: SRC_node(){ type = SRC; }  
 	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
@@ -350,6 +353,7 @@ class SRC_node: public INTER_node{
 	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };	
 };
 
+/* Output Node */
 class DST_node: public INTER_node, public DllistNode{
 	public: 
 		DST_node(){ type = DST; }  
@@ -407,7 +411,10 @@ class TIMES_node: public bool_node{
 };
 
 
-
+/* This node is used for both real and un-interpreted functions. In the case of
+ * un-interpreted functions: 'mother' is the path-condition and 'multi-mother'
+ * is the input parameter list.
+ */
 class UFUN_node: public arith_node, public DllistNode{
 	const int callsite;
 	static int CALLSITES;
@@ -473,7 +480,7 @@ class UFUN_node: public arith_node, public DllistNode{
 };
 
 
-
+/*mother is an index to the array, multi-mother is the array*/
 class ARRACC_node: public arith_node{	
 	public: ARRACC_node(){ arith_type = ARRACC; }  
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
@@ -645,9 +652,16 @@ class EQ_node: public bool_node{
 };
 
 /*!
+    Array assignment node.   
+ 
     multi-mother[0] = old-value;
     multi-mother[1] = new-value;
     if( mother == quant ) return multi-mother[1]; else return multi-mother[0];		
+   
+    e.g. A = (a, b, c)
+    A[i] = 6
+	'mother' is assigned index i. In this case, there will be three nodes
+(quant, multi-mother[0], multi_mother[1]) -- {(0, a, 6), (1, b, 6), (2, c, 6)}.
 */
 class ARRASS_node: public arith_node{		
 	public: 
@@ -681,6 +695,10 @@ class ARRASS_node: public arith_node{
 			return otype;
 		}
 };
+
+/* This node typecasts bit to integers. The only thing is used is 'multi-mother'
+ * where it stores all the input bits.
+ */
 class ACTRL_node: public arith_node{	
 	public: ACTRL_node(){ arith_type = ACTRL; }  
 	ACTRL_node(const ACTRL_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
