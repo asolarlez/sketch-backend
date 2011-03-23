@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SolverTypes_h
 
 #include <cassert>
-#include "inttypes.h"
+
 
 
 
@@ -33,6 +33,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 typedef unsigned long int uint32_t;
 typedef unsigned long long int uint64_t;
 typedef signed long long int int64_t;
+#else 
+#include "inttypes.h"
 #endif
 
 

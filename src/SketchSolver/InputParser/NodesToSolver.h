@@ -12,6 +12,7 @@
 
 // #define Dout( msg ) msg
 
+// Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown    

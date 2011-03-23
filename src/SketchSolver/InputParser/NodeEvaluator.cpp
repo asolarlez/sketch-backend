@@ -1,5 +1,6 @@
 #include "NodeEvaluator.h"
 
+// Class for interpreter of BooleanDAG.
 NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
 functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
 {

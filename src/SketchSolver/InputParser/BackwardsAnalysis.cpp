@@ -408,7 +408,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		tprev = cur;
 	}
 
-
+	i=0;
 	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
 		bool_node* node = (*node_it);
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);

@@ -364,7 +364,8 @@ NodesToSolver::processArith (bool_node &node)
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 	fval.makeSparse (dir);
-	bool isSum = node.type == bool_node::PLUS;
+	bool isSum = node.type == bool_node::PLUS || node.type == bool_node::TIMES;
+	bool skipZeros = node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD;
 	map<int, int> numbers;
 	Tvalue& oval = node_ids[node.id];
 	vector<guardedVal>& tmp = oval.num_ranges;
@@ -380,40 +381,70 @@ NodesToSolver::processArith (bool_node &node)
 	//				timerclass btimer("TB");
 	//				timerclass ctimer("TC");
 	//				timerclass dtimer("TD");
-	for(int i=0; i<mval.getSize (); ++i){
-	    for(int j=0; j<fval.getSize (); ++j){
-		// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
-		//						atimer.restart();
-		int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);
-		//						atimer.stop();
-		Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
-		//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
-		Dout(cout<<"QUANT = "<<quant<<"          "<<mval.getId (i)<<", "<<fval.getId (j)<<endl);
-		//						btimer.restart();
-		map<int, int>::iterator it = numbers.find(quant);
-		//						btimer.stop();
-		if( it != numbers.end()){
-		    //							ctimer.restart();
-			if(isSum){
-				// Because the Tvalues have all their values unique,
-				//and because if i != j then a + i == b + j -> a != b
-				// and because only 1 id can be true in each Tvalue
-				//This optimization is sound.
-				it->second = dir.addChoiceClause(mval.getId (i),fval.getId (j), it->second);
-			}else{
-		    int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
-		    int cvar2 = dir.addOrClause(cvar, it->second);
-		    it->second = cvar2;
+	if(skipZeros){
+		int zem=0, zef=0;
+		for(int i=0; i<mval.getSize (); ++i){
+			if(mval[i]==0){ 
+				zem = mval.getId (i);	
+				break;
 			}
-		    //							ctimer.stop();
-		}else{
-		    //							dtimer.restart();
-		    int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
-			Assert(numbers.size() < INTEGERBOUND, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
-		    numbers[quant] = cvar;
-		    ++vals;
-		    //							dtimer.stop();
 		}
+		for(int j=0; j<fval.getSize (); ++j){
+			if(fval[j] == 0){
+				zef = fval.getId(j);
+				break;
+			}
+		}
+		if(zem == 0 && zef != 0){
+			numbers[0] = zef;
+			++vals;
+		}
+		if(zem != 0 && zef == 0){
+			numbers[0] = zem;
+			++vals;
+		}
+		if(zem != 0 && zef != 0){
+			numbers[0] = dir.addOrClause(zem, zef);
+			++vals;
+		}
+	}
+	for(int i=0; i<mval.getSize (); ++i){
+		if(skipZeros && mval[i] == 0){ continue; }
+	    for(int j=0; j<fval.getSize (); ++j){
+			if(skipZeros && fval[j] == 0){ continue; }
+			// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
+			//						atimer.restart();
+			int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);
+			//						atimer.stop();
+			Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
+			//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
+			Dout(cout<<"QUANT = "<<quant<<"          "<<mval.getId (i)<<", "<<fval.getId (j)<<endl);
+			//						btimer.restart();
+			map<int, int>::iterator it = numbers.find(quant);
+			//						btimer.stop();
+			if( it != numbers.end()){
+				//							ctimer.restart();
+				if(isSum){
+					// Because the Tvalues have all their values unique,
+					//and because if i != j then a + i == b + j -> a != b
+					// and because only 1 id can be true in each Tvalue
+					//This optimization is sound.
+					//The same is true for a*i == b*j as long as a and i != 0
+					it->second = dir.addChoiceClause(mval.getId (i),fval.getId (j), it->second);
+				}else{
+				int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
+				int cvar2 = dir.addOrClause(cvar, it->second);
+				it->second = cvar2;
+				}
+				//							ctimer.stop();
+			}else{
+				//							dtimer.restart();
+				int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
+				Assert(numbers.size() < INTEGERBOUND, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
+				numbers[quant] = cvar;
+				++vals;
+				//							dtimer.stop();
+			}
 		//cout<<" ENDLOOP "<<endl;
 	    }
 	}
@@ -1248,50 +1279,63 @@ void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 	}
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-	mval.makeSparse (dir);
+	if(mval.isSparse()){
+		//mval.makeSparse (dir);
+		map<int, vector<int> > newVals;
+		int vsize = N;
+		vector<guardedVal>& nrange = mval.num_ranges;
 
-	map<int, vector<int> > newVals;
-	int vsize = N;
-	vector<guardedVal>& nrange = mval.num_ranges;
-
-	for(int i=0; i<nrange.size(); ++i){
-		if( nrange[i].value < vsize && nrange[i].value >= 0){
-			Tvalue& curr = choices[nrange[i].value];
-			vector<guardedVal>& cvalues = curr.num_ranges;
-			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  cvsize="<<cvalues.size()<<endl );
-			for(int j=0; j<cvalues.size(); ++j){
-				int cvar = dir.addAndClause( mval.getId (i), curr.getId (j) );
-				newVals[ cvalues[j].value ].push_back(cvar);
-				Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<endl );
+		for(int i=0; i<nrange.size(); ++i){
+			if( nrange[i].value < vsize && nrange[i].value >= 0){
+				Tvalue& curr = choices[nrange[i].value];
+				vector<guardedVal>& cvalues = curr.num_ranges;
+				Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  cvsize="<<cvalues.size()<<endl );
+				for(int j=0; j<cvalues.size(); ++j){
+					int cvar = dir.addAndClause( mval.getId (i), curr.getId (j) );
+					newVals[ cvalues[j].value ].push_back(cvar);
+					Dout( cout<<" cvalues["<<j<<"] = "<<cvalues[j]<<endl );
+				}
+			}else{
+				Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
+				newVals[ 0 ].push_back( mval.getId (i));			
 			}
-		}else{
-			Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<" OUT OF RANGE"<<endl );
-			newVals[ 0 ].push_back( mval.getId (i));			
 		}
-	}
 
-	vector<guardedVal>& result = output.num_ranges;
-	result.clear();
-	Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
-	{
-		if(newVals.size() == 0){			
+		vector<guardedVal>& result = output.num_ranges;
+		result.clear();
+		Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
+		{
+			if(newVals.size() == 0){			
+				output = Tvalue( -YES );			
+				Dout(cout<<" after sparsification "<<output<<endl);
+				return;
+			}		
+			for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it){
+				vector<int>& vars = it->second;
+				int orTerms = 0;
+				while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
+				for(int i=0; i<vars.size(); ++i){
+					++orTerms;
+					scratchpad[orTerms] = vars[i];
+				}
+				scratchpad[0] = 0;
+				int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
+				result.push_back(guardedVal(cvar, it->first));
+			}
+			output.sparsify ();
+		}
+	}else{
+		//mval is not sparse; it's a single bit.
+		if(choices.size() == 0){
 			output = Tvalue( -YES );			
 			Dout(cout<<" after sparsification "<<output<<endl);
 			return;
-		}		
-		for(map<int, vector<int> >::iterator it = newVals.begin(); it != newVals.end(); ++it){
-			vector<int>& vars = it->second;
-			int orTerms = 0;
-			while( (vars.size() + 1) >= scratchpad.size() ){ scratchpad.resize(scratchpad.size()*2); }
-			for(int i=0; i<vars.size(); ++i){
-				++orTerms;
-				scratchpad[orTerms] = vars[i];
-			}
-			scratchpad[0] = 0;
-			int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
-			result.push_back(guardedVal(cvar, it->first));
 		}
-		output.sparsify ();
+		if(choices.size() == 1){
+			choices.push_back(Tvalue( -YES ));
+		}
+		int fl;
+		mergeTvalues(mval.getId(), choices[0], choices[1], output, fl);
 	}
 }
 

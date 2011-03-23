@@ -14,7 +14,9 @@
 #undef CONST
 #endif
 
-
+/* @TODO: Probably just keep EQ and LT nodes and get rid of other relational
+ * nodes -- it may help in recognizing more common sub-expressions.
+ */
 
 using namespace std;
 
@@ -156,7 +158,7 @@ public:
     cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
   }
-  virtual string lprint(){
+  virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= ";
 		if(mother != NULL){
@@ -178,6 +180,17 @@ public:
   virtual void accept(NodeVisitor& visitor) =0;
   virtual bool_node* clone(bool copyChildren = true)=0;
   virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
+  virtual void printSubDAG(ostream& out)const{
+	  set<const bool_node* > s;
+	  printSubDAG(out, s);
+  }
+
+  virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
+  virtual void lprintSubDAG(ostream& out)const{
+	  set<const bool_node* > s;
+	  lprintSubDAG(out, s);
+  }
+
   virtual OutType getOtype() const;
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
@@ -239,6 +252,7 @@ class arith_node: public bool_node{
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
+	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
 	virtual string get_tname() const{
 		switch(arith_type){			
 			case ARRACC: return "ARRACC";
@@ -285,6 +299,7 @@ class XOR_node: public bool_node{
 		}
 	};
 
+/* Interface nodes, it includes input, output and control */
 class INTER_node: public bool_node{	
 	protected: 
 	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), nbits(bn.nbits){ }  
@@ -318,7 +333,7 @@ class INTER_node: public bool_node{
 	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
 	    return str.str();
 	  }
-	virtual string lprint(){
+	virtual string lprint()const{
 		return name;
 	}
 	virtual string lid(){
@@ -326,7 +341,7 @@ class INTER_node: public bool_node{
 	}
 };
 
-
+/* Input nodes */
 class SRC_node: public INTER_node{		
 	public: SRC_node(){ type = SRC; }  
 	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
@@ -338,6 +353,7 @@ class SRC_node: public INTER_node{
 	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };	
 };
 
+/* Output Node */
 class DST_node: public INTER_node, public DllistNode{
 	public: 
 		DST_node(){ type = DST; }  
@@ -402,7 +418,10 @@ class TIMES_node: public bool_node{
 };
 
 
-
+/* This node is used for both real and un-interpreted functions. In the case of
+ * un-interpreted functions: 'mother' is the path-condition and 'multi-mother'
+ * is the input parameter list.
+ */
 class UFUN_node: public arith_node, public DllistNode{
 	const int callsite;
 	static int CALLSITES;
@@ -454,7 +473,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	    }
 	    
 	  }
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<ufname.substr(0, 5)<<"["<<mother->lid()<<"](";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -468,7 +487,7 @@ class UFUN_node: public arith_node, public DllistNode{
 };
 
 
-
+/*mother is an index to the array, multi-mother is the array*/
 class ARRACC_node: public arith_node{	
 	public: ARRACC_node(){ arith_type = ARRACC; }  
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
@@ -493,7 +512,7 @@ class ARRACC_node: public arith_node{
 			}			
 			return otype;
 		}
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<"["<<mother->lid()<<"]$";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -569,7 +588,7 @@ class CONST_node: public bool_node{
 				str<<"(" << val << ")";
 				return str.str();
 		  }
-		virtual string lprint(){
+		virtual string lprint()const{
 			stringstream str;
 			str<<id<<"= "<<"(" << val << ")";
 			return str.str();
@@ -640,9 +659,16 @@ class EQ_node: public bool_node{
 };
 
 /*!
+    Array assignment node.   
+ 
     multi-mother[0] = old-value;
     multi-mother[1] = new-value;
     if( mother == quant ) return multi-mother[1]; else return multi-mother[0];		
+   
+    e.g. A = (a, b, c)
+    A[i] = 6
+	'mother' is assigned index i. In this case, there will be three nodes
+(quant, multi-mother[0], multi_mother[1]) -- {(0, a, 6), (1, b, 6), (2, c, 6)}.
 */
 class ARRASS_node: public arith_node{		
 	public: 
@@ -663,7 +689,7 @@ class ARRASS_node: public arith_node{
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
-		virtual string lprint(){
+		virtual string lprint()const{
 			stringstream str;
 			str<<id<<"= "<<mother->lid()<<"=="<<quant<<" ? "<<multi_mother[1]->lid()<<":"<<multi_mother[0]->lid();
 			return str.str();
@@ -676,6 +702,10 @@ class ARRASS_node: public arith_node{
 			return otype;
 		}
 };
+
+/* This node typecasts bit to integers. The only thing is used is 'multi-mother'
+ * where it stores all the input bits.
+ */
 class ACTRL_node: public arith_node{	
 	public: ACTRL_node(){ arith_type = ACTRL; }  
 	ACTRL_node(const ACTRL_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
@@ -684,7 +714,7 @@ class ACTRL_node: public arith_node{
 	OutType getOtype()const {
 		return INT;
 	}	
-	virtual string lprint(){
+	virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= "<<"$$";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
@@ -710,9 +740,9 @@ public:
     virtual const string& getMsg()const{ return msg; }
 	virtual ~ASSERT_node(){ 
 	}
-	  virtual string lprint(){
+	  virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= ASSERT";
+		str<<id<<"= ASSERT ";
 		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();

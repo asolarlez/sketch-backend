@@ -43,7 +43,10 @@ void BooleanDAGCreator::getMotherFather(const string& mother,
   mth = get_node(mother);  
 }
 
-
+/* Creates a new node of type 't' with inputs 'mother' and 'father' as its
+ * parents in the BooleanDAG. Note: Unary expressions are represented with
+ * 'father' as NULL.
+ */
 bool_node* BooleanDAGCreator::new_node(bool_node* mother, 
                                 bool_node* father, bool_node::Type t){	
   bool_node* fth=father;
@@ -80,7 +83,9 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 }
 
 
-
+/* Do online optimization while the parser is reading the input file to create
+ * the nodes for the BooleanDAG.
+ */
 bool_node* BooleanDAGCreator::optimizeAndAdd(bool_node* node){
 	
 	bool_node* tmp;

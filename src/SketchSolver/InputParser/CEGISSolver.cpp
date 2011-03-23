@@ -133,6 +133,7 @@ bool CEGISSolver::solveCore(){
 	timerclass ttimer("* TOTAL TIME");
 	ttimer.start();
 	while(doMore){
+		// Synthesizer
 		{// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
@@ -152,6 +153,7 @@ bool CEGISSolver::solveCore(){
 				break;
 			}
 		}
+		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
 			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
@@ -231,13 +233,16 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		Assert(ctrl == ctrlStore.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	}else{
 		pushProblem(hardCodeINode(getProblem(), input, bool_node::SRC));
+		// find_node_ids store the mapping between node in the DAG (miter) vs
+		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
 		//getProblem()->lprint(cout);
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
 	defineProblem(mngFind, dirFind, node_values, find_node_ids);
-	
+
+	// Keeps the history around for debugging purposes.	
 	if( params.superChecks ){ find_history = find_node_ids; }
 	dirFind.nextIteration();
 	if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
@@ -293,7 +298,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 
 
 
-
+// This function is responsible for encoding the problem
 void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids){
 	{
 		timerclass timer("defineProblem");
@@ -386,6 +391,9 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 //Return true.
 }
 
+// Method for cutting the problem for the synthesizer. It first finds the
+// failing assertion and then based on its relative position on the DAG decides
+// to remove or keep the assertions following the failing assertion.
 void CEGISSolver::abstractProblem(){
 	if(inputStore.getBitsize() == 0) return;
 	VarStore tmp = join(inputStore, ctrlStore);
