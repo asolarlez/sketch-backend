@@ -8,7 +8,7 @@
 
 #define Dtime(...) /*nothing*/
 
-
+/* Class for Structural Hashing of DAG*/
 class DagCSE : public NodeVisitor
 {	
 	BooleanDAG& dag;	

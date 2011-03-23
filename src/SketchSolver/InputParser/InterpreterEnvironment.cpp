@@ -236,8 +236,11 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		
 
 	{
+		/* Eliminates uninterpreted functions */
 		DagElimUFUN eufun;	
 		eufun.process(*spec);
+     	/* Assumption -- In the sketch if you have uninterpreted functions it 
+can only call them with the parameters used in the spec */
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
 		eufun.process(*sketch);
 	}

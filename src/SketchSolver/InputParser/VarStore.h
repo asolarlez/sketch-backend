@@ -24,6 +24,7 @@ int intFromBV(T& bv, int start, int nbits){
 }
 
 
+// VarStore -- Keeps the mapping of node in the DAG vs its value.
 class VarStore{
 private:
 
