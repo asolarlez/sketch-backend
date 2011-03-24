@@ -1,8 +1,10 @@
 #include "InterpreterEnvironment.h"
+#include "ABCSATSolver.h"
 #include "InputReader.h"
 #include "CallGraphAnalysis.h"
 #include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
+#include "InputReader.h" // INp yylex_init, yyparse, etc.
 
 
 
@@ -401,6 +403,15 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 
 }
 
+int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag){
+	ostream& out = std::cout;
+	assertDAG(dag, out);
+}
+
+int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileName){
+	ofstream out(fileName, ios_base::out);
+	assertDAG(dag, out);
+}
 
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
 	

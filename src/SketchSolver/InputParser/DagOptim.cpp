@@ -13,7 +13,7 @@ DagOptim::~DagOptim()
 {
 }
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 CONST_node* DagOptim::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){

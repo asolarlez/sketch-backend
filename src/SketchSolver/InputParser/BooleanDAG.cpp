@@ -7,6 +7,7 @@
 #include "SATSolver.h"
 
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 
 
@@ -632,8 +633,10 @@ bool_node* BooleanDAG::create_inputs(int n, const string& gen_name){
 	return create_inter(n, gen_name, n_inputs, bool_node::SRC);
 }
 
-bool_node* BooleanDAG::create_controls(int n, const string& gen_name){
-  return create_inter(n, gen_name, n_controls, bool_node::CTRL);  
+bool_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
+  bool_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
+  dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
+  return tmp;
 }
 
 bool_node* BooleanDAG::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
@@ -684,6 +687,25 @@ void BooleanDAG::lprint(ostream& out){
   out<<"}"<<endl;
 }
 
+void BooleanDAG::print_wrapper()const{    
+  ostream& out = std::cout;
+  print(out);
+}
+
+void BooleanDAG::lprint_wrapper(){
+  ostream& out = std::cout;    
+  lprint(out);
+}
+
+void BooleanDAG::print_wrapper(const char* fileName)const{    
+  std::ofstream out(fileName, ios_base::out);
+  print(out);
+}
+
+void BooleanDAG::lprint_wrapper(const char* fileName){
+  std::ofstream out(fileName, ios_base::out);    
+  lprint(out);
+}
 
 void BooleanDAG::clearBackPointers(){
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){

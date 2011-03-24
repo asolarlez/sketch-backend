@@ -46,7 +46,7 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
   return n1->layer < n2->layer || ( (n1->layer == n2->layer) && n1->ion_pos<n2->ion_pos );
 }
 
-extern timerclass TTMMPP;
+//extern timerclass TTMMPP;
 
 class BooleanDAG  
 {
@@ -86,7 +86,7 @@ Dllist assertions;
   //Mutators for graph creation.
   ////////////////////////////////////////////////////////////////////////
   bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
-  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"));
+  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
 
   void growInputIntSizes();
 
@@ -179,6 +179,10 @@ Dllist assertions;
 
   void print(ostream& out)const;
   void lprint(ostream& out);
+  void print_wrapper()const;
+  void lprint_wrapper();
+  void print_wrapper(const char* fileName)const;
+  void lprint_wrapper(const char* fileName);
   
    BooleanDAG(const string& name_="anon");
 

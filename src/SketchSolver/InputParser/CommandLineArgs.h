@@ -3,13 +3,19 @@
 
 #include <stdlib.h> // atoi
 #include "SATSolver.h"
-
+#include <vector>
+#include <string>
+#include "string.h"
 
 namespace INp{
 extern  int NCTRLS;
 extern  bool overrideNCtrls;
 extern  bool overrideInputs;
 }
+
+
+class CommandLineArgs;
+extern CommandLineArgs* PARAMS;
 
 class CommandLineArgs{
 	public:		
@@ -50,7 +56,21 @@ class CommandLineArgs{
   bool debug;
   bool superChecks;
 
+	CommandLineArgs(vector<string> args) {
+		char** argv = (char**)malloc(sizeof(char*) * args.size());
+		for(int i = 0; i < args.size(); i++) {
+			argv[i] = (char*)malloc(sizeof(char) * args[i].length());
+			argv[i] = (char*)args[i].c_str();
+		}
+		int argc = args.size();
+		initializeCommandLineArgs(argc, argv);
+	}
+
 	CommandLineArgs(int argc, char** argv){
+		initializeCommandLineArgs(argc, argv);
+	}	
+
+	void initializeCommandLineArgs(int argc, char** argv) {
 		input_idx = 1;
 		seedsize = 1;
 		seed = -1;
@@ -279,11 +299,13 @@ class CommandLineArgs{
 	  if(verbosity > 4){
 			printDiag = true;
 	  }
-	}	
+	}
 	
+	void setPARAMS() {
+		PARAMS = this;
+	}
 	
 };
-
 
 
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cassert>
-#include "driver.h"
+#include "Main.h"
 #include "memory_sampler.h"
 #include "timerclass.h"
 

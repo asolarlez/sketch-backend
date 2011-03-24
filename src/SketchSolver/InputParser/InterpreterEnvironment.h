@@ -10,8 +10,6 @@
 #include "BackwardsAnalysis.h"
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
-#include "ABCSATSolver.h"
-#include "InputReader.h" // INp yylex_init, yyparse, etc.
 
 
 #include <sstream>
@@ -23,12 +21,8 @@ using namespace std;
 
 class InterpreterEnvironment
 {
-	typedef enum {READY, UNSAT} STATUS;
-	STATUS status;
-	CommandLineArgs& params;
 	map<string, BooleanDAG*> functionMap;
-	map<string, int> currentControls;
-	BooleanDAG * bgproblem;
+	CommandLineArgs& params;
 	SolverHelper* finder;
 	SATSolver* _pfind;
 	int assertionStep;
@@ -71,6 +65,10 @@ class InterpreterEnvironment
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:
+	typedef enum {READY, UNSAT} STATUS;
+	STATUS status;
+	map<string, int> currentControls;
+	BooleanDAG * bgproblem;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
@@ -91,14 +89,21 @@ public:
 		functionMap[name] = tmp;
 		return new BooleanDAGCreator(tmp);		
 	}
-
-
+	
 	void printControls(ostream& out){
 		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
 			out<<it->first<<"\t"<<it->second<<endl;
 		}
 	}
+	
+	void printControls_wrapper() {
+		ostream& out = std::cout;
+		printControls(out);
+	}
 
+	void printControls_wrapper(const string& s) {
+		printControls(s);
+	}
 
 	int runCommand(const string& cmd, list<string*>& parlist);
 
@@ -125,6 +130,12 @@ public:
 		dag will be useless, and possibly deallocated.
 	*/
 	int assertDAG(BooleanDAG* dag, ostream& out);
+	int assertDAG_wrapper(BooleanDAG* dag);
+	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
+
+	void set_function(const string& s, BooleanDAG* dag) {
+		functionMap[s] = dag;
+	}
 
 	virtual ~InterpreterEnvironment(void);
 };

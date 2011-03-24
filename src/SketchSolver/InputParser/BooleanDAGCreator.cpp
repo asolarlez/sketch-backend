@@ -1,7 +1,7 @@
 #include "BooleanDAGCreator.h"
 #include "CommandLineArgs.h"
 
-extern CommandLineArgs* PARAMS;
+//extern CommandLineArgs* PARAMS;
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 {
@@ -172,9 +172,9 @@ bool_node* BooleanDAGCreator::create_inputs(int n, const string& gen_name){
 	return tmp;
 }
 
-bool_node* BooleanDAGCreator::create_controls(int n, const string& gen_name){
+bool_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	bool_node* tmp =  dag->create_controls(n, gen_name);
+	bool_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
 	named_nodes[tmp->name]= tmp;
 	optim.dagsizeSet(dag->size());
 	return tmp;

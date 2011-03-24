@@ -24,7 +24,7 @@ public:
   virtual bool_node* create_const(int n);
 
   bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
-  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"));
+  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
 
   /**
 	Creates an N-bit output named gen_name, connected to internal node nodeToOutput.

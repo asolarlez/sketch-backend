@@ -46,7 +46,8 @@ public:
 		if(args.seed >= 0){
 			randseed = args.seed;			
 		}
-		cout<<"SOLVER RAND SEED = "<<randseed<<endl;
+		if(PARAMS->verbosity < 0) {Dout(cout<<"SOLVER RAND SEED = "<<randseed<<endl;)}
+		else {cout<<"SOLVER RAND SEED = "<<randseed<<endl;}
 		simulate = args.simulate;
 		simiters = args.simiters;
 		superChecks = args.superChecks;
