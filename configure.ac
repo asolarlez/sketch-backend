@@ -4,10 +4,9 @@
 AC_PREREQ(2.61)
 AC_INIT(SKETCH, 1.4.0, arnold@cs.berkeley.edu)
 AC_CONFIG_HEADER([config.h])
-
+LT_INIT([disable-static])
 AM_INIT_AUTOMAKE
-
-
+AC_PREFIX_DEFAULT(/usr)
 
 # Checks for programs.
 AC_PROG_CXX
@@ -31,12 +30,13 @@ fi
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
-
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for libraries
 AC_SEARCH_LIBS([pthread_create], [pthread])
 AC_SEARCH_LIBS([clock_gettime], [rt])
-
+AC_SUBST([CEGIS_SO_VERSION], [1:2:0])
+AC_SUBST([CEGIS_API_VERSION], [1.4.0])
 # Checks for header files.
 AC_FUNC_ALLOCA
 AC_HEADER_DIRENT
