@@ -1,11 +1,15 @@
-syntax: regexp
-[^/]+\.vim
-
 syntax: glob
 *.o
 *.a
 *.Po
 *.so
+*.lo
+*.Plo
+*.m4
+*.la
+.libs/*
+libtool
+ltmain.sh
 *SBitII
 INSTALL
 aclocal.m4
@@ -34,4 +38,6 @@ src/SketchSolver/InputParser.output
 src/SketchSolver/cegis
 glob:src\SketchSolver\InputParser\InputLexer.cpp
 glob:src\SketchSolver\InputParser\InputParser.cpp
+glob:src/tags
+relre:tags
 *.swp
