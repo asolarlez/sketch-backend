@@ -405,12 +405,12 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag){
 	ostream& out = std::cout;
-	assertDAG(dag, out);
+	return assertDAG(dag, out);
 }
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileName){
 	ofstream out(fileName, ios_base::out);
-	assertDAG(dag, out);
+	return assertDAG(dag, out);
 }
 
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	

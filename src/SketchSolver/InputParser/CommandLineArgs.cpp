@@ -1,6 +1,7 @@
+#include "timerclass.h"
 #include "CommandLineArgs.h"
 #include "memory_sampler.h"
-#include "timerclass.h"
+
 
 CommandLineArgs* PARAMS;
 timerclass totalElapsed;
