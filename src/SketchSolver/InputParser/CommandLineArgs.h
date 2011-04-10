@@ -7,6 +7,9 @@
 #include <string>
 #include "string.h"
 
+using std::cout;
+using std::endl;
+
 namespace INp{
 extern  int NCTRLS;
 extern  bool overrideNCtrls;
@@ -16,6 +19,8 @@ extern  bool overrideInputs;
 
 class CommandLineArgs;
 extern CommandLineArgs* PARAMS;
+
+const string VERSION_INFO = "vlarrays";
 
 class CommandLineArgs{
 	public:		
@@ -105,6 +110,10 @@ class CommandLineArgs{
 		debug = false;
 		superChecks = false;
 	  for(int ii=0; ii<argc; ++ii){
+        if (string(argv[ii]) == "--print-version") {
+            cout << "CEGIS version features: " << VERSION_INFO << endl;
+            input_idx = ii+1;
+        }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
 	      input_idx = ii+1;
