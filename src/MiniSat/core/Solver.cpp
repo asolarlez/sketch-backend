@@ -418,6 +418,7 @@ Clause* Solver::propagate()
 {
     Clause* confl     = NULL;
     int     num_props = 0;
+    volatile int avoidGccWeirdness;
 
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
@@ -431,8 +432,11 @@ Clause* Solver::propagate()
 
             // Make sure the false literal is data[1]:
             Lit false_lit = ~p;
-            if (c[0] == false_lit)
-                c[0] = c[1], c[1] = false_lit;
+            if (c[0] == false_lit) {
+                c[0] = c[1];
+                c[1] = false_lit;
+                avoidGccWeirdness++;
+            }
 
             assert(c[1] == false_lit);
 
@@ -440,7 +444,7 @@ Clause* Solver::propagate()
             Lit first = c[0];
             if (value(first) == l_True){
                 *j++ = &c;
-            }else{
+            } else {
                 // Look for new watch:
                 for (int k = 2; k < c.size(); k++)
                     if (value(c[k]) != l_False){
