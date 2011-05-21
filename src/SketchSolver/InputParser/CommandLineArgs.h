@@ -114,6 +114,10 @@ class CommandLineArgs{
             cout << "CEGIS version features: " << VERSION_INFO << endl;
             input_idx = ii+1;
         }
+        if (string(argv[ii]) == "--bnd-int-range") {
+            Assert(ii<(argc-1), "--bnd-int-range needs an extra parameter");
+            input_idx = ii+2;
+        }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
 	      input_idx = ii+1;
