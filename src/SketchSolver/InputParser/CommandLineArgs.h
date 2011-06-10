@@ -7,6 +7,9 @@
 #include <string>
 #include "string.h"
 
+using std::cout;
+using std::endl;
+
 namespace INp{
 extern  int NCTRLS;
 extern  bool overrideNCtrls;
@@ -16,6 +19,8 @@ extern  bool overrideInputs;
 
 class CommandLineArgs;
 extern CommandLineArgs* PARAMS;
+
+const string VERSION_INFO = "vlarrays";
 
 class CommandLineArgs{
 	public:		
@@ -105,6 +110,14 @@ class CommandLineArgs{
 		debug = false;
 		superChecks = false;
 	  for(int ii=0; ii<argc; ++ii){
+        if (string(argv[ii]) == "--print-version") {
+            cout << "CEGIS version features: " << VERSION_INFO << endl;
+            input_idx = ii+1;
+        }
+        if (string(argv[ii]) == "--bnd-int-range") {
+            Assert(ii<(argc-1), "--bnd-int-range needs an extra parameter");
+            input_idx = ii+2;
+        }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
 	      input_idx = ii+1;
@@ -145,20 +158,20 @@ class CommandLineArgs{
 	    	alterARRACS = true;
 	      input_idx = ii+1;      
 	    }
-		if( string(argv[ii]) == "-assumebcheck" ){
+		if( string(argv[ii]) == "--assumebcheck" ){
 	    	assumebcheck = true;
-			cout<<"assuming  bounds checks"<<endl;
+			cout << "assuming  bounds checks" << endl;
 	      input_idx = ii+1;      
 	    }
-		if( string(argv[ii]) == "-olevel" ){
-	      Assert(ii<(argc-1), "-olevel needs an extra parameter");
+		if( string(argv[ii]) == "--olevel" ){
+	      Assert(ii<(argc-1), "--olevel needs an extra parameter");
 	      olevel = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
 	    }
 
 	    
-		 if( string(argv[ii]) == "-inlineamnt" ){
-	      Assert(ii<(argc-1), "-inlineamnt needs an extra parameter");
+		 if( string(argv[ii]) == "--bnd-inline-amnt" ){
+	      Assert(ii<(argc-1), "--bnd-inline-amnt needs an extra parameter");
 	      inlineAmnt = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
 	    }
@@ -178,7 +191,7 @@ class CommandLineArgs{
 			input_idx = ii+1;      
 	    }
 
-		if( string(argv[ii]) == "-showinputs" ){
+		if( string(argv[ii]) == "--print-cex" ){
 	    	showInputs = true;
 	      input_idx = ii+1;      
 	    }
@@ -212,15 +225,15 @@ class CommandLineArgs{
 	    }
 		
 
-	    if( string(argv[ii]) == "-overrideCtrls" ){
-	      Assert(ii<(argc-1), "-overrideCtrls needs an extra parameter");
+	    if( string(argv[ii]) == "--bnd-cbits" ){
+	      Assert(ii<(argc-1), "--bnd-cbits needs an extra parameter");
 	      INp::NCTRLS= atoi(argv[ii+1]);
 		  INp::overrideNCtrls=true;
 		  cout<<"Overriding controls with "<<INp::NCTRLS<<endl;
 	      input_idx = ii+2;      
 	    }
-	    if( string(argv[ii]) == "-overrideInputs" ){
-	      Assert(ii<(argc-1), "-overrideInputs needs an extra parameter");
+	    if( string(argv[ii]) == "--bnd-inbits" ){
+	      Assert(ii<(argc-1), "--bnd-inbits needs an extra parameter");
 	      NINPUTS= atoi(argv[ii+1]);
 		  INp::overrideInputs=true;
 		  cout<<"Overriding inputs with "<<NINPUTS<<endl;
@@ -247,8 +260,8 @@ class CommandLineArgs{
 	    } 
 
 
-		if( string(argv[ii]) == "-verbosity" ){
-	      Assert(ii<(argc-1), "-verbosity needs an extra parameter");
+		if( string(argv[ii]) == "--verbosity" ){
+	      Assert(ii<(argc-1), "--verbosity needs an extra parameter");
 	      verbosity = atoi(argv[ii+1]);	  
 		  hastimeout=true;
 	      input_idx = ii+2;
@@ -257,8 +270,8 @@ class CommandLineArgs{
 
 
 
-	    if( string(argv[ii]) == "-seed" ){
-	      Assert(ii<(argc-1), "-seed needs an extra parameter");
+	    if( string(argv[ii]) == "--seed" ){
+	      Assert(ii<(argc-1), "--seed needs an extra parameter");
 	      seed = atoi(argv[ii+1]);	  
 	      input_idx = ii+2;
 	    } 
@@ -267,6 +280,12 @@ class CommandLineArgs{
 	      terminateafter = atoi(argv[ii+1]);	  
 	      input_idx = ii+2;
 	    } 
+	    if ( (string(argv[ii]) == "-o") || (string(argv[ii]) == "--output") ) {
+	      Assert(ii<(argc-1), "-o / --output needs an extra parameter");
+          //string tmp(argv[ii+1]);
+          outputFname = argv[ii+1];
+	      input_idx = ii+2;
+	    }
 	    if( string(argv[ii]) == "-synth" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
 	      string synth(argv[ii+1]);	  
@@ -295,7 +314,7 @@ class CommandLineArgs{
 	  }
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];
-	  outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
+	  // outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
 	  if(verbosity > 4){
 			printDiag = true;
 	  }

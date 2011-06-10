@@ -3,6 +3,8 @@
 
 #ifndef  _MSC_VER
 #include <sys/time.h>
+#include <string>
+#include <iostream>
 
 using namespace std;
 
