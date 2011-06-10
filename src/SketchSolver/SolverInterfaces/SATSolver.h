@@ -25,7 +25,9 @@ protected:
      */
     const bool solveNegation;
 public:
-	
+	bool isNegated(){
+		return solveNegation;
+	}
 	typedef enum {ABC, ABCLIGHT, ZCHAFF, MINI} SolverType;
 	typedef enum {FINDER, CHECKER} SolverMode;
 	

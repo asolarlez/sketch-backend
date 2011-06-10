@@ -361,16 +361,24 @@ public:
 class DagOptim : public NodeVisitor, public virtual NodeStore
 {	
 	bool ALTER_ARRACS;	
+	bool possibleCycles;
 protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
 
+	int BOTTOM;
+	int DONE;
+	int INSTACK;
+
+	void cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterator> >& bns, map<int, UFUN_node*>& dupNodes);
 
 	void checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*>& bnmap);
 	bool checkPrecedence(bool_node* dest, bool_node* src);
-
+	void findCycles(BooleanDAG& dag);
+	void breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes);
 public:
+	map<bool_node*, FastSet<bool_node> > funDependencies;
 	map<bool_node*, AbstractNodeValue> anv;
 	
 	map<int, CONST_node*> cnmap;

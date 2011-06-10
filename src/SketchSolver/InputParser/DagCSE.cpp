@@ -211,7 +211,7 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  	int mid = node.mother == NULL? -1: node.mother->globalId;
  	int fid = node.father == NULL? -1: node.father->globalId;
  	
-	setStr(min(mid, fid), '/' ,max(mid, fid));
+	setStr(mid, '/' ,fid);
 
  	
  	Dtime(stimer.stop();)

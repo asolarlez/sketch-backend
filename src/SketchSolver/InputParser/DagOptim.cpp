@@ -5,8 +5,12 @@
 DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 {
 	ALTER_ARRACS = false;
+	possibleCycles = false;
 	rvalue = NULL;	
 	initialize(dag);
+	BOTTOM=-1;
+	DONE=-2;
+	INSTACK=0;
 }
 
 DagOptim::~DagOptim()
@@ -993,6 +997,7 @@ void DagOptim::checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*
 * 
 */
 bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
+	cout<<"CP: "<<src->globalId<<" -> "<<dest->globalId<<endl;
 	stack<bool_node*> sd;
 	set<bool_node*> bnmap;
 	sd.push(dest);	
@@ -1019,6 +1024,8 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 
 
 
+
+
 void DagOptim::visit( UFUN_node& node ){
 	if(isConst(node.mother)){
 		if(getIval( node.mother ) == 0){
@@ -1028,6 +1035,9 @@ void DagOptim::visit( UFUN_node& node ){
 	}
 
 	string tmp = node.get_ufname();
+	if(node.ignoreAsserts){
+		tmp += "_IA";
+	}
 	tmp += ".";
 	tmp += node.outname;
 	tmp += "(";
@@ -1052,6 +1062,7 @@ void DagOptim::visit( UFUN_node& node ){
 			rvalue = brother;
 			return;
 		}
+		possibleCycles = true;
 		//This is a little tricky. 
 		//What's happening here is that we have found a function node (brother) 
 		//that takes the same inputs as node, so in principle, we should be able to 
@@ -1065,7 +1076,7 @@ void DagOptim::visit( UFUN_node& node ){
 		//So at this point, we want to check whether there is a dependency between 
 		//brother and node; if there is not, then we merge the two calls, but if there is, 
 		//we need to keep the old call in place.
-		if(!checkPrecedence(node.mother, brother)){
+		if(true /*|| !checkPrecedence(node.mother, brother)*/){
 			brother->dislodge();
 			brother->mother->remove_child(brother);
 			bool_node* on = new OR_node();
@@ -1648,15 +1659,262 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 void DagOptim::cleanup(BooleanDAG& dag){
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
+	newnodes.clear();
+	dag.relabel();
+
+	// dag.print(cout);
+	if(possibleCycles){ 
+		findCycles(dag);
+		possibleCycles = false;
+	}
+
+	dag.removeNullNodes();
+	dag.addNewNodes(newnodes);
 	//dag.repOK();
 	newnodes.clear();
 	//dag.sort_graph();
-	dag.cleanup();
+	//dag.print(cout);
+	dag.cleanup();	
 	dag.relabel();
 #ifdef _DEBUG
 	dag.repOK();
-#endif
+#endif	
 }
+
+/*The goal of this routine is to break any cycles 
+that were introduced by merging UFUNs. For example, consider
+the following code:
+t = f(x);
+if(t){
+  y = f(x);
+}
+In this case, both calls to f can be merged into one. However, 
+when we do that, the path condition for the first call will
+get or-ed with the path condition for the second one, causing
+a cycle in the DAG. 
+However, that cycle is really a fake cycle. Consider two 
+calls to a function:
+t1=f(x)[p1] and t2=f(x)[p2]
+both have the same input, but one of them has path condition p1
+and one has path condition p2. 
+Both calls are going to get merged into t1=f(x)[p1 or p2]
+Now, suppose p2 is actually of 
+the form p2=F(t1, q); I argue that I can replace p2 with 
+p2'=F(0, q); and that it won't make any difference. If this is
+true, that solves the problem because now the cycle will be broken.
+
+The reason why the replacement works is as follows. Consider the cases:
+First, in the case where p1 is true, then the value of p2 doesn't matter, 
+so replacing p2 with p2' makes no difference. Now, consider what 
+happens when p1 is false. One invariant in the DAG is that if
+the path condition to a function is false, then the value of its output
+has no effect on the computation, so replacing t1 with zero should
+make no difference. So either way, the replacement is ok.
+
+So in the routine below, we are going to find cycles, and then 
+identify the best place to break those cycles.
+	*/
+void DagOptim::findCycles(BooleanDAG& dag){
+	
+	map<int, UFUN_node*> dupNodes;
+	stack<pair<bool_node*, childset::iterator> > bns;
+	for(int i=0; i<dag.size(); ++i){
+		dag[i]->flag = BOTTOM;
+	}
+	{
+		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
+		for(int i=0; i<ins.size(); ++i){		
+			cbPerNode(ins[i], bns, dupNodes);
+		}
+	}
+	{
+		vector<bool_node*>& ins = dag.getNodesByType(bool_node::CTRL);
+		for(int i=0; i<ins.size(); ++i){		
+			cbPerNode(ins[i], bns, dupNodes);
+		}
+	}
+
+	for(map<int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
+		cbPerNode(it->second, bns, dupNodes);
+	}
+
+}
+
+void DagOptim::cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterator> >& bns, map<int, UFUN_node*>& dupNodes){
+	if(cur->flag ==BOTTOM){
+			bool_node* n = cur;
+			bns.push(make_pair(n, n->children.begin()));
+			n->flag = INSTACK;
+			while(!bns.empty()){	
+				n = bns.top().first;
+				childset::iterator& it = bns.top().second;
+				if(!n->children.checkIter(it)){
+					it = n->children.begin();
+				}
+				bool esc = false;
+				for(; it != n->children.end(); ++it){
+					if((*it)->flag == INSTACK){
+						// found cycle.
+						breakCycle((*it), bns, dupNodes);
+						bns.top().second = bns.top().first->children.begin();																		
+						esc = true;
+						break;
+					}
+					if((*it)->flag == BOTTOM){
+						bns.push(make_pair((*it), (*it)->children.begin()));
+						(*it)->flag = INSTACK;
+						break;
+					}
+				}
+				if(!esc && it == n->children.end()){
+					n->flag = DONE;
+					bns.pop();
+				}
+			}
+		}
+}
+
+
+
+void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes){	
+	int BOTTOM=-1;
+	list<pair<bool_node*, childset::iterator> > sp;
+	stack<pair<bool_node*, childset::iterator> > tst;
+	bool good = false;
+	bool doubleFun = false;
+	UFUN_node* luf = NULL;	
+	while(s.top().first != bn){	
+		s.top().first->flag = BOTTOM;
+		Assert(!s.empty(), "njkflaiuy");
+		sp.push_front( s.top() );
+		luf = dynamic_cast<UFUN_node*>(s.top().first);
+		if(luf != NULL){
+			s.pop();
+			if(s.top().first == luf->mother && (luf->mother->type == bool_node::OR || dupNodes.count(luf->globalId) )){				
+				while(s.top().first != bn){	
+					UFUN_node* puf = dynamic_cast<UFUN_node*>(s.top().first);
+					if(puf != NULL){
+						doubleFun = true;
+					}
+					s.top().first->flag = BOTTOM;
+					tst.push(s.top());
+					s.pop();
+					Assert(!s.empty(), "zmiyeoiaujn");
+				}		
+				tst.push(s.top());
+				s.top().first->flag = BOTTOM;
+				{
+					UFUN_node* puf = dynamic_cast<UFUN_node*>(s.top().first);
+					if(puf != NULL){doubleFun = true;}
+				}
+				s.pop();
+				break;
+			}else{
+				doubleFun = true;
+			}
+		}else{
+			s.pop();
+		}
+	}
+	if(s.size()>0 && s.top().first == bn){
+		s.top().first->flag = BOTTOM;
+		sp.push_front( s.top() );
+		s.pop();
+	}
+	while(!tst.empty()){
+		sp.push_back(tst.top());
+		tst.pop();
+	}
+	if(PARAMS->verbosity > 4){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
+	// sp.front() is the function that is having trouble.
+	if(true || doubleFun){		
+		bool_node* lastOr = sp.back().first;
+		sp.pop_back();
+		Assert(lastOr == sp.front().first->mother, "m;lqkey");
+		bool_node* outer = NULL;
+		bool_node* inner = NULL;
+		if(lastOr->mother == sp.back().first){
+			inner = lastOr->mother;
+			outer = lastOr->father;
+		}else{
+			Assert(lastOr->father == sp.back().first, "Kokjne;");
+			inner = lastOr->father;
+			outer = lastOr->mother;
+		}
+
+		UFUN_node* oldNode = dynamic_cast<UFUN_node*>(sp.front().first);
+		// cout<<"double: "<<oldNode->get_name()<<endl;
+		UFUN_node* newNode = NULL;
+		bool isRecycled = false;
+		if(dupNodes.count(oldNode->globalId)>0){
+			newNode = dupNodes[oldNode->globalId];
+			isRecycled = true;
+		}else{
+			newNode = dynamic_cast<UFUN_node*>(oldNode->clone(false));
+			newNode->ignoreAsserts = true;
+			newnodes.push_back(newNode);
+			//oldNode->replace_parent(lastOr, inner);
+			//lastOr->remove_child(oldNode);
+			newNode->replace_parent(lastOr, this->getCnode(true));
+			dupNodes[oldNode->globalId] = newNode;
+			newNode->addToParents();
+		}		
+		sp.pop_front();		
+		
+
+		for(list<pair<bool_node*, childset::iterator> >::iterator it = sp.begin(); it != sp.end(); ++it){
+			if(oldNode->children.count(it->first)>0){
+				it->first->replace_parent(oldNode, newNode);
+				oldNode->remove_child(it->first);
+			}
+		}
+
+		
+		//oldNode->remove_child(sp.front().first);
+		UFUN_node* puf = dynamic_cast<UFUN_node*>(sp.back().first);
+		while(puf == NULL){
+			sp.pop_back();
+			if(sp.empty()){ break; }
+			puf = dynamic_cast<UFUN_node*>(sp.back().first);
+		}
+		if(!isRecycled){
+			oldNode->addBefore(newNode);
+		}
+		if(puf != NULL){
+			oldNode->remove();
+			puf->add(oldNode);
+		}
+	}else{
+		Assert(sp.size() >0, "lnlkjyp;");
+		bool_node* oldoldNode = NULL;
+		bool_node* oldNode = sp.front().first;
+		UFUN_node* funct = dynamic_cast<UFUN_node*>(oldNode);
+		cout<<"single: "<<oldNode->get_name()<<endl;
+		sp.pop_front();
+		bool_node* newNode = this->getCnode(0);
+		bool_node* target;
+		bool_node* newTarget;		
+		while(!sp.empty()){
+			target = sp.front().first; sp.pop_front();
+			target->flag = BOTTOM;
+			newTarget = target->clone(false);
+			newTarget->id = target->id + 10000;
+			newnodes.push_back(newTarget);
+			Assert(newTarget->flag == BOTTOM, "lkn;iuey;");
+			UFUN_node* ufn = dynamic_cast<UFUN_node*>(newTarget);
+			Assert(ufn == NULL, "This can not happen");			
+			newTarget->replace_parent(oldNode, newNode);		
+			newTarget->addToParents();
+			oldoldNode = oldNode;
+			oldNode = target;
+			newNode = newTarget;
+		}
+		Assert(oldNode == funct->mother, "aa;lkwehp");
+		funct->replace_parent(oldNode, newNode);		
+		oldNode->remove_child(funct);
+	}
+}
+
 
 void DagOptim::process(BooleanDAG& dag){
 	timerclass everything("everything");
@@ -1675,9 +1933,8 @@ void DagOptim::process(BooleanDAG& dag){
 
 
 
-			if(dag[i] != node){
-					Dout(cout<<dag[i]->id<<" replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl) ;
-					
+			if(dag[i] != node){					
+					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
 					dag.replace(i, node);
 					
 			}
@@ -1690,7 +1947,7 @@ void DagOptim::process(BooleanDAG& dag){
 
 	everything.stop();
 	
-
+	
 	Dout( everything.print(); )
 	
 	Dout(cout<<" end cse "<<endl);

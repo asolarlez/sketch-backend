@@ -141,7 +141,7 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 
 void NodeEvaluator::display(ostream& out){
 	for(int i=0; i<values.size(); ++i){
-		cout<<"AVALS= "<<bdag[i]->lprint()<<"	v="<<values[i]<<endl;
+		cout<<"AVALS= ["<<bdag[i]->globalId<<"]"<<bdag[i]->lprint()<<"	v="<<values[i]<<endl;
 	}
 }
 

@@ -87,7 +87,13 @@ NodesToSolver::processComparissons (bool_node& node)
 
 template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
-	return comp(quant1, quant2);
+	int tt = comp(quant1, quant2);
+	
+	if(false && !dir.getMng().isNegated() && tt > 33){ 
+		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
+		tt = (rand() % 33); 
+	}
+	return tt;
 }
 
 
@@ -358,7 +364,7 @@ NodesToSolver::processArith (bool_node &node)
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	mval.makeSparse (dir);
 	if( mval.getSize() > 200 ){ 
-		cout<<"sz = "<<mval.getSize()<<endl;
+		cout<<"Sparse representation size = "<<mval.getSize()<<endl;
 		//tmpdag->printSlice(mother, cout);
 	}
 	bool_node* father = node.father;

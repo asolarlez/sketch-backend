@@ -9,16 +9,29 @@ using namespace std;
 template<typename T>
 class fsiter{
 	typedef typename vector<T*>::iterator iter;
+	unsigned vers;
 	iter cur;	
 	iter end;	
 public:
-	fsiter(){
+	fsiter(int v):vers(v){
 
 	}
-	fsiter(iter p_cur, iter p_end ): cur(p_cur), end(p_end){
+
+	fsiter& operator=(fsiter& f){
+		cur = f.cur;
+		end = f.end;
+		vers = f.vers;
+		return *this;
+	}
+
+	fsiter(iter p_cur, iter p_end, int v ): cur(p_cur), end(p_end), vers(v){
 		
 	}	
 	template<typename U> friend class FastSet;
+
+	bool checkIter(int v){
+		return (v == vers);
+	}
 
 	bool operator!=(const fsiter& ot){
 		return this->cur != ot.cur;
@@ -82,7 +95,7 @@ vector<T*> store;
 int sz;
 int _size;
 fsiter<T> _end;
-
+unsigned vers;
 
 
 #if 0
@@ -116,11 +129,12 @@ public:
 		return _size;
 	}
 	void recompEnd(){
-		_end = fsiter<T>( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end());
+		_end = fsiter<T>( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end(), vers);
 	}
 
-	FastSet(void)
+	FastSet(void):_end(0)
 	{
+		vers = 0;
 		sz = 1;
 		unsigned tmp = (CNST<<sz)+2;
 		store.resize( tmp, NULL);		
@@ -128,8 +142,9 @@ public:
 		recompEnd();
 	}
 
-	FastSet(const FastSet& fs): sz(fs.sz), store(fs.store), _size(fs._size){
+	FastSet(const FastSet& fs): sz(fs.sz), store(fs.store), _size(fs._size), _end(0){
 		recompEnd();
+		vers = 0;
 	}
 
 
@@ -138,6 +153,7 @@ public:
 		store = fs.store;
 		_size = fs._size;
 		recompEnd();
+		vers = 0;
 		return *this;
 	}
 
@@ -145,16 +161,20 @@ public:
 		return _end;
 	}
 	
-	
+	bool checkIter(iterator& it){
+		bool tmp = it.checkIter(vers);
+		return tmp;
+	}
 
 	iterator begin() const{
 		if(_size == 0){ return end(); }
 		typename vector<T*>::iterator it = (( FastSet<T>*) this)->store.begin();
 		while(*it == NULL){ ++it; }
-		return fsiter<T>(it, ((FastSet<T>*) this)->store.end());
+		return fsiter<T>(it, ((FastSet<T>*) this)->store.end(), vers);
 	}
 
 	void resize(){
+		++vers;
 		++this->sz;
 		// if(( store.size() / _size ) > 2){  cout<<" ration on resize "<<store.size()<<"/"<<_size<<"  "<<( store.size() / _size )<<endl; }
 		store.resize((CNST<<sz)+2, NULL);		
@@ -262,24 +282,24 @@ public:
 		bool t5 = store[lp5] == val;
 
 		if(t0){
-			return fsiter<T>(store.begin() + loc, store.end());
+			return fsiter<T>(store.begin() + loc, store.end(), vers);
 		}
 		if(t1){
-			return fsiter<T>( store.begin() + lp1, store.end());
+			return fsiter<T>( store.begin() + lp1, store.end(), vers);
 		}
 		if(t2){
-			return fsiter<T>(store.begin() + lp2, store.end());
+			return fsiter<T>(store.begin() + lp2, store.end(), vers);
 		}
 		if(t3){
-			return fsiter<T>(store.begin() + lp3, store.end());
+			return fsiter<T>(store.begin() + lp3, store.end(), vers);
 		}
 		if(t4){
-			return fsiter<T>(store.begin() + lp4, store.end());
+			return fsiter<T>(store.begin() + lp4, store.end(), vers);
 		}
 		if(t5){
-			return fsiter<T>(store.begin() + lp5, store.end());
+			return fsiter<T>(store.begin() + lp5, store.end(), vers);
 		}
-		return fsiter<T>(store.end(), store.end());
+		return fsiter<T>(store.end(), store.end(), vers);
 	}
 
 
@@ -298,6 +318,7 @@ public:
 		store.resize( tmp, NULL);
 		for(int i=0; i<tmp; ++i){ store[i] = NULL; }
 		_size = 0;
+		++vers;
 		recompEnd();
 	}
 
@@ -361,6 +382,8 @@ public:
 		std::swap(_size, t2._size);
 		recompEnd();
 		t2.recompEnd();
+		++vers;
+		++t2.vers;
 	}
 public:
 

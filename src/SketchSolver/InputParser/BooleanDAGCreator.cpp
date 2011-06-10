@@ -11,7 +11,7 @@ BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 
 BooleanDAGCreator::~BooleanDAGCreator(void)
 {
-	cout<<"nnsize = "<<named_nodes.size()<<endl;
+	// cout<<"nnsize = "<<named_nodes.size()<<endl;
 }
 
 

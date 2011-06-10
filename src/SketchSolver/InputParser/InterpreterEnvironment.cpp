@@ -266,12 +266,13 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	for(int i=0; i<steps; ++i){
 		int t = 0;
 		do{
-			dfi.process(dag);
+			dfi.process(dag);			
 			set<string>& dones = dfi.getFunsInlined();
-			cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl;			
+			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
 			if(oldSize > 0){
 				if(dag.size() > 100000 && dag.size() > oldSize * 10){
 					i=steps;
+					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
 				}				
 			}

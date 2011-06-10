@@ -136,7 +136,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		*/
 
-
+		
+		lnfuns++;
+		
 
 		
 		bool_node* output = NULL;
@@ -177,6 +179,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
+						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
+
 						{							
 							DllistNode* tt = getDllnode(ufun);
 							tmpList.append(tt);
@@ -242,7 +246,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}
 				}else{
 					n->mother->remove_child( n );
-					if(isConst(n->mother) && getIval(n->mother) == 1){ continue; }
+					if((isConst(n->mother) && getIval(n->mother) == 1)|| node.ignoreAsserts ){ continue; }
 					bool_node* nnode = new NOT_node();
 					nnode->mother = condition;					
 					{
@@ -348,11 +352,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){
-		// Get the code for this node.
-				
-		if(typeid(*dag[i]) == typeid(UFUN_node)){
-			lnfuns++;
-		}
+		// Get the code for this node.						
 		
 				
 		bool_node* node = computeOptim(dag[i]);		

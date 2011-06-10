@@ -98,9 +98,15 @@ public:
 
   virtual int do_dfs(int idx);
   virtual int back_dfs(int idx);
+  
+  
+  /// Remove bn from my child list.
   virtual void remove_child(bool_node* bn);  
+  
+  /// Remove me from the child list of my parents.  
   virtual void dislodge();
-  virtual void removeFromParents(bool_node* bn);
+  // virtual void removeFromParents(bool_node* bn);
+  /// If any of my parents is equal to oldpar, make it equal to newpar instead.
   virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
   virtual void outDagEntry(ostream& out) const;
   virtual void addToParents();
@@ -242,7 +248,7 @@ class arith_node: public bool_node{
 	vector<bool_node*> multi_mother;	
     virtual int back_dfs(int idx);
 	virtual void dislodge();
-	virtual void removeFromParents(bool_node* bn);
+	// virtual void removeFromParents(bool_node* bn);
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out)const;
 	void set_layer(bool isRecursive);
@@ -428,11 +434,12 @@ class UFUN_node: public arith_node, public DllistNode{
 	int nbits;	
 	string ufname;	
 	public: 
+	bool ignoreAsserts;
 	string outname;
 	int fgid;
 		
-		UFUN_node(const string& p_ufname):ufname(p_ufname), callsite(CALLSITES++){ arith_type = UFUN; nbits=1; } 
-		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid){ }  
+		UFUN_node(const string& p_ufname):ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false){ arith_type = UFUN; nbits=1; } 
+		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out)const{
     	int i=0;
@@ -441,6 +448,7 @@ class UFUN_node: public arith_node, public DllistNode{
 		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;	  		
 		  	}
 		}
+		out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[style=dotted] ; "<<endl;	  		
 	}
 
 	virtual bool_node* clone(bool copyChildren = true){return new UFUN_node(*this, copyChildren);  };
@@ -465,7 +473,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	    
 		if(ufname.size() > 1){
 		  stringstream str;
-		  str<<ufname.substr(0, 5)<<id<<"__"<<get_tname();
+		  str<<ufname.substr(0, 5)<<id<<"__"<<get_tname()<<(ignoreAsserts?"_IA":"");
 		  return str.str();
 		}else{
 			return arith_node::get_name();

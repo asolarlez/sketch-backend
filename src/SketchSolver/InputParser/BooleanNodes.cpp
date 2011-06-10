@@ -402,10 +402,10 @@ void arith_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{
 
 void bool_node::outDagEntry(ostream& out) const{
 	if( father != NULL){
-        out<<" "<<father->get_name()<<" -> "<<get_name()<<" ; "<<endl;
+        out<<" "<<father->get_name()<<" -> "<<get_name()<<"[label=\"f\"] ; "<<endl;
     }
     if( mother != NULL){
-          out<<" "<<mother->get_name()<<" -> "<<get_name()<<" ; "<<endl;
+          out<<" "<<mother->get_name()<<" -> "<<get_name()<<"[label=\"m\"] ; "<<endl;
     }
     if(father == NULL && mother == NULL){
     	   out<<"// orphan node: "<<get_name()<<" ; "<<endl ;
@@ -426,7 +426,7 @@ void arith_node::outDagEntry(ostream& out) const{
 	}
 }
 
-
+/*
 void arith_node::removeFromParents(bool_node* bn){
 	bool_node::removeFromParents(bn);
 	bool_node* tmp = NULL;
@@ -437,8 +437,9 @@ void arith_node::removeFromParents(bool_node* bn){
 	  	}
 	}
 }
+*/
 
-
+/*
 void bool_node::removeFromParents(bool_node* bn){
   if(father != NULL){
   	 father->remove_child(bn);
@@ -447,7 +448,7 @@ void bool_node::removeFromParents(bool_node* bn){
   	mother->remove_child(bn);
   }
 }
-
+*/
 
 void bool_node::dislodge(){
   if(father != NULL){

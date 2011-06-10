@@ -142,7 +142,7 @@ bool CEGISSolver::solveCore(){
 			cpt.checkpoint('f', instore_serialized);
 			if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
-			ftimer.restart(); 
+			ftimer.restart(); 			
 			doMore = find(inputStore, ctrlStore);
 			ftimer.stop();
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
@@ -239,6 +239,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
+
 	defineProblem(mngFind, dirFind, node_values, find_node_ids);
 
 	// Keeps the history around for debugging purposes.	
@@ -254,6 +255,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 
 BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
 	BooleanDAG* newdag = dag->clone();
+
 	vector<bool_node*> inodeList = newdag->getNodesByType(type);
 		
 	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
@@ -280,8 +282,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		cse.process(*newdag);
 	}
 	Dout( newdag->print(cout) ); 
-	
-	if(PARAMS->verbosity > 2){ cout<<" * After replacing nodes size = "<<newdag->size()<<" Ctrls = "<< inodeList.size() <<endl; }	
+		
 	if(false){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
@@ -290,7 +291,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		DagOptim cse(*newdag);			
 		cse.process(*newdag);
 	}
-	if(PARAMS->verbosity > 2){ cout<<" * And after optims it became = "<<newdag->size()<<endl; }	
+	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<endl; }	
 	return newdag;
 }
 
@@ -300,8 +301,8 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 // This function is responsible for encoding the problem
 void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids){
 	{
-		timerclass timer("defineProblem");
-		timer.start();
+		//timerclass timer("defineProblem");
+		//timer.start();
 		int YES = dir.newYES();
 		
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
@@ -322,8 +323,8 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 			throw e;
 		}
 
-		timer.stop();
-		if(PARAMS->verbosity > 2){ timer.print(); }
+		//timer.stop();
+		//if(PARAMS->verbosity > 2){ timer.print(); }
 	}
 }
 
@@ -459,7 +460,7 @@ void CEGISSolver::abstractProblem(){
 
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
-	timerclass tc("simtimer");
+	timerclass tc("Simulation");
 	tc.start();	
 	int iter = 0;
 	VarStore& tmpin = input;
@@ -503,11 +504,18 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 			}
 		}
+		int hold = -1;
 		while(true){
+			cout<<" TESTING HYPOTHESIS"<<endl;
 			int h = eval.scoreNodes();
+			if(hold == h){
+				cout<<"INFINITE LOOP!"<<endl;
+				break;
+			}
+			hold = h;
 			bool_node* niq = (*dag)[h];
 			ASSERT_node* an = new ASSERT_node();
-			int am = 0;
+			int am = 0;			
 			if(niq->getOtype()==bool_node::BOOL){
 				if(eval.getValue(niq)==0){
 					an->mother = new NOT_node();
@@ -519,12 +527,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				am = 2;
 			}
 			BooleanDAG* tbd = dag->slice(h, an);
+			if(PARAMS->verbosity >= 10 && tbd->size() < 100){
+				tbd->lprint(cout);
+			}
 			pushProblem(tbd);
 			
-			timerclass tc("check time");
-			tc.start();
+			
 			bool rv = baseCheck(controls, tmpin);
-			tc.stop().print();
+			
 			popProblem();
 			if(am>0){
 				if(am==2){ delete an->mother->father; }
@@ -549,9 +559,11 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 			}else{
 				{
+					int nval = eval.getValue((*dag)[h]);
+					cout<<" FOUND CONST: "<<niq->lprint()<<" = "<<nval<<endl;
 					DagOptim cse(*dag);
 					int sz = dag->size();
-					dag->replace(h, cse.getCnode(eval.getValue((*dag)[h])));
+					dag->replace(h, cse.getCnode(nval));
 					dag->removeNullNodes();
 					cse.process(*dag);
 					cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl;
@@ -565,7 +577,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}
 	}while(iter < params.simiters);
-	tc.stop().print("didn't find a cex");	
+	
 	{
 		BackwardsAnalysis ba;
 		ba.process(*dag);
@@ -574,7 +586,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		DagOptim cse(*dag);			
 		cse.process(*dag);
 	}
-	if(PARAMS->verbosity > 2){ cout<<" * And after optims it became = "<<dag->size()<<endl; }	
+	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
+	tc.stop().print("didn't find a cex");	
+	// dag->lprint(cout);
 	bool tv = baseCheck(controls, input);
 	popProblem();
 	return tv;
@@ -794,10 +808,10 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 
 bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	Dout( cout<<"check()"<<endl );
-	timerclass tc("* TIME TO ADD CONTROLS ");
-	tc.start();				
+	//timerclass tc("* TIME TO ADD CONTROLS ");
+	//tc.start();				
 	setNewControls(controls);
-	if(PARAMS->verbosity > 2){ tc.stop().print(); }
+	//if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
     int result = mngCheck.solve();
 	//dirCheck.printAllVars();

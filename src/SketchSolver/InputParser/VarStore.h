@@ -72,6 +72,11 @@ public:
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
 			}
 		}
+		void zeroOut(){/* Bias towards zeros */
+			for(int i=0; i<vals.size(); ++i){
+				vals[i] = -1;
+			}
+		}
 	};
 
 private:
@@ -94,6 +99,11 @@ public:
 			objs[i].makeRandom();
 		}
 	}
+	void zeroOut(){ 
+		for(int i=0; i<objs.size(); ++i){
+			objs[i].zeroOut();
+		}
+	}
 	void newVar(const string& name, int size){
 		Assert(index.count(name)==0, "This variable already existed!!");
 		objs.push_back(objP(name, size));
@@ -103,7 +113,7 @@ public:
 
 	void setVarVal(const string& name, int val){
 		int idx;
-		if(index.count(name)==0){
+		if(index.count(name)!=0){
 			idx = index[name];
 		}else{
 			objs.push_back(objP(name, 5));

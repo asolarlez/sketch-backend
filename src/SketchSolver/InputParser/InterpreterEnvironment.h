@@ -82,7 +82,7 @@ public:
 
 	BooleanDAGCreator* newFunction(const string& name){
 		BooleanDAG* tmp = new BooleanDAG(name);
-		cout<<"CREATING "<<name<<endl;
+		if(params.verbosity>5) cout<<"CREATING "<<name<<endl;
 		if(functionMap.count(name)>0){
 			delete functionMap[name];
 		}

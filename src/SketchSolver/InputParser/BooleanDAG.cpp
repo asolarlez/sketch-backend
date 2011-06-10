@@ -666,7 +666,7 @@ void BooleanDAG::printSlice(bool_node* node, ostream& out)const{
 
 
 void BooleanDAG::print(ostream& out)const{    
-  out<<"digraph G{"<<endl;
+	out<<"digraph "<<this->name<<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
   		nodes[i]->outDagEntry(out);

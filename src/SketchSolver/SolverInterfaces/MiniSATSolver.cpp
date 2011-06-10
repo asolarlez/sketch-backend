@@ -186,13 +186,20 @@ void MiniSATSolver::hardAssertVarClause(int x){
 /*	 if(c=='f'){
 		s->printSmallLearnts();
 	 }*/
- 	cout << c <<"# assigns                : "<<s->nAssigns()<<endl;
+	 cout << c <<"# %assign: "<<((100*s->nAssigns())/s->nVars());
+ 	cout <<" clauses: "<<s->nClauses();
+   	cout <<" learn: "<<s->nLearnts(); 	
+	cout <<" restart: "<<s->starts;
+	cout <<" decision: "<<s->decisions; 
+	cout <<" propagated: "<<s->propagations<<endl;		
+	/*
+ 	cout << c <<"# trl                : "<<s->nAssigns()<<endl;
  	cout << c <<"# clauses                : "<<s->nClauses()<<endl;
    	cout << c <<"# learnts                : "<<s->nLearnts()<<endl; 	
 	cout << c << "# restarts              : "<<s->starts<<endl;
 	cout << c << "# decisions             : "<<s->decisions<<endl; 
 	cout << c << "# propagations          : "<<s->propagations<<endl;	
-	cout << c << "# conflict literals     : "<<s->tot_literals<<endl;
+	*/
  }
 
 
@@ -235,7 +242,7 @@ bool MiniSATSolver::ignoreOld(){
  	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	bool result = s->solve();
- 	if( ! s->okay() ){ cout<<" NOT OKAY2 "<<endl; }	
+ 	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
 	if( result) {
 		//cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	

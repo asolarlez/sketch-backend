@@ -45,6 +45,20 @@ public:
 		prev = NULL;
 		next = NULL;
 	}
+	void addBefore(DllistNode* n){
+		if(prev==NULL){
+			prev = n;
+			n->next = this;
+			Assert(parent->head == this, "mlkey;km4");
+			parent->head = n;
+		}else{
+			n->prev = prev;
+			prev->next = n;
+			prev = n;
+			n->next = this;
+		}
+		n->parent = parent;
+	}
 	void add(DllistNode* n){
 		if(next == NULL){
 			next = n;
