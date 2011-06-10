@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="FastDebug|Win32">
+      <Configuration>FastDebug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A4D54392-D0C6-43A1-ACCF-743C7195F292}</ProjectGuid>
+    <RootNamespace>Sketch</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'">$(Configuration)\</IntDir>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc;$(SolutionDir)\abc60513\src\aig\hop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ShowIncludes>true</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>$(SolutionDir)\abc60513\abclib\abclib_debug.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <AddModuleNamesToAssembly>%(AddModuleNamesToAssembly)</AddModuleNamesToAssembly>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AssemblyDebug>
+      </AssemblyDebug>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\vec;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\core;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc;$(SolutionDir)\abc60513\src\aig\hop;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>$(SolutionDir)\abc60513\abclib\abclib_release.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)\abc70930\src\sat\msat;$(SolutionDir)\abc70930\src\sat\fraig;$(SolutionDir)\abc70930\src\sat\ivy;$(SolutionDir)\abc70930\src\sat\asat;$(SolutionDir)\abc70930\src\sat\csat;$(SolutionDir)\abc70930\src\sat\aig;$(SolutionDir)\abc70930\src\misc\vec;$(SolutionDir)\abc70930\src\misc\util;$(SolutionDir)\abc70930\src\misc\st;$(SolutionDir)\abc70930\src\misc\nm;$(SolutionDir)\abc70930\src\misc\mvc;$(SolutionDir)\abc70930\src\misc\extra;$(SolutionDir)\abc70930\src\bdd\epd;$(SolutionDir)\abc70930\src\bdd\reo;$(SolutionDir)\abc70930\src\bdd\parse;$(SolutionDir)\abc70930\src\bdd\mtr;$(SolutionDir)\abc70930\src\bdd\cudd;$(SolutionDir)\abc70930\src\base\main;$(SolutionDir)\abc70930\src\base\io;$(SolutionDir)\abc70930\src\base\cmd;$(SolutionDir)\abc70930\src\base\abci;$(SolutionDir)\sat2005_submission;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\sat2005_submission\MiniSat_submission;$(SolutionDir)\zchaff;$(SolutionDir)\abc70930\src\base\abc;$(SolutionDir)\abc70930\src\aig\hop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>$(SolutionDir)\abc70930\abclib\abclib_debug.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="MiniSat\core\Solver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />
+    <ClCompile Include="SketchSolver\SolverInterfaces\ABCSATSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\BackwardsAnalysis.cpp" />
+    <ClCompile Include="SketchSolver\SolverInterfaces\BLIFwriter.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\BooleanDAG.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\BooleanDAGCreator.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\BooleanNodes.cpp" />
+    <ClCompile Include="SketchSolver\BooleanToCNF.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\CallGraphAnalysis.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\CEGISSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\Checkpointer.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\ComplexInliner.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagCSE.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagElimUFUN.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagFunctionInliner.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagFunctionToAssertion.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagOptim.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagOptimizeCommutAssoc.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DeriveImplications.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\driver.cpp" />
+    <ClCompile Include="SketchSolver\FindCheckSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\InputReader.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\InterpreterEnvironment.cpp" />
+    <ClCompile Include="SketchSolver\memory_sampler.cc" />
+    <ClCompile Include="SketchSolver\SolverInterfaces\MiniSATSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeEvaluator.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeSlicer.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodesToEuclid.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeStore.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodesToSEQ.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodesToSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeVisitor.cpp" />
+    <ClCompile Include="SketchSolver\SolverInterfaces\SATSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\SolveFromInput.cpp" />
+    <ClCompile Include="zchaff\zchaff_base.cpp" />
+    <ClCompile Include="zchaff\zchaff_c_wrapper.cpp" />
+    <ClCompile Include="zchaff\zchaff_cpp_wrapper.cpp" />
+    <ClCompile Include="zchaff\zchaff_dbase.cpp" />
+    <ClCompile Include="zchaff\zchaff_solver.cpp" />
+    <ClCompile Include="zchaff\zchaff_utils.cpp" />
+    <ClCompile Include="SketchSolver\SolverInterfaces\ZchaffSATSolver.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="minisat\core\msolver.h" />
+    <ClInclude Include="minisat\core\solvertypes.h" />
+    <ClInclude Include="minisat\mtl\alg.h" />
+    <ClInclude Include="MiniSat\mtl\BasicHeap.h" />
+    <ClInclude Include="MiniSat\mtl\BoxedVec.h" />
+    <ClInclude Include="minisat\mtl\heap.h" />
+    <ClInclude Include="MiniSat\mtl\Map.h" />
+    <ClInclude Include="MiniSat\mtl\Queue.h" />
+    <ClInclude Include="MiniSat\mtl\Sort.h" />
+    <ClInclude Include="minisat\mtl\vec.h" />
+    <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\ABCSATSolver.h" />
+    <ClInclude Include="SketchSolver\BasicError.h" />
+    <ClInclude Include="SketchSolver\InputParser\BooleanDAG.h" />
+    <ClInclude Include="SketchSolver\BooleanToCNF.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagCSE.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagElimUFUN.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagFunctionInliner.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagOptim.h" />
+    <ClInclude Include="SketchSolver\FindCheckSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\InputParser.h" />
+    <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\MiniSATSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodesToEuclid.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodesToSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodeVisitor.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\SATSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\SolveFromInput.h" />
+    <ClInclude Include="SketchSolver\timerclass.h" />
+    <ClInclude Include="SketchSolver\InputParser\Tvalue.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\ZchaffSATSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\BackwardsAnalysis.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\BLIFwriter.h" />
+    <ClInclude Include="SketchSolver\InputParser\BooleanDAGCreator.h" />
+    <ClInclude Include="SketchSolver\InputParser\BooleanNodes.h" />
+    <ClInclude Include="SketchSolver\InputParser\CallGraphAnalysis.h" />
+    <ClInclude Include="SketchSolver\InputParser\CEGISSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\Checkpointer.h" />
+    <ClInclude Include="SketchSolver\InputParser\CommandLineArgs.h" />
+    <ClInclude Include="SketchSolver\InputParser\ComplexInliner.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagFunctionToAssertion.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagOptimizeCommutAssoc.h" />
+    <ClInclude Include="SketchSolver\InputParser\DeriveImplications.h" />
+    <ClInclude Include="SketchSolver\InputParser\Dllist.h" />
+    <ClInclude Include="SketchSolver\InputParser\driver.h" />
+    <ClInclude Include="SketchSolver\InputParser\FastSet.h" />
+    <ClInclude Include="SketchSolver\InputParser\guardedVal.h" />
+    <ClInclude Include="SketchSolver\InputParser\InterpreterEnvironment.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodeEvaluator.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodeSlicer.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodeStore.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodesToSEQ.h" />
+    <ClInclude Include="zchaff\SAT.h" />
+    <ClInclude Include="zchaff\SAT_C.h" />
+    <ClInclude Include="SketchSolver\InputParser\SFIOutputSeq.h" />
+    <ClInclude Include="SketchSolver\InputParser\StringHTable.h" />
+    <ClInclude Include="SketchSolver\InputParser\VarStore.h" />
+    <ClInclude Include="zchaff\zchaff_base.h" />
+    <ClInclude Include="zchaff\zchaff_clsgen.h" />
+    <ClInclude Include="zchaff\zchaff_dbase.h" />
+    <ClInclude Include="zchaff\zchaff_header.h" />
+    <ClInclude Include="zchaff\zchaff_solver.h" />
+    <ClInclude Include="zchaff\zchaff_version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
+    <None Include="glucose_1.0\sources\glucose\mtl\template.mk" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
