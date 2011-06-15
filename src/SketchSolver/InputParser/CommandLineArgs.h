@@ -60,6 +60,7 @@ class CommandLineArgs{
   bool setMemo;
   bool debug;
   bool superChecks;
+  int randBnd;
 
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
@@ -109,6 +110,7 @@ class CommandLineArgs{
 		setMemo = true;
 		debug = false;
 		superChecks = false;
+		randBnd = -1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -137,6 +139,13 @@ class CommandLineArgs{
 		if( string(argv[ii]) == "-simiters" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
 	      simiters = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+	    }
+
+		if( string(argv[ii]) == "--bndwrand" ){	      
+		  Assert(ii<(argc-1), "--bndwrand needs an extra parameter");
+	      randBnd = atoi(argv[ii+1]);
+		  cout<<"BND W RAND = "<<randBnd<<endl;
 	      input_idx = ii+2;      
 	    }
 

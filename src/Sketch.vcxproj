@@ -302,6 +302,7 @@
     <ClInclude Include="MiniSat\mtl\Queue.h" />
     <ClInclude Include="MiniSat\mtl\Sort.h" />
     <ClInclude Include="minisat\mtl\vec.h" />
+    <ClInclude Include="SketchSolver\InputParser\PrintInteresting.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\ABCSATSolver.h" />
     <ClInclude Include="SketchSolver\BasicError.h" />

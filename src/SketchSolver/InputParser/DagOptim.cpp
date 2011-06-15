@@ -11,6 +11,7 @@ DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
 	BOTTOM=-1;
 	DONE=-2;
 	INSTACK=0;
+	isTopLevel = false;
 }
 
 DagOptim::~DagOptim()
@@ -87,7 +88,21 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			nv.timestamp = n1->globalId;
 			return nv.staticCompare<COMP>(C, reverse);
 		}else{
-			nv.makeTop();
+			if(isTopLevel){
+				int s = 1;
+				int bnd = 1;
+				nv.init(0);
+				int N = inode->get_nbits();
+				for(int i=0; i<N; ++i){
+					bnd = bnd * 2;
+					while(s < bnd){
+						nv.insert(s);
+						++s;
+					}
+				}
+			}else{
+				nv.makeTop();
+			}
 			nv.timestamp = n1->globalId;
 			return 0;
 		}
@@ -276,16 +291,23 @@ bool DagOptim::compSymplification(NTYPE& node){
 		bool_node* momo = node.mother->mother;
 		bool_node* mofa = node.mother->father;
 		
-		if(mofa == node.father){
+		if(mofa == node.father || (isConst(node.father) && isConst(mofa) ) ){
 			momo = 	node.mother->father;;
 			mofa = node.mother->mother;
 		}
 		//At this point, if any of the two is equal to node.father, it will be momo
 		
-		if(momo == node.father){
+		
+
+		if(momo == node.father || (isConst(node.father) && isConst(momo))){
 			NTYPE* pnode = new NTYPE();
 			pnode->mother = mofa;
-			pnode->father = getCnode(0);
+			if(momo == node.father ){
+				pnode->father = getCnode(0);
+			}else{
+				pnode->father = getCnode( getIval(node.father) - getIval(momo) );
+				//cout<<"I JUST SAVED SOME CLAUSES A"<<endl;
+			}			
 			pnode->addToParents();					
 			rvalue  = pnode;
 			visit(*pnode);		
@@ -305,16 +327,21 @@ bool DagOptim::compSymplification(NTYPE& node){
 		bool_node* momo = node.father->mother;
 		bool_node* mofa = node.father->father;
 		
-		if(mofa == node.mother){
+		if(mofa == node.mother || ( (isConst(mofa)) && (isConst(node.mother)) )  ){
 			momo = 	node.father->father;;
 			mofa = node.father->mother;
 		}
-		//At this point, if any of the two is equal to node.father, it will be momo
+		//At this point, if any of the two is equal to node.mother, it will be momo
 		
-		if(momo == node.mother){
+		if(momo == node.mother|| ( (isConst(momo)) && (isConst(node.mother)) )){
 			NTYPE* pnode = new NTYPE();
 			pnode->father = mofa;
-			pnode->mother = getCnode(0);
+			if(momo==node.mother){
+				pnode->mother = getCnode(0);
+			}else{
+				pnode->mother = getCnode( getIval(node.mother) - getIval(momo) );
+				//cout<<"I JUST SAVED SOME CLAUSES B"<<endl;
+			}
 			pnode->addToParents();	
 			rvalue  = pnode;
 			visit(*pnode);

@@ -378,6 +378,7 @@ protected:
 	void findCycles(BooleanDAG& dag);
 	void breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes);
 public:
+	bool isTopLevel;
 	map<bool_node*, FastSet<bool_node> > funDependencies;
 	map<bool_node*, AbstractNodeValue> anv;
 	

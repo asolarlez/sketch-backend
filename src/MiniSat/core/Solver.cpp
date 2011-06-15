@@ -418,7 +418,7 @@ Clause* Solver::propagate()
 {
     Clause* confl     = NULL;
     int     num_props = 0;
-    volatile int avoidGccWeirdness;
+    volatile int avoidGccWeirdness=0;
 
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.

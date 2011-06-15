@@ -3,6 +3,7 @@
 #include "timerclass.h"
 
 #include "CommandLineArgs.h"
+#include "PrintInteresting.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -35,6 +36,29 @@ void NodesToSolver::process(BooleanDAG& bdag){
 
 */
 // #define Dout( out )      out 
+
+
+class PrintSource: public PrintInteresting{
+	vector<Tvalue> &node_ids;
+public:
+	PrintSource(vector<Tvalue> &nids):node_ids(nids){}
+	virtual void visit( ARRACC_node& node ){
+		int sz = node_ids[node.id].getSize();
+		for(int i=0; i<node.multi_mother.size(); ++i){
+			if(node_ids[node.multi_mother[i]->id].getSize() > (sz/2)-1){
+				tovisit[node.multi_mother[i]->id] = true;
+			}
+		}
+	}
+	virtual void print(BooleanDAG& bdag, int seed){
+		for(int i=0; i<=seed; ++i){
+			if(tovisit[i]){
+				int sz = node_ids[i].getSize();
+				cout<<"sz="<<sz<<"\t"<<bdag[i]->lprint()<<endl;
+			}
+		}
+	}
+};
 
 template<typename COMP> void
 NodesToSolver::processComparissons (bool_node& node)
@@ -89,9 +113,9 @@ template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
 	int tt = comp(quant1, quant2);
 	
-	if(false && !dir.getMng().isNegated() && tt > 33){ 
+	if(PARAMS->randBnd > 0 && !dir.getMng().isNegated() && abs(tt) > PARAMS->randBnd){ 
 		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
-		tt = (rand() % 33); 
+		tt = (rand() % (2*PARAMS->randBnd))-PARAMS->randBnd; 
 	}
 	return tt;
 }
@@ -365,6 +389,8 @@ NodesToSolver::processArith (bool_node &node)
 	mval.makeSparse (dir);
 	if( mval.getSize() > 200 ){ 
 		cout<<"Sparse representation size = "<<mval.getSize()<<endl;
+		//PrintSource ps(node_ids);
+		//ps.process(*tmpdag, node.mother->id);								
 		//tmpdag->printSlice(mother, cout);
 	}
 	bool_node* father = node.father;
@@ -445,8 +471,12 @@ NodesToSolver::processArith (bool_node &node)
 				//							ctimer.stop();
 			}else{
 				//							dtimer.restart();
-				int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
-				Assert(numbers.size() < INTEGERBOUND, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
+				int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));				
+				if(numbers.size() >= INTEGERBOUND){
+					PrintSource ps(node_ids);
+					ps.process(*tmpdag, node.id);
+					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
+				}
 				numbers[quant] = cvar;
 				++vals;
 				//							dtimer.stop();

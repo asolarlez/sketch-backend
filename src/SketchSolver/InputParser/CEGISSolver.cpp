@@ -262,7 +262,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
 	{
 		DagOptim cse(*newdag);			
-		
+		cse.isTopLevel = true;
 		for(int i=0; i<inodeList.size(); ++i){
 			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
 			int nbits;
