@@ -17,7 +17,7 @@ public:
 
 	}
 
-	fsiter<T>& operator=(fsiter<T>& f){
+	fsiter<T>& operator=(const fsiter<T>& f){
 		cur = f.cur;
 		end = f.end;
 		vers = f.vers;
@@ -128,9 +128,8 @@ public:
 	int size() const{
 		return _size;
 	}
-	void recompEnd(){
-		fsiter<T> tmp( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end(), vers);
-		_end = tmp;
+	void recompEnd(){		
+		_end = fsiter<T>( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end(), vers);
 	}
 
 	FastSet(void):_end(0)
