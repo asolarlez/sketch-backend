@@ -129,7 +129,8 @@ public:
 		return _size;
 	}
 	void recompEnd(){
-		_end = fsiter<T>( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end(), vers);
+		fsiter<T> tmp( ((FastSet<T>*) this)->store.end(), ((FastSet<T>*) this)->store.end(), vers);
+		_end = tmp;
 	}
 
 	FastSet(void):_end(0)
