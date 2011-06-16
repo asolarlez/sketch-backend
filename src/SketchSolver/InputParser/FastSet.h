@@ -17,7 +17,7 @@ public:
 
 	}
 
-	fsiter& operator=(fsiter& f){
+	fsiter<T>& operator=(fsiter<T>& f){
 		cur = f.cur;
 		end = f.end;
 		vers = f.vers;
