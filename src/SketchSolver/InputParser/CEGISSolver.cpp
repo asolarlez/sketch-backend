@@ -260,6 +260,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		
 	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
 	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
+	
 	{
 		DagOptim cse(*newdag);			
 		cse.isTopLevel = true;
@@ -282,7 +283,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		cse.process(*newdag);
 	}
 	Dout( newdag->print(cout) ); 
-		
+	
 	if(false){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);

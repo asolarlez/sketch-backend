@@ -137,6 +137,13 @@ public:
 		state = LIST;
 	}
 
+	void init(int low, int high){
+		valSet.clear();
+		this->low = low;
+		this->high = high;
+		state = RANGE;
+	}
+
 	void makeTop(){
 		valSet.clear();
 		low = 0;

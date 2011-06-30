@@ -91,15 +91,10 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			if(isTopLevel){
 				int s = 1;
 				int bnd = 1;
-				nv.init(0);
-				int N = inode->get_nbits();
-				for(int i=0; i<N; ++i){
-					bnd = bnd * 2;
-					while(s < bnd){
-						nv.insert(s);
-						++s;
-					}
+				for(int i=0; i<PARAMS->NINPUTS; ++i){
+					bnd = bnd*2;
 				}
+				nv.init(0, bnd*4);				
 			}else{
 				nv.makeTop();
 			}
