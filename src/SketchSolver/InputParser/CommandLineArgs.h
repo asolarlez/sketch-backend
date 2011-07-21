@@ -115,31 +115,38 @@ class CommandLineArgs{
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
             input_idx = ii+1;
+			continue;
         }
         if (string(argv[ii]) == "--bnd-int-range") {
             Assert(ii<(argc-1), "--bnd-int-range needs an extra parameter");
             input_idx = ii+2;
+			continue;
         }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
 	      input_idx = ii+1;
+		  continue;
 	    }
 		if( string(argv[ii]) == "-superChecks" ){	      
 	      superChecks = true;
 	      input_idx = ii+1;
+		  continue;
 	    }
 	    if( string(argv[ii]) == "-nosim" ){	      
 	      simulate = false;
 	      input_idx = ii+1;
+		  continue;
 	    }
 		if( string(argv[ii]) == "-nomemo" ){	      
 	      setMemo = false;
 	      input_idx = ii+1;
+		  continue;
 	    }
 		if( string(argv[ii]) == "-simiters" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
 	      simiters = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
+		  continue;
 	    }
 
 		if( string(argv[ii]) == "--bndwrand" ){	      
@@ -147,6 +154,7 @@ class CommandLineArgs{
 	      randBnd = atoi(argv[ii+1]);
 		  cout<<"BND W RAND = "<<randBnd<<endl;
 	      input_idx = ii+2;      
+		  continue;
 	    }
 
 		if( string(argv[ii]) == "-simplifycex" ){
@@ -156,26 +164,31 @@ class CommandLineArgs{
 		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 
 			  "The argument to simplifycex should be one of \n NOSIM = no simplify \n SIMSIM = simple simplify \n RECSIM = recursive simplify ");
 	      input_idx = ii+2;
+		  continue;
 	    }
 
 	    if( string(argv[ii]) == "-seedsize" ){
 	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
 	      seedsize = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
+		  continue;
 	    }
 		if( string(argv[ii]) == "-alterARRACS" ){
 	    	alterARRACS = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 		if( string(argv[ii]) == "--assumebcheck" ){
 	    	assumebcheck = true;
 			cout << "assuming  bounds checks" << endl;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 		if( string(argv[ii]) == "--olevel" ){
 	      Assert(ii<(argc-1), "--olevel needs an extra parameter");
 	      olevel = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
+		  continue;
 	    }
 
 	    
@@ -183,54 +196,65 @@ class CommandLineArgs{
 	      Assert(ii<(argc-1), "--bnd-inline-amnt needs an extra parameter");
 	      inlineAmnt = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
+		  continue;
 	    }
 	    
 	    if( string(argv[ii]) == "-output2QBF" ){	    	
 	    	output2QBF = true;
 			input_idx = ii+1;
+			continue;
 	    }
 	    
 	    if( string(argv[ii]) == "-outputAIG" ){
 	    	outputAIG = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 	    
 		if( string(argv[ii]) == "-ufunSymmetry" ){
 	    	ufunSymmetry = true;
 			input_idx = ii+1;      
+			continue;
 	    }
 
 		if( string(argv[ii]) == "--print-cex" ){
 	    	showInputs = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 		if( string(argv[ii]) == "-showctrls" ){
 	    	showControls = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 		if( string(argv[ii]) == "-interactive" ){
 	    	interactive = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 	    
 	    if( string(argv[ii]) == "-printDiagnostics" ){
 	    	printDiag = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 	    
 	    if( string(argv[ii]) == "-outputEuclid" ){
 	    	outputEuclid = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 
 		if( string(argv[ii]) == "-mergeFunctions" ){
 	    	mergeFunctions = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 
 		if( string(argv[ii]) == "-showDAG" ){
 	    	showDAG = true;
 	      input_idx = ii+1;      
+		  continue;
 	    }
 		
 
@@ -240,6 +264,7 @@ class CommandLineArgs{
 		  INp::overrideNCtrls=true;
 		  cout<<"Overriding controls with "<<INp::NCTRLS<<endl;
 	      input_idx = ii+2;      
+		  continue;
 	    }
 	    if( string(argv[ii]) == "--bnd-inbits" ){
 	      Assert(ii<(argc-1), "--bnd-inbits needs an extra parameter");
@@ -247,18 +272,21 @@ class CommandLineArgs{
 		  INp::overrideInputs=true;
 		  cout<<"Overriding inputs with "<<NINPUTS<<endl;
 	      input_idx = ii+2;      
+		  continue;
 	    }
 	    if( string(argv[ii]) == "-checkpoint" ){
 	      Assert(ii<(argc-1), "-checkpoint needs an extra parameter");
 	      hasCpt = true;
 		  cptfile = argv[ii+1]; 
 	      input_idx = ii+2;      
+		  continue;
 	    }
 	    if( string(argv[ii]) == "-restore" ){
 	      Assert(ii<(argc-1), "-restore needs an extra parameter");
 	      hasRestore = true;
 		  restorefile = argv[ii+1];
 	      input_idx = ii+2;
+		  continue;
 	    }
 
 		if( string(argv[ii]) == "-timeout" ){
@@ -266,6 +294,7 @@ class CommandLineArgs{
 	      timeout = atoi(argv[ii+1]);	  
 		  hastimeout=true;
 	      input_idx = ii+2;
+		  continue;
 	    } 
 
 
@@ -274,6 +303,7 @@ class CommandLineArgs{
 	      verbosity = atoi(argv[ii+1]);	  
 		  hastimeout=true;
 	      input_idx = ii+2;
+		  continue;
 	    } 
 
 
@@ -283,17 +313,20 @@ class CommandLineArgs{
 	      Assert(ii<(argc-1), "--seed needs an extra parameter");
 	      seed = atoi(argv[ii+1]);	  
 	      input_idx = ii+2;
+		  continue;
 	    } 
 	    if( string(argv[ii]) == "-terminateafter" ){
 	      Assert(ii<(argc-1), "-terminateafter needs an extra parameter");
 	      terminateafter = atoi(argv[ii+1]);	  
 	      input_idx = ii+2;
+		  continue;
 	    } 
 	    if ( (string(argv[ii]) == "-o") || (string(argv[ii]) == "--output") ) {
 	      Assert(ii<(argc-1), "-o / --output needs an extra parameter");
           //string tmp(argv[ii+1]);
           outputFname = argv[ii+1];
 	      input_idx = ii+2;
+		  continue;
 	    }
 	    if( string(argv[ii]) == "-synth" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
@@ -304,10 +337,12 @@ class CommandLineArgs{
 		  if( synth == "MINI" ) synthtype = SATSolver::MINI;
 		  cout<<" synth = |"<<synth<<"|"<<endl;
 	      input_idx = ii+2;
+		  continue;
 	    }
 	    if (string (argv[ii]) == "-bvectarith") {
 		doBvectArith = true;
 		input_idx = ii + 1;
+		continue;
 	    }
 	    
 	    if( string(argv[ii]) == "-verif" ){
@@ -319,7 +354,12 @@ class CommandLineArgs{
   		  if( verif == "MINI" ) veriftype = SATSolver::MINI;	      
   		  cout<<" verif = |"<<verif<<"|"<<endl;
 	      input_idx = ii+2;
+		  continue;
 	    }        
+		if(argv[ii][0] == '-'){
+			cout<<"Unknown flag "<<string(argv[ii])<<endl;
+			input_idx = ii+1;
+		}
 	  }
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];

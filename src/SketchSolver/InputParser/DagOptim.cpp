@@ -1398,7 +1398,7 @@ void DagOptim::visit( ARRACC_node& node ){
 		
 		if( typeid(*node.multi_mother[0]) == typeid(node)  ){
 			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
-			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.children.size() < 2){
+			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == bool_node::BOOL &&  mm0.children.size() < 2){
 				OR_node* on = new OR_node();
 				on->mother = node.mother;
 				on->father = mm0 .mother;
@@ -1957,8 +1957,7 @@ void DagOptim::process(BooleanDAG& dag){
 
 			if(dag[i] != node){					
 					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
-					dag.replace(i, node);
-					
+					dag.replace(i, node);					
 			}
 		}
 	}
