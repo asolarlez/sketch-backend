@@ -65,9 +65,10 @@ void NodesToSEQ::complete(vector<bool_node*>& initState){
 	vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
 	vector<string> inname;
 	for(int i=0; i<ins.size(); ++i){
-		if(ins[i]->name != "SCHEDULE"){
-			input.push_back( node_ids[ins[i]->id] );
-			inname.push_back(ins[i]->get_name());
+		SRC_node* srcn = dynamic_cast<SRC_node*>(ins[i]);
+		if(srcn->name != "SCHEDULE"){
+			input.push_back( node_ids[srcn->id] );
+			inname.push_back(srcn->get_name());
 		}
 	}
 

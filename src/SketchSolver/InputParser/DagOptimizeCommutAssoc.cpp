@@ -15,8 +15,8 @@ DagOptimizeCommutAssoc::~DagOptimizeCommutAssoc(void)
 
 
 
-bool_node* CAoptimizer::newNode(bool_node* mother, bool_node* father){
-	bool_node* bn = newBoolNode(bnType);
+bool_node* CAoptimizer::lnewNode(bool_node* mother, bool_node* father){
+	bool_node* bn = newNode(bnType);
 	
 	bn->mother = mother;
 	bn->father = father;
@@ -33,7 +33,7 @@ bool_node* CAoptimizer::mergeInputs(int input1, int input2, map<inputId, inputNo
 	inputNode& in1 = inputToInterf[input1];
 	inputNode& in2 = inputToInterf[input2];	
 	//First, we create a new boolean node corresponding to the merge of the two old nodes:
-	bool_node* node = newNode(in1.node, in2.node);	
+	bool_node* node = lnewNode(in1.node, in2.node);	
 	//Then we create the new input node.
 	inputNode& out = inputToInterf[node->id];
 	out.node = node;

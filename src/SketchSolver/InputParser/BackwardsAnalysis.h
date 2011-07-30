@@ -67,24 +67,24 @@ public:
 		return false;
 	}
 
-	void addDerivedDatums(set<Datum>& sd) const{
+	void addDerivedDatums(FastMap<bool_node, int>& sd) const{
 		if(node->type == bool_node::AND && val == 1){
 			Datum d1(node->mother, 1);
 			Datum d2(node->father, 1);
-			sd.insert(d1);
+			sd.insert(d1.node, d1.val);
 			d1.addDerivedDatums(sd);
-			sd.insert(d2);
+			sd.insert(d2.node, d2.val);
 			d2.addDerivedDatums(sd);
 		}
 		if(node->type == bool_node::OR && val == 0){
 			Datum d1(node->mother, 0);
 			Datum d2(node->father, 0);
-			if(sd.count(d1)==0){
-				sd.insert(d1);
+			if(sd.count(d1.node)==0){
+				sd.insert(d1.node, d1.val);
 				d1.addDerivedDatums(sd);
 			}
-			if(sd.count(d2)==0){
-				sd.insert(d2);
+			if(sd.count(d2.node)==0){
+				sd.insert(d2.node, d2.val);
 				d2.addDerivedDatums(sd);
 			}
 		}
@@ -92,11 +92,11 @@ public:
 			if(node->mother->type == bool_node::CONST){
 				int C = dynamic_cast<CONST_node*>(node->mother)->getVal();
 				Datum d1(node->father, val - C);
-				sd.insert(d1);
+				sd.insert(d1.node, d1.val);
 			}else{
 				int C = dynamic_cast<CONST_node*>(node->father)->getVal();
 				Datum d1(node->mother, val - C);
-				sd.insert(d1);
+				sd.insert(d1.node, d1.val);
 			}
 			return ;
 		}
@@ -122,11 +122,11 @@ inline bool operator<(const Datum& d1, const Datum& d2){
 }
 
 class Info{
-	set<Datum> known;
+	FastMap<bool_node, int> known;
 	typedef enum{ BOTTOM, MIDDLE, TOP} State;
 	State state;
 	int hasD;
-	set<Datum> temp;
+	FastMap<bool_node, int> temp;
 
 public:
 	Info(){
@@ -135,8 +135,8 @@ public:
 	}
 	string lprint(){
 		stringstream str;
-		for(set<Datum>::iterator it = known.begin(); it != known.end(); ++it){
-			str<<it->node->lprint()<<"\t== "<<it->val<<endl;
+		for(FastMap<bool_node, int>::iterator it = known.begin(); it != known.end(); ++it){
+			str<<it->first->lprint()<<"\t== "<<it->second<<endl;
 		}
 		return str.str();
 	}
@@ -151,7 +151,7 @@ public:
 
 	void push(const Datum& d){
 		Assert(!hasD, "Only one datum can be pushed at a time");
-		temp.insert(d);
+		temp.insert(d.node, d.val);
 		if(d.hasDerivedDatums()){
 			d.addDerivedDatums(temp);
 		}
@@ -164,68 +164,44 @@ public:
 		temp.clear();
 	}
 
-	void filter(set<Datum>& filter){
-		Assert(hasD, "This is to filter temp, so hadD must be true");
-		set<Datum>::iterator fit = filter.begin();
-		set<Datum>::iterator tit = temp.begin();
+	void filter(FastMap<bool_node,int>& filter){
+		Assert(hasD, "This is to filter temp, so hadD must be true");		
+		FastMap<bool_node,int>::iterator tit = temp.begin();
 		while(tit != temp.end()){
-			while(fit != filter.end() &&  fit->node->id < tit->node->id){
-				++fit;
-			}
-			if(fit == filter.end()){ return; }
-			while(tit != temp.end() && fit->node->id == tit->node->id){
-				temp.erase(tit++);
-			}
-			while(tit != temp.end() && fit->node->id > tit->node->id){
+			if(filter.count(tit->first)){				
+				temp.erase(tit);
 				++tit;
-			}
+			}else{
+				++tit;
+			}			
 		}
 	}
 
-	void pop(set<Datum>& out){
+	void pop(FastMap<bool_node,int>& out){
 		Assert(hasD, "Only one datum can be pushed at a time");
 		Assert(out.size()==0, "The out should be empty");
 		hasD = false;
 		swap(out, temp);
 	}
 
-	bool seek(bool_node* node, set<Datum>& ds, int& out){
-		set<Datum>::iterator iter = ds.lower_bound(Datum(node, INT_MIN));
-		if(iter == ds.end()){ return false; }
-		if(node->type == bool_node::NOT){
-				if(iter->node == node->mother){ 
-					out = iter->val; 
-					out = 1-out;
-					return true; 
-				}
-		}else{
-			if(iter->node == node){
-				out = iter->val; 
-				return true; 
+	
+ 
+	bool getValue(bool_node* node, int& out){
+		if(hasD ){			
+			FastMap<bool_node,int>::iterator tit = temp.find(node);
+			if(tit!= temp.end()){
+				out = tit->second;
+				return true;
 			}
+		}
+		FastMap<bool_node,int>::iterator vit =  known.find(node);
+		if(vit!= known.end()){
+			out = vit->second;
+			return true;
 		}
 		return false;
 	}
- 
-	bool getValue(bool_node* node, int& out){
-		if(hasD && seek(node, temp, out)){			
-			return true;
-		}
-		return seek(node, known, out);		
-	}
-	/*
-	Info& add(bool_node* node, int val){
-		int tmp;
-		Assert(!getValue(node, tmp), "Node should not already be here");
-		known.insert(Datum(node, val));
-	}
-	
-	Info& add(bool_node* node){
-		int tmp;
-		Assert(!getValue(node, tmp), "Node should not already be here");
-		known.insert(Datum(node));
-	}
-	*/
+
 
 	Info& operator+=(const Info& inf){
 		Assert(!hasD, "This shouldn't happen");
@@ -239,14 +215,14 @@ public:
 				}
 			}
 		}else{
-			set<Datum> tmp;
+			FastMap<bool_node,int> tmp;
 			if(inf.hasD){
-				set<Datum> sd = inf.known;
+				FastMap<bool_node,int> sd = inf.known;
 				sd.insert(inf.temp.begin(), inf.temp.end());
-				set_intersection(known.begin(), known.end(), sd.begin(), sd.end(), inserter(tmp, tmp.begin()));
+				tmp.insertIntersection(known, sd);				
 				swap(tmp, known);
-			}else{				
-				set_intersection(known.begin(), known.end(), inf.known.begin(), inf.known.end(), inserter(tmp, tmp.begin()));
+			}else{	
+				tmp.insertIntersection(known, inf.known);				
 				swap(tmp, known);				
 			}
 			state = MIDDLE;

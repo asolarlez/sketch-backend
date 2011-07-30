@@ -92,18 +92,11 @@ void NodeEvaluator::visit( NEG_node& node ){
 void NodeEvaluator::visit( CONST_node& node ){
 	setbn(node, node.getVal());
 }
-void NodeEvaluator::visit( GT_node& node ){
-	setbn(node, i(*node.mother) > i(*node.father));
-}
-void NodeEvaluator::visit( GE_node& node ){
-	setbn(node, i(*node.mother) >= i(*node.father));
-}
+
 void NodeEvaluator::visit( LT_node& node ){
 	setbn(node, i(*node.mother) < i(*node.father));
 }
-void NodeEvaluator::visit( LE_node& node ){
-	setbn(node, i(*node.mother) <= i(*node.father));
-}
+
 void NodeEvaluator::visit( EQ_node& node ){
 	setbn(node, i(*node.mother) == i(*node.father));
 }

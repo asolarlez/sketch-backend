@@ -51,18 +51,11 @@ int DeriveImplications::getid(bool_node& n){
 	}
 }
 
-void DeriveImplications::visit( GT_node& node ){
-	ineqmap[ idx(node) ].push_back(&node);
-}
-void DeriveImplications::visit( GE_node& node ){
-	
-}
+
 void DeriveImplications::visit( LT_node& node ){
 	ineqmap[ idx(node) ].push_back(&node);
 }
-void DeriveImplications::visit( LE_node& node ){
 
-}
 void DeriveImplications::visit( EQ_node& node ){
 	ineqmap[ idx(node) ].push_back(&node);
 }

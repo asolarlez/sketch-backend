@@ -180,18 +180,9 @@ public:
 	}
 	virtual void visit( MOD_node& node ){
 		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" %_16 "<<father_name(node, false)<<"; "<<endl;		
-	}
-	virtual void visit( GT_node& node ){
-		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" > "<<father_name(node, false)<<"; "<<endl;		
-	}
-	virtual void visit( GE_node& node ){
-		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" >= "<<father_name(node, false)<<"; "<<endl;		
-	}
+	}	
 	virtual void visit( LT_node& node ){
 		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" < "<<father_name(node, false)<<"; "<<endl;		
-	}
-	virtual void visit( LE_node& node ){
-		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" <= "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( EQ_node& node ){
 		out<<node_name(node, true)<<" := "<<mother_name(node, false)<<" = "<<father_name(node, false)<<"; "<<endl;		

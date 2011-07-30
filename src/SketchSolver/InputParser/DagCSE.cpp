@@ -255,27 +255,7 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  }
  
  
- void DagCSE::visit(  GT_node& node ){
- 	Dtime(stimer.restart();)
- 	
- 	int mid = node.mother == NULL? -1: node.mother->globalId;
- 	int fid = node.father == NULL? -1: node.father->globalId;
- 	
- 	
-	setStr(fid, '<', mid);
- 	
- 	Dtime(stimer.stop();)
- }
- void DagCSE::visit(  GE_node& node ){
- 	Dtime(stimer.restart();)
- 	
- 	int mid = node.mother == NULL? -1: node.mother->globalId;
- 	int fid = node.father == NULL? -1: node.father->globalId;
- 	
-	setStr(fid, '{', mid);
 
- 	Dtime(stimer.stop();)
- }
  
  void DagCSE::visit(  LT_node& node ){
  	Dtime(stimer.restart();)
@@ -289,16 +269,6 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  }
  
  
- void DagCSE::visit(  LE_node& node ){
- 	Dtime(stimer.restart();)
- 	
- 	int mid = node.mother == NULL? -1: node.mother->globalId;
- 	int fid = node.father == NULL? -1: node.father->globalId;
- 	
-	setStr(mid, '{', fid);
- 	
- 	Dtime(stimer.stop();)
- }
  void DagCSE::visit(  EQ_node& node ){
  	Dtime(stimer.restart();)
  	

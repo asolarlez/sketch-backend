@@ -19,10 +19,7 @@ public:
 	vector<pair<bool_node*, int> >& getimps(bool_node* n, bool rev);
 	DeriveImplications(void);
 	~DeriveImplications(void);
-	virtual void visit( GT_node& node );
-	virtual void visit( GE_node& node );
 	virtual void visit( LT_node& node );
-	virtual void visit( LE_node& node );
 	virtual void visit( EQ_node& node );
 	virtual void visit( ASSERT_node &node);	
 	virtual void process(BooleanDAG& bdag);

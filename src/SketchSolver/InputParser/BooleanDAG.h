@@ -43,7 +43,7 @@ inline bool comp_id(bool_node* n1, bool_node* n2){
 
 
 inline bool comp_layer(bool_node* n1, bool_node* n2){
-  return n1->layer < n2->layer || ( (n1->layer == n2->layer) && n1->ion_pos<n2->ion_pos );
+  return n1->layer < n2->layer ;
 }
 
 //extern timerclass TTMMPP;
@@ -63,7 +63,7 @@ class BooleanDAG
 
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
-  map<string, bool_node*> named_nodes;
+  map<string, INTER_node*> named_nodes;
 
   map<bool_node::Type, vector<bool_node*> > nodesByType;
   
@@ -76,7 +76,7 @@ class BooleanDAG
   void compute_layer_sizes();
 
   void shareparent_remove(int i);
-  bool_node* create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
+  INTER_node* create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
 
 public:
 Dllist assertions;
@@ -85,8 +85,8 @@ Dllist assertions;
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph creation.
   ////////////////////////////////////////////////////////////////////////
-  bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
-  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
+  INTER_node* create_inputs(int n, const string& gen_name=string("INPUT"));
+  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
 
   void growInputIntSizes();
 
@@ -97,12 +97,12 @@ Dllist assertions;
   /**
 	Creates an N-bit output named gen_name, connected to internal node nodeToOutput.
   */
-  bool_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
-  bool_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
+  INTER_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
+  INTER_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
 
   bool_node* new_node(bool_node* mother, bool_node* father, bool_node::Type t);
 	
-  void nameNode(bool_node* node){ named_nodes[node->name] = node; }
+  //void nameNode(bool_node* node){ named_nodes[node->name] = node; }
 
 
   ////////////////////////////////////////////////////////////////////////

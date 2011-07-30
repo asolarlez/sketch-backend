@@ -79,18 +79,11 @@ void NodeVisitor::visit( NEG_node& node ){
 void NodeVisitor::visit( CONST_node& node ){
 	visitBool(node);	
 }
-void NodeVisitor::visit( GT_node& node ){
-	visitBool(node);	
-}
-void NodeVisitor::visit( GE_node& node ){
-	visitBool(node);	
-}
+
 void NodeVisitor::visit( LT_node& node ){
 	visitBool(node);	
 }
-void NodeVisitor::visit( LE_node& node ){
-	visitBool(node);	
-}
+
 void NodeVisitor::visit( EQ_node& node ){
 	visitBool(node);	
 }

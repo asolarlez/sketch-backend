@@ -443,10 +443,9 @@ public:
 	virtual void visit( MOD_node& node );
 	virtual void visit( NEG_node& node );
 	
-	virtual void visit( GT_node& node );
-	virtual void visit( GE_node& node );
+	
 	virtual void visit( LT_node& node );
-	virtual void visit( LE_node& node );
+	
 	virtual void visit( EQ_node& node );
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
@@ -461,6 +460,9 @@ public:
 	virtual bool isConst(const bool_node* n1);
 	virtual bool getBval(const bool_node* n1);
 	virtual int getIval(const bool_node* n1);
+	bool_node*  addGE(bool_node* mother, bool_node* father);
+	bool_node*  addLE(bool_node* mother, bool_node* father);
+	bool_node*  addGT(bool_node* mother, bool_node* father);
 };
 
 

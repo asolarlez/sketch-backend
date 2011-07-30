@@ -109,20 +109,21 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
-			for(int i=0; i<controls.size(); ++i){				
-				bool_node* actual = dag.unchecked_get_node( controls[i]->name );
+			for(int i=0; i<controls.size(); ++i){	
+				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
+				bool_node* actual = dag.unchecked_get_node( ctrl->name );
 				if(actual != NULL){
 					nmap[controls[i]->id] = actual;
 					actual->children.erase((bool_node*)&node);
 //					actual->children.insert(controls[i]->children.begin(), controls[i]->children.end());
 				}else{
-					if(seenControls.count(controls[i]->name)>0){						
-						nmap[controls[i]->id] = seenControls[controls[i]->name];
+					if(seenControls.count(ctrl->name)>0){						
+						nmap[controls[i]->id] = seenControls[ctrl->name];
 					}else{
 						bool_node* tmp = controls[i]->clone(false);
 						addNode( tmp );
 						nmap[controls[i]->id] = tmp;
-						seenControls[tmp->name] = tmp;
+						seenControls[ctrl->name] = tmp;
 					}
 				}
 			}

@@ -22,7 +22,7 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 }
 
-bool_node::bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), ion_pos(0), otype(BOTTOM)
+bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(BOTTOM), type(t)
   { 
 	  layer = 0;
 #ifdef SCHECKMEM
@@ -30,8 +30,8 @@ bool_node::bool_node():globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), fathe
 #endif
   }  
   bool_node::bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
-  								 name(bn.name), father(bn.father), 
-  								 flag(bn.flag), id(bn.id), ion_pos(bn.ion_pos), 
+  								 father(bn.father), 
+  								 flag(bn.flag), id(bn.id), 
 								 otype(bn.otype), type(bn.type)
   { 
       if(copyChildren){ children = bn.children; }
@@ -215,9 +215,7 @@ void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_no
 
 string bool_node::get_name() const {
     stringstream str;
-    if(name.size() > 0)
-      str<<name<<"__"<<get_tname();
-    else{      
+    {      
       str<<"name_"<<abs(id)<<"__"<<get_tname();
       
     }    

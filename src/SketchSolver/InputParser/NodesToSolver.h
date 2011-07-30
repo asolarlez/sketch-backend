@@ -118,11 +118,8 @@ public:
     virtual void visit (DIV_node &node);
     virtual void visit (NEG_node &node);
     virtual void visit (MOD_node &node);
-    virtual void visit( CONST_node& node );
-    virtual void visit (GT_node &node);
-    virtual void visit (GE_node &node);
-    virtual void visit (LT_node &node);
-    virtual void visit (LE_node &node);
+    virtual void visit( CONST_node& node );    
+    virtual void visit (LT_node &node);    
     virtual void visit (EQ_node &node);
     virtual void visit (ARRASS_node &node);
     virtual void visit (ACTRL_node &node);

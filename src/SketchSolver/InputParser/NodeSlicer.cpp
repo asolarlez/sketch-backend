@@ -110,30 +110,14 @@ void NodeSlicer::visit( CONST_node& node ){
 	if(isMarked(node)){ return; }
 	mark(node);
 }
-void NodeSlicer::visit( GT_node& node ){
-	if(isMarked(node)){ return; }
-	mark(node);
-	node.mother->accept(*this);
-	node.father->accept(*this);
-}
-void NodeSlicer::visit( GE_node& node ){
-	if(isMarked(node)){ return; }
-	mark(node);
-	node.mother->accept(*this);
-	node.father->accept(*this);
-}
+
 void NodeSlicer::visit( LT_node& node ){
 	if(isMarked(node)){ return; }
 	mark(node);
 	node.mother->accept(*this);
 	node.father->accept(*this);
 }
-void NodeSlicer::visit( LE_node& node ){
-	if(isMarked(node)){ return; }
-	mark(node);
-	node.mother->accept(*this);
-	node.father->accept(*this);
-}
+
 void NodeSlicer::visit( EQ_node& node ){
 	if(isMarked(node)){ return; }
 	mark(node);

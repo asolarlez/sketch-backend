@@ -22,25 +22,26 @@ bool_node* BooleanDAGCreator::get_node(const string& name){
   if(name.size()==0){
     fth = NULL;
   }else{
-	if(named_nodes.find(name) != named_nodes.end()){
-		fth = named_nodes[name];	
-	}else{
-		fth = optim.getCnode(-333);
-		dag->setOffset(optim.newNodesSize());
-	}
+	  if(!named_nodes.get(name.c_str(), name.size(), fth)){
+		  fth = optim.getCnode(-333);
+		  dag->setOffset(optim.newNodesSize());
+	  }	
   }
   return fth;
 }
 
 void BooleanDAGCreator::getMotherFather(const string& mother, 
 					 const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth){
-  Assert(father.size()==0 || named_nodes.find(father) != named_nodes.end(), "You are using a variable which was never initialized: "<<father);
-  Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");    
-  Assert(mother.size()==0 ||named_nodes.find(mother) != named_nodes.end(), "You are using a variable which was never initialized: "<< mother);
   
-  fth = get_node(father);
-
-  mth = get_node(mother);  
+  Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");    
+  
+  
+  if(!named_nodes.get(father.c_str(), father.size(), fth)){
+	  Assert(false, "You are using a variable which was never initialized: "<<father);
+  }
+  if(!named_nodes.get(mother.c_str(), mother.size(), mth)){
+	  Assert(false, "You are using a variable which was never initialized: "<< mother);
+  }
 }
 
 /* Creates a new node of type 't' with inputs 'mother' and 'father' as its
@@ -69,7 +70,7 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
 //  tmp = dag->new_node(mth, fth, t);    ARMANDO: This is a big performance bug.
 
-  tmp = newBoolNode(t);
+  tmp = newNode(t);
   tmp->father = fth;
   tmp->mother = mth;    
   //tmp->name = name;
@@ -130,28 +131,23 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
   thenode->father = fth;
   thenode->mother = mth;  
-  string s;    
-  swap(thenode->name, s);
+  
   thenode = optimizeAndAdd(thenode);
-  if(s.size()>0){
-	named_nodes[s] = thenode;
-  }
+  
   return thenode;
 }
 
 
 
 void BooleanDAGCreator::alias(const string& ssource,  bool_node* starg){
-  	map<string, bool_node*>::iterator it = named_nodes.find(ssource);		
-  	if( it != named_nodes.end() ){
-		Assert(it->second->type==bool_node::DST, "Only destination nodes can be assigned after being defined "<<ssource);
+	bool_node* dst;
+	if(named_nodes.condAdd(ssource.c_str(), ssource.size(), starg, dst)){
+		Assert(dst->type==bool_node::DST, "Only destination nodes can be assigned after being defined "<<ssource);
 
-		Assert(it->second->mother == NULL, "The mother of the DST node had already been defined. DST="<<ssource);
-		it->second->mother = starg;
-		it->second->addToParents();		
-	}else{
-		named_nodes[ssource] = starg;		
-  	}
+		Assert(dst->mother == NULL, "The mother of the DST node had already been defined. DST="<<ssource);
+		dst->mother = starg;
+		dst->addToParents();		
+	}  	
   }
 
 
@@ -165,33 +161,40 @@ bool_node* BooleanDAGCreator::create_const(int n){
 
 
 
-bool_node* BooleanDAGCreator::create_inputs(int n, const string& gen_name){
-	bool_node* tmp = dag->create_inputs(n, gen_name);
-	named_nodes[tmp->name]= tmp;
+INTER_node* BooleanDAGCreator::create_inputs(int n, const string& gen_name){
+	INTER_node* tmp = dag->create_inputs(n, gen_name);
+	bool_node* f;
+	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
+	Assert(!flag, "Two inputs with the same name!");	
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }
 
-bool_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
+INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	bool_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
-	named_nodes[tmp->name]= tmp;
+	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
+	bool_node* f;
+	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);	
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }
 
-bool_node* BooleanDAGCreator::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
+INTER_node* BooleanDAGCreator::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	bool_node* tmp =  dag->create_outputs(n, nodeToOutput, gen_name);
-	named_nodes[tmp->name]= tmp;
+	INTER_node* tmp =  dag->create_outputs(n, nodeToOutput, gen_name);
+	bool_node* f;
+	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
+	Assert(!flag, "Two inputs with the same name!");	
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }
 
-bool_node* BooleanDAGCreator::create_outputs(int n, const string& gen_name){
+INTER_node* BooleanDAGCreator::create_outputs(int n, const string& gen_name){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	bool_node* tmp =  dag->create_outputs(n, gen_name);
-	named_nodes[tmp->name]= tmp;
+	INTER_node* tmp =  dag->create_outputs(n, gen_name);
+	bool_node* f;
+	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
+	Assert(!flag, "Two inputs with the same name!");	
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }

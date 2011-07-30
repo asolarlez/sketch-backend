@@ -695,7 +695,6 @@ NodesToSolver::visit (NEG_node &node)
 void
 NodesToSolver::visit (CTRL_node &node)
 {
-    int iid = node.ion_pos;
     
     if(  node_values.find(&node) != node_values.end() ){
 		if( node.get_nbits() > 1 ){
@@ -1012,41 +1011,6 @@ NodesToSolver::visit (LT_node &node)
 #endif /* HAVE_BVECTARITH */
 }
 
-void
-NodesToSolver::visit (LE_node &node)
-{
-    Dout (cout << " LE " << endl);
-    if (checkParentsChanged (node, true))
-#ifdef HAVE_BVECTARITH
-	intBvectLe (node);
-#else
-	processComparissons<less_equal<int> > (node);
-#endif /* HAVE_BVECTARITH */
-}
-
-void
-NodesToSolver::visit (GT_node &node)
-{
-    Dout (cout << " GT " << endl);
-    if (checkParentsChanged (node, true))
-#ifdef HAVE_BVECTARITH
-	intBvectGt (node);
-#else
-	processComparissons<greater<int> > (node);
-#endif /* HAVE_BVECTARITH */
-}
-
-void
-NodesToSolver::visit (GE_node &node)
-{
-    Dout (cout << " GE " << endl);
-    if (checkParentsChanged (node, true))
-#ifdef HAVE_BVECTARITH
-	intBvectGe (node);
-#else
-	processComparissons<greater_equal<int> > (node);
-#endif /* HAVE_BVECTARITH */
-}
 
 
 

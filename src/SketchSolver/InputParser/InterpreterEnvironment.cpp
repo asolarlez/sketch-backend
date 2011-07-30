@@ -169,8 +169,10 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");	
 		for(int i=0; i<specIn.size(); ++i){
-			Dout( cout<<"Matching inputs spec: "<<sketchIn[i]->name<<" with sketch: "<<specIn[i]->name<<endl );
-			sketch->rename(sketchIn[i]->name, specIn[i]->name);
+			SRC_node* sknode = dynamic_cast<SRC_node*>(sketchIn[i]);
+			SRC_node* spnode = dynamic_cast<SRC_node*>(specIn[i]);
+			Dout( cout<<"Matching inputs spec: "<<sknode->name<<" with sketch: "<<spnode->name<<endl );
+			sketch->rename(sknode->name, spnode->name);
 			if(sketchIn[i]->getOtype() == bool_node::BOOL){
 				inbits++;
 			}else{
@@ -190,7 +192,9 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		vector<bool_node*>& sketchDST = sketch->getNodesByType(bool_node::DST);
 		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec and sketch must match");	
 		for(int i=0; i<sketchDST.size(); ++i){
-			sketch->rename(sketchDST[i]->name, specDST[i]->name);			
+			DST_node* spnode = dynamic_cast<DST_node*>(specDST[i]);
+			DST_node* sknode = dynamic_cast<DST_node*>(sketchDST[i]);
+			sketch->rename(sknode->name, spnode->name);			
 		}
 	}
 
@@ -431,7 +435,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}*/
 
 	
-	if(params.olevel >= 5){
+	if(params.olevel >= 5){		
 		BackwardsAnalysis opt;
 		//cout<<"BEFORE: "<<endl;
 		//result->print(cout);

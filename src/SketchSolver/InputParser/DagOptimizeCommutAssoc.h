@@ -75,7 +75,7 @@ class CAoptimizer{
 	void addInternal(bool_node& bn, set<int>* cset);
 	void addInterface(bool_node& bn, set<int>* cset);
 
-	bool_node* newNode(bool_node* mother, bool_node* father);
+	bool_node* lnewNode(bool_node* mother, bool_node* father);
 	bool_node* getNode(int id);
 	bool_node*  mergeInputs(int input1, int input2, map<inputId, inputNode >& inputToInterf, map<int, set<int> >& interfToInput, map<pair<int, int>, int>& distances, bool mngDistances = false);
 

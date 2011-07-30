@@ -62,7 +62,7 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 		if(n->father != NULL){
 			sliceH(n->father, bd);
 		}
-		if(n->type==bool_node::ARITH){
+		if(n->isArith()){
 			arith_node* an = dynamic_cast<arith_node*>(n);
 			for(int i=0; i<an->multi_mother.size(); ++i){
 				sliceH(an->multi_mother[i], bd);
@@ -221,12 +221,14 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	
 	
 	//
-	
-	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
-	if(it != named_nodes.end() && it->second==onode){
-		named_nodes.erase(it);
+	if(onode->isInter()){
+		INTER_node* inonode = dynamic_cast<INTER_node*>(onode);
+		map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+		if(it != named_nodes.end() && it->second==inonode){
+			named_nodes.erase(it);
+		}
 	}
-	
+
 	
 	
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
@@ -268,9 +270,12 @@ void BooleanDAG::removeNullNodes(){
 void BooleanDAG::remove(int i){
 	bool_node* onode = nodes[i];	
 	onode->dislodge();
-	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
-	if(it != named_nodes.end() && it->second==onode){
-		named_nodes.erase(it);
+	if(onode->isInter()){
+		INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
+		map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+		if(it != named_nodes.end() && it->second==inonode){
+			named_nodes.erase(it);
+		}
 	}
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
@@ -307,10 +312,12 @@ void BooleanDAG::shareparent_remove(int i){
     }
   }
   
-
-	map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
-	if(it != named_nodes.end() && it->second==onode){
-		named_nodes.erase(it);
+  	if(onode->isInter()){
+		INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
+		map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+		if(it != named_nodes.end() && it->second==inonode){
+			named_nodes.erase(it);
+		}
 	}
   
   
@@ -322,6 +329,7 @@ void BooleanDAG::shareparent_remove(int i){
 
 
 void BooleanDAG::repOK(){
+	cout<<"*** DOING REPOK ****"<<endl;
 
 	map<bool_node::Type, set<bool_node*> > tsets;
 	for(map<bool_node::Type, vector<bool_node*> >::iterator it = nodesByType.begin(); it != nodesByType.end(); ++it){
@@ -334,8 +342,11 @@ void BooleanDAG::repOK(){
 		}		
 	}
 
+	  for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
+		  Assert( it->second != NULL, "Named node was null");
+	  }
 
-	cout<<"*** DOING REPOK ****"<<endl;
+	
 	//First, we check that the array doesn't contain any repeated nodes.
 	map<bool_node*, int> nodeset;
 	for(int i=0; i<nodes.size(); ++i){
@@ -357,7 +368,7 @@ void BooleanDAG::repOK(){
 		if(n != NULL){
 			if( isDllnode(n) ){
 //				cout<<"  "<<n->get_name()<<"  "<<dynamic_cast<bool_node*>(cur)->get_name()<<endl;
-				if(n->type != bool_node::ARITH){
+				if(!n->isArith()){
 					Assert(getDllnode(n) == cur, "You are skipping a node");
 					
 					do{
@@ -376,7 +387,7 @@ void BooleanDAG::repOK(){
 				Assert( nodeset.count(n->father)==1, "Father is not in dag "<<n->get_name()<<"  "<<i);
 				Assert( par->children.count(n) != 0, "My father has disowned me "<<n->get_name()<<"  "<<i);
 			}
-			if(n->type == bool_node::ARITH){
+			if(n->isArith()){
 				arith_node* an = dynamic_cast<arith_node*>(n);
 				for(int t=0; t<an->multi_mother.size(); ++t){
 					if(an->multi_mother[t] != NULL){
@@ -407,16 +418,20 @@ void BooleanDAG::cleanUnshared(){
   }
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
-	if(onode->flag == 0 ){  		  		
-		map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
-		if(it != named_nodes.end() && it->second==onode){
-			named_nodes.erase(it);
+	if(onode->flag == 0 ){ 
+		if(onode->isInter()){
+			INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
+			map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+			if(it != named_nodes.end() && it->second==inonode){
+				named_nodes.erase(it);
+			}
 		}
   		onode->id = -22;	
   		delete onode;
 		nodes[i] = NULL;
 	}
   }
+
   removeNullNodes();  
 }
 
@@ -462,10 +477,13 @@ void BooleanDAG::cleanup(){
   	if(onode->flag == 0 && 
   		onode->type != bool_node::SRC && 
   		onode->type != bool_node::CTRL){
-  		  		
-		map<string, bool_node*>::iterator it = named_nodes.find(onode->name);
-		if(it != named_nodes.end() && it->second==onode){
-			named_nodes.erase(it);
+  		  	
+		if(onode->isInter()){
+			INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
+			map<string, INTER_node*>::iterator it = named_nodes.find(inonode->name);
+			if(it != named_nodes.end() && it->second==inonode){
+				named_nodes.erase(it);
+			}
 		}
   			
   		onode->id = -22;	
@@ -519,8 +537,11 @@ void BooleanDAG::addNewNode(bool_node* node){
 	Assert( node->id != -22, "This node should not exist anymore");	
 	node->id = nodes.size() + offset;
 	nodes.push_back(node);	
-	if(node->name.size() > 0){
-		named_nodes[node->name] = node;
+	if(node->isInter()){
+		INTER_node* innode = dynamic_cast<INTER_node*>(node);	
+		if(innode->name.size() > 0){
+			named_nodes[innode->name] = innode;
+		}
 	}
 		
 	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT){
@@ -576,7 +597,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 bool_node* BooleanDAG::new_node(bool_node* mother, 
                                 bool_node* father, bool_node::Type t){
                                 	
-  bool_node* tmp = newBoolNode(t);
+  bool_node* tmp = newNode(t);
   tmp->father = father;
   tmp->mother = mother;  
   tmp->addToParents();
@@ -595,7 +616,7 @@ vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
 }
 
 
-bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type){
+INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type){
 	//Create interface nodes, either source, dest, or ctrl.
 	
 	if( named_nodes.find(gen_name) != named_nodes.end() ){
@@ -603,9 +624,8 @@ bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,
 	}
 	
   if(n < 0){
-    bool_node* tmp = newBoolNode(type);
+    INTER_node* tmp = dynamic_cast<INTER_node*>(newNode(type));
     nodesByType[type].push_back(tmp);
-    tmp->ion_pos = counter;
     tmp->id = nodes.size() + offset;
     nodes.push_back(tmp);
     tmp->name = gen_name;
@@ -614,10 +634,9 @@ bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,
     ++counter;
 	return tmp;
   }else{
-  	bool_node* tmp = newBoolNode(type);
+  	INTER_node* tmp = dynamic_cast<INTER_node*>(newNode(type));
   	nodesByType[type].push_back(tmp);
     dynamic_cast<INTER_node*>(tmp)->set_nbits(n);
-    tmp->ion_pos = counter;
     tmp->id = nodes.size() + offset;
     nodes.push_back(tmp);
     tmp->name = gen_name;
@@ -629,26 +648,26 @@ bool_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter,
 }
 
 
-bool_node* BooleanDAG::create_inputs(int n, const string& gen_name){
+INTER_node* BooleanDAG::create_inputs(int n, const string& gen_name){
 	return create_inter(n, gen_name, n_inputs, bool_node::SRC);
 }
 
-bool_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
-  bool_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
+  INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
   dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
   return tmp;
 }
 
-bool_node* BooleanDAG::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
-  bool_node* tmp = create_inter(n, gen_name, n_outputs, bool_node::DST);
+INTER_node* BooleanDAG::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
+  INTER_node* tmp = create_inter(n, gen_name, n_outputs, bool_node::DST);
   tmp->mother = nodeToOutput;
   tmp->addToParents();
   return tmp;
 }
 
 
-bool_node* BooleanDAG::create_outputs(int n, const string& gen_name){
-  bool_node* tmp = create_inter(n, gen_name, n_outputs, bool_node::DST);
+INTER_node* BooleanDAG::create_outputs(int n, const string& gen_name){
+  INTER_node* tmp = create_inter(n, gen_name, n_outputs, bool_node::DST);
   return tmp;
 }
 
@@ -677,7 +696,7 @@ void BooleanDAG::print(ostream& out)const{
 }
 
 void BooleanDAG::lprint(ostream& out){    
-  out<<"dag{"<<endl;
+	out<<"dag"<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
   		out<<nodes[i]->lprint()<<endl;
@@ -750,19 +769,21 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 				(*node_it)->type == bool_node::SRC){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if((*node_it)->type == bool_node::SRC){
-					while(has_name((*node_it)->name)){
-						(*node_it)->name += "_b";
+					INTER_node* inter = dynamic_cast<INTER_node*>((*node_it));
+					while(has_name(inter->name)){
+						inter->name += "_b";
 					}
-					named_nodes[(*node_it)->name] = (*node_it);
+					named_nodes[inter->name] = inter;
 				}
 			}
 		}else{
-			if( !has_name((*node_it)->name) ){
-				nodes.push_back( (*node_it) );
-				nodesByType[(*node_it)->type].push_back((*node_it));	
-				named_nodes[(*node_it)->name] = (*node_it);
+			CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
+			if( !has_name(cnode->name) ){
+				nodes.push_back( cnode );
+				nodesByType[cnode->type].push_back(cnode);	
+				named_nodes[cnode->name] = cnode;
 			}else{
-				replacements[(*node_it)] = get_node((*node_it)->name);
+				replacements[(*node_it)] = get_node(cnode->name);
 				delete *node_it;
 			}
 		}
@@ -791,7 +812,8 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT ){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if( (*node_it)->type == bool_node::CTRL ){
-					named_nodes[(*node_it)->name] = (*node_it);
+					INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
+					named_nodes[inode->name] = inode;
 				}
 				if( (*node_it)->type == bool_node::ASSERT ){
 					DllistNode* tt = getDllnode((*node_it));
@@ -802,20 +824,22 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 		}
 		
 		if( (*node_it)->type == bool_node::SRC ){
-			if( !has_name((*node_it)->name) ){
-				nodes.push_back( (*node_it) );
-				nodesByType[(*node_it)->type].push_back((*node_it));	
-				named_nodes[(*node_it)->name] = (*node_it);
+			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
+			if( !has_name(inode->name) ){
+				nodes.push_back( inode );
+				nodesByType[inode->type].push_back(inode);	
+				named_nodes[inode->name] = inode;
 			}else{
-				replacements[*node_it] = this->get_node((*node_it)->name);
+				replacements[*node_it] = this->get_node(inode->name);
 				delete (*node_it);
 			}
 		}
 				
 		if( (*node_it)->type == bool_node::DST){
-			nodesByType[(*node_it)->type].push_back((*node_it));
-			bool_node* otherDst = named_nodes[(*node_it)->name];
-			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(*node_it)->name<<endl);
+			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
+			//nodesByType[(*node_it)->type].push_back((*node_it));
+			INTER_node* otherDst = named_nodes[inode->name];
+			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(inode)->name<<endl);
 			EQ_node* eq = new EQ_node();			
 			eq->father = otherDst->mother;
 			eq->mother = (*node_it)->mother;
@@ -862,7 +886,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 
 
 void BooleanDAG::rename(const string& oldname,  const string& newname){
-	bool_node* node = named_nodes[oldname];
+	INTER_node* node = named_nodes[oldname];
 	node->name = newname;
 	named_nodes.erase(oldname);
 	named_nodes[newname] = node;	
@@ -914,10 +938,10 @@ BooleanDAG* BooleanDAG::clone(){
 	bdag->n_outputs = n_outputs;
 	bdag->intSize = intSize;
 
-	for(map<string, bool_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
+	for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
 		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );
 		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );
-		bdag->named_nodes[it->first] = bdag->nodes[it->second->id];	
+		bdag->named_nodes[it->first] = dynamic_cast<INTER_node*>(bdag->nodes[it->second->id]);	
 	}
 	
 	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 

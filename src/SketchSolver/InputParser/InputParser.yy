@@ -6,11 +6,7 @@ BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
-bool_node *comparisson (bool_node *p1, bool_node *p2, bool_node::Type atype)
-{
-    Assert (p1 || p2, "Can't have both comparisson's children NULL");   
-    return currentBD->new_node(p1, p2, atype);     
-}
+
 
 
 
@@ -249,7 +245,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
 	for(int i=0; i<bigN; ++i, ++it, ++oldit){		
-		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newArithNode(arith_node::ARRASS));
+		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newNode(bool_node::ARRASS));
 		an->multi_mother.reserve(2);
 		an->multi_mother.push_back(*oldit);			
 		an->multi_mother.push_back(rhs);
@@ -279,7 +275,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
   if ($2) {
     /* Asserting an expression, construct assert node. */
 	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
-		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newBoolNode(bool_node::ASSERT));
+		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
 		bn->setMsg(*$4);
 		currentBD->new_node ($2, NULL, bn);
 	}    
@@ -313,7 +309,7 @@ Expression: Term { $$ = $1; }
 }
 | '$' varList '$' '[' Expression ']' {
 	int pushval = 0;
-	arith_node* an = newArithNode(arith_node::ARRACC);
+	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARRACC));
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
@@ -327,7 +323,7 @@ Expression: Term { $$ = $1; }
 }
 
 | T_twoS varList T_twoS {
-	arith_node* an = newArithNode(arith_node::ACTRL);
+	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ACTRL));
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
@@ -359,19 +355,22 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($1, neg1, bool_node::PLUS); 	
 }
 | Term '>' Term {
-	$$ = comparisson($1, $3, bool_node::GT);
+	
+	$$ = currentBD->new_node($3, $1, bool_node::LT);     
 }
 | Term '<' Term {
-	$$ = comparisson($1, $3, bool_node::LT);
+	$$ = currentBD->new_node($1, $3, bool_node::LT);
 }
 | Term T_ge Term {
-	$$ = comparisson($1, $3, bool_node::GE);
+	bool_node* tmp = currentBD->new_node($1, $3, bool_node::LT);
+	$$ = currentBD->new_node(tmp, NULL, bool_node::NOT);
 }
 | Term T_le Term {
-	$$ = comparisson($1, $3, bool_node::LE);
+	bool_node* tmp = currentBD->new_node($3, $1, bool_node::LT);
+	$$ = currentBD->new_node(tmp, NULL, bool_node::NOT);
 }
 | Expression '?' Expression ':' Expression {
-	arith_node* an = newArithNode(arith_node::ARRACC);
+	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARRACC));
 	bool_node* yesChild =($3);
 	bool_node* noChild = ($5);
 	an->multi_mother.push_back( noChild );
@@ -437,7 +436,7 @@ Term: Constant {
 			ufun->set_nbits( 1  );
 		}
 		
-		ufun->name = (currentBD->new_name(fname));
+		//ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node($9, NULL, ufun);
 		if(currentBD->methdparams.count(fgid)==0){
 			currentBD->methdparams[fgid].push_back($$);

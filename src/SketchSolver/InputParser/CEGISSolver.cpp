@@ -433,6 +433,7 @@ void CEGISSolver::abstractProblem(){
 					cout<<" candidate failed assertion "<<an->getMsg()<<endl;
 				}
 				if(failedpos > cutoff){
+					if(PARAMS->verbosity > 2){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<" node "<<(*node_it)->id<<" out of "<<orisize<<endl; }
 					dag->clear();
 					delete dag;
 					return;

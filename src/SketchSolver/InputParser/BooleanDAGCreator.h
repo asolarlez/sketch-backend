@@ -5,7 +5,7 @@
 
 class BooleanDAGCreator
 {
-	map<string, bool_node*> named_nodes;
+	StringHTable2<bool_node*> named_nodes;
 	int new_names;
 	int new_namesb;
 
@@ -23,14 +23,14 @@ public:
 	
   virtual bool_node* create_const(int n);
 
-  bool_node* create_inputs(int n, const string& gen_name=string("INPUT"));
-  bool_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
+  INTER_node* create_inputs(int n, const string& gen_name=string("INPUT"));
+  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
 
   /**
 	Creates an N-bit output named gen_name, connected to internal node nodeToOutput.
   */
-  bool_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
-  bool_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
+  INTER_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
+  INTER_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
   
 
   /** Produces a node called name.
@@ -60,11 +60,12 @@ public:
   /*-------------------------------------*/
 
   bool_node* optimizeAndAdd(bool_node* node);
-  
+  /*
   bool has_alias(const string& s){
+	  named_nodes.contai
     return named_nodes.find(s) != named_nodes.end();
   }
-
+  */
   bool_node* get_alias(const string& s){
     return get_node(s);
   }

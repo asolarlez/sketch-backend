@@ -154,12 +154,12 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			tata = true;
 		}
 		AbstractNodeValue& mnv = tata? anv[ar.mother] : mot->second;
-		if(mnv.isTop() || ar.arith_type == arith_node::ARRASS /*typeid(*n1) == typeid(ARRASS_node)*/){
+		if(mnv.isTop() || ar.type == bool_node::ARRASS /*typeid(*n1) == typeid(ARRASS_node)*/){
 			for(int i=0; i<ar.multi_mother.size(); ++i){
 				bool_node* parent = ar.multi_mother[i];
 				helper<COMP>(parent, C, reverse, rv, nv);
 			}
-			if((!PARAMS->assumebcheck) && ar.arith_type == arith_node::ARRACC  && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
+			if((!PARAMS->assumebcheck) && ar.type == bool_node::ARRACC  && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
 				nv.insert(0);
 				bool cm = reverse? comp(C, 0) : comp(0, C);
 				int tmp = cm ? 1 : -1;	
@@ -816,49 +816,7 @@ void DagOptim::visit( NEG_node& node ){
 }
 	
 	
-		
-void DagOptim::visit( GT_node& node ){
-	if( isConst(node.mother) ){
-		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) > getIval( node.father ) );
-			return;
-		}			
-	}
 	
-	if( node.mother == node.father ){
-		rvalue = getCnode(false);
-		return;
-	} 
-	
-	
-	
-	if( compSymplification<greater<int> , GT_node>(node) ){
-		return;	
-	}
-	
-	
-	rvalue = &node;
-}
-void DagOptim::visit( GE_node& node ){
-	if( isConst(node.mother) ){
-		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) >= getIval( node.father ) );
-			return;
-		}			
-	}
-	if( node.mother == node.father ){
-		rvalue = getCnode(true);
-		return;
-	}
-	
-	if( compSymplification<greater_equal<int> , GE_node>(node) ){
-		return;	
-	}
-	 
-	rvalue = &node;
-}
-
-
 void DagOptim::visit( LT_node& node ){
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
@@ -877,30 +835,6 @@ void DagOptim::visit( LT_node& node ){
 	
 	rvalue = &node;
 }
-
-void DagOptim::visit( LE_node& node ){
-	if( isConst(node.mother) ){
-		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) <= getIval( node.father ) );
-			return;
-		}			
-	}
-	if( node.mother == node.father ){
-		rvalue = getCnode(true);
-		return;
-	} 
-	
-	
-	if( compSymplification<less_equal<int> , LE_node>(node) ){
-		return;	
-	}	
-	
-	
-	
-	rvalue = &node;
-}
-
-
 
 
 
@@ -1033,7 +967,7 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 		}
 		checkAndPush(bn->mother, sd, bnmap);
 		checkAndPush(bn->father, sd, bnmap);
-		if(bn->type == bool_node::ARITH){
+		if(bn->isArith()){
 			arith_node* an = dynamic_cast<arith_node*>(bn);
 			for(int i=0; i<an->multi_mother.size(); ++i){
 				checkAndPush(an->multi_mother[i], sd, bnmap);
@@ -1145,6 +1079,45 @@ void DagOptim::visit( UFUN_node& node ){
 	rvalue = &node;	
 }
 
+// m >= f <==> !(m < f);
+bool_node*  DagOptim::addGE(bool_node* mother, bool_node* father){
+	LT_node* lt = new LT_node();
+	lt->mother = mother;
+	lt->father = father;
+	lt->addToParents();
+	addNode(lt);
+	NOT_node* nn = new NOT_node();
+	nn->mother = lt;
+	nn->addToParents();
+	addNode(nn);	
+	return nn;
+}
+
+// m > f <==> (f < m);
+bool_node*  DagOptim::addGT(bool_node* mother, bool_node* father){
+	LT_node* lt = new LT_node();
+	lt->mother = father;
+	lt->father = mother;
+	lt->addToParents();
+	addNode(lt);
+	return lt;	
+}
+
+// m <= f <==> !(f < m);
+bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
+	LT_node* lt = new LT_node();
+	lt->mother = father;
+	lt->father = mother;
+	lt->addToParents();
+	addNode(lt);
+	NOT_node* nn = new NOT_node();
+	nn->mother = lt;
+	nn->addToParents();
+	addNode(nn);	
+	return nn;
+}
+
+
 void DagOptim::visit( ARRACC_node& node ){
 	if( isConst(node.mother) ){
 		int val = getIval( node.mother );		
@@ -1195,11 +1168,7 @@ void DagOptim::visit( ARRACC_node& node ){
 					ar->addToParents();
 					addNode(ar);
 
-					GE_node* gt = new GE_node();
-					gt->mother = node.mother;
-					gt->father = this->getCnode(0);
-					gt->addToParents();
-					addNode(gt);
+					bool_node* gt = addGE(node.mother, this->getCnode(0));
 					
 					ARRACC_node* gar = new ARRACC_node();
 					gar->mother = gt;
@@ -1701,6 +1670,7 @@ void DagOptim::cleanup(BooleanDAG& dag){
 #ifdef _DEBUG
 	dag.repOK();
 #endif	
+	//dag.lprint(cout);
 }
 
 /*The goal of this routine is to break any cycles 
