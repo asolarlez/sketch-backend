@@ -24,7 +24,7 @@ AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_LEX
 AC_PROG_LIBTOOL
-if test "$LEX" = ":"; then
+if test "x$LEX" != "xflex"; then
    AC_MSG_ERROR([You must install Flex])
 fi
 
