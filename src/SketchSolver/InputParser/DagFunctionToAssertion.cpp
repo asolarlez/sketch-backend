@@ -13,7 +13,7 @@ DagFunctionToAssertion::~DagFunctionToAssertion()
 
 void DagFunctionToAssertion::visit( UFUN_node& node ){	
 	const string& name = node.get_ufname();
-	if( functionMap.find(name) != functionMap.end() ){
+	if(!node.ignoreAsserts && functionMap.find(name) != functionMap.end() ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
 		
 		bool_node* cur = node.mother;
@@ -35,7 +35,11 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		node.remove();
 		rvalue = this->getCnode(0);		
 	}else{
-		rvalue = &node;
+		if(node.ignoreAsserts){
+			rvalue = getCnode(0);
+		}else{
+			rvalue = &node;
+		}
 	}
 }
 

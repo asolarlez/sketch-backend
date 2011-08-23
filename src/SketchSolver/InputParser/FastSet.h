@@ -531,7 +531,7 @@ public:
 
 		unsigned sz = (store.size()/2) + 2;  // XXX/cgjones: probably not the best name ...
 		for(unsigned i=0; i<sz; ++i){
-			pair<T*, M>& tmp = store[i];
+			pair<T*, M> tmp = store[i];
 			if(tmp.first == NULL){ continue; }
 			//unsigned loc = hash( tmp );
                         unsigned loc = traits::hash (tmp.first, this->sz);
@@ -702,29 +702,23 @@ public:
 
 		{
 			if(t2){
-				++_size;
 				slp2.second = val.second; return;
 			}
 			if(t3){
-				++_size;
 				slp3.second = val.second; return;
 			}
 
 			if(t0){
-				++_size;
 				sl.second = val.second; return;
 			}
 			if(t1){
-				++_size;
 				slp1.second = val.second; return;
 			}
 			
 			if(t4){
-				++_size;
 				slp4.second = val.second; return;
 			}
 			if(t5){
-				++_size;
 				slp5.second = val.second; return;
 			}
 			if(slp2.first == NULL){

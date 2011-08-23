@@ -31,24 +31,24 @@ CONST_node* BackwardsAnalysis::getCnode(bool c){
 
 
 void BackwardsAnalysis::visitArith(arith_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	if(t.isBottom()){
 		rvalue = getCnode(0);
 		return;
 	}
 	if(node.mother != NULL){
-		info[node.mother] += t;
+		info[node.mother->id] += t;
 	}
 
 	for(int i=0; i<node.multi_mother.size(); ++i){
-		info[node.multi_mother[i]] += t;
+		info[node.multi_mother[i]->id] += t;
 	}
 
 	rvalue = &node;
 }
 
 void BackwardsAnalysis::visitBool(bool_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	if(t.isBottom()){
 		rvalue = getCnode(0);
 		return;
@@ -77,20 +77,20 @@ void BackwardsAnalysis::visitBool(bool_node& node ){
 
 
 void BackwardsAnalysis::visit( DST_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	t.makeTop();
 	if(node.mother != NULL){
-		info[node.mother] += t;
+		info[node.mother->id] += t;
 	}
 	rvalue = &node;
 }
 
 void BackwardsAnalysis::visit( ASSERT_node &node){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	// cout<<"node = "<< node.lprint()<<endl;
 	// cout<<t.lprint();
 	if(node.mother != NULL){
-		info[node.mother] += t;
+		info[node.mother->id] += t;
 	}
 	rvalue = &node;
 }
@@ -122,7 +122,7 @@ bool_node* BackwardsAnalysis::localModify(AND_node* node, Info& t){
 
 
 void BackwardsAnalysis::visit( AND_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
 	int v;
@@ -139,7 +139,7 @@ void BackwardsAnalysis::visit( AND_node& node ){
 
 	t.push(Datum(node.mother));
 	bool_node* ffather = modifyNode(node.father, t);
-	set<Datum> info;
+	FastMap<bool_node, int> info;
 	t.pop(info);
 	
 	
@@ -214,7 +214,7 @@ bool_node* BackwardsAnalysis::localModify(OR_node* node, Info& t){
 
 
 void BackwardsAnalysis::visit( OR_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
 	if(t.isBottom()){
@@ -231,7 +231,7 @@ void BackwardsAnalysis::visit( OR_node& node ){
 
 	t.push(Datum(node.mother, 0));
 	bool_node* ffather = modifyNode(node.father, t);
-	set<Datum> info;
+	FastMap<bool_node, int> info;
 	t.pop(info);
 
 
@@ -274,7 +274,7 @@ bool_node* BackwardsAnalysis::localModify(ARRACC_node* node, Info& t){
 
 	
 void BackwardsAnalysis::visit( ARRACC_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
 	if(t.isBottom()){
@@ -330,7 +330,7 @@ bool_node* BackwardsAnalysis::modifyNode(bool_node* node, Info& t){
 	}
 
 	if(out == node){
-		info[node] += t;
+		info[node->id] += t;
 	}
 	return out;
 }
@@ -350,7 +350,7 @@ bool_node* BackwardsAnalysis::localModify(ARRASS_node* node, Info& t){
 
 	
 void BackwardsAnalysis::visit( ARRASS_node& node ){
-	Info& t = info[&node];
+	Info& t = info[node.id];
 	if(t.isBottom()){
 		rvalue = getCnode(0);
 		return;
@@ -385,14 +385,16 @@ void BackwardsAnalysis::visit( ARRASS_node& node ){
 
 void BackwardsAnalysis::process(BooleanDAG& bdag){
 	int i=0;
+	
 	vector<bool_node*> bn = bdag.getNodesByType(bool_node::ASSERT);
 	bool_node* tprev = NULL;
 //	dimp.process(bdag);
+	info.resize(bdag.size());
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];
-		Info& c = info[cur];
+		Info& c = info[cur->id];
 		if(tprev != NULL){
-			Info& p = info[tprev];
+			Info& p = info[tprev->id];
 			//cout<<"T = "<<tprev->mother->lprint()<<endl;
 			if(tprev->mother->children.size()>1  || tprev->mother->type == bool_node::AND){
 //				dimp.checkImplications(tprev->mother);

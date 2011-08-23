@@ -45,6 +45,7 @@ public:
 			int t = intFromBV(vals, 0, vals.size());
 			return isNeg? -t : t; 
 		}
+		
 		void setVal(int v){
 			if(v<0){
 				v = -v;
@@ -141,6 +142,11 @@ public:
 	}
 	bool contains(const string& name) const{
 		return index.count(name)>0;
+	}
+	void setFromString(const string& in){
+		for(int i=0; i<in.size(); ++i){
+			setBit(i, in[i]=='1'? 1 : -1);
+		}
 	}
 	vector<int> serialize() const{
 		vector<int> out;

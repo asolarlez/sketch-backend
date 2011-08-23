@@ -288,7 +288,7 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
 	int p = 0;
 
 	const string& tst = node.get_ufname();
-	int mxsz = tst.size() + node.outname.size() + node.multi_mother.size() * 8 + 10;
+	int mxsz = tst.size() + node.outname.size() + node.multi_mother.size() * 8 + 14;
 	if(tmpbuf.size() < mxsz){
 		tmpbuf.resize(mxsz);
 	}
@@ -309,7 +309,6 @@ bool_node* DagCSE::quickcse(int mid, int fid, bool_node::Type t){
  		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->globalId;
 		writeInt(tch, mmid, p);
 		tch[p] = ','; p++;
-
  	}
 	tch[p] = ')'; p++;
 	Assert(p < mxsz , "Strange!!!!");

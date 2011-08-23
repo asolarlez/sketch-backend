@@ -88,15 +88,23 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			nv.timestamp = n1->globalId;
 			return nv.staticCompare<COMP>(C, reverse);
 		}else{
-			if(isTopLevel){
-				int s = 1;
+			if(n1->type == bool_node::CTRL){
 				int bnd = 1;
-				for(int i=0; i<PARAMS->NINPUTS; ++i){
-					bnd = bnd*2;
-				}
-				nv.init(0, bnd*4);				
+					for(int i=0; i<inode->get_nbits(); ++i){
+						bnd = bnd*2;
+					}
+				nv.init(0, bnd);				
 			}else{
-				nv.makeTop();
+				if(isTopLevel){
+					int s = 1;
+					int bnd = 1;
+					for(int i=0; i<PARAMS->NINPUTS; ++i){
+						bnd = bnd*2;
+					}
+					nv.init(0, bnd*4);				
+				}else{
+					nv.makeTop();
+				}
 			}
 			nv.timestamp = n1->globalId;
 			return 0;

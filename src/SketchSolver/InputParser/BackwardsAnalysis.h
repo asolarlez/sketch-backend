@@ -187,16 +187,25 @@ public:
 	
  
 	bool getValue(bool_node* node, int& out){
+		Datum d(node);
 		if(hasD ){			
-			FastMap<bool_node,int>::iterator tit = temp.find(node);
+			FastMap<bool_node,int>::iterator tit = temp.find(d.node);
 			if(tit!= temp.end()){
-				out = tit->second;
+				if(node->type == bool_node::NOT){
+					out = 1-tit->second;
+				}else{
+					out = tit->second;
+				}	
 				return true;
 			}
 		}
-		FastMap<bool_node,int>::iterator vit =  known.find(node);
+		FastMap<bool_node,int>::iterator vit =  known.find(d.node);
 		if(vit!= known.end()){
-			out = vit->second;
+			if(node->type == bool_node::NOT){
+					out = 1-vit->second;
+				}else{
+					out = vit->second;
+				}
 			return true;
 		}
 		return false;
@@ -245,7 +254,7 @@ class BackwardsAnalysis :
 	public NodeVisitor, public virtual NodeStore
 {
 private:
-	map<bool_node*, Info> info;
+	vector<Info> info;
 	map<int, CONST_node*> cnmap;
 	// DeriveImplications dimp;
 protected:
