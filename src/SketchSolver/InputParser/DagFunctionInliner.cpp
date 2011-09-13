@@ -340,16 +340,18 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	funsInlined.clear();
 	somethingChanged = false;
 	lnfuns = 0;
-
+	uidcount = 0;
 	if(ictrl != NULL){
 		for(int i=0; i<dag.size() ; ++i ){
 			// Get the code for this node.				
 			if(typeid(*dag[i]) == typeid(UFUN_node)){
-				ictrl->checkInline(*dynamic_cast<UFUN_node*>(dag[i]));
+				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
+				uidcount = max(uidcount, uf.fgid);
+				ictrl->checkInline(uf);
 			}
 		}
 	}
-	uidcount = 0;
+	
 	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){

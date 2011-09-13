@@ -274,13 +274,13 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 			set<string>& dones = dfi.getFunsInlined();
 			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
 			if(oldSize > 0){
-				if(dag.size() > 100000 && dag.size() > oldSize * 10){
+				if(dag.size() > 400000 && dag.size() > oldSize * 10){
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
 				}				
 			}
-			oldSize = dag.size();
+			oldSize = dag.size();			
 			++t;
 		}while(dfi.changed());
 		// fin.ctt.printCtree(cout, dag);

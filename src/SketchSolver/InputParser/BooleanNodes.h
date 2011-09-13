@@ -496,7 +496,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	  }
 	virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= "<<ufname.substr(0, min<int>(25,ufname.length() ))<<"["<<mother->lid()<<"](";
+		str<<id<<"= "<<ufname.substr(0, min<int>(25,ufname.length() ))<<"#"<<fgid<<"["<<mother->lid()<<"](";
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
 		  	if(*it != NULL){
 		  		str<<(*it)->lid()<<", ";	  		
