@@ -74,11 +74,15 @@ main(int argc, char** argv)
 	signal(SIGINT, CtrlCHandler);
 	signal(SIGTERM, TerminationHandler);	
 
+	CommandLineArgs params(argc, argv);
 
-    ABCSolverStart();
+	if(params.synthtype == SATSolver::ABC || params.veriftype == SATSolver::ABC){
+	   cout<<"This makes no sense"<<endl;
+       ABCSolverStart();
+	}
   
          // too coarse of a timing?
-    CommandLineArgs params(argc, argv);
+    
     PARAMS = &params;
     Driver m(params);
     m.parseInput();
@@ -96,7 +100,7 @@ main(int argc, char** argv)
     totalElapsed.stop ();
 
     printStats ();
-
+	1;
     return rv;
 }
 
