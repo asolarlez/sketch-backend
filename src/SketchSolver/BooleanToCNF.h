@@ -99,6 +99,7 @@ public:
 
 	int sval(int var){
 		int t = 0;
+		if(!doMemoization){ return var; }
 		if(var != YES && var != -YES){
 			if(var>0){ t = mng.isValKnown(var); }
 			else{ t = -mng.isValKnown(-var); }

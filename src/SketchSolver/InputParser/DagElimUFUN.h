@@ -39,7 +39,7 @@ class SFunInfo{
 
 			fun_0(PARAMS_0, SVAR_0) := SVAR_0
 
-			fun_i(PARAMS_i, SVAR_i) := let tmp := (PARAMS_i == PARAMS_i-1) ? SVAR_i-1 : SVAR_i in fun_i-1(PARAMS_i, tmp);
+			fun_i(PARAMS_i, SVAR_i) := let (tmp := (PARAMS_i == PARAMS_i-1) ? SVAR_i-1 : SVAR_i) in fun_i-1(PARAMS_i, tmp);
 
 
 		*/

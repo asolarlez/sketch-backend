@@ -280,7 +280,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 					break;
 				}				
 			}
-			oldSize = dag.size();			
+			oldSize = dag.size();
 			++t;
 		}while(dfi.changed());
 		// fin.ctt.printCtree(cout, dag);

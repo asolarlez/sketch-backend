@@ -237,6 +237,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		DagOptim fa(*newdag);
 		fa.process(*newdag);
 		pushProblem(newdag);
+		//newdag->lprint(cout);
 		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.

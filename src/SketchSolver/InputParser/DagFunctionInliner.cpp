@@ -73,6 +73,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		return;
 	}	
 
+
+	bool_node* condition = node.mother;
+	if(isConst(condition) && !getBval(condition)){
+		rvalue = getCnode(0);
+		return;
+	}
+
 	ufunAll.restart();
 
 
@@ -88,8 +95,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		if(ictrl != NULL){ ictrl->registerInline(node); }
 		//cout<<" inlining "<<name<<endl;
 		BooleanDAG& oldFun = *functionMap[name];
-		//oldFun->clone_nodes(clones);
-		bool_node* condition = node.mother;
+		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
 		nmap.resize( oldFun.size() );		
 		{
