@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 
+#include "CegisCApi.h"
 #include "BooleanNodes.h"
 #include "BasicError.h"
 #include "timerclass.h"
@@ -48,8 +49,9 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
 
 //extern timerclass TTMMPP;
 
-class BooleanDAG  
+struct BooleanDAG  
 {
+private:
 #ifdef SCHECKMEM
 	static set<BooleanDAG*> allocated;
 #endif

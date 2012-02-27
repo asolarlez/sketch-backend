@@ -22,7 +22,7 @@ extern CommandLineArgs* PARAMS;
 
 const string VERSION_INFO = "vlarrays";
 
-class CommandLineArgs{
+struct CommandLineArgs{
 	public:		
   int input_idx;
   int seedsize;

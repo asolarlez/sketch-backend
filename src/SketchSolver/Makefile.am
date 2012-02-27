@@ -26,6 +26,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
 	InputParser/BooleanNodes.h			\
+	InputParser/CegisCApi.h					\
 	InputParser/CEGISSolver.h \
 	InputParser/CallGraphAnalysis.h \
 	InputParser/Checkpointer.h \
@@ -65,6 +66,7 @@ libcegis_la_SOURCES =				\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\
 	InputParser/BooleanNodes.cpp		\
+	InputParser/CegisCApi.cpp			\
 	InputParser/CEGISSolver.cpp	\
 	InputParser/CallGraphAnalysis.cpp \
 	InputParser/Checkpointer.cpp \

@@ -1,6 +1,7 @@
 #ifndef BOOLNODES_H_
 #define BOOLNODES_H_
 
+#include "CegisCApi.h"
 #include "FastSet.h"
 #include "NodeVisitor.h"
 #include "Dllist.h"
@@ -39,7 +40,7 @@ typedef FastSet<bool_node> childset;
 //#define SCHECKMEM
 
 
-class bool_node{
+struct bool_node{
 
 private:
   /** The unique ID to be assigned to the next bool_node created. */
