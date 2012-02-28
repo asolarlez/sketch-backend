@@ -535,8 +535,8 @@ void Inityyparse(){
 	 	
 }
 
-void yyerror(char* c){
-	Assert(false, c); 
+void yyerror(const char* c){
+	Assert(false, (char *)c); 
 }
 
 
