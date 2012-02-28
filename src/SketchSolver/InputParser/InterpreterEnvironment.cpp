@@ -387,7 +387,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		return 1;	
 	}
 
-	if(params.superChecks){
+	if(false){
 		statehistory.push_back(solver.find_history);
 
 		for(int i=0; i<history.size(); ++i){

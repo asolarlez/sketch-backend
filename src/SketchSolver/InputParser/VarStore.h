@@ -32,20 +32,72 @@ private:
 public:
 	class objP{
 	public:
+		objP* next;
+		int index;
 		string name;
 		vector<int> vals;
 		bool isNeg;
-		objP(const string& nm, int size):name(nm),vals(size), isNeg(false){	}
-		objP(const objP& old):vals(old.vals), name(old.name), isNeg(old.isNeg){}
-		objP& operator=(const objP& old){ vals=old.vals; name=old.name; isNeg = old.isNeg; return *this;}
+		virtual ~objP(){
+			if(next != NULL){ delete next; }
+		}
+		objP(const string& nm, int size):name(nm),vals(size), isNeg(false), index(0), next(NULL){	}
+		objP(const objP& old):vals(old.vals), name(old.name), isNeg(old.isNeg), index(old.index){if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
+		objP& operator=(const objP& old){ 
+			vals=old.vals; name=old.name; isNeg = old.isNeg; index=old.index; 
+			if(old.next!=NULL){ 
+				if(next!=NULL){
+					(*next)=*old.next;  
+				}else{
+					next = new objP(*old.next);
+				}
+			}else{
+				if(next!=NULL){ delete next; next=NULL;}
+			}
+			return *this;
+		}
+		void makeArr(int start, int end){			
+			Assert(start < end, "Empty arr");
+			index = start;
+			if(start+1 < end){
+				if(next == NULL){
+					next = new objP(name, vals.size());
+				}				
+				next->makeArr(start+1, end);
+			}else{
+				if(next != NULL){
+					delete next;
+					next = NULL;
+				}
+			}
+		}
 		int size(){ return vals.size(); }
-		int resize(int n){ vals.resize(n); return n; }
-		void setBit(int i, int val){ vals[i] = val; }
+		int globalSize(){ if(next == NULL){ return size();} return next->globalSize() + size(); }
+		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
+		void setBit(int i, int val){ 
+			if(i<vals.size()){ vals[i] = val; }
+			else{ 
+				Assert(next != NULL, "bad bad"); 
+				next->setBit(i-vals.size(), val);
+			}
+		}
 		int getInt() const{
 			int t = intFromBV(vals, 0, vals.size());
 			return isNeg? -t : t; 
 		}
-		
+		int getInt(int idx) const{
+			if(this->index==idx){
+				return getInt();
+			}else{
+				if(next != NULL){ next->getInt(idx); }
+			}
+		}
+		void setVal(int idx, int v){
+			if(this->index==idx){
+				setVal(v);
+			}else{
+				if(next != NULL){ next->setVal(idx, v); }
+			}
+		}
 		void setVal(int v){
 			if(v<0){
 				v = -v;
@@ -63,20 +115,23 @@ public:
 				}
 			}
 		}
-		void printBit(ostream& out) const{
+		void printBit(ostream& out) const{			
 			for(int i=0; i<vals.size(); ++i){
 				out<<(vals[i]==1?1:0);
 			}
+			if(next!= NULL){ out<<"|"; next->printBit(out); }
 		}
 		void makeRandom(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
 			}
+			if(next!= NULL){ next->makeRandom(); }
 		}
 		void zeroOut(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
 				vals[i] = -1;
 			}
+			if(next!= NULL){ next->zeroOut(); }
 		}
 	};
 
@@ -84,9 +139,7 @@ private:
 	vector<objP> objs;
 	map<string, int> index;
 	int bitsize;
-	objP& getObj(const string& name){ 
-		return objs[index[name]];
-	}
+		
 public:
 	VarStore(){
 		bitsize=0;
@@ -105,10 +158,21 @@ public:
 			objs[i].zeroOut();
 		}
 	}
+
+	void newArr(const string& name, int nbits, int arrsz){
+		Assert(index.count(name)==0, "This variable already existed!!");
+		int begidx = objs.size();
+		index[name] = begidx;
+		objs.push_back(objP(name, nbits));		
+		objs[begidx].makeArr(0, arrsz);
+		bitsize += nbits*arrsz;
+	}
+
 	void newVar(const string& name, int size){
 		Assert(index.count(name)==0, "This variable already existed!!");
+		int begidx = objs.size();
 		objs.push_back(objP(name, size));
-		index[name] = objs.size()-1;
+		index[name] = begidx;
 		bitsize += size;
 	}
 
@@ -124,12 +188,24 @@ public:
 	}
 
 	void resizeVar(const string& name, int size){
-		objP& tmp = getObj(name);
-		bitsize -= tmp.size();
-		tmp.resize(size);
-		bitsize += size;		
+		int idx = index[name];
+		{
+			objP& tmp = objs[idx];
+			bitsize -= tmp.globalSize();
+			int x = tmp.resize(size);
+			bitsize += x;
+		}
 	}
-	int getBitsize() const{ 
+	void resizeArr(const string& name, int arrSize){
+		int idx = index[name];
+		{
+			objP& tmp = objs[idx];
+			bitsize -= tmp.globalSize();
+			tmp.makeArr(0, arrSize);
+			bitsize += arrSize*tmp.size();
+		}
+	}
+	int getBitsize() const{
 		return bitsize;
 	}
 	int getIntsize(){
@@ -160,18 +236,22 @@ public:
 		bool found = false;
 		for(int t=0; t<objs.size(); ++t){
 			objP& tmp = objs[t];
-			if(i < tmp.size()){
+			int gsz = tmp.globalSize();
+			if(i < gsz){
 				tmp.setBit(i, val);
 				found = true;
 				break;
 			}else{
-				i = i-tmp.size();
+				i = i-gsz;
 			}
 		}
 		Assert(found, "This is a bug");
 	}
 	int operator[](const string& name) {
 		return objs[index[name]].getInt();
+	}
+	objP& getObj(const string& name){ 
+		return objs[index[name]];
 	}
 	friend VarStore join(const VarStore& v1 , const VarStore& v2);
 };

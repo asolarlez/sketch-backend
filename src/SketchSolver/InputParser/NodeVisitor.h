@@ -21,6 +21,9 @@ class EQ_node;
 class ARRASS_node;
 class ACTRL_node;
 class ASSERT_node;
+class ARR_R_node;
+class ARR_W_node;
+class ARR_CREATE_node;
 class arith_node;
 class bool_node;
 class BooleanDAG;
@@ -56,7 +59,12 @@ class NodeVisitor{
 	virtual void visit( EQ_node& node );
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
-	virtual void visit( ASSERT_node &node);	
+	virtual void visit( ASSERT_node &node);
+
+	virtual void visit( ARR_R_node &node);
+	virtual void visit( ARR_W_node &node);
+	virtual void visit( ARR_CREATE_node &node);
+
 	virtual void process(BooleanDAG& bdag);
 };
 

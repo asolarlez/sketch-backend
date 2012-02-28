@@ -97,3 +97,12 @@ void NodeVisitor::visit( ASSERT_node &node){
 	visitBool(node);	
 }	
 
+void NodeVisitor::visit( ARR_R_node &node){
+	visitBool(node);
+}
+void NodeVisitor::visit( ARR_W_node &node){
+	visitArith(node);	
+}
+void NodeVisitor::visit( ARR_CREATE_node &node){
+	visitArith(node);	
+}

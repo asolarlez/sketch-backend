@@ -4,7 +4,7 @@
 #include <vector>
 #include <cassert>
 #include "guardedVal.h"
-
+#include "SATSolver.h"
 using namespace std;
 
 /*
@@ -17,7 +17,7 @@ using namespace std;
  */
 
 typedef enum {
-    TVAL_BVECT, TVAL_BVECT_SIGNED, TVAL_SPARSE
+    TVAL_BVECT, TVAL_BVECT_SIGNED, TVAL_SPARSE, TVAL_ARRAY
 } valtype_t;
 
 
@@ -38,6 +38,7 @@ public:
      * Accessors.
      */
 public:
+	
     inline valtype_t getType (void) const { return type; }
 
     inline int getId (int idx = 0) const {
@@ -59,6 +60,8 @@ public:
     inline bool isBvectSigned (void) const { return type == TVAL_BVECT_SIGNED; }
 
     inline bool isSparse (void) const { return type == TVAL_SPARSE; }
+
+	inline bool isArray (void) const { return type == TVAL_ARRAY; }
 
 
     /*
@@ -224,10 +227,11 @@ public:
 
 	void print(ostream &out, SATSolver* solv){
 		
-		if ( isSparse () ){
+		if ( isSparse () || isArray()){
 			
 			int tq = 0;
 			bool found = false;
+			int ti = -1;
 			for (int i = 0; i < size; i++){
 				int g;
 				if(num_ranges[i].guard > 0){
@@ -237,10 +241,11 @@ public:
 				}
 				if(g > 0){
 					tq = num_ranges[i].value;
+					ti = num_ranges[i].idx;
 					found = true;
+					if(isArray()){ out << "{"<< num_ranges[i].guard <<":("<< tq  <<", "<<ti<<")}"; }else{out << "{"<< num_ranges[i].guard <<":("<< tq  <<")}";}
 				}
-			}
-			out << "{0:("<< tq  <<")}";
+			}			
 			Assert(found, "What !!??");
 		} else{
 			int tt = ((neg? (-1):1 ) * solv->getVarVal(id));
@@ -280,7 +285,12 @@ public:
 	neg = false;
     }
 
-
+    inline void arrayify (void) {
+	type = TVAL_ARRAY;
+	size = num_ranges.size ();
+	id = 0;
+	neg = false;
+    }
 
 
     /* Negate a bit-vector.
@@ -502,6 +512,29 @@ public:
 	Tvalue tmp = toBvectSigned (dir, padding);
 	*this = tmp;
     }
+
+	void makeArray (SolverHelper &dir, int nbits, int arrsz) {
+		Assert (id > 0, "id must be positive, instead it is" << id << " (makeArray)");
+		Assert (this->size == nbits*arrsz, "id must be positive, instead it is" << id << " (makeArray)");
+		num_ranges.clear();
+		for(int arrid=0; arrid<arrsz; ++arrid){
+			vector<int> ids (nbits);
+			vector<guardedVal> vg;
+			for (int i = 0; i < nbits; i++)
+				ids[i] = getId (arrid*nbits+i);
+			dir.getSwitchVars (ids, nbits, vg);
+			for(int t=0; t<vg.size(); ++t){
+				num_ranges.push_back(guardedVal(vg[t].guard , vg[t].value ,arrid));
+			}
+		}
+		id = num_ranges[0].guard;
+		if(id < 0){ id = -id; }
+		int oldsize = size;  /* save previous size (number of bits). */
+		size = num_ranges.size();
+
+		neg = false;
+	    type = TVAL_ARRAY;
+	}
 
     void makeSparse (SolverHelper &dir, int adj = 1) {
 	Assert (isSparse() || id > 0, "id must be positive, instead it is" << id << " (makeSparse)");

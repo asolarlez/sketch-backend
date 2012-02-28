@@ -236,6 +236,7 @@ bool MiniSATSolver::ignoreOld(){
  int MiniSATSolver::solve(){
  	if(solveNegation){
  		vec<Lit> lits;
+		Dout(cout<<"@asserting "; for(int i=0; i<finalOr.size(); ++i){ cout<<finalOr[i]<<", ";} cout<<endl; )
 		addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
  	} 
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }

@@ -7,6 +7,22 @@
 
 using namespace std;
 
+/*
+struct saentry{
+	int val; 
+	int vers;
+	int next;
+};
+
+class simarray{
+	vector<int>* store;
+	vector<int>* base;
+	int deflt;
+	int time;
+public:
+
+};
+*/
 class NodeEvaluator :
 	public NodeVisitor
 {
@@ -14,6 +30,7 @@ class NodeEvaluator :
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;
 	vector<int> values;
+	map<int, vector<int> > vecvalues;
 	vector<bool> changes;
 	VarStore* inputs;
 	bool failedAssert;
@@ -62,6 +79,11 @@ public:
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ASSERT_node &node);		
+
+	virtual void visit( ARR_R_node &node);
+	virtual void visit( ARR_W_node &node);
+	virtual void visit( ARR_CREATE_node &node);
+
 	bool run(VarStore& inputs_p);
 	void display(ostream& out);
 	int scoreNodes();

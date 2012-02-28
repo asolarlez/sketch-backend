@@ -28,7 +28,7 @@ params(args)
 		for(int i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
-			declareInput(specIn[i]->get_name(), nbits);
+			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
 	}
 	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
@@ -90,15 +90,22 @@ void CEGISSolver::declareControl(const string& cname, int size){
 
 
 
-void CEGISSolver::declareInput(const string& inname, int size){
+void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz){
 	//Inputs can be redeclared to change their sizes, but not controls.
 	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
-	cpt.resizeInput(inname, size);
+	cpt.resizeInput(inname, bitsize);
 	if( !inputStore.contains(inname)){
-		inputStore.newVar(inname, size);		
+		if(arrSz >= 0){
+			inputStore.newArr(inname, bitsize, arrSz);	
+		}else{
+			inputStore.newVar(inname, bitsize);				
+		}
 		Dout( cout<<" INPUT "<<inname<<" sz = "<<size<<endl );
 	}else{
-		inputStore.resizeVar(inname, size);
+		inputStore.resizeVar(inname, bitsize);
+		if(arrSz >= 0){
+			inputStore.resizeArr(inname, arrSz);
+		}
 	}
 }
 
@@ -259,6 +266,46 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 }
 
 
+bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
+	int arrsz = -1;
+	if(inode->type== bool_node::SRC){	
+		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
+	}
+	if(arrsz>=0){
+		VarStore::objP* val = &(values.getObj(inode->get_name()));
+		int nbits = inode->get_nbits();
+		ARR_CREATE_node* acn = new ARR_CREATE_node();
+		while(val != NULL){
+			bool_node* cnst;
+			if(nbits==1){
+				cnst= cse.getCnode( val->getInt() ==1 );
+			}else{
+				cnst= cse.getCnode( val->getInt() );
+			}
+			while(acn->multi_mother.size()< val->index){
+				acn->multi_mother.push_back( cse.getCnode(0) );
+			}
+			acn->multi_mother.push_back( cnst );
+			val = val->next;
+		}
+		acn->addToParents();
+		cse.addNode(acn);
+		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
+		return acn;
+	}else{
+		int nbits = inode->get_nbits();		
+		bool_node* onode;
+		if(nbits==1){
+			onode= cse.getCnode( values[inode->get_name()]==1 );
+		}else{
+			onode= cse.getCnode( values[inode->get_name()] );
+		}
+		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< onode->lprint() <<endl; }
+		return onode;
+	}
+}
+
+
 BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
 	BooleanDAG* newdag = dag->clone();
 
@@ -273,13 +320,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		for(int i=0; i<inodeList.size(); ++i){
 			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
 			int nbits;
-			int t = valueForINode(inode, values, nbits);
-			bool_node * repl=NULL;
-			if( nbits ==1 ){
-				repl = cse.getCnode( t == 1 );						
-			}else{
-				repl = cse.getCnode( t);							
-			}
+			bool_node * repl= nodeForINode(inode, values, cse);			
 			
 			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
 			newdag->replace(inode->id, repl);
@@ -311,7 +352,7 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//timerclass timer("defineProblem");
 		//timer.start();
 		int YES = dir.newYES();
-		
+		//getProblem()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
 		try{
 			nts.process(*getProblem());				
@@ -393,6 +434,15 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls){
 		
 
 	}
+	if(false){ //This is useful code when debugging;		
+		for(int i=0; i<find_history.size(); ++i){
+			cout<<i<<"=";
+			find_history[i].print(cout, &mngFind);
+			cout<<endl;
+		}
+		cout<<"???"<<endl;
+	}
+
 	mngFind.reset();
 	return true;
 //Return true.
@@ -596,6 +646,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 	tc.stop().print("didn't find a cex");	
+	cout<<"After all optim"<<endl;
+	//getProblem()->lprint(std::cout);
 	// dag->lprint(cout);
 	bool tv = baseCheck(controls, input);
 	popProblem();
@@ -622,7 +674,7 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag){
 		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 		int nbits = srcnode->get_nbits();
 		if(nbits >= 2){	
-			declareInput(specIn[i]->get_name(), nbits);
+			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
 	}
 }
@@ -687,10 +739,13 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params);
+	//cout<<"Before hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
-
+	//cout<<"After hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	do{
 		switch(cc.actionDecide(problemLevel() - (hardcode? 1: 0),getProblem())){
 			case CheckControl::POP_LEVEL:{
@@ -846,7 +901,8 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		const string& cname = it->name;
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
-			Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+			Assert( cnt == it->globalSize(), "SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<<endl);
+			cout<<"XXX input "<<cname<<" size="<<cnt<<endl;
 			for(int i=0; i<cnt; ++i){
 				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
@@ -856,6 +912,18 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		}
 	}
 	Dout( dirCheck.print() );
+	if(false){ //This is useful code when debugging;
+		map<string, BooleanDAG*> empty;
+		NodeEvaluator eval(empty, *getProblem());
+		eval.run(input);
+		for(int i=0; i<check_node_ids.size(); ++i){
+			cout<<i<<"=";
+			check_node_ids[i].print(cout, &mngCheck);
+			cout<<endl;
+		}
+		cout<<"???"<<endl;
+	}
+
 	mngCheck.reset();
 	return true;
 }
@@ -880,7 +948,9 @@ void CEGISSolver::setNewControls(VarStore& controls){
 		}
 		if(	(*node_it)->type == bool_node::SRC ){
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
-			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits());
+			int arsz = srcnode->getArrSz();
+			if(arsz <0){ arsz = 1; }
+			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
 		}
 	}	
 	defineProblem(mngCheck, dirCheck, node_values, check_node_ids);
@@ -915,7 +985,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 				while(resizelist.size()>0){
 					pair<string, int> p = resizelist.front();
 					resizelist.pop();
-					declareInput(p.first, p.second);	
+					declareInput(p.first, p.second, -1);
 				}
 				addInputsToTestSet(inputStore); }
 			for(int i=0; i<inputSize; ++i){
@@ -946,7 +1016,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		while(resizelist.size()>0){
 			pair<string, int> p = resizelist.front();
 					resizelist.pop();
-			declareInput(p.first, p.second);	
+			declareInput(p.first, p.second, -1);	
 		}
 		succeeded = solveCore();
 	}else if(last == 'c'){
@@ -954,7 +1024,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 			while(resizelist.size()>0){
 				pair<string, int> p = resizelist.front();
 					resizelist.pop();
-				declareInput(p.first, p.second);	
+				declareInput(p.first, p.second, -1);	
 			}
 			addInputsToTestSet(inputStore); 
 		}

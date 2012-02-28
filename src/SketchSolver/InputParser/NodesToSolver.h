@@ -15,8 +15,10 @@
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
-    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown    
-
+    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
+	void addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval);
+	int compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend);
+	template<typename COMP> void compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval);
     template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
@@ -124,10 +126,16 @@ public:
     virtual void visit (ARRASS_node &node);
     virtual void visit (ACTRL_node &node);
 
+	virtual void visit( ARR_R_node &node);
+	virtual void visit( ARR_W_node &node);
+	virtual void visit( ARR_CREATE_node &node);
+
     virtual void visit (ASSERT_node &node);
 	// void process(BooleanDAG& bdag);
+	virtual void mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx=-1);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
     virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);
+	virtual void doArrArrAcc(ARRACC_node& node, Tvalue& output);
     virtual bool checkParentsChanged (bool_node &node, bool more);	
 };
 
