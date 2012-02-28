@@ -15,7 +15,8 @@ extern "C" {
         typedef struct X X;
 
     STRUCT_PROTOTYPE(bool_node);
-    STRUCT_PROTOTYPE(NodeVector);
+    STRUCT_PROTOTYPE(NodeVector); // stl vector<bool_node>
+    // STRUCT_PROTOTYPE(SafeString); // stl string
     STRUCT_PROTOTYPE(BooleanDAG);
     STRUCT_PROTOTYPE(CommandLineArgs);
 
@@ -30,8 +31,12 @@ extern "C" {
     int node_vec_size(NodeVector *v);
     bool_node *node_vec_get(NodeVector *v, int index);
 
+
+
     // wrapped functions
+    CommandLineArgs *cmdline_args(int argc, char **argv);
     NodeVector *get_nodes_by_type(BNType t);
+    void cl_set_global_params(CommandLineArgs *args);
     // bool_node *bn_clone(bool_node *n, bool copyChildren);
 
 
