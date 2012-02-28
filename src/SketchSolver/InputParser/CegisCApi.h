@@ -19,6 +19,7 @@ extern "C" {
     // STRUCT_PROTOTYPE(SafeString); // stl string
     STRUCT_PROTOTYPE(BooleanDAG);
     STRUCT_PROTOTYPE(CommandLineArgs);
+    STRUCT_PROTOTYPE(InterpreterEnvironment);
 
     typedef enum {BN_AND, BN_OR, BN_XOR, BN_SRC, BN_DST,
         BN_NOT, BN_CTRL, BN_PLUS, BN_TIMES, BN_DIV,
@@ -35,8 +36,18 @@ extern "C" {
 
     // wrapped functions
     CommandLineArgs *cmdline_args(int argc, char **argv);
-    NodeVector *get_nodes_by_type(BNType t);
     void cl_set_global_params(CommandLineArgs *args);
+    char *cl_get_in_name(CommandLineArgs *args);
+    void cl_set_in_name(CommandLineArgs *args, char *name);
+
+    void runDriver();
+    InterpreterEnvironment *getEnvt();
+    BooleanDAG *evt_get_copy(InterpreterEnvironment *evt, char *s);
+    BooleanDAG *evt_prepare_miter(InterpreterEnvironment *evt,
+        BooleanDAG *spec, BooleanDAG *sketch);
+    int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter);
+
+    NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t);
     // bool_node *bn_clone(bool_node *n, bool copyChildren);
 
 

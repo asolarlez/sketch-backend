@@ -3,6 +3,7 @@
 
 #include "BasicError.h"
 #include "BooleanDAG.h"
+#include "CegisCApi.h"
 #include "InputReader.h"
 #include "SolveFromInput.h"
 #include "CommandLineArgs.h"
