@@ -30,6 +30,7 @@ module CegisCApi (
     cmdline_args,
     cl_get_in_name,
     cl_set_in_name,
+    cl_get_out_name,
     -- ** Start running the backend
     strip_sketches_lines,
     runDriver,
@@ -37,7 +38,8 @@ module CegisCApi (
     -- ** Actual synthesis commands
     evt_get_copy,
     evt_prepare_miter,
-    evt_assert_dag
+    evt_assert_dag,
+    evt_print_controls
     ) where
 
 import Prelude hiding (id, (.))
@@ -92,9 +94,13 @@ cmdline_args x = do
 {# fun cl_set_global_params
     { id `CommandLineArgs' } -> `()' #}
 
--- | Get the input filename, as parsed by cegis
+-- | Get the input filename, as parsed by cegis command line handler.
 {# fun cl_get_in_name { id `CommandLineArgs' } -> `String' peekCAString* #}
+
 {# fun cl_set_in_name { id `CommandLineArgs', `String' } -> `()' #}
+
+-- | Get the output filename, as parsed by cegis command line handler.
+{# fun cl_get_out_name { id `CommandLineArgs' } -> `String' peekCAString* #}
 
 
 
@@ -119,6 +125,10 @@ cmdline_args x = do
 -- | Solves a DAG, usually the output of 'evt_prepare_miter'
 {# fun evt_assert_dag {
     id `InterpreterEnvironment', id `BooleanDAG' } -> `Int' #}
+
+-- | Write the current solutions to a filename
+{# fun evt_print_controls {
+    id `InterpreterEnvironment', `String' } -> `()' #}
 
 
 
@@ -160,12 +170,12 @@ strip_sketches_lines fn@((++ ".fcns-only") -> fn') = do
 
 
 test_args = [ "--verbosity", "5", "--num-solutions", "2",
-    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/input.tmp",
-    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/solution-0" ]
+    "-o", "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/solution",
+    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/input.tmp" ]
 
 data HsCegisArgs = HsCegisArgs {
     minimize :: Bool,
-    num_solutions :: Int }
+    num_solutions :: Integer }
 defArgs = HsCegisArgs {
     minimize = False,
     num_solutions = 1 }
@@ -180,9 +190,17 @@ reparse_args l = go l (defArgs, []) where
 test = do
     let (args, backend_args) = reparse_args test_args
     cli <- cmdline_args backend_args
+
+    -- strip "assert ... sketches ..." from input,
+    -- set input to that new file
     nme <- cl_get_in_name cli
     (nme', sketches) <- strip_sketches_lines nme
     cl_set_in_name cli nme'
+
+    outname <- (\x (n :: Integer) -> printf "%s-%03d" x n) <$>
+        cl_get_out_name cli
+
+    -- build DAGs from the input functions
     runDriver
     e <- getEnvt
 
@@ -195,10 +213,12 @@ test = do
         return bd
 
     -- write the first solution out
+    evt_print_controls e (outname 0)
 
-    -- forM [2..num_solutions args] $
+    forM [2..num_solutions args] $ \j -> do
+        ...
 
-    print "num solutions"
-    print (num_solutions args)
+    -- print "num solutions"
+    -- print (num_solutions args)
 
     print "done"

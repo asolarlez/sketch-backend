@@ -16,7 +16,6 @@ extern "C" {
 
     STRUCT_PROTOTYPE(bool_node);
     STRUCT_PROTOTYPE(NodeVector); // stl vector<bool_node>
-    // STRUCT_PROTOTYPE(SafeString); // stl string
     STRUCT_PROTOTYPE(BooleanDAG);
     STRUCT_PROTOTYPE(CommandLineArgs);
     STRUCT_PROTOTYPE(InterpreterEnvironment);
@@ -39,6 +38,7 @@ extern "C" {
     void cl_set_global_params(CommandLineArgs *args);
     char *cl_get_in_name(CommandLineArgs *args);
     void cl_set_in_name(CommandLineArgs *args, char *name);
+    char *cl_get_out_name(CommandLineArgs *args);
 
     void runDriver();
     InterpreterEnvironment *getEnvt();
@@ -46,6 +46,7 @@ extern "C" {
     BooleanDAG *evt_prepare_miter(InterpreterEnvironment *evt,
         BooleanDAG *spec, BooleanDAG *sketch);
     int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter);
+    void evt_print_controls(InterpreterEnvironment *evt, char *fn);
 
     NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t);
     // bool_node *bn_clone(bool_node *n, bool copyChildren);

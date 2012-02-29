@@ -37,6 +37,10 @@ void cl_set_in_name(CommandLineArgs *args, char *name) {
     args->inputFname = string(name);
 }
 
+char *cl_get_out_name(CommandLineArgs *args) {
+    return (char *)(args->outputFname.c_str());
+}
+
 BooleanDAG *evt_get_copy(InterpreterEnvironment *evt, char *s) {
     return evt->getCopy(string(s));
 }
@@ -55,4 +59,8 @@ NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t) {
     vector<bool_node*> *vec = new vector<bool_node*>();
     *vec = dag->getNodesByType((bool_node::Type)t);
     return new NodeVector(vec);
+}
+
+void evt_print_controls(InterpreterEnvironment *evt, char *fn) {
+    evt->printControls_wrapper(string(fn));
 }
