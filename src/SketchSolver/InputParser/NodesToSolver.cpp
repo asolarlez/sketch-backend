@@ -1703,7 +1703,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 	for(int i=0; i < N; ++i, ++it){
 		choices[i] = tval_lookup (*it, TVAL_SPARSE);	
 		if(choices[i].isBvect()){
-			choices[i].toSparse(dir);
+			choices[i].makeSparse(dir);
 		}		
 	}
 	bool_node* mother = node.mother;
@@ -1714,66 +1714,53 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		Assert(choices.size() == 2, "NYI aslkdn;hyp;k");
 		map<pair<int, int>, int> vals;
 		int gval = mval.getId();
-		set<int> leftseen;
-		{
-			vector<guardedVal>& gvv = choices[0].num_ranges;		
-			for(vector<guardedVal>::iterator it = gvv.begin(); it != gvv.end(); ++it){
-				vals[make_pair(it->idx, it->value)] = dir.addAndClause(it->guard, -gval);
-				leftseen.insert(it->idx);
-			}
+		
+		vector<guardedVal>& gvl = choices[0].num_ranges;	
+		Tvalue altL;
+		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
+			altL.num_ranges.push_back(gvl[i]);
 		}
-		set<int>::iterator leftit = leftseen.begin();
-		{
-			vector<guardedVal>& gvv = choices[1].num_ranges;	
-			vector<guardedVal>::iterator begdefR = choices[1].num_ranges.begin();
-			vector<guardedVal>::iterator enddefR = begdefR;
-			while(enddefR != choices[1].num_ranges.end() && enddefR->idx <0){
-				++enddefR;
-			}
-			Tvalue altdef=tvOne;
-			altdef.num_ranges[0].value = -333;
-			if(begdefR == enddefR){
-				begdefR = altdef.num_ranges.begin();
-				enddefR = altdef.num_ranges.end();
-			}
-			int cidx = -10;
-			for(vector<guardedVal>::iterator it = gvv.begin(); it != gvv.end(); ++it){
-				if(cidx != it->idx){
-					while(leftit!= leftseen.end() && *leftit < it->idx){
-						//leftit was in left but not in right. We must add the default value for right.
-						for(vector<guardedVal>::iterator dit = begdefR; dit != enddefR; ++dit){
-							addToVals(vals, dit, *leftit, gval);
-						}						
-						++leftit;
-					}
-					if(leftit!= leftseen.end() && *leftit==it->idx){
-						++leftit;
-					}else{
-						//leftit is greater than it->idx;
-						//that means this idx was not present on the left
-						for(vector<guardedVal>::iterator dit = begdefR; dit != enddefR; ++dit){
-							addToVals(vals, dit, it->idx, -gval);
-						}
-					}
-					cidx = it->idx;
-				}
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		else{ altL.sparsify(); }
 
-				addToVals(vals, it, it->idx, gval);				
-			}
-			//There may have been some left over indices on the left that did not show up on the right.
-			while(leftit!= leftseen.end() ){
-				//leftit was in left but not in right. We must add -333 for right.
-				for(vector<guardedVal>::iterator dit = begdefR; dit != enddefR; ++dit){
-					addToVals(vals, dit, *leftit, gval);
-				}				
-				++leftit;
-			}
+		vector<guardedVal>& gvr = choices[1].num_ranges;	
+		Tvalue altR;
+		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
+			altR.num_ranges.push_back(gvr[i]);
 		}
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		else{ altR.sparsify(); }
 
+		int idxl = 0;
+		int idxr = 0;
 		vector<guardedVal>& out = output.num_ranges;
 		out.clear();
-		for(map<pair<int, int>, int>::iterator it = vals.begin(); it != vals.end(); ++it){
-			out.push_back(guardedVal(it->second, it->first.second, it->first.first));
+		int gvrs = gvr.size();
+		int gvls = gvl.size();
+		while(idxr< gvrs || idxl < gvls){
+			if(idxr< gvrs && idxl < gvls && gvr[idxr].idx == gvl[idxl].idx){
+				int idxval = gvr[idxr].idx;
+				int pir = idxr;
+				int pil = idxl;
+				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
+				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
+				mergeTvalues(gval, gvl, pil, idxl, gvr, pir, idxr, out, idxval); 
+				continue;
+			}
+			if(idxr>= gvrs ||  (idxl < gvls && gvr[idxr].idx > gvl[idxl].idx) ){
+				int idxval = gvl[idxl].idx;
+				int pil = idxl;
+				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
+				mergeTvalues(gval, gvl, pil, idxl, altR.num_ranges, 0, altR.num_ranges.size(), out, idxval); 
+				continue;
+			}
+			if(idxl >= gvls || (idxr< gvrs && gvr[idxr].idx < gvl[idxl].idx) ){
+				int idxval = gvr[idxr].idx;
+				int pir = idxr;
+				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
+				mergeTvalues(gval, altL.num_ranges, 0, altR.num_ranges.size(), gvr, pir, idxr, out, idxval); 
+				continue;
+			}
 		}
 		output.arrayify();
 	}
