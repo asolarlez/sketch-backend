@@ -50,7 +50,7 @@ private:
 #endif
 
 public:
-  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL} Type;
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL, PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL} Type;
   typedef enum{BOTTOM, BOOL, INT} OutType;
   const Type type;
 

@@ -33,13 +33,15 @@ extern "C" {
 
 
 
-    // wrapped functions
+    // command line argument handling / global settings
     CommandLineArgs *cmdline_args(int argc, char **argv);
     void cl_set_global_params(CommandLineArgs *args);
     char *cl_get_in_name(CommandLineArgs *args);
     void cl_set_in_name(CommandLineArgs *args, char *name);
     char *cl_get_out_name(CommandLineArgs *args);
+    void cl_set_verbosity(CommandLineArgs *args, int v);
 
+    // core synthesis functions
     void runDriver();
     InterpreterEnvironment *getEnvt();
     BooleanDAG *evt_get_copy(InterpreterEnvironment *evt, char *s);
@@ -47,9 +49,14 @@ extern "C" {
         BooleanDAG *spec, BooleanDAG *sketch);
     int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter);
     void evt_print_controls(InterpreterEnvironment *evt, char *fn);
+    int evt_is_ready(InterpreterEnvironment *evt);
 
+    // boolean dag
     NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t);
-    // bool_node *bn_clone(bool_node *n, bool copyChildren);
+
+    // boolean node
+    bool_node *bn_clone(bool_node *n, int copyChildren);
+    int bn_is_minimize(bool_node *n);
 
 
 

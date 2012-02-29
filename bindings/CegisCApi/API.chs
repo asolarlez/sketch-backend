@@ -22,7 +22,7 @@
              TypeSynonymInstances,
              ViewPatterns #-}
 
-module CegisCApi (
+module CegisCApi.API (
     -- * Types
     BNType (..),
     -- * API
@@ -35,11 +35,14 @@ module CegisCApi (
     strip_sketches_lines,
     runDriver,
     getEnvt,
-    -- ** Actual synthesis commands
+    -- ** Core synthesis commands
     evt_get_copy,
     evt_prepare_miter,
     evt_assert_dag,
-    evt_print_controls
+    evt_is_ready,
+    evt_print_controls,
+    -- ** Manipulating the DAG
+    bdag_get_nodes_by_type
     ) where
 
 import Prelude hiding (id, (.))
@@ -72,6 +75,7 @@ import Foreign.C.Types
 
 {- Marshaling functions -}
 fromEnum' = fromIntegral . fromEnum
+toBool = (/= 0)
 
 cStringArray :: [String] -> IO (Ptr CString)
 cStringArray = newArray <=< mapM newCString
@@ -102,6 +106,9 @@ cmdline_args x = do
 -- | Get the output filename, as parsed by cegis command line handler.
 {# fun cl_get_out_name { id `CommandLineArgs' } -> `String' peekCAString* #}
 
+-- | Set the verbosity; 5 is very verbose, -1 should print nearly nothing
+{# fun cl_set_verbosity { id `CommandLineArgs', `Int' } -> `()' #}
+
 
 
 -- | Call this after 'cmdline_args'. Reads a program from the input filename,
@@ -126,6 +133,15 @@ cmdline_args x = do
 {# fun evt_assert_dag {
     id `InterpreterEnvironment', id `BooleanDAG' } -> `Int' #}
 
+-- | Returns if the sketch has a valid solution (write it out with 'evt_print_controls')
+{# fun evt_is_ready { id `InterpreterEnvironment' } -> `Bool' toBool #}
+
+-- | Throws an error if the environment is not ready
+evt_check_ready :: InterpreterEnvironment -> IO InterpreterEnvironment
+evt_check_ready ie = go <$> evt_is_ready ie where
+    go False = error "Could not resolve sketch."
+    go True = ie
+
 -- | Write the current solutions to a filename
 {# fun evt_print_controls {
     id `InterpreterEnvironment', `String' } -> `()' #}
@@ -136,12 +152,16 @@ cmdline_args x = do
 unpackNodeVec :: NodeVector -> IO [BoolNode]
 unpackNodeVec nv = do
     l <- node_vec_size nv
-    forM [1..l] (node_vec_get nv)
+    forM [0..l - 1] (node_vec_get nv)
 {# fun node_vec_size { id `NodeVector' } -> `Int' #}
 {# fun node_vec_get { id `NodeVector', `Int' } -> `BoolNode' id #}
 
-{# fun bdag_get_nodes_by_type as get_nodes_by_type_
+-- | Get a list of all nodes of a particular type from the tree
+{# fun bdag_get_nodes_by_type
     { id `BooleanDAG', fromEnum' `BNType' } -> `[BoolNode]' unpackNodeVec* #}
+
+-- | Determine whether a control node (star) should be minimized
+{# fun bn_is_minimize { id `BoolNode' } -> `Bool' toBool #}
 
 
 -- | Pair containing a sketch and a specification
@@ -169,10 +189,6 @@ strip_sketches_lines fn@((++ ".fcns-only") -> fn') = do
           untuple x = error ("untuple -- unexpected input " ++ show x)
 
 
-test_args = [ "--verbosity", "5", "--num-solutions", "2",
-    "-o", "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/solution",
-    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/input.tmp" ]
-
 data HsCegisArgs = HsCegisArgs {
     minimize :: Bool,
     num_solutions :: Integer }
@@ -181,11 +197,100 @@ defArgs = HsCegisArgs {
     num_solutions = 1 }
 
 reparse_args :: [String] -> (HsCegisArgs, [String])
-reparse_args l = go l (defArgs, []) where
+reparse_args l = check $ go l (defArgs, []) where
     go ("--num-solutions":x:xs) = go xs . first (\args -> args { num_solutions = read x })
     go ("--minimize":xs) = go xs . first (\args -> args { minimize = True })
     go (x:xs) = second (x:) . go xs
     go [] = id
+    check x@(HsCegisArgs { minimize, num_solutions }, _)
+        | minimize && num_solutions /= 1 = error "use either --minimize or --num-solutions"
+        | otherwise = x
+
+test_args = [ "--verbosity", "5",
+    "--minimize",
+    -- "--num-solutions", "2",
+    "-o", "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/solution",
+    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/input.tmp" ]
+
+minimize_sketch
+  :: InterpreterEnvironment -> CommandLineArgs -> [(SketchSpec, BooleanDAG)] -> String -> IO ()
+minimize_sketch e cli ss_miters fn = do
+    putStrLn "\n\nstarting minimize routine"
+    evt_check_ready e
+    cl_set_verbosity cli (-1)
+    cl_set_global_params cli
+
+    let solve_all_dags = do
+            forM ss_miters $ \(_, dag) -> evt_assert_dag e dag
+            evt_is_ready e
+
+    -- extract all minimize nodes from all dags
+    min_nodes <- forM ss_miters $ \(ss, dag) -> do
+        nodes <- filterM bn_is_minimize =<< bdag_get_nodes_by_type dag BnCtrl
+        putStrLn $ printf "number of minimize control in dag nodes in sketch %s: %d"
+            (sketch ss) (length nodes)
+        return (ss, dag, nodes)
+
+    -- minimize
+    go min_nodes where
+        go [] = return ()
+        go ((ss, dag, []):xs) = go xs
+        go ((ss, dag, (n:ns)):xs) = go' ss dag n >> go ((ss, dag, ns):xs)
+        go' ss dag n = undefined
+        {---------------------------------------------------
+        -- withEvt
+        -- forM nodes $ \n -> do
+        --     if
+        --     evt_print_controls evt fn
+        -- return (ss, dag, nodes)
+        ----------------------------------------------------}
+
+    {---------------------------------------------------
+    -- forM min_nodes
+    --     lastSuccessfulValue = self.envt.currentControls[hole.get_name()]
+    --     while(toIterate):
+    --         self.writeSolutions(num=0)
+    --         print 'lastSuccessfulValue = ', lastSuccessfulValue
+    --         newDag = BooleanDAG()
+    --         bgProblem = self.bDag.clone()
+    --         ctrlNodes = bgProblem.getNodesByType(bool_node.CTRL)
+    --         hole_clone = None
+    --         for i in xrange(len(ctrlNodes)):
+    --             if(ctrlNodes[i].get_name() == hole.get_name()):
+    --                 hole_clone = ctrlNodes[i]
+    --                 break
+    --         newDag.addNewNode(hole_clone)
+    --         constNode = newDag.new_node(None, None, bool_node.CONST)
+    --         constNode.setVal(lastSuccessfulValue)
+    --         ltNode = newDag.new_node(hole_clone, constNode, bool_node.LT)
+    --         assertNode = newDag.new_node(ltNode, None, bool_node.ASSERT)
+    --         self.envt.assertDAG_wrapper(newDag)
+    --         if self.envt.status == InterpreterEnvironment.STATUS.READY:
+    --             lastSuccessfulValue = self.envt.currentControls[hole.get_name()]
+    --         elif self.envt.status == InterpreterEnvironment.STATUS.UNSAT:
+    --             toIterate = False
+    --         else:
+    --             assert False, "Missing case for InterpreterEnvironment.STATUS enum"     
+    --     constNode = self.bDag.new_node(None, None, bool_node.CONST)
+    --     constNode.setVal(lastSuccessfulValue)
+    --     eqNode = self.bDag.new_node(hole, constNode, bool_node.EQ)
+    --     self.bDag.new_node(eqNode, None, bool_node.ASSERT)
+    --     print('Minimum value of hole ' + str(hole.get_name()) + ' is ' + str(lastSuccessfulValue))
+    ----------------------------------------------------}
+
+    {---------------------------------------------------
+    -- assert self.envt.status == InterpreterEnvironment.STATUS.READY, "Can't minimize the buggy sketch"
+    -- self.cmdLineArgs.verbosity = -1
+    -- self.cmdLineArgs.setPARAMS()
+    -- ctrlNodes = self.bDag.getNodesByType(bool_node.CTRL)
+    -- toMinimizeNodes = []
+    -- for i in xrange(len(ctrlNodes)):
+    --     if ctrlNodes[i].get_toMinimize():
+    --         toMinimizeNodes.append(ctrlNodes[i])
+    -- for i in xrange(len(toMinimizeNodes)):
+    --     self.minimizeHole(toMinimizeNodes[i])
+    ----------------------------------------------------}
+
 
 test = do
     let (args, backend_args) = reparse_args test_args
@@ -204,19 +309,24 @@ test = do
     runDriver
     e <- getEnvt
 
-    -- resolve all of the DAGs
-    miters <- forM sketches $ \(SketchSpec { sketch, spec }) -> do
+    -- resolve all of the DAGs, return pairs of miters and sketch-specs
+    ss_miters <- forM sketches $ \ss@(SketchSpec { sketch, spec }) -> do
         sk_copy <- evt_get_copy e sketch
         spec_copy <- evt_get_copy e spec
         bd <- evt_prepare_miter e spec_copy sk_copy
         evt_assert_dag e bd
-        return bd
+        return (ss, bd)
 
     -- write the first solution out
+    evt_check_ready e
     evt_print_controls e (outname 0)
 
-    forM [2..num_solutions args] $ \j -> do
-        ...
+    if (minimize args) then
+        minimize_sketch e cli ss_miters (outname 0)
+    else return ()
+
+    -- forM [2..num_solutions args] $ \j -> do
+        -- ...
 
     -- print "num solutions"
     -- print (num_solutions args)

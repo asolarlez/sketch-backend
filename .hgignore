@@ -47,3 +47,6 @@ bindings/CegisCApi.chs.h
 bindings/CegisCApi.hs
 Session.vim
 bindings/doc
+bindings/API.i
+bindings/CegisCApi/API.chi
+bindings/CegisCApi/API.chs.h
