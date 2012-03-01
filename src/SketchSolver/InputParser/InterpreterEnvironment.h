@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CegisCApi.h"
 #include "CommandLineArgs.h"
 #include "BooleanDAG.h"
 #include "BooleanDAGCreator.h"

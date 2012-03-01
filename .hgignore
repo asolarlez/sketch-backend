@@ -36,8 +36,14 @@ src/SketchSolver/InputParser.cpp
 src/SketchSolver/InputParser.hpp
 src/SketchSolver/InputParser.output
 src/SketchSolver/cegis
+src/SketchSolver/InputParser/CegisCApi.h.gch
 glob:src\SketchSolver\InputParser\InputLexer.cpp
 glob:src\SketchSolver\InputParser\InputParser.cpp
 glob:src/tags
 relre:tags
 *.swp
+bindings/CegisCApi.chi
+bindings/CegisCApi.chs.h
+bindings/CegisCApi.hs
+Session.vim
+bindings/doc
