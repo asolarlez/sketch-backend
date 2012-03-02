@@ -39,6 +39,8 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans.Class
 
+import qualified Data.Map as Map
+
 import CegisCApi.API
 import CegisCApi.HighLevelConcurrent
 import CegisCApi.Helper
@@ -66,8 +68,8 @@ reparse_args l = check $ go l (defArgs, []) where
 test_args = [ "--verbosity", "5",
     "--minimize",
     -- "--num-solutions", "2",
-    "-o", "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/solution",
-    "/home/gatoatigrado/.sketch/tmp/miniTest1.sk/input.tmp" ]
+    "-o", "/home/gatoatigrado/.sketch/tmp/miniTest210MinRepeat.sk/solution",
+    "/home/gatoatigrado/.sketch/tmp/miniTest210MinRepeat.sk/input.tmp" ]
 
 minimize_sketch
   :: InterpreterEnvironment -> CommandLineArgs -> [(SketchSpec, BooleanDAG)] -> String -> IO ()
@@ -94,10 +96,16 @@ minimize_sketch e cli ss_miters fn = do
         go ((ss, dag, []):xs) = go xs
         go z@((ss, dag, (n:ns)):xs) =
             fork_if (go' ss dag n)
-                (go z) -- continue minimizing same hole
-                (do set_const n -- fix the minimum value
+                (do putStrLn "minimized value!"
+                    go z) -- continue minimizing same hole
+                (do putStrLn "failed to minimize value."
+                    set_const n -- fix the minimum value
                     go ((ss, dag, ns):xs)) -- minimize a different one
-        go' ss dag n = return False
+        go' ss dag n = do
+            ctrl_map <- evt_get_controls e
+            nme <- bn_get_name n
+            putStrLn $ printf "Value for node '%s': %s" (nme) (show $ Map.lookup nme ctrl_map)
+            return False
         set_const n = return () -- TBD
 
     {---------------------------------------------------

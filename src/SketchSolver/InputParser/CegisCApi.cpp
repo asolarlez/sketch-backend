@@ -92,7 +92,23 @@ int evt_is_ready(InterpreterEnvironment *evt) {
     return toCInteger(evt->status == InterpreterEnvironment::READY);
 }
 
+void evt_get_controls(InterpreterEnvironment *evt, int *nkeys, char ***keys, int **values) {
+    int n = evt->currentControls.size();
+    *nkeys = n;
+    (*keys) = new char*[n];
+    (*values) = new int[n];
 
+    int i = 0;
+    for (map<string, int>::iterator it = evt->currentControls.begin();
+         it != evt->currentControls.end();
+         it++)
+    {
+        Assert(i < n, "sanity check");
+        (*keys)[i] = (char *)(*it).first.c_str();
+        (*values)[i] = (*it).second;
+        i++;
+    }
+}
 
 //--------------------------------------------------
 // Querying the DAG and manipulating nodes
@@ -112,4 +128,8 @@ int bn_is_minimize(bool_node *n) {
     Assert(n != NULL, "bn_is_minimize() -- given a null value");
     Assert(n->type == bool_node::CTRL, "bn_is_minimize() -- not given a control node!");
     return toCInteger(((CTRL_node *)n)->get_toMinimize());
+}
+
+char *bn_get_name(bool_node *n) {
+    return (char *)(n->get_name().c_str());
 }

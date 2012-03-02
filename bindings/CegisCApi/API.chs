@@ -48,9 +48,11 @@ module CegisCApi.API (
     evt_is_ready,
     evt_check_ready,
     evt_print_controls,
+    evt_get_controls,
     -- ** Manipulating the DAG
     bdag_get_nodes_by_type,
-    bn_is_minimize
+    bn_is_minimize,
+    bn_get_name
     ) where
 
 import Prelude hiding (id, (.))
@@ -60,14 +62,18 @@ import Control.Category
 import Control.Monad
 import Control.Monad.Trans.Class
 
+import qualified Data.Map as Map
 import qualified Data.List.HT as HT
 
 import Text.Printf
 
-import Foreign.Marshal.Array
-import Foreign.Ptr
 import Foreign.C.String
 import Foreign.C.Types
+import Foreign.Marshal.Alloc
+import Foreign.Marshal.Array
+import Foreign.Marshal.Utils
+import Foreign.Ptr
+import Foreign.Storable
 
 {# context lib="cegis" #}
 {# pointer *bool_node as BoolNode newtype #}
@@ -81,11 +87,20 @@ import Foreign.C.Types
 
 {- Marshaling functions -}
 fromEnum' = fromIntegral . fromEnum
-toBool = (/= 0)
 
 cStringArray :: [String] -> IO (Ptr CString)
 cStringArray = newArray <=< mapM newCString
 
+fromCStringArray :: Integral a => a -> Ptr CString -> IO [String]
+fromCStringArray (fromInteger . toInteger -> n) ptr = do
+    mapM peekCAString =<< peekArray (fromInteger . toInteger $ n) ptr
+
+fromCIntArray :: Integral a => a -> Ptr CInt -> IO [Int]
+fromCIntArray (fromInteger . toInteger -> n) ptr = do
+    map (fromInteger . toInteger) <$> peekArray n ptr
+
+-- for some reason, can't type "with" into c2hs blocks
+withT = with
 
 
 
@@ -152,6 +167,23 @@ evt_check_ready ie = go <$> evt_is_ready ie where
 {# fun evt_print_controls {
     id `InterpreterEnvironment', `String' } -> `()' #}
 
+{# fun evt_get_controls as evt_get_controls_ {
+    id `InterpreterEnvironment',
+    alloca- `CInt' peek*,
+    alloca- `Ptr (CString)' peek*,
+    alloca- `Ptr CInt' peek* } -> `()' #}
+
+-- | Get the current solution
+evt_get_controls
+  :: InterpreterEnvironment -> IO (Map.Map String Int)
+evt_get_controls evt = do
+    (n, keys, val) <- evt_get_controls_ evt
+    let n' :: Int = fromInteger . toInteger $ n
+    keys' <- fromCStringArray n keys
+    val' :: [Int] <- fromCIntArray n val
+    return $ Map.fromList [(keys' !! i, val' !! i) | i <- [0..(n' - 1)]]
+    -- return Map.fromList [
+
 
 
 -- marshalling vectors
@@ -168,4 +200,7 @@ unpackNodeVec nv = do
 
 -- | Determine whether a control node (star) should be minimized
 {# fun bn_is_minimize { id `BoolNode' } -> `Bool' toBool #}
+
+-- | Get the name of a node
+{# fun bn_get_name { id `BoolNode' } -> `String' peekCAString* #}
 
