@@ -1,5 +1,11 @@
-module CegisCApi.HighLevelConcurrent (forkos_try) where
+-- Copyright 2012 gatoatigrado (nicholas tung) [ntung at ntung]
+-- Licensed under the Apache License, Version 2.0 (the "License"); you may
+-- not use this file except in compliance with the License. You may obtain a
+-- copy of the License at http://www.apache.org/licenses/LICENSE-2.0 .
 
+module CegisCApi.HighLevelConcurrent (forkos_try, fork_if) where
+
+import Control.Applicative
 import Control.Exception
 import Control.Monad
 import Control.Concurrent
@@ -22,6 +28,14 @@ forkos_try x rest = do
             (Just _) -> putMVar mv True >> rest v)
     v <- takeMVar mv
     if v then return () else rest Nothing
+
+-- | Common case usage of 'forkos_try'.
+fork_if :: IO Bool -> IO () -> IO () -> IO ()
+fork_if c t e = forkos_try (toMaybe <$> c) go where
+    toMaybe True = Just ()
+    toMaybe False = Nothing
+    go (Just ()) = t
+    go (Nothing) = e
 
 -- Mock function that does some imperative operation,
 -- which may succeed or fail.
