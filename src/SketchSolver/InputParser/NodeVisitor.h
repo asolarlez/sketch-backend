@@ -25,7 +25,7 @@ class ARR_R_node;
 class ARR_W_node;
 class ARR_CREATE_node;
 class arith_node;
-class bool_node;
+struct bool_node;
 class BooleanDAG;
 
 class NodeVisitor{
