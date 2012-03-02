@@ -37,7 +37,6 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 	BooleanDAG* bdag;
 	bool_node* bnode;
 }
-
 %token <doubleConst> T_dbl
 %token<intConst>  T_int
 %token<intConst>  T_bool
@@ -48,6 +47,9 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token<boolConst> T_true
 %token<boolConst> T_false
 %token<variableType> T_vartype
+%token T_rightAC
+%token T_leftAC
+%token T_arrow
 %token T_twoS
 %token T_ppls
 %token T_mmns
@@ -147,6 +149,7 @@ ParamDecl: T_vartype T_ident {
 
 		currentBD->create_inputs(-1, *$2); 
 	}	
+	delete $2;
 }
 | '!' T_vartype T_ident {
  	 if( $2 == INT){
@@ -156,11 +159,29 @@ ParamDecl: T_vartype T_ident {
 
 	 	 currentBD->create_outputs(-1, *$3); 
  	 }
+	 delete $3;
  }
-| T_vartype {
-Gvartype = $1;
+ |
+ T_vartype '[''*' ConstantExpr']' T_ident {  
+	if( $1 == INT){
 
- } '[' ConstantExpr ']' InList 
+		currentBD->create_inputs( 2 /*NINPUTS*/ , *$6, $4); 
+	}else{
+
+		currentBD->create_inputs(-1, *$6, $4); 
+	}	
+	delete $6;
+}
+| '!' T_vartype '[''*' ConstantExpr']' T_ident {
+ 	 if( $2 == INT){
+		 currentBD->create_outputs(2 /* NINPUTS */, *$7);
+ 	 }else{
+
+	 	 currentBD->create_outputs(-1, *$7); 
+ 	 }
+	 delete $7;
+ }
+| T_vartype '[' ConstantExpr ']'{Gvartype = $1; } InList 
 | '!' T_vartype '[' ConstantExpr ']' OutList 
 
 
@@ -307,6 +328,26 @@ Expression: Term { $$ = $1; }
 | Term T_eq Term { 			
 	$$ = currentBD->new_node($1,  $3, bool_node::EQ);
 }
+| T_ident '[' Expression ']'{	
+	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
+	delete $1;
+}
+| NegConstant '[' Expression ']'{	
+	$$ = currentBD->new_node($3, currentBD->create_const($1), bool_node::ARR_R);		
+}
+| T_ident '[''[' Expression T_arrow Expression  ']'']'{
+	ARR_W_node* an = dynamic_cast<ARR_W_node*>(newNode(bool_node::ARR_W));
+	an->multi_mother.push_back( currentBD->get_node(*$1) );
+	an->multi_mother.push_back( $6 );
+	$$ = currentBD->new_node($4, NULL, an);	
+	delete $1;
+}
+| NegConstant '[''[' Expression T_arrow Expression  ']'']'{
+	ARR_W_node* an = dynamic_cast<ARR_W_node*>(newNode(bool_node::ARR_W));
+	an->multi_mother.push_back( currentBD->create_const($1) );
+	an->multi_mother.push_back( $6 );
+	$$ = currentBD->new_node($4, NULL, an);		
+}
 | '$' varList '$' '[' Expression ']' {
 	int pushval = 0;
 	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARRACC));
@@ -321,7 +362,18 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($5, NULL,  an);
 	delete childs;	
 }
-
+| T_leftAC varList T_rightAC{
+	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARR_CREATE));
+	list<bool_node*>* childs = $2;
+	list<bool_node*>::reverse_iterator it = childs->rbegin();
+	int bigN = childs->size();
+	an->multi_mother.reserve(bigN);
+	for(int i=0; i<bigN; ++i, ++it){
+		an->multi_mother.push_back(*it);
+	}		
+	$$ = currentBD->new_node(NULL, NULL, an); 
+	delete childs;
+}
 | T_twoS varList T_twoS {
 	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ACTRL));
 	list<bool_node*>* childs = $2;
@@ -429,11 +481,13 @@ Term: Constant {
 			}
 		}
 		
-		if( $3 == INT){
+		if( $3 == INT || $3==INT_ARR){
 			ufun->set_nbits( 2 /*NINPUTS*/  );
-		}else{
-	
+		}else{	
 			ufun->set_nbits( 1  );
+		}
+		if($3 == INT_ARR || $3==BIT_ARR){
+			ufun->makeArr();
 		}
 		
 		//ufun->name = (currentBD->new_name(fname));

@@ -10,7 +10,7 @@
 #include <stack>
 #include <ctime>
 
-
+class DagOptim;
 class CEGISparams{
 public:
 	int randseed;
@@ -105,7 +105,7 @@ class CEGISSolver
 	bool firstTime;
 protected:
 	void declareControl(const string& cname, int size);
-	void declareInput(const string& cname, int size);
+	void declareInput(const string& cname, int size, int arrSz);
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input);
 	bool find(VarStore& input, VarStore& controls);
@@ -120,6 +120,7 @@ protected:
 
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
+	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
 	
 
 	void normalizeInputStore();

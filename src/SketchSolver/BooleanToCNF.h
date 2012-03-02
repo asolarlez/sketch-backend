@@ -324,7 +324,11 @@ SolverHelper::addChoiceClause (int a, int b, int c, int x)
 
 	if(b == YES)
 	return addOrClause(a, c, x);
-	
+	if(b == -YES)
+	return addAndClause(-a, c, x);
+
+	if(c == YES)
+	return addOrClause(-a, b, x);
 	if(c == -YES)
 	return addAndClause(a, b, x);
 

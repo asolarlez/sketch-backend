@@ -1273,33 +1273,34 @@ void DagOptim::visit( ARRACC_node& node ){
 		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
 				
 				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
-
-				if(isConst(eqmom->mother) || isConst(eqmom->father)){
-					bool_node* mother = NULL;
-					int C;
-					if(isConst(eqmom->mother)){
-						mother = eqmom->father;
-						C = this->getIval(eqmom->mother);
-					}else{
-						mother = eqmom->mother;
-						C = this->getIval(eqmom->father);
+				if(node.getOtype() == bool_node::INT || node.getOtype() == bool_node::BOOL){
+					if(isConst(eqmom->mother) || isConst(eqmom->father)){
+						bool_node* mother = NULL;
+						int C;
+						if(isConst(eqmom->mother)){
+							mother = eqmom->father;
+							C = this->getIval(eqmom->mother);
+						}else{
+							mother = eqmom->mother;
+							C = this->getIval(eqmom->father);
+						}
+						ARRASS_node* an = new ARRASS_node();
+						an->mother = mother;
+						int b = 0;
+						if(node.mother->type == bool_node::NOT){
+							b = 1;
+						}else{
+							b = 0;
+						}
+						an->multi_mother.push_back(node.multi_mother[b]);
+						an->multi_mother.push_back(node.multi_mother[1-b]);
+						an->addToParents();
+						an->quant = C;
+						addNode(an);
+						stillPrivate = an;
+						rvalue = an;
+						return;
 					}
-					ARRASS_node* an = new ARRASS_node();
-					an->mother = mother;
-					int b = 0;
-					if(node.mother->type == bool_node::NOT){
-						b = 1;
-					}else{
-						b = 0;
-					}
-					an->multi_mother.push_back(node.multi_mother[b]);
-					an->multi_mother.push_back(node.multi_mother[1-b]);
-					an->addToParents();
-					an->quant = C;
-					addNode(an);
-					stillPrivate = an;
-					rvalue = an;
-					return;
 				}
 		}
 		

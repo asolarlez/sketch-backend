@@ -83,6 +83,15 @@ Comment      ("//"[^\n]*)
 "\$\$"		{
 				return T_twoS;
 			}
+"{\$"		{
+				return T_leftAC;
+			}	
+"\$}"		{
+				return T_rightAC;
+			}	
+"->"		{
+				return T_arrow;
+			}
 
 "--"		{
 				return T_mmns;
@@ -122,6 +131,16 @@ Comment      ("//"[^\n]*)
 		
 "bit"	{
 				yylval->variableType = BIT;
+				return T_vartype;
+		}
+
+"int_arr"	{
+				yylval->variableType = INT_ARR;
+				return T_vartype;
+		}
+		
+"bit_arr"	{
+				yylval->variableType = BIT_ARR;
 				return T_vartype;
 		}
 

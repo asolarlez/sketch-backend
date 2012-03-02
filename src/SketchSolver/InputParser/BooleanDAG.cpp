@@ -648,8 +648,10 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
 }
 
 
-INTER_node* BooleanDAG::create_inputs(int n, const string& gen_name){
-	return create_inter(n, gen_name, n_inputs, bool_node::SRC);
+INTER_node* BooleanDAG::create_inputs(int n, const string& gen_name, int arrSz){
+	SRC_node* src = dynamic_cast<SRC_node*>(create_inter(n, gen_name, n_inputs, bool_node::SRC));
+	src->setArr(arrSz);
+	return src;
 }
 
 INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){

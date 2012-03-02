@@ -225,8 +225,9 @@ string bool_node::get_name() const {
     return str.str();
   }
 
+
+
 bool_node::OutType bool_node::getOtype() const{
-	Assert(false, "This shouldn't get called");
 	return BOOL;
 }
 

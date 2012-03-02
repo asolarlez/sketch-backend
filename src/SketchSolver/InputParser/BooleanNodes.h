@@ -50,8 +50,8 @@ private:
 #endif
 
 public:
-  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL, PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL} Type;
-  typedef enum{BOTTOM, BOOL, INT} OutType;
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE} Type;
+  typedef enum{BOTTOM, BOOL, INT,BOOL_ARR, INT_ARR} OutType;
   const Type type;
 
 protected:
@@ -61,9 +61,12 @@ protected:
 public:
 
 
-
+  bool isArrType(){
+	  OutType ot = getOtype();
+	  return ot == INT_ARR || ot==BOOL_ARR;
+  }
   bool isArith(){
-	  return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL;
+	  return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL || type == ARR_W || type == ARR_CREATE;
   }
 
   bool isInter(){
@@ -97,14 +100,36 @@ public:
   void resetId(){
 	globalId = NEXT_GLOBAL_ID++;
   }
-  
+  /**
+              INT_ARR
+		      |     \
+		  BOOL_ARR  INT
+		       \    /
+			    BOOL
+		      
+
+  */
   OutType joinOtype(OutType t1, OutType t2) const{
   	if(t1 == BOTTOM){ return t2; }
   	if(t2 == BOTTOM){ return t1; }
   	if( t2 == t1 ){ 
   		return t1; 
   	}else{ 
-  		return INT; 
+		OutType rv = BOOL;
+		if(t1==INT_ARR || t2==INT_ARR){
+			return INT_ARR;
+		}
+		if(t1==INT || t2==INT){
+			rv = INT;
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				rv = INT_ARR;
+			}
+		}else{
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				rv = BOOL_ARR;
+			}
+		}		
+  		return rv; 
   	}
   }
 
@@ -151,6 +176,9 @@ public:
 		case UFUN: return "UFUN";			
 		case ACTRL: return "ACTRL";
 		case ARRASS: return "ARRASS";
+		case ARR_R: return "ARR_R";
+		case ARR_W: return "ARR_W";
+		case ARR_CREATE: return "ARR_CREATE";
     }
     //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
     throw BasicError("Err", "Err");
@@ -279,6 +307,137 @@ class arith_node: public bool_node{
 
 
 
+class ARR_R_node: public bool_node{
+	//mother = index
+	//father = inputarr
+	public: 
+		ARR_R_node(const ARR_R_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
+		ARR_R_node():bool_node(ARR_R){}  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new ARR_R_node(*this, copyChildren);  };
+		OutType getOtype() const{
+			if(otype != BOTTOM){
+				return otype;
+			}
+			OutType ot = father->getOtype();
+			if(ot == BOTTOM){
+				otype = ot;
+				return ot;
+			}
+			if(ot == BOOL_ARR){
+				otype = BOOL;
+				return BOOL;
+			}
+			if(ot == INT_ARR){
+				otype = INT;
+				return INT;			
+			}
+			Assert(false, "father must be an array!! a;lkjen;");
+			return BOOL;
+		}
+		virtual string lprint()const{
+			stringstream str;
+			str<<id<<"= "<<father->lid()<<"["<<mother->lid()<<"]";
+			return str.str();
+		}
+	};
+
+
+/*!
+    Array assignment node.   
+ 
+    multi-mother[0] = old-array;
+    multi-mother[1] = new-value;
+        
+*/
+class ARR_W_node:public arith_node{		
+	public: 
+		ARR_W_node():arith_node(ARR_W){ }
+		ARR_W_node(const ARR_W_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+		bool_node*& getOldArr(){
+			return multi_mother[0];
+		}
+		bool_node*& getNewVal(){
+			return multi_mother[1];
+		}
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new ARR_W_node(*this, copyChildren);  };
+		virtual void outDagEntry(ostream& out) const{
+			if( mother != NULL){
+			  out<<" "<<mother->get_name()<<" -> "<<get_name()<<";" ; 
+    		}		    		
+			
+	  		if(multi_mother[0] != NULL){
+	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
+	  		}
+			if(multi_mother[1] != NULL){
+	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
+	  		}
+		}
+		virtual string lprint()const{
+			stringstream str;
+			str<<id<<"= "<<multi_mother[0]->lid()<<"{"<<mother->lid()<<"->"<<multi_mother[1]->lid()<<"}";				
+			return str.str();
+		}
+		OutType getOtype()const {
+			if(otype != BOTTOM){
+				return otype;
+			}
+			otype = multi_mother[0]->getOtype();
+			if(otype==INT){
+				otype = INT_ARR;
+			}
+			if(otype==BOOL){
+				otype = BOOL_ARR;
+			}
+			otype = joinOtype(otype, multi_mother[1]->getOtype());
+			return otype;
+		}
+};
+
+class ARR_CREATE_node:public arith_node{		
+	public: 
+		ARR_CREATE_node():arith_node(ARR_CREATE){ }
+		ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new ARR_CREATE_node(*this, copyChildren);  };
+		virtual void outDagEntry(ostream& out) const{				    					
+	  		if(multi_mother[0] != NULL){
+	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
+	  		}
+			if(multi_mother[1] != NULL){
+	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
+	  		}
+		}
+		virtual string lprint()const{
+			stringstream str;
+			str<<id<<"= "<<"{";
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  		if(*it != NULL){
+		  			str<<(*it)->lid()<<", ";	  		
+		  		}
+			}
+			str<<"}";
+			return str.str();
+		}
+		OutType getOtype()const {
+			if(otype != BOTTOM){
+				return otype;
+			}
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+				otype = joinOtype((*it)->getOtype(), otype);	
+			}	
+			if(otype == INT){
+				otype = INT_ARR;
+			}
+			if(otype == BOOL){
+				otype = BOOL_ARR;
+			}
+			return otype;
+		}
+};
+
+
 
 class AND_node: public bool_node{ 	
 	public: 
@@ -359,9 +518,42 @@ class INTER_node: public bool_node{
 /* Input nodes */
 class SRC_node: public INTER_node{		
 public: SRC_node():INTER_node(SRC){ }  
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }  
-	SRC_node(const string& nm):INTER_node(SRC){ 		
+	int arrSz;
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz){ }  
+	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){ 
 		name = nm;
+	}
+	int getArrSz()const{
+		return arrSz;
+	}
+	void setArr(int sz){ 
+		arrSz = sz; 
+		if(sz>=0){
+			if(otype == INT){
+				otype = INT_ARR;			
+			}
+			if(otype == BOOL){
+				otype = BOOL_ARR;
+			}		
+		}
+	}
+	bool isArr() const{
+		return arrSz >= 0;
+	}
+	OutType getOtype() const {
+		if(otype != BOTTOM){
+			return otype;
+		}
+		INTER_node::getOtype();
+		if(!isArr()){ return otype; }
+		if(otype == INT){
+			otype = INT_ARR;
+			return otype;
+		}
+		if(otype == BOOL){
+			otype = BOOL_ARR;
+			return otype;
+		}		
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };	
@@ -470,6 +662,13 @@ class UFUN_node: public arith_node, public DllistNode{
 	int get_nbits() const { return nbits; }
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
+	void makeArr(){ 
+		if(nbits>1){
+			otype = INT_ARR;
+		}else{
+			otype = BOOL_ARR;
+		}
+	}
 	OutType getOtype()const {
 		if(otype != BOTTOM){
 			return otype;
@@ -766,6 +965,9 @@ inline bool_node* newNode( bool_node::Type type){
 		case bool_node::UFUN: return new UFUN_node("NULL");
 		case bool_node::ARRASS: return new ARRASS_node();
 		case bool_node::ACTRL: return new ACTRL_node();	
+		case bool_node::ARR_R: return new ARR_R_node();	
+		case bool_node::ARR_W: return new ARR_W_node();	
+		case bool_node::ARR_CREATE: return new ARR_CREATE_node();
 	}
 	return NULL;
 }
@@ -788,3 +990,4 @@ inline DllistNode* getDllnode(bool_node* bn){
 
 
 #endif
+

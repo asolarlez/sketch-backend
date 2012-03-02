@@ -14,7 +14,33 @@ NodeEvaluator::~NodeEvaluator(void)
 {
 }
 
-
+void NodeEvaluator::visit( ARR_R_node &node){
+	vector<int>& vv = vecvalues[node.father->id];
+	int idx = i(*node.mother);
+	setbn(node, idx<vv.size()?vv[idx]:i(*node.father) );
+}
+void NodeEvaluator::visit( ARR_W_node &node){
+	vector<int>& vvout = vecvalues[node.id];
+	vector<int>& vvin = vecvalues[node.getOldArr()->id];
+	int idx = i(*node.mother);
+	vvout = vvin;
+	int x = i(*node.getOldArr());
+	setbn(node, x);
+	if(idx >=0 && idx >= vvout.size()){	
+		vvout.resize(idx+1, x );
+	}
+	if(idx>=0){
+		vvout[idx] = i(*node.getNewVal());
+	}
+}
+void NodeEvaluator::visit( ARR_CREATE_node &node){
+	vector<int>& vv = vecvalues[node.id];
+	int sz = node.multi_mother.size();
+	vv.resize(sz);
+	for(int t=0; t<sz; ++t){
+		vv[t] = i(*node.multi_mother[t]);
+	}
+}
 
 void NodeEvaluator::visit( AND_node& node ){
 	setbn(node, b(*node.mother) && b(*node.father));
@@ -26,7 +52,18 @@ void NodeEvaluator::visit( XOR_node& node ){
 	setbn(node, b(*node.mother) ^ b(*node.father));
 }
 void NodeEvaluator::visit( SRC_node& node ){
-	setbn(node, (*inputs)[node.get_name()]);	
+	if(node.arrSz>=0){
+		vector<int>& vv = vecvalues[node.id];
+		vv.resize(node.arrSz);
+		VarStore::objP* op = &(inputs->getObj(node.get_name()));
+		while(op->next != NULL){
+			vv[op->index] = op->getInt();
+			op = op->next;
+		}
+
+	}else{
+		setbn(node, (*inputs)[node.get_name()]);	
+	}
 }
 void NodeEvaluator::visit( DST_node& node ){
 	setbn(node, i(*node.mother));
@@ -74,7 +111,20 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 	if( idx >= node.multi_mother.size() || idx < 0){
 		setbn(node, 0);
 	}else{
-		setbn(node, i(*node.multi_mother[idx]) );
+		bool_node* pred = node.multi_mother[idx];
+		bool_node::OutType otp = node.getOtype();
+		if(otp==bool_node::INT || otp ==bool_node::BOOL){
+			setbn(node, i(*pred) );
+		}else{
+			bool_node::OutType potp = pred->getOtype();
+			if(potp==bool_node::INT || potp ==bool_node::BOOL){
+				setbn(node, i(*pred) );
+			}else{
+				vector<int>& vvout = vecvalues[pred->id];
+				vecvalues[node.id] = vvout;
+				setbn(node, i(*pred) );
+			}
+		}
 	}	
 }
 
@@ -146,7 +196,7 @@ int NodeEvaluator::scoreNodes(){
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin(); it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
-		if(!*it && ni->type != bool_node::CONST){
+		if(!*it && ni->type != bool_node::CONST && !ni->isArrType()){
 			++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){

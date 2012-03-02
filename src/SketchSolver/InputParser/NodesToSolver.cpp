@@ -60,15 +60,171 @@ public:
 	}
 };
 
+void advanceToEndIdx(int& iend, int cidx, vector<guardedVal>&tv){
+	while(iend < tv.size() && tv[iend].idx == cidx){
+		++iend;
+	}
+}
+
+int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend){
+	int orTerms = 0;
+	int i=mstart, j=fstart;
+	int inci = 1;
+	int incj = 1;
+	// There is an assumption that the num_ranges are monotonic. 
+	// However, they could be monotonically increasing or monotonically decreasing.
+	// So we need to check.
+	if(mend -1 > mstart && mv[mstart].value > mv[mstart+1].value){
+		inci = -1;
+		i = mend -1;
+	}
+		
+	if(fend -1> fstart && fv[fstart].value > fv[fstart+1].value){
+		incj = -1;
+		j = fend -1;
+	}
+	vector<int> noeq;
+	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
+		    bool avi = i < mend && i >= mstart;
+		    bool avj = j < fend && j >= fstart;
+			int curri = avi ? mv[i].value  : -1;
+			int currj = avj ? fv[j].value  : -1;
+			if( curri == currj && avi && avj){
+				int cvar = dir.addAndClause(mv[i].guard, fv[j].guard);
+				++orTerms;
+				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+				scratchpad[orTerms] = cvar;
+				i = i + inci;
+				j = j + incj;
+				continue;
+			}
+			if((curri < currj && avi) || !avj){
+				noeq.push_back(mv[i].guard);
+				i = i + inci;
+				continue;
+		    }
+		    if( (currj < curri && avj) || !avi ){
+				noeq.push_back(fv[j].guard);
+				j = j + incj;
+				continue;
+		    }
+	}
+	
+	if(orTerms==0){
+		return -YES;
+	}else{
+		int rv;
+		if(orTerms==1){
+			rv = scratchpad[1];
+		}else{
+			scratchpad[0] = 0;
+			rv = dir.addBigOrClause( &scratchpad[0], orTerms);			
+		}
+		for(vector<int>::iterator it = noeq.begin(); it < noeq.end(); ++it){
+			dir.addHelperC(-(*it), -rv);
+		}
+		return rv;
+	}
+
+}
+
+
+template<typename COMP> void
+NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
+	vector<guardedVal>& mv = tmval.num_ranges;
+	vector<guardedVal>& fv = tfval.num_ranges;
+
+	int midx = mv[0].idx;
+	int fidx = fv[0].idx;
+	int mistart = 0;
+	int fistart = 0;
+	int miend = 0;
+	int fiend = 0;
+	advanceToEndIdx(miend, midx, mv);
+	advanceToEndIdx(fiend, fidx, fv);
+	Tvalue mdef;
+	if(midx==-1){
+		for(int i=0; i<miend; ++i){
+			mdef.num_ranges.push_back(guardedVal(mv[i].guard, mv[i].value));
+		}
+	}else{
+		mdef = tvOne;
+		mdef.num_ranges[0].value = -333;
+	}
+	Tvalue fdef;
+	if(fidx==-1){
+		for(int i=0; i<fiend; ++i){
+			fdef.num_ranges.push_back(guardedVal(fv[i].guard, fv[i].value));
+		}
+	}else{
+		fdef = tvOne;
+		fdef.num_ranges[0].value = -333;
+	}
+	int cvar = YES;
+	bool moreM = true;
+	bool moreF = true;
+	do{
+		if(midx == fidx && moreM && moreF){				
+				int rv = compareRange(mv, mistart, miend, fv, fistart, fiend);
+				cvar = dir.addAndClause(cvar, rv);	
+				if(miend < mv.size()){
+					mistart=miend;
+					midx = mv[mistart].idx;
+					advanceToEndIdx(miend, midx, mv);
+				}else{
+					moreM=false;
+				}
+				if(fiend<fv.size()){
+					fistart=fiend;
+					fidx=fv[fistart].idx;
+					advanceToEndIdx(fiend, fidx, fv);
+				}else{
+					moreF=false;
+				}
+				continue;
+		}
+		if((midx < fidx && moreM) || !moreF){
+			int rv = compareRange(mv, mistart, miend, fdef.num_ranges, 0, fdef.num_ranges.size());
+			cvar = dir.addAndClause(cvar, rv);
+			if(miend < mv.size()){
+				mistart=miend;
+				midx = mv[mistart].idx;
+				advanceToEndIdx(miend, midx, mv);
+			}else{
+				moreM=false;
+			}
+			continue;
+		}else{
+			int rv = compareRange(mdef.num_ranges, 0, mdef.num_ranges.size(), fv, fistart, fiend);
+			cvar = dir.addAndClause(cvar, rv);
+			if(fiend<fv.size()){
+				fistart=fiend;
+				fidx=fv[fistart].idx;
+				advanceToEndIdx(fiend, fidx, fv);
+			}else{
+				moreF=false;
+			}
+			continue;
+		}
+	}while(moreM || moreF);
+
+	node_ids[node.id] = cvar;	
+}
+
 template<typename COMP> void
 NodesToSolver::processComparissons (bool_node& node)
 {
     bool_node *mother = node.mother;
-    Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
-    mval.makeSparse (dir);
+    Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+	if(mval.isArray() || fval.isArray()){
+		compareArrays<COMP>(node, mval, fval);
+		return;
+	}
+
+	mval.makeSparse (dir);
     fval.makeSparse (dir);
     int cvar = -YES;
     COMP comp;
@@ -588,15 +744,22 @@ NodesToSolver::visit (SRC_node &node)
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
 		
     } else {
-		Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
+		int arrSz = node.getArrSz();		
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
-		if (node.get_nbits () > 1) {
-		    node_ids[node.id].setSize (node.get_nbits ());
+		if (node.get_nbits () > 1 || arrSz >=0) {		    
 		    Dout (cout << "setting input nodes" << node.get_name() << endl);
 #ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
-		    node_ids[node.id].makeSparse (dir);
+			if(arrSz<0){
+				node_ids[node.id].setSize (node.get_nbits ());
+				Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
+				node_ids[node.id].makeSparse (dir);
+			}else{
+				node_ids[node.id].setSize (node.get_nbits ()*arrSz);
+				Assert( dir.getArrSize(node.get_name()) == arrSz*node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
+				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz);
+			}
 #endif /* HAVE_BVECTARITH */
 		}
 		node_ids[node.id].markInput(dir);
@@ -878,7 +1041,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	bool parentSame = true;
 	bool parentSameBis = true;
 	bool isBoolean=true;	
-
+	bool isArray = false;
 //	aracctimer.restart();
 //	flooptimer.restart();
 	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
@@ -886,6 +1049,9 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		const Tvalue& cval = tval_lookup(*it);
 		if( cval.isSparse() ){
 			isBoolean = false;
+		}
+		if(cval.isArray()){
+			isArray=true;
 		}
 		choices[i] = cval;
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
@@ -909,6 +1075,11 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl);
 												 //aracctimer.stop().print();
 												 return; }
+	if(isArray){
+		doArrArrAcc(node, node_ids[node.id]);
+		return;
+	}
+
 	if(!isBoolean){
 //		nonbooltimer.restart();
 		doNonBoolArrAcc(node, node_ids[node.id]);
@@ -1023,6 +1194,59 @@ NodesToSolver::visit (LT_node &node)
 
 
 
+void NodesToSolver::mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx){
+	int i=nr0Start, j=nr1Start;
+	out.reserve(out.size()+ (nr0End-nr0Start) + (nr1End-nr1Start) );
+	
+		int inci = 1;
+		int incj = 1;
+		// There is an assumption that the num_ranges are monotonic. 
+		// However, they could be monotonically increasing or monotonically decreasing.
+		// So we need to check.
+		if(nr0End -1 > nr0Start && nr0[nr0Start].value > nr0[nr0Start+1].value){
+			inci = -1;
+			i = nr0End -1;
+		}
+		
+		if(nr1End -1> nr1Start && nr1[nr1Start].value > nr1[nr1Start+1].value){
+			incj = -1;
+			j = nr1End -1;
+		}
+		
+
+		while( (i>=nr0Start && i < nr0End) || (j>=nr1Start && j< nr1End)){
+		    bool avi = i < nr0End && i >= nr0Start;
+		    bool avj = j < nr1End && j >= nr1Start;
+			int curri = avi ? nr0[i].value  : -1;
+			int currj = avj ? nr1[j].value  : -1;
+		    if( curri == currj && avi && avj){
+				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
+				
+				int cvar3 = dir.addChoiceClause(guard, nr1[j].guard,nr0[i].guard);
+				if(cvar3!= -YES){ out.push_back(guardedVal(cvar3, curri, idx));	}
+				i = i + inci;
+				j = j + incj;
+				continue;
+			}
+		    if((curri < currj && avi) || !avj){
+				Dout(cout<<" curri = "<<curri<<endl);
+				int cvar = dir.addAndClause( nr0[i].guard, -guard);
+				if(cvar!=-YES){ out.push_back(guardedVal(cvar, curri, idx)); }
+				i = i + inci;
+				continue;
+		    }
+		    if( (currj < curri && avj) || !avi ){
+				Dout(cout<<" currj = "<<currj<<endl);
+				int cvar = dir.addAndClause( nr1[j].guard, guard );
+				if(cvar!=-YES){ out.push_back(guardedVal(cvar, currj, idx)); }
+				j = j + incj;
+				continue;
+		    }
+		    Assert(false, "Should never get here");
+		}		
+}
+
+
 
 void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag){
 		if( !mid0.isSparse() ){
@@ -1045,63 +1269,15 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		    Dout( cout<<"var "<< mid0 <<endl);
 		    return;
 		}
-		int i=0, j=0;
+		
 		vector<guardedVal>& nr0 = mid0.num_ranges;
 		vector<guardedVal>& nr1 = mid1.num_ranges;		
 		vector<guardedVal>& out = output.num_ranges;
 		out.clear();
-		out.reserve(nr0.size() + nr1.size());
-
-		int inci = 1;
-		int incj = 1;
-		// There is an assumption that the num_ranges are monotonic. 
-		// However, they could be monotonically increasing or monotonically decreasing.
-		// So we need to check.
-		if(nr0.size() > 1 && nr0[0].value > nr0[1].value){
-			inci = -1;
-			i = nr0.size() -1;
-		}
 		
-		if(nr1.size() > 1 && nr1[0].value > nr1[1].value){
-			incj = -1;
-			j = nr1.size() -1;
-		}
+		mergeTvalues(guard, nr0, 0, nr0.size(), nr1, 0, nr1.size(), out);
 
-		while(i < nr0.size() || j< nr1.size()){
-		    bool avi = i < nr0.size() && i >= 0;
-		    bool avj = j < nr1.size() && j >= 0;
-			int curri = avi ? nr0[i].value  : -1;
-			int currj = avj ? nr1[j].value  : -1;
-		    if( curri == currj && avi && avj){
-				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
-				/*
-				int cvar1 = dir.addAndClause( mid0.getId (i), -guard);
-				int cvar2 = dir.addAndClause( mid1.getId (j), guard);
-				int cvar3 = dir.addOrClause( cvar2, cvar1);
-				*/
-				int cvar3 = dir.addChoiceClause(guard, mid1.getId (j), mid0.getId (i));
-				out.push_back(guardedVal(cvar3, curri));
-				
-				i = i + inci;
-				j = j + incj;
-				continue;
-			}
-		    if((curri < currj && avi) || !avj){
-				Dout(cout<<" curri = "<<curri<<endl);
-				int cvar = dir.addAndClause( mid0.getId (i), -guard);
-				out.push_back(guardedVal(cvar, curri));				
-				i = i + inci;
-				continue;
-		    }
-		    if( (currj < curri && avj) || !avi ){
-				Dout(cout<<" currj = "<<currj<<endl);
-				int cvar = dir.addAndClause( mid1.getId (j), guard );
-				out.push_back(guardedVal(cvar, currj));
-				j = j + incj;
-				continue;
-		    }
-		    Assert(false, "Should never get here");
-		}		
+
 		Assert( out.size () > 0, "This should not happen here2");		
 		output.sparsify ();
 		return;
@@ -1132,6 +1308,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		if( cval.isSparse() ){
 		    isBoolean = false;
 		}
+		Assert(!cval.isArray(), "ARRASS doesn't work for arrays");
 		mothers[i] = *it;
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"   ");
 		choices[i] = cval;
@@ -1194,6 +1371,258 @@ void NodesToSolver::visit( ACTRL_node& node ){
 	dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].sparsify ();
 	Dout(cout<<"&ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
+	return;
+}
+
+void
+NodesToSolver::visit( ARR_R_node &node){
+	Tvalue index = tval_lookup(node.mother);	
+	Tvalue inarr = tval_lookup(node.father);	
+	if(!index.isSparse()){
+		index.makeSparse(dir);
+	}
+	if(inarr.isBvect()){
+		inarr.makeSparse(dir);
+	}
+	if(!inarr.isArray()){
+		cout<<"test"<<endl;
+	}
+	
+	vector<guardedVal>& idv = index.num_ranges;
+	map<int, int> valToID;
+	int idxincr = 1;
+	int idxi = 0;
+	if(idv.size() - 1 > idxi && idv[0].value > idv[1].value){
+		idxincr = -1;
+		idxi = idv.size()-1;
+	}
+	while(idxi < idv.size() && idxi >= 0 && idv[idxi].value < 0){
+		//Negative indices in the array map to zero by default.
+		map<int, int>::iterator it = valToID.find(0);
+		if(it == valToID.end()){
+			valToID[0] = idv[idxi].guard;
+		}else{
+			it->second = dir.addOrClause(idv[idxi].guard, it->second);
+		}
+		idxi += idxincr;
+	}	
+
+	vector<guardedVal>::const_iterator begdef = inarr.num_ranges.begin();
+	vector<guardedVal>::const_iterator enddef = begdef;
+	while(enddef != inarr.num_ranges.end() && enddef->idx <0){
+		++enddef;
+	}
+	
+	vector<guardedVal>::const_iterator inarriter = enddef;
+	vector<guardedVal>::const_iterator inarrend = inarr.num_ranges.end();
+	
+	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
+	defdef.num_ranges[0].value = -333;
+	if(begdef == enddef){
+		begdef = defdef.num_ranges.begin();
+		enddef = defdef.num_ranges.end();
+	}
+	
+	int cidx;
+	bool moreIdx = idxi < idv.size() && idxi >= 0;
+	bool moreArr=false;
+	if(inarriter != inarrend){
+		cidx = inarriter->idx;	
+		moreArr=true;
+	}
+	while(moreIdx){
+		if(moreIdx && moreArr && cidx == idv[idxi].value){
+			while(inarriter != inarrend && inarriter->idx == cidx){
+				int iatv = inarriter->value;
+				map<int, int>::iterator it = valToID.find(iatv);
+				if(it == valToID.end()){
+					valToID[iatv] = dir.addAndClause(idv[idxi].guard, inarriter->guard);
+				}else{
+					int cvar = dir.addAndClause(idv[idxi].guard,inarriter->guard);
+					it->second = dir.addOrClause(cvar, it->second);
+				}
+				++inarriter;
+			}
+			if(inarriter != inarrend){
+				cidx = inarriter->idx;
+			}else{
+				cidx = -1;
+				moreArr = false;
+			}
+			idxi += idxincr;
+			if(!(idxi >= 0 && idxi < idv.size())){
+				moreIdx = false;
+			}
+			continue;
+		}
+		if(!moreIdx || (moreArr && cidx < idv[idxi].value)){ 
+			// array entry not contemplated by index.
+			// nothing to do but to increment the array entry.
+			while(inarriter != inarrend && inarriter->idx == cidx){				
+				++inarriter;
+			}
+			if(inarriter != inarrend){
+				cidx = inarriter->idx;
+			}else{
+				cidx = -1;
+				moreArr = false;
+			}
+			continue;
+		}
+		if(!moreArr || (moreIdx && idv[idxi].value < cidx)){
+			//The index refers to an entry that doesn't exist in the array.
+			//Need to produce the default value.
+			for(vector<guardedVal>::const_iterator it = begdef; it < enddef; ++it){
+				int iatv = it->value;
+				map<int, int>::iterator vit = valToID.find(iatv);
+				if(vit == valToID.end()){
+					valToID[iatv] = dir.addAndClause(idv[idxi].guard, it->guard);
+				}else{
+					int cvar = dir.addAndClause(idv[idxi].guard,it->guard);
+					vit->second = dir.addOrClause(cvar, vit->second);
+				}
+			}
+			idxi += idxincr;
+			if(!(idxi >= 0 && idxi < idv.size())){
+				moreIdx = false;
+			}
+			continue;
+		}
+	}
+
+
+	Tvalue& nvar = node_ids[node.id];
+	if(node.getOtype() == bool_node::INT){
+		vector<guardedVal>& tmp = nvar.num_ranges;
+		tmp.clear();
+		tmp.reserve(valToID.size());
+		map<int, int>::iterator it = valToID.begin();
+		for(int i=0; it!=valToID.end(); ++i, ++it){
+			if(it->second != -YES){
+				tmp.push_back( guardedVal(it->second, it->first) );
+			}
+		}
+		if(tmp.size() == 1){
+			tmp[0].guard = YES;
+		}
+		nvar.sparsify ();
+	}else{
+		map<int, int>::iterator it = valToID.begin();
+		for(int i=0; it!=valToID.end(); ++i, ++it){
+			if(it->first == 0){
+				nvar = Tvalue(-it->second);
+				return;
+			}
+			if(it->first == 1){
+				nvar = Tvalue(it->second);
+				return;
+			}
+		}
+		nvar = Tvalue(-YES);
+	}
+}
+void NodesToSolver::visit( ARR_W_node &node){	
+	Tvalue index = tval_lookup(node.mother);	
+	vector<guardedVal>& idxgv = index.num_ranges;
+	Tvalue inarr = tval_lookup(node.getOldArr());	
+	Tvalue newval = tval_lookup(node.getNewVal());
+	Tvalue& nvar = node_ids[node.id];
+	vector<guardedVal>& out = nvar.num_ranges;
+	out.clear();
+	if(!index.isSparse()){
+		index.makeSparse(dir);
+	}	
+	if(!newval.isSparse()){
+		newval.makeSparse(dir);
+	}
+	if(inarr.isBvect()){
+		inarr.makeSparse(dir);
+	}
+	int lasti = 0;
+	int lastidx = -1;
+	int idxincr = 1;
+	int idxstart = 0;
+	if(idxgv.size()>1 && idxgv[0].value > idxgv[1].value){
+		idxstart = idxgv.size()-1;
+		idxincr = -1;
+	}
+	while(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value < 0){
+		idxstart += idxincr;
+	}
+	int cindex = inarr.num_ranges[0].idx;
+	int defstart = 0;
+	int defend = 0;
+	Tvalue tvdef = tvOne;
+	tvdef.num_ranges[0].value = -333;
+	if(cindex < 0){
+		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
+			++defend;
+		}
+	}
+	for(int i=0; i<=inarr.getSize(); ++i){
+		bool donow = false;
+		if(i==inarr.getSize() || inarr.num_ranges[i].idx != cindex){
+			donow = true;
+		}
+
+		if(donow){
+			while(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value < cindex){
+				if(defend-defstart > 0){
+					mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
+				}else{
+					mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
+				}
+				idxstart += idxincr;
+			}
+			if(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value == cindex){
+				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
+				idxstart += idxincr;
+			}else{
+				for(int tt=lasti; tt<i; ++tt){
+					out.push_back(inarr.num_ranges[tt]);
+				}
+			}
+			lasti = i;
+			if(i!= inarr.getSize()){ cindex = inarr.num_ranges[i].idx; }
+		}
+	}
+	while(idxstart >= 0 && idxstart < idxgv.size()){
+		if(defend-defstart > 0){
+			mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
+		}else{
+			mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
+		}
+		idxstart += idxincr;
+	}
+	nvar.arrayify();
+}
+
+void
+
+
+	NodesToSolver::visit( ARR_CREATE_node &node){
+	Tvalue& nvar = node_ids[node.id];
+	vector<guardedVal>& tmp = nvar.num_ranges;
+	tmp.clear();
+	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
+		const Tvalue& mval = tval_lookup(*it);
+		if(mval.isSparse()){
+			for(int t=0; t<mval.getSize(); ++t){
+				tmp.push_back(guardedVal(mval.getId(t), mval[t], i));
+			}			
+		}	
+		if(mval.isBvect()){
+			int v = mval.getId();
+			if(v != -YES){
+				tmp.push_back(guardedVal(v, 1, i));
+			}
+			if(v != YES){
+				tmp.push_back(guardedVal(-v, 0, i));
+			}
+		}
+	}	
+	nvar.arrayify();
 	return;
 }
 
@@ -1267,6 +1696,90 @@ NodesToSolver::visit (CONST_node &node)
 }
 
 
+void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
+	vector<bool_node*>::iterator it = node.multi_mother.begin();
+	int N = node.multi_mother.size();
+	vector<Tvalue> choices(N);
+	for(int i=0; i < N; ++i, ++it){
+		choices[i] = tval_lookup (*it, TVAL_SPARSE);	
+		if(choices[i].isBvect()){
+			choices[i].makeSparse(dir);
+		}		
+	}
+	bool_node* mother = node.mother;
+	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
+	if(mval.isSparse()){
+		Assert(false, "NYI aslkdn;hyp;k");
+	}else{
+		Assert(choices.size() == 2, "NYI aslkdn;hyp;k");
+		map<pair<int, int>, int> vals;
+		int gval = mval.getId();
+		
+		vector<guardedVal>& gvl = choices[0].num_ranges;	
+		Tvalue altL;
+		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
+			altL.num_ranges.push_back(gvl[i]);
+		}
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		else{ altL.sparsify(); }
+
+		vector<guardedVal>& gvr = choices[1].num_ranges;	
+		Tvalue altR;
+		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
+			altR.num_ranges.push_back(gvr[i]);
+		}
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		else{ altR.sparsify(); }
+
+		int idxl = 0;
+		int idxr = 0;
+		vector<guardedVal>& out = output.num_ranges;
+		out.clear();
+		int gvrs = gvr.size();
+		int gvls = gvl.size();
+		while(idxr< gvrs || idxl < gvls){
+			if(idxr< gvrs && idxl < gvls && gvr[idxr].idx == gvl[idxl].idx){
+				int idxval = gvr[idxr].idx;
+				int pir = idxr;
+				int pil = idxl;
+				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
+				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
+				mergeTvalues(gval, gvl, pil, idxl, gvr, pir, idxr, out, idxval); 
+				continue;
+			}
+			if(idxr>= gvrs ||  (idxl < gvls && gvr[idxr].idx > gvl[idxl].idx) ){
+				int idxval = gvl[idxl].idx;
+				int pil = idxl;
+				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
+				mergeTvalues(gval, gvl, pil, idxl, altR.num_ranges, 0, altR.num_ranges.size(), out, idxval); 
+				continue;
+			}
+			if(idxl >= gvls || (idxr< gvrs && gvr[idxr].idx < gvl[idxl].idx) ){
+				int idxval = gvr[idxr].idx;
+				int pir = idxr;
+				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
+				mergeTvalues(gval, altL.num_ranges, 0, altR.num_ranges.size(), gvr, pir, idxr, out, idxval); 
+				continue;
+			}
+		}
+		output.arrayify();
+	}
+
+}
+
+void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval){
+	int vval = dir.addAndClause(it->guard, gval);
+	if(vval != -YES){
+		map<pair<int, int>, int>::iterator mit = vals.find( make_pair(idx, it->value) );
+		if(mit == vals.end()){
+			vals[make_pair(idx, it->value)] = vval;
+		}else{
+			mit->second = dir.addOrClause(mit->second, vval );
+		}
+	}
+}
+
+
 void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 	Dout( cout<<" non boolean array "<<endl );
 	vector<bool_node*>::iterator it = node.multi_mother.begin();
@@ -1275,7 +1788,9 @@ void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 	vector<Tvalue> choices(N);
 	for(int i=0; i < N; ++i, ++it){
 		choices[i] = tval_lookup (*it, TVAL_SPARSE);
-		choices[i].makeSparse (dir);
+		if(choices[i].isBvect()){
+			choices[i].makeSparse (dir);
+		}
 	}
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
