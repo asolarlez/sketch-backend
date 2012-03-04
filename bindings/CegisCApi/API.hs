@@ -26,12 +26,13 @@
              TypeSynonymInstances,
              ViewPatterns #-}
 
+-- | This module provides an API to control the CEGIS synthesis backend.
 module CegisCApi.API (
     -- * Types
     BNType (..),
-    BoolNode,
     NodeVector,
-    BooleanDAG,
+    BoolNodePtr,
+    BooleanDAGPtr,
     CommandLineArgs,
     InterpreterEnvironment,
     -- * API
@@ -55,8 +56,33 @@ module CegisCApi.API (
     evt_get_controls,
     -- ** Manipulating the DAG
     bdag_get_nodes_by_type,
+    bdag_new,
+    bdag_clone,
     bn_is_minimize,
-    bn_get_name
+    bn_get_name,
+    bn_new,
+    bn_clone,
+    bn_set_const,
+
+    -- *** Sugar
+    -- | Example:
+    --
+    -- @
+    --  withDag dag $ do
+    --      y <- e_const v
+    --      lt_node <- e_lt x y
+    --      e_assert lt_node
+    -- @
+    bn_new_const,
+    bn_assert,
+    e_const,
+    e_lt,
+    e_eq,
+    e_assert,
+    withDag,
+
+    -- * Re-exported stuff
+    nullPtr
     ) where
 
 import Prelude hiding (id, (.))
@@ -65,6 +91,7 @@ import Control.Applicative
 import Control.Category
 import Control.Monad
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.Reader
 
 import qualified Data.Map as Map
 import qualified Data.List.HT as HT
@@ -80,17 +107,34 @@ import Foreign.Ptr
 import Foreign.Storable
 
 
-{-# LINE 78 "API.chs" #-}
-newtype BoolNode = BoolNode (Ptr (BoolNode))
-{-# LINE 79 "API.chs" #-}
+{-# LINE 105 "API.chs" #-}
+data BoolNode
+data BooleanDAG
+
+-- | Reference to a Boolean DAG node. Its memory is
+-- managed by the Boolean DAG
+type BoolNodePtr = Ptr (BoolNode)
+{-# LINE 111 "API.chs" #-}
+
 newtype NodeVector = NodeVector (Ptr (NodeVector))
-{-# LINE 80 "API.chs" #-}
-newtype BooleanDAG = BooleanDAG (Ptr (BooleanDAG))
-{-# LINE 81 "API.chs" #-}
+{-# LINE 113 "API.chs" #-}
+
+-- | Reference to a Boolean DAG. Boolean DAG's are self-contained,
+-- but their control values are statically stored by an
+-- InterpreterEnvironment (I think; Armando: correct me if I'm wrong).
+type BooleanDAGPtr = Ptr (BooleanDAG)
+{-# LINE 118 "API.chs" #-}
+
+-- | Contains a lot of global settings (verbosity, etc.).
+-- Make sure to initialize it (via 'cmdline_args')
+-- before you do anything else.
 newtype CommandLineArgs = CommandLineArgs (Ptr (CommandLineArgs))
-{-# LINE 82 "API.chs" #-}
+{-# LINE 123 "API.chs" #-}
+
+-- | Manages the 2QBF synthesis problem.
 newtype InterpreterEnvironment = InterpreterEnvironment (Ptr (InterpreterEnvironment))
-{-# LINE 83 "API.chs" #-}
+{-# LINE 126 "API.chs" #-}
+
 data BNType = BnAnd
             | BnOr
             | BnXor
@@ -119,7 +163,7 @@ data BNType = BnAnd
             | BnArrCreate
             deriving (Enum,Show,Eq)
 
-{-# LINE 84 "API.chs" #-}
+{-# LINE 128 "API.chs" #-}
 
 
 
@@ -141,6 +185,28 @@ fromCIntArray (fromInteger . toInteger -> n) ptr = do
 withT = with
 
 
+-- marshalling vectors
+unpackNodeVec :: NodeVector -> IO [BoolNodePtr]
+unpackNodeVec nv = do
+    l <- node_vec_size nv
+    forM [0..l - 1] (node_vec_get nv)
+node_vec_size :: NodeVector -> IO (Int)
+node_vec_size a1 =
+  let {a1' = id a1} in 
+  node_vec_size'_ a1' >>= \res ->
+  let {res' = fromIntegral res} in
+  return (res')
+{-# LINE 155 "API.chs" #-}
+node_vec_get :: NodeVector -> Int -> IO (BoolNodePtr)
+node_vec_get a1 a2 =
+  let {a1' = id a1} in 
+  let {a2' = fromIntegral a2} in 
+  node_vec_get'_ a1' a2' >>= \res ->
+  let {res' = id res} in
+  return (res')
+{-# LINE 156 "API.chs" #-}
+
+
 
 -- | You probably want to run this function first.
 --   Pass it an array of arguments, like
@@ -159,13 +225,13 @@ cmdline_args_ a1 a2 =
   cmdline_args_'_ a1' a2' >>= \res ->
   let {res' = id res} in
   return (res')
-{-# LINE 118 "API.chs" #-}
+{-# LINE 171 "API.chs" #-}
 cl_set_global_params :: CommandLineArgs -> IO ()
 cl_set_global_params a1 =
   let {a1' = id a1} in 
   cl_set_global_params'_ a1' >>= \res ->
   return ()
-{-# LINE 120 "API.chs" #-}
+{-# LINE 173 "API.chs" #-}
 
 -- | Get the input filename, as parsed by cegis command line handler.
 cl_get_in_name :: CommandLineArgs -> IO (String)
@@ -174,7 +240,7 @@ cl_get_in_name a1 =
   cl_get_in_name'_ a1' >>= \res ->
   peekCAString res >>= \res' ->
   return (res')
-{-# LINE 123 "API.chs" #-}
+{-# LINE 177 "API.chs" #-}
 
 cl_set_in_name :: CommandLineArgs -> String -> IO ()
 cl_set_in_name a1 a2 =
@@ -182,7 +248,7 @@ cl_set_in_name a1 a2 =
   withCString a2 $ \a2' -> 
   cl_set_in_name'_ a1' a2' >>= \res ->
   return ()
-{-# LINE 125 "API.chs" #-}
+{-# LINE 181 "API.chs" #-}
 
 -- | Get the output filename, as parsed by cegis command line handler.
 cl_get_out_name :: CommandLineArgs -> IO (String)
@@ -191,7 +257,7 @@ cl_get_out_name a1 =
   cl_get_out_name'_ a1' >>= \res ->
   peekCAString res >>= \res' ->
   return (res')
-{-# LINE 128 "API.chs" #-}
+{-# LINE 185 "API.chs" #-}
 
 -- | Set the verbosity; 5 is very verbose, -1 should print nearly nothing
 cl_set_verbosity :: CommandLineArgs -> Int -> IO ()
@@ -200,7 +266,7 @@ cl_set_verbosity a1 a2 =
   let {a2' = fromIntegral a2} in 
   cl_set_verbosity'_ a1' a2' >>= \res ->
   return ()
-{-# LINE 131 "API.chs" #-}
+{-# LINE 190 "API.chs" #-}
 
 
 
@@ -211,30 +277,30 @@ runDriver :: IO ()
 runDriver =
   runDriver'_ >>= \res ->
   return ()
-{-# LINE 138 "API.chs" #-}
+{-# LINE 197 "API.chs" #-}
 
--- | Get the C-global environment generated by 'runDriver'
+-- | Get the C-global environment generated by 'runDriver'.
 getEnvt :: IO (InterpreterEnvironment)
 getEnvt =
   getEnvt'_ >>= \res ->
   let {res' = id res} in
   return (res')
-{-# LINE 141 "API.chs" #-}
+{-# LINE 200 "API.chs" #-}
 
--- | Get a copy of a function's DAG
-evt_get_copy :: InterpreterEnvironment -> String -> IO (BooleanDAG)
+-- | Get a copy of a function's DAG.
+evt_get_copy :: InterpreterEnvironment -> String -> IO (BooleanDAGPtr)
 evt_get_copy a1 a2 =
   let {a1' = id a1} in 
   withCString a2 $ \a2' -> 
   evt_get_copy'_ a1' a2' >>= \res ->
   let {res' = id res} in
   return (res')
-{-# LINE 144 "API.chs" #-}
+{-# LINE 205 "API.chs" #-}
 
 -- | DAG representing the assertion \"forall in. spec(in) == sketch(in)\". Arguments:
 --
 -- > evt_prepare_miter spec sketch
-evt_prepare_miter :: InterpreterEnvironment -> BooleanDAG -> BooleanDAG -> IO (BooleanDAG)
+evt_prepare_miter :: InterpreterEnvironment -> BooleanDAGPtr -> BooleanDAGPtr -> IO (BooleanDAGPtr)
 evt_prepare_miter a1 a2 a3 =
   let {a1' = id a1} in 
   let {a2' = id a2} in 
@@ -242,41 +308,41 @@ evt_prepare_miter a1 a2 a3 =
   evt_prepare_miter'_ a1' a2' a3' >>= \res ->
   let {res' = id res} in
   return (res')
-{-# LINE 151 "API.chs" #-}
+{-# LINE 213 "API.chs" #-}
 
--- | Solves a DAG, usually the output of 'evt_prepare_miter'
-evt_assert_dag :: InterpreterEnvironment -> BooleanDAG -> IO (Int)
+-- | Solves a DAG. Usually this DAG is the output of 'evt_prepare_miter'.
+evt_assert_dag :: InterpreterEnvironment -> BooleanDAGPtr -> IO (Int)
 evt_assert_dag a1 a2 =
   let {a1' = id a1} in 
   let {a2' = id a2} in 
   evt_assert_dag'_ a1' a2' >>= \res ->
   let {res' = fromIntegral res} in
   return (res')
-{-# LINE 155 "API.chs" #-}
+{-# LINE 217 "API.chs" #-}
 
--- | Returns if the sketch has a valid solution (write it out with 'evt_print_controls')
+-- | Returns if the sketch has a valid solution (write it out with 'evt_print_controls').
 evt_is_ready :: InterpreterEnvironment -> IO (Bool)
 evt_is_ready a1 =
   let {a1' = id a1} in 
   evt_is_ready'_ a1' >>= \res ->
   let {res' = toBool res} in
   return (res')
-{-# LINE 158 "API.chs" #-}
+{-# LINE 221 "API.chs" #-}
 
--- | Throws an error if the environment is not ready
+-- | Throws an error if the environment is not ready.
 evt_check_ready :: InterpreterEnvironment -> IO InterpreterEnvironment
 evt_check_ready ie = go <$> evt_is_ready ie where
     go False = error "Could not resolve sketch."
     go True = ie
 
--- | Write the current solutions to a filename
+-- | Write the current solutions to a file (argument: filename).
 evt_print_controls :: InterpreterEnvironment -> String -> IO ()
 evt_print_controls a1 a2 =
   let {a1' = id a1} in 
   withCString a2 $ \a2' -> 
   evt_print_controls'_ a1' a2' >>= \res ->
   return ()
-{-# LINE 168 "API.chs" #-}
+{-# LINE 232 "API.chs" #-}
 
 evt_get_controls_ :: InterpreterEnvironment -> IO (CInt, Ptr (CString), Ptr CInt)
 evt_get_controls_ a1 =
@@ -289,9 +355,10 @@ evt_get_controls_ a1 =
   peek  a3'>>= \a3'' -> 
   peek  a4'>>= \a4'' -> 
   return (a2'', a3'', a4'')
-{-# LINE 174 "API.chs" #-}
+{-# LINE 238 "API.chs" #-}
 
--- | Get the current solution
+-- | Get the current solution, as a map from hole names to values.
+-- Use Map.toList if you want to print / iterate over all of them.
 evt_get_controls
   :: InterpreterEnvironment -> IO (Map.Map String Int)
 evt_get_controls evt = do
@@ -304,55 +371,115 @@ evt_get_controls evt = do
 
 
 
--- marshalling vectors
-unpackNodeVec :: NodeVector -> IO [BoolNode]
-unpackNodeVec nv = do
-    l <- node_vec_size nv
-    forM [0..l - 1] (node_vec_get nv)
-node_vec_size :: NodeVector -> IO (Int)
-node_vec_size a1 =
-  let {a1' = id a1} in 
-  node_vec_size'_ a1' >>= \res ->
-  let {res' = fromIntegral res} in
-  return (res')
-{-# LINE 194 "API.chs" #-}
-node_vec_get :: NodeVector -> Int -> IO (BoolNode)
-node_vec_get a1 a2 =
-  let {a1' = id a1} in 
-  let {a2' = fromIntegral a2} in 
-  node_vec_get'_ a1' a2' >>= \res ->
-  let {res' = id res} in
-  return (res')
-{-# LINE 195 "API.chs" #-}
 
--- | Get a list of all nodes of a particular type from the tree
-bdag_get_nodes_by_type :: BooleanDAG -> BNType -> IO ([BoolNode])
+
+-- | Get a list of all nodes of a particular type from the tree.
+bdag_get_nodes_by_type :: BooleanDAGPtr -> BNType -> IO ([BoolNodePtr])
 bdag_get_nodes_by_type a1 a2 =
   let {a1' = id a1} in 
   let {a2' = fromEnum' a2} in 
   bdag_get_nodes_by_type'_ a1' a2' >>= \res ->
   unpackNodeVec res >>= \res' ->
   return (res')
-{-# LINE 199 "API.chs" #-}
+{-# LINE 258 "API.chs" #-}
 
--- | Determine whether a control node (star) should be minimized
-bn_is_minimize :: BoolNode -> IO (Bool)
+-- | Creates a new BooleanDAG.
+bdag_new :: IO (BooleanDAGPtr)
+bdag_new =
+  bdag_new'_ >>= \res ->
+  let {res' = id res} in
+  return (res')
+{-# LINE 262 "API.chs" #-}
+
+bdag_clone :: BooleanDAGPtr -> IO (BooleanDAGPtr)
+bdag_clone a1 =
+  let {a1' = id a1} in 
+  bdag_clone'_ a1' >>= \res ->
+  let {res' = id res} in
+  return (res')
+{-# LINE 265 "API.chs" #-}
+
+
+
+-- | Determine whether a control node (star) should be minimized.
+bn_is_minimize :: BoolNodePtr -> IO (Bool)
 bn_is_minimize a1 =
   let {a1' = id a1} in 
   bn_is_minimize'_ a1' >>= \res ->
   let {res' = toBool res} in
   return (res')
-{-# LINE 202 "API.chs" #-}
+{-# LINE 270 "API.chs" #-}
 
--- | Get the name of a node
-bn_get_name :: BoolNode -> IO (String)
+-- | Get the name of a node.
+bn_get_name :: BoolNodePtr -> IO (String)
 bn_get_name a1 =
   let {a1' = id a1} in 
   bn_get_name'_ a1' >>= \res ->
   peekCAString res >>= \res' ->
   return (res')
-{-# LINE 205 "API.chs" #-}
+{-# LINE 273 "API.chs" #-}
 
+bn_clone :: BoolNodePtr -> Bool -> IO (BoolNodePtr)
+bn_clone a1 a2 =
+  let {a1' = id a1} in 
+  let {a2' = fromBool a2} in 
+  bn_clone'_ a1' a2' >>= \res ->
+  let {res' = id res} in
+  return (res')
+{-# LINE 277 "API.chs" #-}
+
+-- | Create a new node. Arguments: DAG (required), mother (can be
+-- nullPtr), father (can be nullPtr), and type (required).
+bn_new :: BooleanDAGPtr -> BoolNodePtr -> BoolNodePtr -> BNType -> IO (BoolNodePtr)
+bn_new a1 a2 a3 a4 =
+  let {a1' = id a1} in 
+  let {a2' = id a2} in 
+  let {a3' = id a3} in 
+  let {a4' = fromEnum' a4} in 
+  bn_new'_ a1' a2' a3' a4' >>= \res ->
+  let {res' = id res} in
+  return (res')
+{-# LINE 285 "API.chs" #-}
+
+-- | Set the value of a 'BnConst' node.
+bn_set_const :: BoolNodePtr -> Int -> IO ()
+bn_set_const a1 a2 =
+  let {a1' = id a1} in 
+  let {a2' = fromIntegral a2} in 
+  bn_set_const'_ a1' a2' >>= \res ->
+  return ()
+{-# LINE 290 "API.chs" #-}
+
+-- | Convenience -- runs 'bn_new', then 'bn_set_const'
+bn_new_const dag v = do
+    n <- bn_new dag nullPtr nullPtr BnConst
+    n <$ bn_set_const n v
+
+-- | Convenience -- assert a boolean node
+bn_assert dag n = bn_new dag n nullPtr BnAssert
+
+e_const v = do
+    dag <- ask
+    lift $ bn_new_const dag v
+
+e_binary t x y = do
+    dag <- ask
+    lift $ bn_new dag x y t
+
+e_lt = e_binary BnLt
+e_eq = e_binary BnEq
+
+e_assert n = do
+    dag <- ask
+    lift $ bn_assert dag n
+
+withDag = flip runReaderT
+
+foreign import ccall safe "API.chs.h node_vec_size"
+  node_vec_size'_ :: ((NodeVector) -> (IO CInt))
+
+foreign import ccall safe "API.chs.h node_vec_get"
+  node_vec_get'_ :: ((NodeVector) -> (CInt -> (IO (BoolNodePtr))))
 
 foreign import ccall safe "API.chs.h cmdline_args"
   cmdline_args_'_ :: (CInt -> ((Ptr (Ptr CChar)) -> (IO (CommandLineArgs))))
@@ -379,13 +506,13 @@ foreign import ccall safe "API.chs.h getEnvt"
   getEnvt'_ :: (IO (InterpreterEnvironment))
 
 foreign import ccall safe "API.chs.h evt_get_copy"
-  evt_get_copy'_ :: ((InterpreterEnvironment) -> ((Ptr CChar) -> (IO (BooleanDAG))))
+  evt_get_copy'_ :: ((InterpreterEnvironment) -> ((Ptr CChar) -> (IO (BooleanDAGPtr))))
 
 foreign import ccall safe "API.chs.h evt_prepare_miter"
-  evt_prepare_miter'_ :: ((InterpreterEnvironment) -> ((BooleanDAG) -> ((BooleanDAG) -> (IO (BooleanDAG)))))
+  evt_prepare_miter'_ :: ((InterpreterEnvironment) -> ((BooleanDAGPtr) -> ((BooleanDAGPtr) -> (IO (BooleanDAGPtr)))))
 
 foreign import ccall safe "API.chs.h evt_assert_dag"
-  evt_assert_dag'_ :: ((InterpreterEnvironment) -> ((BooleanDAG) -> (IO CInt)))
+  evt_assert_dag'_ :: ((InterpreterEnvironment) -> ((BooleanDAGPtr) -> (IO CInt)))
 
 foreign import ccall safe "API.chs.h evt_is_ready"
   evt_is_ready'_ :: ((InterpreterEnvironment) -> (IO CInt))
@@ -396,17 +523,26 @@ foreign import ccall safe "API.chs.h evt_print_controls"
 foreign import ccall safe "API.chs.h evt_get_controls"
   evt_get_controls_'_ :: ((InterpreterEnvironment) -> ((Ptr CInt) -> ((Ptr (Ptr (Ptr CChar))) -> ((Ptr (Ptr CInt)) -> (IO ())))))
 
-foreign import ccall safe "API.chs.h node_vec_size"
-  node_vec_size'_ :: ((NodeVector) -> (IO CInt))
-
-foreign import ccall safe "API.chs.h node_vec_get"
-  node_vec_get'_ :: ((NodeVector) -> (CInt -> (IO (BoolNode))))
-
 foreign import ccall safe "API.chs.h bdag_get_nodes_by_type"
-  bdag_get_nodes_by_type'_ :: ((BooleanDAG) -> (CInt -> (IO (NodeVector))))
+  bdag_get_nodes_by_type'_ :: ((BooleanDAGPtr) -> (CInt -> (IO (NodeVector))))
+
+foreign import ccall safe "API.chs.h bdag_new"
+  bdag_new'_ :: (IO (BooleanDAGPtr))
+
+foreign import ccall safe "API.chs.h bdag_clone"
+  bdag_clone'_ :: ((BooleanDAGPtr) -> (IO (BooleanDAGPtr)))
 
 foreign import ccall safe "API.chs.h bn_is_minimize"
-  bn_is_minimize'_ :: ((BoolNode) -> (IO CInt))
+  bn_is_minimize'_ :: ((BoolNodePtr) -> (IO CInt))
 
 foreign import ccall safe "API.chs.h bn_get_name"
-  bn_get_name'_ :: ((BoolNode) -> (IO (Ptr CChar)))
+  bn_get_name'_ :: ((BoolNodePtr) -> (IO (Ptr CChar)))
+
+foreign import ccall safe "API.chs.h bn_clone"
+  bn_clone'_ :: ((BoolNodePtr) -> (CInt -> (IO (BoolNodePtr))))
+
+foreign import ccall safe "API.chs.h bn_new"
+  bn_new'_ :: ((BooleanDAGPtr) -> ((BoolNodePtr) -> ((BoolNodePtr) -> (CInt -> (IO (BoolNodePtr))))))
+
+foreign import ccall safe "API.chs.h bn_set_const"
+  bn_set_const'_ :: ((BoolNodePtr) -> (CInt -> (IO ())))

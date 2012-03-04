@@ -54,11 +54,18 @@ extern "C" {
 
     // boolean dag
     NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t);
+    BooleanDAG *bdag_new();
+    BooleanDAG *bdag_clone(BooleanDAG *dag);
 
     // boolean node
-    bool_node *bn_clone(bool_node *n, int copyChildren);
     int bn_is_minimize(bool_node *n);
     char *bn_get_name(bool_node *n);
+    bool_node *bn_new(BooleanDAG *dag,
+                      bool_node *mother,
+                      bool_node *father,
+                      BNType typ);
+    bool_node *bn_clone(bool_node *n, int copyChildren);
+    void bn_set_const(bool_node *n, int value);
 
 
 

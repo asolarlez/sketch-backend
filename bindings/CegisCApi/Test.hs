@@ -72,7 +72,11 @@ test_args = [ "--verbosity", "5",
     "/home/gatoatigrado/.sketch/tmp/miniTest210MinRepeat.sk/input.tmp" ]
 
 minimize_sketch
-  :: InterpreterEnvironment -> CommandLineArgs -> [(SketchSpec, BooleanDAG)] -> String -> IO ()
+  :: InterpreterEnvironment
+      -> CommandLineArgs
+      -> [(SketchSpec, BooleanDAGPtr)]
+      -> String
+      -> IO ()
 minimize_sketch e cli ss_miters fn = do
     putStrLn "\n\nstarting minimize routine"
     evt_check_ready e
@@ -91,22 +95,92 @@ minimize_sketch e cli ss_miters fn = do
         return (ss, dag, nodes)
 
     -- minimize
-    go min_nodes >> throw ThreadKilled where
+    go min_nodes where
         go [] = return ()
         go ((ss, dag, []):xs) = go xs
-        go z@((ss, dag, (n:ns)):xs) =
-            fork_if (go' ss dag n)
-                (do putStrLn "minimized value!"
-                    go z) -- continue minimizing same hole
-                (do putStrLn "failed to minimize value."
-                    set_const n -- fix the minimum value
-                    go ((ss, dag, ns):xs)) -- minimize a different one
+        go z@((ss, dag, (n:ns)):xs) = do
+            evt_check_ready e
+            tid <- myThreadId
+            putStrLn $ printf "Everything is SAT on thread '%s', minimizing..." (show tid)
+            v <- go' ss dag n
+            if v then do
+                evt_print_controls e fn
+                go z -- continue minimizing same hole
+            else do
+                putStrLn "failed to minimize value."
+                set_const dag n -- fix the minimum value
+                go ((ss, dag, ns):xs) -- minimize a different one
+
+            {---------------------------------------------------
+            -- fork_if (go' ss dag n)
+            --     (do -- putStrLn "minimized value!"
+            --         evt_print_controls e fn
+            --         go z) -- continue minimizing same hole
+            --     (do putStrLn "failed to minimize value."
+            --         set_const dag n -- fix the minimum value
+            --         go ((ss, dag, ns):xs)) -- minimize a different one
+            ----------------------------------------------------}
+
+        -- Try to minimize; return True if succeeded, False otherwise
         go' ss dag n = do
+            tid <- myThreadId
+            putStrLn $ printf "minimizing on thread '%s'" (show tid)
+            v <- get_ctrl_value n
+            case v of
+                Just x -> do
+                    -- putStrLn $ printf "Value for node: %d" x
+                    (dag', n') <- get_dag_node_copy dag n
+                    evt_assert_dag e =<< get_minimize_dag n' x
+                    putStrLn "go' checking value..."
+                    val <- evt_is_ready e -- if True, then it succeeded in minimization.
+                    putStrLn $ "go' done checking value, got " ++ show val
+                    return val
+                Nothing -> do
+                    -- putStrLn $ printf "ERROR -- control '%s' not found in map!" nme
+                    return False
+
+        get_ctrl_value :: BoolNodePtr -> IO (Maybe Int)
+        get_ctrl_value n = do
             ctrl_map <- evt_get_controls e
             nme <- bn_get_name n
-            putStrLn $ printf "Value for node '%s': %s" (nme) (show $ Map.lookup nme ctrl_map)
-            return False
-        set_const n = return () -- TBD
+            return $ Map.lookup nme ctrl_map
+        
+        -- FIXME: this is inefficient. Copies entire DAG, then finds
+        -- the copy of control node _n_ in the copied DAG.
+        get_dag_node_copy dag n = do
+            dag' <- bdag_clone dag
+            nme <- bn_get_name n
+            let f x = (== nme) <$> bn_get_name x
+            nodes <- filterM f =<< bdag_get_nodes_by_type dag BnCtrl
+            return (dag', nodes !! 0)
+
+        -- get a new DAG representing "n < v"
+        get_minimize_dag n v = do
+            dag <- bdag_new
+            withDag dag $ do
+                vn <- e_const v
+                lt <- e_lt n vn
+                e_assert lt
+            return dag
+
+        set_const dag n = do
+            {---------------------------------------------------
+            -- tid <- myThreadId
+            -- putStrLn $ printf "pre-checking DAG on thread '%s'" (show tid)
+            -- evt_assert_dag e dag
+            -- evt_check_ready e
+            -- putStrLn "done pre-checking"
+            ----------------------------------------------------}
+
+            (Just v) <- get_ctrl_value n
+            withDag dag $ do
+                v_n <- e_const v
+                eq_n <- e_eq n v_n
+                e_assert eq_n
+
+            putStrLn "checking DAG..."
+            evt_assert_dag e dag
+            evt_check_ready e
 
     {---------------------------------------------------
     -- forM min_nodes
@@ -196,3 +270,5 @@ test = do
     -- print (num_solutions args)
 
     print "done"
+
+main = test

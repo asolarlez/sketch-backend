@@ -13,6 +13,9 @@ import Control.Concurrent.MVar
 
 import Data.IORef
 
+import System.Exit
+import System.Posix.Process
+
 import Text.Printf
 
 -- | Takes a command x and continuation rest;
@@ -20,14 +23,37 @@ import Text.Printf
 -- otherwise, rolls back state and passes Nothing to the continuation
 forkos_try :: IO (Maybe α) -> (Maybe α -> IO ()) -> IO ()
 forkos_try x rest = do
-    mv <- newEmptyMVar :: IO (MVar Bool)
-    forkOS (do
+    child_pid <- forkProcess (do
+        pid <- getProcessID
+        putStrLn $ printf "[forkos_try] running on process '%s' ..." (show pid)
         v <- x
+        putStrLn $ printf "[forkos_try] done running on process '%s'..." (show pid)
         case v of
-            Nothing -> putMVar mv False >> throw ThreadKilled
-            (Just _) -> putMVar mv True >> rest v)
-    v <- takeMVar mv
-    if v then return () else rest Nothing
+            Nothing -> exitImmediately (ExitFailure 214)
+            (Just _) -> rest v >> exitImmediately ExitSuccess)
+    c <- getProcessStatus True False child_pid
+    case c of
+        (Just (Exited (ExitFailure 214))) -> do
+            -- putStrLn "child failed, running backup"
+            rest Nothing
+        (Just (Exited (ExitSuccess))) -> do
+            -- putStrLn "child succeeded"
+            return ()
+        {---------------------------------------------------
+        -- (Just (Terminated _)) -> do
+        --     -- putStrLn "child succeeded"
+        --     return ()
+        ----------------------------------------------------}
+        (Just (Terminated 11)) -> do
+            tid <- myThreadId
+            putStrLn $ printf
+                "[forkos_try] Segmentation fault on process '%s'"
+                (show child_pid)
+        _ -> do
+            tid <- myThreadId
+            putStrLn $ printf
+                "[forkos_try] unknown error '%s' on process '%s'"
+                (show c) (show child_pid)
 
 -- | Common case usage of 'forkos_try'.
 fork_if :: IO Bool -> IO () -> IO () -> IO ()

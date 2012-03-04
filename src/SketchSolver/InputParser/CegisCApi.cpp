@@ -110,6 +110,8 @@ void evt_get_controls(InterpreterEnvironment *evt, int *nkeys, char ***keys, int
     }
 }
 
+
+
 //--------------------------------------------------
 // Querying the DAG and manipulating nodes
 //-------------------------------------------------- 
@@ -119,8 +121,12 @@ NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t) {
     return new NodeVector(vec);
 }
 
-bool_node *bn_clone(bool_node *n, int copyChildren) {
-    return n->clone(fromCInteger(copyChildren));
+BooleanDAG *bdag_new() {
+    return new BooleanDAG();
+}
+
+BooleanDAG *bdag_clone(BooleanDAG *dag) {
+    return dag->clone();
 }
 
 int bn_is_minimize(bool_node *n) {
@@ -133,3 +139,21 @@ int bn_is_minimize(bool_node *n) {
 char *bn_get_name(bool_node *n) {
     return (char *)(n->get_name().c_str());
 }
+
+bool_node *bn_new(BooleanDAG *dag,
+                  bool_node *mother,
+                  bool_node *father,
+                  BNType typ)
+{
+    return dag->new_node(mother, father, (bool_node::Type)typ);
+}
+
+bool_node *bn_clone(bool_node *n, int copyChildren) {
+    return n->clone(fromCInteger(copyChildren));
+}
+
+void bn_set_const(bool_node *n, int value) {
+    ((CONST_node*)n)->setVal(value);
+}
+
+  // bool_node* new_node(bool_node* mother, bool_node* father, bool_node::Type t);
