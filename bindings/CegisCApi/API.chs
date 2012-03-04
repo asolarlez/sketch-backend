@@ -48,12 +48,13 @@ module CegisCApi.API (
     evt_assert_dag,
     evt_is_ready,
     evt_check_ready,
-    evt_print_controls,
+    evt_write_controls,
     evt_get_controls,
     -- ** Manipulating the DAG
     bdag_get_nodes_by_type,
     bdag_new,
     bdag_clone,
+    bdag_add_new_node,
     bn_is_minimize,
     bn_get_name,
     bn_new,
@@ -71,11 +72,21 @@ module CegisCApi.API (
     -- @
     bn_new_const,
     bn_assert,
-    e_const,
+    withDag,
+
+    -- **** Comparators
     e_lt,
     e_eq,
+
+    -- **** Logical connectives
+    e_or,
+    e_and,
+    e_not,
+
+    -- **** Other
+    e_const,
+    e_add_node,
     e_assert,
-    withDag,
 
     -- * Re-exported stuff
     nullPtr
@@ -216,7 +227,7 @@ cmdline_args x = do
 {# fun evt_assert_dag {
     id `InterpreterEnvironment', id `BooleanDAGPtr' } -> `Int' #}
 
--- | Returns if the sketch has a valid solution (write it out with 'evt_print_controls').
+-- | Returns if the sketch has a valid solution (write it out with 'evt_write_controls').
 {# fun evt_is_ready {
     id `InterpreterEnvironment' } -> `Bool' toBool #}
 
@@ -227,7 +238,7 @@ evt_check_ready ie = go <$> evt_is_ready ie where
     go True = ie
 
 -- | Write the current solutions to a file (argument: filename).
-{# fun evt_print_controls {
+{# fun evt_write_controls {
     id `InterpreterEnvironment',
     `String' } -> `()' #}
 
@@ -261,10 +272,12 @@ evt_get_controls evt = do
 {# fun bdag_new
     { } -> `BooleanDAGPtr' id #}
 
+-- | Clone a DAG
 {# fun bdag_clone {
     id `BooleanDAGPtr' } -> `BooleanDAGPtr' id #}
 
-
+{# fun bdag_add_new_node {
+    id `BooleanDAGPtr', id `BoolNodePtr' } -> `()' #} 
 
 -- | Determine whether a control node (star) should be minimized.
 {# fun bn_is_minimize { id `BoolNodePtr' } -> `Bool' toBool #}
@@ -301,12 +314,24 @@ e_const v = do
     dag <- ask
     lift $ bn_new_const dag v
 
+-- | Add a new node, possibly from another DAG
+e_add_node n = ask >>= lift . flip bdag_add_new_node n
+
+e_unary t x = do
+    dag <- ask
+    lift $ bn_new dag x nullPtr t
+
 e_binary t x y = do
     dag <- ask
     lift $ bn_new dag x y t
 
 e_lt = e_binary BnLt
 e_eq = e_binary BnEq
+
+e_or = e_binary BnOr
+e_and = e_binary BnAnd
+
+e_not = e_unary BnNot
 
 e_assert n = do
     dag <- ask

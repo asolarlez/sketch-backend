@@ -84,7 +84,7 @@ int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter) {
     return evt->assertDAG_wrapper(miter);
 }
 
-void evt_print_controls(InterpreterEnvironment *evt, char *fn) {
+void evt_write_controls(InterpreterEnvironment *evt, char *fn) {
     evt->printControls_wrapper(string(fn));
 }
 
@@ -127,6 +127,10 @@ BooleanDAG *bdag_new() {
 
 BooleanDAG *bdag_clone(BooleanDAG *dag) {
     return dag->clone();
+}
+
+void bdag_add_new_node(BooleanDAG *dag, bool_node *node) {
+    dag->addNewNode(node);
 }
 
 int bn_is_minimize(bool_node *n) {

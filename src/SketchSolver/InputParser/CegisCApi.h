@@ -48,7 +48,7 @@ extern "C" {
     BooleanDAG *evt_prepare_miter(InterpreterEnvironment *evt,
         BooleanDAG *spec, BooleanDAG *sketch);
     int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter);
-    void evt_print_controls(InterpreterEnvironment *evt, char *fn);
+    void evt_write_controls(InterpreterEnvironment *evt, char *fn);
     int evt_is_ready(InterpreterEnvironment *evt);
     void evt_get_controls(InterpreterEnvironment *evt, int *nkeys, char ***keys, int **values);
 
@@ -56,6 +56,7 @@ extern "C" {
     NodeVector *bdag_get_nodes_by_type(BooleanDAG *dag, BNType t);
     BooleanDAG *bdag_new();
     BooleanDAG *bdag_clone(BooleanDAG *dag);
+    void bdag_add_new_node(BooleanDAG *dag, bool_node *node);
 
     // boolean node
     int bn_is_minimize(bool_node *n);

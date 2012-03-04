@@ -39,6 +39,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans.Class
 
+import qualified Data.List as List
 import qualified Data.Map as Map
 
 import CegisCApi.API
@@ -66,8 +67,8 @@ reparse_args l = check $ go l (defArgs, []) where
         | otherwise = x
 
 test_args = [ "--verbosity", "5",
-    "--minimize",
-    -- "--num-solutions", "2",
+    -- "--minimize",
+    "--num-solutions", "2",
     "-o", "/home/gatoatigrado/.sketch/tmp/miniTest210MinRepeat.sk/solution",
     "/home/gatoatigrado/.sketch/tmp/miniTest210MinRepeat.sk/input.tmp" ]
 
@@ -102,24 +103,24 @@ minimize_sketch e cli ss_miters fn = do
             evt_check_ready e
             tid <- myThreadId
             putStrLn $ printf "Everything is SAT on thread '%s', minimizing..." (show tid)
-            v <- go' ss dag n
-            if v then do
-                evt_print_controls e fn
-                go z -- continue minimizing same hole
-            else do
-                putStrLn "failed to minimize value."
-                set_const dag n -- fix the minimum value
-                go ((ss, dag, ns):xs) -- minimize a different one
-
             {---------------------------------------------------
-            -- fork_if (go' ss dag n)
-            --     (do -- putStrLn "minimized value!"
-            --         evt_print_controls e fn
-            --         go z) -- continue minimizing same hole
-            --     (do putStrLn "failed to minimize value."
-            --         set_const dag n -- fix the minimum value
-            --         go ((ss, dag, ns):xs)) -- minimize a different one
+            -- v <- go' ss dag n
+            -- if v then do
+            --     evt_write_controls e fn
+            --     go z -- continue minimizing same hole
+            -- else do
+            --     putStrLn "failed to minimize value."
+            --     set_const dag n -- fix the minimum value
+            --     go ((ss, dag, ns):xs) -- minimize a different one
             ----------------------------------------------------}
+
+            fork_if (go' ss dag n)
+                (do -- putStrLn "minimized value!"
+                    evt_write_controls e fn
+                    go z) -- continue minimizing same hole
+                (do putStrLn "failed to minimize value."
+                    set_const dag n -- fix the minimum value
+                    go ((ss, dag, ns):xs)) -- minimize a different one
 
         -- Try to minimize; return True if succeeded, False otherwise
         go' ss dag n = do
@@ -158,19 +159,18 @@ minimize_sketch e cli ss_miters fn = do
         get_minimize_dag n v = do
             dag <- bdag_new
             withDag dag $ do
+                e_add_node n
                 vn <- e_const v
                 lt <- e_lt n vn
                 e_assert lt
             return dag
 
         set_const dag n = do
-            {---------------------------------------------------
-            -- tid <- myThreadId
-            -- putStrLn $ printf "pre-checking DAG on thread '%s'" (show tid)
-            -- evt_assert_dag e dag
-            -- evt_check_ready e
-            -- putStrLn "done pre-checking"
-            ----------------------------------------------------}
+            tid <- myThreadId
+            putStrLn $ printf "pre-checking DAG on thread '%s'" (show tid)
+            evt_assert_dag e dag
+            evt_check_ready e
+            putStrLn "done pre-checking"
 
             (Just v) <- get_ctrl_value n
             withDag dag $ do
@@ -182,50 +182,75 @@ minimize_sketch e cli ss_miters fn = do
             evt_assert_dag e dag
             evt_check_ready e
 
-    {---------------------------------------------------
-    -- forM min_nodes
-    --     lastSuccessfulValue = self.envt.currentControls[hole.get_name()]
-    --     while(toIterate):
-    --         self.writeSolutions(num=0)
-    --         print 'lastSuccessfulValue = ', lastSuccessfulValue
-    --         newDag = BooleanDAG()
-    --         bgProblem = self.bDag.clone()
-    --         ctrlNodes = bgProblem.getNodesByType(bool_node.CTRL)
-    --         hole_clone = None
-    --         for i in xrange(len(ctrlNodes)):
-    --             if(ctrlNodes[i].get_name() == hole.get_name()):
-    --                 hole_clone = ctrlNodes[i]
-    --                 break
-    --         newDag.addNewNode(hole_clone)
-    --         constNode = newDag.new_node(None, None, bool_node.CONST)
-    --         constNode.setVal(lastSuccessfulValue)
-    --         ltNode = newDag.new_node(hole_clone, constNode, bool_node.LT)
-    --         assertNode = newDag.new_node(ltNode, None, bool_node.ASSERT)
-    --         self.envt.assertDAG_wrapper(newDag)
-    --         if self.envt.status == InterpreterEnvironment.STATUS.READY:
-    --             lastSuccessfulValue = self.envt.currentControls[hole.get_name()]
-    --         elif self.envt.status == InterpreterEnvironment.STATUS.UNSAT:
-    --             toIterate = False
-    --         else:
-    --             assert False, "Missing case for InterpreterEnvironment.STATUS enum"     
-    --     constNode = self.bDag.new_node(None, None, bool_node.CONST)
-    --     constNode.setVal(lastSuccessfulValue)
-    --     eqNode = self.bDag.new_node(hole, constNode, bool_node.EQ)
-    --     self.bDag.new_node(eqNode, None, bool_node.ASSERT)
-    --     print('Minimum value of hole ' + str(hole.get_name()) + ' is ' + str(lastSuccessfulValue))
-    ----------------------------------------------------}
+get_another_solution :: InterpreterEnvironment
+    -> CommandLineArgs
+    -> [(SketchSpec, BooleanDAGPtr)]
+    -> String
+    -> IO Bool
+get_another_solution e cli ss_miters fn = do
+    cl_set_verbosity cli (-1)
+    cl_set_global_params cli
+
+    -- lookup values of current controls
+    ctrl_names <- List.nub . concat <$>
+        (forM ss_miters $ \(ss, dag) -> do
+            dag_copy <- bdag_clone dag
+            nodes <- bdag_get_nodes_by_type dag_copy BnCtrl
+            zip nodes <$> mapM bn_get_name nodes)
+    ctrl_map <- evt_get_controls e
+    let ctrl_values = map (id &&& flip Map.lookup ctrl_map . snd) ctrl_names 
+    seq ctrl_values (return ())
+
+    -- create "h /= value(h)" ∀ holes h
+    new_dag <- bdag_new
+    neqs <- forM ctrl_values $ \((n, name), Just v) -> do
+        withDag new_dag $ do
+            e_add_node n
+            vn <- e_const v
+            e_not =<< e_eq n vn
+
+    if neqs == [] then
+        return False
+    else do
+        print "creating big or..."
+        bigor <- foldM (\x y -> withDag new_dag $ e_or x y) (head neqs) (tail neqs)
+        withDag new_dag $ e_assert bigor
+        print "asserting new dag...."
+        evt_assert_dag e new_dag
+
+        evt_is_ready e >>= rv where
+            rv False = return False
+            rv True = True <$ evt_write_controls e fn
 
     {---------------------------------------------------
-    -- assert self.envt.status == InterpreterEnvironment.STATUS.READY, "Can't minimize the buggy sketch"
-    -- self.cmdLineArgs.verbosity = -1
-    -- self.cmdLineArgs.setPARAMS()
-    -- ctrlNodes = self.bDag.getNodesByType(bool_node.CTRL)
-    -- toMinimizeNodes = []
-    -- for i in xrange(len(ctrlNodes)):
-    --     if ctrlNodes[i].get_toMinimize():
-    --         toMinimizeNodes.append(ctrlNodes[i])
-    -- for i in xrange(len(toMinimizeNodes)):
-    --     self.minimizeHole(toMinimizeNodes[i])
+    -- def __getAnotherSolution(self):
+    --     '''Returns true if a different satisfiable solution exists from the input 'dag' otherwise returns false. Treat this function as private, as it modifies the 'self.bDag' object. Use getAlternateSOlutions() method.'''
+    --     self.cmdLineArgs.verbosity = -1
+    --     self.cmdLineArgs.setPARAMS()
+    --     newDag = BooleanDAG()
+    --     bgProblem = self.bDag.clone()
+    --     ctrlNodes = bgProblem.getNodesByType(bool_node.CTRL)
+    --     lNotCtrlNodes = []
+    --     toAssert = []
+    --     for i in xrange(len(ctrlNodes)):
+    --         constNode = newDag.new_node(None, None, bool_node.CONST)
+    --         constNode.setVal(self.envt.currentControls[ctrlNodes[i].get_name()])
+    --         newDag.addNewNode(ctrlNodes[i])
+    --         eqNode = newDag.new_node(ctrlNodes[i], constNode, bool_node.EQ)
+    --         lNotCtrlNodes.append(newDag.new_node(eqNode, None, bool_node.NOT))
+    --     if len(lNotCtrlNodes) == 1:
+    --         toAssert.append(lNotCtrlNodes[i])
+    --     elif len(lNotCtrlNodes) == 0:
+    --         return False
+    --     else:
+    --         toAssert.append(reduce(lambda v, u: newDag.new_node(v, u, bool_node.OR), lNotCtrlNodes))
+    --     for i in xrange(len(toAssert)):
+    --         newDag.new_node(toAssert[i], None, bool_node.ASSERT)
+    --     self.envt.assertDAG_wrapper(newDag)
+    --     if self.envt.status == InterpreterEnvironment.STATUS.READY:
+    --         return True
+    --     else:
+    --         return False
     ----------------------------------------------------}
 
 
@@ -257,14 +282,14 @@ test = do
 
     -- write the first solution out
     evt_check_ready e
-    evt_print_controls e (outname 0)
+    evt_write_controls e (outname 0)
 
     if (minimize args) then
         minimize_sketch e cli ss_miters (outname 0)
     else return ()
 
-    -- forM [2..num_solutions args] $ \j -> do
-        -- ...
+    forM [1 .. num_solutions args - 1] $ \j -> do
+        get_another_solution e cli ss_miters (outname j)
 
     -- print "num solutions"
     -- print (num_solutions args)
