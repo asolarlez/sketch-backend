@@ -28,7 +28,7 @@
              TypeSynonymInstances,
              ViewPatterns #-}
 
-module CegisCApi.Test where
+module HsCegis where
 
 import Prelude hiding (id, (.))
 import Control.Arrow
@@ -42,12 +42,14 @@ import Control.Monad.Trans.Class
 import qualified Data.List as List
 import qualified Data.Map as Map
 
-import CegisCApi.API
-import CegisCApi.HighLevelConcurrent
-import CegisCApi.Helper
+import System.Environment
 import System.Exit
 
 import Text.Printf
+
+import CegisCApi.API
+import CegisCApi.HighLevelConcurrent
+import CegisCApi.Helper
 
 data HsCegisArgs = HsCegisArgs {
     minimize :: Bool,
@@ -222,41 +224,8 @@ get_another_solution e cli ss_miters fn = do
             rv False = return False
             rv True = True <$ evt_write_controls e fn
 
-    {---------------------------------------------------
-    -- def __getAnotherSolution(self):
-    --     '''Returns true if a different satisfiable solution exists from the input 'dag' otherwise returns false. Treat this function as private, as it modifies the 'self.bDag' object. Use getAlternateSOlutions() method.'''
-    --     self.cmdLineArgs.verbosity = -1
-    --     self.cmdLineArgs.setPARAMS()
-    --     newDag = BooleanDAG()
-    --     bgProblem = self.bDag.clone()
-    --     ctrlNodes = bgProblem.getNodesByType(bool_node.CTRL)
-    --     lNotCtrlNodes = []
-    --     toAssert = []
-    --     for i in xrange(len(ctrlNodes)):
-    --         constNode = newDag.new_node(None, None, bool_node.CONST)
-    --         constNode.setVal(self.envt.currentControls[ctrlNodes[i].get_name()])
-    --         newDag.addNewNode(ctrlNodes[i])
-    --         eqNode = newDag.new_node(ctrlNodes[i], constNode, bool_node.EQ)
-    --         lNotCtrlNodes.append(newDag.new_node(eqNode, None, bool_node.NOT))
-    --     if len(lNotCtrlNodes) == 1:
-    --         toAssert.append(lNotCtrlNodes[i])
-    --     elif len(lNotCtrlNodes) == 0:
-    --         return False
-    --     else:
-    --         toAssert.append(reduce(lambda v, u: newDag.new_node(v, u, bool_node.OR), lNotCtrlNodes))
-    --     for i in xrange(len(toAssert)):
-    --         newDag.new_node(toAssert[i], None, bool_node.ASSERT)
-    --     self.envt.assertDAG_wrapper(newDag)
-    --     if self.envt.status == InterpreterEnvironment.STATUS.READY:
-    --         return True
-    --     else:
-    --         return False
-    ----------------------------------------------------}
-
-
-
-test = do
-    let (args, backend_args) = reparse_args test_args
+main = do
+    (args, backend_args) <- reparse_args <$> getArgs
     cli <- cmdline_args backend_args
 
     -- strip "assert ... sketches ..." from input,
@@ -291,9 +260,4 @@ test = do
     forM [1 .. num_solutions args - 1] $ \j -> do
         get_another_solution e cli ss_miters (outname j)
 
-    -- print "num solutions"
-    -- print (num_solutions args)
-
     print "done"
-
-main = test
