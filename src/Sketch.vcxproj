@@ -315,7 +315,6 @@
     <ClInclude Include="SketchSolver\InputParser\DagFunctionInliner.h" />
     <ClInclude Include="SketchSolver\InputParser\DagOptim.h" />
     <ClInclude Include="SketchSolver\FindCheckSolver.h" />
-    <ClInclude Include="SketchSolver\InputParser\InputParser.h" />
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\MiniSATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToEuclid.h" />
