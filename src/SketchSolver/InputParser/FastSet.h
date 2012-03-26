@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include "BasicError.h"
+#include <cstring>
 
 using namespace std;
 
