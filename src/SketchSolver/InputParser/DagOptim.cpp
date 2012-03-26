@@ -1712,11 +1712,21 @@ the path condition to a function is false, then the value of its output
 has no effect on the computation, so replacing t1 with zero should
 make no difference. So either way, the replacement is ok.
 
-So in the routine below, we are going to find cycles, and then 
-identify the best place to break those cycles.
+The reasoning above doesn't quite generalize to more complex
+cycles. When the cycles get complicated, the solution is to have 
+two versions of the function; one where we care only about its
+output and ignore any asserts in it, and one where we only care 
+about the asserts. The routine below finds the best places to break cycles.
+
 	*/
 void DagOptim::findCycles(BooleanDAG& dag){
-	
+	for(int i=0; i<dag.size() ; ++i ){
+			// Get the code for this node.				
+		if(dag[i]->type == bool_node::UFUN){
+			UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
+			uidcount = max(uidcount, uf.fgid);
+		}
+	}
 	map<int, UFUN_node*> dupNodes;
 	stack<pair<bool_node*, childset::iterator> > bns;
 	for(int i=0; i<dag.size(); ++i){
@@ -1741,6 +1751,11 @@ void DagOptim::findCycles(BooleanDAG& dag){
 
 }
 
+/*
+The function below uses a stack to do depth first search to find cycles.
+When it finds a cycle, it calls the breakCycle routine to break it and 
+then restarts the DFS from the place where the cycle was broken.
+*/
 void DagOptim::cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterator> >& bns, map<int, UFUN_node*>& dupNodes){
 	if(cur->flag ==BOTTOM){
 			bool_node* n = cur;
@@ -1847,6 +1862,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 		// cout<<"double: "<<oldNode->get_name()<<endl;
 		UFUN_node* newNode = NULL;
 		bool isRecycled = false;
+		int oldfgid = -1;
 		if(dupNodes.count(oldNode->globalId)>0){
 			newNode = dupNodes[oldNode->globalId];
 			isRecycled = true;
@@ -1859,17 +1875,37 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			newNode->replace_parent(lastOr, this->getCnode(true));
 			dupNodes[oldNode->globalId] = newNode;
 			newNode->addToParents();
+
+			//It's important that nodes don't have duplicate fgid's.
+			++uidcount;
+			oldNode->fgid = uidcount; 
 		}		
 		sp.pop_front();		
 		
 
+		for(childset::iterator it = oldNode->children.begin(); it != oldNode->children.end(); ++it){
+			(*it)->replace_parent(oldNode, newNode);
+			if(!isRecycled){
+				if((*it)->type==bool_node::UFUN){
+					UFUN_node* un = dynamic_cast<UFUN_node*>(*it);
+					if(un->fgid == newNode->fgid){
+						Assert(un->mother == lastOr, "I don't believe this!! What's going on here?");
+						un->replace_parent(lastOr, this->getCnode(true));
+						lastOr->remove_child(un);
+						un->ignoreAsserts = true;
+					}					
+				}
+			}		
+		}
+		oldNode->children.clear();
+		/*
 		for(list<pair<bool_node*, childset::iterator> >::iterator it = sp.begin(); it != sp.end(); ++it){
 			if(oldNode->children.count(it->first)>0){
 				it->first->replace_parent(oldNode, newNode);
 				oldNode->remove_child(it->first);
 			}
 		}
-
+		*/
 		
 		//oldNode->remove_child(sp.front().first);
 		UFUN_node* puf = dynamic_cast<UFUN_node*>(sp.back().first);

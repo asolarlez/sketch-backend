@@ -291,6 +291,8 @@ class arith_node: public bool_node{
     virtual int back_dfs(int idx);
 	virtual void dislodge();
 	// virtual void removeFromParents(bool_node* bn);
+	//Note: replace_parent won't remove the node from the children list of the old parent, because most of the time the old parent will just
+	//get destroyed anyway; if that's not the case, make sure to remove the node from the children list of the old parent.
 	virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
 	virtual void outDagEntry(ostream& out)const;
 	void set_layer(bool isRecursive);

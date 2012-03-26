@@ -350,7 +350,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	if(ictrl != NULL){
 		for(int i=0; i<dag.size() ; ++i ){
 			// Get the code for this node.				
-			if(typeid(*dag[i]) == typeid(UFUN_node)){
+			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
 				uidcount = max(uidcount, uf.fgid);
 				ictrl->checkInline(uf);

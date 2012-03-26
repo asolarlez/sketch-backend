@@ -373,7 +373,7 @@ protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
-
+	int uidcount;
 	int BOTTOM;
 	int DONE;
 	int INSTACK;

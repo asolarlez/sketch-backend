@@ -753,6 +753,18 @@ void BooleanDAG::resetBackPointers(){
 void BooleanDAG::andDag(BooleanDAG* bdag){
 	relabel();
 	bdag->relabel();
+	if(this->intSize != bdag->intSize){
+		// give priority to intsize of new dag.
+		intSize = bdag->intSize;
+		vector<bool_node*>& sn = getNodesByType(bool_node::SRC);
+		for(int i=0; i<sn.size(); ++i){
+			INTER_node* inter = dynamic_cast<INTER_node*>((sn[i]));
+			if(inter->get_nbits()>1){
+				inter->set_nbits(bdag->intSize);
+			}
+		}
+	}
+
 	map<bool_node*, bool_node*> replacements;	
 	for(BooleanDAG::iterator node_it = bdag->begin(); node_it != bdag->end(); ++node_it){
 		Assert( (*node_it) != NULL, "Can't make a miter when you have null nodes.");
@@ -918,10 +930,11 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 		}
 	}
 	Dout( cout<<" after indiv clone "<<endl );
-	nstore.resize(nnodes);
-	BooleanDAG::iterator old_it = begin();
-	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it, ++old_it){
-		(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore, (*old_it)->children);
+	//nstore.resize(nnodes);
+	//BooleanDAG::iterator old_it = begin();
+	for(BooleanDAG::iterator node_it = nstore.begin(); node_it != nstore.end(); ++node_it /*,++old_it*/){
+		//(*node_it)->redirectPointers(*this, (vector<const bool_node*>&) nstore, (*old_it)->children);
+		(*node_it)->redirectParentPointers(*this, (vector<const bool_node*>&) nstore, true, NULL);
 	}
 }
 

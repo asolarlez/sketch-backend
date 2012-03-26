@@ -661,7 +661,7 @@ NodesToSolver::processArith (bool_node &node)
 	for(int i=1; i<vals; ++i, ++it){		
 		tmp[i] = guardedVal(it->second, it->first);		
 	}
-	oval.sparsify ();
+	oval.sparsify (dir);
 	dir.addHelperC(oval);
 	Dout( cout<<" := "<<oval<<endl );	    
 }
@@ -1212,7 +1212,7 @@ void NodesToSolver::mergeTvalues(int guard, const vector<guardedVal>& nr0, int n
 			incj = -1;
 			j = nr1End -1;
 		}
-		
+		int added = 0;
 
 		while( (i>=nr0Start && i < nr0End) || (j>=nr1Start && j< nr1End)){
 		    bool avi = i < nr0End && i >= nr0Start;
@@ -1221,25 +1221,53 @@ void NodesToSolver::mergeTvalues(int guard, const vector<guardedVal>& nr0, int n
 			int currj = avj ? nr1[j].value  : -1;
 		    if( curri == currj && avi && avj){
 				Dout(cout<<" curri = "<<curri<<" currj = "<<currj<<endl);
-				
+				int ni = i + inci;
+				int nj = j + incj;
+				if(added == 1 && ! ((ni>=nr0Start && ni < nr0End) || (nj>=nr1Start && nj< nr1End)) ){
+					int cvar = -out[out.size()-1].guard;
+					if(cvar!=-YES){
+						out.push_back(guardedVal(cvar, curri, idx));
+					}
+					break;
+				}
 				int cvar3 = dir.addChoiceClause(guard, nr1[j].guard,nr0[i].guard);
-				if(cvar3!= -YES){ out.push_back(guardedVal(cvar3, curri, idx));	}
-				i = i + inci;
-				j = j + incj;
+				if(cvar3!= -YES){ ++added; out.push_back(guardedVal(cvar3, curri, idx));	}
+				i = ni;
+				j = nj;
 				continue;
 			}
 		    if((curri < currj && avi) || !avj){
 				Dout(cout<<" curri = "<<curri<<endl);
+				int ni = i + inci;
+				if(added == 1 && ! ((ni>=nr0Start && ni < nr0End) || (avj)) ){
+					int cvar = -out[out.size()-1].guard;
+					if(cvar!=-YES){
+						out.push_back(guardedVal(cvar, curri, idx));
+						dir.addHelperC(-cvar, -guard);
+						dir.addHelperC(-cvar, nr0[i].guard);
+					}
+					break;
+				}
 				int cvar = dir.addAndClause( nr0[i].guard, -guard);
-				if(cvar!=-YES){ out.push_back(guardedVal(cvar, curri, idx)); }
-				i = i + inci;
+				if(cvar!=-YES){++added; out.push_back(guardedVal(cvar, curri, idx)); }
+				i = ni;
 				continue;
 		    }
 		    if( (currj < curri && avj) || !avi ){
 				Dout(cout<<" currj = "<<currj<<endl);
+				int nj = j + incj;
+				if(added == 1 && ! ((avi) || (nj>=nr1Start && nj< nr1End)) ){
+					int cvar = -out[out.size()-1].guard;
+					if(cvar!=-YES){
+						out.push_back(guardedVal(cvar, currj, idx));
+						dir.addHelperC(-cvar, guard);
+						dir.addHelperC(-cvar, nr1[j].guard);
+					}
+					break;
+				}
 				int cvar = dir.addAndClause( nr1[j].guard, guard );
-				if(cvar!=-YES){ out.push_back(guardedVal(cvar, currj, idx)); }
-				j = j + incj;
+				if(cvar!=-YES){++added; out.push_back(guardedVal(cvar, currj, idx)); }
+				j = nj;
 				continue;
 		    }
 		    Assert(false, "Should never get here");
@@ -1279,7 +1307,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 
 
 		Assert( out.size () > 0, "This should not happen here2");		
-		output.sparsify ();
+		output.sparsify (dir);
 		return;
 }
 
@@ -1369,7 +1397,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
 	vector<guardedVal>& tmp = node_ids[node.id].num_ranges;
 	dir.getSwitchVars(ids, size, tmp);
-	node_ids[node.id].sparsify ();
+	node_ids[node.id].sparsify (dir);
 	Dout(cout<<"&ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
 	return;
 }
@@ -1505,7 +1533,7 @@ NodesToSolver::visit( ARR_R_node &node){
 		if(tmp.size() == 1){
 			tmp[0].guard = YES;
 		}
-		nvar.sparsify ();
+		nvar.sparsify (dir);
 	}else{
 		map<int, int>::iterator it = valToID.begin();
 		for(int i=0; it!=valToID.end(); ++i, ++it){
@@ -1721,7 +1749,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 			altL.num_ranges.push_back(gvl[i]);
 		}
 		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
-		else{ altL.sparsify(); }
+		else{ altL.sparsify(dir); }
 
 		vector<guardedVal>& gvr = choices[1].num_ranges;	
 		Tvalue altR;
@@ -1729,7 +1757,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 			altR.num_ranges.push_back(gvr[i]);
 		}
 		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
-		else{ altR.sparsify(); }
+		else{ altR.sparsify(dir); }
 
 		int idxl = 0;
 		int idxr = 0;
@@ -1837,7 +1865,7 @@ void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
 				int cvar = dir.addBigOrClause( &scratchpad[0], orTerms);
 				result.push_back(guardedVal(cvar, it->first));
 			}
-			output.sparsify ();
+			output.sparsify (dir);
 		}
 	}else{
 		//mval is not sparse; it's a single bit.

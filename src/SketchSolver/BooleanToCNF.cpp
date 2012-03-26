@@ -57,6 +57,8 @@ void SolverHelper::addHelperC(Tvalue& tv){
 
 
 void SolverHelper::addHelperC(int l1, int l2){
+	if(l1 == -l2)
+		return;
 	int l = this->setStr(min(l1,l2), ':' ,max(l1,l2));
 	int rv;
 	if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){		

@@ -46,7 +46,7 @@ NodesToSEQ::visit (SRC_node &node)
 
 		    Dout (cout << "setting input nodes" << node.name << endl);
 		    // In the future, I may want to make some of these holes not-sparse.
-			node_ids[node.id].sparsify();
+			node_ids[node.id].sparsify(dir);
 		}else{
 			node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		}

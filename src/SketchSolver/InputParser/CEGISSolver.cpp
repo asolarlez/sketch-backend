@@ -353,9 +353,15 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//timer.start();
 		int YES = dir.newYES();
 		//getProblem()->lprint(cout);
-		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
+		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
 		try{
-			nts.process(*getProblem());				
+			nts.process(*getProblem());	
+			BooleanDAG& bd = *getProblem();
+			/*
+			for(int i=0; i<node_ids.size(); ++i){
+				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
+			}
+			*/
 		}catch(BasicError& e){
 			if(PARAMS->debug){
 				for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
@@ -902,7 +908,6 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
 			Assert( cnt == it->globalSize(), "SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<<endl);
-			cout<<"XXX input "<<cname<<" size="<<cnt<<endl;
 			for(int i=0; i<cnt; ++i){
 				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));

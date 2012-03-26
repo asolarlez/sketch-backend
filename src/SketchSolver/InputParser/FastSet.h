@@ -402,7 +402,7 @@ void swap(FastSet<T>& t1, FastSet<T>& t2){
 
 template<typename T, typename M>
 class fmiter{
-	typedef typename vector<pair<T*, M> >::iterator iter;
+	typedef pair<T*, M>* iter;
 	unsigned vers;
 	iter cur;	
 	iter end;	
@@ -419,7 +419,9 @@ public:
 	}
 
 	fmiter(iter p_cur, iter p_end, int v ): cur(p_cur), end(p_end), vers(v){
-		
+#ifdef _DEBUG
+	Assert(p_cur <= p_end, "What??");
+#endif		
 	}	
 	template<typename U, typename P> friend class FastMap;
 
@@ -439,16 +441,24 @@ public:
 		do{
 		++cur;
 		}while(cur != end && cur->first == NULL);
-		
+#ifdef _DEBUG
+	Assert(cur <= end, "What??");
+#endif				
 		return *this;
 	}
 
 	pair<T*, M>& operator*(){
+#ifdef _DEBUG
+	Assert(cur < end, "What??");
+#endif	
 		return *(this->cur);
 	}
 
 	pair<T*, M>* operator->(){
-		return &(*(this->cur));
+#ifdef _DEBUG
+	Assert(cur < end, "What??");
+#endif	
+		return this->cur;
 	}
 
 };
@@ -462,13 +472,12 @@ class FastMap
 {
     typedef FastSetTraits<T> traits;
 
-vector<pair<T*, M> > store;
+pair<T*, M>* store;
+pair<T*, M>* store_end;
 int sz;
 int _size;
 fmiter<T, M> _end;
 unsigned vers;
-
-
 
 public:	
 	typedef fmiter<T, M>iterator;
@@ -477,7 +486,7 @@ public:
 		return _size;
 	}
 	void recompEnd(){		
-		_end = fmiter<T, M>( ((FastMap<T,M>*) this)->store.end(), ((FastMap<T,M>*) this)->store.end(), vers);
+		_end = fmiter<T, M>( ((FastMap<T,M>*) this)->store_end, ((FastMap<T,M>*) this)->store_end, vers);
 	}
 
 	FastMap(void):_end(0)
@@ -485,12 +494,18 @@ public:
 		vers = 0;
 		sz = 1;
 		unsigned tmp = (CNST<<sz)+2;
-		store.resize( tmp, make_pair<T*,M>(NULL, 0));		
+		store = new pair<T*, M>[tmp];		
+		store_end = store + tmp;
+		memset(store, 0, tmp*sizeof(pair<T*, M>));
 		_size = 0;
 		recompEnd();
 	}
 
-	FastMap(const FastMap& fs): sz(fs.sz), store(fs.store), _size(fs._size), _end(0){
+	FastMap(const FastMap& fs): sz(fs.sz), _size(fs._size), _end(0){
+		int tmp = fs.store_end - fs.store;
+		store = new pair<T*, M>[tmp];		
+		store_end = store + tmp;
+		memcpy(store, fs.store, tmp*sizeof(pair<T*, M>));
 		recompEnd();
 		vers = 0;
 	}
@@ -498,7 +513,10 @@ public:
 
 	FastMap& operator=(const FastMap& fs){
 		sz = fs.sz;
-		store = fs.store;
+		int tmp = fs.store_end - fs.store;
+		store = new pair<T*, M>[tmp];		
+		store_end = store + tmp;
+		memcpy(store, fs.store, tmp*sizeof(pair<T*, M>));
 		_size = fs._size;
 		recompEnd();
 		vers = 0;
@@ -516,61 +534,91 @@ public:
 
 	iterator begin() const{
 		if(_size == 0){ return end(); }
-		typename vector<pair<T*, M> >::iterator it = (( FastMap<T,M>*) this)->store.begin();
-		while(it->first == NULL){ ++it; }
-		return fmiter<T,M>(it, ((FastMap<T,M>*) this)->store.end(), vers);
+		pair<T*, M> * it = store;
+		while(it->first == NULL){ ++it; } //This is safe because the map has at least one non-null element.
+		return fmiter<T,M>(it, store_end, vers);
 	}
 
 	void resize(){
 		++vers;
 		++this->sz;
 		// if(( store.size() / _size ) > 2){  cout<<" ration on resize "<<store.size()<<"/"<<_size<<"  "<<( store.size() / _size )<<endl; }
-		store.resize((CNST<<sz)+2, make_pair<T*,M>(NULL, 0));		
+		unsigned lsz = store_end - store;
+#ifdef _DEBUG
+	set<pair<T*, M> > vp;
+	for(iterator it = begin(); it != end(); ++it){
+		vp.insert(*it);
+	}
+#endif
+		int store_size = (CNST<<sz)+2;
+		pair<T*, M> * tbuf = new pair<T*, M>[store_size];	
+		memset(tbuf, 0, store_size*sizeof(pair<T*,M>));
 		unsigned m = 3;
-		m = ~m;
-
-		unsigned sz = (store.size()/2) + 2;  // XXX/cgjones: probably not the best name ...
-		for(unsigned i=0; i<sz; ++i){
+		m = ~m;				
+		for(unsigned i=0; i<lsz; ++i){
 			pair<T*, M> tmp = store[i];
 			if(tmp.first == NULL){ continue; }
 			//unsigned loc = hash( tmp );
                         unsigned loc = traits::hash (tmp.first, this->sz);
 			if(loc != (i & m)){ 
-				store[i].first= NULL; 
 				int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
-				
-				if(store[lp2].first == NULL){
-					store[lp2] = tmp; continue;
+#ifdef _DEBUG
+	Assert(lp5 < store_size, "What??");
+#endif
+
+				if(tbuf[lp2].first == NULL){
+					tbuf[lp2] = tmp; continue;
 				}
-				if(store[lp3].first == NULL){
-					store[lp3] = tmp; continue;
+				if(tbuf[lp3].first == NULL){
+					tbuf[lp3] = tmp; continue;
 				}
 
-				if(store[loc].first == NULL){
-					store[loc] = tmp; continue;
+				if(tbuf[loc].first == NULL){
+					tbuf[loc] = tmp; continue;
 				}
-				if(store[lp1].first == NULL){
-					store[lp1] = tmp; continue;
+				if(tbuf[lp1].first == NULL){
+					tbuf[lp1] = tmp; continue;
 				}
 
-				if(store[lp4].first == NULL){
-					store[lp4] = tmp; continue;
+				if(tbuf[lp4].first == NULL){
+					tbuf[lp4] = tmp; continue;
 				}
-				if(store[lp5].first == NULL){
-					store[lp5] = tmp; continue;
+				if(tbuf[lp5].first == NULL){
+					tbuf[lp5] = tmp; continue;
 				}
-				store[i] = tmp;
+				tbuf[i] = tmp;
+				while(i<lsz){
+					tbuf[i] = store[i];
+					++i;
+				}
+				delete[] store;
+				store = tbuf;
+				store_end = tbuf + store_size;
 				resize();
-				break;
+				return;
+			}else{
+				tbuf[i] = tmp;
 			}
-		}		
+		}
+		delete[] store;
+		store = tbuf;
+		store_end = tbuf + store_size;
 		recompEnd();
+#ifdef _DEBUG
+	for(iterator it = begin(); it != end(); ++it){
+		Assert(vp.count(*it)>0, "Not working");
+	}
+	Assert(vp.size() == _size, "Not working");
+#endif
 	}
 
 	int count(T* val){
 		//unsigned loc = hash(val);
             unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
+#ifdef _DEBUG
+	Assert(store+lp5 < store_end, "What??");
+#endif
 		bool t0 = store[l].first == val;
 		bool t1 = store[lp1].first == val;
 		bool t2 = store[lp2].first == val;
@@ -584,6 +632,9 @@ public:
 		//unsigned loc = hash(val);
             unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
+#ifdef _DEBUG
+	Assert(store+lp5 < store_end, "What??");
+#endif
 		bool t0 = store[l]->first == val;
 		bool t1 = store[lp1]->first == val;
 		bool t2 = store[lp2]->first == val;
@@ -609,10 +660,20 @@ public:
 		if(t5){
 			store[lp5]->first = NULL; --_size; return;
 		}
+#ifdef _DEBUG
+	set<pair<T*, M> > vp;
+	for(iterator it = begin(); it != end(); ++it){
+		vp.insert(*it);
+	}
+	Assert(vp.count(val)==0, "It didn't get removed!!");
+#endif
 	}
 
 	void erase(iterator& it){
-		if(it.cur != store.end()){
+#ifdef _DEBUG
+	Assert(it.cur <= store_end, "What??");
+#endif
+		if(it.cur != store_end){
 			--_size;
 			it.cur->first = NULL;
 		}
@@ -628,26 +689,28 @@ public:
 		bool t3 = store[lp3].first == val;
 		bool t4 = store[lp4].first == val;
 		bool t5 = store[lp5].first == val;
-
+#ifdef _DEBUG
+	Assert(store+lp5 < store_end, "What??");
+#endif
 		if(t0){
-			return fmiter<T, M>(store.begin() + loc, store.end(), vers);
+			return fmiter<T, M>(store + loc, store_end, vers);
 		}
 		if(t1){
-			return fmiter<T, M>( store.begin() + lp1, store.end(), vers);
+			return fmiter<T, M>( store + lp1, store_end, vers);
 		}
 		if(t2){
-			return fmiter<T, M>(store.begin() + lp2, store.end(), vers);
+			return fmiter<T, M>(store + lp2, store_end, vers);
 		}
 		if(t3){
-			return fmiter<T, M>(store.begin() + lp3, store.end(), vers);
+			return fmiter<T, M>(store + lp3, store_end, vers);
 		}
 		if(t4){
-			return fmiter<T, M>(store.begin() + lp4, store.end(), vers);
+			return fmiter<T, M>(store + lp4, store_end, vers);
 		}
 		if(t5){
-			return fmiter<T, M>(store.begin() + lp5, store.end(), vers);
+			return fmiter<T, M>(store + lp5, store_end, vers);
 		}
-		return fmiter<T, M>(store.end(), store.end(), vers);
+		return fmiter<T, M>(store_end, store_end, vers);
 	}
 
 
@@ -672,9 +735,11 @@ public:
 
 	void clear(){
 		sz = 1;
-		unsigned tmp = (CNST<<sz)+2;
-		store.resize( tmp, make_pair<T*, M>(NULL, 0));
-		for(int i=0; i<tmp; ++i){ store[i].first = NULL; }
+		delete[] store;
+		unsigned tmp = (CNST<<sz)+2;		
+		store = new pair<T*, M>[tmp];		
+		store_end = store + tmp;
+		memset(store, 0, tmp*sizeof(pair<T*, M>));
 		_size = 0;
 		++vers;
 		recompEnd();
@@ -682,6 +747,7 @@ public:
 
 
 	void insert(const pair<T*, M>& val){
+
 		//unsigned loc = hash(val);
        unsigned loc = traits::hash(val.first, sz);
 	   
@@ -692,35 +758,29 @@ public:
 		pair<T*, M>& slp3 = store[lp3];
 		pair<T*, M>& slp4 = store[lp4];
 		pair<T*, M>& slp5 = store[lp5];
-	   
-		bool t0 = sl.first == val.first;
-		bool t1 = slp1.first == val.first;
-		bool t2 = slp2.first == val.first;
-		bool t3 = slp3.first == val.first;
-		bool t4 = slp4.first == val.first;
-		bool t5 = slp5.first == val.first;
-
+#ifdef _DEBUG
+	Assert(store+lp5 < store_end, "What??");
+#endif	   		
 		{
-			if(t2){
+			if(slp2.first == val.first){
 				slp2.second = val.second; return;
 			}
-			if(t3){
+			if(slp3.first == val.first){
 				slp3.second = val.second; return;
-			}
-
-			if(t0){
+			}	
+			if(sl.first == val.first){
 				sl.second = val.second; return;
 			}
-			if(t1){
+			if(slp1.first == val.first){
 				slp1.second = val.second; return;
-			}
-			
-			if(t4){
+			}					
+			if(slp4.first == val.first){
 				slp4.second = val.second; return;
 			}
-			if(t5){
+			if(slp5.first == val.first){
 				slp5.second = val.second; return;
-			}
+			}	
+			
 			if(slp2.first == NULL){
 				++_size;
 				slp2 = val; return;
@@ -728,8 +788,7 @@ public:
 			if(slp3.first == NULL){
 				++_size;
 				slp3 = val; return;
-			}
-
+			}											
 			if(sl.first == NULL){
 				++_size;
 				sl = val; return;
@@ -738,7 +797,6 @@ public:
 				++_size;
 				slp1 = val; return;
 			}
-			
 			if(slp4.first == NULL){
 				++_size;
 				slp4 = val; return;
@@ -750,6 +808,13 @@ public:
 			resize();
 			insert(val);
 		}
+		#ifdef _DEBUG
+			set<pair<T*, M> > vp;
+			for(iterator it = begin(); it != end(); ++it){
+				vp.insert(*it);
+			}
+			Assert(vp.count(val)>0, "It didn't get inserted!!");
+		#endif
 	}
 
 	void insert(T* f, M s){
@@ -757,6 +822,7 @@ public:
 	}
 	void swap(FastMap<T, M>& t2){
 		std::swap(store, t2.store);
+		std::swap(store_end, t2.store_end);
 		std::swap(sz, t2.sz);
 		std::swap(_size, t2._size);
 		recompEnd();
@@ -768,6 +834,7 @@ public:
 
 	~FastMap(void)
 	{
+		delete[] store;
 	}
 };
 

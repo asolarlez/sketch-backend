@@ -187,7 +187,7 @@ public:
     friend ostream &operator<< (ostream &out, const Tvalue &tv) {
 	out << "{" << (tv.neg ? -tv.id : tv.id);
 
-	if (tv.isSparse () ){
+	if (!tv.isBvect ()){
 	    out << " [ ";
 	    for (int i = 0; i < tv.size; i++)
 			out << tv.num_ranges[i] << ", ";
@@ -278,9 +278,17 @@ public:
 
     /* Sparsify a value.
      * FIXME seems like a inconsistency pronating method... */
-    inline void sparsify (void) {
+    inline void sparsify (SolverHelper& sh) {
 	type = TVAL_SPARSE;
 	size = num_ranges.size ();
+	if(size==2 && num_ranges[0].guard != -num_ranges[1].guard){
+		cout<<"XXX = "<<*this;
+		int tmp = num_ranges[1].guard;
+		num_ranges[1].guard = -num_ranges[0].guard;
+		sh.addHelperC(-num_ranges[0].guard, -tmp);
+		sh.addHelperC(num_ranges[0].guard, tmp);
+		cout<<"  -->  "<<*this<<endl;
+	}	
 	id = 0;
 	neg = false;
     }

@@ -202,12 +202,14 @@ void arith_node::redirectParentPointers(BooleanDAG& oribdag, const vector<const 
 void bool_node::redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild){
 	redirectParentPointers(oribdag, bdag, false, NULL);
 	
-	for(child_iter child = tchild.begin(); child != tchild.end(); ++child){
-		Assert( (*child)->id != -22, "This node should not exist anymore");
-		if( oribdag.checkNodePosition((*child)) ){
-			children.insert((bool_node*) bdag[ (*child)->id ] );
+	for(child_iter child = tchild.begin(); 
+		child != tchild.end(); 
+		++child){
+		bool_node* bn = *child;
+		if( oribdag.checkNodePosition(bn) ){
+			children.insert((bool_node*) bdag[ bn->id ] );
 		}else{
-			children.insert(*child);
+			children.insert(bn);
 		}
 	}
 }
