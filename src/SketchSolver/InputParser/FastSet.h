@@ -550,6 +550,7 @@ public:
 	for(iterator it = begin(); it != end(); ++it){
 		vp.insert(*it);
 	}
+	Assert(vp.size() == _size, "Not working");
 #endif
 		int store_size = (CNST<<sz)+2;
 		pair<T*, M> * tbuf = new pair<T*, M>[store_size];	
@@ -587,14 +588,22 @@ public:
 				if(tbuf[lp5].first == NULL){
 					tbuf[lp5] = tmp; continue;
 				}
-				tbuf[i] = tmp;
+				int j=i;
 				while(i<lsz){
-					tbuf[i] = store[i];
+					while(tbuf[j].first != NULL){	++j; }
+#ifdef _DEBUG
+					Assert(tbuf[j].first == NULL, "??llken;kiy");
+#endif
+					tbuf[j] = store[i];
 					++i;
+					++j;
 				}
 				delete[] store;
 				store = tbuf;
 				store_end = tbuf + store_size;
+#ifdef _DEBUG
+				recompEnd();
+#endif
 				resize();
 				return;
 			}else{
@@ -606,9 +615,11 @@ public:
 		store_end = tbuf + store_size;
 		recompEnd();
 #ifdef _DEBUG
-	for(iterator it = begin(); it != end(); ++it){
+		int ii=0;
+	for(iterator it = begin(); it != end(); ++it, ++ii){
 		Assert(vp.count(*it)>0, "Not working");
 	}
+	Assert(ii == _size, "Something fishy");
 	Assert(vp.size() == _size, "Not working");
 #endif
 	}
@@ -748,7 +759,13 @@ public:
 
 
 	void insert(const pair<T*, M>& val){
-
+#ifdef _DEBUG
+	set<pair<T*, M> > vof;
+	for(iterator it = begin(); it != end(); ++it){
+		vof.insert(*it);
+	}
+	Assert(vof.size()==_size, "It didn't get inserted!!");
+#endif
 		//unsigned loc = hash(val);
        unsigned loc = traits::hash(val.first, sz);
 	   
@@ -815,6 +832,7 @@ public:
 				vp.insert(*it);
 			}
 			Assert(vp.count(val)>0, "It didn't get inserted!!");
+			Assert(vp.size()==_size, "It didn't get inserted!!");
 		#endif
 	}
 

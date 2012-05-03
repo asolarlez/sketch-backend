@@ -11,6 +11,41 @@ BackwardsAnalysis::~BackwardsAnalysis(void)
 }
 
 
+bool valueSearch(bool_node* node,FastMap<bool_node,int>& fm, int&out, int bnd){
+	if(bnd < 0){ return false; }
+	if(node->type == bool_node::NOT){
+		bool tmp = valueSearch(node->mother, fm, out, bnd);
+		out = 1-out;
+		return tmp;
+	}
+	FastMap<bool_node,int>::iterator vit =  fm.find(node);
+	if(vit!= fm.end()){		
+		out = vit->second;
+		return true;
+	}
+	if(node->type == bool_node::AND){
+		int tv1;
+		bool tmp1 = valueSearch(node->mother, fm, tv1, bnd-1);
+		if(tmp1 == true && tv1 == 0){
+			out = tv1;
+			return true;
+		}
+		int tv2;
+		bool tmp2 = valueSearch(node->father, fm, tv2, bnd-1);
+		if(tmp2 == true && tv2 == 0){
+			out = tv2;
+			return true;
+		}
+		if(tmp1==true && tmp2==true){
+			out = ((tv1==1)&&(tv2==1))?1:0;
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+
 
 CONST_node* BackwardsAnalysis::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
@@ -36,6 +71,13 @@ void BackwardsAnalysis::visitArith(arith_node& node ){
 		rvalue = getCnode(0);
 		return;
 	}
+	/* This seems unprofitable; maybe later we'll discover it's useful.
+	int tout;
+	if(t.getValue(&node, tout)){
+		rvalue = getCnode(tout);
+		return;
+	}
+	*/
 	if(node.mother != NULL){
 		info[node.mother->id] += t;
 	}
@@ -53,6 +95,13 @@ void BackwardsAnalysis::visitBool(bool_node& node ){
 		rvalue = getCnode(0);
 		return;
 	}
+	int tout;
+	/* This seems unprofitable; maybe later we'll discover it's useful.
+	if(t.getValue(&node, tout)){
+		rvalue = getCnode(tout);
+		return;
+	}
+	*/
 	bool_node* fmother = NULL;
 	if(node.mother != NULL){
 		fmother = modifyNode(node.mother, t);
@@ -185,6 +234,10 @@ bool BackwardsAnalysis::check(Info& t, bool_node* n, int& v){
 }
 */
 
+
+
+
+
 bool_node* BackwardsAnalysis::localModify(OR_node* node, Info& t){
 	int v;
 
@@ -315,17 +368,33 @@ void BackwardsAnalysis::visit( ARRACC_node& node ){
 
 bool_node* BackwardsAnalysis::modifyNode(bool_node* node, Info& t){
 	bool_node* out = node;
-	if(typeid(*node) == typeid(AND_node)){
+	if(node->type == bool_node::NOT){
+		bool_node* tmp = modifyNode(node->mother, t);
+		if(tmp != node->mother){
+			if(tmp->type == bool_node::CONST){
+				out = this->getCnode(1-dynamic_cast<CONST_node*>(tmp)->getVal());
+			}else{
+				NOT_node* nn = new NOT_node();
+				nn->mother = tmp;				
+				nn->addToParents();
+				this->addNode(nn);
+				out=nn;
+			}
+		}
+	}
+	if(node->type == bool_node::AND){
 		out = localModify(dynamic_cast<AND_node*>(node), t);
 	}
 
-	if(typeid(*node) == typeid(OR_node)){
+	if(node->type == bool_node::OR){
 		out = localModify(dynamic_cast<OR_node*>(node), t);
 	}
-	if(typeid(*node) == typeid(ARRACC_node)){
+	
+	if(node->type == bool_node::ARRACC){
 		out = localModify(dynamic_cast<ARRACC_node*>(node), t);
 	}
-	if(typeid(*node) == typeid(ARRASS_node)){
+	
+	if(node->type == bool_node::ARRASS){
 		out = localModify(dynamic_cast<ARRASS_node*>(node), t);
 	}
 

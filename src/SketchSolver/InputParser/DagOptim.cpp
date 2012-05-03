@@ -1560,7 +1560,7 @@ void DagOptim::visit( ARRASS_node& node ){
 	}
 
 
-	if(typeid(*node.mother) == typeid(PLUS_node) && (isConst(node.mother->mother) || isConst(node.mother->father)  )){
+	if(node.mother->type == bool_node::PLUS && (isConst(node.mother->mother) || isConst(node.mother->father)  )){
 		bool_node* n1 = node.mother;		
 		bool_node* nm;
 		int C;
@@ -1583,6 +1583,63 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 	
+	if(node.multi_mother[0]->type == bool_node::EQ){
+		bool_node* eqmm0 = node.multi_mother[0];
+		bool dochange = false;
+		if(eqmm0->mother == node.mother){
+			if(eqmm0->father->type == bool_node::CONST){
+				if(this->getIval(eqmm0->father)==node.quant){
+					dochange = true;
+		}	}	}
+		if(eqmm0->father == node.mother){
+			if(eqmm0->mother->type == bool_node::CONST){
+				if(this->getIval(eqmm0->mother)==node.quant){
+					dochange = true;
+		}	}	}
+
+		if(dochange){
+			ARRASS_node* as = new ARRASS_node();
+			as->mother = node.mother;
+			as->quant = node.quant;
+			as->multi_mother = node.multi_mother;
+			as->multi_mother[0] = this->getCnode(0);
+			as->addToParents();
+			addNode(as);
+			as->accept(*this);
+			return;
+		}
+
+	}
+	
+	if(isConst( node.multi_mother[0] ) && isConst( node.multi_mother[1] )){
+		int m0 = getIval(node.multi_mother[0]);
+		int m1 = getIval(node.multi_mother[1]);
+		if(m0 == 0 && m1==1){
+			EQ_node* en = new EQ_node();
+			en->mother = node.mother;
+			en->father = getCnode(node.quant);
+			en->addToParents();
+			addNode(en);
+			en->accept(*this);
+			return;
+		}
+		if(m0 == 1 && m1==0){
+			EQ_node* en = new EQ_node();
+			en->mother = node.mother;
+			en->father = getCnode(node.quant);
+			en->addToParents();
+			addNode(en);
+			en->accept(*this);
+
+			NOT_node* nn = new NOT_node();
+			nn->mother = rvalue;
+			nn->addToParents();
+			addNode(nn);
+			nn->accept(*this);			
+			return;
+		}
+	}
+
 	int sc = staticCompare<equal_to<int> >(node.mother, node.quant, true);
 	
 	if(sc == 1){

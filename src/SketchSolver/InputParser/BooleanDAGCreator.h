@@ -92,9 +92,6 @@ public:
   }
 
 
- void finalize(){
-	dag->registerOutputs();
-	 optim.cleanup(*dag);
- }
+ void finalize();
 
 };

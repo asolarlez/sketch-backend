@@ -49,6 +49,8 @@ public:
 	Datum():node(NULL), val(-1){
 	
 	}
+
+
 	Datum& operator=(const Datum& d){
 		node = d.node;
 		val = d.val;
@@ -104,6 +106,8 @@ public:
 
 };
 
+
+bool valueSearch(bool_node* node,FastMap<bool_node,int>& fm, int&out, int bnd=3);
 
 inline bool operator==(const Datum& d1, const Datum& d2){
 	if(d1.node->id == d2.node->id){
@@ -188,27 +192,11 @@ public:
  
 	bool getValue(bool_node* node, int& out){
 		Datum d(node);
-		if(hasD ){			
-			FastMap<bool_node,int>::iterator tit = temp.find(d.node);
-			if(tit!= temp.end()){
-				if(node->type == bool_node::NOT){
-					out = 1-tit->second;
-				}else{
-					out = tit->second;
-				}	
-				return true;
-			}
+		if(hasD ){	
+			bool tt = valueSearch(node, temp, out);
+			if(tt){ return true; }			
 		}
-		FastMap<bool_node,int>::iterator vit =  known.find(d.node);
-		if(vit!= known.end()){
-			if(node->type == bool_node::NOT){
-					out = 1-vit->second;
-				}else{
-					out = vit->second;
-				}
-			return true;
-		}
-		return false;
+		return valueSearch(node,known , out);		
 	}
 
 

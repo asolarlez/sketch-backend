@@ -14,6 +14,13 @@ BooleanDAGCreator::~BooleanDAGCreator(void)
 	// cout<<"nnsize = "<<named_nodes.size()<<endl;
 }
 
+ void BooleanDAGCreator::finalize(){
+	dag->registerOutputs();
+	 optim.cleanup(*dag);
+	 if(PARAMS->verbosity>7){
+		 cout<<"size = "<<dag->size()<<endl;		 
+	 }
+ }
 
 bool_node* BooleanDAGCreator::get_node(const string& name){
   bool_node* fth;
