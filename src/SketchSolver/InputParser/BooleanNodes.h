@@ -334,8 +334,8 @@ class ARR_R_node: public bool_node{
 				otype = INT;
 				return INT;			
 			}
-			Assert(false, "father must be an array!! a;lkjen;");
-			return BOOL;
+			otype = ot;
+			return otype;			
 		}
 		virtual string lprint()const{
 			stringstream str;
