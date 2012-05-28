@@ -15,8 +15,21 @@ public:
 };
 
 class CallTreeTracker{
+
+	/**
+	Call tree. vector of calls by a given caller.
+	Indexed by the globalID of the call node.
+	*/
 	map<int, vector<int> > ctree;
+
+	/**
+		
+	*/
 	map<int, Caller > rctree;
+
+	/**
+	Record the name of a function indexed by a call id.
+	*/
 	map<int, string> cname;
 
 	string funName(const UFUN_node& fun){
@@ -84,12 +97,26 @@ public:
 class InlineControl{
 	
 public:
+
+	/**
+	Tell the inline controller that you are about to inline the function represented by node.
+	*/
 	virtual void registerInline(UFUN_node& node)=0;
+
+	/**
+	Call this method to check if you want to inline a method or not.
+	*/
 	virtual bool checkInline(UFUN_node& node)=0;
+
+	/**
+	Register the existence of a call.
+	*/
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee)=0;
 };
 
 class OneCallPerCSiteInliner: public InlineControl{
+
+	/*Return true if I am supposed to inline the node.*/
 	bool checkInlineHelper(UFUN_node& node){
 		int tmp = node.globalId;
 		while(ctt.seenCall(tmp)){
@@ -101,14 +128,11 @@ class OneCallPerCSiteInliner: public InlineControl{
 		}
 		return true;
 	}
-
-	set<int> badConditions;
-public:
-	CallTreeTracker ctt;
-	virtual void registerInline(UFUN_node& node){
-
-	}
-
+	/**
+	When we call this function, we know we don't want to inline the call, 
+	but we want to register its condition as a bad condition so that 
+	other calls with the same condition don't get inlined.
+	*/
 	void recInsert(bool_node* n){
 		badConditions.insert(n->globalId);
 		if(n->type == bool_node::OR){
@@ -121,6 +145,10 @@ public:
 		}
 	}
 
+	/*
+	When we call this function, we know the function in question is a good
+	candidate for inlining, but we want to make sure it doesn't have bad conditions.
+	*/
 	bool recCheck(bool_node* n){
 		if(badConditions.count(n->globalId)>0){
 			//cout<<"Saved an inline"<<endl;
@@ -131,6 +159,19 @@ public:
 			}
 		}
 		return true;
+	}
+
+	/**
+	If you decide that a call should not be inlined ant that call has 
+	condition C, then any other call that has condition C should not be 
+	inlined either, because C being true would surely cause an assertion, so 
+	any other call that has C as a condition will not be inlined either.
+	*/
+	set<int> badConditions;
+public:
+	CallTreeTracker ctt;
+	virtual void registerInline(UFUN_node& node){
+
 	}
 
 	virtual bool checkInline(UFUN_node& node){

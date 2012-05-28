@@ -521,7 +521,7 @@ void DagOptim::visit( AND_node& node ){
 			return;	
 		}
 
-	}
+	}	
 
 	rvalue = &node;
 }
@@ -556,7 +556,20 @@ void DagOptim::visit( OR_node& node ){
 			rvalue = node.father;
 			return;	
 		}
-	}
+	}	
+	if(node.father->type == bool_node::NOT && node.mother->type == bool_node::NOT){
+		AND_node* an = new AND_node();
+		an->mother = node.mother->mother;
+		an->father = node.father->mother;
+		an->addToParents();
+		addNode(an);
+		NOT_node* nn = new NOT_node();
+		nn->mother = an;
+		nn->addToParents();
+		addNode(nn);
+		nn->accept(*this);
+		return;
+	}	
 	rvalue = &node;
 }
 
@@ -823,7 +836,15 @@ void DagOptim::visit( NEG_node& node ){
 	rvalue = &node;
 }
 	
-	
+
+void DagOptim::visit( ARR_W_node& node ){
+	if(node.multi_mother[0] == node.multi_mother[1]){
+		rvalue = node.multi_mother[0];
+		return;
+	}
+	rvalue = &node;
+}
+
 	
 void DagOptim::visit( LT_node& node ){
 	if( isConst(node.mother) ){
@@ -1792,18 +1813,18 @@ void DagOptim::findCycles(BooleanDAG& dag){
 	{
 		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
 		for(int i=0; i<ins.size(); ++i){		
-			cbPerNode(ins[i], bns, dupNodes);
+			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the sources.
 		}
 	}
 	{
 		vector<bool_node*>& ins = dag.getNodesByType(bool_node::CTRL);
 		for(int i=0; i<ins.size(); ++i){		
-			cbPerNode(ins[i], bns, dupNodes);
+			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the controls.
 		}
 	}
 
 	for(map<int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
-		cbPerNode(it->second, bns, dupNodes);
+		cbPerNode(it->second, bns, dupNodes); // do DFS starting from constant nodes.
 	}
 
 }
@@ -1812,6 +1833,12 @@ void DagOptim::findCycles(BooleanDAG& dag){
 The function below uses a stack to do depth first search to find cycles.
 When it finds a cycle, it calls the breakCycle routine to break it and 
 then restarts the DFS from the place where the cycle was broken.
+
+All nodes are initialized to flag==BOTTOM. When a node is first visited by DFS, its flag is changed to INSTACK.
+The node is then pushed into the stack, and the stack also keeps track of which of its children we are currently visiting
+as part of DFS.
+
+If as part of DFS we find a node that is currently in the stack, that means we found a cycle and we have to break it.
 */
 void DagOptim::cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterator> >& bns, map<int, UFUN_node*>& dupNodes){
 	if(cur->flag ==BOTTOM){
@@ -1821,8 +1848,8 @@ void DagOptim::cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterat
 			while(!bns.empty()){	
 				n = bns.top().first;
 				childset::iterator& it = bns.top().second;
-				if(!n->children.checkIter(it)){
-					it = n->children.begin();
+				if(!n->children.checkIter(it)){//if the node got modified, the childrens list will change
+					it = n->children.begin(); // and the iterator will be corrupted so we have to reset it to begin.
 				}
 				bool esc = false;
 				for(; it != n->children.end(); ++it){
@@ -1848,62 +1875,102 @@ void DagOptim::cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterat
 }
 
 
+/*
+When this function is called, s is the DFS stack and it looks like this:
+
+a->b->c->d->e->f->g->h
+
+where one of h's children is a node in s (say c), and that node c is equal to bn.
+
+The map dupNodes stores nodes stores nodes for which a duplicate has been made.
+
+One by one, we pop nodes from the stack and push them to a temporary stack sp.
+We can only break cycles in function nodes, and specifically cycles caused by the 
+guard of a function node, so we are looking for a node in the stack that is a function
+node. In this case, suppose f is a function node and e is f's guard.
+
+At the end of the while loop, the state will look like this:
+
+s = a->b->c
+sp = f->g->h
+tst = e -> d
+
+All the nodes that have been popped from s are now set to bottom.
+
+*/
+
 
 void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes){	
 	int BOTTOM=-1;
 	list<pair<bool_node*, childset::iterator> > sp;
 	stack<pair<bool_node*, childset::iterator> > tst;
 	bool good = false;
-	bool doubleFun = false;
+	
 	UFUN_node* luf = NULL;	
 	while(s.top().first != bn){	
 		s.top().first->flag = BOTTOM;
 		Assert(!s.empty(), "njkflaiuy");
-		sp.push_front( s.top() );
 		luf = dynamic_cast<UFUN_node*>(s.top().first);
+		sp.push_front( s.top() );		
+		s.pop();
 		if(luf != NULL){
-			s.pop();
-			if(s.top().first == luf->mother && (luf->mother->type == bool_node::OR || dupNodes.count(luf->globalId) )){				
-				while(s.top().first != bn){	
-					UFUN_node* puf = dynamic_cast<UFUN_node*>(s.top().first);
-					if(puf != NULL){
-						doubleFun = true;
-					}
+			if(s.top().first == luf->mother /*&& (luf->mother->type == bool_node::OR || dupNodes.count(luf->globalId) )*/){
+				//Found a point to break the cycle. 
+				while(s.top().first != bn){											
 					s.top().first->flag = BOTTOM;
 					tst.push(s.top());
 					s.pop();
 					Assert(!s.empty(), "zmiyeoiaujn");
 				}		
 				tst.push(s.top());
-				s.top().first->flag = BOTTOM;
-				{
-					UFUN_node* puf = dynamic_cast<UFUN_node*>(s.top().first);
-					if(puf != NULL){doubleFun = true;}
-				}
+				s.top().first->flag = BOTTOM;				
 				s.pop();
 				break;
-			}else{
-				doubleFun = true;
 			}
-		}else{
-			s.pop();
 		}
 	}
+	/*
+	Let's say the original stack was
+	a->b->c->d->e->f->g->h
+	At this point we have 
+	s = a->b
+	sp = f->g->h
+	tst = e -> d->c
+
+	All the nodes that have been popped from s are now set to bottom.
+
+	*/
+
+
 	if(s.size()>0 && s.top().first == bn){
+		//This branch deals with the corner case where c and f are the same and tst is empty.
+		Assert(tst.empty(), "Invariant");
 		s.top().first->flag = BOTTOM;
 		sp.push_front( s.top() );
 		s.pop();
 	}
+
+
 	while(!tst.empty()){
 		sp.push_back(tst.top());
 		tst.pop();
 	}
+	/*
+	After pushing tst back int sp, the state looks like this:
+	s = a->b
+	sp = f->g->h->c->d->e	
+	At this point, s no longer matters. The important thing is that we have 
+	a complete representation of the loop, with the top of sp corresponding to 
+	the function where the loop will be broken.
+	*/
+
 	if(PARAMS->verbosity > 4){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
 	// sp.front() is the function that is having trouble.
-	if(true || doubleFun){		
+	{		
 		bool_node* lastOr = sp.back().first;
 		sp.pop_back();
 		Assert(lastOr == sp.front().first->mother, "m;lqkey");
+		/*
 		bool_node* outer = NULL;
 		bool_node* inner = NULL;
 		if(lastOr->mother == sp.back().first){
@@ -1914,7 +1981,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			inner = lastOr->father;
 			outer = lastOr->mother;
 		}
-
+		*/
 		UFUN_node* oldNode = dynamic_cast<UFUN_node*>(sp.front().first);
 		// cout<<"double: "<<oldNode->get_name()<<endl;
 		UFUN_node* newNode = NULL;
@@ -1932,7 +1999,6 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			newNode->replace_parent(lastOr, this->getCnode(true));
 			dupNodes[oldNode->globalId] = newNode;
 			newNode->addToParents();
-
 			//It's important that nodes don't have duplicate fgid's.
 			++uidcount;
 			oldNode->fgid = uidcount; 
@@ -1942,17 +2008,17 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 
 		for(childset::iterator it = oldNode->children.begin(); it != oldNode->children.end(); ++it){
 			(*it)->replace_parent(oldNode, newNode);
-			if(!isRecycled){
+			/*if(!isRecycled){
 				if((*it)->type==bool_node::UFUN){
 					UFUN_node* un = dynamic_cast<UFUN_node*>(*it);
 					if(un->fgid == newNode->fgid){
-						Assert(un->mother == lastOr, "I don't believe this!! What's going on here?");
+						//Assert(un->mother == lastOr, "I don't believe this!! What's going on here?");
 						un->replace_parent(lastOr, this->getCnode(true));
 						lastOr->remove_child(un);
 						un->ignoreAsserts = true;
 					}					
 				}
-			}		
+			}*/	
 		}
 		oldNode->children.clear();
 		/*
@@ -1971,6 +2037,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			if(sp.empty()){ break; }
 			puf = dynamic_cast<UFUN_node*>(sp.back().first);
 		}
+		/*
 		if(!isRecycled){
 			oldNode->addBefore(newNode);
 		}
@@ -1978,34 +2045,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			oldNode->remove();
 			puf->add(oldNode);
 		}
-	}else{
-		Assert(sp.size() >0, "lnlkjyp;");
-		bool_node* oldoldNode = NULL;
-		bool_node* oldNode = sp.front().first;
-		UFUN_node* funct = dynamic_cast<UFUN_node*>(oldNode);
-		cout<<"single: "<<oldNode->get_name()<<endl;
-		sp.pop_front();
-		bool_node* newNode = this->getCnode(0);
-		bool_node* target;
-		bool_node* newTarget;		
-		while(!sp.empty()){
-			target = sp.front().first; sp.pop_front();
-			target->flag = BOTTOM;
-			newTarget = target->clone(false);
-			newTarget->id = target->id + 10000;
-			newnodes.push_back(newTarget);
-			Assert(newTarget->flag == BOTTOM, "lkn;iuey;");
-			UFUN_node* ufn = dynamic_cast<UFUN_node*>(newTarget);
-			Assert(ufn == NULL, "This can not happen");			
-			newTarget->replace_parent(oldNode, newNode);		
-			newTarget->addToParents();
-			oldoldNode = oldNode;
-			oldNode = target;
-			newNode = newTarget;
-		}
-		Assert(oldNode == funct->mother, "aa;lkwehp");
-		funct->replace_parent(oldNode, newNode);		
-		oldNode->remove_child(funct);
+		*/
 	}
 }
 

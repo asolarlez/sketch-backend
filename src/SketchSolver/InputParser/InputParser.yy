@@ -472,13 +472,17 @@ Term: Constant {
 		UFUN_node* ufun = new UFUN_node(fname);
 		ufun->outname = *$12;
 		int fgid = $14;
-		ufun->fgid = fgid;		
+		ufun->fgid = fgid;	
+		bool_node* pCond;	
 		if(currentBD->methdparams.count(fgid)>0){
 			ufun->multi_mother = currentBD->methdparams[fgid];
+			ufun->ignoreAsserts = true;
+			pCond = currentBD->create_const(1);
 		}else{
 			for( ; parit != params->rend(); ++parit){
 				ufun->multi_mother.push_back((*parit));
 			}
+			pCond = $9;
 		}
 		
 		if( $3 == INT || $3==INT_ARR){
@@ -491,10 +495,10 @@ Term: Constant {
 		}
 		
 		//ufun->name = (currentBD->new_name(fname));
-		$$ = currentBD->new_node($9, NULL, ufun);
+		$$ = currentBD->new_node(pCond, NULL, ufun);
 		if(currentBD->methdparams.count(fgid)==0){
 			currentBD->methdparams[fgid].push_back($$);
-		}		
+		}
 		
 		
 		delete $1;

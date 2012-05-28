@@ -69,6 +69,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	map<int, int> oldToNew;
 
 	if(ictrl != NULL && !ictrl->checkInline(node)){
+		mpcontroller[node.fgid]["__ALL"] = NULL;
 		rvalue = &node;
 		return;
 	}	
@@ -77,6 +78,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	bool_node* condition = node.mother;
 	if(isConst(condition) && !getBval(condition)){
 		rvalue = getCnode(0);
+		mpcontroller[node.fgid]["__ALL"] = getCnode(0);
 		return;
 	}
 
@@ -85,8 +87,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 	if( functionMap.find(name) != functionMap.end() ){
 		if(mpcontroller.count(node.fgid) > 0){
-			bool_node* rv = mpcontroller[node.fgid][node.outname];
-			rvalue = rv;
+			map<string,bool_node*>::iterator it = mpcontroller[node.fgid].find(node.outname);
+			if(it != mpcontroller[node.fgid].end()){
+				bool_node* rv = it->second;
+				rvalue = rv;
+			}else{
+				bool_node* rv = mpcontroller[node.fgid]["__ALL"];
+				if(rv == NULL){
+					rv = &node;
+				}
+				rvalue = rv;
+			}			
 			return;
 		}
 
@@ -188,10 +199,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
 
-						{							
+						if(!ufun->ignoreAsserts){													
 							DllistNode* tt = getDllnode(ufun);
 							tmpList.append(tt);
-						}	
+						}
+
 						{
 							if(oldToNew.count(ufun->fgid)>0){
 								ufun->fgid = oldToNew[ufun->fgid];
@@ -202,35 +214,36 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							}
 						}
 
+						bool_node * oldMother = ufun->mother;	
+						if(!ufun->ignoreAsserts){												
+							ufun->mother->remove_child( n );
+							bool_node* andCond = new AND_node();
+							andCond->mother = ufun->mother;
+							andCond->father = condition;
 
-						bool_node * oldMother = ufun->mother;						
-						ufun->mother->remove_child( n );
-						bool_node* andCond = new AND_node();
-						andCond->mother = ufun->mother;
-						andCond->father = condition;
-
-						{
+							{
 							
-							bool_node* andcondPrime = this->computeOptim(andCond);
+								bool_node* andcondPrime = this->computeOptim(andCond);
 							
-							if(andcondPrime == andCond){
+								if(andcondPrime == andCond){
 								
-								this->addNode(andCond);
-								andCond->addToParents();
-							}else{
-								delete andCond;
-							}
-							andCond = andcondPrime;
-						}
-						ufun->mother = andCond;
-						ufun->mother->children.insert(n);
-						if(andCond != oldMother){
-							for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
-								if(*it == oldMother){
-  									oldMother->children.insert( n );
-									break;
+									this->addNode(andCond);
+									andCond->addToParents();
+								}else{
+									delete andCond;
 								}
-							  }
+								andCond = andcondPrime;
+							}
+							ufun->mother = andCond;
+							ufun->mother->children.insert(n);
+							if(andCond != oldMother){
+								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
+									if(*it == oldMother){
+  										oldMother->children.insert( n );
+										break;
+									}
+								  }
+							}
 						}
 						DagOptim::visit(*ufun);						
 						const bool_node* nnode = rvalue;
@@ -353,6 +366,12 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
 				uidcount = max(uidcount, uf.fgid);
+				/*
+				When the inline controller checks a function and the function is 
+				not inlined, the controller makes sure other function with the same path 
+				condition are also not inlined. Therefore, it is good to call checkInline
+				on all functions first, before we start inlining.
+				*/
 				ictrl->checkInline(uf);
 			}
 		}

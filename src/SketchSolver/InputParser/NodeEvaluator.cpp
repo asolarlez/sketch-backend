@@ -148,7 +148,25 @@ void NodeEvaluator::visit( LT_node& node ){
 }
 
 void NodeEvaluator::visit( EQ_node& node ){
-	setbn(node, i(*node.mother) == i(*node.father));
+
+	if(node.mother->getOtype() == bool_node::BOOL_ARR 
+		|| node.mother->getOtype() == bool_node::INT_ARR
+		|| node.father->getOtype() == bool_node::BOOL_ARR
+		|| node.father->getOtype() == bool_node::INT_ARR){
+			vector<int>& mv = vecvalues[node.mother->id];
+			vector<int>& fv = vecvalues[node.father->id];
+			int msz = mv.size() > fv.size() ? mv.size() : fv.size();
+			bool tt = (i(*node.mother) == i(*node.father));
+			for(int jj=0; jj<msz; ++jj){
+				int tm = jj < mv.size() ? mv[jj] : i(*node.mother);
+				int tf = jj < fv.size() ? fv[jj] : i(*node.father);
+				tt = tt && (tm == tf);
+				if(!tt){ break; }
+			}
+		setbn(node, tt);
+	}else{
+		setbn(node, i(*node.mother) == i(*node.father)); //XXX There is a bug here!!
+	}
 }
 /*!
     multi-mother[0] = old-value;
@@ -170,6 +188,20 @@ void NodeEvaluator::visit( ASSERT_node &node){
 	failedAssert = failedAssert || !t;
 	setbn(node, t );
 }	
+
+
+void NodeEvaluator::printNodeValue(int i){
+	cout<<i<<" = ";
+	if(vecvalues.count(i)>0){
+		vector<int>& vv = vecvalues[i];		
+		for(int i=0; i<vv.size(); ++i){
+			cout<<vv[i]<<", ";
+		}
+		cout<<endl;
+	}else{
+		cout<<values[i]<<endl;
+	}
+}
 
 
 bool NodeEvaluator::run(VarStore& inputs_p){

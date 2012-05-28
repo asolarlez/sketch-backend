@@ -360,7 +360,7 @@ void BooleanDAG::repOK(){
 	}
 	DllistNode* cur = this->assertions.head;
 	DllistNode* last=NULL;
-	while(cur != NULL && isUFUN(cur)){ last = cur; cur = cur->next; }	
+	//while(cur != NULL && isUFUN(cur)){ last = cur; cur = cur->next; }	
 	//Now, we have to check whether all the node's predecessors are in the nodeset.
 	//We also check that each node is in the children of all its parents.
 	for(int i=0; i<nodes.size(); ++i){
@@ -368,13 +368,23 @@ void BooleanDAG::repOK(){
 		if(n != NULL){
 			if( isDllnode(n) ){
 //				cout<<"  "<<n->get_name()<<"  "<<dynamic_cast<bool_node*>(cur)->get_name()<<endl;
-				if(!n->isArith()){
+				//if(!n->isArith()){
 					Assert(getDllnode(n) == cur, "You are skipping a node");
-					
-					do{
+					UFUN_node* uf = dynamic_cast<UFUN_node*>(n);
+					if(uf != NULL){
+						Assert(!uf->ignoreAsserts, "If a function ignores asserts it should not be in Dll list");
+					}
+					//do{
 						last = cur; 
 						cur = cur->next; 
-					}while(cur != NULL && isUFUN(cur));
+					//}while(cur != NULL && isUFUN(cur));
+				//}
+			}
+			UFUN_node* uf = dynamic_cast<UFUN_node*>(n);
+			if(uf != NULL){
+				if(uf->ignoreAsserts){
+					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
+					Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
 			}
 			if(n->mother != NULL){

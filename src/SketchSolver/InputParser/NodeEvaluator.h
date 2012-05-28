@@ -90,6 +90,8 @@ public:
 	void trackChanges(){
 		trackChange = true;
 	}
+	void printNodeValue(int i);
+
 	int getValue(bool_node& bn){
 		return i(bn);
 	}

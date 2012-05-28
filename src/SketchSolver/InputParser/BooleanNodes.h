@@ -646,7 +646,9 @@ class UFUN_node: public arith_node, public DllistNode{
 	string outname;
 	int fgid;
 		
-		UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false){ nbits=1; } 
+		UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false){ 
+			nbits=1; 
+		} 
 		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out)const{
@@ -978,7 +980,14 @@ inline bool_node* newNode( bool_node::Type type){
 
 
 inline bool isDllnode(bool_node* bn){
-	return bn->type == bool_node::ASSERT || bn->type==bool_node::DST || typeid(*bn) == typeid(UFUN_node) ;
+	if(bn->type == bool_node::ASSERT || bn->type==bool_node::DST){
+		return true;
+	}
+	UFUN_node* uf = dynamic_cast<UFUN_node*>(bn);
+	if(uf != NULL){
+		return !uf->ignoreAsserts;
+	}
+	return false;
 }
 
 inline bool isUFUN(DllistNode* dn){

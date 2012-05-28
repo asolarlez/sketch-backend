@@ -220,6 +220,12 @@ NodesToSolver::processComparissons (bool_node& node)
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 	if(mval.isArray() || fval.isArray()){
+		if(mval.isBvect()){
+			mval.makeSparse(dir);
+		}
+		if(fval.isBvect()){
+			fval.makeSparse(dir);
+		}
 		compareArrays<COMP>(node, mval, fval);
 		return;
 	}
