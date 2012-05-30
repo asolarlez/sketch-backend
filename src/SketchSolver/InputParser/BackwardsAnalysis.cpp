@@ -379,6 +379,7 @@ void BackwardsAnalysis::visit( ARRACC_node& node ){
 
 
 bool_node* BackwardsAnalysis::modifyNode(bool_node* node, Info& t){
+	//cout<<" modifying "<<node->lprint()<<" sz = "<<t.getSize()<<endl;
 	bool_node* out = node;
 	if(node->type == bool_node::NOT){
 		bool_node* tmp = modifyNode(node->mother, t);
@@ -497,6 +498,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		node->accept(*this);
 		bool_node* tmp = rvalue;
+		info[node->id].clear();
 		if(tmp != node){
 			node->neighbor_replace(tmp);
 			//bdag.replace(node->id, tmp);

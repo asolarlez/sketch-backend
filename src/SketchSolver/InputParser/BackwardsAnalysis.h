@@ -133,6 +133,14 @@ class Info{
 	FastMap<bool_node, int> temp;
 
 public:
+	void clear(){
+		known.clear();
+		temp.clear();
+		hasD = false;
+	}
+	int getSize(){
+		return known.size() + temp.size();
+	}
 	Info(){
 		state = BOTTOM;
 		hasD = false;
