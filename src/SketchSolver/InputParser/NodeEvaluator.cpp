@@ -116,10 +116,7 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 		if(otp==bool_node::INT || otp ==bool_node::BOOL){
 			setbn(node, i(*pred) );
 		}else{
-			bool_node::OutType potp = pred->getOtype();
-			if(potp==bool_node::INT || potp ==bool_node::BOOL){
-				setbn(node, i(*pred) );
-			}else{
+			{
 				vector<int>& vvout = vecvalues[pred->id];
 				vecvalues[node.id] = vvout;
 				setbn(node, i(*pred) );

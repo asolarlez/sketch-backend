@@ -468,61 +468,63 @@ void DagOptim::visit( CONST_node& node ){
 }
 
 void DagOptim::visit( AND_node& node ){
-	if( node.father == node.mother ){ // x & x == x
-		rvalue = node.father;
+	bool_node* nfather = node.father;
+	bool_node* nmother = node.mother;
+
+	if( nfather == nmother ){ // x & x == x
+		rvalue = nfather;
 		return;	
 	}
-	if( isNotOfEachOther(node.father, node.mother) ){ // x & !x == false
+	if( isNotOfEachOther(nfather, nmother) ){ // x & !x == false
 		rvalue = getCnode(0);
 		return;	
 	}
-	if( isConst(node.father) ){
-		if( isConst(node.mother) ){ // const prop
-			rvalue = getCnode ( getBval( node.father ) && getBval( node.mother ) );				
+	if( isConst(nfather) ){
+		if( isConst(nmother) ){ // const prop
+			rvalue = getCnode ( getBval( nfather ) && getBval( nmother ) );				
 			return;
 		}
-		if( !getBval(node.father) ){ // x & false == false;
+		if( !getBval(nfather) ){ // x & false == false;
 			rvalue = getCnode(0);
 			return;
 		}else{
-			rvalue = node.mother;
+			rvalue = nmother;
 			return;	
 		}		
 	}
-	if( isConst(node.mother) ){
-		if( ! getBval(node.mother)){ // false & x == false;
+	if( isConst(nmother) ){
+		if( ! getBval(nmother)){ // false & x == false;
 			rvalue = getCnode(0);			
 			return;
 		}else{
-			rvalue = node.father;
+			rvalue = nfather;
 			return;	
 		}
 	}
 
-	if(node.mother->type == bool_node::AND){
-		if(isNotOfEachOther(node.father, node.mother->mother)){
+	if(nmother->type == bool_node::AND){
+		if(isNotOfEachOther(nfather, nmother->mother)){
 			rvalue = getCnode(0);
 			return;	
 		}
-		if(isNotOfEachOther(node.father, node.mother->father)){
+		if(isNotOfEachOther(nfather, nmother->father)){
 			rvalue = getCnode(0);
 			return;	
 		}
 
 	}
 
-	if(node.father->type == bool_node::AND){
-		if(isNotOfEachOther(node.mother, node.father->mother)){
+	if(nfather->type == bool_node::AND){
+		if(isNotOfEachOther(nmother, nfather->mother)){
 			rvalue = getCnode(0);
 			return;	
 		}
-		if(isNotOfEachOther(node.mother, node.father->father)){
+		if(isNotOfEachOther(nmother, nfather->father)){
 			rvalue = getCnode(0);
 			return;	
 		}
-
 	}	
-
+	
 	rvalue = &node;
 }
 

@@ -2,6 +2,18 @@
 #include <typeinfo>
 
 
+string Info::lprint(){
+	stringstream str;
+	for(FastMap<bool_node, int>::iterator it = known.begin(); it != known.end(); ++it){
+		str<<it->first->lprint()<<"\t ~> "<<it->second<<", "<<endl;
+	}
+	str<<"::"<<endl;
+	for(FastMap<bool_node, int>::iterator it = temp.begin(); it != temp.end(); ++it){
+		str<<it->first->lprint()<<"\t ~> "<<it->second<<", "<<endl;
+	}
+	return str.str();
+}
+
 BackwardsAnalysis::BackwardsAnalysis(void)
 {
 }

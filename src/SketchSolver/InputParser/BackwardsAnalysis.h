@@ -137,13 +137,7 @@ public:
 		state = BOTTOM;
 		hasD = false;
 	}
-	string lprint(){
-		stringstream str;
-		for(FastMap<bool_node, int>::iterator it = known.begin(); it != known.end(); ++it){
-			str<<it->first->lprint()<<"\t== "<<it->second<<endl;
-		}
-		return str.str();
-	}
+	string lprint();
 	bool isBottom(){
 		return state == BOTTOM;
 	}
