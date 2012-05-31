@@ -1418,9 +1418,6 @@ NodesToSolver::visit( ARR_R_node &node){
 	if(inarr.isBvect()){
 		inarr.makeSparse(dir);
 	}
-	if(!inarr.isArray()){
-		cout<<"test"<<endl;
-	}
 	
 	vector<guardedVal>& idv = index.num_ranges;
 	map<int, int> valToID;
@@ -1792,7 +1789,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 				int idxval = gvr[idxr].idx;
 				int pir = idxr;
 				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
-				mergeTvalues(gval, altL.num_ranges, 0, altR.num_ranges.size(), gvr, pir, idxr, out, idxval); 
+				mergeTvalues(gval, altL.num_ranges, 0, altL.num_ranges.size(), gvr, pir, idxr, out, idxval); 
 				continue;
 			}
 		}

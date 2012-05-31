@@ -573,6 +573,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			cout<<" TESTING HYPOTHESIS"<<endl;
 			int h = eval.scoreNodes();
 			if(hold == h){
+				Assert(false, "This should not happen");
 				cout<<"INFINITE LOOP!"<<endl;
 				break;
 			}

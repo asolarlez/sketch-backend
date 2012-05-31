@@ -278,7 +278,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
-				}				
+				}
 			}
 			oldSize = dag.size();
 			++t;			

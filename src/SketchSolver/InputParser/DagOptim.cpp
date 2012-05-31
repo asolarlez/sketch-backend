@@ -839,11 +839,55 @@ void DagOptim::visit( NEG_node& node ){
 }
 	
 
+
+void DagOptim::visit( ARR_R_node& node ){
+	//mother = index
+	//father = inputarr
+	if(node.father->type == bool_node::ARR_W){
+		if(node.father->mother == node.mother){
+			/* X = A{i -> t}; y = X[i];  ===> y = t;
+			*/
+			rvalue = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[1];
+			return;
+		}else{
+			if(isConst(node.father->mother) && isConst(node.mother)){
+				//They must be different constants, otherwise we wouldn't be in this branch.
+				/* X = A{i -> t}; y = X[j];  ===> y = A[j];
+				*/
+				node.dislodge();
+				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
+				node.resetId();
+				node.addToParents();
+				node.accept(*this);
+				return;
+			}
+		}
+	}
+	rvalue = &node;
+}
+
 void DagOptim::visit( ARR_W_node& node ){
+	 /* multi-mother[0] = old-array;
+        multi-mother[1] = new-value;*/
 	if(node.multi_mother[0] == node.multi_mother[1]){
 		rvalue = node.multi_mother[0];
 		return;
 	}
+	/*
+	X = A{i->t}; Y = X{i->q} ===> X=A{i->t}; Y = A{i->q}
+	*/
+	if(node.multi_mother[0]->type == bool_node::ARR_W){
+		if(node.mother == node.multi_mother[0]->mother){
+			ARR_W_node* X = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
+			node.dislodge();
+			node.multi_mother[0] = X->multi_mother[0];
+			node.resetId();
+			node.addToParents();
+			node.accept(*this);
+			return;
+		}
+	}
+
 	rvalue = &node;
 }
 
@@ -1525,6 +1569,53 @@ void DagOptim::visit( ARRACC_node& node ){
 		}
 
 	}
+
+	if(node.multi_mother.size()==2 && node.multi_mother[1]->type == bool_node::ARR_W){
+		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.multi_mother[1]);
+		/*!
+			arrw 
+			multi-mother[0] = old-array;
+			multi-mother[1] = new-value;        
+		*/
+		if(arrw->multi_mother[0] == node.multi_mother[0]){
+			/*
+			X = W{i->t}   //arrw
+			Y= [p]$W, X$  //node
+			should be transformed into
+			to = W[i]
+			tn = [p]$to, t$
+			Y = W{i->tn}
+			*/
+			bool_node* W = node.multi_mother[0];
+			ARR_R_node* to = new ARR_R_node();
+			to->mother = arrw->mother; // index;
+			to->father = W; 
+			addNode(to);
+			to->addToParents();
+			to->accept(*this);
+			bool_node* too = rvalue;
+				
+			ARRACC_node* tn = new ARRACC_node();
+			tn->mother = node.mother;
+			tn->multi_mother.push_back(too);
+			tn->multi_mother.push_back(arrw->multi_mother[1]);
+			addNode(tn);
+			tn->addToParents();
+			tn->accept(*this);
+			bool_node* tnn = rvalue;
+
+			ARR_W_node* Y = new ARR_W_node();
+			Y->mother = arrw->mother;
+			Y->multi_mother.push_back(W);
+			Y->multi_mother.push_back(tnn);
+			addNode(Y);
+			Y->addToParents();
+			Y->accept(*this);
+			return;
+		}
+
+	}
+
 	
 	rvalue = &node;
 }

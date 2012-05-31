@@ -449,7 +449,9 @@ public:
 	virtual void visit( EQ_node& node );
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
+	virtual void visit( ARR_R_node& node );
 	virtual void visit( ARR_W_node& node );
+
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
 	virtual void process(BooleanDAG& bdag);	

@@ -17,7 +17,11 @@ NodeEvaluator::~NodeEvaluator(void)
 void NodeEvaluator::visit( ARR_R_node &node){
 	vector<int>& vv = vecvalues[node.father->id];
 	int idx = i(*node.mother);
-	setbn(node, idx<vv.size()?vv[idx]:i(*node.father) );
+	if(idx < 0){
+		setbn(node, 0 );
+	}else{
+		setbn(node, idx<vv.size()?vv[idx]:i(*node.father) );
+	}
 }
 void NodeEvaluator::visit( ARR_W_node &node){
 	vector<int>& vvout = vecvalues[node.id];
