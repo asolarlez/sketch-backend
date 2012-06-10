@@ -641,16 +641,27 @@ class UFUN_node: public arith_node, public DllistNode{
 	int nbits;	
 	string ufname;
 	//string name;
+	bool isDependent;
 	public: 
 	bool ignoreAsserts;
+	
 	string outname;
 	int fgid;
 		
-		UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false){ 
+		UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), isDependent(false){ 
 			nbits=1; 
 		} 
-		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts){ }  
-	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }  
+	
+		void makeDependent(){
+			isDependent = true;
+			ignoreAsserts = true;
+		}
+		bool dependent(){
+			return isDependent;
+		}
+
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out)const{
     	int i=0;
 		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){

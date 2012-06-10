@@ -386,6 +386,20 @@ void BooleanDAG::repOK(){
 					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
 					Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
+				if(uf->dependent()){
+					Assert(uf->ignoreAsserts, "Dependent ufun nodes should ignore asserts");
+					Assert(uf->multi_mother.size() == 1 && 
+						uf->multi_mother[0]->type == bool_node::UFUN, "Multi-mother of a dependent node should be a ufun node.");
+					UFUN_node* mf = dynamic_cast<UFUN_node*>(uf->multi_mother[0]);
+					Assert(mf->fgid == uf->fgid, "Mother of dependent node should have the same fgid");
+				}else{
+					if(uf->multi_mother.size() == 1){
+						UFUN_node* mf = dynamic_cast<UFUN_node*>(uf->multi_mother[0]);
+						if(mf != NULL){
+							Assert(mf->fgid != uf->fgid, "Looks like this should have been a dependent node.");
+						}
+					}
+				}
 			}
 			if(n->mother != NULL){
 				bool_node* par = n->mother;

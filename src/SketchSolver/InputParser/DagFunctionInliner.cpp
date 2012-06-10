@@ -112,7 +112,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			
-			Assert( inputs.size() == node.multi_mother.size() , "Argument missmatch: More formal than actual parameters");
+			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
 			
 			for(int i=0; i<inputs.size(); ++i){			
 				
@@ -247,7 +247,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 						DagOptim::visit(*ufun);						
 						const bool_node* nnode = rvalue;
-						if( !(isConst(oldMother) && this->getIval(oldMother)==0)){
+						if( nnode->type == bool_node::UFUN ){
+							//&& !(isConst(oldMother) && this->getIval(oldMother)==0)
 							if(ictrl != NULL){ ictrl->registerCall(node, dynamic_cast<const UFUN_node*>(nnode)); }
 						}
 						if(nnode == n){
@@ -384,7 +385,6 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		
 				
 		bool_node* node = computeOptim(dag[i]);		
-		
 		
 		if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );

@@ -171,6 +171,9 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 	addNode(on);
 
 	UFUN_node* funnew = new UFUN_node(*fun1, false);
+	if(fun1->dependent()){
+		funnew->makeDependent();
+	}
 	funnew->mother = on;
 	funnew->multi_mother = nargs;
 	funnew->children.clear();

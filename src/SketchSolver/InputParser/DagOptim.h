@@ -321,6 +321,33 @@ public:
 		}				
 	}
 
+	void scale(int v){
+		if(isTop() || isBottom()){
+			return;
+		}
+		if(v>=0){
+			low = low * v;
+			high = high * v;
+		}else{
+			low = v*high;
+			high = v*low;
+		}
+		if(state==LIST){
+			if(v != 0){
+				set<int> tmp;
+				for(set<int>::iterator it1 = valSet.begin(); it1 != valSet.end(); ++it1){
+					tmp.insert(*it1 * v);
+				}
+				swap(tmp, valSet);
+			}else{
+				valSet.clear();
+				valSet.insert(0);
+			}
+		}
+
+	}
+
+
 	void add(AbstractNodeValue& anv){
 		if(anv.isTop()){
 			makeTop();

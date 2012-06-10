@@ -476,7 +476,7 @@ Term: Constant {
 		bool_node* pCond;	
 		if(currentBD->methdparams.count(fgid)>0){
 			ufun->multi_mother = currentBD->methdparams[fgid];
-			ufun->ignoreAsserts = true;
+			ufun->makeDependent();
 			pCond = currentBD->create_const(1);
 		}else{
 			for( ; parit != params->rend(); ++parit){

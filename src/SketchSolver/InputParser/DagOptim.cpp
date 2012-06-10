@@ -111,6 +111,37 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		}
 	}
 
+	if( n1->type == bool_node::TIMES){
+
+		if(isConst(n1->mother) || isConst(n1->father)){
+			bool_node* cparent = n1->mother;
+			bool_node* oparent = n1->father;
+			if(!isConst(cparent)){
+				cparent = oparent;
+				oparent = n1->mother;
+			}
+			int cv = getIval(cparent);
+				
+			AbstractNodeValue& nv = anv[n1];
+			nv.timestamp = n1->globalId;
+			{
+				bool_node* parent = oparent;
+				map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
+				if(it == anv.end()){
+					staticCompare<COMP>(parent, C, reverse);
+				}else{
+					if(it->second.timestamp != parent->globalId){
+						anv.erase(it);
+						staticCompare<COMP>(parent, C, reverse);
+					}
+				}
+				nv.insert( anv[parent] );
+			}
+			nv.scale(cv);
+			return nv.staticCompare<COMP>(C, reverse);
+		}
+	}
+
 
 	if( n1->type == bool_node::PLUS){
 		AbstractNodeValue& nv = anv[n1];
@@ -863,6 +894,10 @@ void DagOptim::visit( ARR_R_node& node ){
 			}
 		}
 	}
+	if(isConst(node.father)){		
+		rvalue = node.father;		
+		return;
+	}
 	rvalue = &node;
 }
 
@@ -1062,6 +1097,19 @@ void DagOptim::visit( UFUN_node& node ){
 		if(getIval( node.mother ) == 0){
 			rvalue = getCnode(0);
 			return;
+		}
+	}
+	if(node.dependent()){
+		if(isConst(node.multi_mother[0])){
+			//The node on which I depend was eliminated, so I should go away as well.
+			//not strictly necessary since the only way the mother could go away is if the 
+			//path condition is false, in which case whatever I output here will not matter.
+			rvalue = getCnode(0);
+			return;
+		}
+		UFUN_node* mn = dynamic_cast<UFUN_node*>(node.multi_mother[0]);
+		if(mn->fgid != node.fgid){
+			node.fgid = mn->fgid;
 		}
 	}
 
@@ -1570,6 +1618,54 @@ void DagOptim::visit( ARRACC_node& node ){
 
 	}
 
+
+	if(node.multi_mother.size()==2 && node.multi_mother[0]->type == bool_node::ARR_W){
+		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
+		/*!
+			arrw 
+			multi-mother[0] = old-array;
+			multi-mother[1] = new-value;        
+		*/
+		if(arrw->multi_mother[0] == node.multi_mother[1]){
+			/*
+			X = W{i->t}   //arrw
+			Y= [p]$X, W$  //node
+			should be transformed into
+			to = W[i]
+			tn = [p]$t, to$
+			Y = W{i->tn}
+			*/
+			bool_node* W = node.multi_mother[1];
+			ARR_R_node* to = new ARR_R_node();
+			to->mother = arrw->mother; // index;
+			to->father = W; 
+			addNode(to);
+			to->addToParents();
+			to->accept(*this);
+			bool_node* too = rvalue;
+				
+			ARRACC_node* tn = new ARRACC_node();
+			tn->mother = node.mother;
+			tn->multi_mother.push_back(arrw->multi_mother[1]);
+			tn->multi_mother.push_back(too);
+			addNode(tn);
+			tn->addToParents();
+			tn->accept(*this);
+			bool_node* tnn = rvalue;
+
+			ARR_W_node* Y = new ARR_W_node();
+			Y->mother = arrw->mother;
+			Y->multi_mother.push_back(W);
+			Y->multi_mother.push_back(tnn);
+			addNode(Y);
+			Y->addToParents();
+			Y->accept(*this);
+			return;
+		}
+
+	}
+
+
 	if(node.multi_mother.size()==2 && node.multi_mother[1]->type == bool_node::ARR_W){
 		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.multi_mother[1]);
 		/*!
@@ -1613,6 +1709,42 @@ void DagOptim::visit( ARRACC_node& node ){
 			Y->accept(*this);
 			return;
 		}
+
+		if(node.multi_mother[0]->type == bool_node::ARR_W){
+			ARR_W_node* arrt = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
+			if(arrw->mother == arrt->mother && arrw->multi_mother[0] == arrt->multi_mother[0]){
+				/*
+				T = W{i->q}	  //arrt
+				X = W{i->t}   //arrw
+				Y= [p]$T, X$  //node
+				should be transformed into
+				tn = [p]$t, q$
+				Y = W{i->tn}
+				*/
+				bool_node* W = arrw->multi_mother[0];
+				ARRACC_node* tn = new ARRACC_node();
+				tn->mother = node.mother;
+				tn->multi_mother.push_back(arrt->multi_mother[1]);
+				tn->multi_mother.push_back(arrw->multi_mother[1]);				
+				addNode(tn);
+				tn->addToParents();
+				tn->accept(*this);
+				bool_node* tnn = rvalue;
+
+				ARR_W_node* Y = new ARR_W_node();
+				Y->mother = arrw->mother;
+				Y->multi_mother.push_back(W);
+				Y->multi_mother.push_back(tnn);
+				addNode(Y);
+				Y->addToParents();
+				Y->accept(*this);
+				return;
+			}
+
+
+		}
+
+
 
 	}
 
