@@ -282,12 +282,12 @@ public:
 	type = TVAL_SPARSE;
 	size = num_ranges.size ();
 	if(size==2 && num_ranges[0].guard != -num_ranges[1].guard){
-		cout<<"XXX = "<<*this;
+		//cout<<"XXX = "<<*this;
 		int tmp = num_ranges[1].guard;
 		num_ranges[1].guard = -num_ranges[0].guard;
 		sh.addHelperC(-num_ranges[0].guard, -tmp);
 		sh.addHelperC(num_ranges[0].guard, tmp);
-		cout<<"  -->  "<<*this<<endl;
+		//cout<<"  -->  "<<*this<<endl;
 	}	
 	id = 0;
 	neg = false;
