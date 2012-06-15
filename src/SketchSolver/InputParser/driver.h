@@ -7,7 +7,7 @@
 #include "InputReader.h"
 #include "SolveFromInput.h"
 #include "CommandLineArgs.h"
-#include "ABCSATSolver.h"
+//#include "ABCSATSolver.h"
 #include "DagOptim.h"
 #include "DagFunctionInliner.h"
 #include "DagElimUFUN.h"

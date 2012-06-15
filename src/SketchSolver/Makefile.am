@@ -1,6 +1,6 @@
 # Where to find the solvers, and which one to use
 SOLVERS = SolverInterfaces/
-SOLVER = -DABCSAT
+#SOLVER = -DABCSAT
 
 include SolverInterfaces/solvers.mk
 
@@ -12,7 +12,8 @@ cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
 libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
-libcegis_la_LIBADD = ../abc60513/libabc.la ../MiniSat/libminisat.la ../zchaff/libzchaff.la -ldl
+#libcegis_la_LIBADD = ../abc60513/libabc.la ../MiniSat/libminisat.la ../zchaff/libzchaff.la -ldl
+libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\

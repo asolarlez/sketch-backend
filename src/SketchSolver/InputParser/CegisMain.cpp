@@ -35,9 +35,9 @@ main(int argc, char** argv)
 
 	CommandLineArgs params(argc, argv);
 
-	if(params.synthtype == SATSolver::ABC || params.veriftype == SATSolver::ABC){
-	   cout<<"This makes no sense"<<endl;
-       ABCSolverStart();
+	if(params.synthtype != SATSolver::MINI || params.veriftype != SATSolver::MINI) {
+	   cout<<"Only MiniSAT solver is supported in this version!"<<endl;
+       //ABCSolverStart();
 	}
   
          // too coarse of a timing?
