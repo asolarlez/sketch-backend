@@ -556,24 +556,43 @@ void DagOptim::visit( AND_node& node ){
 		}
 	}	
 	
+	if(nfather->type == bool_node::LT && nmother->type == bool_node::LT){
+		if(nfather->father == nmother->father){
+			if(isConst(nfather->mother) && isConst(nmother->mother)){
+				if(this->getIval(nfather->mother) < this->getIval(nmother->mother)){
+					rvalue = nmother;
+				}else{
+					rvalue = nfather;
+				}
+				return;
+			}
+		}
+		if(nfather->father == nmother->mother && nmother->father == nfather->mother){
+			rvalue = this->getCnode(0);
+			return;
+		}
+	}
+
 	rvalue = &node;
 }
 
 void DagOptim::visit( OR_node& node ){
-	if( node.father == node.mother ){ // x | x == x
-		rvalue = node.father;
+	bool_node* nfather = node.father;
+	bool_node* nmother = node.mother;
+	if( nfather == nmother ){ // x | x == x
+		rvalue = nfather;
 		return;	
 	}
-	if( isNotOfEachOther(node.father, node.mother) ){ // x | !x == true
+	if( isNotOfEachOther(nfather, nmother) ){ // x | !x == true
 		rvalue = getCnode(1);
 		return;	
 	}
-	if( isConst(node.father) ){
-		if( isConst(node.mother) ){ // const prop
-			rvalue = getCnode ( getBval( node.father ) || getBval( node.mother ) );				
+	if( isConst(nfather) ){
+		if( isConst(nmother) ){ // const prop
+			rvalue = getCnode ( getBval( nfather ) || getBval( node.mother ) );				
 			return;
 		}
-		if( getBval(node.father) ){ // x | true == true
+		if( getBval(nfather) ){ // x | true == true
 			rvalue = getCnode(1);			
 			return;
 		}else{
@@ -586,14 +605,14 @@ void DagOptim::visit( OR_node& node ){
 			rvalue = getCnode(1);			
 			return;
 		}else{
-			rvalue = node.father;
+			rvalue = nfather;
 			return;	
 		}
 	}	
-	if(node.father->type == bool_node::NOT && node.mother->type == bool_node::NOT){
+	if(nfather->type == bool_node::NOT && node.mother->type == bool_node::NOT){
 		AND_node* an = new AND_node();
 		an->mother = node.mother->mother;
-		an->father = node.father->mother;
+		an->father = nfather->mother;
 		an->addToParents();
 		addNode(an);
 		NOT_node* nn = new NOT_node();
@@ -603,6 +622,17 @@ void DagOptim::visit( OR_node& node ){
 		nn->accept(*this);
 		return;
 	}	
+	if(nmother->type == bool_node::LT && nfather->type == bool_node::NOT && nfather->mother->type == bool_node::LT){
+		bool_node* nfe = nfather->mother;
+		if(nmother->father == nfe->father){
+			if(isConst(nmother->mother)&& isConst(nfe->mother)){
+				if(getIval(nmother->mother)<=getIval(nfe->mother)){
+					rvalue = getCnode(1);
+					return;
+				}
+			}
+		}
+	}
 	rvalue = &node;
 }
 

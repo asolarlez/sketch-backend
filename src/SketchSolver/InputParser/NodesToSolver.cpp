@@ -212,7 +212,7 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 }
 
 template<typename COMP> void
-NodesToSolver::processComparissons (bool_node& node)
+NodesToSolver::processComparissons (bool_node& node, bool revFval)
 {
     bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
@@ -238,8 +238,16 @@ NodesToSolver::processComparissons (bool_node& node)
     int orTerms = 0;
 	vector<char> mc(mval.getSize(), 'n');
 	vector<char> fc(fval.getSize(), 'n');
+	int flow = 0;
+	int fhigh = fval.getSize ();
+	int finc = 1;
+	if(revFval){
+		flow = fhigh-1;
+		fhigh = -1;
+		finc = -1;
+	}
     for(int i=0; i<mval.getSize (); ++i){
-		for(int j=0; j<fval.getSize (); ++j){
+		for(int j=flow; j!=fhigh; j = j+finc){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
 		    if(comp(mval[i], fval[j])){
 				cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
@@ -1172,7 +1180,7 @@ NodesToSolver::visit (EQ_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectEq (node);
 #else
-	processComparissons<equal_to<int> > (node);
+	processComparissons<equal_to<int> > (node, false);
 #endif /* HAVE_BVECTARITH */
 }
 
@@ -1184,7 +1192,7 @@ NodesToSolver::visit (LT_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectLt (node);
 #else
-	processComparissons<less<int> > (node);
+	processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
 #endif /* HAVE_BVECTARITH */
 }
 

@@ -22,7 +22,7 @@ class NodesToSolver : public NodeVisitor {
     template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
-    template<typename COMP> void processComparissons (bool_node &node);
+    template<typename COMP> void processComparissons (bool_node &node, bool revFval);
 	vector<int> lgv;
     Tvalue tvYES;
     Tvalue tvOne;
