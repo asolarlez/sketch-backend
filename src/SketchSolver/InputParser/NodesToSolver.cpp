@@ -1905,3 +1905,18 @@ bool NodesToSolver::checkParentsChanged(bool_node& node, bool more){
 	}
 }
 
+/*
+void NodesToSolver::process(BooleanDAG& bdag){
+	int i=0;
+	tmpdag = &bdag;
+	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+		try{
+		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+		(*node_it)->accept(*this);
+		cout<<(*node_it)->lprint()<<" -----> "<< node_ids[(*node_it)->id].getSize() <<endl;
+		}catch(BasicError& be){
+			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
+    	}
+	}
+}
+*/

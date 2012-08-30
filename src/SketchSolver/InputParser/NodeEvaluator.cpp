@@ -44,6 +44,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 	for(int t=0; t<sz; ++t){
 		vv[t] = i(*node.multi_mother[t]);
 	}
+	setbn(node, -333 );
 }
 
 void NodeEvaluator::visit( AND_node& node ){

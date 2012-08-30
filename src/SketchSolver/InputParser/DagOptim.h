@@ -392,6 +392,21 @@ public:
 
 
 
+class TempTriple{
+public:
+	bool hasModified;
+	ASSERT_node* main;
+	bool_node* bn[3];	
+	bool f[3];
+	TempTriple(){
+		hasModified = false;
+	}
+	void add(int i, bool_node* b, bool ff){
+		bn[i] = b;
+		f[i] = ff;
+	}
+};
+
 class DagOptim : public NodeVisitor, public virtual NodeStore
 {	
 	bool ALTER_ARRACS;	
@@ -400,6 +415,7 @@ protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
+	map<string, TempTriple > testAsserts;
 	int uidcount;
 	int BOTTOM;
 	int DONE;

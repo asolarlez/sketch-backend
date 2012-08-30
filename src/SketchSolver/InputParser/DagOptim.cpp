@@ -557,6 +557,7 @@ void DagOptim::visit( AND_node& node ){
 	}	
 	
 	if(nfather->type == bool_node::LT && nmother->type == bool_node::LT){
+		// (a<x)&(b<x) --> a<x when b<a
 		if(nfather->father == nmother->father){
 			if(isConst(nfather->mother) && isConst(nmother->mother)){
 				if(this->getIval(nfather->mother) < this->getIval(nmother->mother)){
@@ -567,11 +568,35 @@ void DagOptim::visit( AND_node& node ){
 				return;
 			}
 		}
+		// (x<a)&(a<x) --> 0 
 		if(nfather->father == nmother->mother && nmother->father == nfather->mother){
 			rvalue = this->getCnode(0);
 			return;
 		}
 	}
+
+	if(nfather->type == bool_node::AND && nmother->type == bool_node::LT && nfather->mother->type == bool_node::LT ){
+		// (a<x)&((b<x)& T)--> a<x when b<a
+		bool_node* nfm = nfather->mother;
+		if(nfm->father == nmother->father){
+			if(isConst(nfm->mother) && isConst(nmother->mother)){
+				if(this->getIval(nfm->mother) < this->getIval(nmother->mother)){
+					AND_node* an = new AND_node();
+					an->mother = nmother;
+					an->father = nfather->father;
+					an->addToParents();
+					addNode(an);
+					an->accept(*this);
+					return;
+				}else{
+					rvalue = nfather;
+				}
+				return;
+			}
+		}
+		
+	}
+
 
 	rvalue = &node;
 }
@@ -1932,6 +1957,21 @@ void DagOptim::visit( ARRASS_node& node ){
 void DagOptim::visit( ACTRL_node& node ){
 	rvalue = &node;
 }
+
+char tbuf[40];
+char* toString(TempTriple& tmp){
+	int p=0;
+	for(int i=0; i<3; i=i+2){
+		if(tmp.f[i]){
+			writeInt(tbuf, (tmp.bn[i]->globalId<<1), p);
+		}else{
+			writeInt(tbuf, (tmp.bn[i]->globalId<<1) | 1, p);
+		}
+		tbuf[p] = ','; ++p;
+	}
+	tbuf[p] = 0;
+	return tbuf;
+}
 	
 void DagOptim::visit( ASSERT_node &node){
 	if(isConst(node.mother)){
@@ -1941,6 +1981,99 @@ void DagOptim::visit( ASSERT_node &node){
 			return ;
 		}
 	}
+	
+	if(node.mother->type == bool_node::OR){
+		TempTriple tmp;
+		bool good = false;
+		bool_node* ornode = node.mother;
+		if(ornode->mother->type == bool_node::NOT){			
+			tmp.add(0, ornode->mother->mother, true);
+		}else{
+			tmp.add(0, ornode->mother, false);
+		}
+		if(ornode->father->type == bool_node::NOT && ornode->father->mother->type == bool_node::AND){
+			bool_node* andnode = ornode->father->mother;
+			if(andnode->mother->type == bool_node::NOT){
+				tmp.add(1, andnode->mother->mother, false);
+			}else{
+				tmp.add(1, andnode->mother, true);
+			}
+			if(andnode->father->type == bool_node::NOT){
+				tmp.add(2, andnode->father->mother, false);
+			}else{
+				tmp.add(2, andnode->father, true);
+			}
+			good = true;
+		}else if(ornode->father->type == bool_node::OR){
+			bool_node* oonode = ornode->father;
+			if(oonode->mother->type == bool_node::NOT){
+				tmp.add(1, oonode->mother->mother, true);
+			}else{
+				tmp.add(1, oonode->mother, false);
+			}
+			if(oonode->father->type == bool_node::NOT){
+				tmp.add(2, oonode->father->mother, true);
+			}else{
+				tmp.add(2, oonode->father, false);
+			}
+			good = true;
+		}
+		if(good){
+			char* tt = toString(tmp);
+			if(testAsserts.count(string(tt))>0){
+				TempTriple& ttri = testAsserts[string(tt)];
+				if(ttri.bn[1] == tmp.bn[1] && ttri.f[1] != tmp.f[1]){
+					if(!ttri.hasModified){
+						OR_node* on = new OR_node();
+						on ->mother = ornode->mother;
+						if(ttri.f[2]){
+							on->father = new NOT_node();
+							on->father->mother = ttri.bn[2];
+							on->father->addToParents();
+							addNode(on->father);
+						}else{
+							on->father = ttri.bn[2];
+						}
+						on->addToParents();
+						addNode(on);
+						ttri.hasModified = true;
+						ttri.main->dislodge();
+						ttri.main->mother = on;
+						ttri.main->addToParents();
+						string msg = ttri.main->getMsg();
+						msg += " or ";
+						msg += node.getMsg();
+						ttri.main->setMsg(msg);
+						rvalue = ttri.main;
+						return;
+					}else{
+						rvalue = getCnode(0);
+						return;
+					}
+				}else{
+					if(ttri.bn[1]->type == bool_node::LT && tmp.bn[1]->type == bool_node::LT){
+						if(ttri.bn[1]->father == tmp.bn[1]->father){
+							if( isConst(ttri.bn[1]->mother) && isConst(tmp.bn[1]->mother) ){
+								if(ttri.f[1] && tmp.f[1] && getIval(ttri.bn[1]->mother) <= getIval(tmp.bn[1]->mother)){
+								// assert u | !(a<x) | v
+								// assert u | !(b<x) | v
+								// if (a <= b) then the second assertion is unnecessary.
+									rvalue = getCnode(0);
+									return;
+								}
+							}
+						}
+					}
+				}
+			}else{
+				tmp.main = &node;
+				testAsserts[string(tt)] = tmp;
+				//cout<<tmp.bn[0]->id<<", "<<", "<<tmp.bn[1]->id<<", "<<tmp.bn[2]->id<<endl;
+			}
+		}
+	}
+
+
 	rvalue = &node;
 }	
 void DagOptim::visit( DST_node& node ){
@@ -1953,6 +2086,7 @@ void DagOptim::initLight(BooleanDAG& dag){
 	cnmap.clear();
 	cse.clear();
 	callMap.clear();
+	testAsserts.clear();
 }
 
 
