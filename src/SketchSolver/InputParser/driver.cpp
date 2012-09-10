@@ -143,14 +143,14 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 		solver.outputEuclid(fout);
 	}
   	
-	if(params.output2QBF){
-		solver.setup2QBF(cout);
-		string fname = name;
-		fname += "_2qbf.blif";
-		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
-		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
-		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
-	}
+//	if(params.output2QBF){
+//		solver.setup2QBF(cout);
+//		string fname = name;
+//		fname += "_2qbf.blif";
+//		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
+//		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
+//		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
+//	}
   	
   	
 	if( params.hasCpt ){ 
@@ -174,11 +174,11 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 		}
 	}catch(SolverException* ex){
 		cout<<"ERROR "<<name<<": "<<ex->code<<"  "<<ex->msg<<endl;
-		ABCSolverEnd();
+//		ABCSolverEnd();
 		return ex->code + 2;
 	}catch(BasicError& be){
 		cout<<"ERROR: "<<name<<endl;
-		ABCSolverEnd();
+//		ABCSolverEnd();
 		return 3;
 	}
 	if( solveCode ){
@@ -186,7 +186,7 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 	}else{
 		cout<<"** Outputing bad controls"<<endl;
 		solver.output_control_map(out);
-		ABCSolverEnd();
+//		ABCSolverEnd();
 		return 1;	
 	}
 	return 0;

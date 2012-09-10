@@ -26,14 +26,14 @@ SOLVER_SRCS     += $(SOLVERS)/SATSolver.cpp $(SOLVERS)/BLIFwriter.cpp
 SOLVER_HDRS	+= $(SOLVERS)/SATSolver.h $(SOLVERS)/BLIFwriter.h
 
 ## ABC
-ABC		= ../abc60513
-SOLVER_LIBS	+= $(ABC)/libabc.a
+#ABC		= ../abc60513
+#SOLVER_LIBS	+= $(ABC)/libabc.a
 # TODO: all of ABC's source directories are included here.  ABC should
 # have a narrower interface.
-include $(ABC)/modules.includes.mk
-SOLVER_INCS	+= $(ABC_INCS)
-SOLVER_SRCS	+= $(SOLVERS)/ABCSATSolver.cpp
-SOLVER_HDRS	+= $(SOLVERS)/ABCSATSolver.h
+#include $(ABC)/modules.includes.mk
+#SOLVER_INCS	+= $(ABC_INCS)
+#SOLVER_SRCS	+= $(SOLVERS)/ABCSATSolver.cpp
+#SOLVER_HDRS	+= $(SOLVERS)/ABCSATSolver.h
 
 ## MiniSat
 SOLVER_LIBS	+= ../MiniSat/libminisat.a
@@ -42,7 +42,7 @@ SOLVER_SRCS	+= $(SOLVERS)/MiniSATSolver.cpp
 SOLVER_HDRS	+= $(SOLVERS)/MiniSATSolver.h
 
 ## zchaff
-SOLVER_LIBS	+= ../zchaff/libzchaff.a
-SOLVER_INCS	+= -I../zchaff
-SOLVER_SRCS	+= $(SOLVERS)/ZchaffSATSolver.cpp
-SOLVER_HDRS	+= $(SOLVERS)/ZchaffSATSolver.h
+#SOLVER_LIBS	+= ../zchaff/libzchaff.a
+#SOLVER_INCS	+= -I../zchaff
+#SOLVER_SRCS	+= $(SOLVERS)/ZchaffSATSolver.cpp
+#SOLVER_HDRS	+= $(SOLVERS)/ZchaffSATSolver.h

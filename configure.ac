@@ -79,8 +79,6 @@ AC_OUTPUT(
     Makefile 
 
     src/Makefile
-    src/abc60513/Makefile
     src/MiniSat/Makefile
-    src/zchaff/Makefile
     src/SketchSolver/Makefile
 )
