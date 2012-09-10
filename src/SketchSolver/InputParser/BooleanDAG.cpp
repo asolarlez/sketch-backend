@@ -721,6 +721,16 @@ void BooleanDAG::print(ostream& out)const{
   out<<"}"<<endl;
 }
 
+void BooleanDAG::mrprint(ostream& out){
+  out<<"dag "<< this->get_name()<<" :"<<endl;
+  for(int i=0; i<nodes.size(); ++i){
+  	if(nodes[i] != NULL){
+  		out<<nodes[i]->mrprint()<<endl;
+  	}    
+  }
+  out.flush();
+}
+
 void BooleanDAG::lprint(ostream& out){    
 	out<<"dag"<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){

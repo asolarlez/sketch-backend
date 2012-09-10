@@ -46,6 +46,8 @@ struct CommandLineArgs{
   bool showInputs;
   bool showControls;
   bool showDAG;
+  bool outputMRDAG;
+  string mrdagfile;
   bool ufunSymmetry;
   string inputFname;
   string outputFname;
@@ -59,7 +61,7 @@ struct CommandLineArgs{
   string simplifycex;
   bool setMemo;
   bool debug;
-  bool superChecks;
+  bool superChecks;  
   int randBnd;
 
 	CommandLineArgs(vector<string> args) {
@@ -98,6 +100,7 @@ struct CommandLineArgs{
 		showInputs = false;
 		showControls = false;
 		showDAG = false;
+		outputMRDAG = false;
 		ufunSymmetry = false;
 		alterARRACS = false;
 		interactive = false;
@@ -254,6 +257,13 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "-showDAG" ){
 	    	showDAG = true;
 	      input_idx = ii+1;      
+		  continue;
+	    }
+
+		if( string(argv[ii]) == "-writeDAG" ){
+	    	outputMRDAG = true;
+			mrdagfile = argv[ii+1];
+	      input_idx = ii+2;      
 		  continue;
 	    }
 		

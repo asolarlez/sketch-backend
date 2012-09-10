@@ -466,6 +466,12 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}
 	if(params.showDAG){ 
 		result->lprint(cout);		
-	}		
+	}
+	if(params.outputMRDAG){
+		ofstream of(params.mrdagfile);
+		cout<<"Outputing Machine Readable DAG to file "<<params.mrdagfile<<endl;
+		result->mrprint(of);
+		of.close();
+	}
 	return result;
 }

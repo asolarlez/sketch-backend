@@ -242,6 +242,21 @@ public:
   }
 
   virtual OutType getOtype() const;
+  virtual string otypeString() const{
+	  OutType ot = getOtype();
+	  switch(ot){		
+		case BOOL: return "BOOL";
+		case INT: return "INT";
+		case BOOL_ARR: return "BOOL_ARR";
+		case INT_ARR: return "INT_ARR";
+		default: return "BOTTOM";
+	  }
+  }
+	virtual string mrprint()const{
+		stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<father->id;
+		return str.str();
+	}
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
   void neighbor_replace(bool_node* replacement);
   void replace_child(bool_node* ori, bool_node* replacement);
@@ -395,6 +410,11 @@ class ARR_W_node:public arith_node{
 			otype = joinOtype(otype, multi_mother[1]->getOtype());
 			return otype;
 		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
+			return str.str();
+		}
 };
 
 class ARR_CREATE_node:public arith_node{		
@@ -436,6 +456,14 @@ class ARR_CREATE_node:public arith_node{
 				otype = BOOL_ARR;
 			}
 			return otype;
+		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<multi_mother.size();
+			for(int i=0; i<multi_mother.size(); ++i){
+				str<<" "<<multi_mother[i]->id;
+			}
+			return str.str();
 		}
 };
 
@@ -515,6 +543,11 @@ class INTER_node: public bool_node{
 	virtual string lid(){
 		return name;
 	}
+	virtual string mrprint()const{
+		stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<name<<" "<<nbits;
+		return str.str();
+	}
 };
 
 /* Input nodes */
@@ -574,6 +607,11 @@ class DST_node: public INTER_node, public DllistNode{
 		tmp += " = " + mother->lprint();
 		return tmp;
 	}
+	virtual string mrprint()const{
+		stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<name<<" "<<mother->id;
+		return str.str();
+	}
 };
 
 
@@ -609,6 +647,12 @@ class NOT_node: public bool_node{
 		str<<"(!"<<mother->lid()<<")";
 		return str.str();
     }
+	virtual string mrprint()const{
+		stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id;
+		return str.str();
+	}
+
 };
 
 class PLUS_node: public bool_node{	
@@ -720,6 +764,21 @@ class UFUN_node: public arith_node, public DllistNode{
 		str<<")";
 		return str.str();
 	}
+	virtual string mrprint()const{
+		stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<ufname<<" "<<outname<<" "<<fgid;
+		if(this->isDependent){
+			str<<" ***";
+		}else{
+			str<<" "<<multi_mother.size();
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  		if(*it != NULL){
+		  			str<<" "<<(*it)->id;
+		  		}
+			}
+		}
+		return str.str();
+	}
 };
 
 
@@ -759,6 +818,14 @@ class ARRACC_node: public arith_node{
 		str<<"$";
 		return str.str();
 	}
+	virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<multi_mother.size();
+			for(int i=0; i<multi_mother.size(); ++i){
+				str<<" "<<multi_mother[i]->id;
+			}
+			return str.str();
+		}
 	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
 };
 class DIV_node: public bool_node{	
@@ -793,6 +860,11 @@ class NEG_node: public bool_node{
 		virtual bool_node* clone(bool copyChildren = true){return new NEG_node(*this, copyChildren);  };
 		OutType getOtype()const {
 			return INT;
+		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id;			
+			return str.str();
 		}
 };
 
@@ -840,6 +912,11 @@ class CONST_node: public bool_node{
 				otype = BOOL;
 			}		
 			return otype;
+		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<val;			
+			return str.str();
 		}
 };
 
@@ -908,6 +985,13 @@ class ARRASS_node: public arith_node{
 			otype = joinOtype(multi_mother[0]->getOtype(), multi_mother[1]->getOtype());
 			return otype;
 		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" == "<<quant;
+			str<<" "<<multi_mother[0]->id;
+			str<<" "<<multi_mother[1]->id;			
+			return str.str();
+		}
 };
 
 /* This node typecasts bit to integers. The only thing is used is 'multi-mother'
@@ -932,6 +1016,15 @@ class ACTRL_node: public arith_node{
 		str<<"$$";
 		return str.str();
 	}
+
+	virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<multi_mother.size();
+			for(int i=0; i<multi_mother.size(); ++i){
+				str<<" "<<multi_mother[i]->id;
+			}
+			return str.str();
+		}
 };
 class ASSERT_node: public bool_node, virtual public DllistNode{
 	bool isHardAssert;
@@ -953,6 +1046,11 @@ public:
 		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();
+  }
+  virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<mother->id<<" \""<<msg<<"\"";
+			return str.str();
   }
 };
 

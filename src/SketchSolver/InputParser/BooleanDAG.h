@@ -181,6 +181,7 @@ Dllist assertions;
 
   void print(ostream& out)const;
   void lprint(ostream& out);
+  void mrprint(ostream& out);
   void print_wrapper()const;
   void lprint_wrapper();
   void print_wrapper(const char* fileName)const;
