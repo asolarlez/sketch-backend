@@ -468,7 +468,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		result->lprint(cout);		
 	}
 	if(params.outputMRDAG){
-		ofstream of(params.mrdagfile);
+		ofstream of(params.mrdagfile.c_str());
 		cout<<"Outputing Machine Readable DAG to file "<<params.mrdagfile<<endl;
 		result->mrprint(of);
 		of.close();
