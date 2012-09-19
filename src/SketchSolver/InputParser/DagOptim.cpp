@@ -274,6 +274,7 @@ template<typename COMP, typename NTYPE>
 bool DagOptim::compSymplification(NTYPE& node){
 
 	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
+		//(a+b) < (a + c) ==> b < c
 		bool_node* momo = node.mother->mother;
 		bool_node* mofa = node.mother->father;
 		
@@ -321,19 +322,19 @@ bool DagOptim::compSymplification(NTYPE& node){
 	}
 		
 	if( typeid(*node.mother) == typeid(PLUS_node) ){
-		
+		//(a+b) < x
 		bool_node* momo = node.mother->mother;
 		bool_node* mofa = node.mother->father;
 		
-		if(mofa == node.father || (isConst(node.father) && isConst(mofa) ) ){
+		if(mofa == node.father || (isConst(mofa) ) ){
 			momo = 	node.mother->father;;
 			mofa = node.mother->mother;
 		}
 		//At this point, if any of the two is equal to node.father, it will be momo
-		
-		
+				
 
 		if(momo == node.father || (isConst(node.father) && isConst(momo))){
+			//(x+b) < x  or  (c2+b) < c1
 			NTYPE* pnode = new NTYPE();
 			pnode->mother = mofa;
 			if(momo == node.father ){
@@ -354,6 +355,8 @@ bool DagOptim::compSymplification(NTYPE& node){
 			}
 			return true;
 		}			
+		
+
 	}
 		
 	if( typeid(*node.father) == typeid(PLUS_node) ){
@@ -556,9 +559,9 @@ void DagOptim::visit( AND_node& node ){
 		}
 	}	
 	
-	if(nfather->type == bool_node::LT && nmother->type == bool_node::LT){
-		// (a<x)&(b<x) --> a<x when b<a
+	if(nfather->type == bool_node::LT && nmother->type == bool_node::LT){		
 		if(nfather->father == nmother->father){
+			// (a<x)&(b<x) --> a<x when b<a
 			if(isConst(nfather->mother) && isConst(nmother->mother)){
 				if(this->getIval(nfather->mother) < this->getIval(nmother->mother)){
 					rvalue = nmother;
@@ -567,7 +570,63 @@ void DagOptim::visit( AND_node& node ){
 				}
 				return;
 			}
+
+			// (a+e<x) & (b+e<x) ---> a+e<x when b<a
+			if(nfather->mother->type == bool_node::PLUS && nmother->mother->type == bool_node::PLUS){
+				bool_node* nfm = nfather->mother;
+				bool_node* nmm = nmother->mother;
+
+				bool_node* nmmConst = nmm->mother;
+				bool_node* nmmExp = nmm->father;
+				if(isConst(nmmExp)){
+					bool_node* tmp = nmmExp;
+					nmmExp = nmmConst;
+					nmmConst = tmp;
+				}
+
+				bool_node* nfmConst = nfm->mother;
+				bool_node* nfmExp = nfm->father;
+				if(isConst(nfmExp)){
+					bool_node* tmp = nfmExp;
+					nfmExp = nfmConst;
+					nfmConst = tmp;
+				}
+
+				if(isConst(nfmConst) && isConst(nmmConst) && nfmExp== nmmExp){
+					if(this->getIval(nfmConst) < this->getIval(nmmConst)){
+						rvalue = nmother;
+					}else{
+						rvalue = nfather;
+					}
+					return;
+				}
+			}
+			// (a+e<x) & (e<x) ---> a+e<x when 0<a
+			if(nmother->mother->type == bool_node::PLUS){
+				bool_node* nfm = nfather->mother;
+				bool_node* nmm = nmother->mother;
+
+				bool_node* nmmConst = nmm->mother;
+				bool_node* nmmExp = nmm->father;
+				if(isConst(nmmExp)){
+					bool_node* tmp = nmmExp;
+					nmmExp = nmmConst;
+					nmmConst = tmp;
+				}
+				if(isConst(nmmConst) && nfm== nmmExp){
+					if(0 < this->getIval(nmmConst)){
+						rvalue = nmother;
+					}else{
+						rvalue = nfather;
+					}
+					return;
+				}
+			}
+
 		}
+		
+
+
 		// (x<a)&(a<x) --> 0 
 		if(nfather->father == nmother->mother && nmother->father == nfather->mother){
 			rvalue = this->getCnode(0);

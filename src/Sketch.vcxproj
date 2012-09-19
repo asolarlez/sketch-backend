@@ -251,7 +251,6 @@
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMainHelpers.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />
-    <ClCompile Include="SketchSolver\SolverInterfaces\ABCSATSolver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BackwardsAnalysis.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\BLIFwriter.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanDAG.cpp" />
@@ -284,13 +283,6 @@
     <ClCompile Include="SketchSolver\InputParser\NodeVisitor.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\SATSolver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\SolveFromInput.cpp" />
-    <ClCompile Include="zchaff\zchaff_base.cpp" />
-    <ClCompile Include="zchaff\zchaff_c_wrapper.cpp" />
-    <ClCompile Include="zchaff\zchaff_cpp_wrapper.cpp" />
-    <ClCompile Include="zchaff\zchaff_dbase.cpp" />
-    <ClCompile Include="zchaff\zchaff_solver.cpp" />
-    <ClCompile Include="zchaff\zchaff_utils.cpp" />
-    <ClCompile Include="SketchSolver\SolverInterfaces\ZchaffSATSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="minisat\core\msolver.h" />
@@ -306,7 +298,6 @@
     <ClInclude Include="SketchSolver\InputParser\CegisMainHelpers.h" />
     <ClInclude Include="SketchSolver\InputParser\PrintInteresting.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />
-    <ClInclude Include="SketchSolver\SolverInterfaces\ABCSATSolver.h" />
     <ClInclude Include="SketchSolver\BasicError.h" />
     <ClInclude Include="SketchSolver\InputParser\BooleanDAG.h" />
     <ClInclude Include="SketchSolver\BooleanToCNF.h" />
@@ -324,7 +315,6 @@
     <ClInclude Include="SketchSolver\InputParser\SolveFromInput.h" />
     <ClInclude Include="SketchSolver\timerclass.h" />
     <ClInclude Include="SketchSolver\InputParser\Tvalue.h" />
-    <ClInclude Include="SketchSolver\SolverInterfaces\ZchaffSATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\BackwardsAnalysis.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\BLIFwriter.h" />
     <ClInclude Include="SketchSolver\InputParser\BooleanDAGCreator.h" />

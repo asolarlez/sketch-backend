@@ -13,7 +13,8 @@ DagFunctionToAssertion::~DagFunctionToAssertion()
 
 void DagFunctionToAssertion::visit( UFUN_node& node ){	
 	const string& name = node.get_ufname();
-	if(!node.ignoreAsserts && functionMap.find(name) != functionMap.end() ){
+	bool isUninterp = (functionMap.find(name) == functionMap.end());
+	if(!node.ignoreAsserts && !isUninterp ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
 		
 		bool_node* cur = node.mother;
@@ -35,10 +36,14 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		node.remove();
 		rvalue = this->getCnode(0);		
 	}else{
-		if(node.ignoreAsserts){
-			rvalue = getCnode(0);
-		}else{
+		if(node.dependent() && isUninterp){
 			rvalue = &node;
+		}else{
+			if(node.ignoreAsserts){
+				rvalue = getCnode(0);
+			}else{
+				rvalue = &node;
+			}
 		}
 	}
 }

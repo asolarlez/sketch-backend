@@ -1,6 +1,7 @@
 #include "DagElimUFUN.h"
 
 #include "BooleanDAGCreator.h"
+#include "CommandLineArgs.h"
 
 
 DagElimUFUN::DagElimUFUN()
@@ -69,6 +70,22 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 	}	
 }
 
+
+SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){	
+	stringstream str;
+		str<< node.get_ufname() <<"_"<<node.outname<<"_"<<i;
+		SRC_node* src =  new SRC_node( str.str() );
+		src->set_nbits( node.get_nbits() );
+		if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
+			int sz = 1;
+			for(int i=0; i<PARAMS->NINPUTS; ++i){
+				sz = sz *2;
+			}
+			src->setArr(sz);
+		}
+		return src;
+}
+
 /**
 SFIfun( PARAM, SVAL){ return SVAL if PARAM is different to the params of all previous iterations }.
 */
@@ -77,18 +94,26 @@ SFIfun( PARAM, SVAL){ return SVAL if PARAM is different to the params of all pre
 bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	bool_node* rv = NULL;
 	
-	const string& name = node.get_ufname();
+	string name = node.get_ufname();
+	name += node.outname;
 	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
 	int nargs = node.multi_mother.size();
+	vector<bool_node*>* nmm = &node.multi_mother;
+	if(node.dependent()){
+		nargs = mothercache[node.fgid].size();
+		nmm = &(mothercache[node.fgid]);
+	}else{
+		mothercache[node.fgid] = node.multi_mother;
+	}
+	vector<bool_node*>& nmmother = *nmm;
 	if( functions.find(name) == functions.end() ){
 		//This means this is the first time we see
 		//this function, so the function just outputs its symvalue.
 		//The symvalue has to be created first, though.
-		Dout( cout<<" First time for the function"<<endl );
-		stringstream str;
-		str<< node.get_ufname() <<"_0";
-		SRC_node* src =  new SRC_node( str.str() );
-		src->set_nbits( node.get_nbits() );
+		Dout( cout<<" First time for the function"<<endl );		
+
+		SRC_node* src = srcNode(node, 0);
+
 		newnodes.push_back( src );
 		rv = src;
 		
@@ -106,18 +131,18 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			stringstream str;
 			str<<"PARAM_"<<i;
 			sfi.fun->create_inputs(src->get_nbits(),  str.str());
-			sfi.actuals.push_back(node.multi_mother[i]);	
+			sfi.actuals.push_back(nmmother[i]);	
 		}		
 		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
 		bool_node* C0 = new CONST_node(0);
 		sfi.fun->addNewNode(C0);
 		sfi.fun->create_outputs(1, C0, "RES");
 	}else{
-		if(node.multi_mother.size()==0){
+		if(nmmother.size()==0){
 			return functions[name].symval;
 		}
 
-		BooleanDAG& comp = getComparator(node.multi_mother.size());
+		BooleanDAG& comp = getComparator(nmmother.size());
 		//comp is now a comparator that will compare N inputs with N other inputs.
 		// comp(ina_0, ..., ina_N, inb_0, ..., inb_N) := and_(0<=i<=N)(ina_i == inb_i); 
 		Dout( cout<<" before clone "<<endl);
@@ -139,7 +164,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 											  (*cclone)[tt->id]->id<<endl);
 			cclone->replace(tt->id, sfi.actuals[i]);
 			//As we do this, we also update the actuals in sfi.
-			sfi.actuals[i] = node.multi_mother[i];
+			sfi.actuals[i] = nmmother[i];
 		}
 		// Dout( cclone->print(cout) );
 		Dout( cout<<" after replacing inputs "<<endl);	
@@ -153,11 +178,9 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		ARRACC_node* ch = new ARRACC_node();				
 		ch->mother = dst->mother;
 		
-		stringstream str;
-		str<< node.get_ufname() <<"_"<<sfi.step;
-		string curParamName = str.str() ;
-		SRC_node* src =  new SRC_node( curParamName);
-		src->set_nbits( node.get_nbits() );
+
+		SRC_node* src = srcNode(node, sfi.step);
+
 		sfi.step++;				
 		ch->multi_mother.push_back(src);				
 		ch->multi_mother.push_back(sfi.symval);
@@ -260,7 +283,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			str<<"ina_"<<i;
 			{
 				bool_node* tt = cclone->get_node(str.str());
-				cclone->replace(tt->id, node.multi_mother[i]);
+				cclone->replace(tt->id, nmmother[i]);
 			}
 			
 			stringstream parnm;
@@ -275,7 +298,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		Dout( cout<<"fully integrated cclone. "<<endl  );
 		
 		{
-			bool_node* tmpbn = sfi.fun->get_node(curParamName);
+			bool_node* tmpbn = sfi.fun->get_node(src->name);
 			Assert(tmpbn != NULL, "This is an abomination.");		
 			bool_node* nsvar = sfi.fun->create_inputs(node.get_nbits(), "SVAR");
 			Dout( cout<<" replacing "<<tmpbn->get_name()<<":ch="<< tmpbn->children.size()  <<" with "<< nsvar->get_name() <<endl);
@@ -286,6 +309,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[on->id], "RES");
 				
 		Dout( cout<<" ADDING "<<cclone->size()<<" NODES"<<endl );
+
 		newnodes.insert(newnodes.end(), cclone->begin(), cclone->end());
 		sfi.fun->removeNullNodes();
 		sfi.fun->relabel();
@@ -297,7 +321,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 
 void DagElimUFUN::visit( UFUN_node& node ){
-	const string& name = node.get_ufname();
+	string name = node.get_ufname();
+	name += node.outname;
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){	
 		rvalue = produceNextSFunInfo( node  );
 	}else{
@@ -307,6 +332,14 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		//to distinguish it from the others; hence the moreNewFuns flag.).
 		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
 		int nargs = node.multi_mother.size();
+		vector<bool_node*>* nmm = &node.multi_mother;
+		if(node.dependent()){
+			nargs = mothercache[node.fgid].size();
+			nmm = &(mothercache[node.fgid]);
+		}else{
+			mothercache[node.fgid] = node.multi_mother;
+		}
+		vector<bool_node*>& nmmother = *nmm;
 		if(nargs == 0){			
 			if(oneMoreFun){
 				functions[name].moreNewFuns = false;
@@ -322,7 +355,7 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			str1<<"PARAM_"<<i;
 			bool_node* inarg = sfi.fun->get_node( str1.str() );
 			Assert(inarg != NULL, "This can't be happening!!!");
-			cclone->replace(inarg->id, node.multi_mother[i]);
+			cclone->replace(inarg->id, nmmother[i]);
 		}
 		
 		bool_node* src = NULL;
@@ -330,10 +363,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			src =  new CONST_node(0);			
 		}else{
 			stringstream str;
-			str<< node.get_ufname() <<"_"<<sfi.step;
-			string curParamName = str.str() ;		
-			src =  new SRC_node( curParamName);
-			dynamic_cast<SRC_node*>(src)->set_nbits( node.get_nbits() );
+			
+			src = srcNode(node, sfi.step); 
 		}
 		sfi.step++;		
 		cclone->addNewNode(src);		

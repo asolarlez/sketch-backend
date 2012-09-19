@@ -74,8 +74,11 @@ class DagElimUFUN : public NodeVisitor, virtual NodeStore
 	map<int, BooleanDAG> comparators;	
 	map<string, SFunInfo> functions;
 	BooleanDAG& getComparator(int sz);
-		
+	map<int, vector<bool_node*> > mothercache;
 	vector<BooleanDAG> bdags;
+
+	SRC_node* srcNode(UFUN_node& node, int i);
+
 public:
 	DagElimUFUN();
 	virtual ~DagElimUFUN();
