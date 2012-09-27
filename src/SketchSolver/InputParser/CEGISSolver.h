@@ -21,6 +21,7 @@ public:
 
 	bool simulate;
 	int simiters;
+	int simstopsize;
 
 	typedef enum{ NOSIM /*no simplify*/, SIMSIM/*simple simplify*/, RECSIM/*recursive simplify*/} simtype;
 	simtype simplifycex;
@@ -33,7 +34,7 @@ public:
 		iterlimit(-1),
 		randseed(time(NULL)),
 		simulate(true),
-		simiters(3),
+		simiters(3),		
 		simplifycex(RECSIM),
 		superChecks(false)
 	{
@@ -50,6 +51,7 @@ public:
 		else {cout<<"SOLVER RAND SEED = "<<randseed<<endl;}
 		simulate = args.simulate;
 		simiters = args.simiters;
+		simstopsize = args.simstopsize;
 		superChecks = args.superChecks;
 		if(args.simplifycex == "NOSIM"){ simplifycex = NOSIM; }
 		if(args.simplifycex == "SIMSIM"){ simplifycex = SIMSIM; }

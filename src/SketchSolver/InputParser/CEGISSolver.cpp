@@ -570,7 +570,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		}
 		int hold = -1;
 		while(true){
-			cout<<" TESTING HYPOTHESIS"<<endl;
+			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
 			if(hold == h){
 				Assert(false, "This should not happen");
@@ -624,14 +624,26 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 			}else{
 				{
-					int nval = eval.getValue((*dag)[h]);
-					cout<<" FOUND CONST: "<<niq->lprint()<<" = "<<nval<<endl;
+					bool_node* btoR = (*dag)[h];
+					int nval = eval.getValue(btoR);
+					if(PARAMS->verbosity > 8){ cout<<" FOUND CONST: "<<niq->lprint()<<" = "<<nval<<endl; }
 					DagOptim cse(*dag);
-					int sz = dag->size();
+					int sz = dag->size();					
+					if(btoR->type == bool_node::EQ && nval == 1){
+						if(btoR->mother->type == bool_node::CONST){
+							dag->replace(btoR->father->id, btoR->mother);
+						}else if(btoR->father->type == bool_node::CONST){
+							dag->replace(btoR->mother->id, btoR->father);
+						}else if( btoR->mother->id >  btoR->father->id){
+							dag->replace(btoR->mother->id, btoR->father);
+						}else{
+							dag->replace(btoR->father->id, btoR->mother);
+						}
+					}
 					dag->replace(h, cse.getCnode(nval));
 					dag->removeNullNodes();
 					cse.process(*dag);
-					cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl;
+					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
 					if(dag->getNodesByType(bool_node::ASSERT).size()==0){
 						tc.stop().print("no cex");
 						popProblem();
@@ -640,8 +652,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 				break;
 			}
-		}
-	}while(iter < params.simiters);
+		}		
+	}while(iter < params.simiters && dag->size() > params.simstopsize);
 	
 	{
 		BackwardsAnalysis ba;

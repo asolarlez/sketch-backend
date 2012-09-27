@@ -6,43 +6,52 @@ functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
+	vecvalues.resize(bdag.size(), NULL);
 
 }
 
 
 NodeEvaluator::~NodeEvaluator(void)
 {
+	for(int i=0; i<vecvalues.size(); ++i){
+		if(vecvalues[i] != NULL){
+			delete vecvalues[i];
+		}
+	}
 }
 
 void NodeEvaluator::visit( ARR_R_node &node){
-	vector<int>& vv = vecvalues[node.father->id];
+	cpvec* vv = vecvalues[node.father->id];
 	int idx = i(*node.mother);
 	if(idx < 0){
 		setbn(node, 0 );
 	}else{
-		setbn(node, idx<vv.size()?vv[idx]:i(*node.father) );
+		setbn(node, vv->get(idx,i(*node.father)) );
 	}
 }
 void NodeEvaluator::visit( ARR_W_node &node){
-	vector<int>& vvout = vecvalues[node.id];
-	vector<int>& vvin = vecvalues[node.getOldArr()->id];
+	cpvec* vvin = vecvalues[node.getOldArr()->id];	
 	int idx = i(*node.mother);
-	vvout = vvin;
 	int x = i(*node.getOldArr());
-	setbn(node, x);
-	if(idx >=0 && idx >= vvout.size()){	
-		vvout.resize(idx+1, x );
-	}
-	if(idx>=0){
-		vvout[idx] = i(*node.getNewVal());
-	}
+	setbn(node, x);	
+	cpvec* vvo = vecvalues[node.id];
+	if(vvo != NULL){
+		vvo->update(vvin, idx, i(*node.getNewVal()));
+	}else{
+		vecvalues[node.id] = new cpvec(vvin, idx, i(*node.getNewVal()));
+	}	
 }
+
 void NodeEvaluator::visit( ARR_CREATE_node &node){
-	vector<int>& vv = vecvalues[node.id];
+	
 	int sz = node.multi_mother.size();
-	vv.resize(sz);
+	cpvec* cpv = new cpvec(sz);
+	if(vecvalues[node.id] != NULL){
+		delete vecvalues[node.id];
+	}
+	vecvalues[node.id] = cpv;	
 	for(int t=0; t<sz; ++t){
-		vv[t] = i(*node.multi_mother[t]);
+		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
 	setbn(node, -333 );
 }
@@ -58,14 +67,10 @@ void NodeEvaluator::visit( XOR_node& node ){
 }
 void NodeEvaluator::visit( SRC_node& node ){
 	if(node.arrSz>=0){
-		vector<int>& vv = vecvalues[node.id];
-		vv.resize(node.arrSz);
-		VarStore::objP* op = &(inputs->getObj(node.get_name()));
-		while(op->next != NULL){
-			vv[op->index] = op->getInt();
-			op = op->next;
+		if(vecvalues[node.id] != NULL){
+			delete vecvalues[node.id];
 		}
-
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));		
 	}else{
 		setbn(node, (*inputs)[node.get_name()]);	
 	}
@@ -122,8 +127,12 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 			setbn(node, i(*pred) );
 		}else{
 			{
-				vector<int>& vvout = vecvalues[pred->id];
-				vecvalues[node.id] = vvout;
+				cpvec* cpvt = vecvalues[node.id];
+				if(cpvt != NULL){
+					cpvt->update(vecvalues[pred->id], -1, 0);
+				}else{
+					vecvalues[node.id] = new cpvec(vecvalues[pred->id], -1, 0);
+				}				
 				setbn(node, i(*pred) );
 			}
 		}
@@ -155,19 +164,22 @@ void NodeEvaluator::visit( EQ_node& node ){
 		|| node.mother->getOtype() == bool_node::INT_ARR
 		|| node.father->getOtype() == bool_node::BOOL_ARR
 		|| node.father->getOtype() == bool_node::INT_ARR){
-			vector<int>& mv = vecvalues[node.mother->id];
-			vector<int>& fv = vecvalues[node.father->id];
-			int msz = mv.size() > fv.size() ? mv.size() : fv.size();
+			cpvec* mv = vecvalues[node.mother->id];
+			cpvec* fv = vecvalues[node.father->id];
+			int msz = mv==NULL? 0 : mv->size() ;
+			int fsz = fv==NULL? 0 : fv->size() ;			
+			msz = msz > fsz ? msz : fsz;
+
 			bool tt = (i(*node.mother) == i(*node.father));
 			for(int jj=0; jj<msz; ++jj){
-				int tm = jj < mv.size() ? mv[jj] : i(*node.mother);
-				int tf = jj < fv.size() ? fv[jj] : i(*node.father);
+				int tm = mv==NULL?  i(*node.mother) :mv->get(jj, i(*node.mother));
+				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
 				tt = tt && (tm == tf);
 				if(!tt){ break; }
 			}
 		setbn(node, tt);
 	}else{
-		setbn(node, i(*node.mother) == i(*node.father)); //XXX There is a bug here!!
+		setbn(node, i(*node.mother) == i(*node.father)); 
 	}
 }
 /*!
@@ -194,10 +206,10 @@ void NodeEvaluator::visit( ASSERT_node &node){
 
 void NodeEvaluator::printNodeValue(int i){
 	cout<<i<<" = ";
-	if(vecvalues.count(i)>0){
-		vector<int>& vv = vecvalues[i];		
-		for(int i=0; i<vv.size(); ++i){
-			cout<<vv[i]<<", ";
+	if(vecvalues[i]!= NULL){
+		cpvec* vv = vecvalues[i];		
+		for(int i=0; i<vv->size(); ++i){
+			cout<<vv->get(i, values[i])<<", ";
 		}
 		cout<<endl;
 	}else{

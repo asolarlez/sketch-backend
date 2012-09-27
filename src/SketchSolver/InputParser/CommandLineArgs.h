@@ -58,6 +58,7 @@ struct CommandLineArgs{
   int NINPUTS;
   bool simulate;
   int simiters;
+  int simstopsize;
   string simplifycex;
   bool setMemo;
   bool debug;
@@ -109,6 +110,7 @@ struct CommandLineArgs{
 		NINPUTS = 5;
 		simulate = true;
 		simiters = 3;
+		simstopsize = 4000;
 		simplifycex = "RECSYM";
 		setMemo = true;
 		debug = false;
@@ -146,8 +148,15 @@ struct CommandLineArgs{
 		  continue;
 	    }
 		if( string(argv[ii]) == "-simiters" ){
-	      Assert(ii<(argc-1), "-seedsize needs an extra parameter");
+	      Assert(ii<(argc-1), "-simiters needs an extra parameter");
 	      simiters = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+		  continue;
+	    }
+
+		if( string(argv[ii]) == "-simstopsize" ){
+	      Assert(ii<(argc-1), "-simstopsize needs an extra parameter");
+	      simstopsize = atoi(argv[ii+1]);
 	      input_idx = ii+2;      
 		  continue;
 	    }

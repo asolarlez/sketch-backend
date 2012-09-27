@@ -526,16 +526,16 @@ class INTER_node: public bool_node{
 		return otype;
 	}
 	
-	string get_name() const{
-	    stringstream str;
-	    if(name.size() > 0)
-	      str<<name<<"__"<<get_tname();
-	    else{      
+	string get_name() const{	    
+	    if(name.size() > 0){
+			return name;
+	      //str<<name<<"__"<<get_tname();
+	}else{      
+		  stringstream str;
 	      str<<"name_"<<abs(id)<<"_"<<"__"<<get_tname();
-	      
+		  return str.str();  
 	    }
-	    Assert( id != -22, "This is a corpse. It's living gargabe "<<str.str()<<" id ="<<id );
-	    return str.str();
+	    
 	  }
 	virtual string lprint()const{
 		return name;

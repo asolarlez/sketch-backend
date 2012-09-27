@@ -23,6 +23,105 @@ public:
 
 };
 */
+
+const int UNSET = -22;
+class cpvec{
+	int bnd;
+	cpvec* parent;
+	//Entry 0 corresponds to the true value stored here.
+	//Entry's 1 and 2 are cache locations to avoid having to traverse too much.
+	int val[3];
+	int idx[3];
+	int flip;
+public:
+	int* vv;
+	~cpvec(){
+		if(vv != NULL){
+			delete[] vv;
+		}
+	}
+
+	void update(cpvec* pp, int ii, int v){
+		Assert(vv==NULL, "qwejh;u88");
+		parent = pp;
+		if(parent==NULL){
+			bnd = max(0, ii+1);
+		}else{
+			if(parent->idx[0] == UNSET && parent->vv == NULL && parent->parent != NULL){
+				parent = parent->parent;
+			}
+			bnd = max(parent->bnd, ii+1);
+		}		
+		if(ii<0){
+			idx[0] = UNSET;
+		}else{
+			idx[0] = ii;			
+			val[0] = v;
+		}
+		idx[1] = UNSET;
+		idx[2] = UNSET;
+		flip = 0;
+	}
+
+	cpvec(cpvec* pp, int ii, int v):vv(NULL){		
+		update(pp, ii, v);
+	}
+	cpvec(int sz):vv(new int[sz]){
+		bnd = sz;		
+		parent = NULL;
+		idx[0] = UNSET;
+		idx[1] = UNSET;
+		idx[2] = UNSET;
+		flip = 0;
+	}
+	cpvec(int sz, VarStore::objP* op):vv(new int[sz]){
+		bnd = sz;	
+		while(op != NULL){
+			Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
+			vv[op->index] = op->getInt();
+			op = op->next;
+		}
+		parent = NULL;
+		idx[0] = UNSET;
+		idx[1] = UNSET;
+		idx[2] = UNSET;
+		flip = 0;
+	}
+	int size() const{
+		return bnd;
+	}
+	bool lget(int ii, int& rv){
+		if(vv != NULL){ rv= vv[ii]; return true;}
+		int b0 = idx[0]==ii;
+		int b1 = idx[1]==ii;
+		int b2 = idx[2]==ii;
+		if(b0){ rv= val[0]; return true;}
+		if(b1){ rv= val[1]; return true;}
+		if(b2){ rv= val[2]; return true;}
+		return false;
+	}
+	int get(int ii, int deflt){
+		if(ii>=bnd){
+			return deflt;
+		}
+		Assert(ii < bnd, "Out of bounds error in solver ;qek;kl");		
+		int rv;
+		cpvec* tt = this;
+		while(tt != NULL && !tt->lget(ii, rv)){
+			tt = tt->parent;
+		}
+		if(tt == NULL){ 
+			return deflt; 
+		}
+		if(tt == this){ return rv; }
+		//If the value was stored far away, we keep a copy closer.
+		idx[1+flip] = ii;
+		val[1+flip] = rv;
+		flip = 1-flip;
+		return rv;
+	}
+};
+
 class NodeEvaluator :
 	public NodeVisitor
 {
@@ -30,7 +129,7 @@ class NodeEvaluator :
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;
 	vector<int> values;
-	map<int, vector<int> > vecvalues;
+	vector<cpvec*> vecvalues;
 	vector<bool> changes;
 	VarStore* inputs;
 	bool failedAssert;
