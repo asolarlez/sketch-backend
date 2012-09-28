@@ -273,7 +273,16 @@ bool MiniSATSolver::ignoreOld(){
  	s->newVar();
 	Dout(cout<<"clause count = "<<clauseCount<<endl;)
 	clauseCount=0;
+	if(lsolve){
+		s->makeIncomplete();
+	}
 }
+
+void MiniSATSolver::lightSolve(){
+	s->makeIncomplete();
+	lsolve = true;
+}
+
 
  MiniSATSolver::~MiniSATSolver(){
 	delete s;

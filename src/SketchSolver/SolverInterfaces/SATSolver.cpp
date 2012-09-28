@@ -3,6 +3,10 @@
 #include "MiniSATSolver.h"
 //#include "ZchaffSATSolver.h"
 
+
+void SATSolver::lightSolve(){
+}
+
 SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
 		SATSolver* solver = NULL;
 //		if( t ==  ABC ){

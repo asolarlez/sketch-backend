@@ -64,7 +64,7 @@ struct CommandLineArgs{
   bool debug;
   bool superChecks;  
   int randBnd;
-
+  bool lightVerif;
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
 		for(int i = 0; i < args.size(); i++) {
@@ -116,6 +116,7 @@ struct CommandLineArgs{
 		debug = false;
 		superChecks = false;
 		randBnd = -1;
+		lightVerif = false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -134,6 +135,11 @@ struct CommandLineArgs{
 	    }
 		if( string(argv[ii]) == "-superChecks" ){	      
 	      superChecks = true;
+	      input_idx = ii+1;
+		  continue;
+	    }
+		if( string(argv[ii]) == "-lightverif" ){	      
+	      lightVerif = true;
 	      input_idx = ii+1;
 		  continue;
 	    }

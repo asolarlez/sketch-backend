@@ -326,6 +326,10 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 
 	// problem->repOK();
 	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
+	if(params.lightVerif){
+		cout<<"WARNING: Running with lightweight verification"<<endl;
+		checker->lightSolve();
+	}
 	SolverHelper check(*checker);
 	check.setMemo(params.setMemo && params.veriftype == SATSolver::MINI);
 	CEGISSolver solver(problem, *finder, check, params);

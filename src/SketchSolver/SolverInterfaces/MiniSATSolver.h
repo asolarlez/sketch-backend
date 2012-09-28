@@ -21,6 +21,7 @@ protected:
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
+	int lsolve;
 public:
 	ostream* debugout;
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
@@ -30,6 +31,7 @@ public:
 		s->newVar();
 		clauseCount=0;
 		debugout = NULL;
+		lsolve = false;
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
@@ -78,6 +80,7 @@ public:
 	 }
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
+	 virtual void lightSolve();
 	 
 };
 

@@ -56,6 +56,7 @@ Solver::Solver() :
   , random_seed      (91648253)
   , progress_estimate(0)
   , remove_satisfied (true)
+  , incompletenessCutoff(-1)
 {}
 
 
@@ -689,14 +690,18 @@ bool Solver::solve(const vec<Lit>& assumps)
         printf("|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
         printf("===============================================================================\n");
     }
-
     // Search:
     while (status == l_Undef){
         if (verbosity >= 1)
             printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", (int)conflicts, order_heap.size(), nClauses(), (int)clauses_literals, (int)nof_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progress_estimate*100), fflush(stdout);
         status = search((int)nof_conflicts, (int)nof_learnts);
         nof_conflicts *= restart_inc;
-        nof_learnts   *= learntsize_inc;
+        nof_learnts   *= learntsize_inc;		
+		if(incompletenessCutoff > 0 && decisions > incompletenessCutoff){
+			printf("WARNING: You are running with the -lightverif flag, so I am bailing\n");
+			printf("out and assuming the problem is UNSAT even though I don't know for sure.\n");
+			status = l_False;
+		}
     }
 
     if (verbosity >= 1)
