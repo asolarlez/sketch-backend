@@ -95,7 +95,7 @@ public:
 	int incompletenessCutoff;
     enum { polarity_true = 0, polarity_false = 1, polarity_user = 2, polarity_rnd = 3 };
 
-	void makeIncomplete(){ incompletenessCutoff = 80000; printf("TTT Setting ico=%d\n", incompletenessCutoff);}
+	void makeIncomplete(){ incompletenessCutoff = 40000; printf("TTT Setting cutoff=%d\n", incompletenessCutoff);}
     // Statistics: (read-only member variable)
     //
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts;
