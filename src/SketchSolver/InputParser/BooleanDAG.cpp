@@ -474,8 +474,10 @@ void BooleanDAG::cleanup(){
 		  DllistNode* cur = assertions.head;
 		  while(cur != NULL){
 			  //if(typeid(*cur) == typeid(ASSERT_node) || typeid(*cur) == typeid(DST_node)){
-				  idx = 
-					  dynamic_cast<bool_node*>(cur)->back_dfs(idx);
+			  bool_node* tbn = dynamic_cast<bool_node*>(cur);
+			  //if(tbn->type != bool_node::ASSERT){ cout<<tbn->lprint()<<endl;}
+				  idx = tbn->back_dfs(idx);
+				//  			  if(tbn->type != bool_node::ASSERT){ cout<<tbn->lprint()<<endl;}
 			  //}
 			  cur = cur->next;
 		  }

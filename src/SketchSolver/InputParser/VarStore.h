@@ -160,7 +160,7 @@ public:
 	}
 
 	void newArr(const string& name, int nbits, int arrsz){
-		Assert(index.count(name)==0, "This variable already existed!!");
+		Assert(index.count(name)==0, name<<": This array already existed!!");
 		int begidx = objs.size();
 		index[name] = begidx;
 		objs.push_back(objP(name, nbits));		
@@ -169,7 +169,7 @@ public:
 	}
 
 	void newVar(const string& name, int size){
-		Assert(index.count(name)==0, "This variable already existed!!");
+		Assert(index.count(name)==0, name<<": This variable already existed!!");
 		int begidx = objs.size();
 		objs.push_back(objP(name, size));
 		index[name] = begidx;
