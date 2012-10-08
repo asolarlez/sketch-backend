@@ -283,9 +283,13 @@ template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
 	int tt = comp(quant1, quant2);
 	
-	if(PARAMS->randBnd > 0 && !dir.getMng().isNegated() && abs(tt) > PARAMS->randBnd){ 
+	if(PARAMS->randBnd > 0 && abs(tt) > PARAMS->randBnd){ 
 		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
-		tt = (rand() % (2*PARAMS->randBnd))-PARAMS->randBnd; 
+		if(!dir.getMng().isNegated()){
+			tt = (rand() % (2*PARAMS->randBnd))-PARAMS->randBnd; 
+		}else{
+			tt =  PARAMS->randBnd*2;
+		}
 	}
 	return tt;
 }
