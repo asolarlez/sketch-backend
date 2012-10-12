@@ -107,7 +107,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc;$(SolutionDir)\abc60513\src\aig\hop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -120,7 +120,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>$(SolutionDir)\abc60513\abclib\abclib_debug.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -171,7 +171,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\vec;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\core;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc;$(SolutionDir)\abc60513\src\aig\hop;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\core;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -179,7 +179,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>$(SolutionDir)\abc60513\abclib\abclib_release.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
@@ -215,14 +215,14 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'">
     <ClCompile>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\abc70930\src\sat\msat;$(SolutionDir)\abc70930\src\sat\fraig;$(SolutionDir)\abc70930\src\sat\ivy;$(SolutionDir)\abc70930\src\sat\asat;$(SolutionDir)\abc70930\src\sat\csat;$(SolutionDir)\abc70930\src\sat\aig;$(SolutionDir)\abc70930\src\misc\vec;$(SolutionDir)\abc70930\src\misc\util;$(SolutionDir)\abc70930\src\misc\st;$(SolutionDir)\abc70930\src\misc\nm;$(SolutionDir)\abc70930\src\misc\mvc;$(SolutionDir)\abc70930\src\misc\extra;$(SolutionDir)\abc70930\src\bdd\epd;$(SolutionDir)\abc70930\src\bdd\reo;$(SolutionDir)\abc70930\src\bdd\parse;$(SolutionDir)\abc70930\src\bdd\mtr;$(SolutionDir)\abc70930\src\bdd\cudd;$(SolutionDir)\abc70930\src\base\main;$(SolutionDir)\abc70930\src\base\io;$(SolutionDir)\abc70930\src\base\cmd;$(SolutionDir)\abc70930\src\base\abci;$(SolutionDir)\sat2005_submission;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\sat2005_submission\MiniSat_submission;$(SolutionDir)\zchaff;$(SolutionDir)\abc70930\src\base\abc;$(SolutionDir)\abc70930\src\aig\hop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>$(SolutionDir)\abc70930\abclib\abclib_debug.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>

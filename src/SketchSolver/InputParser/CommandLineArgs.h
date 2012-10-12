@@ -47,6 +47,7 @@ struct CommandLineArgs{
   bool showControls;
   bool showDAG;
   bool outputMRDAG;
+  bool minvarHole;
   string mrdagfile;
   bool ufunSymmetry;
   string inputFname;
@@ -117,6 +118,7 @@ struct CommandLineArgs{
 		superChecks = false;
 		randBnd = -1;
 		lightVerif = false;
+		minvarHole = false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -282,6 +284,11 @@ struct CommandLineArgs{
 		  continue;
 	    }
 		
+		if( string(argv[ii]) == "--minvarHole" ){
+	    	minvarHole = true;
+	      input_idx = ii+1;      
+		  continue;
+	    }
 
 	    if( string(argv[ii]) == "--bnd-cbits" ){
 	      Assert(ii<(argc-1), "--bnd-cbits needs an extra parameter");

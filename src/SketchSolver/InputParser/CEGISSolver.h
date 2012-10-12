@@ -110,7 +110,7 @@ protected:
 	void declareInput(const string& cname, int size, int arrSz);
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input);
-	bool find(VarStore& input, VarStore& controls);
+	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
 	void addInputsToTestSet(VarStore& input);
 
 	bool check(VarStore& input, VarStore& controls);
@@ -123,10 +123,10 @@ protected:
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
 	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
-	
 
 	void normalizeInputStore();
 	void abstractProblem();
+	bool minimizeHoleValue(string minVarNodeName, int minVarNodeSize);
 	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
 	vector<Tvalue> find_history;
@@ -159,4 +159,12 @@ public:
 	void outputCheckVarmap(ostream& out){
 		dirCheck.outputVarMap(out);	
 	}
+
+    VarStore prevCtrlStore;
+	VarStore prevInputStore;
+	bool prevSolutionFound;
+	void storePreviousSolution(VarStore prevInputStore1, VarStore prevCtrlStore1);
+	CTRL_node* getMinVarHoleNode();
+	string minVarNodeName; 
+	int minVarNodeSize;
 };

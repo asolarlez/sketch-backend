@@ -139,6 +139,15 @@ bool CEGISSolver::solveCore(){
 	timerclass ctimer("* CHECK TIME");
 	timerclass ttimer("* TOTAL TIME");
 	ttimer.start();
+	prevSolutionFound = false;
+	bool hasInputChanged = true;
+
+	if(PARAMS->minvarHole){
+		CTRL_node* minCTRLNode = getMinVarHoleNode();
+		minVarNodeName = (*minCTRLNode).get_name();
+		minVarNodeSize = (*minCTRLNode).get_nbits();
+	}
+
 	while(doMore){
 		// Synthesizer
 		{// Find
@@ -150,16 +159,26 @@ bool CEGISSolver::solveCore(){
 			if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart(); 			
-			doMore = find(inputStore, ctrlStore);
+			doMore = find(inputStore, ctrlStore, hasInputChanged);
 			ftimer.stop();
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
 			if(!doMore){
-				cout<<"******** FAILED ********"<<endl;	
-				ftimer.print();	ctimer.print();
-				fail = true;
-				break;
+				if(PARAMS->minvarHole && prevSolutionFound){
+					cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
+					inputStore = prevInputStore;
+					ctrlStore = prevCtrlStore;
+					fail = false;
+					break;
+				}
+				else{
+					cout<<"******** FAILED ********"<<endl;	
+					ftimer.print();	ctimer.print();
+					fail = true;
+					break;
+				}
 			}
 		}
+
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
@@ -175,6 +194,23 @@ bool CEGISSolver::solveCore(){
 		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
 		++iterations;
 		if( params.iterlimit > 0 && iterations >= params.iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
+
+		if(doMore) hasInputChanged = true;
+		else hasInputChanged = false;
+
+		// Minimization loop-- found a solution, but can i find a better solution?
+		if(PARAMS->minvarHole && !doMore){
+			// store the current solution
+			storePreviousSolution(inputStore, ctrlStore);
+			// optimization: only add inputs if the verification fails
+			if(minimizeHoleValue(minVarNodeName, minVarNodeSize))
+				doMore=true;
+			else{
+				doMore = false;
+				inputStore = prevInputStore;
+				ctrlStore = prevCtrlStore;
+			}
+		}
 	}
 	ttimer.stop();
 	if(!fail){
@@ -187,6 +223,49 @@ bool CEGISSolver::solveCore(){
 }
 
 
+CTRL_node* CEGISSolver::getMinVarHoleNode(){
+	BooleanDAG* dag = getProblem();
+	vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
+	int nMinVarNodes = 0;
+	CTRL_node* result;
+	for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
+		CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
+		bool isMinimizeNode = (*cnode).get_toMinimize();
+		if(isMinimizeNode){
+			nMinVarNodes++;
+			result = cnode;
+		}
+	}	
+	cout << "Number of minvar nodes = " << nMinVarNodes << endl;
+	Assert((nMinVarNodes<=1), "only 1 MINVAR hole is allowed currently!");
+	return result;
+}
+
+void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevCtrlStore1){
+	prevInputStore = prevInputStore1;
+	prevCtrlStore = prevCtrlStore1;
+	prevSolutionFound = true;
+}
+
+bool CEGISSolver::minimizeHoleValue(string minVarNodeName, int minVarNodeSize){
+	int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
+	int H__0_var_idx = dirFind.getVar(minVarNodeName);
+	cout << "*********INSIDE minimizeHoleValue, current value of C=" << H__0_val << endl;
+	Tvalue tv = H__0_var_idx;
+	tv.setSize(minVarNodeSize);
+	tv.makeSparse(dirFind);
+	try{
+	for(int i=0; i<tv.num_ranges.size(); ++i){
+		if(tv.num_ranges[i].value >= H__0_val){
+			dirFind.addAssertClause(-tv.num_ranges[i].guard);
+		}
+	}	
+	}
+	catch(BasicError& be){
+		return false;
+	}
+	return true;
+}
 
 void CEGISSolver::addInputsToTestSet(VarStore& input){
 	map<bool_node*,  int> node_values;
@@ -400,14 +479,15 @@ int CEGISSolver::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 
 
 
-bool CEGISSolver::find(VarStore& input, VarStore& controls){
+bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged){
 	
+	if(hasInputChanged){
 	timerclass tc("* TIME TO ADD INPUT ");
 	tc.start();				
 	addInputsToTestSet(input);
 	tc.stop();
 	if(PARAMS->verbosity > 2){ tc.print(); }
-	
+	}
 //Solve
 	int result = mngFind.solve();
 	if(params.printDiag){
