@@ -665,7 +665,7 @@ NodesToSolver::processArith (bool_node &node)
 
 
 	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
-	Assert( vals > 0 && vals == numbers.size(), "This should not happen here");
+	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here");
 	int newID = -1;
 	tmp.resize(vals);
 	map<int, int>::iterator it = numbers.begin();
@@ -1324,7 +1324,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		mergeTvalues(guard, nr0, 0, nr0.size(), nr1, 0, nr1.size(), out);
 
 
-		Assert( out.size () > 0, "This should not happen here2");		
+		Assert( out.size () > 0, "NotesToSolver::mergeTValues: This should not happen here2");		
 		output.sparsify (dir);
 		return;
 }

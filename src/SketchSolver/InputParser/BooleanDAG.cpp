@@ -189,7 +189,7 @@ void BooleanDAG::layer_graph(){
         nodes[i]->layer += (ofst + tmp);
       }
     }else{
-      Assert(lid.size() > 0, "This should not happen.");
+      Assert(lid.size() > 0, "BooleanDAG::layerGraph: This should not happen.");
       ofst += lid.size()-1;
       prvlayer = nodes[i]->layer;
       nodes[i]->layer += ofst;
