@@ -459,13 +459,12 @@ void BooleanDAG::repOK(){
 				  Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
 				  Assert(seen.count(*child)==0, "The children set has repeat nodes !!!");
 				  seen.insert(*child);
-				}
 			}
 		}
 	}
 	Assert(last == this->assertions.tail, "Missing nodes" );
 	
-	okForARRACC(this, nodes);
+	okForARRACC(this, nodes, 0);
 	cout<<"*** DONE REPOK ****"<<endl;
 	return;
 }
