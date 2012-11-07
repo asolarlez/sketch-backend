@@ -5,6 +5,7 @@
 #include "BooleanDAG.h"
 #include "BasicError.h"
 #include "SATSolver.h"
+#include "BooleanNodes.h"
 
 #include <sstream>
 #include <fstream>
@@ -326,7 +327,40 @@ void BooleanDAG::shareparent_remove(int i){
   nodes[i] = NULL;  
 }
 
+int checkOkForARRACC(BooleanDAG * dag, bool_node* bnode, int line /*=0*/) {
+  if (bnode == NULL || bnode->type != bool_node::ARRACC) {
+		return -1;
+	}
+	ARRACC_node * node = dynamic_cast<ARRACC_node*>(bnode);
+	if ( (node->multi_mother.size()>2 || node->mother->getOtype() != bool_node::BOOL)) {
+			for (int j=0; j<node->multi_mother.size(); ++j) {
+				bool_node * m = node->multi_mother[j];
+				if (m != NULL && m->isArrType()) {
+					cout << "Error! line=" << line << endl;
+				  cout << "ARRACC " << node->get_name() << endl;
+					cout << " array elem " << m->get_name() << " in dag:" << endl;
+					dag->lprint(cout);
+					return j;
+				}
+			}
+	}
+	return -1;
+}
 
+void okForARRACC(BooleanDAG * dag, bool_node* bnode, int line /*=0*/) {
+	int result = checkOkForARRACC(dag, bnode, line);
+	if (result >= 0) {
+		Assert(false, "ARRACC array elm");
+	}
+}
+
+void okForARRACC(BooleanDAG * dag, vector<bool_node*> const & nodes, int line /*=0*/) {
+	for(int i=0; i<nodes.size(); ++i){
+		if (nodes[i] != NULL) {
+			okForARRACC(dag, nodes[i], line);
+		}
+	}
+}
 
 void BooleanDAG::repOK(){
 	cout<<"*** DOING REPOK ****"<<endl;
@@ -346,7 +380,6 @@ void BooleanDAG::repOK(){
 		  Assert( it->second != NULL, "Named node was null");
 	  }
 
-	
 	//First, we check that the array doesn't contain any repeated nodes.
 	map<bool_node*, int> nodeset;
 	for(int i=0; i<nodes.size(); ++i){
@@ -367,7 +400,7 @@ void BooleanDAG::repOK(){
 		bool_node* n = nodes[i];
 		if(n != NULL){
 			if( isDllnode(n) ){
-//				cout<<"  "<<n->get_name()<<"  "<<dynamic_cast<bool_node*>(cur)->get_name()<<endl;
+//                             cout<<"  "<<n->get_name()<<"  "<<dynamic_cast<bool_node*>(cur)->get_name()<<endl;
 				//if(!n->isArith()){
 					Assert(getDllnode(n) == cur, "You are skipping a node");
 					UFUN_node* uf = dynamic_cast<UFUN_node*>(n);
@@ -423,14 +456,18 @@ void BooleanDAG::repOK(){
 			}
 			set<bool_node*> seen;
 			for(child_iter child = n->children.begin(); child != n->children.end(); ++child){
-				Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
-				Assert(seen.count(*child)==0, "The children set has repeat nodes !!!");
-				seen.insert(*child);
+				  Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
+				  Assert(seen.count(*child)==0, "The children set has repeat nodes !!!");
+				  seen.insert(*child);
+				}
 			}
-
 		}
 	}
 	Assert(last == this->assertions.tail, "Missing nodes" );
+	
+	okForARRACC(this, nodes);
+	cout<<"*** DONE REPOK ****"<<endl;
+	return;
 }
 
 

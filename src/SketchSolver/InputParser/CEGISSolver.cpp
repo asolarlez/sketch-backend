@@ -117,7 +117,7 @@ bool CEGISSolver::solve(){
 	srand(params.randseed);
 	inputStore.makeRandom();
 	for(int ns = 0; ns < (params.nseeds-1); ++ns){			
-		cout<<"!%";	inputStore.printBrief(cout); cout<<endl;
+		cout<<"solve: !%";	inputStore.printContent(cout); cout<<endl;
                 // NOTE - newer gcc (4.4) won't accept T --> T& if a variable isn't assigned
                 std::vector<int, std::allocator<int> > instore_serialized =
                     inputStore.serialize();
@@ -152,7 +152,7 @@ bool CEGISSolver::solveCore(){
 		// Synthesizer
 		{// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
-			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
+			if(PARAMS->verbosity > 4){ cout<<"solveCore: !% ";inputStore.printBrief(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > instore_serialized =
                             inputStore.serialize();
 			cpt.checkpoint('f', instore_serialized);
@@ -324,7 +324,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		fa.process(*newdag);
 		pushProblem(newdag);
 		//newdag->lprint(cout);
-		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
+		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
@@ -389,9 +389,10 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	BooleanDAG* newdag = dag->clone();
 
 	vector<bool_node*> inodeList = newdag->getNodesByType(type);
-		
-	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
-	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
+	char const * const inputOrCtrl = (type == bool_node::CTRL? " controls" : " inputs");
+	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for"<< inputOrCtrl <<endl; }
+	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<< inputOrCtrl << " = "<<  inodeList.size() <<endl;	}
+	//if(PARAMS->verbosity > 10){cout<<" * Before specialization: dag=" << endl; dag->print(cout); }
 	
 	{
 		DagOptim cse(*newdag);			
@@ -406,6 +407,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		}
 				
 		newdag->removeNullNodes();
+		//newdag->repOK();
 		cse.process(*newdag);
 	}
 	Dout( newdag->print(cout) ); 
@@ -416,9 +418,10 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	}
 	if(false){
 		DagOptim cse(*newdag);			
+		//newdag->repOK();
 		cse.process(*newdag);
 	}
-	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<endl; }	
+	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<endl; }
 	return newdag;
 }
 
@@ -653,8 +656,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
 			if(hold == h){
-				Assert(false, "CEGISSolver::simulate: This should not happen");
 				cout<<"INFINITE LOOP!"<<endl;
+				Assert(false, "CEGISSolver::simulate: This should not happen");
 				break;
 			}
 			hold = h;
@@ -672,8 +675,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				am = 2;
 			}
 			BooleanDAG* tbd = dag->slice(h, an);
-			if(PARAMS->verbosity >= 10 && tbd->size() < 100){
+			if(PARAMS->verbosity >= 10 && tbd->size() < 1000){
 				tbd->lprint(cout);
+			} else {
+				cout << "tbd->size()=" << tbd->size() << endl;
 			}
 			pushProblem(tbd);
 			
@@ -722,6 +727,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					}
 					dag->replace(h, cse.getCnode(nval));
 					dag->removeNullNodes();
+					//dag->repOK();
 					cse.process(*dag);
 					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
 					if(dag->getNodesByType(bool_node::ASSERT).size()==0){
@@ -741,6 +747,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	}
 	{
 		DagOptim cse(*dag);			
+		//dag->repOK();
 		cse.process(*dag);
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	

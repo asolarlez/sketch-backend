@@ -111,7 +111,18 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 	}
 	
 	if(orTerms==0){
-		return -YES;
+// TODO xzl: discuss about this
+//		return -YES;
+		// that means all values of m and f don't overlap
+		// so if m or f is ever initialized at this index, EQ fails
+		// another word: rv = !noeq
+		Assert( noeq.size()>0 , "orTerms and noeq can't be both zero!");
+		int last = noeq.size();
+//		cout << "size=" << last << " noeq[0]=" << noeq[0] << endl;
+		noeq.insert(noeq.begin(), 0);
+		int rv = dir.addBigOrClause(&noeq[0], last);
+//		cout << "-rv=" << -rv << endl;
+		return -rv;
 	}else{
 		int rv;
 		if(orTerms==1){
@@ -134,6 +145,9 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 	vector<guardedVal>& mv = tmval.num_ranges;
 	vector<guardedVal>& fv = tfval.num_ranges;
 
+// NOTE xzl:
+// mv[mistart..miend-1].idx == midx
+// simillar for fv
 	int midx = mv[0].idx;
 	int fidx = fv[0].idx;
 	int mistart = 0;
@@ -149,7 +163,8 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}else{
 		mdef = tvOne;
-		mdef.num_ranges[0].value = -333;
+		// FIXME xzl: set default to 0
+		mdef.num_ranges[0].value = 0; //-333;
 	}
 	Tvalue fdef;
 	if(fidx==-1){
@@ -158,13 +173,14 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}else{
 		fdef = tvOne;
-		fdef.num_ranges[0].value = -333;
+		// FIXME xzl: set default to 0
+		fdef.num_ranges[0].value = 0; //-333;
 	}
 	int cvar = YES;
 	bool moreM = true;
 	bool moreF = true;
 	do{
-		if(midx == fidx && moreM && moreF){				
+		if(midx == fidx && moreM && moreF){
 				int rv = compareRange(mv, mistart, miend, fv, fistart, fiend);
 				cvar = dir.addAndClause(cvar, rv);	
 				if(miend < mv.size()){
@@ -1460,7 +1476,8 @@ NodesToSolver::visit( ARR_R_node &node){
 	vector<guardedVal>::const_iterator inarrend = inarr.num_ranges.end();
 	
 	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
-	defdef.num_ranges[0].value = -333;
+	// FIXME xzl: change default uninitialized value to 0
+	defdef.num_ranges[0].value = 0; //-333;
 	if(begdef == enddef){
 		begdef = defdef.num_ranges.begin();
 		enddef = defdef.num_ranges.end();
@@ -1533,6 +1550,11 @@ NodesToSolver::visit( ARR_R_node &node){
 		}
 	}
 
+//cout << "valToID";
+//for (map<int,int>::const_iterator it = valToID.begin(); it != valToID.end(); ++it) {
+//  cout << " " << it->first << "@" << it->second;
+//}
+//cout << endl;
 
 	Tvalue& nvar = node_ids[node.id];
 	if(node.getOtype() == bool_node::INT){
@@ -1545,7 +1567,10 @@ NodesToSolver::visit( ARR_R_node &node){
 				tmp.push_back( guardedVal(it->second, it->first) );
 			}
 		}
+		// TODO: this might be wrong!
+		// tmp[0].guard might evaluate to false if a[i] should never be initialized
 		if(tmp.size() == 1){
+//			cout << "changing " << tmp[0].guard << " to YES" << endl;
 			tmp[0].guard = YES;
 		}
 		nvar.sparsify (dir);
@@ -1554,14 +1579,20 @@ NodesToSolver::visit( ARR_R_node &node){
 		for(int i=0; it!=valToID.end(); ++i, ++it){
 			if(it->first == 0){
 				nvar = Tvalue(-it->second);
+//				cout << "0 nvar=" << nvar << endl;
 				return;
 			}
 			if(it->first == 1){
 				nvar = Tvalue(it->second);
+//				cout << "1 nvar=" << nvar << endl;
 				return;
 			}
 		}
+		// TODO: this might be wrong!
+		// this is to say: any uninitialized bit has been set to 0
 		nvar = Tvalue(-YES);
+//		nvar = Tvalue();
+//		cout << "2 nvar=" << nvar << endl;
 	}
 }
 void NodesToSolver::visit( ARR_W_node &node){	
@@ -1570,6 +1601,12 @@ void NodesToSolver::visit( ARR_W_node &node){
 	Tvalue inarr = tval_lookup(node.getOldArr());	
 	Tvalue newval = tval_lookup(node.getNewVal());
 	Tvalue& nvar = node_ids[node.id];
+	// FIXME xzl: if we don't add this, it will write 0 for uninitialized value
+/*	if (newval.isNull()) {
+		cout << "we don't write null" << endl;
+		nvar = inarr;
+		return;
+	}*/
 	vector<guardedVal>& out = nvar.num_ranges;
 	out.clear();
 	if(!index.isSparse()){
@@ -1596,7 +1633,8 @@ void NodesToSolver::visit( ARR_W_node &node){
 	int defstart = 0;
 	int defend = 0;
 	Tvalue tvdef = tvOne;
-	tvdef.num_ranges[0].value = -333;
+	// FIXME: change default uninitialized to 0
+	tvdef.num_ranges[0].value = 0; //-333;
 	if(cindex < 0){
 		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
 			++defend;
@@ -1640,10 +1678,8 @@ void NodesToSolver::visit( ARR_W_node &node){
 	nvar.arrayify();
 }
 
-void
-
-
-	NodesToSolver::visit( ARR_CREATE_node &node){
+void NodesToSolver::visit( ARR_CREATE_node &node){
+//cout << "visit ARR_CREATE " << node.get_name() << endl;
 	Tvalue& nvar = node_ids[node.id];
 	vector<guardedVal>& tmp = nvar.num_ranges;
 	tmp.clear();
@@ -1666,6 +1702,7 @@ void
 		}
 	}	
 	nvar.arrayify();
+//cout << "CREATE nvar=" << nvar << endl;
 	return;
 }
 
@@ -1754,7 +1791,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 	if(mval.isSparse()){
 		Assert(false, "NYI aslkdn;hyp;k");
 	}else{
-		Assert(choices.size() == 2, "NYI aslkdn;hyp;k");
+		Assert(choices.size() == 2, "NYI choices.size==2 aslkdn;hyp;k");
 		map<pair<int, int>, int> vals;
 		int gval = mval.getId();
 		
@@ -1763,7 +1800,8 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
 			altL.num_ranges.push_back(gvl[i]);
 		}
-		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		// FIXME xzl: change default uninitialized to 0
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0 /*-333*/;}
 		else{ altL.sparsify(dir); }
 
 		vector<guardedVal>& gvr = choices[1].num_ranges;	
@@ -1771,7 +1809,8 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
 			altR.num_ranges.push_back(gvr[i]);
 		}
-		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		// FIXME xzl: change default uninitialized to 0
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0 /*-333*/;}
 		else{ altR.sparsify(dir); }
 
 		int idxl = 0;

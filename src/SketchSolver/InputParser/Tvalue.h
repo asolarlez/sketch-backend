@@ -172,6 +172,7 @@ public:
 	init (a_type, a_id, a_size, a_neg);
     }
 
+// NOTE: default Tvalue() gives an uninitialized value
     Tvalue (void) {
 	init (TVAL_BVECT, 0, -1);
     }
@@ -596,8 +597,10 @@ public:
 	    type = TVAL_SPARSE;
 	} else if (isSparse ()) {
 	    Dout (cout << "Converting from Sparse to Sparse (no-op)" << endl);
-	} else
+	} else {
+cout << "Error! type=" << type << endl;
 	    assert (0);  /* Can't get here. */
+	}
 
 	/* Adjust using given coefficient. */
 	intAdjust (adj);

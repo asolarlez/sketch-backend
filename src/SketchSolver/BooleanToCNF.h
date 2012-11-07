@@ -434,6 +434,8 @@ SolverHelper::addOrClause (int a, int b, int x)
 /*
  * This encodes a[0] == (a[1] OR a[2] OR ...  OR a[last]).
  */
+// TODO xzl: when a[0]==0, it generates a new variable a[0] = OR(a[1..last])?
+// TODO xzl: any case, it overwrites a[0]?
 inline int
 SolverHelper::addBigOrClause (int *a, int last)
 {
