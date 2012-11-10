@@ -216,6 +216,14 @@ public:
 			objs[i].printBit(out);
 		}
 	}
+	void printContent(ostream& out) const{
+		for(int i=0; i<objs.size(); ++i){
+			out << objs[i].name << ":";
+			objs[i].printBit(out);
+			cout << endl;
+		}
+	}
+
 	bool contains(const string& name) const{
 		return index.count(name)>0;
 	}

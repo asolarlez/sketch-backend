@@ -387,7 +387,7 @@ class ARR_W_node:public arith_node{
 	  		if(multi_mother[0] != NULL){
 	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
 	  		}
-			if(multi_mother[1] != NULL){
+			if(multi_mother.size()>1 && multi_mother[1] != NULL){
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
@@ -427,7 +427,7 @@ class ARR_CREATE_node:public arith_node{
 	  		if(multi_mother[0] != NULL){
 	  			out<<" "<<multi_mother[0]->get_name()<<" -> "<<get_name()<<"[label=\"O\"] ; "<<endl;	  		
 	  		}
-			if(multi_mother[1] != NULL){
+			if(multi_mother.size()>1 && multi_mother[1] != NULL){
 	  			out<<" "<<multi_mother[1]->get_name()<<" -> "<<get_name()<<"[label=\"N\"] ; "<<endl;
 	  		}
 		}
