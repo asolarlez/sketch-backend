@@ -158,8 +158,12 @@ bool CEGISSolver::solveCore(){
 			cpt.checkpoint('f', instore_serialized);
 			if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
-			ftimer.restart(); 			
-			doMore = find(inputStore, ctrlStore, hasInputChanged);
+			ftimer.restart(); 		
+			try{
+				doMore = find(inputStore, ctrlStore, hasInputChanged);
+			}catch(BasicError& e){
+				doMore = false;
+			}
 			ftimer.stop();
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
 			if(!doMore){
@@ -332,8 +336,18 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
-	defineProblem(mngFind, dirFind, node_values, find_node_ids);
 
+	try{
+	defineProblem(mngFind, dirFind, node_values, find_node_ids);
+	}catch(BasicError& e){
+		dirFind.nextIteration();
+		if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
+		if(specialize){
+			popProblem();
+			find_node_ids.clear();
+		}
+		throw e;
+	}
 	// Keeps the history around for debugging purposes.	
 	if( params.superChecks ){ find_history = find_node_ids; }
 	dirFind.nextIteration();

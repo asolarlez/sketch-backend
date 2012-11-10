@@ -1693,13 +1693,15 @@ NodesToSolver::visit (ASSERT_node &node)
 	{
 		if(fval.getId() == -YES ) {  
 			cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
-			
+			stringstream cstr;
 			set<const bool_node*> s;
-			cout<<"digraph G{"<<endl;
-			node.printSubDAG(cout, s);
-			cout<<"}"<<endl;
-			cout<<" slice size = "<<s.size()<<endl;
-			
+			cstr<<"digraph G{"<<endl;
+			node.printSubDAG(cstr, s);
+			cstr<<"}"<<endl;
+			cstr<<" slice size = "<<s.size()<<endl;
+			if(s.size() < 10){
+				cout<<cstr.str()<<endl;
+			}			
 		}
 		dir.addAssertClause (fval.getId ());
 	}
@@ -1917,7 +1919,8 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);
-		cout<<(*node_it)->lprint()<<" -----> "<< node_ids[(*node_it)->id].getSize() <<endl;
+//		Tvalue& tv = node_ids[(*node_it)->id];
+//		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     	}
