@@ -18,6 +18,7 @@ inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 class MiniSATSolver : public SATSolver{
 protected:
 	vector<int> finalOr;
+	vec<Lit> assumptions;
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
@@ -53,6 +54,8 @@ public:
 	 virtual void addEquateClause(int x, int a);
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
+	 virtual void retractableAssertClause(int x);
+
 	 virtual void hardAssertVarClause(int x);
 	 
 	 virtual void markInput(int id);
@@ -66,11 +69,10 @@ public:
 	 
 	 virtual bool ignoreOld();
 	 
-	 virtual void deleteClauseGroup(int i);
 	 virtual int solve();
 	
 	 virtual void reset();
-	 virtual void cleanupDatabase();
+	 virtual void retractAssumptions();
 	
 	 virtual void finish(){
 		if(solveNegation){

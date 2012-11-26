@@ -142,10 +142,10 @@ bool CEGISSolver::solveCore(){
 	prevSolutionFound = false;
 	bool hasInputChanged = true;
 
+	vector<string> mhnames;
+	vector<int> mhsizes;
 	if(PARAMS->minvarHole){
-		CTRL_node* minCTRLNode = getMinVarHoleNode();
-		minVarNodeName = (*minCTRLNode).get_name();
-		minVarNodeSize = (*minCTRLNode).get_nbits();
+		getMinVarHoleNode(mhnames, mhsizes);		
 	}
 
 	while(doMore){
@@ -207,7 +207,7 @@ bool CEGISSolver::solveCore(){
 			// store the current solution
 			storePreviousSolution(inputStore, ctrlStore);
 			// optimization: only add inputs if the verification fails
-			if(minimizeHoleValue(minVarNodeName, minVarNodeSize))
+			if(minimizeHoleValue(mhnames, mhsizes))
 				doMore=true;
 			else{
 				doMore = false;
@@ -223,11 +223,12 @@ bool CEGISSolver::solveCore(){
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
 	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" CHECK TIME "<<ctimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
+	dirFind.getMng().retractAssumptions();
 	return !fail;
 }
 
 
-CTRL_node* CEGISSolver::getMinVarHoleNode(){
+void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
 	BooleanDAG* dag = getProblem();
 	vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
 	int nMinVarNodes = 0;
@@ -236,13 +237,11 @@ CTRL_node* CEGISSolver::getMinVarHoleNode(){
 		CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
 		bool isMinimizeNode = (*cnode).get_toMinimize();
 		if(isMinimizeNode){
-			nMinVarNodes++;
-			result = cnode;
+			mhnames.push_back(cnode->get_name());
+			mhsizes.push_back(cnode->get_nbits());
 		}
 	}	
-	cout << "Number of minvar nodes = " << nMinVarNodes << endl;
-	Assert((nMinVarNodes<=1), "only 1 MINVAR hole is allowed currently!");
-	return result;
+	cout << "Number of minvar nodes = " << mhsizes.size() << endl;
 }
 
 void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevCtrlStore1){
@@ -251,23 +250,43 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
-bool CEGISSolver::minimizeHoleValue(string minVarNodeName, int minVarNodeSize){
-	int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
-	int H__0_var_idx = dirFind.getVar(minVarNodeName);
-	cout << "*********INSIDE minimizeHoleValue, current value of C=" << H__0_val << endl;
-	Tvalue tv = H__0_var_idx;
-	tv.setSize(minVarNodeSize);
-	tv.makeSparse(dirFind);
-	try{
-	for(int i=0; i<tv.num_ranges.size(); ++i){
-		if(tv.num_ranges[i].value >= H__0_val){
-			dirFind.addAssertClause(-tv.num_ranges[i].guard);
+bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){
+	cout << "*********INSIDE minimizeHoleValue, current value of ";
+	bool isSingleMinHole = (mhsizes.size()==1);
+	vector<int> bigor; bigor.push_back(0);
+	for(int i=0; i<mhsizes.size(); ++i){
+		string& minVarNodeName = mhnames[i];
+		int minVarNodeSize = mhsizes[i];
+		int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
+		int H__0_var_idx = dirFind.getVar(minVarNodeName);
+		cout <<minVarNodeName<<"=" << H__0_val << ", ";
+		Tvalue tv = H__0_var_idx;
+		tv.setSize(minVarNodeSize);
+		tv.makeSparse(dirFind);
+		try{
+			for(int i=0; i<tv.num_ranges.size(); ++i){
+				if(tv.num_ranges[i].value > H__0_val){	
+					dirFind.addRetractableAssertClause(-tv.num_ranges[i].guard);
+				}
+				if(isSingleMinHole && tv.num_ranges[i].value == H__0_val){	
+					dirFind.addRetractableAssertClause(-tv.num_ranges[i].guard);
+				}
+				if(tv.num_ranges[i].value < H__0_val){	
+					bigor.push_back(tv.num_ranges[i].guard);
+				}
+			}	
 		}
-	}	
+		catch(BasicError& be){
+			return false;
+		}
 	}
-	catch(BasicError& be){
-		return false;
+	cout<<endl;
+	if(!isSingleMinHole){
+		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
+		dirFind.addRetractableAssertClause(bigor[0]);
 	}
+	
+	
 	return true;
 }
 
@@ -336,7 +355,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
-
+	
 	try{
 	defineProblem(mngFind, dirFind, node_values, find_node_ids);
 	}catch(BasicError& e){
@@ -686,7 +705,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				am = 2;
 			}
 			BooleanDAG* tbd = dag->slice(h, an);
-			if(PARAMS->verbosity >= 10 && tbd->size() < 100){
+			if(PARAMS->verbosity >= 10 && tbd->size() < 200){
 				tbd->lprint(cout);
 			}
 			pushProblem(tbd);

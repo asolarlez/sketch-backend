@@ -70,12 +70,12 @@ public:
 
     virtual bool ignoreOld();
 
-    virtual void deleteClauseGroup(int i);
     virtual int solve();
 
     virtual void reset();
-    virtual void cleanupDatabase();
-
+    
+	virtual void retractableAssertClause(int x);
+	virtual void retractAssumptions();
 	virtual void markInput(int){  }
     virtual void clean();	
     virtual void printDiagnostics(char c);	

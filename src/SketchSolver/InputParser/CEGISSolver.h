@@ -126,7 +126,7 @@ protected:
 
 	void normalizeInputStore();
 	void abstractProblem();
-	bool minimizeHoleValue(string minVarNodeName, int minVarNodeSize);
+	bool minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes);
 	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
 public:
 	vector<Tvalue> find_history;
@@ -164,7 +164,7 @@ public:
 	VarStore prevInputStore;
 	bool prevSolutionFound;
 	void storePreviousSolution(VarStore prevInputStore1, VarStore prevCtrlStore1);
-	CTRL_node* getMinVarHoleNode();
+	void getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes);
 	string minVarNodeName; 
 	int minVarNodeSize;
 };

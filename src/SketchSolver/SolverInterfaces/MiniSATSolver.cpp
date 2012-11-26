@@ -172,6 +172,16 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	}
 }
 
+ void MiniSATSolver::retractableAssertClause(int x){
+	 Assert(!solveNegation, "You can only add retractable clauses in Synthesis mode");
+	 int var = abs(x);		
+	 assumptions.push( (x > 0) ? Lit(var) : ~Lit(var) );	 
+ }
+
+void MiniSATSolver::retractAssumptions(){
+	assumptions.clear();
+}
+
 
 void MiniSATSolver::hardAssertVarClause(int x){
 	Dout( cout<<"@ assert "<<x<<";"<<endl );
@@ -229,9 +239,7 @@ bool MiniSATSolver::ignoreOld(){
 	return false;	
 }
 	 
- void MiniSATSolver::deleteClauseGroup(int i){
-	
-}
+
 
  int MiniSATSolver::solve(){
  	if(solveNegation){
@@ -242,7 +250,7 @@ bool MiniSATSolver::ignoreOld(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
  	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
-	bool result = s->solve();
+	bool result = s->solve(assumptions);
  	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
 	if( result) {
 		//cout<<" Returned SAT"<<endl;
@@ -259,11 +267,7 @@ bool MiniSATSolver::ignoreOld(){
 	clauseCount=0;
 }
 
- void MiniSATSolver::cleanupDatabase(){
-	finalOr.clear();
-	//cout<<"clause count = "<<clauseCount<<endl;
-	clauseCount=0;
-}
+
 
  void MiniSATSolver::clean(){
  	finalOr.clear();

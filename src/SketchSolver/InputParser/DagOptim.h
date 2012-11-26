@@ -421,6 +421,8 @@ protected:
 	int DONE;
 	int INSTACK;
 
+	bool optimizeMMsize2(ARRACC_node& node);
+
 	void cbPerNode(bool_node* cur, stack<pair<bool_node*, childset::iterator> >& bns, map<int, UFUN_node*>& dupNodes);
 
 	void checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*>& bnmap);

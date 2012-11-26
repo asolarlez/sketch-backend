@@ -175,9 +175,7 @@ bool BLIFwriter::ignoreOld(){
 	return true;
 }
 	 
- void BLIFwriter::deleteClauseGroup(int i){
-	
-}
+
 
  int BLIFwriter::solve(){
  	if(solveNegation){
@@ -207,14 +205,23 @@ bool BLIFwriter::ignoreOld(){
 	return SATSolver::UNDETERMINED;
 }
 
+
+void BLIFwriter::retractableAssertClause(int x){
+
+}
+
+void BLIFwriter::retractAssumptions(){
+
+}
+
  void BLIFwriter::reset(){
  		
 }
-
+ /*
  void BLIFwriter::cleanupDatabase(){
 	
 }
-
+*/
  void BLIFwriter::clean(){
  	
 }

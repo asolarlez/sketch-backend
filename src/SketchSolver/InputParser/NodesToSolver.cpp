@@ -66,6 +66,125 @@ void advanceToEndIdx(int& iend, int cidx, vector<guardedVal>&tv){
 	}
 }
 
+
+void NodesToSolver::computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax){	
+	cout<<"Found a max/min"<<endl;
+	int mstart=0; int mend=mv.size();
+	int fstart=0; int fend=fv.size();
+
+	int msofar = YES;
+	int fsofar = YES;
+
+	int i=mstart, j=fstart;
+	int inci = 1;
+	int incj = 1;
+	// There is an assumption that the num_ranges are monotonic. 
+	// However, they could be monotonically increasing or monotonically decreasing.
+	// So we need to check. Moreover, if doMax is true, we are computing the max, so we want to go
+	// from high value to low value, but if it is false, we want to go from low-value to high-value.
+
+	if(doMax){		
+		if(mend -1 > mstart && mv[mstart].value < mv[mstart+1].value){
+			inci = -1;
+			i = mend -1;
+		}
+		
+		if(fend -1> fstart && fv[fstart].value < fv[fstart+1].value){
+			incj = -1;
+			j = fend -1;
+		}
+	}else{
+		if(mend -1 > mstart && mv[mstart].value > mv[mstart+1].value){
+			inci = -1;
+			i = mend -1;
+		}
+		
+		if(fend -1> fstart && fv[fstart].value > fv[fstart+1].value){
+			incj = -1;
+			j = fend -1;
+		}
+	}
+	
+	int mcnt = 0; int msz = mend - mstart;
+	int fcnt = 0; int fsz = fend - fstart;
+	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
+		    bool avi = i < mend && i >= mstart;
+		    bool avj = j < fend && j >= fstart;
+			int curri = avi ? mv[i].value  : -1;
+			int currj = avj ? fv[j].value  : -1;
+			bool ltmin = curri < currj;
+			bool ltmax = curri > currj;
+			if((( (ltmin && !doMax) || (ltmax && doMax)  ) && avi) || !avj){
+				int tmpv = dir.addAndClause(mv[i].guard, fsofar);
+				if(tmpv != -YES){
+					out.push_back(guardedVal(tmpv, curri));
+				}				
+				++mcnt;
+				if(mcnt == msz){
+					msofar = -YES;
+				}else{
+					if(mcnt==msz-1){
+						msofar = mv[i+inci].guard;
+					}else{
+						msofar = dir.addAndClause(msofar, -mv[i].guard);
+					}
+				}
+				i = i + inci;
+				continue;
+		    }
+		    if( (( (ltmax && !doMax) || (ltmin && doMax)  ) && avj) || !avi ){
+				int tmpv = dir.addAndClause(fv[j].guard, msofar);
+				if(tmpv != -YES){
+					out.push_back(guardedVal(tmpv, currj));
+				}
+				++fcnt;
+				if(fcnt == fsz){
+					fsofar = -YES;
+				}else{
+					if(fcnt == fsz-1){
+						fsofar = fv[j+incj].guard;
+					}else{
+						fsofar = dir.addAndClause(fsofar, -fv[j].guard);
+					}
+				}
+				j = j + incj;
+				continue;
+		    }
+			if( curri == currj && avi && avj){
+				int tmpvm = dir.addAndClause(mv[i].guard, fsofar);
+				int tmpvf = dir.addAndClause(fv[j].guard, msofar);
+				int tmpor = dir.addOrClause(tmpvm, tmpvf);
+				if(tmpor != -YES){
+					out.push_back(guardedVal(tmpor, currj));
+				}
+				++mcnt;
+				if(mcnt == msz){
+					msofar = -YES;
+				}else{
+					if(mcnt==msz-1){
+						msofar = mv[i+inci].guard;
+					}else{
+						msofar = dir.addAndClause(msofar, -mv[i].guard);
+					}
+				}
+				++fcnt;
+				if(fcnt == fsz){
+					fsofar = -YES;
+				}else{
+					if(fcnt == fsz-1){
+						fsofar = fv[j+incj].guard;
+					}else{
+						fsofar = dir.addAndClause(fsofar, -fv[j].guard);
+					}
+				}
+				i = i + inci;
+				j = j + incj;
+				continue;
+			}
+	}
+}
+
+
 int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend){
 	int orTerms = 0;
 	int i=mstart, j=fstart;
@@ -1096,6 +1215,25 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	if(isArray){
 		doArrArrAcc(node, node_ids[node.id]);
 		return;
+	}
+
+	if(node.mother->type == bool_node::LT){
+		if(node.mother->mother == node.multi_mother[0] && 
+			node.mother->father == node.multi_mother[1]){
+				if(choices[0].isBvect()){choices[0].makeSparse(dir);}
+				if(choices[1].isBvect()){choices[1].makeSparse(dir);}
+				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, node_ids[node.id].num_ranges, true);
+				node_ids[node.id].sparsify(dir);
+				return;
+		}
+		if(node.mother->mother == node.multi_mother[1] && 
+			node.mother->father == node.multi_mother[0]){
+				if(choices[0].isBvect()){choices[0].makeSparse(dir);}
+				if(choices[1].isBvect()){choices[1].makeSparse(dir);}
+				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, node_ids[node.id].num_ranges, false);
+				node_ids[node.id].sparsify(dir);
+				return;
+		}
 	}
 
 	if(!isBoolean){

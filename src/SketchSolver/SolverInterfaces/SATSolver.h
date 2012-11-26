@@ -61,6 +61,8 @@ public:
     virtual void setVarClause(int x)=0;
     virtual void assertVarClause(int x)=0;
 
+	virtual void retractableAssertClause(int x)=0;
+
 	virtual void addHelperClause(int c[], int size)=0;
 	virtual int isValKnown(int i){return 0; }
 
@@ -74,11 +76,11 @@ public:
 
     virtual bool ignoreOld()=0;
 
-    virtual void deleteClauseGroup(int i)=0;
+    
     virtual int solve()=0;
 
     virtual void reset()=0;
-    virtual void cleanupDatabase()=0;
+    virtual void retractAssumptions()=0;
 
     virtual void clean()=0;	
     virtual void printDiagnostics(char c)=0;	 

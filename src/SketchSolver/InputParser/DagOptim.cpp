@@ -1355,6 +1355,270 @@ bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
 }
 
 
+bool DagOptim::optimizeMMsize2(ARRACC_node& node){
+	
+
+		if( isConst(node.multi_mother[0]) ){
+			int val0 = getIval( node.multi_mother[0] );
+			if( isConst(node.multi_mother[1]) ){
+				int val1 = getIval( node.multi_mother[1] );	
+				if( (val0 == 0 || val0 == 1) &&  (val1 == 0 || val1 == 1) ){
+				//We know val0 and val1 are different.
+					if(val0 == 0){
+						rvalue = node.mother;
+						return true;
+					}else{
+						NOT_node* nt = new NOT_node();
+						nt->mother = node.mother;
+						nt->addToParents();
+						addNode(nt);
+						stillPrivate = nt;
+						nt->accept(*this);
+						return true;
+					}
+				}
+			}
+			// if( isConst(node.multi_mother[0]) )
+			if(val0 == 0 && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				AND_node* an = new AND_node();				
+				an->mother = node.mother;
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				addNode(an);
+				stillPrivate = an;
+				an->accept(*this);
+				return true;
+			}
+		}//if( isConst(node.multi_mother[0]) )
+
+		if( isConst(node.multi_mother[1]) ){
+			int val1 = getIval( node.multi_mother[1] );	
+			if(val1 == 1 && node.multi_mother[0]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				OR_node* an = new OR_node();
+				an->mother = node.mother;
+				an->father = node.multi_mother[0];
+				an->addToParents();
+				addNode(an);
+				stillPrivate = an;
+				an->accept(*this);
+				return true;
+			}
+		}//if( isConst(node.multi_mother[1]) )
+
+
+		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				AND_node* an = new AND_node();
+				an->mother = node.mother;
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				addNode(an);
+				stillPrivate = an;
+				an->accept(*this);
+				return true;
+		}
+		
+		
+		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+				OR_node* an = new OR_node();
+				an->mother = node.multi_mother[0];
+				an->father = node.multi_mother[1];
+				an->addToParents();
+				addNode(an);
+				stillPrivate = an;
+				an->accept(*this);
+				return true;
+		}
+
+
+		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
+				
+				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
+				if(node.getOtype() == bool_node::INT || node.getOtype() == bool_node::BOOL){
+					if(isConst(eqmom->mother) || isConst(eqmom->father)){
+						bool_node* mother = NULL;
+						int C;
+						if(isConst(eqmom->mother)){
+							mother = eqmom->father;
+							C = this->getIval(eqmom->mother);
+						}else{
+							mother = eqmom->mother;
+							C = this->getIval(eqmom->father);
+						}
+						ARRASS_node* an = new ARRASS_node();
+						an->mother = mother;
+						int b = 0;
+						if(node.mother->type == bool_node::NOT){
+							b = 1;
+						}else{
+							b = 0;
+						}
+						an->multi_mother.push_back(node.multi_mother[b]);
+						an->multi_mother.push_back(node.multi_mother[1-b]);
+						an->addToParents();
+						an->quant = C;
+						addNode(an);
+						stillPrivate = an;
+						rvalue = an;
+						return true;
+					}
+				}
+		}
+		
+		
+		
+		if( node.multi_mother[1]->type == bool_node::ARRACC  ){			
+			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
+			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == bool_node::BOOL && mm1 .mother->getOtype() == bool_node::BOOL ){
+				AND_node* an = new AND_node();
+				an->mother = node.mother;
+				an->father = mm1 .mother;
+				an->addToParents();
+				addNode(an);
+
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				
+				node.dislodge();
+				node.mother = an;
+				node.multi_mother[1] = mm1.multi_mother[1];
+				node.resetId();
+				node.addToParents();				
+				node.accept(*this);
+				return true;
+			}	
+
+			if(node.mother == mm1.mother){
+				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
+				node.dislodge();
+				node.multi_mother[1] = mm1.multi_mother[1];
+				node.resetId();
+				node.addToParents();				
+				rvalue = &node;
+				return true;
+			}
+			
+			/*
+			if( node.multi_mother[0] == mm1.multi_mother[1] && mm1.children.size() < 2){
+				AND_node* an = new AND_node();
+				an->name = node.name;
+				an->name += "AND";
+				an->mother = node.mother;
+				
+								
+				NOT_node* nt = new NOT_node();
+				nt->name = node.name;
+				nt->name += "NOTc";
+				nt->mother = mm1 .mother;
+				nt->addToParents();
+				addNode(nt);
+
+				
+				
+				an->father = nt;
+				an->addToParents();
+				addNode(an);
+
+				
+				
+
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				
+				
+				node.dislodge();
+				node.mother = an;
+				node.multi_mother[1] = mm1.multi_mother[0];
+				node.addToParents();
+			}
+			*/
+			
+					
+			
+		}
+		
+		if( node.multi_mother[0]->type == bool_node::ARRACC  ){
+			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
+			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == bool_node::BOOL &&  mm0.children.size() < 2){
+				OR_node* on = new OR_node();
+				on->mother = node.mother;
+				on->father = mm0 .mother;
+				on->addToParents();
+				addNode(on);
+
+				// on = dynamic_cast<OR_node*>( cse.computeCSE(on) );
+				
+				bool_node* ton = this->computeOptim(on);
+
+				node.dislodge();
+				node.mother = ton;
+				node.multi_mother[0] = mm0.multi_mother[0];
+				node.resetId();
+				node.addToParents();
+				node.accept(*this);
+				return true;
+			}
+			
+			
+			if(node.mother == mm0.mother){
+				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
+				node.dislodge();
+				node.multi_mother[0] = mm0.multi_mother[0];
+				node.resetId();
+				node.addToParents();
+				rvalue = &node;
+				return true;
+			}
+
+
+			
+
+
+			/*
+			if( node.multi_mother[1] == mm1.multi_mother[0] && mm1.children.size() < 2){
+				OR_node* an = new OR_node();
+				an->name = node.name;
+				an->name += "OR";
+				an->mother = node.mother;
+				
+								
+				NOT_node* nt = new NOT_node();
+				nt->name = node.name;
+				nt->name += "NOTd";
+				nt->mother = mm1 .mother;
+				addNode(nt);
+
+				an->father = nt;
+				an->addToParents();
+				addNode(an);
+
+					
+				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				
+				
+				node.dislodge();
+				node.mother = an;
+				node.multi_mother[0] = mm1.multi_mother[1];
+				node.addToParents();
+			}
+			*/
+			
+		}
+
+		if(node.mother->type == bool_node::NOT){
+			bool_node* newmom = node.mother->mother;
+			bool_node* np0 = node.multi_mother[1];
+			bool_node* np1 = node.multi_mother[0];
+			node.dislodge();
+			node.mother = newmom;
+			node.multi_mother[0] = np0;
+			node.multi_mother[1] = np1;
+			node.resetId();
+			node.addToParents();
+			node.accept(*this);
+			return true;
+		}
+
+		return false;
+}
+
 void DagOptim::visit( ARRACC_node& node ){
 	if( isConst(node.mother) ){
 		int val = getIval( node.mother );		
@@ -1425,254 +1689,36 @@ void DagOptim::visit( ARRACC_node& node ){
 
 	
 	if( node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL ){
-
-
-		if( isConst(node.multi_mother[0]) ){
-			int val0 = getIval( node.multi_mother[0] );
-			if( isConst(node.multi_mother[1]) ){
-				int val1 = getIval( node.multi_mother[1] );	
-				if( (val0 == 0 || val0 == 1) &&  (val1 == 0 || val1 == 1) ){
-				//We know val0 and val1 are different.
-					if(val0 == 0){
-						rvalue = node.mother;
-						return;
-					}else{
-						NOT_node* nt = new NOT_node();
-						nt->mother = node.mother;
-						nt->addToParents();
-						addNode(nt);
-						stillPrivate = nt;
-						nt->accept(*this);
-						return;
-					}
-				}
-			}
-			
-			if(val0 == 0 && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
-				AND_node* an = new AND_node();				
-				an->mother = node.mother;
-				an->father = node.multi_mother[1];
-				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
-				return;
-			}
-		}
-
-		if( isConst(node.multi_mother[1]) ){
-			int val1 = getIval( node.multi_mother[1] );	
-			if(val1 == 1 && node.multi_mother[0]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
-				OR_node* an = new OR_node();
-				an->mother = node.mother;
-				an->father = node.multi_mother[0];
-				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
-				return;
-			}
-		}
-
-
-		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
-				AND_node* an = new AND_node();
-				an->mother = node.mother;
-				an->father = node.multi_mother[1];
-				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
-				return;
-		}
-		
-		
-		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
-				OR_node* an = new OR_node();
-				an->mother = node.multi_mother[0];
-				an->father = node.multi_mother[1];
-				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
-				return;
-		}
-
-
-		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
-				
-				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
-				if(node.getOtype() == bool_node::INT || node.getOtype() == bool_node::BOOL){
-					if(isConst(eqmom->mother) || isConst(eqmom->father)){
-						bool_node* mother = NULL;
-						int C;
-						if(isConst(eqmom->mother)){
-							mother = eqmom->father;
-							C = this->getIval(eqmom->mother);
-						}else{
-							mother = eqmom->mother;
-							C = this->getIval(eqmom->father);
-						}
-						ARRASS_node* an = new ARRASS_node();
-						an->mother = mother;
-						int b = 0;
-						if(node.mother->type == bool_node::NOT){
-							b = 1;
-						}else{
-							b = 0;
-						}
-						an->multi_mother.push_back(node.multi_mother[b]);
-						an->multi_mother.push_back(node.multi_mother[1-b]);
-						an->addToParents();
-						an->quant = C;
-						addNode(an);
-						stillPrivate = an;
-						rvalue = an;
-						return;
-					}
-				}
-		}
-		
-		
-		
-		if( typeid(*node.multi_mother[1]) == typeid(node)  ){			
-			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
-			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == bool_node::BOOL && mm1 .mother->getOtype() == bool_node::BOOL ){
-				AND_node* an = new AND_node();
-				an->mother = node.mother;
-				an->father = mm1 .mother;
-				an->addToParents();
-				addNode(an);
-
-				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
-				
-				node.dislodge();
-				node.mother = an;
-				node.multi_mother[1] = mm1.multi_mother[1];
-				node.resetId();
-				node.addToParents();				
-				node.accept(*this);
-				return;
-			}	
-
-			if(node.mother == mm1.mother){
-				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
-				node.dislodge();
-				node.multi_mother[1] = mm1.multi_mother[1];
-				node.resetId();
-				node.addToParents();				
-				rvalue = &node;
-				return;
-			}
-			
-			/*
-			if( node.multi_mother[0] == mm1.multi_mother[1] && mm1.children.size() < 2){
-				AND_node* an = new AND_node();
-				an->name = node.name;
-				an->name += "AND";
-				an->mother = node.mother;
-				
-								
-				NOT_node* nt = new NOT_node();
-				nt->name = node.name;
-				nt->name += "NOTc";
-				nt->mother = mm1 .mother;
-				nt->addToParents();
-				addNode(nt);
-
-				
-				
-				an->father = nt;
-				an->addToParents();
-				addNode(an);
-
-				
-				
-
-				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
-				
-				
-				node.dislodge();
-				node.mother = an;
-				node.multi_mother[1] = mm1.multi_mother[0];
-				node.addToParents();
-			}
-			*/
-			
-					
-			
-		}
-		
-		if( typeid(*node.multi_mother[0]) == typeid(node)  ){
-			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
-			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == bool_node::BOOL &&  mm0.children.size() < 2){
-				OR_node* on = new OR_node();
-				on->mother = node.mother;
-				on->father = mm0 .mother;
-				on->addToParents();
-				addNode(on);
-
-				// on = dynamic_cast<OR_node*>( cse.computeCSE(on) );
-				
-				bool_node* ton = this->computeOptim(on);
-
-				node.dislodge();
-				node.mother = ton;
-				node.multi_mother[0] = mm0.multi_mother[0];
-				node.resetId();
-				node.addToParents();
-				node.accept(*this);
-				return;
-			}
-			
-			
-			if(node.mother == mm0.mother){
-				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
-				node.dislodge();
-				node.multi_mother[0] = mm0.multi_mother[0];
-				node.resetId();
-				node.addToParents();
-				rvalue = &node;
-				return;
-			}
-
-
-			
-
-
-			/*
-			if( node.multi_mother[1] == mm1.multi_mother[0] && mm1.children.size() < 2){
-				OR_node* an = new OR_node();
-				an->name = node.name;
-				an->name += "OR";
-				an->mother = node.mother;
-				
-								
-				NOT_node* nt = new NOT_node();
-				nt->name = node.name;
-				nt->name += "NOTd";
-				nt->mother = mm1 .mother;
-				addNode(nt);
-
-				an->father = nt;
-				an->addToParents();
-				addNode(an);
-
-					
-				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
-				
-				
-				node.dislodge();
-				node.mother = an;
-				node.multi_mother[0] = mm1.multi_mother[1];
-				node.addToParents();
-			}
-			*/
-			
-		}
-		
-		
+		if(this->optimizeMMsize2(node)){
+			return;
+		}				
 	}else{
+		if(node.mother->type == bool_node::ARRACC){
+			ARRACC_node* an = dynamic_cast<ARRACC_node*>(node.mother);
+			if(an->mother->getOtype() == bool_node::BOOL && an->multi_mother.size()==2 && an->multi_mother[0]->type == bool_node::CONST && an->multi_mother[1]->type == bool_node::CONST){
+				int c0 = this->getIval(an->multi_mother[0]);
+				int c1 = this->getIval(an->multi_mother[1]);
+				ARRACC_node* ar = new ARRACC_node();
+				ar->mother = an->mother;
+				if(c0 < node.multi_mother.size()){
+					ar->multi_mother.push_back(node.multi_mother[c0]);
+				}else{
+					ar->multi_mother.push_back(this->getCnode(0));
+				}
+				if(c1 < node.multi_mother.size()){
+					ar->multi_mother.push_back(node.multi_mother[c1]);
+				}else{
+					ar->multi_mother.push_back(this->getCnode(0));
+				}
+				ar->addToParents();					
+				addNode(ar);
+				ar->accept(*this);
+				return;
+			}
+		}
+
+
+
 		staticCompare<less<int> >(node.mother, node.multi_mother.size(), false);
 		AbstractNodeValue& val = anv[node.mother];
 		if(!val.isTop()){
@@ -1892,10 +1938,10 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
-	if(false && node.quant == 0){ // EXPERIMENTAL OPTIM.
+	if(node.quant == 0){ // EXPERIMENTAL OPTIM.
 		vector<bool_node*>  vv;		
 		checkArrass(vv, node.mother, node, 0);
-		if(vv.size()>2){
+		if(vv.size()>3){
 			ARRACC_node* an = new ARRACC_node();
 			an->mother = node.mother;
 			an->multi_mother.swap(vv);
