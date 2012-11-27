@@ -1938,7 +1938,8 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
-	if(node.quant == 0){ // EXPERIMENTAL OPTIM.
+	bool_node::OutType ot = node.getOtype();
+	if(node.quant == 0  &&  (ot == bool_node::INT || ot == bool_node::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
 		vector<bool_node*>  vv;		
 		checkArrass(vv, node.mother, node, 0);
 		if(vv.size()>3){

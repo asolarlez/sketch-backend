@@ -313,6 +313,10 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		newnodes.insert(newnodes.end(), cclone->begin(), cclone->end());
 		sfi.fun->removeNullNodes();
 		sfi.fun->relabel();
+		cclone->disownNodes();
+		delete cclone;
+		
+
 		Dout(  sfi.fun->print(cout) );
 		Dout( cout<<" DONE DONE DONE"<<endl );
 	}	

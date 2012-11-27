@@ -92,6 +92,10 @@ Dllist assertions;
 
   void growInputIntSizes();
 
+  void disownNodes(){
+	  ownsNodes=false;
+  }
+
   int getIntSize(){
 	return intSize;
   }
