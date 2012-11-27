@@ -68,7 +68,6 @@ void advanceToEndIdx(int& iend, int cidx, vector<guardedVal>&tv){
 
 
 void NodesToSolver::computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax){	
-	cout<<"Found a max/min"<<endl;
 	int mstart=0; int mend=mv.size();
 	int fstart=0; int fend=fv.size();
 
@@ -328,6 +327,110 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 	}while(moreM || moreF);
 
 	node_ids[node.id] = cvar;	
+}
+
+
+void NodesToSolver::processLT (LT_node& node){
+	bool_node *mother = node.mother;
+    Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
+
+    bool_node *father = node.father;
+    Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+	if(mval.isArray() || fval.isArray()){
+		Assert(false, "Can't do < on arrays");
+	}
+	mval.makeSparse (dir);
+    fval.makeSparse (dir);
+    int cvar = -YES;
+
+	vector<guardedVal>& mv = mval.num_ranges;
+	vector<guardedVal>& fv = fval.num_ranges;
+
+	int mstart=0; int mend=mv.size();
+	int fstart=0; int fend=fv.size();
+
+	int msofar = YES;
+	int fsofar = YES;
+
+	int i=mstart, j=fstart;
+	int inci = 1;
+	int incj = 1;
+	// There is an assumption that the num_ranges are monotonic. 
+	// However, they could be monotonically increasing or monotonically decreasing.
+	// So we need to check. 
+	{
+		if(mend -1 > mstart && mv[mstart].value > mv[mstart+1].value){
+			inci = -1;
+			i = mend -1;
+		}
+		
+		if(fend -1> fstart && fv[fstart].value > fv[fstart+1].value){
+			incj = -1;
+			j = fend -1;
+		}
+	}
+	vector<char> mc(mval.getSize(), 'n');
+	vector<char> fc(fval.getSize(), 'n');
+	int mcnt = 0; int msz = mend - mstart;
+	int fcnt = 0; int fsz = fend - fstart;
+	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
+		    bool avi = i < mend && i >= mstart;
+		    bool avj = j < fend && j >= fstart;
+			int curri = avi ? mv[i].value  : -1;
+			int currj = avj ? fv[j].value  : -1;
+			if(!avi){
+				dir.addHelperC(cvar, -fv[j].guard);
+				j = j + incj;
+				continue;
+			}
+			if(!avj){
+				dir.addHelperC(-cvar, -mv[i].guard);
+				i = i + inci;
+				continue;
+			}
+			if((( curri < currj  ) && avi && avj)){
+				int tmpv = dir.addAndClause(mv[i].guard, fsofar);
+				cvar = dir.addOrClause(cvar, tmpv);												
+				i = i + inci;
+				continue;
+		    }
+		    if( (( curri > currj  ) && avj && avi)){				
+				++fcnt;
+				if(fcnt == fsz){
+					fsofar = -YES;
+				}else{
+					if(fcnt == fsz-1){
+						fsofar = fv[j+incj].guard;
+					}else{
+						fsofar = dir.addAndClause(fsofar, -fv[j].guard);
+					}
+				}
+				j = j + incj;
+				continue;
+		    }
+			if( curri == currj && avi && avj){
+				++fcnt;
+				if(fcnt == fsz){
+					fsofar = -YES;
+				}else{
+					if(fcnt == fsz-1){
+						fsofar = fv[j+incj].guard;
+					}else{
+						fsofar = dir.addAndClause(fsofar, -fv[j].guard);
+					}
+				}
+				j = j + incj;
+
+				int tmpvm = dir.addAndClause(mv[i].guard, fsofar);
+				cvar = dir.addOrClause(cvar, tmpvm);					
+				
+				i = i + inci;
+				
+				continue;
+			}
+	}
+	node_ids[node.id] = cvar;
+
 }
 
 template<typename COMP> void
@@ -1334,7 +1437,8 @@ NodesToSolver::visit (LT_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectLt (node);
 #else
-	processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
+	processLT(node);
+	//processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
 #endif /* HAVE_BVECTARITH */
 }
 
