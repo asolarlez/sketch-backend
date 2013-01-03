@@ -199,7 +199,11 @@ void NodeEvaluator::visit( ACTRL_node& node ){
 }
 void NodeEvaluator::visit( ASSERT_node &node){
 	bool t = b(*node.mother);
-	failedAssert = failedAssert || !t;
+	if(node.isHard()){
+		failedHAssert = failedHAssert || !t;
+	}else{
+		failedAssert = failedAssert || !t;
+	}	
 	setbn(node, t );
 }	
 
@@ -222,10 +226,11 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
+	failedHAssert = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 	}
-	return failedAssert;
+	return failedAssert && !failedHAssert;
 }
 
 void NodeEvaluator::display(ostream& out){
@@ -238,11 +243,11 @@ void NodeEvaluator::display(ostream& out){
 int NodeEvaluator::scoreNodes(){
 	int i=0;
 	int maxcount = -10;
-	int highest;
+	int highest= -1;
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin(); it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
-		if(!*it && ni->type != bool_node::CONST && !ni->isArrType()){
+		if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT){
 			++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){

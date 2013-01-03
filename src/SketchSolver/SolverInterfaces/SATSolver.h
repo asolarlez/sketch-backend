@@ -60,6 +60,7 @@ public:
     virtual void addEquateClause(int x, int a)=0;
     virtual void setVarClause(int x)=0;
     virtual void assertVarClause(int x)=0;
+	virtual void hardAssertVarClause(int x)=0;
 
 	virtual void retractableAssertClause(int x)=0;
 

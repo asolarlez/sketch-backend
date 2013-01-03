@@ -235,7 +235,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		
 	}
-
+	
 	
 	//spec->repOK();
 	//sketch->repOK();

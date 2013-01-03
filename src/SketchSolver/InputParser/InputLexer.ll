@@ -176,6 +176,10 @@ Comment      ("//"[^\n]*)
 				return T_def;
 			}
 
+"mdl_def"	{
+				return T_mdldef;
+			}
+
 "MINVAR"	{
 				return T_Min;
 			}

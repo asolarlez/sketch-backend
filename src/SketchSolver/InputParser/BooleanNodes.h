@@ -147,7 +147,8 @@ public:
   virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
   virtual void outDagEntry(ostream& out) const;
   virtual void addToParents();
-   
+  
+
   virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
   virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild);
   virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
@@ -616,20 +617,30 @@ class DST_node: public INTER_node, public DllistNode{
 
 
 class CTRL_node: public INTER_node{
-	bool toMinimize;
+	typedef enum{MINIMIZE=1, ANGELIC=2} Property;
+	unsigned kind;
 	public: 
-	CTRL_node(bool toMinimize = false):INTER_node(CTRL){  this->toMinimize = toMinimize;} 
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->toMinimize = bn.toMinimize;}   
+	CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0){  if(toMinimize){ this->kind = MINIMIZE;}  } 
+	CTRL_node(unsigned kind_):INTER_node(CTRL){  this->kind = kind; } 
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind;}   
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };	
 	string get_name() const {
 		return name;
 	}
 	bool get_toMinimize() const {
-		return toMinimize;
+		return (kind & MINIMIZE) != 0;
 	}
 	void set_toMinimize(bool toMinimize) {
-		this->toMinimize = toMinimize;
+		if(toMinimize){ this->kind |= MINIMIZE;}		
+		else{ this->kind &= ~MINIMIZE; }
+	}
+
+	bool get_Angelic() const {
+		return (kind & ANGELIC) != 0;
+	}
+	void set_Angelic() {
+		this->kind |= ANGELIC;		
 	}
 };
 
@@ -1042,7 +1053,12 @@ public:
 	}
 	  virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= ASSERT ";
+		if(isHardAssert){
+			str<<id<<"= HASSERT ";
+		}else{
+			str<<id<<"= ASSERT ";
+		}
+		
 		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();

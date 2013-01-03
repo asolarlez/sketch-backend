@@ -22,9 +22,8 @@ using namespace std;
 set<BooleanDAG*> BooleanDAG::allocated;
 #endif 
 
-BooleanDAG::BooleanDAG(const string& name_):name(name_)
-{
-  has_passthrough=false;
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(isModel_)
+{  
   is_layered=false;
   is_sorted=false;
   n_inputs = 0;
@@ -1014,7 +1013,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 BooleanDAG* BooleanDAG::clone(){
 	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG(name);
+	BooleanDAG* bdag = new BooleanDAG(name, isModel);
 	relabel();
 
 	clone_nodes(bdag->nodes, &bdag->assertions);

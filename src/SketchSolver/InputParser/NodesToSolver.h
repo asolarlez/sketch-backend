@@ -30,6 +30,7 @@ class NodesToSolver : public NodeVisitor {
     Tvalue tvOne;
     Tvalue tvOneSigned;
 	const int YES;
+	bool stopAddingClauses;
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
@@ -133,7 +134,7 @@ public:
 	virtual void visit( ARR_CREATE_node &node);
 
     virtual void visit (ASSERT_node &node);
-	//void process(BooleanDAG& bdag);
+	void process(BooleanDAG& bdag);
 	virtual void mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx=-1);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
     virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);

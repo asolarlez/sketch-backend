@@ -51,8 +51,8 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	for(int i=0; i<sz; ++i){	
 		int var = abs(tmp[i]);		
 		lits.push( (tmp[i] > 0) ? Lit(var) : ~Lit(var) );		
-	}	
-	if(debugout!=NULL){ 
+	}
+	if(debugout!=NULL){
 		for(int i=0; i<sz; ++i){	
 			if(debugout!=NULL){ (*debugout)<<tmp[i]<<" "; }
 		}		

@@ -276,6 +276,7 @@ public:
     int addAndClause (int a, int b, int x = 0);	
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
+	void addHardAssertClause (int a);
 	void addRetractableAssertClause (int a);
 	bool ignoreOld(){
 		return mng.ignoreOld();
@@ -560,16 +561,27 @@ SolverHelper::addAssertClause (int a)
      /* Vacuously true. */ 
     if (a == YES)
         return; 
-
-    /* Vacuously false. */ 
-    if (a == -YES) {
-    	Assert(false, "Assertion cannot be valid, aborting solver");
-    }
+    
 
     dout ("asserting " << a);
 
     /* Otherwise, assertion clause necessary. */
     mng.assertVarClause (a);
+}
+
+inline void
+SolverHelper::addHardAssertClause (int a)
+{
+    Assert (a != 0, "input id cannot be zero");
+
+     /* Vacuously true. */ 
+    if (a == YES)
+        return; 
+
+    dout ("asserting " << a);
+
+    /* Otherwise, assertion clause necessary. */
+	mng.hardAssertVarClause(a);
 }
 
 inline void

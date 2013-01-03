@@ -47,8 +47,10 @@ params(args)
 			}else{
 				cints++;
 			}
-			/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
-			declareControl(problemIn[i]->get_name(), nbits);
+			if(!ctrlnode->get_Angelic()){
+				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
+				declareControl(problemIn[i]->get_name(), nbits);
+			}			
 		}
 		if(PARAMS->verbosity > 2){
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
@@ -341,6 +343,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		Assert(ctrl == ctrlStore.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	}else{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
+		newdag->lprint(cout);
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 		DagOptim fa(*newdag);
@@ -351,7 +354,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
-		//getProblem()->lprint(cout);
+		getProblem()->lprint(cout);
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	
@@ -379,6 +382,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 
 
 bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
+
 	int arrsz = -1;
 	if(inode->type== bool_node::SRC){	
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
@@ -432,10 +436,27 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		for(int i=0; i<inodeList.size(); ++i){
 			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
 			int nbits;
-			bool_node * repl= nodeForINode(inode, values, cse);			
+			if(type == bool_node::CTRL){
+				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
+				if(cn->get_Angelic()){
+					if(cn->children.size() != 0){
+						Assert(cn->children.size() == 1, "NYI");
+						bool_node* bn = *(cn->children.begin());
+						Assert(bn->type == bool_node::ARRACC, "NYI");
+						ARRACC_node* an = dynamic_cast<ARRACC_node*>(bn);
+						Assert(an->multi_mother[0]==cn, "NYI");
+						newdag->replace(cn->id, an->multi_mother[1]);
+						continue;
+					}else{
+						newdag->replace(inode->id, cse.getCnode(0));
+						continue;
+					}
+				}
+			}
 			
+			bool_node * repl= nodeForINode(inode, values, cse);			
 			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
-			newdag->replace(inode->id, repl);
+			newdag->replace(inode->id, repl);			
 		}
 				
 		newdag->removeNullNodes();
@@ -685,6 +706,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
+			if(h==-1){
+				break;
+			}
 			if(hold == h){
 				Assert(false, "CEGISSolver::simulate: This should not happen");
 				cout<<"INFINITE LOOP!"<<endl;
@@ -873,6 +897,9 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	CheckControl cc(params);
 	//cout<<"Before hard code"<<endl;
 	//getProblem()->lprint(std::cout);
+
+	
+
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
