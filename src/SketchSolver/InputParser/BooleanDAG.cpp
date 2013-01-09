@@ -395,7 +395,7 @@ void BooleanDAG::repOK(){
 	//while(cur != NULL && isUFUN(cur)){ last = cur; cur = cur->next; }	
 	//Now, we have to check whether all the node's predecessors are in the nodeset.
 	//We also check that each node is in the children of all its parents.
-	for(int i=0; i<nodes.size(); ++i){
+	for(int i=0; i<nodes.size(); ++i){	
 		bool_node* n = nodes[i];
 		if(n != NULL){
 			if( isDllnode(n) ){

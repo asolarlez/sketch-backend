@@ -334,6 +334,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nmap[nodeId] = nnode;
 						}
 						if(nprime != NULL){
+							nprime->dislodge();
 							delete nprime;
 						}
 						if(oldFun.isModel && nnode->type == bool_node::UFUN ){
