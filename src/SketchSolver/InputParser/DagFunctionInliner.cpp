@@ -364,7 +364,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						continue;
 					}
 
-					if(!oldFun.isModel){												
+					if(!oldFun.isModel || nprime == NULL){												
 						bool_node* nnode = new NOT_node();
 						nnode->mother = condition;
 						nnode = optAndAddNoMap(nnode);
