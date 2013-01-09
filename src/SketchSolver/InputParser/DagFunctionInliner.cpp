@@ -158,11 +158,18 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			return;
 		}
 
+		
+		//cout<<" inlining "<<name<<endl;
+		BooleanDAG& oldFun = *functionMap[name];
+
+		if(oldFun.isModel && node.children.size() == 0){
+			rvalue = getCnode(false);
+			return;
+		}
 
 		funsInlined.insert(name);
 		if(ictrl != NULL){ ictrl->registerInline(node); }
-		//cout<<" inlining "<<name<<endl;
-		BooleanDAG& oldFun = *functionMap[name];
+
 		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
 		nmap.resize( oldFun.size() );		
@@ -344,100 +351,94 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 					}
 				}else{
-					//Assertion.
 					n->mother->remove_child( n );		
 					if(nprime != NULL){
 						nprime->mother->remove_child( nprime );
 					}
-					if((isConst(n->mother) && getIval(n->mother) == 1)|| node.ignoreAsserts ){ 
+					//Assertion.					
+					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){ 					
 						delete n;
 						if(nprime != NULL){							
 							delete nprime;
 						}
 						continue;
 					}
-					bool_node* nnode = new NOT_node();
-					nnode->mother = condition;
 
-					nnode = optAndAddNoMap(nnode);
+					if(!oldFun.isModel){												
+						bool_node* nnode = new NOT_node();
+						nnode->mother = condition;
+						nnode = optAndAddNoMap(nnode);
 					
-
 					
-					bool_node* cur = n->mother;
-					bool_node* ornode = new OR_node();
-					ornode->mother = cur;
-					ornode->father = nnode;
-					ornode = optAndAddNoMap(ornode);
-
-					bool_node* ornodeprime = NULL;
-					if(nprime != NULL){
-						ornodeprime = new OR_node();
-						ornodeprime->mother = nprime->mother;
-						ornodeprime->father = nnode;
-						ornodeprime = optAndAddNoMap(ornodeprime);
+						bool_node* cur = n->mother;
+						bool_node* ornode = new OR_node();
+						ornode->mother = cur;
+						ornode->father = nnode;
+						ornode = optAndAddNoMap(ornode);
+						n->mother = ornode;
+					}else{
+						bool_node* cur = n->mother;
+						n->mother = nprime->mother;
+						delete nprime;
+						dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
+						if(assertCond == NULL){
+							assertCond = cur;							
+						}else{			
+							bool_node* tt = new AND_node();
+							tt->mother = assertCond;
+							tt->father = cur;
+							tt->addToParents();
+							addNode(tt);							
+							assertCond = tt;
+						}
 					}
 					
-					if(nprime != NULL){
-						n->mother = ornodeprime;
-						delete nprime;
-					}else{
-						n->mother = ornode;		
-					}					
+
 					{							
 						DllistNode* tt = getDllnode(n);
 						tmpList.append(tt);
 					}
-					if(oldFun.isModel){						
-						dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
-						if(assertCond == NULL){
-							assertCond = ornode;							
-						}else{			
-							bool_node* tt = new AND_node();
-							tt->mother = assertCond;
-							tt->father = ornode;
-							tt->addToParents();
-							addNode(tt);							
-							assertCond = tt;
-						}						
-					}
-					if(isConst(cur) && getIval(cur) == 1){
-						delete n;
-						//In this case, the assertion is just ignored.
-						// n->dislodge(); Not needed, since we removed from the mother already.
-					}else{
-						n->mother->children.insert(n);						
-						// tmp->replace_child_inParents(of, tmp);
-						this->addNode(n);
-						
-					}
+					n->mother->children.insert(n);											
+					this->addNode(n);
+					
 				}
 			}else{
 				if( n!= NULL){
 					DST_node* dn = dynamic_cast<DST_node*>(n);
 					bool_node* ttv = n->mother;
 					if(oldFun.isModel){
-						CTRL_node* qn = new CTRL_node();
-						stringstream st;
-						st<<dn->name;
-						st<<lnfuns;
+						if(assertCond == NULL){
+							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);												
+							Assert(un != NULL, "Only ufun node can be the output of a model");
+							SRC_node* sc = ufToSrc[un];
+							sc->neighbor_replace(ttv);
+							sc->children.clear();
+						}else{
+							CTRL_node* qn = new CTRL_node();
+							stringstream st;
+							st<<dn->name;
+							st<<lnfuns;
 						
-						qn->name = st.str();
-						qn->set_Angelic();
-						ARRACC_node* mx = new ARRACC_node();
-						mx->mother = assertCond;
-						mx->multi_mother.push_back(qn);
-						mx->multi_mother.push_back(ttv);
-						mx->addToParents();
-						addNode(qn);
-						addNode(mx);						
-						UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+							qn->name = st.str();
+							qn->set_Angelic();
 						
-						qn->set_nbits( PARAMS->NINPUTS );
-						Assert(un != NULL, "Only ufun node can be the output of a model");
-						SRC_node* sc = ufToSrc[un];
-						sc->neighbor_replace(mx);
-						sc->children.clear();
-						ttv = mx;
+							ARRACC_node* mx = new ARRACC_node();
+							mx->mother = assertCond;
+							mx->multi_mother.push_back(qn);
+							mx->multi_mother.push_back(ttv);
+							mx->addToParents();
+							addNode(qn);
+							addNode(mx);
+							qn->set_nbits( PARAMS->NINPUTS );
+							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+												
+							Assert(un != NULL, "Only ufun node can be the output of a model");
+							SRC_node* sc = ufToSrc[un];
+							sc->neighbor_replace(mx);
+							sc->children.clear();
+							ttv = mx;
+						}
+																		
 						nprime->dislodge();
 						delete nprime;
 					}
@@ -487,7 +488,13 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	lnfuns = 0;
 	uidcount = 0;
 	if(ictrl != NULL){
+		DllistNode* lastDln = NULL;
 		for(int i=0; i<dag.size() ; ++i ){
+
+			if(isDllnode(dag[i])){
+				lastDln = getDllnode(dag[i]);
+			}
+
 			// Get the code for this node.				
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
@@ -499,6 +506,16 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
 				ictrl->checkInline(uf);
+				map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
+				if(it != functionMap.end()){
+					if(it->second->isModel && uf.ignoreAsserts){
+						if(lastDln != NULL){
+							lastDln->add(&uf);
+						}else{
+							dag.assertions.append(&uf);
+						}
+					}
+				}
 			}
 		}
 	}
