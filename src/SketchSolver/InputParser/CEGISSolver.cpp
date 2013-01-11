@@ -153,6 +153,13 @@ bool CEGISSolver::solveCore(){
 	while(doMore){
 		// Synthesizer
 		{// Find
+			//setting input "__rs_node" to false in Input Store
+			if(PARAMS->angelic_model){
+				if(!inputStore.contains("__rs_node")){
+					inputStore.newVar("__rs_node",1);
+				}
+				inputStore.setVarVal("__rs_node",0);
+			}
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > instore_serialized =

@@ -56,6 +56,7 @@ struct CommandLineArgs{
   bool interactive;
   int olevel;
   bool assumebcheck;
+  bool angelic_model;
   int NINPUTS;
   bool simulate;
   int simiters;
@@ -107,6 +108,7 @@ struct CommandLineArgs{
 		alterARRACS = false;
 		interactive = false;
 		assumebcheck = false;
+		angelic_model = false;
 		olevel = 6;
 		NINPUTS = 5;
 		simulate = true;
@@ -201,6 +203,12 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "--assumebcheck" ){
 	    	assumebcheck = true;
 			cout << "assuming  bounds checks" << endl;
+	      input_idx = ii+1;      
+		  continue;
+	    }
+		if( string(argv[ii]) == "-angelic-model" ){
+	    	angelic_model = true;
+			cout << "assuming  angelic ufun value in the model" << endl;
 	      input_idx = ii+1;      
 		  continue;
 	    }

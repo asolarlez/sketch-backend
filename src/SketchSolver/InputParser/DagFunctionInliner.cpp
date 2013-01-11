@@ -424,7 +424,16 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							qn->set_Angelic();
 						
 							ARRACC_node* mx = new ARRACC_node();
-							mx->mother = assertCond;
+							if(!PARAMS->angelic_model)
+								mx->mother = assertCond;
+							else{
+								//create new src node which should be valued to false in Synth phase
+								SRC_node *st = new SRC_node("__rs_node");
+								st->set_nbits(1);//just one bit input
+								mx->mother = st;
+								
+							}
+							//if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
 							mx->multi_mother.push_back(qn);
 							mx->multi_mother.push_back(ttv);
 							mx->addToParents();
