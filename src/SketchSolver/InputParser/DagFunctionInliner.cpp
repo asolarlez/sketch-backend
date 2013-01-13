@@ -431,6 +431,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 								SRC_node *st = new SRC_node("__rs_node");
 								st->set_nbits(1);//just one bit input
 								mx->mother = st;
+								addNode(st);
 								
 							}
 							//if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
