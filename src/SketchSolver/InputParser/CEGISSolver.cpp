@@ -343,7 +343,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		Assert(ctrl == ctrlStore.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	}else{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
-		newdag->lprint(cout);
+		// newdag->lprint(cout);
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 		DagOptim fa(*newdag);
@@ -354,7 +354,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
-		getProblem()->lprint(cout);
+		//getProblem()->lprint(cout);
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	

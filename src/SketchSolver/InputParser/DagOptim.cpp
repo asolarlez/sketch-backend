@@ -2562,9 +2562,12 @@ void DagOptim::process(BooleanDAG& dag){
 
 
 
-			if(dag[i] != node){					
+			if(dag[i] != node){			
+					// cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
 					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
 					dag.replace(i, node);					
+			}else{
+					// cout<<"Kept      "<<dag[i]->lprint()<<endl;
 			}
 		}
 	}
