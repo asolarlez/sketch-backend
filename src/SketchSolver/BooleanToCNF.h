@@ -165,9 +165,15 @@ public:
 	    if( arrsize.find( (it)->first ) !=  arrsize.end() ) {
 		int start = (it)->second;
 		int size = arrsize[(it)->first];
-		for(int i=0; i<size; ++i) {
-		    cout<<start+i<<"\t"<<(it)->first<<"["<<i<<"]=   "<<mng.getVarVal(start+i)<<endl;
+		int vv = 0;
+		int cc = 1;
+		for(int i=0; i<size; ++i) {			
+			if(mng.getVarVal(start+i) == 1){
+				vv = vv + cc;
+			}
+			cc = cc*2;
 		}
+		cout<<(it)->first<<"["<<start<<", "<<(start+size-1)<<"]=   "<<vv<<endl;
 	    } else {
 		cout<<(it)->second<<"\t"<<(it)->first<<"=   "<<mng.getVarVal((it)->second)<<endl;
 	    }
