@@ -198,6 +198,6 @@ Comment      ("//"[^\n]*)
 %%
 
 void Inityylex(void){
-	printf("Initializing scanner\n");
+	//printf("Initializing scanner\n");
 }
 

@@ -212,7 +212,7 @@ bool CEGISSolver::solveCore(){
 		else hasInputChanged = false;
 
 		// Minimization loop-- found a solution, but can i find a better solution?
-		if(PARAMS->minvarHole && !doMore){
+		if(PARAMS->minvarHole && !doMore && mhsizes.size() != 0){
 			// store the current solution
 			storePreviousSolution(inputStore, ctrlStore);
 			// optimization: only add inputs if the verification fails
@@ -259,7 +259,7 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
-bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){
+bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){	
 	cout << "*********INSIDE minimizeHoleValue, current value of ";
 	bool isSingleMinHole = (mhsizes.size()==1);
 	vector<int> bigor; bigor.push_back(0);
@@ -615,6 +615,10 @@ void CEGISSolver::abstractProblem(){
 	int avgDist = 0;
 	int cutoff = ((asserts.size()*6)/10);
 	for(BooleanDAG::iterator node_it = asserts.begin(); node_it != asserts.end(); ++node_it){
+		ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
+		if(an->isHard()){
+			continue;
+		}
 		if(found){
 			if(keepRemoving){
 				dag->remove((*node_it)->id);
@@ -632,7 +636,6 @@ void CEGISSolver::abstractProblem(){
 				avgDist = failedpos> 0 ? cumDist / failedpos : (*node_it)->id;
 				//cout<<"FOUND at "<<failedpos<<" avgDist = "<<avgDist<<endl;
 				if(PARAMS->verbosity > 2){
-					ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
 					cout<<" candidate failed assertion "<<an->getMsg()<<endl;
 				}
 				if(failedpos > cutoff){
@@ -736,7 +739,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				am = 2;
 			}
 			BooleanDAG* tbd = dag->slice(h, an);
-			if(PARAMS->verbosity >= 10 && tbd->size() < 200){
+			if(PARAMS->verbosity > 10 && tbd->size() < 50){
 				tbd->lprint(cout);
 			}
 			pushProblem(tbd);
