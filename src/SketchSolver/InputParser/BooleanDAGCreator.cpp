@@ -1,6 +1,6 @@
 #include "BooleanDAGCreator.h"
 #include "CommandLineArgs.h"
-
+#include "BackwardsAnalysis.h"
 //extern CommandLineArgs* PARAMS;
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
@@ -20,6 +20,12 @@ BooleanDAGCreator::~BooleanDAGCreator(void)
 	 if(PARAMS->verbosity>7){
 		 cout<<"size = "<<dag->size()<<endl;		 
 	 }
+	 // BackwardsAnalysis ba;
+	 // ba.process(*dag);
+	 if(PARAMS->verbosity>7){
+		 cout<<"after ba size = "<<dag->size()<<endl;		 
+	 }
+	 // dag->lprint(cout);
  }
 
 bool_node* BooleanDAGCreator::get_node(const string& name){

@@ -158,8 +158,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			return;
 		}
 
-		
-		//cout<<" inlining "<<name<<endl;
+				
 		BooleanDAG& oldFun = *functionMap[name];
 
 		if(oldFun.isModel && node.children.size() == 0){
@@ -357,13 +356,15 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						nprime->mother->remove_child( nprime );
 					}
 					//Assertion.					
+
+
 					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){ 					
 						delete n;
 						if(nprime != NULL){							
 							delete nprime;
 						}
 						continue;
-					}
+					}					
 
 					if(!oldFun.isModel || nprime == NULL){												
 						bool_node* nnode = new NOT_node();

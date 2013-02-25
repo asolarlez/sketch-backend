@@ -37,7 +37,19 @@ CONST_node* DagOptim::getCnode(bool c){
 	return getCnode( c ? 1 : 0 );
 }
 
-
+bool_node* DagOptim::optAdd(bool_node* bn){
+	bn->accept(*this);
+	bool_node* tmp = rvalue;
+	if(bn == tmp){
+		stillPrivate = bn;
+		addNode(bn);
+		return bn;
+	}else{
+		bn->dislodge();
+		delete bn;
+		return tmp;
+	}
+}
 
 /**
  * return value: 
@@ -308,15 +320,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 			pnode->mother = mofa;
 			pnode->father = fafa;
 			pnode->addToParents();
-			rvalue  = pnode;
-			visit(*pnode);
-			if(rvalue != pnode){
-				pnode->dislodge();
-				delete pnode;
-				
-			}else{
-				addNode(pnode);	
-			}
+			rvalue  = optAdd(pnode);
 			return true;
 		}
 	}
@@ -344,15 +348,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 				//cout<<"I JUST SAVED SOME CLAUSES A"<<endl;
 			}			
 			pnode->addToParents();					
-			rvalue  = pnode;
-			visit(*pnode);		
-			if(rvalue != pnode){
-				pnode->dislodge();
-				delete pnode;
-				//cout<<"=================== saved 3"<<endl;
-			}else{
-				addNode(pnode);	
-			}
+			rvalue  = optAdd(pnode);			
 			return true;
 		}			
 		
@@ -380,15 +376,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 				//cout<<"I JUST SAVED SOME CLAUSES B"<<endl;
 			}
 			pnode->addToParents();	
-			rvalue  = pnode;
-			visit(*pnode);
-			if(rvalue != pnode){
-				pnode->dislodge();
-				delete pnode;
-				//cout<<"=================== saved 3"<<endl;
-			}else{
-				addNode(pnode);	
-			}
+			rvalue  = optAdd(pnode);			
 			return true;
 		}			
 	}
@@ -644,8 +632,7 @@ void DagOptim::visit( AND_node& node ){
 					an->mother = nmother;
 					an->father = nfather->father;
 					an->addToParents();
-					addNode(an);
-					an->accept(*this);
+					rvalue = optAdd(an);					
 					return;
 				}else{
 					rvalue = nfather;
@@ -694,16 +681,15 @@ void DagOptim::visit( OR_node& node ){
 		}
 	}	
 	if(nfather->type == bool_node::NOT && node.mother->type == bool_node::NOT){
-		AND_node* an = new AND_node();
+		bool_node* an = new AND_node();
 		an->mother = node.mother->mother;
 		an->father = nfather->mother;
 		an->addToParents();
-		addNode(an);
+		an = optAdd(an);
 		NOT_node* nn = new NOT_node();
 		nn->mother = an;
 		nn->addToParents();
-		addNode(nn);
-		nn->accept(*this);
+		rvalue = optAdd(nn);		
 		return;
 	}	
 	if(nmother->type == bool_node::LT && nfather->type == bool_node::NOT && nfather->mother->type == bool_node::LT){
@@ -787,10 +773,8 @@ void DagOptim::visit( PLUS_node& node ){
 					pnode->mother = nconst;
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
-					pnode->addToParents();
-					addNode(pnode);		
-					stillPrivate = pnode;
-					rvalue  = pnode;
+					pnode->addToParents();	
+					rvalue  = optAdd(pnode);
 					return;
 				}
 				if( isConst(fathernode.mother) ){
@@ -801,9 +785,7 @@ void DagOptim::visit( PLUS_node& node ){
 					Assert(!isConst(fathernode.father), "This can't happen");
 					pnode->father = fathernode.father;
 					pnode->addToParents();
-					addNode(pnode);	
-					stillPrivate = pnode;
-					rvalue  = pnode;
+					rvalue = optAdd(pnode);						
 					return;
 				}
 				
@@ -879,12 +861,12 @@ void DagOptim::visit( PLUS_node& node ){
 				PLUS_node& fathernode = *dynamic_cast<PLUS_node*>(node.father);
 				if( isConst(fathernode.father) ){
 					bool_node* nconst = getCnode(getIval( fathernode.father ) + getIval( node.mother ));
-					PLUS_node* pnode = new PLUS_node();
+					bool_node* pnode = new PLUS_node();
 					pnode->mother = nconst;
 					Assert(!isConst(fathernode.mother), "This can't happen");
 					pnode->father = fathernode.mother;
 					pnode->addToParents();
-					addNode(pnode);
+					pnode = optAdd(pnode);
 					Assert(false, "Optim is useless");
 				}
 			
@@ -1095,8 +1077,7 @@ void DagOptim::visit( EQ_node& node ){
 				NOT_node* nt = new NOT_node();				
 				nt->mother = node.father;
 				nt->addToParents();
-				addNode(nt);
-				nt->accept(*this);
+				rvalue = optAdd(nt);				
 				return;	
 			}
 		}
@@ -1133,8 +1114,7 @@ void DagOptim::visit( EQ_node& node ){
 				NOT_node* nt = new NOT_node();
 				nt->mother = node.mother;
 				nt->addToParents();
-				addNode(nt);
-				nt->accept(*this);
+				rvalue = optAdd(nt);				
 				return;	
 			}
 		}
@@ -1142,16 +1122,15 @@ void DagOptim::visit( EQ_node& node ){
 	
 
 	if(node.father->getOtype() == bool_node::BOOL && node.mother->getOtype() == bool_node::BOOL){
-		XOR_node* x = new XOR_node();
+		bool_node* x = new XOR_node();
 		x->mother = node.mother;
 		x->father = node.father;
 		x->addToParents();
-		addNode(x);
-		NOT_node* n = new NOT_node();
+		x = optAdd(x);
+		bool_node* n = new NOT_node();
 		n->mother = x;
 		n->addToParents();
-		addNode(n);
-		stillPrivate = n;
+		n = optAdd(n);		
 		rvalue = n;
 		return;
 	}
@@ -1318,16 +1297,15 @@ void DagOptim::visit( UFUN_node& node ){
 
 // m >= f <==> !(m < f);
 bool_node*  DagOptim::addGE(bool_node* mother, bool_node* father){
-	LT_node* lt = new LT_node();
+	bool_node* lt = new LT_node();
 	lt->mother = mother;
 	lt->father = father;
 	lt->addToParents();
-	addNode(lt);
+	lt = optAdd(lt);
 	NOT_node* nn = new NOT_node();
 	nn->mother = lt;
-	nn->addToParents();
-	addNode(nn);	
-	return nn;
+	nn->addToParents();	
+	return optAdd(nn);
 }
 
 // m > f <==> (f < m);
@@ -1335,23 +1313,21 @@ bool_node*  DagOptim::addGT(bool_node* mother, bool_node* father){
 	LT_node* lt = new LT_node();
 	lt->mother = father;
 	lt->father = mother;
-	lt->addToParents();
-	addNode(lt);
-	return lt;	
+	lt->addToParents();	
+	return optAdd(lt);
 }
 
 // m <= f <==> !(f < m);
 bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
-	LT_node* lt = new LT_node();
+	bool_node* lt = new LT_node();
 	lt->mother = father;
 	lt->father = mother;
 	lt->addToParents();
-	addNode(lt);
+	lt = optAdd(lt);
 	NOT_node* nn = new NOT_node();
 	nn->mother = lt;
-	nn->addToParents();
-	addNode(nn);	
-	return nn;
+	nn->addToParents();	
+	return optAdd(nn);	
 }
 
 
@@ -1371,9 +1347,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 						NOT_node* nt = new NOT_node();
 						nt->mother = node.mother;
 						nt->addToParents();
-						addNode(nt);
-						stillPrivate = nt;
-						nt->accept(*this);
+						rvalue = optAdd(nt);												
 						return true;
 					}
 				}
@@ -1384,9 +1358,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
+				rvalue = optAdd(an);			
 				return true;
 			}
 		}//if( isConst(node.multi_mother[0]) )
@@ -1398,9 +1370,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				an->mother = node.mother;
 				an->father = node.multi_mother[0];
 				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
+				rvalue = optAdd(an);			
 				return true;
 			}
 		}//if( isConst(node.multi_mother[1]) )
@@ -1411,9 +1381,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
 				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
+				rvalue = optAdd(an);		
 				return true;
 		}
 		
@@ -1423,9 +1391,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				an->mother = node.multi_mother[0];
 				an->father = node.multi_mother[1];
 				an->addToParents();
-				addNode(an);
-				stillPrivate = an;
-				an->accept(*this);
+				rvalue = optAdd(an);		
 				return true;
 		}
 
@@ -1456,9 +1422,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 						an->multi_mother.push_back(node.multi_mother[1-b]);
 						an->addToParents();
 						an->quant = C;
-						addNode(an);
-						stillPrivate = an;
-						rvalue = an;
+						rvalue = optAdd(an);
 						return true;
 					}
 				}
@@ -1469,13 +1433,13 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		if( node.multi_mother[1]->type == bool_node::ARRACC  ){			
 			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
 			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == bool_node::BOOL && mm1 .mother->getOtype() == bool_node::BOOL ){
-				AND_node* an = new AND_node();
+				bool_node* an = new AND_node();
 				an->mother = node.mother;
 				an->father = mm1 .mother;
 				an->addToParents();
-				addNode(an);
+				an = optAdd(an);
 
-				an = dynamic_cast<AND_node*>( cse.computeCSE(an) );
+				an =  cse.computeCSE(an) ;
 				
 				node.dislodge();
 				node.mother = an;
@@ -1656,30 +1620,27 @@ void DagOptim::visit( ARRACC_node& node ){
 					return;
 				}else{
 					
-					LT_node* nt = new LT_node();
+					bool_node* nt = new LT_node();
 					nt->mother = node.mother;
 					nt->father = this->getCnode((int) node.multi_mother.size());
 					nt->addToParents();
-					addNode(nt);
+					nt = optAdd(nt);
 					
 					ARRACC_node* ar = new ARRACC_node();
 					ar->mother = nt;
 					ar->multi_mother.push_back(getCnode(0));
 					ar->multi_mother.push_back(bn);						
 					ar->addToParents();
-					addNode(ar);
+					bool_node* arrr = optAdd(ar);
 
 					bool_node* gt = addGE(node.mother, this->getCnode(0));
 					
 					ARRACC_node* gar = new ARRACC_node();
 					gar->mother = gt;
 					gar->multi_mother.push_back(getCnode(0));
-					gar->multi_mother.push_back(ar);						
+					gar->multi_mother.push_back(arrr);						
 					gar->addToParents();
-					addNode(gar);
-
-					
-					rvalue = gar;
+					rvalue = optAdd(gar);					
 					return;
 				}
 			}
@@ -1711,8 +1672,7 @@ void DagOptim::visit( ARRACC_node& node ){
 					ar->multi_mother.push_back(this->getCnode(0));
 				}
 				ar->addToParents();					
-				addNode(ar);
-				ar->accept(*this);
+				rvalue = optAdd(ar);				
 				return;
 			}
 		}
@@ -1750,6 +1710,7 @@ void DagOptim::visit( ARRACC_node& node ){
 					}
 				}
 				if(size == 0){
+					delete ar;
 					rvalue = getCnode(0);
 					return;
 				}
@@ -1798,28 +1759,23 @@ void DagOptim::visit( ARRACC_node& node ){
 			bool_node* W = node.multi_mother[1];
 			ARR_R_node* to = new ARR_R_node();
 			to->mother = arrw->mother; // index;
-			to->father = W; 
-			addNode(to);
-			to->addToParents();
-			to->accept(*this);
-			bool_node* too = rvalue;
+			to->father = W; 			
+			to->addToParents();			
+			bool_node* too = optAdd(to);
 				
 			ARRACC_node* tn = new ARRACC_node();
 			tn->mother = node.mother;
 			tn->multi_mother.push_back(arrw->multi_mother[1]);
-			tn->multi_mother.push_back(too);
-			addNode(tn);
-			tn->addToParents();
-			tn->accept(*this);
-			bool_node* tnn = rvalue;
+			tn->multi_mother.push_back(too);			
+			tn->addToParents();			
+			bool_node* tnn = optAdd(tn);
 
 			ARR_W_node* Y = new ARR_W_node();
 			Y->mother = arrw->mother;
 			Y->multi_mother.push_back(W);
-			Y->multi_mother.push_back(tnn);
-			addNode(Y);
+			Y->multi_mother.push_back(tnn);			
 			Y->addToParents();
-			Y->accept(*this);
+			rvalue = optAdd(Y);
 			return;
 		}
 
@@ -1845,28 +1801,23 @@ void DagOptim::visit( ARRACC_node& node ){
 			bool_node* W = node.multi_mother[0];
 			ARR_R_node* to = new ARR_R_node();
 			to->mother = arrw->mother; // index;
-			to->father = W; 
-			addNode(to);
-			to->addToParents();
-			to->accept(*this);
-			bool_node* too = rvalue;
+			to->father = W; 			
+			to->addToParents();			
+			bool_node* too = optAdd(to);
 				
 			ARRACC_node* tn = new ARRACC_node();
 			tn->mother = node.mother;
 			tn->multi_mother.push_back(too);
-			tn->multi_mother.push_back(arrw->multi_mother[1]);
-			addNode(tn);
-			tn->addToParents();
-			tn->accept(*this);
-			bool_node* tnn = rvalue;
+			tn->multi_mother.push_back(arrw->multi_mother[1]);			
+			tn->addToParents();			
+			bool_node* tnn = optAdd(tn);
 
 			ARR_W_node* Y = new ARR_W_node();
 			Y->mother = arrw->mother;
 			Y->multi_mother.push_back(W);
-			Y->multi_mother.push_back(tnn);
-			addNode(Y);
+			Y->multi_mother.push_back(tnn);			
 			Y->addToParents();
-			Y->accept(*this);
+			rvalue = optAdd(Y);
 			return;
 		}
 
@@ -1885,19 +1836,16 @@ void DagOptim::visit( ARRACC_node& node ){
 				ARRACC_node* tn = new ARRACC_node();
 				tn->mother = node.mother;
 				tn->multi_mother.push_back(arrt->multi_mother[1]);
-				tn->multi_mother.push_back(arrw->multi_mother[1]);				
-				addNode(tn);
-				tn->addToParents();
-				tn->accept(*this);
-				bool_node* tnn = rvalue;
+				tn->multi_mother.push_back(arrw->multi_mother[1]);								
+				tn->addToParents();				
+				bool_node* tnn = optAdd(tn);
 
 				ARR_W_node* Y = new ARR_W_node();
 				Y->mother = arrw->mother;
 				Y->multi_mother.push_back(W);
-				Y->multi_mother.push_back(tnn);
-				addNode(Y);
+				Y->multi_mother.push_back(tnn);				
 				Y->addToParents();
-				Y->accept(*this);
+				rvalue = optAdd(Y);
 				return;
 			}
 
@@ -1949,19 +1897,18 @@ void DagOptim::visit( ARRASS_node& node ){
 			an->addToParents();
 			addNode(an);
 			int sz = an->multi_mother.size();
-			LT_node* ltn = new LT_node();
+			bool_node* ltn = new LT_node();
 			ltn->mother = node.mother;
 			ltn->father = this->getCnode(sz);
 			ltn->addToParents();
-			addNode(ltn);
+			ltn = optAdd(ltn);
 
 			ARRACC_node* an2 = new ARRACC_node();
 			an2->mother = ltn;
 			an2->multi_mother.push_back(an->multi_mother[sz-1]);
 			an2->multi_mother.push_back(an);
-			an2->addToParents();
-			addNode(an2);
-			rvalue = an2;
+			an2->addToParents();			
+			rvalue = optAdd(an2);
 			return;
 		}
 	}
@@ -1983,10 +1930,8 @@ void DagOptim::visit( ARRASS_node& node ){
 		as->mother = nm;
 		as->quant = node.quant - C;
 		as->multi_mother = node.multi_mother;
-		as->addToParents();
-		addNode(as);
-
-		rvalue = as;
+		as->addToParents();		
+		rvalue = optAdd(as);
 		return;
 	}
 	
@@ -2011,8 +1956,7 @@ void DagOptim::visit( ARRASS_node& node ){
 			as->multi_mother = node.multi_mother;
 			as->multi_mother[0] = this->getCnode(0);
 			as->addToParents();
-			addNode(as);
-			as->accept(*this);
+			rvalue = optAdd(as);			
 			return;
 		}
 
@@ -2026,8 +1970,7 @@ void DagOptim::visit( ARRASS_node& node ){
 			en->mother = node.mother;
 			en->father = getCnode(node.quant);
 			en->addToParents();
-			addNode(en);
-			en->accept(*this);
+			rvalue = optAdd(en);			
 			return;
 		}
 		if(m0 == 1 && m1==0){
@@ -2035,14 +1978,12 @@ void DagOptim::visit( ARRASS_node& node ){
 			en->mother = node.mother;
 			en->father = getCnode(node.quant);
 			en->addToParents();
-			addNode(en);
-			en->accept(*this);
+			rvalue = optAdd(en);			
 
 			NOT_node* nn = new NOT_node();
 			nn->mother = rvalue;
 			nn->addToParents();
-			addNode(nn);
-			nn->accept(*this);			
+			rvalue = optAdd(nn);	
 			return;
 		}
 	}
@@ -2130,18 +2071,18 @@ void DagOptim::visit( ASSERT_node &node){
 				TempTriple& ttri = testAsserts[string(tt)];
 				if(ttri.bn[1] == tmp.bn[1] && ttri.f[1] != tmp.f[1]){
 					if(!ttri.hasModified){
-						OR_node* on = new OR_node();
+						bool_node* on = new OR_node();
 						on ->mother = ornode->mother;
 						if(ttri.f[2]){
 							on->father = new NOT_node();
 							on->father->mother = ttri.bn[2];
 							on->father->addToParents();
-							addNode(on->father);
+							on->father = optAdd(on->father);
 						}else{
 							on->father = ttri.bn[2];
 						}
 						on->addToParents();
-						addNode(on);
+						on = optAdd(on);
 						ttri.hasModified = true;
 						ttri.main->dislodge();
 						ttri.main->mother = on;
