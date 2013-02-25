@@ -977,10 +977,11 @@ void DagOptim::visit( ARR_R_node& node ){
 			rvalue = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[1];
 			return;
 		}else{
-			if(isConst(node.father->mother) && isConst(node.mother)){
+
+			if(isConst(node.father->mother) && isConst(node.mother) && getIval(node.father->mother)!=getIval(node.mother)){
 				//They must be different constants, otherwise we wouldn't be in this branch.
 				/* X = A{i -> t}; y = X[j];  ===> y = A[j];
-				*/
+				*/				
 				node.dislodge();
 				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
 				node.resetId();
@@ -988,6 +989,46 @@ void DagOptim::visit( ARR_R_node& node ){
 				node.accept(*this);
 				return;
 			}
+			if(node.father->mother->type == bool_node::PLUS &&
+				node.father->mother->mother == node.mother && 
+				isConst(node.father->mother->father) &&
+				getIval(node.father->mother->father) != 0
+				){
+				/*X = A{b+i -> t}; y = X[b]; y = A[j];*/
+				node.dislodge();
+				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
+				node.resetId();
+				node.addToParents();
+				node.accept(*this);
+				return;
+			}
+
+
+			if(node.mother->type == bool_node::PLUS){
+				if(isConst(node.mother->father)){// not equal zero.
+					int jval = getIval(node.mother->father);
+					Assert(jval!= 0, "AEfalke");
+					if(node.mother->mother == node.father->mother ||
+						(node.father->mother->type == bool_node::PLUS &&
+						node.father->mother->mother == node.mother->mother && 
+						isConst(node.father->mother->father) &&
+						getIval(node.father->mother->father) != jval)
+						){
+				/*
+				X = A{b+i -> t}; y = X[b+j]; y = A[j];
+				or
+				X = A{b -> t}; y = X[b+j]; y = A[j];
+				*/
+							node.dislodge();
+							node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
+							node.resetId();
+							node.addToParents();
+							node.accept(*this);
+							return;
+					}
+				}
+			}
+
 		}
 	}
 	if(isConst(node.father)){		
