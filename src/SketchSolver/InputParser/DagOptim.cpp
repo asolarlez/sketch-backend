@@ -623,7 +623,7 @@ void DagOptim::visit( AND_node& node ){
 	}
 
 	if(nfather->type == bool_node::AND && nmother->type == bool_node::LT && nfather->mother->type == bool_node::LT ){
-		// (a<x)&((b<x)& T)--> a<x when b<a
+		// (a<x)&((b<x)& T)--> a<x & T when b<a
 		bool_node* nfm = nfather->mother;
 		if(nfm->father == nmother->father){
 			if(isConst(nfm->mother) && isConst(nmother->mother)){
@@ -1031,6 +1031,18 @@ void DagOptim::visit( ARR_R_node& node ){
 
 		}
 	}
+
+	if(isConst(node.mother) && node.father->type == bool_node::ARR_CREATE){
+		int idx = getIval(node.mother);
+		ARR_CREATE_node* acn = dynamic_cast<ARR_CREATE_node*>(node.father);
+		if(idx >= acn->multi_mother.size()){
+			rvalue = getCnode(-333);
+			return;
+		}
+		rvalue = acn->multi_mother[idx];
+		return;
+	}
+
 	if(isConst(node.father)){		
 		rvalue = node.father;		
 		return;

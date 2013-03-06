@@ -10,6 +10,11 @@ BLIFwriter::BLIFwriter(const string& name_p, SolverMode smode):SATSolver(name_p,
 
 }
 
+
+void BLIFwriter::addCountingHelperClause(int c[], int sz){
+
+}
+
 BLIFwriter::~BLIFwriter(void)
 {
 }

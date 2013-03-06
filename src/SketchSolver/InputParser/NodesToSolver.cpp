@@ -888,18 +888,37 @@ NodesToSolver::processArith (bool_node &node)
 
 	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
 	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here");
-	int newID = -1;
+	
 	tmp.resize(vals);
 	map<int, int>::iterator it = numbers.begin();
 
-	{
-		int quant = it->first;		
-		newID = it->second;
-		tmp[0] = guardedVal(newID, quant);
-	}
-	++it;
-	for(int i=1; i<vals; ++i, ++it){		
+	int i;
+	for(i=0; it != numbers.end(); ++it){
+		if(it->second == YES){
+			tmp.resize(1);
+			tmp[0] = guardedVal(it->second, it->first);	
+			for(map<int, int>::iterator sit = numbers.begin(); sit != numbers.end(); ++sit){
+				if(sit->second != it->second){
+					cout<<"NEW SAVE"<<endl;
+					dir.addAssertClause(-sit->second);
+				}
+			}
+			i=1;
+			break;
+		}
+		if(it->second == -YES){
+			continue;
+		}
 		tmp[i] = guardedVal(it->second, it->first);		
+		++i;
+	}
+	tmp.resize(i);
+	if(tmp.size() == 1){
+		if(tmp[0].guard != YES){
+			cout<<"GOOD SAVE"<<endl;
+			dir.addAssertClause(tmp[0].guard);
+			tmp[0].guard = YES;
+		}
 	}
 	oval.sparsify (dir);
 	dir.addHelperC(oval);

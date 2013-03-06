@@ -28,6 +28,7 @@ namespace MSsolverNS{
 //=================================================================================================
 // Constructor/Destructor:
 
+uint32_t SINGLESET = 3;
 
 Solver::Solver() :
 
@@ -93,7 +94,7 @@ Var Solver::newVar(bool sign, bool dvar)
 }
 
 
-bool Solver::addClause(vec<Lit>& ps)
+bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
     assert(decisionLevel() == 0);
 
@@ -119,6 +120,7 @@ bool Solver::addClause(vec<Lit>& ps)
         return ok = (propagate() == NULL);
     }else{
         Clause* c = Clause_new(ps, false);
+		c->mark(kind);
         clauses.push(c);
         attachClause(*c);
     }
@@ -131,12 +133,19 @@ void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
     watches[toInt(~c[0])].push(&c);
     watches[toInt(~c[1])].push(&c);
+	if(c.mark()==SINGLESET){
+		//singleset clauses are watched by all the literals except the last one.
+		for(int i=2; i<c.size()-1; ++i){
+			watches[toInt(~c[i])].push(&c);
+		}
+	}
     if (c.learnt()) learnts_literals += c.size();
     else            clauses_literals += c.size(); }
 
 
 void Solver::detachClause(Clause& c) {
     assert(c.size() > 1);
+	assert(c.mark()==0);
     assert(find(watches[toInt(~c[0])], &c));
     assert(find(watches[toInt(~c[1])], &c));
     remove(watches[toInt(~c[0])], &c);
@@ -151,6 +160,7 @@ void Solver::removeClause(Clause& c) {
 
 
 bool Solver::satisfied(const Clause& c) const {
+	if(c.mark() == SINGLESET){ return false; }
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
@@ -215,6 +225,7 @@ Lit Solver::pickBranchLit(int polarity_mode, double random_var_freq)
 
     return next == var_Undef ? lit_Undef : Lit(next, sign);
 }
+
 
 
 /*_________________________________________________________________________________________________
@@ -427,16 +438,106 @@ Clause* Solver::propagate()
         vec<Clause*>&  ws  = watches[toInt(p)];
         Clause         **i, **j, **end;
         num_props++;
-
+		std::cout<<"FLIT = "<<(sign(p)?" ":"-")<<var(p)<<std::endl;
         for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
             Clause& c = **i++;
 
+			Lit false_lit = ~p;
+
+			if(c.mark() == SINGLESET){
+				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
+				// std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
+				int last = c.size()-1;
+				for(int k=0; k<c.size(); ++k){
+					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
+					if(c[k] == false_lit){
+						std::cout<<"Found false_lit in pos "<<k<< " &c="<<&c<<std::endl;
+						assert (k != last);
+						c[k] = c[0];
+						c[0] = false_lit;
+					}
+					if (value(c[k]) == l_False && c[k] != false_lit){
+						//I know p is false; that's why I am here. 
+						//If a c[k] different from p also became false, then we have violated the constraint.
+						//
+						{
+						Lit tt = c[k];
+						c[k] = c[1];
+						c[1] = tt;	
+						}
+
+						if(c[0] != false_lit){
+							for(int tt = k+1; tt < c.size(); ++tt){
+								if(c[tt] == false_lit){
+									c[tt] = c[0];
+									c[0] = false_lit;
+									break;
+								}
+							}
+						}
+						std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
+						qhead = trail.size();		
+						Fake* f = new (&c[0]) Fake();
+						Clause* nc = Clause_new(*(f), true);
+						// std::cout<<"     clause ["<<var(c[0])<<", "<<var(c[1])<<"]"<<std::endl;
+						*j++ = nc;
+						learnts.push(nc);
+						//Important invariant: This singleset clause is in the watches of all its literals except for the last one.
+						watches[toInt(~c[1])].push(nc);	
+						{
+							Lit tt = c[last];
+							c[last] = c[0];
+							c[0] = tt;	
+						}
+						if(k!=last){
+							//In this case, last is the unwatched literal, so we move it to pos 0,
+							// and the old c[0] (now c[last]) is now the unwatched literal.
+							
+							//Instead of adding the clause to the current watch list, we swap the current with last and add it to the watch list of what used to be last.
+							watches[toInt(~c[0])].push(&c);
+						}else{
+							//In this case, the old last got swapped with c[1] earlier, so c[1] is the unwatched literal.
+							//so we need to swap c[0] with last, and watch c[1].
+							
+							watches[toInt(~c[1])].push(&c);
+						}
+						
+						// Copy the remaining watches:
+						while (i < end)
+	                        *j++ = *i++;
+
+						confl = nc;
+
+						goto FoundWatch;
+					}
+				}
+				std::cout<<"Wasted effort "<<&c<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<" false_lit = "<<(sign(false_lit)?"-":" ")<<var(false_lit)<<"  ";
+				for(int vv=0; vv <= last; ++vv){
+					std::cout<<", "<<(sign(c[vv])?"-":" ")<<var(c[vv]);
+				}				
+				{
+					Lit tt = c[last];
+					c[last] = c[0];
+					c[0] = tt;	
+				}
+				std::cout<<" AND AFTER ";
+				for(int vv=0; vv <= last; ++vv){
+					std::cout<<", "<<(sign(c[vv])?"-":" ")<<var(c[vv]);
+				}
+				std::cout<<std::endl;
+				//Instead of adding the clause to the current watch list, we swap the current with last and add it to the watch list of what used to be last.
+				watches[toInt(~c[0])].push(&c);
+				
+				goto FoundWatch;
+			}
+			
+
             // Make sure the false literal is data[1]:
-            Lit false_lit = ~p;
+            
             if (c[0] == false_lit) {
                 c[0] = c[1];
                 c[1] = false_lit;
-                avoidGccWeirdness++;
+                avoidGccWeirdness++; // Without this, a bug in some versions of gcc caused the code to break.
             }
 
             assert(c[1] == false_lit);
@@ -466,7 +567,7 @@ Clause* Solver::propagate()
             }
         FoundWatch:;
         }
-        ws.shrink(i - j);
+        ws.shrink(i - j);		
     }
     propagations += num_props;
     simpDB_props -= num_props;
@@ -587,7 +688,11 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             first = false;
 
             learnt_clause.clear();
-            analyze(confl, learnt_clause, backtrack_level);
+			
+			
+			
+			analyze(confl, learnt_clause, backtrack_level);
+			          
             cancelUntil(backtrack_level);
             assert(value(learnt_clause[0]) == l_Undef);
 
@@ -733,16 +838,30 @@ void Solver::verifyModel()
 {
     bool failed = false;
     for (int i = 0; i < clauses.size(); i++){
-        assert(clauses[i]->mark() == 0);
-        Clause& c = *clauses[i];
-        for (int j = 0; j < c.size(); j++)
-            if (modelValue(c[j]) == l_True)
-                goto next;
+		if(clauses[i]->mark()==0){
+			Clause& c = *clauses[i];
+			for (int j = 0; j < c.size(); j++)
+				if (modelValue(c[j]) == l_True)
+					goto next;
 
-        printf("unsatisfied clause: ");
-        printClause(*clauses[i]);
-        printf("\n");
-        failed = true;
+			printf("unsatisfied clause: ");
+			printClause(*clauses[i]);
+			printf("\n");
+			failed = true;
+		}
+		if(clauses[i]->mark()==SINGLESET){
+			Clause& c = *clauses[i];
+			int cnt = 0;
+			for (int j = 0; j < c.size(); j++)
+				if (modelValue(c[j]) == l_False)
+					++cnt;
+			if(cnt > 2){
+				printf("unsatisfied clause: ");
+				printClause(*clauses[i]);
+				printf("\n");
+				failed = true;
+			}
+		}
     next:;
     }
 

@@ -37,6 +37,21 @@ void MiniSATSolver::annotate(const string& msg){
 	FileOutput(output<<endl);
 }
 
+
+ void MiniSATSolver::addCountingHelperClause(int c[], int sz){
+	vec<Lit> lits;
+	Dout(cout<<"@ C-helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
+	lits.clear();
+	for(int i=0; i<sz; ++i){	
+		int var = abs(c[i]);		
+		lits.push( (c[i] > 0) ? Lit(var) : ~Lit(var) );		
+	}
+	s->addClause(lits, SINGLESET);
+	++clauseCount;
+ }
+
+
+
 void MiniSATSolver::addHelperClause(int c[], int sz){
 	vec<Lit> lits;
 	Dout(cout<<"@ helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)

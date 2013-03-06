@@ -7,6 +7,11 @@
 void SATSolver::lightSolve(){
 }
 
+
+void SATSolver::addCountingHelperClause(int c[], int sz){
+
+}
+
 SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
 		SATSolver* solver = NULL;
 //		if( t ==  ABC ){

@@ -65,7 +65,7 @@ public:
 	virtual void addHelperClause(int c[], int size);
     virtual int getVarVal(int id);
     virtual int newVar();
-
+	virtual void addCountingHelperClause(int c[], int sz);
     virtual int newInVar();
     virtual void disableVarBranch(int i);
 
