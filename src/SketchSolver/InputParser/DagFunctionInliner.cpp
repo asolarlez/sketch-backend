@@ -2,7 +2,7 @@
 #include "DagFunctionToAssertion.h"
 #include "timerclass.h"
 #include "CommandLineArgs.h"
-
+#include <sstream>
 
 
 //extern CommandLineArgs* PARAMS;
@@ -57,10 +57,67 @@ int sizeForNode(bool_node* bn){
 	return sizeof(AND_node);
 }
 
+bool_node* DagFunctionInliner::optAndAddNoMap(bool_node* nnode){ //assumes node is unnattached
+	bool_node* nnodep = this->computeOptim(nnode);						
+	if(nnodep == nnode){
+		nnode->addToParents();
+		this->addNode(nnode);								
+	}else{
+		delete nnode;
+	}
+	return nnodep;
+}
+
+
+void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap){//Assumes node has already been attached
+	int nodeId = n->id;
+	bool_node* nnode = this->computeOptim(n);						
+	if(nnode == n){
+		this->addNode( n );							
+		nmap[nodeId] = n;	
+	}else{
+		n->dislodge();
+		delete n;
+		nmap[nodeId] = nnode;
+	}
+}
 
 
 
-
+bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap, vector<const bool_node*>& nmap){
+	bool chk = false;
+	bool_node* tt = node->mother;
+	chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
+	tt = node->father;
+	chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
+	arith_node* an = NULL;
+	if(node->isArith()){
+		an = dynamic_cast<arith_node*>(node);
+		for(int i=0; i<an->multi_mother.size(); ++i){
+			tt = an->multi_mother[i];
+			chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);			
+		}
+	}
+	if(chk){
+		tt = node->mother;
+		if(tt!= NULL && secondarynmap[tt->id] == NULL){
+			secondarynmap[tt->id] = nmap[tt->id];
+		}
+		tt = node->father;
+		if(tt!= NULL && secondarynmap[tt->id] == NULL){
+			secondarynmap[tt->id] = nmap[tt->id];
+		}
+		if(an != NULL){
+			for(int i=0; i<an->multi_mother.size(); ++i){
+				tt = an->multi_mother[i];
+				if(tt!= NULL && secondarynmap[tt->id] == NULL){
+					secondarynmap[tt->id] = nmap[tt->id];
+				}
+			}
+		}
+	}
+	return chk;
+}
 
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
@@ -101,11 +158,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			return;
 		}
 
+				
+		BooleanDAG& oldFun = *functionMap[name];
+
+		if(oldFun.isModel && node.children.size() == 0){
+			rvalue = getCnode(false);
+			return;
+		}
 
 		funsInlined.insert(name);
 		if(ictrl != NULL){ ictrl->registerInline(node); }
-		//cout<<" inlining "<<name<<endl;
-		BooleanDAG& oldFun = *functionMap[name];
+
 		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
 		nmap.resize( oldFun.size() );		
@@ -146,6 +209,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}
 		}
 		
+		lnfuns++;
+		
+
 
 		/*
 			The idea is that we have a wavefront moving through the graph as we add more nodes.
@@ -154,12 +220,15 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		*/
 
+		vector<const bool_node*> secondarynmap;
+		secondarynmap.resize( oldFun.size(), NULL );
+		map<const UFUN_node*, SRC_node*> ufToSrc;
 		
-		lnfuns++;
-		
+		bool doubleCopies = false;
 
 		
 		bool_node* output = NULL;
+		bool_node* assertCond = NULL;
 
 		for(int i=0; i<oldFun.size(); ++i){
 			
@@ -173,30 +242,28 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			bool_node* n =  oldFun[i]->clone(false);
 			//bool_node* of = oldFun[i];
 			n->redirectParentPointers(oldFun, nmap, true, oldFun[i]);			
+
+			bool_node* nprime = NULL;
+
+			if(doubleCopies){				
+				if(checkParentsInMap(oldFun[i], secondarynmap, nmap)){
+					nprime = oldFun[i]->clone(false);					
+					nprime->redirectParentPointers(oldFun, secondarynmap, true, oldFun[i]);
+				}
+			}
+
 			int nodeId = n->id;
 			if( n != NULL &&  n->type != bool_node::DST ){			
 				if(n->type != bool_node::ASSERT){
 					if(typeid(*n) != typeid(UFUN_node)){
-
 						
-						bool_node* nnode = this->computeOptim(n);
-						
+						optAndAdd(n, nmap);
+						if(nprime != NULL){
+							optAndAdd(nprime, secondarynmap);
+						}						
 
-						if(nnode == n){
-							//bool_node* tmp = n->clone();											
-							this->addNode( n );
-							
-							nmap[nodeId] = n;
-							//tmp->replace_child_inParents(of, n); // maybe redundant.
-							// parentReplace(oldFun[i], tmp);
-						}else{
-							n->dislodge();
-							//n->removeFromParents(of);
-							delete n;
-							nmap[nodeId] = nnode;
-						}
 					}else{			
-						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
+						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);						
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
 
 						if(!ufun->ignoreAsserts){													
@@ -258,82 +325,153 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							
 							this->addNode( n );
 							nmap[nodeId] = n;							
+							nnode = n;
 						}else{
 							n->dislodge();
 							delete n;
 							//n->removeFromParents(of);
 							nmap[nodeId] = nnode;
 						}
+						if(nprime != NULL){
+							nprime->dislodge();
+							delete nprime;
+						}
+						if(oldFun.isModel && nnode->type == bool_node::UFUN ){
+							const UFUN_node* ufn = dynamic_cast<const UFUN_node*>(nnode);
+							//Add an SRC node to stand in place of this ufun.
+							string nm = ufn->get_ufname();
+							nm += "_";
+							nm += ufn->outname;
+							SRC_node* sn = new SRC_node(nm);							
+							sn->set_nbits( ufn->get_nbits() );
+							doubleCopies = true;
+							secondarynmap[nodeId] = sn;
+							ufToSrc[ufn] = sn;
+						}
+
 					}
 				}else{
-					n->mother->remove_child( n );
-					if((isConst(n->mother) && getIval(n->mother) == 1)|| node.ignoreAsserts ){ continue; }
-					bool_node* nnode = new NOT_node();
-					nnode->mother = condition;					
-					{
-						
-						bool_node* nnodep = this->computeOptim(nnode);
-						
-						if(nnodep == nnode){
-							nnode->addToParents();
-							this->addNode(nnode);	
-							
-						}else{
-							delete nnode;
-						}
-						nnode = nnodep;
+					n->mother->remove_child( n );		
+					if(nprime != NULL){
+						nprime->mother->remove_child( nprime );
 					}
+					//Assertion.					
 
+
+					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){ 					
+						delete n;
+						if(nprime != NULL){							
+							delete nprime;
+						}
+						continue;
+					}					
+
+					if(!oldFun.isModel || nprime == NULL){												
+						bool_node* nnode = new NOT_node();
+						nnode->mother = condition;
+						nnode = optAndAddNoMap(nnode);
 					
-					bool_node* cur = n->mother;
-					bool_node* ornode = new OR_node();
-					ornode->mother = cur;
-					ornode->father = nnode;
-					{
-						
-						bool_node* ornodep = this->computeOptim(ornode);
-						
-						if(ornodep == ornode){
-							this->addNode(ornode);
-							
-							ornode->addToParents();
-
-						}else{
-							delete ornode;
+					
+						bool_node* cur = n->mother;
+						bool_node* ornode = new OR_node();
+						ornode->mother = cur;
+						ornode->father = nnode;
+						ornode = optAndAddNoMap(ornode);
+						n->mother = ornode;
+					}else{
+						bool_node* cur = n->mother;
+						n->mother = nprime->mother;
+						delete nprime;
+						dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
+						if(assertCond == NULL){
+							assertCond = cur;							
+						}else{			
+							bool_node* tt = new AND_node();
+							tt->mother = assertCond;
+							tt->father = cur;
+							tt->addToParents();
+							addNode(tt);							
+							assertCond = tt;
 						}
-						ornode = ornodep;
 					}
-					cur = ornode;	
-					n->mother = cur;		
+					
+
 					{							
 						DllistNode* tt = getDllnode(n);
 						tmpList.append(tt);
 					}
-					if(isConst(cur) && getIval(cur) == 1){
-						delete n;
-						//In this case, the assertion is just ignored.
-						// n->dislodge(); Not needed, since we removed from the mother already.
-					}else{
-						n->mother->children.insert(n);						
-						// tmp->replace_child_inParents(of, tmp);
-
-						this->addNode(n);
-						
-					}
+					n->mother->children.insert(n);											
+					this->addNode(n);
+					
 				}
 			}else{
 				if( n!= NULL){
 					DST_node* dn = dynamic_cast<DST_node*>(n);
 					bool_node* ttv = n->mother;
+					if(oldFun.isModel){
+						if(assertCond == NULL){
+							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);												
+							Assert(un != NULL, "Only ufun node can be the output of a model");
+							SRC_node* sc = ufToSrc[un];
+							sc->neighbor_replace(ttv);
+							sc->children.clear();
+						}else{
+							CTRL_node* qn = new CTRL_node();
+							stringstream st;
+							st<<dn->name;
+							st<<lnfuns;
+						
+							qn->name = st.str();
+							qn->set_Angelic();
+						
+							ARRACC_node* mx = new ARRACC_node();
+							if(!PARAMS->angelic_model)
+								mx->mother = assertCond;
+							else{
+								//create new src node which should be valued to false in Synth phase
+								SRC_node *st = new SRC_node("__rs_node");
+								st->set_nbits(1);//just one bit input
+								mx->mother = st;
+								addNode(st);
+								
+							}
+							//if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
+							mx->multi_mother.push_back(qn);
+							mx->multi_mother.push_back(ttv);
+							mx->addToParents();
+							addNode(qn);
+							addNode(mx);
+							qn->set_nbits( PARAMS->NINPUTS );
+							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+												
+							Assert(un != NULL, "Only ufun node can be the output of a model");
+							SRC_node* sc = ufToSrc[un];
+							sc->neighbor_replace(mx);
+							sc->children.clear();
+							ttv = mx;
+						}
+																		
+						nprime->dislodge();
+						delete nprime;
+					}
 					mpcontroller[node.fgid][dn->name] = ttv;
 					if(dn->name == node.outname){
 						output = ttv;
-					}
+					}										
 					n->dislodge();
 					delete n;
 				}
 			}
 		}
+
+		for(map<const UFUN_node*, SRC_node*>::iterator it = ufToSrc.begin(); it != ufToSrc.end(); ++it){
+			if(it->second->children.size() == 0){
+				delete it->second;
+			}else{
+				Assert(false, "NYI: All the outputs of a function in a model should be outputed by the model.");
+			}
+		}
+
 		node.add(&tmpList);
 		node.remove();
 		rvalue = output;
@@ -362,7 +500,13 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	lnfuns = 0;
 	uidcount = 0;
 	if(ictrl != NULL){
+		DllistNode* lastDln = NULL;
 		for(int i=0; i<dag.size() ; ++i ){
+
+			if(isDllnode(dag[i])){
+				lastDln = getDllnode(dag[i]);
+			}
+
 			// Get the code for this node.				
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
@@ -374,6 +518,16 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
 				ictrl->checkInline(uf);
+				map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
+				if(it != functionMap.end()){
+					if(it->second->isModel && uf.ignoreAsserts){
+						if(lastDln != NULL){
+							lastDln->add(&uf);
+						}else{
+							dag.assertions.append(&uf);
+						}
+					}
+				}
 			}
 		}
 	}

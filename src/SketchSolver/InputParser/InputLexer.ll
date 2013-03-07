@@ -180,6 +180,10 @@ Comment      ("//"[^\n]*)
 				return T_def;
 			}
 
+"mdl_def"	{
+				return T_mdldef;
+			}
+
 "MINVAR"	{
 				return T_Min;
 			}
@@ -198,6 +202,6 @@ Comment      ("//"[^\n]*)
 %%
 
 void Inityylex(void){
-	printf("Initializing scanner\n");
+	//printf("Initializing scanner\n");
 }
 

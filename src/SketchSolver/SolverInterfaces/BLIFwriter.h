@@ -61,7 +61,7 @@ public:
     virtual void addEquateClause(int x, int a);
     virtual void setVarClause(int x);
     virtual void assertVarClause(int x);
-    virtual void hardAssertVarClause(int x);
+	virtual void hardAssertVarClause(int x);
 	virtual void addHelperClause(int c[], int size);
     virtual int getVarVal(int id);
     virtual int newVar();

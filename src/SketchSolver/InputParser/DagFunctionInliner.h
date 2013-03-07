@@ -256,7 +256,9 @@ class DagFunctionInliner : public DagOptim
 	map<string, bool_node*> seenControls;
 	map<int, map<string, bool_node*> > mpcontroller;
 	int uidcount;
-		
+			
+	void optAndAdd(bool_node* n, vector<const bool_node*>& nmap);
+	bool_node* optAndAddNoMap(bool_node* nnode);
 
 	set<string> funsInlined;
 

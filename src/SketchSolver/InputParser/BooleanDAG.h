@@ -62,6 +62,7 @@ private:
   int offset;
   int intSize;
   bool ownsNodes;
+  
 
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
@@ -73,14 +74,14 @@ private:
   const string name;
   bool is_sorted; //The sorted property implies that everyone comes after their parents
   bool is_layered;  //The layered property implies that nodes are sorted by layer. is_layered implies is_sorted.
-  bool has_passthrough; //This property implies that NOT nodes have been added.
-
+  
   void compute_layer_sizes();
 
   void shareparent_remove(int i);
   INTER_node* create_inter(int n, const string& gen_name, int& counter,  bool_node::Type type);
 
 public:
+	bool isModel;
 Dllist assertions;
 	typedef vector<bool_node*>::iterator iterator;
 	typedef vector<bool_node*>::reverse_iterator reverse_iterator;
@@ -191,7 +192,7 @@ Dllist assertions;
   void print_wrapper(const char* fileName)const;
   void lprint_wrapper(const char* fileName);
   
-   BooleanDAG(const string& name_="anon");
+   BooleanDAG(const string& name_="anon", bool isModel_=false);
 
 	virtual ~BooleanDAG();
 };

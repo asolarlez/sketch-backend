@@ -1115,17 +1115,24 @@ NodesToSolver::visit (CTRL_node &node)
 		    node_ids[node.id] = node_values[(&node)]*YES;
 		}		
 		return;
-    }else{
-		Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
-		node_ids[node.id] = dir.getArr(node.get_name(), 0);
-		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
-		    node_ids[node.id].setSize( node.get_nbits() );
-		    Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
-#ifndef HAVE_BVECTARITH
-		    // In the future, I may want to make some of these holes not-sparse.
-		    node_ids[node.id].makeSparse(dir);
-#endif /* HAVE_BVECTARITH */
+    }else{		
+
+		if(node.get_Angelic()){
+			node_ids[node.id] = dir.newAnonymousVar(node.get_nbits());
+
+		}else{
+			Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
+			node_ids[node.id] = dir.getArr(node.get_name(), 0);
 		}
+
+		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
+			node_ids[node.id].setSize( node.get_nbits() );
+			Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
+#ifndef HAVE_BVECTARITH
+			// In the future, I may want to make some of these holes not-sparse.
+			node_ids[node.id].makeSparse(dir);
+#endif /* HAVE_BVECTARITH */
+		}				
 		node_ids[node.id].markInput(dir);
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
@@ -1921,38 +1928,34 @@ NodesToSolver::visit (ASSERT_node &node)
 		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
 		return;
 	}
-	if (node.isHard()) {
-		if(fval.getId() != YES ) {
-			// no need to assert YES
-			dir.addHardAssert(fval.getId());
-		}
-		return;
-	}
 
-/*	if(node.id == 125){
-		set<const bool_node*> s;
-			cout<<"digraph G{"<<endl;
-			node.printSubDAG(cout, s);
-			cout<<"}"<<endl;
-			cout<<" slice size = "<<s.size()<<endl;
-	}
-	*/
 
-	//Assert(!node.isHard(), "This functionality is depracted");
 	{
-		if(fval.getId() == -YES ) {  
-			cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
-			stringstream cstr;
-			set<const bool_node*> s;
-			cstr<<"digraph G{"<<endl;
-			node.printSubDAG(cstr, s);
-			cstr<<"}"<<endl;
-			cstr<<" slice size = "<<s.size()<<endl;
-			if(s.size() < 10){
-				cout<<cstr.str()<<endl;
-			}			
+		if(fval.getId() == -YES ) {
+			// We can stop adding clauses after this point.
+			//If we are in synthesis, this is the end, but if we are in 
+			//verification, this may or may not mean something depending on 
+			//whether there are assumptions before this point, or if this
+			//assertion itself is an assumption.
+			if(!dir.getMng().isNegated()){				
+				cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
+				stringstream cstr;
+				set<const bool_node*> s;
+				cstr<<"digraph G{"<<endl;
+				node.printSubDAG(cstr, s);
+				cstr<<"}"<<endl;
+				cstr<<" slice size = "<<s.size()<<endl;
+				if(s.size() < 10){
+					cout<<cstr.str()<<endl;
+				}
+			}
+			stopAddingClauses = true;
 		}
-		dir.addAssertClause (fval.getId ());
+		if(node.isHard()){
+			dir.addHardAssertClause (fval.getId ());
+		}else{
+			dir.addAssertClause (fval.getId ());
+		}		
 	}
 	//cout<<"|"<<node.getMsg()<<"|"<<endl;
 	
@@ -2160,10 +2163,11 @@ bool NodesToSolver::checkParentsChanged(bool_node& node, bool more){
 	}
 }
 
-/*
+
 void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
 	tmpdag = &bdag;
+	stopAddingClauses = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
@@ -2173,6 +2177,9 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     	}
+		if(stopAddingClauses){
+			break;
+		}
 	}
 }
-*/
+

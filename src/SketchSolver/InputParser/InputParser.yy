@@ -6,7 +6,7 @@ BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
 
-
+bool isModel;
 
 
 
@@ -69,6 +69,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 
 %token T_def
+%token T_mdldef
 %token T_Min
 %token T_assert
 %token T_assume
@@ -191,13 +192,14 @@ ParamList: /*empty*/
 | ParamDecl
 | ParamDecl ',' ParamList 
 
+Mhelp: T_mdldef {isModel=true; } | T_def {isModel=false; }
 
-Method: T_def T_ident
+Method: Mhelp T_ident
 {		modelBuilding.restart ();
 		if(currentBD!= NULL){
 			delete currentBD;
 		}
-		currentBD = envt->newFunction(*$2);
+		currentBD = envt->newFunction(*$2, isModel);
 		delete $2;
 }
 '(' ParamList ')' '{' WorkBody '}' { 

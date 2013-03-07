@@ -165,9 +165,15 @@ public:
 	    if( arrsize.find( (it)->first ) !=  arrsize.end() ) {
 		int start = (it)->second;
 		int size = arrsize[(it)->first];
-		for(int i=0; i<size; ++i) {
-		    cout<<start+i<<"\t"<<(it)->first<<"["<<i<<"]=   "<<mng.getVarVal(start+i)<<endl;
+		int vv = 0;
+		int cc = 1;
+		for(int i=0; i<size; ++i) {			
+			if(mng.getVarVal(start+i) == 1){
+				vv = vv + cc;
+			}
+			cc = cc*2;
 		}
+		cout<<(it)->first<<"["<<start<<", "<<(start+size-1)<<"]=   "<<vv<<endl;
 	    } else {
 		cout<<(it)->second<<"\t"<<(it)->first<<"=   "<<mng.getVarVal((it)->second)<<endl;
 	    }
@@ -276,7 +282,7 @@ public:
     int addAndClause (int a, int b, int x = 0);	
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
-    void addHardAssert (int a);
+	void addHardAssertClause (int a);
 	void addRetractableAssertClause (int a);
 	bool ignoreOld(){
 		return mng.ignoreOld();
@@ -561,11 +567,7 @@ SolverHelper::addAssertClause (int a)
      /* Vacuously true. */ 
     if (a == YES)
         return; 
-
-    /* Vacuously false. */ 
-    if (a == -YES) {
-    	Assert(false, "Assertion cannot be valid, aborting solver");
-    }
+    
 
     dout ("asserting " << a);
 
@@ -574,7 +576,7 @@ SolverHelper::addAssertClause (int a)
 }
 
 inline void
-SolverHelper::addHardAssert (int a)
+SolverHelper::addHardAssertClause (int a)
 {
     Assert (a != 0, "input id cannot be zero");
 
@@ -582,17 +584,11 @@ SolverHelper::addHardAssert (int a)
     if (a == YES)
         return; 
 
-    /* Vacuously false. */ 
-    if (a == -YES) {
-	    // TODO xzl: do optimization here
-    }
-
-    dout ("hard asserting " << a);
+    dout ("asserting " << a);
 
     /* Otherwise, assertion clause necessary. */
-    mng.hardAssertVarClause (a);
+	mng.hardAssertVarClause(a);
 }
-
 
 inline void
 SolverHelper::addRetractableAssertClause (int a)

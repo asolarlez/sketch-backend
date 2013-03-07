@@ -129,6 +129,14 @@ void BLIFwriter::annotateInput(const string& name, int i, int sz){
 	 }
 }
 
+void BLIFwriter::hardAssertVarClause(int x){
+	if(!off){
+		string t = outvar();
+		output<<".names "<<nm(x)<<" "<<t<<endl;
+		output<<sgn(x)<<" 1"<<endl;		
+	}
+}
+
 
  void BLIFwriter::assertVarClause(int x){
  	if( !solveNegation  ){
