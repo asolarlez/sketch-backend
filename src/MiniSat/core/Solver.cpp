@@ -535,28 +535,30 @@ Clause* Solver::propagate()
             assert(c[1] == false_lit);
 
             // If 0th watch is true, then clause is already satisfied.
+			{
             Lit first = c[0];
-            if (value(first) == l_True){
-                *j++ = &c;
-            } else {
-                // Look for new watch:
-                for (int k = 2; k < c.size(); k++)
-                    if (value(c[k]) != l_False){
-                        c[1] = c[k]; c[k] = false_lit;
-                        watches[toInt(~c[1])].push(&c);
-                        goto FoundWatch; }
+				if (value(first) == l_True){
+					*j++ = &c;
+				} else {
+					// Look for new watch:
+					for (int k = 2; k < c.size(); k++)
+						if (value(c[k]) != l_False){
+							c[1] = c[k]; c[k] = false_lit;
+							watches[toInt(~c[1])].push(&c);
+							goto FoundWatch; }
 
-                // Did not find watch -- clause is unit under assignment:
-                *j++ = &c;
-                if (value(first) == l_False){
-                    confl = &c;
-                    qhead = trail.size();
-                    // Copy the remaining watches:
-                    while (i < end)
-                        *j++ = *i++;
-                }else
-                    uncheckedEnqueue(first, &c);
-            }
+					// Did not find watch -- clause is unit under assignment:
+					*j++ = &c;
+					if (value(first) == l_False){
+						confl = &c;
+						qhead = trail.size();
+						// Copy the remaining watches:
+						while (i < end)
+							*j++ = *i++;
+					}else
+						uncheckedEnqueue(first, &c);
+				}
+			}
         FoundWatch:;
         }
         ws.shrink(i - j);		
