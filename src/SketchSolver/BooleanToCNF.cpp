@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <Sort.h>
 using namespace std;
 
 #include "BooleanToCNF.h"
@@ -36,15 +37,21 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 void SolverHelper::addHelperC(Tvalue& tv){
 	if(tv.isSparse() ){
 		vector<guardedVal>& gv = tv.num_ranges;
-		if(gv.size() == 1){ return; }
-		if(gv.size() == 2){
+		int size = gv.size();
+		if(size == 1){ return; }
+		if(size == 2){
 			addHelperC(-gv[0].guard, -gv[1].guard);
 		}
-		int* x = new int[gv.size()];
-		for(int i=0; i<gv.size(); ++i){
+		int* x = new int[size];
+		for(int i=0; i<size; ++i){
 			x[i] = -gv[i].guard;
+		}		
+		MSsolverNS::sort(x, size);
+		int l = this->setStrBO(x, size, ':', 0);		
+		int rv;
+		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){				
+			mng.addCountingHelperClause(x, gv.size());
 		}
-		mng.addCountingHelperClause(x, gv.size());
 		delete x;
 
 		/*

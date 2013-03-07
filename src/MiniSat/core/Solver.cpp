@@ -438,7 +438,7 @@ Clause* Solver::propagate()
         vec<Clause*>&  ws  = watches[toInt(p)];
         Clause         **i, **j, **end;
         num_props++;
-		std::cout<<"FLIT = "<<(sign(p)?" ":"-")<<var(p)<<std::endl;
+		
         for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
             Clause& c = **i++;
 
@@ -450,8 +450,7 @@ Clause* Solver::propagate()
 				int last = c.size()-1;
 				for(int k=0; k<c.size(); ++k){
 					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
-					if(c[k] == false_lit){
-						std::cout<<"Found false_lit in pos "<<k<< " &c="<<&c<<std::endl;
+					if(c[k] == false_lit){						
 						assert (k != last);
 						c[k] = c[0];
 						c[0] = false_lit;
@@ -475,7 +474,7 @@ Clause* Solver::propagate()
 								}
 							}
 						}
-						std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
+						// std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
 						qhead = trail.size();		
 						Fake* f = new (&c[0]) Fake();
 						Clause* nc = Clause_new(*(f), true);
@@ -511,20 +510,13 @@ Clause* Solver::propagate()
 						goto FoundWatch;
 					}
 				}
-				std::cout<<"Wasted effort "<<&c<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<" false_lit = "<<(sign(false_lit)?"-":" ")<<var(false_lit)<<"  ";
-				for(int vv=0; vv <= last; ++vv){
-					std::cout<<", "<<(sign(c[vv])?"-":" ")<<var(c[vv]);
-				}				
+				
 				{
 					Lit tt = c[last];
 					c[last] = c[0];
 					c[0] = tt;	
 				}
-				std::cout<<" AND AFTER ";
-				for(int vv=0; vv <= last; ++vv){
-					std::cout<<", "<<(sign(c[vv])?"-":" ")<<var(c[vv]);
-				}
-				std::cout<<std::endl;
+				
 				//Instead of adding the clause to the current watch list, we swap the current with last and add it to the watch list of what used to be last.
 				watches[toInt(~c[0])].push(&c);
 				

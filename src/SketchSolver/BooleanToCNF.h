@@ -57,15 +57,15 @@ class SolverHelper {
 		return p;
 	}
 
-	int setStrBO(int* a, int last){
+	int setStrBO(int* a, int last, char separator = '|', int ofst = 1){
 		int p = 0;
 		if(last*10 > tmpbuf.size()){ tmpbuf.resize(last * 11); }
 		char* tch = &tmpbuf[0];
-		for(int ol = 1; ol <= last; ++ol){
-			int tt = a[ol];
+		for(int ol = 0; ol < last; ++ol){
+			int tt = a[ol+ofst];
 			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
 			writeInt(tch, tt, p);
-			tch[p] = '|'; p++;
+			tch[p] = separator; p++;
 		}
 		tch[p-1] = 0;
 		return p-1;
