@@ -166,14 +166,29 @@ bool CEGISSolver::solveCore(){
 		if(doMore) hasInputChanged = true;
 		else hasInputChanged = false;
 
+		// Minimization loop-- found a solution, but can i find a better solution?
+		if(PARAMS->minvarHole && !hasInputChanged){
+			// store the current solution
+			storePreviousSolution(inputStore, ctrlStore);
+			// optimization: only add inputs if the verification fails
+			if(minimizeHoleValue(mhnames, mhsizes))
+				doMore=true;
+			else{
+				doMore = false;
+				inputStore = prevInputStore;
+				ctrlStore = prevCtrlStore;
+			}
+		}
+
 		// Synthesizer
 		if (doMore) {// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
-			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
-                        std::vector<int, std::allocator<int> > instore_serialized =
-                            inputStore.serialize();
-			cpt.checkpoint('f', instore_serialized);
-			if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
+			if (hasInputChanged) {
+				if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
+				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
+			       	cpt.checkpoint('f', instore_serialized);
+			       	if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
+			}
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart(); 		
 			try{
@@ -198,20 +213,6 @@ bool CEGISSolver::solveCore(){
 				ftimer.print();	ctimer.print();
 				fail = true;
 				break;
-			}
-		}
-
-		// Minimization loop-- found a solution, but can i find a better solution?
-		if(PARAMS->minvarHole && !hasInputChanged){
-			// store the current solution
-			storePreviousSolution(inputStore, ctrlStore);
-			// optimization: only add inputs if the verification fails
-			if(minimizeHoleValue(mhnames, mhsizes))
-				doMore=true;
-			else{
-				doMore = false;
-				inputStore = prevInputStore;
-				ctrlStore = prevCtrlStore;
 			}
 		}
 	}
