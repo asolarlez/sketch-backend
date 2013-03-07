@@ -1921,6 +1921,13 @@ NodesToSolver::visit (ASSERT_node &node)
 		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
 		return;
 	}
+	if (node.isHard()) {
+		if(fval.getId() != YES ) {
+			// no need to assert YES
+			dir.addHardAssert(fval.getId());
+		}
+		return;
+	}
 
 /*	if(node.id == 125){
 		set<const bool_node*> s;
@@ -1931,7 +1938,7 @@ NodesToSolver::visit (ASSERT_node &node)
 	}
 	*/
 
-	Assert(!node.isHard(), "This functionality is depracted");
+	//Assert(!node.isHard(), "This functionality is depracted");
 	{
 		if(fval.getId() == -YES ) {  
 			cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 

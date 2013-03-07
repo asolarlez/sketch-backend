@@ -71,12 +71,14 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_def
 %token T_Min
 %token T_assert
+%token T_assume
 
 %token T_eof
 
 %type<intConst> Program
 %type<strConst> Ident
 %type<intConst> WorkStatement
+%type<strConst> OptionalMsg
 %type<bnode> Expression
 %type<bnode> Term
 %type<intConst> NegConstant
@@ -303,7 +305,25 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     delete $4;
   }
 } 
+| T_assume Expression OptionalMsg ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
+		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
+		bn->makeHardAssert();
+		if ($3) {
+			bn->setMsg(*$3);
+		}
+		currentBD->new_node ($2, NULL, bn);
+	}
+	if ($3) {
+		delete $3;
+	}
+  }
+}
 
+OptionalMsg: ':' T_string { $$ = $2; }
+	   | { $$ = 0; }
 
 Expression: Term { $$ = $1; }
 | Term '&' Term {

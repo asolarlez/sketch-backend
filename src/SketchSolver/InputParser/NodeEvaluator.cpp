@@ -2,7 +2,7 @@
 
 // Class for interpreter of BooleanDAG.
 NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
+functionMap(functionMap_p), trackChange(false), failedAssert(false), failedHardAssert(false), bdag(bdag_p)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
@@ -200,6 +200,7 @@ void NodeEvaluator::visit( ACTRL_node& node ){
 void NodeEvaluator::visit( ASSERT_node &node){
 	bool t = b(*node.mother);
 	failedAssert = failedAssert || !t;
+	failedHardAssert = failedHardAssert || (node.isHard() && !t);
 	setbn(node, t );
 }	
 
@@ -222,10 +223,11 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
+	failedHardAssert = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 	}
-	return failedAssert;
+	return !failedHardAssert && failedAssert;
 }
 
 void NodeEvaluator::display(ostream& out){

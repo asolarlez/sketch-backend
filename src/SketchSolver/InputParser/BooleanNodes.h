@@ -1042,7 +1042,11 @@ public:
 	}
 	  virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= ASSERT ";
+		str<<id<<"= ASSERT";
+		if (isHard()) {
+			str << "hard";
+		}
+		str << ' ';
 		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();
