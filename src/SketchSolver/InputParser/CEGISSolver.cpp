@@ -685,9 +685,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
-			if(hold == h){
-				Assert(false, "CEGISSolver::simulate: This should not happen");
-				cout<<"INFINITE LOOP!"<<endl;
+			//cout << "after scoreNodes h=" << h << " hold=" << hold << endl;
+			if(hold >= h){
+				//Assert(false, "CEGISSolver::simulate: This should not happen");
+				//cout<<"INFINITE LOOP!"<<endl;
 				break;
 			}
 			hold = h;
@@ -767,6 +768,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}		
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
+	//cout << "after simiters" << endl;
 	
 	{
 		BackwardsAnalysis ba;
