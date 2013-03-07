@@ -149,10 +149,6 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
  * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
  */
 BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch){
-//	cout << "The spec:" << endl;
-//	spec->lprint(cout);
-//	cout << "The sketch:" << endl;
-//	sketch->lprint(cout);
 	if(params.verbosity > 2){
 		
 		cout<<"* before  EVERYTHING: "<< spec->get_name() <<"::SPEC nodes = "<<spec->size()<<"\t "<< sketch->get_name() <<"::SKETCH nodes = "<<sketch->size()<<endl;

@@ -133,7 +133,6 @@ class NodeEvaluator :
 	vector<bool> changes;
 	VarStore* inputs;
 	bool failedAssert;
-	bool failedHardAssert;
 	bool trackChange;
 	int i(bool_node& bn){
 		return values[bn.id];

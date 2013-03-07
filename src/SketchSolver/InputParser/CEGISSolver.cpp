@@ -20,8 +20,6 @@ mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
 params(args)
 {
-//	cout << "miter:" << endl;
-//	miter->lprint(cout);
 	problemStack.push(miter);
 	BooleanDAG* problem = miter;
 	{
@@ -117,12 +115,16 @@ bool CEGISSolver::solve(){
 	}
 	
 	srand(params.randseed);
-	ctrlStore.makeRandom();
-//	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
-//        std::vector<int, std::allocator<int> > ctrlstore_serialized =
-//                    ctrlStore.serialize();
-//	cpt.checkpoint('c', ctrlstore_serialized);
-//	setNewControls(ctrlStore);	
+	inputStore.makeRandom();
+	for(int ns = 0; ns < (params.nseeds-1); ++ns){			
+		cout<<"!%";	inputStore.printBrief(cout); cout<<endl;
+                // NOTE - newer gcc (4.4) won't accept T --> T& if a variable isn't assigned
+                std::vector<int, std::allocator<int> > instore_serialized =
+                    inputStore.serialize();
+		cpt.checkpoint('f', instore_serialized);
+		addInputsToTestSet(inputStore);	
+		inputStore.makeRandom();		
+	}
 	
 	bool succeeded = solveCore();
 		
@@ -147,27 +149,8 @@ bool CEGISSolver::solveCore(){
 	}
 
 	while(doMore){
-		// Verifier
-		if(PARAMS->showControls){ print_control_map(cout); }
-		{ // Check
-			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
-                        std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
-			cpt.checkpoint('c', ctrlstore_serialized);
-			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
-			ctimer.restart(); 
-			doMore = check(ctrlStore, inputStore);
-		 	ctimer.stop();
-			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
-		}
-		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
-		++iterations;
-		if( params.iterlimit > 0 && iterations >= params.iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
-
-		if(doMore) hasInputChanged = true;
-		else hasInputChanged = false;
-
 		// Synthesizer
-		if (doMore) {// Find
+		{// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > instore_serialized =
@@ -183,26 +166,44 @@ bool CEGISSolver::solveCore(){
 			}
 			ftimer.stop();
 			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
+			if(!doMore){
+				if(PARAMS->minvarHole && prevSolutionFound){
+					cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
+					inputStore = prevInputStore;
+					ctrlStore = prevCtrlStore;
+					fail = false;
+					break;
+				}
+				else{
+					cout<<"******** FAILED ********"<<endl;	
+					ftimer.print();	ctimer.print();
+					fail = true;
+					break;
+				}
+			}
 		}
 
-		if(hasInputChanged && !doMore){
-			if(PARAMS->minvarHole && prevSolutionFound){
-				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
-				inputStore = prevInputStore;
-				ctrlStore = prevCtrlStore;
-				fail = false;
-				break;
-			}
-			else{
-				cout<<"******** FAILED ********"<<endl;	
-				ftimer.print();	ctimer.print();
-				fail = true;
-				break;
-			}
+		// Verifier
+		if(PARAMS->showControls){ print_control_map(cout); }
+		{ // Check
+			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
+                        std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
+			cpt.checkpoint('c', ctrlstore_serialized);
+			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
+			ctimer.restart(); 
+			doMore = check(ctrlStore, inputStore);
+			 ctimer.stop();
+			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
 		}
+		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
+		++iterations;
+		if( params.iterlimit > 0 && iterations >= params.iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
+
+		if(doMore) hasInputChanged = true;
+		else hasInputChanged = false;
 
 		// Minimization loop-- found a solution, but can i find a better solution?
-		if(PARAMS->minvarHole && !hasInputChanged){
+		if(PARAMS->minvarHole && !doMore){
 			// store the current solution
 			storePreviousSolution(inputStore, ctrlStore);
 			// optimization: only add inputs if the verification fails
@@ -864,21 +865,19 @@ public:
 	}
 };
 
-// check verifies that controls satisfies all asserts
-// and if there is a counter-example, it will be put to input
 bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	BooleanDAG* oriProblem = getProblem();
 	bool hardcode = PARAMS->olevel >= 6;
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params);
-//	cout<<"Before hard code"<<endl;
-//	getProblem()->lprint(std::cout);
+	//cout<<"Before hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
-//	cout<<"After hard code"<<endl;
-//	getProblem()->lprint(std::cout);
+	//cout<<"After hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	do{
 		switch(cc.actionDecide(problemLevel() - (hardcode? 1: 0),getProblem())){
 			case CheckControl::POP_LEVEL:{
