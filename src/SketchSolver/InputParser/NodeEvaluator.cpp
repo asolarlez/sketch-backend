@@ -2,7 +2,7 @@
 
 // Class for interpreter of BooleanDAG.
 NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
+functionMap(functionMap_p), trackChange(false), hasValidResult(false), failedAssert(false), bdag(bdag_p)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
@@ -227,10 +227,26 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
+	hasValidResult = false;
+	pendingChanges.clear();
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 	}
-	return failedAssert && !failedHAssert;
+	if (failedHAssert) {
+		return false;
+	}
+	if (hasValidResult) {
+		if (trackChange) {
+			for (vector<int>::const_iterator it = pendingChanges.begin(); it != pendingChanges.end(); ++it) {
+				changes[*it] = true;
+				//cout << "changing " << *it << " " << bdag[*it]->lprint() << endl;
+			}
+		}
+	} else {
+		hasValidResult = true;
+		validResult = values;
+	}
+	return failedAssert;
 }
 
 void NodeEvaluator::display(ostream& out){
@@ -247,6 +263,7 @@ int NodeEvaluator::scoreNodes(){
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin(); it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
+		cout << *it << " " << ni->lprint() << endl;
 		if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT){
 			++nconsts;
 			int count = 0;
