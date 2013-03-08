@@ -304,7 +304,7 @@ public:
 inline int
 SolverHelper::addEqualsClause (int a, int x)
 {
-    Assert (a != 0, "input id cannot be zero");
+    Assert (a != 0, "input id cannot be zero in addEqualsClause");
 
     /* No left-value, return right-value. */
     if (x == 0)
@@ -562,7 +562,7 @@ SolverHelper::addEquateClause (int a, int b)
 inline void
 SolverHelper::addAssertClause (int a)
 {
-    Assert (a != 0, "input id cannot be zero");
+    Assert (a != 0, "input id cannot be zero in addAssertClause");
 
      /* Vacuously true. */ 
     if (a == YES)
@@ -578,7 +578,7 @@ SolverHelper::addAssertClause (int a)
 inline void
 SolverHelper::addHardAssertClause (int a)
 {
-    Assert (a != 0, "input id cannot be zero");
+    Assert (a != 0, "input id cannot be zero in addHardAssertClause");
 
      /* Vacuously true. */ 
     if (a == YES)
@@ -593,7 +593,7 @@ SolverHelper::addHardAssertClause (int a)
 inline void
 SolverHelper::addRetractableAssertClause (int a)
 {
-    Assert (a != 0, "input id cannot be zero");
+    Assert (a != 0, "input id cannot be zero in addRetractableAssertClause");
 
      /* Vacuously true. */ 
     if (a == YES)

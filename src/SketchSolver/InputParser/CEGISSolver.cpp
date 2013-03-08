@@ -251,7 +251,7 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 }
 
 bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){
-	cout << "*********INSIDE minimizeHoleValue, current value of ";
+	cout << "*********INSIDE minimizeHoleValue, " << "mhsize=" << mhsizes.size() << " current value of ";
 	bool isSingleMinHole = (mhsizes.size()==1);
 	vector<int> bigor; bigor.push_back(0);
 	for(int i=0; i<mhsizes.size(); ++i){
@@ -259,7 +259,7 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 		int minVarNodeSize = mhsizes[i];
 		int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
 		int H__0_var_idx = dirFind.getVar(minVarNodeName);
-		cout <<minVarNodeName<<"=" << H__0_val << ", ";
+		cout <<minVarNodeName<<"=" << H__0_val << ", " << flush;
 		Tvalue tv = H__0_var_idx;
 		tv.setSize(minVarNodeSize);
 		tv.makeSparse(dirFind);
