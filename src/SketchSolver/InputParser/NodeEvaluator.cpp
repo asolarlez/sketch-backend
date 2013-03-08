@@ -227,7 +227,6 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	int i=0;
 	failedAssert = false;
 	failedHAssert = false;
-	hasValidResult = false;
 	pendingChanges.clear();
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
