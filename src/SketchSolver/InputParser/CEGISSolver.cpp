@@ -685,8 +685,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
-			//cout << "after scoreNodes h=" << h << " hold=" << hold << endl;
-			if(hold >= h){
+			if (h == -1){
+				break;
+			}
+			if(hold == h){
 				//Assert(false, "CEGISSolver::simulate: This should not happen");
 				//cout<<"INFINITE LOOP!"<<endl;
 				break;
