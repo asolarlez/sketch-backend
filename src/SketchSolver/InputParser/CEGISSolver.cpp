@@ -682,13 +682,13 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}
 		int hold = -1;
-		while(eval.hasValidValues()){
+		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h = eval.scoreNodes();
-			cout << "after scoreNodes h=" << h << " hold=" << hold << endl;
-			if(hold == h){
-				Assert(false, "CEGISSolver::simulate: This should not happen");
-				cout<<"INFINITE LOOP!"<<endl;
+			//cout << "after scoreNodes h=" << h << " hold=" << hold << endl;
+			if(hold >= h){
+				//Assert(false, "CEGISSolver::simulate: This should not happen");
+				//cout<<"INFINITE LOOP!"<<endl;
 				break;
 			}
 			hold = h;
@@ -696,13 +696,13 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			ASSERT_node* an = new ASSERT_node();
 			int am = 0;			
 			if(niq->getOtype()==bool_node::BOOL){
-				if(eval.getValidValue(niq)==0){
+				if(eval.getValue(niq)==0){
 					an->mother = new NOT_node();
 					am = 1;
 				}
 			}else{
 				an->mother = new EQ_node();
-				an->mother->father = new CONST_node( eval.getValidValue(niq) );
+				an->mother->father = new CONST_node( eval.getValue(niq) );
 				am = 2;
 			}
 			BooleanDAG* tbd = dag->slice(h, an);
@@ -739,7 +739,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}else{
 				{
 					bool_node* btoR = (*dag)[h];
-					int nval = eval.getValidValue(btoR);
+					int nval = eval.getValue(btoR);
 					if(PARAMS->verbosity > 8){ cout<<" FOUND CONST: "<<niq->lprint()<<" = "<<nval<<endl; }
 					DagOptim cse(*dag);
 					int sz = dag->size();					
@@ -768,7 +768,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}		
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
-	cout << "after simiters" << endl;
+	//cout << "after simiters" << endl;
 	
 	{
 		BackwardsAnalysis ba;

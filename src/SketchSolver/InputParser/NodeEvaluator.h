@@ -131,13 +131,10 @@ class NodeEvaluator :
 	vector<int> values;
 	vector<cpvec*> vecvalues;
 	vector<bool> changes;
-	vector<int> pendingChanges;
-	vector<int> validResult;  // the values that does not violate Hassert
 	VarStore* inputs;
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;
-	bool hasValidResult;
 	int i(bool_node& bn){
 		return values[bn.id];
 	}
@@ -146,13 +143,11 @@ class NodeEvaluator :
 		return values[bn.id] == 1;
 	}
 	void setbn(bool_node& bn, int i){
-		if(trackChange && hasValidResult){
+		if(trackChange){
 			int id = bn.id;
-			if (validResult[id] != i) {
-				pendingChanges.push_back(id);
-			}
-			//changes[id] = changes[id] || (t!=i);
-			values[id] = i;
+			int& t = values[id];
+			changes[id] = changes[id] || (t!=i);
+			t = i;
 		}else{
 			values[bn.id] = i;
 		}
@@ -202,11 +197,5 @@ public:
 	}
 	int getValue(bool_node* bn){
 		return i(*bn);
-	}
-	int getValidValue(bool_node* bn) {
-		return validResult[bn->id];
-	}
-	bool hasValidValues() {
-		return hasValidResult;
 	}
 };
