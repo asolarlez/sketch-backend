@@ -151,6 +151,7 @@ bool CEGISSolver::solveCore(){
 		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
 			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
 			cpt.checkpoint('c', ctrlstore_serialized);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
@@ -185,6 +186,7 @@ bool CEGISSolver::solveCore(){
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if (hasInputChanged) {
 				if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
+				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
 				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
 			       	cpt.checkpoint('f', instore_serialized);
 			       	if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
@@ -1168,6 +1170,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		bool doMore;
 		{ // Check
 			cout<<"!+";	ctrlStore.printBrief(cout);	cout<<endl;
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
 			cout<<"BEG CHECK"<<endl; ctimer.restart();
 			doMore = check(ctrlStore, inputStore);
 			ctimer.stop(); cout<<"END CHECK"<<endl;
