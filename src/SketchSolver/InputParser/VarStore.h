@@ -223,7 +223,7 @@ public:
 	void printContent(ostream& out) const{
 		for(int i=0; i<objs.size(); ++i){
 			out << objs[i].name << ":";
-			objs[i].printBit(out);
+			objs[i].printContent(out);
 			cout << endl;
 		}
 	}

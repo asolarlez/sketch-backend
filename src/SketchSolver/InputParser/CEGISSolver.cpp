@@ -1051,14 +1051,25 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		}
 	}
 	Dout( dirCheck.print() );
-	if(false){ //This is useful code when debugging;
+	if(true){ //This is useful code when debugging;
 		map<string, BooleanDAG*> empty;
-		NodeEvaluator eval(empty, *getProblem());
+		BooleanDAG * prob = getProblem();
+		NodeEvaluator eval(empty, *prob);
 		eval.run(input);
 		for(int i=0; i<check_node_ids.size(); ++i){
-			cout<<i<<"=";
-			check_node_ids[i].print(cout, &mngCheck);
-			cout<<endl;
+//			cout<<i<<"=";
+//			check_node_ids[i].print(cout, &mngCheck);
+//			cout<< " vs ";
+//			eval.printNodeValue(i);
+			int sv = check_node_ids[i].eval(&mngCheck);
+			bool_node * node = (*prob)[i];
+			int ev = eval.getValue(node);
+			if (sv != ev) {
+				cout<<i<<"=";
+				check_node_ids[i].print(cout, &mngCheck);
+				cout<< " vs ";
+				eval.printNodeValue(i);
+			}
 		}
 		cout<<"???"<<endl;
 	}
