@@ -1061,7 +1061,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		}
 	}
 	Dout( dirCheck.print() );
-	if(true){ //This is useful code when debugging;
+	if(false){ //This is useful code when debugging;
 		cout << "counter example:" << endl;
 		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
