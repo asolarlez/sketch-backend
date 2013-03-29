@@ -1009,6 +1009,16 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 
 */
 
+int getSolverVal(bool_node * node, vector<Tvalue> & node_ids, SATSolver & solver, int * j) {
+	if (node->type == bool_node::ASSERT) {
+		node = node->mother;
+	}
+	int i = node->id;
+	int sv = node_ids[i].eval(&solver);
+	if (j) { *j = i; }
+	return sv;
+}
+
 bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	Dout( cout<<"check()"<<endl );
 	//timerclass tc("* TIME TO ADD CONTROLS ");
@@ -1063,22 +1073,16 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 //			check_node_ids[i].print(cout, &mngCheck);
 //			cout<< " vs ";
 //			eval.printNodeValue(i);
-			bool_node * anode = (*prob)[i];
-			if (anode->type != bool_node::ASSERT) {
-				continue;
-			}
-			bool_node * node = anode->mother;
-			int j = node->id;
-			int ev = eval.getValue(anode);
-			int sv = check_node_ids[j].eval(&mngCheck);
-			if (sv != ev || !sv) {
-				cout << i << " " << anode->lprint() << j << " " << check_node_ids[j].getId() << " " << node->lprint()
-					<<"=" << sv << " vs " << ev << endl;
-				check_node_ids[j].print(cout, &mngCheck);
-				cout << endl;
-				//cout<< " vs ";
-				//eval.printNodeValue(i);
-			}
+			bool_node * node = (*prob)[i];
+			cout << node->lprint();
+			int ev = eval.getValue(node);
+			int j;
+			int sv = getSolverVal(node, check_node_ids, mngCheck, &j);
+			cout << " " << sv << " vs " << ev;
+			cout << endl;
+			check_node_ids[j].print(cout, &mngCheck);
+			cout<< " NodeEvaluator says:";
+			eval.printNodeValue(i);
 		}
 		cout<<"???"<<endl;
 	}

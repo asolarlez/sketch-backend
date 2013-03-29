@@ -267,7 +267,9 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}else{
 		mdef = tvOne;
-		mdef.num_ranges[0].value = -333;
+		// TODO xzl: temporarily disable -333
+		//mdef.num_ranges[0].value = -333;
+		mdef.num_ranges[0].value = 0;
 	}
 	Tvalue fdef;
 	if(fidx==-1){
@@ -276,7 +278,9 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}else{
 		fdef = tvOne;
-		fdef.num_ranges[0].value = -333;
+		// TODO xzl: temporarily disable -333
+		//fdef.num_ranges[0].value = -333;
+		fdef.num_ranges[0].value = 0;
 	}
 	int cvar = YES;
 	bool moreM = true;
@@ -1709,7 +1713,9 @@ NodesToSolver::visit( ARR_R_node &node){
 	vector<guardedVal>::const_iterator inarrend = inarr.num_ranges.end();
 	
 	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
-	defdef.num_ranges[0].value = -333;
+	// TODO xzl: temporarily disable -333
+	//defdef.num_ranges[0].value = -333;
+	defdef.num_ranges[0].value = 0;
 	if(begdef == enddef){
 		begdef = defdef.num_ranges.begin();
 		enddef = defdef.num_ranges.end();
@@ -1845,7 +1851,9 @@ void NodesToSolver::visit( ARR_W_node &node){
 	int defstart = 0;
 	int defend = 0;
 	Tvalue tvdef = tvOne;
-	tvdef.num_ranges[0].value = -333;
+	// TODO xzl: temporarily disable -333
+	//tvdef.num_ranges[0].value = -333;
+	tvdef.num_ranges[0].value = 0;
 	if(cindex < 0){
 		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
 			++defend;
@@ -2018,7 +2026,9 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
 			altL.num_ranges.push_back(gvl[i]);
 		}
-		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		// TODO xzl: temporarily disable -333
+		//if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0;}
 		else{ altL.sparsify(dir); }
 
 		vector<guardedVal>& gvr = choices[1].num_ranges;	
@@ -2026,7 +2036,9 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
 			altR.num_ranges.push_back(gvr[i]);
 		}
-		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		// TODO xzl: temporarily disable -333
+		//if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0;}
 		else{ altR.sparsify(dir); }
 
 		int idxl = 0;

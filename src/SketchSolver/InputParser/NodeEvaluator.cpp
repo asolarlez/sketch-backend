@@ -53,7 +53,9 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 	for(int t=0; t<sz; ++t){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
-	setbn(node, -333 );
+	// TODO xzl: temporarily disable -333
+	//setbn(node, -333 );
+	setbn(node, 0);
 }
 
 void NodeEvaluator::visit( AND_node& node ){
