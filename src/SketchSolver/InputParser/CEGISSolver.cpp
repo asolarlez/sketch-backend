@@ -1052,6 +1052,8 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	}
 	Dout( dirCheck.print() );
 	if(true){ //This is useful code when debugging;
+		cout << "counter example:" << endl;
+		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
 		BooleanDAG * prob = getProblem();
 		NodeEvaluator eval(empty, *prob);
@@ -1061,14 +1063,21 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 //			check_node_ids[i].print(cout, &mngCheck);
 //			cout<< " vs ";
 //			eval.printNodeValue(i);
-			int sv = check_node_ids[i].eval(&mngCheck);
-			bool_node * node = (*prob)[i];
-			int ev = eval.getValue(node);
-			if (sv != ev) {
-				cout<<i<<"=";
-				check_node_ids[i].print(cout, &mngCheck);
-				cout<< " vs ";
-				eval.printNodeValue(i);
+			bool_node * anode = (*prob)[i];
+			if (anode->type != bool_node::ASSERT) {
+				continue;
+			}
+			bool_node * node = anode->mother;
+			int j = node->id;
+			int ev = eval.getValue(anode);
+			int sv = check_node_ids[j].eval(&mngCheck);
+			if (sv != ev || !sv) {
+				cout << i << " " << anode->lprint() << j << " " << check_node_ids[j].getId() << " " << node->lprint()
+					<<"=" << sv << " vs " << ev << endl;
+				check_node_ids[j].print(cout, &mngCheck);
+				cout << endl;
+				//cout<< " vs ";
+				//eval.printNodeValue(i);
 			}
 		}
 		cout<<"???"<<endl;

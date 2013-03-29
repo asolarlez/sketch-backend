@@ -1952,6 +1952,7 @@ NodesToSolver::visit (ASSERT_node &node)
 			stopAddingClauses = true;
 		}
 		if(node.isHard()){
+			cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
 			dir.addHardAssertClause (fval.getId ());
 		}else{
 			dir.addAssertClause (fval.getId ());
