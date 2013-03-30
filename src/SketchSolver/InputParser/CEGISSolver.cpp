@@ -469,9 +469,11 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
 		try{
+			cout << "BEG nts.process" << endl;
 			nts.process(*getProblem());	
-			BooleanDAG& bd = *getProblem();
+			cout << "END nts.process" << endl;
 			/*
+			BooleanDAG& bd = *getProblem();
 			for(int i=0; i<node_ids.size(); ++i){
 				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
 			}
