@@ -2189,10 +2189,11 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 //		Tvalue& tv = node_ids[(*node_it)->id];
 //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
-		}catch(BasicError& be){
+		}/*catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
-    	}
-		catch (Exception & e) {
+    	}*/
+		catch (exception e) {
+			cout << "exception" << endl;
 			cout << e << endl;
 			throw e;
 		}
