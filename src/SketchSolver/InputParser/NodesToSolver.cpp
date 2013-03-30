@@ -2194,7 +2194,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
     	}*/
 		catch (exception e) {
 			cout << "exception" << endl;
-			cout << e << endl;
+			cout << e.what() << endl;
 			throw e;
 		}
 		if(stopAddingClauses){
