@@ -2184,7 +2184,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	stopAddingClauses = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
-			if ((i>=2428928 && i<=2428928+1024) || i%1024 == 0) cout << "processing " << i << (*node_it)->lprint() << endl;
+			if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		(*node_it)->accept(*this);
 //		Tvalue& tv = node_ids[(*node_it)->id];
