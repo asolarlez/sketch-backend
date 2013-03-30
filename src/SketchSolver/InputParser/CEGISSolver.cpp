@@ -524,7 +524,9 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	if(PARAMS->verbosity > 2){ tc.print(); }
 	}
 //Solve
+	cout << "BEG mngFind.solve" << endl;
 	int result = mngFind.solve();
+	cout << "END mngFind.solve" << endl;
 	if(params.printDiag){
 	  	cout<<"# FIND DIAGNOSTICS"<<endl;
 		printDiagnostics(mngFind, 'f');
@@ -1026,7 +1028,9 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	setNewControls(controls);
 	//if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
+    cout << "BEG mngCheck.solve" << endl;
     int result = mngCheck.solve();
+    cout << "END mngCheck.solve" << endl;
 	//dirCheck.printAllVars();
     if(params.printDiag){
 	    cout<<"# CHECK DIAGNOSTICS"<<endl;

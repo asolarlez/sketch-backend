@@ -787,7 +787,8 @@ NodesToSolver::processArith (bool_node &node)
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	mval.makeSparse (dir);
-	if( mval.getSize() > 200 ){ 
+	// TODO xzl: temporarily disable sparse warning
+	if( false && mval.getSize() > 200 ){ 
 		cout<<"Sparse representation size = "<<mval.getSize()<<endl;
 		//PrintSource ps(node_ids);
 		//ps.process(*tmpdag, node.mother->id);								
@@ -1960,7 +1961,7 @@ NodesToSolver::visit (ASSERT_node &node)
 			stopAddingClauses = true;
 		}
 		if(node.isHard()){
-			cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
+			//cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
 			dir.addHardAssertClause (fval.getId ());
 		}else{
 			dir.addAssertClause (fval.getId ());
