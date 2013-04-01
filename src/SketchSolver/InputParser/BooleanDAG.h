@@ -178,7 +178,13 @@ Dllist assertions;
   
   void sliceH(bool_node* n, BooleanDAG* bd);
   BooleanDAG* slice(int i, ASSERT_node*& out);
-  
+  BooleanDAG* slice(vector<bool_node*> const & interesting, int i, ASSERT_node*& out);
+  BooleanDAG* slice(vector<bool_node*> const & interesting);
+  template<typename forward_iter>
+  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out);
+  template<typename forward_iter>
+  BooleanDAG* slice(forward_iter begin, forward_iter end);
+
   void repOK();
 
   BooleanDAG* clone();
