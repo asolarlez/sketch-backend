@@ -826,12 +826,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	vector<VarStore> expensive;
 	BooleanDAG* dag =getProblem();
 	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
+	vector<bool_node *> hasserts;
 	if(asserts.size()==0){
 		tc.stop().print("no cex");
 		return false;
 	}
 	if (!inputGen || inputGen->hasH) {
-		vector<bool_node *> hasserts;
 		filterHasserts(asserts, hasserts);
 		if (!inputGen) {
 			inputGen = new InputGen(dag, hasserts);
@@ -879,7 +879,17 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		int hold = -1;
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
-			int h = eval.scoreNodes();
+			int h;
+		       	if (inputGen->hasH) {
+				hasserts.clear();
+				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
+				filterHasserts(asserts, hasserts);
+				// we should always pretain hard asserts and their mothers
+				// NOTE: rely on the assumption that dag is already sorted
+				h = eval.scoreNodes(hasserts.back()->id+1);
+			} else {
+				h = eval.scoreNodes(0);
+			}
 			if (h == -1){
 				break;
 			}
@@ -904,9 +914,6 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			BooleanDAG* tbd;
 		       	if (inputGen->hasH) {
-				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
-				vector<bool_node*> hasserts;
-				filterHasserts(asserts, hasserts);
 				vector<bool_node*>::const_iterator begin = hasserts.begin(), end=hasserts.end();
 				tbd = dag->slice(begin, end, h, an);
 			} else {

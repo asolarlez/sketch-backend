@@ -186,7 +186,8 @@ public:
 
 	bool run(VarStore& inputs_p);
 	void display(ostream& out);
-	int scoreNodes();
+	// get unchanged node, but only starting from start
+	int scoreNodes(int start = 0);
 	void trackChanges(){
 		trackChange = true;
 	}

@@ -242,12 +242,12 @@ void NodeEvaluator::display(ostream& out){
 }
 
 
-int NodeEvaluator::scoreNodes(){
-	int i=0;
+int NodeEvaluator::scoreNodes(int start /*=0*/){
+	int i=start;
 	int maxcount = -10;
 	int highest= -1;
 	int nconsts = 0;
-	for(vector<bool>::iterator it = changes.begin(); it != changes.end(); ++it, ++i){
+	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
 		if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT){
 			++nconsts;
