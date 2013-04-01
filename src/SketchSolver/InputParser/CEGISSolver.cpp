@@ -654,9 +654,10 @@ struct InputGen {
 
 	BooleanDAG * dag;
 	int intsize;
+	int nsrc; // number of constrained src nodes
 	// FIXME xzl: this is inefficient!
 	map<string, INTER_node*> srcnodes;
-	vector<VarStore> constrainedIn;
+	vector<vector<int> > constrainedIn;
 	VarStore constrained;
 	VarStore unconstrained;
 
@@ -671,6 +672,7 @@ struct InputGen {
 		dag = problem->slice(hasserts.begin(), hasserts.end(), -1)->clone();
 		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
 		int sliceInSize = sliceIn.size();
+		nsrc = 0;
 		if (sliceInSize == 0) {
 			hasH = false;
 			return;
@@ -681,13 +683,16 @@ struct InputGen {
 		int YES = dir->newYES();
 		for (int i=0; i<sliceInSize; ++i) {
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(sliceIn[i]);	
-			int nbits = srcnode->get_nbits();
-			string const & name = srcnode->get_name();
-			srcnodes[name] = srcnode;
 			int arsz = srcnode->getArrSz();
-			declareInput(constrained, name, nbits, arsz);
-			if(arsz <0){ arsz = 1; }
-			dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+			if (arsz <= 1) { // now we ignore arrays
+				++nsrc;
+				int nbits = srcnode->get_nbits();
+				string const & name = srcnode->get_name();
+				srcnodes[name] = srcnode;
+				declareInput(constrained, name, nbits, arsz);
+				if(arsz <0){ arsz = 1; }
+				dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+			}
 		}
 
 		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);
@@ -738,7 +743,13 @@ struct InputGen {
 			// FIXME xzl: it is more efficient to create a new dag and only add unequalizers!
 			//dag = new BooleanDAG("inputGen");
 			bool_node * mother = NULL;
+			vector<int> compressed(nsrc);
+			int tail=0;
 			for(VarStore::iterator it = constrained.begin(); it !=constrained.end(); ++it) {
+				if (it->index != 0 || it->next) {
+					// TODO xzl: properly handle array cases. Now just ignore
+					continue;
+				}
 				const string& cname = it->name;
 				int cnt = dir->getArrSize(cname);
 				Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
@@ -746,31 +757,28 @@ struct InputGen {
 					int val = solver->getVarVal(dir->getArr(cname, i));
 					it->setBit(i, (val==1) ? 1 : 0);
 				}
-				if (it->index != 0 || it->next) {
-					// TODO xzl: properly handle array cases. Now just ignore
+				int val = it->getInt();
+				compressed[tail++] = val;
+				//cout << "InputGen: creating " << cname << " size=" << cnt << endl;
+				//INTER_node * src = dag->create_inputs(cnt, cname);
+				INTER_node * src = srcnodes[cname];
+				bool_node * v = new CONST_node(val);
+				dag->addNewNode(v);
+				bool_node * eq = dag->new_node(src, v, bool_node::EQ);
+				if (mother) {
+					mother = dag->new_node(mother, eq, bool_node::AND);
 				} else {
-					int val = it->getInt();
-					//cout << "InputGen: creating " << cname << " size=" << cnt << endl;
-					//INTER_node * src = dag->create_inputs(cnt, cname);
-					INTER_node * src = srcnodes[cname];
-					bool_node * v = new CONST_node(val);
-					dag->addNewNode(v);
-					bool_node * eq = dag->new_node(src, v, bool_node::EQ);
-					if (mother) {
-						mother = dag->new_node(mother, eq, bool_node::AND);
-					} else {
-						mother = eq;
-					}
+					mother = eq;
 				}
 			}
 			Assert( mother, "empty mother!");
 			mother = dag->new_node(mother, NULL, bool_node::NOT);
 			ASSERT_node * anode = dynamic_cast<ASSERT_node*>(dag->new_node(mother, NULL, bool_node::ASSERT));
 			//anode->makeHardAssert();
-			while (dag->getIntSize()<intsize) {
-				dag->growInputIntSizes();
-			}
-			constrainedIn.push_back(constrained);
+			//while (dag->getIntSize()<intsize) {
+			//	dag->growInputIntSizes();
+			//}
+			constrainedIn.push_back(compressed);
 			// useful debug info:
 			cout << "InputGen: found a constrained input: ";
 			constrained.printContent(cout);
@@ -780,8 +788,18 @@ struct InputGen {
 	void gen(VarStore & input) {
 		find();
 		unconstrained.makeRandom();
-		VarStore & c = noMore ? constrainedIn[rand()%(constrainedIn.size())] : constrained;
-		input = join(c, unconstrained);
+		if (noMore) {
+			vector<int> const & compressed = constrainedIn[rand()%constrainedIn.size()];
+			int i=0;
+			for(VarStore::iterator it = constrained.begin(); it !=constrained.end(); ++it) {
+				if (it->index != 0 || it->next) {
+					// TODO xzl: properly handle array cases. Now just ignore
+					continue;
+				}
+				it->setVal(compressed[i++]);
+			}
+		}
+		input = join(constrained, unconstrained);
 		//cout << "InputGen: gen() returns ";
 		//input.printContent(cout);
 		//for (VarStore::iterator i=c.begin(); i!=c.end(); ++i) {
