@@ -188,7 +188,7 @@ bool CEGISSolver::solveCore(){
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if (hasInputChanged) {
 				if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
-				if(PARAMS->verbosity > 19){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
+				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
 				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
 			       	cpt.checkpoint('f', instore_serialized);
 			       	if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
@@ -780,8 +780,13 @@ struct InputGen {
 	void gen(VarStore & input) {
 		find();
 		unconstrained.makeRandom();
-		VarStore & c = noMore ? constrainedIn[rand()%constrainedIn.size()] : constrained;
+		VarStore & c = noMore ? constrainedIn[rand()%(constrainedIn.size())] : constrained;
 		input = join(c, unconstrained);
+		//cout << "InputGen: gen() returns ";
+		//input.printContent(cout);
+		//for (VarStore::iterator i=c.begin(); i!=c.end(); ++i) {
+		//	assert(i->getInt());
+		//}
 	}
 
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
@@ -799,7 +804,7 @@ struct InputGen {
 		}
 	}}
 };
-InputGen * inputGen;
+InputGen * inputGen = NULL;
 
 void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & hasserts) {
 	vector<bool_node*>::const_iterator i=asserts.begin();
@@ -856,7 +861,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			eval.trackChanges();
 			if(done){
-				tc.stop().print("found a cex");
+				tc.stop().print("found a cex by random testing");
 				popProblem();
 				return true;
 			}
@@ -931,7 +936,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					done= eval.run(tmpin);
 				}				
 				if(done){
-					tc.stop().print("found a cex");
+					tc.stop().print("found a cex by solver checking");
 					popProblem();
 					return true;
 				}else{
@@ -1393,7 +1398,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		bool doMore;
 		{ // Check
 			cout<<"!+";	ctrlStore.printBrief(cout);	cout<<endl;
-			if(PARAMS->verbosity > 19){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
 			cout<<"BEG CHECK"<<endl; ctimer.restart();
 			doMore = check(ctrlStore, inputStore);
 			ctimer.stop(); cout<<"END CHECK"<<endl;
