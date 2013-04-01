@@ -989,11 +989,12 @@ NodesToSolver::visit (SRC_node &node)
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
 		
     } else {
-		int arrSz = node.getArrSz();		
+		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
 		if (node.get_nbits () > 1 || arrSz >=0) {		    
-		    Dout (cout << "setting input nodes" << node.get_name() << endl);
+		    Dout (cout << "setting input nodes " << node.get_name() << endl);
+		    //cout << "setting input nodes " << node.get_name() << endl;
 #ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
 			if(arrSz<0){
@@ -1010,6 +1011,7 @@ NodesToSolver::visit (SRC_node &node)
 		node_ids[node.id].markInput(dir);
 	Dout (cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
+	//cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id] << "  " << &node << endl;
     }
 }
 

@@ -73,8 +73,8 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 }
 
 template<typename forward_iter>
-inline BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
-	BooleanDAG* bd = slice(begin, end);
+BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
+	BooleanDAG* bd = slice(begin, end, i);
 	if(out->mother != NULL){
 		out->mother->mother = nodes[i];		
 		if(out->mother->father != NULL){
@@ -88,33 +88,27 @@ inline BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i
 	return bd;
 }
 
-
-inline BooleanDAG* BooleanDAG::slice(vector<bool_node*> const & interesting, int i, ASSERT_node*& out){
-	return slice(interesting.begin(), interesting.end(), i, out);
-}
-
-
-inline BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out) {
-	return slice(nodes.begin()+i, nodes.begin()+(i+1), i, out);
+BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out) {
+	return slice(vector<bool_node*>::const_iterator(), vector<bool_node*>::const_iterator(), i, out);
 }
 
 // interesting are the interesting nodes (stored in [begin, end)) in this dag!
 // and they must be sorted according to the normal order!
 template<typename forward_iter>
-BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end) {
+BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i) {
 	for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
 		(*it)->flag = 0;
 	}
 	BooleanDAG* bd = new BooleanDAG(this->name);
 	bd->ownsNodes = false;
 	for (; begin!=end; ++begin) {
+		//cout << "slicing on " << (*begin)->lprint() << endl;
 		bd->sliceH(*begin, bd);
 	}
+	if (i>=0) {
+		bd->sliceH(nodes[i], bd);
+	}
 	return bd;
-}
-
-BooleanDAG* BooleanDAG::slice(vector<bool_node*> const & interesting) {
-	return slice(interesting.begin(), interesting.end());
 }
 
 void BooleanDAG::clear(){	
