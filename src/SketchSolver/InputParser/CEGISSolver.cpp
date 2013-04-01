@@ -715,9 +715,9 @@ struct InputGen {
 		//int YES = dir->newYES();
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(*dir, "InputGen", node_values, node_ids);			
-		//cout << "InputGen: BEG nts.process" << endl;
+		cout << "InputGen: BEG nts.process" << endl;
 		nts.process(*dag);
-		//cout << "InputGen: END nts.process" << endl;
+		cout << "InputGen: END nts.process" << endl;
 		//TODO xzl: do we need this?
 		//dir->nextIteration();
 		int result = solver->solve();
