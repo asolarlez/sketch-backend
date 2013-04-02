@@ -979,7 +979,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					if(btoR->type == bool_node::EQ && nval == 1){
 						if(btoR->mother->type == bool_node::CONST){
 							int id = btoR->father->id;
-							if (id >= lowrebound)  dag->replace(id, btoR->mother);
+							if (id >= lowerbound)  dag->replace(id, btoR->mother);
 						}else if(btoR->father->type == bool_node::CONST){
 							int id = btoR->mother->id;
 							if (id >= lowerbound) dag->replace(id, btoR->father);
