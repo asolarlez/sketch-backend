@@ -656,7 +656,7 @@ struct InputGen {
 	int intsize;
 	int nsrc; // number of constrained src nodes
 	// FIXME xzl: this is inefficient!
-	vector<INTER_node*> srcnodes;
+	map<string, INTER_node*> srcnodes;
 	vector<vector<int> > constrainedIn;
 	VarStore constrained;
 	VarStore unconstrained;
@@ -688,7 +688,7 @@ struct InputGen {
 				++nsrc;
 				int nbits = srcnode->get_nbits();
 				string const & name = srcnode->get_name();
-				srcnodes.push_back(srcnode);
+				srcnodes[name] = srcnode;
 				declareInput(constrained, name, nbits, arsz);
 				if(arsz <0){ arsz = 1; }
 				dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
