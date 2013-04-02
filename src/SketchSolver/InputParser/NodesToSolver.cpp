@@ -1949,7 +1949,9 @@ NodesToSolver::visit (ASSERT_node &node)
 			//whether there are assumptions before this point, or if this
 			//assertion itself is an assumption.
 			if(!dir.getMng().isNegated()){				
-				cerr<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
+				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
+				cout << "In find mode" << endl;
+				if (false) {
 				stringstream cstr;
 				set<const bool_node*> s;
 				cstr<<"digraph G{"<<endl;
@@ -1959,8 +1961,10 @@ NodesToSolver::visit (ASSERT_node &node)
 				if(s.size() < 10){
 					cout<<cstr.str()<<endl;
 				}
+				}
 			}
 			stopAddingClauses = true;
+			cout << "stop adding clauses" << endl;
 		}
 		if(node.isHard()){
 			//cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
