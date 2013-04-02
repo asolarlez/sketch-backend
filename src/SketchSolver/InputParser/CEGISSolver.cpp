@@ -898,13 +898,15 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h;
+			int lowerbound;  // donot touch nodes whose ids are smaller than lowerbound
 		       	if (inputGen->hasH) {
 				hasserts.clear();
 				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 				filterHasserts(asserts, hasserts);
 				// we should always pretain hard asserts and their mothers
 				// NOTE: rely on the assumption that dag is already sorted
-				h = eval.scoreNodes(hasserts.back()->id+1);
+				lowerbound = hasserts.back()->id+1;
+				h = eval.scoreNodes(lowerbound);
 			} else {
 				h = eval.scoreNodes(0);
 			}
@@ -976,15 +978,20 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					int sz = dag->size();					
 					if(btoR->type == bool_node::EQ && nval == 1){
 						if(btoR->mother->type == bool_node::CONST){
-							dag->replace(btoR->father->id, btoR->mother);
+							int id = btoR->father->id;
+							if (id >= lowrebound)  dag->replace(id, btoR->mother);
 						}else if(btoR->father->type == bool_node::CONST){
-							dag->replace(btoR->mother->id, btoR->father);
+							int id = btoR->mother->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father);
 						}else if( btoR->mother->id >  btoR->father->id){
-							dag->replace(btoR->mother->id, btoR->father);
+							int id = btoR->mother->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father);
 						}else{
-							dag->replace(btoR->father->id, btoR->mother);
+							int id = btoR->father->id;
+							if (id >= lowerbound) dag->replace(id, btoR->mother);
 						}
 					}
+					// h must >= lowrbound
 					dag->replace(h, cse.getCnode(nval));
 					dag->removeNullNodes();
 					cse.process(*dag);
@@ -997,7 +1004,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 				break;
 			}
-		}		
+		}
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
 	//cout << "after simiters" << endl;
 	
