@@ -499,12 +499,17 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl;
 		node->accept(*this);
+		cout<<"after accept" << endl;
 		bool_node* tmp = rvalue;
+		cout<<"after rvalue" << endl;
 		info[node->id].clear();
+		cout<<"after clear" << endl;
 		if(tmp != node){
+			cout<<"i will replace " << node->get_name() << " with " << tmp->get_name() << endl;
 			node->neighbor_replace(tmp);
 			//bdag.replace(node->id, tmp);
 		}
+		cout<<"after all" << endl;
 	}
 	bdag.removeNullNodes();
 	bdag.addNewNodes(newnodes);	
