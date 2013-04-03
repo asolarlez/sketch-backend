@@ -477,7 +477,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 		Info& c = info[cur->id];
 		if(tprev != NULL){
 			Info& p = info[tprev->id];
-			//cout<<"T = "<<tprev->mother->lprint()<<endl;
+			cout<<"T = "<<tprev->mother->lprint()<<endl;
 			if(tprev->mother->children.size()>1  || tprev->mother->type == bool_node::AND){
 //				dimp.checkImplications(tprev->mother);
 				p.push(Datum(tprev->mother));			
@@ -493,9 +493,11 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	}
 
 	i=0;
+	cout << "reverse begin" << endl;
 	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
 		bool_node* node = (*node_it);
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+		cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl;
 		node->accept(*this);
 		bool_node* tmp = rvalue;
 		info[node->id].clear();

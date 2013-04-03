@@ -1007,12 +1007,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		}
 		//cout << "simiters: " << iter << endl;
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
-	cout << "after simiters" << endl;
-	dag->lprint(cout);
+	//cout << "after simiters" << endl;
 	
 	{
 		BackwardsAnalysis ba;
-		cout << "ba:" << endl;
+		cout << "do ba, dag=";
+		dag->lprint(cout);
 		ba.process(*dag);
 	}
 	{
