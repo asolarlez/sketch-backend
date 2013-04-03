@@ -1005,16 +1005,19 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				break;
 			}
 		}
-		cout << "simiters: " << iter << endl;
+		//cout << "simiters: " << iter << endl;
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
 	cout << "after simiters" << endl;
+	dag->lprint(cout);
 	
 	{
 		BackwardsAnalysis ba;
+		cout << "ba:" << endl;
 		ba.process(*dag);
 	}
 	{
 		DagOptim cse(*dag);			
+		cout << "cse:" << endl;
 		cse.process(*dag);
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
