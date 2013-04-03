@@ -996,7 +996,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					dag->removeNullNodes();
 					cse.process(*dag);
 					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
-					if(dag->getNodesByType(bool_node::ASSERT).size()==0){
+					if(dag->getNodesByType(bool_node::ASSERT).empty()){
 						tc.stop().print("no cex");
 						popProblem();
 						return false;
@@ -1005,8 +1005,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				break;
 			}
 		}
+		cout << "simiters: " << iter << endl;
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
-	//cout << "after simiters" << endl;
+	cout << "after simiters" << endl;
 	
 	{
 		BackwardsAnalysis ba;

@@ -1950,7 +1950,6 @@ NodesToSolver::visit (ASSERT_node &node)
 			//assertion itself is an assumption.
 			if(!dir.getMng().isNegated()){				
 				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
-				cout << "Print the problem slice:" << endl;
 				stringstream cstr;
 				set<const bool_node*> s;
 				cstr<<"digraph G{"<<endl;
