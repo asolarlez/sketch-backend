@@ -1011,8 +1011,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	
 	{
 		BackwardsAnalysis ba;
-		cout << "do ba, dag=";
-		dag->lprint(cout);
+		cout << "do ba, dag->repOK():";
+		dag->repOK();
 		ba.process(*dag);
 	}
 	{
