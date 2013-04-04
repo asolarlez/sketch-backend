@@ -350,41 +350,56 @@ cout << "return node" << endl;
 
 	
 void BackwardsAnalysis::visit( ARRACC_node& node ){
+	cout << "ARRACC_node visit" << endl;
 	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
+	cout << "after t=info[]" << endl;
 	if(t.isBottom()){
+		cout << "rvalue=getCnode(0)" << endl;
 		rvalue = getCnode(0);
 		return;
 	}
 	int v;
+	cout << "before localModify" << endl;
 	bool_node* tmp = localModify(&node, t);
+	cout << "after localModify" << endl;
 	if(tmp != &node){
 		rvalue = tmp;
 		return ;
 	}
 
+	cout << "before modifyNode(mother)" << endl;
 	bool_node* fmother = modifyNode(node.mother, t);
+	cout << "after modifyNode(mother)" << endl;
 	vector<bool_node*> tmm(node.multi_mother.size());
 	bool changed = false;
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		t.push(Datum(node.mother, i));
+		cout << "before modifyNode(multi_mother[i])" << endl;
 		tmm[i] = modifyNode(node.multi_mother[i], t);
+		cout << "after modifyNode(multi_mother[i])" << endl;
 		changed = changed || (node.multi_mother[i] != tmm[i]);
 		t.pop();
 	}
 
 	if(fmother != node.mother || changed){
+		cout << "before dislodge" << endl;
 		node.dislodge();
+		cout << "after dislodge" << endl;
 		node.mother = fmother;
 		for(int i=0; i<tmm.size(); ++i){
+			cout << "multi_mother[i]=tmm[i]" << endl;
 			node.multi_mother[i] = tmm[i];
 		}
+		cout << "resetId" << endl;
 		node.resetId();
+		cout << "addToParents" << endl;
 		node.addToParents();
 	}
 
 	rvalue = &node;
+	cout << "return" << endl;
 	return;
 }
 
