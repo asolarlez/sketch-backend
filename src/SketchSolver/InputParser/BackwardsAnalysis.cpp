@@ -329,15 +329,20 @@ void BackwardsAnalysis::visit( OR_node& node ){
 
 bool_node* BackwardsAnalysis::localModify(ARRACC_node* node, Info& t){
 	int v;
-
+cout << "ARRACC" << endl;
 	if(t.getValue(node->mother, v)){
+cout << "after t.getValue" << endl;
 		if(v >= 0 && v < node->multi_mother.size()){
+cout << "before modifyNode" << endl;
 			bool_node* tmp = modifyNode(node->multi_mother[v], t);		
+cout << "after modifyNode" << endl;
 			return tmp;
 		}else{
+cout << "return Cnode(0)" << endl;
 			return getCnode(0);
 		}
 	}else{
+cout << "return node" << endl;
 		return node;
 	}
 }
