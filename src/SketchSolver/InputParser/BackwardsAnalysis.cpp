@@ -496,8 +496,9 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	cout << "reverse begin" << endl;
 	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
 		bool_node* node = (*node_it);
+		cout << "node: " << node->it << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
-		cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl;
+		cout<<node->get_name()<<":"<<node->id<<endl;
 		node->accept(*this);
 		cout<<"after accept" << endl;
 		bool_node* tmp = rvalue;
