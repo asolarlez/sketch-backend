@@ -78,12 +78,12 @@ CONST_node* BackwardsAnalysis::getCnode(bool c){
 
 
 void BackwardsAnalysis::visitArith(arith_node& node ){
-	cout << "visitArith" << endl;
+	//cout << "visitArith" << endl;
 	Info& t = info[node.id];
-	cout << "after t=info[node.id]" << endl;
+	//cout << "after t=info[node.id]" << endl;
 	if(t.isBottom()){
 		rvalue = getCnode(0);
-		cout << "after rvalue=getCnode" << endl;
+		//cout << "after rvalue=getCnode" << endl;
 		return;
 	}
 	/* This seems unprofitable; maybe later we'll discover it's useful.
@@ -95,16 +95,16 @@ void BackwardsAnalysis::visitArith(arith_node& node ){
 	*/
 	if(node.mother != NULL){
 		info[node.mother->id] += t;
-		cout << "after info[mother]+=t" << endl;
+		//cout << "after info[mother]+=t" << endl;
 	}
 
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		info[node.multi_mother[i]->id] += t;
-		cout << "after info[multi_mother]+=t" << endl;
+		//cout << "after info[multi_mother]+=t" << endl;
 	}
 
 	rvalue = &node;
-	cout << "after rvalue=&node" << endl;
+	//cout << "after rvalue=&node" << endl;
 }
 
 void BackwardsAnalysis::visitBool(bool_node& node ){
@@ -329,20 +329,20 @@ void BackwardsAnalysis::visit( OR_node& node ){
 
 bool_node* BackwardsAnalysis::localModify(ARRACC_node* node, Info& t){
 	int v;
-cout << "ARRACC" << endl;
+//cout << "ARRACC" << endl;
 	if(t.getValue(node->mother, v)){
-cout << "after t.getValue" << endl;
+//cout << "after t.getValue" << endl;
 		if(v >= 0 && v < node->multi_mother.size()){
-cout << "before modifyNode" << endl;
+//cout << "before modifyNode" << endl;
 			bool_node* tmp = modifyNode(node->multi_mother[v], t);		
-cout << "after modifyNode" << endl;
+//cout << "after modifyNode" << endl;
 			return tmp;
 		}else{
-cout << "return Cnode(0)" << endl;
+//cout << "return Cnode(0)" << endl;
 			return getCnode(0);
 		}
 	}else{
-cout << "return node" << endl;
+//cout << "return node" << endl;
 		return node;
 	}
 }
@@ -350,62 +350,62 @@ cout << "return node" << endl;
 
 	
 void BackwardsAnalysis::visit( ARRACC_node& node ){
-	cout << "ARRACC_node visit" << endl;
+	//cout << "ARRACC_node visit" << endl;
 	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
-	cout << "after t=info[]" << endl;
+	//cout << "after t=info[]" << endl;
 	if(t.isBottom()){
-		cout << "rvalue=getCnode(0)" << endl;
+		//cout << "rvalue=getCnode(0)" << endl;
 		rvalue = getCnode(0);
 		return;
 	}
 	int v;
-	cout << "before localModify" << endl;
+	//cout << "before localModify" << endl;
 	bool_node* tmp = localModify(&node, t);
-	cout << "after localModify" << endl;
+	//cout << "after localModify" << endl;
 	if(tmp != &node){
 		rvalue = tmp;
 		return ;
 	}
 
-	cout << "before modifyNode(mother)" << endl;
+	//cout << "before modifyNode(mother)" << endl;
 	bool_node* fmother = modifyNode(node.mother, t);
-	cout << "after modifyNode(mother)" << endl;
+	//cout << "after modifyNode(mother)" << endl;
 	vector<bool_node*> tmm(node.multi_mother.size());
 	bool changed = false;
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		t.push(Datum(node.mother, i));
-		cout << "before modifyNode(multi_mother[i])" << endl;
+		//cout << "before modifyNode(multi_mother[i])" << endl;
 		tmm[i] = modifyNode(node.multi_mother[i], t);
-		cout << "after modifyNode(multi_mother[i])" << endl;
+		//cout << "after modifyNode(multi_mother[i])" << endl;
 		changed = changed || (node.multi_mother[i] != tmm[i]);
 		t.pop();
 	}
 
 	if(fmother != node.mother || changed){
-		cout << "before dislodge" << endl;
+		//cout << "before dislodge" << endl;
 		node.dislodge();
-		cout << "after dislodge" << endl;
+		//cout << "after dislodge" << endl;
 		node.mother = fmother;
 		for(int i=0; i<tmm.size(); ++i){
-			cout << "multi_mother[i]=tmm[i]" << endl;
+			//cout << "multi_mother[i]=tmm[i]" << endl;
 			node.multi_mother[i] = tmm[i];
 		}
-		cout << "resetId" << endl;
+		//cout << "resetId" << endl;
 		node.resetId();
-		cout << "addToParents" << endl;
+		//cout << "addToParents" << endl;
 		node.addToParents();
 	}
 
 	rvalue = &node;
-	cout << "return" << endl;
+	//cout << "return" << endl;
 	return;
 }
 
 
 bool_node* BackwardsAnalysis::modifyNode(bool_node* node, Info& t){
-	cout<<" modifying "<<node->lprint()<<" sz = "<<t.getSize()<<endl;
+	//cout<<" modifying "<<node->lprint()<<" sz = "<<t.getSize()<<endl;
 	bool_node* out = node;
 	if(node->type == bool_node::NOT){
 		bool_node* tmp = modifyNode(node->mother, t);
@@ -498,13 +498,13 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	bool_node* tprev = NULL;
 //	dimp.process(bdag);
 	info.resize(bdag.size());
-	cout << "info.size=" << info.size();
+	//cout << "info.size=" << info.size();
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];
 		Info& c = info[cur->id];
 		if(tprev != NULL){
 			Info& p = info[tprev->id];
-			cout<<"T = "<<tprev->mother->lprint()<<endl;
+			//cout<<"T = "<<tprev->mother->lprint()<<endl;
 			if(tprev->mother->children.size()>1  || tprev->mother->type == bool_node::AND){
 //				dimp.checkImplications(tprev->mother);
 				p.push(Datum(tprev->mother));			
@@ -520,27 +520,27 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	}
 
 	i=0;
-	cout << "reverse begin" << endl;
+	//cout << "reverse begin" << endl;
 	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
-		cout << "i=" << i;
+		//cout << "i=" << i;
 		bool_node* node = (*node_it);
-		cout << "node: " << node->id << endl;
+		//cout << "node: " << node->id << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
-		cout<<node->get_name()<<":"<<node->id<<endl;
+		//cout<<node->get_name()<<":"<<node->id<<endl;
 		node->accept(*this);
-		cout<<"after accept" << endl;
+		//cout<<"after accept" << endl;
 		bool_node* tmp = rvalue;
-		cout<<"after rvalue" << endl;
+		//cout<<"after rvalue" << endl;
 		info[node->id].clear();
-		cout<<"after clear" << endl;
+		//cout<<"after clear" << endl;
 		if(tmp != node){
-			cout<<"i will replace " << node->get_name() << " with " << tmp->get_name() << endl;
+			//cout<<"i will replace " << node->get_name() << " with " << tmp->get_name() << endl;
 			node->neighbor_replace(tmp);
 			//bdag.replace(node->id, tmp);
 		}
-		cout<<"after all" << endl;
+		//cout<<"after all" << endl;
 	}
-	cout << "reverse end" << endl;
+	//cout << "reverse end" << endl;
 	bdag.removeNullNodes();
 	bdag.addNewNodes(newnodes);	
 	newnodes.clear();

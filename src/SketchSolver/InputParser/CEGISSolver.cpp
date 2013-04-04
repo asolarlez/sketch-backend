@@ -1010,10 +1010,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	//cout << "after simiters" << endl;
 	
 	{
-		BackwardsAnalysis ba;
-		cout << "do ba, dag->repOK():";
-		dag->repOK();
-		ba.process(*dag);
+		//BackwardsAnalysis ba;
+		//cout << "do ba, dag->repOK():";
+		//dag->repOK();
+		//ba.process(*dag);
 	}
 	{
 		DagOptim cse(*dag);			
