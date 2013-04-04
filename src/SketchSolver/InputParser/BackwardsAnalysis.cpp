@@ -78,9 +78,12 @@ CONST_node* BackwardsAnalysis::getCnode(bool c){
 
 
 void BackwardsAnalysis::visitArith(arith_node& node ){
+	cout << "visitArith" << endl;
 	Info& t = info[node.id];
+	cout << "after t=info[node.id]" << endl;
 	if(t.isBottom()){
 		rvalue = getCnode(0);
+		cout << "after rvalue=getCnode" << endl;
 		return;
 	}
 	/* This seems unprofitable; maybe later we'll discover it's useful.
@@ -92,13 +95,16 @@ void BackwardsAnalysis::visitArith(arith_node& node ){
 	*/
 	if(node.mother != NULL){
 		info[node.mother->id] += t;
+		cout << "after info[mother]+=t" << endl;
 	}
 
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		info[node.multi_mother[i]->id] += t;
+		cout << "after info[multi_mother]+=t" << endl;
 	}
 
 	rvalue = &node;
+	cout << "after rvalue=&node" << endl;
 }
 
 void BackwardsAnalysis::visitBool(bool_node& node ){
