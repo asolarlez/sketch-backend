@@ -483,6 +483,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	bool_node* tprev = NULL;
 //	dimp.process(bdag);
 	info.resize(bdag.size());
+	cout << "info.size=" << info.size();
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];
 		Info& c = info[cur->id];
