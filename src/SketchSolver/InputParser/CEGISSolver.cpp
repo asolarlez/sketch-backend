@@ -811,14 +811,14 @@ struct InputGen {
 		int size = problem->getIntSize();
 		if (intsize < size) {
 			cout << "InputGen: growInputSize to " << size << endl;
-			delete dag;
-			delete dir;
-			delete solver;
+			//delete dag;
+			//delete dir;
+			//delete solver;
 			noMore = false;
 			constrainedIn.clear();
+			node_ids.clear();
 			hasH = !hasserts.empty();
 			init(problem, hasserts);
-			node_ids.clear();
 		}
 	}}
 };
