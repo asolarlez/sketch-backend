@@ -18,7 +18,8 @@ dirCheck(checker),
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
-params(args)
+params(args),
+inputGen(NULL)
 {
 //	cout << "miter:" << endl;
 //	miter->lprint(cout);
@@ -822,7 +823,6 @@ struct InputGen {
 		}
 	}}
 };
-InputGen * inputGen = NULL;
 
 void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & hasserts) {
 	vector<bool_node*>::const_iterator i=asserts.begin();

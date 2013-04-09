@@ -95,6 +95,7 @@ class CEGISSolver
 
 	
 	VarStore inputStore;
+	struct InputGen *inputGen;
 
 	CEGISparams params;
 	
