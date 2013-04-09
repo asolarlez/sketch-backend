@@ -442,16 +442,18 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	
 	if(params.olevel >= 5){		
 		BackwardsAnalysis opt;
-		//cout<<"BEFORE: "<<endl;
+		cout<<"BEFORE ba: "<<endl;
 		//result->print(cout);
 		opt.process(*result);
-		// cout<<"AFTER: "<<endl;
+		cout<<"AFTER ba: "<<endl;
 		// result->print(cout);
 	}
 	// result->repOK();
 	if(params.olevel >= 7){
+		cout << "BEFORE OptimizeCommutAssoc" << endl;
 		DagOptimizeCommutAssoc opt;
 		opt.process(*result);
+		cout << "AFTER OptimizeCommutAssoc" << endl;
 	}
 	// result->repOK();
 	//result->print(cout) ;
@@ -459,12 +461,14 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
 
 	if(params.olevel >= 4){
+		cout << "BEFORE cse" << endl;
 		DagOptim cse(*result);	
 		if(params.alterARRACS){ 
 			cout<<" alterARRACS"<<endl;
 			cse.alterARRACS(); 
 		}
 		cse.process(*result);
+		cout << "AFTER cse" << endl;
 	}
 	// result->repOK();	
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}
