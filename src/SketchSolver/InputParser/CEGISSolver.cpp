@@ -721,17 +721,17 @@ struct InputGen {
 		//int YES = dir->newYES();
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(*dir, "InputGen", node_values, node_ids);			
-		cout << "InputGen: BEG nts.process" << endl;
+		//cout << "InputGen: BEG nts.process" << endl;
 		nts.process(*dag);
-		cout << "InputGen: END nts.process" << endl;
+		//cout << "InputGen: END nts.process" << endl;
 		//TODO xzl: do we need this?
 		//dir->nextIteration();
 		int result = solver->solve();
-		cout << "InputGen: solve result=" << result << endl;
+		//cout << "InputGen: solve result=" << result << endl;
 		//delete dag;
 		if (result != SATSolver::SATISFIABLE) {
 			noMore = true;
-			cout << "InputGen: noMore=" << noMore << endl;
+			//cout << "InputGen: noMore=" << noMore << endl;
 	    		switch( result ){
 	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
 	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
@@ -781,7 +781,7 @@ struct InputGen {
 			//}
 			constrainedIn.push_back(compressed);
 			// useful debug info:
-			cout << "InputGen: found a constrained input: ";
+			//cout << "InputGen: found a constrained input: ";
 			constrained.printContent(cout);
 		}
 	}
@@ -811,7 +811,7 @@ struct InputGen {
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
 		int size = problem->getIntSize();
 		if (intsize < size) {
-			cout << "InputGen: growInputSize to " << size << endl;
+			//cout << "InputGen: growInputSize to " << size << endl;
 			//delete dag;
 			//delete dir;
 			//delete solver;
