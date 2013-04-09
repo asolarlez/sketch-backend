@@ -440,7 +440,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 
 	
 	
-	if(params.olevel >= 5){		
+	if(false && params.olevel >= 5){		
 		BackwardsAnalysis opt;
 		cout<<"BEFORE ba: "<<endl;
 		//result->print(cout);
