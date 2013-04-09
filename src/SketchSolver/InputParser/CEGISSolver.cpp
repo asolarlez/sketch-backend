@@ -782,7 +782,7 @@ struct InputGen {
 			constrainedIn.push_back(compressed);
 			// useful debug info:
 			//cout << "InputGen: found a constrained input: ";
-			constrained.printContent(cout);
+			//constrained.printContent(cout);
 		}
 	}
 
