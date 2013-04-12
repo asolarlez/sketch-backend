@@ -427,9 +427,12 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	BooleanDAG* newdag = dag->clone();
 
 	vector<bool_node*> inodeList = newdag->getNodesByType(type);
-		
-	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
-	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
+	
+	if(PARAMS->verbosity > 2) {
+		char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
+		cout<<" * Specializing problem for "<< stype <<endl;
+		cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
+	}
 	
 	{
 		DagOptim cse(*newdag);			
