@@ -861,6 +861,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		}
 	}
 	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
+	if (hasCtrls) {
+		// must be not specialized
+		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
+	}
 	dag = dag->clone();
 	pushProblem(dag);
 	do{
