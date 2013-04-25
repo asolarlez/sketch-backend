@@ -21,6 +21,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Sort.h"
 #include <cmath>
 #include <iostream>
+#include <fstream>
+
+using namespace std;
 
 namespace MSsolverNS{
 
@@ -878,4 +881,36 @@ void Solver::checkLiteralCount()
         assert((int)clauses_literals == cnt);
     }
 }
+
+
+void Solver::writeDIMACS(const char* filename)
+{	
+    ofstream dimacs_file(filename);
+    if (dimacs_file.is_open()) {
+		int clausecount = 0;
+		 for (int i = 0; i < clauses.size(); i++) {
+            Clause* c = clauses[i];
+			if(c->mark() == SINGLESET){
+				continue;
+			}
+			clausecount++;
+		 }
+        dimacs_file << "p cnf " << nVars() << " " << clausecount << "\n";
+        for (int i = 0; i < clauses.size(); i++) {
+            Clause* c = clauses[i];
+			if(c->mark() == SINGLESET){
+				continue;
+			}
+            for (int j = 0; j < c->size(); j++) {
+                const char* neg = sign((*c)[j]) ? "-" : "";
+                dimacs_file << neg << var((*c)[j]) + 1 << " ";
+            }
+            dimacs_file << "0\n";
+        }
+        dimacs_file.close();
+    } else {
+        cout << "Unable to open file";
+    }
+}
+
 }

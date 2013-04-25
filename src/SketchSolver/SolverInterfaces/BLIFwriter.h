@@ -68,7 +68,7 @@ public:
 	virtual void addCountingHelperClause(int c[], int sz);
     virtual int newInVar();
     virtual void disableVarBranch(int i);
-
+	virtual void outputSAT(){ }
     virtual bool ignoreOld();
 
     virtual int solve();

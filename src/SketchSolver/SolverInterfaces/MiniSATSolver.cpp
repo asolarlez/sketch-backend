@@ -267,13 +267,22 @@ bool MiniSATSolver::ignoreOld(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	bool result = s->solve(assumptions);
  	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
+
+	if(outputProblems){
+		++solveCount;
+		stringstream str;
+		str<<"sat_"<<(solveNegation?"VER":"SYN")<<"_"<<solveCount<<".cnf";
+		cout<<"Creating SAT file "<<str.str()<<endl;
+		s->writeDIMACS(str.str().c_str());
+	}
+
 	if( result) {
 		//cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
 	}else{
 		//cout<<"Returned UNSAT"<<endl;
 		return UNSATISFIABLE;
-	}
+	}		
 }
 
  void MiniSATSolver::reset(){

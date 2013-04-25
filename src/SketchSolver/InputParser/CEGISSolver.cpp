@@ -292,7 +292,12 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 	cout<<endl;
 	if(!isSingleMinHole){
 		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
-		dirFind.addRetractableAssertClause(bigor[0]);
+		try{
+			dirFind.addRetractableAssertClause(bigor[0]);
+		}
+		catch(BasicError& be){
+			return false;
+		}
 	}
 	
 	
@@ -449,10 +454,16 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 					if(cn->children.size() != 0){
 						Assert(cn->children.size() == 1, "NYI");
 						bool_node* bn = *(cn->children.begin());
-						Assert(bn->type == bool_node::ARRACC, "NYI");
-						ARRACC_node* an = dynamic_cast<ARRACC_node*>(bn);
-						Assert(an->multi_mother[0]==cn, "NYI");
-						newdag->replace(cn->id, an->multi_mother[1]);
+						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI");
+						arith_node* an = dynamic_cast<arith_node*>(bn);
+						if(an->multi_mother[0]==cn){
+							Assert(an->multi_mother[0]==cn, "NYI");
+							newdag->replace(cn->id, an->multi_mother[1]);
+						}else{
+							Assert(an->multi_mother[1]==cn, "NYI");
+							newdag->replace(cn->id, an->multi_mother[0]);
+						}
+						
 						continue;
 					}else{
 						newdag->replace(inode->id, cse.getCnode(0));
@@ -1081,12 +1092,16 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	}
 	Dout( dirCheck.print() );
 	if(false){ //This is useful code when debugging;
+		cout<<"AFTER CSTAGE"<<endl;
+		getProblem()->lprint(cout);
 		map<string, BooleanDAG*> empty;
 		NodeEvaluator eval(empty, *getProblem());
 		eval.run(input);
+		cout<<"PRINT EVAL"<<endl;
 		for(int i=0; i<check_node_ids.size(); ++i){
 			cout<<i<<"=";
 			check_node_ids[i].print(cout, &mngCheck);
+			cout<<"    "<<(*getProblem())[i]->lprint();
 			cout<<endl;
 		}
 		cout<<"???"<<endl;

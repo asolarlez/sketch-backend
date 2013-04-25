@@ -31,6 +31,7 @@ class NodesToSolver : public NodeVisitor {
     Tvalue tvOneSigned;
 	const int YES;
 	bool stopAddingClauses;
+	bool shortcut;
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;

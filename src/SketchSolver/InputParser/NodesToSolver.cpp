@@ -504,7 +504,9 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
 	int tt = comp(quant1, quant2);
-	
+	if(!shortcut){
+		return tt;
+	}
 	if(PARAMS->randBnd > 0 && abs(tt) > PARAMS->randBnd){ 
 		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
 		if(!dir.getMng().isNegated()){
@@ -836,6 +838,11 @@ NodesToSolver::processArith (bool_node &node)
 			++vals;
 		}
 	}
+	if(PARAMS->randBnd > 0 && mval.getSize() * fval.getSize() > 3*PARAMS->randBnd){
+		shortcut = true;
+	}else{
+		shortcut = false;
+	}
 	for(int i=0; i<mval.getSize (); ++i){
 		if(skipZeros && mval[i] == 0){ continue; }
 	    for(int j=0; j<fval.getSize (); ++j){
@@ -899,7 +906,6 @@ NodesToSolver::processArith (bool_node &node)
 			tmp[0] = guardedVal(it->second, it->first);	
 			for(map<int, int>::iterator sit = numbers.begin(); sit != numbers.end(); ++sit){
 				if(sit->second != it->second){
-					cout<<"NEW SAVE"<<endl;
 					dir.addAssertClause(-sit->second);
 				}
 			}
@@ -915,7 +921,6 @@ NodesToSolver::processArith (bool_node &node)
 	tmp.resize(i);
 	if(tmp.size() == 1){
 		if(tmp[0].guard != YES){
-			cout<<"GOOD SAVE"<<endl;
 			dir.addAssertClause(tmp[0].guard);
 			tmp[0].guard = YES;
 		}

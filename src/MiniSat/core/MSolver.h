@@ -101,6 +101,7 @@ public:
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts;
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
 
+	void writeDIMACS(const char* filename);
 protected:
 
     // Helper structures:
