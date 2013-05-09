@@ -659,8 +659,8 @@ struct InputGen {
 	BooleanDAG * dag;
 	int intsize;
 	int nsrc; // number of constrained src nodes
-	// FIXME xzl: this is inefficient!
-	map<string, INTER_node*> srcnodes;
+	// name => (index -> INTER_node*) for scalars, index can only be 0
+	map<string, vector<bool_node*> > srcnodes;
 	vector<vector<int> > constrainedIn;
 	VarStore constrained;
 	VarStore unconstrained;
@@ -685,17 +685,55 @@ struct InputGen {
 		solver = SATSolver::solverCreate(SATSolver::MINI, SATSolver::FINDER, "__inputGen");
 		dir = new SolverHelper(*solver);
 		int YES = dir->newYES();
+		bool hasArr = false;
 		for (int i=0; i<sliceInSize; ++i) {
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(sliceIn[i]);	
 			int arsz = srcnode->getArrSz();
-			if (arsz <= 1) { // now we ignore arrays
+			int nbits = srcnode->get_nbits();
+			string const & name = srcnode->get_name();
+			if (arsz <= 1) {
 				++nsrc;
-				int nbits = srcnode->get_nbits();
-				string const & name = srcnode->get_name();
-				srcnodes[name] = srcnode;
-				declareInput(constrained, name, nbits, arsz);
-				if(arsz <0){ arsz = 1; }
-				dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+				//srcnodes[name] = srcnode;
+				srcnodes.insert(std::make_pair(name, vector<bool_node*>(1, srcnode)));
+			} else{
+				//cout << "assume depend on array! arsz=" << arsz << " nbits=" << srcnode->get_nbits() << " srcnode=" << srcnode->mrprint() << endl;
+				//dag->lprint(cout);
+				//Assert(0, "assume depend on array");
+				// NOTE we do not increase nsrc here
+				// because we only increase per individual array element
+				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz)));
+				hasArr = true;
+			}
+			declareInput(constrained, name, nbits, arsz);
+			if(arsz <0){ arsz = 1; }
+			dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+		}
+
+		if (hasArr) {
+			for (BooleanDAG::iterator it=dag->begin(); it!=dag->end(); ++it) {
+				if ((*it)->type == bool_node::ARR_R) {
+					ARR_R_node * anode = dynamic_cast<ARR_R_node*>(*it);
+					if (anode->father->type != bool_node::SRC) {
+						cout << "assume depend on complex array father! anode=" << anode->mrprint() << endl;
+						dag->lprint(cout);
+						Assert(0, "assume depend on complex array father");
+					}
+					SRC_node * fnode = dynamic_cast<SRC_node*>(anode->father);
+					map<string, vector<bool_node*> >::iterator entry = srcnodes.find(fnode->get_name());
+					vector<bool_node*> & vec = entry->second;
+					if (anode->mother->type != bool_node::CONST) {
+						cout << "assume depend on non-const array index! anode=" << anode->mrprint() << endl;
+						dag->lprint(cout);
+						Assert(0, "assume depend on non-const array index");
+					}
+					CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
+					int index = mnode->getVal();
+					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					if (vec[index] == NULL) {
+						++nsrc;
+						vec[index] = anode;
+					}
+				}
 			}
 		}
 
@@ -717,16 +755,26 @@ struct InputGen {
 		if (node_ids.size() != dag->size()) {
 			node_ids.resize(dag->size());
 		}
-		//cout << "InputGen: the new dag: ";
+		//cout << "InputGen: the dag: ";
 		//dag->lprint(cout);
-		//dir->outputVarMap(cout);
+		//dag->repOK();
+		dir->outputVarMap(cout);
 		// TODO xzl: do we need this?
 		//int YES = dir->newYES();
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(*dir, "InputGen", node_values, node_ids);			
 		//cout << "InputGen: BEG nts.process" << endl;
 		nts.process(*dag);
+		//BooleanDAG * bdag = dag->clone();
+		//DagOptim cse(*bdag);
+		//cse.process(*bdag);
+		//cout << "InputGen: the bdag: ";
+		//bdag->lprint(cout);
+		//bdag->repOK();
+		//nts.process(*bdag);
 		//cout << "InputGen: END nts.process" << endl;
+		//bdag->clear();
+		//delete bdag;
 		//TODO xzl: do we need this?
 		//dir->nextIteration();
 		int result = solver->solve();
@@ -734,7 +782,7 @@ struct InputGen {
 		//delete dag;
 		if (result != SATSolver::SATISFIABLE) {
 			noMore = true;
-			//cout << "InputGen: noMore=" << noMore << endl;
+			cout << "InputGen: noMore=" << noMore << endl;
 	    		switch( result ){
 	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
 	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
@@ -749,36 +797,47 @@ struct InputGen {
 			bool_node * mother = NULL;
 			vector<int> compressed(nsrc);
 			int tail=0;
-			for(VarStore::iterator it = constrained.begin(); it !=constrained.end(); ++it) {
-				if (it->index != 0 || it->next) {
-					// TODO xzl: properly handle array cases. Now just ignore
-					continue;
-				}
-				const string& cname = it->name;
-				int cnt = dir->getArrSize(cname);
-				Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
-				for(int i=0; i<cnt; ++i) {
-					int val = solver->getVarVal(dir->getArr(cname, i));
-					it->setBit(i, (val==1) ? 1 : 0);
-				}
-				int val = it->getInt();
-				compressed[tail++] = val;
-				//cout << "InputGen: creating " << cname << " size=" << cnt << endl;
-				//INTER_node * src = dag->create_inputs(cnt, cname);
-				INTER_node * src = srcnodes[cname];
-				bool_node * v = new CONST_node(val);
-				dag->addNewNode(v);
-				bool_node * eq = dag->new_node(src, v, bool_node::EQ);
-				if (mother) {
-					mother = dag->new_node(mother, eq, bool_node::AND);
-				} else {
-					mother = eq;
+			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
+				const string& cname = i->name;
+				const int size = i->size();
+				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
+					int index = p->index;
+					const vector<bool_node*> & vec = srcnodes[cname];
+					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					bool_node * src = vec[index];
+					//cout << "InputGen: " << cname << "[" << index << "]: " << src << endl;
+					if (src == NULL) {
+						continue;
+					}
+					//int cnt = dir->getArrSize(cname);
+					//Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+					int sz = p->size();
+					Assert( sz == size, "SIZE MISMATCH: "<< sz <<" != "<< size <<endl);
+					Assert( p->name == cname, "NAME MISMATCH: "<< p->name <<" != "<< cname <<endl);
+					for(int i=0; i<size; ++i) {
+						int val = solver->getVarVal(dir->getArr(cname, size*index+i));
+						p->setBit(i, (val==1) ? 1 : 0);
+					}
+					int val = p->getInt();
+					compressed[tail++] = val;
+					bool_node * v = new CONST_node(val);
+					dag->addNewNode(v);
+					bool_node * eq = dag->new_node(src, v, bool_node::EQ);
+					if (mother) {
+						mother = dag->new_node(mother, eq, bool_node::AND);
+					} else {
+						mother = eq;
+					}
 				}
 			}
 			Assert( mother, "empty mother!");
 			mother = dag->new_node(mother, NULL, bool_node::NOT);
 			ASSERT_node * anode = dynamic_cast<ASSERT_node*>(dag->new_node(mother, NULL, bool_node::ASSERT));
-			//anode->makeHardAssert();
+			anode->makeHardAssert();
+			dag->assertions.append(anode);
+			//cout << "InputGen: the new dag: ";
+			//dag->lprint(cout);
+			//dag->repOK();
 			//while (dag->getIntSize()<intsize) {
 			//	dag->growInputIntSizes();
 			//}
@@ -796,8 +855,10 @@ struct InputGen {
 			vector<int> const & compressed = constrainedIn[rand()%constrainedIn.size()];
 			int i=0;
 			for(VarStore::iterator it = constrained.begin(); it !=constrained.end(); ++it) {
-				if (it->index != 0 || it->next) {
-					// TODO xzl: properly handle array cases. Now just ignore
+				const string& cname = it->name;
+				int index = it->index;
+				bool_node * src = srcnodes[cname][index];
+				if (src == NULL) {
 					continue;
 				}
 				it->setVal(compressed[i++]);
@@ -814,11 +875,12 @@ struct InputGen {
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
 		int size = problem->getIntSize();
 		if (intsize < size) {
-			//cout << "InputGen: growInputSize to " << size << endl;
+			cout << "InputGen: growInputSize to " << size << endl;
 			//delete dag;
 			//delete dir;
 			//delete solver;
 			noMore = false;
+			srcnodes.clear();
 			constrainedIn.clear();
 			node_ids.clear();
 			hasH = !hasserts.empty();

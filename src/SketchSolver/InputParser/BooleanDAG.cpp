@@ -453,7 +453,7 @@ void BooleanDAG::repOK(){
 			}
 			if(n->mother != NULL){
 				bool_node* par = n->mother;
-				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << n->mother->get_name());
 				Assert( par->children.count(n) != 0, "My mother has disowned me "<<n->get_name()<<"  "<<i);
 			}
 			if(n->father != NULL){
@@ -466,7 +466,7 @@ void BooleanDAG::repOK(){
 				for(int t=0; t<an->multi_mother.size(); ++t){
 					if(an->multi_mother[t] != NULL){
 						bool_node* par = an->multi_mother[t];
-						Assert( nodeset.count(par)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+						Assert( nodeset.count(par)==1, "Multi-Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << par->get_name());
 						Assert( par->children.count(n) != 0, "My multimother has disowned me "<<n->get_name()<<"  "<<i);
 					}
 				}
@@ -479,7 +479,7 @@ void BooleanDAG::repOK(){
 			}
 		}
 	}
-	Assert(last == this->assertions.tail, "Missing nodes" );
+	Assert(last == this->assertions.tail, "Missing nodes: last != assertions.tail" );
 	
 	okForARRACC(this, nodes, 0);
 	cout<<"*** DONE REPOK ****"<<endl;
