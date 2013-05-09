@@ -687,6 +687,7 @@ struct InputGen {
 	}
 
 	void setcnode(int val, CONST_node * node) {
+		Assert(val >= 0, "val=" << val << endl);
 		if (constnodes.size()<val+1) {
 			constnodes.resize(val+1, NULL);
 		}
@@ -726,7 +727,7 @@ struct InputGen {
 				//Assert(0, "assume depend on array");
 				// NOTE we do not increase nsrc here
 				// because we only increase per individual array element
-				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz)));
+				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz, NULL)));
 				hasArr = true;
 				if (arsz > maxArSz) {
 					maxArSz = arsz;
@@ -767,7 +768,7 @@ struct InputGen {
 						CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
 						int index = mnode->getVal();
 						Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
-						setcnode(index, mnode);
+						//setcnode(index, mnode);
 						if (vec[index] == NULL) {
 							++nsrc;
 							vec[index] = anode;
