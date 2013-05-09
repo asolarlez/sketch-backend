@@ -796,8 +796,8 @@ struct InputGen {
 		}
 		//cout << "InputGen: the dag: ";
 		//dag->lprint(cout);
-		dir->outputVarMap(cout);
-		dag->repOK();
+		//dir->outputVarMap(cout);
+		//dag->repOK();
 		// TODO xzl: do we need this?
 		//int YES = dir->newYES();
 		//getProblem()->lprint(cout);
