@@ -661,13 +661,30 @@ struct InputGen {
 	int nsrc; // number of constrained src nodes
 	// name => (index -> INTER_node*) for scalars, index can only be 0
 	map<string, vector<bool_node*> > srcnodes;
+	vector<CONST_node*> constnodes;
+	// array name => the array node which is indexed by non-constant index
 	vector<vector<int> > constrainedIn;
 	VarStore constrained;
 	VarStore unconstrained;
 
-	InputGen(BooleanDAG * problem, vector<bool_node*> const & hasserts) : hasH(!hasserts.empty()), noMore(false) { if (hasH) {
+	InputGen(BooleanDAG * problem, vector<bool_node*> const & hasserts) : hasH(!hasserts.empty()), noMore(false), constnodes(32) { if (hasH) {
 		init(problem, hasserts);
 	}}
+
+	CONST_node * getcnode(int val) {
+		CONST_node * node;
+		if (constnodes.size()<val+1) {
+			constnodes.resize(val+1, NULL);
+			node = NULL;
+		} else {
+			node = constnodes[val];
+		}
+		if (!node) {
+			constnodes[val] = node = new CONST_node(val);
+			dag->addNewNode(node);
+		}
+		return node;
+	}
 
 	// TODO xzl: should we delete in deconstructor?
 
@@ -710,8 +727,16 @@ struct InputGen {
 		}
 
 		if (hasArr) {
+			map<string, bool_node*> nonconstIndexed;
 			for (BooleanDAG::iterator it=dag->begin(); it!=dag->end(); ++it) {
-				if ((*it)->type == bool_node::ARR_R) {
+				if ((*it)->type == bool_node::CONST) {
+					CONST_node * cnode = dynamic_cast<CONST_node*>(*it);
+					int val = cnode->getVal();
+					if (constnodes.size()<val+1) {
+						constnodes.resize(val+1, NULL);
+					}
+					constnodes[val] = cnode;
+				} else if ((*it)->type == bool_node::ARR_R) {
 					ARR_R_node * anode = dynamic_cast<ARR_R_node*>(*it);
 					if (anode->father->type != bool_node::SRC) {
 						cout << "assume depend on complex array father! anode=" << anode->mrprint() << endl;
@@ -719,19 +744,33 @@ struct InputGen {
 						Assert(0, "assume depend on complex array father");
 					}
 					SRC_node * fnode = dynamic_cast<SRC_node*>(anode->father);
-					map<string, vector<bool_node*> >::iterator entry = srcnodes.find(fnode->get_name());
+					string const & name = fnode->get_name();
+					map<string, vector<bool_node*> >::iterator entry = srcnodes.find(name);
 					vector<bool_node*> & vec = entry->second;
 					if (anode->mother->type != bool_node::CONST) {
-						cout << "assume depend on non-const array index! anode=" << anode->mrprint() << endl;
-						dag->lprint(cout);
-						Assert(0, "assume depend on non-const array index");
+						//cout << "assume depend on non-const array index! anode=" << anode->mrprint() << endl;
+						//dag->lprint(cout);
+						//Assert(0, "assume depend on non-const array index");
+						nonconstIndexed.insert(std::make_pair(name, fnode));
+					} else {
+						CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
+						int index = mnode->getVal();
+						Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+						if (vec[index] == NULL) {
+							++nsrc;
+							vec[index] = anode;
+						}
 					}
-					CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
-					int index = mnode->getVal();
-					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
-					if (vec[index] == NULL) {
+				}
+			}
+			for (map<string, bool_node*>::const_iterator it=nonconstIndexed.begin(); it != nonconstIndexed.end(); ++it) {
+				const string & name = it->first;
+				bool_node * fnode = it->second;
+				vector<bool_node*> & vec = srcnodes[name];
+				for (int i=0; i<vec.size(); i++) {
+					if (!vec[i]) {
 						++nsrc;
-						vec[index] = anode;
+						vec[i] = dag->new_node(getcnode(i), fnode, bool_node::ARR_R);
 					}
 				}
 			}
@@ -757,8 +796,8 @@ struct InputGen {
 		}
 		//cout << "InputGen: the dag: ";
 		//dag->lprint(cout);
-		//dag->repOK();
 		dir->outputVarMap(cout);
+		dag->repOK();
 		// TODO xzl: do we need this?
 		//int YES = dir->newYES();
 		//getProblem()->lprint(cout);
@@ -820,8 +859,7 @@ struct InputGen {
 					}
 					int val = p->getInt();
 					compressed[tail++] = val;
-					bool_node * v = new CONST_node(val);
-					dag->addNewNode(v);
+					bool_node * v = getcnode(val);
 					bool_node * eq = dag->new_node(src, v, bool_node::EQ);
 					if (mother) {
 						mother = dag->new_node(mother, eq, bool_node::AND);
@@ -843,8 +881,8 @@ struct InputGen {
 			//}
 			constrainedIn.push_back(compressed);
 			// useful debug info:
-			//cout << "InputGen: found a constrained input: ";
-			//constrained.printContent(cout);
+			cout << "InputGen: found a constrained input: ";
+			constrained.printContent(cout);
 		}
 	}
 
@@ -881,6 +919,7 @@ struct InputGen {
 			//delete solver;
 			noMore = false;
 			srcnodes.clear();
+			constnodes.clear();
 			constrainedIn.clear();
 			node_ids.clear();
 			hasH = !hasserts.empty();
