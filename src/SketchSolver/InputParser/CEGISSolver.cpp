@@ -686,6 +686,13 @@ struct InputGen {
 		return node;
 	}
 
+	void setcnode(int val, CONST_node * node) {
+		if (constnodes.size()<val+1) {
+			constnodes.resize(val+1, NULL);
+		}
+		constnodes[val] = node;
+	}
+
 	// TODO xzl: should we delete in deconstructor?
 
 	void init(BooleanDAG * problem, vector<bool_node*>const & hasserts) {
@@ -703,6 +710,7 @@ struct InputGen {
 		dir = new SolverHelper(*solver);
 		int YES = dir->newYES();
 		bool hasArr = false;
+		int maxArSz = 0;
 		for (int i=0; i<sliceInSize; ++i) {
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(sliceIn[i]);	
 			int arsz = srcnode->getArrSz();
@@ -720,6 +728,9 @@ struct InputGen {
 				// because we only increase per individual array element
 				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz)));
 				hasArr = true;
+				if (arsz > maxArSz) {
+					maxArSz = arsz;
+				}
 			}
 			declareInput(constrained, name, nbits, arsz);
 			if(arsz <0){ arsz = 1; }
@@ -732,10 +743,10 @@ struct InputGen {
 				if ((*it)->type == bool_node::CONST) {
 					CONST_node * cnode = dynamic_cast<CONST_node*>(*it);
 					int val = cnode->getVal();
-					if (constnodes.size()<val+1) {
-						constnodes.resize(val+1, NULL);
+					// NOTE very dangerous bug! val may be negative!
+					if (val >= 0 && val < maxArSz) {
+						setcnode(val, cnode);
 					}
-					constnodes[val] = cnode;
 				} else if ((*it)->type == bool_node::ARR_R) {
 					ARR_R_node * anode = dynamic_cast<ARR_R_node*>(*it);
 					if (anode->father->type != bool_node::SRC) {
@@ -756,6 +767,7 @@ struct InputGen {
 						CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
 						int index = mnode->getVal();
 						Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+						setcnode(index, mnode);
 						if (vec[index] == NULL) {
 							++nsrc;
 							vec[index] = anode;
