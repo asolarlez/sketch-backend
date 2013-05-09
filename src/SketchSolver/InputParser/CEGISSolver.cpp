@@ -767,9 +767,10 @@ struct InputGen {
 					} else {
 						CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
 						int index = mnode->getVal();
-						Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+						//Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
 						//setcnode(index, mnode);
-						if (vec[index] == NULL) {
+						// NOTE dangerous bug! here index may be out of bound and we must check!
+						if (index>=0 && index<vec.size() && vec[index] == NULL) {
 							++nsrc;
 							vec[index] = anode;
 						}
