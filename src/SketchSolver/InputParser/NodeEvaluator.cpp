@@ -178,7 +178,7 @@ void NodeEvaluator::visit( EQ_node& node ){
 				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
 				tt = tt && (tm == tf);
 				if(!tt){
-					//cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
+					cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
 					break;
 				}
 			}

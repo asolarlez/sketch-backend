@@ -489,7 +489,7 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 				for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
 					const string& cname = it->name;
 					int cnt = dir.getArrSize(cname);
-					Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+					Assert( cnt == it->size(), "defineProblem: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
 					for(int i=0; i<cnt; ++i){
 						int val = nts.lastGoodVal(dir.getArr(cname, i));
 						it->setBit(i, (val==1) ? 1 : 0);			
@@ -557,7 +557,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->name;
 		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
 		for(int i=0; i<cnt; ++i){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			
@@ -733,6 +733,7 @@ struct InputGen {
 					maxArSz = arsz;
 				}
 			}
+			cout << "InputGen: declaring " << name << " " << nbits << " * " << arsz << endl;
 			declareInput(constrained, name, nbits, arsz);
 			if(arsz <0){ arsz = 1; }
 			dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
@@ -853,6 +854,7 @@ struct InputGen {
 			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
 				const string& cname = i->name;
 				const int size = i->size();
+				//cout << "InputGen: " << cname << " " << i->globalSize() << endl;
 				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
 					int index = p->index;
 					const vector<bool_node*> & vec = srcnodes[cname];
@@ -865,7 +867,7 @@ struct InputGen {
 					//int cnt = dir->getArrSize(cname);
 					//Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
 					int sz = p->size();
-					Assert( sz == size, "SIZE MISMATCH: "<< sz <<" != "<< size <<endl);
+					Assert( sz == size, "InputGen: SIZE MISMATCH: "<< sz <<" != "<< size <<endl);
 					Assert( p->name == cname, "NAME MISMATCH: "<< p->name <<" != "<< cname <<endl);
 					for(int i=0; i<size; ++i) {
 						int val = solver->getVarVal(dir->getArr(cname, size*index+i));
@@ -905,15 +907,21 @@ struct InputGen {
 		unconstrained.makeRandom();
 		if (noMore) {
 			vector<int> const & compressed = constrainedIn[rand()%constrainedIn.size()];
-			int i=0;
-			for(VarStore::iterator it = constrained.begin(); it !=constrained.end(); ++it) {
-				const string& cname = it->name;
-				int index = it->index;
-				bool_node * src = srcnodes[cname][index];
-				if (src == NULL) {
-					continue;
+			int pos=0;
+			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
+				const string& cname = i->name;
+				const int size = i->size();
+				//cout << "InputGen: " << cname << " " << i->globalSize() << endl;
+				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
+					int index = p->index;
+					const vector<bool_node*> & vec = srcnodes[cname];
+					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					bool_node * src = vec[index];
+					if (src == NULL) {
+						continue;
+					}
+					p->setVal(compressed[pos++]);
 				}
-				it->setVal(compressed[i++]);
 			}
 		}
 		input = join(constrained, unconstrained);
@@ -1002,9 +1010,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			eval.trackChanges();
 			if(done){
 				tc.stop().print("found a cex by random testing");
-				if (false) {
+				if (true) {
 					dag->lprint(cout);
-					for (int i=0; i<dag->size(); i++) {
+					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
 						cout << val << " " << node->lprint() << endl;
@@ -1077,7 +1085,6 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				tbd->lprint(cout);
 			}
 			pushProblem(tbd);
-			
 			
 			bool rv = baseCheck(controls, tmpin);
 			
@@ -1425,7 +1432,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		const string& cname = it->name;
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
-			Assert( cnt == it->globalSize(), "SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<<endl);
+			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);
 			for(int i=0; i<cnt; ++i){
 				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
