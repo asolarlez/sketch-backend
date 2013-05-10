@@ -733,7 +733,7 @@ struct InputGen {
 					maxArSz = arsz;
 				}
 			}
-			cout << "InputGen: declaring " << name << " " << nbits << " * " << arsz << endl;
+			//cout << "InputGen: declaring " << name << " " << nbits << " * " << arsz << endl;
 			declareInput(constrained, name, nbits, arsz);
 			if(arsz <0){ arsz = 1; }
 			dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
