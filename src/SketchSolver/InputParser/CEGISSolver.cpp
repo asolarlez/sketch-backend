@@ -896,6 +896,9 @@ struct InputGen {
 			//	dag->growInputIntSizes();
 			//}
 			constrainedIn.push_back(compressed);
+			if (compressed.size()%4096 ==0) {
+				cout << "InputGen: compressed.size=" << compressed.size();
+			}
 			// useful debug info:
 			//cout << "InputGen: found a constrained input: ";
 			//constrained.printContent(cout);
