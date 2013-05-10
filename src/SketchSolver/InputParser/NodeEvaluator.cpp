@@ -177,7 +177,10 @@ void NodeEvaluator::visit( EQ_node& node ){
 				int tm = mv==NULL?  i(*node.mother) :mv->get(jj, i(*node.mother));
 				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
 				tt = tt && (tm == tf);
-				if(!tt){ break; }
+				if(!tt){
+					//cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
+					break;
+				}
 			}
 		setbn(node, tt);
 	}else{
