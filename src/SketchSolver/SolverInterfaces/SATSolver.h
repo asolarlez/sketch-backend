@@ -63,9 +63,10 @@ public:
 	virtual void hardAssertVarClause(int x)=0;
 
 	virtual void retractableAssertClause(int x)=0;
-
+	virtual void outputSAT()=0;
 	virtual void addHelperClause(int c[], int size)=0;
 	virtual int isValKnown(int i){return 0; }
+	virtual void addCountingHelperClause(int c[], int sz);
 
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
@@ -86,6 +87,7 @@ public:
     virtual void clean()=0;	
     virtual void printDiagnostics(char c)=0;	 
 	virtual void lightSolve();
+
 };
 
 

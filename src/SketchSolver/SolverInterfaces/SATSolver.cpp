@@ -7,6 +7,11 @@
 void SATSolver::lightSolve(){
 }
 
+
+void SATSolver::addCountingHelperClause(int c[], int sz){
+
+}
+
 SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
 		SATSolver* solver = NULL;
 //		if( t ==  ABC ){
@@ -19,7 +24,7 @@ SATSolver* SATSolver::solverCreate(SolverType t, SolverMode m, string name){
 //      		solver = new ZchaffSATSolver(name, m);
 //     		cout<<name<<" = ZCHAFF"<<endl;
 //      	}else if( t ==  MINI){
-      		solver = new MiniSATSolver(name, m);
+      		solver = new MiniSATSolver(name, m);			
      		cout<<name<<" = MINI"<<endl;
 //      	}
 		return solver;

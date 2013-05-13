@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <Sort.h>
 using namespace std;
 
 #include "BooleanToCNF.h"
@@ -34,11 +35,35 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 
 
 void SolverHelper::addHelperC(Tvalue& tv){
-	
-	vector<guardedVal>& gv = tv.num_ranges;
-	if(tv.isSparse() &&  gv.size() > 1){
-		addHelperC(-gv[0].guard, -gv[1].guard);
-		if(gv.size()>2){
+	if(tv.isSparse() ){
+		vector<guardedVal>& gv = tv.num_ranges;
+		int size = gv.size();
+		if(size == 1){ return; }
+		if(size == 2){
+			addHelperC(-gv[0].guard, -gv[1].guard);
+		}
+		int* x = new int[size];
+		for(int i=0; i<size; ++i){
+			x[i] = -gv[i].guard;
+		}		
+		MSsolverNS::sort(x, size);
+		int l = this->setStrBO(x, size, ':', 0);		
+		int rv;
+		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){				
+			mng.addCountingHelperClause(x, gv.size());
+		}
+		delete x;
+
+		/*
+		vector<guardedVal>& gv = tv.num_ranges;
+		if(gv.size()<7){
+			for(int i=0; i<gv.size()-1; ++i){
+				for(int j=i+1; j < gv.size(); ++j){
+					addHelperC(-gv[i].guard, -gv[j].guard);
+				}
+			}
+		}else{
+			addHelperC(-gv[0].guard, -gv[1].guard);
 			int t = addOrClause(gv[0].guard, gv[1].guard);
 			for(int i=2; i<gv.size()-1; ++i){
 				addHelperC(-t, -gv[i].guard);
@@ -46,6 +71,8 @@ void SolverHelper::addHelperC(Tvalue& tv){
 			}
 			addHelperC(-t, -gv[gv.size()-1].guard);
 		}
+		*/
+		
 	}
 	
 }
