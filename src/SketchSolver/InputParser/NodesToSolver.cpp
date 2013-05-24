@@ -508,7 +508,9 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
 	int tt = comp(quant1, quant2);
-	
+	if(!shortcut){
+		return tt;
+	}
 	if(PARAMS->randBnd > 0 && abs(tt) > PARAMS->randBnd){ 
 		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
 		if(!dir.getMng().isNegated()){
@@ -841,6 +843,11 @@ NodesToSolver::processArith (bool_node &node)
 			++vals;
 		}
 	}
+	if(PARAMS->randBnd > 0 && mval.getSize() * fval.getSize() > 3*PARAMS->randBnd){
+		shortcut = true;
+	}else{
+		shortcut = false;
+	}
 	for(int i=0; i<mval.getSize (); ++i){
 		if(skipZeros && mval[i] == 0){ continue; }
 	    for(int j=0; j<fval.getSize (); ++j){
@@ -893,18 +900,35 @@ NodesToSolver::processArith (bool_node &node)
 
 	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
 	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here");
-	int newID = -1;
+	
 	tmp.resize(vals);
 	map<int, int>::iterator it = numbers.begin();
 
-	{
-		int quant = it->first;		
-		newID = it->second;
-		tmp[0] = guardedVal(newID, quant);
-	}
-	++it;
-	for(int i=1; i<vals; ++i, ++it){		
+	int i;
+	for(i=0; it != numbers.end(); ++it){
+		if(it->second == YES){
+			tmp.resize(1);
+			tmp[0] = guardedVal(it->second, it->first);	
+			for(map<int, int>::iterator sit = numbers.begin(); sit != numbers.end(); ++sit){
+				if(sit->second != it->second){
+					dir.addAssertClause(-sit->second);
+				}
+			}
+			i=1;
+			break;
+		}
+		if(it->second == -YES){
+			continue;
+		}
 		tmp[i] = guardedVal(it->second, it->first);		
+		++i;
+	}
+	tmp.resize(i);
+	if(tmp.size() == 1){
+		if(tmp[0].guard != YES){
+			dir.addAssertClause(tmp[0].guard);
+			tmp[0].guard = YES;
+		}
 	}
 	oval.sparsify (dir);
 	dir.addHelperC(oval);

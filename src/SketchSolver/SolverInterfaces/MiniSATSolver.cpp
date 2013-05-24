@@ -37,6 +37,21 @@ void MiniSATSolver::annotate(const string& msg){
 	FileOutput(output<<endl);
 }
 
+
+ void MiniSATSolver::addCountingHelperClause(int c[], int sz){
+	vec<Lit> lits;
+	Dout(cout<<"@ C-helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
+	lits.clear();
+	for(int i=0; i<sz; ++i){	
+		int var = abs(c[i]);		
+		lits.push( (c[i] > 0) ? Lit(var) : ~Lit(var) );		
+	}
+	s->addClause(lits, SINGLESET);
+	++clauseCount;
+ }
+
+
+
 void MiniSATSolver::addHelperClause(int c[], int sz){
 	vec<Lit> lits;
 	Dout(cout<<"@ helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
@@ -252,13 +267,22 @@ bool MiniSATSolver::ignoreOld(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	bool result = s->solve(assumptions);
  	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
+
+	if(outputProblems){
+		++solveCount;
+		stringstream str;
+		str<<"sat_"<<(solveNegation?"VER":"SYN")<<"_"<<solveCount<<".cnf";
+		cout<<"Creating SAT file "<<str.str()<<endl;
+		s->writeDIMACS(str.str().c_str());
+	}
+
 	if( result) {
 		//cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
 	}else{
 		//cout<<"Returned UNSAT"<<endl;
 		return UNSATISFIABLE;
-	}
+	}		
 }
 
  void MiniSATSolver::reset(){

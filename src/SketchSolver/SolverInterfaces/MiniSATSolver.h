@@ -17,12 +17,14 @@ inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
 class MiniSATSolver : public SATSolver{
 protected:
+	int solveCount;
+	bool outputProblems;
 	vector<int> finalOr;
 	vec<Lit> assumptions;
 	Solver* s;
 	void addClause(int tmp[], int sz, MSsolverNS::vec<Lit>& lits);
 	int clauseCount;
-	int lsolve;
+	bool lsolve;
 public:
 	ostream* debugout;
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
@@ -33,6 +35,13 @@ public:
 		clauseCount=0;
 		debugout = NULL;
 		lsolve = false;
+		solveCount = 0;
+		outputProblems = false;
+
+	 }
+	 virtual void outputSAT(){
+		 cout<<"Outputing problems"<<endl;
+		 outputProblems = true;
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
@@ -55,6 +64,7 @@ public:
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
 	 virtual void retractableAssertClause(int x);
+	 void addCountingHelperClause(int c[], int sz);
 
 	 virtual void hardAssertVarClause(int x);
 	 
