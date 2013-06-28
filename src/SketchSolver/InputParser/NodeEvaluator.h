@@ -5,6 +5,8 @@
 #include "VarStore.h"
 #include <map>
 
+#include <iostream>
+
 using namespace std;
 
 /*
@@ -67,6 +69,8 @@ public:
 		update(pp, ii, v);
 	}
 	cpvec(int sz):vv(new int[sz]){
+		// NOTE xzL: set uninitialized value to be 0
+		memset(vv, 0, sz*sizeof(int));
 		bnd = sz;		
 		parent = NULL;
 		idx[0] = UNSET;
@@ -75,6 +79,8 @@ public:
 		flip = 0;
 	}
 	cpvec(int sz, VarStore::objP* op):vv(new int[sz]){
+		// NOTE xzL: set uninitialized value to be 0
+		memset(vv, 0, sz*sizeof(int));
 		bnd = sz;	
 		while(op != NULL){
 			Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
@@ -91,6 +97,14 @@ public:
 		return bnd;
 	}
 	bool lget(int ii, int& rv){
+		if (ii >= bnd) {
+			// This fixes a very serious bug!
+			// if a is an ARR_W node extending b, an old ARR node
+			// then a.lget will call b.lget
+			// but a.bnd might be bigger than b.bnd
+			// so b.lget cannot blindly return vv
+			return false;
+		}
 		if(vv != NULL){ rv= vv[ii]; return true;}
 		int b0 = idx[0]==ii;
 		int b1 = idx[1]==ii;
@@ -119,6 +133,20 @@ public:
 		val[1+flip] = rv;
 		flip = 1-flip;
 		return rv;
+	}
+	void print(ostream & os) {
+		// recursively print the structure of a cpvec
+		os << bnd << "[";
+		for (int i=0; i<bnd; i++) {
+			os << get(i, -1) << " ";
+		}
+		for (int i=0; i<3; i++) {
+			os << idx[i] << "," << val[i] << " ";
+		}
+		if (parent) {
+			parent->print(os);
+		}
+		os << "]";
 	}
 };
 

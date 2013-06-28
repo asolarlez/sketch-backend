@@ -39,7 +39,15 @@ void NodeEvaluator::visit( ARR_W_node &node){
 		vvo->update(vvin, idx, i(*node.getNewVal()));
 	}else{
 		vecvalues[node.id] = new cpvec(vvin, idx, i(*node.getNewVal()));
-	}	
+	}
+	if (false && node.id == 197) {
+		cout << node.lprint() << ":";
+		vecvalues[node.id]->print(cout);
+		cout << endl;
+		cout << node.getOldArr()->id << "{" << idx << "->" << i(*node.getNewVal()) << "} ";
+		vvin->print(cout);
+		cout << endl;
+	}
 }
 
 void NodeEvaluator::visit( ARR_CREATE_node &node){
@@ -178,7 +186,15 @@ void NodeEvaluator::visit( EQ_node& node ){
 				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
 				tt = tt && (tm == tf);
 				if(!tt){
-					cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
+					if (false) {
+						cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
+						cout << "i(): " << i(*node.mother) << " " << i(*node.father) << endl;
+						cout << "mv:";
+						mv->print(cout);
+						cout << " fv:";
+						fv->print(cout);
+						cout << endl;
+					}
 					break;
 				}
 			}
@@ -221,6 +237,10 @@ void NodeEvaluator::printNodeValue(int i){
 			cout<<vv->get(i, values[i])<<", ";
 		}
 		cout<<endl;
+		if (false && (i == 197 || i==194)) {
+			vv->print(cout);
+			cout << endl;
+		}
 	}else{
 		cout<<values[i]<<endl;
 	}

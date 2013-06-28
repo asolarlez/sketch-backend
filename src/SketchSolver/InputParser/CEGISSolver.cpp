@@ -1014,11 +1014,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			if(done){
 				tc.stop().print("found a cex by random testing");
 				if (true) {
-					dag->lprint(cout);
+					//dag->lprint(cout);
 					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
 						cout << val << " " << node->lprint() << endl;
+						eval.printNodeValue(i);
 						if (!val && node->type == bool_node::ASSERT) {
 							cout << "assertion fail!" << endl;
 							break;
