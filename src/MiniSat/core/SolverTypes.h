@@ -110,6 +110,16 @@ const lbool l_Undef = toLbool( 0);
 //=================================================================================================
 // Clause -- a simple class for representing a clause:
 
+extern uint32_t SINGLESET;
+
+class Fake{
+	Lit data[0];
+public:
+	int size() const { return 2; }
+	Lit&         operator [] (int i)         { return data[i]; }
+    Lit          operator [] (int i) const   { return data[i]; }
+};
+
 
 class Clause {
     uint32_t size_etc;

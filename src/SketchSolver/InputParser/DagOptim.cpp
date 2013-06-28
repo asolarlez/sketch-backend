@@ -623,7 +623,7 @@ void DagOptim::visit( AND_node& node ){
 	}
 
 	if(nfather->type == bool_node::AND && nmother->type == bool_node::LT && nfather->mother->type == bool_node::LT ){
-		// (a<x)&((b<x)& T)--> a<x when b<a
+		// (a<x)&((b<x)& T)--> a<x & T when b<a
 		bool_node* nfm = nfather->mother;
 		if(nfm->father == nmother->father){
 			if(isConst(nfm->mother) && isConst(nmother->mother)){
@@ -1031,6 +1031,18 @@ void DagOptim::visit( ARR_R_node& node ){
 
 		}
 	}
+
+	if(isConst(node.mother) && node.father->type == bool_node::ARR_CREATE){
+		int idx = getIval(node.mother);
+		ARR_CREATE_node* acn = dynamic_cast<ARR_CREATE_node*>(node.father);
+		if(idx >= acn->multi_mother.size()){
+			rvalue = getCnode(-333);
+			return;
+		}
+		rvalue = acn->multi_mother[idx];
+		return;
+	}
+
 	if(isConst(node.father)){		
 		rvalue = node.father;		
 		return;
@@ -2540,12 +2552,13 @@ void DagOptim::process(BooleanDAG& dag){
 				
 
 		if(dag[i] != NULL){
+			// cout<<"Orig = "<<dag[i]->lprint();
 			bool_node* node = computeOptim(dag[i]);
-
+			// cout<<"  becomes "<<node->lprint()<<endl;
 
 
 			if(dag[i] != node){			
-					// cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
+					//cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
 					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
 					dag.replace(i, node);					
 			}else{

@@ -288,7 +288,12 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 	cout<<endl;
 	if(!isSingleMinHole){
 		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
-		dirFind.addRetractableAssertClause(bigor[0]);
+		try{
+			dirFind.addRetractableAssertClause(bigor[0]);
+		}
+		catch(BasicError& be){
+			return false;
+		}
 	}
 	
 	
@@ -440,6 +445,30 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		for(int i=0; i<inodeList.size(); ++i){
 			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
 			int nbits;
+			if(type == bool_node::CTRL){
+				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
+				if(cn->get_Angelic()){
+					if(cn->children.size() != 0){
+						Assert(cn->children.size() == 1, "NYI");
+						bool_node* bn = *(cn->children.begin());
+						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI");
+						arith_node* an = dynamic_cast<arith_node*>(bn);
+						if(an->multi_mother[0]==cn){
+							Assert(an->multi_mother[0]==cn, "NYI");
+							newdag->replace(cn->id, an->multi_mother[1]);
+						}else{
+							Assert(an->multi_mother[1]==cn, "NYI");
+							newdag->replace(cn->id, an->multi_mother[0]);
+						}
+						
+						continue;
+					}else{
+						newdag->replace(inode->id, cse.getCnode(0));
+						continue;
+					}
+				}
+			}
+			
 			bool_node * repl= nodeForINode(inode, values, cse);			
 			
 			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
@@ -1453,6 +1482,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		BooleanDAG * prob = getProblem();
 		NodeEvaluator eval(empty, *prob);
 		eval.run(input);
+		cout<<"PRINT EVAL"<<endl;
 		for(int i=0; i<check_node_ids.size(); ++i){
 //			cout<<i<<"=";
 //			check_node_ids[i].print(cout, &mngCheck);
