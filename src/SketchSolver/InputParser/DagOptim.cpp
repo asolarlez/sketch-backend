@@ -2,7 +2,7 @@
 #include "SATSolver.h"
 #include "CommandLineArgs.h"
 
-DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
+DagOptim::DagOptim(BooleanDAG& dag):cse(dag), stillPrivate(NULL)
 {
 	ALTER_ARRACS = false;
 	possibleCycles = false;

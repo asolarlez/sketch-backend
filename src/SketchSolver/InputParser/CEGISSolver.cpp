@@ -1051,7 +1051,6 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 						eval.printNodeValue(i);
 						if (!val && node->type == bool_node::ASSERT) {
 							cout << "assertion fail!" << endl;
-							break;
 						}
 					}
 				}

@@ -924,9 +924,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 					assertions.append( tt );
 				}
 			}
-		}
-		
-		if( (*node_it)->type == bool_node::SRC ){
+		} else if( (*node_it)->type == bool_node::SRC ){
 			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 			if( !has_name(inode->name) ){
 				nodes.push_back( inode );
@@ -935,10 +933,9 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			}else{
 				replacements[*node_it] = this->get_node(inode->name);
 				delete (*node_it);
+				// dangerous! after delete, the rest reads from *node_it will be invalid!
 			}
-		}
-				
-		if( (*node_it)->type == bool_node::DST){
+		} else if( (*node_it)->type == bool_node::DST){
 			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 			//nodesByType[(*node_it)->type].push_back((*node_it));
 			INTER_node* otherDst = named_nodes[inode->name];
