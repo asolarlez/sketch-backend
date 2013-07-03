@@ -628,6 +628,8 @@ void CEGISSolver::abstractProblem(){
 	int avgDist = 0;
 	int cutoff = ((asserts.size()*6)/10);
 	for(BooleanDAG::iterator node_it = asserts.begin(); node_it != asserts.end(); ++node_it){
+		int save_id = (*node_it)->id;
+		// save the id in case node is deleted below
 		if(found){
 			if(keepRemoving){
 				dag->remove((*node_it)->id);
@@ -659,7 +661,7 @@ void CEGISSolver::abstractProblem(){
 				cumDist += (*node_it)->id - lastAssert;				
 			}			
 		}
-		lastAssert = (*node_it)->id;
+		lastAssert = save_id; //(*node_it)->id;
 	}
 	dag->removeNullNodes();
 	dag->cleanup();
@@ -1300,20 +1302,22 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	do{
 		switch(cc.actionDecide(problemLevel() - (hardcode? 1: 0),getProblem())){
 			case CheckControl::POP_LEVEL:{
-				BooleanDAG* tbd = getProblem();
+				// must save the int size! tbd will be deleted by popProblem()
+				int tbdIntSize = getProblem()->getIntSize();
 				popProblem();
 				cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;
 				if(hardcode){
-					tbd = getProblem();
+					tbdIntSize = getProblem()->getIntSize();
+					// must save the int size! tbd will be deleted by popProblem()
 					popProblem();
 					oriProblem = getProblem();
-					if(tbd->getIntSize() != oriProblem->getIntSize()){
+					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}
 					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));					
 				}else{
 					oriProblem = getProblem();
-					if(tbd->getIntSize() != oriProblem->getIntSize()){
+					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}
 				}
