@@ -480,11 +480,11 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	}
 	Dout( newdag->print(cout) ); 
 	
-	if(false){
+	if(true){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 	}
-	if(false){
+	if(true){
 		DagOptim cse(*newdag);			
 		cse.process(*newdag);
 	}
@@ -1183,10 +1183,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	//cout << "after simiters" << endl;
 	
 	{
-		//BackwardsAnalysis ba;
+		BackwardsAnalysis ba;
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
-		//ba.process(*dag);
+		ba.process(*dag);
 	}
 	{
 		DagOptim cse(*dag);			

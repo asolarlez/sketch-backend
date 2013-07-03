@@ -492,6 +492,7 @@ void BackwardsAnalysis::visit( ARRASS_node& node ){
 
 
 void BackwardsAnalysis::process(BooleanDAG& bdag){
+	dagsizeSet(bdag.size());
 	int i=0;
 	
 	vector<bool_node*> bn = bdag.getNodesByType(bool_node::ASSERT);
@@ -499,6 +500,7 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 //	dimp.process(bdag);
 	info.resize(bdag.size());
 	//cout << "info.size=" << info.size();
+	//cout << "ba: dagsize=" << dagsize << endl;
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];
 		Info& c = info[cur->id];
@@ -542,6 +544,17 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	}
 	//cout << "reverse end" << endl;
 	bdag.removeNullNodes();
+	if (false) { for (int i=0; i<newnodes.size(); i++) {
+		bool_node * node = newnodes[i];
+		Assert(node->type == bool_node::CONST, "node->type=" << node->type);
+		int val = dynamic_cast<CONST_node*>(node)->getVal();
+		Assert(cnmap[val]==node, "cnmap["<<val<<"]="<<cnmap[val]<<"!="<<node);
+		int id = node->id;
+		if (id != dagsize+i) {
+			cout << "Wrong node->id=" << id << "when i=" << i << "dagsize=" << dagsize << endl;
+			exit(1);
+		}
+	} }
 	bdag.addNewNodes(newnodes);	
 	newnodes.clear();
 	bdag.cleanup();
