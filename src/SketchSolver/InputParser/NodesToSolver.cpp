@@ -205,6 +205,7 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
 		    bool avi = i < mend && i >= mstart;
 		    bool avj = j < fend && j >= fstart;
+		    // TODO xzl: why -1? does this value really matter?
 			int curri = avi ? mv[i].value  : -1;
 			int currj = avj ? fv[j].value  : -1;
 			if( curri == currj && avi && avj){
@@ -217,11 +218,13 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 				continue;
 			}
 			if((curri < currj && avi) || !avj){
+				// when curri=0 (default value) but j does not have, should not put guard to noeq, instead, it should be AND with the negation of all non default guard of j and put into orTerms
 				noeq.push_back(mv[i].guard);
 				i = i + inci;
 				continue;
 		    }
 		    if( (currj < curri && avj) || !avi ){
+				// when currj=0 (default value) but i does not, should not put guard to noeq, instead, it should be AND with the negation of all non default guard of i and put into orTerms
 				noeq.push_back(fv[j].guard);
 				j = j + incj;
 				continue;
@@ -229,6 +232,7 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 	}
 	
 	if(orTerms==0){
+		// if one has only default value (0) and the other has no term, should be YES
 		return -YES;
 	}else{
 		int rv;
@@ -249,6 +253,7 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 
 template<typename COMP> void
 NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
+//	cout << "compareArrays: " << node.lprint() << endl << "tmval= " << tmval << endl << "tfval= " << tfval << endl;
 	vector<guardedVal>& mv = tmval.num_ranges;
 	vector<guardedVal>& fv = tfval.num_ranges;
 
@@ -261,15 +266,18 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 	advanceToEndIdx(miend, midx, mv);
 	advanceToEndIdx(fiend, fidx, fv);
 	Tvalue mdef;
+	// in Tvalue, idx==-1 means the default value for array
+	// mdef is the default value for mother
 	if(midx==-1){
 		for(int i=0; i<miend; ++i){
 			mdef.num_ranges.push_back(guardedVal(mv[i].guard, mv[i].value));
 		}
 	}else{
+		// when there is no default value, the default is -333, guarded by YES
 		mdef = tvOne;
 		// TODO xzl: temporarily disable -333
-		//mdef.num_ranges[0].value = -333;
-		mdef.num_ranges[0].value = 0;
+		mdef.num_ranges[0].value = -333;
+		//mdef.num_ranges[0].value = 0;
 	}
 	Tvalue fdef;
 	if(fidx==-1){
@@ -279,8 +287,8 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 	}else{
 		fdef = tvOne;
 		// TODO xzl: temporarily disable -333
-		//fdef.num_ranges[0].value = -333;
-		fdef.num_ranges[0].value = 0;
+		fdef.num_ranges[0].value = -333;
+		//fdef.num_ranges[0].value = 0;
 	}
 	int cvar = YES;
 	bool moreM = true;
@@ -330,7 +338,8 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}while(moreM || moreF);
 
-	node_ids[node.id] = cvar;	
+	node_ids[node.id] = cvar;
+	//cout << "compareArrays: cvar=" << cvar << endl;
 }
 
 
@@ -992,10 +1001,6 @@ NodesToSolver::visit (SRC_node &node)
     
 
 	if( node.children.size() == 0){ return; }
-
-
-	
-		
     if (node_values.find (&node) != node_values.end ()) {
 		if (node.get_nbits () > 1) {
 		    Tvalue tmp = tvYES;
@@ -1016,7 +1021,7 @@ NodesToSolver::visit (SRC_node &node)
 		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
-		if (node.get_nbits () > 1 || arrSz >=0) {		    
+		if (node.get_nbits () > 1 || arrSz >=0) {
 		    Dout (cout << "setting input nodes " << node.get_name() << endl);
 		    //cout << "setting input nodes " << node.get_name() << endl;
 #ifndef HAVE_BVECTARITH
@@ -1037,6 +1042,8 @@ NodesToSolver::visit (SRC_node &node)
 	      << "  " << &node << endl);
 	//cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id] << "  " << &node << endl;
     }
+    // for input arrays, add the default value (out of bound) to be 0, if not present already
+    node_ids[node.id].addArrDefault(YES, 0);
 }
 
 
@@ -1702,8 +1709,8 @@ void NodesToSolver::visit( ACTRL_node& node ){
 
 void
 NodesToSolver::visit( ARR_R_node &node){
-	Tvalue index = tval_lookup(node.mother);	
-	Tvalue inarr = tval_lookup(node.father);	
+	Tvalue index = tval_lookup(node.mother);
+	Tvalue inarr = tval_lookup(node.father);
 	if(!index.isSparse()){
 		index.makeSparse(dir);
 	}
@@ -1741,8 +1748,8 @@ NodesToSolver::visit( ARR_R_node &node){
 	
 	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
 	// TODO xzl: temporarily disable -333
-	//defdef.num_ranges[0].value = -333;
-	defdef.num_ranges[0].value = 0;
+	defdef.num_ranges[0].value = -333;
+	//defdef.num_ranges[0].value = 0;
 	if(begdef == enddef){
 		begdef = defdef.num_ranges.begin();
 		enddef = defdef.num_ranges.end();
@@ -1817,6 +1824,10 @@ NodesToSolver::visit( ARR_R_node &node){
 
 
 	Tvalue& nvar = node_ids[node.id];
+	// TODO xzl: bug This is wrong.
+	// especially when type is BIT
+	// need to consider the case when index falls out of bound
+	// valToID is NOT sufficient. need to make a special case.
 	if(node.getOtype() == bool_node::INT){
 		vector<guardedVal>& tmp = nvar.num_ranges;
 		tmp.clear();
@@ -1836,15 +1847,18 @@ NodesToSolver::visit( ARR_R_node &node){
 		for(int i=0; it!=valToID.end(); ++i, ++it){
 			if(it->first == 0){
 				nvar = Tvalue(-it->second);
+//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 				return;
 			}
 			if(it->first == 1){
 				nvar = Tvalue(it->second);
+//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 				return;
 			}
 		}
 		nvar = Tvalue(-YES);
 	}
+//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 void NodesToSolver::visit( ARR_W_node &node){	
 	Tvalue index = tval_lookup(node.mother);	
@@ -1879,8 +1893,8 @@ void NodesToSolver::visit( ARR_W_node &node){
 	int defend = 0;
 	Tvalue tvdef = tvOne;
 	// TODO xzl: temporarily disable -333
-	//tvdef.num_ranges[0].value = -333;
-	tvdef.num_ranges[0].value = 0;
+	tvdef.num_ranges[0].value = -333;
+	//tvdef.num_ranges[0].value = 0;
 	if(cindex < 0){
 		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
 			++defend;
@@ -1922,6 +1936,7 @@ void NodesToSolver::visit( ARR_W_node &node){
 		idxstart += idxincr;
 	}
 	nvar.arrayify();
+//	cout << "ARR_W(inarr,index,newval,nvar): " << node.lprint() << endl << inarr << endl << index << endl << newval << endl << nvar << endl;
 }
 
 void
@@ -2055,8 +2070,8 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 			altL.num_ranges.push_back(gvl[i]);
 		}
 		// TODO xzl: temporarily disable -333
-		//if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
-		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0;}
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		//if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0;}
 		else{ altL.sparsify(dir); }
 
 		vector<guardedVal>& gvr = choices[1].num_ranges;	
@@ -2065,8 +2080,8 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 			altR.num_ranges.push_back(gvr[i]);
 		}
 		// TODO xzl: temporarily disable -333
-		//if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
-		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0;}
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		//if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0;}
 		else{ altR.sparsify(dir); }
 
 		int idxl = 0;

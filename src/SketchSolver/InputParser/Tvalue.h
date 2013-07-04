@@ -609,6 +609,14 @@ public:
 	return tv;
     }
 
+    inline void addArrDefault(int g, int v) {
+	    if (isArray()) {
+		    if (num_ranges.size()==0 || num_ranges[0].idx != -1) {
+			    num_ranges.insert(num_ranges.begin(), guardedVal(g, v, -1));
+		    }
+	    }
+    }
+
     /* This method is no longer necessary, since we now explicitly negate Boolean
      * values with a dedicated gate, and get the right kind of default value
      * (i.e. sparse/int) in case of a null argument; instead, use (1) makeSparse()

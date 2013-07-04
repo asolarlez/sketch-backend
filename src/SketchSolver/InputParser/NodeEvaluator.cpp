@@ -62,8 +62,8 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
 	// TODO xzl: temporarily disable -333
-	//setbn(node, -333 );
-	setbn(node, 0);
+	setbn(node, -333 );
+	//setbn(node, 0);
 }
 
 void NodeEvaluator::visit( AND_node& node ){
@@ -80,7 +80,9 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
-		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));		
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));
+		// for SRC arrays, anything beyond bounds are 0 by default
+		setbn(node, 0);
 	}else{
 		setbn(node, (*inputs)[node.get_name()]);	
 	}
