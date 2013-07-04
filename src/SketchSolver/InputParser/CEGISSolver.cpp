@@ -1188,12 +1188,15 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		BackwardsAnalysis ba;
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
+		cout << "simulate: ba" << endl;
 		ba.process(*dag);
+		cout << "simulate: after ba" << endl;
 	}
 	{
-		DagOptim cse(*dag);			
-		cout << "cse:" << endl;
+		DagOptim cse(*dag);
+		cout << "simulate: cse" << endl;
 		cse.process(*dag);
+		cout << "simulate: after cse" << endl;
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 	tc.stop().print("didn't find a cex");	
