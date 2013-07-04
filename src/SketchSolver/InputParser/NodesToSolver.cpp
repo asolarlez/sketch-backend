@@ -1847,18 +1847,18 @@ NodesToSolver::visit( ARR_R_node &node){
 		for(int i=0; it!=valToID.end(); ++i, ++it){
 			if(it->first == 0){
 				nvar = Tvalue(-it->second);
-//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
+//	cout << "ARR_R(inarr,index,nvar)1: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 				return;
 			}
 			if(it->first == 1){
 				nvar = Tvalue(it->second);
-//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
+//	cout << "ARR_R(inarr,index,nvar)2: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 				return;
 			}
 		}
 		nvar = Tvalue(-YES);
 	}
-//	cout << "ARR_R(inarr,index,nvar): " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
+//	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 void NodesToSolver::visit( ARR_W_node &node){	
 	Tvalue index = tval_lookup(node.mother);	
