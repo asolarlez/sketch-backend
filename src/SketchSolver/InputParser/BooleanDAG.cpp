@@ -709,8 +709,11 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
 }
 
 
-INTER_node* BooleanDAG::create_inputs(int n, const string& gen_name, int arrSz){
+INTER_node* BooleanDAG::create_inputs(int n, bool_node::OutType type, const string& gen_name, int arrSz){
 	SRC_node* src = dynamic_cast<SRC_node*>(create_inter(n, gen_name, n_inputs, bool_node::SRC));
+	if(type == bool_node::FLOAT || type == bool_node::FLOAT_ARR){
+		src->otype = type;
+	}
 	src->setArr(arrSz);
 	return src;
 }
@@ -917,6 +920,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			}else{
 				replacements[*node_it] = this->get_node(inode->name);
 				delete (*node_it);
+				continue;
 			}
 		}
 				

@@ -62,6 +62,7 @@ bool valueSearch(bool_node* node,FastMap<bool_node,int>& fm, int&out, int bnd){
 CONST_node* BackwardsAnalysis::getCnode(int val){
 	if( cnmap.find(val) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
+		//Make sure dagsize gets initialized!!
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[val] = cnode;
@@ -466,11 +467,13 @@ void BackwardsAnalysis::visit( ARRASS_node& node ){
 
 
 void BackwardsAnalysis::process(BooleanDAG& bdag){
+	dagsizeSet(bdag.size());
 	int i=0;
 	
 	vector<bool_node*> bn = bdag.getNodesByType(bool_node::ASSERT);
 	bool_node* tprev = NULL;
 //	dimp.process(bdag);
+	
 	info.resize(bdag.size());
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];

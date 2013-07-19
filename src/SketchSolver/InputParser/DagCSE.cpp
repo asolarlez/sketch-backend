@@ -295,7 +295,11 @@ void DagCSE::visit( ARR_CREATE_node& node ){
   	char* tch = &tmpbuf[0];
 	int p = 0;
 	tch[p] = '$'; p++;
-	writeInt(tch, node.getVal(), p);	
+	if(node.isFloat()){
+		p += sprintf(tch+p, "%A", node.getFval());
+	}else{
+		writeInt(tch, node.getVal(), p);
+	}
 	tch[p] = '$'; p++;
 	tch[p]=0;  	
  	ccode = tch;

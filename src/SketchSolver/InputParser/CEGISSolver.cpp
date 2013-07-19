@@ -660,6 +660,7 @@ void CEGISSolver::abstractProblem(){
 				cumDist += (*node_it)->id - lastAssert;				
 			}			
 		}
+		//This is buggy because node_it may have beeen deleted by dag->remove()
 		lastAssert = (*node_it)->id;
 	}
 	dag->removeNullNodes();
@@ -936,12 +937,14 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 					tbd = getProblem();
 					popProblem();
 					oriProblem = getProblem();
+					//tbd will be invalid by the time we get here because popProblem deletes the problem.
 					if(tbd->getIntSize() != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}
 					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));					
 				}else{
 					oriProblem = getProblem();
+					//tbd will be invalid by the time we get here because popProblem deletes the problem.
 					if(tbd->getIntSize() != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}

@@ -51,7 +51,7 @@ private:
 
 public:
   typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE} Type;
-  typedef enum{BOTTOM, BOOL, INT,BOOL_ARR, INT_ARR} OutType;
+  typedef enum{BOTTOM, BOOL, INT,BOOL_ARR, INT_ARR, FLOAT, FLOAT_ARR} OutType;
   const Type type;
 
 protected:
@@ -63,7 +63,7 @@ public:
 
   bool isArrType(){
 	  OutType ot = getOtype();
-	  return ot == INT_ARR || ot==BOOL_ARR;
+	  return ot == INT_ARR || ot==BOOL_ARR || ot == FLOAT_ARR;
   }
   bool isArith(){
 	  return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL || type == ARR_W || type == ARR_CREATE;
@@ -101,11 +101,13 @@ public:
 	globalId = NEXT_GLOBAL_ID++;
   }
   /**
-              INT_ARR
-		      |     \
-		  BOOL_ARR  INT
-		       \    /
-			    BOOL
+					 FLOAT_ARR
+			       	   |	  \
+				    INT_ARR    FLOAT 
+		            |     \   /
+		     	BOOL_ARR   INT    
+			        \     /            
+	   		   	      BOOL           
 		      
 
   */
@@ -114,22 +116,36 @@ public:
   	if(t2 == BOTTOM){ return t1; }
   	if( t2 == t1 ){ 
   		return t1; 
-  	}else{ 
-		OutType rv = BOOL;
-		if(t1==INT_ARR || t2==INT_ARR){
-			return INT_ARR;
+  	}else{ 		
+		if(t1==FLOAT_ARR || t2 == FLOAT_ARR){
+			return FLOAT_ARR;
 		}
-		if(t1==INT || t2==INT){
-			rv = INT;
-			if(t1==BOOL_ARR || t2==BOOL_ARR){
-				rv = INT_ARR;
-			}
-		}else{
-			if(t1==BOOL_ARR || t2==BOOL_ARR){
-				rv = BOOL_ARR;
+		if(t1==INT_ARR || t2==INT_ARR){
+			if(t1==FLOAT || t2==FLOAT){
+				return FLOAT_ARR;
+			}else{
+				return INT_ARR;
 			}
 		}		
-  		return rv; 
+		if(t1==FLOAT || t2 == FLOAT){
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				return  FLOAT_ARR;
+			}else{
+				return FLOAT;
+			}
+		}
+		if(t1==INT || t2==INT){			
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				return INT_ARR;
+			}else{
+				return INT;
+			}			
+		}else{
+			if(t1==BOOL_ARR || t2==BOOL_ARR){				
+				return BOOL_ARR;				
+			}
+		}		
+  		return BOOL; 
   	}
   }
 
@@ -250,6 +266,8 @@ public:
 		case INT: return "INT";
 		case BOOL_ARR: return "BOOL_ARR";
 		case INT_ARR: return "INT_ARR";
+		case FLOAT_ARR: return "FLOAT_ARR";
+		case FLOAT: return "FLOAT";
 		default: return "BOTTOM";
 	  }
   }
@@ -350,6 +368,10 @@ class ARR_R_node: public bool_node{
 				otype = INT;
 				return INT;			
 			}
+			if(ot == FLOAT_ARR){
+				otype = FLOAT;
+				return FLOAT;			
+			}
 			otype = ot;
 			return otype;			
 		}
@@ -408,6 +430,9 @@ class ARR_W_node:public arith_node{
 			if(otype==BOOL){
 				otype = BOOL_ARR;
 			}
+			if(otype==FLOAT){
+				otype = FLOAT_ARR;
+			}
 			otype = joinOtype(otype, multi_mother[1]->getOtype());
 			return otype;
 		}
@@ -455,6 +480,9 @@ class ARR_CREATE_node:public arith_node{
 			}
 			if(otype == BOOL){
 				otype = BOOL_ARR;
+			}
+			if(otype == FLOAT){
+				otype = FLOAT_ARR;
 			}
 			return otype;
 		}
@@ -672,7 +700,10 @@ class PLUS_node: public bool_node{
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new PLUS_node(*this, copyChildren);  };
 	OutType getOtype()const {
-			return INT;
+			if(otype == BOTTOM){
+				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+			}
+			return otype;
 	}
 };
 class TIMES_node: public bool_node{	
@@ -681,7 +712,10 @@ class TIMES_node: public bool_node{
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new TIMES_node(*this, copyChildren);  };
 	OutType getOtype()const {
-		return INT;
+		if(otype == BOTTOM){
+				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+			}
+			return otype;
 	}
 };
 
@@ -846,7 +880,10 @@ class DIV_node: public bool_node{
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new DIV_node(*this, copyChildren);  };
 		OutType getOtype()const {
-			return INT;
+			if(otype == BOTTOM){
+				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+			}
+			return otype;
 		}
 };
 class MOD_node: public bool_node{	
@@ -862,15 +899,17 @@ class MOD_node: public bool_node{
 };
 
 
-class NEG_node: public bool_node{	
-	
+class NEG_node: public bool_node{		
 	public: 
 		NEG_node():bool_node(NEG){  }
 		NEG_node(const NEG_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new NEG_node(*this, copyChildren);  };
 		OutType getOtype()const {
-			return INT;
+			if(otype == BOTTOM){
+				otype = joinOtype(mother->getOtype(), INT);
+			}
+			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
@@ -879,37 +918,74 @@ class NEG_node: public bool_node{
 		}
 };
 
+typedef union{
+	int val;
+	double fval;
+} NumType;
 
 class CONST_node: public bool_node{
-	int val;
+	NumType	v;
+	bool isInt;
 	public:
-		CONST_node():bool_node(CONST){  
-			val = -1;}
-		CONST_node(int n):bool_node(CONST){  
-			val = n;}
-		CONST_node(const CONST_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), val(bn.val){
+		CONST_node():bool_node(CONST), isInt(true){  
+			v.val = -1;}
+		CONST_node(int n):bool_node(CONST), isInt(true){  
+			v.val = n;}
+		CONST_node(double d):bool_node(CONST), isInt(false){  
+			v.fval = d;}
+		CONST_node(const CONST_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), v(bn.v), isInt(bn.isInt){
 			//if(val == 13){ cout<<" surprise"<<endl; }
 		}  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-		virtual void setVal(int v){ val = v; }
-		virtual int getVal() const { return val; }
+		void setVal(int n){ v.val = n; }
+		int getVal() const { return v.val; }
+		bool isFloat() const { return !isInt; }
+		double getFval() const { return v.fval; }
+		static long long int code(double d){
+			if(d<1e-100 && d > -1e-100){
+				return 0;
+			}
+			if(d>0.0){
+				double lg = log10(d);
+				return (((long long int)(lg*100000000))<<2 & (-1l)) | 1;
+			}else{
+				double lg = log10(-d);
+				return ((long long int)(lg*100000000))<<2 | 3;
+			}
+		}
+		long long int getCode() const { 
+			if(isInt){
+				return v.val <<1;
+			}else{
+				return code(v.fval);
+			}
+		}
+
 		string get_name() const{
 		    stringstream str;
 		    str<<"C";
-		    if( val<0){
+		    if( v.val<0){
 		    	str<<"m";	
 		    }
-		    str<<abs(val);		    
+		    str<<abs(v.val);		    
 		    return str.str();
 		}
 		  virtual string lid(){
 				stringstream str;
-				str<<"(" << val << ")";
+				if(isInt){
+					str<<"(" << v.val << ")";
+				}else{
+					str<<"(" << v.fval << ")";
+				}
 				return str.str();
 		  }
 		virtual string lprint()const{
 			stringstream str;
-			str<<id<<"= "<<"(" << val << ")";
+			if(isInt){
+				str<<id<<"= "<<"(" << v.val << ")";
+			}else{
+				str<<id<<"= "<<"(" << v.fval << ")";
+			}
 			return str.str();
 		}
 		virtual bool_node* clone(bool copyChildren = true){return new CONST_node(*this, copyChildren);  };
@@ -917,16 +993,24 @@ class CONST_node: public bool_node{
 			if(otype != BOTTOM){
 				return otype;
 			}
-			if(val != 0 && val != 1){
-				otype = INT;	
+			if(!isInt){
+				otype = FLOAT;
 			}else{
-				otype = BOOL;
-			}		
+				if(v.val != 0 && v.val != 1){
+					otype = INT;	
+				}else{
+					otype = BOOL;
+				}		
+			}
 			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<val;			
+			if(isInt){
+				str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<v.val;			
+			}else{
+				str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<v.fval;			
+			}
 			return str.str();
 		}
 };

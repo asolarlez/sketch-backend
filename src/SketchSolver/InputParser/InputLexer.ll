@@ -134,6 +134,11 @@ Comment      ("//"[^\n]*)
 				return T_vartype;
 		}
 
+"float"	{
+		yylval->variableType = FLOAT;
+		return T_vartype;
+}
+
 "int_arr"	{
 				yylval->variableType = INT_ARR;
 				return T_vartype;
@@ -143,6 +148,12 @@ Comment      ("//"[^\n]*)
 				yylval->variableType = BIT_ARR;
 				return T_vartype;
 		}
+
+"float_arr" {
+				yylval->variableType = FLOAT_ARR;
+				return T_vartype;
+		}
+
 
 "for"		{
 				

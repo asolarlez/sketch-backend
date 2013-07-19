@@ -2,7 +2,7 @@
 #include "SATSolver.h"
 #include "CommandLineArgs.h"
 
-DagOptim::DagOptim(BooleanDAG& dag):cse(dag)
+DagOptim::DagOptim(BooleanDAG& dag):cse(dag), stillPrivate(NULL)
 {
 	ALTER_ARRACS = false;
 	possibleCycles = false;
@@ -20,16 +20,35 @@ DagOptim::~DagOptim()
 
 //extern CommandLineArgs* PARAMS;
 
-CONST_node* DagOptim::getCnode(int val){
-	if( cnmap.find(val) == cnmap.end() ){
-		CONST_node* cnode = new CONST_node(val);
+CONST_node* DagOptim::getCnode(double c){
+	long long int code = CONST_node::code(c);
+	if(code == 0){ 
+		return getCnode(0);
+	}
+	if( cnmap.find(code) == cnmap.end() ){
+		CONST_node* cnode = new CONST_node(c);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
-		cnmap[val] = cnode;
+		cnmap[code] = cnode;
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
 		return cnode;
 	}else{
-		return cnmap[val];	
+		return cnmap[code];	
+	}
+
+}
+
+
+CONST_node* DagOptim::getCnode(int val){
+	if( cnmap.find(val<<1) == cnmap.end() ){
+		CONST_node* cnode = new CONST_node(val);
+		cnode->id = newnodes.size() + dagsize;		
+		newnodes.push_back(cnode);
+		cnmap[val<<1] = cnode;
+		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
+		return cnode;
+	}else{
+		return cnmap[val<<1];	
 	}
 }
 
@@ -449,7 +468,8 @@ bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 }
 bool DagOptim::isConst(const bool_node* n1){
 	if( n1->type == bool_node::CONST ){
-		return true;
+		return !dynamic_cast<const CONST_node*>(n1)->isFloat();
+		// return true;
 	}	
 	return false;
 }
@@ -480,7 +500,7 @@ void DagOptim::visit( CTRL_node& node ){
 }
 
 void DagOptim::visit( CONST_node& node ){
-	int val = node.getVal();
+	long long int val = node.getCode();	
 	if( cnmap.find(val) == cnmap.end() ){
 		cnmap[val] = &node;
 		rvalue = &node;
@@ -790,6 +810,7 @@ void DagOptim::visit( PLUS_node& node ){
 				}
 				
 			}
+
 			
 		}	
 	}
@@ -2246,7 +2267,7 @@ void DagOptim::cleanup(BooleanDAG& dag){
 #ifdef _DEBUG
 	dag.repOK();
 #endif	
-	//dag.lprint(cout);
+	// dag.lprint(cout);
 }
 
 /*The goal of this routine is to break any cycles 
@@ -2312,7 +2333,7 @@ void DagOptim::findCycles(BooleanDAG& dag){
 		}
 	}
 
-	for(map<int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
+	for(map<long long int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
 		cbPerNode(it->second, bns, dupNodes); // do DFS starting from constant nodes.
 	}
 

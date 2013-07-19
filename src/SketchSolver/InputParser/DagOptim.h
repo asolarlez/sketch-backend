@@ -7,6 +7,7 @@
 #include <typeinfo>
 #include <set>
 #include <stack>
+#include <functional>
 
 using namespace std;
 
@@ -434,7 +435,7 @@ public:
 	map<bool_node*, FastSet<bool_node> > funDependencies;
 	map<bool_node*, AbstractNodeValue> anv;
 	
-	map<int, CONST_node*> cnmap;
+	map<long long int, CONST_node*> cnmap;	
 	map<string, UFUN_node*> callMap;
 
 	DagOptim(BooleanDAG& dag);
@@ -503,6 +504,7 @@ public:
 	virtual void process(BooleanDAG& bdag);	
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
+	virtual  CONST_node* getCnode(double c);
 	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);
 	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
 	virtual bool isConst(const bool_node* n1);

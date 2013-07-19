@@ -116,22 +116,26 @@ MethodList: {}
 InList: T_ident {  
 
     if( Gvartype == INT){
-
-		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+		currentBD->create_inputs( 2 /*NINPUTS*/, bool_node::INT , *$1); 
 	}else{
-
-		currentBD->create_inputs(-1, *$1); 
+		if(Gvartype==FLOAT){
+			currentBD->create_inputs(-1, bool_node::FLOAT, *$1); 
+		}else{
+			currentBD->create_inputs(-1, bool_node::BOOL, *$1); 
+		}
 	}	
 
 }
 | T_ident {
 	
     if( Gvartype == INT){
-
-		currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+		currentBD->create_inputs( 2 /*NINPUTS*/, bool_node::INT , *$1); 
 	}else{
-
-		currentBD->create_inputs(-1, *$1); 
+		if(Gvartype==FLOAT){
+			currentBD->create_inputs(-1, bool_node::FLOAT, *$1); 
+		}else{
+			currentBD->create_inputs(-1, bool_node::BOOL, *$1); 
+		}
 	}	
 } InList
 
@@ -145,10 +149,13 @@ OutList: T_ident { 	 currentBD->create_outputs(-1, *$1); }
 ParamDecl: T_vartype T_ident {  
 	if( $1 == INT){
 
-		currentBD->create_inputs( 2 /*NINPUTS*/ , *$2); 
+		currentBD->create_inputs( 2 /*NINPUTS*/, bool_node::INT , *$2); 
 	}else{
-
-		currentBD->create_inputs(-1, *$2); 
+		if($1 == FLOAT){
+			currentBD->create_inputs(-1, bool_node::FLOAT, *$2); 
+		}else{
+			currentBD->create_inputs(-1, bool_node::BOOL, *$2); 
+		}
 	}	
 	delete $2;
 }
@@ -166,10 +173,13 @@ ParamDecl: T_vartype T_ident {
  T_vartype '[''*' ConstantExpr']' T_ident {  
 	if( $1 == INT){
 
-		currentBD->create_inputs( 2 /*NINPUTS*/ , *$6, $4); 
+		currentBD->create_inputs( 2 /*NINPUTS*/, bool_node::INT_ARR , *$6, $4); 
 	}else{
-
-		currentBD->create_inputs(-1, *$6, $4); 
+		if($1 == FLOAT){
+			currentBD->create_inputs(-1, bool_node::FLOAT_ARR, *$6, $4); 
+		}else{
+			currentBD->create_inputs(-1, bool_node::BOOL_ARR, *$6, $4); 
+		}
 	}	
 	delete $6;
 }
@@ -457,15 +467,22 @@ IdentList: T_ident {
 Term: Constant {
 	$$ = currentBD->create_const($1);
 }	 
+| T_dbl {
+	$$ = currentBD->create_const($1);
+}
 
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' '[' T_ident ',' Constant ']' {
 	
 	list<bool_node*>* params = $6;
 	if(false && params->size() == 0){
 		if( $3 == INT){
-			$$ = currentBD->create_inputs( 2 /*NINPUTS*/ , *$1); 
+			$$ = currentBD->create_inputs( 2 /*NINPUTS*/, bool_node::INT , *$1); 
 		}else{
-			$$ = currentBD->create_inputs(-1, *$1);
+			if($3==FLOAT){
+				$$ = currentBD->create_inputs(-1,bool_node::FLOAT, *$1);
+			}else{
+				$$ = currentBD->create_inputs(-1,bool_node::BOOL, *$1);
+			}
 		}
 		delete $1;
 	}else{	
@@ -509,12 +526,8 @@ Term: Constant {
 	delete $6;
 }
 
-| '-' Term {	
-	if($2->type == bool_node::CONST){
-		$$ = currentBD->create_const(-dynamic_cast<CONST_node*>($2)->getVal());
-	}else{
-		$$ = currentBD->new_node($2, NULL, bool_node::NEG);		
-	}	
+| '-' Term {		
+		$$ = currentBD->new_node($2, NULL, bool_node::NEG);				
 }
 | '!' Term { 
 	$$ = currentBD->new_node($2, NULL, bool_node::NOT);		    

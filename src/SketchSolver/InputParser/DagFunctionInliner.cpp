@@ -236,7 +236,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			if(t == bool_node::SRC || t == bool_node::CTRL) continue;
 			if(t == bool_node::CONST){
 				CONST_node* n =  dynamic_cast<CONST_node*>(oldFun[i]);
-				nmap[n->id] = getCnode(n->getVal());
+				if(n->isFloat()){
+					nmap[n->id] = getCnode(n->getFval());
+				}else{
+					nmap[n->id] = getCnode(n->getVal());
+				}
+				
 				continue;
 			}
 			bool_node* n =  oldFun[i]->clone(false);

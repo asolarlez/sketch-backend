@@ -1,5 +1,6 @@
 #include "NodesToSolver.h"
 #include <algorithm>
+#include <functional>
 #include "timerclass.h"
 
 #include "CommandLineArgs.h"

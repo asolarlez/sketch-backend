@@ -91,7 +91,9 @@ public:
 		return bnd;
 	}
 	bool lget(int ii, int& rv){
-		if(vv != NULL){ rv= vv[ii]; return true;}
+		if(vv != NULL){ 
+			Assert(ii < bnd, "Out of bounds error in solver ;qek;kl");		
+			rv= vv[ii]; return true;}
 		int b0 = idx[0]==ii;
 		int b1 = idx[1]==ii;
 		int b2 = idx[2]==ii;
