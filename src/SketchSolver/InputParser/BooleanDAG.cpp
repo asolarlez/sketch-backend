@@ -71,13 +71,10 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 		bd->addNewNode(n);
 	}
 }
-BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out){
-	for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
-		(*it)->flag = 0;
-	}
-	BooleanDAG* bd = new BooleanDAG(this->name);
-	bd->ownsNodes = false;
-	bd->sliceH(nodes[i], bd);
+
+template<typename forward_iter>
+BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
+	BooleanDAG* bd = slice(begin, end, i);
 	if(out->mother != NULL){
 		out->mother->mother = nodes[i];		
 		if(out->mother->father != NULL){
@@ -91,7 +88,28 @@ BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out){
 	return bd;
 }
 
+BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out) {
+	return slice(vector<bool_node*>::const_iterator(), vector<bool_node*>::const_iterator(), i, out);
+}
 
+// interesting are the interesting nodes (stored in [begin, end)) in this dag!
+// and they must be sorted according to the normal order!
+template<typename forward_iter>
+BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i) {
+	for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
+		(*it)->flag = 0;
+	}
+	BooleanDAG* bd = new BooleanDAG(this->name);
+	bd->ownsNodes = false;
+	for (; begin!=end; ++begin) {
+		//cout << "slicing on " << (*begin)->lprint() << endl;
+		bd->sliceH(*begin, bd);
+	}
+	if (i>=0) {
+		bd->sliceH(nodes[i], bd);
+	}
+	return bd;
+}
 
 void BooleanDAG::clear(){	
 	if(ownsNodes){
@@ -435,7 +453,7 @@ void BooleanDAG::repOK(){
 			}
 			if(n->mother != NULL){
 				bool_node* par = n->mother;
-				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << n->mother->get_name());
 				Assert( par->children.count(n) != 0, "My mother has disowned me "<<n->get_name()<<"  "<<i);
 			}
 			if(n->father != NULL){
@@ -448,7 +466,7 @@ void BooleanDAG::repOK(){
 				for(int t=0; t<an->multi_mother.size(); ++t){
 					if(an->multi_mother[t] != NULL){
 						bool_node* par = an->multi_mother[t];
-						Assert( nodeset.count(par)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i);
+						Assert( nodeset.count(par)==1, "Multi-Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << par->get_name());
 						Assert( par->children.count(n) != 0, "My multimother has disowned me "<<n->get_name()<<"  "<<i);
 					}
 				}
@@ -461,7 +479,7 @@ void BooleanDAG::repOK(){
 			}
 		}
 	}
-	Assert(last == this->assertions.tail, "Missing nodes" );
+	Assert(last == this->assertions.tail, "Missing nodes: last != assertions.tail" );
 	
 	okForARRACC(this, nodes, 0);
 	cout<<"*** DONE REPOK ****"<<endl;
@@ -909,9 +927,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 					assertions.append( tt );
 				}
 			}
-		}
-		
-		if( (*node_it)->type == bool_node::SRC ){
+		} else if( (*node_it)->type == bool_node::SRC ){
 			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 			if( !has_name(inode->name) ){
 				nodes.push_back( inode );

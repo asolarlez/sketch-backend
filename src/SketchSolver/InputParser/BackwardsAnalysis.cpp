@@ -79,9 +79,12 @@ CONST_node* BackwardsAnalysis::getCnode(bool c){
 
 
 void BackwardsAnalysis::visitArith(arith_node& node ){
+	//cout << "visitArith" << endl;
 	Info& t = info[node.id];
+	//cout << "after t=info[node.id]" << endl;
 	if(t.isBottom()){
 		rvalue = getCnode(0);
+		//cout << "after rvalue=getCnode" << endl;
 		return;
 	}
 	/* This seems unprofitable; maybe later we'll discover it's useful.
@@ -93,13 +96,16 @@ void BackwardsAnalysis::visitArith(arith_node& node ){
 	*/
 	if(node.mother != NULL){
 		info[node.mother->id] += t;
+		//cout << "after info[mother]+=t" << endl;
 	}
 
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		info[node.multi_mother[i]->id] += t;
+		//cout << "after info[multi_mother]+=t" << endl;
 	}
 
 	rvalue = &node;
+	//cout << "after rvalue=&node" << endl;
 }
 
 void BackwardsAnalysis::visitBool(bool_node& node ){
@@ -324,15 +330,20 @@ void BackwardsAnalysis::visit( OR_node& node ){
 
 bool_node* BackwardsAnalysis::localModify(ARRACC_node* node, Info& t){
 	int v;
-
+//cout << "ARRACC" << endl;
 	if(t.getValue(node->mother, v)){
+//cout << "after t.getValue" << endl;
 		if(v >= 0 && v < node->multi_mother.size()){
+//cout << "before modifyNode" << endl;
 			bool_node* tmp = modifyNode(node->multi_mother[v], t);		
+//cout << "after modifyNode" << endl;
 			return tmp;
 		}else{
+//cout << "return Cnode(0)" << endl;
 			return getCnode(0);
 		}
 	}else{
+//cout << "return node" << endl;
 		return node;
 	}
 }
@@ -340,41 +351,56 @@ bool_node* BackwardsAnalysis::localModify(ARRACC_node* node, Info& t){
 
 	
 void BackwardsAnalysis::visit( ARRACC_node& node ){
+	//cout << "ARRACC_node visit" << endl;
 	Info& t = info[node.id];
 	//cout<<"node = "<< node.lprint()<<endl;
 	//cout<<t.lprint();
+	//cout << "after t=info[]" << endl;
 	if(t.isBottom()){
+		//cout << "rvalue=getCnode(0)" << endl;
 		rvalue = getCnode(0);
 		return;
 	}
 	int v;
+	//cout << "before localModify" << endl;
 	bool_node* tmp = localModify(&node, t);
+	//cout << "after localModify" << endl;
 	if(tmp != &node){
 		rvalue = tmp;
 		return ;
 	}
 
+	//cout << "before modifyNode(mother)" << endl;
 	bool_node* fmother = modifyNode(node.mother, t);
+	//cout << "after modifyNode(mother)" << endl;
 	vector<bool_node*> tmm(node.multi_mother.size());
 	bool changed = false;
 	for(int i=0; i<node.multi_mother.size(); ++i){
 		t.push(Datum(node.mother, i));
+		//cout << "before modifyNode(multi_mother[i])" << endl;
 		tmm[i] = modifyNode(node.multi_mother[i], t);
+		//cout << "after modifyNode(multi_mother[i])" << endl;
 		changed = changed || (node.multi_mother[i] != tmm[i]);
 		t.pop();
 	}
 
 	if(fmother != node.mother || changed){
+		//cout << "before dislodge" << endl;
 		node.dislodge();
+		//cout << "after dislodge" << endl;
 		node.mother = fmother;
 		for(int i=0; i<tmm.size(); ++i){
+			//cout << "multi_mother[i]=tmm[i]" << endl;
 			node.multi_mother[i] = tmm[i];
 		}
+		//cout << "resetId" << endl;
 		node.resetId();
+		//cout << "addToParents" << endl;
 		node.addToParents();
 	}
 
 	rvalue = &node;
+	//cout << "return" << endl;
 	return;
 }
 
@@ -475,6 +501,8 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 //	dimp.process(bdag);
 	
 	info.resize(bdag.size());
+	//cout << "info.size=" << info.size();
+	//cout << "ba: dagsize=" << dagsize << endl;
 	for(int i = 0; i<bn.size(); ++i){
 		bool_node* cur = bn[i];
 		Info& c = info[cur->id];
@@ -496,18 +524,39 @@ void BackwardsAnalysis::process(BooleanDAG& bdag){
 	}
 
 	i=0;
+	//cout << "reverse begin" << endl;
 	for(BooleanDAG::reverse_iterator node_it = bdag.rbegin(); node_it != bdag.rend(); ++node_it, ++i){
+		//cout << "i=" << i;
 		bool_node* node = (*node_it);
+		//cout << "node: " << node->id << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+		//cout<<node->get_name()<<":"<<node->id<<endl;
 		node->accept(*this);
+		//cout<<"after accept" << endl;
 		bool_node* tmp = rvalue;
+		//cout<<"after rvalue" << endl;
 		info[node->id].clear();
+		//cout<<"after clear" << endl;
 		if(tmp != node){
+			//cout<<"i will replace " << node->get_name() << " with " << tmp->get_name() << endl;
 			node->neighbor_replace(tmp);
 			//bdag.replace(node->id, tmp);
 		}
+		//cout<<"after all" << endl;
 	}
+	//cout << "reverse end" << endl;
 	bdag.removeNullNodes();
+	if (false) { for (int i=0; i<newnodes.size(); i++) {
+		bool_node * node = newnodes[i];
+		Assert(node->type == bool_node::CONST, "node->type=" << node->type);
+		int val = dynamic_cast<CONST_node*>(node)->getVal();
+		Assert(cnmap[val]==node, "cnmap["<<val<<"]="<<cnmap[val]<<"!="<<node);
+		int id = node->id;
+		if (id != dagsize+i) {
+			cout << "Wrong node->id=" << id << "when i=" << i << "dagsize=" << dagsize << endl;
+			exit(1);
+		}
+	} }
 	bdag.addNewNodes(newnodes);	
 	newnodes.clear();
 	bdag.cleanup();

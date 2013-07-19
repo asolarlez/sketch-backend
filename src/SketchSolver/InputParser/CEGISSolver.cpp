@@ -18,8 +18,11 @@ dirCheck(checker),
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
-params(args)
+params(args),
+inputGen(NULL)
 {
+//	cout << "miter:" << endl;
+//	miter->lprint(cout);
 	problemStack.push(miter);
 	BooleanDAG* problem = miter;
 	{
@@ -90,12 +93,8 @@ void CEGISSolver::declareControl(const string& cname, int size){
 	ctrlStore.newVar(cname, size);	
 }
 
-
-
-void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz){
+void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz) {
 	//Inputs can be redeclared to change their sizes, but not controls.
-	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
-	cpt.resizeInput(inname, bitsize);
 	if( !inputStore.contains(inname)){
 		if(arrSz >= 0){
 			inputStore.newArr(inname, bitsize, arrSz);	
@@ -111,22 +110,24 @@ void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz){
 	}
 }
 
+void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz) {
+	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
+	cpt.resizeInput(inname, bitsize);
+	::declareInput(inputStore, inname, bitsize, arrSz);
+}
+
 bool CEGISSolver::solve(){	
 	if(PARAMS->verbosity > 1){
 		cout<<"inputSize = "<<inputStore.getBitsize()<<"\tctrlSize = "<<ctrlStore.getBitsize()<<endl;
 	}
 	
 	srand(params.randseed);
-	inputStore.makeRandom();
-	for(int ns = 0; ns < (params.nseeds-1); ++ns){			
-		cout<<"!%";	inputStore.printBrief(cout); cout<<endl;
-                // NOTE - newer gcc (4.4) won't accept T --> T& if a variable isn't assigned
-                std::vector<int, std::allocator<int> > instore_serialized =
-                    inputStore.serialize();
-		cpt.checkpoint('f', instore_serialized);
-		addInputsToTestSet(inputStore);	
-		inputStore.makeRandom();		
-	}
+	ctrlStore.makeRandom();
+//	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
+//        std::vector<int, std::allocator<int> > ctrlstore_serialized =
+//                    ctrlStore.serialize();
+//	cpt.checkpoint('c', ctrlstore_serialized);
+//	setNewControls(ctrlStore);	
 	
 	bool succeeded = solveCore();
 		
@@ -151,57 +152,17 @@ bool CEGISSolver::solveCore(){
 	}
 
 	while(doMore){
-		// Synthesizer
-		{// Find
-			//setting input "__rs_node" to false in Input Store
-			if(PARAMS->angelic_model){
-				if(!inputStore.contains("__rs_node")){
-					inputStore.newVar("__rs_node",1);
-				}
-				inputStore.setVarVal("__rs_node",0);
-			}
-			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
-			if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
-                        std::vector<int, std::allocator<int> > instore_serialized =
-                            inputStore.serialize();
-			cpt.checkpoint('f', instore_serialized);
-			if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
-			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
-			ftimer.restart(); 		
-			try{
-				doMore = find(inputStore, ctrlStore, hasInputChanged);
-			}catch(BasicError& e){
-				doMore = false;
-			}
-			ftimer.stop();
-			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
-			if(!doMore){
-				if(PARAMS->minvarHole && prevSolutionFound){
-					cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
-					inputStore = prevInputStore;
-					ctrlStore = prevCtrlStore;
-					fail = false;
-					break;
-				}
-				else{
-					cout<<"******** FAILED ********"<<endl;	
-					ftimer.print();	ctimer.print();
-					fail = true;
-					break;
-				}
-			}
-		}
-
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
 			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
 			cpt.checkpoint('c', ctrlstore_serialized);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart(); 
 			doMore = check(ctrlStore, inputStore);
-			 ctimer.stop();
+		 	ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
 		}
 		if(PARAMS->verbosity > 0){cout<<"********  "<<iterations<<"\tftime= "<<ftimer.get_cur_ms() <<"\tctime= "<<ctimer.get_cur_ms()<<endl; }
@@ -222,6 +183,43 @@ bool CEGISSolver::solveCore(){
 				doMore = false;
 				inputStore = prevInputStore;
 				ctrlStore = prevCtrlStore;
+			}
+		}
+
+		// Synthesizer
+		if (doMore) {// Find
+			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
+			if (hasInputChanged) {
+				if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
+				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
+				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
+			       	cpt.checkpoint('f', instore_serialized);
+			       	if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
+			}
+			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
+			ftimer.restart(); 		
+			try{
+				doMore = find(inputStore, ctrlStore, hasInputChanged);
+			}catch(BasicError& e){
+				doMore = false;
+			}
+			ftimer.stop();
+			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
+		}
+
+		if(hasInputChanged && !doMore){
+			if(PARAMS->minvarHole && prevSolutionFound){
+				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
+				inputStore = prevInputStore;
+				ctrlStore = prevCtrlStore;
+				fail = false;
+				break;
+			}
+			else{
+				cout<<"******** FAILED ********"<<endl;	
+				ftimer.print();	ctimer.print();
+				fail = true;
+				break;
 			}
 		}
 	}
@@ -259,8 +257,8 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
-bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){	
-	cout << "*********INSIDE minimizeHoleValue, current value of ";
+bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){
+	cout << "*********INSIDE minimizeHoleValue, " << "mhsize=" << mhsizes.size() << " current value of ";
 	bool isSingleMinHole = (mhsizes.size()==1);
 	vector<int> bigor; bigor.push_back(0);
 	for(int i=0; i<mhsizes.size(); ++i){
@@ -268,7 +266,7 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 		int minVarNodeSize = mhsizes[i];
 		int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
 		int H__0_var_idx = dirFind.getVar(minVarNodeName);
-		cout <<minVarNodeName<<"=" << H__0_val << ", ";
+		cout <<minVarNodeName<<"=" << H__0_val << ", " << flush;
 		Tvalue tv = H__0_var_idx;
 		tv.setSize(minVarNodeSize);
 		tv.makeSparse(dirFind);
@@ -355,7 +353,6 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		Assert(ctrl == ctrlStore.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
 	}else{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
-		// newdag->lprint(cout);
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 		DagOptim fa(*newdag);
@@ -394,7 +391,6 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 
 
 bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
-
 	int arrsz = -1;
 	if(inode->type== bool_node::SRC){	
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
@@ -438,9 +434,12 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	BooleanDAG* newdag = dag->clone();
 
 	vector<bool_node*> inodeList = newdag->getNodesByType(type);
-		
-	if(PARAMS->verbosity > 2){ cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; }
-	if(PARAMS->verbosity > 2){cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	}
+	
+	if(PARAMS->verbosity > 2) {
+		char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
+		cout<<" * Specializing problem for "<< stype <<endl;
+		cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
+	}
 	
 	{
 		DagOptim cse(*newdag);			
@@ -473,8 +472,9 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 			}
 			
 			bool_node * repl= nodeForINode(inode, values, cse);			
+			
 			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
-			newdag->replace(inode->id, repl);			
+			newdag->replace(inode->id, repl);
 		}
 				
 		newdag->removeNullNodes();
@@ -482,11 +482,11 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	}
 	Dout( newdag->print(cout) ); 
 	
-	if(false){
+	if(true){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 	}
-	if(false){
+	if(true){
 		DagOptim cse(*newdag);			
 		cse.process(*newdag);
 	}
@@ -506,9 +506,11 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
 		try{
+			cout << "BEG nts.process" << endl;
 			nts.process(*getProblem());	
-			BooleanDAG& bd = *getProblem();
+			cout << "END nts.process" << endl;
 			/*
+			BooleanDAG& bd = *getProblem();
 			for(int i=0; i<node_ids.size(); ++i){
 				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
 			}
@@ -518,7 +520,7 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 				for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
 					const string& cname = it->name;
 					int cnt = dir.getArrSize(cname);
-					Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+					Assert( cnt == it->size(), "defineProblem: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
 					for(int i=0; i<cnt; ++i){
 						int val = nts.lastGoodVal(dir.getArr(cname, i));
 						it->setBit(i, (val==1) ? 1 : 0);			
@@ -561,7 +563,9 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	if(PARAMS->verbosity > 2){ tc.print(); }
 	}
 //Solve
+	cout << "BEG mngFind.solve" << endl;
 	int result = mngFind.solve();
+	cout << "END mngFind.solve" << endl;
 	if(params.printDiag){
 	  	cout<<"# FIND DIAGNOSTICS"<<endl;
 		printDiagnostics(mngFind, 'f');
@@ -584,7 +588,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->name;
 		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
 		for(int i=0; i<cnt; ++i){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			
@@ -626,6 +630,8 @@ void CEGISSolver::abstractProblem(){
 	int avgDist = 0;
 	int cutoff = ((asserts.size()*6)/10);
 	for(BooleanDAG::iterator node_it = asserts.begin(); node_it != asserts.end(); ++node_it){
+		int save_id = (*node_it)->id;
+		// save the id in case node is deleted below
 		ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
 		if(an->isHard()){
 			continue;
@@ -660,8 +666,7 @@ void CEGISSolver::abstractProblem(){
 				cumDist += (*node_it)->id - lastAssert;				
 			}			
 		}
-		//This is buggy because node_it may have beeen deleted by dag->remove()
-		lastAssert = (*node_it)->id;
+		lastAssert = save_id; //(*node_it)->id;
 	}
 	dag->removeNullNodes();
 	dag->cleanup();
@@ -678,6 +683,322 @@ void CEGISSolver::abstractProblem(){
 	}
 }
 
+struct InputGen {
+	bool hasH;
+	bool noMore;
+
+	SolverHelper * dir;
+	SATSolver * solver;
+	vector<Tvalue> node_ids;
+	map<bool_node*,  int> node_values; // always empty
+
+	BooleanDAG * dag;
+	int intsize;
+	int nsrc; // number of constrained src nodes
+	// name => (index -> INTER_node*) for scalars, index can only be 0
+	map<string, vector<bool_node*> > srcnodes;
+	vector<CONST_node*> constnodes;
+	// array name => the array node which is indexed by non-constant index
+	vector<vector<int> > constrainedIn;
+	VarStore constrained;
+	VarStore unconstrained;
+
+	InputGen(BooleanDAG * problem, vector<bool_node*> const & hasserts) : hasH(!hasserts.empty()), noMore(false), constnodes(32) { if (hasH) {
+		init(problem, hasserts);
+	}}
+
+	CONST_node * getcnode(int val) {
+		CONST_node * node;
+		if (constnodes.size()<val+1) {
+			constnodes.resize(val+1, NULL);
+			node = NULL;
+		} else {
+			node = constnodes[val];
+		}
+		if (!node) {
+			constnodes[val] = node = new CONST_node(val);
+			dag->addNewNode(node);
+		}
+		return node;
+	}
+
+	void setcnode(int val, CONST_node * node) {
+		Assert(val >= 0, "val=" << val << endl);
+		if (constnodes.size()<val+1) {
+			constnodes.resize(val+1, NULL);
+		}
+		constnodes[val] = node;
+	}
+
+	// TODO xzl: should we delete in deconstructor?
+
+	void init(BooleanDAG * problem, vector<bool_node*>const & hasserts) {
+		//cout << "InputGen: init" << endl;
+		dag = problem->slice(hasserts.begin(), hasserts.end(), -1)->clone();
+		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
+		int sliceInSize = sliceIn.size();
+		nsrc = 0;
+		if (sliceInSize == 0) {
+			hasH = false;
+			return;
+		}
+		intsize = dag->getIntSize();
+		solver = SATSolver::solverCreate(SATSolver::MINI, SATSolver::FINDER, "__inputGen");
+		dir = new SolverHelper(*solver);
+		int YES = dir->newYES();
+		bool hasArr = false;
+		int maxArSz = 0;
+		for (int i=0; i<sliceInSize; ++i) {
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(sliceIn[i]);	
+			int arsz = srcnode->getArrSz();
+			int nbits = srcnode->get_nbits();
+			string const & name = srcnode->get_name();
+			if (arsz <= 1) {
+				++nsrc;
+				//srcnodes[name] = srcnode;
+				srcnodes.insert(std::make_pair(name, vector<bool_node*>(1, srcnode)));
+			} else{
+				//cout << "assume depend on array! arsz=" << arsz << " nbits=" << srcnode->get_nbits() << " srcnode=" << srcnode->mrprint() << endl;
+				//dag->lprint(cout);
+				//Assert(0, "assume depend on array");
+				// NOTE we do not increase nsrc here
+				// because we only increase per individual array element
+				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz, NULL)));
+				hasArr = true;
+				if (arsz > maxArSz) {
+					maxArSz = arsz;
+				}
+			}
+			//cout << "InputGen: declaring " << name << " " << nbits << " * " << arsz << endl;
+			declareInput(constrained, name, nbits, arsz);
+			if(arsz <0){ arsz = 1; }
+			dir->declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+		}
+
+		if (hasArr) {
+			map<string, bool_node*> nonconstIndexed;
+			for (BooleanDAG::iterator it=dag->begin(); it!=dag->end(); ++it) {
+				if ((*it)->type == bool_node::CONST) {
+					CONST_node * cnode = dynamic_cast<CONST_node*>(*it);
+					int val = cnode->getVal();
+					// NOTE very dangerous bug! val may be negative!
+					if (val >= 0 && val < maxArSz) {
+						setcnode(val, cnode);
+					}
+				} else if ((*it)->type == bool_node::ARR_R) {
+					ARR_R_node * anode = dynamic_cast<ARR_R_node*>(*it);
+					if (anode->father->type != bool_node::SRC) {
+						cout << "assume depend on complex array father! anode=" << anode->mrprint() << endl;
+						dag->lprint(cout);
+						Assert(0, "assume depend on complex array father");
+					}
+					SRC_node * fnode = dynamic_cast<SRC_node*>(anode->father);
+					string const & name = fnode->get_name();
+					map<string, vector<bool_node*> >::iterator entry = srcnodes.find(name);
+					vector<bool_node*> & vec = entry->second;
+					if (anode->mother->type != bool_node::CONST) {
+						//cout << "assume depend on non-const array index! anode=" << anode->mrprint() << endl;
+						//dag->lprint(cout);
+						//Assert(0, "assume depend on non-const array index");
+						nonconstIndexed.insert(std::make_pair(name, fnode));
+					} else {
+						CONST_node * mnode = dynamic_cast<CONST_node*>(anode->mother);
+						int index = mnode->getVal();
+						//Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+						//setcnode(index, mnode);
+						// NOTE dangerous bug! here index may be out of bound and we must check!
+						if (index>=0 && index<vec.size() && vec[index] == NULL) {
+							++nsrc;
+							vec[index] = anode;
+						}
+					}
+				}
+			}
+			for (map<string, bool_node*>::const_iterator it=nonconstIndexed.begin(); it != nonconstIndexed.end(); ++it) {
+				const string & name = it->first;
+				bool_node * fnode = it->second;
+				vector<bool_node*> & vec = srcnodes[name];
+				for (int i=0; i<vec.size(); i++) {
+					if (!vec[i]) {
+						++nsrc;
+						vec[i] = dag->new_node(getcnode(i), fnode, bool_node::ARR_R);
+					}
+				}
+			}
+		}
+
+		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);
+		int rest = specIn.size()-sliceInSize;
+		for(int i=0; rest>0; ++i){			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			string const & name = specIn[i]->get_name();
+			if (!constrained.contains(name)) {
+				--rest;
+				declareInput(unconstrained, name, nbits, srcnode->getArrSz());
+			}
+		}
+	}
+
+	void find() {
+		if (noMore) return;
+		if (node_ids.size() != dag->size()) {
+			node_ids.resize(dag->size());
+		}
+		//cout << "InputGen: the dag: ";
+		//dag->lprint(cout);
+		//dir->outputVarMap(cout);
+		//dag->repOK();
+		// TODO xzl: do we need this?
+		//int YES = dir->newYES();
+		//getProblem()->lprint(cout);
+		NodesToSolver nts(*dir, "InputGen", node_values, node_ids);			
+		//cout << "InputGen: BEG nts.process" << endl;
+		nts.process(*dag);
+		//BooleanDAG * bdag = dag->clone();
+		//DagOptim cse(*bdag);
+		//cse.process(*bdag);
+		//cout << "InputGen: the bdag: ";
+		//bdag->lprint(cout);
+		//bdag->repOK();
+		//nts.process(*bdag);
+		//cout << "InputGen: END nts.process" << endl;
+		//bdag->clear();
+		//delete bdag;
+		//TODO xzl: do we need this?
+		//dir->nextIteration();
+		int result = solver->solve();
+		//cout << "InputGen: solve result=" << result << endl;
+		//delete dag;
+		if (result != SATSolver::SATISFIABLE) {
+			noMore = true;
+			cout << "InputGen: noMore=" << noMore << endl;
+	    		switch( result ){
+	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
+	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
+	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
+			}
+		} else {
+			//cout << "InputGen: get new constrained ";
+			//dir->print();
+			// FIXME xzl: it is more efficient to create a new dag and only add unequalizers!
+			//dag = new BooleanDAG("inputGen");
+			bool_node * mother = NULL;
+			vector<int> compressed(nsrc);
+			int tail=0;
+			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
+				const string& cname = i->name;
+				const int size = i->size();
+				//cout << "InputGen: " << cname << " " << i->globalSize() << endl;
+				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
+					int index = p->index;
+					const vector<bool_node*> & vec = srcnodes[cname];
+					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					bool_node * src = vec[index];
+					//cout << "InputGen: " << cname << "[" << index << "]: " << src << endl;
+					if (src == NULL) {
+						continue;
+					}
+					//int cnt = dir->getArrSize(cname);
+					//Assert( cnt == it->size(), "SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+					int sz = p->size();
+					Assert( sz == size, "InputGen: SIZE MISMATCH: "<< sz <<" != "<< size <<endl);
+					Assert( p->name == cname, "NAME MISMATCH: "<< p->name <<" != "<< cname <<endl);
+					for(int i=0; i<size; ++i) {
+						int val = solver->getVarVal(dir->getArr(cname, size*index+i));
+						p->setBit(i, (val==1) ? 1 : 0);
+					}
+					int val = p->getInt();
+					compressed[tail++] = val;
+					bool_node * v = getcnode(val);
+					bool_node * eq = dag->new_node(src, v, bool_node::EQ);
+					if (mother) {
+						mother = dag->new_node(mother, eq, bool_node::AND);
+					} else {
+						mother = eq;
+					}
+				}
+			}
+			Assert( mother, "empty mother!");
+			mother = dag->new_node(mother, NULL, bool_node::NOT);
+			ASSERT_node * anode = dynamic_cast<ASSERT_node*>(dag->new_node(mother, NULL, bool_node::ASSERT));
+			anode->makeHardAssert();
+			dag->assertions.append(anode);
+			//cout << "InputGen: the new dag: ";
+			//dag->lprint(cout);
+			//dag->repOK();
+			//while (dag->getIntSize()<intsize) {
+			//	dag->growInputIntSizes();
+			//}
+			constrainedIn.push_back(compressed);
+			if (compressed.size()%4096 ==0) {
+				cout << "InputGen: compressed.size=" << compressed.size();
+			}
+			// useful debug info:
+			//cout << "InputGen: found a constrained input: ";
+			//constrained.printContent(cout);
+		}
+	}
+
+	void gen(VarStore & input) {
+		find();
+		unconstrained.makeRandom();
+		if (noMore) {
+			vector<int> const & compressed = constrainedIn[rand()%constrainedIn.size()];
+			int pos=0;
+			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
+				const string& cname = i->name;
+				const int size = i->size();
+				//cout << "InputGen: " << cname << " " << i->globalSize() << endl;
+				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
+					int index = p->index;
+					const vector<bool_node*> & vec = srcnodes[cname];
+					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					bool_node * src = vec[index];
+					if (src == NULL) {
+						continue;
+					}
+					p->setVal(compressed[pos++]);
+				}
+			}
+		}
+		input = join(constrained, unconstrained);
+		//cout << "InputGen: gen() returns ";
+		//input.printContent(cout);
+		//for (VarStore::iterator i=c.begin(); i!=c.end(); ++i) {
+		//	assert(i->getInt());
+		//}
+	}
+
+	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
+		int size = problem->getIntSize();
+		if (intsize < size) {
+			cout << "InputGen: growInputSize to " << size << endl;
+			//delete dag;
+			//delete dir;
+			//delete solver;
+			noMore = false;
+			srcnodes.clear();
+			constnodes.clear();
+			constrainedIn.clear();
+			node_ids.clear();
+			hasH = !hasserts.empty();
+			init(problem, hasserts);
+		}
+	}}
+};
+
+void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & hasserts) {
+	vector<bool_node*>::const_iterator i=asserts.begin();
+	vector<bool_node*>::const_iterator e=asserts.end();
+	for (; i!=e; ++i) {
+		ASSERT_node * a = dynamic_cast<ASSERT_node*>(*i);
+		if (a->isHard()) {
+			hasserts.push_back(a);
+		}
+	}
+}
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	timerclass tc("Simulation");
@@ -687,18 +1008,36 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	map<string, BooleanDAG*> empty;
 	vector<VarStore> expensive;
 	BooleanDAG* dag =getProblem();
-	if(dag->getNodesByType(bool_node::ASSERT).size()==0){
+	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
+	vector<bool_node *> hasserts;
+	if(asserts.size()==0){
 		tc.stop().print("no cex");
 		return false;
 	}
-	bool hasCtrls = dag->getNodesByType(bool_node::CTRL).size()!=0;
+	if (!inputGen || inputGen->hasH) {
+		filterHasserts(asserts, hasserts);
+		if (!inputGen) {
+			inputGen = new InputGen(dag, hasserts);
+		} else {
+			inputGen->ensureIntSize(dag, hasserts);
+		}
+	}
+	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
+	if (hasCtrls) {
+		// must be not specialized
+		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
+	}
 	dag = dag->clone();
 	pushProblem(dag);
 	do{
 		++iter;		
 		NodeEvaluator eval(empty, *dag);		
 		for(int i=0; i<40; ++i){
-			tmpin.makeRandom();
+			if (inputGen->hasH) {
+				inputGen->gen(tmpin);
+			} else {
+				tmpin.makeRandom();
+			}
 			
 			bool done;
 			if(hasCtrls){
@@ -709,7 +1048,19 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			eval.trackChanges();
 			if(done){
-				tc.stop().print("found a cex");
+				tc.stop().print("found a cex by random testing");
+				if (true) {
+					//dag->lprint(cout);
+					for (int i=0; false && i<dag->size(); i++) {
+						bool_node * node = (*dag)[i];
+						int val = eval.getValue(node);
+						cout << val << " " << node->lprint() << endl;
+						eval.printNodeValue(i);
+						if (!val && node->type == bool_node::ASSERT) {
+							cout << "assertion fail!" << endl;
+						}
+					}
+				}
 				popProblem();
 				return true;
 			}
@@ -727,19 +1078,31 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		int hold = -1;
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
-			int h = eval.scoreNodes();
-			if(h==-1){
+			int h;
+			int lowerbound;  // donot touch nodes whose ids are smaller than lowerbound
+		       	if (inputGen->hasH) {
+				hasserts.clear();
+				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
+				filterHasserts(asserts, hasserts);
+				// we should always pretain hard asserts and their mothers
+				// NOTE: rely on the assumption that dag is already sorted
+				lowerbound = hasserts.back()->id+1;
+				h = eval.scoreNodes(lowerbound);
+			} else {
+				h = eval.scoreNodes(0);
+			}
+			if (h == -1){
 				break;
 			}
 			if(hold == h){
-				Assert(false, "CEGISSolver::simulate: This should not happen");
-				cout<<"INFINITE LOOP!"<<endl;
+				//Assert(false, "CEGISSolver::simulate: This should not happen");
+				//cout<<"INFINITE LOOP!"<<endl;
 				break;
 			}
 			hold = h;
 			bool_node* niq = (*dag)[h];
 			ASSERT_node* an = new ASSERT_node();
-			int am = 0;			
+			int am = 0;
 			if(niq->getOtype()==bool_node::BOOL){
 				if(eval.getValue(niq)==0){
 					an->mother = new NOT_node();
@@ -750,12 +1113,17 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				an->mother->father = new CONST_node( eval.getValue(niq) );
 				am = 2;
 			}
-			BooleanDAG* tbd = dag->slice(h, an);
-			if(PARAMS->verbosity > 10 && tbd->size() < 50){
+			BooleanDAG* tbd;
+		       	if (inputGen->hasH) {
+				vector<bool_node*>::const_iterator begin = hasserts.begin(), end=hasserts.end();
+				tbd = dag->slice(begin, end, h, an);
+			} else {
+				tbd = dag->slice(h, an);
+			}
+			if(PARAMS->verbosity >= 10 && tbd->size() < 200){
 				tbd->lprint(cout);
 			}
 			pushProblem(tbd);
-			
 			
 			bool rv = baseCheck(controls, tmpin);
 			
@@ -775,7 +1143,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					done= eval.run(tmpin);
 				}				
 				if(done){
-					tc.stop().print("found a cex");
+					tc.stop().print("found a cex by solver checking");
 					popProblem();
 					return true;
 				}else{
@@ -790,20 +1158,25 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					int sz = dag->size();					
 					if(btoR->type == bool_node::EQ && nval == 1){
 						if(btoR->mother->type == bool_node::CONST){
-							dag->replace(btoR->father->id, btoR->mother);
+							int id = btoR->father->id;
+							if (id >= lowerbound)  dag->replace(id, btoR->mother);
 						}else if(btoR->father->type == bool_node::CONST){
-							dag->replace(btoR->mother->id, btoR->father);
+							int id = btoR->mother->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father);
 						}else if( btoR->mother->id >  btoR->father->id){
-							dag->replace(btoR->mother->id, btoR->father);
+							int id = btoR->mother->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father);
 						}else{
-							dag->replace(btoR->father->id, btoR->mother);
+							int id = btoR->father->id;
+							if (id >= lowerbound) dag->replace(id, btoR->mother);
 						}
 					}
+					// h must >= lowrbound
 					dag->replace(h, cse.getCnode(nval));
 					dag->removeNullNodes();
 					cse.process(*dag);
 					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
-					if(dag->getNodesByType(bool_node::ASSERT).size()==0){
+					if(dag->getNodesByType(bool_node::ASSERT).empty()){
 						tc.stop().print("no cex");
 						popProblem();
 						return false;
@@ -811,16 +1184,24 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				}
 				break;
 			}
-		}		
+		}
+		//cout << "simiters: " << iter << endl;
 	}while(iter < params.simiters && dag->size() > params.simstopsize);
+	//cout << "after simiters" << endl;
 	
 	{
 		BackwardsAnalysis ba;
+		//cout << "do ba, dag->repOK():";
+		//dag->repOK();
+		cout << "simulate: ba" << endl;
 		ba.process(*dag);
+		cout << "simulate: after ba" << endl;
 	}
 	{
-		DagOptim cse(*dag);			
+		DagOptim cse(*dag);
+		cout << "simulate: cse" << endl;
 		cse.process(*dag);
+		cout << "simulate: after cse" << endl;
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 	tc.stop().print("didn't find a cex");	
@@ -911,41 +1292,40 @@ public:
 	}
 };
 
+// check verifies that controls satisfies all asserts
+// and if there is a counter-example, it will be put to input
 bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	BooleanDAG* oriProblem = getProblem();
 	bool hardcode = PARAMS->olevel >= 6;
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params);
-	//cout<<"Before hard code"<<endl;
-	//getProblem()->lprint(std::cout);
-
-	
-
+//	cout<<"Before hard code"<<endl;
+//	getProblem()->lprint(std::cout);
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
-	//cout<<"After hard code"<<endl;
-	//getProblem()->lprint(std::cout);
+//	cout<<"After hard code"<<endl;
+//	getProblem()->lprint(std::cout);
 	do{
 		switch(cc.actionDecide(problemLevel() - (hardcode? 1: 0),getProblem())){
 			case CheckControl::POP_LEVEL:{
-				BooleanDAG* tbd = getProblem();
+				// must save the int size! tbd will be deleted by popProblem()
+				int tbdIntSize = getProblem()->getIntSize();
 				popProblem();
 				cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;
 				if(hardcode){
-					tbd = getProblem();
+					tbdIntSize = getProblem()->getIntSize();
+					// must save the int size! tbd will be deleted by popProblem()
 					popProblem();
 					oriProblem = getProblem();
-					//tbd will be invalid by the time we get here because popProblem deletes the problem.
-					if(tbd->getIntSize() != oriProblem->getIntSize()){
+					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}
 					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));					
 				}else{
 					oriProblem = getProblem();
-					//tbd will be invalid by the time we get here because popProblem deletes the problem.
-					if(tbd->getIntSize() != oriProblem->getIntSize()){
+					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(oriProblem);						
 					}
 				}
@@ -1052,6 +1432,16 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 
 */
 
+int getSolverVal(bool_node * node, vector<Tvalue> & node_ids, SATSolver & solver, int * j) {
+	if (node->type == bool_node::ASSERT) {
+		node = node->mother;
+	}
+	int i = node->id;
+	int sv = node_ids[i].eval(&solver);
+	if (j) { *j = i; }
+	return sv;
+}
+
 bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	Dout( cout<<"check()"<<endl );
 	//timerclass tc("* TIME TO ADD CONTROLS ");
@@ -1059,7 +1449,9 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	setNewControls(controls);
 	//if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
+    cout << "BEG mngCheck.solve" << endl;
     int result = mngCheck.solve();
+    cout << "END mngCheck.solve" << endl;
 	//dirCheck.printAllVars();
     if(params.printDiag){
 	    cout<<"# CHECK DIAGNOSTICS"<<endl;
@@ -1084,7 +1476,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		const string& cname = it->name;
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
-			Assert( cnt == it->globalSize(), "SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<<endl);
+			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);
 			for(int i=0; i<cnt; ++i){
 				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
@@ -1095,17 +1487,28 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	}
 	Dout( dirCheck.print() );
 	if(false){ //This is useful code when debugging;
-		cout<<"AFTER CSTAGE"<<endl;
-		getProblem()->lprint(cout);
+		cout << "counter example:" << endl;
+		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
-		NodeEvaluator eval(empty, *getProblem());
+		BooleanDAG * prob = getProblem();
+		NodeEvaluator eval(empty, *prob);
 		eval.run(input);
 		cout<<"PRINT EVAL"<<endl;
 		for(int i=0; i<check_node_ids.size(); ++i){
-			cout<<i<<"=";
-			check_node_ids[i].print(cout, &mngCheck);
-			cout<<"    "<<(*getProblem())[i]->lprint();
-			cout<<endl;
+//			cout<<i<<"=";
+//			check_node_ids[i].print(cout, &mngCheck);
+//			cout<< " vs ";
+//			eval.printNodeValue(i);
+			bool_node * node = (*prob)[i];
+			cout << node->lprint();
+			int ev = eval.getValue(node);
+			int j;
+			int sv = getSolverVal(node, check_node_ids, mngCheck, &j);
+			cout << " " << sv << " vs " << ev;
+			cout << endl;
+			check_node_ids[j].print(cout, &mngCheck);
+			cout<< " NodeEvaluator says:";
+			eval.printNodeValue(i);
 		}
 		cout<<"???"<<endl;
 	}
@@ -1217,6 +1620,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		bool doMore;
 		{ // Check
 			cout<<"!+";	ctrlStore.printBrief(cout);	cout<<endl;
+			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
 			cout<<"BEG CHECK"<<endl; ctimer.restart();
 			doMore = check(ctrlStore, inputStore);
 			ctimer.stop(); cout<<"END CHECK"<<endl;

@@ -39,7 +39,15 @@ void NodeEvaluator::visit( ARR_W_node &node){
 		vvo->update(vvin, idx, i(*node.getNewVal()));
 	}else{
 		vecvalues[node.id] = new cpvec(vvin, idx, i(*node.getNewVal()));
-	}	
+	}
+	if (false && node.id == 197) {
+		cout << node.lprint() << ":";
+		vecvalues[node.id]->print(cout);
+		cout << endl;
+		cout << node.getOldArr()->id << "{" << idx << "->" << i(*node.getNewVal()) << "} ";
+		vvin->print(cout);
+		cout << endl;
+	}
 }
 
 void NodeEvaluator::visit( ARR_CREATE_node &node){
@@ -53,7 +61,9 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 	for(int t=0; t<sz; ++t){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
+	// TODO xzl: temporarily disable -333
 	setbn(node, -333 );
+	//setbn(node, 0);
 }
 
 void NodeEvaluator::visit( AND_node& node ){
@@ -70,7 +80,9 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
-		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));		
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));
+		// for SRC arrays, anything beyond bounds are 0 by default
+		setbn(node, 0);
 	}else{
 		setbn(node, (*inputs)[node.get_name()]);	
 	}
@@ -175,7 +187,18 @@ void NodeEvaluator::visit( EQ_node& node ){
 				int tm = mv==NULL?  i(*node.mother) :mv->get(jj, i(*node.mother));
 				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
 				tt = tt && (tm == tf);
-				if(!tt){ break; }
+				if(!tt){
+					if (false) {
+						cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
+						cout << "i(): " << i(*node.mother) << " " << i(*node.father) << endl;
+						cout << "mv:";
+						mv->print(cout);
+						cout << " fv:";
+						fv->print(cout);
+						cout << endl;
+					}
+					break;
+				}
 			}
 		setbn(node, tt);
 	}else{
@@ -216,6 +239,10 @@ void NodeEvaluator::printNodeValue(int i){
 			cout<<vv->get(i, values[i])<<", ";
 		}
 		cout<<endl;
+		if (false && (i == 197 || i==194)) {
+			vv->print(cout);
+			cout << endl;
+		}
 	}else{
 		cout<<values[i]<<endl;
 	}
@@ -240,12 +267,12 @@ void NodeEvaluator::display(ostream& out){
 }
 
 
-int NodeEvaluator::scoreNodes(){
-	int i=0;
+int NodeEvaluator::scoreNodes(int start /*=0*/){
+	int i=start;
 	int maxcount = -10;
 	int highest= -1;
 	int nconsts = 0;
-	for(vector<bool>::iterator it = changes.begin(); it != changes.end(); ++it, ++i){
+	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
 		if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT){
 			++nconsts;

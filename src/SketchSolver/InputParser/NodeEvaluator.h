@@ -5,6 +5,8 @@
 #include "VarStore.h"
 #include <map>
 
+#include <iostream>
+
 using namespace std;
 
 /*
@@ -67,6 +69,8 @@ public:
 		update(pp, ii, v);
 	}
 	cpvec(int sz):vv(new int[sz]){
+		// NOTE xzL: set uninitialized value to be 0
+		memset(vv, 0, sz*sizeof(int));
 		bnd = sz;		
 		parent = NULL;
 		idx[0] = UNSET;
@@ -75,6 +79,8 @@ public:
 		flip = 0;
 	}
 	cpvec(int sz, VarStore::objP* op):vv(new int[sz]){
+		// NOTE xzL: set uninitialized value to be 0
+		memset(vv, 0, sz*sizeof(int));
 		bnd = sz;	
 		while(op != NULL){
 			Assert(op->index < sz, "Out of bounds error in solver ;alkwebbn");
@@ -92,8 +98,11 @@ public:
 	}
 	bool lget(int ii, int& rv){
 		if(vv != NULL){ 
-			Assert(ii < bnd, "Out of bounds error in solver ;qek;kl");		
-			rv= vv[ii]; return true;}
+			if(i>=bnd){ return false; }		
+			rv= vv[ii]; 
+			return true;
+		}
+
 		int b0 = idx[0]==ii;
 		int b1 = idx[1]==ii;
 		int b2 = idx[2]==ii;
@@ -121,6 +130,20 @@ public:
 		val[1+flip] = rv;
 		flip = 1-flip;
 		return rv;
+	}
+	void print(ostream & os) {
+		// recursively print the structure of a cpvec
+		os << bnd << "[";
+		for (int i=0; i<bnd; i++) {
+			os << get(i, -1) << " ";
+		}
+		for (int i=0; i<3; i++) {
+			os << idx[i] << "," << val[i] << " ";
+		}
+		if (parent) {
+			parent->print(os);
+		}
+		os << "]";
 	}
 };
 
@@ -188,7 +211,8 @@ public:
 
 	bool run(VarStore& inputs_p);
 	void display(ostream& out);
-	int scoreNodes();
+	// get unchanged node, but only starting from start
+	int scoreNodes(int start = 0);
 	void trackChanges(){
 		trackChange = true;
 	}

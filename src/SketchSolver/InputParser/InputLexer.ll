@@ -168,6 +168,10 @@ Comment      ("//"[^\n]*)
     return T_assert;
 }
 
+"assume" {
+    return T_assume;
+}
+
 
 
 "NativeFilter"	{				

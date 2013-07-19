@@ -121,6 +121,10 @@ public:
 			}
 			if(next!= NULL){ out<<"|"; next->printBit(out); }
 		}
+		void printContent(ostream& out) const{			
+			out << getInt();
+			if(next!= NULL){ out<<"|"; next->printContent(out); }
+		}
 		void makeRandom(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
@@ -219,7 +223,7 @@ public:
 	void printContent(ostream& out) const{
 		for(int i=0; i<objs.size(); ++i){
 			out << objs[i].name << ":";
-			objs[i].printBit(out);
+			objs[i].printContent(out);
 			cout << endl;
 		}
 	}
