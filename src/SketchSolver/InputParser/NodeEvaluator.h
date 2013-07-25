@@ -98,7 +98,7 @@ public:
 	}
 	bool lget(int ii, int& rv){
 		if(vv != NULL){ 
-			if(i>=bnd){ return false; }		
+			if(ii>=bnd){ return false; }		
 			rv= vv[ii]; 
 			return true;
 		}

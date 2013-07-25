@@ -763,7 +763,9 @@ struct InputGen {
 				//Assert(0, "assume depend on array");
 				// NOTE we do not increase nsrc here
 				// because we only increase per individual array element
-				srcnodes.insert(std::make_pair(name, vector<bool_node*>(arsz, NULL)));
+				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>()); 				
+				srcnodes.insert(vp);
+				(*srcnodes.rbegin()).second.resize(arsz, NULL);
 				hasArr = true;
 				if (arsz > maxArSz) {
 					maxArSz = arsz;
