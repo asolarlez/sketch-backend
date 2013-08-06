@@ -943,10 +943,14 @@ struct InputGen {
 		}
 	}
 
-	void gen(VarStore & input) {
+	// return true if we generate a random input satisfying the assumptions; return false otherwise.
+	bool gen(VarStore & input) {
 		find();
 		unconstrained.makeRandom();
 		if (noMore) {
+			if (constrainedIn.size() == 0) {
+				return false;
+			}
 			vector<int> const & compressed = constrainedIn[rand()%constrainedIn.size()];
 			int pos=0;
 			for(VarStore::iterator i = constrained.begin(); i !=constrained.end(); ++i) {
@@ -971,6 +975,7 @@ struct InputGen {
 		//for (VarStore::iterator i=c.begin(); i!=c.end(); ++i) {
 		//	assert(i->getInt());
 		//}
+		return true;
 	}
 
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
@@ -1031,12 +1036,16 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	}
 	dag = dag->clone();
 	pushProblem(dag);
+	bool hasInput = true;
 	do{
 		++iter;		
 		NodeEvaluator eval(empty, *dag);		
 		for(int i=0; i<40; ++i){
 			if (inputGen->hasH) {
-				inputGen->gen(tmpin);
+				if (!inputGen->gen(tmpin)) {
+					hasInput = false;
+					break;
+				}
 			} else {
 				tmpin.makeRandom();
 			}
@@ -1188,29 +1197,31 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}
 		//cout << "simiters: " << iter << endl;
-	}while(iter < params.simiters && dag->size() > params.simstopsize);
+	}while(hasInput && iter < params.simiters && dag->size() > params.simstopsize);
 	//cout << "after simiters" << endl;
-	
-	{
+
+	bool tv;
+	if (hasInput) {
 		BackwardsAnalysis ba;
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
-		cout << "simulate: ba" << endl;
+//		cout << "simulate: ba" << endl;
 		ba.process(*dag);
-		cout << "simulate: after ba" << endl;
-	}
-	{
+//		cout << "simulate: after ba" << endl;
 		DagOptim cse(*dag);
-		cout << "simulate: cse" << endl;
+//		cout << "simulate: cse" << endl;
 		cse.process(*dag);
-		cout << "simulate: after cse" << endl;
+//		cout << "simulate: after cse" << endl;
+		if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
+		tc.stop().print("didn't find a cex");	
+		cout<<"After all optim"<<endl;
+		//getProblem()->lprint(std::cout);
+		// dag->lprint(cout);
+		tv = baseCheck(controls, input);
+	} else {
+		// when there is no input satisfying the assumption, we cannot find any counter example
+		tv = false;
 	}
-	if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
-	tc.stop().print("didn't find a cex");	
-	cout<<"After all optim"<<endl;
-	//getProblem()->lprint(std::cout);
-	// dag->lprint(cout);
-	bool tv = baseCheck(controls, input);
 	popProblem();
 	return tv;
 }
