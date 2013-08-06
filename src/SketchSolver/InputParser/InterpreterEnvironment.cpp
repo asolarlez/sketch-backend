@@ -304,7 +304,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		problem = dag;
 		bgproblem = dag;
 	}else{
-		if(bgproblem->getNodesByType(bool_node::SRC).size() == 0){
+		if(false && bgproblem->getNodesByType(bool_node::SRC).size() == 0){
 			cout<<"No inputs"<<endl;
 			problem = dag;
 			bgproblem->andDag(dag->clone());			
@@ -319,6 +319,8 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 			problem = bgproblem;
 		}
 	}
+	cout << "InterpreterEnvironment: new problem" << endl;
+	problem->lprint(cout);
 
 	if(params.superChecks){
 		history.push_back(problem->clone());	
