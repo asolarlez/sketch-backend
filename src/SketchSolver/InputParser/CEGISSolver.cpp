@@ -896,7 +896,7 @@ struct InputGen {
 				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
 					int index = p->index;
 					const vector<bool_node*> & vec = srcnodes[cname];
-					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					Assert(index >= 0 && index < vec.size(), "find " << cname << " vector bound check failed " << index << "/" << vec.size());
 					bool_node * src = vec[index];
 					//cout << "InputGen: " << cname << "[" << index << "]: " << src << endl;
 					if (src == NULL) {
@@ -960,7 +960,7 @@ struct InputGen {
 				for (VarStore::objP * p = &(*i); p != NULL; p=p->next) {
 					int index = p->index;
 					const vector<bool_node*> & vec = srcnodes[cname];
-					Assert(index >= 0 && index < vec.size(), "vector bound check failed " << index << " " << vec.size());
+					Assert(index >= 0 && index < vec.size(), "gen " << cname << " vector bound check failed " << index << "/" << vec.size());
 					bool_node * src = vec[index];
 					if (src == NULL) {
 						continue;
