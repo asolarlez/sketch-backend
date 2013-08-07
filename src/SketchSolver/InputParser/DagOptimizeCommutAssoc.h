@@ -104,6 +104,7 @@ class DagOptimizeCommutAssoc :
 	public NodeVisitor, public virtual NodeStore
 {
 public:
+	typedef map<bool_node::Type, CAoptimizer>::iterator optiterator;
 	map<bool_node::Type, CAoptimizer> optimizers;
 	BooleanDAG* dag;
 	bool_node* getNode(int id);

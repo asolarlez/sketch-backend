@@ -1435,6 +1435,12 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				rvalue = optAdd(an);			
 				return true;
 			}
+
+			if(val0==1 && node.multi_mother[1] == node.mother){
+				rvalue = getCnode(1);
+				return true;
+			}
+
 		}//if( isConst(node.multi_mother[0]) )
 
 		if( isConst(node.multi_mother[1]) ){

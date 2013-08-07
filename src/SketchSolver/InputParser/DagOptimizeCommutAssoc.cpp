@@ -181,7 +181,7 @@ bool_node* CAoptimizer::replacement(bool_node* bn){
 
 void CAoptimizer::computeCommonSubs(){
 	//The first step is to group the interface nodes into equivalence classes.
-	map<pair<int, int>, int> distances;	
+	
 	for(interfIter it = interfaces.begin(); it != interfaces.end(); ++it){		
 		pair<int, set<inputId>* > & p = *it;
 		//The set in this pair says, for each interface node, which input nodes flow to it.
@@ -194,7 +194,7 @@ void CAoptimizer::computeCommonSubs(){
 	for(map<inputId, inputNode >::iterator it = inputToInterf.begin(); it != inputToInterf.end(); ++it){
 		it->second.node = getNode(it->first);
 	}
-
+	map<pair<int, int>, int> distances;	
 	//Now, all the input nodes with the same set must be coallesced into a single node.
 	
 	{
@@ -353,8 +353,9 @@ void CAoptimizer::addInterface(bool_node& bn, set<int>* cset){
 
 
 bool_node* CAoptimizer::checkNode(bool_node& bn){
-	//Solitary nodes aren't consider. Only nodes that belong to connected components of similar nodes.
-
+	
+	//Old: Solitary nodes aren't consider. Only nodes that belong to connected components of similar nodes.
+	//New: I am now considering solitary nodes too.
 	bool good = false;
 	bool isInterface = false;
 	for(child_iter it = bn.children.begin(); it != bn.children.end(); ++it){
@@ -374,21 +375,29 @@ bool_node* CAoptimizer::checkNode(bool_node& bn){
 		return addGeneral(bn, !isInterface);
 	}else{
 	//otherwise, we need to see if any of the children are of the same type.
+		return addGeneral(bn, !isInterface);
+		/*
 		if(good){
 			return addGeneral(bn, !isInterface);
 		}else{
 			return &bn;
 		}
+		*/
 	}
 }
 
 void DagOptimizeCommutAssoc::visitACNode(bool_node& bn){
-	if(optimizers.count(bn.type)== 0){
-		optimizers[bn.type].setDag(dag);
-		optimizers[bn.type].setType(bn.type);
-		optimizers[bn.type].setParent(this);
+	optiterator oit = optimizers.find(bn.type);
+	if(oit == optimizers.end()){
+		CAoptimizer& caop = optimizers[bn.type];
+		caop.setDag(dag);
+		caop.setType(bn.type);
+		caop.setParent(this);
+		rvalue = caop.checkNode(bn);
+	}else{
+		rvalue = oit->second.checkNode(bn);
 	}
-	rvalue = optimizers[bn.type].checkNode(bn);
+	
 }
 
 void DagOptimizeCommutAssoc::visit( AND_node& node ){
@@ -428,6 +437,8 @@ void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
 
 	dagsize = bdag.size();
 	dag = &bdag;
+	timerclass tc("prepass");
+	tc.start();
 	for(int i=0; i<bdag.size(); ++i){
 		// Get the code for this node. 		
 		bdag[i]->accept(*this);
@@ -437,13 +448,17 @@ void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
 			bdag.replace(i, n);
 		}
 	}
-
+	tc.stop().print();
 	
-
+	timerclass tc2("ccs");
+	tc2.start();
 	for(map<bool_node::Type, CAoptimizer>::iterator it = optimizers.begin(); it != optimizers.end(); ++it){
 		it->second.computeCommonSubs();		
 	}
+	tc2.stop().print();
 
+	timerclass tc3("replacement");
+	tc3.start();
 	for(int i=0; i<bdag.size(); ++i){
 		if(bdag[i] != NULL){
 			bool_node::Type t = bdag[i]->type;
@@ -455,7 +470,7 @@ void DagOptimizeCommutAssoc::process(BooleanDAG& bdag){
 			}
 		}
 	}
-
+	tc3.stop().print();
 
 	bdag.removeNullNodes();
 	bdag.addNewNodes(newnodes);

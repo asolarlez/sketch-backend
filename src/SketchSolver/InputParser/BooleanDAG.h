@@ -177,11 +177,48 @@ Dllist assertions;
   void registerOutputs();
   
   void sliceH(bool_node* n, BooleanDAG* bd);
-  BooleanDAG* slice(int i, ASSERT_node*& out);
+  BooleanDAG* slice(int i, ASSERT_node*& out){
+		return slice(nodes.end(), nodes.end(), i, out);
+	}
+
+  
+  
   template<typename forward_iter>
-  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out);
+  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
+	BooleanDAG* bd = slice(begin, end, i);
+	if(out->mother != NULL){
+		out->mother->mother = nodes[i];		
+		if(out->mother->father != NULL){
+			bd->addNewNode(out->mother->father);
+		}
+		bd->addNewNode(out->mother);
+	}else{
+		out->mother = nodes[i];
+	}
+	bd->addNewNode(out);
+	return bd;
+}
+
+  
+
+// interesting are the interesting nodes (stored in [begin, end)) in this dag!
+// and they must be sorted according to the normal order!
   template<typename forward_iter>
-  BooleanDAG* slice(forward_iter begin, forward_iter end, int i);
+  BooleanDAG* slice(forward_iter begin, forward_iter end, int i){
+		for(BooleanDAG::iterator it = nodes.begin(); it != nodes.end(); ++it){
+			(*it)->flag = 0;
+		}
+		BooleanDAG* bd = new BooleanDAG(this->name);
+		bd->ownsNodes = false;
+		for (; begin!=end; ++begin) {
+			//cout << "slicing on " << (*begin)->lprint() << endl;
+			bd->sliceH(*begin, bd);
+		}
+		if (i>=0) {
+			bd->sliceH(nodes[i], bd);
+		}
+		return bd;
+	}
 
   void repOK();
 
@@ -200,6 +237,8 @@ Dllist assertions;
 
 	virtual ~BooleanDAG();
 };
+
+
 
 #endif // !defined(AFX_BOOLEANDAG_H__61A0B2EB_5CC4_4D69_AA64_9DC156ED4C8D__INCLUDED_)
 
