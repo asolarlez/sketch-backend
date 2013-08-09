@@ -1039,7 +1039,6 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
 	}
 	dag = dag->clone();
-	cout << "simulate: before hasInput=true dag->intSize=" << dag->getIntSize() << endl;
 	pushProblem(dag);
 	bool hasInput = true;
 	do{
@@ -1141,9 +1140,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			pushProblem(tbd);
 			
-			cout << "simulate: rv = baseCheck dag->intSize=" << dag->getIntSize() << " tbd->intSize=" << tbd->getIntSize() << endl;
 			bool rv = baseCheck(controls, tmpin);
-			cout << "simulate: rv = baseCheck END" << endl;
 			
 			popProblem();
 			if(am>0){
