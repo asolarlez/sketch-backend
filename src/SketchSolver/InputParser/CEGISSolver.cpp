@@ -1046,6 +1046,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				tc.stop().print("found a cex by random testing");
 				if (true) {
 					//dag->lprint(cout);
+					// useful code for debugging
 					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
