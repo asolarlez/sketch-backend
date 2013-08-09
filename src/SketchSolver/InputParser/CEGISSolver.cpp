@@ -734,9 +734,9 @@ struct InputGen {
 
 	void init(BooleanDAG * problem, vector<bool_node*>const & hasserts) {
 		dag = problem->slice(hasserts.begin(), hasserts.end(), -1)->clone();
-		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
 		//cout << "InputGen: init dag=" << endl;
 		//dag->lprint(cout);
+		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
 		int sliceInSize = sliceIn.size();
 		nsrc = 0;
 		if (sliceInSize == 0) {
