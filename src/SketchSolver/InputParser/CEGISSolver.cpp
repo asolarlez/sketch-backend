@@ -733,9 +733,10 @@ struct InputGen {
 	// TODO xzl: should we delete in deconstructor?
 
 	void init(BooleanDAG * problem, vector<bool_node*>const & hasserts) {
-		//cout << "InputGen: init" << endl;
 		dag = problem->slice(hasserts.begin(), hasserts.end(), -1)->clone();
 		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
+		//cout << "InputGen: init dag=" << endl;
+		//dag->lprint(cout);
 		int sliceInSize = sliceIn.size();
 		nsrc = 0;
 		if (sliceInSize == 0) {
@@ -763,9 +764,11 @@ struct InputGen {
 				//Assert(0, "assume depend on array");
 				// NOTE we do not increase nsrc here
 				// because we only increase per individual array element
-				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>()); 				
+				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>());
+				vp.second.resize(arsz, NULL);
 				srcnodes.insert(vp);
-				(*srcnodes.rbegin()).second.resize(arsz, NULL);
+				// Bug: This is wrong! srcnodes is a map not a vector!
+				// (*srcnodes.rbegin()).second.resize(arsz, NULL);
 				hasArr = true;
 				if (arsz > maxArSz) {
 					maxArSz = arsz;
