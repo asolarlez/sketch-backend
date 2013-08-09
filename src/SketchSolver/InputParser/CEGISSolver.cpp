@@ -763,11 +763,8 @@ struct InputGen {
 				//Assert(0, "assume depend on array");
 				// NOTE we do not increase nsrc here
 				// because we only increase per individual array element
-				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>());
-				vp.second.resize(arsz, NULL);
+				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>(arsz, NULL));
 				srcnodes.insert(vp);
-				// Bug: This is wrong! srcnodes is a map not a vector!
-				// (*srcnodes.rbegin()).second.resize(arsz, NULL);
 				hasArr = true;
 				if (arsz > maxArSz) {
 					maxArSz = arsz;
@@ -1066,6 +1063,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				tc.stop().print("found a cex by random testing");
 				if (true) {
 					//dag->lprint(cout);
+					// useful code for debugging
 					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
