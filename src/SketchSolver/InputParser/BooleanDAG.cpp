@@ -100,6 +100,7 @@ BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i) {
 		(*it)->flag = 0;
 	}
 	BooleanDAG* bd = new BooleanDAG(this->name);
+	bd->intSize = intSize;
 	bd->ownsNodes = false;
 	for (; begin!=end; ++begin) {
 		//cout << "slicing on " << (*begin)->lprint() << endl;

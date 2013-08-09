@@ -18,8 +18,7 @@ dirCheck(checker),
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
-params(args),
-inputGen(NULL)
+params(args)
 {
 //	cout << "miter:" << endl;
 //	miter->lprint(cout);
@@ -983,8 +982,9 @@ struct InputGen {
 
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
 		int size = problem->getIntSize();
-		if (intsize < size) {
-			cout << "InputGen: growInputSize to " << size << endl;
+		if (intsize != size) {
+			cout << "InputGen: growInputSize from " << intsize << " to " << size << endl;
+			Assert( intsize < size, "intSize decreases!" );
 			//delete dag;
 			//delete dir;
 			//delete solver;
@@ -1024,13 +1024,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		tc.stop().print("no cex");
 		return false;
 	}
-	if (!inputGen || inputGen->hasH) {
+	int intSize = dag->getIntSize();
+	if (intSize >= inputGens.size()) {
+		inputGens.resize(intSize+1, NULL);
+	}
+	InputGen * & inputGen = inputGens[intSize];
+	if (!inputGen) {
 		filterHasserts(asserts, hasserts);
-		if (!inputGen) {
-			inputGen = new InputGen(dag, hasserts);
-		} else {
-			inputGen->ensureIntSize(dag, hasserts);
-		}
+		inputGen = new InputGen(dag, hasserts);
 	}
 	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
 	if (hasCtrls) {
@@ -1038,6 +1039,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
 	}
 	dag = dag->clone();
+	cout << "simulate: before hasInput=true dag->intSize=" << dag->getIntSize() << endl;
 	pushProblem(dag);
 	bool hasInput = true;
 	do{
@@ -1139,7 +1141,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 			pushProblem(tbd);
 			
+			cout << "simulate: rv = baseCheck dag->intSize=" << dag->getIntSize() << " tbd->intSize=" << tbd->getIntSize() << endl;
 			bool rv = baseCheck(controls, tmpin);
+			cout << "simulate: rv = baseCheck END" << endl;
 			
 			popProblem();
 			if(am>0){
