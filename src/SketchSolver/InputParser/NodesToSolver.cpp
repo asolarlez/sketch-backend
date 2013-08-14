@@ -865,6 +865,13 @@ NodesToSolver::processArith (bool_node &node)
 			// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
 			//						atimer.restart();
 			int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);
+			if (PARAMS->intRange>0 && abs(quant)>PARAMS->intRange) {
+				//cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<< " > intRange " << PARAMS->intRange << endl;
+				int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
+				// TODO xzl: is this assertion OK? what about the path condition?
+				dir.addAssertClause(-cvar);
+				continue;
+			}
 			//						atimer.stop();
 			Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
 			//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
@@ -893,7 +900,7 @@ NodesToSolver::processArith (bool_node &node)
 				if(numbers.size() >= INTEGERBOUND){
 					PrintSource ps(node_ids);
 					ps.process(*tmpdag, node.id);
-					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
+					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER" << " current intRange=" << PARAMS->intRange << " try to set a smaller one with --bnd-int-range");
 				}
 				numbers[quant] = cvar;
 				++vals;
