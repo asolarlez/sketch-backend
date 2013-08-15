@@ -647,10 +647,11 @@ class DST_node: public INTER_node, public DllistNode{
 class CTRL_node: public INTER_node{
 	typedef enum{MINIMIZE=1, ANGELIC=2} Property;
 	unsigned kind;
+	int arrSz;
 	public: 
-	CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0){  if(toMinimize){ this->kind = MINIMIZE;}  } 
-	CTRL_node(unsigned kind_):INTER_node(CTRL){  this->kind = kind; } 
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind;}   
+	CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  } 
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; } 
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind; this->arrSz = bn.arrSz; }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };	
 	string get_name() const {
@@ -669,6 +670,39 @@ class CTRL_node: public INTER_node{
 	}
 	void set_Angelic() {
 		this->kind |= ANGELIC;		
+	}
+
+	int getArrSz()const{
+		return arrSz;
+	}
+	void setArr(int sz){ 
+		arrSz = sz; 
+		if(sz>=0){
+			if(otype == INT){
+				otype = INT_ARR;			
+			}
+			if(otype == BOOL){
+				otype = BOOL_ARR;
+			}		
+		}
+	}
+	bool isArr() const{
+		return arrSz >= 0;
+	}
+	OutType getOtype() const {
+		if(otype != BOTTOM){
+			return otype;
+		}
+		INTER_node::getOtype();
+		if(!isArr()){ return otype; }
+		if(otype == INT){
+			otype = INT_ARR;
+			return otype;
+		}
+		if(otype == BOOL){
+			otype = BOOL_ARR;
+			return otype;
+		}		
 	}
 };
 
@@ -772,6 +806,9 @@ class UFUN_node: public arith_node, public DllistNode{
 		}else{
 			otype = BOOL_ARR;
 		}
+	}
+	bool isArr() const {
+		return otype == INT_ARR || otype == BOOL_ARR;
 	}
 	OutType getOtype()const {
 		if(otype != BOTTOM){

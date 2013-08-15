@@ -349,6 +349,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nm += ufn->outname;
 							SRC_node* sn = new SRC_node(nm);							
 							sn->set_nbits( ufn->get_nbits() );
+							// BUGFIX: need to setArr if UFUN out is array. related to Issue #5.
+							// TODO xzl: is this correct? is it necessary?
+							if (ufn->isArr()) {
+								//cout << "sn " << sn->lprint() << " ufn " << ufn->lprint() << endl;
+								sn->setArr(PARAMS->angelic_arrsz);
+							}
 							doubleCopies = true;
 							secondarynmap[nodeId] = sn;
 							ufToSrc[ufn] = sn;
@@ -416,7 +422,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					if(oldFun.isModel){
 						if(assertCond == NULL){
 							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);												
-							Assert(un != NULL, "Only ufun node can be the output of a model");
+							Assert(un != NULL, "Only ufun node can be the output of a model. ttv=" << ttv->lprint());
 							SRC_node* sc = ufToSrc[un];
 							sc->neighbor_replace(ttv);
 							sc->children.clear();
@@ -446,10 +452,16 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							mx->addToParents();
 							addNode(qn);
 							addNode(mx);
-							qn->set_nbits( PARAMS->NINPUTS );
+							const int angelicbits = PARAMS->NANGELICS;
+							qn->set_nbits( angelicbits );
 							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
 												
-							Assert(un != NULL, "Only ufun node can be the output of a model");
+							Assert(un != NULL, "Only ufun node can be the output of a model ttv=" << ttv->lprint());
+							// BUGFIX xzl: fix Issue #5, when angelic CTRL is an array
+							if (un->isArr()) {
+								//cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
+								qn->setArr(PARAMS->angelic_arrsz);
+							}
 							SRC_node* sc = ufToSrc[un];
 							sc->neighbor_replace(mx);
 							sc->children.clear();

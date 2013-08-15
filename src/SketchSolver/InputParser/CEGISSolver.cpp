@@ -357,6 +357,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		DagOptim fa(*newdag);
 		fa.process(*newdag);
 		pushProblem(newdag);
+		//cout << "addInputsToTestSet: newdag=";
 		//newdag->lprint(cout);
 		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
 		// find_node_ids store the mapping between node in the DAG (miter) vs
@@ -1315,8 +1316,8 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params);
-//	cout<<"Before hard code"<<endl;
-//	getProblem()->lprint(std::cout);
+	//cout<<"check: Before hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
@@ -1557,6 +1558,8 @@ void CEGISSolver::setNewControls(VarStore& controls){
 			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
 		}
 	}	
+	//cout << "setNewControls: problem=";
+	//getProblem()->lprint(cout);
 	defineProblem(mngCheck, dirCheck, node_values, check_node_ids);
 }
 

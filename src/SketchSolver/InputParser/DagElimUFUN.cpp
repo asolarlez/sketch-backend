@@ -76,11 +76,16 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 		str<< node.get_ufname() <<"_"<<node.outname<<"_"<<i;
 		SRC_node* src =  new SRC_node( str.str() );
 		src->set_nbits( node.get_nbits() );
-		if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
-			int sz = 1;
-			for(int i=0; i<PARAMS->NINPUTS; ++i){
-				sz = sz *2;
-			}
+		//if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
+		if(node.isArr()) {
+			// TODO xzl: is this fix correct?
+			// will this be used with angelic CTRL? see Issue #5 and DagFunctionInliner
+			//int sz = PARAMS->angelic_arrsz;
+			int sz = 1 << PARAMS->NINPUTS;
+			//int sz = 1;
+			//for(int i=0; i<PARAMS->NINPUTS; ++i){
+			//	sz = sz *2;
+			//}
 			src->setArr(sz);
 		}
 		return src;
