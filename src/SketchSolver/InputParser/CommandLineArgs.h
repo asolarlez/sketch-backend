@@ -58,6 +58,8 @@ struct CommandLineArgs{
   bool assumebcheck;
   bool angelic_model;
   int NINPUTS;
+  int NANGELICS;
+  int angelic_arrsz;
   bool simulate;
   int simiters;
   int simstopsize;
@@ -113,6 +115,8 @@ struct CommandLineArgs{
 		angelic_model = false;
 		olevel = 6;
 		NINPUTS = 5;
+		NANGELICS = -1;
+		angelic_arrsz = -1;
 		simulate = true;
 		simiters = 3;
 		simstopsize = 4000;
@@ -324,6 +328,18 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
+	    if( string(argv[ii]) == "--bnd-angelicbits" ){
+	      Assert(ii<(argc-1), "--bnd-angelicbits needs an extra parameter");
+	      NANGELICS = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+		  continue;
+	    }
+	    if( string(argv[ii]) == "--bnd-angelic-arrsz" ){
+	      Assert(ii<(argc-1), "--bnd-angelic-arrsz needs an extra parameter");
+	      angelic_arrsz = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+		  continue;
+	    }
 	    if( string(argv[ii]) == "-checkpoint" ){
 	      Assert(ii<(argc-1), "-checkpoint needs an extra parameter");
 	      hasCpt = true;
@@ -411,6 +427,8 @@ struct CommandLineArgs{
 			input_idx = ii+1;
 		}
 	  }
+	  if (NANGELICS<NINPUTS) { NANGELICS=NINPUTS; }
+	  if (angelic_arrsz<=0) { angelic_arrsz=(1<<NANGELICS); }
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];
 	  // outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
