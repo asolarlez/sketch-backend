@@ -76,6 +76,7 @@ void NodeEvaluator::visit( XOR_node& node ){
 	setbn(node, b(*node.mother) ^ b(*node.father));
 }
 void NodeEvaluator::visit( SRC_node& node ){
+	//cout << "NodeEvaluator SRC " << node.lprint() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
 	if(node.arrSz>=0){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
@@ -94,6 +95,8 @@ void NodeEvaluator::visit( NOT_node& node ){
 	setbn(node, !b(*node.mother));
 }
 void NodeEvaluator::visit( CTRL_node& node ){
+	// TODO xzl: will we encounter angelic array here?
+	//cout << "NodeEvaluator CTRL " << node.lprint() << " " << node.get_Angelic() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
 	setbn(node, (*inputs)[node.get_name()]);
 }
 void NodeEvaluator::visit( PLUS_node& node ){

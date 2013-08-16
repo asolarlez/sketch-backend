@@ -456,6 +456,7 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+    //cout << "comparing " << node.lprint() << " mval=" << mval << " fval=" << fval << endl; 
 	if(mval.isArray() || fval.isArray()){
 		if(mval.isBvect()){
 			mval.makeSparse(dir);
@@ -1045,7 +1046,7 @@ NodesToSolver::visit (SRC_node &node)
 #endif /* HAVE_BVECTARITH */
 		}
 		node_ids[node.id].markInput(dir);
-	Dout (cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
+	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
     // for input arrays, add the default value (out of bound) to be 0, if not present already

@@ -177,9 +177,9 @@ Dllist assertions;
   void registerOutputs();
   
   void sliceH(bool_node* n, BooleanDAG* bd);
-  BooleanDAG* slice(int i, ASSERT_node*& out);
+  BooleanDAG* slice(int i, ASSERT_node* out);
   template<typename forward_iter>
-  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out);
+  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node* out);
   template<typename forward_iter>
   BooleanDAG* slice(forward_iter begin, forward_iter end, int i);
 

@@ -73,10 +73,12 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 }
 
 template<typename forward_iter>
-BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
+BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSERT_node* out){
 	BooleanDAG* bd = slice(begin, end, i);
 	if(out->mother != NULL){
-		out->mother->mother = nodes[i];		
+		out->mother->mother = nodes[i];
+		// BUGFIX xzl: need to add to parents, otherwise the simulate in CEGISSolver will fail sometimes because out->mother->mother is an SRC_node whose children is empty, causing NodesToSolver to fail.
+		out->mother->addToParents();
 		if(out->mother->father != NULL){
 			bd->addNewNode(out->mother->father);
 		}
@@ -84,11 +86,13 @@ BooleanDAG* BooleanDAG::slice(forward_iter begin, forward_iter end, int i, ASSER
 	}else{
 		out->mother = nodes[i];
 	}
+	// BUGFIX xzl: for safety, we link parents here too
+	out->addToParents();
 	bd->addNewNode(out);
 	return bd;
 }
 
-BooleanDAG* BooleanDAG::slice(int i, ASSERT_node*& out) {
+BooleanDAG* BooleanDAG::slice(int i, ASSERT_node* out) {
 	return slice(vector<bool_node*>::const_iterator(), vector<bool_node*>::const_iterator(), i, out);
 }
 

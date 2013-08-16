@@ -1037,10 +1037,11 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
 	}
 	dag = dag->clone();
+	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
 	pushProblem(dag);
 	bool hasInput = true;
 	do{
-		++iter;		
+		++iter;
 		NodeEvaluator eval(empty, *dag);		
 		for(int i=0; i<40; ++i){
 			if (inputGen->hasH) {
@@ -1105,6 +1106,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			} else {
 				h = eval.scoreNodes(0);
 			}
+			//cout << "TESTING h=" << h << " hold=" << hold << endl;
 			if (h == -1){
 				break;
 			}
@@ -1142,8 +1144,18 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			bool rv = baseCheck(controls, tmpin);
 			
 			popProblem();
+
+			// BUGFIX xzl: we need to dislodge before delete a node, to make the DAG sane. otherwise some passess like BackwardAnalysis will fail silently.
+			// Important to maintain the order: dislodge must happen before a node's parent being deleted.
+			an->dislodge();
 			if(am>0){
-				if(am==2){ delete an->mother->father; }
+				// Important
+				an->mother->dislodge();
+				if(am==2){
+					// This one is not necessary because it must be a CONST (no parent), but for safety we put it here anyways.
+					an->mother->father->dislodge();
+					delete an->mother->father;
+				}
 				delete an->mother; 
 			}
 			delete an;
@@ -1201,20 +1213,20 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		}
 		//cout << "simiters: " << iter << endl;
 	}while(hasInput && iter < params.simiters && dag->size() > params.simstopsize);
-	//cout << "after simiters" << endl;
+	//cout << "after simiters " << iter << endl;
 
 	bool tv;
 	if (hasInput) {
 		BackwardsAnalysis ba;
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
-//		cout << "simulate: ba" << endl;
+		//cout << "simulate: ba" << endl;
 		ba.process(*dag);
-//		cout << "simulate: after ba" << endl;
+		//cout << "simulate: after ba" << endl;
 		DagOptim cse(*dag);
-//		cout << "simulate: cse" << endl;
+		//cout << "simulate: cse" << endl;
 		cse.process(*dag);
-//		cout << "simulate: after cse" << endl;
+		//cout << "simulate: after cse" << endl;
 		if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 		tc.stop().print("didn't find a cex");	
 		cout<<"After all optim"<<endl;
