@@ -871,6 +871,7 @@ NodesToSolver::processArith (bool_node &node)
 				//cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<< " > intRange " << PARAMS->intRange << endl;
 				int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
 				// TODO xzl: is this assertion OK? what about the path condition?
+				// FIXME xzl: I think it is incorrect.
 				dir.addAssertClause(-cvar);
 				continue;
 			}
