@@ -347,8 +347,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							string nm = ufn->get_ufname();
 							nm += "_";
 							nm += ufn->outname;
-							SRC_node* sn = new SRC_node(nm);							
-							sn->set_nbits( ufn->get_nbits() );
+							SRC_node* sn = new SRC_node(nm);
+							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
+							//sn->set_nbits( ufn->get_nbits() );
+							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
+							sn->set_nbits(PARAMS->NANGELICS);
 							// BUGFIX: need to setArr if UFUN out is array. related to Issue #5.
 							// TODO xzl: is this correct? is it necessary?
 							if (ufn->isArr()) {
@@ -452,9 +455,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							mx->addToParents();
 							addNode(qn);
 							addNode(mx);
-							const int angelicbits = PARAMS->NANGELICS;
-							qn->set_nbits( angelicbits );
+							qn->set_nbits(PARAMS->NANGELICS);
 							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+							//cout << "DagFunctionInliner: un=" << un->lprint() << " nbits=" << un->get_nbits() << " isArr=" << un->isArr() << endl;
 												
 							Assert(un != NULL, "Only ufun node can be the output of a model ttv=" << ttv->lprint());
 							// BUGFIX xzl: fix Issue #5, when angelic CTRL is an array

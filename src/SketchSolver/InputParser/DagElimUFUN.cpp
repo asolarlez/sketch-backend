@@ -75,7 +75,11 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 	stringstream str;
 		str<< node.get_ufname() <<"_"<<node.outname<<"_"<<i;
 		SRC_node* src =  new SRC_node( str.str() );
-		src->set_nbits( node.get_nbits() );
+		// BUGFIX: this is not wide enough! UFUN_node.nbits is either 1 or 2, set by InputParser
+		// TODO xzl: confirm this bug. Confirmed by cout, need to confirm with asolar
+		//src->set_nbits( node.get_nbits() );
+		//cout << "DagElimUFUN: " << node.lprint() << " nbits=" << node.get_nbits() << " isArr=" << node.isArr() << endl;
+		src->set_nbits(PARAMS->NANGELICS);
 		//if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
 		if(node.isArr()) {
 			// TODO xzl: is this fix correct?

@@ -1008,7 +1008,7 @@ void NodesToSolver::visit( XOR_node& node ){
 void
 NodesToSolver::visit (SRC_node &node)
 {
-    //cout << "NodesToSolver SRC " << node.lprint() << endl;
+    //cout << "NodesToSolver SRC " << node.lprint() << " nbits=" << node.get_nbits() << endl;
 
 	if( node.children.size() == 0){ return; }
     if (node_values.find (&node) != node_values.end ()) {
