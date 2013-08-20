@@ -18,8 +18,7 @@ dirCheck(checker),
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 mngCheck(checker.getMng()),
-params(args),
-inputGen(NULL)
+params(args)
 {
 //	cout << "miter:" << endl;
 //	miter->lprint(cout);
@@ -358,6 +357,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		DagOptim fa(*newdag);
 		fa.process(*newdag);
 		pushProblem(newdag);
+		//cout << "addInputsToTestSet: newdag=";
 		//newdag->lprint(cout);
 		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
 		// find_node_ids store the mapping between node in the DAG (miter) vs
@@ -733,8 +733,9 @@ struct InputGen {
 	// TODO xzl: should we delete in deconstructor?
 
 	void init(BooleanDAG * problem, vector<bool_node*>const & hasserts) {
-		//cout << "InputGen: init" << endl;
 		dag = problem->slice(hasserts.begin(), hasserts.end(), -1)->clone();
+		//cout << "InputGen: init dag=" << endl;
+		//dag->lprint(cout);
 		vector<bool_node*>& sliceIn = dag->getNodesByType(bool_node::SRC);
 		int sliceInSize = sliceIn.size();
 		nsrc = 0;
@@ -763,9 +764,8 @@ struct InputGen {
 				//Assert(0, "assume depend on array");
 				// NOTE we do not increase nsrc here
 				// because we only increase per individual array element
-				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>()); 				
+				pair<string, vector<bool_node*> > vp(name, vector<bool_node*>(arsz, NULL));
 				srcnodes.insert(vp);
-				(*srcnodes.rbegin()).second.resize(arsz, NULL);
 				hasArr = true;
 				if (arsz > maxArSz) {
 					maxArSz = arsz;
@@ -980,8 +980,9 @@ struct InputGen {
 
 	void ensureIntSize(BooleanDAG * problem, vector<bool_node *> const & hasserts) { if (hasH) {
 		int size = problem->getIntSize();
-		if (intsize < size) {
-			cout << "InputGen: growInputSize to " << size << endl;
+		if (intsize != size) {
+			cout << "InputGen: growInputSize from " << intsize << " to " << size << endl;
+			Assert( intsize < size, "intSize decreases!" );
 			//delete dag;
 			//delete dir;
 			//delete solver;
@@ -1021,13 +1022,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		tc.stop().print("no cex");
 		return false;
 	}
-	if (!inputGen || inputGen->hasH) {
+	int intSize = dag->getIntSize();
+	if (intSize >= inputGens.size()) {
+		inputGens.resize(intSize+1, NULL);
+	}
+	InputGen * & inputGen = inputGens[intSize];
+	if (!inputGen) {
 		filterHasserts(asserts, hasserts);
-		if (!inputGen) {
-			inputGen = new InputGen(dag, hasserts);
-		} else {
-			inputGen->ensureIntSize(dag, hasserts);
-		}
+		inputGen = new InputGen(dag, hasserts);
 	}
 	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
 	if (hasCtrls) {
@@ -1035,10 +1037,11 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		cout << "Simulate: hasCtrls=" << hasCtrls << endl;
 	}
 	dag = dag->clone();
+	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
 	pushProblem(dag);
 	bool hasInput = true;
 	do{
-		++iter;		
+		++iter;
 		NodeEvaluator eval(empty, *dag);		
 		for(int i=0; i<40; ++i){
 			if (inputGen->hasH) {
@@ -1062,6 +1065,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				tc.stop().print("found a cex by random testing");
 				if (true) {
 					//dag->lprint(cout);
+					// useful code for debugging
 					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
@@ -1102,6 +1106,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			} else {
 				h = eval.scoreNodes(0);
 			}
+			//cout << "TESTING h=" << h << " hold=" << hold << endl;
 			if (h == -1){
 				break;
 			}
@@ -1139,8 +1144,18 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			bool rv = baseCheck(controls, tmpin);
 			
 			popProblem();
+
+			// BUGFIX xzl: we need to dislodge before delete a node, to make the DAG sane. otherwise some passess like BackwardAnalysis will fail silently.
+			// Important to maintain the order: dislodge must happen before a node's parent being deleted.
+			an->dislodge();
 			if(am>0){
-				if(am==2){ delete an->mother->father; }
+				// Important
+				an->mother->dislodge();
+				if(am==2){
+					// This one is not necessary because it must be a CONST (no parent), but for safety we put it here anyways.
+					an->mother->father->dislodge();
+					delete an->mother->father;
+				}
 				delete an->mother; 
 			}
 			delete an;
@@ -1198,20 +1213,20 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		}
 		//cout << "simiters: " << iter << endl;
 	}while(hasInput && iter < params.simiters && dag->size() > params.simstopsize);
-	//cout << "after simiters" << endl;
+	//cout << "after simiters " << iter << endl;
 
 	bool tv;
 	if (hasInput) {
 		BackwardsAnalysis ba;
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
-//		cout << "simulate: ba" << endl;
+		//cout << "simulate: ba" << endl;
 		ba.process(*dag);
-//		cout << "simulate: after ba" << endl;
+		//cout << "simulate: after ba" << endl;
 		DagOptim cse(*dag);
-//		cout << "simulate: cse" << endl;
+		//cout << "simulate: cse" << endl;
 		cse.process(*dag);
-//		cout << "simulate: after cse" << endl;
+		//cout << "simulate: after cse" << endl;
 		if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 		tc.stop().print("didn't find a cex");	
 		cout<<"After all optim"<<endl;
@@ -1313,8 +1328,8 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params);
-//	cout<<"Before hard code"<<endl;
-//	getProblem()->lprint(std::cout);
+	//cout<<"check: Before hard code"<<endl;
+	//getProblem()->lprint(std::cout);
 	if(hardcode){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
@@ -1555,6 +1570,8 @@ void CEGISSolver::setNewControls(VarStore& controls){
 			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
 		}
 	}	
+	//cout << "setNewControls: problem=";
+	//getProblem()->lprint(cout);
 	defineProblem(mngCheck, dirCheck, node_values, check_node_ids);
 }
 

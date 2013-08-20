@@ -177,17 +177,19 @@ Dllist assertions;
   void registerOutputs();
   
   void sliceH(bool_node* n, BooleanDAG* bd);
-  BooleanDAG* slice(int i, ASSERT_node*& out){
+  BooleanDAG* slice(int i, ASSERT_node* out){
 		return slice(nodes.end(), nodes.end(), i, out);
 	}
 
   
   
   template<typename forward_iter>
-  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node*& out){
+  BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node* out){
 	BooleanDAG* bd = slice(begin, end, i);
 	if(out->mother != NULL){
-		out->mother->mother = nodes[i];		
+		out->mother->mother = nodes[i];
+		// BUGFIX xzl: need to add to parents, otherwise the simulate in CEGISSolver will fail sometimes because out->mother->mother is an SRC_node whose children is empty, causing NodesToSolver to fail.
+		out->mother->addToParents();
 		if(out->mother->father != NULL){
 			bd->addNewNode(out->mother->father);
 		}
@@ -195,6 +197,8 @@ Dllist assertions;
 	}else{
 		out->mother = nodes[i];
 	}
+	// BUGFIX xzl: for safety, we link parents here too
+	out->addToParents();
 	bd->addNewNode(out);
 	return bd;
 }

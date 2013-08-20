@@ -45,8 +45,10 @@ void BooleanDAG::growInputIntSizes(){
 	for(int i=0; i<specIn.size(); ++i){	
 		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 		int nbits = srcnode->get_nbits();
-		if(nbits >= 2){			
-			srcnode->set_nbits(nbits+1);			
+		// BUGFIX xzl: nbits might be strange for SRC_nodes turned from Angelic CTRLs
+		if(nbits >= 2 && nbits < intSize){
+			srcnode->set_nbits(nbits+1);
+			// NOTE xzl: this might no longer be true for general case since we have Angelic CTRL turned into SRC_node. Hence we added a check in the "if" branch
 			Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
 		}
 	}
@@ -814,7 +816,9 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 		vector<bool_node*>& sn = getNodesByType(bool_node::SRC);
 		for(int i=0; i<sn.size(); ++i){
 			INTER_node* inter = dynamic_cast<INTER_node*>((sn[i]));
-			if(inter->get_nbits()>1){
+			if(inter->get_nbits()>1 && inter->get_nbits() < bdag->intSize){
+				// BUGFIX xzl: the inter might be a SRC_node turned from Angelic CTRL, and having a larger nbits than bdag
+				Assert(inter->get_nbits() <= bdag->intSize, "inter " << inter->lprint() << " " << inter->get_nbits() << " > " << bdag->intSize);
 				inter->set_nbits(bdag->intSize);
 			}
 		}

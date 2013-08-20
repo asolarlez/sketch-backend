@@ -442,7 +442,9 @@ Clause* Solver::propagate()
         Clause         **i, **j, **end;
         num_props++;
 		
-        for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
+        //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
+        //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
+        for (i = j = &ws[0], end = i + ws.size();  i != end;){
             Clause& c = **i++;
 
 			Lit false_lit = ~p;
@@ -453,8 +455,18 @@ Clause* Solver::propagate()
 				int last = c.size()-1;
 				for(int k=0; k<c.size(); ++k){
 					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
-					if(c[k] == false_lit){						
-						assert (k != last);
+					if(c[k] == false_lit){
+						if (false && k == last) {
+							std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
+							std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
+							std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
+							std::cout<<" c["<<k-1<<"] = "<<var(c[k-1])<<std::endl;
+							std::cout << "k,last= " << k << " " << last << endl;
+						}
+						// BUGFIX: This assert checks the invariant that SINGLESET clause is not watched by its last literal.
+						// But c[0] and c[1] are watched unconditionally, so this is not valid when c.size()<=2.
+						// TODO xzl: confirm this bug with asolar. Is this fix sufficient?
+						assert (last <= 1 || k != last);
 						c[k] = c[0];
 						c[0] = false_lit;
 					}

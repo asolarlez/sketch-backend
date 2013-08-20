@@ -522,8 +522,8 @@ public:
     }
 
 	void makeArray (SolverHelper &dir, int nbits, int arrsz) {
-		Assert (id > 0, "id must be positive, instead it is" << id << " (makeArray)");
-		Assert (this->size == nbits*arrsz, "id must be positive, instead it is" << id << " (makeArray)");
+		Assert (id > 0, "id must be positive, instead it is " << id << " (makeArray)");
+		Assert (this->size == nbits*arrsz, "size=" << size << " != " << nbits << "*" << arrsz);
 		num_ranges.clear();
 		for(int arrid=0; arrid<arrsz; ++arrid){
 			vector<int> ids (nbits);
@@ -545,7 +545,7 @@ public:
 	}
 
     void makeSparse (SolverHelper &dir, int adj = 1) {
-	Assert (isSparse() || id > 0, "id must be positive, instead it is" << id << " (makeSparse)");
+	Assert (isSparse() || id > 0, "id must be positive, instead it is " << id << " (makeSparse)");
 
 	if (isBvect () || isBvectSigned ()) {
 	    if (size == 1 && isBvect ()) {

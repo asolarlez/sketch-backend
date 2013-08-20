@@ -450,11 +450,13 @@ void NodesToSolver::processLT (LT_node& node){
 template<typename COMP> void
 NodesToSolver::processComparissons (bool_node& node, bool revFval)
 {
+    //cout << "comparing " << node.lprint() << endl; 
     bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 
     bool_node *father = node.father;
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+    //cout << "comparing " << node.lprint() << " mval=" << mval << " fval=" << fval << endl; 
 	if(mval.isArray() || fval.isArray()){
 		if(mval.isBvect()){
 			mval.makeSparse(dir);
@@ -865,6 +867,14 @@ NodesToSolver::processArith (bool_node &node)
 			// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
 			//						atimer.restart();
 			int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);
+			if (PARAMS->intRange>0 && abs(quant)>PARAMS->intRange) {
+				//cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<< " > intRange " << PARAMS->intRange << endl;
+				int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
+				// TODO xzl: is this assertion OK? what about the path condition?
+				// FIXME xzl: I think it is incorrect.
+				dir.addAssertClause(-cvar);
+				continue;
+			}
 			//						atimer.stop();
 			Dout(cout<<quant<<" = "<<mval[i]<<" OP "<<fval[j]<<endl);
 			//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
@@ -893,7 +903,7 @@ NodesToSolver::processArith (bool_node &node)
 				if(numbers.size() >= INTEGERBOUND){
 					PrintSource ps(node_ids);
 					ps.process(*tmpdag, node.id);
-					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER");
+					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER" << " current intRange=" << PARAMS->intRange << " try to set a smaller one with --bnd-int-range");
 				}
 				numbers[quant] = cvar;
 				++vals;
@@ -999,7 +1009,7 @@ void NodesToSolver::visit( XOR_node& node ){
 void
 NodesToSolver::visit (SRC_node &node)
 {
-    
+    //cout << "NodesToSolver SRC " << node.lprint() << " nbits=" << node.get_nbits() << endl;
 
 	if( node.children.size() == 0){ return; }
     if (node_values.find (&node) != node_values.end ()) {
@@ -1017,14 +1027,12 @@ NodesToSolver::visit (SRC_node &node)
 		    node_ids[node.id] = node_values[(&node)]*YES;
 		}
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
-		
     } else {
 		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
 		if (node.get_nbits () > 1 || arrSz >=0) {
 		    Dout (cout << "setting input nodes " << node.get_name() << endl);
-		    //cout << "setting input nodes " << node.get_name() << endl;
 #ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
 			if(arrSz<0){
@@ -1039,9 +1047,8 @@ NodesToSolver::visit (SRC_node &node)
 #endif /* HAVE_BVECTARITH */
 		}
 		node_ids[node.id].markInput(dir);
-	Dout (cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
+	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
-	//cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id] << "  " << &node << endl;
     }
     // for input arrays, add the default value (out of bound) to be 0, if not present already
     node_ids[node.id].addArrDefault(YES, 0);
@@ -1137,7 +1144,8 @@ NodesToSolver::visit (NEG_node &node)
 void
 NodesToSolver::visit (CTRL_node &node)
 {
-    
+    //cout << "NodesToSolver CTRL " << node.lprint() << endl;
+    const int nbits = node.get_nbits();
     if(  node_values.find(&node) != node_values.end() ){
 		if( node.get_nbits() > 1 ){
 		    Tvalue tmp = tvYES;
@@ -1154,25 +1162,36 @@ NodesToSolver::visit (CTRL_node &node)
 		    node_ids[node.id] = node_values[(&node)]*YES;
 		}		
 		return;
-    }else{		
-
+    }else{
+		Tvalue & nvar = node_ids[node.id];
 		if(node.get_Angelic()){
-			node_ids[node.id] = dir.newAnonymousVar(node.get_nbits());
-
+			// BUGFIX: Issue #5
+			// when node is an array, need to create array
+			const int arrSz = node.getArrSz();
+			//cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
+			if(arrSz<0){
+				nvar = dir.newAnonymousVar(nbits);
+				nvar.setSize(nbits);
+				nvar.makeSparse(dir);
+			}else{
+				const int totbits = nbits*arrSz;
+				nvar = dir.newAnonymousVar(totbits);
+				nvar.setSize(totbits);
+				nvar.makeArray(dir, nbits, arrSz);
+			}
 		}else{
-			Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd" );
-			node_ids[node.id] = dir.getArr(node.get_name(), 0);
-		}
-
-		if( node.get_nbits() > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
-			node_ids[node.id].setSize( node.get_nbits() );
-			Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
+			Assert( dir.getArrSize(node.get_name()) == nbits, "THIS IS basd" );
+			nvar = dir.getArr(node.get_name(), 0);
+			if( nbits > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
+				nvar.setSize(nbits);
+				Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
 #ifndef HAVE_BVECTARITH
-			// In the future, I may want to make some of these holes not-sparse.
-			node_ids[node.id].makeSparse(dir);
+				// In the future, I may want to make some of these holes not-sparse.
+				nvar.makeSparse(dir);
 #endif /* HAVE_BVECTARITH */
-		}				
-		node_ids[node.id].markInput(dir);
+			}
+		}
+		nvar.markInput(dir);
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
     }
@@ -1300,6 +1319,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 
 
 	Dout(cout<<" ARRACC "<<endl);
+	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
 	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
@@ -1318,7 +1338,6 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		node_ids[node.id] = tval_lookup(choice);
 		Tvalue& cval = node_ids[node.id];
 		
-		Dout( cout<<node.get_name()<<" Shortcout = "<<cval<<endl );
 		return;
 	}
 	
@@ -1359,6 +1378,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 //	flooptimer.stop().print();
 //	COUT<<" FIRST LOOP mmsize ="<<node.multi_mother.size()<<" omv.num_ranges.size()="<<omv.num_ranges.size()<<endl;
 	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl);
+		//cout<<"Parents did not change "<<endl;
 												 //aracctimer.stop().print();
 												 return; }
 	if(isArray){
@@ -1710,6 +1730,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 
 void
 NodesToSolver::visit( ARR_R_node &node){
+	//cout << "NodesToSolver ARR_R " << node.lprint() << endl;
 	Tvalue index = tval_lookup(node.mother);
 	Tvalue inarr = tval_lookup(node.father);
 	if(!index.isSparse()){
@@ -1767,6 +1788,7 @@ NodesToSolver::visit( ARR_R_node &node){
 		if(moreIdx && moreArr && cidx == idv[idxi].value){
 			while(inarriter != inarrend && inarriter->idx == cidx){
 				int iatv = inarriter->value;
+				//cout << "found index, val: " << cidx << "," << idv[idxi].guard << " " << iatv << "," << inarriter->guard << endl;
 				map<int, int>::iterator it = valToID.find(iatv);
 				if(it == valToID.end()){
 					valToID[iatv] = dir.addAndClause(idv[idxi].guard, inarriter->guard);
@@ -1774,6 +1796,7 @@ NodesToSolver::visit( ARR_R_node &node){
 					int cvar = dir.addAndClause(idv[idxi].guard,inarriter->guard);
 					it->second = dir.addOrClause(cvar, it->second);
 				}
+				//cout << "update valToID[" << iatv << "]=" << valToID[iatv] << endl;
 				++inarriter;
 			}
 			if(inarriter != inarrend){
@@ -1835,6 +1858,7 @@ NodesToSolver::visit( ARR_R_node &node){
 		tmp.reserve(valToID.size());
 		map<int, int>::iterator it = valToID.begin();
 		for(int i=0; it!=valToID.end(); ++i, ++it){
+			//cout << "valToID[" << it->first << "]=" << it->second << endl;
 			if(it->second != -YES){
 				tmp.push_back( guardedVal(it->second, it->first) );
 			}
@@ -2047,6 +2071,7 @@ NodesToSolver::visit (CONST_node &node)
 
 
 void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
+	//cout << "NodesToSolver.doArrArrAcc " << node.lprint() << endl;
 	vector<bool_node*>::iterator it = node.multi_mother.begin();
 	int N = node.multi_mother.size();
 	vector<Tvalue> choices(N);
@@ -2118,7 +2143,7 @@ void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
 		}
 		output.arrayify();
 	}
-
+	//cout << "doArrArrAcc " << node.get_name() << ": " << output << endl;
 }
 
 void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval){
