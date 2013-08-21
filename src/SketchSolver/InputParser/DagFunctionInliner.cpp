@@ -351,7 +351,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
 							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
-							sn->set_nbits(PARAMS->NANGELICS);
+							// BUGFIX: nbits must be 1 if original UFUN out is boolean type
+							int nbits = ufn->get_nbits();
+							if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+							sn->set_nbits(nbits);
 							// BUGFIX: need to setArr if UFUN out is array. related to Issue #5.
 							// TODO xzl: is this correct? is it necessary?
 							if (ufn->isArr()) {
@@ -455,8 +458,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							mx->addToParents();
 							addNode(qn);
 							addNode(mx);
-							qn->set_nbits(PARAMS->NANGELICS);
 							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+							// BUGFIX: nbits must be 1 if original UFUN out is boolean type
+							int nbits = un->get_nbits();
+							if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+							qn->set_nbits(nbits);
 							//cout << "DagFunctionInliner: un=" << un->lprint() << " nbits=" << un->get_nbits() << " isArr=" << un->isArr() << endl;
 												
 							Assert(un != NULL, "Only ufun node can be the output of a model ttv=" << ttv->lprint());

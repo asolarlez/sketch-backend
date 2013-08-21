@@ -79,7 +79,10 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 		// TODO xzl: confirm this bug. Confirmed by cout, need to confirm with asolar
 		//src->set_nbits( node.get_nbits() );
 		//cout << "DagElimUFUN: " << node.lprint() << " nbits=" << node.get_nbits() << " isArr=" << node.isArr() << endl;
-		src->set_nbits(PARAMS->NANGELICS);
+		// BUGFIX: nbits must be 1 if original UFUN out is boolean type
+		int nbits = node.get_nbits();
+		if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+		src->set_nbits(nbits);
 		//if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
 		if(node.isArr()) {
 			// TODO xzl: is this fix correct?
