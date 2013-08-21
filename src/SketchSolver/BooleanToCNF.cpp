@@ -41,6 +41,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 		if(size == 1){ return; }
 		if(size == 2){
 			addHelperC(-gv[0].guard, -gv[1].guard);
+			return;
 		}
 		int* x = new int[size];
 		for(int i=0; i<size; ++i){

@@ -39,6 +39,7 @@ void MiniSATSolver::annotate(const string& msg){
 
 
  void MiniSATSolver::addCountingHelperClause(int c[], int sz){
+	Assert(sz>2, "addCountingHelperClause: too small sz=" << sz);
 	vec<Lit> lits;
 	Dout(cout<<"@ C-helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
 	lits.clear();

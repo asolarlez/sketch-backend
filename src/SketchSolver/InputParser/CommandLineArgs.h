@@ -68,7 +68,6 @@ struct CommandLineArgs{
   bool debug;
   bool superChecks;  
   int randBnd;
-  int intRange;
   bool lightVerif;
   bool outputSat;
 	CommandLineArgs(vector<string> args) {
@@ -125,7 +124,6 @@ struct CommandLineArgs{
 		debug = false;
 		superChecks = false;
 		randBnd = -1;
-		intRange = -1;
 		lightVerif = false;
 		minvarHole = false;
 		outputSat = false;
@@ -133,12 +131,6 @@ struct CommandLineArgs{
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
             input_idx = ii+1;
-			continue;
-        }
-        if (string(argv[ii]) == "--bnd-int-range") {
-            Assert(ii<(argc-1), "--bnd-int-range needs an extra parameter");
-            intRange = atoi(argv[ii+1]);
-            input_idx = ii+2;
 			continue;
         }
 		if( string(argv[ii]) == "-debug" ){	      

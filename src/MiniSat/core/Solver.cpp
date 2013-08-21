@@ -138,6 +138,7 @@ void Solver::attachClause(Clause& c) {
     watches[toInt(~c[1])].push(&c);
 	if(c.mark()==SINGLESET){
 		//singleset clauses are watched by all the literals except the last one.
+		assert(c.size()>2);
 		for(int i=2; i<c.size()-1; ++i){
 			watches[toInt(~c[i])].push(&c);
 		}
@@ -463,10 +464,7 @@ Clause* Solver::propagate()
 							std::cout<<" c["<<k-1<<"] = "<<var(c[k-1])<<std::endl;
 							std::cout << "k,last= " << k << " " << last << endl;
 						}
-						// BUGFIX: This assert checks the invariant that SINGLESET clause is not watched by its last literal.
-						// But c[0] and c[1] are watched unconditionally, so this is not valid when c.size()<=2.
-						// TODO xzl: confirm this bug with asolar. Is this fix sufficient?
-						assert (last <= 1 || k != last);
+						assert (k != last);
 						c[k] = c[0];
 						c[0] = false_lit;
 					}
