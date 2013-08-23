@@ -50,7 +50,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 		MSsolverNS::sort(x, size);
 		int l = this->setStrBO(x, size, ':', 0);		
 		int rv;
-		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){				
+		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){
 			mng.addCountingHelperClause(x, gv.size());
 		}
 		delete x;

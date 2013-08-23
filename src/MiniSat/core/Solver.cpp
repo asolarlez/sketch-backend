@@ -101,6 +101,13 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
     assert(decisionLevel() == 0);
 
+    if (false && kind == SINGLESET) {
+		cout << "addClause " << ps.size();
+		for (int i=0; i<ps.size(); i++) {
+			cout << " " << var(ps[i]);
+		}
+		cout << endl;
+	}
     if (!ok)
         return false;
     else{
@@ -114,6 +121,13 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
                 ps[j++] = p = ps[i];
         ps.shrink(i - j);
     }
+    if (false && kind == SINGLESET) {
+		cout << "addClause after shrink " << ps.size();
+		for (int i=0; i<ps.size(); i++) {
+			cout << " " << var(ps[i]);
+		}
+		cout << endl;
+	}
 
     if (ps.size() == 0)
         return ok = false;
@@ -123,7 +137,8 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         return ok = (propagate() == NULL);
     }else{
         Clause* c = Clause_new(ps, false);
-		c->mark(kind);
+        // bugfix: SINGLESET is only useful when ps.size()>2
+        if (kind != SINGLESET || ps.size()>2) { c->mark(kind); }
         clauses.push(c);
         attachClause(*c);
     }
