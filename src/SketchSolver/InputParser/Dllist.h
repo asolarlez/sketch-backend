@@ -59,6 +59,26 @@ public:
 		}
 		n->parent = parent;
 	}
+
+	virtual string lprint()const=0;
+
+	virtual void print(){
+		cout<<"N= "<<this->lprint()<<endl;
+		/*
+		ASSERT_node* an = dynamic_cast<ASSERT_node*>(this);
+		if(an == NULL){
+			UFUN_node* un = dynamic_cast<UFUN_node*>(this);
+				if(un != NULL){
+					cout<<"N="<<un->lprint()<<endl;
+				}
+		}else{
+			cout<<"N="<<an->lprint()<<endl;
+		}*/
+		if(next != NULL){
+			next->print();
+		}
+	}
+
 	void add(DllistNode* n){
 		if(next == NULL){
 			next = n;

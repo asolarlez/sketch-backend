@@ -389,11 +389,10 @@ void BooleanDAG::repOK(){
 					if(uf != NULL){
 						Assert(!uf->ignoreAsserts, "If a function ignores asserts it should not be in Dll list");
 					}
-					//do{
+					
 						last = cur; 
 						cur = cur->next; 
-					//}while(cur != NULL && isUFUN(cur));
-				//}
+					
 			}
 			UFUN_node* uf = dynamic_cast<UFUN_node*>(n);
 			if(uf != NULL){
@@ -503,7 +502,7 @@ void BooleanDAG::cleanup(){
 	  }
   }
   
-
+  
   for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
   		nodes[i]->type != bool_node::SRC && 
@@ -516,6 +515,7 @@ void BooleanDAG::cleanup(){
 		}
 	}
   }
+
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
   	if(onode->flag == 0 && 
@@ -528,15 +528,32 @@ void BooleanDAG::cleanup(){
 			if(it != named_nodes.end() && it->second==inonode){
 				named_nodes.erase(it);
 			}
-		}
-  			
+		}  			
   		onode->id = -22;	
   		delete onode;
-		nodes[i] = NULL;
+		nodes[i] = NULL;		
   	}
   }  
   removeNullNodes();  
   sort(nodes.begin(), nodes.end(), comp_id);
+   DllistNode* cur = this->assertions.head;
+  DllistNode* last=NULL;
+  for(int i=0; i < nodes.size(); ++i){
+	bool_node* onode = nodes[i];
+	if( isDllnode(onode) ){
+			DllistNode* dn = getDllnode(onode);
+			if(dn != cur){
+				//dn is out of place in the list. we need to put it back in its place.
+				//We are assuming, however, that the list does contain all the necessary nodes, just maybe not in the right order.
+				//that assumption ensures that cur will never be null, because if it were, it would mean we were not expecting any more dllnodes.
+				dn->remove();
+				cur->addBefore(dn);
+				cur = dn;// this restores the invariant that cur points onode, the currently visited node.				
+			}
+			last = cur; 
+			cur = cur->next; 
+		}
+  }
 }
 
 

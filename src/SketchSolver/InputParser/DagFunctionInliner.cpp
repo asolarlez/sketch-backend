@@ -316,6 +316,18 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 									}
 								  }
 							}
+						}else{
+							if(!isConst(ufun->mother)){
+								ufun->mother->remove_child(n);
+								ufun->mother = getCnode(1);
+								ufun->mother->children.insert(n);
+								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
+									if(*it == oldMother){
+  										oldMother->children.insert( n );
+										break;
+									}
+								  }
+							}
 						}
 						DagOptim::visit(*ufun);						
 						const bool_node* nnode = rvalue;

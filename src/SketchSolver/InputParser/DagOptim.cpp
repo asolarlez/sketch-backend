@@ -1301,28 +1301,17 @@ void DagOptim::visit( UFUN_node& node ){
 
 	
 	map<string, UFUN_node*>::iterator bro =  callMap.find(tmp);
+	
 	if(bro != callMap.end()){
 		UFUN_node* brother = bro->second;
-
 		if(brother->mother == node.mother){
 			rvalue = brother;
 			return;
 		}
 		possibleCycles = true;
-		//This is a little tricky. 
-		//What's happening here is that we have found a function node (brother) 
-		//that takes the same inputs as node, so in principle, we should be able to 
-		//remove node, and replace all it with brother everywhere it's used, since
-		//node is just a function of it's inputs. But consider the following case:
-		// x = foo(a,b); if(x){ y=foo(a,b); }
-		// In principle, we could replace both calls to foo(a,b) with a single call, 
-		//but there is a dependency between the output of the first foo and the 
-		//condition for the second foo; if we replace them with a single call, 
-		//we will get a circular dependency.
-		//So at this point, we want to check whether there is a dependency between 
-		//brother and node; if there is not, then we merge the two calls, but if there is, 
-		//we need to keep the old call in place.
+		
 		if(true /*|| !checkPrecedence(node.mother, brother)*/){
+			
 			brother->dislodge();
 			brother->mother->remove_child(brother);
 			bool_node* on = new OR_node();
@@ -1340,9 +1329,13 @@ void DagOptim::visit( UFUN_node& node ){
 				on = onPr;
 			}
 			
+						
+
 			brother->mother = on;
 			brother->resetId();
 			brother->addToParents();
+			
+
 			rvalue = brother;
 			return;
 		}else{
@@ -2323,8 +2316,13 @@ void DagOptim::findCycles(BooleanDAG& dag){
 	}
 	map<int, UFUN_node*> dupNodes;
 	stack<pair<bool_node*, childset::iterator> > bns;
+	vector<bool_node*> acreates;
+
 	for(int i=0; i<dag.size(); ++i){
 		dag[i]->flag = BOTTOM;
+		if(dag[i]->type == bool_node::ARR_CREATE){
+			acreates.push_back(dag[i]);
+		}
 	}
 	{
 		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
@@ -2342,7 +2340,14 @@ void DagOptim::findCycles(BooleanDAG& dag){
 	for(map<long long int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
 		cbPerNode(it->second, bns, dupNodes); // do DFS starting from constant nodes.
 	}
-
+	for(int i=0; i<acreates.size(); ++i){
+		cbPerNode(acreates[i], bns, dupNodes); // do depth first search starting from the array creators.
+	}
+#ifdef _DEBUG
+	for(int i=0; i<dag.size(); ++i){
+		Assert(dag[i]->flag != BOTTOM, "This is a big mistake!");
+	}
+#endif
 }
 
 /*
@@ -2400,7 +2405,7 @@ where one of h's children is a node in s (say c), and that node c is equal to bn
 
 The map dupNodes stores nodes stores nodes for which a duplicate has been made.
 
-One by one, we pop nodes from the stack and push them to a temporary stack sp.
+One by one, we pop nodes from the stack and push them to a temporary list sp.
 We can only break cycles in function nodes, and specifically cycles caused by the 
 guard of a function node, so we are looking for a node in the stack that is a function
 node. In this case, suppose f is a function node and e is f's guard.
@@ -2537,6 +2542,21 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			}*/	
 		}
 		oldNode->children.clear();
+
+		/*
+		//At this point the only potential problem is that oldNode may be out of place in the DLLlist, because it is in the position of the first
+		//occcurence of the function, but other functions may have flowed to the last occurence of the function.
+		//We have decided to fis this later during dag cleanup. 
+		if(!isRecycled){
+			Dllist* dl = oldNode->parent;
+			if(dl->tail != oldNode){
+				oldNode->remove();
+				//The solution is simple; to avoid further problems, just move it to the end.
+				dl->tail->addBefore(oldNode);
+			}
+		}
+		*/
+
 		/*
 		for(list<pair<bool_node*, childset::iterator> >::iterator it = sp.begin(); it != sp.end(); ++it){
 			if(oldNode->children.count(it->first)>0){

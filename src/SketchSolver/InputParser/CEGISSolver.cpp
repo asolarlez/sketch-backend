@@ -1094,12 +1094,12 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h;
-			int lowerbound;  // donot touch nodes whose ids are smaller than lowerbound
+			int lowerbound=0;  // donot touch nodes whose ids are smaller than lowerbound
 		       	if (inputGen->hasH) {
 				hasserts.clear();
 				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 				filterHasserts(asserts, hasserts);
-				// we should always pretain hard asserts and their mothers
+				// we should always retain hard asserts and their mothers
 				// NOTE: rely on the assumption that dag is already sorted
 				lowerbound = hasserts.back()->id+1;
 				h = eval.scoreNodes(lowerbound);
