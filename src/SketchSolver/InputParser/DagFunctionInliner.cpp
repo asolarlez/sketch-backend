@@ -471,6 +471,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							addNode(qn);
 							addNode(mx);
 							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+							Assert(un != NULL, "Output of model should be an uninterpreted function.");
 							// BUGFIX: nbits must be 1 if original UFUN out is boolean type
 							int nbits = un->get_nbits();
 							if (nbits > 1) { nbits = PARAMS->NANGELICS; }

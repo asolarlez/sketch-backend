@@ -94,6 +94,17 @@ statistics::MemorySampler::stop ()
 
 }
 
+statistics::MemorySampler&
+statistics::MemorySampler::poll (){
+	statistics::MemoryStatistics curr;
+    assert (0 == statistics::getMemoryStatistics (&curr));
+    if (curr.total > memstats_.total)
+        memstats_ = curr;
+	return *this;
+}
+
+
+
 statistics::MemoryStatistics
 statistics::MemorySampler::getMemStats ()
 {

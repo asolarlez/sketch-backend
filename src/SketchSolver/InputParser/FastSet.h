@@ -420,7 +420,7 @@ public:
 	}
 
 	fmiter(iter p_cur, iter p_end, int v ): cur(p_cur), end(p_end), vers(v){
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(p_cur <= p_end, "What??");
 #endif		
 	}	
@@ -442,21 +442,21 @@ public:
 		do{
 		++cur;
 		}while(cur != end && cur->first == NULL);
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(cur <= end, "What??");
 #endif				
 		return *this;
 	}
 
 	pair<T*, M>& operator*(){
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(cur < end, "What??");
 #endif	
 		return *(this->cur);
 	}
 
 	pair<T*, M>* operator->(){
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(cur < end, "What??");
 #endif	
 		return this->cur;
@@ -545,7 +545,7 @@ public:
 		++this->sz;
 		// if(( store.size() / _size ) > 2){  cout<<" ration on resize "<<store.size()<<"/"<<_size<<"  "<<( store.size() / _size )<<endl; }
 		unsigned lsz = store_end - store;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	set<pair<T*, M> > vp;
 	for(iterator it = begin(); it != end(); ++it){
 		vp.insert(*it);
@@ -564,7 +564,7 @@ public:
                         unsigned loc = traits::hash (tmp.first, this->sz);
 			if(loc != (i & m)){ 
 				int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(lp5 < store_size, "What??");
 #endif
 
@@ -591,7 +591,7 @@ public:
 				int j=i;
 				while(i<lsz){
 					while(tbuf[j].first != NULL){	++j; }
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 					Assert(tbuf[j].first == NULL, "??llken;kiy");
 #endif
 					tbuf[j] = store[i];
@@ -601,7 +601,7 @@ public:
 				delete[] store;
 				store = tbuf;
 				store_end = tbuf + store_size;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 				recompEnd();
 #endif
 				resize();
@@ -614,7 +614,7 @@ public:
 		store = tbuf;
 		store_end = tbuf + store_size;
 		recompEnd();
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 		int ii=0;
 	for(iterator it = begin(); it != end(); ++it, ++ii){
 		Assert(vp.count(*it)>0, "Not working");
@@ -628,7 +628,7 @@ public:
 		//unsigned loc = hash(val);
             unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(store+lp5 < store_end, "What??");
 #endif
 		bool t0 = store[l].first == val;
@@ -644,7 +644,7 @@ public:
 		//unsigned loc = hash(val);
             unsigned loc = traits::hash(val, sz);
 		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(store+lp5 < store_end, "What??");
 #endif
 		bool t0 = store[l]->first == val;
@@ -672,7 +672,7 @@ public:
 		if(t5){
 			store[lp5]->first = NULL; --_size; return;
 		}
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	set<pair<T*, M> > vp;
 	for(iterator it = begin(); it != end(); ++it){
 		vp.insert(*it);
@@ -682,7 +682,7 @@ public:
 	}
 
 	void erase(iterator& it){
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(it.cur <= store_end, "What??");
 #endif
 		if(it.cur != store_end){
@@ -701,7 +701,7 @@ public:
 		bool t3 = store[lp3].first == val;
 		bool t4 = store[lp4].first == val;
 		bool t5 = store[lp5].first == val;
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(store+lp5 < store_end, "What??");
 #endif
 		if(t0){
@@ -759,7 +759,7 @@ public:
 
 
 	void insert(const pair<T*, M>& val){
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	set<pair<T*, M> > vof;
 	for(iterator it = begin(); it != end(); ++it){
 		vof.insert(*it);
@@ -776,7 +776,7 @@ public:
 		pair<T*, M>& slp3 = store[lp3];
 		pair<T*, M>& slp4 = store[lp4];
 		pair<T*, M>& slp5 = store[lp5];
-#ifdef _DEBUG
+#ifdef _DEBUG_B
 	Assert(store+lp5 < store_end, "What??");
 #endif	   		
 		{
@@ -826,7 +826,7 @@ public:
 			resize();
 			insert(val);
 		}
-		#ifdef _DEBUG
+		#ifdef _DEBUG_B
 			set<pair<T*, M> > vp;
 			for(iterator it = begin(); it != end(); ++it){
 				vp.insert(*it);

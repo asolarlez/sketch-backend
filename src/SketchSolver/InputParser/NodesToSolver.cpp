@@ -943,7 +943,12 @@ NodesToSolver::processArith (bool_node &node)
 		}
 	}
 	oval.sparsify (dir);
-	dir.addHelperC(oval);
+	if(oval.getSize()==0){
+		stopAddingClauses = true;
+		//This means that the problem has become unsat.
+	}else{
+		dir.addHelperC(oval);
+	}
 	Dout( cout<<" := "<<oval<<endl );	    
 }
 

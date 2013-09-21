@@ -37,7 +37,7 @@ public:
 
     void run ();
     void stop ();
-
+	MemorySampler& poll();
     statistics::MemoryStatistics getMemStats ();
 };
 
