@@ -17,14 +17,10 @@ class timerclass{
 	timerclass(){
 		tottime = 0;	
 		ctime = 0;
-		stime=0;
-		endtime=0;
 	}
 	timerclass(const string& pname):name(pname){
 		tottime = 0;	
 		ctime = 0;
-		stime=0;
-		endtime=0;
 	}
 	
 	inline timerclass& start(){
