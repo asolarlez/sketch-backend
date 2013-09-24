@@ -383,10 +383,30 @@ void NodesToSolver::processLT (LT_node& node){
 			j = fend -1;
 		}
 	}
-	vector<char> mc(mval.getSize(), 'n');
-	vector<char> fc(fval.getSize(), 'n');
+
+	
 	int mcnt = 0; int msz = mend - mstart;
 	int fcnt = 0; int fsz = fend - fstart;
+
+	//If all the mothers are less than all the fathers, then just return yes.
+	// mv[i] has the smallest mother.
+	// mv[i+(msz-1)*inci] has the biggest mother.
+	// fv[j] has the smallest father.
+	// fv[j+(fsz-1)*incj] has the biggest father.
+	if(mv[i+(msz-1)*inci].value < fv[j].value){
+		// cout<<"!!! Saved with YES, "<<inci<<endl;
+		node_ids[node.id] = YES;
+		return;
+	}
+	//If all the mothers are >= all the fathers, just return false.
+	if(mv[i].value >= fv[j+(fsz-1)*incj].value){
+		// cout<<"!!! Saved with NO, "<<incj<<endl;
+		node_ids[node.id] = -YES;
+		return;
+	}
+
+	vector<char> mc(mval.getSize(), 'n');
+	vector<char> fc(fval.getSize(), 'n');
 	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
 		    bool avi = i < mend && i >= mstart;
 		    bool avj = j < fend && j >= fstart;
@@ -1608,14 +1628,14 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		}
 		if(guard == YES){
 		    flag = output != mid1;
-		    if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
+		    // if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES asdf"<<endl; }
 		    output = mid1;
 		    Dout( cout<<"var "<< mid1 <<endl);
 		    return;
 		}
 		if(guard == -YES){
 		    flag = output != mid0;
-		    if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
+		    // if( flag == false ){ cout << "HURRAY, I JUST SAVED A BUNCH OF CLAUSES paoiu"<<endl; }
 		    output = mid0;
 		    Dout( cout<<"var "<< mid0 <<endl);
 		    return;
