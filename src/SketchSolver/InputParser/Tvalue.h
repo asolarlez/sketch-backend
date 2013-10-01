@@ -232,7 +232,12 @@ public:
 			int tq = 0;
 			bool found = false;
 			int ti = -1;
+			int lastidx = -1;
+			int lastvisitedidx = -1;			
 			for (int i = 0; i < size; i++){
+				if(isArray() && lastidx !=  num_ranges[i].idx && lastidx != lastvisitedidx){
+					out<<" missing idx = "<<lastidx;
+				}
 				int g;
 				if(num_ranges[i].guard > 0){
 					g = solv->getVarVal(num_ranges[i].guard);
@@ -242,10 +247,15 @@ public:
 				if(g > 0){
 					tq = num_ranges[i].value;
 					ti = num_ranges[i].idx;
+					lastvisitedidx = ti;
 					found = true;
 					if(isArray()){ out << "{"<< num_ranges[i].guard <<":("<< tq  <<", "<<ti<<")}"; }else{out << "{"<< num_ranges[i].guard <<":("<< tq  <<")}";}
 				}
-			}			
+				lastidx = num_ranges[i].idx;
+			}	
+			if(isArray() && lastidx != lastvisitedidx){
+				out<<" missing idx = "<<lastidx;
+			}
 			Assert(found, "What !!??");
 		} else{
 			int tt = ((neg? (-1):1 ) * solv->getVarVal(id));
@@ -613,6 +623,7 @@ public:
 	    if (isArray()) {
 		    if (num_ranges.size()==0 || num_ranges[0].idx != -1) {
 			    num_ranges.insert(num_ranges.begin(), guardedVal(g, v, -1));
+				size = num_ranges.size();
 		    }
 	    }
     }
