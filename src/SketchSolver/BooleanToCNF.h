@@ -88,7 +88,7 @@ class SolverHelper {
 
 public:
     int YES;
-
+	int getLastVar(){ return lastVar; }
 	map<string, int>::const_iterator arrsize_begin(){
 		return arrsize.begin();
 	}

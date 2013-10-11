@@ -506,9 +506,9 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
 		try{
-			cout << "BEG nts.process" << endl;
+			
 			nts.process(*getProblem());	
-			cout << "END nts.process" << endl;
+			
 			/*
 			BooleanDAG& bd = *getProblem();
 			for(int i=0; i<node_ids.size(); ++i){
@@ -563,9 +563,9 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	if(PARAMS->verbosity > 2){ tc.print(); }
 	}
 //Solve
-	cout << "BEG mngFind.solve" << endl;
+	
 	int result = mngFind.solve();
-	cout << "END mngFind.solve" << endl;
+	
 	if(params.printDiag){
 	  	cout<<"# FIND DIAGNOSTICS"<<endl;
 		printDiagnostics(mngFind, 'f');
@@ -1477,9 +1477,9 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	setNewControls(controls);
 	//if(PARAMS->verbosity > 2){ tc.stop().print(); }
 	
-    cout << "BEG mngCheck.solve" << endl;
+    
     int result = mngCheck.solve();
-    cout << "END mngCheck.solve" << endl;
+    
 	//dirCheck.printAllVars();
     if(params.printDiag){
 	    cout<<"# CHECK DIAGNOSTICS"<<endl;
