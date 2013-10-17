@@ -98,6 +98,9 @@ class CEGISSolver
 	vector<struct InputGen *> inputGens;
 
 	CEGISparams params;
+
+	bool stoppedEarly;
+	string errorMsg;
 	
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;

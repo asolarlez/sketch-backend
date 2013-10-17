@@ -506,9 +506,13 @@ void CEGISSolver::defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node
 		//getProblem()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
 		try{
-			
+			stoppedEarly =false;
 			nts.process(*getProblem());	
-			
+			if(nts.stoppedPrematurely()){
+				errorMsg = nts.errorMsg;
+				stoppedEarly = true;
+			}
+
 			/*
 			BooleanDAG& bd = *getProblem();
 			for(int i=0; i<node_ids.size(); ++i){
@@ -579,6 +583,9 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
 	    	}    			
     	}
+		if(this->stoppedEarly){
+			cerr<<this->errorMsg<<endl;
+		}
     	return false;
     }
 	Dout( dirFind.print() );

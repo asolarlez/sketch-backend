@@ -2030,7 +2030,9 @@ NodesToSolver::visit (ASSERT_node &node)
 			//whether there are assumptions before this point, or if this
 			//assertion itself is an assumption.
 			if(!dir.getMng().isNegated()){				
-				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 
+				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 				
+				errorMsg = "  UNSATISFIABLE ASSERTION ";
+				errorMsg += node.getMsg();
 				stringstream cstr;
 				set<const bool_node*> s;
 				cstr<<"digraph G{"<<endl;

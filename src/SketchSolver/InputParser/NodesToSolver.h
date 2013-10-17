@@ -15,6 +15,7 @@
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
+	
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
 	void addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval);
 	int compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend);
@@ -73,7 +74,12 @@ protected:
     void boolNodeUpdate (bool_node &, Tvalue &);
 
 public:
-   
+   string errorMsg;
+
+   bool stoppedPrematurely(){
+	   return this->stopAddingClauses;
+   }
+
    /*
     * p_mng is the wrapper for the sat solver.  
     * p_dir is a SAT solver wrapper that provides a few additiona services for the SAT solver.
