@@ -272,7 +272,8 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		do{						
 			dfi.process(dag);			
 			// dag.repOK();
-			set<string>& dones = dfi.getFunsInlined();
+			set<string>& dones = dfi.getFunsInlined();			
+			// dag.lprint(cout);
 			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
 			if(oldSize > 0){
 				if(dag.size() > 400000 && dag.size() > oldSize * 10){

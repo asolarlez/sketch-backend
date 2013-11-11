@@ -169,6 +169,37 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		funsInlined.insert(name);
 		if(ictrl != NULL){ ictrl->registerInline(node); }
 
+
+		// cout<<" Inlined "<<node.get_ufname()<<"   mother = "<<node.mother->lprint()<<endl;
+		/*
+		if(!isConst(node.mother)){
+			cout<<" Inlined "<<node.get_ufname()<<"   mother = "<<node.mother->lprint()<<endl;
+			stack<bool_node*> bns;
+			bns.push(node.mother);
+			while(! bns.empty()){
+				bool_node* c = bns.top(); 
+				bns.pop();
+				if(c->mother != NULL && !isConst(c->mother)){					
+					bns.push(c->mother);
+				}
+				if(c->father != NULL && !isConst(c->father)){
+					bns.push(c->father);
+				}
+				if(c->isArith() && c->type != bool_node::UFUN){
+					vector<bool_node*>& bn = dynamic_cast<arith_node*>(c)->multi_mother;
+					for(int i=0; i<bn.size(); ++i){
+						if(!isConst(bn[i])){
+							bns.push(bn[i]);
+						}
+					}
+				}
+				cout<<"          "<<c->lprint()<<endl;
+			}
+		}
+		*/
+
+		
+
 		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
 		nmap.resize( oldFun.size() );		

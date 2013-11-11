@@ -132,7 +132,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
     if (ps.size() == 0)
         return ok = false;
     else if (ps.size() == 1){
-        assert(value(ps[0]) == l_Undef);
+        assert(value(ps[0]) == l_Undef);		
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == NULL);
     }else{
@@ -425,7 +425,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 
 void Solver::uncheckedEnqueue(Lit p, Clause* from)
-{
+{	
     assert(value(p) == l_Undef);
     assigns [var(p)] = toInt(lbool(!sign(p)));  // <<== abstract but not uttermost effecient
     level   [var(p)] = decisionLevel();
@@ -772,8 +772,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                 if (next == lit_Undef)
                     // Model found:
                     return l_True;
-            }
-
+            }			
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
             newDecisionLevel();
@@ -920,7 +919,12 @@ void Solver::writeDIMACS(const char* filename)
 			}
 			clausecount++;
 		 }
+		 clausecount += trail.size();		 
         dimacs_file << "p cnf " << nVars() << " " << clausecount << "\n";
+		for(int i=0; i<trail.size(); ++i){			 
+			 const char* neg = sign(trail[i]) ? "-" : "";
+			 dimacs_file << neg << var(trail[i]) + 1 << " 0"<<endl;
+		 }
         for (int i = 0; i < clauses.size(); i++) {
             Clause* c = clauses[i];
 			if(c->mark() == SINGLESET){
