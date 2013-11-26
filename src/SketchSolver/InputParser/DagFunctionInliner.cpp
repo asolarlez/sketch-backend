@@ -127,7 +127,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 	if(ictrl != NULL && !ictrl->checkInline(node)){
 		mpcontroller[node.fgid]["__ALL"] = NULL;
-		rvalue = &node;
+		DagOptim::visit(node);			
 		return;
 	}	
 
@@ -151,9 +151,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}else{
 				bool_node* rv = mpcontroller[node.fgid]["__ALL"];
 				if(rv == NULL){
-					rv = &node;
+					DagOptim::visit(node);	
+				}else{
+					rvalue = rv;
 				}
-				rvalue = rv;
 			}			
 			return;
 		}
