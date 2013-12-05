@@ -175,6 +175,8 @@ public:
 	}
 
 	virtual bool checkInline(UFUN_node& node){
+		if(node.dependent()){ return true; } // dependent calls are not really calls and should be ignored.
+
 		const bool rv = checkInlineHelper(node);
 		if(!rv){ 
 			recInsert(node.mother);		
@@ -185,6 +187,7 @@ public:
 
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
+		if(callee->dependent()){ return; } // dependent calls are not really calls and should be ignored.
 		ctt.registerCall(caller, callee);
 	}
 	void clear(){

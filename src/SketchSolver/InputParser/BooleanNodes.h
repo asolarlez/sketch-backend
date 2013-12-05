@@ -780,7 +780,7 @@ class UFUN_node: public arith_node, public DllistNode{
 			isDependent = true;
 			ignoreAsserts = true;
 		}
-		bool dependent(){
+		bool dependent() const{
 			return isDependent;
 		}
 
