@@ -341,7 +341,7 @@ void DagCSE::visit( ARR_CREATE_node& node ){
 	int p = 0;
 
 	const string& tst = node.get_ufname();
-	int mxsz = tst.size() + node.outname.size() + node.multi_mother.size() * 8 + 14;
+	int mxsz = tst.size() + node.outname.size() + node.multi_mother.size() * 8 + 17;
 	if(tmpbuf.size() < mxsz){
 		tmpbuf.resize(mxsz);
 	}
@@ -350,6 +350,10 @@ void DagCSE::visit( ARR_CREATE_node& node ){
 	
 	memcpy(tch, tst.c_str(), tst.size());
 	p+= tst.size();
+	if(node.ignoreAsserts){
+		tch[p] = '$'; p++;
+		tch[p] = 'I'; p++;		
+	}
 	tch[p] = '.'; p++;
 	memcpy(tch+p, node.outname.c_str(), node.outname.size());
 	p+=node.outname.size();
