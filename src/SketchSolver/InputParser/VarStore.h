@@ -98,6 +98,29 @@ public:
 				if(next != NULL){ next->setVal(idx, v); }
 			}
 		}
+		///Return false if objP did not have enough bits to be made equal to v.
+		bool setValSafe(int v){
+			if(v<0){
+				v = -v;
+				isNeg = true;
+			}
+			{
+				int t = vals.size();
+				vals.clear();				
+				while(v != 0){
+					vals.push_back(v&1);
+					v = v >> 1;
+					if(vals.size()==t && v != 0){
+						return false;
+					}
+				}
+				if(t > vals.size()){
+					vals.resize(t, 0);
+				}
+				return true;
+			}
+		}
+
 		void setVal(int v){
 			if(v<0){
 				v = -v;
@@ -125,6 +148,24 @@ public:
 			out << getInt();
 			if(next!= NULL){ out<<"|"; next->printContent(out); }
 		}
+
+		bool increment(){
+			for(int i=0; i<vals.size(); ++i){
+				if(vals[i]==-1){
+					vals[i] = 1;
+					return true;
+				}else{
+					vals[i] = -1;
+				}				
+			}
+			if(next != NULL){
+				return next->increment();
+			}else{
+				return false;
+			}
+		}
+
+
 		void makeRandom(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
@@ -162,6 +203,17 @@ public:
 			objs[i].zeroOut();
 		}
 	}
+	bool increment(const string& name){
+		// cout<<"Upgraded "<<name<<" ";
+		int idx = index[name];
+		
+		objP& tmp = objs[idx];
+		bool rv = tmp.increment();
+		// tmp.printContent(cout);
+		//cout<<endl;
+		return rv;
+	}
+
 
 	void newArr(const string& name, int nbits, int arrsz){
 		Assert(index.count(name)==0, name<<": This array already existed!!");
@@ -280,6 +332,12 @@ public:
 	}
 	objP& getObj(const string& name){ 
 		return objs[index[name]];
+	}
+	int getId(const string& name){
+		return index[name];
+	}
+	objP& getObj(int id){ 
+		return objs[id];
 	}
 	friend VarStore join(const VarStore& v1 , const VarStore& v2);
 };

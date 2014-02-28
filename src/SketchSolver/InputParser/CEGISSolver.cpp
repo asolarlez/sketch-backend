@@ -9,6 +9,7 @@
 #include "NodeSlicer.h"
 #include "BackwardsAnalysis.h"
 #include "MiniSATSolver.h"
+#include "CounterexampleFinder.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -640,7 +641,7 @@ void CEGISSolver::abstractProblem(){
 		int save_id = (*node_it)->id;
 		// save the id in case node is deleted below
 		ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
-		if(an->isHard()){
+		if(!an->isNormal()){
 			continue;
 		}
 		if(found){
@@ -854,26 +855,11 @@ struct InputGen {
 		if (node_ids.size() != dag->size()) {
 			node_ids.resize(dag->size());
 		}
-		//cout << "InputGen: the dag: ";
-		//dag->lprint(cout);
-		//dir->outputVarMap(cout);
-		//dag->repOK();
-		// TODO xzl: do we need this?
-		//int YES = dir->newYES();
-		//getProblem()->lprint(cout);
+
 		NodesToSolver nts(*dir, "InputGen", node_values, node_ids);			
-		//cout << "InputGen: BEG nts.process" << endl;
+		
 		nts.process(*dag);
-		//BooleanDAG * bdag = dag->clone();
-		//DagOptim cse(*bdag);
-		//cse.process(*bdag);
-		//cout << "InputGen: the bdag: ";
-		//bdag->lprint(cout);
-		//bdag->repOK();
-		//nts.process(*bdag);
-		//cout << "InputGen: END nts.process" << endl;
-		//bdag->clear();
-		//delete bdag;
+		
 		//TODO xzl: do we need this?
 		//dir->nextIteration();
 		int result = solver->solve();
@@ -934,19 +920,13 @@ struct InputGen {
 			ASSERT_node * anode = dynamic_cast<ASSERT_node*>(dag->new_node(mother, NULL, bool_node::ASSERT));
 			anode->makeHardAssert();
 			dag->assertions.append(anode);
-			//cout << "InputGen: the new dag: ";
-			//dag->lprint(cout);
-			//dag->repOK();
-			//while (dag->getIntSize()<intsize) {
-			//	dag->growInputIntSizes();
-			//}
+			
+
 			constrainedIn.push_back(compressed);
 			if (compressed.size()%4096 ==0) {
 				cout << "InputGen: compressed.size=" << compressed.size();
 			}
-			// useful debug info:
-			//cout << "InputGen: found a constrained input: ";
-			//constrained.printContent(cout);
+			
 		}
 	}
 
@@ -1009,7 +989,7 @@ void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & has
 	vector<bool_node*>::const_iterator e=asserts.end();
 	for (; i!=e; ++i) {
 		ASSERT_node * a = dynamic_cast<ASSERT_node*>(*i);
-		if (a->isHard()) {
+		if (!a->isNormal()) {
 			hasserts.push_back(a);
 		}
 	}
@@ -1030,6 +1010,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		return false;
 	}
 	int intSize = dag->getIntSize();
+	/*
 	if (intSize >= inputGens.size()) {
 		inputGens.resize(intSize+1, NULL);
 	}
@@ -1038,6 +1019,15 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		filterHasserts(asserts, hasserts);
 		inputGen = new InputGen(dag, hasserts);
 	}
+	*/
+
+	
+	bool hasH = false;
+	filterHasserts(asserts, hasserts);
+	if(hasserts.size()>0){
+		hasH = true;
+	}
+
 	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
 	if (hasCtrls) {
 		// must be not specialized
@@ -1049,23 +1039,29 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	bool hasInput = true;
 	do{
 		++iter;
-		NodeEvaluator eval(empty, *dag);		
+		CounterexampleFinder eval(empty, *dag);	
+		eval.init(tmpin);
 		for(int i=0; i<40; ++i){
-			if (inputGen->hasH) {
+			/*if (inputGen->hasH) {
 				if (!inputGen->gen(tmpin)) {
 					hasInput = false;
 					break;
 				}
-			} else {
+			} else */
+			{
 				tmpin.makeRandom();
 			}
 			
 			bool done;
-			if(hasCtrls){
-				VarStore ta(join(tmpin, controls));
-				done= eval.run(ta);
-			}else{
-				done= eval.run(tmpin);
+			Assert(!hasCtrls, "This can not happen");
+			{
+				CounterexampleFinder::Result res = eval.searchLoop(20);		
+				done = (res == CounterexampleFinder::FOUND);
+
+				if(res == CounterexampleFinder::UNSAT){
+					popProblem();
+					return false;
+				}
 			}
 			eval.trackChanges();
 			if(done){
@@ -1102,7 +1098,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h;
 			int lowerbound=0;  // donot touch nodes whose ids are smaller than lowerbound
-		       	if (inputGen->hasH) {
+		    if (hasH) {
 				hasserts.clear();
 				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 				filterHasserts(asserts, hasserts);
@@ -1110,7 +1106,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				// NOTE: rely on the assumption that dag is already sorted
 				lowerbound = hasserts.back()->id+1;
 				h = eval.scoreNodes(lowerbound);
-			} else {
+			} else 	{
 				h = eval.scoreNodes(0);
 			}
 			//cout << "TESTING h=" << h << " hold=" << hold << endl;
@@ -1137,7 +1133,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				am = 2;
 			}
 			BooleanDAG* tbd;
-		       	if (inputGen->hasH) {
+		    if (hasH) {
 				vector<bool_node*>::const_iterator begin = hasserts.begin(), end=hasserts.end();
 				tbd = dag->slice(begin, end, h, an);
 			} else {
@@ -1209,6 +1205,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 					dag->removeNullNodes();
 					cse.process(*dag);
 					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
+					
 					if(dag->getNodesByType(bool_node::ASSERT).empty()){
 						tc.stop().print("no cex");
 						popProblem();

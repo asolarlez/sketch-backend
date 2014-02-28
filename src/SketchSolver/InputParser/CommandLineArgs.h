@@ -70,6 +70,7 @@ struct CommandLineArgs{
   int randBnd;
   bool lightVerif;
   bool outputSat;
+  int boundedCount;
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
 		for(int i = 0; i < args.size(); i++) {
@@ -127,6 +128,9 @@ struct CommandLineArgs{
 		lightVerif = false;
 		minvarHole = false;
 		outputSat = false;
+
+		boundedCount = 80;
+
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -170,6 +174,13 @@ struct CommandLineArgs{
 		  continue;
 	    }
 
+		if( string(argv[ii]) == "-boundedcount" ){
+	      Assert(ii<(argc-1), "-boundedcount needs an extra parameter");
+	      boundedCount = atoi(argv[ii+1]);
+	      input_idx = ii+2;      
+		  continue;
+	    }
+
 		if( string(argv[ii]) == "-simstopsize" ){
 	      Assert(ii<(argc-1), "-simstopsize needs an extra parameter");
 	      simstopsize = atoi(argv[ii+1]);
@@ -184,6 +195,8 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
+
+
 
 		if( string(argv[ii]) == "-simplifycex" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");

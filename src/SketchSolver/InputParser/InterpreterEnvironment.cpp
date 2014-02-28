@@ -263,8 +263,16 @@ can only call them with the parameters used in the spec */
 
 
 void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps){	
-	OneCallPerCSiteInliner fin;
-	DagFunctionInliner dfi(dag, functionMap, &fin);	
+	//OneCallPerCSiteInliner fin;
+	InlineControl* fin = new HybridInliner(PARAMS->boundedCount);
+	/*
+	if(PARAMS->boundedCount > 0){
+		fin = new BoundedCountInliner(PARAMS->boundedCount);
+	}else{
+		fin = new OneCallPerCSiteInliner();
+	}	 
+	*/
+	DagFunctionInliner dfi(dag, functionMap, fin);	
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
@@ -285,14 +293,16 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 			oldSize = dag.size();
 			++t;			
 		}while(dfi.changed());
+		cout<<"END OF STEP "<<i<<endl;
 		// fin.ctt.printCtree(cout, dag);
-		fin.clear();
-		if(t==1){ break; }
+		fin->clear();
+		if(t==1){ cout<<"Bailing out"<<endl; break; }
 	}
 	{		
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
 	}
+	delete fin;
 }
 
 

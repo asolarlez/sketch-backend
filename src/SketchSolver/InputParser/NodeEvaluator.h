@@ -150,6 +150,7 @@ public:
 class NodeEvaluator :
 	public NodeVisitor
 {
+protected:
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;

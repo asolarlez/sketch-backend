@@ -109,10 +109,81 @@ public:
 	virtual bool checkInline(UFUN_node& node)=0;
 
 	/**
+	Call this method is called before starting to inline, just to let the inliner know what's coming.
+	*/
+	virtual void preCheckInline(UFUN_node& node)=0;
+
+	virtual void clear()=0;
+
+	/**
 	Register the existence of a call.
 	*/
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee)=0;
 };
+
+
+class BoundedCountInliner: public InlineControl{
+	int inlinebound;
+	map<string, int> counts;
+public:
+	BoundedCountInliner(int count): inlinebound(count){
+		
+	}
+
+	/**
+	Tell the inline controller that you are about to inline the function represented by node.
+	*/
+	void registerInline(UFUN_node& node){}
+
+	virtual void preCheckInline(UFUN_node& node){
+	
+	}
+
+
+	/**
+	Call this method to check if you want to inline a method or not.
+	*/
+	bool checkInline(UFUN_node& node){
+		if(node.dependent()){
+			return true;
+		}
+
+		if(node.mother->type == bool_node::CONST){
+			int val = dynamic_cast<CONST_node*>(node.mother)->getVal();
+			if(val==1){
+				return true;
+			}else{
+				return false;
+			}
+		}
+
+		const string& s = node.get_ufname();
+		map<string, int>::iterator it = counts.find(s);
+		if(it != counts.end()){			
+			if(it->second < inlinebound){				
+				it->second++;
+				return true;
+			}else{
+				return false;
+			}
+		}
+		counts[s] = 1;
+		return true;
+	}
+
+	/**
+	Register the existence of a call.
+	*/
+	void registerCall(const UFUN_node& caller, const UFUN_node* callee){}
+	void clear(){}
+	void superclear(){ 
+		counts.clear();
+	}
+};
+
+
+
+
 
 class OneCallPerCSiteInliner: public InlineControl{
 
@@ -174,6 +245,10 @@ public:
 
 	}
 
+	virtual void preCheckInline(UFUN_node& node){
+		checkInline(node);
+	}
+
 	virtual bool checkInline(UFUN_node& node){
 		if(node.dependent()){ return true; } // dependent calls are not really calls and should be ignored.
 
@@ -217,7 +292,65 @@ class ExclusiveInliner : public InlineControl{
 	void remFunsToInline(T beg, T end){
 		funsToNotInline.insert(beg, end);
 	}
+	void clear(){}
 };
+
+
+
+
+
+class HybridInliner : public InlineControl{
+	OneCallPerCSiteInliner ocs;
+	BoundedCountInliner bci;
+public:
+
+	HybridInliner(int count): bci(count){
+
+	}
+
+	/**
+	Tell the inline controller that you are about to inline the function represented by node.
+	*/
+	void registerInline(UFUN_node& node){
+		ocs.registerInline(node);
+		bci.registerInline(node);
+	}
+
+	/**
+	Call this method to check if you want to inline a method or not.
+	*/
+	virtual bool checkInline(UFUN_node& node){
+		bool t1 = ocs.checkInline(node);
+		bool t2 = bci.checkInline(node);
+		/*if(!node.dependent()){
+			cout<<" node="<<node.get_ufname()<<" t1="<<(t1?"yes":"no")<<"  t2="<<(t2?"yes":"no")<<endl;
+		}*/		
+		return t1 && t2;
+	}
+
+	/**
+	Call this method is called before starting to inline, just to let the inliner know what's coming.
+	*/
+	virtual void preCheckInline(UFUN_node& node){
+		ocs.preCheckInline(node);
+		bci.preCheckInline(node);
+	}
+
+	virtual void clear(){
+		ocs.clear();
+		bci.superclear();
+	}
+
+	/**
+	Register the existence of a call.
+	*/
+	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
+		ocs.registerCall(caller, callee);
+
+	}
+};
+
+
 
 
 class InclusiveInliner : public InlineControl{
@@ -226,6 +359,9 @@ class InclusiveInliner : public InlineControl{
 public:
 	InclusiveInliner():inlineAllFuns(true){}
 	virtual void registerInline(UFUN_node& node){}
+	virtual void preCheckInline(UFUN_node& node){
+		
+	}
 	virtual bool checkInline(UFUN_node& node){
 		return (inlineAllFuns) ||  !funsToInline.count(node.get_ufname())==0;
 	}
@@ -242,6 +378,7 @@ public:
 		inlineAllFuns = false;
 		funsToInline.insert(beg, end);
 	}
+	void clear(){}
 };
 
 

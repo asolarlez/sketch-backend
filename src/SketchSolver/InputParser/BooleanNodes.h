@@ -1159,28 +1159,30 @@ class ACTRL_node: public arith_node{
 		}
 };
 class ASSERT_node: public bool_node, virtual public DllistNode{
-	bool isHardAssert;
+	typedef enum{Normal, Hard, Assume} AssertType;	
+	AssertType assertType;
 	string msg;
 public:
-    ASSERT_node ():bool_node(ASSERT), isHardAssert(false) { }
-    ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ isHardAssert = bn.isHardAssert;  msg = bn.msg; }  
+    ASSERT_node ():bool_node(ASSERT), assertType(Normal) { }
+    ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ assertType = bn.assertType;  msg = bn.msg; }  
     virtual void accept (NodeVisitor &visitor)  { visitor.visit (*this); }
     virtual bool_node* clone(bool copyChildren = true) {return new ASSERT_node(*this, copyChildren);  };
-    virtual void makeHardAssert(){ isHardAssert = true; }
-    virtual bool isHard() const { return isHardAssert ; }
+    virtual void makeHardAssert(){ assertType = Hard; }
+	virtual void makeAssume(){ assertType = Hard; }
+    virtual bool isHard() const { return assertType == Hard ; }
+	virtual bool isNormal() const { return assertType == Normal ; }
+	virtual bool isAssume() const { return assertType == Assume ; }
     virtual void setMsg(const string& pmsg){ msg = pmsg; }
     virtual const string& getMsg()const{ return msg; }
 	virtual ~ASSERT_node(){ 
 	}
 	  virtual string lprint()const{
 		stringstream str;
-		if(isHardAssert){
-			str<<id<<"= HASSERT ";
-		}else{
-			str<<id<<"= ASSERT ";
-		}
-		
-		
+		switch(assertType){
+			case Normal: str<<id<<"= ASSERT "; break;
+			case Hard: str<<id<<"= HASSERT "; break;
+			case Assume: str<<id<<"= Assume "; break;
+		}		
 		str<<mother->lid()<<" : "<<msg;		
 		return str.str();
   }

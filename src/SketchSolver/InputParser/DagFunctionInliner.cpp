@@ -243,7 +243,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		lnfuns++;
 		
-
+		cout<<node.get_ufname()<<endl;
 
 		/*
 			The idea is that we have a wavefront moving through the graph as we add more nodes.
@@ -588,7 +588,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				condition are also not inlined. Therefore, it is good to call checkInline
 				on all functions first, before we start inlining.
 				*/
-				ictrl->checkInline(uf);
+				ictrl->preCheckInline(uf);
 				map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
 				if(it != functionMap.end()){
 					if(it->second->isModel && uf.ignoreAsserts){

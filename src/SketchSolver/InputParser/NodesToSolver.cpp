@@ -2042,9 +2042,8 @@ NodesToSolver::visit (ASSERT_node &node)
 				if(s.size() < 10){
 					cout<<cstr.str()<<endl;
 				}
-			}
-			stopAddingClauses = true;
-			cout << "Stop adding more clauses" << endl;
+				stopAddingClauses = true;
+			}			
 		}
 		if(node.isHard()){
 			//cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
@@ -2269,6 +2268,8 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
 	tmpdag = &bdag;
 	stopAddingClauses = false;
+
+	bool isNegated = dir.getMng().isNegated();
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 	//		if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;
@@ -2286,7 +2287,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 //			cout << e.what() << endl;
 //			throw e;
 //		}
-		if(stopAddingClauses){
+		if(stopAddingClauses && !isNegated){
 			break;
 		}
 	}

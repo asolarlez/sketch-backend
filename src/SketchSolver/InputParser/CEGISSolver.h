@@ -95,7 +95,7 @@ class CEGISSolver
 
 	
 	VarStore inputStore;
-	vector<struct InputGen *> inputGens;
+	// vector<struct InputGen *> inputGens;
 
 	CEGISparams params;
 
