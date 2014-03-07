@@ -15,7 +15,7 @@ if test "$CXX" = ":"; then
 fi
 
 AC_PROG_YACC
-if test "$YACC" = ":"; then
+if test "x${YACC:0:5}" != "xbison"; then
    AC_MSG_ERROR([You must install Bison])
 fi
 
