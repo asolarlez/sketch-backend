@@ -412,6 +412,7 @@ public:
 	virtual void process(BooleanDAG& bdag);
 		
 	virtual void visit( UFUN_node& node );
+	virtual void visit(CTRL_node& node);
 	virtual bool changed(){ return somethingChanged; }
 	
 

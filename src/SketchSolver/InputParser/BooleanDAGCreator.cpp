@@ -191,6 +191,9 @@ INTER_node* BooleanDAGCreator::create_inputs(int n, bool_node::OutType type, con
 INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
 	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
+	if(gen_name == "#PC"){
+		dynamic_cast<CTRL_node*>(tmp)->set_Pcond();
+	}
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);	
 	optim.dagsizeSet(dag->size());

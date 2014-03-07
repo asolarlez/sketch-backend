@@ -645,7 +645,7 @@ class DST_node: public INTER_node, public DllistNode{
 
 
 class CTRL_node: public INTER_node{
-	typedef enum{MINIMIZE=1, ANGELIC=2} Property;
+	typedef enum{MINIMIZE=1, ANGELIC=2, PCOND=4} Property;
 	unsigned kind;
 	int arrSz;
 	public: 
@@ -670,6 +670,13 @@ class CTRL_node: public INTER_node{
 	}
 	void set_Angelic() {
 		this->kind |= ANGELIC;		
+	}
+
+	bool get_Pcond() const {
+		return (kind & PCOND) != 0;
+	}
+	void set_Pcond() {
+		this->kind |= PCOND;		
 	}
 
 	int getArrSz()const{

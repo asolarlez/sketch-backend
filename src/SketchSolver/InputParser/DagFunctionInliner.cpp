@@ -83,6 +83,14 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 }
 
 
+void DagFunctionInliner::visit(CTRL_node& node){
+	if(node.get_Pcond()){
+		rvalue = this->getCnode(true);
+	}else{
+		DagOptim::visit(node);
+	}
+}
+
 
 bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap, vector<const bool_node*>& nmap){
 	bool chk = false;
@@ -224,6 +232,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			for(int i=0; i<controls.size(); ++i){	
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				bool_node* actual = dag.unchecked_get_node( ctrl->name );
+
+				if(ctrl->get_Pcond()){
+					nmap[ctrl->id] = node.mother;
+					continue;
+				}
+
 				if(actual != NULL){
 					nmap[controls[i]->id] = actual;
 					actual->children.erase((bool_node*)&node);
@@ -243,7 +257,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		lnfuns++;
 		
-		cout<<node.get_ufname()<<endl;
+		// cout<<node.get_ufname()<<endl;
 
 		/*
 			The idea is that we have a wavefront moving through the graph as we add more nodes.
@@ -265,6 +279,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		for(int i=0; i<oldFun.size(); ++i){
 			
 			bool_node::Type t = oldFun[i]->type;
+
+
 			if(t == bool_node::SRC || t == bool_node::CTRL) continue;
 			if(t == bool_node::CONST){
 				CONST_node* n =  dynamic_cast<CONST_node*>(oldFun[i]);
@@ -319,7 +335,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 
 						bool_node * oldMother = ufun->mother;	
-						if(!ufun->ignoreAsserts){												
+						if(!ufun->ignoreAsserts){	
+							/*
 							ufun->mother->remove_child( n );
 							bool_node* andCond = new AND_node();
 							andCond->mother = ufun->mother;
@@ -348,6 +365,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 									}
 								  }
 							}
+							*/
 						}else{
 							if(!isConst(ufun->mother)){
 								ufun->mother->remove_child(n);
@@ -427,7 +445,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						continue;
 					}					
 
-					if(!oldFun.isModel || nprime == NULL){												
+					if(!oldFun.isModel || nprime == NULL){	
+						/*
 						bool_node* nnode = new NOT_node();
 						nnode->mother = condition;
 						nnode = optAndAddNoMap(nnode);
@@ -439,6 +458,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						ornode->father = nnode;
 						ornode = optAndAddNoMap(ornode);
 						n->mother = ornode;
+						*/
+						
 					}else{
 						bool_node* cur = n->mother;
 						n->mother = nprime->mother;
