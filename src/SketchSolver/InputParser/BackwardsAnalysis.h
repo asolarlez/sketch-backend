@@ -214,7 +214,11 @@ public:
 				}
 			}
 		}else{
-			FastMap<bool_node,int> tmp;
+			int tsz = 1;
+			if(known.size() > 50){
+				tsz = 5;				
+			}
+			FastMap<bool_node,int> tmp(tsz);
 			if(inf.hasD){
 				FastMap<bool_node,int> sd = inf.known;
 				sd.insert(inf.temp.begin(), inf.temp.end());

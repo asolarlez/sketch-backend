@@ -167,7 +167,7 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-		if( string(argv[ii]) == "-simiters" ){
+		if( string(argv[ii]) == "-simiters" ){ 
 	      Assert(ii<(argc-1), "-simiters needs an extra parameter");
 	      simiters = atoi(argv[ii+1]);
 	      input_idx = ii+2;      

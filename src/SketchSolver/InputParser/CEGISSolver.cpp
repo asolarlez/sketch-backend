@@ -483,11 +483,11 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	}
 	Dout( newdag->print(cout) ); 
 	
-	if(true){
+	if(false){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);
 	}
-	if(true){
+	if(false){
 		DagOptim cse(*newdag);			
 		cse.process(*newdag);
 	}
@@ -994,6 +994,17 @@ void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & has
 		}
 	}
 }
+
+ void bitset::print(ostream& os){
+		int i=next(-1);
+		os<<"{";
+		while(i != -1){
+			os<<", "<<i;
+			i = next(i);
+		}
+		os<<"}"<<endl;
+
+	}
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	timerclass tc("Simulation");

@@ -490,6 +490,17 @@ public:
 		_end = fmiter<T, M>( ((FastMap<T,M>*) this)->store_end, ((FastMap<T,M>*) this)->store_end, vers);
 	}
 
+	FastMap(int initsize):_end(0){
+		vers = 0;
+		sz = initsize;
+		unsigned tmp = (CNST<<sz)+2;
+		store = new pair<T*, M>[tmp];		
+		store_end = store + tmp;
+		memset(store, 0, tmp*sizeof(pair<T*, M>));
+		_size = 0;
+		recompEnd();
+	}
+
 	FastMap(void):_end(0)
 	{
 		vers = 0;
@@ -691,6 +702,40 @@ public:
 		}
 	}
 
+
+	M* findBis(T* val){
+		unsigned loc = traits::hash(val, sz);
+		int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
+		bool t0 = store[l].first == val;
+		bool t1 = store[lp1].first == val;
+		bool t2 = store[lp2].first == val;
+		bool t3 = store[lp3].first == val;
+		bool t4 = store[lp4].first == val;
+		bool t5 = store[lp5].first == val;
+#ifdef _DEBUG_B
+	Assert(store+lp5 < store_end, "What??");
+#endif
+		if(t0){
+			return &store[l].second;
+		}
+		if(t1){
+			return &store[lp1].second;
+		}
+		if(t2){
+			return &store[lp2].second;
+		}
+		if(t3){
+			return &store[lp3].second;
+		}
+		if(t4){
+			return &store[lp4].second;
+		}
+		if(t5){
+			return &store[lp5].second;
+		}
+		return NULL;
+	}
+
 	iterator find(T* val){
 		//unsigned loc = hash(val);
             unsigned loc = traits::hash(val, sz);
@@ -735,8 +780,22 @@ public:
 	}
 
 
-
 	void insertIntersection(const FastMap& fm1, const FastMap& fm2){
+		pair<T*, M>* beg = fm1.store;
+		pair<T*, M>* end = fm1.store_end;
+
+		while(beg < end){
+			if(beg->first == NULL){ ++beg; continue; }			
+			M* it = ((FastMap&)fm2).findBis(beg->first);
+			if(it != NULL && *it == beg->second){
+				insert(*beg);
+			}
+			++beg;
+		}
+	}
+
+
+	void insertIntersectionBis(const FastMap& fm1, const FastMap& fm2){
 		for(iterator it = fm1.begin(); it!= fm1.end(); ++it){
 			iterator it2 = ((FastMap&)fm2).find(it->first);
 			if(it2 != fm2.end() && it2->second == it->second){
@@ -756,6 +815,7 @@ public:
 		++vers;
 		recompEnd();
 	}
+
 
 
 	void insert(const pair<T*, M>& val){
@@ -780,46 +840,48 @@ public:
 	Assert(store+lp5 < store_end, "What??");
 #endif	   		
 		{
-			if(slp2.first == val.first){
+			T* vf = val.first;
+			T* slf = sl.first, *slp2f = slp2.first, *slp3f = slp3.first, *slp1f = slp1.first, *slp4f = slp4.first, *slp5f = slp5.first;
+			if(slp2f == vf){
 				slp2.second = val.second; return;
 			}
-			if(slp3.first == val.first){
+			if(slp3f == vf){
 				slp3.second = val.second; return;
 			}	
-			if(sl.first == val.first){
+			if(slf == vf){
 				sl.second = val.second; return;
 			}
-			if(slp1.first == val.first){
+			if(slp1f == vf){
 				slp1.second = val.second; return;
 			}					
-			if(slp4.first == val.first){
+			if(slp4f == vf){
 				slp4.second = val.second; return;
 			}
-			if(slp5.first == val.first){
+			if(slp5f == vf){
 				slp5.second = val.second; return;
 			}	
 			
-			if(slp2.first == NULL){
+			if(slp2f == NULL){
 				++_size;
 				slp2 = val; return;
 			}
-			if(slp3.first == NULL){
+			if(slp3f == NULL){
 				++_size;
 				slp3 = val; return;
 			}											
-			if(sl.first == NULL){
+			if(slf == NULL){
 				++_size;
 				sl = val; return;
 			}
-			if(slp1.first == NULL){
+			if(slp1f == NULL){
 				++_size;
 				slp1 = val; return;
 			}
-			if(slp4.first == NULL){
+			if(slp4f == NULL){
 				++_size;
 				slp4 = val; return;
 			}
-			if(slp5.first == NULL){
+			if(slp5f == NULL){
 				++_size;
 				slp5 = val; return;
 			}

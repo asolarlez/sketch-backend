@@ -1,40 +1,143 @@
 #pragma once
 #include "NodeEvaluator.h"
+#include "StringHTable.h"
+
+class bitset{
+	int size;
+	unsigned buf[];
+public:
+	bitset(int sz):size(sz){
+		memset(buf, 0, sz*sizeof(unsigned));
+	}
+	void insert(int v){
+		int idx = v >> 5;
+		int msk = 1 << (v & 0x1f);
+		buf[idx] |= msk;
+	}
+
+	void print(ostream& os);
+
+	void insert(bitset* other){
+		if(other==NULL){ return ; }
+		Assert(size == other->size, "e;lkhy");
+		unsigned* oth = other->buf;
+		for(int i=0; i<size; ++i){
+			buf[i] |= oth[i];
+		}
+	}
+	friend bitset* merge(Ostore<unsigned>& store, bitset* a, bitset* b);
+	int next(int v){
+		++v;
+		int msz = size << 5;
+		while(v < msz){
+			int idx = v >> 5;
+			int msk = 1 << (v & 0x1f);
+			if((buf[idx] & msk) != 0){
+				return v;
+			}
+			++v;
+		}
+		return -1;
+	}
+};
+
+
+inline bitset* bitsetcreateLL(Ostore<unsigned>& store, int wsize){		
+	bitset* rv = new(store.newObj(wsize+1 )) bitset(wsize);
+	return rv;
+}
+
+inline bitset* bitsetcreate(Ostore<unsigned>& store, int sz){
+	int wsize = sz > 0 ? (((sz-1)>>5)+1) : 0;	
+	bitset* rv = new(store.newObj(wsize+1 )) bitset(wsize);
+	return rv;
+}
+
+inline bitset* merge(Ostore<unsigned>& store, bitset* a, bitset* b){
+	if(b==NULL){
+		return a;
+	}
+	if(a==NULL){
+		return b;
+	}
+	Assert(a->size == b->size, "Clekn");
+	unsigned* ba = a->buf;
+	unsigned* bb = b->buf;
+	int sz = a->size;
+	for(int i=0; i<sz; ++i){
+		if(ba[i] != (ba[i] | bb[i])){
+			bitset* rv = bitsetcreateLL(store, sz);
+			for(int j=0; j<sz; ++j){
+				rv->buf[j] = ba[j] | bb[j];
+			}
+			return rv;
+		}
+	}
+	return a;
+}
+
+
 
 class CounterexampleFinder :
 	public NodeEvaluator
 {
-	vector<set<int> >  influences;
+	Ostore<unsigned> store;
+	vector<bitset* >  influences;
 	vector<int> jumpids;
 	void computeInfluences(){
 		influences.clear();
 		influences.resize(bdag.size());
+		int bssize = inputs->getIntsize();
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 			bool_node* cur = (*node_it);
 			if(cur->type == bool_node::SRC){
 				SRC_node* src = dynamic_cast<SRC_node*>(cur);	
 				int oid = inputs->getId(src->get_name());
-				influences[cur->id].insert( oid );
+				bitset* nb = bitsetcreate(store, bssize);
+				nb->insert( oid );
+				// nb->print(cout);
+				influences[cur->id] = nb;
 				if(jumpids.size() <= oid){
 					jumpids.resize(oid+1);
 				}
 				jumpids[oid] = src->id;
 			}else{
+				bitset* res = NULL;
 				if(cur->mother != NULL){
-					set<int>& s = influences[cur->mother->id];
-					influences[cur->id].insert(s.begin(), s.end());
+					res = influences[cur->mother->id];					
 				}
+				bool isFresh = false;
 				if(cur->father != NULL){
-					set<int>& s = influences[cur->father->id];
-					influences[cur->id].insert(s.begin(), s.end());
+					if(res == NULL){
+						res = influences[cur->father->id];
+					}else{
+						bitset* old = res;
+						res = merge(store, res, influences[cur->father->id]);
+						if(old != res){
+							isFresh = true;
+						}
+					}
 				}
 				arith_node* an = dynamic_cast<arith_node*>(cur);
 				if(an != NULL){
 					for(int i=0; i<an->multi_mother.size(); ++i){
-						set<int>& s = influences[an->multi_mother[i]->id];
-						influences[cur->id].insert(s.begin(), s.end());
+						if(res == NULL){
+							res = influences[an->multi_mother[i]->id];
+						}else{
+							if(!isFresh){
+								bitset* old = res;
+								res = merge(store, res, influences[an->multi_mother[i]->id]);
+								if(old != res){
+									isFresh = true;
+								}
+							}else{
+								res->insert(influences[an->multi_mother[i]->id]);
+							}
+							
+						}
 					}
 				}
+				influences[cur->id] = res;
 			}
 		}
 	}
@@ -62,9 +165,12 @@ public:
 				}
 				failedHAssert = false;
 				ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
-				set<int>& inf = influences[an->id];
-				set<int>::reverse_iterator it = inf.rbegin();
-				if(it == inf.rend()){
+				bitset* inf = influences[an->id];
+				if(inf == NULL){
+					return UNSAT;
+				}
+				int it = inf->next(-1);				
+				if(it == -1){
 					return UNSAT;
 				}
 				if( (*node_it)->mother->type == bool_node::EQ ){
@@ -94,9 +200,9 @@ public:
 					}
 				}
 				int jmp = bdsz;
-				for(;it != inf.rend(); ++it){
-					inputs->getObj(*it).makeRandom();
-					int jid = jumpids[*it];
+				for(;it != -1; it = inf->next(it)){
+					inputs->getObj(it).makeRandom();
+					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
 				}
 				node_it = bdag.begin() + jmp;
@@ -113,6 +219,7 @@ public:
 
 	~CounterexampleFinder(void)
 	{
+		
 	}
 };
 
