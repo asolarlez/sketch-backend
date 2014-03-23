@@ -1981,14 +1981,14 @@ void NodesToSolver::visit( ARR_W_node &node){
 //	cout << "ARR_W(inarr,index,newval,nvar): " << node.lprint() << endl << inarr << endl << index << endl << newval << endl << nvar << endl;
 }
 
-void
-
-
-	NodesToSolver::visit( ARR_CREATE_node &node){
+void NodesToSolver::visit( ARR_CREATE_node &node){
 	Tvalue& nvar = node_ids[node.id];
 	vector<guardedVal>& tmp = nvar.num_ranges;
 	tmp.clear();
 	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+
+	tmp.push_back(guardedVal(YES, node.dfltval, -1)); // default value lives in location -1;
+
 	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
 		if(mval.isSparse()){

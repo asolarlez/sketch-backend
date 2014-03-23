@@ -12,6 +12,7 @@ DagOptim::DagOptim(BooleanDAG& dag):cse(dag), stillPrivate(NULL)
 	DONE=-2;
 	INSTACK=0;
 	isTopLevel = false;
+	nccount = 0;
 }
 
 DagOptim::~DagOptim()
@@ -1078,6 +1079,36 @@ void DagOptim::visit( ARR_W_node& node ){
 		rvalue = node.multi_mother[0];
 		return;
 	}
+
+
+	if(isConst(node.multi_mother[0]) && isConst(node.mother) && isConst(node.multi_mother[1])){
+		if(nccount < NCREATORS){
+			bool_node* defval = node.multi_mother[0];		
+			int idx = getIval(node.mother);
+			if(idx == 0){
+				tempcreators[nccount].first = node.globalId;
+				tempcreators[nccount].second.dfltval = getIval(defval);
+				tempcreators[nccount].second.multi_mother.push_back(node.multi_mother[1]);
+				++nccount;
+			}			
+		}
+	}
+
+	if(node.multi_mother[0]->type == bool_node::ARR_W && isConst(node.mother) && isConst(node.multi_mother[1])){
+		for(int i=0; i<nccount; ++i){
+			if(tempcreators[i].first == node.multi_mother[0]->globalId){
+				ARR_CREATE_node* old = &(tempcreators[i].second);
+				int idx = getIval(node.mother);
+				if(idx == old->multi_mother.size()){
+					old->multi_mother.push_back(node.multi_mother[1]);
+					tempcreators[i].first = node.globalId;
+				}
+				break;
+			}
+		}
+	}
+
+
 	/*
 	X = A{i->t}; Y = X{i->q} ===> X=A{i->t}; Y = A{i->q}
 	*/
@@ -2243,13 +2274,57 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 }
 
 
+bool DagOptim::checkTempcreators(BooleanDAG& dag, bool_node* node, int i){	
+			bool_node* cur = node;
+			int count = tempcreators[i].second.multi_mother.size();
+			bool replace = true;
+			cur = dynamic_cast<ARR_W_node*>(cur)->getOldArr();
+			for(int t=1; t< count; ++t){
+				if(cur->type == bool_node::ARR_W && cur->children.size() == 1){
+					cur = dynamic_cast<ARR_W_node*>(cur)->getOldArr();
+				}else{
+					replace = false;
+					break;
+				}
+			}
+			if(replace){
+				bool_node* acn = tempcreators[i].second.clone(false);
+				acn->addToParents();
+				int id = node->id;
+				dag.replace(id, acn);
+				dag[id] = acn;				
+				return true;
+			}
+			return false;
+}
+
 void DagOptim::cleanup(BooleanDAG& dag){
+
 	dag.removeNullNodes();
 	dag.addNewNodes(newnodes);
 	newnodes.clear();
 	dag.relabel();
 
 	// dag.print(cout);
+
+	if(nccount > 0){
+		bool modified = false;
+		int size = dag.size();
+		for(int i=0; i<size; ++i){
+			if(dag[i]->type == bool_node::ARR_W){
+				for(int j=0; j<nccount; ++j){
+					int id = tempcreators[j].first;
+					if(dag[i] == NULL || dag[i]->globalId != id){ continue; }
+					modified = modified || checkTempcreators(dag, dag[i], j);
+				}
+			}
+		}		
+		
+		nccount = 0;
+	}
+
+	
+
 	if(possibleCycles){ 
 		findCycles(dag);
 		possibleCycles = false;

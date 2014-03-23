@@ -443,10 +443,12 @@ class ARR_W_node:public arith_node{
 		}
 };
 
-class ARR_CREATE_node:public arith_node{		
+class ARR_CREATE_node:public arith_node{	
+	
 	public: 
-		ARR_CREATE_node():arith_node(ARR_CREATE){ }
-		ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+		int dfltval;		
+		ARR_CREATE_node():arith_node(ARR_CREATE),dfltval(-333){ }
+		ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), dfltval(bn.dfltval){ }  
 		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new ARR_CREATE_node(*this, copyChildren);  };
 		virtual void outDagEntry(ostream& out) const{				    					
@@ -465,7 +467,7 @@ class ARR_CREATE_node:public arith_node{
 		  			str<<(*it)->lid()<<", ";	  		
 		  		}
 			}
-			str<<"}";
+			str<<"}("<<dfltval<<")";
 			return str.str();
 		}
 		OutType getOtype()const {
@@ -492,6 +494,7 @@ class ARR_CREATE_node:public arith_node{
 			for(int i=0; i<multi_mother.size(); ++i){
 				str<<" "<<multi_mother[i]->id;
 			}
+			str<<" "<<dfltval;
 			return str.str();
 		}
 };

@@ -74,6 +74,7 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit floor getpagesize gettimeofday mblen memchr memmove memset pow putenv select sqrt strchr strcspn strdup strerror strpbrk strrchr strspn strstr strtol strtoul])
 
 CFLAGS=-O3
+LIBS=-Wl,--stack,16777216
 
 AC_OUTPUT(
     Makefile 

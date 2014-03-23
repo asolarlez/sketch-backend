@@ -236,6 +236,13 @@ void DagCSE::visit(  ARR_W_node& node ){
 void DagCSE::visit( ARR_CREATE_node& node ){
  	Dtime(stimer.restart();)
  	int mid = node.mother == NULL? -1: node.mother->globalId;
+
+	int tempsz = node.multi_mother.size()*7;
+
+	if(tempsz > tmpbuf.size()){
+		tmpbuf.resize(tempsz);
+	}
+
 	char* tch = &tmpbuf[0];
 	int p = 0;
 	

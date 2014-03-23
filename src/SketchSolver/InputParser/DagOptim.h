@@ -408,15 +408,20 @@ public:
 	}
 };
 
+const int NCREATORS=4;
+
 class DagOptim : public NodeVisitor, public virtual NodeStore
 {	
 	bool ALTER_ARRACS;	
 	bool possibleCycles;
+	int nccount;
+	pair<int, ARR_CREATE_node>  tempcreators[NCREATORS];
 protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
 	map<string, TempTriple > testAsserts;
+	bool checkTempcreators(BooleanDAG& dag, bool_node* node, int i);
 	int uidcount;
 	int BOTTOM;
 	int DONE;
