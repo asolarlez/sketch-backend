@@ -74,7 +74,10 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit floor getpagesize gettimeofday mblen memchr memmove memset pow putenv select sqrt strchr strcspn strdup strerror strpbrk strrchr strspn strstr strtol strtoul])
 
 CFLAGS=-O3
+
+if test "`ld --help | grep -o '\-\-stack'`" == "--stack"; then
 LIBS=-Wl,--stack,16777216
+fi
 
 AC_OUTPUT(
     Makefile 
