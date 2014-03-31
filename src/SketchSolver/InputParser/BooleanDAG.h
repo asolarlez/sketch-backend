@@ -88,7 +88,7 @@ Dllist assertions;
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph creation.
   ////////////////////////////////////////////////////////////////////////
-  INTER_node* create_inputs(int n, bool_node::OutType type, const string& gen_name=string("INPUT"), int arrSz=-1);
+  INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1);
   INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
 
   void growInputIntSizes();

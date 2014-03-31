@@ -45,7 +45,7 @@ params(args)
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
-			if(ctrlnode->getOtype() == bool_node::BOOL){
+			if(ctrlnode->getOtype() == OutType::BOOL){
 				cbits++;
 			}else{
 				cints++;
@@ -1133,7 +1133,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			bool_node* niq = (*dag)[h];
 			ASSERT_node* an = new ASSERT_node();
 			int am = 0;
-			if(niq->getOtype()==bool_node::BOOL){
+			if(niq->getOtype()==OutType::BOOL){
 				if(eval.getValue(niq)==0){
 					an->mother = new NOT_node();
 					am = 1;
@@ -1332,7 +1332,8 @@ public:
 				}
 			}
 		}
-	}
+		Assert(false, "No return");
+	}	
 };
 
 // check verifies that controls satisfies all asserts

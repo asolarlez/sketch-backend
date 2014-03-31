@@ -24,6 +24,8 @@ class ASSERT_node;
 class ARR_R_node;
 class ARR_W_node;
 class ARR_CREATE_node;
+class TUPLE_CREATE_node;
+class TUPLE_R_node;
 class arith_node;
 struct bool_node;
 class BooleanDAG;
@@ -64,6 +66,9 @@ class NodeVisitor{
 	virtual void visit( ARR_R_node &node);
 	virtual void visit( ARR_W_node &node);
 	virtual void visit( ARR_CREATE_node &node);
+
+	virtual void visit( TUPLE_CREATE_node &node);
+	virtual void visit( TUPLE_R_node &node);
 
 	virtual void process(BooleanDAG& bdag);
 };

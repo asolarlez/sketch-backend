@@ -103,7 +103,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return rv;
 	}
 
-	if(n1->getOtype() == bool_node::BOOL){
+	if(n1->getOtype() == OutType::BOOL){
 		AbstractNodeValue& nv = anv[n1];
 		nv.init(0);	
 		nv.insert(1);
@@ -114,7 +114,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	if(n1->type == bool_node::SRC ||  n1->type == bool_node::CTRL){
 		INTER_node* inode = dynamic_cast<INTER_node*>(n1);
 		AbstractNodeValue& nv = anv[n1];
-		if(inode->getOtype() == bool_node::BOOL){
+		if(inode->getOtype() == OutType::BOOL){
 			nv.init(0);	
 			nv.insert(1);
 			nv.timestamp = n1->globalId;
@@ -230,7 +230,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 				bool_node* parent = ar.multi_mother[i];
 				helper<COMP>(parent, C, reverse, rv, nv);
 			}
-			if((!PARAMS->assumebcheck) && ar.type == bool_node::ARRACC  && (n1->mother->getOtype() == bool_node::INT || ar.multi_mother.size() < 2)){			
+			if((!PARAMS->assumebcheck) && ar.type == bool_node::ARRACC  && (n1->mother->getOtype() == OutType::INT || ar.multi_mother.size() < 2)){			
 				nv.insert(0);
 				bool cm = reverse? comp(C, 0) : comp(0, C);
 				int tmp = cm ? 1 : -1;	
@@ -1171,7 +1171,7 @@ void DagOptim::visit( EQ_node& node ){
 			return;
 		}
 		int mvalue = getIval( node.mother );
-		if( node.father->getOtype() == bool_node::BOOL ){			
+		if( node.father->getOtype() == OutType::BOOL ){			
 			
 			if(mvalue == 1){
 				rvalue = node.father;
@@ -1207,7 +1207,7 @@ void DagOptim::visit( EQ_node& node ){
 	}
 	
 	if( isConst(node.father) ){
-		if( node.mother->getOtype() == bool_node::BOOL ){
+		if( node.mother->getOtype() == OutType::BOOL ){
 			int mvalue = getIval( node.father );
 			
 			if(mvalue == 1){
@@ -1226,7 +1226,7 @@ void DagOptim::visit( EQ_node& node ){
 	}
 	
 
-	if(node.father->getOtype() == bool_node::BOOL && node.mother->getOtype() == bool_node::BOOL){
+	if(node.father->getOtype() == OutType::BOOL && node.mother->getOtype() == OutType::BOOL){
 		bool_node* x = new XOR_node();
 		x->mother = node.mother;
 		x->father = node.father;
@@ -1451,7 +1451,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				}
 			}
 			// if( isConst(node.multi_mother[0]) )
-			if(val0 == 0 && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+			if(val0 == 0 && node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
 				AND_node* an = new AND_node();				
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
@@ -1469,7 +1469,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 
 		if( isConst(node.multi_mother[1]) ){
 			int val1 = getIval( node.multi_mother[1] );	
-			if(val1 == 1 && node.multi_mother[0]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+			if(val1 == 1 && node.multi_mother[0]->getOtype()==OutType::BOOL && ALTER_ARRACS){
 				OR_node* an = new OR_node();
 				an->mother = node.mother;
 				an->father = node.multi_mother[0];
@@ -1480,7 +1480,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		}//if( isConst(node.multi_mother[1]) )
 
 
-		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
 				AND_node* an = new AND_node();
 				an->mother = node.mother;
 				an->father = node.multi_mother[1];
@@ -1490,7 +1490,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		}
 		
 		
-		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==bool_node::BOOL && ALTER_ARRACS){
+		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
 				OR_node* an = new OR_node();
 				an->mother = node.multi_mother[0];
 				an->father = node.multi_mother[1];
@@ -1503,7 +1503,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
 				
 				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
-				if(node.getOtype() == bool_node::INT || node.getOtype() == bool_node::BOOL){
+				if(node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL){
 					if(isConst(eqmom->mother) || isConst(eqmom->father)){
 						bool_node* mother = NULL;
 						int C;
@@ -1536,7 +1536,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		
 		if( node.multi_mother[1]->type == bool_node::ARRACC  ){			
 			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
-			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == bool_node::BOOL && mm1 .mother->getOtype() == bool_node::BOOL ){
+			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == OutType::BOOL && mm1 .mother->getOtype() == OutType::BOOL ){
 				bool_node* an = new AND_node();
 				an->mother = node.mother;
 				an->father = mm1 .mother;
@@ -1604,7 +1604,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		
 		if( node.multi_mother[0]->type == bool_node::ARRACC  ){
 			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
-			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == bool_node::BOOL &&  mm0.children.size() < 2){
+			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == OutType::BOOL &&  mm0.children.size() < 2){
 				OR_node* on = new OR_node();
 				on->mother = node.mother;
 				on->father = mm0 .mother;
@@ -1709,7 +1709,7 @@ void DagOptim::visit( ARRACC_node& node ){
 			}
 		}
 		if( tmp ){
-			if( (node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL) || PARAMS->assumebcheck ){
+			if( (node.multi_mother.size()==2 && node.mother->getOtype()== OutType::BOOL) || PARAMS->assumebcheck ){
 				/* 
 				 * It may seem that the transformation inside the following if statement also applies to
 				 * ARRACC with non-bool mother. But this is not the case, because if the mother is non-bool, 
@@ -1753,14 +1753,14 @@ void DagOptim::visit( ARRACC_node& node ){
 
 
 	
-	if( node.multi_mother.size()==2 && node.mother->getOtype()== bool_node::BOOL ){
+	if( node.multi_mother.size()==2 && node.mother->getOtype()== OutType::BOOL ){
 		if(this->optimizeMMsize2(node)){
 			return;
 		}				
 	}else{
 		if(node.mother->type == bool_node::ARRACC){
 			ARRACC_node* an = dynamic_cast<ARRACC_node*>(node.mother);
-			if(an->mother->getOtype() == bool_node::BOOL && an->multi_mother.size()==2 && an->multi_mother[0]->type == bool_node::CONST && an->multi_mother[1]->type == bool_node::CONST){
+			if(an->mother->getOtype() == OutType::BOOL && an->multi_mother.size()==2 && an->multi_mother[0]->type == bool_node::CONST && an->multi_mother[1]->type == bool_node::CONST){
 				int c0 = this->getIval(an->multi_mother[0]);
 				int c1 = this->getIval(an->multi_mother[1]);
 				ARRACC_node* ar = new ARRACC_node();
@@ -1990,8 +1990,8 @@ void DagOptim::visit( ARRASS_node& node ){
 		return;
 	}
 
-	bool_node::OutType ot = node.getOtype();
-	if(node.quant == 0  &&  (ot == bool_node::INT || ot == bool_node::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
+	OutType* ot = node.getOtype();
+	if(node.quant == 0  &&  (ot == OutType::INT || ot == OutType::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
 		vector<bool_node*>  vv;		
 		checkArrass(vv, node.mother, node, 0);
 		if(vv.size()>3){

@@ -314,7 +314,7 @@ int checkOkForARRACC(BooleanDAG * dag, bool_node* bnode, int line /*=0*/) {
 		return -1;
 	}
 	ARRACC_node * node = dynamic_cast<ARRACC_node*>(bnode);
-	if ( (node->multi_mother.size()>2 || node->mother->getOtype() != bool_node::BOOL)) {
+	if ( (node->multi_mother.size()>2 || node->mother->getOtype() != OutType::BOOL)) {
 			for (int j=0; j<node->multi_mother.size(); ++j) {
 				bool_node * m = node->multi_mother[j];
 				if (m != NULL && m->isArrType()) {
@@ -691,7 +691,7 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
-    tmp->otype = bool_node::BOOL;
+    tmp->otype = OutType::BOOL;
     ++counter;
 	return tmp;
   }else{
@@ -702,16 +702,16 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
     nodes.push_back(tmp);
     tmp->name = gen_name;
     named_nodes[gen_name] = tmp;
-    tmp->otype = bool_node::INT;
+    tmp->otype = OutType::INT;
     counter += n;
 	return tmp;
   }
 }
 
 
-INTER_node* BooleanDAG::create_inputs(int n, bool_node::OutType type, const string& gen_name, int arrSz){
+INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
 	SRC_node* src = dynamic_cast<SRC_node*>(create_inter(n, gen_name, n_inputs, bool_node::SRC));
-	if(type == bool_node::FLOAT || type == bool_node::FLOAT_ARR){
+	if(type == OutType::FLOAT || type == OutType::FLOAT_ARR){
 		src->otype = type;
 	}
 	src->setArr(arrSz);

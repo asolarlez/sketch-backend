@@ -173,7 +173,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			SRC_node* spnode = dynamic_cast<SRC_node*>(specIn[i]);
 			Dout( cout<<"Matching inputs spec: "<<sknode->name<<" with sketch: "<<spnode->name<<endl );
 			sketch->rename(sknode->name, spnode->name);
-			if(sketchIn[i]->getOtype() == bool_node::BOOL){
+			if(sketchIn[i]->getOtype() == OutType::BOOL){
 				inbits++;
 			}else{
 				inints++;

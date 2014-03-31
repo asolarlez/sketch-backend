@@ -1869,7 +1869,7 @@ NodesToSolver::visit( ARR_R_node &node){
 	// especially when type is BIT
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
-	if(node.getOtype() == bool_node::INT){
+	if(node.getOtype() == OutType::INT){
 		vector<guardedVal>& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());

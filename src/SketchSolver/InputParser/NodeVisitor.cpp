@@ -106,3 +106,12 @@ void NodeVisitor::visit( ARR_W_node &node){
 void NodeVisitor::visit( ARR_CREATE_node &node){
 	visitArith(node);	
 }
+
+void NodeVisitor::visit( TUPLE_CREATE_node &node){
+	visitArith(node);	
+}
+
+void NodeVisitor::visit( TUPLE_R_node &node){
+	visitBool(node);
+}
+

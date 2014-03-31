@@ -8,6 +8,92 @@
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
 
+OutType* OutType::BOTTOM = new Bottom();
+OutType* OutType::BOOL = new Bool();
+OutType* OutType::INT = new Int();
+OutType* OutType::FLOAT = new Float();
+OutType* OutType::BOOL_ARR = new Arr(BOOL);
+OutType* OutType::INT_ARR = new Arr(INT);
+OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
+vector<OutType*> OutType::store;
+
+OutType* OutType::makeTuple(vector<OutType*>& elems){
+	Tuple* t = new Tuple();
+	t->entries = elems;
+	store.push_back(t);
+	return t;
+}
+
+
+  /**
+                          TUPLE_ARR
+					     /	       \
+					   /            \
+					 /  FLOAT_ARR    \   
+			       	 |   |    \       \   
+				    INT_ARR    FLOAT  TUPLE
+		            |     \   /       /
+		     	BOOL_ARR   INT-------/    
+			        \     /            
+	   		   	      BOOL           
+		      
+
+  */
+  OutType* OutType::joinOtype(OutType* t1, OutType* t2) {
+  	if(t1 == BOTTOM){ return t2; }
+  	if(t2 == BOTTOM){ return t1; }
+	if(t1->isTuple){
+		if(t2->isArr){
+			if(t2 == INT_ARR){
+				return ((Tuple*)t2)->arr;
+			}else{
+				return t2;
+			}
+		}else{
+			return t1;
+		}
+	}
+	if(t1->isArr){
+		if(((Arr*)t1)->atype->isTuple){
+			return t1;
+		}
+	}
+  	if( t2 == t1 ){ 
+  		return t1; 
+  	}else{ 		
+		if(t1==FLOAT_ARR || t2 == FLOAT_ARR){
+			return FLOAT_ARR;
+		}
+		if(t1==INT_ARR || t2==INT_ARR){
+			if(t1==FLOAT || t2==FLOAT){
+				return FLOAT_ARR;
+			}else{
+				return INT_ARR;
+			}
+		}		
+		if(t1==FLOAT || t2 == FLOAT){
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				return  FLOAT_ARR;
+			}else{
+				return FLOAT;
+			}
+		}
+		if(t1==INT || t2==INT){			
+			if(t1==BOOL_ARR || t2==BOOL_ARR){
+				return INT_ARR;
+			}else{
+				return INT;
+			}			
+		}else{
+			if(t1==BOOL_ARR || t2==BOOL_ARR){				
+				return BOOL_ARR;				
+			}
+		}		
+  		return BOOL; 
+  	}
+  }
+
+
 #ifdef SCHECKMEM
 set<bool_node*> bool_node::allocated;
 #endif 
@@ -22,7 +108,7 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 }
 
-bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(BOTTOM), type(t)
+bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t)
   { 
 	  layer = 0;
 #ifdef SCHECKMEM
@@ -229,12 +315,12 @@ string bool_node::get_name() const {
 
 
 
-bool_node::OutType bool_node::getOtype() const{
-	return BOOL;
+OutType* bool_node::getOtype() const{
+	return OutType::BOOL;
 }
 
-bool_node::OutType arith_node::getOtype() const{
-	return INT;
+OutType* arith_node::getOtype() const{
+	return OutType::INT;
 }
 
 void bool_node::set_layer(bool isRecursive){

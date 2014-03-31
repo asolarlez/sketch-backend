@@ -141,8 +141,8 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 		setbn(node, 0);
 	}else{
 		bool_node* pred = node.multi_mother[idx];
-		bool_node::OutType otp = node.getOtype();
-		if(otp==bool_node::INT || otp ==bool_node::BOOL){
+		OutType* otp = node.getOtype();
+		if(otp==OutType::INT || otp ==OutType::BOOL){
 			setbn(node, i(*pred) );
 		}else{
 			{
@@ -179,10 +179,10 @@ void NodeEvaluator::visit( LT_node& node ){
 
 void NodeEvaluator::visit( EQ_node& node ){
 
-	if(node.mother->getOtype() == bool_node::BOOL_ARR 
-		|| node.mother->getOtype() == bool_node::INT_ARR
-		|| node.father->getOtype() == bool_node::BOOL_ARR
-		|| node.father->getOtype() == bool_node::INT_ARR){
+	if(node.mother->getOtype() == OutType::BOOL_ARR 
+		|| node.mother->getOtype() == OutType::INT_ARR
+		|| node.father->getOtype() == OutType::BOOL_ARR
+		|| node.father->getOtype() == OutType::INT_ARR){
 			cpvec* mv = vecvalues[node.mother->id];
 			cpvec* fv = vecvalues[node.father->id];
 			int msz = mv==NULL? 0 : mv->size() ;
@@ -242,8 +242,8 @@ void NodeEvaluator::printNodeValue(int i){
 	cout<<i<<" = ";
 	if(vecvalues[i]!= NULL){
 		cpvec* vv = vecvalues[i];		
-		for(int i=0; i<vv->size(); ++i){
-			cout<<vv->get(i, values[i])<<", ";
+		for(int j=0; j<vv->size(); ++j){
+			cout<<vv->get(j, values[j])<<", ";
 		}
 		cout<<endl;
 		if (false && (i == 197 || i==194)) {

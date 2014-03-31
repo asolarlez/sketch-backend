@@ -39,6 +39,57 @@ typedef FastSet<bool_node> childset;
 
 //#define SCHECKMEM
 
+class OutType{ 
+public:
+	const bool isArr;
+	const bool isTuple;
+	static OutType* BOTTOM;
+	static OutType* BOOL;
+	static OutType* INT;
+	static OutType* FLOAT;
+	static OutType* BOOL_ARR;
+	static OutType* INT_ARR;
+	static OutType* FLOAT_ARR;
+	static vector<OutType*> store;
+	virtual string str() const=0;
+	// StringHTable2<OutType*> tuples;
+	OutType(bool _isArr, bool _isTuple);
+	static OutType* joinOtype(OutType* t1, OutType* t2);
+	static OutType* makeTuple(vector<OutType*>& elems);
+};
+
+
+
+
+class Bottom: public OutType{public: Bottom(): OutType(false, false){}  string str() const{ return "BOTTOM"; }  };
+
+class Bool: public OutType{public: Bool(): OutType(false, false){} string str() const{ return "BOOL"; }};
+
+class Int: public OutType{public: Int(): OutType(false, false){} string str() const{ return "INT"; }};
+
+class Float: public OutType{ public: Float(): OutType(false, false){} string str() const{ return "FLOAT"; }};
+
+class Arr: public OutType{public:  OutType * atype; 
+	Arr(OutType* type):OutType(true, false), atype(type){} 
+	string str() const { return atype->str() + "_ARR"; }
+};
+
+class Tuple: public OutType{ 
+public:
+	OutType* arr;
+	Tuple():OutType(false, true){ arr = new Arr(this); }
+	vector<OutType*> entries;
+	string str() const { return "TUPLE"; }
+};
+
+inline OutType::OutType(bool _isArr, bool _isTuple): isArr(_isArr), isTuple(_isTuple){
+	
+}
+
+
+
+
+
 
 struct bool_node{
 
@@ -50,8 +101,8 @@ private:
 #endif
 
 public:
-  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE} Type;
-  typedef enum{BOTTOM, BOOL, INT,BOOL_ARR, INT_ARR, FLOAT, FLOAT_ARR} OutType;
+  typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
+  
   const Type type;
 
 protected:
@@ -62,8 +113,8 @@ public:
 
 
   bool isArrType(){
-	  OutType ot = getOtype();
-	  return ot == INT_ARR || ot==BOOL_ARR || ot == FLOAT_ARR;
+	  OutType* ot = getOtype();
+	  return ot->isArr;
   }
   bool isArith(){
 	  return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL || type == ARR_W || type == ARR_CREATE;
@@ -90,7 +141,7 @@ public:
   mutable int flag;
   
   
-  mutable OutType otype;
+  mutable OutType* otype;
   bool_node* mother;  
   bool_node* father;
   
@@ -100,54 +151,7 @@ public:
   void resetId(){
 	globalId = NEXT_GLOBAL_ID++;
   }
-  /**
-					 FLOAT_ARR
-			       	   |	  \
-				    INT_ARR    FLOAT 
-		            |     \   /
-		     	BOOL_ARR   INT    
-			        \     /            
-	   		   	      BOOL           
-		      
 
-  */
-  OutType joinOtype(OutType t1, OutType t2) const{
-  	if(t1 == BOTTOM){ return t2; }
-  	if(t2 == BOTTOM){ return t1; }
-  	if( t2 == t1 ){ 
-  		return t1; 
-  	}else{ 		
-		if(t1==FLOAT_ARR || t2 == FLOAT_ARR){
-			return FLOAT_ARR;
-		}
-		if(t1==INT_ARR || t2==INT_ARR){
-			if(t1==FLOAT || t2==FLOAT){
-				return FLOAT_ARR;
-			}else{
-				return INT_ARR;
-			}
-		}		
-		if(t1==FLOAT || t2 == FLOAT){
-			if(t1==BOOL_ARR || t2==BOOL_ARR){
-				return  FLOAT_ARR;
-			}else{
-				return FLOAT;
-			}
-		}
-		if(t1==INT || t2==INT){			
-			if(t1==BOOL_ARR || t2==BOOL_ARR){
-				return INT_ARR;
-			}else{
-				return INT;
-			}			
-		}else{
-			if(t1==BOOL_ARR || t2==BOOL_ARR){				
-				return BOOL_ARR;				
-			}
-		}		
-  		return BOOL; 
-  	}
-  }
 
   virtual int do_dfs(int idx);
   virtual int back_dfs(int idx);
@@ -258,22 +262,11 @@ public:
 	  lprintSubDAG(out, s);
   }
 
-  virtual OutType getOtype() const;
-  virtual string otypeString() const{
-	  OutType ot = getOtype();
-	  switch(ot){		
-		case BOOL: return "BOOL";
-		case INT: return "INT";
-		case BOOL_ARR: return "BOOL_ARR";
-		case INT_ARR: return "INT_ARR";
-		case FLOAT_ARR: return "FLOAT_ARR";
-		case FLOAT: return "FLOAT";
-		default: return "BOTTOM";
-	  }
-  }
+  virtual OutType* getOtype() const;
+  
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<father->id;
+		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<father->id;
 		return str.str();
 	}
   virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
@@ -338,7 +331,7 @@ class arith_node: public bool_node{
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
 	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
 	
-	virtual OutType getOtype()const;
+	virtual OutType* getOtype()const;
 };
 
 
@@ -351,27 +344,19 @@ class ARR_R_node: public bool_node{
 		ARR_R_node():bool_node(ARR_R){}  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new ARR_R_node(*this, copyChildren);  };
-		OutType getOtype() const{
-			if(otype != BOTTOM){
+		OutType* getOtype() const{
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
-			OutType ot = father->getOtype();
-			if(ot == BOTTOM){
+			OutType* ot = father->getOtype();
+			if(ot == OutType::BOTTOM){
 				otype = ot;
 				return ot;
 			}
-			if(ot == BOOL_ARR){
-				otype = BOOL;
-				return BOOL;
-			}
-			if(ot == INT_ARR){
-				otype = INT;
-				return INT;			
-			}
-			if(ot == FLOAT_ARR){
-				otype = FLOAT;
-				return FLOAT;			
-			}
+			if(ot->isArr){
+				otype = ((Arr*)ot)->atype;
+				return otype;
+			}			
 			otype = ot;
 			return otype;			
 		}
@@ -419,26 +404,29 @@ class ARR_W_node:public arith_node{
 			str<<id<<"= "<<multi_mother[0]->lid()<<"{"<<mother->lid()<<"->"<<multi_mother[1]->lid()<<"}";				
 			return str.str();
 		}
-		OutType getOtype()const {
-			if(otype != BOTTOM){
+		OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
 			otype = multi_mother[0]->getOtype();
-			if(otype==INT){
-				otype = INT_ARR;
+			if(otype==OutType::INT){
+				otype = OutType::INT_ARR;
 			}
-			if(otype==BOOL){
-				otype = BOOL_ARR;
+			if(otype==OutType::BOOL){
+				otype = OutType::BOOL_ARR;
 			}
-			if(otype==FLOAT){
-				otype = FLOAT_ARR;
+			if(otype==OutType::FLOAT){
+				otype = OutType::FLOAT_ARR;
 			}
-			otype = joinOtype(otype, multi_mother[1]->getOtype());
+			if(otype->isTuple){
+				otype = ((Tuple*)otype)->arr;
+			}
+			otype = OutType::joinOtype(otype, multi_mother[1]->getOtype());
 			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
 			return str.str();
 		}
 };
@@ -470,27 +458,27 @@ class ARR_CREATE_node:public arith_node{
 			str<<"}("<<dfltval<<")";
 			return str.str();
 		}
-		OutType getOtype()const {
-			if(otype != BOTTOM){
+		OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
 			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
-				otype = joinOtype((*it)->getOtype(), otype);	
+				otype = OutType::joinOtype((*it)->getOtype(), otype);	
 			}	
-			if(otype == INT){
-				otype = INT_ARR;
+			if(otype == OutType::INT){
+				otype = OutType::INT_ARR;
 			}
-			if(otype == BOOL){
-				otype = BOOL_ARR;
+			if(otype == OutType::BOOL){
+				otype = OutType::BOOL_ARR;
 			}
-			if(otype == FLOAT){
-				otype = FLOAT_ARR;
+			if(otype == OutType::FLOAT){
+				otype = OutType::FLOAT_ARR;
 			}
 			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<multi_mother.size();
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
 			for(int i=0; i<multi_mother.size(); ++i){
 				str<<" "<<multi_mother[i]->id;
 			}
@@ -501,14 +489,84 @@ class ARR_CREATE_node:public arith_node{
 
 
 
+class TUPLE_CREATE_node:public arith_node{
+	TUPLE_CREATE_node():arith_node(TUPLE_CREATE){ }
+		TUPLE_CREATE_node(const TUPLE_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
+		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new TUPLE_CREATE_node(*this, copyChildren);  };
+		virtual void outDagEntry(ostream& out) const{				    					
+	  		Assert(false, "NYI");
+		}
+		virtual string lprint()const{
+			stringstream str;
+			str<<id<<"= "<<"<";
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+		  		if(*it != NULL){
+		  			str<<(*it)->lid()<<", ";	  		
+		  		}
+			}
+			str<<">";
+			return str.str();
+		}
+		OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
+				return otype;
+			}
+			vector<OutType*> tv;
+			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+				tv.push_back((*it)->getOtype());	
+			}	
+			otype = OutType::makeTuple(tv);			
+			return otype;
+		}
+		virtual string mrprint()const{
+			stringstream str;
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+			for(int i=0; i<multi_mother.size(); ++i){
+				str<<" "<<multi_mother[i]->id;
+			}			
+			return str.str();
+		}
+};
+
+
+
+class TUPLE_R_node: public bool_node{
+	//mother = inputarr
+	public:
+		int idx;
+		TUPLE_R_node(const TUPLE_R_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), idx(bn.idx){ }  
+		TUPLE_R_node():bool_node(TUPLE_R), idx(-1){}  
+		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+		virtual bool_node* clone(bool copyChildren = true){return new TUPLE_R_node(*this, copyChildren);  };
+		OutType* getOtype() const{
+			if(otype != OutType::BOTTOM){
+				return otype;
+			}
+			OutType* ot = father->getOtype();
+			Assert(ot->isTuple && idx >=0, "LWEKY");
+			otype = ((Tuple*)ot)->entries[idx];
+			return ot;
+		}
+		virtual string lprint()const{
+			stringstream str;
+			str<<id<<"= "<<father->lid()<<"["<<mother->lid()<<"]";
+			return str.str();
+		}
+	};
+
+
+
+
+
 class AND_node: public bool_node{ 	
 	public: 
 		AND_node(const AND_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		AND_node():bool_node(AND){}  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new AND_node(*this, copyChildren);  };
-		OutType getOtype() const{
-			return BOOL;
+		OutType* getOtype() const{
+			return OutType::BOOL;
 		}
 	};
 class OR_node: public bool_node{	
@@ -517,8 +575,8 @@ class OR_node: public bool_node{
 		OR_node(const OR_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }   
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new OR_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			return BOOL;
+		OutType* getOtype()const {
+			return OutType::BOOL;
 		}
 	};
 class XOR_node: public bool_node{	
@@ -527,8 +585,8 @@ class XOR_node: public bool_node{
 		XOR_node(const XOR_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new XOR_node(*this, copyChildren);  };
-		OutType getOtype() const{
-			return BOOL;
+		OutType* getOtype() const{
+			return OutType::BOOL;
 		}
 	};
 
@@ -546,14 +604,14 @@ class INTER_node: public bool_node{
 	int get_nbits() const { return nbits; }
 	void set_nbits(int n){ nbits = n; }
 	
-	OutType getOtype() const {
-		if(otype != BOTTOM){
+	OutType* getOtype() const {
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		if(nbits>1){
-			otype = INT;	
+			otype = OutType::INT;	
 		}else{
-			otype = BOOL;
+			otype = OutType::BOOL;
 		}		
 		return otype;
 	}
@@ -577,7 +635,7 @@ class INTER_node: public bool_node{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<name<<" "<<nbits;
+		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<nbits;
 		return str.str();
 	}
 };
@@ -596,29 +654,29 @@ public: SRC_node():INTER_node(SRC){ }
 	void setArr(int sz){ 
 		arrSz = sz; 
 		if(sz>=0){
-			if(otype == INT){
-				otype = INT_ARR;			
+			if(otype == OutType::INT){
+				otype = OutType::INT_ARR;			
 			}
-			if(otype == BOOL){
-				otype = BOOL_ARR;
+			if(otype == OutType::BOOL){
+				otype = OutType::BOOL_ARR;
 			}		
 		}
 	}
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-	OutType getOtype() const {
-		if(otype != BOTTOM){
+	OutType* getOtype() const {
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
-		if(otype == INT){
-			otype = INT_ARR;
+		if(otype == OutType::INT){
+			otype = OutType::INT_ARR;
 			return otype;
 		}
-		if(otype == BOOL){
-			otype = BOOL_ARR;
+		if(otype == OutType::BOOL){
+			otype = OutType::BOOL_ARR;
 			return otype;
 		}		
 	}
@@ -641,7 +699,7 @@ class DST_node: public INTER_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<name<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<mother->id;
 		return str.str();
 	}
 };
@@ -688,29 +746,29 @@ class CTRL_node: public INTER_node{
 	void setArr(int sz){ 
 		arrSz = sz; 
 		if(sz>=0){
-			if(otype == INT){
-				otype = INT_ARR;			
+			if(otype == OutType::INT){
+				otype = OutType::INT_ARR;			
 			}
-			if(otype == BOOL){
-				otype = BOOL_ARR;
+			if(otype == OutType::BOOL){
+				otype = OutType::BOOL_ARR;
 			}		
 		}
 	}
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-	OutType getOtype() const {
-		if(otype != BOTTOM){
+	OutType* getOtype() const {
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
-		if(otype == INT){
-			otype = INT_ARR;
+		if(otype == OutType::INT){
+			otype = OutType::INT_ARR;
 			return otype;
 		}
-		if(otype == BOOL){
-			otype = BOOL_ARR;
+		if(otype == OutType::BOOL){
+			otype = OutType::BOOL_ARR;
 			return otype;
 		}		
 	}
@@ -722,8 +780,8 @@ class NOT_node: public bool_node{
 	NOT_node(const NOT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new NOT_node(*this, copyChildren);  };
-	OutType getOtype() const {
-			return BOOL;
+	OutType* getOtype() const {
+			return OutType::BOOL;
 	}
 	virtual string lid(){
 		stringstream str;
@@ -732,7 +790,7 @@ class NOT_node: public bool_node{
     }
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;
 		return str.str();
 	}
 
@@ -743,9 +801,9 @@ class PLUS_node: public bool_node{
 	PLUS_node(const PLUS_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new PLUS_node(*this, copyChildren);  };
-	OutType getOtype()const {
-			if(otype == BOTTOM){
-				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+	OutType* getOtype()const {
+			if(otype == OutType::BOTTOM){
+				otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
 			}
 			return otype;
 	}
@@ -755,9 +813,9 @@ class TIMES_node: public bool_node{
 	TIMES_node(const TIMES_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }    
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new TIMES_node(*this, copyChildren);  };
-	OutType getOtype()const {
-		if(otype == BOTTOM){
-				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+	OutType* getOtype()const {
+		if(otype == OutType::BOTTOM){
+				otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
 			}
 			return otype;
 	}
@@ -812,22 +870,22 @@ class UFUN_node: public arith_node, public DllistNode{
 	void set_nbits(int n){ nbits = n; }
 	void makeArr(){ 
 		if(nbits>1){
-			otype = INT_ARR;
+			otype = OutType::INT_ARR;
 		}else{
-			otype = BOOL_ARR;
+			otype = OutType::BOOL_ARR;
 		}
 	}
 	bool isArr() const {
-		return otype == INT_ARR || otype == BOOL_ARR;
+		return otype == OutType::INT_ARR || otype == OutType::BOOL_ARR;
 	}
-	OutType getOtype()const {
-		if(otype != BOTTOM){
+	OutType* getOtype()const {
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		if(nbits>1){
-			otype = INT;	
+			otype = OutType::INT;	
 		}else{
-			otype = BOOL;
+			otype = OutType::BOOL;
 		}
 		return otype;
 	}
@@ -858,7 +916,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<ufname<<" "<<outname<<" "<<fgid;
+		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<ufname<<" "<<outname<<" "<<fgid;
 		if(this->isDependent){
 			str<<" ***";
 		}else{
@@ -890,12 +948,12 @@ class ARRACC_node: public arith_node{
 		  	}
 		}
 	}
-	OutType getOtype()const {
-			if(otype != BOTTOM){
+	OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
 			for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
-				otype = joinOtype((*it)->getOtype(), otype);	
+				otype = OutType::joinOtype((*it)->getOtype(), otype);	
 			}			
 			return otype;
 		}
@@ -912,7 +970,7 @@ class ARRACC_node: public arith_node{
 	}
 	virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" "<<multi_mother.size();
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother.size();
 			for(int i=0; i<multi_mother.size(); ++i){
 				str<<" "<<multi_mother[i]->id;
 			}
@@ -926,9 +984,9 @@ class DIV_node: public bool_node{
 		DIV_node(const DIV_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }     
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new DIV_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			if(otype == BOTTOM){
-				otype = joinOtype(joinOtype(mother->getOtype(), father->getOtype()), INT);
+		OutType* getOtype()const {
+			if(otype == OutType::BOTTOM){
+				otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
 			}
 			return otype;
 		}
@@ -940,8 +998,8 @@ class MOD_node: public bool_node{
 		MOD_node(const MOD_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new MOD_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			return INT;
+		OutType* getOtype()const {
+			return OutType::INT;
 		}
 };
 
@@ -952,15 +1010,15 @@ class NEG_node: public bool_node{
 		NEG_node(const NEG_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new NEG_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			if(otype == BOTTOM){
-				otype = joinOtype(mother->getOtype(), INT);
+		OutType* getOtype()const {
+			if(otype == OutType::BOTTOM){
+				otype = OutType::joinOtype(mother->getOtype(), OutType::INT);
 			}
 			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id;			
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;			
 			return str.str();
 		}
 };
@@ -1036,17 +1094,17 @@ class CONST_node: public bool_node{
 			return str.str();
 		}
 		virtual bool_node* clone(bool copyChildren = true){return new CONST_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			if(otype != BOTTOM){
+		OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
 			if(!isInt){
-				otype = FLOAT;
+				otype = OutType::FLOAT;
 			}else{
 				if(v.val != 0 && v.val != 1){
-					otype = INT;	
+					otype = OutType::INT;	
 				}else{
-					otype = BOOL;
+					otype = OutType::BOOL;
 				}		
 			}
 			return otype;
@@ -1054,9 +1112,9 @@ class CONST_node: public bool_node{
 		virtual string mrprint()const{
 			stringstream str;
 			if(isInt){
-				str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<v.val;			
+				str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.val;			
 			}else{
-				str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<v.fval;			
+				str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.fval;			
 			}
 			return str.str();
 		}
@@ -1068,8 +1126,8 @@ class LT_node: public bool_node{
 		LT_node(const LT_node& bn,bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new LT_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			return BOOL;
+		OutType* getOtype()const {
+			return OutType::BOOL;
 		}
 };
 
@@ -1079,8 +1137,8 @@ class EQ_node: public bool_node{
 		EQ_node(const EQ_node& bn,bool copyChildren = true): bool_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
 		virtual bool_node* clone(bool copyChildren = true){return new EQ_node(*this, copyChildren);  };
-		OutType getOtype()const {
-			return BOOL;
+		OutType* getOtype()const {
+			return OutType::BOOL;
 		}
 };
 
@@ -1120,16 +1178,16 @@ class ARRASS_node: public arith_node{
 			str<<id<<"= "<<mother->lid()<<"=="<<quant<<" ? "<<multi_mother[1]->lid()<<":"<<multi_mother[0]->lid();
 			return str.str();
 		}
-		OutType getOtype()const {
-			if(otype != BOTTOM){
+		OutType* getOtype()const {
+			if(otype != OutType::BOTTOM){
 				return otype;
 			}
-			otype = joinOtype(multi_mother[0]->getOtype(), multi_mother[1]->getOtype());
+			otype = OutType::joinOtype(multi_mother[0]->getOtype(), multi_mother[1]->getOtype());
 			return otype;
 		}
 		virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<mother->id<<" == "<<quant;
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" == "<<quant;
 			str<<" "<<multi_mother[0]->id;
 			str<<" "<<multi_mother[1]->id;			
 			return str.str();
@@ -1144,8 +1202,8 @@ class ACTRL_node: public arith_node{
 	ACTRL_node(const ACTRL_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
 	virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }	
 	virtual bool_node* clone(bool copyChildren = true){return new ACTRL_node(*this, copyChildren);  };
-	OutType getOtype()const {
-		return INT;
+	OutType *getOtype()const {
+		return OutType::INT;
 	}	
 	virtual string lprint()const{
 		stringstream str;
@@ -1161,7 +1219,7 @@ class ACTRL_node: public arith_node{
 
 	virtual string mrprint()const{
 			stringstream str;
-			str<<id<<" = "<<get_tname()<<" "<<otypeString()<<" "<<multi_mother.size();
+			str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
 			for(int i=0; i<multi_mother.size(); ++i){
 				str<<" "<<multi_mother[i]->id;
 			}

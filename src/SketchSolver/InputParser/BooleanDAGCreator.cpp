@@ -73,7 +73,7 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
 
   if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
-	  Assert( mth->getOtype() == bool_node::BOOL && (fth == NULL || fth->getOtype() == bool_node::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
+	  Assert( mth->getOtype() == OutType::BOOL && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
   }
 
 
@@ -179,7 +179,7 @@ bool_node* BooleanDAGCreator::create_const(double n){
 }
 
 
-INTER_node* BooleanDAGCreator::create_inputs(int n, bool_node::OutType type, const string& gen_name, int arrSz){
+INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
 	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz);
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);

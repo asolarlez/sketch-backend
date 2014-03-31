@@ -45,13 +45,13 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 				stringstream str;
 				str<<"ina_"<<i;
 				ina = str.str();
-				inaNode = argComp.create_inputs(nargs, bool_node::INT, ina);
+				inaNode = argComp.create_inputs(nargs, OutType::INT, ina);
 			}
 			{
 				stringstream str;
 				str<<"inb_"<<i;
 				inb = str.str();
-				inbNode = argComp.create_inputs(nargs, bool_node::INT, inb);
+				inbNode = argComp.create_inputs(nargs, OutType::INT, inb);
 			}
 			bool_node* eq = argComp.new_node(inaNode, inbNode, bool_node::EQ);			
 			if(peq != NULL){

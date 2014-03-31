@@ -104,7 +104,7 @@ public:
 			}
 		}else{
 			stringstream str;
-			if(node.getOtype()==bool_node::BOOL  && !isBool){
+			if(node.getOtype()==OutType::BOOL  && !isBool){
 				str<<"( case "<<prefix<<node.get_name()<<"_"<<node.id<<": 1; default : 0; esac )";
 			}else{
 				str<<prefix<<node.get_name()<<"_"<<node.id;	
@@ -169,9 +169,9 @@ public:
 		out<<" case ";		
 		out<<mother_name(node, true)<<":";
 		
-		out<<node_name(*mmother[1], node.getOtype()==bool_node::BOOL);
+		out<<node_name(*mmother[1], node.getOtype()==OutType::BOOL);
 		out<<"; default : ";
-		out<<node_name(*mmother[0], node.getOtype()==bool_node::BOOL);
+		out<<node_name(*mmother[0], node.getOtype()==OutType::BOOL);
 		out<<"; esac; "<<endl;
 	}
 
