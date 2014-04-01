@@ -9,22 +9,20 @@
 
 using namespace std;
 
-/*
-struct saentry{
-	int val; 
-	int vers;
-	int next;
-};
 
-class simarray{
-	vector<int>* store;
-	vector<int>* base;
-	int deflt;
-	int time;
-public:
+class cptuple{
+	int n;
+	int *data;
+	cptuple* rec;
+	cptuple(int n){
+		data = (int*) malloc((sizeof(int)+sizeof(cptuple*))*n);
+		rec = (cptuple*) data+n;
+	}
+
 
 };
-*/
+
+
 
 const int UNSET = -22;
 class cpvec{

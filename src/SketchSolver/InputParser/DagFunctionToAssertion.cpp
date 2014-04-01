@@ -36,14 +36,10 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 		node.remove();
 		rvalue = this->getCnode(0);		
 	}else{
-		if(node.dependent() && isUninterp){
+		if(isUninterp){
 			rvalue = &node;
 		}else{
-			if(node.ignoreAsserts){
-				rvalue = getCnode(0);
-			}else{
-				rvalue = &node;
-			}
+			rvalue = getCnode(0);
 		}
 	}
 }
