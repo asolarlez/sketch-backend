@@ -9,7 +9,7 @@
 
 using namespace std;
 
-
+/*Started creating a class to represent tuples */
 class cptuple{
 	int n;
 	int *data;

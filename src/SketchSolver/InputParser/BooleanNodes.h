@@ -490,6 +490,7 @@ class ARR_CREATE_node:public arith_node{
 
 
 class TUPLE_CREATE_node:public arith_node{
+public:
 	TUPLE_CREATE_node():arith_node(TUPLE_CREATE){ }
 		TUPLE_CREATE_node(const TUPLE_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }  
 		virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
@@ -1288,6 +1289,8 @@ inline bool_node* newNode( bool_node::Type type){
 		case bool_node::ARR_R: return new ARR_R_node();	
 		case bool_node::ARR_W: return new ARR_W_node();	
 		case bool_node::ARR_CREATE: return new ARR_CREATE_node();
+		case bool_node::TUPLE_CREATE: return new TUPLE_CREATE_node();
+		case bool_node::TUPLE_R: return new TUPLE_R_node();
 	}
 	return NULL;
 }

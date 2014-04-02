@@ -1016,7 +1016,7 @@ void DagOptim::visit( ARR_R_node& node ){
 				isConst(node.father->mother->father) &&
 				getIval(node.father->mother->father) != 0
 				){
-				/*X = A{b+i -> t}; y = X[b]; y = A[j];*/
+				/*X = A{b+i -> t}; y = X[b]; y = A[b];*/
 				node.dislodge();
 				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
 				node.resetId();

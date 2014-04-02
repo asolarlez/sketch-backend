@@ -1,13 +1,8 @@
 Name: sketch-backend
 Project: SKETCH CEGIS solver
-Institution: UC Berkeley
+Institution: MIT
 Authors: Armando Solar-Lezama et al.
 
-=== Readme first ===
-    * See http://sketch.cs.berkeley.edu/wiki/index.php/Development
-        for more (updated) information about building from source.
-    * Please read http://sketch.cs.berkeley.edu/wiki/index.php/Download
-        for instructions to install binary distributions.
 
 === Building ===
 
@@ -22,8 +17,6 @@ Then, configure and make SKETCH
     >>> ./autogen.sh
     >>> ./configure
     >>> make
-
-Note: If you are using cygwin on Vista, perl 5.10 will crash. Use 5.8 instead.
 
 === Distributing ===
 

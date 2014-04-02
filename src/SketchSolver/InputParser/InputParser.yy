@@ -49,6 +49,8 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token<variableType> T_vartype
 %token T_rightAC
 %token T_leftAC
+%token T_rightTC
+%token T_leftTC
 %token T_arrow
 %token T_twoS
 %token T_ppls
@@ -364,6 +366,12 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
 	delete $1;
 }
+| T_ident '.' '[' NegConstant ']'{	
+	TUPLE_R_node* tn = dynamic_cast<TUPLE_R_node*>(currentBD->new_node(currentBD->get_node(*$1), NULL, bool_node::TUPLE_R));	
+	tn->idx = $4;
+	$$ = tn;
+	delete $1;
+}
 | NegConstant '[' Expression ']'{	
 	$$ = currentBD->new_node($3, currentBD->create_const($1), bool_node::ARR_R);		
 }
@@ -396,6 +404,18 @@ Expression: Term { $$ = $1; }
 }
 | T_leftAC varList T_rightAC{
 	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARR_CREATE));
+	list<bool_node*>* childs = $2;
+	list<bool_node*>::reverse_iterator it = childs->rbegin();
+	int bigN = childs->size();
+	an->multi_mother.reserve(bigN);
+	for(int i=0; i<bigN; ++i, ++it){
+		an->multi_mother.push_back(*it);
+	}		
+	$$ = currentBD->new_node(NULL, NULL, an); 
+	delete childs;
+}
+| T_leftTC varList T_rightTC{
+	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::TUPLE_CREATE));
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();

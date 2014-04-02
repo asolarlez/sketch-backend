@@ -89,6 +89,12 @@ Comment      ("//"[^\n]*)
 "\$}"		{
 				return T_rightAC;
 			}	
+"{<"		{
+				return T_leftTC;
+			}	
+">}"		{
+				return T_rightTC;
+			}	
 "->"		{
 				return T_arrow;
 			}
