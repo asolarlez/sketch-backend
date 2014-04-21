@@ -25,7 +25,6 @@ class NodesToSolver : public NodeVisitor {
 					      int id1, int id2, THEOP comp);
     template<typename COMP> void processComparissons (bool_node &node, bool revFval);
 	void processLT (LT_node& node);
-	void computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax);
 	vector<int> lgv;
     Tvalue tvYES;
     Tvalue tvOne;
@@ -144,10 +143,17 @@ public:
 	void process(BooleanDAG& bdag);
 	virtual void mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx=-1);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
-    virtual void doNonBoolArrAcc (ARRACC_node& node, Tvalue& output);
-	virtual void doArrArrAcc(ARRACC_node& node, Tvalue& output);
+    
+	
     virtual bool checkParentsChanged (bool_node &node, bool more);	
+	void doArrArrAcc(ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void doNonBoolArrAcc (ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void muxTValues(ARRACC_node& node, Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
+ void computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax);
+ void arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& out);
+ void arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar);
 };
+
 
 #endif /* __NODESTOSOLVER_H */
 

@@ -52,7 +52,7 @@ int Driver::resolveSketches(){
 	  cerr<<"There was an error solving the problem. "<<endl<<"Exiting compiler"<<endl;
 	  exit(1);
 	}
-
+	return 0;
 }
 
 

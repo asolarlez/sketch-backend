@@ -679,7 +679,8 @@ public: SRC_node():INTER_node(SRC){ }
 		if(otype == OutType::BOOL){
 			otype = OutType::BOOL_ARR;
 			return otype;
-		}		
+		}	
+		return OutType::BOTTOM;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };	
@@ -771,7 +772,8 @@ class CTRL_node: public INTER_node{
 		if(otype == OutType::BOOL){
 			otype = OutType::BOOL_ARR;
 			return otype;
-		}		
+		}	
+		return OutType::BOTTOM;
 	}
 };
 
