@@ -5,6 +5,7 @@ using namespace std;
 BooleanDAGCreator* currentBD;
 stack<string> namestack;
 vartype Gvartype;
+string tupleName;
 
 bool isModel;
 
@@ -36,6 +37,8 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 	vartype variableType;
 	BooleanDAG* bdag;
 	bool_node* bnode;
+    OutType* otype;
+    vector<OutType*>* tVector;
 }
 %token <doubleConst> T_dbl
 %token<intConst>  T_int
@@ -69,7 +72,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_Sketches
 %token T_new
 
-
+%token T_Typedef
 %token T_def
 %token T_mdldef
 %token T_Min
@@ -92,6 +95,8 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %type<sList> IdentList
 %type<sList> TokenList
 %type<bdag> AssertionExpr
+%type<otype> TupleType
+%type<tVector> TupleTypeList
 
 
 
@@ -109,7 +114,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %%
 
-Program: MethodList T_eof{  $$=0; return 0;}
+Program: Typedef MethodList T_eof{  $$=0; return 0;}
 
 
 MethodList: {}
@@ -117,8 +122,11 @@ MethodList: {}
 | HLAssertion MethodList {}
 
 
-InList: T_ident {  
-
+InList: T_ident { 
+    if(Gvartype == TUPLE){
+        currentBD->create_inputs( -1, OutType::getTuple(tupleName), *$1);
+    }
+    else
     if( Gvartype == INT){
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$1); 
 	}else{
@@ -131,7 +139,10 @@ InList: T_ident {
 
 }
 | T_ident {
-	
+	if(Gvartype == TUPLE){
+        currentBD->create_inputs( -1, OutType::getTuple(tupleName), *$1);
+    }
+    else
     if( Gvartype == INT){
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$1); 
 	}else{
@@ -163,6 +174,13 @@ ParamDecl: T_vartype T_ident {
 	}	
 	delete $2;
 }
+| T_ident T_ident{
+
+    currentBD->create_inputs( -1 , OutType::getTuple(*$1) , *$2);
+       
+
+    delete $2;
+}
 | '!' T_vartype T_ident {
  	 if( $2 == INT){
 
@@ -172,6 +190,11 @@ ParamDecl: T_vartype T_ident {
 	 	 currentBD->create_outputs(-1, *$3); 
  	 }
 	 delete $3;
+ }
+ | '!' T_ident T_ident{
+
+    currentBD->create_outputs(-1, *$3);
+    delete $3;
  }
  |
  T_vartype '[''*' ConstantExpr']' T_ident {  
@@ -187,6 +210,11 @@ ParamDecl: T_vartype T_ident {
 	}	
 	delete $6;
 }
+|
+T_ident '[' '*' ConstantExpr ']' T_ident {
+    currentBD->create_inputs(-1, OutType::getTuple(*$1), *$6, $4);
+}
+
 | '!' T_vartype '[''*' ConstantExpr']' T_ident {
  	 if( $2 == INT){
 		 currentBD->create_outputs(2 /* NINPUTS */, *$7);
@@ -196,8 +224,13 @@ ParamDecl: T_vartype T_ident {
  	 }
 	 delete $7;
  }
+ | '!' T_ident '[' '*' ConstantExpr ']' T_ident {
+  currentBD->create_outputs(-1,*$7);
+ }
 | T_vartype '[' ConstantExpr ']'{Gvartype = $1; } InList 
+| T_ident '[' ConstantExpr ']' {Gvartype = TUPLE; tupleName = *$1;} InList
 | '!' T_vartype '[' ConstantExpr ']' OutList 
+| '!' T_ident '[' ConstantExpr ']' OutList
 
 
 ParamList: /*empty*/ 
@@ -211,8 +244,11 @@ Method: Mhelp T_ident
 		if(currentBD!= NULL){
 			delete currentBD;
 		}
+
 		currentBD = envt->newFunction(*$2, isModel);
+
 		delete $2;
+
 }
 '(' ParamList ')' '{' WorkBody '}' { 
 	currentBD->finalize();
@@ -220,8 +256,37 @@ Method: Mhelp T_ident
 }
 
 
+TupleType: T_vartype {
+    if( $1 == INT){ $$ = OutType::INT;}
+    if( $1 == BIT){ $$ = OutType::BOOL;}
+    if( $1 == INT_ARR){ $$ = OutType::INT_ARR;}
+    if( $1 == BIT_ARR){ $$ = OutType::BOOL_ARR;}
+    if( $1 == FLOAT_ARR){ $$ = OutType::FLOAT_ARR;}
+}
+| T_ident { 
+    $$ = OutType::getTuple(*$1);
+}
 
-AssertionExpr: T_ident T_Sketches T_ident 
+TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
+|  TupleTypeList TupleType  {
+    $1->push_back( $2 );
+    $$ = $1;
+}
+
+TypeLine: T_ident '(' TupleTypeList ')'{
+//add type
+    OutType::makeTuple(*$1, *$3);
+
+}
+
+TypeList: { /* Empty */ }
+| TypeList TypeLine { }
+
+Typedef: {/* Empty */}
+|T_Typedef '{' TypeList '}'{ }
+
+
+AssertionExpr: T_ident T_Sketches T_ident
 {
 	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
 }
@@ -366,10 +431,12 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
 	delete $1;
 }
-| T_ident '.' '[' NegConstant ']'{	
-	TUPLE_R_node* tn = dynamic_cast<TUPLE_R_node*>(currentBD->new_node(currentBD->get_node(*$1), NULL, bool_node::TUPLE_R));	
-	tn->idx = $4;
-	$$ = tn;
+| T_ident '.' '[' NegConstant ']'{
+   
+	//TUPLE_R_node* tn = dynamic_cast<TUPLE_R_node*>();
+    
+	//tn->idx = $4;
+	$$ = currentBD->new_node(currentBD->get_node(*$1), $4);
 	delete $1;
 }
 | NegConstant '[' Expression ']'{	
@@ -404,6 +471,8 @@ Expression: Term { $$ = $1; }
 }
 | T_leftAC varList T_rightAC{
 	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARR_CREATE));
+    
+
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
@@ -414,15 +483,18 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
 }
-| T_leftTC varList T_rightTC{
+| '[' T_ident ']' T_leftTC varList T_rightTC{
+
 	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::TUPLE_CREATE));
-	list<bool_node*>* childs = $2;
+
+	list<bool_node*>* childs = $5;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-	}		
+	}
+    (dynamic_cast<TUPLE_CREATE_node*>(an))->setName(*$2);
 	$$ = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
 }
@@ -486,6 +558,7 @@ Expression: Term { $$ = $1; }
 
 varList: { /* Empty */  	$$ = new list<bool_node*>();	}
 | Term varList{
+
 //The signs are already in the stack by default. All I have to do is not remove them.
 	if($1 != NULL){
 		$2->push_back( $1 );
@@ -511,6 +584,51 @@ Term: Constant {
 	$$ = currentBD->create_const($1);
 }
 
+| T_ident '[' T_ident ']' '(' varList ')' '(' Expression ')' '[' T_ident ',' Constant ']' {
+    
+	list<bool_node*>* params = $6;
+	if(false && params->size() == 0){
+
+        $$ = currentBD->create_inputs(-1,OutType::getTuple(*$3), *$1);
+
+		delete $1;
+	}else{	
+		string& fname = *$1;
+		list<bool_node*>::reverse_iterator parit = params->rbegin();
+		UFUN_node* ufun = new UFUN_node(fname);
+		ufun->outname = *$12;
+		int fgid = $14;
+		ufun->fgid = fgid;	
+		bool_node* pCond;	
+		if(currentBD->methdparams.count(fgid)>0){
+			ufun->multi_mother = currentBD->methdparams[fgid];
+			ufun->makeDependent();
+			pCond = currentBD->create_const(1);
+		}else{
+			for( ; parit != params->rend(); ++parit){
+				ufun->multi_mother.push_back((*parit));
+			}
+			pCond = $9;
+		}
+		
+
+        ufun->set_nbits( 0 );
+        ufun->set_tupleName(*$3);
+		
+		
+		//ufun->name = (currentBD->new_name(fname));
+		$$ = currentBD->new_node(pCond, NULL, ufun);
+		if(currentBD->methdparams.count(fgid)==0){
+			currentBD->methdparams[fgid].push_back($$);
+		}
+		
+		
+		delete $1;
+		delete $12;
+	}
+	delete $6;
+
+}
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' '[' T_ident ',' Constant ']' {
 	
 	list<bool_node*>* params = $6;

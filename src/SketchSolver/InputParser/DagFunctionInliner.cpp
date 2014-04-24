@@ -628,11 +628,8 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.						
-		
-				
-		bool_node* node = computeOptim(dag[i]);		
-		
-		if(dag[i] != node){
+		bool_node* node = computeOptim(dag[i]);
+       if(dag[i] != node){
 				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}

@@ -149,6 +149,7 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
  * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
  */
 BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch){
+    
 	if(params.verbosity > 2){
 		
 		cout<<"* before  EVERYTHING: "<< spec->get_name() <<"::SPEC nodes = "<<spec->size()<<"\t "<< sketch->get_name() <<"::SKETCH nodes = "<<sketch->size()<<endl;
@@ -278,7 +279,8 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	for(int i=0; i<steps; ++i){
 		int t = 0;
 		do{						
-			dfi.process(dag);			
+			dfi.process(dag);
+            //cout<<"dd"<<endl;
 			// dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();			
 			// dag.lprint(cout);
@@ -439,6 +441,7 @@ int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileN
 
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
 	
+    
 	if(params.olevel >= 3){
 		DagOptim cse(*result);	
 		//cse.alterARRACS();
@@ -461,7 +464,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		//result->print(cout);
 		opt.process(*result);
 		cout<<"AFTER ba: "<<endl;
-		// result->print(cout);
+		 result->print(cout);
 	}
 	// result->repOK();
 	if(params.olevel >= 7){
@@ -470,7 +473,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		opt.process(*result);
 		cout << "AFTER OptimizeCommutAssoc "<<result->size() << endl;
 	}
-	// result->repOK();
+	//result->repOK();
 	//result->print(cout) ;
 
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
@@ -485,8 +488,9 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		cse.process(*result);
 		cout << "AFTER cse" << endl;
 	}
-	// result->repOK();	
+	 //result->repOK();
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}
+    
 	if(params.showDAG){ 
 		result->lprint(cout);		
 	}

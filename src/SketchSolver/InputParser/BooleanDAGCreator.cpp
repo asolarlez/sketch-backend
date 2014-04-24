@@ -55,6 +55,30 @@ void BooleanDAGCreator::getMotherFather(const string& mother,
 	  Assert(false, "You are using a variable which was never initialized: "<< mother);
   }
 }
+/*
+ * Specialized for tuple_r
+ */
+bool_node* BooleanDAGCreator::new_node(bool_node* mother,
+                                       int idx){
+   
+    bool_node* fth=NULL;
+    bool_node* mth=mother;
+    bool_node::Type t = bool_node::TUPLE_R;
+    bool_node* trv = this->optim.quickcse(mth != NULL? mth->globalId: -1, fth != NULL ? fth->globalId : -1, t);
+    if(trv != NULL){ return trv; }
+    Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
+    Assert(t != bool_node::SRC && t != bool_node::DST && t != bool_node::CTRL, "You can only use new_node to create internal nodes, you can not use it for either SRC, DST, or CTRL");
+    bool_node* tmp;
+    tmp = newNode(t);
+    tmp->father = fth;
+    tmp->mother = mth;
+    dynamic_cast<TUPLE_R_node*>(tmp)->idx = idx;
+    
+   
+    tmp = optimizeAndAdd(tmp);
+   
+    return tmp;
+}
 
 /* Creates a new node of type 't' with inputs 'mother' and 'father' as its
  * parents in the BooleanDAG. Note: Unary expressions are represented with
@@ -64,8 +88,10 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
                                 bool_node* father, bool_node::Type t){	
   bool_node* fth=father;
   bool_node* mth=mother;
+   
 
   bool_node* trv = this->optim.quickcse(mth != NULL? mth->globalId: -1, fth != NULL ? fth->globalId : -1, t);
+   
   if(trv != NULL){ return trv; }
 
   Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
@@ -73,10 +99,10 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
 
   if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
+      
 	  Assert( mth->getOtype() == OutType::BOOL && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
   }
-
-
+ 
 
   bool_node* tmp;
 
@@ -84,12 +110,14 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
   tmp = newNode(t);
   tmp->father = fth;
-  tmp->mother = mth;    
+  tmp->mother = mth;
+   
+  
   //tmp->name = name;
   if(t == bool_node::ASSERT || typeid(*tmp) == typeid(UFUN_node)){
 	  this->dag->assertions.append( dynamic_cast<ASSERT_node*>(tmp) );
   }
-
+ 
   tmp = optimizeAndAdd(tmp);
   
   return tmp;
@@ -101,17 +129,24 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
  */
 bool_node* BooleanDAGCreator::optimizeAndAdd(bool_node* node){
 	
+   
 	bool_node* tmp;
     Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	if(PARAMS->olevel == 0){
+	
+    if(PARAMS->olevel == 0){
+        
 		tmp = node;
 	}else{
+       
 		if(PARAMS->olevel == 1){
+            
 			tmp = optim.computeCSE(node);
 		}else{
-			tmp = optim.computeOptim(node);
-		}
-	}	
+            tmp = optim.computeOptim(node);
+           
+        }
+	}
+   
 	if(tmp == node){
 		node->addToParents();
 		optim.addNode(node);
@@ -119,9 +154,11 @@ bool_node* BooleanDAGCreator::optimizeAndAdd(bool_node* node){
 		node->dislodge(); //Node must be dislodged before being deleted, even if it was never explicitly atatched to its parents because the optim may have atatched to parents.
 		delete node;		
 	}
+    
 	dag->setOffset(optim.newNodesSize());
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	return tmp;
+	
+    return tmp;
 }
 
 
@@ -131,7 +168,6 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
                                 bool_node* father,  bool_node* thenode){
   bool_node* fth=father;
   bool_node* mth = mother;
-  
   bool_node::Type t = thenode->type;
   
   Assert(t != bool_node::SRC && t != bool_node::DST && t != bool_node::CTRL, "You can only use new_node to create internal nodes, you can not use it for either SRC, DST, or CTRL");
@@ -145,7 +181,6 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
   thenode->mother = mth;  
   
   thenode = optimizeAndAdd(thenode);
-  
   return thenode;
 }
 

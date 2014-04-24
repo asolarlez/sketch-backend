@@ -3,7 +3,7 @@
 
 #include <sstream>
 #include <algorithm>
-
+#include <map>
 
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
@@ -16,12 +16,53 @@ OutType* OutType::BOOL_ARR = new Arr(BOOL);
 OutType* OutType::INT_ARR = new Arr(INT);
 OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
 vector<OutType*> OutType::store;
+map<string, OutType*> OutType::tupleMap;
+int i;
+
+OutType* OutType::getTuple(const string& name){
+    
+	if(tupleMap.count(name)>0 ){
+       
+		return tupleMap[name];
+    }
+    Tuple* t = new Tuple();
+    tupleMap[name] = t;
+    return t;
+}
+
+OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
+    Tuple* t;
+	if(tupleMap.count(name)>0 ){
+		t =  dynamic_cast<Tuple*>(tupleMap[name]);
+    }else{
+        t = new Tuple();
+        tupleMap[name] = t;
+    }
+    t->entries = elems;
+    
+    return t;
+    
+}
 
 OutType* OutType::makeTuple(vector<OutType*>& elems){
-	Tuple* t = new Tuple();
-	t->entries = elems;
-	store.push_back(t);
-	return t;
+   for(map<string,OutType*>::iterator itr = tupleMap.begin(); itr != tupleMap.end(); ++itr){
+        bool matched = true;
+        vector<OutType*> entries = dynamic_cast<Tuple*>(itr->second)->entries;
+        if(entries.size()!= elems.size()) continue;
+        for(int i=0;i< entries.size();i++){
+            if(joinOtype(entries[i], elems[i]) != entries[i]){
+                matched = false;
+                break;
+            }
+        }
+        if(matched){
+            return itr->second;
+        }
+    }
+    
+    cout<<"did not match anything"<<endl;
+    
+
 }
 
 
@@ -40,8 +81,10 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 
   */
   OutType* OutType::joinOtype(OutType* t1, OutType* t2) {
+      
   	if(t1 == BOTTOM){ return t2; }
   	if(t2 == BOTTOM){ return t1; }
+      
 	if(t1->isTuple){
 		if(t2->isArr){
 			if(t2 == INT_ARR){
@@ -53,13 +96,24 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 			return t1;
 		}
 	}
+    if(t2->isTuple){
+        if(t1->isArr){
+            if(t1==INT_ARR){
+                return ((Tuple*)t1)->arr;
+            }else{
+                return t1;
+            }
+        }else{
+            return t2;
+        }
+    }
 	if(t1->isArr){
 		if(((Arr*)t1)->atype->isTuple){
 			return t1;
 		}
 	}
-  	if( t2 == t1 ){ 
-  		return t1; 
+  	if( t2 == t1 ){
+        return t1; 
   	}else{ 		
 		if(t1==FLOAT_ARR || t2 == FLOAT_ARR){
 			return FLOAT_ARR;
@@ -109,7 +163,8 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 }
 
 bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t)
-  { 
+  {
+      
 	  layer = 0;
 #ifdef SCHECKMEM
   allocated.insert(this);
@@ -119,7 +174,8 @@ bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0),
   								 father(bn.father), 
   								 flag(bn.flag), id(bn.id), 
 								 otype(bn.otype), type(bn.type)
-  { 
+  {
+      
       if(copyChildren){ children = bn.children; }
 #ifdef SCHECKMEM
   allocated.insert(this);
@@ -178,8 +234,9 @@ void arith_node::addToParents(bool_node* only_thisone){
 
 
 void arith_node::addToParents(){
-  bool_node::addToParents();
-  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+  
+    bool_node::addToParents();
+    for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
   	if(*it != NULL){
 		bool_node* tmp = (*it);
 	  	tmp->children.insert(this);
@@ -189,12 +246,15 @@ void arith_node::addToParents(){
 
 
 void bool_node::addToParents(){
+    
+    
   if(father != NULL){
-    father->children.insert(this);
-  }
+      father->children.insert(this);
+    }
   if(mother != NULL && father != mother){
-    mother->children.insert(this);
+      mother->children.insert(this);
   }
+    
 }
 
 
@@ -320,6 +380,7 @@ OutType* bool_node::getOtype() const{
 }
 
 OutType* arith_node::getOtype() const{
+    
 	return OutType::INT;
 }
 

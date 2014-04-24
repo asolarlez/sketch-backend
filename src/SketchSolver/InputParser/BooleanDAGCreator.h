@@ -43,6 +43,9 @@ public:
   /* Associates the name source to the node  starg.
   */
   void alias(const string& ssource,  bool_node* starg);
+  /* Only for tuple_r */
+    bool_node* new_node(bool_node* mother,
+                        int idx);
 
   /**
 	Create a new node from the string names of its parents.

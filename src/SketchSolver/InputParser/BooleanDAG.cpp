@@ -711,7 +711,7 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
 
 INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
 	SRC_node* src = dynamic_cast<SRC_node*>(create_inter(n, gen_name, n_inputs, bool_node::SRC));
-	if(type == OutType::FLOAT || type == OutType::FLOAT_ARR){
+	if(type == OutType::FLOAT || type == OutType::FLOAT_ARR || type->isTuple){
 		src->otype = type;
 	}
 	src->setArr(arrSz);

@@ -204,6 +204,9 @@ Comment      ("//"[^\n]*)
 "MINVAR"	{
 				return T_Min;
 			}
+"typedef" {
+                return T_Typedef;
+            }
 
 
 {Identifier} {
