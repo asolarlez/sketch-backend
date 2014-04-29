@@ -41,7 +41,7 @@ class NodeVisitor{
 	
 	
 	NodeVisitor();
-	~NodeVisitor();	
+	~NodeVisitor();
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
 	virtual void visit( XOR_node& node );
@@ -62,14 +62,14 @@ class NodeVisitor{
 	virtual void visit( ARRASS_node& node );
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ASSERT_node &node);
-
+    
 	virtual void visit( ARR_R_node &node);
 	virtual void visit( ARR_W_node &node);
 	virtual void visit( ARR_CREATE_node &node);
-
+    
 	virtual void visit( TUPLE_CREATE_node &node);
 	virtual void visit( TUPLE_R_node &node);
-
+    
 	virtual void process(BooleanDAG& bdag);
 };
 

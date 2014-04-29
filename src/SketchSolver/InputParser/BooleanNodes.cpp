@@ -88,7 +88,7 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 	if(t1->isTuple){
 		if(t2->isArr){
 			if(t2 == INT_ARR){
-				return ((Tuple*)t2)->arr;
+				return ((Tuple*)t1)->arr;
 			}else{
 				return t2;
 			}
@@ -99,7 +99,7 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
     if(t2->isTuple){
         if(t1->isArr){
             if(t1==INT_ARR){
-                return ((Tuple*)t1)->arr;
+                return ((Tuple*)t2)->arr;
             }else{
                 return t1;
             }

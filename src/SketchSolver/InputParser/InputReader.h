@@ -16,7 +16,7 @@ extern int yylineno;
 extern char yytext[];
 extern int yy_flex_debug;
 
-typedef enum{ INT, LONG, BIT, INT_ARR, BIT_ARR, FLOAT, FLOAT_ARR} vartype;
+typedef enum{ INT, LONG, BIT, INT_ARR, BIT_ARR, FLOAT, FLOAT_ARR, TUPLE} vartype;
 
 /*
  * This is from y.tab.c

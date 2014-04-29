@@ -265,11 +265,11 @@ void DagCSE::visit( TUPLE_CREATE_node& node){
     
     Dtime(stimer.restart();)
 	int p = 0;
-	//int mid = node.mother == NULL? -1: node.mother->globalId;
+	
 	int mmsize = node.multi_mother.size();
 	if(mmsize * 20 > tmpbuf.size()){ tmpbuf.resize(mmsize * 20  );}
 	char* tch = &tmpbuf[0];
-	//writeInt(tch, mid, p);
+	
 	tch[p] = '<'; p++;
 	for(int i=0; i<mmsize; ++i){
         

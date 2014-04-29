@@ -990,13 +990,14 @@ void DagOptim::visit( NEG_node& node ){
 
 void DagOptim::visit( TUPLE_R_node& node){
   if(isConst(node.mother)){
-        rvalue = node.mother;
+        rvalue = getCnode(0);
 		return;
 	}
     if(node.mother->type == bool_node::TUPLE_CREATE){
         int idx = node.idx;
         TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother);
         if(idx >= parent->multi_mother.size()|| idx <0){
+            //this should never happen
            rvalue = &node;
             return;
         }

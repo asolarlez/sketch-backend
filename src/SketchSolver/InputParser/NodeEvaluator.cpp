@@ -257,6 +257,7 @@ void NodeEvaluator::printNodeValue(int i){
 
 
 bool NodeEvaluator::run(VarStore& inputs_p){
+    
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;

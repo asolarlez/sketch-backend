@@ -584,20 +584,20 @@ Term: Constant {
 	$$ = currentBD->create_const($1);
 }
 
-| T_ident '[' T_ident ']' '(' varList ')' '(' Expression ')' '[' T_ident ',' Constant ']' {
+| T_ident '[' '*' T_ident ']' '(' varList ')' '(' Expression ')' '[' T_ident ',' Constant ']' {
     
-	list<bool_node*>* params = $6;
+	list<bool_node*>* params = $7;
 	if(false && params->size() == 0){
 
-        $$ = currentBD->create_inputs(-1,OutType::getTuple(*$3), *$1);
+        $$ = currentBD->create_inputs(-1,OutType::getTuple(*$4), *$1);
 
 		delete $1;
 	}else{	
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
 		UFUN_node* ufun = new UFUN_node(fname);
-		ufun->outname = *$12;
-		int fgid = $14;
+		ufun->outname = *$13;
+		int fgid = $15;
 		ufun->fgid = fgid;	
 		bool_node* pCond;	
 		if(currentBD->methdparams.count(fgid)>0){
@@ -608,12 +608,12 @@ Term: Constant {
 			for( ; parit != params->rend(); ++parit){
 				ufun->multi_mother.push_back((*parit));
 			}
-			pCond = $9;
+			pCond = $10;
 		}
 		
 
         ufun->set_nbits( 0 );
-        ufun->set_tupleName(*$3);
+        ufun->set_tupleName(*$4);
 		
 		
 		//ufun->name = (currentBD->new_name(fname));
@@ -624,9 +624,9 @@ Term: Constant {
 		
 		
 		delete $1;
-		delete $12;
+		delete $13;
 	}
-	delete $6;
+	delete $7;
 
 }
 | T_ident '[' T_vartype ']' '(' varList  ')''(' Expression ')' '[' T_ident ',' Constant ']' {
