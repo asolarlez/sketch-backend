@@ -1320,86 +1320,11 @@ void NodesToSolver::visit( UFUN_node& node ){
 
 
 
+void NodesToSolver::muxTValues(ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray){
 
-
-
-
-
-
-//timerclass aracctimer("ARRACC TIMER");
-//timerclass flooptimer("FIRST LOOP TIMER");
-//timerclass nonbooltimer("NON BOOL TIMER");
-//timerclass elooptimer("FINAL LOOP TIMER");
-
-
-void NodesToSolver::visit( ARRACC_node& node ){
-
-
-	Dout(cout<<" ARRACC "<<endl);
-	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
-	const Tvalue& omv = tval_lookup(node.mother) ;	
-	bool isSparse = omv.isSparse();
-    Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
-	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
-		int idx = omv.num_ranges[0].value;
-
-		if( idx >= node.multi_mother.size()){
-			node_ids[node.id] = -YES;
-			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
-			return;
-		}
-
-		bool_node* choice = node.multi_mother[idx];
-		
-		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
-		node_ids[node.id] = tval_lookup(choice);
-		Tvalue& cval = node_ids[node.id];
-		
-		return;
-	}
 	
-	vector<bool_node*>::iterator it = node.multi_mother.begin();	
-	vector<Tvalue> choices(node.multi_mother.size());
-	bool parentSame = true;
-	bool parentSameBis = true;
-	bool isBoolean=true;	
-	bool isArray = false;
-//	aracctimer.restart();
-//	flooptimer.restart();
-	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
-		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
-		const Tvalue& cval = tval_lookup(*it);
-		if( cval.isSparse() ){
-			isBoolean = false;
-		}
-		if(cval.isArray()){
-			isArray=true;
-		}
-		choices[i] = cval;
-		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
-		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
-	}
-	if( omv.isSparse() ){
-		vector<guardedVal>::const_iterator itbeg, itend, itfind;
-		itbeg = omv.num_ranges.begin();
-		itend = omv.num_ranges.end();
-		parentSame = true;
-		for( ; itbeg < itend; ++itbeg){
-			if( itbeg->value < node.multi_mother.size() ){
-				bool_node* cnode = node.multi_mother[itbeg->value];
-				parentSame = parentSame && ( (cnode)== NULL || !cnode->flag);
-				Dout(cout<<"Checking parents same "<<*itbeg<<" = "<<parentSame);
-			}
-		}
-	}
-//	flooptimer.stop().print();
-//	COUT<<" FIRST LOOP mmsize ="<<node.multi_mother.size()<<" omv.num_ranges.size()="<<omv.num_ranges.size()<<endl;
-	if(!checkParentsChanged( node, parentSame)){ Dout(cout<<"Parents did not change "<<endl);
-		//cout<<"Parents did not change "<<endl;
-												 //aracctimer.stop().print();
-												 return; }
 	if(isArray){
-		doArrArrAcc(node, node_ids[node.id]);
+		doArrArrAcc(node, mval, choices, out);
 		return;
 	}
 
@@ -1408,33 +1333,32 @@ void NodesToSolver::visit( ARRACC_node& node ){
 			node.mother->father == node.multi_mother[1]){
 				if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 				if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, node_ids[node.id].num_ranges, true);
-				node_ids[node.id].sparsify(dir);
+				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true);
+				out.sparsify(dir);
 				return;
 		}
 		if(node.mother->mother == node.multi_mother[1] && 
 			node.mother->father == node.multi_mother[0]){
 				if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 				if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, node_ids[node.id].num_ranges, false);
-				node_ids[node.id].sparsify(dir);
+				computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false);
+				out.sparsify(dir);
 				return;
 		}
 	}
 
 	if(!isBoolean){
 //		nonbooltimer.restart();
-		doNonBoolArrAcc(node, node_ids[node.id]);
+		doNonBoolArrAcc(node, mval, choices, out);
 //		nonbooltimer.stop().print();
 //		aracctimer.stop().print();
-		Dout(cout<<node.get_name()<<"  "<<node_ids[node.id]<<endl);
+		Dout(cout<<node.get_name()<<"  "<<out<<endl);
 		return;
 	}
 	Dout(cout<<" is boolean"<<endl);
-	bool_node* mother = node.mother;
-	const Tvalue& mval = tval_lookup(mother) ;
+	
 	Dout(cout<<" mother = "<<mval<<"   "<<endl);
-	Assert( mother != NULL, "This should never happen");
+	
 	if( !mval.isSparse() ){ //mother->type != bool_node::ARITH		
 		int cvar;
 		if(choices.size()>=2){
@@ -1447,8 +1371,8 @@ void NodesToSolver::visit( ARRACC_node& node ){
 				cvar = -YES;
 			}
 		}
-		node_ids[node.id] = cvar;
-		Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
+		out = cvar;
+		Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
 //		aracctimer.stop().print();
 		return;
 	}
@@ -1474,13 +1398,73 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		}
 	}
 	if( orTerms < 2){
-		node_ids[node.id] = cvar;
+		out = cvar;
 	}else{
 		scratchpad[0] = 0;
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
-		node_ids[node.id] = result;		
+		out = result;		
 	}
-	Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);
+	Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
+}
+
+
+
+
+
+//timerclass aracctimer("ARRACC TIMER");
+//timerclass flooptimer("FIRST LOOP TIMER");
+//timerclass nonbooltimer("NON BOOL TIMER");
+//timerclass elooptimer("FINAL LOOP TIMER");
+
+
+void NodesToSolver::visit( ARRACC_node& node ){
+
+
+	Dout(cout<<" ARRACC "<<endl);
+	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
+	Tvalue& omv = tval_lookup(node.mother) ;	
+	bool isSparse = omv.isSparse();
+    Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
+	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
+		int idx = omv.num_ranges[0].value;
+
+		if( idx >= node.multi_mother.size()){
+			node_ids[node.id] = -YES;
+			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
+			return;
+		}
+
+		bool_node* choice = node.multi_mother[idx];
+		
+		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
+		node_ids[node.id] = tval_lookup(choice);				
+		return;
+	}
+	
+	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	vector<Tvalue> choices(node.multi_mother.size());
+	bool parentSame = true;
+	bool parentSameBis = true;
+	bool isBoolean=true;	
+	bool isArray = false;
+//	aracctimer.restart();
+//	flooptimer.restart();
+	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
+		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
+		const Tvalue& cval = tval_lookup(*it);
+		if( cval.isSparse() ){
+			isBoolean = false;
+		}
+		if(cval.isArray()){
+			isArray=true;
+		}
+		choices[i] = cval;
+		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
+		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
+	}
+
+	muxTValues(node, omv, choices, node_ids[node.id], isBoolean, isArray);
+
 //	elooptimer.stop().print();
 //	aracctimer.stop().print();
 	return;
@@ -1745,11 +1729,9 @@ void NodesToSolver::visit( ACTRL_node& node ){
 	return;
 }
 
+
 void
-NodesToSolver::visit( ARR_R_node &node){
-	//cout << "NodesToSolver ARR_R " << node.lprint() << endl;
-	Tvalue index = tval_lookup(node.mother);
-	Tvalue inarr = tval_lookup(node.father);
+NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar){
 	if(!index.isSparse()){
 		index.makeSparse(dir);
 	}
@@ -1863,13 +1845,12 @@ NodesToSolver::visit( ARR_R_node &node){
 		}
 	}
 
-
-	Tvalue& nvar = node_ids[node.id];
+	
 	// TODO xzl: bug This is wrong.
 	// especially when type is BIT
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
-	if(node.getOtype() == OutType::INT){
+	if(isInt){
 		vector<guardedVal>& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());
@@ -1900,14 +1881,23 @@ NodesToSolver::visit( ARR_R_node &node){
 		}
 		nvar = Tvalue(-YES);
 	}
+
+}
+
+void
+NodesToSolver::visit( ARR_R_node &node){
+	//cout << "NodesToSolver ARR_R " << node.lprint() << endl;
+	Tvalue index = tval_lookup(node.mother);
+	Tvalue inarr = tval_lookup(node.father);
+
+	arrRTvalue(node.getOtype() == OutType::INT, index, inarr, node_ids[node.id]);
 //	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
-void NodesToSolver::visit( ARR_W_node &node){	
-	Tvalue index = tval_lookup(node.mother);	
+
+
+void NodesToSolver::arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar){
+	
 	vector<guardedVal>& idxgv = index.num_ranges;
-	Tvalue inarr = tval_lookup(node.getOldArr());	
-	Tvalue newval = tval_lookup(node.getNewVal());
-	Tvalue& nvar = node_ids[node.id];
 	vector<guardedVal>& out = nvar.num_ranges;
 	out.clear();
 	if(!index.isSparse()){
@@ -1978,6 +1968,14 @@ void NodesToSolver::visit( ARR_W_node &node){
 		idxstart += idxincr;
 	}
 	nvar.arrayify();
+}
+
+void NodesToSolver::visit( ARR_W_node &node){	
+	Tvalue index = tval_lookup(node.mother);		
+	Tvalue inarr = tval_lookup(node.getOldArr());	
+	Tvalue newval = tval_lookup(node.getNewVal());
+	Tvalue& nvar = node_ids[node.id];
+	arrWTvalue(index, inarr, newval, nvar);
 //	cout << "ARR_W(inarr,index,newval,nvar): " << node.lprint() << endl << inarr << endl << index << endl << newval << endl << nvar << endl;
 }
 
@@ -2088,19 +2086,16 @@ NodesToSolver::visit (CONST_node &node)
 }
 
 
-void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& output){
+void NodesToSolver::doArrArrAcc(ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
 	//cout << "NodesToSolver.doArrArrAcc " << node.lprint() << endl;
-	vector<bool_node*>::iterator it = node.multi_mother.begin();
-	int N = node.multi_mother.size();
-	vector<Tvalue> choices(N);
-	for(int i=0; i < N; ++i, ++it){
-		choices[i] = tval_lookup (*it, TVAL_SPARSE);	
+	
+	int N = node.multi_mother.size();	
+	for(int i=0; i < N; ++i){		
 		if(choices[i].isBvect()){
 			choices[i].makeSparse(dir);
 		}		
 	}
 	bool_node* mother = node.mother;
-	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	if(mval.isSparse()){
 		Assert(false, "NYI aslkdn;hyp;k");
 	}else{
@@ -2177,20 +2172,18 @@ void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>
 }
 
 
-void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& output){
+void NodesToSolver::doNonBoolArrAcc(ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
 	Dout( cout<<" non boolean array "<<endl );
 	vector<bool_node*>::iterator it = node.multi_mother.begin();
 	
 	int N = node.multi_mother.size();
-	vector<Tvalue> choices(N);
-	for(int i=0; i < N; ++i, ++it){
-		choices[i] = tval_lookup (*it, TVAL_SPARSE);
+	
+	for(int i=0; i < N; ++i, ++it){		
 		if(choices[i].isBvect()){
 			choices[i].makeSparse (dir);
 		}
 	}
 	bool_node* mother = node.mother;
-	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	if(mval.isSparse()){
 		//mval.makeSparse (dir);
 		map<int, vector<int> > newVals;

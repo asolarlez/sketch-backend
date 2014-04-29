@@ -5,7 +5,7 @@ NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG
 functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
 {
 	values.resize(bdag.size());
-	changes.resize(bdag.size(), false);
+	chacnges.resize(bdag.size(), false);
 	vecvalues.resize(bdag.size(), NULL);
 
 }
@@ -33,6 +33,27 @@ void NodeEvaluator::visit( ARR_R_node &node){
 		setbn(node, vv->get(idx,i(*node.father)) );
 	}
 }
+
+void NodeEvaluator::visit( TUPLE_R_node &node){
+    // TODO: create a special node for NIL, with a special ID,
+    //       and its vecvalue is not initialized.
+    
+	cpvec* vv = vecvalues[node.father->id];
+	if(vv==NULL){
+		setbn(node, i(*node.father));
+		return;
+	}
+	int idx = i(*node.mother);
+	if(idx < 0){
+		setbn(node, 0 );
+	}else if (node.getOtype()->isTuple) {
+		setbn(node, values[vv[idx]] );
+        vecvalues[node.id] = vecvalues[vv[idx]] ;
+	}else {
+        setbn(node, vv[idx])
+    }
+}
+
 void NodeEvaluator::visit( ARR_W_node &node){
 	cpvec* vvin = vecvalues[node.getOldArr()->id];	
 	int idx = i(*node.mother);
@@ -62,6 +83,22 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 		delete vecvalues[node.id];
 	}
 	vecvalues[node.id] = cpv;	
+	for(int t=0; t<sz; ++t){
+		cpv->vv[t] = i(*node.multi_mother[t]);
+	}
+	// TODO xzl: temporarily disable -333
+	setbn(node, node.dfltval );
+	//setbn(node, 0);
+}
+
+void NodeEvaluator::visit( TUPLE_CREATE_node &node){
+	
+	int sz = node.multi_mother.size();
+	cpvec* cpv = new cpvec(sz);
+	if(vecvalues[node.id] != NULL){
+		delete vecvalues[node.id];
+	}
+	vecvalues[node.id] = cpv;
 	for(int t=0; t<sz; ++t){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
@@ -257,7 +294,6 @@ void NodeEvaluator::printNodeValue(int i){
 
 
 bool NodeEvaluator::run(VarStore& inputs_p){
-    
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
