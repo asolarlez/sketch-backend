@@ -354,7 +354,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	}else{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
 		BackwardsAnalysis ba;
-		ba.process(*newdag);
+		//ba.process(*newdag);
 		DagOptim fa(*newdag);
 		fa.process(*newdag);
 		pushProblem(newdag);
@@ -485,7 +485,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	
 	if(false){
 		BackwardsAnalysis ba;
-		ba.process(*newdag);
+		//ba.process(*newdag);
 	}
 	if(false){
 		DagOptim cse(*newdag);			
@@ -995,7 +995,7 @@ void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & has
 	}
 }
 
- void bitset::print(ostream& os){
+ void mybitset::print(ostream& os){
 		int i=next(-1);
 		os<<"{";
 		while(i != -1){
@@ -1236,7 +1236,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		//cout << "do ba, dag->repOK():";
 		//dag->repOK();
 		//cout << "simulate: ba" << endl;
-		ba.process(*dag);
+		//ba.process(*dag);
 		//cout << "simulate: after ba" << endl;
 		DagOptim cse(*dag);
 		//cout << "simulate: cse" << endl;

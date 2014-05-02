@@ -35,6 +35,9 @@ class NodesToSolver : public NodeVisitor {
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
+        vector<vector<Tvalue>*> tpl_store;
+
+
     /* Return the value indexed by given node, or a default value (of given type). */
     inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
 				int quant = 1) {
@@ -138,6 +141,9 @@ public:
 	virtual void visit( ARR_R_node &node);
 	virtual void visit( ARR_W_node &node);
 	virtual void visit( ARR_CREATE_node &node);
+    
+    virtual void visit( TUPLE_R_node &node);
+	virtual void visit( TUPLE_CREATE_node &node);
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
@@ -146,9 +152,9 @@ public:
     
 	
     virtual bool checkParentsChanged (bool_node &node, bool more);	
-	void doArrArrAcc(ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void doNonBoolArrAcc (ARRACC_node& node, Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void muxTValues(ARRACC_node& node, Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
+	void doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void doNonBoolArrAcc (Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void muxTValues(ARRACC_node* node, Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
  void computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax);
  void arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& out);
  void arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar);
