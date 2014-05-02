@@ -2017,7 +2017,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     Tvalue tid = tval_lookup(node.mother);
     
     int length = tid.num_ranges.size();
-    vector<Tvalue> choices(tpl_store.size());
+    vector<Tvalue> choices(tpl_store.size(), tvYES);
     
     bool isBoolean = true;
     bool isArray = false;
