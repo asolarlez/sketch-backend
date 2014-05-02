@@ -1981,6 +1981,8 @@ void NodesToSolver::visit( ARR_W_node &node){
 //	cout << "ARR_W(inarr,index,newval,nvar): " << node.lprint() << endl << inarr << endl << index << endl << newval << endl << nvar << endl;
 }
 
+
+
 void NodesToSolver::visit( ARR_CREATE_node &node){
 	Tvalue& nvar = node_ids[node.id];
 	vector<guardedVal>& tmp = nvar.num_ranges;
@@ -2008,6 +2010,26 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	}	
 	nvar.arrayify();
 	return;
+}
+
+void NodesToSolver::visit( TUPLE_R_node &node){
+}
+
+void NodesToSolver::visit (TUPLE_CREATE_node &node) {
+    Tvalue& nvar = node_ids[node.id];
+    vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
+    int id = tpl_store.size();
+    tpl_store.push_back(new_vec);
+    
+    vector<bool_node*>::iterator it = node.multi_mother.begin();
+    for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
+		const Tvalue& mval = tval_lookup(*it);
+        (*new_vec)[i] = mval;
+    }
+    
+    nvar = tvOne;
+    nvar.num_ranges[0].value = id;
+    
 }
 
 void
