@@ -5,8 +5,9 @@ NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG
 functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
 {
 	values.resize(bdag.size());
-	chacnges.resize(bdag.size(), false);
+	changes.resize(bdag.size(), false);
 	vecvalues.resize(bdag.size(), NULL);
+    tuplevalues.resize(bdag.size(), NULL);
 
 }
 
@@ -15,6 +16,11 @@ NodeEvaluator::~NodeEvaluator(void)
 {
 	for(int i=0; i<vecvalues.size(); ++i){
 		if(vecvalues[i] != NULL){
+			delete vecvalues[i];
+		}
+	}
+    for(int i=0; i<tuplevalues.size(); ++i){
+		if(tuplevalues[i] != NULL){
 			delete vecvalues[i];
 		}
 	}
@@ -38,20 +44,21 @@ void NodeEvaluator::visit( TUPLE_R_node &node){
     // TODO: create a special node for NIL, with a special ID,
     //       and its vecvalue is not initialized.
     
-	cpvec* vv = vecvalues[node.father->id];
-	if(vv==NULL){
-		setbn(node, i(*node.father));
+	cptuple* cpt = tuplevalues[i(*node.mother)];
+	if(cpt==NULL){
+        setbn(node, -1);
 		return;
 	}
-	int idx = i(*node.mother);
-	if(idx < 0){
-		setbn(node, 0 );
+	int idx = node.idx;
+	if(idx < 0 || idx >= cpt->size()){
+        setbn(node, -1 );
 	}else if (node.getOtype()->isTuple) {
-		setbn(node, values[vv[idx]] );
-        vecvalues[node.id] = vecvalues[vv[idx]] ;
+		setbn(node,cpt->vv[idx]);
+        tuplevalues[node.id] = tuplevalues[cpt->vv[idx]] ;
 	}else {
-        setbn(node, vv[idx])
+        setbn(node, cpt->vv[idx]);
     }
+   
 }
 
 void NodeEvaluator::visit( ARR_W_node &node){
@@ -94,17 +101,16 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 	
 	int sz = node.multi_mother.size();
-	cpvec* cpv = new cpvec(sz);
-	if(vecvalues[node.id] != NULL){
-		delete vecvalues[node.id];
+	cptuple* cpv = new cptuple(sz);
+	if(tuplevalues[node.id] != NULL){
+		delete tuplevalues[node.id];
 	}
-	vecvalues[node.id] = cpv;
+	tuplevalues[node.id] = cpv;
 	for(int t=0; t<sz; ++t){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
-	// TODO xzl: temporarily disable -333
-	setbn(node, node.dfltval );
-	//setbn(node, 0);
+	setbn(node, node.id );
+    
 }
 
 void NodeEvaluator::visit( AND_node& node ){
@@ -181,16 +187,23 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 		OutType* otp = node.getOtype();
 		if(otp==OutType::INT || otp ==OutType::BOOL){
 			setbn(node, i(*pred) );
-		}else{
-			{
-				cpvec* cpvt = vecvalues[node.id];
-				if(cpvt != NULL){
-					cpvt->update(vecvalues[pred->id], -1, 0);
-				}else{
-					vecvalues[node.id] = new cpvec(vecvalues[pred->id], -1, 0);
-				}				
-				setbn(node, i(*pred) );
-			}
+		}else if(otp->isTuple){
+            int itup = i(*pred);
+             setbn(node, i(*pred) );
+            if(itup != -1){
+            tuplevalues[node.id] = tuplevalues[itup] ;
+            }
+        }
+        else{
+			
+            cpvec* cpvt = vecvalues[node.id];
+            if(cpvt != NULL){
+                cpvt->update(vecvalues[pred->id], -1, 0);
+            }else{
+                vecvalues[node.id] = new cpvec(vecvalues[pred->id], -1, 0);
+            }
+            setbn(node, i(*pred) );
+			
 		}
 	}	
 }
@@ -318,8 +331,8 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
-		if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT){
-			++nconsts;
+        if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && ni->type != bool_node::TUPLE_CREATE){
+            ++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){
 				if(!changes[(*cit)->id]){

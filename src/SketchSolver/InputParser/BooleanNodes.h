@@ -120,7 +120,7 @@ struct bool_node{
         return ot->isArr;
     }
     bool isArith(){
-        return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL || type == ARR_W || type == ARR_CREATE;
+        return type == ARRACC || type == UFUN || type == ARRASS || type == ACTRL || type == ARR_W || type == ARR_CREATE || type == TUPLE_CREATE;
     }
     
     bool isInter(){

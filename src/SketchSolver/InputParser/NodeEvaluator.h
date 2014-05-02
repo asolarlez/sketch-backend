@@ -11,13 +11,23 @@ using namespace std;
 
 /*Started creating a class to represent tuples */
 class cptuple{
-	int n;
-	int *data;
-	cptuple* rec;
-	cptuple(int n){
-		data = (int*) malloc((sizeof(int)+sizeof(cptuple*))*n);
-		rec = (cptuple*) data+n;
+	int bnd;
+public:
+    
+	int *vv;
+    ~cptuple(){
+		if(vv != NULL){
+			delete[] vv;
+		}
 	}
+	cptuple(int n):vv(new int[n]){
+		memset(vv, 0, n*sizeof(int));
+        bnd = n;
+    }
+    int size() const{
+		return bnd;
+	}
+   
 
 
 };
@@ -154,6 +164,7 @@ protected:
 	BooleanDAG& bdag;
 	vector<int> values;
 	vector<cpvec*> vecvalues;
+    vector<cptuple*> tuplevalues;
 	vector<bool> changes;
 	VarStore* inputs;
 	bool failedAssert;
@@ -207,6 +218,8 @@ public:
 	virtual void visit( ARR_R_node &node);
 	virtual void visit( ARR_W_node &node);
 	virtual void visit( ARR_CREATE_node &node);
+    virtual void visit( TUPLE_CREATE_node &node);
+    virtual void visit( TUPLE_R_node &node);
 
 	bool run(VarStore& inputs_p);
 	void display(ostream& out);
