@@ -43,8 +43,12 @@ void NodeEvaluator::visit( ARR_R_node &node){
 void NodeEvaluator::visit( TUPLE_R_node &node){
     // TODO: create a special node for NIL, with a special ID,
     //       and its vecvalue is not initialized.
-    
-	cptuple* cpt = tuplevalues[i(*node.mother)];
+    int itup = i(*node.mother);
+    if(itup == -1){
+        setbn(node, -1);
+        return;
+    }
+	cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
         setbn(node, -1);
 		return;

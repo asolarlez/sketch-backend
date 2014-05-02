@@ -523,8 +523,7 @@ class TUPLE_CREATE_node:public arith_node{
             return otype;
         }
         otype = OutType::getTuple(name);
-        Assert(dynamic_cast<Tuple*>(otype)->entries.size()>0, "fdadsd");
-       
+        
         return otype;
        /*vector<OutType*> tv;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
