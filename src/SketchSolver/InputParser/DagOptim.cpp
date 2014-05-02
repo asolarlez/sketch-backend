@@ -1058,7 +1058,7 @@ void DagOptim::visit( ARR_R_node& node ){
 		int idx = getIval(node.mother);
 		ARR_CREATE_node* acn = dynamic_cast<ARR_CREATE_node*>(node.father);
 		if(idx >= acn->multi_mother.size()){
-			rvalue = getCnode(-333);
+			rvalue = getCnode(acn->dfltval);
 			return;
 		}
 		rvalue = acn->multi_mother[idx];
