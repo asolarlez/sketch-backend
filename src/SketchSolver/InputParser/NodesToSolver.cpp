@@ -2039,7 +2039,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
         }
     }
     
-    muxTValues(&node, tid, choices, node_ids[node.id], isBoolean, isArray);
+    muxTValues(NULL, tid, choices, node_ids[node.id], isBoolean, isArray);
 }
 
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {
