@@ -2,11 +2,12 @@
 #include "NodeEvaluator.h"
 #include "StringHTable.h"
 
-class bitset{
+
+class mybitset{
 	int size;
 	unsigned buf[];
 public:
-	bitset(int sz):size(sz){
+	mybitset(int sz):size(sz){
 		memset(buf, 0, sz*sizeof(unsigned));
 	}
 	void insert(int v){
@@ -17,7 +18,7 @@ public:
 
 	void print(ostream& os);
 
-	void insert(bitset* other){
+	void insert(mybitset* other){
 		if(other==NULL){ return ; }
 		Assert(size == other->size, "e;lkhy");
 		unsigned* oth = other->buf;
@@ -25,7 +26,7 @@ public:
 			buf[i] |= oth[i];
 		}
 	}
-	friend bitset* merge(Ostore<unsigned>& store, bitset* a, bitset* b);
+	friend mybitset* merge(Ostore<unsigned>& store, mybitset* a, mybitset* b);
 	int next(int v){
 		++v;
 		int msz = size << 5;
@@ -42,18 +43,18 @@ public:
 };
 
 
-inline bitset* bitsetcreateLL(Ostore<unsigned>& store, int wsize){		
-	bitset* rv = new(store.newObj(wsize+1 )) bitset(wsize);
+inline mybitset* mybitsetcreateLL(Ostore<unsigned>& store, int wsize){		
+	mybitset* rv = new(store.newObj(wsize+1 )) mybitset(wsize);
 	return rv;
 }
 
-inline bitset* bitsetcreate(Ostore<unsigned>& store, int sz){
+inline mybitset* mybitsetcreate(Ostore<unsigned>& store, int sz){
 	int wsize = sz > 0 ? (((sz-1)>>5)+1) : 0;	
-	bitset* rv = new(store.newObj(wsize+1 )) bitset(wsize);
+	mybitset* rv = new(store.newObj(wsize+1 )) mybitset(wsize);
 	return rv;
 }
 
-inline bitset* merge(Ostore<unsigned>& store, bitset* a, bitset* b){
+inline mybitset* merge(Ostore<unsigned>& store, mybitset* a, mybitset* b){
 	if(b==NULL){
 		return a;
 	}
@@ -66,7 +67,7 @@ inline bitset* merge(Ostore<unsigned>& store, bitset* a, bitset* b){
 	int sz = a->size;
 	for(int i=0; i<sz; ++i){
 		if(ba[i] != (ba[i] | bb[i])){
-			bitset* rv = bitsetcreateLL(store, sz);
+			mybitset* rv = mybitsetcreateLL(store, sz);
 			for(int j=0; j<sz; ++j){
 				rv->buf[j] = ba[j] | bb[j];
 			}
@@ -82,7 +83,7 @@ class CounterexampleFinder :
 	public NodeEvaluator
 {
 	Ostore<unsigned> store;
-	vector<bitset* >  influences;
+	vector<mybitset* >  influences;
 	vector<int> jumpids;
 	void computeInfluences(){
 		influences.clear();
@@ -93,7 +94,7 @@ class CounterexampleFinder :
 			if(cur->type == bool_node::SRC){
 				SRC_node* src = dynamic_cast<SRC_node*>(cur);	
 				int oid = inputs->getId(src->get_name());
-				bitset* nb = bitsetcreate(store, bssize);
+				mybitset* nb = mybitsetcreate(store, bssize);
 				nb->insert( oid );
 				// nb->print(cout);
 				influences[cur->id] = nb;
@@ -102,7 +103,7 @@ class CounterexampleFinder :
 				}
 				jumpids[oid] = src->id;
 			}else{
-				bitset* res = NULL;
+				mybitset* res = NULL;
 				if(cur->mother != NULL){
 					res = influences[cur->mother->id];					
 				}
@@ -111,7 +112,7 @@ class CounterexampleFinder :
 					if(res == NULL){
 						res = influences[cur->father->id];
 					}else{
-						bitset* old = res;
+						mybitset* old = res;
 						res = merge(store, res, influences[cur->father->id]);
 						if(old != res){
 							isFresh = true;
@@ -125,7 +126,7 @@ class CounterexampleFinder :
 							res = influences[an->multi_mother[i]->id];
 						}else{
 							if(!isFresh){
-								bitset* old = res;
+								mybitset* old = res;
 								res = merge(store, res, influences[an->multi_mother[i]->id]);
 								if(old != res){
 									isFresh = true;
@@ -165,7 +166,7 @@ public:
 				}
 				failedHAssert = false;
 				ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
-				bitset* inf = influences[an->id];
+				mybitset* inf = influences[an->id];
 				if(inf == NULL){
 					return UNSAT;
 				}
@@ -222,4 +223,5 @@ public:
 		
 	}
 };
+
 

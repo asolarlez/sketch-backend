@@ -35,7 +35,7 @@ class NodesToSolver : public NodeVisitor {
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
-
+        vector<vector<Tvalue>*> tpl_store;
 
 
     /* Return the value indexed by given node, or a default value (of given type). */
@@ -141,6 +141,9 @@ public:
 	virtual void visit( ARR_R_node &node);
 	virtual void visit( ARR_W_node &node);
 	virtual void visit( ARR_CREATE_node &node);
+    
+    virtual void visit( TUPLE_R_node &node);
+	virtual void visit( TUPLE_CREATE_node &node);
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
