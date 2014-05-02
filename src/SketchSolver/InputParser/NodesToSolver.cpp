@@ -2012,6 +2012,34 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 }
 
 void NodesToSolver::visit( TUPLE_R_node &node){
+    //cout << "NodesToSolver TUPLE_R " << node.lprint() << endl;
+    int index = node.idx;
+    Tvalue tid = tval_lookup(node.mother);
+    
+    int length = tid.num_ranges.size();
+    vector<Tvalue> choices(tpl_store.size());
+    
+    bool isBoolean = true;
+    bool isArray = false;
+    for (int i=0; i < length; ++i) {
+        
+        int tsidx = tid.num_ranges[i].value;
+        if (tsidx >= 0) {
+            vector<Tvalue>& tuple = *tpl_store[tsidx];
+            if (index < tuple.size()) {
+                const Tvalue& cval = tuple[index];
+                if( cval.isSparse() ){
+                    isBoolean = false;
+                }
+                if(cval.isArray()){
+                    isArray=true;
+                }
+                choices[tsidx] = cval;
+            }
+        }
+    }
+    
+    muxTValues(&node, tid, choices, node_ids[node.id], isBoolean, isArray);
 }
 
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {
