@@ -21,7 +21,7 @@ NodeEvaluator::~NodeEvaluator(void)
 	}
     for(int i=0; i<tuplevalues.size(); ++i){
 		if(tuplevalues[i] != NULL){
-			delete vecvalues[i];
+			delete tuplevalues[i];
 		}
 	}
 }
@@ -45,17 +45,17 @@ void NodeEvaluator::visit( TUPLE_R_node &node){
     //       and its vecvalue is not initialized.
     int itup = i(*node.mother);
     if(itup == -1){
-        setbn(node, -1);
+        setbn(node, 0);
         return;
     }
 	cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
-        setbn(node, -1);
+        setbn(node, 0);
 		return;
 	}
 	int idx = node.idx;
 	if(idx < 0 || idx >= cpt->size()){
-        setbn(node, -1 );
+        setbn(node, 0 );
 	}else if (node.getOtype()->isTuple) {
 		setbn(node,cpt->vv[idx]);
         tuplevalues[node.id] = tuplevalues[cpt->vv[idx]] ;
