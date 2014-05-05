@@ -58,7 +58,7 @@ void NodeEvaluator::visit( TUPLE_R_node &node){
         setbn(node, 0 );
 	}else if (node.getOtype()->isTuple) {
 		setbn(node,cpt->vv[idx]);
-        tuplevalues[node.id] = tuplevalues[cpt->vv[idx]] ;
+        //tuplevalues[node.id] = tuplevalues[cpt->vv[idx]] ;
 	}else {
         setbn(node, cpt->vv[idx]);
     }
@@ -189,15 +189,9 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 	}else{
 		bool_node* pred = node.multi_mother[idx];
 		OutType* otp = node.getOtype();
-		if(otp==OutType::INT || otp ==OutType::BOOL){
+		if(otp==OutType::INT || otp ==OutType::BOOL || otp->isTuple){
 			setbn(node, i(*pred) );
-		}else if(otp->isTuple){
-            int itup = i(*pred);
-             setbn(node, i(*pred) );
-            if(itup != -1){
-            tuplevalues[node.id] = tuplevalues[itup] ;
-            }
-        }
+		}
         else{
 			
             cpvec* cpvt = vecvalues[node.id];
