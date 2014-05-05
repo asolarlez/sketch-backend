@@ -107,6 +107,8 @@ public:
 
 	/* Initialize the default "one" integer. */
 	tvOne.num_ranges.push_back (guardedVal(p_dir.YES, 1));
+	tpl_store.push_back(NULL);
+
     };
     
 	int lastGoodVal(int id){
