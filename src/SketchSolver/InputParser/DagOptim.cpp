@@ -1276,6 +1276,7 @@ void DagOptim::visit( EQ_node& node ){
 		}
         if(node.father->type == bool_node::TUPLE_CREATE){
             rvalue = getCnode(false);
+			return;
         }
 
 		/*
@@ -1321,6 +1322,7 @@ void DagOptim::visit( EQ_node& node ){
 		}
         if(node.mother->type == bool_node::TUPLE_CREATE){
             rvalue = getCnode(false);
+			return;
         }
         
 	}
