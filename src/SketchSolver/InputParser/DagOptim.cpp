@@ -989,7 +989,7 @@ void DagOptim::visit( NEG_node& node ){
 	
 
 void DagOptim::visit( TUPLE_R_node& node){
-  if(isConst(node.mother)){
+  if(!node.mother->getOtype()->isTuple){
         rvalue = getCnode(0);
 		return;
 	}
@@ -1007,6 +1007,52 @@ void DagOptim::visit( TUPLE_R_node& node){
     if(node.mother->type ==bool_node::ARRACC){
        int idx =node.idx;
        ARRACC_node* parent = dynamic_cast<ARRACC_node*>(node.mother);
+        
+        /*// multimother size = 2 and one node is null
+        if(parent->multi_mother.size() ==2){
+            if(!parent->multi_mother[0]->getOtype()->isTuple){
+                //0 node is null and 1 node should output a tuple
+                //set node's parent to multi_mother[1]
+                node.dislodge();
+                node.mother = parent->multi_mother[1];
+				node.resetId();
+				node.addToParents();
+				node.accept(*this);
+				return;
+            }
+            //symetric case
+            else if(!parent->multi_mother[1]->getOtype()->isTuple){
+                //1 node is null and 0 node should output a tuple
+                //set node's parent to multi_mother[0]
+                node.dislodge();
+                node.mother = parent->multi_mother[0];
+				node.resetId();
+				node.addToParents();
+				node.accept(*this);
+				return;
+            }
+            //both parents are non-nulls
+            else{
+                parent->dislodge();
+                node.dislodge();
+                for(int i=0; i< parent->multi_mother.size(); i++){
+                    TUPLE_R_node* tnode = new TUPLE_R_node();
+                    tnode->idx = node.idx;
+                    tnode->mother = parent->multi_mother[i];
+                    tnode->addToParents();
+                    tnode->accept(*this);
+                    parent->multi_mother[i] = tnode;
+                }
+                parent->addToParents();
+                
+                rvalue = parent;
+                return;
+                
+            }
+        } */
+        
+        
+       //If all nodes in arracc in tuples
        bool allTuple = true;
         for(int i=0; i< parent->multi_mother.size(); i++){
             if(parent->multi_mother[i]->type != bool_node::TUPLE_CREATE){
@@ -1228,6 +1274,9 @@ void DagOptim::visit( EQ_node& node ){
 				return;	
 			}
 		}
+        if(node.father->type == bool_node::TUPLE_CREATE){
+            rvalue = getCnode(false);
+        }
 
 		/*
 
@@ -1267,7 +1316,12 @@ void DagOptim::visit( EQ_node& node ){
 				rvalue = optAdd(nt);				
 				return;	
 			}
+            
+            
 		}
+        if(node.mother->type == bool_node::TUPLE_CREATE){
+            rvalue = getCnode(false);
+        }
         
 	}
 	
