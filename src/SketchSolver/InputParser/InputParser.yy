@@ -431,13 +431,13 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
 	delete $1;
 }
-| T_ident '.' '[' NegConstant ']'{
+| Term '.' '[' NegConstant ']'{
    
 	//TUPLE_R_node* tn = dynamic_cast<TUPLE_R_node*>();
     
 	//tn->idx = $4;
-	$$ = currentBD->new_node(currentBD->get_node(*$1), $4);
-	delete $1;
+	$$ = currentBD->new_node($1, $4);
+	
 }
 | NegConstant '[' Expression ']'{	
 	$$ = currentBD->new_node($3, currentBD->create_const($1), bool_node::ARR_R);		

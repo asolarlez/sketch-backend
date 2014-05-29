@@ -362,6 +362,7 @@
     <None Include="ClassDiagram1.cd" />
     <None Include="ClassDiagram2.cd" />
     <None Include="glucose_1.0\sources\glucose\mtl\template.mk" />
+    <None Include="SketchSolver\InputParser\InputParser.yy" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

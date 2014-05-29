@@ -27,7 +27,7 @@ BooleanDAGCreator::~BooleanDAGCreator(void)
 	 }	 
  }
 
-bool_node* BooleanDAGCreator::get_node(const string& name){
+bool_node* BooleanDAGCreator::get_node(const string& name){	
   bool_node* fth;
   Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
   //Assert(name.size()==0 || named_nodes.find(name) != named_nodes.end(), "name does not exist: "<<name);
