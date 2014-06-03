@@ -209,6 +209,13 @@ public:
 				node_it = bdag.begin() + jmp;
 				(*node_it)->accept(*this);
 			}
+			
+			if(failedAssert){
+				//cout<<" FAILED BUT WONT REPORT "<<(*node_it)->lprint()<<endl;
+				return FOUND;
+			}
+			
+
 		}
 		return (failedAssert && !failedHAssert) ? FOUND : NOTFOUND;
 	}

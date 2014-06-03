@@ -277,10 +277,11 @@ void NodeEvaluator::visit( ACTRL_node& node ){
 }
 void NodeEvaluator::visit( ASSERT_node &node){
 	bool t = b(*node.mother);
-	if(node.isHard()){
-		failedHAssert = failedHAssert || !t;
-	}else{
+
+	if(node.isNormal()){
 		failedAssert = failedAssert || !t;
+	}else{
+		failedHAssert = failedHAssert || !t;
 	}	
 	setbn(node, t );
 }	

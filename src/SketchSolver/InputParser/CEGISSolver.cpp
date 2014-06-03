@@ -307,51 +307,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
 	cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl;
-	if(!specialize){
-		bool sameProblem = getProblem() == lastFproblem;//indicates whether this is the same problem as last time.
-		if(find_node_ids.size() != getProblem()->size()){
-			find_node_ids.resize(getProblem()->size());
-			Assert(!sameProblem, "How could this be true!?");
-		}
-		int numRepeat=0;
-		int idx = 0;
-		int k=0, ctrl=0;
-		vector<bool_node*>& srcList = getProblem()->getNodesByType(bool_node::SRC);
-		for(BooleanDAG::iterator node_it = srcList.begin(); node_it != srcList.end(); ++node_it, ++idx){			
-			//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
-			int nbits;
-			node_values[(*node_it)] = valueForINode(srcnode, input, nbits);
-			string name = srcnode->get_name();
-			bool changed = true;
-			map<string, int>::iterator fit = last_input.find(name);
-			if( fit != last_input.end() &&  fit->second == input[name]){
-				changed = false;
-			}
-			last_input[name] = input[name];
-			changed = changed || !sameProblem;
-
-			if(!changed){ ++numRepeat;	}
-			Dout(cout<<"input "<<name<<(changed? " changed" :" unchanged")<<endl);
-
-			(*node_it)->flag = changed;
-
-			k+=nbits;
-		}
-		vector<bool_node*>& ctrList = getProblem()->getNodesByType(bool_node::CTRL);
-		for(BooleanDAG::iterator node_it = ctrList.begin(); node_it != ctrList.end(); ++node_it, ++idx){			
-			//Dout(cout<<"NODE INIT "<<(*node_it)->name<<"  "<<node_ids[(*node_it)->id]<<"  "<<(*node_it)<<endl);	
-			(*node_it)->flag = firstTime || !sameProblem;
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
-			int nbits = ctrlnode->get_nbits();
-			ctrl += nbits;
-		}
-
-		firstTime = false;
-		if(PARAMS->verbosity > 2){ cout<<"* RECYCLED "<<numRepeat<<" values out of "<<input.getIntsize()<<endl ; }
-		Assert(k == input.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<k<<" INPUTS"<<endl);
-		Assert(ctrl == ctrlStore.getBitsize(), "THIS SHOULDN'T HAPPEN!!! PROCESSED ONLY "<<ctrl<<" CONTROLS"<<endl);	
-	}else{
+	{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
 		BackwardsAnalysis ba;
 		// ba.process(*newdag);
@@ -1021,16 +977,6 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		return false;
 	}
 	int intSize = dag->getIntSize();
-	/*
-	if (intSize >= inputGens.size()) {
-		inputGens.resize(intSize+1, NULL);
-	}
-	InputGen * & inputGen = inputGens[intSize];
-	if (!inputGen) {
-		filterHasserts(asserts, hasserts);
-		inputGen = new InputGen(dag, hasserts);
-	}
-	*/
 
 	
 	bool hasH = false;
@@ -1246,7 +1192,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 		tc.stop().print("didn't find a cex");	
 		cout<<"After all optim"<<endl;
 		//getProblem()->lprint(std::cout);
-		// dag->lprint(cout);
+		//dag->lprint(cout);
 		tv = baseCheck(controls, input);
 	} else {
 		// when there is no input satisfying the assumption, we cannot find any counter example
@@ -1350,7 +1296,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 		pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL));		
 	}
 //	cout<<"After hard code"<<endl;
-//	getProblem()->lprint(std::cout);
+	// getProblem()->lprint(std::cout);
 	do{
 		switch(cc.actionDecide(problemLevel() - (hardcode? 1: 0),getProblem())){
 			case CheckControl::POP_LEVEL:{

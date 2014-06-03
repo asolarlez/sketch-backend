@@ -179,10 +179,21 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
  void MiniSATSolver::assertVarClause(int x){
  	if( !solveNegation  ){
-		Dout( cout<<"@ assert "<<x<<";"<<endl );
-		FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
-		vec<Lit> lits;
-		{ int tmp[] = { x }; addClause(tmp, 1, lits);}		
+		if(finalOr.size() == 0){
+			Dout( cout<<"@ assert "<<x<<";"<<endl );
+			FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );
+			vec<Lit> lits;
+			{ int tmp[] = { x }; addClause(tmp, 1, lits);}		
+		}else{
+			vec<Lit> lits;		
+			int sz = finalOr.size();
+			for(int i=0; i<sz; ++i){	
+				int var = abs(finalOr[i]);		
+				lits.push( (finalOr[i] > 0) ? Lit(var) : ~Lit(var) );		
+			}
+			lits.push( (x > 0) ? Lit(x) : ~Lit(-x) );	
+			s->addClause(lits);
+		}
 	}else{	
 		finalOr.push_back(-x);
 	}
@@ -196,6 +207,28 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 
 void MiniSATSolver::retractAssumptions(){
 	assumptions.clear();
+}
+
+void MiniSATSolver::assumeVarClause(int x){
+	if(solveNegation){
+		// I am in the verification phase		
+		vec<Lit> lits;
+		if(finalOr.size() == 0){
+			//If no asserts yet, we need to ensure counterexamples satisfy the assume
+			{ int tmp[] = { x }; addClause(tmp, 1, lits);}	
+		}else{
+			//If there are some asserts already, those can fail evne if the assume fails.
+			int sz = finalOr.size();
+			for(int i=0; i<sz; ++i){	
+				int var = abs(finalOr[i]);		
+				lits.push( (finalOr[i] > 0) ? Lit(var) : ~Lit(var) );		
+			}
+			lits.push( (x > 0) ? Lit(x) : ~Lit(-x) );	
+			s->addClause(lits);
+		}		
+	}else{
+		finalOr.push_back(-x);
+	}
 }
 
 

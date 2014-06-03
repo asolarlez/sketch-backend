@@ -61,7 +61,7 @@ public:
     virtual void setVarClause(int x)=0;
     virtual void assertVarClause(int x)=0;
 	virtual void hardAssertVarClause(int x)=0;
-
+	virtual void assumeVarClause(int x)=0;
 	virtual void retractableAssertClause(int x)=0;
 	virtual void outputSAT()=0;
 	virtual void addHelperClause(int c[], int size)=0;

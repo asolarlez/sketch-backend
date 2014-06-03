@@ -143,6 +143,10 @@ void BLIFwriter::hardAssertVarClause(int x){
 }
 
 
+ void BLIFwriter::assumeVarClause(int x){
+ 	Assert(false, "");
+}
+
  void BLIFwriter::assertVarClause(int x){
  	if( !solveNegation  ){
 		if(!off){

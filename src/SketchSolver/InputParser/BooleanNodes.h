@@ -1266,7 +1266,7 @@ class ASSERT_node: public bool_node, virtual public DllistNode{
     virtual void accept (NodeVisitor &visitor)  { visitor.visit (*this); }
     virtual bool_node* clone(bool copyChildren = true) {return new ASSERT_node(*this, copyChildren);  };
     virtual void makeHardAssert(){ assertType = Hard; }
-	virtual void makeAssume(){ assertType = Hard; }
+	virtual void makeAssume(){ assertType = Assume; }
     virtual bool isHard() const { return assertType == Hard ; }
 	virtual bool isNormal() const { return assertType == Normal ; }
 	virtual bool isAssume() const { return assertType == Assume ; }

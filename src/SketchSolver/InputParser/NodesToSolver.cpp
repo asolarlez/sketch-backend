@@ -2100,7 +2100,11 @@ NodesToSolver::visit (ASSERT_node &node)
 			//cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
 			dir.addHardAssertClause (fval.getId ());
 		}else{
-			dir.addAssertClause (fval.getId ());
+			if(node.isAssume()){
+				dir.addAssumeClause(fval.getId() );
+			}else{
+				dir.addAssertClause (fval.getId ());
+			}			
 		}		
 	}
 	//cout<<"|"<<node.getMsg()<<"|"<<endl;

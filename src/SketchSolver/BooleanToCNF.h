@@ -283,6 +283,7 @@ public:
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
 	void addHardAssertClause (int a);
+	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);
 	bool ignoreOld(){
 		return mng.ignoreOld();
@@ -573,6 +574,22 @@ SolverHelper::addAssertClause (int a)
 
     /* Otherwise, assertion clause necessary. */
     mng.assertVarClause (a);
+}
+
+
+inline void
+SolverHelper::addAssumeClause (int a)
+{
+    Assert (a != 0, "input id cannot be zero in addHardAssertClause");
+
+     /* Vacuously true. */ 
+    if (a == YES)
+        return; 
+
+    dout ("asserting " << a);
+
+    /* Otherwise, assertion clause necessary. */
+	mng.assumeVarClause(a);
 }
 
 inline void

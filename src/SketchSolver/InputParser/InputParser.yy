@@ -389,7 +389,7 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     /* Asserting an expression, construct assert node. */
 	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
 		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
-		bn->makeHardAssert();
+		bn->makeAssume();
 		if ($3) {
 			bn->setMsg(*$3);
 		}
