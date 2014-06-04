@@ -144,7 +144,7 @@ class CounterexampleFinder :
 	}
 public:
 	typedef enum {FOUND, NOTFOUND, UNSAT} Result;
-
+	const string* message;
 	void init(VarStore& vs){
 		inputs = &vs;
 		computeInfluences();
@@ -168,10 +168,12 @@ public:
 				ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
 				mybitset* inf = influences[an->id];
 				if(inf == NULL){
+					message = &(an->getMsg());
 					return UNSAT;
 				}
 				int it = inf->next(-1);				
 				if(it == -1){
+					message = &(an->getMsg());
 					return UNSAT;
 				}
 				if( (*node_it)->mother->type == bool_node::EQ ){
@@ -183,6 +185,7 @@ public:
 
 						bool inrange = op.setValSafe(fv);
 						if(!inrange){
+							message = &(an->getMsg());
 							return UNSAT;
 						}
 						node_it = bdag.begin() + eq->mother->id;
@@ -193,6 +196,7 @@ public:
 						int fv = this->getValue(eq->mother);
 						bool inrange = inputs->getObj(eq->father->get_name()).setValSafe(fv);
 						if(!inrange){
+							message = &(an->getMsg());
 							return UNSAT;
 						}
 						node_it = bdag.begin() + eq->father->id;

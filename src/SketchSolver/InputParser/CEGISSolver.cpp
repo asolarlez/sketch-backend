@@ -1028,6 +1028,9 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				done = (res == CounterexampleFinder::FOUND);
 
 				if(res == CounterexampleFinder::UNSAT){
+					if(PARAMS->verbosity >=5 ){ 
+						cout<<" UNSAT ASSUMPTION "<<((eval.message != NULL)? *eval.message : "")<< endl; 
+					}
 					popProblem();
 					return false;
 				}
