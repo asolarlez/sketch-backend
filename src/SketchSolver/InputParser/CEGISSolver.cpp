@@ -940,13 +940,16 @@ struct InputGen {
 	}}
 };
 
-void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & hasserts) {
+void filterHasserts(vector<bool_node*> const & asserts, int id, vector<bool_node*> & hasserts) {
 	vector<bool_node*>::const_iterator i=asserts.begin();
 	vector<bool_node*>::const_iterator e=asserts.end();
 	for (; i!=e; ++i) {
 		ASSERT_node * a = dynamic_cast<ASSERT_node*>(*i);
 		if (!a->isNormal()) {
 			hasserts.push_back(a);
+		}
+		if(a->id > id){
+			break;
 		}
 	}
 }
@@ -961,6 +964,18 @@ void filterHasserts(vector<bool_node*> const & asserts, vector<bool_node*> & has
 		os<<"}"<<endl;
 
 	}
+
+
+ bool hasHAsserts(const vector<bool_node*>& asserts){
+	vector<bool_node*>::const_iterator i=asserts.begin();
+	vector<bool_node*>::const_iterator e=asserts.end();
+	for (; i!=e; ++i) {
+		ASSERT_node * a = dynamic_cast<ASSERT_node*>(*i);
+		if (!a->isNormal()) {
+			return true;
+		}		
+	}
+ }
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	timerclass tc("Simulation");
@@ -979,11 +994,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 	int intSize = dag->getIntSize();
 
 	
-	bool hasH = false;
-	filterHasserts(asserts, hasserts);
-	if(hasserts.size()>0){
-		hasH = true;
-	}
+	bool hasH = hasHAsserts(asserts);
+	
 
 	bool hasCtrls = !dag->getNodesByType(bool_node::CTRL).empty();
 	if (hasCtrls) {
@@ -1051,21 +1063,22 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			}
 		}
 		int hold = -1;
+		int lowerbound = 0;
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
 			int h;
-			int lowerbound=0;  // donot touch nodes whose ids are smaller than lowerbound
+			
+			h = eval.scoreNodes(0);
 		    if (hasH) {
-				hasserts.clear();
+				hasserts.clear();				
 				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
-				filterHasserts(asserts, hasserts);
-				// we should always retain hard asserts and their mothers
-				// NOTE: rely on the assumption that dag is already sorted
-				lowerbound = hasserts.back()->id+1;
-				h = eval.scoreNodes(lowerbound);
-			} else 	{
-				h = eval.scoreNodes(0);
-			}
+				filterHasserts(asserts, h, hasserts);
+				lowerbound = 0;
+				if(hasserts.size() > 0){
+					lowerbound = (*hasserts.rbegin())->id + 1;
+				}
+				if(PARAMS->verbosity > 8){ cout<<"h = "<<h<<"  hasserts.size()= "<<hasserts.size()<<endl; }
+			} 
 			//cout << "TESTING h=" << h << " hold=" << hold << endl;
 			if (h == -1){
 				break;
@@ -1075,6 +1088,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 				//cout<<"INFINITE LOOP!"<<endl;
 				break;
 			}
+			
 			hold = h;
 			bool_node* niq = (*dag)[h];
 			ASSERT_node* an = new ASSERT_node();
@@ -1099,6 +1113,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			if(PARAMS->verbosity >= 10 && tbd->size() < 200){
 				tbd->lprint(cout);
 			}
+			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
 			pushProblem(tbd);
 			
 			bool rv = baseCheck(controls, tmpin);
@@ -1121,6 +1136,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			delete an;
 			dag->relabel();
 			if(rv){
+				//It found an input that causes things to change.
 				bool done;
 				if(hasCtrls){
 					VarStore ta(join(tmpin, controls));
