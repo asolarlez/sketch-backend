@@ -118,8 +118,8 @@ struct CommandLineArgs{
 		NANGELICS = -1;
 		angelic_arrsz = -1;
 		simulate = true;
-		simiters = 3;
-		simstopsize = 4000;
+		simiters = 4;
+		simstopsize = 2000;
 		simplifycex = "RECSYM";
 		setMemo = true;
 		debug = false;

@@ -441,7 +441,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 	
 	if(false){
 		BackwardsAnalysis ba;
-		//ba.process(*newdag);
+		ba.process(*newdag);
 	}
 	if(false){
 		DagOptim cse(*newdag);			
@@ -977,13 +977,12 @@ void filterHasserts(vector<bool_node*> const & asserts, int id, vector<bool_node
 	}
  }
 
-bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
+bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive){
 	timerclass tc("Simulation");
 	tc.start();	
 	int iter = 0;
 	VarStore& tmpin = input;
-	map<string, BooleanDAG*> empty;
-	vector<VarStore> expensive;
+	map<string, BooleanDAG*> empty;	
 	BooleanDAG* dag =getProblem();
 	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 	vector<bool_node *> hasserts;
@@ -1113,7 +1112,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			} else {
 				tbd = dag->slice(h, an);
 			}
-			if(PARAMS->verbosity >= 10 && tbd->size() < 200){
+			if(PARAMS->verbosity >= 10 && tbd->size() < 50){
 				tbd->lprint(cout);
 			}
 			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
@@ -1122,7 +1121,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			bool rv = baseCheck(controls, tmpin);
 			
 			popProblem();
-
+			//tc.stop().print("Step").restart();
 			// BUGFIX xzl: we need to dislodge before delete a node, to make the DAG sane. otherwise some passess like BackwardAnalysis will fail silently.
 			// Important to maintain the order: dislodge must happen before a node's parent being deleted.
 			an->dislodge();
@@ -1140,6 +1139,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input){
 			dag->relabel();
 			if(rv){
 				//It found an input that causes things to change.
+				vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::SRC);
+				for(int i=0; i<ctrls.size(); ++i){
+					SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
+					if(bn->id > h){						
+						tmpin.getObj(bn->get_name()).makeRandom();
+					}
+				}
+
 				bool done;
 				if(hasCtrls){
 					VarStore ta(join(tmpin, controls));
@@ -1304,6 +1311,7 @@ public:
 // check verifies that controls satisfies all asserts
 // and if there is a counter-example, it will be put to input
 bool CEGISSolver::check(VarStore& controls, VarStore& input){
+	vector<VarStore> expensive;
 	BooleanDAG* oriProblem = getProblem();
 	bool hardcode = PARAMS->olevel >= 6;
 	bool rv = false;
@@ -1353,7 +1361,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::SOLVE:{
 				if(params.simulate){
-					rv = simulate(controls, input);	
+					rv = simulate(controls, input, expensive);	
 				}else{
 					rv = baseCheck(controls, input);
 				}

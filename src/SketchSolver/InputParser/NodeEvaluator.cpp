@@ -312,8 +312,14 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	failedHAssert = false;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
+		if(failedAssert){
+			return true;
+		}
+		if(failedHAssert){
+			return false;
+		}
 	}
-	return failedAssert && !failedHAssert;
+	return false;
 }
 
 void NodeEvaluator::display(ostream& out){
@@ -330,6 +336,22 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
 		bool_node* ni = bdag[i];
+		{
+			int mx = 0;
+			if(ni->mother != NULL){ mx = ni->mother->layer + 1; }
+			if(ni->father != NULL){ int t = ni->father->layer; mx = ((t + 1)> mx) ? t+1 : mx; }
+			arith_node* an = dynamic_cast<arith_node*>(ni);
+			if(an != NULL){
+				for(int i=0; i<an->multi_mother.size(); ++i){
+					int t = an->multi_mother[i]->layer; 
+					mx = ((t + 1)> mx) ? t+1 : mx;
+				}
+			}
+			ni->layer = mx;
+		}
+
+
+
         if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && ni->type != bool_node::TUPLE_CREATE){
             ++nconsts;
 			int count = 0;
@@ -341,7 +363,8 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 					}
 				}
 			}
-			if(count > maxcount + 3){
+			if(count > maxcount + 3 && count > (ni->layer / 10)){
+				cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<"   "<<ni->lprint()<<endl;
 				highest = i;
 				maxcount = count;
 			}

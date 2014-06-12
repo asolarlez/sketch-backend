@@ -113,7 +113,7 @@ protected:
 	void declareControl(const string& cname, int size);
 	void declareInput(const string& cname, int size, int arrSz);
 	bool solveCore();
-	bool simulate(VarStore& controls, VarStore& input);
+	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
 	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
 	void addInputsToTestSet(VarStore& input);
 
