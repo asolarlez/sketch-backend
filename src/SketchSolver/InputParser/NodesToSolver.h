@@ -160,6 +160,10 @@ public:
  void computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax);
  void arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& out);
  void arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar);
+
+
+  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
+
 };
 
 

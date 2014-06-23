@@ -309,50 +309,24 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 
 int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	Assert(status==READY, "You can't do this if you are UNSAT");
-	++assertionStep;
-	BooleanDAG* problem;
+	++assertionStep;	
 	
-	if(bgproblem == NULL){
-		problem = dag;
-		bgproblem = dag;
-	}else{
-		// TODO xzl: temporary fix, should consider better fix
-		if(false && bgproblem->getNodesByType(bool_node::SRC).size() == 0){
-			cout<<"No inputs"<<endl;
-			problem = dag;
-			bgproblem->andDag(dag->clone());			
-			//bgproblem = runOptims(bgproblem);
-		}else{
-			//bgproblem->repOK();
-			//dag->repOK();
-			bgproblem->andDag(dag);
-			//bgproblem->repOK();
-			bgproblem = runOptims(bgproblem);
-			//bgproblem->repOK();
-			problem = bgproblem;
-		}
-	}
+	solver->addProblem(dag);
+	
 //	cout << "InterpreterEnvironment: new problem" << endl;
 //	problem->lprint(cout);
 
 	if(params.superChecks){
-		history.push_back(problem->clone());	
+		history.push_back(dag->clone());	
 	}
 
 	// problem->repOK();
-	SATSolver* checker = SATSolver::solverCreate(params.veriftype, SATSolver::CHECKER, checkName());
-	if(params.lightVerif){
-		cout<<"WARNING: Running with lightweight verification"<<endl;
-		checker->lightSolve();
-	}
-	SolverHelper check(*checker);
-	check.setMemo(params.setMemo && params.veriftype == SATSolver::MINI);
-	CEGISSolver solver(problem, *finder, check, params);
 	
+		
   	
 	if(params.outputEuclid){      		
 		ofstream fout("bench.ucl");
-		solver.outputEuclid(fout);
+		solver->outputEuclid(fout);
 	}
   	
 	if(params.output2QBF){
@@ -360,69 +334,46 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		fname += "_2qbf.cnf";
 		ofstream out(fname.c_str());
 		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
-		solver.setup2QBF(out);
-		
+		solver->setup2QBF(out);		
 	}
   	
   		
-	if( params.hasCpt ){ 
-		string fname = params.cptfile;
-		fname += "_";
-		fname += basename();
-		solver.setCheckpoint(fname);
-		}	
-
 	int solveCode = 0;
 	try{
-		if(!params.hasRestore){
-			solveCode = solver.solve();
-		}else{	  			
-			string fname = params.restorefile;
-			fname += "_";
-			fname += basename();
-			cout<<"restoring from "<<fname<<endl;
-			ifstream input(fname.c_str());
-			solveCode = solver.solveFromCheckpoint(input);
-		}
-		solver.get_control_map(currentControls);
+		
+		solveCode = solver->solve();
+		
+		solver->get_control_map(currentControls);
 	}catch(SolverException* ex){
 		cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
-		status=UNSAT;
-		delete checker;
-		if(problem != bgproblem){ problem->clear(); delete problem; }
+		status=UNSAT;				
 		return ex->code + 2;
 	}catch(BasicError& be){
-		solver.get_control_map(currentControls);
+		solver->get_control_map(currentControls);
 		cout<<"ERROR: "<<basename()<<endl;
-		status=UNSAT;
-		delete checker;
-		if(problem != bgproblem){ problem->clear(); delete problem; }
+		status=UNSAT;				
 		return 3;
 	}
 	if( !solveCode ){
-		status=UNSAT;
-		delete checker;
-		if(problem != bgproblem){ problem->clear(); delete problem; }
+		status=UNSAT;				
 		return 1;	
 	}
 
 	if(false){
-		statehistory.push_back(solver.find_history);
+		statehistory.push_back(solver->find_history);
 
 		for(int i=0; i<history.size(); ++i){
 			cout<<" ~~~ Order = "<<i<<endl;
-			BooleanDAG* bd = solver.hardCodeINode(history[i], solver.ctrlStore, bool_node::CTRL);
+			BooleanDAG* bd = solver->hardCodeINode(history[i], solver->ctrlStore, bool_node::CTRL);
 			int sz = bd->getNodesByType(bool_node::ASSERT).size();
 			cout<<" ++ Order = "<<i<<" size = "<<sz<<endl;
 			if(sz > 0){
 				Strudel st(statehistory[i], &finder->getMng());
-				st.checker(history[i] , solver.ctrlStore, bool_node::CTRL);
+				st.checker(history[i] , solver->ctrlStore, bool_node::CTRL);
 			}
 		}
 	}
-
-	delete checker;
-	if(problem != bgproblem){ problem->clear(); delete problem; }
+		
 	return 0;
 
 }

@@ -39,6 +39,9 @@ void NodesToSolver::process(BooleanDAG& bdag){
 // #define Dout( out )      out 
 
 
+
+
+
 class PrintSource: public PrintInteresting{
 	vector<Tvalue> &node_ids;
 public:
@@ -66,6 +69,41 @@ void advanceToEndIdx(int& iend, int cidx, vector<guardedVal>&tv){
 		++iend;
 	}
 }
+
+
+
+bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids){
+	//timerclass timer("defineProblem");
+		//timer.start();
+	bool stoppedEarly;
+		int YES = dir.newYES();
+		//getProblem()->lprint(cout);
+		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
+		try{
+			stoppedEarly =false;
+			nts.process(dag);	
+			if(nts.stoppedPrematurely()){
+				dir.lastErrMsg = nts.errorMsg;
+				stoppedEarly = true;
+			}
+
+			/*
+			BooleanDAG& bd = *getProblem();
+			for(int i=0; i<node_ids.size(); ++i){
+				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
+			}
+			*/
+		}catch(BasicError& e){			
+			throw e;
+		}
+
+		//timer.stop();
+		//if(PARAMS->verbosity > 2){ timer.print(); }
+	
+	return stoppedEarly;
+}
+
+
 
 
 void NodesToSolver::computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax){	

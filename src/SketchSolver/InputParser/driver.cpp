@@ -159,7 +159,7 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 		fname += name;
 		solver.setCheckpoint(fname);
 		}
-	solver.setup();
+	// solver.setup();
 	int solveCode = 0;
 	try{
 		if(!params.hasRestore){

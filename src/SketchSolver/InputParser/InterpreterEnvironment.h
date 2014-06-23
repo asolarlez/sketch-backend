@@ -70,6 +70,7 @@ public:
 	STATUS status;
 	map<string, int> currentControls;
 	BooleanDAG * bgproblem;
+	CEGISSolver* solver;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if(p.outputSat){
@@ -77,7 +78,8 @@ public:
 		}
 		finder = new SolverHelper(*_pfind);
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
-		sessionName = procFname(params.inputFname);			  
+		sessionName = procFname(params.inputFname);		
+		solver = new CEGISSolver(*finder, params);
 	}
 	
 	void addFunction(const string& name, BooleanDAG* fun){

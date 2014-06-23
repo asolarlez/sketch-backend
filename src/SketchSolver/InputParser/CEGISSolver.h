@@ -22,11 +22,11 @@ public:
 	bool simulate;
 	int simiters;
 	int simstopsize;
-
+	bool setMemo;
 	typedef enum{ NOSIM /*no simplify*/, SIMSIM/*simple simplify*/, RECSIM/*recursive simplify*/} simtype;
 	simtype simplifycex;
 	bool superChecks;
-
+	bool lightVerif;
 	CEGISparams(CommandLineArgs& args):
 		printDiag(false),
 		nseeds(1),
@@ -36,7 +36,9 @@ public:
 		simulate(true),
 		simiters(3),		
 		simplifycex(RECSIM),
-		superChecks(false)
+		superChecks(false),
+		setMemo(args.setMemo),
+		lightVerif(args.lightVerif)
 	{
 		printDiag = args.printDiag;
 		nseeds = args.seedsize;		
@@ -69,7 +71,8 @@ public:
 
 class CEGISSolver
 {
-
+	int curProblem;
+	vector<BooleanDAG*> problems;
 	stack<BooleanDAG*> problemStack;
 	void pushProblem(BooleanDAG* p){
 		problemStack.push(p);
@@ -87,11 +90,9 @@ class CEGISSolver
 		return problemStack.size();
 	}
 
-	SolverHelper& dirFind;	
-	SolverHelper& dirCheck;
-
+	SolverHelper& dirFind;		
 	SATSolver& mngFind;
-	SATSolver& mngCheck;
+	
 
 	
 	VarStore inputStore;
@@ -100,15 +101,13 @@ class CEGISSolver
 	CEGISparams params;
 
 	bool stoppedEarly;
-	string errorMsg;
 	
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;
 	
 	vector<Tvalue> find_node_ids;
 	vector<Tvalue> check_node_ids;
-	map<string, int> last_input;
-	bool firstTime;
+	map<string, int> last_input;	
 protected:
 	void declareControl(const string& cname, int size);
 	void declareInput(const string& cname, int size, int arrSz);
@@ -119,11 +118,7 @@ protected:
 
 	bool check(VarStore& input, VarStore& controls);
 	bool baseCheck(VarStore& controls, VarStore& input);
-	void setNewControls(VarStore& controls);
-
-
-	void defineProblem(SATSolver& mng, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
-
+	void setNewControls(VarStore& controls, SolverHelper& dirCheck);
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
 	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
@@ -137,13 +132,14 @@ public:
 	VarStore ctrlStore;
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
-	CEGISSolver(BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args);
+	CEGISSolver(SolverHelper& finder, CommandLineArgs& args);
 	~CEGISSolver(void);
+	void addProblem(BooleanDAG* miter);
+
 
 	virtual bool solve();
 	void print_control_map(ostream& out);
-
-	virtual void setup();
+	
 
 	bool solveFromCheckpoint(istream& in);
 	virtual void setCheckpoint(const string& filename);
@@ -151,7 +147,7 @@ public:
 
 
 	void printDiagnostics(SATSolver& mng, char c);
-	void printDiagnostics();
+	
 
 	void redeclareInputs(BooleanDAG* dag);
 	
@@ -160,9 +156,6 @@ public:
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ostream& out);
 
-	void outputCheckVarmap(ostream& out){
-		dirCheck.outputVarMap(out);	
-	}
 
     VarStore prevCtrlStore;
 	VarStore prevInputStore;
