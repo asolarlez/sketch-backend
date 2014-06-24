@@ -238,18 +238,26 @@ bool CEGISSolver::solveCore(){
 
 
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
-	BooleanDAG* dag = getProblem();
-	vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
-	int nMinVarNodes = 0;
-	CTRL_node* result;
-	for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
-		CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
-		bool isMinimizeNode = (*cnode).get_toMinimize();
-		if(isMinimizeNode){
-			mhnames.push_back(cnode->get_name());
-			mhsizes.push_back(cnode->get_nbits());
+	map<string, CTRL_node*> minimizes;
+	for(int i=0; i<problems.size(); ++i){
+		BooleanDAG* dag = problems[i];
+		vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
+		for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
+			CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
+			bool isMinimizeNode = (*cnode).get_toMinimize();
+			if(isMinimizeNode){
+				if(minimizes.count(cnode->get_name())== 0){
+					minimizes[cnode->get_name()] = cnode;
+				}				
+			}
 		}
-	}	
+	}
+
+	for(map<string, CTRL_node*>::iterator it = minimizes.begin(); it != minimizes.end(); ++it){
+		CTRL_node* cnode = (*it).second;
+		mhnames.push_back(cnode->get_name());
+		mhsizes.push_back(cnode->get_nbits());
+	}
 	cout << "Number of minvar nodes = " << mhsizes.size() << endl;
 }
 
