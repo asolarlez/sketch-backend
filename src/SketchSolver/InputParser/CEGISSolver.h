@@ -74,7 +74,7 @@ class CEGISSolver
 	int curProblem;
 	vector<BooleanDAG*> problems;
 	stack<BooleanDAG*> problemStack;
-	void pushProblem(BooleanDAG* p){
+	void pushProblem(BooleanDAG* p){		
 		problemStack.push(p);
 	}
 	BooleanDAG* getProblem(){
@@ -126,7 +126,7 @@ protected:
 	void normalizeInputStore();
 	void abstractProblem();
 	bool minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes);
-	void growInputs(BooleanDAG* dag, BooleanDAG* oridag);
+	void growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 public:
 	vector<Tvalue> find_history;
 	VarStore ctrlStore;

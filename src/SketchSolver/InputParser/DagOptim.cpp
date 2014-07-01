@@ -2245,6 +2245,7 @@ char* toString(TempTriple& tmp){
 }
 	
 void DagOptim::visit( ASSERT_node &node){
+
 	if(isConst(node.mother)){
 		int cv = this->getIval(node.mother);
 		if(cv == 1){

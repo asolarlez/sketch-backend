@@ -14,6 +14,7 @@
 //extern CommandLineArgs* PARAMS;
 
 void CEGISSolver::addProblem(BooleanDAG* problem){
+	curProblem = problems.size();
 	problems.push_back(problem);
 
 	{
@@ -99,6 +100,8 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 		}
 		Dout( cout<<" INPUT "<<inname<<" sz = "<<size<<endl );
 	}else{
+		// cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
+
 		inputStore.resizeVar(inname, bitsize);
 		if(arrSz >= 0){
 			inputStore.resizeArr(inname, arrSz);
@@ -116,6 +119,7 @@ bool CEGISSolver::solve(){
 	if(problems.size()==0){
 		return true;
 	}
+	Assert(problemStack.size() == 0, "A big bug");
 	pushProblem((*problems.rbegin())->clone());
 
 	if(PARAMS->verbosity > 1){
@@ -132,9 +136,14 @@ bool CEGISSolver::solve(){
 //	setNewControls(ctrlStore);	
 	
 	bool succeeded = solveCore();
-		
+	
+	popProblem();
+
 	return succeeded;
 }
+
+
+
 
 bool CEGISSolver::solveCore(){	
 	int iterations = 0;
@@ -225,6 +234,8 @@ bool CEGISSolver::solveCore(){
 			}
 		}
 	}
+
+
 	ttimer.stop();
 	if(!fail){
 		cout<<" *GOT THE CORRECT ANSWER IN "<<iterations<<" iterations."<<endl;		
@@ -235,6 +246,8 @@ bool CEGISSolver::solveCore(){
 	dirFind.getMng().retractAssumptions();
 	return !fail;
 }
+
+
 
 
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
@@ -931,7 +944,7 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag){
 }
 
 
-void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag){
+void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop){
 	int gnbits = -1;
 	if(PARAMS->verbosity > 2){
 		cout<<"* growing the inputs to size "<< (dag->getIntSize()+1) <<endl;
@@ -939,6 +952,9 @@ void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag){
 	dag->growInputIntSizes();
 	if(oridag != dag){
 		oridag->growInputIntSizes();
+	}
+	if(isTop){
+		problems[this->curProblem]->growInputIntSizes();
 	}
 	redeclareInputs(dag);
 }
@@ -1044,7 +1060,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::GROW_IN:{
 				cout<<"CONTROL: Growing Input"<<problemLevel()<<endl;
-				growInputs(getProblem(), oriProblem);
+				growInputs(getProblem(), oriProblem, (problemLevel() - (hardcode? 1: 0)) == 1 );
 				continue;
 			}
 			case CheckControl::SOLVE:{
@@ -1059,8 +1075,11 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 				curProblem = (curProblem + 1) % problems.size() ;
-				pushProblem(problems[curProblem]->clone());
-				if(hardcode){
+				if(PARAMS->verbosity > 2){
+					cout<<"Switching to problem "<<curProblem<<endl;
+				}
+				pushProblem(problems[curProblem]->clone());				
+				if(hardcode){				
 					oriProblem = getProblem();
 					pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL));
 				}
