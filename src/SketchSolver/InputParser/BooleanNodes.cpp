@@ -20,7 +20,9 @@ map<string, OutType*> OutType::tupleMap;
 int i;
 
 OutType* OutType::getTuple(const string& name){
-    
+    if  (name.compare("NOREC")) {
+    	return OutType::BOTTOM;
+    }
 	if(tupleMap.count(name)>0 ){
        
 		return tupleMap[name];

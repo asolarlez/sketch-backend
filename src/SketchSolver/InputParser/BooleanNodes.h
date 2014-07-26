@@ -561,7 +561,7 @@ class TUPLE_R_node: public bool_node{
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::BOOL){
+       if(ot == OutType::BOTTOM || OutType::BOOL){
             return ot;
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
@@ -909,7 +909,7 @@ class UFUN_node: public arith_node, public DllistNode{
 		}
         if(nbits == 0){
             otype = OutType::getTuple(tupleName);
-            Assert(dynamic_cast<Tuple*>(otype)->entries.size()>0, "fdasd");
+            //Assert(dynamic_cast<Tuple*>(otype)->entries.size()>0, "fdasd");
         }else
 		if(nbits>1){
 			otype = OutType::INT;
