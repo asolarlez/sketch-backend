@@ -989,7 +989,7 @@ void DagOptim::visit( NEG_node& node ){
 	
 
 void DagOptim::visit( TUPLE_R_node& node){
-  if(!node.mother->getOtype()->isTuple){
+  if(isConst(node.mother)){
         rvalue = getCnode(0);
 		return;
 	}

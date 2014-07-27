@@ -44,6 +44,7 @@ class OutType{
 	const bool isArr;
 	const bool isTuple;
 	static OutType* BOTTOM;
+    static OutType* UNKNOWN;
 	static OutType* BOOL;
 	static OutType* INT;
 	static OutType* FLOAT;
@@ -62,7 +63,7 @@ class OutType{
 };
 
 
-
+class Unknown: public OutType{public: Unknown(): OutType(false, false){} string str() const{ return "UNKNOWN"; } };
 
 class Bottom: public OutType{public: Bottom(): OutType(false, false){}  string str() const{ return "BOTTOM"; }  };
 
@@ -561,7 +562,7 @@ class TUPLE_R_node: public bool_node{
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::BOTTOM || OutType::BOOL){
+       if(ot == OutType::UNKNOWN || OutType::BOOL){
             return ot;
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
