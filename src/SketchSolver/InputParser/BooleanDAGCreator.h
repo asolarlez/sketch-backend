@@ -32,7 +32,7 @@ public:
   */
   INTER_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
   INTER_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
-  
+  INTER_node* create_outputs(int n, int count, const string& gen_name=string("OUTPUT"));
 
   /** Produces a node called name.
   */

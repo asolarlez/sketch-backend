@@ -615,6 +615,7 @@ class XOR_node: public bool_node{
 class INTER_node: public bool_node{
 	public:
 	string name;
+    int count;
 	protected:
 	
 	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), name(bn.name), nbits(bn.nbits){ }

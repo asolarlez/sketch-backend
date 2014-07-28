@@ -254,3 +254,14 @@ INTER_node* BooleanDAGCreator::create_outputs(int n, const string& gen_name){
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }
+
+INTER_node* BooleanDAGCreator::create_outputs(int n, int count, const string& gen_name) {
+    Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
+	INTER_node* tmp =  dag->create_outputs(n, gen_name);
+    tmp->count = count;
+	bool_node* f;
+	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
+	Assert(!flag, "Two inputs with the same name!");
+	optim.dagsizeSet(dag->size());
+	return tmp;
+}

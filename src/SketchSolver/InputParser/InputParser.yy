@@ -191,9 +191,9 @@ ParamDecl: T_vartype T_ident {
  	 }
 	 delete $3;
  }
- | '!' T_ident T_ident{
+ | '!' T_ident T_ident T_int{
 
-    currentBD->create_outputs(-1, *$3);
+    currentBD->create_outputs(-1, $4, *$3);
     delete $3;
  }
  |
@@ -598,7 +598,7 @@ Term: Constant {
 		UFUN_node* ufun = new UFUN_node(fname);
 		ufun->outname = *$13;
 		int fgid = $15;
-		ufun->fgid = fgid;	
+		ufun->fgid = fgid;
 		bool_node* pCond;	
 		if(currentBD->methdparams.count(fgid)>0){
 			ufun->multi_mother = currentBD->methdparams[fgid];
