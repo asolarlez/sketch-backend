@@ -1444,8 +1444,7 @@ void DagOptim::visit( UFUN_node& node ){
 			rvalue = brother;
 			return;
 		}
-		possibleCycles = true;
-		
+		possibleCycles = true;		
 		if(true /*|| !checkPrecedence(node.mother, brother)*/){
 			
 			brother->dislodge();
@@ -2245,6 +2244,7 @@ char* toString(TempTriple& tmp){
 }
 	
 void DagOptim::visit( ASSERT_node &node){
+
 	if(isConst(node.mother)){
 		int cv = this->getIval(node.mother);
 		if(cv == 1){
@@ -2253,6 +2253,14 @@ void DagOptim::visit( ASSERT_node &node){
 		}
 	}
 	
+	if(!node.isNormal()){
+		//We should clear the callMap after an assume to prevent merging calls from before Assume with calls after Assume. 
+		//otherwise this may reorder assumes and asserts and change the semantics of the program.
+		callMap.clear();
+		rvalue = &node;
+		return;
+	}
+
 	if(node.mother->type == bool_node::OR){
 		TempTriple tmp;
 		bool good = false;

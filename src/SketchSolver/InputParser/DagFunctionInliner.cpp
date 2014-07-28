@@ -482,9 +482,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						DllistNode* tt = getDllnode(n);
 						tmpList.append(tt);
 					}
-					n->mother->children.insert(n);											
-					this->addNode(n);
+					n->mother->children.insert(n);	
 					
+					this->addNode(n);
+					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){
+						cout<<"Found ASSUME "<<node.lprint()<<endl;
+						callMap.clear();						
+					}
 				}
 			}else{
 				if( n!= NULL){

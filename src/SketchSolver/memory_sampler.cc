@@ -55,8 +55,8 @@ statistics::MemorySampler::MemorySampler (unsigned int intervalSecs)
 statistics::MemorySampler::~MemorySampler ()
 {
 #if defined (__linux)
-    assert (0 == pthread_mutex_destroy (&lock_));
-    assert (0 == pthread_cond_destroy (&cond_));
+     (pthread_mutex_destroy (&lock_));
+     (pthread_cond_destroy (&cond_));
 #endif
 }
 

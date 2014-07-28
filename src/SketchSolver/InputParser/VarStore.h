@@ -289,6 +289,9 @@ public:
 			int s  = t.find(':');
 			string name= t.substr(0, s);
 			string val = t.substr(s+1);
+			if(index.count(name)==0){
+				continue;
+			}
 			objP& oo = this->getObj(name);
 			oo.setVal(atoi(val.c_str()));
 		}

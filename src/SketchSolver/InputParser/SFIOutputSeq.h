@@ -15,8 +15,9 @@ public:
 	int iter;
 
 	SFIOutputSeq(ostream& out_p, BooleanDAG* miter, SolverHelper& finder, SolverHelper& checker, CommandLineArgs& args, BooleanDAG* seqMiter_p, BooleanDAG* initializer_p):
-	  CEGISSolver(miter, finder, checker, args)
+	  CEGISSolver(finder,args)
 	{
+		Assert(false, "This does not work anymore");
 		seqMiter = seqMiter_p;
 		initializer = initializer_p;
 		iter = 0;
@@ -150,7 +151,7 @@ public:
 		delete seq;
 		delete init;
 
-		CEGISSolver::setNewControls(controls);
+		// CEGISSolver::setNewControls(controls, dirC);
 	}
 
 	void output_control_map(ostream& out){

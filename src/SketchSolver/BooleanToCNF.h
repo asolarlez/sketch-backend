@@ -42,8 +42,7 @@ class SolverHelper {
     int varCnt;
 	int lastVar;
     SATSolver& mng;
-	vector<char> tmpbuf;
-	
+	vector<char> tmpbuf;	
 
 	int setStr(int id1, char op, int id2){
 		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
@@ -88,6 +87,7 @@ class SolverHelper {
 
 public:
     int YES;
+	string lastErrMsg;
 	int getLastVar(){ return lastVar; }
 	map<string, int>::const_iterator arrsize_begin(){
 		return arrsize.begin();
