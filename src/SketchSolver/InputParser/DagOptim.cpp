@@ -1149,7 +1149,7 @@ void DagOptim::visit( ARR_R_node& node ){
 				}
 			}
 
-			if(isConst(nfather->mother) && nmother->type == bool_node::ARRACC && isConst(((ARRACC_node*)nmother)->multi_mother[0]) && isConst(((ARRACC_node*)nmother)->multi_mother[1]) ){
+			if(isConst(nfather->mother) && nmother->type == bool_node::ARRACC && isConst(((ARRACC_node*)nmother)->multi_mother[0]) && isConst(((ARRACC_node*)nmother)->multi_mother[1]) && ((ARRACC_node*)nmother)->multi_mother.size()==2 ){
 				/* X = A{i -> t}; y = X[a?b:c];  ===> y = a?X[b]:X[c];
 				*/
 				ARRACC_node *amother = ((ARRACC_node*)nmother);
