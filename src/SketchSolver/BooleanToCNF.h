@@ -289,9 +289,9 @@ public:
 		return mng.ignoreOld();
 	}
     int assertVectorsDiffer (int v1, int v2, int size);
-    int select(int choices[], int control, int nchoices, int bitsPerChoice);
-    int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
-    int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
+    // int select(int choices[], int control, int nchoices, int bitsPerChoice);
+    // int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
+    // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, vector<guardedVal>& output);
 	void addHelperC(int l1, int l2);
 };
@@ -406,37 +406,11 @@ SolverHelper::addXorClause (int a, int b, int x)
 inline int
 SolverHelper::addOrClause (int a, int b, int x)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
-	a = sval(a); b = sval(b); 
-    /* Check for shortcut cases (prefer fixed results first). */
-    if (a == YES || b == YES || a == -b)
-	return addEqualsClause (YES, x);
-    if (b == -YES || a == b)
-	return addEqualsClause (a, x);
-    if (a == -YES)
-	return addEqualsClause (b, x);
-
-    /* Allocate fresh result variable as necessary. */
-	if (x == 0){
-		if(doMemoization){
-			int l = this->setStr(min(a,b), '|' ,max(a,b));
-			int rv;
-			int tt = lastVar+1;
-			if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
-				int xx = mng.isValKnown(rv);
-				if(xx != 0){  return xx*YES; }
-				return rv;
-			}		
-		}
-		x = newAnonymousVar ();
-		//Assert(tt == x, "This is an invariant that shouldn't be violated");
-	}
-
-
-    /* Add clause. */
-    mng.addOrClause (x, a, b);
-
-    return x;
+	if(x==0){
+		return -addAndClause(-a, -b, x);
+	}else{
+		return addAndClause(-a, -b, -x);
+	}	
 }
 
 /*

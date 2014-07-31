@@ -53,7 +53,9 @@ public:
     virtual void annotateInput(const string& name, int i, int sz)=0;
     virtual void addChoiceClause(int x, int a, int b, int c)=0;
     virtual void addXorClause(int x, int a, int b)=0;
-    virtual void addOrClause(int x, int a, int b)=0;
+    
+	// virtual void addOrClause(int x, int a, int b)=0;
+
     virtual void addBigOrClause(int* a, int size)=0;
     virtual void addAndClause(int x, int a, int b)=0;
     virtual void addEqualsClause(int x, int a)=0;

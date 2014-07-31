@@ -514,13 +514,35 @@ public:
 	virtual  CONST_node* getCnode(double c);
 	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);
 	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
-	virtual bool isConst(const bool_node* n1);
-	virtual bool getBval(const bool_node* n1);
-	virtual int getIval(const bool_node* n1);
+	bool isConst(const bool_node* n1);
+	bool getBval(const bool_node* n1);
+	int getIval(const bool_node* n1);
 	bool_node*  addGE(bool_node* mother, bool_node* father);
 	bool_node*  addLE(bool_node* mother, bool_node* father);
 	bool_node*  addGT(bool_node* mother, bool_node* father);
 };
+
+
+inline
+bool DagOptim::isConst(const bool_node* n1){
+	if( n1->type == bool_node::CONST ){
+		return !((CONST_node*)n1)->isFloat();
+		// return true;
+	}
+	return false;
+}
+
+inline
+bool DagOptim::getBval(const bool_node* n1){
+	return getIval(n1) != 0;
+}	
+
+inline
+int  DagOptim::getIval(const bool_node* n1){
+	//Assert( isConst(n1), "This node is not a constant !!");
+	const CONST_node * cn = (CONST_node*)(n1);
+	return cn->getVal()	;
+}
 
 
 

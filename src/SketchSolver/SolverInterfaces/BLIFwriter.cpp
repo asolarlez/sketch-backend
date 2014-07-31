@@ -60,13 +60,14 @@ void BLIFwriter::annotateInput(const string& name, int i, int sz){
 }
 
 //This function encodes x == a or b;
+ /*
  void BLIFwriter::addOrClause(int x, int a, int b){
 	 if(!off){
 		output<<".names "<<nm(a)<<" "<<nm(b)<<" "<<nm(x)<<endl;
 		output<<sgn(a)<<"-"<<" 1"<<endl;
 		output<<"-"<<sgn(b)<<" 1"<<endl;
 	 }
-}
+}*/
 
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];

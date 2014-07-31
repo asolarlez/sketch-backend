@@ -250,8 +250,8 @@ public:
 	}
 
 	virtual bool checkInline(UFUN_node& node){
-		if(node.dependent()){ return true; } // dependent calls are not really calls and should be ignored.
-
+		if(node.dependent()){ return true; } // dependent calls are not really calls and should be ignored.		
+		
 		const bool rv = checkInlineHelper(node);
 		if(!rv){ 
 			recInsert(node.mother);		

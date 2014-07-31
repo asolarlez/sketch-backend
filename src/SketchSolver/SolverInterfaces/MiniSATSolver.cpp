@@ -105,6 +105,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 }
 
 //This function encodes x == a or b;
+ /*
  void MiniSATSolver::addOrClause(int x, int a, int b){
 	Dout( cout<<"@ "<<x<<"= "<<a<<" or "<<b<<"; "<<endl );
 	FileOutput( output<<x<<" OR "<<a<<" "<<b<<endl );
@@ -112,7 +113,7 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	{ int tmp[] = { (x), -(a)}; addClause(tmp, 2, lits);}
 	{ int tmp[] = { (x), -(b)}; addClause(tmp, 2, lits);}
 	{ int tmp[] = { -(x), (a), (b)}; addClause(tmp, 3, lits);}
-}
+}*/
 
 
 //This function encodes a[0] == a[1] or a[2] or ... a[size];

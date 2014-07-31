@@ -95,6 +95,7 @@ void SolverHelper::addHelperC(int l1, int l2){
 	}
 }
 
+/*
 int
 SolverHelper::select (int choices[], int control, int nchoices, int bitsPerChoice)
 {
@@ -156,3 +157,4 @@ SolverHelper::arbitraryPerm (int input, int insize, int controls[], int ncontrol
     return outvar;
 }
 
+*/

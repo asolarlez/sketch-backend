@@ -467,24 +467,6 @@ bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	}
 	return false;
 }
-bool DagOptim::isConst(const bool_node* n1){
-	if( n1->type == bool_node::CONST ){
-		return !dynamic_cast<const CONST_node*>(n1)->isFloat();
-		// return true;
-	}	
-	return false;
-}
-
-
-bool DagOptim::getBval(const bool_node* n1){
-	return getIval(n1) != 0;
-}	
-
-int  DagOptim::getIval(const bool_node* n1){
-	Assert( isConst(n1), "This node is not a constant !!");
-	const CONST_node * cn = dynamic_cast<const CONST_node*>(n1);
-	return cn->getVal()	;
-}
 
 
 void DagOptim::visit( SRC_node& node ){
@@ -1085,22 +1067,31 @@ void DagOptim::visit( TUPLE_R_node& node){
 void DagOptim::visit( ARR_R_node& node ){
 	//mother = index
 	//father = inputarr
-	if(node.father->type == bool_node::ARR_W){
-		if(node.father->mother == node.mother){
+	bool_node* nfather = node.father;
+	bool_node* nmother = node.mother;
+
+	if(nfather->type == bool_node::ARR_W){
+		if(nfather->mother == nmother){
 			/* X = A{i -> t}; y = X[i];  ===> y = t;
 			*/
-			rvalue = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[1];
+			rvalue = dynamic_cast<ARR_W_node*>(nfather)->multi_mother[1];
 			return;
 		}else{
 
-			if(isConst(node.father->mother) && isConst(node.mother) && getIval(node.father->mother)!=getIval(node.mother)){
+			if(isConst(nfather->mother) && isConst(nmother) && getIval(nfather->mother)!=getIval(nmother)){
 				//They must be different constants, otherwise we wouldn't be in this branch.
 				/* X = A{i -> t}; y = X[j];  ===> y = A[j];
-				*/				
-				node.dislodge();
-				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
-				node.resetId();
-				node.addToParents();
+				*/
+				//Experimental optimization. node.father and node.mother can't be equal because they are different type.
+				//So we don't have to dislodge from both, only from father, since that's what we are changing.
+				//Also, we only have to insert to the new father.
+				//Also, there is no need to change the id of the node, because its semantics haven't changed.
+				//node.dislodge();
+				node.father->remove_child(&node);
+				node.father = ((ARR_W_node*)nfather)->multi_mother[0];
+				// node.resetId();
+				// node.addToParents();
+				node.father->children.insert(&node);				
 				node.accept(*this);
 				return;
 			}
@@ -1147,9 +1138,9 @@ void DagOptim::visit( ARR_R_node& node ){
 		}
 	}
 
-	if(isConst(node.mother) && node.father->type == bool_node::ARR_CREATE){
-		int idx = getIval(node.mother);
-		ARR_CREATE_node* acn = dynamic_cast<ARR_CREATE_node*>(node.father);
+	if(isConst(nmother) && nfather->type == bool_node::ARR_CREATE){
+		int idx = getIval(nmother);
+		ARR_CREATE_node* acn = ((ARR_CREATE_node*)node.father);
 		if(idx >= acn->multi_mother.size()){
 			rvalue = getCnode(acn->dfltval);
 			return;
@@ -1416,6 +1407,9 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 	}
 
+
+
+
 	string tmp = node.get_ufname();
 	if(node.ignoreAsserts){
 		tmp += "_IA";
@@ -1440,8 +1434,13 @@ void DagOptim::visit( UFUN_node& node ){
 	
 	if(bro != callMap.end()){
 		UFUN_node* brother = bro->second;
-		if(brother->mother == node.mother){
+		if(brother->mother == node.mother){			
 			rvalue = brother;
+
+			bool_node* tnode = cse.computeCSE(rvalue);
+			if(tnode != rvalue){
+				rvalue = tnode;				
+			}
 			return;
 		}
 		possibleCycles = true;		
@@ -1467,13 +1466,21 @@ void DagOptim::visit( UFUN_node& node ){
 						
 
 			brother->mother = on;
-			brother->resetId();
+//			brother->resetId();
+//			Shouldn't reset id. Global ID stays the same because meaning stays the same.			
 			brother->addToParents();
 			
 
 			rvalue = brother;
+
+			bool_node* tnode = cse.computeCSE(rvalue);
+			if(tnode != rvalue){
+				rvalue = tnode;				
+			}
+
 			return;
 		}else{
+			Assert(false, "Dead branch");
 			child_iter end = node.children.end();
 			for(child_iter it = node.children.begin(); 
 												it !=end; ++it){
@@ -1482,14 +1489,22 @@ void DagOptim::visit( UFUN_node& node ){
 			}
 			node.children.clear();
 			rvalue = &node;
+			bool_node* tnode = cse.computeCSE(rvalue);
+			if(tnode != rvalue){
+				rvalue = tnode;				
+			}
 			return;
 		}
 
 
 		
 	}else{
-		callMap[tmp] = &node;
 		rvalue  = &node;
+		bool_node* tnode = cse.computeCSE(rvalue);
+		if(tnode != rvalue){
+			rvalue = tnode;			
+		}
+		callMap[tmp] = dynamic_cast<UFUN_node*>(rvalue);
 		return;
 	}
 
@@ -2388,9 +2403,11 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 bool_node* DagOptim::computeOptim(bool_node* node){
     node->accept(*this);
 	node = rvalue;
-   
-	bool_node* tmp = cse.computeCSE(node);
-	
+	bool_node* tmp = node;
+   if(node->type != bool_node::UFUN){
+	   //if it is ufun, accept already called computeCSE.
+		tmp = cse.computeCSE(node);
+   }
 	if(tmp != node){
 		if(newnodes.size() > 0 && node == stillPrivate && stillPrivate == *( newnodes.rbegin() )){
 			stillPrivate->dislodge();
