@@ -1087,14 +1087,28 @@ void DagOptim::visit( ARR_R_node& node ){
 				//Also, we only have to insert to the new father.
 				//Also, there is no need to change the id of the node, because its semantics haven't changed.
 				//node.dislodge();
-				node.father->remove_child(&node);
-				node.father = ((ARR_W_node*)nfather)->multi_mother[0];
+
+				bool_node* newFather = ((ARR_W_node*)nfather)->multi_mother[0];
+
+				node.father->remove_child(&node);				
+				while(newFather->type == bool_node::ARR_W && isConst(newFather->mother) && getIval(newFather->mother)!=getIval(nmother)){
+					newFather = ((ARR_W_node*)newFather)->multi_mother[0];				
+				}
+				
+
+
+				node.father = newFather;
 				// node.resetId();
 				// node.addToParents();
 				node.father->children.insert(&node);				
 				node.accept(*this);
 				return;
 			}
+
+
+
+
+
 			if(node.father->mother->type == bool_node::PLUS &&
 				node.father->mother->mother == node.mother && 
 				isConst(node.father->mother->father) &&
@@ -1134,6 +1148,32 @@ void DagOptim::visit( ARR_R_node& node ){
 					}
 				}
 			}
+
+			if(isConst(nfather->mother) && nmother->type == bool_node::ARRACC && isConst(((ARRACC_node*)nmother)->multi_mother[0]) && isConst(((ARRACC_node*)nmother)->multi_mother[1]) ){
+				/* X = A{i -> t}; y = X[a?b:c];  ===> y = a?X[b]:X[c];
+				*/
+				ARRACC_node *amother = ((ARRACC_node*)nmother);
+				ARRACC_node *an = new ARRACC_node();
+				an->mother = nmother->mother;
+				ARR_R_node* ar0 = new ARR_R_node();
+				ar0->mother = amother->multi_mother[0];
+				ar0->father = nfather;
+				ar0->addToParents();
+
+
+				ARR_R_node* ar1 = new ARR_R_node();
+				ar1->mother = amother->multi_mother[1];
+				ar1->father = nfather;
+				ar1->addToParents();
+
+				an->multi_mother.push_back( optAdd(ar0) );
+				an->multi_mother.push_back( optAdd(ar1) );
+				an->addToParents();
+				rvalue = optAdd(an);				
+				return;
+			}
+
+
 
 		}
 	}
@@ -1497,7 +1537,7 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 
 
-		
+		 
 	}else{
 		rvalue  = &node;
 		bool_node* tnode = cse.computeCSE(rvalue);
