@@ -280,6 +280,9 @@ public:
     int addOrClause (int a, int b, int x = 0);
     int addBigOrClause (int* a, int last);
     int addAndClause (int a, int b, int x = 0);	
+
+	int addExPairConstraint(int* pairs, int npairs);
+
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
 	void addHardAssertClause (int a);
@@ -412,6 +415,60 @@ SolverHelper::addOrClause (int a, int b, int x)
 		return addAndClause(-a, -b, -x);
 	}	
 }
+
+inline
+int SolverHelper::addExPairConstraint(int* pairs, int npairs){
+	int cnt = 0;
+	for(int i=0; i<npairs; ++i){
+		int x = sval(pairs[2*i]);
+		int y = sval(pairs[2*i+1]);
+		if(x==-YES || y ==-YES){
+			continue;
+		}
+		if(x==YES){
+			return y;
+		}
+		if(y==YES){
+			return x;
+		}
+		if(x==-y){
+			continue;
+		}
+		pairs[2*cnt] = min(x, y);
+		pairs[2*cnt+1] = max(x,y);
+		++cnt;
+	}
+	if(cnt == 0){
+		return -YES;
+	}
+	if(cnt == 1){
+		return addAndClause(pairs[0], pairs[1]);
+	}
+	if(cnt==2){
+		if(
+			(pairs[0] == -pairs[2] && pairs[1] == -pairs[3])  ||
+			(pairs[0] == -pairs[3] && pairs[1] == -pairs[2])
+			){
+			return addXorClause(pairs[0], -pairs[1]);
+		}
+
+	}
+
+	if(doMemoization){
+		int l = this->setStrBO(pairs, cnt*2, '/', 0);
+		int rv;
+		int tt = lastVar+1;
+		if(this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)){
+			int xx = mng.isValKnown(rv);
+			if(xx != 0){  rv = xx*YES; }
+			return rv;
+		}		
+	}
+	int out = newAnonymousVar ();
+	mng.addExPairConstraint(pairs, cnt, out);
+	return out;
+}
+
 
 /*
  * This encodes a[0] == (a[1] OR a[2] OR ...  OR a[last]).

@@ -577,18 +577,7 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 
 template<typename THEOP>
 inline int NodesToSolver::doArithExpr(int quant1, int quant2, int id1, int id2, THEOP comp){
-	int tt = comp(quant1, quant2);
-	if(!shortcut){
-		return tt;
-	}
-	if(PARAMS->randBnd > 0 && abs(tt) > PARAMS->randBnd){ 
-		//cout<<"WARNING: I am doing some really crazy stuff!!!!"<<endl;
-		if(!dir.getMng().isNegated()){
-			tt = (rand() % (2*PARAMS->randBnd))-PARAMS->randBnd; 
-		}else{
-			tt =  PARAMS->randBnd*2;
-		}
-	}
+	int tt = comp(quant1, quant2);	
 	return tt;
 }
 
@@ -872,6 +861,7 @@ NodesToSolver::processArith (bool_node &node)
 	bool isSum = node.type == bool_node::PLUS || node.type == bool_node::TIMES;
 	bool skipZeros = node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD;
 	map<int, int> numbers;
+	map<int, vector<int> > qnumbers;
 	Tvalue& oval = node_ids[node.id];
 	vector<guardedVal>& tmp = oval.num_ranges;
 	tmp.clear();
@@ -930,46 +920,67 @@ NodesToSolver::processArith (bool_node &node)
 			//if(quant > INTEGERBOUND){ quant = INTEGERBOUND; }
 			Dout(cout<<"QUANT = "<<quant<<"          "<<mval.getId (i)<<", "<<fval.getId (j)<<endl);
 			//						btimer.restart();
-			map<int, int>::iterator it = numbers.find(quant);
-			//						btimer.stop();
-			if( it != numbers.end()){
-				//							ctimer.restart();
-				if(isSum){
-					// Because the Tvalues have all their values unique,
-					//and because if i != j then a + i == b + j -> a != b
-					// and because only 1 id can be true in each Tvalue
-					//This optimization is sound.
-					//The same is true for a*i == b*j as long as a and i != 0
-					it->second = dir.addChoiceClause(mval.getId (i),fval.getId (j), it->second);
-				}else{
-				int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
-				int cvar2 = dir.addOrClause(cvar, it->second);
-				it->second = cvar2;
-				}
-				//							ctimer.stop();
+
+			if(isSum){
+				qnumbers[quant].push_back(mval.getId(i));
+				qnumbers[quant].push_back(fval.getId(j));				
 			}else{
-				//							dtimer.restart();
-				int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));				
-				if(numbers.size() >= INTEGERBOUND){
-					PrintSource ps(node_ids);
-					ps.process(*tmpdag, node.id);
-					Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER" << " current randBnd =" << PARAMS->randBnd << " try to set a smaller one with --bndwrand in backend, or --bnd-int-range in frontend");
+				map<int, int>::iterator it = numbers.find(quant);
+				//						btimer.stop();
+				if( it != numbers.end()){
+						int cvar = dir.addAndClause(mval.getId (i),fval.getId (j));
+						int cvar2 = dir.addOrClause(cvar, it->second);
+						it->second = cvar2;				
+				}else{
+						int cvar = dir.addAndClause(mval.getId (i), fval.getId (j));				
+						if(numbers.size() >= INTEGERBOUND){
+							PrintSource ps(node_ids);
+							ps.process(*tmpdag, node.id);
+							Assert(false, "AN INTEGER GOT REALLY BIG, AND IS NOW BEYOND THE SCOPE OF THE SOLVER" << " current randBnd =" << PARAMS->randBnd << " try to set a smaller one with --bndwrand in backend, or --bnd-int-range in frontend");
+						}
+						numbers[quant] = cvar;
+						++vals;								
 				}
-				numbers[quant] = cvar;
-				++vals;
-				//							dtimer.stop();
 			}
 		//cout<<" ENDLOOP "<<endl;
 	    }
 	}
-	//				atimer.print();
-	//				btimer.print();
-	//				ctimer.print();
-	//				dtimer.print();
 
+	if(isSum){
+		for(map<int, vector<int> >::iterator it = qnumbers.begin(); it != qnumbers.end(); ++it){
+			int id = dir.addExPairConstraint(&(it->second[0]), it->second.size()/2);
+			numbers[it->first] = id;
+			++vals;
+		}
+	}
+
+	if(shortcut){
+		int refuse = -YES;
+		for(map<int, int >::iterator it = numbers.begin(); it != numbers.end(); ){
+			int tt = it->first;
+			if(PARAMS->randBnd > 0 && abs(tt) > PARAMS->randBnd){ 				
+				refuse = dir.addOrClause(refuse, it->second);
+				numbers.erase(it++);
+			}else{
+				++it;
+			}
+		}		
+		if(refuse != -YES){
+			if(!dir.getMng().isNegated()){
+				int id = rand() % numbers.size();
+				map<int, int>::iterator mit = numbers.begin();
+				for(int i=0; i<id; ++i){ ++mit; }				
+				mit->second = dir.addOrClause(mit->second, refuse);			
+			}else{
+				Assert(numbers.count(PARAMS->randBnd*2)==0, "Lnliurya;");
+				numbers[PARAMS->randBnd*2] = refuse;		
+			}			
+		}
+		vals = numbers.size();
+	}
 
 	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
-	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here");
+	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here "<<vals<<"  "<<numbers.size());
 	
 	tmp.resize(vals);
 	map<int, int>::iterator it = numbers.begin();
@@ -2364,7 +2375,8 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 
 
-//		Tvalue& tv = node_ids[(*node_it)->id];
+		// Tvalue& tv = node_ids[(*node_it)->id];
+		// cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
 //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		

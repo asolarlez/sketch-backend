@@ -12,7 +12,7 @@
 #include "MiniSATSolver.h"
 
 
-// #define Dout( out )      out 
+#define Dout( out )   /*   out  */
 
 
 void MiniSATSolver::markInput(int id){
@@ -37,6 +37,26 @@ void MiniSATSolver::annotate(const string& msg){
 	FileOutput(output<<endl);
 }
 
+
+ void MiniSATSolver::addExPairConstraint(int* pairs, int npairs, int out){
+	int* tb = new int[2*npairs+2];
+	vec<Lit> lits;
+	tb[0] = -out;
+	tb[npairs+1] = -out;
+	for(int i=0; i<npairs; ++i){
+		int x = pairs[2*i];
+		int y = pairs[2*i+1];
+		{ int tmp[] = {-x, -y, out}; addClause(tmp, 3, lits); }
+		{ int tmp[] = {-out, -x, y}; addClause(tmp, 3, lits); }
+		{ int tmp[] = {-out, x, -y}; addClause(tmp, 3, lits); }
+		Dout(cout<<"@ ExPair : "<<out<<" <- ("<<x<<", "<<y<<")"<<endl;)
+		tb[i+1] = x;
+		tb[npairs+i+2] = y;
+	}
+	addClause(tb, npairs+1, lits);
+	addClause(tb+npairs+1, npairs+1, lits);
+	delete tb;
+ }
 
  void MiniSATSolver::addCountingHelperClause(int c[], int sz){
 	Assert(sz>2, "addCountingHelperClause: too small sz=" << sz);

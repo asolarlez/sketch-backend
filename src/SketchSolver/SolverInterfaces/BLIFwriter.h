@@ -70,6 +70,7 @@ public:
     virtual int newInVar();
     virtual void disableVarBranch(int i);
 	virtual void outputSAT(){ }
+	virtual void addExPairConstraint(int* pairs, int npairs, int out){}
     virtual bool ignoreOld();
 
     virtual int solve();

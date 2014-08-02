@@ -425,7 +425,8 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 
 void Solver::uncheckedEnqueue(Lit p, Clause* from)
-{	
+{		
+	// cout<<"           "<<(sign(p)?"-":" ")<<var(p)<<endl;
     assert(value(p) == l_Undef);
     assigns [var(p)] = toInt(lbool(!sign(p)));  // <<== abstract but not uttermost effecient
     level   [var(p)] = decisionLevel();
@@ -506,7 +507,7 @@ Clause* Solver::propagate()
 						qhead = trail.size();		
 						Fake* f = new (&c[0]) Fake();
 						Clause* nc = Clause::Clause_new(*(f), true);
-						// std::cout<<"     clause ["<<var(c[0])<<", "<<var(c[1])<<"]"<<std::endl;
+						// std::cout<<"     clause ["<<(sign(c[0])?"-":" ")<<var(c[0])<<", "<<(sign(c[1])?"-":" ")<<var(c[1])<<"]"<<std::endl;
 						*j++ = nc;
 						learnts.push(nc);
 						//Important invariant: This singleset clause is in the watches of all its literals except for the last one.
@@ -702,6 +703,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
     for (;;){
         Clause* confl = propagate();
         if (confl != NULL){
+			// cout<<"CONFLICT"<<endl;
             // CONFLICT
 			firstTry = false;
             conflicts++; conflictC++;
@@ -776,6 +778,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
             newDecisionLevel();
+			// cout<<(sign(next)?"-":" ")<<var(next)<<endl;
             uncheckedEnqueue(next);
         }
     }

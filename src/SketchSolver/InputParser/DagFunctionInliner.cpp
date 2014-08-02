@@ -485,8 +485,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					n->mother->children.insert(n);	
 					
 					this->addNode(n);
-					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){
-						cout<<"Found ASSUME "<<node.lprint()<<endl;
+					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){						
 						callMap.clear();						
 					}
 				}

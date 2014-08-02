@@ -68,6 +68,8 @@ public:
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);
 
+	 virtual void addExPairConstraint(int* pairs, int npairs, int out);
+
 	 virtual void hardAssertVarClause(int x);
 	 
 	 virtual void markInput(int id);
