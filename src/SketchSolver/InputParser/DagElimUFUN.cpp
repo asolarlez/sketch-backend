@@ -95,7 +95,8 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 			//}
 			src->setArr(sz);
 		}
-		return src;
+    
+        return src;
 }
 
 /**
@@ -122,12 +123,19 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		//This means this is the first time we see
 		//this function, so the function just outputs its symvalue.
 		//The symvalue has to be created first, though.
-		Dout( cout<<" First time for the function"<<endl );		
-
-		SRC_node* src = srcNode(node, 0);
+		Dout( cout<<" First time for the function"<<endl );
+        
+        
+        SRC_node* src = srcNode(node, 0);
 
 		newnodes.push_back( src );
-		rv = src;
+        
+        TUPLE_CREATE_node* tupOutput = new TUPLE_CREATE_node();
+        tupOutput->setName(node.getTupleName());
+        tupOutput->multi_mother.push_back(src);
+        tupOutput->addToParents();
+        newnodes.push_back(tupOutput);
+		rv = tupOutput;
 		
 		//Now, we have to build the first SFunInfo for the node.
 		// This first SFunInfo will be equal to:
@@ -137,7 +145,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		sfi.fun = new BooleanDAG("tmp");
 		bool_node* svar = sfi.fun->create_inputs(src->get_nbits(), src->getOtype(),  "SVAR");
 		
-		sfi.symval = src;
+		sfi.symval = tupOutput;
 		sfi.outval = rv;
 		for(int i=0; i<nargs; ++i){
 			stringstream str;
@@ -192,15 +200,20 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		
 
 		SRC_node* src = srcNode(node, sfi.step);
-
-		sfi.step++;				
-		ch->multi_mother.push_back(src);				
+        TUPLE_CREATE_node* tupOutput = new TUPLE_CREATE_node();
+        tupOutput->setName(node.getTupleName());
+        tupOutput->multi_mother.push_back(src);
+        tupOutput->addToParents();
+        sfi.step++;
+		
+        ch->multi_mother.push_back(tupOutput);
 		ch->multi_mother.push_back(sfi.symval);
 		ch->addToParents();
 
 		Dout(cout<<" After addToParents "<<endl);
 		
 		cclone->addNewNode(src);
+        cclone->addNewNode(tupOutput);
 		
 		Dout( cout<<" After raddNewNode src"<<endl  );
 		
@@ -264,7 +277,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 								
 		sfi.outval = rv;
 		//The previous symvalue is replaced with the current one.
-		sfi.symval = src;
+		sfi.symval = tupOutput;
 		
 		
 		

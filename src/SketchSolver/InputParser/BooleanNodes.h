@@ -355,7 +355,7 @@ class ARR_R_node: public bool_node{
             return otype;
         }
         OutType* ot = father->getOtype();
-        if(ot == OutType::BOTTOM || otype ==OutType::UNKNOWN){
+        if(ot == OutType::BOTTOM || ot ==OutType::UNKNOWN){
             otype = ot;
             return ot;
         }
@@ -427,6 +427,9 @@ class ARR_W_node:public arith_node{
         if(otype->isTuple){
             otype = ((Tuple*)otype)->arr;
         }
+        if (otype == OutType::UNKNOWN) {
+            return otype;
+        }
         otype = OutType::joinOtype(otype, multi_mother[1]->getOtype());
         return otype;
     }
@@ -469,8 +472,10 @@ class ARR_CREATE_node:public arith_node{
         if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
             return otype;
         }
+        otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
+            if (otype == OutType::UNKNOWN) return otype;
         }
         if(otype == OutType::INT){
             otype = OutType::INT_ARR;
@@ -562,7 +567,7 @@ class TUPLE_R_node: public bool_node{
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::UNKNOWN || OutType::BOOL){
+       if(ot == OutType::UNKNOWN || ot == OutType::BOOL){
             return ot;
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
@@ -894,6 +899,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(string& name){tupleName = name;}
+    string& getTupleName() {return tupleName;}
 	void makeArr(){
         /* todo tuple array */
 		if(nbits>1){
@@ -905,6 +911,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	bool isArr() const {
 		return otype == OutType::INT_ARR || otype == OutType::BOOL_ARR;
 	}
+    
 	OutType* getOtype()const {
 		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
 			return otype;
@@ -983,9 +990,10 @@ class ARRACC_node: public arith_node{
         if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
             return otype;
         }
-        
+        otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
+            if (otype == OutType::UNKNOWN) return otype;
         }
         return otype;
     }

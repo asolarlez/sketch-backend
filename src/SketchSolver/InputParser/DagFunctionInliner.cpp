@@ -496,7 +496,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					bool_node* ttv = n->mother;
 					if(oldFun.isModel){
 						if(assertCond == NULL){
-							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);												
+                            UFUN_node* un;
+                            if (ttv->type == bool_node::TUPLE_CREATE) {
+                                TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                                un = dynamic_cast<UFUN_node*>(outTuple->multi_mother[0]);
+                            } else {
+                                un =  dynamic_cast<UFUN_node*>(ttv);
+                            }
 							Assert(un != NULL, "Only ufun node can be the output of a model. ttv=" << ttv->lprint());
 							SRC_node* sc = ufToSrc[un];
 							sc->neighbor_replace(ttv);
@@ -527,7 +533,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							mx->addToParents();
 							addNode(qn);
 							addNode(mx);
-							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
+                            UFUN_node* un;
+                            if (ttv->type == bool_node::TUPLE_CREATE) {
+                                TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                                un = dynamic_cast<UFUN_node*>(outTuple->multi_mother[0]);
+                            } else {
+                                un =  dynamic_cast<UFUN_node*>(ttv);
+                            }
 							Assert(un != NULL, "Output of model should be an uninterpreted function.");
 							// BUGFIX: nbits must be 1 if original UFUN out is boolean type
 							int nbits = un->get_nbits();
