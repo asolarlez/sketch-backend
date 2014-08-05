@@ -343,7 +343,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
-		// getProblem()->lprint(cout);
+		//getProblem()->lprint(cout);
 	}
 	//FindCheckSolver::addInputsToTestSet(input);
 	lastFproblem = getProblem();	

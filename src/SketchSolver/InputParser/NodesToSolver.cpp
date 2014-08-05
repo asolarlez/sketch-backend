@@ -542,20 +542,32 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 		fhigh = -1;
 		finc = -1;
 	}
+
+	bool isEq = node.type == bool_node::EQ;
+
     for(int i=0; i<mval.getSize (); ++i){
 		for(int j=flow; j!=fhigh; j = j+finc){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
 		    if(comp(mval[i], fval[j])){
-				cvar = dir.addAndClause(mval.getId (i), fval.getId (j));
 				mc[i] = 'y';
 				fc[j] = 'y';
 				++orTerms;
-				if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-				scratchpad[orTerms] = cvar;
+				if(isEq){					
+					if(2*orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+					scratchpad[orTerms*2-2] = mval.getId(i);
+					scratchpad[orTerms*2-1] = fval.getId(j);
+				}else{
+					cvar = dir.addAndClause(mval.getId (i), fval.getId (j));									
+					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+					scratchpad[orTerms] = cvar;
+				}
 			}
 		}
     }
     if( orTerms < 2 ){
+		if(isEq){
+			cvar = dir.addExPairConstraint(&scratchpad[0], orTerms);
+		}
 		for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
 		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
 		node_ids[node.id] = cvar;
@@ -563,8 +575,13 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 		if(orTerms == mval.getSize() * fval.getSize()){
 			node_ids[node.id] = YES;
 		}else{
-			scratchpad[0] = 0;
-			int result = dir.addBigOrClause( &scratchpad[0], orTerms);
+			int result;
+			if(isEq){
+				result = dir.addExPairConstraint(&scratchpad[0], orTerms);
+			}else{
+				scratchpad[0] = 0;
+				result = dir.addBigOrClause( &scratchpad[0], orTerms);				
+			}
 			for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
 			for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
 			node_ids[node.id] = result;
@@ -2375,8 +2392,8 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 
 
-		// Tvalue& tv = node_ids[(*node_it)->id];
-		// cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
+//		 Tvalue& tv = node_ids[(*node_it)->id];
+//		 cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
 //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
