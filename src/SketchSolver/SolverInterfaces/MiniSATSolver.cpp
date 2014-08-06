@@ -141,13 +141,21 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	Dout( cout<<"@ "<<a[0]<<"= " );
 	FileOutput( output<<a[0]<<" BOR "<<size<<" " );
 	vec<Lit> lits;
-	for(int i=0; i<size; ++i){
-		Dout(cout<<a[i+1]<<" or ");
-		{ int tmp[] = { (a[0]), -(a[i+1])}; addClause(tmp, 2, lits);}
-		FileOutput( output<<a[i+1]<<" " );
-	}
+	
+	Dout(for(int i=0; i<size; ++i){cout<<a[i+1]<<" or "; })
+	//	{ int tmp[] = { (a[0]), -(a[i+1])}; addClause(tmp, 2, lits);}
+		//FileOutput( output<<a[i+1]<<" " );
+	
 	FileOutput( output<<endl );
 	Dout(cout<<"; "<<endl);
+	
+	
+	for(int i=0; i<size+1; ++i){	
+		int var = abs(a[i]);		
+		lits.push( (a[i] > 0) ? Lit(var) : ~Lit(var) );		
+	}
+	s->addClause(lits, LAZYOR);
+	lits.clear();
 	a[0] = -a[0];
 	addClause(a, size+1, lits);
 }

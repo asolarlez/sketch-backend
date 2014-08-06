@@ -37,6 +37,16 @@ static inline void remove(V& ts, const T& t)
     for (; j < ts.size()-1; j++) ts[j] = ts[j+1];
     ts.pop();
 }
+template<class V, class T>
+static inline void maybeRemove(V& ts, const T& t)
+{
+    int j = 0;
+    for (; j < ts.size() && ts[j] != t; j++);    
+    for (; j < ts.size()-1; j++) ts[j] = ts[j+1];
+	if(j < ts.size() ){
+	    ts.pop();
+	}
+}
 #else
 template<class V, class T>
 static inline void remove(V& ts, const T& t)

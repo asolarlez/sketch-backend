@@ -111,6 +111,7 @@ const lbool l_Undef = toLbool( 0);
 // Clause -- a simple class for representing a clause:
 
 extern uint32_t SINGLESET;
+extern uint32_t LAZYOR;
 
 class Fake{
 	Lit data[0];

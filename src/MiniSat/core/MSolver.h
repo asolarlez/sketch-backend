@@ -123,6 +123,7 @@ protected:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
+	vec<Clause*>        lazyors;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
@@ -182,7 +183,7 @@ protected:
     void     detachClause     (Clause& c);             // Detach a clause to watcher lists.
     void     removeClause     (Clause& c);             // Detach and free a clause.
     bool     locked           (const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
-    bool     satisfied        (const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
+    bool     satisfied        (const Clause& c) ; // Returns TRUE if a clause is satisfied in the current state.
 
     // Misc:
     //
@@ -255,7 +256,7 @@ inline lbool    Solver::value         (Var x) const   { return toLbool(assigns[x
 inline lbool    Solver::value         (Lit p) const   { return toLbool(assigns[var(p)]) ^ sign(p); }
 inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
-inline int      Solver::nClauses      ()      const   { return clauses.size(); }
+inline int      Solver::nClauses      ()      const   { return clauses.size() + lazyors.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return assigns.size(); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity    [v] = (char)b; }

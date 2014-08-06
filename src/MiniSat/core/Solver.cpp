@@ -32,6 +32,7 @@ namespace MSsolverNS{
 // Constructor/Destructor:
 
 uint32_t SINGLESET = 3;
+uint32_t LAZYOR = 1;
 
 Solver::Solver() :
 
@@ -68,6 +69,7 @@ Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
+	for (int i = 0; i < lazyors.size(); i++) free(lazyors[i]);
 }
 
 
@@ -112,14 +114,19 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         return false;
     else{
         // Check if clause is satisfied and remove false/duplicate literals:
-        sort(ps);
-        Lit p; int i, j;
-        for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
-            if (value(ps[i]) == l_True || ps[i] == ~p)
-                return true;
-            else if (value(ps[i]) != l_False && ps[i] != p)
-                ps[j++] = p = ps[i];
-        ps.shrink(i - j);
+		if(kind != LAZYOR){
+			sort(ps);
+			Lit p; int i, j;
+			for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+				if (value(ps[i]) == l_True || ps[i] == ~p){
+					if(kind == SINGLESET){
+						cout<<"AAAAAAAAAAAAARRRRRRRRRRGGGGGGGGGGHHHHHHHHHHHH"<<endl; }
+					return true;
+				}
+				else if (value(ps[i]) != l_False && ps[i] != p)
+					ps[j++] = p = ps[i];
+			ps.shrink(i - j);
+		}
     }
     if (false && kind == SINGLESET) {
 		cout << "addClause after shrink " << ps.size();
@@ -139,7 +146,11 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         Clause* c = Clause::Clause_new(ps, false);
         // bugfix: SINGLESET is only useful when ps.size()>2
         if (kind != SINGLESET || ps.size()>2) { c->mark(kind); }
-        clauses.push(c);
+		if(kind == LAZYOR){
+			lazyors.push(c);
+		}else{
+			clauses.push(c);
+		}        
         attachClause(*c);
     }
 
@@ -149,6 +160,22 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
+	if(c.mark()==LAZYOR){
+		/*
+		Lazyor clause has the following structure 
+		c[0] = c[1] or c[2] c[3] ...c[n-1]
+		So we want the following rules for i>0
+		c[i] => if(c[0] == undef){ c[0] = true }
+		        if(c[0] == false){ conflict (c[0], -c[i]) }
+		
+		*/		
+		assert(c.size()>2);
+		for(int i=1; i<c.size(); ++i){
+			watches[toInt(c[i])].push(&c);
+		}
+		clauses_literals += c.size();
+		return;
+	}
     watches[toInt(~c[0])].push(&c);
     watches[toInt(~c[1])].push(&c);
 	if(c.mark()==SINGLESET){
@@ -164,6 +191,25 @@ void Solver::attachClause(Clause& c) {
 
 void Solver::detachClause(Clause& c) {
     assert(c.size() > 1);
+
+	if(c.mark() == LAZYOR){
+		// cout<<"REMOVING LAZYOR"<<endl;
+		for(int ii=1; ii<c.size(); ++ii){
+			maybeRemove(watches[toInt(c[ii])], &c);
+		}
+
+		clauses_literals -= c.size();
+		return;
+	}
+	if(c.mark()==SINGLESET){
+		// cout<<"REMOVING SINGLESET"<<endl;
+		for(int ii=0; ii<c.size()-1; ++ii){
+			remove(watches[toInt(~c[ii])], &c);
+		}
+		clauses_literals -= c.size();
+		return;
+	}
+
 	assert(c.mark()==0);
     assert(find(watches[toInt(~c[0])], &c));
     assert(find(watches[toInt(~c[1])], &c));
@@ -178,8 +224,41 @@ void Solver::removeClause(Clause& c) {
     free(&c); }
 
 
-bool Solver::satisfied(const Clause& c) const {
-	if(c.mark() == SINGLESET){ return false; }
+bool Solver::satisfied(const Clause& c) {
+	if(c.mark() == SINGLESET){ 
+		for (int i = 0; i < c.size(); i++){
+			lbool cv = value(c[i]);
+			if(cv == l_Undef){
+				return false;
+			}			   
+		}
+		// cout<<"Removing SINGLESET"<<endl;
+		return true; 
+	}
+	if(c.mark()== LAZYOR){
+		if(value(c[0])==l_True){
+			return true;
+		}
+		if(value(c[0])==l_False){
+			for (int i = 0; i < c.size(); i++){
+				lbool cv = value(c[i]);
+				if(cv == l_Undef){
+					uncheckedEnqueue(~c[i], NULL);
+					// cout<<"Propagating from constant Lazyor"<<endl;
+				}	
+				if(cv == l_True){
+					return false; 
+					//We just discovered an inconsistency
+					//It probably just arose from the unchecked enqueue of some other 
+					//lazyor clause. We leave this clause in place so that
+					//the later propagate will discover the problem.
+				}
+				//if cv == l_False already, there is nothing to do.
+			}
+			return true;			
+		}
+		return false;
+	}
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
@@ -452,6 +531,8 @@ Clause* Solver::propagate()
     int     num_props = 0;
     volatile int avoidGccWeirdness=0;
 
+	bool isLevelZero = (decisionLevel()==0);
+
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
 		// std::cout<<(sign(p)?var(p):-var(p))<<std::endl;
@@ -466,10 +547,100 @@ Clause* Solver::propagate()
 
 			Lit false_lit = ~p;
 
+
+			if(c.mark() == LAZYOR){
+				/*
+				Lazyor clause has the following structure 
+				c[0] = c[1] or c[2] c[3] ...c[n-1]
+				So we want the following rules for i>0
+				c[i] => if(c[0] == true){ nothing to do }
+						if(c[0] == undef){ c[0] = true }
+						if(c[0] == false){ conflict (c[0], -c[i]) }
+		
+				*/	
+				/*
+				std::cout<<"LAZYOR "<<(sign(p)?"-":" ")<<var(p)<<": ";
+				for(int ii=0; ii<c.size(); ++ii){
+					std::cout<<" "<<(sign(c[ii])?"-":" ")<<var(c[ii])<<", ";
+				}
+				std::cout<<endl;*/
+
+				Lit first = c[0];
+				if (value(first) == l_True){
+					// std::cout<<"SKIP"<<endl;
+					*j++ = &c;
+					goto FoundWatch;
+				}
+				if (value(first) == l_False){
+					// std::cout<<"CONFL"<<endl;
+					int ttf[2];
+					
+					Fake* f = new (ttf) Fake();
+					(*f)[0] = first;
+					(*f)[1] = ~p;					
+					Clause* nc = Clause::Clause_new(*(f), true);
+					*j++ = nc;
+					// We add nc to the watches list, but that means it is no longer
+					// necessary to add c, since it is redundant with this new clause.
+					watches[toInt(~first)].push(nc);	
+					//Since we are no longer watching this on the LAZYOR clause, 
+					//we need to add this as a real clause.
+					clauses.push(nc);
+					while (i < end)
+	                        *j++ = *i++;
+					confl = nc;			
+					qhead = trail.size();
+					goto FoundWatch;
+				}else{
+					// std::cout<<"ADD"<<endl;
+					int ttf[2];
+					Fake* f = new (ttf) Fake();
+					(*f)[0] = first;
+					(*f)[1] = ~p;					
+					Clause* nc = Clause::Clause_new(*(f), true);
+					watches[toInt(~first)].push(nc);
+					clauses.push(nc);
+					*j++ = nc;
+					// We add nc to the watches list, but that means it is no longer
+					// necessary to add c, since it is redundant with this new clause.
+					uncheckedEnqueue(first, nc);
+					goto FoundWatch;
+				}
+			}
+
+
 			if(c.mark() == SINGLESET){
 				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
 				// std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
 				int last = c.size()-1;
+
+				if(isLevelZero){
+					for(int k=0; k<c.size(); ++k){
+						if(c[k] == false_lit){
+							// assert(value(c[k])==l_False);							
+						}else{
+							lbool cv = value(c[k]);
+							if (cv == l_False){
+								// A conflict in level zero. This means we are done.
+								// Copy the remaining watches:
+								while (i < end)
+									*j++ = *i++;
+								qhead = trail.size();		
+								confl = &c;
+								goto FoundWatch;
+							}else
+							if (cv == l_Undef){
+								// cout<<"Eagerly setting litteral "<<endl;
+								uncheckedEnqueue(c[k], &c);
+							}
+							//If it's true, then there is nothing to do.
+						}
+					}
+					*j++ = &c;
+					goto FoundWatch;
+				}
+
+
 				for(int k=0; k<c.size(); ++k){
 					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
 					if(c[k] == false_lit){
@@ -653,7 +824,8 @@ void Solver::removeSatisfied(vec<Clause*>& cs)
 bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
-
+	
+	removeSatisfied(lazyors);
     if (!ok || propagate() != NULL)
         return ok = false;
 
@@ -861,6 +1033,34 @@ bool Solver::solve(const vec<Lit>& assumps)
 void Solver::verifyModel()
 {
     bool failed = false;
+
+	for(int i=0; i<lazyors.size(); ++i){
+		Clause& c = *lazyors[i];
+		for (int j = 1; j < c.size(); j++){
+				if (modelValue(c[j]) == l_True && modelValue(c[0]) == l_True)
+					goto nextB;
+				if (modelValue(c[j]) == l_True && modelValue(c[0]) == l_False){
+					printf("unsatisfied LAZYOR clause: ");
+					printClause(*lazyors[i]);
+					printf("\n");
+					failed = true;
+					goto nextB;
+				}					
+		}
+		if(modelValue(c[0]) == l_True){
+			//All the operands were false, but it was true;
+			//This does not violate the rules of the clause itself, but it is bad anyway.
+			//This is because every lazyor clause should be paired with a normal clause
+			//that enforces that if all c[i] are false, c[0] is false.
+			printf("badness of LAZYOR clause: ");
+					printClause(*lazyors[i]);
+					printf("\n");
+					failed = true;
+		}
+		nextB:;
+	}
+
+
     for (int i = 0; i < clauses.size(); i++){
 		if(clauses[i]->mark()==0){
 			Clause& c = *clauses[i];
@@ -891,7 +1091,7 @@ void Solver::verifyModel()
 
     assert(!failed);
 
-    printf("Verified %d original clauses.\n", clauses.size());
+    printf("Verified %d original clauses and %d lazyor clauses.\n", clauses.size(), lazyors.size());
 }
 
 
