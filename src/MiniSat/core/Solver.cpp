@@ -43,7 +43,7 @@ Solver::Solver() :
     // More parameters:
     //
   , expensive_ccmin  (true)
-  , polarity_mode    (polarity_false)
+  , polarity_mode    (polarity_rnd)
   , verbosity        (0)
 
     // Statistics: (formerly in 'SolverStats')
