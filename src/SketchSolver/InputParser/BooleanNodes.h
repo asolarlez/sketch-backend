@@ -671,6 +671,8 @@ class INTER_node: public bool_node{
 class SRC_node: public INTER_node{
     public: SRC_node():INTER_node(SRC){ }
 	int arrSz;
+    bool isTuple = false;
+    string tupleName;
 	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz){ }
 	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
 		name = nm;
@@ -692,6 +694,10 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
+    void setTuple(string& name){
+        tupleName = name;
+        isTuple = true;
+    }
 	OutType* getOtype() const {
         
 		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
@@ -710,7 +716,11 @@ class SRC_node: public INTER_node{
 		}
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };
+	virtual bool_node* clone(bool copyChildren = true){
+        SRC_node* clonedNode = new SRC_node(*this, copyChildren);
+        clonedNode->tupleName = tupleName;
+        clonedNode->isTuple = isTuple;
+        return clonedNode;};
 };
 
 /* Output Node */
