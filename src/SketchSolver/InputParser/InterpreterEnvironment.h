@@ -147,6 +147,7 @@ public:
 	void set_function(const string& s, BooleanDAG* dag) {
 		functionMap[s] = dag;
 	}
-
+    
+    void replaceSrcWithTuple(BooleanDAG& dag);
 	virtual ~InterpreterEnvironment(void);
 };

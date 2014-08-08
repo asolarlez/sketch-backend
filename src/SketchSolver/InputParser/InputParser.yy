@@ -263,6 +263,11 @@ TupleType: T_vartype {
     if( $1 == BIT_ARR){ $$ = OutType::BOOL_ARR;}
     if( $1 == FLOAT_ARR){ $$ = OutType::FLOAT_ARR;}
 }
+| T_vartype '[' '*' ConstantExpr ']' {
+    if ($1 == INT) {$$ = OutType::INT_ARR;}
+    if( $1 == BIT){ $$ = OutType::BOOL_ARR;}
+    if( $1 == FLOAT){ $$ = OutType::FLOAT_ARR;}
+}
 | T_ident { 
     $$ = OutType::getTuple(*$1);
 }
@@ -271,6 +276,17 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 |  TupleTypeList TupleType  {
     $1->push_back( $2 );
     $$ = $1;
+}
+| TupleTypeList T_vartype '[' Constant ']' {
+    OutType* type;
+    if ($2 == INT) {type = OutType::INT_ARR;}
+    if( $2 == BIT){ type = OutType::BOOL_ARR;}
+    if( $2 == FLOAT){type = OutType::FLOAT_ARR;}
+    for (int i = 0; i < $4; i++ ) {
+        $1->push_back (type );
+    }
+    $$ = $1;
+
 }
 
 TypeLine: T_ident '(' TupleTypeList ')'{

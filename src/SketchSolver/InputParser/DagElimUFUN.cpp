@@ -195,8 +195,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		
         
 		SRC_node* src = srcNode(node, sfi.step);
-        sfi.fun->print(cout);
-		sfi.step++;
+        sfi.step++;
 		
 		ch->multi_mother.push_back(src);
 		ch->multi_mother.push_back(sfi.symval);
@@ -319,7 +318,6 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			bool_node* nsvar = sfi.fun->create_inputs(node.get_nbits(), node.getOtype(), "SVAR");
 			Dout( cout<<" replacing "<<tmpbn->get_name()<<":ch="<< tmpbn->children.size()  <<" with "<< nsvar->get_name() <<endl);
 			sfi.fun->replace(tmpbn->id, nsvar  );
-            sfi.fun->print(cout);
 		}
 		
 		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[rv->id], "OUT");
@@ -469,58 +467,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
 	newnodes.clear();
 	dag.removeNullNodes();
     
-    for(int i=0; i<dag.size(); ++i ){
-		if (dag[i]->type == bool_node::SRC) {
-            SRC_node* srcNode = dynamic_cast<SRC_node*>(dag[i]);
-            if (srcNode->isTuple) {
-                Tuple* outputsType = dynamic_cast<Tuple*>(OutType::getTuple(srcNode->tupleName));
-                string name = srcNode->get_name();
-                TUPLE_CREATE_node* outputs = new TUPLE_CREATE_node();
-                outputs->setName(srcNode->tupleName);
-                int size = outputsType->entries.size();
-                for (int j = 0; j < size ; j++) {
-                    stringstream str;
-                    str<<name<<"_"<<j;
-                    SRC_node* src =  new SRC_node( str.str() );
-                    OutType* type = outputsType->entries[j];
-                    int nbits = 0;
-                    if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-                        nbits = 1;
-                    }
-                    if (type == OutType::INT || type == OutType::INT_ARR) {
-                        nbits = 2;
-                    }
-                    if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-                    src->set_nbits(nbits);
-                    //if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
-                    if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-                        // TODO xzl: is this fix correct?
-                        // will this be used with angelic CTRL? see Issue #5 and DagFunctionInliner
-                        //int sz = PARAMS->angelic_arrsz;
-                        
-                        //This should be changed
-                        int sz = 1 << PARAMS->NINPUTS;
-                        //int sz = 1;
-                        //for(int i=0; i<PARAMS->NINPUTS; ++i){
-                        //	sz = sz *2;
-                        //}
-                        src->setArr(sz);
-                        newnodes.push_back(src);
-                    }
-                    
-                    outputs->multi_mother.push_back(src);
-                }
-                outputs->addToParents();
-                newnodes.push_back(outputs);
-                dag.replace(i, outputs);
-                
-            }
-        }
-	}
     
-    dag.addNewNodes(newnodes);
-	newnodes.clear();
-	dag.removeNullNodes();
     
 	/*
      You don't want to do cleanup here, because when you eliminate ufun from the spec,

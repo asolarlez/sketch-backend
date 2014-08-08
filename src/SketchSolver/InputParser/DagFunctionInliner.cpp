@@ -520,6 +520,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                             st<<dn->name;
                             st<<lnfuns;
                             
+                            cout<<st.str()<<endl;
 						
 							qn->name = st.str();
 							qn->set_Angelic();
@@ -568,9 +569,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                     qn->setArr(PARAMS->angelic_arrsz);
                                 }
                                 SRC_node* sc = ufToSrc[un];
-                                outTuple->multi_mother[0] = mx;
-                                sc->neighbor_replace(outTuple);
+                                TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+                                newOutTuple->setName(outTuple->name);
+                                newOutTuple->multi_mother.push_back(mx);
+                                newOutTuple->addToParents();
+                                addNode(newOutTuple);
+                                sc->neighbor_replace(newOutTuple);
                                 sc->children.clear();
+                                ttv = newOutTuple;
 
                              } else {
                                 //if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
@@ -688,20 +694,21 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		}
 	}
 	
+    //dag.lprint(cout);
 	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){
-		// Get the code for this node.						
+		// Get the code for this node.
+        //cout<<dag[i]->lprint()<<endl;
 		bool_node* node = computeOptim(dag[i]);
        if(dag[i] != node){
-				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+				(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
 	}
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;
-
-	seenControls.clear();	
+    seenControls.clear();
 	cleanup(dag);
 }
 
