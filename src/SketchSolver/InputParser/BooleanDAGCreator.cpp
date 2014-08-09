@@ -100,7 +100,7 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
   if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
       
-	 // Assert( mth->getOtype() == OutType::BOOL  && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
+	 Assert( mth->getOtype() == OutType::BOOL  && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
   }
  
 
@@ -251,17 +251,6 @@ INTER_node* BooleanDAGCreator::create_outputs(int n, const string& gen_name){
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
 	Assert(!flag, "Two inputs with the same name!");	
-	optim.dagsizeSet(dag->size());
-	return tmp;
-}
-
-INTER_node* BooleanDAGCreator::create_outputs(int n, int count, const string& gen_name) {
-    Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	INTER_node* tmp =  dag->create_outputs(n, gen_name);
-    tmp->count = count;
-	bool_node* f;
-	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
-	Assert(!flag, "Two inputs with the same name!");
 	optim.dagsizeSet(dag->size());
 	return tmp;
 }

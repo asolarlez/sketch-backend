@@ -496,68 +496,63 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					bool_node* ttv = n->mother;
 					if(oldFun.isModel){
 						if(assertCond == NULL){
-                           if (ttv->type == bool_node::TUPLE_CREATE) {
-                               //This should always be true.
-                                TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
-                                TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
-                                UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
-                                SRC_node* sc = ufToSrc[un];
-                                sc->neighbor_replace(ttv);
-                                sc->children.clear();
+                       
+                            TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            SRC_node* sc = ufToSrc[un];
+                            sc->neighbor_replace(ttv);
+                            sc->children.clear();
                                
-                            } else {
-                                UFUN_node* un =  dynamic_cast<UFUN_node*>(ttv);
-                                Assert(un != NULL, "Only ufun node can be the output of a model. ttv=" << ttv->lprint());
-                                SRC_node* sc = ufToSrc[un];
-                                sc->neighbor_replace(ttv);
-                                sc->children.clear();
-                            }
+                        
 						}else{
-                            int numOutputs = dn->count;
-                            Assert(numOutputs == 1, "Model has more than one output");
-                            CTRL_node* qn = new CTRL_node();
-                            stringstream st;
-                            st<<dn->name;
-                            st<<lnfuns;
+                            Assert(ttv->type == bool_node::TUPLE_CREATE,"dfwer" );
+                            TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                            Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
+                            int numOutputs = outTuple->multi_mother.size();
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
                             
-                            cout<<st.str()<<endl;
-						
-							qn->name = st.str();
-							qn->set_Angelic();
-						
-							ARRACC_node* mx = new ARRACC_node();
-							if(!PARAMS->angelic_model)
-								mx->mother = assertCond;
-							else{
-								//create new src node which should be valued to false in Synth phase
-								SRC_node *st = new SRC_node("__rs_node");
-								st->set_nbits(1);//just one bit input
-								mx->mother = st;
-								addNode(st);
-								
-							}
-           
-                            if (ttv->type == bool_node::TUPLE_CREATE) {
-                                // Should always be true
-                                TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
-                                TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
-                                UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+                            newOutTuple->setName(outTuple->name);
+                            
+                            for ( int p = 0; p < numOutputs; p++) {
+                                CTRL_node* qn = new CTRL_node();
+                                stringstream st;
+                                st<<dn->name;
+                                st<<lnfuns;
+                                st<<"_"<<p;
                                 
-                                //if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
+                                qn->name = st.str();
+                                qn->set_Angelic();
+                            
+                                ARRACC_node* mx = new ARRACC_node();
+                                if(!PARAMS->angelic_model)
+                                    mx->mother = assertCond;
+                                else{
+                                    //create new src node which should be valued to false in Synth phase
+                                    SRC_node *st = new SRC_node("__rs_node");
+                                    st->set_nbits(1);//just one bit input
+                                    mx->mother = st;
+                                    addNode(st);
+                                    
+                                }
+                                Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
+                                tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[p]);
+                                
                                 mx->multi_mother.push_back(qn);
                                 mx->multi_mother.push_back(tupleRead);
                                 mx->addToParents();
                                 addNode(qn);
                                 addNode(mx);
                                 
-                                //If types are given from frontend, we can do this.
                                 OutType* outputType = tupleRead->getOtype();
                                 // BUGFIX: nbits must be 1 if original UFUN out is boolean type
                                 int nbits = 0;
-                                if (outputType == OutType::BOOL) {
+                                if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
                                     nbits = 1;
                                 }
-                                if (outputType == OutType::INT) {
+                                if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
                                     nbits = 2;
                                 }
                                 if (nbits > 1) { nbits = PARAMS->NANGELICS; }
@@ -568,49 +563,18 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                     //cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
                                     qn->setArr(PARAMS->angelic_arrsz);
                                 }
-                                SRC_node* sc = ufToSrc[un];
-                                TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
-                                newOutTuple->setName(outTuple->name);
                                 newOutTuple->multi_mother.push_back(mx);
-                                newOutTuple->addToParents();
-                                addNode(newOutTuple);
-                                sc->neighbor_replace(newOutTuple);
-                                sc->children.clear();
-                                ttv = newOutTuple;
-
-                             } else {
-                                //if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
-                                mx->multi_mother.push_back(qn);
-                                // Should change this
-                                mx->multi_mother.push_back(ttv);
-                                mx->addToParents();
-                                addNode(qn);
-                                addNode(mx);
-                                UFUN_node* un;
-                                if (ttv->type == bool_node::TUPLE_CREATE) {
-                                    TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
-                                    un = dynamic_cast<UFUN_node*>(outTuple->multi_mother[0]);
-                                } else {
-                                    un =  dynamic_cast<UFUN_node*>(ttv);
-                                }
-                                Assert(un != NULL, "Output of model should be an uninterpreted function.");
-                                // BUGFIX: nbits must be 1 if original UFUN out is boolean type
-                                int nbits = un->get_nbits();
-                                if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-                                qn->set_nbits(nbits);
-                                //cout << "DagFunctionInliner: un=" << un->lprint() << " nbits=" << un->get_nbits() << " isArr=" << un->isArr() << endl;
-                                                    
-                                Assert(un != NULL, "Only ufun node can be the output of a model ttv=" << ttv->lprint());
-                                // BUGFIX xzl: fix Issue #5, when angelic CTRL is an array
-                                if (un->isArr()) {
-                                    //cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
-                                    qn->setArr(PARAMS->angelic_arrsz);
-                                }
-                                SRC_node* sc = ufToSrc[un];
-                                sc->neighbor_replace(mx);
-                                sc->children.clear();
-                                ttv = mx;
+                                
+                            
                             }
+                            SRC_node* sc = ufToSrc[un];
+                            newOutTuple->addToParents();
+                            addNode(newOutTuple);
+                            sc->neighbor_replace(newOutTuple);
+                            sc->children.clear();
+                            ttv = newOutTuple;
+
+                             
 						}
 																		
 						nprime->dislodge();

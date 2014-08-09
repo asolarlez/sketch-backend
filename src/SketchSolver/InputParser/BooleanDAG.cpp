@@ -931,10 +931,10 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(inode)->name<<endl);
             
             if (otherDst->mother->type == bool_node::TUPLE_CREATE) {
-                int inodeCount = inode ->count;
-                int otherDstCount = otherDst->count;
                 TUPLE_CREATE_node* inodeTuple = dynamic_cast<TUPLE_CREATE_node*>(inode->mother);
                 TUPLE_CREATE_node* otherDstTuple = dynamic_cast<TUPLE_CREATE_node*>(otherDst->mother);
+                int inodeCount = inodeTuple->multi_mother.size();
+                int otherDstCount = otherDstTuple->multi_mother.size();
                 Assert(inodeCount == otherDstCount, "Number of outputs should be the same" << (inode)->name<<endl);
                 for (int i = 0; i < inodeCount; i++) {
                     EQ_node* eq = new EQ_node();
@@ -947,7 +947,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
                     Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
                                     string mm = "The spec and sketch can not be made to be equal. ";
                     mm += otherDst->name;
-                    if (i==0) {
+                    if (i==inodeCount -1) {
                         Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
                         replace( otherDst->id, eq);
                     }

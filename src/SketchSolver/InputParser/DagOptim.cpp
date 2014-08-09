@@ -2436,7 +2436,7 @@ void DagOptim::cleanup(BooleanDAG& dag){
 	newnodes.clear();
 	dag.relabel();
 
-	// dag.print(cout);
+	dag.lprint(cout);
 
 	if(nccount > 0){
 		bool modified = false;
@@ -2805,10 +2805,9 @@ void DagOptim::process(BooleanDAG& dag){
 				
 
 		if(dag[i] != NULL){
-            
-			 //cout<<"Orig = "<<dag[i]->lprint();
+            // cout<<"Orig = "<<dag[i]->lprint();
 			bool_node* node = computeOptim(dag[i]);
-			 //cout<<"  becomes "<<node->lprint()<<endl;
+			// cout<<"  becomes "<<node->lprint()<<endl;
 
 
 			if(dag[i] != node){			

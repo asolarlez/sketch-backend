@@ -191,9 +191,9 @@ ParamDecl: T_vartype T_ident {
  	 }
 	 delete $3;
  }
- | '!' T_ident T_ident T_int{
+ | '!' T_ident T_ident {
 
-    currentBD->create_outputs(-1, $4, *$3);
+    currentBD->create_outputs(-1, *$3);
     delete $3;
  }
  |

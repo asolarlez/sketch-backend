@@ -138,14 +138,14 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		SFunInfo& sfi = functions[name];
 		sfi.step = 1;
 		sfi.fun = new BooleanDAG("tmp");
-		bool_node* svar = sfi.fun->create_inputs(0, node.getOtype(),  "SVAR");
+		bool_node* svar = sfi.fun->create_inputs(1, node.getOtype(),  "SVAR");
         
 		sfi.symval = src;
 		sfi.outval = rv;
 		for(int i=0; i<nargs; ++i){
 			stringstream str;
 			str<<"PARAM_"<<i;
-			sfi.fun->create_inputs(0, node.getOtype(),  str.str());
+			sfi.fun->create_inputs(1, node.getOtype(),  str.str());
 			sfi.actuals.push_back(nmmother[i]);
 		}
 		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
@@ -303,7 +303,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			
 			stringstream parnm;
 			parnm<<"PARAM_"<<i;
-			bool_node* par =  sfi.fun->create_inputs(node.get_nbits(), node.getOtype(), parnm.str());
+			bool_node* par =  sfi.fun->create_inputs(1, node.getOtype(), parnm.str());
 			
 			bool_node* npar = sfi.fun->get_node(str.str());
 			sfi.fun->replace(npar->id, par);
@@ -315,13 +315,13 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		{
 			bool_node* tmpbn = sfi.fun->get_node(src->name);
 			Assert(tmpbn != NULL, "This is an abomination.");
-			bool_node* nsvar = sfi.fun->create_inputs(node.get_nbits(), node.getOtype(), "SVAR");
+			bool_node* nsvar = sfi.fun->create_inputs(1, node.getOtype(), "SVAR");
 			Dout( cout<<" replacing "<<tmpbn->get_name()<<":ch="<< tmpbn->children.size()  <<" with "<< nsvar->get_name() <<endl);
 			sfi.fun->replace(tmpbn->id, nsvar  );
 		}
 		
-		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[rv->id], "OUT");
-		sfi.fun->create_outputs(node.get_nbits(), (*sfi.fun)[on->id], "RES");
+		sfi.fun->create_outputs(1, (*sfi.fun)[rv->id], "OUT");
+		sfi.fun->create_outputs(1, (*sfi.fun)[on->id], "RES");
         
 		Dout( cout<<" ADDING "<<cclone->size()<<" NODES"<<endl );
         

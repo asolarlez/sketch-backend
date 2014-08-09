@@ -243,24 +243,15 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		/* Eliminates uninterpreted functions */
-        //cout<<"before eliminate ufun"<<endl;
-        //spec->lprint(cout);
         DagElimUFUN eufun;
 		eufun.process(*spec);
-        //cout<<"after eliminate ufun"<<endl;
-        //spec->lprint(cout);
         
         
      	/* Assumption -- In the sketch if you have uninterpreted functions it 
 can only call them with the parameters used in the spec */
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
-        //cout<<"before eliminate ufun"<<endl;
-        sketch->lprint(cout);
-		
-		eufun.process(*sketch);
-       // cout<<"after eliminate ufun"<<endl;
-        //sketch->lprint(cout);
-        
+        eufun.process(*sketch);
+       
 	}
     
     {
@@ -269,13 +260,9 @@ can only call them with the parameters used in the spec */
         replaceSrcWithTuple(*sketch);
     }
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
-    cout<<"before make miter"<<endl;
-    sketch->lprint(cout);
-	spec->makeMiter(sketch);
+    spec->makeMiter(sketch);
 	BooleanDAG* result = spec;
-    cout<<"after make miter"<<endl;
-    result->lprint(cout);
-	
+    
 	
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
 		
@@ -335,10 +322,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
     
     dag.addNewNodes(newnodes);
 	newnodes.clear();
-    //cout<<"after replacing src with tuples"<<endl;
-    //dag.lprint(cout);
-
-	dag.removeNullNodes();
+    dag.removeNullNodes();
 }
 
 

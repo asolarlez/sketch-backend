@@ -44,7 +44,6 @@ class OutType{
 	const bool isArr;
 	const bool isTuple;
 	static OutType* BOTTOM;
-    static OutType* UNKNOWN;
 	static OutType* BOOL;
 	static OutType* INT;
 	static OutType* FLOAT;
@@ -62,8 +61,6 @@ class OutType{
     static OutType* getTuple(const string& name);
 };
 
-
-class Unknown: public OutType{public: Unknown(): OutType(false, false){} string str() const{ return "UNKNOWN"; } };
 
 class Bottom: public OutType{public: Bottom(): OutType(false, false){}  string str() const{ return "BOTTOM"; }  };
 
@@ -351,11 +348,11 @@ class ARR_R_node: public bool_node{
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new ARR_R_node(*this, copyChildren);  };
     OutType* getOtype() const{
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         OutType* ot = father->getOtype();
-        if(ot == OutType::BOTTOM || ot ==OutType::UNKNOWN){
+        if(ot == OutType::BOTTOM){
             otype = ot;
             return ot;
         }
@@ -411,7 +408,7 @@ class ARR_W_node:public arith_node{
         return str.str();
     }
     OutType* getOtype()const {
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         otype = multi_mother[0]->getOtype();
@@ -426,9 +423,6 @@ class ARR_W_node:public arith_node{
         }
         if(otype->isTuple){
             otype = ((Tuple*)otype)->arr;
-        }
-        if (otype == OutType::UNKNOWN) {
-            return otype;
         }
         otype = OutType::joinOtype(otype, multi_mother[1]->getOtype());
         return otype;
@@ -469,13 +463,12 @@ class ARR_CREATE_node:public arith_node{
         return str.str();
     }
     OutType* getOtype()const {
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
-            if (otype == OutType::UNKNOWN) return otype;
         }
         if(otype == OutType::INT){
             otype = OutType::INT_ARR;
@@ -525,7 +518,7 @@ class TUPLE_CREATE_node:public arith_node{
     }
     void setName(string& n){name = n; }
     OutType* getOtype()const {
-      if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+      if(otype != OutType::BOTTOM){
             return otype;
         }
         otype = OutType::getTuple(name);
@@ -561,13 +554,13 @@ class TUPLE_R_node: public bool_node{
     virtual bool_node* clone(bool copyChildren = true){return new TUPLE_R_node(*this, copyChildren);  };
     OutType* getOtype() const{
        
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             
             return otype;
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::UNKNOWN || ot == OutType::BOOL){
+       if(ot == OutType::BOOL){
             return ot;
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
@@ -620,8 +613,7 @@ class XOR_node: public bool_node{
 class INTER_node: public bool_node{
 	public:
 	string name;
-    int count;
-	protected:
+    protected:
 	
 	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), name(bn.name), nbits(bn.nbits){ }
     INTER_node(Type t):bool_node(t){nbits = 1;}
@@ -632,7 +624,7 @@ class INTER_node: public bool_node{
 	void set_nbits(int n){ nbits = n; }
 	
 	OutType* getOtype() const {
-		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		if(nbits>1){
@@ -700,7 +692,7 @@ class SRC_node: public INTER_node{
     }
 	OutType* getOtype() const {
         
-		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+		if(otype != OutType::BOTTOM){
             
 			return otype;
 		}
@@ -729,7 +721,7 @@ class DST_node: public INTER_node, public DllistNode{
     DST_node():INTER_node(DST){ }
     DST_node(const DST_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-    virtual bool_node* clone(bool copyChildren = true){DST_node* clonedNode = new DST_node(*this, copyChildren); clonedNode->count = count; return clonedNode;  };
+    virtual bool_node* clone(bool copyChildren = true){return new DST_node(*this, copyChildren); };
     virtual ~DST_node(){}
 	virtual string lprint()const{
 		string tmp =  name;
@@ -797,7 +789,7 @@ class CTRL_node: public INTER_node{
 		return arrSz >= 0;
 	}
 	OutType* getOtype() const {
-		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
 		INTER_node::getOtype();
@@ -841,7 +833,7 @@ class PLUS_node: public bool_node{
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new PLUS_node(*this, copyChildren);  };
 	OutType* getOtype()const {
-        if(otype == OutType::BOTTOM || otype == OutType::UNKNOWN){
+        if(otype == OutType::BOTTOM){
             otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
         }
         return otype;
@@ -853,7 +845,7 @@ class TIMES_node: public bool_node{
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new TIMES_node(*this, copyChildren);  };
 	OutType* getOtype()const {
-		if(otype == OutType::BOTTOM || otype == OutType::UNKNOWN){
+		if(otype == OutType::BOTTOM){
             otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
         }
         return otype;
@@ -923,7 +915,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	}
     
 	OutType* getOtype()const {
-		if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+		if(otype != OutType::BOTTOM){
 			return otype;
 		}
         if(nbits == 0){
@@ -997,13 +989,12 @@ class ARRACC_node: public arith_node{
 		}
 	}
 	OutType* getOtype()const {
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
-            if (otype == OutType::UNKNOWN) return otype;
         }
         return otype;
     }
@@ -1035,7 +1026,7 @@ class DIV_node: public bool_node{
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new DIV_node(*this, copyChildren);  };
     OutType* getOtype()const {
-        if(otype == OutType::BOTTOM || otype == OutType::UNKNOWN){
+        if(otype == OutType::BOTTOM){
             otype = OutType::joinOtype(OutType::joinOtype(mother->getOtype(), father->getOtype()), OutType::INT);
         }
         return otype;
@@ -1061,7 +1052,7 @@ class NEG_node: public bool_node{
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new NEG_node(*this, copyChildren);  };
     OutType* getOtype()const {
-        if(otype == OutType::BOTTOM || OutType::UNKNOWN){
+        if(otype == OutType::BOTTOM){
             otype = OutType::joinOtype(mother->getOtype(), OutType::INT);
         }
         return otype;
@@ -1145,7 +1136,7 @@ class CONST_node: public bool_node{
     }
     virtual bool_node* clone(bool copyChildren = true){return new CONST_node(*this, copyChildren);  };
     OutType* getOtype()const {
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         if(!isInt){
@@ -1229,7 +1220,7 @@ class ARRASS_node: public arith_node{
         return str.str();
     }
     OutType* getOtype()const {
-        if(otype != OutType::BOTTOM && otype != OutType::UNKNOWN){
+        if(otype != OutType::BOTTOM){
             return otype;
         }
         otype = OutType::joinOtype(multi_mother[0]->getOtype(), multi_mother[1]->getOtype());

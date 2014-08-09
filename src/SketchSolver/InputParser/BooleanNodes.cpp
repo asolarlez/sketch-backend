@@ -9,7 +9,6 @@ int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
 
 OutType* OutType::BOTTOM = new Bottom();
-OutType* OutType::UNKNOWN = new Unknown();
 OutType* OutType::BOOL = new Bool();
 OutType* OutType::INT = new Int();
 OutType* OutType::FLOAT = new Float();
@@ -19,13 +18,8 @@ OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
 vector<OutType*> OutType::store;
 map<string, OutType*> OutType::tupleMap;
 int i;
-const string norecTuple = "NOREC";
 
 OutType* OutType::getTuple(const string& name){
-    if (name == norecTuple) {
-        return OutType::UNKNOWN;
-    }
-    
     if(tupleMap.count(name)>0 ){
        
 		return tupleMap[name];
@@ -87,10 +81,7 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 
   */
   OutType* OutType::joinOtype(OutType* t1, OutType* t2) {
-    
-    if (t1 == UNKNOWN || t2 == UNKNOWN) {return UNKNOWN;}
-      
-  	if(t1 == BOTTOM){ return t2; }
+    if(t1 == BOTTOM){ return t2; }
   	if(t2 == BOTTOM){ return t1; }
       
 	if(t1->isTuple){
