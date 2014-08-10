@@ -442,6 +442,7 @@ public:
 	
 	map<long long int, CONST_node*> cnmap;	
 	map<string, UFUN_node*> callMap;
+    map<int, UFUN_node*> combinedFunCallMap;
 
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();

@@ -511,8 +511,6 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		result->mrprint(of);
 		of.close();
 	}
-    cout<<"After optims"<<endl;
-    result->lprint(cout);
     
 	return result;
 }

@@ -1402,7 +1402,7 @@ void DagOptim::visit( UFUN_node& node ){
 			return;
 		}
 	}
-	if(node.dependent()){
+	/*if(node.dependent()){
 		if(isConst(node.multi_mother[0])){
 			//The node on which I depend was eliminated, so I should go away as well.
 			//not strictly necessary since the only way the mother could go away is if the 
@@ -1414,7 +1414,46 @@ void DagOptim::visit( UFUN_node& node ){
 		if(mn->fgid != node.fgid){
 			node.fgid = mn->fgid;
 		}
-	}
+	}*/
+    int fgid = node.fgid;
+    if (fgid !=0) {
+        if (combinedFunCallMap.count(fgid) > 0) {
+            UFUN_node* brother = combinedFunCallMap[fgid];
+            
+            brother->dislodge();
+			brother->mother->remove_child(brother);
+			bool_node* on = new OR_node();
+			on->mother = brother->mother;
+			on->father = node.mother;
+            on->addToParents();
+            on = optAdd(on);
+            brother->mother = on;
+            int size = brother->multi_mother.size();
+            int size1 = node.multi_mother.size();
+            Assert(size == size1, "Size of inputs of both nodes should be equal");
+            
+            for (int i = 0; i < size; i++) {
+                ARRACC_node* inputNode = new ARRACC_node();
+                inputNode->mother = node.mother;
+                inputNode->multi_mother.push_back(brother->multi_mother[i]);
+                inputNode->multi_mother.push_back(node.multi_mother[i]);
+                
+                inputNode->addToParents();
+                bool_node* optInputNode = optAdd(inputNode);
+                
+                brother->multi_mother[i] = optInputNode;
+            }
+            brother->resetId();
+			brother->addToParents();
+            
+			rvalue = brother;
+			return;
+        } else {
+            combinedFunCallMap[fgid] = &node;
+            rvalue  = &node;
+            return;
+        }
+    }
 
 	string tmp = node.get_ufname();
 	if(node.ignoreAsserts){
@@ -2366,6 +2405,7 @@ void DagOptim::initLight(BooleanDAG& dag){
 	cse.clear();
 	callMap.clear();
 	testAsserts.clear();
+    combinedFunCallMap.clear();
 }
 
 
@@ -2435,8 +2475,6 @@ void DagOptim::cleanup(BooleanDAG& dag){
 	dag.addNewNodes(newnodes);
 	newnodes.clear();
 	dag.relabel();
-
-	dag.lprint(cout);
 
 	if(nccount > 0){
 		bool modified = false;
@@ -2517,7 +2555,7 @@ void DagOptim::findCycles(BooleanDAG& dag){
 			// Get the code for this node.				
 		if(dag[i]->type == bool_node::UFUN){
 			UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
-			uidcount = max(uidcount, uf.fgid);
+			//uidcount = max(uidcount, uf.fgid);
 		}
 	}
 	map<int, UFUN_node*> dupNodes;
@@ -2713,7 +2751,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 		// cout<<"double: "<<oldNode->get_name()<<endl;
 		UFUN_node* newNode = NULL;
 		bool isRecycled = false;
-		int oldfgid = -1;
+		//int oldfgid = -1;
 		if(dupNodes.count(oldNode->globalId)>0){
 			newNode = dupNodes[oldNode->globalId];
 			isRecycled = true;
@@ -2727,8 +2765,8 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			dupNodes[oldNode->globalId] = newNode;
 			newNode->addToParents();
 			//It's important that nodes don't have duplicate fgid's.
-			++uidcount;
-			oldNode->fgid = uidcount; 
+			//++uidcount;
+			//oldNode->fgid = uidcount;
 		}		
 		sp.pop_front();		
 		

@@ -15,8 +15,8 @@ class BooleanDAGCreator
 					 const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth);
 
 public:
-	map<int, vector<bool_node*> > methdparams;
-	BooleanDAGCreator(BooleanDAG* p_dag);
+    BooleanDAGCreator(BooleanDAG* p_dag);
+    
 public:
 	virtual ~BooleanDAGCreator(void);
 
