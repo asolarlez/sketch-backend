@@ -867,14 +867,14 @@ class UFUN_node: public arith_node, public DllistNode{
 	bool isDependent;
 	public:
 	bool ignoreAsserts;
-	
+	bool combined;
 	string outname;
 	int fgid;
     
     UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), isDependent(false){
         nbits=1;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent), combined(bn.combined){ }
 	
     void makeDependent(){
         isDependent = true;
