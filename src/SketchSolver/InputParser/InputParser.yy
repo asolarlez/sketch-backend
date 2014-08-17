@@ -628,7 +628,7 @@ Term: Constant {
 		
 		//ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node(pCond, NULL, ufun);
-        
+
         delete $1;
 		delete $13;
 	}

@@ -410,6 +410,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nm += "_";
 							nm += ufn->outname;
 							SRC_node* sn = new SRC_node(nm);
+                            sn->setTuple(ufn->getTupleName());
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
 							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
@@ -525,6 +526,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                 
                                 qn->name = st.str();
                                 qn->set_Angelic();
+                                qn->setTuple(un->getTupleName());
                             
                                 ARRACC_node* mx = new ARRACC_node();
                                 if(!PARAMS->angelic_model)

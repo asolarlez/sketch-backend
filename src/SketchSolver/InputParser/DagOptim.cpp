@@ -989,7 +989,8 @@ void DagOptim::visit( NEG_node& node ){
 	
 
 void DagOptim::visit( TUPLE_R_node& node){
-  if(isConst(node.mother)){
+    
+    if(!(node.mother->getOtype()->isTuple)){
         rvalue = getCnode(0);
 		return;
 	}
@@ -1416,7 +1417,7 @@ void DagOptim::visit( UFUN_node& node ){
 		}
 	}*/
    
-    int fgid = node.fgid;
+   /* int fgid = node.fgid;
     if (fgid !=0 && !node.combined) {
         if (combinedFunCallMap.count(fgid) > 0) {
             UFUN_node* brother = combinedFunCallMap[fgid];
@@ -1456,8 +1457,13 @@ void DagOptim::visit( UFUN_node& node ){
             rvalue  = &node;
             return;
         }
-    }
+    } */
 
+    if (node.fgid != 0) {
+        rvalue  = &node;
+		return;
+    }
+    
 	string tmp = node.get_ufname();
 	if(node.ignoreAsserts){
 		tmp += "_IA";
@@ -1512,8 +1518,7 @@ void DagOptim::visit( UFUN_node& node ){
 			brother->resetId();
 			brother->addToParents();
 			
-
-			rvalue = brother;
+            rvalue = brother;
 			return;
 		}else{
 			child_iter end = node.children.end();
@@ -1822,7 +1827,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 			*/
 			
 		}
-
+    
 		if(node.mother->type == bool_node::NOT){
 			bool_node* newmom = node.mother->mother;
 			bool_node* np0 = node.multi_mother[1];
@@ -1912,7 +1917,7 @@ void DagOptim::visit( ARRACC_node& node ){
 	if( node.multi_mother.size()==2 && node.mother->getOtype()== OutType::BOOL ){
         if(this->optimizeMMsize2(node)){
 			return;
-		}				
+		}
 	}else{
 		if(node.mother->type == bool_node::ARRACC){
 			ARRACC_node* an = dynamic_cast<ARRACC_node*>(node.mother);
@@ -2408,12 +2413,12 @@ void DagOptim::initLight(BooleanDAG& dag){
 	cse.clear();
 	callMap.clear();
 	testAsserts.clear();
-    // Reset this so that the remaining nodes in the map can be optimized as before.
+   /* // Reset this so that the remaining nodes in the map can be optimized as before.
     for(map<int, UFUN_node*>::iterator it =combinedFunCallMap.begin();
         it != combinedFunCallMap.end(); ++it) {
         UFUN_node* node = it->second;
         node->combined = false;
-    }
+    }*/
     combinedFunCallMap.clear();
 }
 
@@ -2430,6 +2435,91 @@ void DagOptim::initialize(BooleanDAG& dag){
 	initLight(dag);
 }
 
+bool_node* DagOptim::process( UFUN_node* node ){
+    
+     int fgid = node->fgid;
+     if (fgid != 0) {
+        if (combinedFunCallMap.count(fgid) > 0) {
+             UFUN_node* brother = combinedFunCallMap[fgid];
+             brother->dislodge();
+             brother->mother->remove_child(brother);
+             bool_node* on = new OR_node();
+             on->mother = brother->mother;
+             on->father = node->mother;
+             on->addToParents();
+             on = optAdd(on);
+             brother->mother = on;
+             int size = brother->multi_mother.size();
+             int size1 = node->multi_mother.size();
+             Assert(size == size1, "Size of inputs of both nodes should be equal");
+             
+             for (int i = 0; i < size; i++) {
+                 if (brother->multi_mother[i] != node->multi_mother[i]) {
+                     ARRACC_node* inputNode = new ARRACC_node();
+                     inputNode->mother = node->mother;
+                     inputNode->multi_mother.push_back(brother->multi_mother[i]);
+                     inputNode->multi_mother.push_back(node->multi_mother[i]);
+                 
+                     inputNode->addToParents();
+                     bool_node* optInputNode = optAdd(inputNode);
+                 
+                 
+                     brother->multi_mother[i] = optInputNode;
+                 }
+             }
+             brother->resetId();
+             brother->addToParents();
+             brother->fgid = 0;
+             return brother;
+         
+         } else {
+            /* node->dislodge();
+             node->mother->remove_child(node);
+             int size = node->multi_mother.size();
+             for (int i = 0; i < size; i++) {
+                 ARRACC_node* inputNode = new ARRACC_node();
+                 inputNode->mother = node->mother;
+                 inputNode->multi_mother.push_back(getCnode(0));
+                 inputNode->multi_mother.push_back(node->multi_mother[i]);
+                 inputNode->addToParents();
+                 addNode(inputNode);
+                 node->multi_mother[i] = inputNode;
+             }
+             node->resetId();
+             node->addToParents();
+             */
+             combinedFunCallMap[fgid] = node;
+             node->fgid = 0;
+             
+             return node;
+         }
+     }
+    return node;
+}
+
+void DagOptim::combineFunCalls(BooleanDAG& dag) {
+    combinedFunCallMap.clear();
+    for(int i=0; i<dag.size() ; ++i ){
+		if(dag[i] != NULL){
+            if (dag[i]->type == bool_node::UFUN) {
+                bool_node* node = process(dynamic_cast<UFUN_node*>(dag[i]));
+                
+                if(dag[i] != node){
+                    //cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
+                    Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
+                    dag.replace(i, node);
+                }else{
+                    //cout<<"Kept      "<<dag[i]->lprint()<<endl;
+                }
+            }
+		}
+	}
+    
+	cleanup(dag);
+    //dag.lprint(cout);
+    
+}
+
 bool_node* DagOptim::computeCSE(bool_node* node){
 	return cse.computeCSE(node);
 }
@@ -2438,11 +2528,6 @@ bool_node* DagOptim::computeOptim(bool_node* node){
     node->accept(*this);
 	node = rvalue;
     
-    if (node->type == bool_node::UFUN) {
-        if ((dynamic_cast<UFUN_node*>(node))->combined) {
-            return node;
-        }
-    }
 	bool_node* tmp = cse.computeCSE(node);
 	
 	if(tmp != node){

@@ -686,7 +686,7 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-    void setTuple(string& name){
+   void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;
     }
@@ -696,6 +696,7 @@ class SRC_node: public INTER_node{
             
 			return otype;
 		}
+        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){
@@ -740,15 +741,24 @@ class CTRL_node: public INTER_node{
 	typedef enum{MINIMIZE=1, ANGELIC=2, PCOND=4} Property;
 	unsigned kind;
 	int arrSz;
+    
 	public:
-	CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  }
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  }
 	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; }
 	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind; this->arrSz = bn.arrSz; }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };
+	virtual bool_node* clone(bool copyChildren = true){CTRL_node* newNode = new CTRL_node(*this, copyChildren);
+        newNode->tupleName = tupleName; newNode->isTuple = isTuple; return newNode;};
 	string get_name() const {
 		return name;
 	}
+    bool isTuple = false;
+    string tupleName;
+	
+    void setTuple (const string& name) {
+        tupleName = name;
+        isTuple = true;
+    }
 	bool get_toMinimize() const {
 		return (kind & MINIMIZE) != 0;
 	}
@@ -792,6 +802,7 @@ class CTRL_node: public INTER_node{
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
+        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){
@@ -867,14 +878,13 @@ class UFUN_node: public arith_node, public DllistNode{
 	bool isDependent;
 	public:
 	bool ignoreAsserts;
-	bool combined;
 	string outname;
 	int fgid;
     
     UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), isDependent(false){
         nbits=1;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent), combined(bn.combined){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }
 	
     void makeDependent(){
         isDependent = true;
@@ -901,7 +911,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(string& name){tupleName = name;}
-    string& getTupleName() {return tupleName;}
+    const string& getTupleName() const {return tupleName;}
 	void makeArr(){
         /* todo tuple array */
 		if(nbits>1){
@@ -992,7 +1002,6 @@ class ARRACC_node: public arith_node{
         if(otype != OutType::BOTTOM){
             return otype;
         }
-        otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
         }
