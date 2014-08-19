@@ -364,7 +364,7 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 				}
 			}
 			if(count > maxcount + 3 && count > (ni->layer / 10)){
-				cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<"   "<<ni->lprint()<<endl;
+				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<"   "<<ni->lprint()<<endl;
 				highest = i;
 				maxcount = count;
 			}

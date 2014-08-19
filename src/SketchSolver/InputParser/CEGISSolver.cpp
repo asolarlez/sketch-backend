@@ -665,6 +665,7 @@ void filterHasserts(vector<bool_node*> const & asserts, int id, vector<bool_node
 			return true;
 		}		
 	}
+	return false;
  }
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive){
@@ -700,15 +701,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		CounterexampleFinder eval(empty, *dag);	
 		eval.init(tmpin);
 		for(int i=0; i<40; ++i){
-			/*if (inputGen->hasH) {
-				if (!inputGen->gen(tmpin)) {
-					hasInput = false;
-					break;
-				}
-			} else */
-			{
-				tmpin.makeRandom();
-			}
+			
+			tmpin.makeRandom();
 			
 			bool done;
 			Assert(!hasCtrls, "This can not happen");
@@ -746,10 +740,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		}
 		if(expensive.size()>0){
 			for(int i=0; i<expensive.size(); ++i){
-				if(hasCtrls){
-					VarStore ta(join(expensive[i], controls));
-					eval.run(ta);
-				}else{
+				Assert(!hasCtrls, "This can not happen");
+				{
 					eval.run(expensive[i]);
 				}
 			}
@@ -757,7 +749,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		int hold = -1;
 		int lowerbound = 0;
 		while(true){
-			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS"<<endl; }
+			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS ITER "<<iter<<endl; }
 			int h;
 			
 			h = eval.scoreNodes(0);
@@ -808,7 +800,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
 			pushProblem(tbd);
 			
-			bool rv = baseCheck(controls, tmpin);
+			lbool rv = baseCheck(controls, tmpin);
 			
 			popProblem();
 			//tc.stop().print("Step").restart();
@@ -827,29 +819,29 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			}
 			delete an;
 			dag->relabel();
-			if(rv){
-				//It found an input that causes things to change.
-				vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::SRC);
-				for(int i=0; i<ctrls.size(); ++i){
-					SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
-					if(bn->id > h){						
-						tmpin.getObj(bn->get_name()).makeRandom();
+			if(rv != l_False){
+				//We didn't prove it unsatisfiable; so either it's sat or it timed out.
+				if(rv==l_True){
+					//It found an input that causes things to change.
+					vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::SRC);
+					for(int i=0; i<ctrls.size(); ++i){
+						SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
+						if(bn->id > h){						
+							tmpin.getObj(bn->get_name()).makeRandom();
+						}
 					}
-				}
-
-				bool done;
-				if(hasCtrls){
-					VarStore ta(join(tmpin, controls));
-					done= eval.run(ta);
+					bool done = eval.run(tmpin);								
+					if(done){
+						tc.stop().print("found a cex by solver checking");
+						popProblem();
+						return true;
+					}else{
+						expensive.push_back(tmpin);
+					}
 				}else{
-					done= eval.run(tmpin);
-				}				
-				if(done){
-					tc.stop().print("found a cex by solver checking");
-					popProblem();
-					return true;
-				}else{
-					expensive.push_back(tmpin);
+					//In this case, it timed out, 
+					cout<<"IGNORANCE!!!!"<<endl;
+					break;
 				}
 			}else{
 				{
@@ -909,7 +901,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		cout<<"After all optim"<<endl;
 		// getProblem()->lprint(std::cout);
 		//dag->lprint(cout);
-		tv = baseCheck(controls, input);
+		tv = (baseCheck(controls, input) == l_True); //Undefined means we are doing light verif so we treat it as false.
 	} else {
 		// when there is no input satisfying the assumption, we cannot find any counter example
 		tv = false;
@@ -1065,9 +1057,9 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::SOLVE:{
 				if(params.simulate){
-					rv = simulate(controls, input, expensive);	
+					rv = simulate(controls, input, expensive);
 				}else{
-					rv = baseCheck(controls, input);
+					rv = (baseCheck(controls, input)==l_True);
 				}
 				continue;
 			}
@@ -1104,13 +1096,12 @@ int getSolverVal(bool_node * node, vector<Tvalue> & node_ids, SATSolver & solver
 	return sv;
 }
 
-bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
+lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	Dout( cout<<"check()"<<endl );
 	MiniSATSolver mngCheck("checker", SATSolver::CHECKER);	
 	SolverHelper dirCheck(mngCheck);
 	dirCheck.setMemo(params.setMemo);
-	if(params.lightVerif){
-		cout<<"WARNING: Running with lightweight verification"<<endl;
+	if(params.lightVerif){		
 		mngCheck.lightSolve();
 	}
 	//timerclass tc("* TIME TO ADD CONTROLS ");
@@ -1129,14 +1120,9 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
     if (result != SATSolver::SATISFIABLE){
     	mngCheck.reset();
     	if( result != SATSolver::UNSATISFIABLE){
-	    	switch( result ){
-	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
-	    	}
+	    	return l_Undef;
     	}
-    	return false;
+    	return l_False;
     }
     
     
@@ -1183,7 +1169,7 @@ bool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 	}
 
 	mngCheck.reset();
-	return true;
+	return l_True;
 }
 
 

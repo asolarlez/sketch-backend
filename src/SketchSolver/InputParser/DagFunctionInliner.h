@@ -122,6 +122,160 @@ public:
 };
 
 
+class InlinerNode{
+public:
+	int funid;
+	InlinerNode* parent;	
+};
+
+
+class TheBestInliner: public InlineControl{
+protected:
+	Ostore<InlinerNode> inodestore;
+	StringHTable2<int> funidmap;
+	map<int, InlinerNode*> inodes;
+	int nextfunid;
+	int limit;
+
+	InlinerNode* root;
+	InlinerNode* current;
+	int currentFun;
+
+		/**
+	When we call this function, we know we don't want to inline the call, 
+	but we want to register its condition as a bad condition so that 
+	other calls with the same condition don't get inlined.
+	*/
+	void recInsert(bool_node* n){
+		badConditions.insert(n->globalId);
+		if(n->type == bool_node::OR){
+			if(badConditions.count(n->mother->globalId)==0){
+				recInsert(n->mother);
+			}
+			if(badConditions.count(n->father->globalId)==0){
+				recInsert(n->father);
+			}
+		}
+	}
+
+	/*
+	When we call this function, we know the function in question is a good
+	candidate for inlining, but we want to make sure it doesn't have bad conditions.
+	*/
+	bool recCheck(bool_node* n){
+		if(badConditions.count(n->globalId)>0){
+			//cout<<"Saved an inline"<<endl;
+			return false;
+		}else{
+			if(n->type == bool_node::AND){	
+				return recCheck(n->mother) && recCheck(n->father);
+			}
+		}
+		return true;
+	}
+
+	/**
+	If you decide that a call should not be inlined ant that call has 
+	condition C, then any other call that has condition C should not be 
+	inlined either, because C being true would surely cause an assertion, so 
+	any other call that has C as a condition will not be inlined either.
+	*/
+	set<int> badConditions;
+	bool boundByCallsite;
+public:
+	TheBestInliner(int& p_limit, bool p_boundByCallsite){
+		boundByCallsite = p_boundByCallsite;
+		limit = p_limit;
+		p_limit = 1;
+		nextfunid = 0;
+		funidmap.condAdd("$root", 6, nextfunid, nextfunid);
+		nextfunid++;
+		root= inodestore.newObj();
+		root->funid = 0;
+		root->parent = NULL;
+		
+	}
+
+	virtual void addChild(InlinerNode* parent, const UFUN_node& node){
+		int id = nextfunid++;
+		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size()+1, id, id);
+		InlinerNode* next = inodestore.newObj();
+		if(boundByCallsite){
+			next->funid = node.get_callsite();
+		}else{
+			next->funid = id;
+		}
+		next->parent = parent;
+		inodes[node.globalId] = next;
+	}
+
+	virtual void preCheckInline(UFUN_node& node){
+		if(node.dependent()){ return; }
+		map<int, InlinerNode*>::iterator it = inodes.find(node.globalId);
+		if(it == inodes.end()){
+			//In this case, we are visiting root, so we should add these as children to root.
+			addChild(root, node);
+		}
+		if(!node.ignoreAsserts && !localCheck(node)){
+			recInsert(node.mother);
+		}
+	}
+
+	virtual void registerInline(UFUN_node& node){
+		current = inodes[node.globalId];
+		Assert(current != NULL, "I've never seen this function before!!!");
+	}
+
+	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
+		Assert(current == inodes[caller.globalId], "This should never happen");
+		addChild(current, *callee);
+	}
+
+	bool localCheck(UFUN_node& node){
+		InlinerNode* candidate = inodes[node.globalId];
+		Assert(candidate != NULL, "I've never seen this function before!!!");
+		int cnt = 0;
+		InlinerNode* temp = candidate->parent;
+		while(temp != NULL){
+			if(temp->funid == candidate->funid){
+				cnt++;
+				if(cnt >= limit){
+					// cout<<"Prevented "<<node.get_ufname()<<endl;
+					return false;
+				}
+			}
+			temp = temp->parent;
+		}
+		// cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
+		return true;
+	}
+
+	virtual bool checkInline(UFUN_node& node){	
+		if(node.dependent()){ return true; }
+		if(node.mother->type == bool_node::CONST){
+			CONST_node* cn = dynamic_cast<CONST_node*>(node.mother);
+			int val = cn->getVal();
+			if(val == 0){
+				return false;
+			}else{
+				if(!node.ignoreAsserts){
+					// cout<<"Inlining with true cond "<<node.get_ufname()<<endl;
+					return true;
+				}
+			}
+		}
+		if(!node.ignoreAsserts && !recCheck(node.mother)){
+			return false;
+		}
+		return localCheck(node);
+	}
+	virtual void clear(){ }
+};
+
+
+
+
+
 class BoundedCountInliner: public InlineControl{
 	int inlinebound;
 	map<string, int> counts;

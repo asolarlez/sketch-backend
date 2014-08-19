@@ -45,6 +45,16 @@ printStats ()
 }
 
 
+
+void DumpSignalHandler(int signal){
+	cerr<<"DUMP OUTPUT!!!."<<endl;
+	cout<<"DUMP OUTPUT!!!."<<endl;
+	flush(cout);
+	INp::envt->printControls("");
+}
+
+
+
 void AssertionHandler(int signal){
 	cerr<<"Someone threw a C-style assertion."<<endl;
 	mem.stop ();

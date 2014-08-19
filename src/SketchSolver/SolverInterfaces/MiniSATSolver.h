@@ -7,6 +7,7 @@
 using namespace std;
 
 #include "MSolver.h"
+#include "SolverTypes.h"
 
 using namespace MSsolverNS;
 
@@ -29,6 +30,7 @@ public:
 	ostream* debugout;
 	 MiniSATSolver(const string& name_p,  SolverMode smode):SATSolver(name_p, smode){
 	 	s = new Solver();
+		if(isNegated()){ s->polarity_mode = Solver::polarity_false; }	
 		FileOutput( string nm = name; nm += ".circuit"; );
 		FileOutput( output.open(nm.c_str()) );	
 		s->newVar();

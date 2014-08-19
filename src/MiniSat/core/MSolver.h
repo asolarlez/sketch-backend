@@ -51,8 +51,8 @@ public:
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
-    bool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
-    bool    solve        ();                        // Search without assumptions.
+    lbool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
+    lbool    solve        ();                        // Search without assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 
     // Variable mode:
@@ -261,7 +261,7 @@ inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return assigns.size(); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity    [v] = (char)b; }
 inline void     Solver::setDecisionVar(Var v, bool b) { decision_var[v] = (char)b; if (b) { insertVarOrder(v); } }
-inline bool     Solver::solve         ()              { vec<Lit> tmp; return solve(tmp); }
+inline lbool    Solver::solve         ()              { vec<Lit> tmp; return solve(tmp); }
 inline bool     Solver::okay          ()      const   { return ok; }
 
 

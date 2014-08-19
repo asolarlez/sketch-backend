@@ -43,7 +43,7 @@ Solver::Solver() :
     // More parameters:
     //
   , expensive_ccmin  (true)
-  , polarity_mode    (polarity_rnd)
+  , polarity_mode    (polarity_false)
   , verbosity        (0)
 
     // Statistics: (formerly in 'SolverStats')
@@ -114,13 +114,11 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         return false;
     else{
         // Check if clause is satisfied and remove false/duplicate literals:
-		if(kind != LAZYOR){
+		if(kind != LAZYOR && kind != SINGLESET){
 			sort(ps);
 			Lit p; int i, j;
 			for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
-				if (value(ps[i]) == l_True || ps[i] == ~p){
-					if(kind == SINGLESET){
-						cout<<"AAAAAAAAAAAAARRRRRRRRRRGGGGGGGGGGHHHHHHHHHHHH"<<endl; }
+				if (value(ps[i]) == l_True || ps[i] == ~p){					
 					return true;
 				}
 				else if (value(ps[i]) != l_False && ps[i] != p)
@@ -157,10 +155,12 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
     return true;
 }
 
+// int TOTSINGLESET=0;
 
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
-	if(c.mark()==LAZYOR){
+	uint32_t mark = c.mark();
+	if(mark==LAZYOR){
 		/*
 		Lazyor clause has the following structure 
 		c[0] = c[1] or c[2] c[3] ...c[n-1]
@@ -178,7 +178,9 @@ void Solver::attachClause(Clause& c) {
 	}
     watches[toInt(~c[0])].push(&c);
     watches[toInt(~c[1])].push(&c);
-	if(c.mark()==SINGLESET){
+	if(mark==SINGLESET){
+		// TOTSINGLESET += c.size();
+		// cout<<"RATIO = "<<TOTSINGLESET<<"/"<<this->nVars()<<"="<<(TOTSINGLESET/(double)this->nVars())<<endl;
 		//singleset clauses are watched by all the literals except the last one.
 		assert(c.size()>2);
 		for(int i=2; i<c.size()-1; ++i){
@@ -972,12 +974,12 @@ double Solver::progressEstimate() const
 }
 
 
-bool Solver::solve(const vec<Lit>& assumps)
+lbool Solver::solve(const vec<Lit>& assumps)
 {
     model.clear();
     conflict.clear();
 	firstTry = true;
-    if (!ok) return false;
+    if (!ok) return l_False;
 
     assumps.copyTo(assumptions);
 
@@ -1001,7 +1003,8 @@ bool Solver::solve(const vec<Lit>& assumps)
 		if(incompletenessCutoff > 0 && decisions > incompletenessCutoff){
 			printf("WARNING: You are running with the -lightverif flag, so I am bailing\n");
 			printf("out and assuming the problem is UNSAT even though I don't know for sure.\n");
-			status = l_False;
+			cancelUntil(0);
+			return l_Undef;
 		}
     }
 
@@ -1023,7 +1026,7 @@ bool Solver::solve(const vec<Lit>& assumps)
     }
 
     cancelUntil(0);
-    return status == l_True;
+    return status;
 }
 
 //=================================================================================================

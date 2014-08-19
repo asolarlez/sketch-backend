@@ -142,20 +142,24 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	FileOutput( output<<a[0]<<" BOR "<<size<<" " );
 	vec<Lit> lits;
 	
-	Dout(for(int i=0; i<size; ++i){cout<<a[i+1]<<" or "; })
-	//	{ int tmp[] = { (a[0]), -(a[i+1])}; addClause(tmp, 2, lits);}
-		//FileOutput( output<<a[i+1]<<" " );
+	for(int i=0; i<size; ++i){
+		Dout(cout<<a[i+1]<<" or "; )
+		{ int tmp[] = { (a[0]), -(a[i+1])}; addClause(tmp, 2, lits);}
+		FileOutput( output<<a[i+1]<<" " );
+	}
+	//	
+		//
 	
 	FileOutput( output<<endl );
 	Dout(cout<<"; "<<endl);
-	
-	
+	/*	
+	LAZYOR clauses proved not to be very helpful.
 	for(int i=0; i<size+1; ++i){	
 		int var = abs(a[i]);		
 		lits.push( (a[i] > 0) ? Lit(var) : ~Lit(var) );		
 	}
 	s->addClause(lits, LAZYOR);
-	lits.clear();
+	lits.clear();*/
 	a[0] = -a[0];
 	addClause(a, size+1, lits);
 }
@@ -328,7 +332,7 @@ bool MiniSATSolver::ignoreOld(){
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ }
  	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
-	bool result = s->solve(assumptions);
+	lbool result = s->solve(assumptions);
  	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
 
 	if(outputProblems){
@@ -339,13 +343,15 @@ bool MiniSATSolver::ignoreOld(){
 		s->writeDIMACS(str.str().c_str());
 	}
 
-	if( result) {
+	if( result == l_True) {
 		//cout<<" Returned SAT"<<endl;
 		return SATISFIABLE;	
-	}else{
+	}
+	if(result==l_False){
 		//cout<<"Returned UNSAT"<<endl;
 		return UNSATISFIABLE;
-	}		
+	}	
+	return UNDETERMINED;
 }
 
  void MiniSATSolver::reset(){
@@ -361,6 +367,7 @@ bool MiniSATSolver::ignoreOld(){
  	Dout( cout<<" CLEANING UP "<<endl );
  	delete s;
  	s = new Solver();
+	if(isNegated()){ s->polarity_mode = Solver::polarity_false; }
  	s->newVar();
 	Dout(cout<<"clause count = "<<clauseCount<<endl;)
 	clauseCount=0;

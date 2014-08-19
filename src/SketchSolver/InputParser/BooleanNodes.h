@@ -701,6 +701,8 @@ class SRC_node: public INTER_node{
 			otype = OutType::BOOL_ARR;
 			return otype;
 		}
+		Assert(false, "NYI");
+		return otype;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };
@@ -793,6 +795,8 @@ class CTRL_node: public INTER_node{
 			otype = OutType::BOOL_ARR;
 			return otype;
 		}
+		Assert(false, "NYI");
+		return otype;
 	}
 };
 
@@ -1331,11 +1335,13 @@ inline bool isDllnode(bool_node* bn){
 	if(bn->type == bool_node::ASSERT || bn->type==bool_node::DST){
 		return true;
 	}
-	UFUN_node* uf = dynamic_cast<UFUN_node*>(bn);
-	if(uf != NULL){
-		return !uf->ignoreAsserts;
+	if(bn->type != bool_node::UFUN){
+		return false;
 	}
-	return false;
+	UFUN_node* uf = (UFUN_node*)(bn);
+	
+	return !uf->ignoreAsserts;
+	
 }
 
 inline bool isUFUN(DllistNode* dn){

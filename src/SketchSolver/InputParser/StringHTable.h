@@ -235,6 +235,8 @@ public:
 				}
 			}
 		}
+		Assert(false, "NYI");
+		return false;
 	}
 
 	void gchelperA(bucket<T>* b, vector<bucket<T>* >& v){
@@ -278,7 +280,9 @@ public:
 		swap(bstore, bst);
 	}
 
-
+	/**
+	Return true if the value was already there and false if you had to add it.
+	*/
 	bool condAdd(const char* key, int len, T val, T& out){
 		unsigned idx = hash(key, len);
 		int tidx = (idx)& mask;
@@ -322,6 +326,8 @@ public:
 				}
 			}
 		}
+		Assert(false, "You shouldn't reach here");
+		return false;
 	}
 
 	void clear(){

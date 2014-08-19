@@ -29,6 +29,8 @@ main(int argc, char** argv)
 
 	try{
 
+
+	signal(16, DumpSignalHandler);
 	signal(SIGABRT, AssertionHandler);
 	signal(SIGINT, CtrlCHandler);
 	signal(SIGTERM, TerminationHandler);	

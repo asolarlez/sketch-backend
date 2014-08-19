@@ -264,7 +264,8 @@ can only call them with the parameters used in the spec */
 
 void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps){	
 	//OneCallPerCSiteInliner fin;
-	InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
+	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
+	InlineControl* fin = new TheBestInliner(steps, params.boundmode == CommandLineArgs::CALLSITE);
 	/*
 	if(PARAMS->boundedCount > 0){
 		fin = new BoundedCountInliner(PARAMS->boundedCount);

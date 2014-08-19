@@ -7,8 +7,11 @@
 #include "Checkpointer.h"
 #include "VarStore.h"
 #include "CommandLineArgs.h"
+#include "SolverTypes.h"
 #include <stack>
 #include <ctime>
+
+using namespace MSsolverNS;
 
 class DagOptim;
 class CEGISparams{
@@ -117,7 +120,7 @@ protected:
 	void addInputsToTestSet(VarStore& input);
 
 	bool check(VarStore& input, VarStore& controls);
-	bool baseCheck(VarStore& controls, VarStore& input);
+	lbool baseCheck(VarStore& controls, VarStore& input);
 	void setNewControls(VarStore& controls, SolverHelper& dirCheck);
 	
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);

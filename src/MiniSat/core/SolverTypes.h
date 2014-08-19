@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SolverTypes_h
 
 #include <cassert>
-
+#include "Alg.h"
 
 
 
@@ -215,7 +215,7 @@ inline Lit Clause::subsumes(const Clause& other) const
 
 inline void Clause::strengthen(Lit p)
 {
-    remove(*this, p);
+    MSsolverNS::remove(*this, p);
     calcAbstraction();
 }
 

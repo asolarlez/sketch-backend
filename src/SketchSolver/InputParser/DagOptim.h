@@ -71,6 +71,8 @@ public:
 			}			
 			return true;
 		}
+		Assert(false, "NYI");
+		return false;
 	}	
 };
 
@@ -94,6 +96,8 @@ public:
 		if(state==RANGE){
 			return ANVIterator(low, high, lim);
 		}
+		Assert(false, "You shouldn't reach here");
+		return ANVIterator(low, high, lim);
 	}
 	bool isList(){ return state == LIST; }
 	bool isTop(){ return state==TOP; }

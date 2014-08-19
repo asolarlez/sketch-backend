@@ -71,6 +71,8 @@ struct CommandLineArgs{
   bool lightVerif;
   bool outputSat;
   int boundedCount;
+  typedef enum {CALLSITE, CALLNAME} BoundMode;
+  BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
 		for(int i = 0; i < args.size(); i++) {
@@ -128,7 +130,7 @@ struct CommandLineArgs{
 		lightVerif = false;
 		minvarHole = false;
 		outputSat = false;
-
+		boundmode = CALLNAME;
 		boundedCount = 80;
 
 	  for(int ii=0; ii<argc; ++ii){
@@ -196,7 +198,20 @@ struct CommandLineArgs{
 		  continue;
 	    }
 
-
+		if( string(argv[ii]) == "--boundmode" ){
+	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      string bm  = argv[ii+1];	  
+		  cout<<"boundmode = "<<bm<<endl;
+		  Assert(bm == "CALLSITE" || bm == "CALLNAME" , 
+			  "The argument to boundmode should be one of \n CALLSITE = bound by callsite \n CALLNAME = bound by call name ");
+	      if(bm == "CALLSITE"){
+			  boundmode = CALLSITE;
+		  }else{
+			  boundmode = CALLNAME;
+		  }
+		  input_idx = ii+2;
+		  continue;
+	    }
 
 		if( string(argv[ii]) == "-simplifycex" ){
 	      Assert(ii<(argc-1), "-synth needs an extra parameter");
