@@ -13,12 +13,15 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, InlineControl* ict):
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	map<string, int>& p_randholes,
+	bool p_randomize, InlineControl* ict):
 dag(p_dag), 
 DagOptim(p_dag), 
 ufunAll(" ufun all"),
 functionMap(p_functionMap),
-ictrl(ict)
+ictrl(ict),
+randomize(p_randomize),
+randholes(p_randholes)
 {
 	alterARRACS();
 }
@@ -84,9 +87,15 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 
 
 void DagFunctionInliner::visit(CTRL_node& node){
+	
+	
 	if(node.get_Pcond()){
 		rvalue = this->getCnode(true);
 	}else{
+		if(randomize){
+			rvalue = checkRandHole(&node);
+			return;
+		}
 		DagOptim::visit(node);
 	}
 }
@@ -231,12 +240,21 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			
 			for(int i=0; i<controls.size(); ++i){	
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
-				bool_node* actual = dag.unchecked_get_node( ctrl->name );
-
 				if(ctrl->get_Pcond()){
 					nmap[ctrl->id] = node.mother;
 					continue;
 				}
+				if(randomize){
+					bool_node* subst = checkRandHole(ctrl);
+					if(subst != ctrl){
+						nmap[ctrl->id] = subst;
+						continue;
+					}
+				}
+
+				bool_node* actual = dag.unchecked_get_node( ctrl->name );
+
+				
 
 				if(actual != NULL){
 					nmap[controls[i]->id] = actual;

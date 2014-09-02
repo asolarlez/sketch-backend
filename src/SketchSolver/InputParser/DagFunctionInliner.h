@@ -536,6 +536,8 @@ public:
 };
 
 
+const int LEAVEALONE = -8888888;
+
 class DagFunctionInliner : public DagOptim
 {
 	
@@ -559,9 +561,73 @@ class DagFunctionInliner : public DagOptim
 	bool somethingChanged;
 	int lnfuns;
 	InlineControl* ictrl;
+
+	map<string, int>& randholes;
+	bool randomize;
+	bool_node* checkRandHole(CTRL_node* node){
+		map<string, int>::iterator it = randholes.find( node->get_name()  );
+		if( it == randholes.end() ){
+			int chsize = node->children.size();
+			int odds = max(5, 100/ (chsize>0?chsize:1)  );
+			cout<<node->get_name()<<" odds = 1/"<<odds;
+			if(rand() % odds == 0){
+				cout<<" try to replace"<<endl;
+				int bound = 1;
+				
+				int nbits = node->get_nbits();
+				for(int qq = 0; qq < nbits; ++qq){
+					bound = bound*2;
+				}
+				int obound = bound;
+				int ul = -1;
+				for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
+					cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
+					bool_node* child = *it;
+					if(child->type == bool_node::LT && child->mother == node){
+						if(child->father->type == bool_node::CONST){
+							ul = max(ul, getIval(child->father));
+						}
+					}else{
+						if(child->type == bool_node::ARRACC && child->mother == node){
+							bound = min(bound, ((arith_node*)child)->multi_mother.size());
+						}else{
+							if(child->type == bool_node::ARRASS && child->mother == node){
+								ul = max(ul, ((ARRASS_node*)child)->quant);
+							}else{
+							if(!(child->type == bool_node::EQ )){
+								cout<<"    has a bad child"<<child->lprint()<<endl;
+								randholes[node->get_name()] = LEAVEALONE;
+								return node;
+							}
+							}
+						}
+					}
+				}
+				if(ul > 0 && bound ==obound ){
+					bound = min(bound, ul);
+				}
+				int rv = rand() % bound;
+				cout<<"    replacing with "<<rv<<" < "<<bound<<endl;
+				randholes[node->get_name()] = rv;
+				return getCnode(rv);
+			}else{
+				cout<<" not replacing"<<endl;
+				randholes[node->get_name()] = LEAVEALONE;
+				return node;
+			}
+		}else{
+			if(it->second == LEAVEALONE){
+				return node;
+			}else{
+				return getCnode(it->second);
+			}
+		}
+	}
+
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, InlineControl* ict=NULL);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	map<string, int>& p_randholes,
+	bool p_randomize=false, InlineControl* ict=NULL);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

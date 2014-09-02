@@ -127,7 +127,7 @@ bool CEGISSolver::solve(){
 		cout<<"Random seeds = "<<params.nseeds<<endl;	
 	}
 	
-	srand(params.randseed);
+	
 	ctrlStore.makeRandom();
 //	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
 //        std::vector<int, std::allocator<int> > ctrlstore_serialized =
@@ -1210,7 +1210,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 	
 	cout<<"inputSize = "<<inputSize<<"\tctrlSize = "<<ctrlSize<<endl;
 	
-	srand(params.randseed);
+	
 	int maxSize = (ctrlSize>inputSize? ctrlSize : inputSize)+2;
 
 	char* buff = new char[maxSize];

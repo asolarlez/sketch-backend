@@ -17,6 +17,7 @@
 
 extern timerclass solution;
 extern timerclass modelBuilding;
+extern const int LEAVEALONE;
 
 using namespace std;
 
@@ -28,6 +29,7 @@ class InterpreterEnvironment
 	SATSolver* _pfind;
 	int assertionStep;
 	string sessionName;
+	map<string, int> hardcodedholes;
 
 	/*Debug state: */
 	vector<BooleanDAG*> history;
@@ -102,6 +104,12 @@ public:
 	}
 	
 	void printControls(ostream& out){
+		for(map<string, int>::iterator it = hardcodedholes.begin(); it != hardcodedholes.end(); ++it){
+			if(it->second != LEAVEALONE){
+				out<<it->first<<"\t"<<it->second<<endl;
+			}
+		}
+
 		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
 			out<<it->first<<"\t"<<it->second<<endl;
 		}

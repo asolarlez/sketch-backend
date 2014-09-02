@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "string.h"
+#include <ctime>
 
 using std::cout;
 using std::endl;
@@ -71,6 +72,7 @@ struct CommandLineArgs{
   bool lightVerif;
   bool outputSat;
   int boundedCount;
+  bool randomassign;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -132,7 +134,7 @@ struct CommandLineArgs{
 		outputSat = false;
 		boundmode = CALLNAME;
 		boundedCount = 80;
-
+		randomassign =false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -141,6 +143,11 @@ struct CommandLineArgs{
         }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
+	      input_idx = ii+1;
+		  continue;
+	    }
+		if( string(argv[ii]) == "-randassign" ){	      
+	      randomassign = true;
 	      input_idx = ii+1;
 		  continue;
 	    }
@@ -454,6 +461,14 @@ struct CommandLineArgs{
 	  // outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
 	  if(verbosity > 4){
 			printDiag = true;
+	  }
+	  if(seed < 0){
+			seed = time(NULL);
+	  }
+	  srand(seed);
+
+	  if(verbosity>=0){
+		cout<<"SOLVER RAND SEED = "<<seed<<endl;
 	  }
 	}
 	

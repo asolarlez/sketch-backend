@@ -288,8 +288,8 @@ void ComplexInliner::unify(){
 
 
 void ComplexInliner::immInline(BooleanDAG& dag){
-
-	DagFunctionInliner dfi(dag, functionMap);
+	map<string, int> fake;
+	DagFunctionInliner dfi(dag, functionMap, fake);
 	dfi.process(dag);
 	
 	somethingChanged = dfi.changed();

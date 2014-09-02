@@ -15,8 +15,7 @@ using namespace MSsolverNS;
 
 class DagOptim;
 class CEGISparams{
-public:
-	int randseed;
+public:	
 	int iterlimit;
 	bool printDiag;
 	int NINPUTS;
@@ -34,8 +33,7 @@ public:
 		printDiag(false),
 		nseeds(1),
 		NINPUTS(3),
-		iterlimit(-1),
-		randseed(time(NULL)),
+		iterlimit(-1),		
 		simulate(true),
 		simiters(3),		
 		simplifycex(RECSIM),
@@ -48,12 +46,7 @@ public:
 		NINPUTS = args.NINPUTS;
 		if(args.terminateafter > 0){
 			iterlimit = args.terminateafter;
-		}
-		if(args.seed >= 0){
-			randseed = args.seed;			
-		}
-		if(PARAMS->verbosity < 0) {Dout(cout<<"SOLVER RAND SEED = "<<randseed<<endl;)}
-		else {cout<<"SOLVER RAND SEED = "<<randseed<<endl;}
+		}		
 		simulate = args.simulate;
 		simiters = args.simiters;
 		simstopsize = args.simstopsize;
@@ -65,8 +58,7 @@ public:
 
 	void activatePrintDiag(){
 		printDiag = true;
-	}	
-	void set_randseed(int seed){ randseed = seed; };
+	}		
 	void setIterLimit(int p_iterlimit){iterlimit = p_iterlimit; };
 
 };
