@@ -589,7 +589,7 @@ class DagFunctionInliner : public DagOptim
 						}
 					}else{
 						if(child->type == bool_node::ARRACC && child->mother == node){
-							bound = min(bound, ((arith_node*)child)->multi_mother.size());
+							bound = min(bound, (int) ((arith_node*)child)->multi_mother.size());
 						}else{
 							if(child->type == bool_node::ARRASS && child->mother == node){
 								ul = max(ul, ((ARRASS_node*)child)->quant);
