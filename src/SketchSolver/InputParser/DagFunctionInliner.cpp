@@ -143,7 +143,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	map<int, int> oldToNew;
 
 	if(ictrl != NULL && !ictrl->checkInline(node)){
-		mpcontroller[node.fgid]["__ALL"] = NULL;
+		//mpcontroller[node.fgid]["__ALL"] = NULL;
 		DagOptim::visit(node);			
 		return;
 	}	
@@ -152,7 +152,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	bool_node* condition = node.mother;
 	if(isConst(condition) && !getBval(condition)){
 		rvalue = getCnode(0);
-		mpcontroller[node.fgid]["__ALL"] = getCnode(0);
+		//mpcontroller[node.fgid]["__ALL"] = getCnode(0);
 		return;
 	}
 
@@ -160,7 +160,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 
 	if( functionMap.find(name) != functionMap.end() ){
-		if(mpcontroller.count(node.fgid) > 0){
+		/*if(mpcontroller.count(node.fgid) > 0){
 			map<string,bool_node*>::iterator it = mpcontroller[node.fgid].find(node.outname);
 			if(it != mpcontroller[node.fgid].end()){
 				bool_node* rv = it->second;
@@ -174,7 +174,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 			}			
 			return;
-		}
+		}*/
 
 				
 		BooleanDAG& oldFun = *functionMap[name];
@@ -343,13 +343,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 
 						{
-							if(oldToNew.count(ufun->fgid)>0){
+							/*if(oldToNew.count(ufun->fgid)>0){
 								ufun->fgid = oldToNew[ufun->fgid];
 							}else{
 								++uidcount;
 								oldToNew[ufun->fgid] = uidcount;
 								ufun->fgid = uidcount;
-							}
+							}*/
 						}
 
 						bool_node * oldMother = ufun->mother;	
@@ -428,6 +428,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nm += "_";
 							nm += ufn->outname;
 							SRC_node* sn = new SRC_node(nm);
+                            sn->setTuple(ufn->getTupleName());
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
 							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
@@ -513,61 +514,92 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					bool_node* ttv = n->mother;
 					if(oldFun.isModel){
 						if(assertCond == NULL){
-							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);												
-							Assert(un != NULL, "Only ufun node can be the output of a model. ttv=" << ttv->lprint());
-							SRC_node* sc = ufToSrc[un];
-							sc->neighbor_replace(ttv);
-							sc->children.clear();
+                       
+                            TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            SRC_node* sc = ufToSrc[un];
+                            sc->neighbor_replace(ttv);
+                            sc->children.clear();
+                               
+                        
 						}else{
-							CTRL_node* qn = new CTRL_node();
-							stringstream st;
-							st<<dn->name;
-							st<<lnfuns;
-						
-							qn->name = st.str();
-							qn->set_Angelic();
-						
-							ARRACC_node* mx = new ARRACC_node();
-							if(!PARAMS->angelic_model)
-								mx->mother = assertCond;
-							else{
-								//create new src node which should be valued to false in Synth phase
-								SRC_node *st = new SRC_node("__rs_node");
-								st->set_nbits(1);//just one bit input
-								mx->mother = st;
-								addNode(st);
-								
-							}
-							//if its all-angelic-model, we need to set mx->mother as new SRC_node to be set to false in Syn phase
-							mx->multi_mother.push_back(qn);
-							mx->multi_mother.push_back(ttv);
-							mx->addToParents();
-							addNode(qn);
-							addNode(mx);
-							UFUN_node* un = dynamic_cast<UFUN_node*>(ttv);
-							Assert(un != NULL, "Output of model should be an uninterpreted function.");
-							// BUGFIX: nbits must be 1 if original UFUN out is boolean type
-							int nbits = un->get_nbits();
-							if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-							qn->set_nbits(nbits);
-							//cout << "DagFunctionInliner: un=" << un->lprint() << " nbits=" << un->get_nbits() << " isArr=" << un->isArr() << endl;
-												
-							Assert(un != NULL, "Only ufun node can be the output of a model ttv=" << ttv->lprint());
-							// BUGFIX xzl: fix Issue #5, when angelic CTRL is an array
-							if (un->isArr()) {
-								//cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
-								qn->setArr(PARAMS->angelic_arrsz);
-							}
-							SRC_node* sc = ufToSrc[un];
-							sc->neighbor_replace(mx);
-							sc->children.clear();
-							ttv = mx;
+                            Assert(ttv->type == bool_node::TUPLE_CREATE,"dfwer" );
+                            TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
+                            Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
+                            int numOutputs = outTuple->multi_mother.size();
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            
+                            TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+                            newOutTuple->setName(outTuple->name);
+                            
+                            for ( int p = 0; p < numOutputs; p++) {
+                                CTRL_node* qn = new CTRL_node();
+                                stringstream st;
+                                st<<dn->name;
+                                st<<lnfuns;
+                                st<<"_"<<p;
+                                
+                                qn->name = st.str();
+                                qn->set_Angelic();
+                                qn->setTuple(un->getTupleName());
+                            
+                                ARRACC_node* mx = new ARRACC_node();
+                                if(!PARAMS->angelic_model)
+                                    mx->mother = assertCond;
+                                else{
+                                    //create new src node which should be valued to false in Synth phase
+                                    SRC_node *st = new SRC_node("__rs_node");
+                                    st->set_nbits(1);//just one bit input
+                                    mx->mother = st;
+                                    addNode(st);
+                                    
+                                }
+                                Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
+                                tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[p]);
+                                
+                                mx->multi_mother.push_back(qn);
+                                mx->multi_mother.push_back(tupleRead);
+                                mx->addToParents();
+                                addNode(qn);
+                                addNode(mx);
+                                
+                                OutType* outputType = tupleRead->getOtype();
+                                // BUGFIX: nbits must be 1 if original UFUN out is boolean type
+                                int nbits = 0;
+                                if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
+                                    nbits = 1;
+                                }
+                                if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
+                                    nbits = 2;
+                                }
+                                if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+                                qn->set_nbits(nbits);
+                                
+                                // BUGFIX xzl: fix Issue #5, when angelic CTRL is an array
+                                if (outputType == OutType::INT_ARR || outputType == OutType::BOOL_ARR) {
+                                    //cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
+                                    qn->setArr(PARAMS->angelic_arrsz);
+                                }
+                                newOutTuple->multi_mother.push_back(mx);
+                                
+                            
+                            }
+                            SRC_node* sc = ufToSrc[un];
+                            newOutTuple->addToParents();
+                            addNode(newOutTuple);
+                            sc->neighbor_replace(newOutTuple);
+                            sc->children.clear();
+                            ttv = newOutTuple;
+
+                             
 						}
 																		
 						nprime->dislodge();
 						delete nprime;
 					}
-					mpcontroller[node.fgid][dn->name] = ttv;
+					//mpcontroller[node.fgid][dn->name] = ttv;
 					if(dn->name == node.outname){
 						output = ttv;
 					}										
@@ -623,7 +655,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			// Get the code for this node.				
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
-				uidcount = max(uidcount, uf.fgid);
+				//uidcount = max(uidcount, uf.fgid);
 				/*
 				When the inline controller checks a function and the function is 
 				not inlined, the controller makes sure other function with the same path 
@@ -645,21 +677,22 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		}
 	}
 	
+    //dag.lprint(cout);
 	mpcontroller.clear();
 
 	for(int i=0; i<dag.size() ; ++i ){
-		// Get the code for this node.						
+		// Get the code for this node.
+        //cout<<dag[i]->lprint()<<endl;
 		bool_node* node = computeOptim(dag[i]);
        if(dag[i] != node){
-				Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+                Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
 	}
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;
-
-	seenControls.clear();	
-	cleanup(dag);
+    seenControls.clear();
+    cleanup(dag);
 }
 
 

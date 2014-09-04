@@ -16,7 +16,9 @@ BooleanDAGCreator::~BooleanDAGCreator(void)
 
  void BooleanDAGCreator::finalize(){
 	dag->registerOutputs();
-	 optim.cleanup(*dag);
+     optim.cleanup(*dag);
+     optim.combineFunCalls(*dag);
+        
 	 if(PARAMS->verbosity>7){
 		 cout<<"size = "<<dag->size()<<endl;		 
 	 }
@@ -100,7 +102,7 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 
   if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::NOT){
       
-	  Assert( mth->getOtype() == OutType::BOOL && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
+	 Assert( mth->getOtype() == OutType::BOOL  && (fth == NULL || fth->getOtype() == OutType::BOOL), "The parents of a boolean operator must be boolean !!!"<<"  mth="<<mth->get_name()<<"  fth="<<(fth!=NULL? fth->get_name():"NULL"));
   }
  
 

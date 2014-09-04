@@ -2083,8 +2083,8 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     Tvalue tid = tval_lookup(node.mother);
     
     int length = tid.num_ranges.size();
-	Tvalue zero = tvOne;
-	zero.num_ranges[0].value = 0;
+	Tvalue zero = tvYES;
+	zero.bitAdjust(false);
     vector<Tvalue> choices(tpl_store.size(), zero);
     
     bool isBoolean = true;

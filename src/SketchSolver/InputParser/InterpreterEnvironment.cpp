@@ -239,26 +239,90 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	
 	//spec->repOK();
 	//sketch->repOK();
-	Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
+    Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
 
 	{
 		/* Eliminates uninterpreted functions */
-		DagElimUFUN eufun;	
+        DagElimUFUN eufun;
 		eufun.process(*spec);
+        
+        
      	/* Assumption -- In the sketch if you have uninterpreted functions it 
 can only call them with the parameters used in the spec */
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
-		eufun.process(*sketch);
+        eufun.process(*sketch);
+       
 	}
+    
+    {
+        //Post processing to replace ufun inputs with tuple of src nodes.
+        replaceSrcWithTuple(*spec);
+        replaceSrcWithTuple(*sketch);
+    }
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
-	spec->makeMiter(sketch);
+    spec->makeMiter(sketch);
 	BooleanDAG* result = spec;
-	
+    
 	
 	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
 		
 
 	return runOptims(result);
+}
+
+void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
+    vector<bool_node*> newnodes;
+    for(int i=0; i<dag.size(); ++i ){
+		if (dag[i]->type == bool_node::SRC) {
+            SRC_node* srcNode = dynamic_cast<SRC_node*>(dag[i]);
+            if (srcNode->isTuple) {
+                Tuple* outputsType = dynamic_cast<Tuple*>(OutType::getTuple(srcNode->tupleName));
+                string name = srcNode->get_name();
+                TUPLE_CREATE_node* outputs = new TUPLE_CREATE_node();
+                outputs->setName(srcNode->tupleName);
+                int size = outputsType->entries.size();
+                for (int j = 0; j < size ; j++) {
+                    stringstream str;
+                    str<<name<<"_"<<j;
+                    SRC_node* src =  new SRC_node( str.str() );
+                    OutType* type = outputsType->entries[j];
+                    int nbits = 0;
+                    if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+                        nbits = 1;
+                    }
+                    if (type == OutType::INT || type == OutType::INT_ARR) {
+                        nbits = 2;
+                    }
+                    if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+                    src->set_nbits(nbits);
+                    //if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
+                    if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+                        // TODO xzl: is this fix correct?
+                        // will this be used with angelic CTRL? see Issue #5 and DagFunctionInliner
+                        //int sz = PARAMS->angelic_arrsz;
+                        
+                        //This should be changed
+                        int sz = 1 << PARAMS->NINPUTS;
+                        //int sz = 1;
+                        //for(int i=0; i<PARAMS->NINPUTS; ++i){
+                        //	sz = sz *2;
+                        //}
+                        src->setArr(sz);
+                    }
+                    newnodes.push_back(src);
+                    outputs->multi_mother.push_back(src);
+                }
+                outputs->addToParents();
+                newnodes.push_back(outputs);
+                dag.replace(i, outputs);
+                
+            }
+        }
+	}
+    
+    dag.addNewNodes(newnodes);
+	newnodes.clear();
+    dag.removeNullNodes();
 }
 
 
@@ -278,9 +342,9 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
 		int t = 0;
-		do{						
-			dfi.process(dag);			
-			// dag.repOK();
+		do{
+            dfi.process(dag);
+            // dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();			
 			// dag.lprint(cout);
 			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
@@ -299,7 +363,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin->clear();
 		if(t==1){ cout<<"Bailing out"<<endl; break; }
 	}
-	{		
+	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
 	}
@@ -448,5 +512,6 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		result->mrprint(of);
 		of.close();
 	}
+    
 	return result;
 }

@@ -400,20 +400,20 @@ void BooleanDAG::repOK(){
 					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
 					Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
-				if(uf->dependent()){
+				/*if(uf->dependent()){
 					Assert(uf->ignoreAsserts, "Dependent ufun nodes should ignore asserts");
 					Assert(uf->multi_mother.size() == 1 && 
 						uf->multi_mother[0]->type == bool_node::UFUN, "Multi-mother of a dependent node should be a ufun node.");
 					UFUN_node* mf = dynamic_cast<UFUN_node*>(uf->multi_mother[0]);
 					Assert(mf->fgid == uf->fgid, "Mother of dependent node should have the same fgid");
-				}else{
+				}else{*/
 					if(uf->multi_mother.size() == 1){
 						UFUN_node* mf = dynamic_cast<UFUN_node*>(uf->multi_mother[0]);
-						if(mf != NULL){
+						/*if(mf != NULL){
 							Assert(mf->fgid != uf->fgid, "Looks like this should have been a dependent node.");
-						}
+						}*/
 					}
-				}
+				//}
 			}
 			if(n->mother != NULL){
 				bool_node* par = n->mother;
@@ -762,7 +762,17 @@ void BooleanDAG::print(ostream& out)const{
 }
 
 void BooleanDAG::mrprint(ostream& out){
+  
   out<<"dag "<< this->get_name()<<" :"<<endl;
+    for(map<string,OutType*>::iterator itr = OutType::tupleMap.begin(); itr != OutType::tupleMap.end(); ++itr){
+        out<<"TUPLE_DEF "<<itr->first;
+        vector<OutType*> entries = dynamic_cast<Tuple*>(itr->second)->entries;
+        for(int i=0;i< entries.size();i++){
+            out<<" "<<entries[i]->str();
+        }
+        out<<endl;
+        out.flush();
+    }
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
   		out<<nodes[i]->mrprint()<<endl;
@@ -886,7 +896,7 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 
 
 void BooleanDAG::makeMiter(BooleanDAG* bdag){
-	bool_node* tip = NULL; 
+	bool_node* tip = NULL;
 	relabel();
 	bdag->relabel();
 	map<bool_node*, bool_node*> replacements;	
@@ -925,40 +935,81 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 		}
 				
 		if( (*node_it)->type == bool_node::DST){
-			INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
+            INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 			//nodesByType[(*node_it)->type].push_back((*node_it));
 			INTER_node* otherDst = named_nodes[inode->name];
 			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(inode)->name<<endl);
-			EQ_node* eq = new EQ_node();			
-			eq->father = otherDst->mother;
-			eq->mother = (*node_it)->mother;
-			
-			//eq->addToParents();			
-			
-			Dout(cout<<"           switching inputs "<<endl);
-			eq->switchInputs(*this, replacements);
-			
-			Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
-			Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
+            
+            if (otherDst->mother->type == bool_node::TUPLE_CREATE) {
+                TUPLE_CREATE_node* inodeTuple = dynamic_cast<TUPLE_CREATE_node*>(inode->mother);
+                TUPLE_CREATE_node* otherDstTuple = dynamic_cast<TUPLE_CREATE_node*>(otherDst->mother);
+                int inodeCount = inodeTuple->multi_mother.size();
+                int otherDstCount = otherDstTuple->multi_mother.size();
+                Assert(inodeCount == otherDstCount, "Number of outputs should be the same" << (inode)->name<<endl);
+                for (int i = 0; i < inodeCount; i++) {
+                    EQ_node* eq = new EQ_node();
+                    eq->mother = otherDstTuple->multi_mother[i];
+                    eq->father = inodeTuple->multi_mother[i];
+                    
+                    //eq->addToParents();
+                    Dout(cout<<"           switching inputs "<<endl);
+                    eq->switchInputs(*this, replacements);
+                    Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
+                                    string mm = "The spec and sketch can not be made to be equal. ";
+                    mm += otherDst->name;
+                    if (i==inodeCount -1) {
+                        Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
+                        replace( otherDst->id, eq);
+                    }
+                    
+                    nodes.push_back( eq );
 
-			string mm = "The spec and sketch can not be made to be equal. ";
-			mm += otherDst->name;
+                    ASSERT_node* finalAssert = new ASSERT_node();			
+                    finalAssert->setMsg( mm );
+                    finalAssert->mother = eq;
+                    finalAssert->addToParents();
+                    nodes.push_back(finalAssert);
 
-			replace( otherDst->id, eq);	
-			if(replacements.count((*node_it)->mother)==0){
-				(*node_it)->dislodge();
-			}
-			delete (*node_it);
-			nodes.push_back( eq );	
-
-			ASSERT_node* finalAssert = new ASSERT_node();			
-			finalAssert->setMsg( mm );
-			finalAssert->mother = eq;
-			finalAssert->addToParents();
-			nodes.push_back(finalAssert);
-
-			nodesByType[finalAssert->type].push_back(finalAssert);
-			assertions.append( getDllnode(finalAssert) );
+                    nodesByType[finalAssert->type].push_back(finalAssert);
+                    assertions.append( getDllnode(finalAssert) );
+                }
+                if(replacements.count((*node_it)->mother)==0){
+                    (*node_it)->dislodge();
+                }
+                delete (*node_it);
+            } else {
+                EQ_node* eq = new EQ_node();
+                eq->father = otherDst->mother;
+                eq->mother = (*node_it)->mother;
+                
+                //eq->addToParents();
+                
+                Dout(cout<<"           switching inputs "<<endl);
+                eq->switchInputs(*this, replacements);
+                
+                Dout(cout<<"           replacing "<<otherDst->get_name()<<" with "<<eq->get_name()<<endl);
+                Assert( nodes[otherDst->id] == otherDst, "The replace won't work, because the id's are wrong");
+                
+                string mm = "The spec and sketch can not be made to be equal. ";
+                mm += otherDst->name;
+                
+                replace( otherDst->id, eq);
+                if(replacements.count((*node_it)->mother)==0){
+                    (*node_it)->dislodge();
+                }
+                delete (*node_it);
+                nodes.push_back( eq );
+                
+                ASSERT_node* finalAssert = new ASSERT_node();			
+                finalAssert->setMsg( mm );
+                finalAssert->mother = eq;
+                finalAssert->addToParents();
+                nodes.push_back(finalAssert);
+                
+                nodesByType[finalAssert->type].push_back(finalAssert);
+                assertions.append( getDllnode(finalAssert) );
+            }
+            
 		}
 	}
 
@@ -1047,14 +1098,14 @@ BooleanDAG* BooleanDAG::clone(){
 }
 
 
-
-
 void BooleanDAG::registerOutputs(){
 	 vector<bool_node*>& vn = getNodesByType(bool_node::DST);
 	 for(int i=0; i<vn.size(); ++i){
 		assertions.append( getDllnode(vn[i]) );
 	 }
 }
+
+
 
 
 

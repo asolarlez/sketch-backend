@@ -236,6 +236,7 @@ Dllist assertions;
   void lprint_wrapper();
   void print_wrapper(const char* fileName)const;
   void lprint_wrapper(const char* fileName);
+  void combineFunCalls(map<int, vector<bool_node*> > funCalls);
   
    BooleanDAG(const string& name_="anon", bool isModel_=false);
 

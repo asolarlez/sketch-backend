@@ -191,7 +191,7 @@ ParamDecl: T_vartype T_ident {
  	 }
 	 delete $3;
  }
- | '!' T_ident T_ident{
+ | '!' T_ident T_ident {
 
     currentBD->create_outputs(-1, *$3);
     delete $3;
@@ -263,6 +263,11 @@ TupleType: T_vartype {
     if( $1 == BIT_ARR){ $$ = OutType::BOOL_ARR;}
     if( $1 == FLOAT_ARR){ $$ = OutType::FLOAT_ARR;}
 }
+| T_vartype '[' '*' ConstantExpr ']' {
+    if ($1 == INT) {$$ = OutType::INT_ARR;}
+    if( $1 == BIT){ $$ = OutType::BOOL_ARR;}
+    if( $1 == FLOAT){ $$ = OutType::FLOAT_ARR;}
+}
 | T_ident { 
     $$ = OutType::getTuple(*$1);
 }
@@ -271,6 +276,17 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 |  TupleTypeList TupleType  {
     $1->push_back( $2 );
     $$ = $1;
+}
+| TupleTypeList T_vartype '[' Constant ']' {
+    OutType* type;
+    if ($2 == INT) {type = OutType::INT_ARR;}
+    if( $2 == BIT){ type = OutType::BOOL_ARR;}
+    if( $2 == FLOAT){type = OutType::FLOAT_ARR;}
+    for (int i = 0; i < $4; i++ ) {
+        $1->push_back (type );
+    }
+    $$ = $1;
+
 }
 
 TypeLine: T_ident '(' TupleTypeList ')'{
@@ -598,19 +614,13 @@ Term: Constant {
 		UFUN_node* ufun = new UFUN_node(fname);
 		ufun->outname = *$13;
 		int fgid = $15;
-		ufun->fgid = fgid;	
+		ufun->fgid = fgid;
 		bool_node* pCond;	
-		if(currentBD->methdparams.count(fgid)>0){
-			ufun->multi_mother = currentBD->methdparams[fgid];
-			ufun->makeDependent();
-			pCond = currentBD->create_const(1);
-		}else{
-			for( ; parit != params->rend(); ++parit){
-				ufun->multi_mother.push_back((*parit));
-			}
-			pCond = $10;
-		}
-		
+		for( ; parit != params->rend(); ++parit){
+            ufun->multi_mother.push_back((*parit));
+        }
+        pCond = $10;
+
 
         ufun->set_nbits( 0 );
         ufun->set_tupleName(*$4);
@@ -618,12 +628,8 @@ Term: Constant {
 		
 		//ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node(pCond, NULL, ufun);
-		if(currentBD->methdparams.count(fgid)==0){
-			currentBD->methdparams[fgid].push_back($$);
-		}
-		
-		
-		delete $1;
+
+        delete $1;
 		delete $13;
 	}
 	delete $7;
@@ -651,16 +657,12 @@ Term: Constant {
 		int fgid = $14;
 		ufun->fgid = fgid;	
 		bool_node* pCond;	
-		if(currentBD->methdparams.count(fgid)>0){
-			ufun->multi_mother = currentBD->methdparams[fgid];
-			ufun->makeDependent();
-			pCond = currentBD->create_const(1);
-		}else{
-			for( ; parit != params->rend(); ++parit){
-				ufun->multi_mother.push_back((*parit));
-			}
-			pCond = $9;
-		}
+
+        for( ; parit != params->rend(); ++parit){
+            ufun->multi_mother.push_back((*parit));
+        }
+        pCond = $9;
+
 		
 		if( $3 == INT || $3==INT_ARR){
 			ufun->set_nbits( 2 /*NINPUTS*/  );
@@ -673,10 +675,7 @@ Term: Constant {
 		
 		//ufun->name = (currentBD->new_name(fname));
 		$$ = currentBD->new_node(pCond, NULL, ufun);
-		if(currentBD->methdparams.count(fgid)==0){
-			currentBD->methdparams[fgid].push_back($$);
-		}
-		
+
 		
 		delete $1;
 		delete $12;

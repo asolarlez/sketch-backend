@@ -439,6 +439,7 @@ protected:
 	bool checkPrecedence(bool_node* dest, bool_node* src);
 	void findCycles(BooleanDAG& dag);
 	void breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes);
+    bool_node* process(UFUN_node* node);
 public:
 	bool isTopLevel;
 	map<bool_node*, FastSet<bool_node> > funDependencies;
@@ -446,6 +447,7 @@ public:
 	
 	map<long long int, CONST_node*> cnmap;	
 	map<string, UFUN_node*> callMap;
+    map<int, UFUN_node*> combinedFunCallMap;
 
 	DagOptim(BooleanDAG& dag);
 	virtual ~DagOptim();
@@ -453,6 +455,7 @@ public:
 	bool_node* quickcse(int idmom, int idpop, bool_node::Type t){
 		return cse.quickcse(idmom, idpop, t);
 	}
+    void combineFunCalls(BooleanDAG& dag);
 
 	void alterARRACS(){ ALTER_ARRACS = true; } 
 

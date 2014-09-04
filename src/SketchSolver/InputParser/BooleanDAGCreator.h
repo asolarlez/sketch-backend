@@ -15,8 +15,8 @@ class BooleanDAGCreator
 					 const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth);
 
 public:
-	map<int, vector<bool_node*> > methdparams;
-	BooleanDAGCreator(BooleanDAG* p_dag);
+    BooleanDAGCreator(BooleanDAG* p_dag);
+    
 public:
 	virtual ~BooleanDAGCreator(void);
 
@@ -32,7 +32,6 @@ public:
   */
   INTER_node* create_outputs(int n, bool_node* nodeToOutput, const string& gen_name=string("OUTPUT"));
   INTER_node* create_outputs(int n, const string& gen_name=string("OUTPUT"));
-  
 
   /** Produces a node called name.
   */
