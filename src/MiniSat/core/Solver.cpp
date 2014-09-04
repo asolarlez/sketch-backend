@@ -125,6 +125,17 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 					ps[j++] = p = ps[i];
 			ps.shrink(i - j);
 		}
+		if(kind == SINGLESET){
+			sort(ps);
+			Lit p; int i, j;
+			for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+				if(ps[i] == p){
+					cout<<"SOMETING BAD HERE"<<endl;
+				}
+				ps[j++] = p = ps[i];
+			}
+			ps.shrink(i - j);
+		}
     }
     if (false && kind == SINGLESET) {
 		cout << "addClause after shrink " << ps.size();
