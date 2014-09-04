@@ -77,10 +77,11 @@ class Arr: public OutType{public:  OutType * atype;
 
 class Tuple: public OutType{
     public:
+    string name;
 	OutType* arr;
 	Tuple():OutType(false, true){ arr = new Arr(this); }
 	vector<OutType*> entries;
-	string str() const { return "TUPLE"; }
+	string str() const { return name; }
 };
 
 inline OutType::OutType(bool _isArr, bool _isTuple): isArr(_isArr), isTuple(_isTuple){
@@ -269,7 +270,7 @@ struct bool_node{
     
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<father->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<father->id;
 		return str.str();
 	}
     virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
@@ -429,7 +430,7 @@ class ARR_W_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
         return str.str();
     }
 };
@@ -483,7 +484,7 @@ class ARR_CREATE_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -534,7 +535,7 @@ class TUPLE_CREATE_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -571,6 +572,11 @@ class TUPLE_R_node: public bool_node{
         stringstream str;
         str<<id<<"= "<<mother->lid()<<"["<<idx<<"]";
         return str.str();
+    }
+    virtual string mrprint()const{
+        stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<idx;
+		return str.str();
     }
 };
 
@@ -654,7 +660,7 @@ class INTER_node: public bool_node{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<nbits;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
 		return str.str();
 	}
 };
@@ -731,7 +737,7 @@ class DST_node: public INTER_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<mother->id;
 		return str.str();
 	}
 };
@@ -832,7 +838,7 @@ class NOT_node: public bool_node{
     }
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
 		return str.str();
 	}
     
@@ -966,7 +972,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<ufname<<" "<<outname<<" "<<fgid;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<ufname<<" "<<outname<<" "<<fgid;
 		if(this->isDependent){
 			str<<" ***";
 		}else{
@@ -1020,7 +1026,7 @@ class ARRACC_node: public arith_node{
 	}
 	virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -1068,7 +1074,7 @@ class NEG_node: public bool_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
         return str.str();
     }
 };
@@ -1162,9 +1168,9 @@ class CONST_node: public bool_node{
     virtual string mrprint()const{
         stringstream str;
         if(isInt){
-            str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.val;
+            str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<v.val;
         }else{
-            str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.fval;
+            str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<v.fval;
         }
         return str.str();
     }
@@ -1237,7 +1243,7 @@ class ARRASS_node: public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" == "<<quant;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" == "<<quant;
         str<<" "<<multi_mother[0]->id;
         str<<" "<<multi_mother[1]->id;
         return str.str();
@@ -1269,7 +1275,7 @@ class ACTRL_node: public arith_node{
     
 	virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
