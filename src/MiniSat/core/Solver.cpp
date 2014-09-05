@@ -130,8 +130,21 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 			Lit p; int i, j;
 			for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
 				if(ps[i] == p){
-					cout<<"SOMETING BAD HERE"<<endl;
-				}
+                    uncheckedEnqueue(p);
+                    if (ps[j-1] == p) {
+                        j--;
+                    }
+				} else if (ps[i] == ~ p) {
+                    int k;
+                    for (k = 0; k < j; k++) {
+                        uncheckedEnqueue(ps[k]);
+                    }
+                    for (k = i+1; k < ps.size(); k++) {
+                        uncheckedEnqueue(ps[k]);
+                    }
+                    
+                    return true;
+                }
 				ps[j++] = p = ps[i];
 			}
 			ps.shrink(i - j);
