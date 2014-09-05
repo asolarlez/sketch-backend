@@ -669,11 +669,12 @@ class INTER_node: public bool_node{
 class SRC_node: public INTER_node{
     public: SRC_node():INTER_node(SRC){ }
 	int arrSz;
-    bool isTuple = false;
+    bool isTuple;
     string tupleName;
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz){ }
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple){ }
 	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
 		name = nm;
+		isTuple = false;
 	}
 	int getArrSz()const{
 		return arrSz;
@@ -751,16 +752,19 @@ class CTRL_node: public INTER_node{
 	int arrSz;
     
 	public:
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; }
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind; this->arrSz = bn.arrSz; }
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren),isTuple(bn.isTuple){ 
+		this->kind = bn.kind; this->arrSz = bn.arrSz; 
+		
+	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){CTRL_node* newNode = new CTRL_node(*this, copyChildren);
         newNode->tupleName = tupleName; newNode->isTuple = isTuple; return newNode;};
 	string get_name() const {
 		return name;
 	}
-    bool isTuple = false;
+    bool isTuple;
     string tupleName;
 	
     void setTuple (const string& name) {
