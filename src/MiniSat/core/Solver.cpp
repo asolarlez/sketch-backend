@@ -1040,7 +1040,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
         // Extend & copy model:
         model.growTo(nVars());
         for (int i = 0; i < nVars(); i++) model[i] = value(i);
-#ifndef NDEBUG
+#ifdef _DEBUG
         verifyModel();
 #endif
     }else{
