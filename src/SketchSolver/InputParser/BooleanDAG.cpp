@@ -98,8 +98,7 @@ BooleanDAG::~BooleanDAG()
 
 void BooleanDAG::relabel(){
   for(int i=0; i < nodes.size(); ++i){
-  	if( nodes[i] != NULL ){
-  		Assert( nodes[i]->id != -22, "This node should be dead (relabel) "<<nodes[i]->get_name());
+  	if( nodes[i] != NULL ){  		
     	nodes[i]->id = i;
   	}
   }
@@ -216,13 +215,14 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
-		for(int i=0; i<bnv.size(); ){
-			if( bnv[i] == onode ){
-				bnv.erase( bnv.begin() + i);
-			}else{
-				++i;	
+		vector<bool_node*>::iterator end = bnv.end();
+		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
+			if(*it == onode){
+				it = bnv.erase(it);
+				// there are no duplicates, so once we find we can stop.
+				break;
 			}
-		}	
+		}			
 	}
 	
 	nodes[i]->id = -22;
@@ -515,7 +515,8 @@ void BooleanDAG::cleanup(){
 		}
 	}
   }
-
+  vector<bool_node*> tmpv;
+  tmpv.resize(idx);
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
   	if(onode->flag == 0 && 
@@ -530,12 +531,14 @@ void BooleanDAG::cleanup(){
 			}
 		}  			
   		onode->id = -22;	
-  		delete onode;
-		nodes[i] = NULL;		
-  	}
-  }  
-  removeNullNodes();  
-  sort(nodes.begin(), nodes.end(), comp_id);
+  		delete onode;		
+  	}else{
+		tmpv[onode->id] = onode;
+	}
+  }
+  swap(tmpv, nodes);
+  // removeNullNodes();  
+  // sort(nodes.begin(), nodes.end(), comp_id);
    DllistNode* cur = this->assertions.head;
   DllistNode* last=NULL;
   for(int i=0; i < nodes.size(); ++i){

@@ -31,14 +31,16 @@ using namespace std;
 // #define SCHECKMEM
 
 inline bool comp_id(bool_node* n1, bool_node* n2){
-  int n1id = n1->id;
+  unsigned int n1id = (unsigned int) n1->id;
+  /*
   if(n1id == -1){
     return false;
-  }
-  int n2id = n2->id;
+  } */
+  unsigned int n2id = (unsigned int) n2->id;
+  /*
   if(n2id == -1){ //& n1->id != -1
     return n1id!= n2id;
-  }
+  } */
   return n1id < n2id;
 }
 

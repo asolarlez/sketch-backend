@@ -2284,7 +2284,7 @@ void DagOptim::visit( ACTRL_node& node ){
 }
 
 char tbuf[40];
-char* toString(TempTriple& tmp){
+char* toString(TempTriple& tmp, int& len){
 	int p=0;
 	for(int i=0; i<3; i=i+2){
 		if(tmp.f[i]){
@@ -2295,6 +2295,7 @@ char* toString(TempTriple& tmp){
 		tbuf[p] = ','; ++p;
 	}
 	tbuf[p] = 0;
+	len = p;
 	return tbuf;
 }
 	
@@ -2317,7 +2318,8 @@ void DagOptim::visit( ASSERT_node &node){
 	}
 
 	if(node.mother->type == bool_node::OR){
-		TempTriple tmp;
+		TempTriple* nt = triples.newObj();
+		TempTriple& tmp = *nt;
 		bool good = false;
 		bool_node* ornode = node.mother;
 		if(ornode->mother->type == bool_node::NOT){			
@@ -2353,9 +2355,11 @@ void DagOptim::visit( ASSERT_node &node){
 			good = true;
 		}
 		if(good){
-			char* tt = toString(tmp);
-			if(testAsserts.count(string(tt))>0){
-				TempTriple& ttri = testAsserts[string(tt)];
+			int len;
+			char* tt = toString(tmp, len);
+			TempTriple* ttrip;			 
+			if(testAsserts.condAdd(tt, len, nt, ttrip)){
+				TempTriple& ttri = *ttrip;
 				if(ttri.bn[1] == tmp.bn[1] && ttri.f[1] != tmp.f[1]){
 					if(!ttri.hasModified){
 						bool_node* on = new OR_node();
@@ -2400,8 +2404,7 @@ void DagOptim::visit( ASSERT_node &node){
 					}
 				}
 			}else{
-				tmp.main = &node;
-				testAsserts[string(tt)] = tmp;
+				tmp.main = &node;				
 				//cout<<tmp.bn[0]->id<<", "<<", "<<tmp.bn[1]->id<<", "<<tmp.bn[2]->id<<endl;
 			}
 		}
@@ -2525,7 +2528,7 @@ void DagOptim::cleanup(BooleanDAG& dag){
 	//dag.sort_graph();
 	//dag.print(cout);
 	dag.cleanup();	
-	dag.relabel();
+	// dag.relabel();
 #ifdef _DEBUG
 	dag.repOK();
 #endif	

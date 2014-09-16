@@ -424,7 +424,8 @@ protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;
 	map<string, int> specialization;
-	map<string, TempTriple > testAsserts;
+	Ostore<TempTriple> triples;
+	StringHTable2<TempTriple*> testAsserts;
 	bool checkTempcreators(BooleanDAG& dag, bool_node* node, int i);
 	int uidcount;
 	int BOTTOM;
