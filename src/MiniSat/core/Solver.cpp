@@ -20,8 +20,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MSolver.h"
 #include "Sort.h"
 #include <cmath>
-#include <iostream>
-#include <fstream>
 
 using namespace std;
 
@@ -1137,18 +1135,21 @@ void Solver::checkLiteralCount()
 }
 
 
-void Solver::writeDIMACS(const char* filename)
+void Solver::writeDIMACS(ofstream& dimacs_file)
 {	
-    ofstream dimacs_file(filename);
+    //ofstream dimacs_file(filename);
     if (dimacs_file.is_open()) {
 		int clausecount = 0;
 		 for (int i = 0; i < clauses.size(); i++) {
             Clause* c = clauses[i];
 			if(c->mark() == SINGLESET){
-				continue;
+				int n = c->size();
+				clausecount += ((n*n)-n)/2;
+			}else{
+				clausecount++;
 			}
-			clausecount++;
 		 }
+		dimacs_file<<"c "<<clauses.size()<<" original clauses expand to "<<clausecount<<" real clauses plus "<<trail.size()<<" unary clauses"<<endl;
 		 clausecount += trail.size();		 
         dimacs_file << "p cnf " << nVars() << " " << clausecount << "\n";
 		for(int i=0; i<trail.size(); ++i){			 
@@ -1158,6 +1159,17 @@ void Solver::writeDIMACS(const char* filename)
         for (int i = 0; i < clauses.size(); i++) {
             Clause* c = clauses[i];
 			if(c->mark() == SINGLESET){
+				dimacs_file<<"c START SINGLESET CLAUSE"<<endl;
+				for(int i=0; i<c->size(); ++i){
+					for(int j=i+1; j<c->size(); ++j){
+						const char* negi = sign((*c)[i]) ? "-" : "";
+						const char* negj = sign((*c)[j]) ? "-" : "";
+						dimacs_file << negi << var((*c)[i]) + 1 << " ";
+						dimacs_file << negj << var((*c)[j]) + 1 << " ";
+						dimacs_file << "0\n";
+					}
+				}
+				dimacs_file<<"c END SINGLESET CLAUSE"<<endl;
 				continue;
 			}
             for (int j = 0; j < c->size(); j++) {
@@ -1166,6 +1178,7 @@ void Solver::writeDIMACS(const char* filename)
             }
             dimacs_file << "0\n";
         }
+		dimacs_file.flush();
         dimacs_file.close();
     } else {
         cout << "Unable to open file";

@@ -99,6 +99,9 @@ public:
 	 virtual void clean();	
 	 virtual void printDiagnostics(char c);
 	 virtual void lightSolve();
+	 virtual void writeDIMACS(ofstream& dimacs_file){
+		 s->writeDIMACS(dimacs_file);
+	 }
 	 
 };
 

@@ -93,6 +93,9 @@ public:
 		return arrsize.begin();
 	}
 
+	void writeDIMACS(ofstream& dimacs_file);
+
+
 	map<string, int>::const_iterator arrsize_end(){
 		return arrsize.end();
 	}

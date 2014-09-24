@@ -82,6 +82,9 @@ public:
 	virtual void markInput(int){  }
     virtual void clean();	
     virtual void printDiagnostics(char c);	
+	virtual void writeDIMACS(ofstream& dimacs_file){
+		
+	 }
 public:
 	~BLIFwriter(void);
 };

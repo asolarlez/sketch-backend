@@ -16,6 +16,19 @@ using namespace std;
 
 
 
+void SolverHelper::writeDIMACS(ofstream& dimacs_file){	
+	for(map<string, int>::iterator fit = varmap.begin(); fit != varmap.end(); ++fit){
+		dimacs_file<<"c hole "<<fit->first<<" "<<(fit->second+1);
+		if(arrsize.count(fit->first)>0){
+			dimacs_file<<" - "<<(fit->second + 1 + arrsize[fit->first]-1);
+		}
+		dimacs_file<<endl;
+	}
+	dimacs_file<<"c YES="<<YES+1<<endl;	
+	mng.writeDIMACS(dimacs_file);
+
+}
+
 int
 SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 {

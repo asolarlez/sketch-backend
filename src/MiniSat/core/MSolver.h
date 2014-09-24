@@ -20,6 +20,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Solver_h
 #define Solver_h
 
+#include <iostream>
+#include <fstream>
+
 #include <cstdio>
 
 #include "Vec.h"
@@ -101,7 +104,7 @@ public:
     uint64_t starts, decisions, rnd_decisions, propagations, conflicts;
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
 
-	void writeDIMACS(const char* filename);
+	void writeDIMACS(std::ofstream& dimacs_file);
 protected:
 
     // Helper structures:

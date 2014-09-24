@@ -333,15 +333,7 @@ bool MiniSATSolver::ignoreOld(){
  	s->simplify();
  	if( ! s->okay() ){ /* cout<<"FOUND UNSAT BEFORE SIMPLIFYING"<<endl; */ return UNSATISFIABLE; }		
 	lbool result = s->solve(assumptions);
- 	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}	
-
-	if(outputProblems){
-		++solveCount;
-		stringstream str;
-		str<<"sat_"<<(solveNegation?"VER":"SYN")<<"_"<<solveCount<<".cnf";
-		cout<<"Creating SAT file "<<str.str()<<endl;
-		s->writeDIMACS(str.str().c_str());
-	}
+ 	if( ! s->okay() ){ /*cout<<" NOT OKAY2 "<<endl; */}		
 
 	if( result == l_True) {
 		//cout<<" Returned SAT"<<endl;

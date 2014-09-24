@@ -501,7 +501,7 @@ int CEGISSolver::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 }
 
 
-
+int CEGISsolveCount=0;
 
 bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged){
 	
@@ -516,6 +516,16 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	
 	int result = mngFind.solve();
 	
+	if(PARAMS->outputSat){
+		++CEGISsolveCount;
+		stringstream str;
+		str<<"sat_SYN_"<<CEGISsolveCount<<".cnf";
+		cout<<"Creating SAT file "<<str.str()<<endl;
+		ofstream file( str.str().c_str() );
+		this->dirFind.writeDIMACS(file);		
+	}
+
+
 	if(params.printDiag){
 	  	cout<<"# FIND DIAGNOSTICS"<<endl;
 		printDiagnostics(mngFind, 'f');
