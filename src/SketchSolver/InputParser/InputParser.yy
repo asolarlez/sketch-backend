@@ -17,14 +17,15 @@ bool isModel;
 #endif
 
 
-#define YYLEX_PARAM yyscanner
-#define YYPARSE_PARAM yyscanner
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
 extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %}
 
 %pure_parser
+%parse-param {yyscan_t yyscanner}
+%lex-param {yyscan_t yyscanner}
+
 
 %union {
 	int intConst;
@@ -766,7 +767,7 @@ void Inityyparse(){
 	 	
 }
 
-void yyerror(const char* c){
+void yyerror( void* yyscanner, const char* c){
 	Assert(false, (char *)c); 
 }
 

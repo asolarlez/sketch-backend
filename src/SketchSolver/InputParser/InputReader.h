@@ -29,7 +29,7 @@ int yylex_init (void** scanner);
 int yylex_destroy (void* scanner);
 void yyset_in (FILE *  in_str , void* yyscanner);
 
-void yyerror(const char* );
+void yyerror(void* yyscanner, const char* );
 
 }
 

@@ -5,10 +5,6 @@
 #include <cstdlib>
 #include "InputReader.h"
 
-
-
-#define YYLEX_PARAM yyscanner
-#define YYPARSE_PARAM yyscanner
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
 
 %}
