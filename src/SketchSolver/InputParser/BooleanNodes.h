@@ -62,8 +62,6 @@ class OutType{
 };
 
 
-
-
 class Bottom: public OutType{public: Bottom(): OutType(false, false){}  string str() const{ return "BOTTOM"; }  };
 
 class Bool: public OutType{public: Bool(): OutType(false, false){} string str() const{ return "BOOL"; }};
@@ -79,10 +77,11 @@ class Arr: public OutType{public:  OutType * atype;
 
 class Tuple: public OutType{
     public:
+    string name;
 	OutType* arr;
 	Tuple():OutType(false, true){ arr = new Arr(this); }
 	vector<OutType*> entries;
-	string str() const { return "TUPLE"; }
+	string str() const { return name; }
 };
 
 inline OutType::OutType(bool _isArr, bool _isTuple): isArr(_isArr), isTuple(_isTuple){
@@ -271,7 +270,7 @@ struct bool_node{
     
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<father->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<father->id;
 		return str.str();
 	}
     virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
@@ -431,7 +430,7 @@ class ARR_W_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
         return str.str();
     }
 };
@@ -468,6 +467,7 @@ class ARR_CREATE_node:public arith_node{
         if(otype != OutType::BOTTOM){
             return otype;
         }
+        otype = OutType::BOTTOM;
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
         }
@@ -484,7 +484,7 @@ class ARR_CREATE_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -535,7 +535,7 @@ class TUPLE_CREATE_node:public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -555,7 +555,7 @@ class TUPLE_R_node: public bool_node{
     virtual bool_node* clone(bool copyChildren = true){return new TUPLE_R_node(*this, copyChildren);  };
     OutType* getOtype() const{
        
-       if(otype != OutType::BOTTOM){
+        if(otype != OutType::BOTTOM){
             
             return otype;
         }
@@ -572,6 +572,11 @@ class TUPLE_R_node: public bool_node{
         stringstream str;
         str<<id<<"= "<<mother->lid()<<"["<<idx<<"]";
         return str.str();
+    }
+    virtual string mrprint()const{
+        stringstream str;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<idx;
+		return str.str();
     }
 };
 
@@ -614,7 +619,7 @@ class XOR_node: public bool_node{
 class INTER_node: public bool_node{
 	public:
 	string name;
-	protected:
+    protected:
 	
 	INTER_node(const INTER_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), name(bn.name), nbits(bn.nbits){ }
     INTER_node(Type t):bool_node(t){nbits = 1;}
@@ -655,7 +660,7 @@ class INTER_node: public bool_node{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<nbits;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
 		return str.str();
 	}
 };
@@ -664,9 +669,12 @@ class INTER_node: public bool_node{
 class SRC_node: public INTER_node{
     public: SRC_node():INTER_node(SRC){ }
 	int arrSz;
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz){ }
+    bool isTuple;
+    string tupleName;
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple){ }
 	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
 		name = nm;
+		isTuple = false;
 	}
 	int getArrSz()const{
 		return arrSz;
@@ -685,12 +693,17 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
+   void setTuple (const string& name) {
+        tupleName = name;
+        isTuple = true;
+    }
 	OutType* getOtype() const {
         
 		if(otype != OutType::BOTTOM){
             
 			return otype;
 		}
+        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){
@@ -705,7 +718,11 @@ class SRC_node: public INTER_node{
 		return otype;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new SRC_node(*this, copyChildren);  };
+	virtual bool_node* clone(bool copyChildren = true){
+        SRC_node* clonedNode = new SRC_node(*this, copyChildren);
+        clonedNode->tupleName = tupleName;
+        clonedNode->isTuple = isTuple;
+        return clonedNode;};
 };
 
 /* Output Node */
@@ -714,7 +731,7 @@ class DST_node: public INTER_node, public DllistNode{
     DST_node():INTER_node(DST){ }
     DST_node(const DST_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ }
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-    virtual bool_node* clone(bool copyChildren = true){return new DST_node(*this, copyChildren);  };
+    virtual bool_node* clone(bool copyChildren = true){return new DST_node(*this, copyChildren); };
     virtual ~DST_node(){}
 	virtual string lprint()const{
 		string tmp =  name;
@@ -723,7 +740,7 @@ class DST_node: public INTER_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<name<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<mother->id;
 		return str.str();
 	}
 };
@@ -733,15 +750,27 @@ class CTRL_node: public INTER_node{
 	typedef enum{MINIMIZE=1, ANGELIC=2, PCOND=4} Property;
 	unsigned kind;
 	int arrSz;
+    
 	public:
-	CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; }
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren){ this->kind = bn.kind; this->arrSz = bn.arrSz; }
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren),isTuple(bn.isTuple){ 
+		this->kind = bn.kind; this->arrSz = bn.arrSz; 
+		
+	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);  };
+	virtual bool_node* clone(bool copyChildren = true){CTRL_node* newNode = new CTRL_node(*this, copyChildren);
+        newNode->tupleName = tupleName; newNode->isTuple = isTuple; return newNode;};
 	string get_name() const {
 		return name;
 	}
+    bool isTuple;
+    string tupleName;
+	
+    void setTuple (const string& name) {
+        tupleName = name;
+        isTuple = true;
+    }
 	bool get_toMinimize() const {
 		return (kind & MINIMIZE) != 0;
 	}
@@ -785,6 +814,7 @@ class CTRL_node: public INTER_node{
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
+        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){
@@ -816,7 +846,7 @@ class NOT_node: public bool_node{
     }
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
 		return str.str();
 	}
     
@@ -862,7 +892,6 @@ class UFUN_node: public arith_node, public DllistNode{
 	bool isDependent;
 	public:
 	bool ignoreAsserts;
-	
 	string outname;
 	int fgid;
     
@@ -896,6 +925,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(string& name){tupleName = name;}
+    const string& getTupleName() const {return tupleName;}
 	void makeArr(){
         /* todo tuple array */
 		if(nbits>1){
@@ -907,13 +937,14 @@ class UFUN_node: public arith_node, public DllistNode{
 	bool isArr() const {
 		return otype == OutType::INT_ARR || otype == OutType::BOOL_ARR;
 	}
+    
 	OutType* getOtype()const {
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
         if(nbits == 0){
             otype = OutType::getTuple(tupleName);
-            Assert(dynamic_cast<Tuple*>(otype)->entries.size()>0, "fdasd");
+            //Assert(dynamic_cast<Tuple*>(otype)->entries.size()>0, "fdasd");
         }else
 		if(nbits>1){
 			otype = OutType::INT;
@@ -949,7 +980,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	}
 	virtual string mrprint()const{
 		stringstream str;
-		str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<ufname<<" "<<outname<<" "<<fgid;
+		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<ufname<<" "<<outname<<" "<<fgid;
 		if(this->isDependent){
 			str<<" ***";
 		}else{
@@ -985,7 +1016,6 @@ class ARRACC_node: public arith_node{
         if(otype != OutType::BOTTOM){
             return otype;
         }
-        
         for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
             otype = OutType::joinOtype((*it)->getOtype(), otype);
         }
@@ -1004,7 +1034,7 @@ class ARRACC_node: public arith_node{
 	}
 	virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
@@ -1052,7 +1082,7 @@ class NEG_node: public bool_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
         return str.str();
     }
 };
@@ -1146,9 +1176,9 @@ class CONST_node: public bool_node{
     virtual string mrprint()const{
         stringstream str;
         if(isInt){
-            str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.val;
+            str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<v.val;
         }else{
-            str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<v.fval;
+            str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<v.fval;
         }
         return str.str();
     }
@@ -1221,7 +1251,7 @@ class ARRASS_node: public arith_node{
     }
     virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<mother->id<<" == "<<quant;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" == "<<quant;
         str<<" "<<multi_mother[0]->id;
         str<<" "<<multi_mother[1]->id;
         return str.str();
@@ -1253,7 +1283,7 @@ class ACTRL_node: public arith_node{
     
 	virtual string mrprint()const{
         stringstream str;
-        str<<id<<" = "<<get_tname()<<" "<<otype->str()<<" "<<multi_mother.size();
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
         for(int i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }

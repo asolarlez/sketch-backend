@@ -20,12 +20,13 @@ map<string, OutType*> OutType::tupleMap;
 int i;
 
 OutType* OutType::getTuple(const string& name){
-    
-	if(tupleMap.count(name)>0 ){
+    if(tupleMap.count(name)>0 ){
        
 		return tupleMap[name];
     }
+    
     Tuple* t = new Tuple();
+    t->name = name;
     tupleMap[name] = t;
     return t;
 }
@@ -36,6 +37,7 @@ OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
 		t =  dynamic_cast<Tuple*>(tupleMap[name]);
     }else{
         t = new Tuple();
+        t->name = name;
         tupleMap[name] = t;
     }
     t->entries = elems;
@@ -81,8 +83,7 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 
   */
   OutType* OutType::joinOtype(OutType* t1, OutType* t2) {
-      
-  	if(t1 == BOTTOM){ return t2; }
+    if(t1 == BOTTOM){ return t2; }
   	if(t2 == BOTTOM){ return t1; }
       
 	if(t1->isTuple){
