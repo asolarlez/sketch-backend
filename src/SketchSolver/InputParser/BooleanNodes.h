@@ -667,11 +667,11 @@ class INTER_node: public bool_node{
 
 /* Input nodes */
 class SRC_node: public INTER_node{
-    public: SRC_node():INTER_node(SRC){ }
+    public: SRC_node():INTER_node(SRC){isTuple = false; }
 	int arrSz;
     bool isTuple;
     string tupleName;
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple){ }
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName) { }
 	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
 		name = nm;
 		isTuple = false;
@@ -719,10 +719,7 @@ class SRC_node: public INTER_node{
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){
-        SRC_node* clonedNode = new SRC_node(*this, copyChildren);
-        clonedNode->tupleName = tupleName;
-        clonedNode->isTuple = isTuple;
-        return clonedNode;};
+        return new SRC_node(*this, copyChildren);};
 };
 
 /* Output Node */
@@ -752,21 +749,21 @@ class CTRL_node: public INTER_node{
 	int arrSz;
     
 	public:
+    bool isTuple;
+    string tupleName;
+	
     CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
 	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren),isTuple(bn.isTuple){ 
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName){
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual bool_node* clone(bool copyChildren = true){CTRL_node* newNode = new CTRL_node(*this, copyChildren);
-        newNode->tupleName = tupleName; newNode->isTuple = isTuple; return newNode;};
+	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);};
 	string get_name() const {
 		return name;
 	}
-    bool isTuple;
-    string tupleName;
-	
+    
     void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;
