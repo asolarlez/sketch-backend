@@ -73,6 +73,7 @@ struct CommandLineArgs{
   bool outputSat;
   int boundedCount;
   bool randomassign;
+  int randdegree;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -135,6 +136,7 @@ struct CommandLineArgs{
 		boundmode = CALLNAME;
 		boundedCount = 80;
 		randomassign =false;
+		randdegree = 100;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -182,7 +184,12 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
-
+		if( string(argv[ii]) == "-randdegree" ){	      
+		 Assert(ii<(argc-1), "-simiters needs an extra parameter");
+	      randdegree = atoi(argv[ii+1]);
+	      input_idx = ii+2;
+		  continue;
+	    }
 		if( string(argv[ii]) == "-boundedcount" ){
 	      Assert(ii<(argc-1), "-boundedcount needs an extra parameter");
 	      boundedCount = atoi(argv[ii+1]);

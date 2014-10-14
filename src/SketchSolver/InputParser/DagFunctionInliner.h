@@ -5,6 +5,7 @@
 #include "DagOptim.h"
 #include <cstring>
 #include <sstream>
+#include "CommandLineArgs.h"
 
 class Caller{
 public:
@@ -566,11 +567,19 @@ class DagFunctionInliner : public DagOptim
 	bool randomize;
 	bool_node* checkRandHole(CTRL_node* node){
 		map<string, int>::iterator it = randholes.find( node->get_name()  );
-		if( it == randholes.end() ){
+		if( it == randholes.end() ){			
 			int chsize = node->children.size();
-			int odds = max(5, 100/ (chsize>0?chsize:1)  );
-			cout<<node->get_name()<<" odds = 1/"<<odds;
-			if(rand() % odds == 0){
+			int baseline = PARAMS->randdegree;
+			int odds = max(2, baseline/ (chsize>0?chsize:1)  );
+			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<")"<<endl;
+			if(chsize == 1){
+				bool_node* bn = * node->children.begin();
+				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
+					cout<<"postponing for later"<<endl;
+					return node;
+				}
+			}			
+			if(rand() % odds == 0 || chsize > 1500){
 				cout<<" try to replace"<<endl;
 				int bound = 1;
 				
