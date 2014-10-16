@@ -6,6 +6,8 @@
 #include <cstring>
 #include <sstream>
 #include "CommandLineArgs.h"
+#include "BooleanToCNF.h"
+#include "Tvalue.h"
 
 class Caller{
 public:
@@ -537,7 +539,28 @@ public:
 };
 
 
-const int LEAVEALONE = -8888888;
+
+class HoleHardcoder{
+	static const int LEAVEALONE = -8888888;
+	map<string, int> randholes;
+	vector<bool> chkrbuf;
+	SolverHelper* sat;
+	int fixValue(string& s, int bound, int nbits);
+public:
+	void setSolver(SolverHelper* sh){
+		sat = sh;
+	}
+	bool_node* checkRandHole(CTRL_node* node, DagOptim& opt);
+	void afterInline();
+	void printControls(ostream& out);
+	bool hasValue(const string& s){
+		map<string, int>::iterator it = randholes.find(s);
+		if(it == randholes.end()){ return false; }
+		return (it->second != LEAVEALONE);
+	}
+};
+
+
 
 class DagFunctionInliner : public DagOptim
 {
@@ -563,79 +586,12 @@ class DagFunctionInliner : public DagOptim
 	int lnfuns;
 	InlineControl* ictrl;
 
-	map<string, int>& randholes;
-	bool randomize;
-	bool_node* checkRandHole(CTRL_node* node){
-		map<string, int>::iterator it = randholes.find( node->get_name()  );
-		if( it == randholes.end() ){			
-			int chsize = node->children.size();
-			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (chsize>0?chsize:1)  );
-			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<")"<<endl;
-			if(chsize == 1){
-				bool_node* bn = * node->children.begin();
-				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
-					cout<<"postponing for later"<<endl;
-					return node;
-				}
-			}			
-			if(rand() % odds == 0 || chsize > 1500){
-				cout<<" try to replace"<<endl;
-				int bound = 1;
-				
-				int nbits = node->get_nbits();
-				for(int qq = 0; qq < nbits; ++qq){
-					bound = bound*2;
-				}
-				int obound = bound;
-				int ul = -1;
-				for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
-					cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
-					bool_node* child = *it;
-					if(child->type == bool_node::LT && child->mother == node){
-						if(child->father->type == bool_node::CONST){
-							ul = max(ul, getIval(child->father));
-						}
-					}else{
-						if(child->type == bool_node::ARRACC && child->mother == node){
-							bound = min(bound, (int) ((arith_node*)child)->multi_mother.size());
-						}else{
-							if(child->type == bool_node::ARRASS && child->mother == node){
-								ul = max(ul, ((ARRASS_node*)child)->quant);
-							}else{
-							if(!(child->type == bool_node::EQ )){
-								cout<<"    has a bad child"<<child->lprint()<<endl;
-								randholes[node->get_name()] = LEAVEALONE;
-								return node;
-							}
-							}
-						}
-					}
-				}
-				if(ul > 0 && bound ==obound ){
-					bound = min(bound, ul);
-				}
-				int rv = rand() % bound;
-				cout<<"    replacing with "<<rv<<" < "<<bound<<endl;
-				randholes[node->get_name()] = rv;
-				return getCnode(rv);
-			}else{
-				cout<<" not replacing"<<endl;
-				randholes[node->get_name()] = LEAVEALONE;
-				return node;
-			}
-		}else{
-			if(it->second == LEAVEALONE){
-				return node;
-			}else{
-				return getCnode(it->second);
-			}
-		}
-	}
-
+	
+	bool randomize;	
+	HoleHardcoder* hcoder;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	map<string, int>& p_randholes,
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
 	bool p_randomize=false, InlineControl* ict=NULL);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);

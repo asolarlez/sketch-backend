@@ -13,7 +13,7 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	map<string, int>& p_randholes,
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
 	bool p_randomize, InlineControl* ict):
 dag(p_dag), 
 DagOptim(p_dag), 
@@ -21,7 +21,7 @@ ufunAll(" ufun all"),
 functionMap(p_functionMap),
 ictrl(ict),
 randomize(p_randomize),
-randholes(p_randholes)
+hcoder(p_hcoder)
 {
 	alterARRACS();
 }
@@ -86,6 +86,169 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 }
 
 
+void HoleHardcoder::afterInline(){
+	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ){
+		if(it->second == LEAVEALONE){
+			it = randholes.erase(it);
+		}else{
+			++it;
+		}
+	}
+}
+
+
+void HoleHardcoder::printControls(ostream& out){
+	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it){
+			if(it->second != LEAVEALONE){
+				out<<it->first<<"\t"<<it->second<<endl;
+			}
+		}
+}
+
+
+	int HoleHardcoder::fixValue(string& s, int bound, int nbits){
+		int rv = rand() % bound;
+		if(sat->checkVar(s)){
+			int H__0_var_idx = sat->getVar(s);			
+			Tvalue tv = H__0_var_idx;
+			tv.setSize(nbits);
+			tv.makeSparse(*sat);			
+			vector<guardedVal>& gvs =tv.num_ranges;
+			for(int i=0; i<gvs.size(); ++i){
+				guardedVal& gv = gvs[i];
+				if(gv.value == rv){
+					int xx = sat->getMng().isValKnown(gv.guard);
+					if(xx==0){
+						//it's ok to set the value to this.
+						sat->addAssertClause(gv.guard);
+						randholes[s] = rv;
+						return rv;
+					}
+					if(xx==1){
+						//the hole is already equal to this.
+						randholes[s] = rv;
+						return rv;
+					}
+					if(xx==0){
+						cout<<" can't set to "<<rv<<endl;
+						//the hole cannot be equal to this vale. 
+						break;
+					}
+				}
+			}
+			//If I get here, it means that rv either didn't match with any of the guarded values, or matched
+			//with a guarded value that was already equal to false, so we need to find another guarded value 
+			//that does match.
+			do{
+				int t = rand() % gvs.size();
+				guardedVal& g2 = gvs[t];
+				int yy =  sat->getMng().isValKnown(g2.guard);
+				if(yy==0){
+					//it's ok to set the value to this.
+					sat->addAssertClause(g2.guard);
+					randholes[s] = g2.value;
+					return g2.value;
+				}
+				if(yy==1){
+					randholes[s] = g2.value;
+					return g2.value;
+				}
+				cout<<"can't set to "<<g2.value<<endl;
+				//This cannot be an infinite loop because the guards for the guarded values cannot all be false.
+			}while(true);				
+		}else{
+			randholes[s] = rv;
+		}
+		return rv;
+	}
+
+bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
+		map<string, int>::iterator it = randholes.find( node->get_name()  );
+		if( it == randholes.end() ){			
+			int chsize = node->children.size();
+			int baseline = PARAMS->randdegree;
+			int odds = max(2, baseline/ (chsize>0?chsize:1)  );
+			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<")"<<endl;
+			if(chsize == 1){
+				bool_node* bn = * node->children.begin();
+				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
+					cout<<"postponing for later"<<endl;
+					return node;
+				}else{
+					cout<<"Single child is "<<bn->lprint()<<endl;
+				}
+			}			
+			if(rand() % odds == 0 || chsize > 1500){
+				cout<<" try to replace"<<endl;
+				int bound = 1;
+				
+				int nbits = node->get_nbits();
+				for(int qq = 0; qq < nbits; ++qq){
+					bound = bound*2;
+				}
+				bool ARRASSEQonly = true;
+				chkrbuf.resize(bound);
+				for(int i=0; i<bound; ++i){ chkrbuf[i] = false; }
+				int obound = bound;
+				int ul = -1;
+				for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
+					cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
+					bool_node* child = *it;
+					if(child->type == bool_node::LT && child->mother == node){
+						if(child->father->type == bool_node::CONST){
+							ul = max(ul, opt.getIval(child->father));
+						}
+						ARRASSEQonly = false;
+					}else{
+						if(child->type == bool_node::ARRACC && child->mother == node){
+							bound = min(bound, (int) ((arith_node*)child)->multi_mother.size());
+							ARRASSEQonly = false;
+						}else{
+							if(child->type == bool_node::ARRASS && child->mother == node){
+								int quant = ((ARRASS_node*)child)->quant;
+								chkrbuf[quant] = true;
+								ul = max(ul, quant);
+							}else{
+							if(!(child->type == bool_node::EQ )){
+								cout<<"    has a bad child"<<child->lprint()<<endl;
+								randholes[node->get_name()] = LEAVEALONE;
+								return node;
+							}else{ //child->type == eq
+								if(child->father->type == bool_node::CONST){
+									chkrbuf[((CONST_node*)child->father)->getVal()] = true;
+								}
+								if(child->mother->type == bool_node::CONST){
+									chkrbuf[((CONST_node*)child->mother)->getVal()] = true;
+								}
+							}
+							}
+						}
+					}
+				}
+				if(ul > 0 && bound ==obound ){
+					bound = min(bound, ul);
+				}				
+				int rv = fixValue(node->get_name(), bound, nbits);
+				cout<<" replacing with value "<<rv<<endl;
+				return opt.getCnode(rv);
+			}else{
+				cout<<" not replacing"<<endl;
+				randholes[node->get_name()] = LEAVEALONE;
+				return node;
+			}
+		}else{
+			if(it->second == LEAVEALONE){
+				if(node->children.size() > 2){
+				cout<<"Leaving alone from before "<< node->lprint() <<" nchildren ="<<node->children.size()<<endl;
+				}
+				return node;
+			}else{
+				return opt.getCnode(it->second);
+			}
+		}
+	}
+
+
 void DagFunctionInliner::visit(CTRL_node& node){
 	
 	
@@ -93,7 +256,7 @@ void DagFunctionInliner::visit(CTRL_node& node){
 		rvalue = this->getCnode(true);
 	}else{
 		if(randomize){
-			rvalue = checkRandHole(&node);
+			rvalue = hcoder->checkRandHole(&node, *this);
 			return;
 		}
 		DagOptim::visit(node);
@@ -245,7 +408,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					continue;
 				}
 				if(randomize){
-					bool_node* subst = checkRandHole(ctrl);
+					bool_node* subst = hcoder->checkRandHole(ctrl, *this);
 					if(subst != ctrl){
 						nmap[ctrl->id] = subst;
 						continue;

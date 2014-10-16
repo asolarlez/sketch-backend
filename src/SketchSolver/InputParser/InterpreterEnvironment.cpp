@@ -23,6 +23,8 @@ public:
 	}
 
 
+
+
 int valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 	Tvalue& tv = vals[inode->id];
 	int retval = tv.eval(solver);
@@ -326,6 +328,8 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 }
 
 
+
+
 void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps){	
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
@@ -337,7 +341,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, hardcodedholes, params.randomassign, fin);	
+	DagFunctionInliner dfi(dag, functionMap, &hardcoder, params.randomassign, fin);	
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
@@ -363,6 +367,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin->clear();
 		if(t==1){ cout<<"Bailing out"<<endl; break; }
 	}
+	hardcoder.afterInline();
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);

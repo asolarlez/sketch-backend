@@ -17,7 +17,6 @@
 
 extern timerclass solution;
 extern timerclass modelBuilding;
-extern const int LEAVEALONE;
 
 using namespace std;
 
@@ -29,7 +28,7 @@ class InterpreterEnvironment
 	SATSolver* _pfind;
 	int assertionStep;
 	string sessionName;
-	map<string, int> hardcodedholes;
+	HoleHardcoder hardcoder;
 
 	/*Debug state: */
 	vector<BooleanDAG*> history;
@@ -80,6 +79,7 @@ public:
 		}
 		finder = new SolverHelper(*_pfind);
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
+		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, params);
 	}
@@ -104,14 +104,12 @@ public:
 	}
 	
 	void printControls(ostream& out){
-		for(map<string, int>::iterator it = hardcodedholes.begin(); it != hardcodedholes.end(); ++it){
-			if(it->second != LEAVEALONE){
-				out<<it->first<<"\t"<<it->second<<endl;
-			}
-		}
+		hardcoder.printControls(out);
 
 		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
-			out<<it->first<<"\t"<<it->second<<endl;
+			if(!hardcoder.hasValue(it->first)){
+				out<<it->first<<"\t"<<it->second<<endl;
+			}
 		}
 	}
 	
