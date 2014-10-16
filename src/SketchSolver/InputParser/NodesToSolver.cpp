@@ -1359,7 +1359,7 @@ class UFUN_store{
 
 
 void NodesToSolver::visit( UFUN_node& node ){
-	Assert(false, "NYI");
+	Assert(false, "NYI; ;jlqkweyyyyy");
 /*
 	Tvalue in = xx; // input tvalue.
 	

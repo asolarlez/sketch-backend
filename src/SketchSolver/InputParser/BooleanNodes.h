@@ -503,7 +503,12 @@ class TUPLE_CREATE_node:public arith_node{
     virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){TUPLE_CREATE_node* newNode = new TUPLE_CREATE_node(*this, copyChildren); newNode->setName(name);return newNode;  };
     virtual void outDagEntry(ostream& out) const{
-        Assert(false, "NYI");
+        int i=0;
+		for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
+		  	if(*it != NULL){
+		  		out<<" "<<(*it)->get_name()<<" -> "<<get_name()<<"[label=\""<< i <<"\"] ; "<<endl;
+		  	}
+		}		
     }
     virtual string lprint()const{
         
@@ -714,7 +719,7 @@ class SRC_node: public INTER_node{
 			otype = OutType::BOOL_ARR;
 			return otype;
 		}
-		Assert(false, "NYI");
+		Assert(false, "NYI;lkkjkjytrdd");
 		return otype;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
@@ -822,7 +827,7 @@ class CTRL_node: public INTER_node{
 			otype = OutType::BOOL_ARR;
 			return otype;
 		}
-		Assert(false, "NYI");
+		Assert(false, "NYI; egewajyt");
 		return otype;
 	}
 };

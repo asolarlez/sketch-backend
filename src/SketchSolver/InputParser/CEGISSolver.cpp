@@ -437,15 +437,15 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
 				if(cn->get_Angelic()){
 					if(cn->children.size() != 0){
-						Assert(cn->children.size() == 1, "NYI");
+						Assert(cn->children.size() == 1, "NYI; hafdst");
 						bool_node* bn = *(cn->children.begin());
-						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI");
+						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
 						arith_node* an = dynamic_cast<arith_node*>(bn);
 						if(an->multi_mother[0]==cn){
-							Assert(an->multi_mother[0]==cn, "NYI");
+							Assert(an->multi_mother[0]==cn, "NYI; cvbnm");
 							newdag->replace(cn->id, an->multi_mother[1]);
 						}else{
-							Assert(an->multi_mother[1]==cn, "NYI");
+							Assert(an->multi_mother[1]==cn, "NYI; weafhgdz");
 							newdag->replace(cn->id, an->multi_mother[0]);
 						}
 						

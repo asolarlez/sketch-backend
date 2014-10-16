@@ -518,7 +518,7 @@ void bool_node::printSubDAG(ostream& out, set<const bool_node* >& s)const{
 	if(mother != NULL && s.count(mother) == 0){
 			mother->printSubDAG(out, s);
 	}
-	outDagEntry(out);	
+	out<<lprint()<<endl;	
 }
 
 

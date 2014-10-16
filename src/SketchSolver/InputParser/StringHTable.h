@@ -201,7 +201,7 @@ public:
 	}
 
 	void add(const char* key, int len, T val){
-		Assert(false, "NYI");
+		Assert(false, "NYI; a;lkyyyyuj");
 	}
 
 	bool get(const char* key, int len, T& out){
@@ -235,7 +235,7 @@ public:
 				}
 			}
 		}
-		Assert(false, "NYI");
+		Assert(false, "NYI; nmjkyut");
 		return false;
 	}
 

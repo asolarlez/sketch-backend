@@ -157,7 +157,7 @@ void NodeEvaluator::visit( TIMES_node& node ){
 	setbn(node, i(*node.mother) * i(*node.father));
 }
 void NodeEvaluator::visit( UFUN_node& node ){
-	Assert(false, "NYI");
+	Assert(false, "NYI; jngyttyuy");
 	/*
 	vector<bool_node*>& mm = node.multi_mother;
 	visitArith(node);

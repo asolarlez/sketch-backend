@@ -106,7 +106,7 @@ void HoleHardcoder::printControls(ostream& out){
 }
 
 
-	int HoleHardcoder::fixValue(string& s, int bound, int nbits){
+	int HoleHardcoder::fixValue(const string& s, int bound, int nbits){
 		int rv = rand() % bound;
 		if(sat->checkVar(s)){
 			int H__0_var_idx = sat->getVar(s);			

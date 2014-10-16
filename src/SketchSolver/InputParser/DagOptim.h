@@ -71,7 +71,7 @@ public:
 			}			
 			return true;
 		}
-		Assert(false, "NYI");
+		Assert(false, "NYI; njhytggfd");
 		return false;
 	}	
 };

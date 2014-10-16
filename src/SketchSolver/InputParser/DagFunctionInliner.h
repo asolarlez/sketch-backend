@@ -545,7 +545,7 @@ class HoleHardcoder{
 	map<string, int> randholes;
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
-	int fixValue(string& s, int bound, int nbits);
+	int fixValue(const string& s, int bound, int nbits);
 public:
 	void setSolver(SolverHelper* sh){
 		sat = sh;
