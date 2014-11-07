@@ -89,7 +89,7 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 void HoleHardcoder::afterInline(){
 	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ){
 		if(it->second == LEAVEALONE){
-			it = randholes.erase(it);
+			randholes.erase(it++);
 		}else{
 			++it;
 		}
