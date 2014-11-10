@@ -350,7 +350,10 @@ bool DagOptim::compSymplification(NTYPE& node){
 		bool_node* momo = node.mother->mother;
 		bool_node* mofa = node.mother->father;
 		
-		if(mofa == node.father || (isConst(mofa) ) ){
+		if(mofa == node.father || (isConst(mofa) && (isConst(node.mother))) ){
+			//The second check for (isConst(node.mother) was missing
+			//This is important or else in cases like x + 1 < x 
+			//there won't be any optimization 
 			momo = 	node.mother->father;;
 			mofa = node.mother->mother;
 		}
