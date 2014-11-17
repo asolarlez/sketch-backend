@@ -670,7 +670,8 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
 	int amtrange = 1;
-	for(int i=0; i<amtsize && i<12; ++i) amtrange *= 2;
+	Assert(amtsize <= 16, "Casting an bit-vector to an integer is only supported for up to 16 bits.");
+	for(int i=0; i<amtsize && i<16; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
 	vector<guardedVal> tmpVect(amtrange);
 	int lastsize = 1;

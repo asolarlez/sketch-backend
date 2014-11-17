@@ -312,10 +312,10 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 			mdef.num_ranges.push_back(guardedVal(mv[i].guard, mv[i].value));
 		}
 	}else{
-		// when there is no default value, the default is -333, guarded by YES
+		// when there is no default value, the default is UNINITIALIZED, guarded by YES
 		mdef = tvOne;
-		// TODO xzl: temporarily disable -333
-		mdef.num_ranges[0].value = -333;
+		
+		mdef.num_ranges[0].value = UNINITIALIZED;
 		//mdef.num_ranges[0].value = 0;
 	}
 	Tvalue fdef;
@@ -325,8 +325,8 @@ NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
 		}
 	}else{
 		fdef = tvOne;
-		// TODO xzl: temporarily disable -333
-		fdef.num_ranges[0].value = -333;
+		
+		fdef.num_ranges[0].value = UNINITIALIZED;
 		//fdef.num_ranges[0].value = 0;
 	}
 	int cvar = YES;
@@ -1835,8 +1835,8 @@ NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar
 	vector<guardedVal>::const_iterator inarrend = inarr.num_ranges.end();
 	
 	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
-	// TODO xzl: temporarily disable -333
-	defdef.num_ranges[0].value = -333;
+	
+	defdef.num_ranges[0].value = UNINITIALIZED;
 	//defdef.num_ranges[0].value = 0;
 	if(begdef == enddef){
 		begdef = defdef.num_ranges.begin();
@@ -1991,8 +1991,8 @@ void NodesToSolver::arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tva
 	int defstart = 0;
 	int defend = 0;
 	Tvalue tvdef = tvOne;
-	// TODO xzl: temporarily disable -333
-	tvdef.num_ranges[0].value = -333;
+	
+	tvdef.num_ranges[0].value = UNINITIALIZED;
 	//tvdef.num_ranges[0].value = 0;
 	if(cindex < 0){
 		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
@@ -2231,8 +2231,8 @@ void NodesToSolver::doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& o
 		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
 			altL.num_ranges.push_back(gvl[i]);
 		}
-		// TODO xzl: temporarily disable -333
-		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = -333;}
+		
+		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = UNINITIALIZED;}
 		//if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0;}
 		else{ altL.sparsify(dir); }
 
@@ -2241,8 +2241,8 @@ void NodesToSolver::doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& o
 		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
 			altR.num_ranges.push_back(gvr[i]);
 		}
-		// TODO xzl: temporarily disable -333
-		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = -333;}
+		
+		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = UNINITIALIZED;}
 		//if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0;}
 		else{ altR.sparsify(dir); }
 

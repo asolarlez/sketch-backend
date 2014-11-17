@@ -89,7 +89,7 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 void HoleHardcoder::afterInline(){
 	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ){
 		if(it->second == LEAVEALONE){
-			it = randholes.erase(it);
+			randholes.erase(it++);
 		}else{
 			++it;
 		}
@@ -167,8 +167,26 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		if( it == randholes.end() ){			
 			int chsize = node->children.size();
 			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (chsize>0?chsize:1)  );
-			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<")"<<endl;
+			int odds = max(2, baseline/ (chsize>0?chsize:1)  );			
+			int tchld = 0;
+			for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
+				bool_node* chld = *it;
+				cout<<node->get_name()<<" CHILDREN  "<<(*it)->lprint()<<endl;
+				if(chld->type == bool_node::ARRACC){
+					ARRACC_node* an = (ARRACC_node*) chld;
+					bool allconst = true;
+					for(vector<bool_node*>::iterator it = an->multi_mother.begin(); it != an->multi_mother.end(); ++it){
+						if((*it)->type != bool_node::CONST){
+							allconst = false;
+							break;
+						}
+					}
+					if(allconst){ cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); }
+				}else{
+					tchld += 1;
+				}
+			}
+			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<")"<<endl;
 			if(chsize == 1){
 				bool_node* bn = * node->children.begin();
 				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
