@@ -352,6 +352,11 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 			set<string>& dones = dfi.getFunsInlined();			
 			//dag.lprint(cout);
 			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
+			if(params.bndDAG > 0 && dag.size() > params.bndDAG) {
+				i=steps;
+				cout<<"WARNING: Preemptively stopping inlining because the graph size exceeds the limit: "<<params.bndDAG<<endl;
+				break;
+			}
 			if(oldSize > 0){
 				if(dag.size() > 400000 && dag.size() > oldSize * 10){
 					i=steps;
