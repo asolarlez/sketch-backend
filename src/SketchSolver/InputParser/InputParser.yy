@@ -269,6 +269,9 @@ TupleType: T_vartype {
     if( $1 == BIT){ $$ = OutType::BOOL_ARR;}
     if( $1 == FLOAT){ $$ = OutType::FLOAT_ARR;}
 }
+| T_ident '[' '*' ConstantExpr ']' {
+  $$ = ((Tuple*)OutType::getTuple(*$1))->arr;
+}
 | T_ident { 
     $$ = OutType::getTuple(*$1);
 }
@@ -444,9 +447,8 @@ Expression: Term { $$ = $1; }
 | Term T_eq Term { 			
 	$$ = currentBD->new_node($1,  $3, bool_node::EQ);
 }
-| T_ident '[' Expression ']'{	
-	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
-	delete $1;
+| Term '[' Expression ']'{
+	$$ = currentBD->new_node($3, $1, bool_node::ARR_R);
 }
 | Term '.' '[' NegConstant ']'{
    
