@@ -27,7 +27,12 @@ NodeEvaluator::~NodeEvaluator(void)
 }
 
 void NodeEvaluator::visit( ARR_R_node &node){
-	cpvec* vv = vecvalues[node.father->id];
+  int ivec = i(*node.father);
+  if(ivec == -1){
+    setbn(node, 0);
+    return;
+  }
+	cpvec* vv = vecvalues[ivec];
 	if(vv==NULL){
 		setbn(node, i(*node.father));
 		return;
