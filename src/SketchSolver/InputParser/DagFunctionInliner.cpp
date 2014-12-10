@@ -88,7 +88,7 @@ void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap)
 
 void HoleHardcoder::afterInline(){
 	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ){
-		if(it->second == LEAVEALONE){
+		if(LEAVEALONE(it->second)){
 			randholes.erase(it++);
 		}else{
 			++it;
@@ -99,7 +99,7 @@ void HoleHardcoder::afterInline(){
 
 void HoleHardcoder::printControls(ostream& out){
 	for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it){
-			if(it->second != LEAVEALONE){
+			if(!LEAVEALONE(it->second)){
 				out<<it->first<<"\t"<<it->second<<endl;
 			}
 		}
@@ -164,10 +164,7 @@ void HoleHardcoder::printControls(ostream& out){
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		map<string, int>::iterator it = randholes.find( node->get_name()  );
-		if( it == randholes.end() ){			
-			int chsize = node->children.size();
-			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (chsize>0?chsize:1)  );			
+		int chsize = node->children.size();							
 			int tchld = 0;
 			for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
 				bool_node* chld = *it;
@@ -181,12 +178,32 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 							break;
 						}
 					}
-					if(allconst){ cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); }
+					if(allconst){ 
+						cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); 
+					}else{
+						tchld += 1;
+					}
 				}else{
 					tchld += 1;
 				}
+			}	
+		if( it != randholes.end() ){
+			if(LEAVEALONE(it->second)){
+				int oldchld = -it->second; //how many chlidren it had the first time around.
+				if(tchld > oldchld + 10 ){ 
+					cout<<"I've seen this before, but I am going to try again "<< node->lprint() <<" nchildren ="<<tchld<<endl;
+				}else{
+					return node;
+				}
+			}else{
+				return opt.getCnode(it->second);
 			}
+		}
+		{							
+			int baseline = PARAMS->randdegree;
+			int odds = max(2, baseline/ (tchld>0?tchld:1)  );		
 			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<")"<<endl;
+			chsize = tchld;
 			if(chsize == 1){
 				bool_node* bn = * node->children.begin();
 				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
@@ -229,7 +246,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 							}else{
 							if(!(child->type == bool_node::EQ )){
 								cout<<"    has a bad child"<<child->lprint()<<endl;
-								randholes[node->get_name()] = LEAVEALONE;
+								randholes[node->get_name()] = REALLYLEAVEALONE;
 								return node;
 							}else{ //child->type == eq
 								if(child->father->type == bool_node::CONST){
@@ -251,17 +268,8 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				return opt.getCnode(rv);
 			}else{
 				cout<<" not replacing"<<endl;
-				randholes[node->get_name()] = LEAVEALONE;
+				randholes[node->get_name()] = -chsize;
 				return node;
-			}
-		}else{
-			if(it->second == LEAVEALONE){
-				if(node->children.size() > 2){
-				cout<<"Leaving alone from before "<< node->lprint() <<" nchildren ="<<node->children.size()<<endl;
-				}
-				return node;
-			}else{
-				return opt.getCnode(it->second);
 			}
 		}
 	}
