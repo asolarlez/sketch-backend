@@ -34,39 +34,34 @@ void NodeEvaluator::visit( ARR_R_node &node){
   }
 	cpvec* vv = vecvalues[ivec];
 	if(vv==NULL){
-		setbn(node, i(*node.father));
+		setbn(node, ivec);
 		return;
 	}
 	int idx = i(*node.mother);
 	if(idx < 0){
 		setbn(node, 0 );
 	}else{
-		setbn(node, vv->get(idx,i(*node.father)) );
+		setbn(node, vv->get(idx,ivec) );
 	}
 }
 
 void NodeEvaluator::visit( TUPLE_R_node &node){
-    // TODO: create a special node for NIL, with a special ID,
-    //       and its vecvalue is not initialized.
-    int itup = i(*node.mother);
-    if(itup == -1){
-        setbn(node, 0);
-        return;
-    }
+  int itup = i(*node.mother);
+  if(itup == -1){
+    setbn(node, 0);
+    return;
+  }
 	cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
-        setbn(node, 0);
+    setbn(node, 0);
 		return;
 	}
 	int idx = node.idx;
 	if(idx < 0 || idx >= cpt->size()){
-        setbn(node, 0 );
-	}else if (node.getOtype()->isTuple) {
-		setbn(node,cpt->vv[idx]);
-        //tuplevalues[node.id] = tuplevalues[cpt->vv[idx]] ;
-	}else {
-        setbn(node, cpt->vv[idx]);
-    }
+    setbn(node, 0 );
+	} else {
+    setbn(node, cpt->vv[idx]);
+  }
    
 }
 
@@ -103,7 +98,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
 	// TODO xzl: temporarily disable -333
-	setbn(node, node.dfltval );
+	setbn(node, node.id );
 	//setbn(node, 0);
 }
 

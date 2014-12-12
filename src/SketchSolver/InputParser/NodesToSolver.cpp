@@ -2137,7 +2137,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     bool isArray = false;
   
   if (node.getOtype()->isArr) {
-    Tvalue prev;
+    Tvalue prev = zero;
     bool first = true;
     for (int i=0; i < length; ++i) {
       int tsidx = tid.num_ranges[i].value;
@@ -2162,9 +2162,11 @@ void NodesToSolver::visit( TUPLE_R_node &node){
           
           Tvalue rhs = tvOne;
           rhs.intAdjust(i);
-          Tvalue cond;
+          Tvalue cond = tvYES;
           createCond(tid, rhs, cond);
-          muxTValues(NULL, cond, binChoice, prev, isBoolean, isArray);
+          Tvalue out = tvOne;
+          muxTValues(NULL, cond, binChoice, out, isBoolean, isArray);
+          prev = out;
 
         }
       }
