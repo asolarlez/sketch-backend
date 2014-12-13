@@ -27,21 +27,16 @@ NodeEvaluator::~NodeEvaluator(void)
 }
 
 void NodeEvaluator::visit( ARR_R_node &node){
-  int ivec = i(*node.father);
-  if(ivec == -1){
-    setbn(node, 0);
-    return;
-  }
-	cpvec* vv = vecvalues[ivec];
+	cpvec* vv = vecvalues[node.father->id];
 	if(vv==NULL){
-		setbn(node, ivec);
+		setbn(node, i(*node.father));
 		return;
 	}
 	int idx = i(*node.mother);
 	if(idx < 0){
 		setbn(node, 0 );
 	}else{
-		setbn(node, vv->get(idx,ivec) );
+    setbn(node, vv->get(idx,i(*node.father)) );
 	}
 }
 
@@ -51,18 +46,29 @@ void NodeEvaluator::visit( TUPLE_R_node &node){
     setbn(node, 0);
     return;
   }
-	cptuple* cpt = tuplevalues[itup];
+  cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
     setbn(node, 0);
 		return;
 	}
 	int idx = node.idx;
-	if(idx < 0 || idx >= cpt->size()){
+  if(idx < 0 || idx >= cpt->size()){
     setbn(node, 0 );
-	} else {
-    setbn(node, cpt->vv[idx]);
+    return;
   }
-   
+  OutType* otp = node.getOtype();
+  if(otp==OutType::INT || otp ==OutType::BOOL || otp->isTuple){
+    setbn(node, cpt->vv[idx]);
+  } else {
+    cpvec* cpvt = vecvalues[node.id];
+    if(cpvt != NULL){
+      cpvt->update(vecvalues[cpt->vv[idx]], -1, 0);
+    }else{
+      vecvalues[node.id] = new cpvec(vecvalues[cpt->vv[idx]], -1, 0);
+    }
+    setbn(node, values[cpt->vv[idx]]);
+  }
+  
 }
 
 void NodeEvaluator::visit( ARR_W_node &node){
@@ -98,7 +104,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
 	// TODO xzl: temporarily disable -333
-	setbn(node, node.id );
+	setbn(node, 0);
 	//setbn(node, 0);
 }
 
@@ -110,8 +116,16 @@ void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 		delete tuplevalues[node.id];
 	}
 	tuplevalues[node.id] = cpv;
+  Tuple* otp = (Tuple*)node.getOtype();
 	for(int t=0; t<sz; ++t){
-		cpv->vv[t] = i(*node.multi_mother[t]);
+    OutType* e = otp->entries[t];
+    if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
+      Assert(!e->isArr, "Should not be an array here");
+      cpv->vv[t] = i(*node.multi_mother[t]);
+    } else {
+      Assert(node.multi_mother[t]->id != -1, "node id is -1");
+      cpv->vv[t] = (node.multi_mother[t]->id);
+    }
 	}
 	setbn(node, node.id );
     

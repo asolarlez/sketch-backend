@@ -460,7 +460,7 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($1, $4);
 	
 }
-| NegConstant '[' Expression ']'{	
+| NegConstant '[' Expression ']' {
 	$$ = currentBD->new_node($3, currentBD->create_const($1), bool_node::ARR_R);		
 }
 | T_ident '[''[' Expression T_arrow Expression  ']'']'{
