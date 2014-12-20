@@ -37,6 +37,9 @@ typedef FastSet<bool_node> childset;
 
 #endif
 
+
+extern const int UNINITIALIZED;
+
 //#define SCHECKMEM
 
 class OutType{
@@ -439,7 +442,7 @@ class ARR_CREATE_node:public arith_node{
 	
 	public:
     int dfltval;
-    ARR_CREATE_node():arith_node(ARR_CREATE),dfltval(-333){ }
+    ARR_CREATE_node():arith_node(ARR_CREATE),dfltval(UNINITIALIZED){ }
     ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), dfltval(bn.dfltval){ }
     virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new ARR_CREATE_node(*this, copyChildren);  };

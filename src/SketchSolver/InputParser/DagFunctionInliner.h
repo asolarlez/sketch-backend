@@ -541,7 +541,8 @@ public:
 
 
 class HoleHardcoder{
-	static const int LEAVEALONE = -8888888;
+	bool LEAVEALONE(int v){ return v < 0; }
+	static const int REALLYLEAVEALONE = -8888888;
 	map<string, int> randholes;
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
@@ -556,7 +557,7 @@ public:
 	bool hasValue(const string& s){
 		map<string, int>::iterator it = randholes.find(s);
 		if(it == randholes.end()){ return false; }
-		return (it->second != LEAVEALONE);
+		return (!LEAVEALONE(it->second));
 	}
 };
 

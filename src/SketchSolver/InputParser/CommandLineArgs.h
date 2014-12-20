@@ -48,6 +48,7 @@ struct CommandLineArgs{
   bool showControls;
   bool showDAG;
   bool outputMRDAG;
+  int bndDAG;
   bool minvarHole;
   string mrdagfile;
   bool ufunSymmetry;
@@ -113,6 +114,7 @@ struct CommandLineArgs{
 		showControls = false;
 		showDAG = false;
 		outputMRDAG = false;
+		bndDAG = -1;
 		ufunSymmetry = false;
 		alterARRACS = false;
 		interactive = false;
@@ -339,7 +341,14 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
-		
+
+	    if( string(argv[ii]) == "--bnd-dag-size" ){
+	      Assert(ii<(argc-1), "--bnd-dag-size needs an extra parameter");
+	      bndDAG = atoi(argv[ii+1]);
+	      input_idx = ii+2;
+		  continue;
+	    }
+
 		if( string(argv[ii]) == "--minvarHole" ){
 	    	minvarHole = true;
 	      input_idx = ii+1;      
