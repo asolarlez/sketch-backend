@@ -2077,6 +2077,52 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	return;
 }
 
+void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
+  mval.makeSparse(dir);
+  fval.makeSparse(dir);
+  int cvar = -YES;
+  equal_to<int> comp;
+  int orTerms = 0;
+	vector<char> mc(mval.getSize(), 'n');
+	vector<char> fc(fval.getSize(), 'n');
+	int flow = 0;
+	int fhigh = fval.getSize ();
+	int finc = 1;
+  
+  for(int i=0; i<mval.getSize (); ++i){
+		for(int j=flow; j!=fhigh; j = j+finc){
+      if(comp(mval[i], fval[j])){
+				mc[i] = 'y';
+				fc[j] = 'y';
+				++orTerms;
+				
+        if(2*orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
+        scratchpad[orTerms*2-2] = mval.getId(i);
+        scratchpad[orTerms*2-1] = fval.getId(j);
+				
+			}
+		}
+  }
+  if( orTerms < 2 ){
+		cvar = dir.addExPairConstraint(&scratchpad[0], orTerms);
+		for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
+		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
+		out = cvar;
+  }else{
+		if(orTerms == mval.getSize() * fval.getSize()){
+			out = YES;
+		}else{
+			int result;
+			result = dir.addExPairConstraint(&scratchpad[0], orTerms);
+			
+			for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
+			for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
+			out = result;
+		}
+  }
+  return;
+}
+
 void NodesToSolver::visit( TUPLE_R_node &node){
     //cout << "NodesToSolver TUPLE_R " << node.lprint() << endl;
     int index = node.idx;
@@ -2089,8 +2135,47 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     
     bool isBoolean = true;
     bool isArray = false;
+  
+  if (node.getOtype()->isArr) {
+    Tvalue prev = zero;
+    bool first = true;
     for (int i=0; i < length; ++i) {
-        
+      int tsidx = tid.num_ranges[i].value;
+      if (tsidx > 0) {
+        vector<Tvalue>& tuple = *tpl_store[tsidx];
+        if (index < tuple.size()) {
+          const Tvalue& cval = tuple[index];
+          if( cval.isSparse() ){
+            isBoolean = false;
+          }
+          if(cval.isArray()){
+            isArray=true;
+          }
+          if (first) {
+            first = false;
+            prev = cval;
+            continue;
+          }
+          vector<Tvalue> binChoice(2, zero);
+          binChoice[0] = prev;
+          binChoice[1] = cval;
+          
+          Tvalue rhs = tvOne;
+          rhs.intAdjust(i);
+          Tvalue cond = tvYES;
+          createCond(tid, rhs, cond);
+          Tvalue out = tvOne;
+          muxTValues(NULL, cond, binChoice, out, isBoolean, isArray);
+          prev = out;
+
+        }
+      }
+    }
+    node_ids[node.id] = prev;
+    return;
+  }
+    for (int i=0; i < length; ++i) {
+      
         int tsidx = tid.num_ranges[i].value;
         if (tsidx > 0) {
             vector<Tvalue>& tuple = *tpl_store[tsidx];

@@ -118,7 +118,7 @@ public:
 			return lgv[id-1];
 		}
 	}
-    
+  void createCond(Tvalue mval , Tvalue fval, Tvalue& out);
 
     virtual void visit (AND_node &node);
     virtual void visit (OR_node &node);

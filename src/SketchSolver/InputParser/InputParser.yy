@@ -55,6 +55,8 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_leftAC
 %token T_rightTC
 %token T_leftTC
+%token T_leftAR
+%token T_rightAR
 %token T_arrow
 %token T_twoS
 %token T_ppls
@@ -269,6 +271,9 @@ TupleType: T_vartype {
     if( $1 == BIT){ $$ = OutType::BOOL_ARR;}
     if( $1 == FLOAT){ $$ = OutType::FLOAT_ARR;}
 }
+| T_ident '[' '*' ConstantExpr ']' {
+  $$ = ((Tuple*)OutType::getTuple(*$1))->arr;
+}
 | T_ident { 
     $$ = OutType::getTuple(*$1);
 }
@@ -444,9 +449,8 @@ Expression: Term { $$ = $1; }
 | Term T_eq Term { 			
 	$$ = currentBD->new_node($1,  $3, bool_node::EQ);
 }
-| T_ident '[' Expression ']'{	
-	$$ = currentBD->new_node($3, currentBD->get_node(*$1), bool_node::ARR_R);	
-	delete $1;
+| Term T_leftAR Expression T_rightAR {
+	$$ = currentBD->new_node($3, $1, bool_node::ARR_R);
 }
 | Term '.' '[' NegConstant ']'{
    
@@ -456,7 +460,7 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node($1, $4);
 	
 }
-| NegConstant '[' Expression ']'{	
+| NegConstant '[' Expression ']' {
 	$$ = currentBD->new_node($3, currentBD->create_const($1), bool_node::ARR_R);		
 }
 | T_ident '[''[' Expression T_arrow Expression  ']'']'{

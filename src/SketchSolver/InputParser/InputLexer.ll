@@ -94,7 +94,12 @@ Comment      ("//"[^\n]*)
 "->"		{
 				return T_arrow;
 			}
-
+"[|"    {
+        return T_leftAR;
+      }
+"|]"    {
+        return T_rightAR;
+      }
 "--"		{
 				return T_mmns;
 			}
