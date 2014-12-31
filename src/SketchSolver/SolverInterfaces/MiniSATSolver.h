@@ -53,6 +53,8 @@ public:
 		 }
 		 return 0; 
 	 }
+	 virtual bool isOK();
+	 virtual bool assertIfPossible(int a);
 	 virtual ~MiniSATSolver();
 	 virtual void annotate(const string& msg);
 	 virtual void annotateInput(const string& name, int i, int sz);

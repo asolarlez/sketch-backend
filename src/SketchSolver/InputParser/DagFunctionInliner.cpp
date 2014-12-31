@@ -119,8 +119,11 @@ void HoleHardcoder::printControls(ostream& out){
 				if(gv.value == rv){
 					int xx = sat->getMng().isValKnown(gv.guard);
 					if(xx==0){
-						//it's ok to set the value to this.
-						sat->addAssertClause(gv.guard);
+						//it's ok to set the value to this.						
+						if(!sat->assertIfPossible(gv.guard)){
+							// tried to set it but didn't work. we'll have to try something different.
+							break;
+						}
 						randholes[s] = rv;
 						return rv;
 					}
@@ -128,8 +131,7 @@ void HoleHardcoder::printControls(ostream& out){
 						//the hole is already equal to this.
 						randholes[s] = rv;
 						return rv;
-					}
-					if(xx==0){
+					}else{
 						cout<<" can't set to "<<rv<<endl;
 						//the hole cannot be equal to this vale. 
 						break;
@@ -144,8 +146,11 @@ void HoleHardcoder::printControls(ostream& out){
 				guardedVal& g2 = gvs[t];
 				int yy =  sat->getMng().isValKnown(g2.guard);
 				if(yy==0){
-					//it's ok to set the value to this.
-					sat->addAssertClause(g2.guard);
+					//it's ok to set the value to this, but let's check
+					if(!sat->assertIfPossible(g2.guard)){
+							// tried to set it but didn't work. we'll have to try something different.
+							continue;
+					}
 					randholes[s] = g2.value;
 					return g2.value;
 				}
@@ -264,7 +269,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					bound = min(bound, ul);
 				}				
 				int rv = fixValue(node->get_name(), bound, nbits);
-				cout<<" replacing with value "<<rv<<endl;
+				cout<<node->get_name()<<": replacing with value "<<rv<<endl;
 				return opt.getCnode(rv);
 			}else{
 				cout<<" not replacing"<<endl;

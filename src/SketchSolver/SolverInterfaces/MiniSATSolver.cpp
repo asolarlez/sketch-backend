@@ -98,6 +98,15 @@ void MiniSATSolver::addClause(int tmp[], int sz, vec<Lit>& lits){
 	++clauseCount;
 } 
 
+bool MiniSATSolver::assertIfPossible(int a){
+	return s->assertIfPossible(a > 0 ? Lit(a) : ~Lit(-a));
+
+}
+
+
+bool MiniSATSolver::isOK(){
+	return s->okay();
+}
 
 //This function encodes x == a ? b:c;
  void MiniSATSolver::addChoiceClause(int x, int a, int b, int c){

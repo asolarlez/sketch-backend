@@ -33,7 +33,8 @@ public:
 	
 	static SATSolver* solverCreate(SolverType t, SolverMode m, string name);
 
-
+	virtual bool isOK()=0;
+	virtual bool assertIfPossible(int a)=0;
 
     enum SATSolverResult{
 	UNDETERMINED,

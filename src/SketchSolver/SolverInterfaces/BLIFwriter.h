@@ -82,8 +82,11 @@ public:
 	virtual void markInput(int){  }
     virtual void clean();	
     virtual void printDiagnostics(char c);	
+	virtual bool isOK(){ return false; }
+	virtual bool assertIfPossible(int a){return false;}
 	virtual void writeDIMACS(ofstream& dimacs_file){
 		
+
 	 }
 public:
 	~BLIFwriter(void);

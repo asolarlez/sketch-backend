@@ -980,6 +980,40 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
     }
 }
 
+bool Solver::assertIfPossible(Lit a){
+	lbool lv = value(a);
+	//if it already has a value, we just check that it's compatible.
+	if(lv==l_True){
+		return true;
+	}
+	if(lv==l_False){
+		return false;
+	}
+	//if it doesn't have a value, try it out to see if it leads to a contradiction.
+	assert(decisionLevel()==0); //this only works at decision level 0.
+	newDecisionLevel();
+	uncheckedEnqueue(a);
+	Clause* confl = propagate();
+	if(confl == NULL){
+		cerr<<"no confl"<<endl;
+		// no conflict arises. it's ok to have this value, so we should make this be level 0 instead of level 1.
+		for (int c = trail.size()-1; c >= trail_lim[0]; c--){
+            Var     x  = var(trail[c]);
+			level[x] = 0;            
+		}	
+		trail_lim.shrink(1);
+		return true;
+	}else{
+		cerr<<"with confl"<<endl;
+		// conflict arises; this means a cannot be true. 
+		cancelUntil(0);
+		uncheckedEnqueue(~a);
+		ok = (propagate()==NULL);
+		return false;
+	}
+	return false;
+}
+
 
 double Solver::progressEstimate() const
 {

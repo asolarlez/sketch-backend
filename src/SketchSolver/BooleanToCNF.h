@@ -96,6 +96,10 @@ public:
 	void writeDIMACS(ofstream& dimacs_file);
 
 
+	bool isOK(){
+		mng.isOK();
+	}
+
 	map<string, int>::const_iterator arrsize_end(){
 		return arrsize.end();
 	}
@@ -288,6 +292,12 @@ public:
 
     void addEquateClause (int a, int b);
     void addAssertClause (int a);
+
+	///Return true if it was possible, false if it was not.
+	bool assertIfPossible(int a){
+		return mng.assertIfPossible(a);
+	}
+
 	void addHardAssertClause (int a);
 	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);

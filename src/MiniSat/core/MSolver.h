@@ -75,6 +75,8 @@ public:
 
 	void	regInput	(int in);		//Armando: Register an input var. What distinguishes these vars is that conflicts on them are really really valuable.
 
+	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
+
 
     // Extra results: (read-only member variable)
     //
@@ -172,6 +174,7 @@ protected:
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
+	
 
     // Maintaining Variable/Clause activity:
     //
