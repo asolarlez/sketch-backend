@@ -187,7 +187,7 @@ struct CommandLineArgs{
 		  continue;
 	    }
 		if( string(argv[ii]) == "-randdegree" ){	      
-		 Assert(ii<(argc-1), "-simiters needs an extra parameter");
+		 Assert(ii<(argc-1), "-randdegree needs an extra parameter");
 	      randdegree = atoi(argv[ii+1]);
 	      input_idx = ii+2;
 		  continue;
