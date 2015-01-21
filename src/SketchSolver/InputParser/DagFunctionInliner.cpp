@@ -270,7 +270,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					bound = min(bound, ul);
 				}				
 				int rv = fixValue(node->get_name(), bound, nbits);
-				cout<<node->get_name()<<": replacing with value "<<rv<<endl;
+				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<endl;
 				return opt.getCnode(rv);
 			}else{
 				cout<<" not replacing"<<endl;
