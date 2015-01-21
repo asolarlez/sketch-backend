@@ -2235,14 +2235,16 @@ NodesToSolver::visit (ASSERT_node &node)
 				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 				
 				errorMsg = "  UNSATISFIABLE ASSERTION ";
 				errorMsg += node.getMsg();
-				stringstream cstr;
-				set<const bool_node*> s;
-				cstr<<"digraph G{"<<endl;
-				node.printSubDAG(cstr, s);
-				cstr<<"}"<<endl;
-				cstr<<" slice size = "<<s.size()<<endl;
-				if(s.size() < 10){
-					cout<<cstr.str()<<endl;
+				if(PARAMS->verbosity > 7){
+					stringstream cstr;
+					set<const bool_node*> s;
+					cstr<<"digraph G{"<<endl;
+					node.printSubDAG(cstr, s);
+					cstr<<"}"<<endl;
+					cstr<<" slice size = "<<s.size()<<endl;
+					if(s.size() < 10){
+						cout<<cstr.str()<<endl;
+					}
 				}
 				stopAddingClauses = true;
 			}			

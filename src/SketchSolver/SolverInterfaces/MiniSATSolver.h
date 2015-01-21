@@ -69,6 +69,8 @@ public:
      virtual void assertVarClause(int x);
 	 virtual void assumeVarClause(int x);
 
+	 virtual void addHelper2Clause(int l1, int l2);
+
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);
 

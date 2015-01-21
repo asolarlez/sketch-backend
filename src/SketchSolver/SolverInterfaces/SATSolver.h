@@ -71,7 +71,7 @@ public:
 	virtual int isValKnown(int i){return 0; }
 	virtual void addCountingHelperClause(int c[], int sz);
 	virtual void addExPairConstraint(int* pairs, int npairs, int out)=0;
-
+	virtual void addHelper2Clause(int l1, int l2){}
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
 

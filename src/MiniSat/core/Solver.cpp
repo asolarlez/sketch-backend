@@ -96,6 +96,68 @@ Var Solver::newVar(bool sign, bool dvar)
     return v;
 }
 
+class ToVec{
+public:
+	Lit i; 
+	Lit j;
+	ToVec(Lit _i, Lit _j):i(_i),j(_j){}
+	inline int size() const{ return 2; }
+	inline Lit operator[](int idx) const{ if(idx==0){ return i;}else{return j;} }
+};
+
+
+bool Solver::addCNFBinary(Lit j, Lit i){
+	if (!ok) return false;
+    if(i == ~j) return true;
+	lbool vi = value(i);
+	lbool vj = value(j);
+	if(vi==l_True || vj==l_True){ return true; }
+	if(vi == l_False){
+		if(vj==l_False){
+			return ok = false;
+		}else{
+			uncheckedEnqueue(j);
+		}
+	}else{
+		if(vj==l_False){
+			uncheckedEnqueue(i);
+		}else{			
+			vec<Clause*>& wi = watches[toInt(~i)];
+			vec<Clause*>& wj = watches[toInt(~j)];
+			int szi  =wi.size();
+			int szj = wj.size();
+			
+			if(szi <= szj){
+				for(int t=0; t<szi; ++t){
+					Clause* ct = wi[t];
+					if(ct->size()==2){
+						if( (*ct)[0]==j || (*ct)[1]==j ){
+							// this clause is already here. Nothing to do.
+							return true;
+						}
+					}
+				}
+			}else{
+				for(int t=0; t<szj; ++t){
+					Clause* ct = wj[t];
+					if(ct->size()==2){
+						if( (*ct)[0]==i || (*ct)[1]==i ){
+							// this clause is already here. Nothing to do.
+							return true;
+						}
+					}
+				}
+			}
+			ToVec tv(i,j);
+			Clause* c = Clause::Clause_new(tv, false);
+			 wi.push(c);
+			 wj.push(c);
+			 clauses_literals += c->size(); 
+		}
+	}
+	return true;
+}
+
 
 bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
@@ -995,7 +1057,6 @@ bool Solver::assertIfPossible(Lit a){
 	uncheckedEnqueue(a);
 	Clause* confl = propagate();
 	if(confl == NULL){
-		cerr<<"no confl"<<endl;
 		// no conflict arises. it's ok to have this value, so we should make this be level 0 instead of level 1.
 		for (int c = trail.size()-1; c >= trail_lim[0]; c--){
             Var     x  = var(trail[c]);
@@ -1004,7 +1065,6 @@ bool Solver::assertIfPossible(Lit a){
 		trail_lim.shrink(1);
 		return true;
 	}else{
-		cerr<<"with confl"<<endl;
 		// conflict arises; this means a cannot be true. 
 		cancelUntil(0);
 		uncheckedEnqueue(~a);

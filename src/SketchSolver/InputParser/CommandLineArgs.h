@@ -141,7 +141,7 @@ struct CommandLineArgs{
 		randdegree = 100;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
-            cout << "CEGIS version features: " << VERSION_INFO << endl;
+            //cout << "CEGIS version features: " << VERSION_INFO << endl;
             input_idx = ii+1;
 			continue;
         }
@@ -485,6 +485,9 @@ struct CommandLineArgs{
 
 	  if(verbosity>=0){
 		cout<<"SOLVER RAND SEED = "<<seed<<endl;
+	  }
+	  if(verbosity > 3){
+		cout<<" optimization level = "<<olevel<<endl;
 	  }
 	}
 	

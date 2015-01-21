@@ -166,7 +166,7 @@ bool CEGISSolver::solveCore(){
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
 		{ // Check
-			if(PARAMS->verbosity > 4){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
+			if(PARAMS->verbosity > 5){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
 			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
 			cpt.checkpoint('c', ctrlstore_serialized);
@@ -207,7 +207,7 @@ bool CEGISSolver::solveCore(){
 				inputStore.setVarVal("__rs_node",0);
 			}
 			if (hasInputChanged) {
-				if(PARAMS->verbosity > 4){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
+				if(PARAMS->verbosity > 5){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
 				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
 				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
 			       	cpt.checkpoint('f', instore_serialized);
@@ -345,7 +345,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		pushProblem(newdag);
 		//cout << "addInputsToTestSet: newdag=";
 		//newdag->lprint(cout);
-		if(PARAMS->verbosity > 2){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
+		if(PARAMS->verbosity > 6){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
 		// find_node_ids store the mapping between node in the DAG (miter) vs
 		// the variables in the CNF.
 		find_node_ids.resize(getProblem()->size());
@@ -421,11 +421,13 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 
 	vector<bool_node*> inodeList = newdag->getNodesByType(type);
 	
-	if(PARAMS->verbosity > 2) {
-		char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
-		cout<<" * Specializing problem for "<< stype <<endl;
-		cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
-	}
+	int oldsize = newdag->size();
+
+	// if(PARAMS->verbosity > 2) {
+		// char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
+		// cout<<" * Specializing problem for "<< stype <<endl;
+		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
+	// }
 	
 	{
 		DagOptim cse(*newdag);			
@@ -476,7 +478,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		DagOptim cse(*newdag);			
 		cse.process(*newdag);
 	}
-	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<endl; }	
+	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }	
 	return newdag;
 }
 
@@ -526,8 +528,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	}
 
 
-	if(params.printDiag){
-	  	cout<<"# FIND DIAGNOSTICS"<<endl;
+	if(params.printDiag){	  	
 		printDiagnostics(mngFind, 'f');
 	}
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
@@ -578,11 +579,16 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 // to remove or keep the assertions following the failing assertion.
 void CEGISSolver::abstractProblem(){
 	if(inputStore.getBitsize() == 0) return;
+	BooleanDAG* dag = getProblem()->clone();
+	int orisize = dag->size();
+	
+	if(orisize < 200){ return; }
+	
 	VarStore tmp = join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;	
-	BooleanDAG* dag = getProblem()->clone();
+	
 	NodeEvaluator eval(empty, *dag);
-	int orisize = dag->size();
+	
 	eval.run(tmp);
 	vector<bool_node*> asserts = dag->getNodesByType(bool_node::ASSERT);
 	bool found = false;
@@ -619,7 +625,7 @@ void CEGISSolver::abstractProblem(){
 					cout<<" candidate failed assertion "<<an->getMsg()<<endl;
 				}
 				if(failedpos > cutoff){
-					if(PARAMS->verbosity > 2){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<" node "<<(*node_it)->id<<" out of "<<orisize<<endl; }
+					if(PARAMS->verbosity > 5){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<" node "<<(*node_it)->id<<" out of "<<orisize<<endl; }
 					dag->clear();
 					delete dag;
 					return;
@@ -686,7 +692,8 @@ void filterHasserts(vector<bool_node*> const & asserts, int id, vector<bool_node
 
 bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive){
 	timerclass tc("Simulation");
-	tc.start();	
+	bool timesim = (PARAMS->verbosity > 5);
+	if(timesim){ tc.start(); }
 	int iter = 0;
 	VarStore& tmpin = input;
 	map<string, BooleanDAG*> empty;	
@@ -694,7 +701,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 	vector<bool_node *> hasserts;
 	if(asserts.size()==0){
-		tc.stop().print("no cex");
+		if(timesim){ tc.stop().print("no cex"); }
 		return false;
 	}
 	int intSize = dag->getIntSize();
@@ -727,7 +734,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				done = (res == CounterexampleFinder::FOUND);
 
 				if(res == CounterexampleFinder::UNSAT){
-					if(PARAMS->verbosity >=5 ){ 
+					if(PARAMS->verbosity > 5 ){ 
 						cout<<" UNSAT ASSUMPTION "<<((eval.message != NULL)? *eval.message : "")<< endl; 
 					}
 					popProblem();
@@ -736,7 +743,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			}
 			eval.trackChanges();
 			if(done){
-				tc.stop().print("found a cex by random testing");
+				if(timesim){ tc.stop().print("found a cex by random testing"); }
 				if (true) {
 					//dag->lprint(cout);
 					// useful code for debugging
@@ -848,7 +855,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 					}
 					bool done = eval.run(tmpin);								
 					if(done){
-						tc.stop().print("found a cex by solver checking");
+						if(timesim){ tc.stop().print("found a cex by solver checking"); }
 						popProblem();
 						return true;
 					}else{
@@ -888,7 +895,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 					if(PARAMS->verbosity >= 5){ cout<<" reduced size from "<<sz<<" to "<<dag->size()<<endl; }
 					
 					if(dag->getNodesByType(bool_node::ASSERT).empty()){
-						tc.stop().print("no cex");
+						if(timesim){ tc.stop().print("no cex"); }
 						popProblem();
 						return false;
 					}
@@ -912,8 +919,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		//cout << "simulate: cse" << endl;
 		cse.process(*dag);
 		//cout << "simulate: after cse" << endl;
-		if(PARAMS->verbosity > 2){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
-		tc.stop().print("didn't find a cex");	
+		if(PARAMS->verbosity > 5){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
+		if(timesim){ tc.stop().print("didn't find a cex");	}
 		cout<<"After all optim"<<endl;
 		// getProblem()->lprint(std::cout);
 		//dag->lprint(cout);
@@ -954,9 +961,6 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag){
 
 void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop){
 	int gnbits = -1;
-	if(PARAMS->verbosity > 2){
-		cout<<"* growing the inputs to size "<< (dag->getIntSize()+1) <<endl;
-	}
 	dag->growInputIntSizes();
 	if(oridag != dag){
 		oridag->growInputIntSizes();
@@ -1067,8 +1071,12 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				return false;
 			}
 			case CheckControl::GROW_IN:{
-				cout<<"CONTROL: Growing Input"<<problemLevel()<<endl;
-				growInputs(getProblem(), oriProblem, (problemLevel() - (hardcode? 1: 0)) == 1 );
+
+				BooleanDAG* dag = getProblem();
+				if(PARAMS->verbosity > 2){
+					cout<<"CONTROL: growing l="<<problemLevel()<<" inputs to size "<< (dag->getIntSize()+1) <<endl;
+				}				
+				growInputs(dag, oriProblem, (problemLevel() - (hardcode? 1: 0)) == 1 );
 				continue;
 			}
 			case CheckControl::SOLVE:{
@@ -1129,8 +1137,7 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
     int result = mngCheck.solve();
     
 	//dirCheck.printAllVars();
-    if(params.printDiag){
-	    cout<<"# CHECK DIAGNOSTICS"<<endl;
+    if(params.printDiag){	    
 		printDiagnostics(mngCheck, 'c');
     }
     if (result != SATSolver::SATISFIABLE){

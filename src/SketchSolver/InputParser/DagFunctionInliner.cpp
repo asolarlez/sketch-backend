@@ -144,11 +144,13 @@ void HoleHardcoder::printControls(ostream& out){
 			do{
 				int t = rand() % gvs.size();
 				guardedVal& g2 = gvs[t];
+				Assert(sat->getMng().isOK(), "Could not set hole "<<s);
 				int yy =  sat->getMng().isValKnown(g2.guard);
 				if(yy==0){
 					//it's ok to set the value to this, but let's check
 					if(!sat->assertIfPossible(g2.guard)){
 							// tried to set it but didn't work. we'll have to try something different.
+							// cout<<"can't set to "<<g2.value<<endl;
 							continue;
 					}
 					randholes[s] = g2.value;
@@ -158,7 +160,7 @@ void HoleHardcoder::printControls(ostream& out){
 					randholes[s] = g2.value;
 					return g2.value;
 				}
-				cout<<"can't set to "<<g2.value<<endl;
+				// cout<<"can't set to "<<g2.value<<endl;
 				//This cannot be an infinite loop because the guards for the guarded values cannot all be false.
 			}while(true);				
 		}else{
@@ -172,8 +174,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		int chsize = node->children.size();							
 			int tchld = 0;
 			for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
-				bool_node* chld = *it;
-				cout<<node->get_name()<<" CHILDREN  "<<(*it)->lprint()<<endl;
+				bool_node* chld = *it;				
 				if(chld->type == bool_node::ARRACC){
 					ARRACC_node* an = (ARRACC_node*) chld;
 					bool allconst = true;
@@ -184,7 +185,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 						}
 					}
 					if(allconst){ 
-						cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); 
+						// cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); 
 					}else{
 						tchld += 1;
 					}
@@ -196,7 +197,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			if(LEAVEALONE(it->second)){
 				int oldchld = -it->second; //how many chlidren it had the first time around.
 				if(tchld > oldchld + 10 ){ 
-					cout<<"I've seen this before, but I am going to try again "<< node->lprint() <<" nchildren ="<<tchld<<endl;
+					// cout<<"I've seen this before, but I am going to try again "<< node->lprint() <<" nchildren ="<<tchld<<endl;
 				}else{
 					return node;
 				}
@@ -206,18 +207,18 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		}
 		{							
 			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (tchld>0?tchld:1)  );		
-			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<")"<<endl;
+			int odds = max(2, baseline/ (tchld>0?tchld:1)  );					
 			chsize = tchld;
 			if(chsize == 1){
 				bool_node* bn = * node->children.begin();
 				if(bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN){
-					cout<<"postponing for later"<<endl;
+					// cout<<"postponing for later"<<endl;
 					return node;
 				}else{
-					cout<<"Single child is "<<bn->lprint()<<endl;
+					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
 			}			
+			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") ";
 			if(rand() % odds == 0 || chsize > 1500){
 				cout<<" try to replace"<<endl;
 				int bound = 1;
@@ -232,7 +233,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				int obound = bound;
 				int ul = -1;
 				for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
-					cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
+					// cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
 					bool_node* child = *it;
 					if(child->type == bool_node::LT && child->mother == node){
 						if(child->father->type == bool_node::CONST){

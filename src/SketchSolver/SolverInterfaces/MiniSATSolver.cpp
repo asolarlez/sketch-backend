@@ -72,6 +72,11 @@ void MiniSATSolver::annotate(const string& msg){
  }
 
 
+ void MiniSATSolver::addHelper2Clause(int l1, int l2){
+	 Dout(cout<<"@ helper "<<l1<<", "<<l2<<endl;)
+	s->addCNFBinary((l1 > 0) ? Lit(l1) : ~Lit(-l1),
+					(l2 > 0) ? Lit(l2) : ~Lit(-l2));
+ }
 
 void MiniSATSolver::addHelperClause(int c[], int sz){
 	vec<Lit> lits;

@@ -126,7 +126,7 @@ public:
 			gc(); 
 		}
 		++phase;	
-		cout<<" hits = "<<hits<<"\t bstoreObjs="<<bstore.newObjs()<<"\t sstorePages="<<store.pages()<<endl;	
+		//cout<<" hits = "<<hits<<"\t bstoreObjs="<<bstore.newObjs()<<"\t sstorePages="<<store.pages()<<endl;	
 	}
 	void stats(ostream& out){
 		out<<" hits = "<<hits<<"\t bstoreObjs="<<bstore.newObjs()<<"\t sstorePages="<<store.pages()<<endl;	

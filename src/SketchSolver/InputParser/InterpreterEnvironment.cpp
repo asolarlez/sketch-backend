@@ -37,7 +37,7 @@ int valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 		BooleanDAG* newdag = dag->clone();
 		vector<bool_node*> inodeList = newdag->getNodesByType(type);
 			
-		cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; 
+		// cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; 
 		cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	
 		{
 			DagOptim cse(*newdag);			
@@ -205,9 +205,6 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	//spec->repOK();
 	//sketch->repOK();
 
-	if(params.verbosity > 1){
-		cout<<" optimization level = "<<params.olevel<<endl;
-	}
 
 	if(false){
 		CallGraphAnalysis cga;
@@ -266,7 +263,7 @@ can only call them with the parameters used in the spec */
 	BooleanDAG* result = spec;
     
 	
-	if(params.verbosity > 2){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
+	if(params.verbosity > 6){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
 		
 
 	return runOptims(result);
@@ -350,7 +347,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
             dfi.process(dag);
             // dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();						
-			if(params.verbosity> 3){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
+			if(params.verbosity> 6){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
 			if (params.bndDAG > 0 && dag.size() > params.bndDAG) {
 				cout << "WARNING: Preemptively stopping CEGIS because the graph size exceeds the limit: " << params.bndDAG << endl;
 				exit(1);
@@ -365,10 +362,10 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 			oldSize = dag.size();
 			++t;			
 		}while(dfi.changed());
-		cout<<"END OF STEP "<<i<<endl;
+		if(params.verbosity> 6){ cout<<"END OF STEP "<<i<<endl; }
 		// fin.ctt.printCtree(cout, dag);
 		fin->clear();
-		if(t==1){ cout<<"Bailing out"<<endl; break; }
+		if(t==1 && params.verbosity> 6){ cout<<"Bailing out"<<endl; break; }
 	}
 	hardcoder.afterInline();
 	{
@@ -470,7 +467,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}
 	// result->repOK();
 
-	if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<result->size()<<endl;	}
+	// if(params.verbosity > 3){cout<<"* after OPTIM: Problem nodes = "<<result->size()<<endl;	}
 	/*{
 		DagOptim op(*result);
 		result->replace(5598, op.getCnode(1));
@@ -499,15 +496,13 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
 
-	if(params.olevel >= 4){
-		cout << "BEFORE cse" << endl;
+	if(params.olevel >= 4){		
 		DagOptim cse(*result);	
 		if(params.alterARRACS){ 
 			cout<<" alterARRACS"<<endl;
 			cse.alterARRACS(); 
 		}
-		cse.process(*result);
-		cout << "AFTER cse" << endl;
+		cse.process(*result);		
 	}
 	// result->repOK();	
 	if(params.verbosity > 0){ cout<<"* Final Problem size: Problem nodes = "<<result->size()<<endl;	}

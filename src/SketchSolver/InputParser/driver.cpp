@@ -82,7 +82,7 @@ void Driver::parseInput(){
 		}
 		delete INp::envt;
 	}catch(BasicError& be){
-		  cerr<<"There was an error parsing the input"<<endl<<"Exiting compiler"<<endl;
+		  cerr<<"Ther sketch did not resolve "<<endl<<"Exiting compiler"<<endl;
 		  exit(1);
 	}
 }
