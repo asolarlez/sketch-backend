@@ -183,7 +183,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 							allconst = false;
 							break;
 						}
-					}
+					}	
 					if(allconst){ 
 						// cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); 
 					}else{
@@ -235,9 +235,25 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
 					// cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
 					bool_node* child = *it;
-					if(child->type == bool_node::LT && child->mother == node){
-						if(child->father->type == bool_node::CONST){
+					if(child->type == bool_node::LT){
+						if(child->mother == node && child->father->type == bool_node::CONST){
 							ul = max(ul, opt.getIval(child->father));
+						}else if(child->father == node && child->mother->type == bool_node::CONST){	
+
+							if(dynamic_cast<CONST_node*>(child->mother)->getVal()==0){
+								//nothing to do, but so far so good.
+								cout<<"so far so good"<<child->lprint()<<endl;
+							}else if (child->children.size()==1 && (*child->children.begin())->type == bool_node::NOT){
+								ul = max(ul, opt.getIval(child->mother)+1);
+							}else{
+								cout<<"    has a bad child"<<child->lprint()<<endl;
+								randholes[node->get_name()] = REALLYLEAVEALONE;
+								return node;
+							}								
+						}else{
+							cout<<"    has a bad child"<<child->lprint()<<endl;
+							randholes[node->get_name()] = REALLYLEAVEALONE;
+							return node;
 						}
 						ARRASSEQonly = false;
 					}else{
@@ -274,6 +290,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				return opt.getCnode(rv);
 			}else{
 				cout<<" not replacing"<<endl;
+				if(chsize == 0){ chsize = 1; }
 				randholes[node->get_name()] = -chsize;
 				return node;
 			}

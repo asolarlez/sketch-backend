@@ -61,7 +61,9 @@ main(int argc, char** argv)
     totalElapsed.stop ();
 
     printStats ();
-	1;
+	if(rv==0){
+		cout<<"ALL CORRECT"<<endl;
+	}
     return rv;
 }
 
