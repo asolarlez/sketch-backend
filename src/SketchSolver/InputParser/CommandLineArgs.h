@@ -43,6 +43,7 @@ struct CommandLineArgs{
   bool mergeFunctions;
   bool hastimeout;
   int timeout;
+  long memLimit;
   int verbosity;
   bool showInputs;
   bool showControls;
@@ -108,6 +109,7 @@ struct CommandLineArgs{
 		inlineAmnt = 3;
 		hastimeout = false;
 		timeout = -1;
+		memLimit = -1;
 		mergeFunctions = false;
 		verbosity = 0;
 		showInputs = false;
@@ -400,12 +402,18 @@ struct CommandLineArgs{
 
 		if( string(argv[ii]) == "-timeout" ){
 	      Assert(ii<(argc-1), "-timeout needs an extra parameter");
-	      timeout = atoi(argv[ii+1]);	  
+	      timeout = atoi(argv[ii+1]);
 		  hastimeout=true;
 	      input_idx = ii+2;
 		  continue;
-	    } 
+	    }
 
+		if( string(argv[ii]) == "-memory-limit" ){
+	      Assert(ii<(argc-1), "-memory-limit needs an extra parameter");
+	      memLimit = atol(argv[ii+1]);
+	      input_idx = ii+2;
+		  continue;
+	    }
 
 		if( string(argv[ii]) == "--verbosity" ){
 	      Assert(ii<(argc-1), "--verbosity needs an extra parameter");
@@ -414,9 +422,6 @@ struct CommandLineArgs{
 	      input_idx = ii+2;
 		  continue;
 	    } 
-
-
-
 
 	    if( string(argv[ii]) == "--seed" ){
 	      Assert(ii<(argc-1), "--seed needs an extra parameter");
