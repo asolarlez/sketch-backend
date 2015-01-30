@@ -42,7 +42,7 @@ AC_SUBST([CEGIS_API_VERSION], [1.4.0])
 AC_FUNC_ALLOCA
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h float.h inttypes.h libintl.h limits.h malloc.h stddef.h stdlib.h string.h strings.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h float.h inttypes.h libintl.h limits.h malloc.h stddef.h stdlib.h string.h strings.h sys/time.h sys/resource.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
