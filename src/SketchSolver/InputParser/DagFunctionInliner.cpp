@@ -185,7 +185,8 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 						}
 					}	
 					if(allconst){ 
-						// cout<<"     ALLCONSTS "<<an->children.size()<<endl; tchld += an->children.size(); 
+						// cout<<"     ALLCONSTS "<<an->children.size()<<endl;
+						tchld += an->children.size(); 
 					}else{
 						tchld += 1;
 					}
