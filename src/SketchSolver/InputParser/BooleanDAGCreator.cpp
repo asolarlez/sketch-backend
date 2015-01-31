@@ -5,6 +5,7 @@
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 {
+	optim.alterARRACS();
 	new_names = 0;
 	new_namesb = 0;
 }

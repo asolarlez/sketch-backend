@@ -173,6 +173,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		map<string, int>::iterator it = randholes.find( node->get_name()  );
 		int chsize = node->children.size();							
 			int tchld = 0;
+			int bchld = 0;
 			for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
 				bool_node* chld = *it;				
 				if(chld->type == bool_node::ARRACC){
@@ -190,10 +191,17 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					}else{
 						tchld += 1;
 					}
+				}else if(chld->type==bool_node::NOT){
+					bchld += chld->children.size();
 				}else{
-					tchld += 1;
+					if(chld->type == bool_node::AND || chld->type == bool_node::OR){
+						bchld += 1;
+					}else{
+						tchld += 1;
+					}					
 				}
 			}	
+			tchld += bchld / 2;
 		if( it != randholes.end() ){
 			if(LEAVEALONE(it->second)){
 				int oldchld = -it->second; //how many chlidren it had the first time around.
@@ -243,7 +251,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 
 							if(dynamic_cast<CONST_node*>(child->mother)->getVal()==0){
 								//nothing to do, but so far so good.
-								cout<<"so far so good"<<child->lprint()<<endl;
+								// cout<<"so far so good"<<child->lprint()<<endl;
 							}else if (child->children.size()==1 && (*child->children.begin())->type == bool_node::NOT){
 								ul = max(ul, opt.getIval(child->mother)+1);
 							}else{
@@ -268,9 +276,14 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 								ul = max(ul, quant);
 							}else{
 							if(!(child->type == bool_node::EQ )){
-								cout<<"    has a bad child"<<child->lprint()<<endl;
-								randholes[node->get_name()] = REALLYLEAVEALONE;
-								return node;
+
+								if(child->type == bool_node::AND || child->type == bool_node::OR || child->type == bool_node::NOT){
+									// cout<<"so far so good"<<child->lprint()<<endl;
+								}else{									
+									cout<<"    has a bad child"<<child->lprint()<<endl;
+									randholes[node->get_name()] = REALLYLEAVEALONE;
+									return node;
+								}
 							}else{ //child->type == eq
 								if(child->father->type == bool_node::CONST){
 									chkrbuf[((CONST_node*)child->father)->getVal()] = true;
