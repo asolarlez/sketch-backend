@@ -1255,7 +1255,9 @@ NodesToSolver::visit (CTRL_node &node)
 			if(arrSz<0){
 				nvar = dir.newAnonymousVar(nbits);
 				nvar.setSize(nbits);
-				nvar.makeSparse(dir);
+        if (nbits > 1) {
+          nvar.makeSparse(dir);
+        }
 			}else{
 				const int totbits = nbits*arrSz;
 				nvar = dir.newAnonymousVar(totbits);
