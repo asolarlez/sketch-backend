@@ -754,6 +754,15 @@ class bitVector{
 	int size;
 	unsigned* data;
 	public:
+	bitVector():size(-1){}
+	void init(int s){
+		size = s;
+		int sz = s/32 + ((s%32)==0?0:1);
+		data = new unsigned[sz];
+		for(int i=0; i<sz; ++i){
+			data[i] = 0;
+		}
+	}
 	bitVector(int s):size(s){
 		int sz = s/32 + ((s%32)==0?0:1);
 		data = new unsigned[sz];
@@ -787,7 +796,9 @@ class bitVector{
 		return (data[s/32]>> (s%32) )>0;
 	}
 	virtual ~bitVector(){
-		delete [] data;	
+		if(size>=0){
+			delete [] data;	
+		}
 	}
 };
 

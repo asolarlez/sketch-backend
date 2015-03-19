@@ -1498,7 +1498,8 @@ void DagOptim::visit( UFUN_node& node ){
 		return;
     }
     
-
+	rvalue  = &node;
+	return;
 
 
 	string tmp = node.get_ufname();

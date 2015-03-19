@@ -1,4 +1,4 @@
-#include "config.h"
+// #include "config.h"
 #include <iostream>
 #include <cassert>
 #include "CegisMainHelpers.h"

@@ -255,11 +255,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SketchSolver\InputParser\AltOptim.cpp" />
     <ClCompile Include="MiniSat\core\Solver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMainHelpers.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BackwardsAnalysis.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\DagSuperOptim.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\BLIFwriter.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanDAG.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanDAGCreator.cpp" />
@@ -293,6 +295,7 @@
     <ClCompile Include="SketchSolver\InputParser\SolveFromInput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SketchSolver\InputParser\AltOptim.h" />
     <ClInclude Include="SketchSolver\InputParser\CounterexampleFinder.h" />
     <ClInclude Include="minisat\core\msolver.h" />
     <ClInclude Include="minisat\core\solvertypes.h" />
@@ -305,6 +308,7 @@
     <ClInclude Include="MiniSat\mtl\Sort.h" />
     <ClInclude Include="minisat\mtl\vec.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMainHelpers.h" />
+    <ClInclude Include="SketchSolver\InputParser\DagSuperOptim.h" />
     <ClInclude Include="SketchSolver\InputParser\NodeSuperEvaluator.h" />
     <ClInclude Include="SketchSolver\InputParser\PrintInteresting.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />
