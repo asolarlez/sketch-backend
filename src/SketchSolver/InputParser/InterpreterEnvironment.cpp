@@ -234,7 +234,6 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		
 	}
-
 	
 	//spec->repOK();
 	//sketch->repOK();
@@ -246,7 +245,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		eufun.process(*spec);
         
         
-     	/* Assumption -- In the sketch if you have uninterpreted functions it 
+     	/* ufunSymmetry optimizes based on the following Assumption: -- In the sketch if you have uninterpreted functions it 
 can only call them with the parameters used in the spec */
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
         eufun.process(*sketch);
@@ -364,10 +363,12 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		}while(dfi.changed());
 		if(params.verbosity> 6){ cout<<"END OF STEP "<<i<<endl; }
 		// fin.ctt.printCtree(cout, dag);
+
 		fin->clear();
 		if(t==1 && params.verbosity> 6){ cout<<"Bailing out"<<endl; break; }
 	}
-	hardcoder.afterInline();
+	hardcoder.afterInline();	
+	dag.lprint(cout);
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);

@@ -263,10 +263,10 @@ struct bool_node{
         printSubDAG(out, s);
     }
     
-    virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
-    virtual void lprintSubDAG(ostream& out)const{
+    virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const;
+    virtual void lprintSubDAG(ostream& out, int bnd)const{
         set<const bool_node* > s;
-        lprintSubDAG(out, s);
+        lprintSubDAG(out, s, bnd);
     }
     
     virtual OutType* getOtype() const;
@@ -336,7 +336,7 @@ class arith_node: public bool_node{
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
-	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
+	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const;
 	
 	virtual OutType* getOtype()const;
 };
@@ -981,6 +981,9 @@ class UFUN_node: public arith_node, public DllistNode{
 		  	}
 		}
 		str<<")";
+		if(this->ignoreAsserts){
+			str<<" $IA";
+		}
 		return str.str();
 	}
 	virtual string mrprint()const{

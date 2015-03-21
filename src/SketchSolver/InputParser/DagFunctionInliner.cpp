@@ -579,50 +579,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 
 						bool_node * oldMother = ufun->mother;	
-						if(!ufun->ignoreAsserts){	
-							/*
-							ufun->mother->remove_child( n );
-							bool_node* andCond = new AND_node();
-							andCond->mother = ufun->mother;
-							andCond->father = condition;
-
-							{
-							
-								bool_node* andcondPrime = this->computeOptim(andCond);
-							
-								if(andcondPrime == andCond){
-								
-									this->addNode(andCond);
-									andCond->addToParents();
-								}else{
-									delete andCond;
-								}
-								andCond = andcondPrime;
-							}
-							ufun->mother = andCond;
-							ufun->mother->children.insert(n);
-							if(andCond != oldMother){
-								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
-									if(*it == oldMother){
-  										oldMother->children.insert( n );
-										break;
-									}
-								  }
-							}
-							*/
-						}else{
-							if(!isConst(ufun->mother)){
-								ufun->mother->remove_child(n);
-								ufun->mother = getCnode(1);
-								ufun->mother->children.insert(n);
-								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
-									if(*it == oldMother){
-  										oldMother->children.insert( n );
-										break;
-									}
-								  }
-							}
-						}
+						
 						DagOptim::visit(*ufun);						
 						const bool_node* nnode = rvalue;
 						if( nnode->type == bool_node::UFUN ){

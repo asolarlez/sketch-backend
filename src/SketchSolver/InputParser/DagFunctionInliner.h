@@ -261,13 +261,13 @@ public:
 			if(val == 0){
 				return false;
 			}else{
-				if(!node.ignoreAsserts){
+				//if(!node.ignoreAsserts){
 					// cout<<"Inlining with true cond "<<node.get_ufname()<<endl;
 					return true;
-				}
+				//}
 			}
 		}
-		if(!node.ignoreAsserts && !recCheck(node.mother)){
+		if(/*!node.ignoreAsserts && */ !recCheck(node.mother)){
 			return false;
 		}
 		return localCheck(node);

@@ -1397,8 +1397,7 @@ void DagOptim::checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*
 /* Is dest reachable from src? 
 * 
 */
-bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
-	cout<<"CP: "<<src->globalId<<" -> "<<dest->globalId<<endl;
+bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){	
 	stack<bool_node*> sd;
 	set<bool_node*> bnmap;
 	sd.push(dest);	
@@ -1496,11 +1495,7 @@ void DagOptim::visit( UFUN_node& node ){
     if (node.fgid != 0) {
         rvalue  = &node;
 		return;
-    }
-    
-	rvalue  = &node;
-	return;
-
+    }    
 
 	string tmp = node.get_ufname();
 	if(node.ignoreAsserts){
@@ -1535,7 +1530,7 @@ void DagOptim::visit( UFUN_node& node ){
 			}
 			return;
 		}
-		possibleCycles = true;		
+		possibleCycles = true;				
 		if(true /*|| !checkPrecedence(node.mother, brother)*/){
 			
 			brother->dislodge();
@@ -2819,9 +2814,9 @@ node. In this case, suppose f is a function node and e is f's guard.
 
 At the end of the while loop, the state will look like this:
 
-s = a->b->c
+s = a->b
 sp = f->g->h
-tst = e -> d
+tst = e -> d -> c
 
 All the nodes that have been popped from s are now set to bottom.
 
@@ -3012,7 +3007,6 @@ void DagOptim::process(BooleanDAG& dag){
 
 
 			if(dag[i] != node){			
-					//cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
 					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
 					dag.replace(i, node);					
 			}else{
