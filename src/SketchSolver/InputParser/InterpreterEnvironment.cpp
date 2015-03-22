@@ -367,8 +367,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin->clear();
 		if(t==1 && params.verbosity> 6){ cout<<"Bailing out"<<endl; break; }
 	}
-	hardcoder.afterInline();	
-	dag.lprint(cout);
+	hardcoder.afterInline();		
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
