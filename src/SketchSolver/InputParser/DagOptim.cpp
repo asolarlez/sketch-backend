@@ -41,7 +41,8 @@ CONST_node* DagOptim::getCnode(double c){
 
 
 CONST_node* DagOptim::getCnode(int val){
-	if( cnmap.find(val<<1) == cnmap.end() ){
+	map<long long int, CONST_node*>::iterator fit = cnmap.find(val<<1);
+	if( fit == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
@@ -49,7 +50,7 @@ CONST_node* DagOptim::getCnode(int val){
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
 		return cnode;
 	}else{
-		return cnmap[val<<1];	
+		return fit->second;
 	}
 }
 
@@ -2887,7 +2888,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 	the function where the loop will be broken.
 	*/
 
-	if(PARAMS->verbosity > 4){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
+	if(PARAMS->verbosity > 5){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
 	// sp.front() is the function that is having trouble.
 	{		
 		bool_node* lastOr = sp.back().first;

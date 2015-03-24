@@ -38,7 +38,7 @@ NodesToSEQ::visit (SRC_node &node)
 			int cvar = dir.newAnonymousVar(sz);
 			node_ids[node.id] = cvar;
 		    node_ids[node.id].setSize(sz);
-			vector<guardedVal>& result = node_ids[node.id].num_ranges;
+			gvvec& result = node_ids[node.id].num_ranges;
 			result.clear();
 			for(int i=0; i<sz; ++i){
 				result.push_back(guardedVal(cvar+i, i-1));

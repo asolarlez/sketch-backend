@@ -49,7 +49,7 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 
 void SolverHelper::addHelperC(Tvalue& tv){
 	if(tv.isSparse() ){
-		vector<guardedVal>& gv = tv.num_ranges;
+		gvvec& gv = tv.num_ranges;
 		int size = gv.size();
 		if(size == 1){ return; }
 		if(size == 2){
@@ -69,7 +69,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 		delete x;
 
 		/*
-		vector<guardedVal>& gv = tv.num_ranges;
+		gvvec& gv = tv.num_ranges;
 		if(gv.size()<7){
 			for(int i=0; i<gv.size()-1; ++i){
 				for(int j=i+1; j < gv.size(); ++j){

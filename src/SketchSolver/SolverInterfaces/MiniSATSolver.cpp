@@ -84,6 +84,23 @@ void MiniSATSolver::addHelperClause(int c[], int sz){
 	addClause(c, sz, lits);
  }
 
+#define mklit(x) ((x)>0?Lit(x):Lit(-(x),true) )
+
+//This function encodes x == a and b;
+ void MiniSATSolver::addAndClause(int x, int a, int b){
+	Dout( cout<<"@ "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
+	FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
+	vec<Lit> lits(3);	
+	lits[0] = mklit(x); lits[1] = mklit(-a); lits[2] = mklit(-b); s->addClause(lits); ++clauseCount;
+	lits.pop();
+	lits[0] = mklit(-x); lits[1] = mklit(a); s->addClause(lits); ++clauseCount;
+	lits[0] = mklit(-x); lits[1] = mklit(b); s->addClause(lits); ++clauseCount;
+
+	// { int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
+	// { int tmp[] = { -(x), (b)}; addClause(tmp, 2, lits);}
+	//{ int tmp[] = { (x), -(a), -(b)}; addClause(tmp, 3, lits);}
+}
+
 
 
 
@@ -179,15 +196,7 @@ bool MiniSATSolver::isOK(){
 }
 
 
-//This function encodes x == a and b;
- void MiniSATSolver::addAndClause(int x, int a, int b){
-	Dout( cout<<"@ "<<x<<"= "<<a<<" and "<<b<<"; "<<endl );
-	FileOutput( output<<x<<" AND "<<a<<" "<<b<<endl );
-	vec<Lit> lits;	
-	{ int tmp[] = { -(x), (a)}; addClause(tmp, 2, lits);}
-	{ int tmp[] = { -(x), (b)}; addClause(tmp, 2, lits);}
-	{ int tmp[] = { (x), -(a), -(b)}; addClause(tmp, 3, lits);}
-}
+
 
 //This function encodes x = a;
  void MiniSATSolver::addEqualsClause(int x, int a){

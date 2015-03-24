@@ -64,7 +64,7 @@ public:
 	}
 };
 
-void advanceToEndIdx(int& iend, int cidx, vector<guardedVal>&tv){
+void advanceToEndIdx(int& iend, int cidx, const gvvec&tv){
 	while(iend < tv.size() && tv[iend].idx == cidx){
 		++iend;
 	}
@@ -106,7 +106,7 @@ bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bo
 
 
 
-void NodesToSolver::computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax){	
+void NodesToSolver::computeMaxOrMin(const gvvec& mv, const gvvec& fv, gvvec& out, bool doMax){	
 	int mstart=0; int mend=mv.size();
 	int fstart=0; int fend=fv.size();
 
@@ -223,7 +223,7 @@ void NodesToSolver::computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& 
 }
 
 
-int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend){
+int NodesToSolver::compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend){
 	int orTerms = 0;
 	int i=mstart, j=fstart;
 	int inci = 1;
@@ -291,10 +291,10 @@ int NodesToSolver::compareRange(vector<guardedVal>& mv, int mstart, int mend, ve
 
 
 template<typename COMP> void
-NodesToSolver::compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval){
+NodesToSolver::compareArrays (bool_node& node,  const Tvalue& tmval,  const Tvalue& tfval){
 //	cout << "compareArrays: " << node.lprint() << endl << "tmval= " << tmval << endl << "tfval= " << tfval << endl;
-	vector<guardedVal>& mv = tmval.num_ranges;
-	vector<guardedVal>& fv = tfval.num_ranges;
+	const gvvec& mv = tmval.num_ranges;
+	const gvvec& fv = tfval.num_ranges;
 
 	int midx = mv[0].idx;
 	int fidx = fv[0].idx;
@@ -395,8 +395,8 @@ void NodesToSolver::processLT (LT_node& node){
     fval.makeSparse (dir);
     int cvar = -YES;
 
-	vector<guardedVal>& mv = mval.num_ranges;
-	vector<guardedVal>& fv = fval.num_ranges;
+	const gvvec& mv = mval.num_ranges;
+	const gvvec& fv = fval.num_ranges;
 
 	int mstart=0; int mend=mv.size();
 	int fstart=0; int fend=fv.size();
@@ -880,7 +880,7 @@ NodesToSolver::processArith (bool_node &node)
 	map<int, int> numbers;
 	map<int, vector<int> > qnumbers;
 	Tvalue& oval = node_ids[node.id];
-	vector<guardedVal>& tmp = oval.num_ranges;
+	gvvec& tmp = oval.num_ranges;
 	tmp.clear();
 	int ttt = mval.getSize ()*fval.getSize ();
 	ttt = ttt > INTEGERBOUND ? INTEGERBOUND : ttt;
@@ -1388,7 +1388,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 
 
 
-void NodesToSolver::muxTValues(ARRACC_node* pnode, Tvalue& mval, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray){
+void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray){
 
 	
 	if(isArray){
@@ -1446,7 +1446,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, Tvalue& mval, vector<Tvalue>&
 		return;
 	}
 //	elooptimer.restart();
-	const vector<guardedVal>& nrange = mval.num_ranges;
+	const gvvec& nrange = mval.num_ranges;
 	int cvar = -YES;
 	int orTerms = 0;
 	for(int i=0; i<nrange.size(); ++i){
@@ -1491,7 +1491,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 
 	Dout(cout<<" ARRACC "<<endl);
 	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
-	Tvalue& omv = tval_lookup(node.mother) ;	
+	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
@@ -1590,7 +1590,7 @@ NodesToSolver::visit (LT_node &node)
 
 
 
-void NodesToSolver::mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx){
+void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, int idx){
 	int i=nr0Start, j=nr1Start;
 	out.reserve(out.size()+ (nr0End-nr0Start) + (nr1End-nr1Start) );
 	
@@ -1694,9 +1694,9 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		    return;
 		}
 		
-		vector<guardedVal>& nr0 = mid0.num_ranges;
-		vector<guardedVal>& nr1 = mid1.num_ranges;		
-		vector<guardedVal>& out = output.num_ranges;
+		gvvec& nr0 = mid0.num_ranges;
+		gvvec& nr1 = mid1.num_ranges;		
+		gvvec& out = output.num_ranges;
 		out.clear();
 		
 		mergeTvalues(guard, nr0, 0, nr0.size(), nr1, 0, nr1.size(), out);
@@ -1750,7 +1750,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		}
     }else{
 		guard = -YES;
-		const vector<guardedVal>& nrange = mval.num_ranges;
+		const gvvec& nrange = mval.num_ranges;
 		for(int i=0; i<nrange.size(); ++i){
 			if( nrange[i].value == quant){
 			guard = mval.getId (i);
@@ -1791,7 +1791,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
 	}
 	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
-	vector<guardedVal>& tmp = node_ids[node.id].num_ranges;
+	gvvec& tmp = node_ids[node.id].num_ranges;
 	dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].sparsify (dir);
 	Dout(cout<<"&ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<tmp.size()<<"   "<<&node<<endl);
@@ -1800,15 +1800,9 @@ void NodesToSolver::visit( ACTRL_node& node ){
 
 
 void
-NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar){
-	if(!index.isSparse()){
-		index.makeSparse(dir);
-	}
-	if(inarr.isBvect()){
-		inarr.makeSparse(dir);
-	}
+NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
 	
-	vector<guardedVal>& idv = index.num_ranges;
+	const gvvec& idv = index.num_ranges;
 	map<int, int> valToID;
 	int idxincr = 1;
 	int idxi = 0;
@@ -1827,18 +1821,18 @@ NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar
 		idxi += idxincr;
 	}	
 
-	vector<guardedVal>::const_iterator begdef = inarr.num_ranges.begin();
-	vector<guardedVal>::const_iterator enddef = begdef;
+	gvvec::const_iterator begdef = inarr.num_ranges.begin();
+	gvvec::const_iterator enddef = begdef;
 	while(enddef != inarr.num_ranges.end() && enddef->idx <0){
 		++enddef;
 	}
 	
-	vector<guardedVal>::const_iterator inarriter = enddef;
-	vector<guardedVal>::const_iterator inarrend = inarr.num_ranges.end();
+	gvvec::const_iterator inarriter = enddef;
+	gvvec::const_iterator inarrend = inarr.num_ranges.end();
 	
-	Tvalue defdef = tvOne; // If the array does not have a default value, we create one.
+	Tvalue defdef; // If the array does not have a default value, we create one.
+	defdef.makeIntVal(YES, UNINITIALIZED);
 	
-	defdef.num_ranges[0].value = UNINITIALIZED;
 	//defdef.num_ranges[0].value = 0;
 	if(begdef == enddef){
 		begdef = defdef.num_ranges.begin();
@@ -1896,7 +1890,7 @@ NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar
 		if(!moreArr || (moreIdx && idv[idxi].value < cidx)){
 			//The index refers to an entry that doesn't exist in the array.
 			//Need to produce the default value.
-			for(vector<guardedVal>::const_iterator it = begdef; it < enddef; ++it){
+			for(gvvec::const_iterator it = begdef; it < enddef; ++it){
 				int iatv = it->value;
 				map<int, int>::iterator vit = valToID.find(iatv);
 				if(vit == valToID.end()){
@@ -1920,7 +1914,7 @@ NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
 	if(isInt){
-		vector<guardedVal>& tmp = nvar.num_ranges;
+		gvvec& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());
 		map<int, int>::iterator it = valToID.begin();
@@ -1958,26 +1952,45 @@ NodesToSolver::visit( ARR_R_node &node){
 	//cout << "NodesToSolver ARR_R " << node.lprint() << endl;
 	Tvalue index = tval_lookup(node.mother);
 	Tvalue inarr = tval_lookup(node.father);
-
+	if(!index.isSparse()){
+		index.makeSparse(dir);
+	}
+	if(inarr.isBvect()){
+		inarr.makeSparse(dir);
+	}
 	arrRTvalue(node.getOtype() == OutType::INT, index, inarr, node_ids[node.id]);
 //	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 
 
-void NodesToSolver::arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar){
-	
-	vector<guardedVal>& idxgv = index.num_ranges;
-	vector<guardedVal>& out = nvar.num_ranges;
+void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar){
+
+	if(index.getSize()==1){ //Constant index.
+		const guardedVal& idxgv = index.num_ranges[0];
+		int lastIndex = inarr.num_ranges.size()-1;
+		const guardedVal& last = inarr.num_ranges[lastIndex];
+		//This means we are appending in a currently empty entry. We can just push back newval 
+		//at the end of inarr.
+		if(last.idx <= idxgv.value-1){
+			nvar.num_ranges = inarr.num_ranges;
+			gvvec::const_iterator end = newval.num_ranges.end();
+			for(gvvec::const_iterator it = newval.num_ranges.begin(); it < end; ++it){
+				guardedVal tmp = *it;
+				tmp.idx = idxgv.value;
+				nvar.num_ranges.push_back(tmp);
+			}
+			nvar.arrayify();
+			return;
+		}
+
+	}
+
+
+
+	const gvvec& idxgv = index.num_ranges;
+	gvvec& out = nvar.num_ranges;
 	out.clear();
-	if(!index.isSparse()){
-		index.makeSparse(dir);
-	}	
-	if(!newval.isSparse()){
-		newval.makeSparse(dir);
-	}
-	if(inarr.isBvect()){
-		inarr.makeSparse(dir);
-	}
+	out.reserve(inarr.getSize() + newval.getSize());	
 	int lasti = 0;
 	int lastidx = -1;
 	int idxincr = 1;
@@ -1992,9 +2005,8 @@ void NodesToSolver::arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tva
 	int cindex = inarr.num_ranges[0].idx;
 	int defstart = 0;
 	int defend = 0;
-	Tvalue tvdef = tvOne;
-	
-	tvdef.num_ranges[0].value = UNINITIALIZED;
+	Tvalue tvdef;
+	tvdef.makeIntVal(YES, UNINITIALIZED);	
 	//tvdef.num_ranges[0].value = 0;
 	if(cindex < 0){
 		while(defend < inarr.num_ranges.size() && inarr.num_ranges[defend].idx < 0){
@@ -2020,9 +2032,11 @@ void NodesToSolver::arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tva
 				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.getSize(), out, idxgv[idxstart].value);
 				idxstart += idxincr;
 			}else{
-				for(int tt=lasti; tt<i; ++tt){
-					out.push_back(inarr.num_ranges[tt]);
-				}
+				gvvec::const_iterator tit = inarr.num_ranges.begin()+lasti;
+				for(int tt=lasti; tt<i; ++tt){					
+					out.push_back(*tit);
+					++tit;
+				}				
 			}
 			lasti = i;
 			if(i!= inarr.getSize()){ cindex = inarr.num_ranges[i].idx; }
@@ -2044,6 +2058,15 @@ void NodesToSolver::visit( ARR_W_node &node){
 	Tvalue inarr = tval_lookup(node.getOldArr());	
 	Tvalue newval = tval_lookup(node.getNewVal());
 	Tvalue& nvar = node_ids[node.id];
+	if(!index.isSparse()){
+		index.makeSparse(dir);
+	}	
+	if(!newval.isSparse()){
+		newval.makeSparse(dir);
+	}
+	if(inarr.isBvect()){
+		inarr.makeSparse(dir);
+	}
 	arrWTvalue(index, inarr, newval, nvar);
 //	cout << "ARR_W(inarr,index,newval,nvar): " << node.lprint() << endl << inarr << endl << index << endl << newval << endl << nvar << endl;
 }
@@ -2052,7 +2075,7 @@ void NodesToSolver::visit( ARR_W_node &node){
 
 void NodesToSolver::visit( ARR_CREATE_node &node){
 	Tvalue& nvar = node_ids[node.id];
-	vector<guardedVal>& tmp = nvar.num_ranges;
+	gvvec& tmp = nvar.num_ranges;
 	tmp.clear();
 	vector<bool_node*>::iterator it = node.multi_mother.begin();	
 
@@ -2128,7 +2151,7 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
 void NodesToSolver::visit( TUPLE_R_node &node){
     //cout << "NodesToSolver TUPLE_R " << node.lprint() << endl;
     int index = node.idx;
-    Tvalue tid = tval_lookup(node.mother);
+    const Tvalue tid = tval_lookup(node.mother);
     
     int length = tid.num_ranges.size();
 	Tvalue zero = tvYES;
@@ -2209,9 +2232,7 @@ void NodesToSolver::visit (TUPLE_CREATE_node &node) {
         (*new_vec)[i] = mval;
     }
     
-    nvar = tvOne;
-    nvar.num_ranges[0].value = id;
-    
+	nvar.makeIntVal(YES, id);    
 }
 
 void
@@ -2285,20 +2306,16 @@ void
 NodesToSolver::visit (CONST_node &node)
 {	
 	
-	if( node.getVal() == 1 ){
-		node_ids[node.id] = tvYES;
-	}else if( node.getVal() == 0){
-		node_ids[node.id] = tvYES;
-		node_ids[node.id].bitAdjust(false);
+	if( node.getVal() == 1 || node.getVal() == 0){
+		node_ids[node.id].makeBitVal(YES, node.getVal()==1);
 	}else{
-		node_ids[node.id] = tvOne;
-		node_ids[node.id].intAdjust(node.getVal());
+		node_ids[node.id].makeIntVal(YES, node.getVal());
 	}
 	Dout (cout << "CONST " << node.get_name() << " " << node_ids[node.id]<< endl);
 }
 
 
-void NodesToSolver::doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
+void NodesToSolver::doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
 	//cout << "NodesToSolver.doArrArrAcc " << node.lprint() << endl;
 	
 	int N = choices.size();	
@@ -2315,29 +2332,29 @@ void NodesToSolver::doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& o
 		map<pair<int, int>, int> vals;
 		int gval = mval.getId();
 		
-		vector<guardedVal>& gvl = choices[0].num_ranges;	
+		const gvvec& gvl = choices[0].num_ranges;	
 		Tvalue altL;
 		for(int i=0; i<gvl.size() && gvl[i].idx<0; ++i){
 			altL.num_ranges.push_back(gvl[i]);
 		}
 		
-		if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = UNINITIALIZED;}
+		if(altL.num_ranges.size()==0){ altL.makeIntVal(YES, UNINITIALIZED);}
 		//if(altL.num_ranges.size()==0){ altL = tvOne; altL.num_ranges[0].value = 0;}
 		else{ altL.sparsify(dir); }
 
-		vector<guardedVal>& gvr = choices[1].num_ranges;	
+		const gvvec& gvr = choices[1].num_ranges;	
 		Tvalue altR;
 		for(int i=0; i<gvr.size() && gvr[i].idx<0; ++i){
 			altR.num_ranges.push_back(gvr[i]);
 		}
 		
-		if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = UNINITIALIZED;}
+		if(altR.num_ranges.size()==0){ altR.makeIntVal(YES, UNINITIALIZED);}
 		//if(altR.num_ranges.size()==0){ altR = tvOne; altR.num_ranges[0].value = 0;}
 		else{ altR.sparsify(dir); }
 
 		int idxl = 0;
 		int idxr = 0;
-		vector<guardedVal>& out = output.num_ranges;
+		gvvec& out = output.num_ranges;
 		out.clear();
 		int gvrs = gvr.size();
 		int gvls = gvl.size();
@@ -2371,7 +2388,7 @@ void NodesToSolver::doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& o
 	//cout << "doArrArrAcc " << node.get_name() << ": " << output << endl;
 }
 
-void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval){
+void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval){
 	int vval = dir.addAndClause(it->guard, gval);
 	if(vval != -YES){
 		map<pair<int, int>, int>::iterator mit = vals.find( make_pair(idx, it->value) );
@@ -2384,7 +2401,7 @@ void NodesToSolver::addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>
 }
 
 
-void NodesToSolver::doNonBoolArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
+void NodesToSolver::doNonBoolArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output){
 	Dout( cout<<" non boolean array "<<endl );
 	
 	int N = choices.size();
@@ -2399,12 +2416,12 @@ void NodesToSolver::doNonBoolArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalu
 		//mval.makeSparse (dir);
 		map<int, vector<int> > newVals;
 		int vsize = N;
-		vector<guardedVal>& nrange = mval.num_ranges;
+		const gvvec& nrange = mval.num_ranges;
 
 		for(int i=0; i<nrange.size(); ++i){
 			if( nrange[i].value < vsize && nrange[i].value >= 0){
 				Tvalue& curr = choices[nrange[i].value];
-				vector<guardedVal>& cvalues = curr.num_ranges;
+				const gvvec& cvalues = curr.num_ranges;
 				Dout( cout<<" x=nrange["<<i<<"]="<<nrange[i]<<"  cvsize="<<cvalues.size()<<endl );
 				for(int j=0; j<cvalues.size(); ++j){
 					int cvar = dir.addAndClause( mval.getId (i), curr.getId (j) );
@@ -2417,7 +2434,7 @@ void NodesToSolver::doNonBoolArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalu
 			}
 		}
 
-		vector<guardedVal>& result = output.num_ranges;
+		gvvec& result = output.num_ranges;
 		result.clear();
 		Dout(cout<<" newVals.size() == " << newVals.size()<<endl );
 		{

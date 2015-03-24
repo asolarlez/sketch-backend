@@ -1073,7 +1073,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			case CheckControl::GROW_IN:{
 
 				BooleanDAG* dag = getProblem();
-				if(PARAMS->verbosity > 2){
+				if(PARAMS->verbosity > 5){
 					cout<<"CONTROL: growing l="<<problemLevel()<<" inputs to size "<< (dag->getIntSize()+1) <<endl;
 				}				
 				growInputs(dag, oriProblem, (problemLevel() - (hardcode? 1: 0)) == 1 );
@@ -1091,7 +1091,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 				curProblem = (curProblem + 1) % problems.size() ;
-				if(PARAMS->verbosity > 2){
+				if(PARAMS->verbosity > 5){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}
 				pushProblem(problems[curProblem]->clone());				

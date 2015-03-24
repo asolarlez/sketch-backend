@@ -7,6 +7,8 @@
 #include "SATSolver.h"
 using namespace std;
 
+
+
 /*
  * The T-value holds either a bit-vector (unsigned or signed) or
  * a sparse integer representation.  In both cases, the 'size' attribute
@@ -31,7 +33,7 @@ class Tvalue {
 public:
     /* FIXME this member needs to be made private with proper mutators, thus
      * we can guarantee sanity of a manipulated value object. */
-    vector<guardedVal> num_ranges;	
+    gvvec num_ranges;	
 
 
     /*
@@ -320,13 +322,26 @@ public:
 	    neg = ! neg;
     }
 
+	void makeIntVal(int yes, int x){
+		Assert(num_ranges.size()==0, "NOGOOD");
+		num_ranges.push_back(guardedVal(yes,x)); 
+		type = TVAL_SPARSE;
+		size = 1;
+		id = 0;
+		neg = false;
+	}
+
+	void makeBitVal(int yes, bool bit){
+		size=1;
+		setId(yes, !bit);
+	}
+
     /* Multiply a sparse by some integer factor. */
     inline void intAdjust (int adj) {
-	Assert (isSparse (), "value type must be sparse");
-
-	if (adj != 1)
-	    for (int i = 0; i < num_ranges.size (); i++)
-		num_ranges[i].value *= adj;
+		Assert (isSparse (), "value type must be sparse");
+		if (adj != 1){	    
+			num_ranges.adjustInt(adj);
+		}
     }
 
     /* Invert an integer value. */
@@ -386,7 +401,7 @@ private:
 
 	/* Construct bit-vector disjuncts by repeated iteration. */
 	vector<vector<int> > bit;
-	vector<guardedVal> nr (num_ranges);
+	gvvec nr (num_ranges);
 	bool more;
 	do {
 	    bit.push_back (vector<int> ());
@@ -537,7 +552,7 @@ public:
 		num_ranges.clear();
 		for(int arrid=0; arrid<arrsz; ++arrid){
 			vector<int> ids (nbits);
-			vector<guardedVal> vg;
+			gvvec vg;
 			for (int i = 0; i < nbits; i++)
 				ids[i] = getId (arrid*nbits+i);
 			dir.getSwitchVars (ids, nbits, vg);
@@ -622,7 +637,7 @@ public:
     inline void addArrDefault(int g, int v) {
 	    if (isArray()) {
 		    if (num_ranges.size()==0 || num_ranges[0].idx != -1) {
-			    num_ranges.insert(num_ranges.begin(), guardedVal(g, v, -1));
+				num_ranges.push_front(guardedVal(g, v, -1));			    
 				size = num_ranges.size();
 		    }
 	    }

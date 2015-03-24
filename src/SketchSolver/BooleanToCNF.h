@@ -308,7 +308,7 @@ public:
     // int select(int choices[], int control, int nchoices, int bitsPerChoice);
     // int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
-    void getSwitchVars (vector<int>& switchID, int amtsize, vector<guardedVal>& output);
+    void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
 };
 
@@ -675,7 +675,7 @@ SolverHelper::addRetractableAssertClause (int a)
 
 
 inline void
-SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guardedVal>& output )
+SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  gvvec& output )
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
@@ -683,10 +683,10 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	Assert(amtsize <= 16, "Casting an bit-vector to an integer is only supported for up to 16 bits.");
 	for(int i=0; i<amtsize && i<16; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
-	vector<guardedVal> tmpVect(amtrange);
+	gvvec tmpVect(amtrange);
 	int lastsize = 1;
 	//int lastRoundVars = getVarCnt();
-	vector<guardedVal> vals(1);	
+	gvvec vals(1);	
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
 		vals[0].guard = YES;
 		if( switchID[amtsize-1] > 0 ){
@@ -731,7 +731,7 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	}
 	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);	
 	output.clear();
-	for(vector<guardedVal>::iterator it = vals.begin(); it != vals.end(); ++it){
+	for(gvvec::iterator it = vals.begin(); it != vals.end(); ++it){
 		if(it->guard != -YES){
 			output.push_back(*it);
 		}

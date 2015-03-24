@@ -113,7 +113,7 @@ void HoleHardcoder::printControls(ostream& out){
 			Tvalue tv = H__0_var_idx;
 			tv.setSize(nbits);
 			tv.makeSparse(*sat);			
-			vector<guardedVal>& gvs =tv.num_ranges;
+			gvvec& gvs =tv.num_ranges;
 			for(int i=0; i<gvs.size(); ++i){
 				guardedVal& gv = gvs[i];
 				if(gv.value == rv){
@@ -226,10 +226,9 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				}else{
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
-			}			
-			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") ";
+			}						
 			if(rand() % odds == 0 || chsize > 1500){
-				cout<<" try to replace"<<endl;
+				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
 				int nbits = node->get_nbits();
@@ -303,7 +302,9 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<endl;
 				return opt.getCnode(rv);
 			}else{
-				cout<<" not replacing"<<endl;
+				if(PARAMS->verbosity>5){
+					cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" not replacing"<<endl;
+				}
 				if(chsize == 0){ chsize = 1; }
 				randholes[node->get_name()] = -chsize;
 				return node;

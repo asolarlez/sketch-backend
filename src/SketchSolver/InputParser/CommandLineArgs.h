@@ -129,7 +129,7 @@ struct CommandLineArgs{
 		simulate = true;
 		simiters = 4;
 		simstopsize = 2000;
-		simplifycex = "RECSYM";
+		simplifycex = "NOSIM";
 		setMemo = true;
 		debug = false;
 		superChecks = false;
