@@ -97,7 +97,7 @@ public:
 
 
 	bool isOK(){
-		mng.isOK();
+		return mng.isOK();
 	}
 
 	map<string, int>::const_iterator arrsize_end(){

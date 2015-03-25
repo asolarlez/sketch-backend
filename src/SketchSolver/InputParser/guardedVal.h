@@ -200,7 +200,7 @@ public:
 		return store->store[idx];
 	}
 
-	void push_front(guardedVal& gv){
+	void push_front(guardedVal gv){
 		if(store==NULL){
 			push_back(gv);
 			return;
