@@ -26,6 +26,9 @@ public:
 	}
 };
 
+
+extern int TOTBUFFERS;
+
 class gvvec;
 class tvstore{
 	friend gvvec;
@@ -36,6 +39,7 @@ private:
 	int largest;
 public:
 	tvstore(int size){
+		++TOTBUFFERS;
 		refc = 0;
 		sz = size;
 		largest = 0;
@@ -82,6 +86,7 @@ public:
 		return rv;
 	}
 	~tvstore(){
+		--TOTBUFFERS;
 		delete[] store;
 	}
 };
@@ -156,8 +161,10 @@ public:
 			store = new tvstore(n);
 			store->refc++;
 			sz = n;
+			store->largest = n;
 			return;
 		}
+		Assert(store->refc>=1, "NONONO");
 		if(store->sz > n){
 			if(store->largest < n){
 				store->largest = n;				
@@ -166,6 +173,7 @@ public:
 		}else{			
 			if(store->refc==1){
 				store->grow(n);
+				store->largest = n;
 				sz = n;
 			}else{
 				store->refc--;
@@ -231,6 +239,7 @@ public:
 		}		
 		++sz;
 		store->largest++;
+		Assert(store->largest == sz && store->refc==1, "qpeuypkuuk");
 	}
 
 	void push_back(const guardedVal& gv){
@@ -261,7 +270,7 @@ public:
 					store = store->clone();
 					store->refc++;
 				}				
-				Assert(store->sz > sz, "WTF!!");
+				Assert(store->sz > sz && store->refc==1, "WTF!!");
 				store->store[sz] = gv;
 				++sz;
 				store->largest=sz;
@@ -271,6 +280,7 @@ public:
 
 	~gvvec(){
 		if(store==NULL){ return; }
+		Assert(store->largest >= sz, "NOT GOOD");
 		if(store->refc<=1){
 			delete store;
 		}else{

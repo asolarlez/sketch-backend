@@ -6,6 +6,9 @@
 #include "CommandLineArgs.h"
 #include "PrintInteresting.h"
 
+int TOTBUFFERS = 0;
+
+
 //extern CommandLineArgs* PARAMS;
 
 // #define Dout(msg) msg
@@ -2495,10 +2498,14 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		try{
 	//		if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
+		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
+		if(TOTBUFFERS > tmpbufs + 1){
+			cout<<"SOMETHING FISHY HERE!!!!"<<endl;
+		}
 
-
-//		 Tvalue& tv = node_ids[(*node_it)->id];
+		 Tvalue& tv = node_ids[(*node_it)->id];
+		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;
 //		 cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
 //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
