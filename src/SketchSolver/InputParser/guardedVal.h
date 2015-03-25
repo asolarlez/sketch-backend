@@ -1,6 +1,8 @@
 #ifndef __GUARDEDVAL_H
 #define __GUARDEDVAL_H
 
+#include <cstring>
+
 class guardedVal{
 public:
 	int value;
@@ -41,19 +43,19 @@ public:
 	}
 	tvstore* clone(){
 		tvstore* rv = new tvstore(sz);
-		memcpy(rv->store, store, sz*sizeof(guardedVal));
+		std::memcpy(rv->store, store, sz*sizeof(guardedVal));
 		return rv;
 	}
 	tvstore* clone(int n){
 		Assert(n >= sz, "");
 		tvstore* rv = new tvstore(n);
-		memcpy(rv->store, store, sz*sizeof(guardedVal));
+		std::memcpy(rv->store, store, sz*sizeof(guardedVal));
 		return rv;
 	}
 
 	void grow(int size){
 		guardedVal* temp = new guardedVal[size];
-		memcpy(temp, store, sz*sizeof(guardedVal));
+		std::memcpy(temp, store, sz*sizeof(guardedVal));
 		delete[] store;
 		store = temp;
 		sz = size;
@@ -61,21 +63,21 @@ public:
 
 	void doubleSize(){
 		guardedVal* temp = new guardedVal[sz*2];
-		memcpy(temp, store, sz*sizeof(guardedVal));
+		std::memcpy(temp, store, sz*sizeof(guardedVal));
 		delete[] store;
 		store = temp;
 		sz = sz*2;
 	}
 	void doubleSize(guardedVal& front){
 		guardedVal* temp = new guardedVal[sz*2];
-		memcpy(temp+1, store, sz*sizeof(guardedVal));
+		std::memcpy(temp+1, store, sz*sizeof(guardedVal));
 		temp[0] = front;
 		delete[] store;
 		store = temp;
 	}
 	tvstore* clone(guardedVal& front){
 		tvstore* rv = new tvstore(sz+1);
-		memcpy(rv->store+1, store, sz*sizeof(guardedVal));
+		std::memcpy(rv->store+1, store, sz*sizeof(guardedVal));
 		rv->store[0] = front;
 		return rv;
 	}
