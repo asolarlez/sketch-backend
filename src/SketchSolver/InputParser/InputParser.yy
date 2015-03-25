@@ -117,7 +117,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %%
 
-Program: Typedef MethodList T_eof{  $$=0; return 0;}
+Program: Typedef MethodList T_eof{ return envt->doallpairs() ;}
 
 
 MethodList: {}
@@ -310,17 +310,23 @@ Typedef: {/* Empty */}
 
 AssertionExpr: T_ident T_Sketches T_ident
 {
-	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
+	if(PARAMS->interactive){
+		$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
+	}else{
+		envt->addspskpair(*$3, *$1);
+	}		
 }
 
 HLAssertion: T_assert {solution.restart();} AssertionExpr ';'
 {
-	int tt = envt->assertDAG($3, std::cout);
-	envt->printControls("");
-	solution.stop();
-	cout<<"COMPLETED"<<endl;
-	if(tt != 0){
-		return tt;
+	if(PARAMS->interactive){
+		int tt = envt->assertDAG($3, std::cout);
+		envt->printControls("");
+		solution.stop();
+		cout<<"COMPLETED"<<endl;
+		if(tt != 0){
+			return tt;
+		}
 	}
 }
 | T_ident '(' TokenList ')' ';'

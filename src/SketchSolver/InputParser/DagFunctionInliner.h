@@ -548,6 +548,9 @@ class HoleHardcoder{
 	SolverHelper* sat;
 	int fixValue(const string& s, int bound, int nbits);
 public:
+	void reset(){
+		randholes.clear();
+	}
 	void setSolver(SolverHelper* sh){
 		sat = sh;
 	}
