@@ -2504,8 +2504,8 @@ void NodesToSolver::process(BooleanDAG& bdag){
 			cout<<"SOMETHING FISHY HERE!!!!"<<endl;
 		}
 
-		 Tvalue& tv = node_ids[(*node_it)->id];
-		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;
+		//Tvalue& tv = node_ids[(*node_it)->id];
+//		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;
 //		 cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
 //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
