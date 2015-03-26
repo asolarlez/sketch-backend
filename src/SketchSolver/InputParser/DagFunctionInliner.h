@@ -544,12 +544,29 @@ class HoleHardcoder{
 	bool LEAVEALONE(int v){ return v < 0; }
 	static const int REALLYLEAVEALONE = -8888888;
 	map<string, int> randholes;
+	string justincase;
+	stringstream concsig;
+	int lasthc;
+	map<string, set<int> > badvalues;
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
 	int fixValue(const string& s, int bound, int nbits);
+	int totsize;
 public:
+	HoleHardcoder(){
+		lasthc = -1;
+		totsize = 1;
+	}
 	void reset(){
+		if(randholes.size()>0){						
+			cout<<"Ruling out bad hole values "<<concsig.str()<<"  "<<lasthc<<endl;
+			badvalues[concsig.str()].insert(lasthc);
+		}
+		concsig.str(string());
+		justincase="";
+		lasthc=-1;
 		randholes.clear();
+		totsize=1;
 	}
 	void setSolver(SolverHelper* sh){
 		sat = sh;

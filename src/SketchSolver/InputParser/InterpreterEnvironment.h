@@ -93,28 +93,7 @@ public:
 		spskpairs.push_back(make_pair(spec, sketch));
 	}
 
-	int doallpairs(){
-		int howmany = params.ntimes;
-		if(howmany < 1 || !params.randomassign){ howmany = 1; }
-		int result=-1;
-		for(int tt = 0; tt<howmany; ++tt){
-			if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
-			for(int i=0; i<spskpairs.size(); ++i){
-				BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
-					getCopy(spskpairs[i].second));
-					result = assertDAG(bd, cout);
-					cout<<"RESULT = "<<result<<endl;;
-					printControls("");
-					if(result!=0){
-						break;
-					}
-			}
-			if(result==0){
-				return result;
-			}
-			if(tt+1 < howmany){ reset(); }
-		}
-	}
+	int doallpairs();
 
 
 	void reset(){

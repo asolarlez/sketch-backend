@@ -108,6 +108,24 @@ void HoleHardcoder::printControls(ostream& out){
 
 	int HoleHardcoder::fixValue(const string& s, int bound, int nbits){
 		int rv = rand() % bound;
+		map<string, set<int> >::iterator badit = badvalues.find(concsig.str());
+		if(badit != badvalues.end()){
+			int i=0;
+			while(badit->second.count(rv) > 0){
+				cout<<"Avoided something bad"<<endl;
+				++i;
+				rv = rand() % bound;
+				if(i>1000){
+					if(justincase==""){ Assert(false, "UNSAT!!!!"); }
+					cout<<"GOING TO justincase "<<justincase<<" "<<lasthc<<endl;
+					badvalues[justincase].insert(lasthc);
+					return 0;
+				}				
+			}
+		}
+
+		
+
 		if(sat->checkVar(s)){
 			int H__0_var_idx = sat->getVar(s);			
 			Tvalue tv = H__0_var_idx;
@@ -141,7 +159,10 @@ void HoleHardcoder::printControls(ostream& out){
 			//If I get here, it means that rv either didn't match with any of the guarded values, or matched
 			//with a guarded value that was already equal to false, so we need to find another guarded value 
 			//that does match.
+			int times = 0;
 			do{
+				++times;
+				Assert(times < 1000, "Tried 1000 times and still nothing!!");
 				int t = rand() % gvs.size();
 				guardedVal& g2 = gvs[t];
 				Assert(sat->getMng().isOK(), "Could not set hole "<<s);
@@ -153,6 +174,18 @@ void HoleHardcoder::printControls(ostream& out){
 							// cout<<"can't set to "<<g2.value<<endl;
 							continue;
 					}
+					if(badit != badvalues.end()){
+						if(badit->second.count(rv) > 0){
+							cout<<"Avoided something bad"<<endl;
+							if(times>1000){
+								cout<<"GOING TO justincase "<<justincase<<" "<<lasthc<<endl;
+								badvalues[justincase].insert(lasthc);
+								return 0;
+							}
+							continue;
+						}
+					}
+
 					randholes[s] = g2.value;
 					return g2.value;
 				}
@@ -227,7 +260,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
 			}						
-			if(rand() % odds == 0 || chsize > 1500){
+			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) ){
 				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
@@ -297,8 +330,15 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				}
 				if(ul > 0 && bound ==obound ){
 					bound = min(bound, ul);
-				}				
-				int rv = fixValue(node->get_name(), bound, nbits);
+				}		
+				totsize*=bound;
+				justincase = concsig.str();
+				if(lasthc >= 0){
+					concsig<<":"<<lasthc;					
+				}
+				concsig<<":"<<node->get_name();
+				int rv = fixValue(node->get_name(), bound, nbits);				
+				lasthc = rv;				
 				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<endl;
 				return opt.getCnode(rv);
 			}else{
