@@ -31,7 +31,7 @@ extern int TOTBUFFERS;
 
 class gvvec;
 class tvstore{
-	friend gvvec;
+	friend class gvvec;
 private:
 	guardedVal* store;
 	int refc;
