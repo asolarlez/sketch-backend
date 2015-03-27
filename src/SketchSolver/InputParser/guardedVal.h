@@ -197,6 +197,7 @@ public:
 			store->refc--;
 			store = store->clone();
 			store->refc++;
+			store->largest = sz;
 		}
 		for(int i=0; i<sz; ++i){
 			store->store[i].value *= adj;
@@ -236,6 +237,7 @@ public:
 			store->refc--;
 			store = store->clone(gv);
 			store->refc++;
+			store->largest = sz;
 		}		
 		++sz;
 		store->largest++;
