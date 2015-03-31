@@ -117,7 +117,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %%
 
-Program: Typedef MethodList T_eof{ return envt->doallpairs() ;}
+Program: Typedef MethodList T_eof{ solution.start(); return envt->doallpairs() ; solution.stop(); }
 
 
 MethodList: {}
@@ -317,7 +317,7 @@ AssertionExpr: T_ident T_Sketches T_ident
 	}		
 }
 
-HLAssertion: T_assert {solution.restart();} AssertionExpr ';'
+HLAssertion: T_assert {if(PARAMS->interactive){ solution.restart();} } AssertionExpr ';'
 {
 	if(PARAMS->interactive){
 		int tt = envt->assertDAG($3, std::cout);

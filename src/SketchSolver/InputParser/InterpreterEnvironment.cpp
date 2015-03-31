@@ -397,6 +397,7 @@ int InterpreterEnvironment::doallpairs(){
 		}
 		if(tt+1 < howmany){ reset(); }
 	}
+	return result;
 }
 
 
