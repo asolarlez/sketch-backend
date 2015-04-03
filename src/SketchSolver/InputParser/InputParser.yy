@@ -117,7 +117,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %%
 
-Program: Typedef MethodList T_eof{ solution.start(); return envt->doallpairs() ; solution.stop(); }
+Program: Typedef MethodList T_eof{ solution.start(); int tmp= envt->doallpairs() ; solution.stop(); return tmp; }
 
 
 MethodList: {}
