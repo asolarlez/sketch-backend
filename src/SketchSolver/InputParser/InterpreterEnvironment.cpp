@@ -382,16 +382,21 @@ int InterpreterEnvironment::doallpairs(){
 	int result=-1;
 	for(int tt = 0; tt<howmany; ++tt){
 		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
+		timerclass roundtimer("Round");
+		roundtimer.start();
 		for(int i=0; i<spskpairs.size(); ++i){
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
 				getCopy(spskpairs[i].second));
 				result = assertDAG(bd, cout);
-				cout<<"RESULT = "<<result<<endl;;
+				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");
 				if(result!=0){
 					break;
 				}
 		}
+		roundtimer.stop();
+		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
+		roundtimer.print("time");
 		if(result==0){
 			return result;
 		}

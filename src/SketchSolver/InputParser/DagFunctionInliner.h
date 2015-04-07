@@ -551,11 +551,14 @@ class HoleHardcoder{
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
 	int fixValue(const string& s, int bound, int nbits);
-	int totsize;
+	long long int totsize;
 public:
 	HoleHardcoder(){
 		lasthc = -1;
 		totsize = 1;
+	}
+	long long int getTotsize(){
+		return totsize;
 	}
 	void reset(){
 		if(randholes.size()>0){						
