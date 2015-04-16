@@ -45,7 +45,10 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 			if(!ctrlnode->get_Angelic()){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 				declareControl(problemIn[i]->get_name(), nbits);
-			}			
+			}
+      if (ctrlnode->spAngelic) {
+        declareInput(problemIn[i]->get_name() + "_src", 5, -1);
+      }
 		}
 		if(PARAMS->verbosity > 2){
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
@@ -438,7 +441,15 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 			if(type == bool_node::CTRL){
 				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
 				if(cn->get_Angelic()){
+          
 					if(cn->children.size() != 0){
+            if (cn->spAngelic) {
+              // replace it with a src node
+              SRC_node* src = dynamic_cast<SRC_node*>(newdag->create_inputs(5, OutType::INT, cn->get_name() + "_src", -1));
+              newdag->addNewNode(src);
+              newdag->replace(cn->id, src);
+              continue;
+            }
 						Assert(cn->children.size() == 1, "NYI; hafdst");
 						bool_node* bn = *(cn->children.begin());
 						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
