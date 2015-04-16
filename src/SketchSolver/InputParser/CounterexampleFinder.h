@@ -215,6 +215,9 @@ public:
 			}
 			
 			if(failedAssert){
+        ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
+        message = &(an->getMsg());
+        cout << (*message) << endl;
 				//cout<<" FAILED BUT WONT REPORT "<<(*node_it)->lprint()<<endl;
 				return FOUND;
 			}

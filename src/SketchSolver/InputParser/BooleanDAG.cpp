@@ -537,8 +537,8 @@ void BooleanDAG::cleanup(){
 	}
   }
   swap(tmpv, nodes);
-  // removeNullNodes();  
-  // sort(nodes.begin(), nodes.end(), comp_id);
+  removeNullNodes();
+  sort(nodes.begin(), nodes.end(), comp_id);
    DllistNode* cur = this->assertions.head;
   DllistNode* last=NULL;
   for(int i=0; i < nodes.size(); ++i){
@@ -722,9 +722,10 @@ INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_na
 	return src;
 }
 
-INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic){
   INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
   dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
+  if (angelic) dynamic_cast<CTRL_node*>(tmp)->set_Special_Angelic();
   return tmp;
 }
 
