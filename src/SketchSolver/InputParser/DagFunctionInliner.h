@@ -115,6 +115,8 @@ public:
 	Call this method is called before starting to inline, just to let the inliner know what's coming.
 	*/
 	virtual void preCheckInline(UFUN_node& node)=0;
+  
+  virtual bool isRecursive(UFUN_node& node) { return false; }
 
 	virtual void clear()=0;
 
@@ -234,6 +236,18 @@ public:
 		addChild(current, *callee);
 	}
 
+  bool isRecursive(UFUN_node& node) {
+    InlinerNode* candidate = inodes[node.globalId];
+		Assert(candidate != NULL, "I've never seen this function before!!!");
+    InlinerNode* temp = candidate->parent;
+   
+    if (temp->funid == candidate->funid) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
 	bool localCheck(UFUN_node& node){
 		InlinerNode* candidate = inodes[node.globalId];
 		Assert(candidate != NULL, "I've never seen this function before!!!");
@@ -568,7 +582,8 @@ class DagFunctionInliner : public DagOptim
 	
 	
 	BooleanDAG& dag;
-	map<string, BooleanDAG*>& functionMap;	
+	map<string, BooleanDAG*>& functionMap;
+  map<string, map<string, string> > replaceMap;
 
 	timerclass ufunAll;
 
@@ -592,8 +607,7 @@ class DagFunctionInliner : public DagOptim
 	HoleHardcoder* hcoder;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
-	bool p_randomize=false, InlineControl* ict=NULL);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, 	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

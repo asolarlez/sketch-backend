@@ -13,12 +13,13 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, HoleHardcoder* p_hcoder,
 	bool p_randomize, InlineControl* ict):
 dag(p_dag), 
 DagOptim(p_dag), 
 ufunAll(" ufun all"),
 functionMap(p_functionMap),
+replaceMap(p_replaceMap),
 ictrl(ict),
 randomize(p_randomize),
 hcoder(p_hcoder)
@@ -381,11 +382,56 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		//mpcontroller[node.fgid]["__ALL"] = getCnode(0);
 		return;
 	}
-
+  
+  map<string, map<string, string> >::iterator it = replaceMap.find(name);
+  if (it != replaceMap.end()) {
+    if (ictrl != NULL && ictrl->isRecursive(node)) {
+      cout << "Replacing ufun node " << name << endl;
+      // create a tuple with first element 20 and second element - interpreted value
+      string newName = (it->second).begin()->second;
+      node.modify_ufname(newName);
+      node.outname = "_p_out_" + newName + "_ANONYMOUS";
+      TUPLE_CREATE_node* new_output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
+      TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
+      Assert(new_output->multi_mother.size() == 1, "Currently only supported for functions with one output");
+      bool_node* new_node = new_output->multi_mother[0];
+      Tuple* tup = dynamic_cast<Tuple*>(new_node->getOtype());
+      tuple_node->setName(tup->name);
+      int size = tup->entries.size();
+      tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
+      for (int i = 1; i < size - 1; i++) {
+        tuple_node->multi_mother.push_back(getCnode(0));
+      }
+      tuple_node->multi_mother.push_back(new_node);
+      tuple_node->addToParents();
+      new_output->dislodge();
+      new_output->multi_mother[0] = optAdd(tuple_node);
+      new_output->resetId();
+			new_output->addToParents();
+      rvalue = new_output;
+      return;
+    }
+  }
+  
+  bool shouldReplaceSpecialNode = false;
+  
+  map<string, map<string, string > >::iterator it1 = replaceMap.begin();
+  
+  for(; it1 != replaceMap.end(); it1++) {
+    map<string, string> fmap = it1->second;
+    if (fmap.find(name) != fmap.end()) {
+      shouldReplaceSpecialNode = true;
+      break;
+    }
+  }
+  
+  //shouldReplaceSpecialNode = false;
+  
 	ufunAll.restart();
 
 
 	if( functionMap.find(name) != functionMap.end() ){
+    //cout << "Inlining " << name << endl;
 		/*if(mpcontroller.count(node.fgid) > 0){
 			map<string,bool_node*>::iterator it = mpcontroller[node.fgid].find(node.outname);
 			if(it != mpcontroller[node.fgid].end()){
@@ -451,11 +497,40 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			
 			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
+      
+      if (shouldReplaceSpecialNode) {
+        Assert(inputs.size() == 1, "Not yet supported");
+      }
 			
 			for(int i=0; i<inputs.size(); ++i){			
 				
 				bool_node* actual = node.multi_mother[i];
-				nmap[inputs[i]->id] = actual;
+        if (shouldReplaceSpecialNode) {
+          // current input: s
+          // new input: (s.[[0]] == 20) ? s.[[-1]] : s
+          Assert(actual->getOtype()->isTuple, "Not yet supported");
+          int size = ((Tuple*) (actual->getOtype()))->entries.size();
+          TUPLE_R_node* tr = new TUPLE_R_node();
+          tr->idx = 0;
+          tr->mother = actual;
+          tr->addToParents();
+          EQ_node* eq = new EQ_node();
+          eq->mother = optAdd(tr);
+          eq->father = getCnode(20); // magic number
+          eq->addToParents();
+          ARRACC_node* arr = new ARRACC_node();
+          arr->mother = optAdd(eq);
+          arr->multi_mother.push_back(actual);
+          TUPLE_R_node* tr1 = new TUPLE_R_node();
+          tr1->idx = size - 1;
+          tr1->mother = actual;
+          tr1->addToParents();
+          arr->multi_mother.push_back(optAdd(tr1)); // Hopefully, the order is correct
+          arr->addToParents();
+          nmap[inputs[i]->id] = optAdd(arr);
+        } else {
+          nmap[inputs[i]->id] = actual;
+        }
 				actual->children.erase((bool_node*)&node);
 //				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
 			}

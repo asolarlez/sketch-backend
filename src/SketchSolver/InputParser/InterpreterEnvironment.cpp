@@ -218,7 +218,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
-			doInline(*sketch, functionMap, params.inlineAmnt);
+			doInline(*sketch, functionMap, params.inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
@@ -226,7 +226,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
-			doInline(*spec, functionMap, params.inlineAmnt);
+			doInline(*spec, functionMap, params.inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
@@ -327,7 +327,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps){	
+void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	InlineControl* fin = new TheBestInliner(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -338,7 +338,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, &hardcoder, params.randomassign, fin);	
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, fin);
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){

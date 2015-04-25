@@ -910,6 +910,9 @@ class UFUN_node: public arith_node, public DllistNode{
     }
     UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }
 	
+    void modify_ufname(string& name) {
+      ufname = name;
+    }
     void makeDependent(){
         isDependent = true;
         ignoreAsserts = true;

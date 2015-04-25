@@ -195,6 +195,14 @@ Comment      ("//"[^\n]*)
 "SKETCHES"	{
 				return T_Sketches;
 			}
+
+"EQUALS" {
+        return T_equals;
+      }
+
+"replace" {
+        return T_replace;
+      }
 						
 
 "def"		{

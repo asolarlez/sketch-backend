@@ -83,6 +83,9 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_assume
 %token T_hassert
 
+%token T_equals
+%token T_replace
+
 %token T_eof
 
 %type<intConst> Program
@@ -124,6 +127,7 @@ Program: Typedef MethodList T_eof{  $$=0; return 0;}
 MethodList: {}
 | Method MethodList {}
 | HLAssertion MethodList {}
+| Replacement MethodList {}
 
 
 InList: T_ident { 
@@ -308,11 +312,15 @@ TypeList: { /* Empty */ }
 Typedef: {/* Empty */}
 |T_Typedef '{' TypeList '}'{ }
 
+Replacement: T_replace T_ident '*' T_ident T_equals T_ident ';' {
+  envt->registerFunctionReplace(*$4, *$2, *$6);
+}
 
 AssertionExpr: T_ident T_Sketches T_ident
 {
 	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
 }
+
 
 HLAssertion: T_assert {solution.restart();} AssertionExpr ';'
 {
