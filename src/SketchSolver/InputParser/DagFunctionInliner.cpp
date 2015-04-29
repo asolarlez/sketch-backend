@@ -387,22 +387,67 @@ void DagFunctionInliner::visit( UFUN_node& node ){
   if (it != replaceMap.end()) {
     if (ictrl != NULL && ictrl->isRecursive(node)) {
       cout << "Replacing ufun node " << name << endl;
-      // create a tuple with first element 20 and second element - interpreted value
+      Assert(node.multi_mother.size() == 1, "Not yet supported");
       string newName = (it->second).begin()->second;
       node.modify_ufname(newName);
       node.outname = "_p_out_" + newName + "_ANONYMOUS";
+      
+      Assert(functionMap.find(newName) != functionMap.end(), "Function " + newName + " is not found");
+      BooleanDAG& repFun = *functionMap[newName];
+      vector<bool_node*>& inputs  = repFun.getNodesByType(bool_node::SRC);
+      int inpSize = inputs.size();
+      vector<bool_node*> extraInputs;
+      if (inpSize > 1) {
+        bool_node* firstInput = inputs[0];
+        // Assuming that the first input will correspond to the input of the original function
+        Assert(firstInput->getOtype() == node.multi_mother[0]->getOtype(), "Input types mismatch");
+        
+        for (int i = 1; i < inpSize; i++) {
+          SRC_node* inp = dynamic_cast<SRC_node*>(inputs[i]);
+          Assert(inp->getOtype() == OutType::INT, "Only integer state is supported");
+          //create a angelic hole
+          CTRL_node* qn = new CTRL_node();
+          stringstream st;
+          st<<inp->name;
+          st<<"_";
+          st<<node.get_callsite();
+          
+          qn->name = st.str();
+          qn->set_Special_Angelic();
+          qn->set_nbits(5);
+          addNode(qn);
+          node.multi_mother.push_back(qn);
+          extraInputs.push_back(qn);
+        }
+      }
+      
+      
       TUPLE_CREATE_node* new_output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
-      Assert(new_output->multi_mother.size() == 1, "Currently only supported for functions with one output");
-      bool_node* new_node = new_output->multi_mother[0];
+      int outSize = new_output->multi_mother.size();
+      
+      bool_node* new_node = new_output->multi_mother[outSize - 1];
       Tuple* tup = dynamic_cast<Tuple*>(new_node->getOtype());
       tuple_node->setName(tup->name);
       int size = tup->entries.size();
       tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
-      for (int i = 1; i < size - 1; i++) {
+      int actFields = size - 1 - (inpSize - 1) - (outSize - 1) ;
+      for (int i = 1; i <  actFields; i++) {
         tuple_node->multi_mother.push_back(getCnode(0));
       }
+      if (inpSize > 1) {
+        for (int i = 0; i < inpSize - 1; i++) {
+          tuple_node->multi_mother.push_back(extraInputs[i]);
+        }
+      }
+      if (outSize > 1) {
+        for (int i = 0; i < outSize - 1; i++) {
+          tuple_node->multi_mother.push_back(new_output->multi_mother[i]);
+        }
+      }
       tuple_node->multi_mother.push_back(new_node);
+      
+      
       tuple_node->addToParents();
       new_output->dislodge();
       new_output->multi_mother[0] = optAdd(tuple_node);
@@ -424,8 +469,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       break;
     }
   }
-  
-  //shouldReplaceSpecialNode = false;
   
 	ufunAll.restart();
 
@@ -498,39 +541,100 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			
 			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
       
+      
+      vector<bool_node*> inp_arg;
       if (shouldReplaceSpecialNode) {
-        Assert(inputs.size() == 1, "Not yet supported");
+        Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
+        bool_node* actual = node.multi_mother[0];
+        
+        Assert(actual->getOtype()->isTuple, "First input should be a tuple");
+        int size = ((Tuple*) (actual->getOtype()))->entries.size();
+        TUPLE_R_node* tr = new TUPLE_R_node();
+        tr->idx = 0;
+        tr->mother = actual;
+        tr->addToParents();
+        EQ_node* eq = new EQ_node();
+        eq->mother = optAdd(tr);
+        eq->father = getCnode(20); // magic number
+        eq->addToParents();
+        bool_node* optEq = optAdd(eq);
+        ARRACC_node* arr = new ARRACC_node();
+        arr->mother = optEq;
+        arr->multi_mother.push_back(actual);
+        
+        TUPLE_R_node* tr1 = new TUPLE_R_node();
+        tr1->idx = size - 1;
+        tr1->mother = actual;
+        tr1->addToParents();
+        
+        arr->multi_mother.push_back(optAdd(tr1));
+        arr->addToParents();
+        inp_arg.push_back(optAdd(arr));
+        
+        int state_size = inputs.size() - 1;
+        
+        NOT_node* not_ = new NOT_node();
+        AND_node* and_ = new AND_node();
+        and_->mother = node.mother;
+        and_->father = optEq;
+        and_->addToParents();
+        
+        not_->mother = optAdd(and_);
+        not_->addToParents();
+        bool_node* optNot = optAdd(not_);
+        
+        for (int i = 0; i < state_size; i++) {
+          bool_node* actSt = node.multi_mother[i+1];
+          
+          ARRACC_node* newSt = new ARRACC_node();
+          newSt->mother = optEq;
+          newSt->multi_mother.push_back(actSt);
+          
+          TUPLE_R_node* tr2 = new TUPLE_R_node();
+          tr2->idx = size - 1 - state_size + i;
+          tr2->mother = actual;
+          tr2->addToParents();
+          
+          newSt->multi_mother.push_back(optAdd(tr2));
+          newSt->addToParents();
+          inp_arg.push_back(optAdd(newSt));
+          
+          OR_node* or_ = new OR_node();
+          
+          or_->mother = optNot;
+          
+          EQ_node* eq1 = new EQ_node();
+          eq1->mother = actSt;
+          TUPLE_R_node* tr3 = new TUPLE_R_node();
+          tr3->idx = size - 1 - 2*state_size + i;
+          tr3->mother = actual;
+          tr3->addToParents();
+          
+          eq1->father = optAdd(tr3);
+          eq1->addToParents();
+          
+          or_->father = optAdd(eq1);
+          or_->addToParents();
+          
+          ASSERT_node* stateEq = new ASSERT_node();
+          stateEq->setMsg("state equivalence");
+          stateEq->mother = optAdd(or_);
+          stateEq->makeHardAssert();
+          stateEq->addToParents();
+          bool_node* optAssert = optAdd(stateEq);
+          if (!isConst(optAssert)) {
+           node.add(getDllnode(optAssert));
+          }
+
+        }
+        
       }
 			
-			for(int i=0; i<inputs.size(); ++i){			
+			for(int i=0; i<inputs.size(); ++i){
 				
 				bool_node* actual = node.multi_mother[i];
-        if (shouldReplaceSpecialNode) {
-          // current input: s
-          // new input: (s.[[0]] == 20) ? s.[[-1]] : s
-          Assert(actual->getOtype()->isTuple, "Not yet supported");
-          int size = ((Tuple*) (actual->getOtype()))->entries.size();
-          TUPLE_R_node* tr = new TUPLE_R_node();
-          tr->idx = 0;
-          tr->mother = actual;
-          tr->addToParents();
-          EQ_node* eq = new EQ_node();
-          eq->mother = optAdd(tr);
-          eq->father = getCnode(20); // magic number
-          eq->addToParents();
-          ARRACC_node* arr = new ARRACC_node();
-          arr->mother = optAdd(eq);
-          arr->multi_mother.push_back(actual);
-          TUPLE_R_node* tr1 = new TUPLE_R_node();
-          tr1->idx = size - 1;
-          tr1->mother = actual;
-          tr1->addToParents();
-          arr->multi_mother.push_back(optAdd(tr1)); // Hopefully, the order is correct
-          arr->addToParents();
-          nmap[inputs[i]->id] = optAdd(arr);
-        } else {
-          nmap[inputs[i]->id] = actual;
-        }
+        
+        nmap[inputs[i]->id] = shouldReplaceSpecialNode ? inp_arg[i] : actual;
 				actual->children.erase((bool_node*)&node);
 //				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
 			}
