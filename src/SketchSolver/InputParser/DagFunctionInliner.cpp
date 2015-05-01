@@ -553,11 +553,27 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         tr->idx = 0;
         tr->mother = actual;
         tr->addToParents();
+        
+        EQ_node* nullCheck = new EQ_node();
+        nullCheck->mother = actual;
+        nullCheck->father = getCnode(-1);
+        nullCheck->addToParents();
+        
+        NOT_node* notNull = new NOT_node();
+        notNull->mother = optAdd(nullCheck);
+        notNull->addToParents();
+        
+        AND_node* cond = new AND_node();
+        cond->mother = optAdd(notNull);
+        
         EQ_node* eq = new EQ_node();
         eq->mother = optAdd(tr);
         eq->father = getCnode(20); // magic number
         eq->addToParents();
-        bool_node* optEq = optAdd(eq);
+        cond->father = optAdd(eq);
+        cond->addToParents();
+        
+        bool_node* optEq = optAdd(cond);
         ARRACC_node* arr = new ARRACC_node();
         arr->mother = optEq;
         arr->multi_mother.push_back(actual);
@@ -621,11 +637,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           stateEq->mother = optAdd(or_);
           stateEq->makeHardAssert();
           stateEq->addToParents();
-          bool_node* optAssert = optAdd(stateEq);
-          if (!isConst(optAssert)) {
-           node.add(getDllnode(optAssert));
-          }
-
+          this->addNode(stateEq);
+          DllistNode* tt = getDllnode(stateEq);
+          tmpList.append(tt);
+          callMap.clear();
         }
         
       }
