@@ -5,6 +5,9 @@
 #include <cassert>
 #include "guardedVal.h"
 #include "SATSolver.h"
+#include "BooleanToCNF.h"
+#include "SolverTypes.h"
+#include "MSolver.h"
 using namespace std;
 
 
@@ -29,7 +32,7 @@ class Tvalue {
     int id;
     int size;
     bool neg;  /* True means the variable(s) is negated. */
-
+	bool isint;
 public:
     /* FIXME this member needs to be made private with proper mutators, thus
      * we can guarantee sanity of a manipulated value object. */
@@ -41,6 +44,15 @@ public:
      */
 public:
 	
+	bool isInt(){
+		return isint;
+	}
+
+	void makeSuperInt(int var){
+		id = var;
+		isint = true;
+	}
+
     inline valtype_t getType (void) const { return type; }
 
     inline int getId (int idx = 0) const {
@@ -118,6 +130,7 @@ private:
 
 	/* Initialize container. */
 	num_ranges.clear ();
+	isint=false;
     }
 
     inline void init (int a_id) { init (TVAL_BVECT, a_id, 1); }
@@ -172,15 +185,17 @@ public:
 public:
     Tvalue (valtype_t a_type, int a_id, int a_size, bool a_neg = false) {
 	init (a_type, a_id, a_size, a_neg);
+	isint=false;
     }
 
     Tvalue (void) {
 	init (TVAL_BVECT, 0, -1);
+	isint=false;
     }
 
-    Tvalue (int a_id) { *this = a_id; }
+    Tvalue (int a_id) { *this = a_id; isint=false; }
 
-    Tvalue (const Tvalue &a_tv) { *this = a_tv; }
+    Tvalue (const Tvalue &a_tv) { *this = a_tv;  }
 
 
     /*
@@ -668,6 +683,26 @@ public:
     }
 #endif
 };
+
+using namespace MSsolverNS;
+
+
+
+int intClause(Tvalue& tv, MSsolverNS::Solver* solver){
+	Assert(tv.isSparse(), "noqiue");
+	 void* mem = malloc(sizeof(MSsolverNS::Clause) + sizeof(uint32_t)*(tv.getSize()*2+1) );
+	 vec<Lit> ps;
+	 gvvec& gv=tv.num_ranges;
+	 int id = solver->intsolve->addVar();
+	 ps.push(toLit(id));
+	 for(int i=0; i<gv.size(); ++i){
+		 ps.push(lfromInt(gv[i].guard));
+		 ps.push(toLit(gv[i].value));
+	 }
+	 solver->addClause(ps, INTSPECIAL);
+	 tv.makeSuperInt(id);
+	 return id;	
+}
 
 #endif  /* __TVALUE_H */
 

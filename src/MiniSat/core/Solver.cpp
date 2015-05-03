@@ -30,6 +30,7 @@ namespace MSsolverNS{
 // Constructor/Destructor:
 
 uint32_t SINGLESET = 3;
+uint32_t INTSPECIAL = 2;
 uint32_t LAZYOR = 1;
 
 Solver::Solver() :
@@ -163,6 +164,14 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
     assert(decisionLevel() == 0);
 
+	if(kind==INTSPECIAL){
+		Clause* c = Clause::Clause_new(ps, false);        
+        c->mark(kind);
+		attachClause(*c);
+		return;
+	}
+
+
     if (false && kind == SINGLESET) {
 		cout << "addClause " << ps.size();
 		for (int i=0; i<ps.size(); i++) {
@@ -244,6 +253,17 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
 	uint32_t mark = c.mark();
+
+	if(mark==INTSPECIAL){
+		int ln = intcLen(c);
+		for(int i=0; i<ln; ++i){
+			Lit l = intcLit(c, i);
+			watches[toInt(l)].push(&c);
+		}
+		return;
+	}
+
+
 	if(mark==LAZYOR){
 		/*
 		Lazyor clause has the following structure 
@@ -444,24 +464,51 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
         assert(confl != NULL);          // (otherwise should be UIP)
         Clause& c = *confl;
 
-        if (c.learnt())
-            claBumpActivity(c);
+		if(c.mark()==INTSPECIAL){
+			int ln = intcLen(c);
+			int vr;
+				for(int ii=0; ii<ln; ++ii){
+					Lit l = intcLit(c, ii);
+					if(l==p){
+						vr = intcIntVar(c);
+						break;
+					}
+				}
+			vec<Lit>& summary = intsolve->getSummary(vr);
+			for(int i=0; i<summary.size(); ++i){
+				Lit q = summary[i];
+				if (!seen[var(q)] && level[var(q)] > 0){
+					varBumpActivity(var(q));
+					seen[var(q)] = 1;
+					if (level[var(q)] >= decisionLevel())
+						pathC++;
+					else{
+						out_learnt.push(q);
+						if (level[var(q)] > out_btlevel)
+							out_btlevel = level[var(q)];
+					}
+				}
+			}
+		}else{
+			if (c.learnt())
+				claBumpActivity(c);
 
-        for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
-            Lit q = c[j];
+			for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
+				Lit q = c[j];
 
-            if (!seen[var(q)] && level[var(q)] > 0){
-                varBumpActivity(var(q));
-                seen[var(q)] = 1;
-                if (level[var(q)] >= decisionLevel())
-                    pathC++;
-                else{
-                    out_learnt.push(q);
-                    if (level[var(q)] > out_btlevel)
-                        out_btlevel = level[var(q)];
-                }
-            }
-        }
+				if (!seen[var(q)] && level[var(q)] > 0){
+					varBumpActivity(var(q));
+					seen[var(q)] = 1;
+					if (level[var(q)] >= decisionLevel())
+						pathC++;
+					else{
+						out_learnt.push(q);
+						if (level[var(q)] > out_btlevel)
+							out_btlevel = level[var(q)];
+					}
+				}
+			}
+		}
 
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
@@ -485,10 +532,11 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
         for (i = j = 1; i < out_learnt.size(); i++)
             if (reason[var(out_learnt[i])] == NULL || !litRedundant(out_learnt[i], abstract_level))
                 out_learnt[j++] = out_learnt[i];
-    }else{
+    }else{		
         out_learnt.copyTo(analyze_toclear);
         for (i = j = 1; i < out_learnt.size(); i++){
             Clause& c = *reason[var(out_learnt[i])];
+			Assert( c.mark() != INTSPECIAL, "NOT HERE");
             for (int k = 1; k < c.size(); k++)
                 if (!seen[var(c[k])] && level[var(c[k])] > 0){
                     out_learnt[j++] = out_learnt[i];
@@ -600,6 +648,8 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
 }
 
 
+vec<char> tempstore;
+
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -632,6 +682,42 @@ Clause* Solver::propagate()
             Clause& c = **i++;
 
 			Lit false_lit = ~p;
+
+
+
+			if(c.mark()==INTSPECIAL){
+				int ln = intcLen(c);
+				for(int ii=0; ii<ln; ++ii){
+					Lit l = intcLit(c, ii);
+					if(l==p){
+						int var = intcIntVar(c);
+						int val = intcVal(c, ii);
+						int ilen = intsolve->interflen();
+						if(intsolve->setVal(var, val, decisionLevel())){
+							int nilen = intsolve->interflen();
+							for(int jjj=ilen; jjj<nilen; ++jjj){
+								uncheckedEnqueue(intsolve->interfLit(jjj), &c);
+							}
+							*j++ = &c;
+							goto FoundWatch;
+						}else{
+							//If we are here, there was a conflict. 
+							vec<Lit>& ps = intsolve->getSummary(var);
+							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+							confl = new (&ps[0]) Clause(ps, true);
+							*j++ = &c;
+							while (i < end)
+								*j++ = *i++;
+								
+							qhead = trail.size();
+							goto FoundWatch;
+						}
+						goto FoundWatch;						
+					}
+				}
+				Assert(false, "should never reach here");
+
+			}
 
 
 			if(c.mark() == LAZYOR){
@@ -808,7 +894,7 @@ Clause* Solver::propagate()
 				
 				goto FoundWatch;
 			}
-			
+			// End of SINGLESET case.
 
             // Make sure the false literal is data[1]:
             

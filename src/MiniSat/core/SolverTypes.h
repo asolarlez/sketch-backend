@@ -57,6 +57,7 @@ class Lit {
     // Don't use these for constructing/deconstructing literals. Use the normal constructors instead.
     friend int  toInt       (Lit p);  // Guarantees small, positive integers suitable for array indexing.
     friend Lit  toLit       (int i);  // Inverse of 'toInt()'
+	friend Lit  lfromInt    (int i);
     friend Lit  operator   ~(Lit p);
     friend bool sign        (Lit p);
     friend int  var         (Lit p);
@@ -68,6 +69,7 @@ class Lit {
     bool operator <  (Lit p) const { return x < p.x;  } // '<' guarantees that p, ~p are adjacent in the ordering.
 };
 
+inline  Lit  lfromInt    (int i){  Lit p; p.x = i>0? i+i : (-(i+i)) + 1; return p;  }
 inline  int  toInt       (Lit p)           { return p.x; }
 inline  Lit  toLit       (int i)           { Lit p; p.x = i; return p; }
 inline  Lit  operator   ~(Lit p)           { Lit q; q.x = p.x ^ 1; return q; }
@@ -170,6 +172,26 @@ public:
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
 };
+
+
+int intcLen(Clause& c){
+	return c.size()/2;
+}
+
+int intcIntVar(Clause& c){
+	return toInt(c[0]);
+}
+
+int intcVal(Clause& c, int i){
+	return toInt(c[i*2+2]);
+}
+
+Lit& intcLit(Clause& c, int i){
+	return c[i*2+1];
+}
+
+
+
 
 
 /*_________________________________________________________________________________________________

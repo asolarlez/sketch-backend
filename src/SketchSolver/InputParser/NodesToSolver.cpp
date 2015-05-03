@@ -867,6 +867,23 @@ NodesToSolver::processArith (bool_node &node)
 
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
+
+	bool_node* father = node.father;
+	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+
+	if(mval.isInt() || fval.isInt()){
+		if(!mval.isInt()){
+			intClause(mval, dir);
+		}
+		if(!fval.isInt()){
+			intClause(fval, dir);
+		}
+		if(node.type== bool_node::PLUS){
+			 node_ids[node.id].makeSuperInt(dir.plus(mval.getId(), fval.getId()));
+		}
+		Assert(false, "Aqirueop");
+	}
+
 	mval.makeSparse (dir);
 	// TODO xzl: temporarily disable sparse warning
 	if( false && mval.getSize() > 200 ){ 
@@ -875,8 +892,7 @@ NodesToSolver::processArith (bool_node &node)
 		//ps.process(*tmpdag, node.mother->id);								
 		//tmpdag->printSlice(mother, cout);
 	}
-	bool_node* father = node.father;
-	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
+	
 	fval.makeSparse (dir);
 	bool isSum = node.type == bool_node::PLUS || node.type == bool_node::TIMES;
 	bool skipZeros = node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD;

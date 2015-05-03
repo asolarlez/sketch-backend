@@ -31,7 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SolverTypes.h"
 
-
+#include "IntPropagator.h"
 //=================================================================================================
 // Solver -- the main class:
 
@@ -40,6 +40,8 @@ namespace MSsolverNS{
 
 class Solver {
 public:
+	IntPropagator* intsolve;
+
 
     // Constructor/Destructor:
     //

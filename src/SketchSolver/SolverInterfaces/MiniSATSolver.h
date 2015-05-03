@@ -73,6 +73,16 @@ public:
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
 	 virtual void assumeVarClause(int x);
+	 virtual int plus(int x, int y){
+		 int rv = s->intsolve->addVar();
+		 s->intsolve->addPlus(x, y, rv);
+		 return rv;
+	 }
+	 virtual int inteq(int x, int y){
+		 int rv = s->intsolve->addVar();
+		 s->intsolve->addEq(x, y, rv);
+		 return rv;
+	 }
 
 	 virtual void addHelper2Clause(int l1, int l2);
 

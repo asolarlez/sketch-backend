@@ -76,7 +76,7 @@ public:
     virtual int solve();
 
     virtual void reset();
-    
+	virtual int plus(int x, int y){};
 	virtual void retractableAssertClause(int x);
 	virtual void retractAssumptions();
 	virtual void markInput(int){  }

@@ -1,7 +1,12 @@
 #ifndef __GUARDEDVAL_H
 #define __GUARDEDVAL_H
 
+#include <iostream>
 #include <cstring>
+#include "BasicError.h"
+
+
+using namespace std;
 
 class guardedVal{
 public:

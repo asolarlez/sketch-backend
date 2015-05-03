@@ -75,6 +75,8 @@ public:
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
 
+	virtual int plus(int x, int y)=0;
+
     virtual int newInVar()=0;
     virtual void disableVarBranch(int i)=0;
 

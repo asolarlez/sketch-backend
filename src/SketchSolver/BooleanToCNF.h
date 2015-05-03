@@ -281,6 +281,12 @@ public:
 		mng.setVarClause(YES);
     }
 
+
+	int plus(int x, int y){
+		return mng.plus(x, y);
+	}
+
+
     int addEqualsClause (int a, int x = 0);
     int addChoiceClause (int a, int b, int c, int x = 0);
     int addXorClause (int a, int b, int x = 0);
