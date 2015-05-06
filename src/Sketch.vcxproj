@@ -255,6 +255,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="MiniSat\core\IntPropagator.cpp" />
     <ClCompile Include="SketchSolver\InputParser\AltOptim.cpp" />
     <ClCompile Include="MiniSat\core\Solver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />

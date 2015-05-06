@@ -92,8 +92,52 @@ void SolverHelper::addHelperC(Tvalue& tv){
 }
 
 
+int SolverHelper::inteq(int x, int y){
+	int rv = newAnonymousVar ();
+	Tvalue tv=rv;
+	tv.makeSparse(*this);	
+	int iv = intClause(tv);
+	mng.inteq(x, y, iv);		
+	return rv;
+}
+
+int SolverHelper::intlt(int x, int y){
+	int rv = newAnonymousVar ();
+	Tvalue tv=rv;
+	tv.sparsify(*this);
+	int iv = intClause(tv);
+	mng.intlt(x, y, iv);		
+	return rv;
+}
 
 
+int SolverHelper::intClause(Tvalue& tv){
+	SATSolver* solver = (&getMng());
+
+	if(tv.getSize()==1){
+		int id = solver->addIntVar();
+		const gvvec& gv=tv.num_ranges;
+		int val = gv[0].value;
+		solver->setIntVal(id, val);
+		tv.makeSuperInt(id);
+		return id;
+	}
+
+
+	Assert(tv.isSparse(), "noqiue");
+	 void* mem = malloc(sizeof(MSsolverNS::Clause) + sizeof(uint32_t)*(tv.getSize()*2+1) );
+	 vec<Lit> ps;
+	 const gvvec& gv=tv.num_ranges;
+	 int id = solver->addIntVar(tv);
+	 ps.push(toLit(id));
+	 for(int i=0; i<gv.size(); ++i){
+		 ps.push(lfromInt(gv[i].guard));
+		 ps.push(toLit(gv[i].value));
+	 }
+	 solver->intSpecialClause(ps);
+	 tv.makeSuperInt(id);
+	 return id;	
+}
 
 
 

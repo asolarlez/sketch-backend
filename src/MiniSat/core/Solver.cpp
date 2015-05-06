@@ -61,6 +61,7 @@ Solver::Solver() :
   , progress_estimate(0)
   , remove_satisfied (true)
   , incompletenessCutoff(-1)
+  , intsolve(new IntPropagator())
 {}
 
 
@@ -69,6 +70,7 @@ Solver::~Solver()
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	for (int i = 0; i < lazyors.size(); i++) free(lazyors[i]);
+	delete intsolve; 
 }
 
 
@@ -168,7 +170,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 		Clause* c = Clause::Clause_new(ps, false);        
         c->mark(kind);
 		attachClause(*c);
-		return;
+		return ok;
 	}
 
 
@@ -382,7 +384,9 @@ void Solver::cancelUntil(int level) {
         qhead = trail_lim[level];
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
-    } }
+    } 
+	intsolve->cancelUntil(level);
+}
 
 
 //=================================================================================================
@@ -474,7 +478,7 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 						break;
 					}
 				}
-			vec<Lit>& summary = intsolve->getSummary(vr);
+			vec<Lit>& summary = intsolve->getSummary(vr, NULL);
 			for(int i=0; i<summary.size(); ++i){
 				Lit q = summary[i];
 				if (!seen[var(q)] && level[var(q)] > 0){
@@ -693,18 +697,34 @@ Clause* Solver::propagate()
 						int var = intcIntVar(c);
 						int val = intcVal(c, ii);
 						int ilen = intsolve->interflen();
-						if(intsolve->setVal(var, val, decisionLevel())){
+						bool goodsofar = intsolve->setVal(var, val, decisionLevel());
+						Intclause* iconf=NULL;
+						if(goodsofar){
+							iconf = intsolve->propagate();
+							goodsofar = (iconf==NULL);							
+						}
+						if(goodsofar){
 							int nilen = intsolve->interflen();
 							for(int jjj=ilen; jjj<nilen; ++jjj){
-								uncheckedEnqueue(intsolve->interfLit(jjj), &c);
+								Lit ilit = intsolve->interfLit(jjj);
+								lbool vvv = value(ilit);
+								if(vvv==l_False){
+									cout<<"WHOAAAAAA"<<endl;
+									//there is a conflict here!!!
+									//this can only hapen if var(ilit) is still in the stack
+									//so if we do nothing, the system will later figure it out.
+								}
+								if(vvv==l_Undef){
+									uncheckedEnqueue(ilit, &c);
+								}
 							}
 							*j++ = &c;
 							goto FoundWatch;
 						}else{
 							//If we are here, there was a conflict. 
-							vec<Lit>& ps = intsolve->getSummary(var);
+							vec<Lit>& ps = intsolve->getSummary(var, iconf);
 							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
-							confl = new (&ps[0]) Clause(ps, true);
+							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
 							while (i < end)
 								*j++ = *i++;
@@ -936,8 +956,7 @@ Clause* Solver::propagate()
         ws.shrink(i - j);		
     }
     propagations += num_props;
-    simpDB_props -= num_props;
-
+    simpDB_props -= num_props;	
     return confl;
 }
 

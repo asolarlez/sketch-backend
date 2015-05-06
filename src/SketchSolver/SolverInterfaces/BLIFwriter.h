@@ -76,7 +76,15 @@ public:
     virtual int solve();
 
     virtual void reset();
-	virtual int plus(int x, int y){};
+	virtual int plus(int x, int y){ return 0; };
+	virtual int times(int x, int y){ return 0; };
+	virtual void inteq(int x, int y, int rv){};
+	virtual void intlt(int x, int y, int rv){ };
+	virtual int addIntVar(Tvalue& tv){return 0; };
+	virtual int addIntVar(){return 0; };
+	virtual void intSpecialClause(vec<Lit>& ps){};
+	virtual void setIntVal(int vr, int val){};
+
 	virtual void retractableAssertClause(int x);
 	virtual void retractAssumptions();
 	virtual void markInput(int){  }

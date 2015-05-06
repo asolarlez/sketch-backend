@@ -23,6 +23,9 @@ using namespace std;
 
 class Tvalue;
 
+
+
+
 class varRange{
 	public:
 	int varID;
@@ -282,10 +285,19 @@ public:
     }
 
 
+	int intClause(Tvalue& tv);
+
 	int plus(int x, int y){
 		return mng.plus(x, y);
 	}
+	int times(int x, int y){
+		return mng.times(x, y);
+	}
 
+
+	int inteq(int x, int y);
+
+	int intlt(int x, int y);
 
     int addEqualsClause (int a, int x = 0);
     int addChoiceClause (int a, int b, int c, int x = 0);

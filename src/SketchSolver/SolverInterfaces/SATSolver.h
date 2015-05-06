@@ -6,11 +6,16 @@
 using namespace std;
 
 #include "BasicError.h"
+#include "vec.h"
+#include "SolverTypes.h"
+
+using namespace MSsolverNS;
 
 #define dout(out)  /* (cout << "[" << __FUNCTION__ << ":" << __LINE__ << "] " << out << endl); */
 #define CheckRepeats( AR, N) /* for(int _i=0; _i<N; ++_i){ for(int _j=_i+1; _j<N; ++_j){ Assert( (AR[_i])/2 != (AR[_j])/2, "REPEAT ENTRY IN CLAUSE "<<_i<<"  "<<_j<<"  "<<AR[_i] ); } } */
 #define FileOutput( out ) /* out */
 
+class Tvalue;
 
 class SATSolver {	
 
@@ -76,6 +81,13 @@ public:
     virtual int newVar()=0;
 
 	virtual int plus(int x, int y)=0;
+	virtual int times(int x, int y)=0;
+	virtual void inteq(int x, int y, int rv)=0;
+	virtual void intlt(int x, int y, int rv)=0;
+	virtual int addIntVar(Tvalue& tv)=0;
+	virtual int addIntVar()=0;
+	virtual void intSpecialClause(vec<Lit>& ps)=0;
+	virtual void setIntVal(int vr, int val)=0;
 
     virtual int newInVar()=0;
     virtual void disableVarBranch(int i)=0;

@@ -5,6 +5,7 @@
 
 #include "CommandLineArgs.h"
 #include "PrintInteresting.h"
+#include "MiniSATSolver.h"
 
 int TOTBUFFERS = 0;
 
@@ -529,6 +530,24 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 		return;
 	}
 
+	if(mval.isInt() || fval.isInt()){
+		
+		if(!mval.isInt()){
+			dir.intClause(mval);
+		}
+		
+		if(!fval.isInt()){
+			dir.intClause(fval);
+		}
+		
+		if(node.type== bool_node::EQ){
+			 node_ids[node.id]= (dir.inteq(mval.getId(), fval.getId()));
+			 cout<<"EQ  "<<node.id<<" = "<<node_ids[node.id]<<endl;
+			 return;
+		}
+		Assert(false, "Aqirueop");
+	}
+
 	mval.makeSparse (dir);
     fval.makeSparse (dir);
     int cvar = -YES;
@@ -871,15 +890,20 @@ NodesToSolver::processArith (bool_node &node)
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
-	if(mval.isInt() || fval.isInt()){
+	if(true || mval.isInt() || fval.isInt()){
 		if(!mval.isInt()){
-			intClause(mval, dir);
+			dir.intClause(mval);
 		}
 		if(!fval.isInt()){
-			intClause(fval, dir);
+			dir.intClause(fval);
 		}
 		if(node.type== bool_node::PLUS){
 			 node_ids[node.id].makeSuperInt(dir.plus(mval.getId(), fval.getId()));
+			 return;
+		}
+		if(node.type== bool_node::TIMES){
+			 node_ids[node.id].makeSuperInt(dir.times(mval.getId(), fval.getId()));
+			 return;
 		}
 		Assert(false, "Aqirueop");
 	}

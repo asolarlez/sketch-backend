@@ -14,7 +14,10 @@ using namespace MSsolverNS;
 inline void MiniSolverStart(){ cout<<" STARTING SAT "<<endl; }
 inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
+namespace MSsolverNS{
 
+extern uint32_t INTSPECIAL;
+}
 
 class MiniSATSolver : public SATSolver{
 protected:
@@ -78,10 +81,16 @@ public:
 		 s->intsolve->addPlus(x, y, rv);
 		 return rv;
 	 }
-	 virtual int inteq(int x, int y){
+	  virtual int times(int x, int y){
 		 int rv = s->intsolve->addVar();
-		 s->intsolve->addEq(x, y, rv);
+		 s->intsolve->addTimes(x, y, rv);
 		 return rv;
+	 }
+	 virtual void inteq(int x, int y, int rv){		
+		 s->intsolve->addEq(x, y, rv);		 
+	 }
+	 virtual void intlt(int x, int y, int rv){		 
+		 s->intsolve->addLt(x, y, rv);		 
 	 }
 
 	 virtual void addHelper2Clause(int l1, int l2);
@@ -121,7 +130,21 @@ public:
 	 virtual void writeDIMACS(ofstream& dimacs_file){
 		 s->writeDIMACS(dimacs_file);
 	 }
-	 
+
+	 virtual void intSpecialClause(vec<Lit>& ps){
+		 s->addClause(ps, INTSPECIAL);
+	 }
+
+	 virtual int addIntVar(){
+		 return s->intsolve->addVar();
+	 }
+	 virtual int addIntVar(Tvalue& tv){
+		 return s->intsolve->addVar(tv);
+	 }
+
+	 virtual void setIntVal(int vr, int val){
+		 s->intsolve->setVal(vr, val, 0);
+	 }
 };
 
 

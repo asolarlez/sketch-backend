@@ -56,6 +56,9 @@ public:
     inline valtype_t getType (void) const { return type; }
 
     inline int getId (int idx = 0) const {
+		if(isint){
+			return id;
+		}
 		if(isSparse()){
 			return num_ranges[idx].guard;
 		}else{
@@ -163,6 +166,7 @@ public:
 #endif
 
 	init (a_tv.type, a_tv.id, a_tv.size, a_tv.neg);
+	isint = a_tv.isint;
 	num_ranges = a_tv.num_ranges;
 	return *this;
     }
@@ -687,22 +691,6 @@ public:
 using namespace MSsolverNS;
 
 
-
-int intClause(Tvalue& tv, MSsolverNS::Solver* solver){
-	Assert(tv.isSparse(), "noqiue");
-	 void* mem = malloc(sizeof(MSsolverNS::Clause) + sizeof(uint32_t)*(tv.getSize()*2+1) );
-	 vec<Lit> ps;
-	 gvvec& gv=tv.num_ranges;
-	 int id = solver->intsolve->addVar();
-	 ps.push(toLit(id));
-	 for(int i=0; i<gv.size(); ++i){
-		 ps.push(lfromInt(gv[i].guard));
-		 ps.push(toLit(gv[i].value));
-	 }
-	 solver->addClause(ps, INTSPECIAL);
-	 tv.makeSuperInt(id);
-	 return id;	
-}
 
 #endif  /* __TVALUE_H */
 

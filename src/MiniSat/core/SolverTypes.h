@@ -174,19 +174,19 @@ public:
 };
 
 
-int intcLen(Clause& c){
+inline int intcLen(Clause& c){
 	return c.size()/2;
 }
 
-int intcIntVar(Clause& c){
+inline int intcIntVar(Clause& c){
 	return toInt(c[0]);
 }
 
-int intcVal(Clause& c, int i){
+inline int intcVal(Clause& c, int i){
 	return toInt(c[i*2+2]);
 }
 
-Lit& intcLit(Clause& c, int i){
+inline Lit& intcLit(Clause& c, int i){
 	return c[i*2+1];
 }
 

@@ -79,7 +79,16 @@ public:
     void     growTo (int size, const T& pad);
     void     clear  (bool dealloc = false);
     void     capacity (int size) { grow(size); }
-
+	void     remove (const T& val){ T* rd=data; T* wt=data; 
+				for(int i=0; i<sz; ++i){ 
+					if(*rd != val){
+						*wt = *rd;
+						++wt;
+					}
+					++rd;					
+				} 
+				sz = rd-data;
+	}
     // Stack interface:
 #if 1
     void     push  (void)              { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz]) T(); sz++; }
