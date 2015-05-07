@@ -76,10 +76,11 @@ public:
     virtual int solve();
 
     virtual void reset();
-	virtual int plus(int x, int y){ return 0; };
-	virtual int times(int x, int y){ return 0; };
-	virtual void inteq(int x, int y, int rv){};
-	virtual void intlt(int x, int y, int rv){ };
+	virtual iVar plus(iVar x, iVar y){ return 0; };
+	virtual iVar times(iVar x, iVar y){ return 0; };
+	virtual void inteq(iVar x, iVar y, iVar rv){};
+	virtual void intlt(iVar x, iVar y, iVar rv){ };
+	virtual iVar intmux(iVar cond, int len, iVar* choices){ return 0; };
 	virtual int addIntVar(Tvalue& tv){return 0; };
 	virtual int addIntVar(){return 0; };
 	virtual void intSpecialClause(vec<Lit>& ps){};

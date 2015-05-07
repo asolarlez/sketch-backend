@@ -80,10 +80,11 @@ public:
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
 
-	virtual int plus(int x, int y)=0;
-	virtual int times(int x, int y)=0;
-	virtual void inteq(int x, int y, int rv)=0;
-	virtual void intlt(int x, int y, int rv)=0;
+	virtual iVar plus(iVar x, iVar y)=0;
+	virtual iVar times(iVar x, iVar y)=0;
+	virtual iVar intmux(iVar cond, int len, iVar* choices)=0;
+	virtual void inteq(iVar x, iVar y, iVar rv)=0;
+	virtual void intlt(iVar x, iVar y, iVar rv)=0;
 	virtual int addIntVar(Tvalue& tv)=0;
 	virtual int addIntVar()=0;
 	virtual void intSpecialClause(vec<Lit>& ps)=0;

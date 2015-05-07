@@ -44,7 +44,7 @@ public:
      */
 public:
 	
-	bool isInt(){
+	bool isInt() const{
 		return isint;
 	}
 

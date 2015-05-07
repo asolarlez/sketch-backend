@@ -468,17 +468,8 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
         assert(confl != NULL);          // (otherwise should be UIP)
         Clause& c = *confl;
 
-		if(c.mark()==INTSPECIAL){
-			int ln = intcLen(c);
-			int vr;
-				for(int ii=0; ii<ln; ++ii){
-					Lit l = intcLit(c, ii);
-					if(l==p){
-						vr = intcIntVar(c);
-						break;
-					}
-				}
-			vec<Lit>& summary = intsolve->getSummary(vr, NULL);
+		if(c.mark()==INTSPECIAL){			
+			vec<Lit>& summary = intsolve->getSummary(p);
 			for(int i=0; i<summary.size(); ++i){
 				Lit q = summary[i];
 				if (!seen[var(q)] && level[var(q)] > 0){
@@ -702,8 +693,8 @@ Clause* Solver::propagate()
 						if(goodsofar){
 							iconf = intsolve->propagate();
 							goodsofar = (iconf==NULL);							
-						}
-						if(goodsofar){
+						}						
+						if(goodsofar){							
 							int nilen = intsolve->interflen();
 							for(int jjj=ilen; jjj<nilen; ++jjj){
 								Lit ilit = intsolve->interfLit(jjj);

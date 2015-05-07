@@ -1431,13 +1431,31 @@ void NodesToSolver::visit( UFUN_node& node ){
 
 
 
-void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray){
+void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray, bool isInt){
 
 	
 	if(isArray){
 		doArrArrAcc(mval, choices, out);
 		return;
 	}
+
+	if(isInt){
+		Tvalue mv = mval;
+		if(!mv.isInt()){
+			dir.intClause(mv);
+		}
+		vector<iVar> chs;
+		for(int i=0; i<choices.size(); ++i){
+			Tvalue& tv = choices[i];
+			if(!tv.isInt()){
+				dir.intClause(tv);
+			}
+			chs.push_back(tv.getId());
+		}
+		out.makeSuperInt(dir.mux(mv.getId(), chs.size(), &chs[0]));
+		return;
+	}
+
 	if(pnode != NULL){
 		ARRACC_node& node = *pnode;
 		if(node.mother->type == bool_node::LT){
@@ -1536,6 +1554,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
 	const Tvalue& omv = tval_lookup(node.mother) ;	
 	bool isSparse = omv.isSparse();
+	bool isInt = omv.isInt();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
 		int idx = omv.num_ranges[0].value;
@@ -1570,12 +1589,15 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		if(cval.isArray()){
 			isArray=true;
 		}
+		if(cval.isInt()){
+			isInt = true;
+		}
 		choices[i] = cval;
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
 	}
 
-	muxTValues(&node, omv, choices, node_ids[node.id], isBoolean, isArray);
+	muxTValues(&node, omv, choices, node_ids[node.id], isBoolean, isArray, isInt);
 
 //	elooptimer.stop().print();
 //	aracctimer.stop().print();

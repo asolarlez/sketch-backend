@@ -76,21 +76,26 @@ public:
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
 	 virtual void assumeVarClause(int x);
-	 virtual int plus(int x, int y){
-		 int rv = s->intsolve->addVar();
+	 virtual iVar plus(iVar x, iVar y){
+		 iVar rv = s->intsolve->addVar();
 		 s->intsolve->addPlus(x, y, rv);
 		 return rv;
 	 }
-	  virtual int times(int x, int y){
-		 int rv = s->intsolve->addVar();
+	  virtual iVar times(iVar x, iVar y){
+		 iVar rv = s->intsolve->addVar();
 		 s->intsolve->addTimes(x, y, rv);
 		 return rv;
 	 }
-	 virtual void inteq(int x, int y, int rv){		
+	 virtual void inteq(iVar x, iVar y, iVar rv){		
 		 s->intsolve->addEq(x, y, rv);		 
 	 }
-	 virtual void intlt(int x, int y, int rv){		 
+	 virtual void intlt(iVar x, iVar y, iVar rv){		 
 		 s->intsolve->addLt(x, y, rv);		 
+	 }
+	 virtual iVar intmux(iVar cond, int len, iVar* choices){
+		 iVar rv = s->intsolve->addVar();
+		 s->intsolve->addBMux(cond, len, choices, rv);
+		 return rv;
 	 }
 
 	 virtual void addHelper2Clause(int l1, int l2);

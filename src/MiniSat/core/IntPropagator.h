@@ -20,7 +20,7 @@ public:
 	void clear(){ def=false; }
 };
 
-typedef uint32_t iVar;
+
 
 
 class mpair{
@@ -49,7 +49,10 @@ protected:
 	iVar data[0];
 public:
 	Intclause(ctype tp, int sz, iVar a1, iVar a2, iVar a3):type(tp), size_etc(sz<<3){ data[0]=a1; data[1]=a2; data[2]=a3; }	
-	Intclause(ctype tp, int sz,  iVar a1, iVar a2, iVar a3, iVar a4):type(tp), size_etc(sz<<3){ data[0]=a1; data[1]=a2; data[2]=a3; data[3]=a4; }
+	Intclause(ctype tp, int sz,  iVar a1, iVar a2, iVar* ch):type(tp), size_etc(sz<<3){
+		data[0]=a1; data[1]=a2; 
+		for(int i=2; i<sz; ++i){ data[i] = ch[i-2]; }		
+	}
 	ctype tp(){ return type; }
 	void retype(ctype tp){ type = tp; }
 	iVar& operator[](int idx){
@@ -92,9 +95,9 @@ inline Intclause* EqClause(iVar a, iVar b, iVar x){
 	return new (mem)Intclause(EQ, 3, x, a, b);
 }
 
-inline Intclause* BMuxClause(iVar cond, iVar a, iVar b, iVar x){
-	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*5);
-	return new (mem)Intclause(EQ, 4, x, cond, a, b); // the 4 is not an error, there are 4 real things, but then at the end there is a slot to write which child is being watched.
+inline Intclause* BMuxClause(iVar cond, int len, iVar* choices, iVar x){
+	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*(len+3));
+	return new (mem)Intclause(BMUX, len+2, x, cond, choices); // the 4 is not an error, there are 4 real things, but then at the end there is a slot to write which child is being watched.
 } 
 
 inline iVar& watchedIdx(Intclause& ic){
@@ -164,6 +167,7 @@ public:
 		v.set(val);
 		reason[vr] = rson;
 		trail.push(mpair(vr, level, val));	
+		return true;
 	}
 
 	void helper(iVar vr){
@@ -186,6 +190,16 @@ public:
 				}
 			}
 		}
+	}
+
+	vec<Lit>& getSummary(Lit& l){
+		for(int i=interf.size()-1; i>=0; i--){
+			interpair& ip = interf[i];
+			if(ip.l == l){
+				return getSummary(trail[ip.tlevel].var, NULL);
+			}
+		}
+		Assert(false, "WTF");
 	}
 
 	vec<Lit>& getSummary(iVar vr, Intclause* ic){		
@@ -245,12 +259,12 @@ public:
 		watches[a].push(c);
 		watches[b].push(c);
 	}
-	void addBMux(iVar cond, iVar a, iVar b, iVar x){
-		Intclause* c = BMuxClause(cond, a, b, x);
+	void addBMux(iVar cond, int len, iVar* choices, iVar x){
+		Intclause* c = BMuxClause(cond, len, choices, x);
 		clauses.push(c);
 		watches[cond].push(c);
 		watches[x].push(c);
-		watches[a].push(c);
+		watches[choices[0]].push(c);
 		watchedIdx(*c)=2;
 	}
 
@@ -292,7 +306,7 @@ private:
 			}
 		}
 	}
-
+	// x = me * other;
 	action timesHelper(iVar x, const mpair& me, iVar other, Intclause* c){
 		Val vx = vals[x];
 		Val voth = vals[other];
@@ -310,6 +324,13 @@ private:
 				//vx is defined, but voth is not. That means we need to set other.
 				//but we first need to check if the values of vx and me are compatible. 
 				//Recall we are dealing with ints, so if vx is not a multiple of me, we cannot set voth.
+				if(me.val == 0){
+					if(vx.v()==0){
+						return ADV;
+					}else{
+						return CONFL;
+					}
+				}
 				if(vx.v() % me.val != 0){
 					return CONFL;
 				}
@@ -352,6 +373,13 @@ private:
 			else{			
 				//vx is defined, but voth is not. That means we need to set other.
 				//we also need to check that me is divisible by x.
+				if(vx.v()==0){
+					if(me.val==0){
+						return ADV;
+					}else{
+						return CONFL;
+					}
+				}
 				if(me.val % vx.v() != 0){ 
 					return CONFL;
 				}
@@ -365,6 +393,14 @@ private:
 		}else{// vx is not defined. need to check voth.
 			if(voth.isDef()){
 				//voth is defined, but vx is not. We need to set a
+				if(voth.v()==0){
+					if(me.val==0){
+						return ADV;
+					}else{
+						return CONFL;
+					}
+				}
+
 				if(me.val % voth.v() != 0){ 
 					return CONFL;
 				}
@@ -405,6 +441,14 @@ private:
 		}else{// vx is not defined. need to check voth.
 			if(voth.isDef()){
 				//voth is defined, but vx is not. We need to set a
+				if(me.val==0){
+					if(voth.v()==0){
+						return ADV;
+					}else{
+						return CONFL;
+					}
+				}
+
 				if(voth.v() % me.val != 0){ 
 					return CONFL;
 				}
@@ -507,6 +551,7 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouln't be here");
 	}
 
 
@@ -558,6 +603,7 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouln't be here");
 	}
 
 
@@ -608,13 +654,14 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouln't be here");
 	}
 	action bmuxHelperCond(iVar x, const mpair& cond,  Intclause* c){
 		iVar in = (*c)[cond.val + 2];
 		Val vin = vals[in];
 		Val vx = vals[x];
 		if(vin.isDef()){
-			if(vx.isDef()){
+			if(vx.isDef()){				
 				if(vin.v() != vx.v()){
 					return CONFL;
 				}else{
@@ -688,25 +735,62 @@ private:
 			int sz = c->size();
 			towatch = -1;
 			for(int i=1; i<sz-2; ++i){
-				int cidx = 2+((idx + i)%(sz-2));
+				int cidx = 2+((idx-2 + i)%(sz-2));
 				iVar nxt = (*c)[cidx];
 				Val vnxt = vals[nxt];
 				if(vnxt.isDef() && vnxt.v() != watched.val){
 					//another choice is also set and has a different value, so they are not all the same.
+					//but if sz==4, then it means all choices are now set, so we can propagate to cond if vx is set.
+					if(sz == 4 && vx.isDef()){
+						 if(vnxt.v()==vx.v()){
+							if(uncheckedSetVal(cond, cidx-2, watched.level, c)){								
+								return ADV;
+						 	}else{								
+								return CONFL;
+							}
+						 }
+						 if(watched.val == vx.v()){
+							if(uncheckedSetVal(cond, idx-2, watched.level, c)){
+								return ADV;
+						 	}else{
+								return CONFL;
+							}
+						 }
+						 return CONFL;
+					}
 					return ADV;
 				}
 				if(!vnxt.isDef()){
 					towatch = cidx;
 				}
 			}
-			if(towatch = -1){
+			if(towatch == -1){
 				//They are all defined and they are all the same.
-				if(uncheckedSetVal(x, watched.val, watched.level, c)){
-					return ADV;
+				if(vx.isDef()){
+					if(vx.v() != watched.val){
+						return CONFL;
+					}else{
+						return ADV;
+					}
 				}else{
-					return CONFL;
+					if(uncheckedSetVal(x, watched.val, watched.level, c)){
+						return ADV;
+					}else{
+						return CONFL;
+					}
 				}
 			}else{
+				if(sz == 4 && vx.isDef() && watched.val != vx.v()){
+					if(uncheckedSetVal((*c)[towatch], vx.v(), watched.level, c)){
+						if(uncheckedSetVal(cond, towatch-2, watched.level, c)){
+							return ADV;
+						}else{
+							return CONFL;
+						}
+					}else{
+						return CONFL;
+					}
+				}
 				//Not all defined, but all the defined ones are the same.
 				//Watch one of the remaining ones.
 				return REPL;
@@ -747,8 +831,10 @@ private:
 		//we just set p. So p must be one of the watched vars.
 		//it can either be c[0] (x) c[1] (cond) or c[watchedIdx(c)];
 		if(p.var == c[0]){
+			
 			act = bmuxHelperX(p, c[1]  , &c);
 		}else if(p.var == c[1]){
+			
 			act = bmuxHelperCond(c[0], p  , &c);
 			if(act==REPL){
 				//cond has been set, but the output has not. We want to make sure we are observing the input
@@ -764,6 +850,7 @@ private:
 				act=ADV;
 			}
 		}else{
+			
 			// in this case p.var must equal c[watchedIdx(c)];
 			int newidx;
 			act = bmuxHelperWatched(p, c[0], c[1], newidx, &c);
@@ -781,6 +868,7 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouln't be here");
 	}
 
 	bool propagatePlus(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
@@ -829,6 +917,7 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouldn't be here");
 	}
 
 
@@ -879,6 +968,7 @@ private:
 			*j++ = &c;
 			return false;
 		}
+		Assert(false, "Shouln't be here");
 	}
 
 public:
@@ -892,6 +982,7 @@ public:
 			for (i = j = &ws[0], end = i + ws.size();  i != end;){
 				Intclause& c = **i++;
 				//unlike sat, we do not reorder vars. too much trouble.
+				
 				bool goodsofar=false;
 				if(c.tp()==PLUS){
 					goodsofar = propagatePlus(c,p,i,j);					
@@ -912,6 +1003,7 @@ public:
 					goodsofar = propagateBMux(c,p,i,j);
 				}
 				if(!goodsofar){
+					//cout<<"CONFLICTING "; c.print(); cout<<" "<<p.var<<endl;
 					confl = &c;
 					qhead = trail.size();
 					while(i<end)
@@ -931,6 +1023,9 @@ public:
 			reason[p.var]=NULL;
 			pos--;
 			trail.pop();
+		}
+		while(interf.size() > 0 && interf[interf.size()-1].tlevel >= trail.size()){
+			interf.pop();
 		}
 		qhead = trail.size();
 	}

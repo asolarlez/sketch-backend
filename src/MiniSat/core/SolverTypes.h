@@ -47,6 +47,7 @@ namespace MSsolverNS{
 typedef int Var;
 #define var_Undef (-1)
 
+typedef uint32_t iVar;
 
 class Lit {
     int     x;

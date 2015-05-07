@@ -113,13 +113,16 @@ int SolverHelper::intlt(int x, int y){
 
 int SolverHelper::intClause(Tvalue& tv){
 	SATSolver* solver = (&getMng());
-
+	if(!tv.isSparse()){
+		tv.makeSparse(*this);
+	}
 	if(tv.getSize()==1){
 		int id = solver->addIntVar();
 		const gvvec& gv=tv.num_ranges;
 		int val = gv[0].value;
 		solver->setIntVal(id, val);
 		tv.makeSuperInt(id);
+		cout<<" TV="<<tv<<endl;
 		return id;
 	}
 
@@ -136,6 +139,7 @@ int SolverHelper::intClause(Tvalue& tv){
 	 }
 	 solver->intSpecialClause(ps);
 	 tv.makeSuperInt(id);
+	 cout<<" TV="<<tv<<endl;
 	 return id;	
 }
 

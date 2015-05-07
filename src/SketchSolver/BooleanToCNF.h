@@ -293,7 +293,9 @@ public:
 	int times(int x, int y){
 		return mng.times(x, y);
 	}
-
+	int mux(iVar cond, int len, iVar* choices){
+		return mng.intmux(cond, len, choices);
+	}
 
 	int inteq(int x, int y);
 

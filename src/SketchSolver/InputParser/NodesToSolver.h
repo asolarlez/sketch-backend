@@ -156,7 +156,7 @@ public:
     virtual bool checkParentsChanged (bool_node &node, bool more);	
 	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
  void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
+ void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray, bool isInt = false);
  void computeMaxOrMin(const gvvec& mv,const gvvec& fv, gvvec& out, bool doMax);
  void arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& out);
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
