@@ -421,8 +421,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         }
       }
       
-      
+      node.makeAssertsHard();
       TUPLE_CREATE_node* new_output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
+  
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
       int outSize = new_output->multi_mother.size();
       
@@ -756,6 +757,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);						
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
+            
+            if (node.hardAsserts()) {
+              ufun->makeAssertsHard();
+            }
 
 						if(!ufun->ignoreAsserts){													
 							DllistNode* tt = getDllnode(ufun);
@@ -899,6 +904,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						n->mother = ornode;
 						*/
 						
+            if (node.hardAsserts()) {
+              dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
+            }
 					}else{
 						bool_node* cur = n->mother;
 						n->mother = nprime->mother;

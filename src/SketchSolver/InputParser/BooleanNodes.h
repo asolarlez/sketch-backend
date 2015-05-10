@@ -900,15 +900,16 @@ class UFUN_node: public arith_node, public DllistNode{
     string tupleName;
 	//string name;
 	bool isDependent;
+  bool hardAssert;
 	public:
 	bool ignoreAsserts;
 	string outname;
 	int fgid;
     
-    UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), isDependent(false){
+    UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false){
         nbits=1;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent){ }
 	
     void modify_ufname(string& name) {
       ufname = name;
@@ -919,6 +920,14 @@ class UFUN_node: public arith_node, public DllistNode{
     }
     bool dependent() const{
         return isDependent;
+    }
+  
+    void makeAssertsHard() {
+      hardAssert = true;
+    }
+  
+    bool hardAsserts() const {
+      return hardAssert;
     }
     
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
