@@ -113,6 +113,7 @@ class IntPropagator{
 	// Map from 
 	vec<Val> vals;
 	vec<mpair> trail;
+	vec<int> tpos;
 	vector<Tvalue> mappings;
 	vec<interpair> interf;
 	vec<Lit> explain;
@@ -148,6 +149,7 @@ public:
 		mappings.push_back(tv);
 		seen.push();
 		reason.push();
+		tpos.push(-1);
 		return rv;
 	}
 
@@ -170,15 +172,26 @@ public:
 		return true;
 	}
 
-	void helper(iVar vr){
+	/*
+	Note about helper: 
+	The reasons returned by getSummary should only include variables that come before me in the 
+	trial. However, there are situations when a clause forced an assignment without being fully 
+	assigned (i.e. a mux can force an assignment even if some of its choices are not set), but then 
+	some of those unassigned entries got assigned. so that when I call getSummary, they get returned 
+	as part of the reason even though they came afterward!!!. 
+	This is fixed by checking that vrlev  <maxtpos.
+		
+	*/
+	void helper(iVar vr, int maxtpos){
 		Intclause* ic = reason[vr];
 		if(ic==NULL){
 			//either interface or unset.
 			Lit tmp;
 			Val& vv = vals[vr];
-			if(vv.isDef() && checkLegal(vr, vv.v(), tmp)){
+			int vrlev = tpos[vr];
+			if(vv.isDef() &&  vrlev >= 0 && (maxtpos<0 || vrlev < maxtpos) && checkLegal(vr, vv.v(), tmp)){
 				if(var(tmp)!=var_Undef){
-					explain.push(tmp);
+					explain.push(~tmp);
 				}
 			}
 		}else{
@@ -186,36 +199,53 @@ public:
 				iVar iv = (*ic)[i];
 				if(seen[iv]==0){
 					seen[iv] = 1;
-					helper(iv);
+					helper(iv, maxtpos);
 				}
 			}
 		}
 	}
 
+	/*
+	look at the root causes that led to lit to be set to its current value. 
+    the return vector contains a list of literals such that if any of those had been true, lit would not have its current value.
+	in general, this will not contain lit unless lit was set from scratch.
+	*/
 	vec<Lit>& getSummary(Lit& l){
+		
 		for(int i=interf.size()-1; i>=0; i--){
 			interpair& ip = interf[i];
-			if(ip.l == l){
-				return getSummary(trail[ip.tlevel].var, NULL);
+			if(ip.l == l){	
+				int lev = ip.tlevel;
+				return getSummary(trail[lev].var, NULL, lev);
 			}
 		}
 		Assert(false, "WTF");
 	}
 
-	vec<Lit>& getSummary(iVar vr, Intclause* ic){		
-		explain.clear();
+	/**
+	 if(ic==null){
+		look at the root causes that led to vr to be set to its current value. 
+		the return vector contains a list of literals such that if any of those had been true, vr would not have its current value.
+	 }else{
+	    it is assumed that ic is a conflict that was returned by propagate.
+		we will return a list of literals such that if any of those literals
+		had ben true, that clause would not have failed in the same way.
+	 }
+	*/
+	vec<Lit>& getSummary(iVar vr, Intclause* ic, int lev = -1){		
+		explain.clear(); 
 		for(int i=0; i< seen.size(); ++i){
 			seen[i] = 0;
 		}
 		if(ic == NULL){
 			seen[vr] = 1;
-			helper(vr);	
+			helper(vr, lev);	
 		}else{
 			for(int i=0; i<ic->size(); ++i){
 				iVar iv = (*ic)[i];
 				if(seen[iv]==0){
 					seen[iv] = 1;
-					helper(iv);
+					helper(iv, lev);
 				}
 			}
 		}		
@@ -229,7 +259,8 @@ public:
 			return v.v()==val;
 		}else{
 			v.set(val);
-			trail.push(mpair(var, level, val));			
+			tpos[var] = trail.size();
+			trail.push(mpair(var, level, val));					
 			return true;
 		}
 	}
@@ -1021,6 +1052,7 @@ public:
 			mpair p = trail[pos];
 			vals[p.var].clear();
 			reason[p.var]=NULL;
+			tpos[p.var] = -1;
 			pos--;
 			trail.pop();
 		}
@@ -1030,7 +1062,7 @@ public:
 		qhead = trail.size();
 	}
 
-	
+	Lit existingLit(iVar vr);
 	void dump();
 
 };

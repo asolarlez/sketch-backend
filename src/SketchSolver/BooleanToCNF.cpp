@@ -112,6 +112,7 @@ int SolverHelper::intlt(int x, int y){
 
 
 int SolverHelper::intClause(Tvalue& tv){
+	if(tv.isInt()){ return tv.getId(); }
 	SATSolver* solver = (&getMng());
 	if(!tv.isSparse()){
 		tv.makeSparse(*this);

@@ -469,13 +469,14 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
         Clause& c = *confl;
 
 		if(c.mark()==INTSPECIAL){			
-			vec<Lit>& summary = intsolve->getSummary(p);
+			vec<Lit>& summary = intsolve->getSummary(p);					
 			for(int i=0; i<summary.size(); ++i){
 				Lit q = summary[i];
-				if (!seen[var(q)] && level[var(q)] > 0){
+				int qlev = level[var(q)];				
+				if (!seen[var(q)] && qlev > 0){
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if (level[var(q)] >= decisionLevel())
+					if (qlev >= decisionLevel())
 						pathC++;
 					else{
 						out_learnt.push(q);
@@ -643,6 +644,7 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
 }
 
 
+
 vec<char> tempstore;
 
 /*_________________________________________________________________________________________________
@@ -685,25 +687,48 @@ Clause* Solver::propagate()
 				for(int ii=0; ii<ln; ++ii){
 					Lit l = intcLit(c, ii);
 					if(l==p){
-						int var = intcIntVar(c);
+						int vr = intcIntVar(c);
 						int val = intcVal(c, ii);
 						int ilen = intsolve->interflen();
-						bool goodsofar = intsolve->setVal(var, val, decisionLevel());
+						bool goodsofar = intsolve->setVal(vr, val, decisionLevel());
 						Intclause* iconf=NULL;
 						if(goodsofar){
 							iconf = intsolve->propagate();
 							goodsofar = (iconf==NULL);							
-						}						
+						}else{
+							//trying to set vr to two different values (it already has one).
+							Lit oth = intsolve->existingLit(vr);
+							vec<Lit> ps;
+							ps.push(~oth); ps.push(~p);
+							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+							confl = new (&tempstore[0]) Clause(ps, true);
+							*j++ = &c;
+							while (i < end)
+								*j++ = *i++;
+								
+							qhead = trail.size();
+							goto FoundWatch;
+						}
 						if(goodsofar){							
 							int nilen = intsolve->interflen();
 							for(int jjj=ilen; jjj<nilen; ++jjj){
 								Lit ilit = intsolve->interfLit(jjj);
 								lbool vvv = value(ilit);
-								if(vvv==l_False){
-									cout<<"WHOAAAAAA"<<endl;
-									//there is a conflict here!!!
-									//this can only hapen if var(ilit) is still in the stack
-									//so if we do nothing, the system will later figure it out.
+								if(vvv==l_False){									
+									vec<Lit>& ps = intsolve->getSummary(ilit);
+									// in this case, getSummary returns the causes that led to ilit to have the bad value, but by themselves, they do not
+									//constitute a bad assignment. However, those causes force ilit to be true. Also, by convention, if ilit is the problematic
+									//variable, the solver expects it to be the first variable in the clause.
+									ps.push(ps[0]);
+									ps[0] = ilit;
+									tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+									confl = new (&tempstore[0]) Clause(ps, true);
+									*j++ = &c;
+									while (i < end)
+										*j++ = *i++;
+								
+									qhead = trail.size();
+									goto FoundWatch;
 								}
 								if(vvv==l_Undef){
 									uncheckedEnqueue(ilit, &c);
@@ -713,7 +738,13 @@ Clause* Solver::propagate()
 							goto FoundWatch;
 						}else{
 							//If we are here, there was a conflict. 
-							vec<Lit>& ps = intsolve->getSummary(var, iconf);
+							//if iconf is not null, then it means there was a contradiction inside intsolve, 
+							//so the root causes for the contradiction constitute a bad assignment. 
+							//on the other hand, if iconf is null, it means the value we are setting contradicts
+							// something the solver already had for that value, but if that were the case, 
+							//the solver would have told us? 
+							Assert(iconf!= NULL, "Maybe?");
+							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
 							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;

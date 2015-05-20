@@ -1481,8 +1481,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 //		nonbooltimer.restart();
 		doNonBoolArrAcc(mval, choices, out);
 //		nonbooltimer.stop().print();
-//		aracctimer.stop().print();
-		Dout(cout<<node.get_name()<<"  "<<out<<endl);
+//		aracctimer.stop().print();		
 		return;
 	}
 	Dout(cout<<" is boolean"<<endl);
@@ -1502,7 +1501,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 			}
 		}
 		out = cvar;
-		Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
+		Dout(cout<<"ARRACC "<<pnode->get_name()<<"  "<<out<<"   "<<pnode<<endl);
 //		aracctimer.stop().print();
 		return;
 	}
@@ -1534,7 +1533,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
 		out = result;		
 	}
-	Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
+	Dout(cout<<"ARRACC "<<pnode->get_name()<<"  "<<out<<"   "<<pnode<<endl);
 }
 
 
@@ -1782,8 +1781,13 @@ void NodesToSolver::visit( ARRASS_node& node ){
     // multi-mother[0] = old-value;
     // multi-mother[1] = new-value;
     // if( mother == quant ) return multi-mother[1]; else return multi-mother[0];
+
+	bool isInt = false;
+
     bool_node* mother = node.mother;
     const Tvalue& mval = tval_lookup(mother) ;
+	isInt = isInt || mval.isInt();
+
     int quant = node.quant;
     Dout(cout<<" mother = "<<((mother != NULL)?mother->get_name():"NULL")<<"  mid = "<<mval<<"  mquant = "<<quant<<endl);
     vector<bool_node*>::iterator it = node.multi_mother.begin();    
@@ -1797,6 +1801,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		if( cval.isSparse() ){
 		    isBoolean = false;
 		}
+		isInt = isInt || cval.isInt();
 		Assert(!cval.isArray(), "ARRASS doesn't work for arrays");
 		mothers[i] = *it;
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"   ");
@@ -1804,7 +1809,42 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
     }
-    if(!checkParentsChanged( node, parentSame)){ return; }
+
+	if(isInt){
+		if(mval.isInt()){
+			Assert(false, "NYI");
+		}else{
+			int guard;
+			if( !mval.isSparse() ){
+				if(quant > 1 || quant < 0){
+					guard = -YES;
+				}else{	    
+					Dout(cout<<" mval = "<<mval<<endl);
+					guard = dir.addXorClause(mval.getId (), quant==0?YES:-YES);
+				}
+			}else{
+				guard = -YES;
+				const gvvec& nrange = mval.num_ranges;
+				for(int i=0; i<nrange.size(); ++i){
+					if( nrange[i].value == quant){
+					guard = mval.getId (i);
+					break;
+					}
+				}
+			}
+			Tvalue tvidx = guard;
+			dir.intClause(tvidx);
+			vector<iVar> chs;
+			for(int i=0; i<choices.size(); ++i){
+				chs.push_back(dir.intClause(choices[i]));
+			}
+			node_ids[node.id].makeSuperInt(dir.mux(tvidx.getId(), chs.size(), &chs[0]) );
+			return;
+		}
+	}
+
+	
+	if(!checkParentsChanged( node, parentSame)){ return; }
     int guard;
     if( !mval.isSparse() ){
 		if(quant > 1 || quant < 0){
@@ -2554,7 +2594,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
 	tmpdag = &bdag;
 	stopAddingClauses = false;
-
+	bdag.lprint(cout);
 	bool isNegated = dir.getMng().isNegated();
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{

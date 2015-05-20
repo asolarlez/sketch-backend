@@ -12,7 +12,7 @@
 #include "MiniSATSolver.h"
 
 
-#define Dout( out )  /*    out   */
+#define Dout( out )   /*   out   */
 
 
 void MiniSATSolver::markInput(int id){
