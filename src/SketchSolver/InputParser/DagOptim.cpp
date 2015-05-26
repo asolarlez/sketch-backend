@@ -1047,21 +1047,57 @@ void DagOptim::visit( TUPLE_R_node& node){
             }
         }
         if(allTuple){
-            ARRACC_node* newParent = new ARRACC_node();
-            newParent->mother = parent->mother;
-            for(int i=0; i< parent->multi_mother.size(); i++){
-                TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
-                if(idx >= tuple_i->multi_mother.size()|| idx <0){
-                    rvalue = &node;
-                    return;
+            if (!node.getOtype()->isArr || parent->mother->getOtype() == OutType::BOOL) {
+                ARRACC_node* newParent = new ARRACC_node();
+                newParent->mother = parent->mother;
+                for(int i=0; i< parent->multi_mother.size(); i++){
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
+                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+                        rvalue = &node;
+                        return;
+                    }
+                    
+                    newParent->multi_mother.push_back(tuple_i->multi_mother[idx]);
                 }
+                newParent->addToParents();
+                node.dislodge();
+                rvalue = optAdd(newParent);
+                return;
+              
+            } else {
+                int size = parent->multi_mother.size();
+                bool_node* mother = parent->mother;
+                bool_node* curr;
                 
-                newParent->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                
+                for (int i = size - 1; i >= 0; i--) {
+                    EQ_node* eq_node = new EQ_node();
+                    eq_node->mother = mother;
+                    eq_node->father = getCnode(i);
+                    eq_node->addToParents();
+                    
+                    ARRACC_node* an = new ARRACC_node();
+                    an->mother = optAdd(eq_node);
+                    if (i == size - 1) {
+                        an->multi_mother.push_back(getCnode(0));
+                    } else {
+                        an->multi_mother.push_back(curr);
+                    }
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
+                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+                        rvalue = &node;
+                        return;
+                    }
+                    
+                    an->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                    an->addToParents();
+                    curr = optAdd(an);
+                    
+                }
+                Assert(curr != NULL, "This is not possible");
+                rvalue = curr;
+                return;
             }
-            newParent->addToParents();
-            node.dislodge();
-            rvalue = optAdd(newParent);
-            return;
         }
         
     }
