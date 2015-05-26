@@ -2163,7 +2163,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
           binChoice[1] = cval;
           
           Tvalue rhs = tvOne;
-          rhs.intAdjust(i);
+          rhs.intAdjust(tsidx);
           Tvalue cond = tvYES;
           createCond(tid, rhs, cond);
           Tvalue out = tvOne;
