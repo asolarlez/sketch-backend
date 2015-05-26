@@ -1800,7 +1800,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 
 
 void
-NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar){
+NodesToSolver::arrRTvalue(bool isBool, Tvalue& index, Tvalue& inarr, Tvalue& nvar){
 	if(!index.isSparse()){
 		index.makeSparse(dir);
 	}
@@ -1919,7 +1919,7 @@ NodesToSolver::arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& nvar
 	// especially when type is BIT
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
-	if(isInt){
+	if(!isBool){
 		vector<guardedVal>& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());
@@ -1959,7 +1959,7 @@ NodesToSolver::visit( ARR_R_node &node){
 	Tvalue index = tval_lookup(node.mother);
 	Tvalue inarr = tval_lookup(node.father);
 
-	arrRTvalue(node.getOtype() == OutType::INT, index, inarr, node_ids[node.id]);
+	arrRTvalue(node.getOtype() == OutType::BOOL, index, inarr, node_ids[node.id]);
 //	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 
