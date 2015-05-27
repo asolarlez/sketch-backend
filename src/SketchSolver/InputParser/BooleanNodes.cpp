@@ -115,6 +115,11 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 			return t1;
 		}
 	}
+    if(t2->isArr){
+        if(((Arr*)t2)->atype->isTuple){
+            return t2;
+        }
+    }
   	if( t2 == t1 ){
         return t1; 
   	}else{ 		

@@ -1095,6 +1095,7 @@ void DagOptim::visit( TUPLE_R_node& node){
                     
                 }
                 Assert(curr != NULL, "This is not possible");
+                node.dislodge();
                 rvalue = curr;
                 return;
             }
@@ -2247,6 +2248,9 @@ void DagOptim::visit( ARRASS_node& node ){
 	}
 
 	OutType* ot = node.getOtype();
+    if (ot->isArr) {
+        Assert(false, "This is bad");
+    }
     if(node.quant == 0  &&  (ot == OutType::INT || ot == OutType::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
         
 		vector<bool_node*>  vv;		
