@@ -39,9 +39,14 @@ class varRange{
 
 class SolverHelper {
 	StringHTable2<int> memoizer;
+
+	StringHTable2<int> intmemo;
+
 	bool doMemoization;
     map<string, int> varmap;
     map<string, int> arrsize;
+	map<int, int> bitToInt;
+	map<int, int> iToBit;
     int varCnt;
 	int lastVar;
     SATSolver& mng;
@@ -57,6 +62,28 @@ class SolverHelper {
 		writeInt(tch, id2, p);
 		tch[p] = 0;		
 		return p;
+	}
+
+	int setStrTV(Tvalue& tv);
+
+	int setStriMux(iVar cond, iVar* a, int last){
+		int p = 0;
+		if(last*10 > tmpbuf.size()){ tmpbuf.resize(last * 11); }
+		char* tch = &tmpbuf[0];
+		{
+			int tt = cond;
+			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
+			writeInt(tch, tt, p);
+			tch[p] = ':'; p++;
+		}
+		for(int ol = 0; ol < last; ++ol){
+			int tt = a[ol];
+			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
+			writeInt(tch, tt, p);
+			tch[p] = ','; p++;
+		}
+		tch[p-1] = 0;
+		return p-1;
 	}
 
 	int setStrBO(int* a, int last, char separator = '|', int ofst = 1){
@@ -88,6 +115,7 @@ class SolverHelper {
 		return p;
 	}
 
+	void regIclause(int id, Tvalue& tv);
 public:
     int YES;
 	string lastErrMsg;
@@ -95,6 +123,13 @@ public:
 	map<string, int>::const_iterator arrsize_begin(){
 		return arrsize.begin();
 	}
+
+	int bitToI(int bitid){
+		return bitToInt[bitid];
+	}
+
+
+	int intToBit(int id);
 
 	void writeDIMACS(ofstream& dimacs_file);
 
@@ -163,6 +198,7 @@ public:
 
     void reset() {
 		memoizer.clear();
+		intmemo.clear();
 		varmap.clear();
 		arrsize.clear();
 		lastVar = 0;
@@ -287,15 +323,15 @@ public:
 
 	int intClause(Tvalue& tv);
 
-	int plus(int x, int y){
-		return mng.plus(x, y);
-	}
-	int times(int x, int y){
-		return mng.times(x, y);
-	}
-	int mux(iVar cond, int len, iVar* choices){
-		return mng.intmux(cond, len, choices);
-	}
+	int plus(int x, int y);
+	int minus(int x, int y);
+	int times(int x, int y);
+
+	int mod(int x, int y);
+
+	int div(int x, int y);
+
+	int mux(iVar cond, int len, iVar* choices);
 
 	int inteq(int x, int y);
 

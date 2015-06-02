@@ -1,5 +1,5 @@
 #include "driver.h"
-#include "SFIOutputSeq.h"
+
 #include "DagOptimizeCommutAssoc.h"
 #include "BackwardsAnalysis.h"
 #include "InterpreterEnvironment.h"
@@ -116,79 +116,4 @@ void PyDriver::parseInput(){
 }
 
 
-
-
-int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, SATSolver* finder, SATSolver* checker, string& name){
-
-	BooleanDAG* skOri = sketch->clone();
-	Assert(false, "OBSOLETE");
-	BooleanDAG* miter = NULL; /* prepareMiter(spec, sketch, funMap, name);*/
-
-	BooleanDAG* rest = NULL;
-	for(map<string, BooleanDAG*>::iterator it = funMap.begin(); it != funMap.end(); ++it){
-		int rpos = it->first.find("rest");
-		if( rpos != -1){
-			rest = it->second;
-		}
-	}
-
-	SolverHelper f(*finder);
-	SolverHelper ch(*checker);
-	SFIOutputSeq solver(out, miter, f, ch, params, rest, skOri);
-  						   
-	
-  	
-	if(params.outputEuclid){      		
-		ofstream fout("bench.ucl");
-		solver.outputEuclid(fout);
-	}
-  	
-//	if(params.output2QBF){
-//		solver.setup2QBF(cout);
-//		string fname = name;
-//		fname += "_2qbf.blif";
-//		cout<<" OUTPUTING 2QBF problem to file "<<fname<<endl;
-//		dynamic_cast<ABCSATSolver*>(checker)->completeProblemSetup();
-//		dynamic_cast<ABCSATSolver*>(checker)->outputToFile(fname);
-//	}
-  	
-  	
-	if( params.hasCpt ){ 
-		string fname = params.cptfile;
-		fname += "_";
-		fname += name;
-		solver.setCheckpoint(fname);
-		}
-	// solver.setup();
-	int solveCode = 0;
-	try{
-		if(!params.hasRestore){
-  			solveCode = solver.solve();
-		}else{	  			
-			string fname = params.restorefile;
-			fname += "_";
-			fname += name;
-			cout<<"restoring from "<<fname<<endl;
-			ifstream input(fname.c_str());
-			solveCode = solver.solveFromCheckpoint(input);
-		}
-	}catch(SolverException* ex){
-		cout<<"ERROR "<<name<<": "<<ex->code<<"  "<<ex->msg<<endl;
-//		ABCSolverEnd();
-		return ex->code + 2;
-	}catch(BasicError& be){
-		cout<<"ERROR: "<<name<<endl;
-//		ABCSolverEnd();
-		return 3;
-	}
-	if( solveCode ){
-		solver.output_control_map(out);
-	}else{
-		cout<<"** Outputing bad controls"<<endl;
-		solver.output_control_map(out);
-//		ABCSolverEnd();
-		return 1;	
-	}
-	return 0;
-}
 

@@ -51,13 +51,6 @@ public:
 };
 
 
-class Driver2: public Driver{
-public:
-	Driver2(CommandLineArgs& p_params):Driver(p_params){
-	}
-
-	virtual int solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map<string, BooleanDAG*>& funMap, SATSolver* finder, SATSolver* checker, string& name);
-};
 
 /*Driver used by the python implementation of sketch-wrapper*/
 class PyDriver: public Driver{

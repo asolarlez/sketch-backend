@@ -395,6 +395,26 @@ void NodesToSolver::processLT (LT_node& node){
 	if(mval.isArray() || fval.isArray()){
 		Assert(false, "Can't do < on arrays");
 	}
+
+	if(mval.isInt() || fval.isInt()){
+		
+		if(!mval.isInt()){
+			dir.intClause(mval);
+		}
+		
+		if(!fval.isInt()){
+			dir.intClause(fval);
+		}
+		
+		{
+			 node_ids[node.id]= (dir.intlt(mval.getId(), fval.getId()));
+			 cout<<"LT  "<<node.id<<" = "<<node_ids[node.id]<<endl;
+			 return;
+		}
+		Assert(false, "Aqirueop");
+	}
+
+
 	mval.makeSparse (dir);
     fval.makeSparse (dir);
     int cvar = -YES;
@@ -905,6 +925,14 @@ NodesToSolver::processArith (bool_node &node)
 			 node_ids[node.id].makeSuperInt(dir.times(mval.getId(), fval.getId()));
 			 return;
 		}
+		if(node.type== bool_node::MOD){
+			 node_ids[node.id].makeSuperInt(dir.mod(mval.getId(), fval.getId()));
+			 return;
+		}
+		if(node.type== bool_node::DIV){
+			 node_ids[node.id].makeSuperInt(dir.div(mval.getId(), fval.getId()));
+			 return;
+		}
 		Assert(false, "Aqirueop");
 	}
 
@@ -1097,37 +1125,58 @@ NodesToSolver::boolNodeUpdate (bool_node &node, Tvalue &nvar)
 
 
 void NodesToSolver::visit( AND_node& node ){
-	const Tvalue& fval = tval_lookup(node.father);
-	const Tvalue& mval = tval_lookup(node.mother);
-	if(!checkParentsChanged(node, true)){ Dout( cout<<fval<<" AND "<<mval<<" unchanged"<<endl  ); return; }	
-	Tvalue oldnvar(node_ids[node.id]);
+	Tvalue fval = tval_lookup(node.father);
+	Tvalue mval = tval_lookup(node.mother);
+	
+	if(fval.isInt()){
+		fval = dir.intToBit(fval.getId());
+	}
+	if(mval.isInt()){
+		mval = dir.intToBit(mval.getId());
+	}
+
+	
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addAndClause(fval.getId (), mval.getId ());
-	node.flag = oldnvar != nvar;
+	
 	Dout(cout<<"AND "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
 
 
 void NodesToSolver::visit( OR_node& node ){
-	if(!checkParentsChanged( node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
-	const Tvalue& fval = tval_lookup(node.father);
-	const Tvalue& mval = tval_lookup(node.mother);
-	Tvalue oldnvar(node_ids[node.id]);
+	
+	Tvalue fval = tval_lookup(node.father);
+	Tvalue mval = tval_lookup(node.mother);
+	
+	if(fval.isInt()){
+		fval = dir.intToBit(fval.getId());
+	}
+	if(mval.isInt()){
+		mval = dir.intToBit(mval.getId());
+	}
+
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addOrClause(fval.getId (), mval.getId ());
-	node.flag = oldnvar != nvar;
+	
 	Dout(cout<<"OR "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
 void NodesToSolver::visit( XOR_node& node ){
-	if(!checkParentsChanged( node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }
-	const Tvalue& fval = tval_lookup(node.father);
-	const Tvalue& mval = tval_lookup(node.mother);
-	Tvalue oldnvar(node_ids[node.id]);
+	
+	Tvalue fval = tval_lookup(node.father);
+	Tvalue mval = tval_lookup(node.mother);
+	
+	if(fval.isInt()){
+		fval = dir.intToBit(fval.getId());
+	}
+	if(mval.isInt()){
+		mval = dir.intToBit(mval.getId());
+	}
+
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addXorClause(fval.getId (), mval.getId ());
-	node.flag = oldnvar != nvar;
+	
 	Dout(cout<<"XOR "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
@@ -1229,6 +1278,13 @@ NodesToSolver::visit (NOT_node &node)
     }
 
     const Tvalue &mval = tval_lookup (node.mother);
+
+	if(mval.isInt()){
+		Tvalue nvar = -dir.intToBit(mval.getId());
+		boolNodeUpdate (node, nvar);
+		return;
+	}
+
     if(!( mval.getType() == TVAL_BVECT && mval.getSize() == 1 )){
     	cerr<<" BAD NODE "<<endl;
     	node.mother->outDagEntry(cerr);
@@ -1257,6 +1313,16 @@ NodesToSolver::visit (NEG_node &node)
     }
 
     const Tvalue &mval = tval_lookup (node.mother);
+
+	if(mval.isInt()){
+		Tvalue tv;
+		tv.makeIntVal(YES, 0);			
+		int gid = dir.intClause(tv);					
+		node_ids[node.id].makeSuperInt(dir.minus(gid, mval.getId()) );
+		return;
+
+	}
+
     Tvalue nvar = mval.toComplement(dir);
     boolNodeUpdate (node, nvar);
 
@@ -1811,8 +1877,27 @@ void NodesToSolver::visit( ARRASS_node& node ){
     }
 
 	if(isInt){
-		if(mval.isInt()){
-			Assert(false, "NYI");
+		if(mval.isInt()){			
+			Tvalue tv;
+			tv.makeIntVal(YES, node.quant);			
+			int gid = dir.intClause(tv);			
+			int beqid = dir.inteq( gid , mval.getId());
+			int eqid;
+			if(beqid==YES){
+				Tvalue uv; uv.makeIntVal(YES, 1);
+				eqid = dir.intClause(uv);
+			}else if(beqid==-YES){
+				Tvalue uv; uv.makeIntVal(YES, 0);
+				eqid = dir.intClause(uv);
+			}else{
+				eqid = dir.bitToI(beqid);
+			}
+			vector<iVar> chs;
+			for(int i=0; i<choices.size(); ++i){
+				chs.push_back(dir.intClause(choices[i]));
+			}
+			node_ids[node.id].makeSuperInt(dir.mux(eqid, chs.size(), &chs[0]) );
+			return;
 		}else{
 			int guard;
 			if( !mval.isSparse() ){
@@ -2346,10 +2431,11 @@ NodesToSolver::visit (ASSERT_node &node)
 	assert (node.mother && ! node.father);
 
 	Tvalue fval = tval_lookup (node.mother);
-	if (! checkParentsChanged (node, true)) {
-		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
-		return;
+	
+	if(fval.isInt()){
+		fval = dir.intToBit(fval.getId());
 	}
+	
 
 
 	{

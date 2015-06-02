@@ -79,17 +79,22 @@ public:
 	virtual void addHelper2Clause(int l1, int l2){}
     virtual int getVarVal(int id)=0;
     virtual int newVar()=0;
-
+	virtual bool isIntVarKnown(int id, int& out)=0;
 	virtual iVar plus(iVar x, iVar y)=0;
 	virtual iVar times(iVar x, iVar y)=0;
+	virtual iVar mod(iVar x, iVar y)=0;
+	virtual iVar div(iVar x, iVar y)=0;
+	virtual iVar minus(iVar x, iVar y)=0;
 	virtual iVar intmux(iVar cond, int len, iVar* choices)=0;
 	virtual void inteq(iVar x, iVar y, iVar rv)=0;
 	virtual void intlt(iVar x, iVar y, iVar rv)=0;
 	virtual int addIntVar(Tvalue& tv)=0;
 	virtual int addIntVar()=0;
+	virtual bool iVarHasBitMapping(iVar id, int& out)=0;
+	virtual void addMapping(int id, Tvalue& tv)=0;
 	virtual void intSpecialClause(vec<Lit>& ps)=0;
 	virtual void setIntVal(int vr, int val)=0;
-
+	
     virtual int newInVar()=0;
     virtual void disableVarBranch(int i)=0;
 
@@ -107,7 +112,7 @@ public:
     virtual void printDiagnostics(char c)=0;	 
 	virtual void lightSolve();
 	virtual void writeDIMACS(ofstream& dimacs_file)=0;
-
+	virtual int nextIntVar()=0;
 };
 
 

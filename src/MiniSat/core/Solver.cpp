@@ -692,9 +692,11 @@ Clause* Solver::propagate()
 						int ilen = intsolve->interflen();
 						bool goodsofar = intsolve->setVal(vr, val, decisionLevel());
 						Intclause* iconf=NULL;
+//						cout<<"WHERE: "<<(num_props+propagations)<<endl;	
+//						intsolve->dump();
 						if(goodsofar){
 							iconf = intsolve->propagate();
-							goodsofar = (iconf==NULL);							
+							goodsofar = (iconf==NULL);								
 						}else{
 							//trying to set vr to two different values (it already has one).
 							Lit oth = intsolve->existingLit(vr);
@@ -706,9 +708,10 @@ Clause* Solver::propagate()
 							while (i < end)
 								*j++ = *i++;
 								
-							qhead = trail.size();
+							qhead = trail.size();						
 							goto FoundWatch;
 						}
+						
 						if(goodsofar){							
 							int nilen = intsolve->interflen();
 							for(int jjj=ilen; jjj<nilen; ++jjj){
@@ -719,7 +722,8 @@ Clause* Solver::propagate()
 									// in this case, getSummary returns the causes that led to ilit to have the bad value, but by themselves, they do not
 									//constitute a bad assignment. However, those causes force ilit to be true. Also, by convention, if ilit is the problematic
 									//variable, the solver expects it to be the first variable in the clause.
-									ps.push(ps[0]);
+									Lit t = ps[0];
+									ps.push(t);
 									ps[0] = ilit;
 									tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
 									confl = new (&tempstore[0]) Clause(ps, true);

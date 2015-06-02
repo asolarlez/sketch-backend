@@ -5,6 +5,7 @@
 #include "Tvalue.h"
 #include "SolverTypes.h"
 #include "Vec.h"
+#include <cstddef>
 
 namespace MSsolverNS{
 
@@ -19,8 +20,6 @@ public:
 	void set(int v){ val=v; def=true; }
 	void clear(){ def=false; }
 };
-
-
 
 
 class mpair{
@@ -39,7 +38,9 @@ public:
 	interpair(int trail_level, Lit lit):tlevel(trail_level),l(lit){}
 };
 
-typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX  } ctype;
+typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV  } ctype;
+
+
 
 
 class Intclause{
@@ -64,6 +65,14 @@ public:
 	void print();
 };
 
+class WrappedIC{
+	public:
+	iVar watched;
+	Intclause cc;
+	WrappedIC(ctype tp, int sz,  iVar a1, iVar a2, iVar* ch):cc(tp, sz, a1, a2, ch){}
+};
+
+
 //Represents x=a+b;
 inline Intclause* PlusClause(iVar a, iVar b, iVar x){
 	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*3);
@@ -82,6 +91,19 @@ inline Intclause* TimesClause(iVar a, iVar b, iVar x ){
 	return new (mem)Intclause(TIMES, 3, x, a, b);
 }
 
+//Represents x=a%b;
+inline Intclause* ModClause(iVar a, iVar b, iVar x ){
+	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*3);
+	return new (mem)Intclause(MOD, 3, x, a, b);
+}
+
+
+//Represents x=a%b;
+inline Intclause* DivClause(iVar a, iVar b, iVar x ){
+	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*3);
+	return new (mem)Intclause(DIV, 3, x, a, b);
+}
+
 
 //Represents x=a<b;
 inline Intclause* LtClause(iVar a, iVar b, iVar x){
@@ -96,12 +118,13 @@ inline Intclause* EqClause(iVar a, iVar b, iVar x){
 }
 
 inline Intclause* BMuxClause(iVar cond, int len, iVar* choices, iVar x){
-	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*(len+3));
-	return new (mem)Intclause(BMUX, len+2, x, cond, choices); // the 4 is not an error, there are 4 real things, but then at the end there is a slot to write which child is being watched.
+	void* mem = malloc(sizeof(WrappedIC)+sizeof(uint32_t)*(len+2));
+	WrappedIC* tmp = new (mem)WrappedIC(BMUX, len+2, x, cond, choices); 
+	return &(tmp->cc);
 } 
 
 inline iVar& watchedIdx(Intclause& ic){
-	return ic[4];
+	return *(iVar*)((((char*)(&ic))-offsetof(WrappedIC,cc))+offsetof(WrappedIC, watched));
 }
 
 inline int bmuxChildren(Intclause& ic){
@@ -128,8 +151,17 @@ public:
 	}
 	~IntPropagator(){
 		for(int i=0; i<clauses.size(); ++i){
-			free(clauses[i]);
+			if(clauses[i]->tp()!= BMUX){
+				free(clauses[i]);
+			}else{
+				Intclause* tmp = clauses[i];
+				free( ((char*)(tmp))-offsetof(WrappedIC,cc) );
+			}
 		}
+	}
+
+	const Val& getVal(int id){
+		return vals[id];
 	}
 	int addVar();
 
@@ -153,7 +185,7 @@ public:
 		return rv;
 	}
 
-
+	void addMapping(int id, Tvalue& tv);
 
 	bool uncheckedSetVal(iVar vr, int val, int level, Intclause* rson){
 
@@ -168,6 +200,7 @@ public:
 		Val& v(vals[vr]);
 		v.set(val);
 		reason[vr] = rson;
+		tpos[vr] = trail.size();
 		trail.push(mpair(vr, level, val));	
 		return true;
 	}
@@ -195,9 +228,36 @@ public:
 				}
 			}
 		}else{
+			int vrlev = tpos[vr];
+			/*
+			if(ic->tp()==BMUX){
+				if(vr==(*ic)[0]){
+					iVar cond = (*ic)[1];
+					int condpos = tpos[cond];
+					Val& vc = vals[cond];
+					if(vc.isDef() && condpos < vrlev){
+						int vcv = vc.v();
+						if(seen[cond]==0){
+							seen[cond]==1;
+							helper(cond, maxtpos);
+						}
+						if(vcv >=0 && vcv+2 <= ic->size()){
+							iVar ivv = (*ic)[vcv+2];
+							if(seen[ivv]==0){
+								seen[ivv] = 1;
+								helper(ivv, maxtpos);
+							}
+						}
+						return;
+					}
+				}
+			}
+			*/
+
 			for(int i=0; i<ic->size(); ++i){
 				iVar iv = (*ic)[i];
-				if(seen[iv]==0){
+				int parpos = tpos[iv];
+				if(/* parpos < vrlev &&*/ seen[iv]==0){
 					seen[iv] = 1;
 					helper(iv, maxtpos);
 				}
@@ -252,6 +312,10 @@ public:
 		return explain;
 	}
 
+	bool isSet(iVar var){
+		Val& v(vals[var]);
+		return v.isDef();
+	}
 
 	bool setVal(iVar var, int val, int level){
 		Val& v(vals[var]);
@@ -264,15 +328,61 @@ public:
 			return true;
 		}
 	}
+	void addMinus(iVar a, iVar b, iVar x){
+		Intclause* c = PlusClause(a, b, x);
+		c->retype(MINUS);
+		clauses.push(c);
+		watches[a].push(c);
+		watches[b].push(c);
+	}
+
 	void addPlus(iVar a, iVar b, iVar x){
 		Intclause* c = PlusClause(a, b, x);
 		clauses.push(c);
 		watches[a].push(c);
 		watches[b].push(c);
 	}
+
+
+	void addMod(iVar a, iVar b, iVar x){
+		Intclause* c = ModClause(a, b, x);
+		clauses.push(c);
+		watches[a].push(c);
+		watches[b].push(c);
+	}
+
+	void addDiv(iVar a, iVar b, iVar x){
+		Intclause* c = DivClause(a, b, x);
+		clauses.push(c);
+		watches[a].push(c);
+		watches[b].push(c);
+	}
+
+
 	void addTimes(iVar a, iVar b, iVar x){
 		Intclause* c = TimesClause(a, b, x);
 		clauses.push(c);
+		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
+		if(isSet(a)){
+			//we can't watch a and b because they a is already set. must watch b,c.
+			//for that, we need to retype to EXACTDIV.
+			c->retype(EXACTDIV); // a = x/b;
+			(*c)[0]=a;
+			(*c)[1]=x;
+			(*c)[2]=b;
+			watches[x].push(c);
+			watches[b].push(c);
+			return;
+		}
+		if(isSet(b)){
+			c->retype(EXACTDIV); // b = x/a;
+			(*c)[0]=b;
+			(*c)[1]=x;
+			(*c)[2]=a;
+			watches[x].push(c);
+			watches[a].push(c);
+			return;
+		}
 		watches[a].push(c);
 		watches[b].push(c);
 	}
@@ -282,6 +392,7 @@ public:
 		watches[a].push(c);
 		watches[b].push(c);
 	}
+	
 	void addEq(iVar a, iVar b, iVar x){
 		//Eq is watched by all three variables.
 		Intclause* c = EqClause(a, b, x);
@@ -291,13 +402,32 @@ public:
 		watches[b].push(c);
 	}
 	void addBMux(iVar cond, int len, iVar* choices, iVar x){
+		Assert(len > 1, "Can't have len <=1");
+
 		Intclause* c = BMuxClause(cond, len, choices, x);
 		clauses.push(c);
 		watches[cond].push(c);
 		watches[x].push(c);
-		watches[choices[0]].push(c);
-		watchedIdx(*c)=2;
+		if(isSet(choices[0])){
+			for(int i=1; i<len; ++i){
+				if(!isSet(choices[i])){
+					watches[choices[i]].push(c);
+					watchedIdx(*c)=2+i;
+					return;
+				}
+			}
+			//All choices are already set. 
+			//if cond is also set, then we should just propagate, but we are not set up to propagate, so we just bail out.
+			Assert(!isSet(cond), "Hope this doesn't happen");
+			watches[choices[0]].push(c);
+			watchedIdx(*c)=2;
+		}else{
+			watches[choices[0]].push(c);
+			watchedIdx(*c)=2;
+		}
 	}
+
+	bool checkLegal(iVar var, int val, Lit& out);
 
 private:
 
@@ -385,7 +515,7 @@ private:
 		}
 	}
 
-	bool checkLegal(iVar var, int val, Lit& out);
+	
 
 	// represents x = me / other  although more accurately, it's x*other = me so other must divide me.
 	action exactdivHelper(iVar x, const mpair& me, iVar other, Intclause* c){
@@ -570,6 +700,42 @@ private:
 		return ADV;
 	}
 
+
+	action ltHelper(iVar x, iVar a, iVar b, Val vx, Val va, Val vb, int level, Intclause* c){
+		if(vx.isDef() && va.isDef() && vb.isDef()){
+			bool eqv = (va.v()<vb.v());
+			if( (vx.v()==1?eqv:!eqv) ){
+				return ADV;
+			}else{
+				return CONFL;
+			}
+		}		
+		if(va.isDef() && vb.isDef()){
+			if(uncheckedSetVal(x, va.v()<vb.v()?1:0, level, c)){
+				return ADV;
+			}else{
+				return CONFL;
+			}
+		}
+		return ADV;
+	}
+
+
+	bool propagateLt(Intclause& c, const mpair& p, Intclause**& i, Intclause**& j){
+		iVar x = c[0];
+		iVar a = c[1];
+		iVar b = c[2];		
+		action act = ltHelper(x, a, b, vals[x], vals[a], vals[b], p.level, &c);
+		if(act==ADV){
+			*j++ = &c;
+			return true;
+		}else if(act==CONFL){
+			*j++ = &c;
+			return false;
+		}
+		Assert(false, "Shouln't be here");
+	}
+
 	bool propagateEq(Intclause& c, const mpair& p, Intclause**& i, Intclause**& j){
 		iVar x = c[0];
 		iVar a = c[1];
@@ -605,6 +771,7 @@ private:
 				c[1] = x;
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -623,6 +790,7 @@ private:
 				// c[1] already equal to a
 				c[2] = x;
 				//it is already in watches for a, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -657,6 +825,7 @@ private:
 				c[1] = x;
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -674,6 +843,7 @@ private:
 				// c[1] already equal to a
 				c[2] = x;
 				//it is already in watches for a, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -688,9 +858,26 @@ private:
 		Assert(false, "Shouln't be here");
 	}
 	action bmuxHelperCond(iVar x, const mpair& cond,  Intclause* c){
-		iVar in = (*c)[cond.val + 2];
-		Val vin = vals[in];
+		int sz = c->size();
 		Val vx = vals[x];
+		if(cond.val + 2 >= sz || cond.val < 0){
+			if(vx.isDef()){	
+				if(0 != vx.v()){
+					return CONFL;
+				}else{
+					return ADV;
+				}
+			}else{
+				if(uncheckedSetVal(x, 0, cond.level, c)){
+					return ADV;
+				}else{
+					return CONFL;
+				}
+			}
+		}
+
+		iVar in = (*c)[cond.val + 2];
+		Val vin = vals[in];		
 		if(vin.isDef()){
 			if(vx.isDef()){				
 				if(vin.v() != vx.v()){
@@ -722,8 +909,27 @@ private:
 		Val vcond = vals[cond];
 		Val vx = vals[x];
 		if(vcond.isDef()){
+			int sz = c->size();			
+
+			if(vcond.v() + 2 >= sz || vcond.v() < 0){
+				if(vx.isDef()){
+					if(0 != vx.v()){
+						return CONFL;
+					}else{
+						return ADV;
+					}
+				}else{
+					if(uncheckedSetVal(x, 0, watched.level, c)){
+						return ADV;
+					}else{
+						return CONFL;
+					}
+				}
+			}
+
+
 			iVar in = (*c)[vcond.v() + 2];
-			if(vcond.v()+2 == watched.var){
+			if(in == watched.var){
 				if(vx.isDef()){
 					if(watched.val != vx.v()){
 						return CONFL;
@@ -763,6 +969,8 @@ private:
 		}else{
 			//vcond is not set. check to see if all are the same so far.
 			int idx = watchedIdx(*c);
+			iVar wvar = (*c)[idx];
+			Assert(wvar == watched.var, "WWWW???");
 			int sz = c->size();
 			towatch = -1;
 			for(int i=1; i<sz-2; ++i){
@@ -833,6 +1041,17 @@ private:
 		Val vcond = vals[cond];
 		if(vcond.isDef()){
 			//We know what the condition is.
+			int sz = c->size();			
+
+			if(vcond.v()+2 >= sz || vcond.v() < 0){
+				if(0 != x.val){
+					return CONFL;
+				}else{
+					return ADV;
+				}
+			}
+
+
 			iVar in = (*c)[vcond.v() + 2];
 			Val vin = vals[in]; // read that input from the clause.
 			if(vin.isDef()){
@@ -874,8 +1093,10 @@ private:
 					//already watching the right thing.
 				}else{
 					iVar in = c[p.val + 2];
+					iVar old = c[idx];
+					Assert(in != p.var && old != p.var, "NONONO");
 					watches[in].push(&c);
-					watches[idx].remove(&c);
+					watches[old].removeFirst(&c);
 					watchedIdx(c) = p.val + 2;
 				}
 				act=ADV;
@@ -888,6 +1109,7 @@ private:
 			if(act==REPL){
 				watchedIdx(c) = newidx;
 				iVar in = c[newidx];
+				Assert(in != p.var, "NONONO");
 				watches[in].push(&c);
 				return true;
 			}
@@ -900,6 +1122,205 @@ private:
 			return false;
 		}
 		Assert(false, "Shouln't be here");
+	}
+
+	// c[0] = c[1] % c[2];
+	// \E x. c[2]*x + c[0] = c[1]
+	// propagations: 
+	// c[0] >= c[2] ==> reject.
+	// c[1] % c[2] ==> c[0]
+	// c[2]=0 ==> c[0]=0
+	// c[1]=0 ==> c[0]=0
+	// c[0] c[1] => c[1]-c[0] if(c[1]-c[0]) is prime and c[0] <  c[1]-c[0] 
+	
+	bool propagateMod(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
+		//p.var can only be c[1] or c[2]
+		action act;
+		iVar x = c[0];
+		iVar a = c[1];
+		iVar b = c[2];
+		Val vx = vals[c[0]];
+		Val va = vals[c[1]];
+		Val vb = vals[c[2]];
+		if(vx.isDef()){
+			if(va.isDef()){
+				if(vb.isDef()){
+					if((vx.v() == 0 && vb.v()==0) ||
+						(vb.v()!=0 && vx.v() == va.v() % vb.v())){
+							act = ADV;
+					}else{
+						act = CONFL;
+					}
+				}else{
+					int t = va.v() - vx.v();
+					if(va.v()==0 && vx.v() != 0){
+						act=CONFL;
+					}else{
+						if(t==1 || t==2 || t==3 || t==5 || t==7 || t==11 || t==13 || t== 17 || t== 19 || t== 23){
+							if(vx.v() < t && uncheckedSetVal(b, t, p.level, &c)){
+								act= ADV;
+							}else{
+								act = CONFL;
+							}
+						}else{
+							act = ADV;
+						}
+					}
+				}
+			}else{// vx and !va def.
+				if(vb.isDef()){
+					if(vx.v() >= vb.v()){
+						act = CONFL;
+					}else{
+						if((vb.v()==1 || vb.v()==0) && vx.v()!= 0){
+							act = CONFL;
+						}else{
+							act = ADV;
+						}
+					}
+				}else{
+					act = ADV;
+				}
+			}
+		}else{ // !vx.
+			if(va.isDef()){
+				if(vb.isDef()){
+					if(uncheckedSetVal(x, vb.v()==0? 0 : (va.v() % vb.v()), p.level, &c)){
+						act = ADV;
+					}else{
+						act = CONFL;
+					}
+				}else{
+					if(va.v()==0){
+						if(uncheckedSetVal(x, 0, p.level, &c)){
+							act = ADV;
+						}else{
+							act = CONFL;
+						}
+					}else{
+						act = ADV;
+					}
+				}
+			}else{
+				if(vb.isDef()){
+					if(vb.v()==0){
+						if(uncheckedSetVal(x, 0, p.level, &c)){
+							act = ADV;
+						}else{
+							act = CONFL;
+						}
+					}else{
+						act = ADV;
+					}
+				}else{
+					act = ADV;
+				}
+			}
+		}
+
+		if(act==ADV){
+			*j++ = &c;
+			return true;
+		}else if(act==CONFL){
+			*j++ = &c;
+			return false;
+		}
+		Assert(false, "Shouldn't be here");
+	}
+
+
+
+	// c[0] = c[1] / c[2];
+	// c[1] = x*b + c  where c < b   3 = 39/10, so it is not true that c[2]= c[1]/c[0]
+
+	// propagations: 	
+	// c[1] / c[2] ==> c[0]
+	// c[2]=0 ==> c[0]=0
+	// c[1]=0 ==> c[0]=0	
+	bool propagateDiv(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
+		//p.var can only be c[1] or c[2]
+		action act;
+		iVar x = c[0];
+		iVar a = c[1];
+		iVar b = c[2];
+		Val vx = vals[c[0]];
+		Val va = vals[c[1]];
+		Val vb = vals[c[2]];
+		if(vx.isDef()){
+			if(va.isDef()){
+				if(vb.isDef()){
+					if((vx.v() == 0 && vb.v()==0) ||
+						(vb.v()!=0 && vx.v() == va.v() / vb.v())){
+							act = ADV;
+					}else{
+						act = CONFL;
+					}
+				}else{
+					act=ADV;
+				}
+			}else{// vx and !va def.
+				if(vb.isDef()){
+					if(vb.v()==1){
+						if(uncheckedSetVal(a, vx.v() , p.level, &c)){
+							act = ADV;
+						}else{
+							act = CONFL;
+						}
+					}else{
+						if(vb.v()==0 && vx.v()!=0){
+							act = CONFL;
+						}else{
+							act = ADV;
+						}
+					}
+				}else{
+					act = ADV;
+				}
+			}
+		}else{ // !vx.
+			if(va.isDef()){
+				if(vb.isDef()){
+					if(uncheckedSetVal(x, vb.v()==0? 0 : (va.v() / vb.v()), p.level, &c)){
+						act = ADV;
+					}else{
+						act = CONFL;
+					}
+				}else{
+					if(va.v()==0){
+						if(uncheckedSetVal(x, 0, p.level, &c)){
+							act = ADV;
+						}else{
+							act = CONFL;
+						}
+					}else{
+						act = ADV;
+					}
+				}
+			}else{
+				if(vb.isDef()){
+					if(vb.v()==0){
+						if(uncheckedSetVal(x, 0, p.level, &c)){
+							act = ADV;
+						}else{
+							act = CONFL;
+						}
+					}else{
+						act = ADV;
+					}
+				}else{
+					act = ADV;
+				}
+			}
+		}
+
+		if(act==ADV){
+			*j++ = &c;
+			return true;
+		}else if(act==CONFL){
+			*j++ = &c;
+			return false;
+		}
+		Assert(false, "Shouldn't be here");
 	}
 
 	bool propagatePlus(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
@@ -920,6 +1341,7 @@ private:
 				c[1] = x;
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
+				Assert(x != p.var , "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -937,6 +1359,7 @@ private:
 				c[1] = x;
 				c[2] = a;
 				//it is already in watches for a, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -971,6 +1394,7 @@ private:
 				c[1] = x;
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -988,6 +1412,7 @@ private:
 				c[1] = x;
 				c[2] = a;
 				//it is already in watches for a, so we add to watches for x.
+				Assert(x != p.var, "NONONO");
 				watches[x].push(&c);
 				return true;
 			}
@@ -1030,9 +1455,19 @@ public:
 				if(c.tp()==EQ){
 					goodsofar = propagateEq(c,p,i,j);
 				}else
+				if(c.tp()==LT){
+					goodsofar = propagateLt(c,p,i,j);
+				}else
 				if(c.tp()==BMUX){
 					goodsofar = propagateBMux(c,p,i,j);
+				}else
+				if(c.tp()==MOD){
+					goodsofar = propagateMod(c,p,i,j);
+				}else
+				if(c.tp()==DIV){
+					goodsofar = propagateDiv(c,p,i,j);
 				}
+
 				if(!goodsofar){
 					//cout<<"CONFLICTING "; c.print(); cout<<" "<<p.var<<endl;
 					confl = &c;
@@ -1064,6 +1499,10 @@ public:
 
 	Lit existingLit(iVar vr);
 	void dump();
+
+	int nvars(){
+		return vals.size();
+	}
 
 };
 

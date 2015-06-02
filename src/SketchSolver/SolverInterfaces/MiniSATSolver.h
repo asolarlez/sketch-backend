@@ -50,6 +50,16 @@ public:
 	 }
 	 virtual void addHelperClause(int c[], int sz);
 
+
+	 virtual bool isIntVarKnown(int id, int& out){
+		 Val v = s->intsolve->getVal(id);
+		 bool rv = v.isDef();
+		 if(v.isDef()){
+			 out = v.v();
+		 }
+		 return rv;
+	 }
+
 	 virtual int isValKnown(int i){
 		 int var = abs(i);
 		 int rv = 1;
@@ -76,9 +86,20 @@ public:
 	 virtual void setVarClause(int x);
      virtual void assertVarClause(int x);
 	 virtual void assumeVarClause(int x);
+
+
+	 virtual int nextIntVar(){
+		 return s->intsolve->nvars();
+	 }
+
 	 virtual iVar plus(iVar x, iVar y){
 		 iVar rv = s->intsolve->addVar();
 		 s->intsolve->addPlus(x, y, rv);
+		 return rv;
+	 }
+	 virtual iVar minus(iVar x, iVar y){
+		 iVar rv = s->intsolve->addVar();
+		 s->intsolve->addMinus(x, y, rv);
 		 return rv;
 	 }
 	  virtual iVar times(iVar x, iVar y){
@@ -86,6 +107,19 @@ public:
 		 s->intsolve->addTimes(x, y, rv);
 		 return rv;
 	 }
+
+	 virtual iVar mod(iVar x, iVar y){
+		 iVar rv = s->intsolve->addVar();
+		 s->intsolve->addMod(x, y, rv);
+		 return rv;
+	 }
+
+	 virtual iVar div(iVar x, iVar y){
+		 iVar rv = s->intsolve->addVar();
+		 s->intsolve->addDiv(x, y, rv);
+		 return rv;
+	 }
+
 	 virtual void inteq(iVar x, iVar y, iVar rv){		
 		 s->intsolve->addEq(x, y, rv);		 
 	 }
@@ -140,15 +174,44 @@ public:
 		 s->addClause(ps, INTSPECIAL);
 	 }
 
+
+	 virtual bool iVarHasBitMapping(iVar id, int& out){		 
+		 Lit lout;
+		 s->intsolve->checkLegal(id, 1, lout);
+		 if(lout != lit_Undef){
+			 out = sign(lout) ? -var(lout) : var(lout);
+			return true;
+		 }
+
+		 return false;
+	 }
+
 	 virtual int addIntVar(){
 		 return s->intsolve->addVar();
 	 }
 	 virtual int addIntVar(Tvalue& tv){
-		 return s->intsolve->addVar(tv);
+		 int id = s->intsolve->addVar(tv);
+
+		 const gvvec gv = tv.num_ranges;
+		 for(int i=0; i<gv.size(); ++i){
+			 const guardedVal& cur = gv[i];
+			 int vv = this->isValKnown(cur.guard);
+			 if(vv==1){
+				 s->intsolve->setVal(id, cur.value, 0); 
+			 }
+		 }
+
+		 return id;
+	 }
+
+	 virtual void addMapping(int id, Tvalue& tv){
+		 s->intsolve->addMapping(id, tv);
 	 }
 
 	 virtual void setIntVal(int vr, int val){
 		 s->intsolve->setVal(vr, val, 0);
+		 Intclause* confl = s->intsolve->propagate();
+		 Assert(confl == NULL, "CAN NOT RESOLVE!");
 	 }
 };
 

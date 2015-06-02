@@ -159,17 +159,7 @@ public:
 	return ! (*this == tv);
     }
 
-    inline Tvalue &operator= (const Tvalue &a_tv) {
-	/* FIXME this assertion probably should hold, however it is violated by some use. */
-#if 0
-	Assert (a_tv.id > 0, "id must be positive, instead it is " << a_tv.id << " (operator=)");
-#endif
 
-	init (a_tv.type, a_tv.id, a_tv.size, a_tv.neg);
-	isint = a_tv.isint;
-	num_ranges = a_tv.num_ranges;
-	return *this;
-    }
 
     inline Tvalue &operator= (int a_id) {
 	init (a_id);
@@ -190,6 +180,14 @@ public:
     Tvalue (valtype_t a_type, int a_id, int a_size, bool a_neg = false) {
 	init (a_type, a_id, a_size, a_neg);
 	isint=false;
+    }
+
+    inline Tvalue &operator= (const Tvalue &a_tv) {
+
+	init (a_tv.type, a_tv.id, a_tv.size, a_tv.neg);
+	isint = a_tv.isint;
+	num_ranges = a_tv.num_ranges;
+	return *this;
     }
 
     Tvalue (void) {

@@ -87,13 +87,36 @@ public:
 					}
 					++rd;					
 				} 
-				sz = rd-data;
+				sz = wt-data;
+	}
+	void     removeFirst (const T& val){ T* rd=data; T* wt=data; 
+				for(int i=0; i<sz; ++i){ 
+					if(*rd != val){
+						*wt = *rd;
+						++wt;
+						++rd;
+					}else{
+						++rd;
+						for(int t=i+1; t<sz; ++t){
+							*wt = *rd;
+							++wt; ++rd;							
+						}
+						--sz;
+						return;
+					}										
+				} 				
 	}
     // Stack interface:
 #if 1
     void     push  (void)              { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz]) T(); sz++; }
     //void     push  (const T& elem)     { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz]) T(elem); sz++; }
-    void     push  (const T& elem)     { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } data[sz++] = elem; }
+    void     push  (const T& elem)     { 
+		if (sz == cap) { 
+			cap = imax(2, (cap*3+1)>>1); 
+			data = (T*)realloc(data, cap * sizeof(T)); 
+		} 
+		data[sz++] = elem; 
+	}
     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
 #else
     void     push  (void)              { if (sz == cap) grow(sz+1); new (&data[sz]) T()    ; sz++; }
