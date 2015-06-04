@@ -387,22 +387,28 @@ void DagFunctionInliner::visit( UFUN_node& node ){
   if (it != replaceMap.end()) {
     if (ictrl != NULL && ictrl->isRecursive(node)) {
       cout << "Replacing ufun node " << name << endl;
-      Assert(node.multi_mother.size() == 1, "Not yet supported");
+      string oldOutputType = node.getTupleName();
       string newName = (it->second).begin()->second;
       node.modify_ufname(newName);
-      node.outname = "_p_out_" + newName + "_ANONYMOUS";
-      
+      node.outname = "_p_out_" + newName + "_ANONYMOUS"; // TODO: fix these magic strings
+      string newNameCaps = newName;
+      std::transform(newNameCaps.begin(), newNameCaps.end(), newNameCaps.begin(), ::toupper);
+      string newOutputType = newNameCaps + "_ANONYMOUS";
+      node.set_tupleName(newOutputType);
+      int oriInpSize = node.multi_mother.size();
       Assert(functionMap.find(newName) != functionMap.end(), "Function " + newName + " is not found");
       BooleanDAG& repFun = *functionMap[newName];
       vector<bool_node*>& inputs  = repFun.getNodesByType(bool_node::SRC);
       int inpSize = inputs.size();
       vector<bool_node*> extraInputs;
-      if (inpSize > 1) {
-        bool_node* firstInput = inputs[0];
-        // Assuming that the first input will correspond to the input of the original function
-        Assert(firstInput->getOtype() == node.multi_mother[0]->getOtype(), "Input types mismatch");
-        
-        for (int i = 1; i < inpSize; i++) {
+      
+      for (int i = 0; i < oriInpSize; i++) {
+        bool_node* input = inputs[i];
+        // Assuming that the first inputs will correspond to the inputs of the original function
+        Assert(input->getOtype() == node.multi_mother[i]->getOtype(), "Input types mismatch");
+      }
+      
+      for (int i = oriInpSize; i < inpSize; i++) {
           SRC_node* inp = dynamic_cast<SRC_node*>(inputs[i]);
           Assert(inp->getOtype() == OutType::INT, "Only integer state is supported");
           //create a angelic hole
@@ -418,43 +424,49 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           addNode(qn);
           node.multi_mother.push_back(qn);
           extraInputs.push_back(qn);
-        }
+        
       }
-      
-      node.makeAssertsHard();
-      TUPLE_CREATE_node* new_output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
+      if (inpSize > oriInpSize) {
+        node.makeAssertsHard(); // TODO: this is wrong
+      }
+      TUPLE_CREATE_node* output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
   
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
-      int outSize = new_output->multi_mother.size();
-      
-      bool_node* new_node = new_output->multi_mother[outSize - 1];
-      Tuple* tup = dynamic_cast<Tuple*>(new_node->getOtype());
+      int outSize = output->multi_mother.size();
+    
+      Tuple* oldOutputTuple = (Tuple*)OutType::getTuple(oldOutputType);
+      Tuple* tup = (Tuple*) (oldOutputTuple->entries[oldOutputTuple->entries.size() - 1]);
       tuple_node->setName(tup->name);
       int size = tup->entries.size();
       tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
-      int actFields = size - 1 - (inpSize - 1) - (outSize - 1) ;
+      int stateSize = inpSize - oriInpSize;
+      int actOutSize = outSize - stateSize;
+      int actFields = size - stateSize - outSize ;
+      //cout << stateSize << " " << actOutSize << " " << actFields << endl;
       for (int i = 1; i <  actFields; i++) {
         tuple_node->multi_mother.push_back(getCnode(0));
       }
-      if (inpSize > 1) {
-        for (int i = 0; i < inpSize - 1; i++) {
-          tuple_node->multi_mother.push_back(extraInputs[i]);
-        }
+      
+      for (int i = 0; i < stateSize; i++) {
+        tuple_node->multi_mother.push_back(extraInputs[i]);
       }
-      if (outSize > 1) {
-        for (int i = 0; i < outSize - 1; i++) {
-          tuple_node->multi_mother.push_back(new_output->multi_mother[i]);
-        }
-      }
-      tuple_node->multi_mother.push_back(new_node);
       
       
+      for (int i = 0; i < outSize; i++) {
+        tuple_node->multi_mother.push_back(output->multi_mother[i]);
+      }
+     
       tuple_node->addToParents();
-      new_output->dislodge();
-      new_output->multi_mother[0] = optAdd(tuple_node);
-      new_output->resetId();
-			new_output->addToParents();
-      rvalue = new_output;
+      output->dislodge();
+      //delete output;
+      TUPLE_CREATE_node* new_output = new TUPLE_CREATE_node();
+      new_output->setName(oldOutputType);
+      for (int i = 1; i < oriInpSize; i++) {
+        new_output->multi_mother.push_back(node.multi_mother[i]);
+      }
+      new_output->multi_mother.push_back(optAdd(tuple_node));
+      new_output->addToParents();
+      rvalue = optAdd(new_output);
       return;
     }
   }
@@ -536,14 +548,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
+    TUPLE_CREATE_node* newOutputTup;
+    bool_node* spCond;
 		nmap.resize( oldFun.size() );		
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
-			
+			// ADT, int, int ... (state)
 			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
       
       
       vector<bool_node*> inp_arg;
+      
       if (shouldReplaceSpecialNode) {
         Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
         bool_node* actual = node.multi_mother[0];
@@ -575,20 +590,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         cond->addToParents();
         
         bool_node* optEq = optAdd(cond);
-        ARRACC_node* arr = new ARRACC_node();
-        arr->mother = optEq;
-        arr->multi_mother.push_back(actual);
+        spCond = optEq;
         
-        TUPLE_R_node* tr1 = new TUPLE_R_node();
-        tr1->idx = size - 1;
-        tr1->mother = actual;
-        tr1->addToParents();
-        
-        arr->multi_mother.push_back(optAdd(tr1));
-        arr->addToParents();
-        inp_arg.push_back(optAdd(arr));
+        vector<bool_node*> newOutputs;
         
         int state_size = inputs.size() - 1;
+        Tuple* retType = (Tuple*) (node.getOtype());
+        int outSize = retType->entries.size() - state_size;
+        
         
         NOT_node* not_ = new NOT_node();
         AND_node* and_ = new AND_node();
@@ -603,19 +612,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         for (int i = 0; i < state_size; i++) {
           bool_node* actSt = node.multi_mother[i+1];
           
-          ARRACC_node* newSt = new ARRACC_node();
-          newSt->mother = optEq;
-          newSt->multi_mother.push_back(actSt);
-          
           TUPLE_R_node* tr2 = new TUPLE_R_node();
-          tr2->idx = size - 1 - state_size + i;
+          tr2->idx = size - outSize - state_size + i;
           tr2->mother = actual;
           tr2->addToParents();
           
-          newSt->multi_mother.push_back(optAdd(tr2));
-          newSt->addToParents();
-          inp_arg.push_back(optAdd(newSt));
-          
+          newOutputs.push_back(optAdd(tr2));
+    
           OR_node* or_ = new OR_node();
           
           or_->mother = optNot;
@@ -623,7 +626,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           EQ_node* eq1 = new EQ_node();
           eq1->mother = actSt;
           TUPLE_R_node* tr3 = new TUPLE_R_node();
-          tr3->idx = size - 1 - 2*state_size + i;
+          tr3->idx = size - outSize - 2*state_size + i;
           tr3->mother = actual;
           tr3->addToParents();
           
@@ -644,13 +647,45 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           callMap.clear();
         }
         
+        for (int i = 0; i < outSize; i++) {
+          TUPLE_R_node* tr1 = new TUPLE_R_node();
+          tr1->idx = size - outSize + i;
+          tr1->mother = actual;
+          tr1->addToParents();
+          
+          newOutputs.push_back(optAdd(tr1));
+        }
+        
+        newOutputTup = new TUPLE_CREATE_node();
+        newOutputTup->setName(retType->name);
+        
+        Assert(((Tuple*)newOutputTup->getOtype())->entries.size() == newOutputs.size(), "Something is wrong here");
+        for (int i = 0; i < newOutputs.size(); i++) {
+          newOutputTup->multi_mother.push_back(newOutputs[i]);
+        }
+        
+        newOutputTup->addToParents();
+        addNode(newOutputTup);
+        
+        
+        node.mother->children.erase((bool_node*)&node);
+        
+        bool_node* new_mother = new AND_node();
+        new_mother->mother = node.mother;
+        new_mother->father = optNot;
+        
+        new_mother->addToParents();
+        
+        node.mother = optAdd(new_mother);
+        node.mother->children.insert(&node);
+        
       }
 			
 			for(int i=0; i<inputs.size(); ++i){
 				
 				bool_node* actual = node.multi_mother[i];
         
-        nmap[inputs[i]->id] = shouldReplaceSpecialNode ? inp_arg[i] : actual;
+        nmap[inputs[i]->id] = actual;
 				actual->children.erase((bool_node*)&node);
 //				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
 			}
@@ -1047,7 +1082,20 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		node.add(&tmpList);
 		node.remove();
-		rvalue = output;
+    
+    if (shouldReplaceSpecialNode) {
+      ARRACC_node* an = new ARRACC_node();
+      an->mother = spCond;
+      an->multi_mother.push_back(output);
+      an->multi_mother.push_back(newOutputTup);
+      
+      an->addToParents();
+      
+      rvalue = optAdd(an);
+      
+    } else {
+      rvalue = output;
+    }
 		if(rvalue == NULL){
 			rvalue = getCnode(0);
 		}
