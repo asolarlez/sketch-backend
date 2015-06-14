@@ -38,7 +38,7 @@ public:
 	interpair(int trail_level, Lit lit):tlevel(trail_level),l(lit){}
 };
 
-typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV  } ctype;
+typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV , CONF } ctype;
 
 
 
@@ -46,13 +46,17 @@ typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV  } ctype;
 class Intclause{
 protected:	
 	ctype type;
-	uint32_t size_etc;	
+	uint32_t size_etc;
+	float act;
 	iVar data[0];
 public:
-	Intclause(ctype tp, int sz, iVar a1, iVar a2, iVar a3):type(tp), size_etc(sz<<3){ data[0]=a1; data[1]=a2; data[2]=a3; }	
-	Intclause(ctype tp, int sz,  iVar a1, iVar a2, iVar* ch):type(tp), size_etc(sz<<3){
+	Intclause(ctype tp, int sz, iVar a1, iVar a2, iVar a3):type(tp), size_etc(sz<<3), act(0){ data[0]=a1; data[1]=a2; data[2]=a3; }	
+	Intclause(ctype tp, int sz,  iVar a1, iVar a2, iVar* ch):type(tp), size_etc(sz<<3), act(0){
 		data[0]=a1; data[1]=a2; 
 		for(int i=2; i<sz; ++i){ data[i] = ch[i-2]; }		
+	}
+	Intclause(ctype tp, int sz, iVar* ch):type(tp), size_etc(sz<<3), act(0){		
+		for(int i=0; i<sz; ++i){ data[i] = ch[i]; }		
 	}
 	ctype tp(){ return type; }
 	void retype(ctype tp){ type = tp; }
@@ -62,6 +66,9 @@ public:
 	int size(){
 		return size_etc >> 3;
 	}
+	double activity(){ return act; }
+	void decay(float f){ act = act * f; }
+	void moreAct(){ act = act + 1.0; }
 	void print();
 };
 
@@ -123,6 +130,39 @@ inline Intclause* BMuxClause(iVar cond, int len, iVar* choices, iVar x){
 	return &(tmp->cc);
 } 
 
+inline Intclause* ConfClause(int len, iVar* choices){
+	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*(len*2));
+	Intclause* tmp = new (mem)Intclause(CONF, len, choices); 
+	for(int i=0; i<len; ++i){
+		(*tmp)[len+i] = choices[len+i];
+	}
+	return tmp;
+} 
+
+inline int setConfVal(Intclause& c, int j, int val){
+	c[c.size()+j] = val;
+}
+
+inline void confSwap(Intclause& c, int i, int j){
+	iVar a = c[i];
+	int n = c.size();
+	c[i] = c[j];
+	c[j] = a;
+	a = c[n+i];
+	c[n+i] = c[n+j];
+	c[n+j] = a;	
+}
+
+inline int confVal(Intclause& c, int j){
+	iVar val = c[c.size()+j];
+	long long int vv = val;
+	if(vv > INT_MAX){
+		vv = vv - UINT_MAX;
+		vv = vv - 1;
+	}
+	return vv;
+}
+
 inline iVar& watchedIdx(Intclause& ic){
 	return *(iVar*)((((char*)(&ic))-offsetof(WrappedIC,cc))+offsetof(WrappedIC, watched));
 }
@@ -144,7 +184,9 @@ class IntPropagator{
 	vec<Intclause*> reason;
 	int qhead;
 	vec<Intclause*> clauses;
+	vec<Intclause*> conflicts;
 	vec<vec<Intclause*> >  watches;
+	vec<char> isBool;
 public:
 	IntPropagator(){
 		qhead = 0;
@@ -174,16 +216,7 @@ public:
 		return interf[i].l;
 	}
 
-	int addVar(Tvalue& tv){
-		int rv = vals.size();
-		vals.push();
-		watches.push();
-		mappings.push_back(tv);
-		seen.push();
-		reason.push();
-		tpos.push(-1);
-		return rv;
-	}
+	int addVar(Tvalue& tv);
 
 	void addMapping(int id, Tvalue& tv);
 
@@ -224,12 +257,13 @@ public:
 			int vrlev = tpos[vr];
 			if(vv.isDef() &&  vrlev >= 0 && (maxtpos<0 || vrlev < maxtpos) && checkLegal(vr, vv.v(), tmp)){
 				if(var(tmp)!=var_Undef){
+					//cout<<", "<<vr<<"("<<vv.v()<<")";
 					explain.push(~tmp);
 				}
 			}
 		}else{
 			int vrlev = tpos[vr];
-			/*
+			ic->moreAct();
 			if(ic->tp()==BMUX){
 				if(vr==(*ic)[0]){
 					iVar cond = (*ic)[1];
@@ -238,7 +272,7 @@ public:
 					if(vc.isDef() && condpos < vrlev){
 						int vcv = vc.v();
 						if(seen[cond]==0){
-							seen[cond]==1;
+							seen[cond]=1;
 							helper(cond, maxtpos);
 						}
 						if(vcv >=0 && vcv+2 <= ic->size()){
@@ -252,12 +286,12 @@ public:
 					}
 				}
 			}
-			*/
+			
 
 			for(int i=0; i<ic->size(); ++i){
 				iVar iv = (*ic)[i];
 				int parpos = tpos[iv];
-				if(/* parpos < vrlev &&*/ seen[iv]==0){
+				if( parpos < vrlev && seen[iv]==0){
 					seen[iv] = 1;
 					helper(iv, maxtpos);
 				}
@@ -300,7 +334,8 @@ public:
 		if(ic == NULL){
 			seen[vr] = 1;
 			helper(vr, lev);	
-		}else{
+		}else{	
+			ic->moreAct();
 			for(int i=0; i<ic->size(); ++i){
 				iVar iv = (*ic)[i];
 				if(seen[iv]==0){
@@ -309,8 +344,100 @@ public:
 				}
 			}
 		}		
+		//cout<<endl;
 		return explain;
 	}
+
+	void innerhelper(Intclause* ic, iVar vr, vec<pair<iVar, int> >& ppp, int trailLev){		
+		if(ic==NULL){			
+			ppp.push(make_pair(vr, vals[vr].v()));
+		}else{
+			ic->moreAct();
+			if(ic->tp()==BMUX && seen[(*ic)[0]]){
+				int xpos = tpos[(*ic)[0]];
+				int xlev = trail[xpos].level;
+				iVar cond = (*ic)[1];
+				int condpos = tpos[cond];
+				if(condpos < xpos){										
+					Val& vc = vals[cond];
+					if(vc.isDef()){
+						int vcv = vc.v();
+						if(seen[cond]==0){
+							seen[cond]=1;
+							int parpos = tpos[cond];
+							int tlev = trail[parpos].level;
+							if(tlev==trailLev){
+								Intclause* nc = reason[cond];
+								innerhelper(nc, cond, ppp, trailLev);
+							}else{
+								if(tlev > 0){
+									ppp.push(make_pair(cond, vals[cond].v()));
+								}
+							}
+						}
+						if(vcv >=0 && vcv+2 <= ic->size()){
+							iVar ivv = (*ic)[vcv+2];
+							if(seen[ivv]==0){
+								seen[ivv] = 1;
+								int parpos = tpos[ivv];
+								int tlev = trail[parpos].level;
+								if(tlev==trailLev){
+									Intclause* nc = reason[ivv];
+									innerhelper(nc, ivv, ppp, trailLev);
+								}else{
+									if(tlev > 0){
+										ppp.push(make_pair(ivv, vals[ivv].v()));
+									}
+								}
+							}
+						}
+						return;
+					}
+				}
+			}
+
+			for(int i=0; i<ic->size(); ++i){
+				iVar iv = (*ic)[i];
+				if(seen[iv]==0){
+					seen[iv]=1;
+					int parpos = tpos[iv];
+					if(parpos > 0){
+						int tlev = trail[parpos].level;
+						if(tlev==trailLev){
+							Intclause* nc = reason[iv];
+							innerhelper(nc, iv, ppp, trailLev);
+						}else{
+							if(tlev > 0){
+								ppp.push(make_pair(iv, vals[iv].v()));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	void getSummary(Intclause* ic, int trailLev, int szbnd){				
+		vec<pair<iVar, int> > ppp;
+		for(int i=0; i< seen.size(); ++i){
+			seen[i] = 0;
+		}
+		innerhelper(ic, 0, ppp, trailLev);
+
+		vec<iVar> vi;
+		vi.growTo(ppp.size()*2);
+		int sz = ppp.size();
+		for(int i=0; i<ppp.size(); ++i){
+			vi[i] = ppp[i].first;
+			vi[sz+i] = ppp[i].second;
+		}
+		if(ppp.size()< szbnd){
+			Intclause* conf = ConfClause(ppp.size(), &vi[0]);			
+			addConf(conf);
+		}
+	}
+
+
 
 	bool isSet(iVar var){
 		Val& v(vals[var]);
@@ -336,13 +463,6 @@ public:
 		watches[b].push(c);
 	}
 
-	void addPlus(iVar a, iVar b, iVar x){
-		Intclause* c = PlusClause(a, b, x);
-		clauses.push(c);
-		watches[a].push(c);
-		watches[b].push(c);
-	}
-
 
 	void addMod(iVar a, iVar b, iVar x){
 		Intclause* c = ModClause(a, b, x);
@@ -358,7 +478,33 @@ public:
 		watches[b].push(c);
 	}
 
-
+	void addPlus(iVar a, iVar b, iVar x){
+		Intclause* c = PlusClause(a, b, x);
+		clauses.push(c);
+		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
+		if(isSet(a)){
+			//we can't watch a and b because they a is already set. must watch b,c.
+			//for that, we need to retype to EXACTDIV.
+			c->retype(MINUS); // a = x-b;
+			(*c)[0]=a;
+			(*c)[1]=x;
+			(*c)[2]=b;
+			watches[x].push(c);
+			watches[b].push(c);
+			return;
+		}
+		if(isSet(b)){
+			c->retype(MINUS); // b = x-a;
+			(*c)[0]=b;
+			(*c)[1]=x;
+			(*c)[2]=a;
+			watches[x].push(c);
+			watches[a].push(c);
+			return;
+		}
+		watches[a].push(c);
+		watches[b].push(c);
+	}
 	void addTimes(iVar a, iVar b, iVar x){
 		Intclause* c = TimesClause(a, b, x);
 		clauses.push(c);
@@ -391,6 +537,39 @@ public:
 		clauses.push(c);
 		watches[a].push(c);
 		watches[b].push(c);
+	}
+
+
+	void addConf(Intclause* conf){	
+		conf->moreAct();
+		conflicts.push(conf);
+		int n = conf->size();
+		int highLev = -1;
+		int highLev2 = -1;
+		int pos = -1;
+		int pos2 = -1;
+		Assert(n >= 2, "qoeioo");
+		for(int i=0; i<n; ++i){
+			int v = (*conf)[i];
+			int tp = tpos[v];
+			if(tp > highLev){
+				highLev2 = highLev;
+				pos2 = pos;
+				highLev = tp;
+				pos = i;
+			}else{
+				if(tp > highLev2){
+					highLev2 = tp;
+					pos2 = i;
+				}
+			}
+		}
+		Assert(pos >=0 && pos2 >=0 && pos2 != pos, "Wqek;ji");
+		confSwap(*conf, 0, pos);
+		if(pos2==0){ pos2 = pos; } // because what used to be at zero is now at pos.
+		confSwap(*conf, 1, pos2);		
+		watches[(*conf)[0]].push(conf);
+		watches[(*conf)[1]].push(conf);		
 	}
 	
 	void addEq(iVar a, iVar b, iVar x){
@@ -426,6 +605,36 @@ public:
 			watchedIdx(*c)=2;
 		}
 	}
+
+
+	void removeConf(Intclause& ic){
+		Assert(ic.tp()==CONF, "Only conflicts can be removed for now");		
+		remove(watches[ic[0]], &ic );
+		remove(watches[ic[1]], &ic );		
+	}
+
+
+	void cleanupConfs(){
+		Intclause** rd, **wr, **end;
+		rd = &conflicts[0];
+		wr = rd;
+		end = rd + conflicts.size();
+		while(rd < end){
+			double act = (*rd)->activity();
+			if(act > 0.01){
+				(*rd)->decay( act> 100 ? 0.99 : act > 10 ? 0.9 : 0.6 );
+				*wr++ = *rd++;
+			}else{
+				removeConf(**rd);
+				free(*rd);
+				++rd;
+			}
+		}
+		//cout<<" Conflicts shrunk by "<<(rd-wr);
+		conflicts.shrink(rd-wr);
+		//cout<<" became "<<conflicts.size()<<endl;
+	}
+
 
 	bool checkLegal(iVar var, int val, Lit& out);
 
@@ -1323,6 +1532,96 @@ private:
 		Assert(false, "Shouldn't be here");
 	}
 
+
+
+	typedef enum { ALLFAILED, ONEUNSET, NOTREADY} confstates;
+
+	bool propagateConf(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
+		//p.var can only be c[1] or c[2]
+		action act;
+		confstates state = ALLFAILED;
+		int goodi = -1;
+		int undef1 = -1;
+		int undef2 = -1;
+		for(int i=0; i<c.size(); ++i){
+			iVar vari = c[i];
+			Val vv = vals[vari];
+			if(!vv.isDef()){
+				if(state==ONEUNSET){
+					state = NOTREADY;
+					if(undef2>=0){ break; };
+				}
+				if(state==ALLFAILED){
+					state = ONEUNSET;
+					goodi = i;
+				}		
+				if(undef1==-1){
+					undef1 = i;
+				}else{
+					if(undef2==-1){
+						undef2 == i;
+					}
+				}
+			}else{
+				if(vv.v() != confVal(c, i)){
+					state = NOTREADY;				
+					if(undef2>=0){ break; }
+				}
+			}
+		}
+		if(state==NOTREADY){			
+			if(undef2 <= 2){
+				act = ADV;
+			}else{
+				if(undef1 == 1){
+					// 1 is undefined but zero is now defined, so we have to swap 0 with undef2.
+					Assert(p.var == c[0], "zero is what we just set");
+					confSwap(c, 0, undef2);
+					watches[c[0]].push(&c);
+					return true;
+				}else{
+					//undef1 is either 0 or >1; either way, c[1] must be set.
+					if(p.var == c[0]){
+						//we just set c[0], but c[1] is also set; this means it's probably in the stack, so just wait for its turn to swap it.
+						Assert(undef1>1, "wewewwe");//If we just set c[0] and c[1] must be set, that means undef1>1.
+						confSwap(c, 0, undef1);
+						watches[c[0]].push(&c);
+						return true;
+					}else{
+						Assert(p.var==c[1], "told you");
+						confSwap(c, 1, undef2);					
+						watches[c[1]].push(&c);
+						return true;
+					}
+
+				}
+			}
+		}else if (state==ALLFAILED){
+			act = CONFL;
+		}else if (state==ONEUNSET){
+			iVar vari = c[goodi];
+			if(isBool[vari]==1){
+				int val = confVal(c, goodi);			
+				if(uncheckedSetVal(vari, 1-val, p.level, &c)){
+					act = ADV;
+				}else{
+					act = CONFL;
+				}
+			}else{
+				act = ADV;
+			}
+		}
+
+		if(act==ADV){
+			*j++ = &c;
+			return true;
+		}else if(act==CONFL){
+			*j++ = &c;
+			return false;
+		}
+		Assert(false, "Shouldn't be here");
+	}
+
 	bool propagatePlus(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
 		//p.var can only be c[1] or c[2]
 		action act;
@@ -1466,6 +1765,9 @@ public:
 				}else
 				if(c.tp()==DIV){
 					goodsofar = propagateDiv(c,p,i,j);
+				}else
+				if(c.tp()==CONF){
+					goodsofar = propagateConf(c,p,i,j);
 				}
 
 				if(!goodsofar){
@@ -1499,6 +1801,7 @@ public:
 
 	Lit existingLit(iVar vr);
 	void dump();
+	void dumpConfs();
 
 	int nvars(){
 		return vals.size();

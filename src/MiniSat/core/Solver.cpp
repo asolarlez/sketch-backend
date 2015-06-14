@@ -747,8 +747,10 @@ Clause* Solver::propagate()
 							//on the other hand, if iconf is null, it means the value we are setting contradicts
 							// something the solver already had for that value, but if that were the case, 
 							//the solver would have told us? 
+							
 							Assert(iconf!= NULL, "Maybe?");
 							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
+							intsolve->getSummary(iconf, decisionLevel(), ps.size()/2);
 							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
@@ -1014,6 +1016,7 @@ void Solver::reduceDB()
             learnts[j++] = learnts[i];
     }
     learnts.shrink(i - j);
+	intsolve->cleanupConfs();
 }
 
 
