@@ -410,7 +410,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       
       for (int i = oriInpSize; i < inpSize; i++) {
           SRC_node* inp = dynamic_cast<SRC_node*>(inputs[i]);
-          Assert(inp->getOtype() == OutType::INT, "Only integer state is supported");
+          OutType* outputType = inp->getOtype();
+
           //create a angelic hole
           CTRL_node* qn = new CTRL_node();
           stringstream st;
@@ -420,7 +421,25 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           
           qn->name = st.str();
           qn->set_Special_Angelic();
-          qn->set_nbits(5);
+        
+          if (outputType->isTuple) {
+            Assert(!outputType->isArr, "NYI");
+            qn->setTuple(((Tuple*)outputType)->name);
+          }
+      
+          int nbits = 5;
+          if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
+            nbits = 1;
+          }
+          if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
+            nbits = 5;
+          }
+        
+          qn->set_nbits(nbits);
+        
+          if (outputType == OutType::INT_ARR || outputType == OutType::BOOL_ARR) {
+            qn->setArr(PARAMS->angelic_arrsz);
+          }
           addNode(qn);
           node.multi_mother.push_back(qn);
           extraInputs.push_back(qn);
@@ -1006,7 +1025,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                 
                                 qn->name = st.str();
                                 qn->set_Angelic();
-                                qn->setTuple(un->getTupleName());
                             
                                 ARRACC_node* mx = new ARRACC_node();
                                 if(!PARAMS->angelic_model)

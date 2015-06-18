@@ -1089,6 +1089,59 @@ void NodesToSolver::visit( XOR_node& node ){
 	return;
 }
 
+void NodesToSolver::makeSrcTuple(const string& tupleName, int depth, Tvalue& nvar, const string& nodeName) {
+  if (depth == 0) {
+    nvar = tvOne;
+    nvar.num_ranges[0].value = 0;
+    return;
+  }
+  Tvalue v = dir.getArr(nodeName, 0);
+  
+  Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
+  int size = tup->entries.size();
+  vector<Tvalue>* new_vec = new vector<Tvalue>(size);
+  int id = tpl_store.size();
+  tpl_store.push_back(new_vec);
+  
+  vector<OutType*>::iterator it = tup->entries.begin();
+  for(int i=0 ; it != tup->entries.end(); ++it, ++i){
+    OutType* type = *it;
+    Tvalue mval = tvYES;
+    string newName = nodeName + "_" + to_string(i);
+
+    if (type == OutType::BOOL) {
+      mval = dir.getArr(newName, 0);
+    } else if (type == OutType::INT) {
+      mval = dir.getArr(newName, 0);
+      mval.setSize(5);
+      mval.makeSparse(dir);
+    } else if (type == OutType::INT_ARR) {
+      int arrSz = ((Arr*)(type))->arrSize;
+      const int totbits = 5*arrSz;
+      mval = dir.getArr(newName, 0);
+      mval.setSize(totbits);
+      mval.makeArray(dir, 5, arrSz);
+      
+    } else if (type == OutType::BOOL_ARR) {
+      int arrSz = ((Arr*)(type))->arrSize;
+      const int totbits = 1*arrSz;
+      mval = dir.getArr(newName, 0);
+      mval.setSize(totbits);
+      mval.makeArray(dir, 5, arrSz);
+      
+    } else if (type->isTuple) {
+      string name = ((Tuple*)(type))->name;
+      makeSrcTuple(name, depth - 1, mval, newName);
+    }
+    (*new_vec)[i] = mval;
+  }
+  
+  nvar = tvOne;
+  nvar.num_ranges[0].value = id;
+  nvar.num_ranges[0].guard = -v.getId();
+  nvar.num_ranges.push_back(guardedVal(v.getId(), 0));
+}
+
 void
 NodesToSolver::visit (SRC_node &node)
 {
@@ -1111,6 +1164,14 @@ NodesToSolver::visit (SRC_node &node)
 		}
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
     } else {
+      
+      Tvalue & nvar = node_ids[node.id];
+      if (node.isTuple) {
+        string tupleName = node.tupleName;
+        makeSrcTuple(tupleName, 2, nvar, node.name);
+    
+      } else {
+      
 		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
@@ -1129,6 +1190,7 @@ NodesToSolver::visit (SRC_node &node)
 			}
 #endif /* HAVE_BVECTARITH */
 		}
+    }
 		node_ids[node.id].markInput(dir);
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
@@ -1222,7 +1284,57 @@ NodesToSolver::visit (NEG_node &node)
 
 
 
-
+void NodesToSolver::makeAngelicCtrlTuple(const string& tupleName, int depth, Tvalue& nvar) {
+  if (depth == 0) {
+    nvar = tvOne;
+    nvar.num_ranges[0].value = 0;
+    return;
+  }
+  
+  Tvalue v = dir.newAnonymousVar(1);
+  Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
+  int size = tup->entries.size();
+  vector<Tvalue>* new_vec = new vector<Tvalue>(size);
+  int id = tpl_store.size();
+  tpl_store.push_back(new_vec);
+  
+  vector<OutType*>::iterator it = tup->entries.begin();
+  for(int i=0 ; it != tup->entries.end(); ++it, ++i){
+    OutType* type = *it;
+    Tvalue mval = tvYES;
+    if (type == OutType::BOOL) {
+      mval = dir.newAnonymousVar(1);
+      mval.setSize(1);
+    } else if (type == OutType::INT) {
+      mval = dir.newAnonymousVar(5); // TODO: get rid of this magic number
+      mval.setSize(5);
+      mval.makeSparse(dir);
+    } else if (type == OutType::INT_ARR) {
+      int arrSz = ((Arr*)(type))->arrSize;
+      const int totbits = 5*arrSz;
+      mval = dir.newAnonymousVar(totbits);
+      mval.setSize(totbits);
+      mval.makeArray(dir, 5, arrSz);
+      
+    } else if (type == OutType::BOOL_ARR) {
+      int arrSz = ((Arr*)(type))->arrSize;
+      const int totbits = 1*arrSz;
+      mval = dir.newAnonymousVar(totbits);
+      mval.setSize(totbits);
+      mval.makeArray(dir, 5, arrSz);
+      
+    } else if (type->isTuple) {
+      string name = ((Tuple*)(type))->name;
+      makeAngelicCtrlTuple(name, depth - 1, mval);
+    }
+    (*new_vec)[i] = mval;
+  }
+  
+  nvar = tvOne;
+  nvar.num_ranges[0].value = id;
+  nvar.num_ranges[0].guard = -v.getId();
+  nvar.num_ranges.push_back(guardedVal(v.getId(), 0));
+}
 
 void
 NodesToSolver::visit (CTRL_node &node)
@@ -1248,22 +1360,29 @@ NodesToSolver::visit (CTRL_node &node)
     }else{
 		Tvalue & nvar = node_ids[node.id];
 		if(node.get_Angelic()){
-			// BUGFIX: Issue #5
-			// when node is an array, need to create array
-			const int arrSz = node.getArrSz();
-			//cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
-			if(arrSz<0){
-				nvar = dir.newAnonymousVar(nbits);
-				nvar.setSize(nbits);
-        if (nbits > 1) {
-          nvar.makeSparse(dir);
+      
+      if (node.isTuple) {
+        string tupleName = node.tupleName;
+        makeAngelicCtrlTuple(tupleName, 2, nvar);
+        
+      } else {
+        // BUGFIX: Issue #5
+        // when node is an array, need to create array
+        const int arrSz = node.getArrSz();
+        //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
+        if(arrSz<0){
+          nvar = dir.newAnonymousVar(nbits);
+          nvar.setSize(nbits);
+          if (nbits > 1) {
+            nvar.makeSparse(dir);
+          }
+        }else{
+          const int totbits = nbits*arrSz;
+          nvar = dir.newAnonymousVar(totbits);
+          nvar.setSize(totbits);
+          nvar.makeArray(dir, nbits, arrSz);
         }
-			}else{
-				const int totbits = nbits*arrSz;
-				nvar = dir.newAnonymousVar(totbits);
-				nvar.setSize(totbits);
-				nvar.makeArray(dir, nbits, arrSz);
-			}
+      }
 		}else{
 			Assert( dir.getArrSize(node.get_name()) == nbits, "THIS IS basd" );
 			nvar = dir.getArr(node.get_name(), 0);

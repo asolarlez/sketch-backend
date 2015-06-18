@@ -105,7 +105,7 @@ class CEGISSolver
 	map<string, int> last_input;	
 protected:
 	void declareControl(const string& cname, int size);
-	void declareInput(const string& cname, int size, int arrSz);
+	void declareInput(const string& cname, int size, int arrSz, bool isTuple = false, const string& tupleName = "");
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
 	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);

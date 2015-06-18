@@ -138,7 +138,7 @@ public:
   /*
    * Replaces f1 inside f2 with functions in f3.
    */
-  void registerFunctionReplace(string f1, string f2, string f3) {
+  void registerFunctionReplace(string f1, string f2, string f3, int stCount) {
     map<string, map<string, string> >::iterator it = replaceMap.find(f1);
     if (it == replaceMap.end()) {
       map<string, string> fmap;

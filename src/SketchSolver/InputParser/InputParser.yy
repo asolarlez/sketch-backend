@@ -312,8 +312,8 @@ TypeList: { /* Empty */ }
 Typedef: {/* Empty */}
 |T_Typedef '{' TypeList '}'{ }
 
-Replacement: T_replace T_ident '*' T_ident T_equals T_ident ';' {
-  envt->registerFunctionReplace(*$4, *$2, *$6);
+Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' ';' {
+  envt->registerFunctionReplace(*$4, *$2, *$6, $8);
 }
 
 AssertionExpr: T_ident T_Sketches T_ident

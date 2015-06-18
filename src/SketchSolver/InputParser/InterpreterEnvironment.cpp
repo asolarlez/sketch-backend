@@ -255,8 +255,8 @@ can only call them with the parameters used in the spec */
     
     {
         //Post processing to replace ufun inputs with tuple of src nodes.
-        replaceSrcWithTuple(*spec);
-        replaceSrcWithTuple(*sketch);
+       // replaceSrcWithTuple(*spec);
+       // replaceSrcWithTuple(*sketch);
     }
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
     spec->makeMiter(sketch);

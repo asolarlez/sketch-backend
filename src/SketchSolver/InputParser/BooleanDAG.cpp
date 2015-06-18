@@ -650,7 +650,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 	if(named_nodes.find(name) != named_nodes.end()){
 		fth = named_nodes[name];	
 	}else{
-		cout<<"WARNING, DANGEROUS!!"<<endl;
+		cout<<"WARNING, DANGEROUS!! " << name << endl;
 		fth = new CONST_node(-333);
 		nodes.push_back(fth);
 	}
@@ -718,6 +718,9 @@ INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_na
 	if(type == OutType::FLOAT || type == OutType::FLOAT_ARR || type->isTuple){
 		src->otype = type;
 	}
+  if (type->isTuple) {
+    src->setTuple(((Tuple*)type)->name);
+  }
 	src->setArr(arrSz);
 	return src;
 }

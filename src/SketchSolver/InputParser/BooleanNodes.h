@@ -73,7 +73,7 @@ class Int: public OutType{public: Int(): OutType(false, false){} string str() co
 
 class Float: public OutType{ public: Float(): OutType(false, false){} string str() const{ return "FLOAT"; }};
 
-class Arr: public OutType{public:  OutType * atype;
+class Arr: public OutType{public:  OutType * atype; int arrSize;
 	Arr(OutType* type):OutType(true, false), atype(type){}
 	string str() const { return atype->str() + "_ARR"; }
 };
