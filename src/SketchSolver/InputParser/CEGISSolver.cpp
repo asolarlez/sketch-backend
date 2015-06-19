@@ -547,7 +547,6 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
               if (cn->isTuple) {
                 src->setTuple(cn->tupleName);
               }
-              newdag->addNewNode(src);
               newdag->replace(cn->id, src);
               continue;
             }
