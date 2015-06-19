@@ -301,9 +301,13 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 }
 
 TypeLine: T_ident '(' TupleTypeList ')'{
-//add type
-    OutType::makeTuple(*$1, *$3);
+  //add type
+    OutType::makeTuple(*$1, *$3, -1);
 
+}
+| T_ident '(' Constant TupleTypeList ')'{
+    //add type
+    OutType::makeTuple(*$1, *$4, $3);
 }
 
 TypeList: { /* Empty */ }

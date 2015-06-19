@@ -59,7 +59,7 @@ class OutType{
 	// StringHTable2<OutType*> tuples;
 	OutType(bool _isArr, bool _isTuple);
 	static OutType* joinOtype(OutType* t1, OutType* t2);
-    static OutType* makeTuple(const string&, vector<OutType*>& elems);
+    static OutType* makeTuple(const string&, vector<OutType*>& elems, int actFields);
 	static OutType* makeTuple(vector<OutType*>& elems);
     static OutType* getTuple(const string& name);
 };
@@ -82,6 +82,7 @@ class Tuple: public OutType{
     public:
     string name;
 	OutType* arr;
+  int actSize;
 	Tuple():OutType(false, true){ arr = new Arr(this); }
 	vector<OutType*> entries;
 	string str() const { return name; }

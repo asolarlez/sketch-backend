@@ -98,7 +98,7 @@ void declareTupleInput(VarStore& inputStore, const string& inname, int bitsize, 
   if (depth == 0) return;
   inputStore.newVar(inname, 1);
   Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
-  int size = tup->entries.size();
+  int size = tup->actSize;
   for (int i = 0; i < size; i++) {
     OutType* type = tup->entries[i];
     string newname = inname + "_" + to_string(i);
@@ -416,7 +416,7 @@ bool_node* createTupleNode(const string& node_name, const string& tuple_name, Va
     return cse.getCnode(0);
   }
   Tuple* tup = (Tuple*) (OutType::getTuple(tuple_name));
-  int size = tup->entries.size();
+  int size = tup->actSize;
   
   TUPLE_CREATE_node* tc = new TUPLE_CREATE_node();
   string tupName = tuple_name;
@@ -464,6 +464,10 @@ bool_node* createTupleNode(const string& node_name, const string& tuple_name, Va
     } else {
       Assert(false, "NYI");
     }
+  }
+  
+  for (int i = size; i < tup->entries.size(); i++) {
+    tc->multi_mother.push_back(cse.getCnode(0));
   }
   
   tc->addToParents();
@@ -1312,7 +1316,7 @@ void declareTupleControlVar(const string& node_name, const string& tuple_name, i
   if (depth == 0) return;
   dirCheck.declareInArr(node_name, 1);
   Tuple* tup = (Tuple*) (OutType::getTuple(tuple_name));
-  int size = tup->entries.size();
+  int size = tup->actSize;
   for (int i = 0; i < size; i++) {
     OutType* type = tup->entries[i];
     string newname = node_name + "_" + to_string(i);

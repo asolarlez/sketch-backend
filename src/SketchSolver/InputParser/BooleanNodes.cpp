@@ -33,7 +33,7 @@ OutType* OutType::getTuple(const string& name){
     return t;
 }
 
-OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
+OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems, int actFields){
     Tuple* t;
 	if(tupleMap.count(name)>0 ){
 		t =  dynamic_cast<Tuple*>(tupleMap[name]);
@@ -43,6 +43,7 @@ OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
         tupleMap[name] = t;
     }
     t->entries = elems;
+    t->actSize = actFields == -1 ? elems.size() : actFields;
     
     return t;
     

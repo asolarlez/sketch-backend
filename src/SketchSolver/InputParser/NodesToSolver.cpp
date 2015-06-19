@@ -1107,6 +1107,9 @@ void NodesToSolver::makeSrcTuple(const string& tupleName, int depth, Tvalue& nva
   for(int i=0 ; it != tup->entries.end(); ++it, ++i){
     OutType* type = *it;
     Tvalue mval = tvYES;
+    if (i >= tup->actSize) {
+      mval.bitAdjust(false);
+    } else {
     string newName = nodeName + "_" + to_string(i);
 
     if (type == OutType::BOOL) {
@@ -1132,6 +1135,7 @@ void NodesToSolver::makeSrcTuple(const string& tupleName, int depth, Tvalue& nva
     } else if (type->isTuple) {
       string name = ((Tuple*)(type))->name;
       makeSrcTuple(name, depth - 1, mval, newName);
+    }
     }
     (*new_vec)[i] = mval;
   }
@@ -1302,6 +1306,9 @@ void NodesToSolver::makeAngelicCtrlTuple(const string& tupleName, int depth, Tva
   for(int i=0 ; it != tup->entries.end(); ++it, ++i){
     OutType* type = *it;
     Tvalue mval = tvYES;
+    if (i >= tup->actSize) {
+      mval.bitAdjust(false);
+    } else {
     if (type == OutType::BOOL) {
       mval = dir.newAnonymousVar(1);
       mval.setSize(1);
@@ -1326,6 +1333,7 @@ void NodesToSolver::makeAngelicCtrlTuple(const string& tupleName, int depth, Tva
     } else if (type->isTuple) {
       string name = ((Tuple*)(type))->name;
       makeAngelicCtrlTuple(name, depth - 1, mval);
+    }
     }
     (*new_vec)[i] = mval;
   }
