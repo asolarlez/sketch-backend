@@ -23,7 +23,8 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 		for(int i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz(), srcnode->isTuple, srcnode->tupleName);
+      Assert(!srcnode->isTuple, "Not possible");
+			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
 	}
 	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
@@ -47,8 +48,8 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 				declareControl(problemIn[i]->get_name(), nbits);
 			}
       if (ctrlnode->spAngelic) {
-        string tupleName = ctrlnode->tupleName;
-        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->isTuple, tupleName);
+        Assert(!ctrlnode->isTuple, "NYI");
+        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz());
       }
 		}
 		if(PARAMS->verbosity > 2){
@@ -94,36 +95,10 @@ void CEGISSolver::declareControl(const string& cname, int size){
 	}	
 }
 
-void declareTupleInput(VarStore& inputStore, const string& inname, int bitsize, int arrSz, const string& tupleName, int depth) {
-  if (depth == 0) return;
-  inputStore.newVar(inname, 1);
-  Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
-  int size = tup->actSize;
-  for (int i = 0; i < size; i++) {
-    OutType* type = tup->entries[i];
-    string newname = inname + "_" + to_string(i);
-    if (type == OutType::BOOL) {
-      inputStore.newVar(newname, 1);
-    } else if (type == OutType::INT) {
-      inputStore.newVar(newname, bitsize);
-    } else if (type == OutType::BOOL_ARR) {
-      inputStore.newArr(newname, 1, arrSz);
-    } else if (type == OutType::INT_ARR) {
-      inputStore.newArr(newname, bitsize, arrSz);
-    } else if (type->isTuple) {
-      declareTupleInput(inputStore, newname, bitsize, arrSz, ((Tuple*) type)->name, depth - 1);
-    } else {
-      Assert(false, "NYI");
-    }
-  }
-}
-
-void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, bool isTuple = false, const string& tupleName = "") {
+void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz) {
 	//Inputs can be redeclared to change their sizes, but not controls.
 	if( !inputStore.contains(inname)){
-    if (isTuple) {
-      declareTupleInput(inputStore, inname, bitsize, arrSz, tupleName, 2); // TODO: get rid of magic number
-    }else if(arrSz >= 0){
+    if(arrSz >= 0){
 			inputStore.newArr(inname, bitsize, arrSz);	
 		}else{
 			inputStore.newVar(inname, bitsize);				
@@ -131,22 +106,17 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 		Dout( cout<<" INPUT "<<inname<<" sz = "<<size<<endl );
 	}else{
 		// cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
-    if (isTuple) {
-      cout << "src tuple" << endl;
-      
-    } else {
       inputStore.resizeVar(inname, bitsize);
       if(arrSz >= 0){
         inputStore.resizeArr(inname, arrSz);
       }
-    }
 	}
 }
 
-void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz, bool isTuple, const string& tupleName) {
+void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz) {
 	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
 	cpt.resizeInput(inname, bitsize);
-	::declareInput(inputStore, inname, bitsize, arrSz, isTuple, tupleName);
+	::declareInput(inputStore, inname, bitsize, arrSz);
 }
 
 bool CEGISSolver::solve(){	
@@ -409,78 +379,14 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	}
 }
 
-bool_node* createTupleNode(const string& node_name, const string& tuple_name, VarStore& values, DagOptim& cse, int depth) {
-  if (depth == 0) return cse.getCnode(0);
-  VarStore::objP* val = &(values.getObj(node_name));
-  if (val->getInt() == 0) {
-    return cse.getCnode(0);
-  }
-  Tuple* tup = (Tuple*) (OutType::getTuple(tuple_name));
-  int size = tup->actSize;
-  
-  TUPLE_CREATE_node* tc = new TUPLE_CREATE_node();
-  string tupName = tuple_name;
-  tc->setName(tupName);
-  
-  for (int i = 0; i < size; i++) {
-    OutType* type = tup->entries[i];
-    string newname = node_name + "_" + to_string(i);
-    if (type == OutType::BOOL) {
-      tc->multi_mother.push_back( cse.getCnode( values[newname]==1 ));
-    } else if (type == OutType::INT) {
-      tc->multi_mother.push_back( cse.getCnode( values[newname] ));
-    } else if (type == OutType::BOOL_ARR) {
-      VarStore::objP* val = &(values.getObj(newname));
 
-      ARR_CREATE_node* acn = new ARR_CREATE_node();
-      while(val != NULL){
-        bool_node* cnst = cse.getCnode( val->getInt() ==1 );
-        while(acn->multi_mother.size()< val->index){
-          acn->multi_mother.push_back( cse.getCnode(0) );
-        }
-        acn->multi_mother.push_back( cnst );
-        val = val->next;
-      }
-      acn->addToParents();
-      cse.addNode(acn);
-      tc->multi_mother.push_back(acn);
-    } else if (type == OutType::INT_ARR) {
-      VarStore::objP* val = &(values.getObj(newname));
-      
-      ARR_CREATE_node* acn = new ARR_CREATE_node();
-      while(val != NULL){
-        bool_node* cnst = cse.getCnode( val->getInt());
-        while(acn->multi_mother.size()< val->index){
-          acn->multi_mother.push_back( cse.getCnode(0) );
-        }
-        acn->multi_mother.push_back( cnst );
-        val = val->next;
-      }
-      acn->addToParents();
-      cse.addNode(acn);
-      tc->multi_mother.push_back(acn);
-    } else if (type->isTuple) {
-      tc->multi_mother.push_back(createTupleNode(newname, ((Tuple*) type)->name, values, cse, depth - 1));
-    } else {
-      Assert(false, "NYI");
-    }
-  }
-  
-  for (int i = size; i < tup->entries.size(); i++) {
-    tc->multi_mother.push_back(cse.getCnode(0));
-  }
-  
-  tc->addToParents();
-  cse.addNode(tc);
-  return tc;
-}
 
 bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
 	int arrsz = -1;
   if (inode->type == bool_node::SRC) {
     SRC_node* src_ = dynamic_cast<SRC_node*>(inode);
     if (src_->isTuple) {
-      return createTupleNode(src_->get_name(), src_->tupleName, values, cse, 2);
+      Assert(false, "Not possible");
     }
   }
 	if(inode->type== bool_node::SRC){	
@@ -549,7 +455,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
               // replace it with a src node
               SRC_node* src = dynamic_cast<SRC_node*>(newdag->create_inputs(cn->get_nbits(), OutType::INT, cn->get_name() + "_src", cn->getArrSz()));
               if (cn->isTuple) {
-                src->setTuple(cn->tupleName);
+                Assert(false, "Not possible");
               }
               newdag->replace(cn->id, src);
               continue;
@@ -1068,7 +974,7 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag){
 		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 		int nbits = srcnode->get_nbits();
 		if(nbits >= 2){	
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz(), srcnode->isTuple, srcnode->tupleName);
+			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
 	}
 }
@@ -1311,31 +1217,6 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 }
 
 
-
-void declareTupleControlVar(const string& node_name, const string& tuple_name, int nbits, int arrSz, SolverHelper& dirCheck, int depth) {
-  if (depth == 0) return;
-  dirCheck.declareInArr(node_name, 1);
-  Tuple* tup = (Tuple*) (OutType::getTuple(tuple_name));
-  int size = tup->actSize;
-  for (int i = 0; i < size; i++) {
-    OutType* type = tup->entries[i];
-    string newname = node_name + "_" + to_string(i);
-    if (type == OutType::BOOL) {
-      dirCheck.declareInArr(newname, 1);
-    } else if (type == OutType::INT) {
-      dirCheck.declareInArr(newname, nbits);
-    } else if (type == OutType::BOOL_ARR) {
-      dirCheck.declareInArr(newname, arrSz);
-    } else if (type == OutType::INT_ARR) {
-      dirCheck.declareInArr(newname, nbits * arrSz);
-    } else if (type->isTuple) {
-      declareTupleControlVar(newname, ((Tuple*) type)->name, nbits, arrSz, dirCheck, depth - 1);
-    } else {
-      Assert(false, "NYI");
-    }
-  }
-}
-
 void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	int idx = 0;	
 	map<bool_node*,  int> node_values;
@@ -1353,7 +1234,7 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 			int arsz = srcnode->getArrSz();
 			if(arsz <0){ arsz = 1; }
       if (srcnode->isTuple) {
-        declareTupleControlVar(srcnode->get_name(), srcnode->tupleName, srcnode->get_nbits(), arsz, dirCheck, 2);
+        Assert(false, "Not possible");
       } else {
 			  dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
       }

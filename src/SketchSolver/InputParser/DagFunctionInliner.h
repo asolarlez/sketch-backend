@@ -615,7 +615,8 @@ public:
 	virtual void visit(CTRL_node& node);
 	virtual bool changed(){ return somethingChanged; }
 	
-
+  bool_node* createTupleAngelicNode(string tuple_name, string node_name, int depth);
+  bool_node* createEqNode(bool_node* left, bool_node* right, int depth);
 
 
 	set<string>& getFunsInlined(){

@@ -1089,62 +1089,6 @@ void NodesToSolver::visit( XOR_node& node ){
 	return;
 }
 
-void NodesToSolver::makeSrcTuple(const string& tupleName, int depth, Tvalue& nvar, const string& nodeName) {
-  if (depth == 0) {
-    nvar = tvOne;
-    nvar.num_ranges[0].value = 0;
-    return;
-  }
-  Tvalue v = dir.getArr(nodeName, 0);
-  
-  Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
-  int size = tup->entries.size();
-  vector<Tvalue>* new_vec = new vector<Tvalue>(size);
-  int id = tpl_store.size();
-  tpl_store.push_back(new_vec);
-  
-  vector<OutType*>::iterator it = tup->entries.begin();
-  for(int i=0 ; it != tup->entries.end(); ++it, ++i){
-    OutType* type = *it;
-    Tvalue mval = tvYES;
-    if (i >= tup->actSize) {
-      mval.bitAdjust(false);
-    } else {
-    string newName = nodeName + "_" + to_string(i);
-
-    if (type == OutType::BOOL) {
-      mval = dir.getArr(newName, 0);
-    } else if (type == OutType::INT) {
-      mval = dir.getArr(newName, 0);
-      mval.setSize(5);
-      mval.makeSparse(dir);
-    } else if (type == OutType::INT_ARR) {
-      int arrSz = ((Arr*)(type))->arrSize;
-      const int totbits = 5*arrSz;
-      mval = dir.getArr(newName, 0);
-      mval.setSize(totbits);
-      mval.makeArray(dir, 5, arrSz);
-      
-    } else if (type == OutType::BOOL_ARR) {
-      int arrSz = ((Arr*)(type))->arrSize;
-      const int totbits = 1*arrSz;
-      mval = dir.getArr(newName, 0);
-      mval.setSize(totbits);
-      mval.makeArray(dir, 5, arrSz);
-      
-    } else if (type->isTuple) {
-      string name = ((Tuple*)(type))->name;
-      makeSrcTuple(name, depth - 1, mval, newName);
-    }
-    }
-    (*new_vec)[i] = mval;
-  }
-  
-  nvar = tvOne;
-  nvar.num_ranges[0].value = id;
-  nvar.num_ranges[0].guard = -v.getId();
-  nvar.num_ranges.push_back(guardedVal(v.getId(), 0));
-}
 
 void
 NodesToSolver::visit (SRC_node &node)
@@ -1171,9 +1115,7 @@ NodesToSolver::visit (SRC_node &node)
       
       Tvalue & nvar = node_ids[node.id];
       if (node.isTuple) {
-        string tupleName = node.tupleName;
-        makeSrcTuple(tupleName, 2, nvar, node.name);
-    
+        Assert(false, "Not possible");
       } else {
       
 		int arrSz = node.getArrSz();
@@ -1288,62 +1230,6 @@ NodesToSolver::visit (NEG_node &node)
 
 
 
-void NodesToSolver::makeAngelicCtrlTuple(const string& tupleName, int depth, Tvalue& nvar) {
-  if (depth == 0) {
-    nvar = tvOne;
-    nvar.num_ranges[0].value = 0;
-    return;
-  }
-  
-  Tvalue v = dir.newAnonymousVar(1);
-  Tuple* tup = (Tuple*) (OutType::getTuple(tupleName));
-  int size = tup->entries.size();
-  vector<Tvalue>* new_vec = new vector<Tvalue>(size);
-  int id = tpl_store.size();
-  tpl_store.push_back(new_vec);
-  
-  vector<OutType*>::iterator it = tup->entries.begin();
-  for(int i=0 ; it != tup->entries.end(); ++it, ++i){
-    OutType* type = *it;
-    Tvalue mval = tvYES;
-    if (i >= tup->actSize) {
-      mval.bitAdjust(false);
-    } else {
-    if (type == OutType::BOOL) {
-      mval = dir.newAnonymousVar(1);
-      mval.setSize(1);
-    } else if (type == OutType::INT) {
-      mval = dir.newAnonymousVar(5); // TODO: get rid of this magic number
-      mval.setSize(5);
-      mval.makeSparse(dir);
-    } else if (type == OutType::INT_ARR) {
-      int arrSz = ((Arr*)(type))->arrSize;
-      const int totbits = 5*arrSz;
-      mval = dir.newAnonymousVar(totbits);
-      mval.setSize(totbits);
-      mval.makeArray(dir, 5, arrSz);
-      
-    } else if (type == OutType::BOOL_ARR) {
-      int arrSz = ((Arr*)(type))->arrSize;
-      const int totbits = 1*arrSz;
-      mval = dir.newAnonymousVar(totbits);
-      mval.setSize(totbits);
-      mval.makeArray(dir, 5, arrSz);
-      
-    } else if (type->isTuple) {
-      string name = ((Tuple*)(type))->name;
-      makeAngelicCtrlTuple(name, depth - 1, mval);
-    }
-    }
-    (*new_vec)[i] = mval;
-  }
-  
-  nvar = tvOne;
-  nvar.num_ranges[0].value = id;
-  nvar.num_ranges[0].guard = -v.getId();
-  nvar.num_ranges.push_back(guardedVal(v.getId(), 0));
-}
-
 void
 NodesToSolver::visit (CTRL_node &node)
 {
@@ -1370,8 +1256,7 @@ NodesToSolver::visit (CTRL_node &node)
 		if(node.get_Angelic()){
       
       if (node.isTuple) {
-        string tupleName = node.tupleName;
-        makeAngelicCtrlTuple(tupleName, 2, nvar);
+        Assert(false, "Not possible");
         
       } else {
         // BUGFIX: Issue #5

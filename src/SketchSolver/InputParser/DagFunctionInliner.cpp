@@ -363,6 +363,128 @@ bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap,
 	return chk;
 }
 
+bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string node_name, int depth) {
+  if (depth == 0) return getCnode(-1);
+  
+  Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+  TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+  new_node->setName(tuple_name);
+  int size = tuple_type->actSize;
+  for (int j = 0; j < size ; j++) {
+    stringstream str;
+    str<<node_name<<"_"<<j;
+    
+    OutType* type = tuple_type->entries[j];
+    
+    if (type->isTuple) {
+      new_node->multi_mother.push_back(createTupleAngelicNode(((Tuple*)type)->name, str.str(), depth - 1));
+    } else {
+      
+      CTRL_node* src =  new CTRL_node();
+      src->name = str.str();
+      src->set_Special_Angelic();
+      
+      int nbits = 0;
+      if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+        nbits = 1;
+      }
+      if (type == OutType::INT || type == OutType::INT_ARR) {
+        nbits = 5;
+      }
+      
+      src->set_nbits(nbits);
+      
+      if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+        src->setArr(PARAMS->angelic_arrsz);
+      }
+      addNode(src);
+      
+      new_node->multi_mother.push_back(src);
+    }
+  }
+  
+  for (int i = size; i < tuple_type->entries.size(); i++) {
+    new_node->multi_mother.push_back(getCnode(-1));
+  }
+  new_node->addToParents();
+  
+  ARRACC_node* ac = new ARRACC_node();
+  stringstream str;
+  str<<node_name<<"__";
+  
+  CTRL_node* src = new CTRL_node();
+  src->name = str.str();
+  src->set_nbits(1);
+  src->set_Special_Angelic();
+  addNode(src);
+  
+  ac->mother = src;
+  ac->multi_mother.push_back(getCnode(-1));
+  ac->multi_mother.push_back(optAdd(new_node));
+  ac->addToParents();
+  return optAdd(ac);
+}
+
+bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, int depth) {
+  if (depth == 0) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = right;
+    eq->addToParents();
+    return optAdd(eq);
+  }
+  OutType* ltype = left->getOtype();
+  OutType* rtype = right->getOtype();
+  
+  if (!ltype->isTuple && !rtype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = right;
+    eq->addToParents();
+    return optAdd(eq);
+  } else if (!ltype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = right;
+    eq->father = getCnode(-1);
+    eq->addToParents();
+    return optAdd(eq);
+  } else if (!rtype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = getCnode(-1);
+    eq->addToParents();
+    return optAdd(eq);
+  } else {
+    int lentries = ((Tuple*)ltype)->actSize;
+    int rentries = ((Tuple*)rtype)->actSize;
+    Assert(lentries == rentries, "Wrong types");
+    bool_node* cur;
+    for (int i = 0; i < lentries; i++) {
+      TUPLE_R_node* left_r = new TUPLE_R_node();
+      left_r->idx = i;
+      left_r->mother = left;
+      left_r->addToParents();
+      
+      TUPLE_R_node* right_r = new TUPLE_R_node();
+      right_r->idx = i;
+      right_r->mother = right;
+      right_r->addToParents();
+      
+      if (i == 0) {
+        cur = createEqNode(optAdd(left_r), optAdd(right_r), depth - 1);
+      } else {
+        AND_node* an = new AND_node();
+        an->mother = cur;
+        an->father = createEqNode(optAdd(left_r), optAdd(right_r), depth-1);
+        an->addToParents();
+        
+        cur = optAdd(an);
+      }
+      
+    }
+    return cur;
+  }
+}
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
 	Dllist tmpList;
@@ -411,38 +533,47 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       for (int i = oriInpSize; i < inpSize; i++) {
           SRC_node* inp = dynamic_cast<SRC_node*>(inputs[i]);
           OutType* outputType = inp->getOtype();
-
-          //create a angelic hole
-          CTRL_node* qn = new CTRL_node();
+        
           stringstream st;
           st<<inp->name;
           st<<"_";
           st<<node.get_callsite();
-          
-          qn->name = st.str();
-          qn->set_Special_Angelic();
         
           if (outputType->isTuple) {
-            Assert(!outputType->isArr, "NYI");
-            qn->setTuple(((Tuple*)outputType)->name);
+            bool_node* tup =  createTupleAngelicNode(((Tuple*)outputType)->name, st.str(), 1); // TODO: magic number
+            node.multi_mother.push_back(tup);
+            extraInputs.push_back(tup);
+          } else {
+            //create a angelic hole
+            CTRL_node* qn = new CTRL_node();
+            
+            
+            qn->name = st.str();
+            qn->set_Special_Angelic();
+            
+            if (outputType->isTuple) {
+              Assert(!outputType->isArr, "NYI");
+              qn->setTuple(((Tuple*)outputType)->name);
+            }
+            
+            int nbits = 0;
+            if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
+              nbits = 1;
+            }
+            if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
+              nbits = 5;
+            }
+            
+            qn->set_nbits(nbits);
+            
+            if (outputType == OutType::INT_ARR || outputType == OutType::BOOL_ARR) {
+              qn->setArr(PARAMS->angelic_arrsz);
+            }
+            
+            addNode(qn);
+            node.multi_mother.push_back(qn);
+            extraInputs.push_back(qn);
           }
-      
-          int nbits = 5;
-          if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
-            nbits = 1;
-          }
-          if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
-            nbits = 5;
-          }
-        
-          qn->set_nbits(nbits);
-        
-          if (outputType == OutType::INT_ARR || outputType == OutType::BOOL_ARR) {
-            qn->setArr(PARAMS->angelic_arrsz);
-          }
-          addNode(qn);
-          node.multi_mother.push_back(qn);
-          extraInputs.push_back(qn);
         
       }
       if (inpSize > oriInpSize) {
@@ -642,17 +773,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           
           or_->mother = optNot;
           
-          EQ_node* eq1 = new EQ_node();
-          eq1->mother = actSt;
           TUPLE_R_node* tr3 = new TUPLE_R_node();
           tr3->idx = size - outSize - 2*state_size + i;
           tr3->mother = actual;
           tr3->addToParents();
           
-          eq1->father = optAdd(tr3);
-          eq1->addToParents();
+          bool_node* eq_node = createEqNode(actSt, optAdd(tr3), 1);
           
-          or_->father = optAdd(eq1);
+          or_->father = eq_node;
           or_->addToParents();
           
           ASSERT_node* stateEq = new ASSERT_node();
