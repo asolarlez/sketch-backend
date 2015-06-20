@@ -604,9 +604,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       
       TUPLE_CREATE_node* new_output = new TUPLE_CREATE_node();
       new_output->setName(oldOutputType);
-      for (int i = 1; i < oriInpSize; i++) {
-        new_output->multi_mother.push_back(node.multi_mother[i]);
-      }
+      //for (int i = 1; i < oriInpSize; i++) {
+      //  new_output->multi_mother.push_back(node.multi_mother[i]);
+      //}
       new_output->multi_mother.push_back(optAdd(tuple_node));
       new_output->addToParents();
       rvalue = optAdd(new_output);
