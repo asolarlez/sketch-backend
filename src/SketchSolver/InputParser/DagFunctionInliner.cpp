@@ -510,85 +510,19 @@ void DagFunctionInliner::visit( UFUN_node& node ){
     if (ictrl != NULL && ictrl->isRecursive(node)) {
       cout << "Replacing ufun node " << name << endl;
       string oldOutputType = node.getTupleName();
-      //string newName = (it->second).begin()->second;
-      //node.modify_ufname(newName);
-      //
+      
       int oriInpSize = node.multi_mother.size();
-      //Assert(functionMap.find(newName) != functionMap.end(), "Function " + newName + " is not found");
-      //BooleanDAG& repFun = *functionMap[newName];
-      //vector<bool_node*>& inputs  = repFun.getNodesByType(bool_node::SRC);
-      //int inpSize = inputs.size();
-      //vector<bool_node*> extraInputs;
       
-      /*for (int i = 0; i < oriInpSize; i++) {
-        bool_node* input = inputs[i];
-        // Assuming that the first inputs will correspond to the inputs of the original function
-        Assert(input->getOtype() == node.multi_mother[i]->getOtype(), "Input types mismatch");
-      }*/
-      
-      /*for (int i = oriInpSize; i < inpSize; i++) {
-          SRC_node* inp = dynamic_cast<SRC_node*>(inputs[i]);
-          OutType* outputType = inp->getOtype();
-        
-          stringstream st;
-          st<<inp->name;
-          st<<"_";
-          st<<node.get_callsite();
-        
-          if (outputType->isTuple) {
-            bool_node* tup =  createTupleAngelicNode(((Tuple*)outputType)->name, st.str(), 1); // TODO: magic number
-            node.multi_mother.push_back(tup);
-            extraInputs.push_back(tup);
-          } else {
-            //create a angelic hole
-            CTRL_node* qn = new CTRL_node();
-            
-            
-            qn->name = st.str();
-            qn->set_Special_Angelic();
-            
-            if (outputType->isTuple) {
-              Assert(!outputType->isArr, "NYI");
-              qn->setTuple(((Tuple*)outputType)->name);
-            }
-            
-            int nbits = 0;
-            if (outputType == OutType::BOOL || outputType == OutType::BOOL_ARR) {
-              nbits = 1;
-            }
-            if (outputType == OutType::INT || outputType == OutType::INT_ARR) {
-              nbits = 5;
-            }
-            
-            qn->set_nbits(nbits);
-            
-            if (outputType == OutType::INT_ARR || outputType == OutType::BOOL_ARR) {
-              qn->setArr(PARAMS->angelic_arrsz);
-            }
-            
-            addNode(qn);
-            node.multi_mother.push_back(qn);
-            extraInputs.push_back(qn);
-          }
-        
-      }*/
-      //if (inpSize > oriInpSize) {
-      //  node.makeAssertsHard(); // TODO: this is wrong
-      //}
-      //TUPLE_CREATE_node* output = dynamic_cast<TUPLE_CREATE_node*>(computeOptim(&node));
-  
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
-      //int outSize = output->multi_mother.size();
     
       Tuple* oldOutputTuple = (Tuple*)OutType::getTuple(oldOutputType);
       Tuple* tup = (Tuple*) (oldOutputTuple->entries[oldOutputTuple->entries.size() - 1]);
       tuple_node->setName(tup->name);
       int size = tup->entries.size();
       tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
-      //int stateSize = inpSize - oriInpSize;
-      //int actOutSize = outSize - stateSize;
+      
       int actFields = size - oriInpSize;
-      //cout << stateSize << " " << actOutSize << " " << actFields << endl;
+
       for (int i = 1; i <  actFields; i++) {
         tuple_node->multi_mother.push_back(getCnode(0));
       }
@@ -604,9 +538,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       
       TUPLE_CREATE_node* new_output = new TUPLE_CREATE_node();
       new_output->setName(oldOutputType);
-      //for (int i = 1; i < oriInpSize; i++) {
-      //  new_output->multi_mother.push_back(node.multi_mother[i]);
-      //}
+      
       new_output->multi_mother.push_back(optAdd(tuple_node));
       new_output->addToParents();
       rvalue = optAdd(new_output);
@@ -775,72 +707,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         repFun->addToParents();
         this->addNode(repFun);
         newOutput = repFun;
-        
-        
-        /*vector<bool_node*> newOutputs;
-        
-        int state_size = inputs.size() - 1;
-        Tuple* retType = (Tuple*) (node.getOtype());
-        int outSize = retType->entries.size() - state_size;
-        
-        
-        
-        
-        for (int i = 0; i < state_size; i++) {
-          bool_node* actSt = node.multi_mother[i+1];
-          
-          TUPLE_R_node* tr2 = new TUPLE_R_node();
-          tr2->idx = size - outSize - state_size + i;
-          tr2->mother = actual;
-          tr2->addToParents();
-          
-          newOutputs.push_back(optAdd(tr2));
-    
-          OR_node* or_ = new OR_node();
-          
-          or_->mother = optNot;
-          
-          TUPLE_R_node* tr3 = new TUPLE_R_node();
-          tr3->idx = size - outSize - 2*state_size + i;
-          tr3->mother = actual;
-          tr3->addToParents();
-          
-          bool_node* eq_node = createEqNode(actSt, optAdd(tr3), 1);
-          
-          or_->father = eq_node;
-          or_->addToParents();
-          
-          ASSERT_node* stateEq = new ASSERT_node();
-          stateEq->setMsg("state equivalence");
-          stateEq->mother = optAdd(or_);
-          stateEq->makeHardAssert();
-          stateEq->addToParents();
-          this->addNode(stateEq);
-          DllistNode* tt = getDllnode(stateEq);
-          tmpList.append(tt);
-          callMap.clear();
-        }
-        
-        for (int i = 0; i < outSize; i++) {
-          TUPLE_R_node* tr1 = new TUPLE_R_node();
-          tr1->idx = size - outSize + i;
-          tr1->mother = actual;
-          tr1->addToParents();
-          
-          newOutputs.push_back(optAdd(tr1));
-        }
-        
-        newOutputTup = new TUPLE_CREATE_node();
-        newOutputTup->setName(retType->name);
-        
-        Assert(((Tuple*)newOutputTup->getOtype())->entries.size() == newOutputs.size(), "Something is wrong here");
-        for (int i = 0; i < newOutputs.size(); i++) {
-          newOutputTup->multi_mother.push_back(newOutputs[i]);
-        }
-        
-        newOutputTup->addToParents();
-        addNode(newOutputTup);*/
-        
         
         node.mother->children.erase((bool_node*)&node);
         
