@@ -119,17 +119,24 @@ public:
   virtual bool isRecursive(UFUN_node& node) { return false; }
 
 	virtual void clear()=0;
+  
+  virtual int numRecursive(UFUN_node& node) {return 0;}
+  
+  virtual void registerCallWithLimit(const UFUN_node& caller, const UFUN_node* callee, int newLmt) {}
 
 	/**
 	Register the existence of a call.
 	*/
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee)=0;
+  
+  virtual int getLimit() {return 0;}
 };
 
 
 class InlinerNode{
 public:
 	int funid;
+  int limit;
 	InlinerNode* parent;	
 };
 
@@ -196,6 +203,7 @@ public:
 		funidmap.condAdd("$root", 6, nextfunid, nextfunid);
 		nextfunid++;
 		root= inodestore.newObj();
+    root->limit = -1;
 		root->funid = 0;
 		root->parent = NULL;
 		
@@ -210,6 +218,21 @@ public:
 		}else{
 			next->funid = id;
 		}
+    next->limit = -1;
+		next->parent = parent;
+		inodes[node.globalId] = next;
+	}
+  
+  virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt){
+		int id = nextfunid++;
+		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size()+1, id, id);
+		InlinerNode* next = inodestore.newObj();
+		if(boundByCallsite){
+			next->funid = node.get_callsite();
+		}else{
+			next->funid = id;
+		}
+    next->limit = newLmt;
 		next->parent = parent;
 		inodes[node.globalId] = next;
 	}
@@ -232,9 +255,14 @@ public:
 	}
 
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
-		Assert(current == inodes[caller.globalId], "This should never happen");
+    Assert(current == inodes[caller.globalId], "This should never happen");
 		addChild(current, *callee);
 	}
+  
+  virtual void registerCallWithLimit(const UFUN_node& caller, const UFUN_node* callee, int newLmt) {
+    Assert(current == inodes[caller.globalId], "This should never happen");
+    addChildWithLimit(current, *callee, newLmt);
+  }
 
   bool isRecursive(UFUN_node& node) {
     InlinerNode* candidate = inodes[node.globalId];
@@ -248,22 +276,44 @@ public:
     }
   }
   
+  int numRecursive(UFUN_node& node) {
+    InlinerNode* candidate = inodes[node.globalId];
+		Assert(candidate != NULL, "I've never seen this function before!!!");
+		int cnt = 0;
+		InlinerNode* temp = candidate->parent;
+    while(temp != NULL){
+      
+			if(temp->funid == candidate->funid){
+				cnt++;
+			}
+			temp = temp->parent;
+		}
+		return cnt;
+  }
+  
 	bool localCheck(UFUN_node& node){
 		InlinerNode* candidate = inodes[node.globalId];
 		Assert(candidate != NULL, "I've never seen this function before!!!");
 		int cnt = 0;
 		InlinerNode* temp = candidate->parent;
+    int recLimit = limit;
 		while(temp != NULL){
+      if (temp->limit != -1 && temp->limit < recLimit) {
+        recLimit = temp->limit;
+        if (cnt >= recLimit) {
+          return false;
+        }
+      }
 			if(temp->funid == candidate->funid){
 				cnt++;
-				if(cnt >= limit){
+				if(cnt >= recLimit){
 					// cout<<"Prevented "<<node.get_ufname()<<endl;
 					return false;
 				}
 			}
 			temp = temp->parent;
 		}
-		// cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
+		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
 		return true;
 	}
 
@@ -286,6 +336,7 @@ public:
 		}
 		return localCheck(node);
 	}
+  virtual int getLimit() {return limit; }
 	virtual void clear(){ }
 };
 

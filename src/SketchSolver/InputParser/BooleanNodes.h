@@ -575,6 +575,7 @@ class TUPLE_R_node: public bool_node{
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
        otype = ((Tuple*)ot)->entries[idx];
+       Assert(otype != NULL, "dfq");
        return otype;
     }
     virtual string lprint()const{
