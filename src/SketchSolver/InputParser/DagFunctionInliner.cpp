@@ -548,7 +548,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
   
   bool shouldReplaceSpecialNode = false;
   string replaceFunName = "";
-  
+  if (node.replaceFun) {
   map<string, map<string, string > >::iterator it1 = replaceMap.begin();
   
   for(; it1 != replaceMap.end(); it1++) {
@@ -558,6 +558,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       replaceFunName = fmap[name];
       break;
     }
+  }
   }
   
 	ufunAll.restart();
@@ -688,6 +689,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         string newOutputType = newNameCaps + "_ANONYMOUS";
         repFun->set_tupleName(newOutputType);
         repFun->mother = optCond;
+        repFun->replaceFun = false;
         for (int i = actSize; i < size; i++) {
           TUPLE_R_node* tr1 = new TUPLE_R_node();
           tr1->idx = i;
@@ -702,7 +704,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       
         if(ictrl != NULL){
           int numRec = ictrl->numRecursive(node);
-          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec);
+          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec - 1);
         }
         repFun->addToParents();
         this->addNode(repFun);
@@ -835,6 +837,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
             
             if (node.hardAsserts()) {
               ufun->makeAssertsHard();
+            }
+            
+            if (!node.replaceFun) {
+              ufun->replaceFun = false;
             }
 
 						if(!ufun->ignoreAsserts){													

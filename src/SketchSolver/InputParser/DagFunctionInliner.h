@@ -303,6 +303,7 @@ public:
         if (cnt >= recLimit) {
           return false;
         }
+        return true;
       }
 			if(temp->funid == candidate->funid){
 				cnt++;
