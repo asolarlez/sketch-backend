@@ -380,6 +380,18 @@ int InterpreterEnvironment::doallpairs(){
 	int howmany = params.ntimes;
 	if(howmany < 1 || !params.randomassign){ howmany = 1; }
 	int result=-1;
+
+	if(howmany > 1){
+		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+			BooleanDAG* bd = it->second;
+			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
+			for(int i=0; i<ctrl.size(); ++i){
+				hardcoder.declareControl((CTRL_node*) ctrl[i]);
+			}
+		}
+	}
+
+
 	for(int tt = 0; tt<howmany; ++tt){
 		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
 		timerclass roundtimer("Round");

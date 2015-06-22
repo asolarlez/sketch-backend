@@ -72,8 +72,7 @@ protected:
     void intBvectLe (arith_node &);
     void intBvectGt (arith_node &);
     void intBvectGe (arith_node &);
-
-    void boolNodeUpdate (bool_node &, Tvalue &);
+    
 
 public:
    string errorMsg;
@@ -152,8 +151,7 @@ public:
 	virtual void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, int idx=-1);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
     
-	
-    virtual bool checkParentsChanged (bool_node &node, bool more);	
+	    
 	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
  void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
  void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);

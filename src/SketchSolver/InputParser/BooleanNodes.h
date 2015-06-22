@@ -106,7 +106,7 @@ struct bool_node{
 #endif
     
     public:
-    typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
+    typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
     
     const Type type;
     
@@ -192,10 +192,7 @@ struct bool_node{
             case DST: return "D";
             case NOT: return "NOT";
             case CTRL: return "CTRL";
-            case GT: return "GT";
-            case GE: return "GE";
             case LT: return "LT";
-            case LE: return "LE";
             case EQ: return "EQ";
             case ASSERT: return "ASSERT";
             case ARRACC: return "ARRACC";
@@ -226,10 +223,7 @@ struct bool_node{
             case DST: return "D";
             case NOT: return "!";
             case CTRL: return "CTRL";
-            case GT: return ">";
-            case GE: return ">=";
             case LT: return "<";
-            case LE: return "<=";
             case EQ: return "==";
             case ASSERT: return "ASSERT";
         }

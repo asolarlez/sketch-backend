@@ -9,6 +9,13 @@
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
 
+
+class BadConcretization{
+
+
+};
+
+
 class Caller{
 public:
 	int callergid;
@@ -538,37 +545,40 @@ public:
 	void clear(){}
 };
 
-
+#include "MiniSATSolver.h"
 
 class HoleHardcoder{
 	bool LEAVEALONE(int v){ return v < 0; }
 	static const int REALLYLEAVEALONE = -8888888;
-	map<string, int> randholes;
-	string justincase;
-	stringstream concsig;
-	int lasthc;
-	map<string, set<int> > badvalues;
+	map<string, int> randholes;			
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
-	int fixValue(const string& s, int bound, int nbits);
+	SolverHelper* globalSat;
+	vec<Lit> sofar;
+	int fixValue(CTRL_node& node, int bound, int nbits);
 	long long int totsize;
 public:
-	HoleHardcoder(){
-		lasthc = -1;
+	HoleHardcoder(){		
 		totsize = 1;
+		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
+		globalSat = new SolverHelper(*ms);
+	}
+	~HoleHardcoder(){		
+		delete &globalSat->getMng();
+		delete globalSat;
 	}
 	long long int getTotsize(){
 		return totsize;
 	}
+	int recordDecision(const guardedVal& gv);
+	void declareControl(CTRL_node* node){
+		globalSat->declareControl(node);
+	}
 	void reset(){
-		if(randholes.size()>0){						
-			cout<<"Ruling out bad hole values "<<concsig.str()<<"  "<<lasthc<<endl;
-			badvalues[concsig.str()].insert(lasthc);
-		}
-		concsig.str(string());
-		justincase="";
-		lasthc=-1;
+		globalSat->getMng().reset();
+		globalSat->getMng().addHelperClause(sofar);
 		randholes.clear();
+		sofar.clear();
 		totsize=1;
 	}
 	void setSolver(SolverHelper* sh){

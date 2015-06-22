@@ -44,7 +44,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 			}
 			if(!ctrlnode->get_Angelic()){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
-				declareControl(problemIn[i]->get_name(), nbits);
+				declareControl(ctrlnode);
 			}			
 		}
 		if(PARAMS->verbosity > 2){
@@ -81,9 +81,11 @@ CEGISSolver::~CEGISSolver(void)
 }
 
 
-void CEGISSolver::declareControl(const string& cname, int size){
+void CEGISSolver::declareControl(CTRL_node* cnode){
+	const string& cname = cnode->get_name();
+	int size = cnode->get_nbits();
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
-	dirFind.declareInArr(cname, size);
+	dirFind.declareControl(cnode);
 
 	if(!ctrlStore.contains(cname)){
 		ctrlStore.newVar(cname, size);

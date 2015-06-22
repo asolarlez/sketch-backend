@@ -8,7 +8,7 @@
 using namespace std;
 
 #include "BooleanToCNF.h"
-#include "Tvalue.h"
+#include "BooleanDAG.h"
 
 #ifndef SAT_Manager
 #define SAT_Manager void *
@@ -91,8 +91,32 @@ void SolverHelper::addHelperC(Tvalue& tv){
 	
 }
 
+Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
+	Assert(!ctrlnode->get_Angelic(), "not allowed");
+	string& name = ctrlnode->get_name();
+	map<string, Tvalue>::iterator mp = controls.find(name);	
+	Assert(mp != controls.end(), "Not here");
+	return mp->second;
+}
 
-
+Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
+	Assert(!ctrlnode->get_Angelic(), "not allowed");
+	string& name = ctrlnode->get_name();
+	map<string, Tvalue>::iterator mp = controls.find(name);
+	if(mp != controls.end()){
+		return mp->second;
+	}else{
+		int nbits = ctrlnode->get_nbits();
+		declareInArr(name, nbits);
+		Tvalue& rv = controls[name];
+		rv = getArr(name, 0);
+		if(nbits > 1){
+			rv.setSize(nbits);
+			rv.makeSparse(*this);
+		}
+		return rv;
+	}
+}
 
 
 

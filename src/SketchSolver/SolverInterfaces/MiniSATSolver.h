@@ -8,6 +8,8 @@ using namespace std;
 
 #include "MSolver.h"
 #include "SolverTypes.h"
+#include "Vec.h"
+
 
 using namespace MSsolverNS;
 
@@ -75,6 +77,11 @@ public:
 	 virtual void assumeVarClause(int x);
 
 	 virtual void addHelper2Clause(int l1, int l2);
+	 virtual void addHelperClause(vec<Lit>& vl);
+
+	 virtual bool tryAssignment(int a){
+		 return s->tryAssignment(lfromInt(a));
+	 }
 
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);

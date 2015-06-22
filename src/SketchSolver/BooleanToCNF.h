@@ -16,12 +16,15 @@
 #include "SATSolver.h"
 #include "guardedVal.h"
 #include "StringHTable.h"
+#include "Tvalue.h"
+
 
 // #define Dout(msg) msg
 
 using namespace std;
 
 class Tvalue;
+class CTRL_node;
 
 class varRange{
 	public:
@@ -39,6 +42,7 @@ class SolverHelper {
 	bool doMemoization;
     map<string, int> varmap;
     map<string, int> arrsize;
+	map<string, Tvalue> controls;
     int varCnt;
 	int lastVar;
     SATSolver& mng;
@@ -237,6 +241,9 @@ public:
 		}	
     }
 
+	Tvalue& declareControl(CTRL_node* ctrlnode);
+	Tvalue& getControl(CTRL_node* ctrlnode);
+
     void makeArrNoBranch(const string& arName) {
 	int var = varmap[arName];
 	int sz = arrsize[arName];
@@ -297,7 +304,9 @@ public:
 	bool assertIfPossible(int a){
 		return mng.assertIfPossible(a);
 	}
-
+	virtual bool tryAssignment(int a){
+		return mng.tryAssignment(a);
+	}
 	void addHardAssertClause (int a);
 	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);

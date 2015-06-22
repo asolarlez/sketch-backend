@@ -2,6 +2,10 @@
 #define __GUARDEDVAL_H
 
 #include <cstring>
+#include <ostream>
+#include "BasicError.h"
+
+using namespace std;
 
 class guardedVal{
 public:

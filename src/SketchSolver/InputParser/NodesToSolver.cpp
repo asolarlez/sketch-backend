@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <functional>
 #include "timerclass.h"
-
+#include "Tvalue.h"
 #include "CommandLineArgs.h"
 #include "PrintInteresting.h"
 
@@ -1042,24 +1042,11 @@ NodesToSolver::processArith (bool_node &node)
 }
 
 
-/*
- * Update node's value and set flag accordingly.
- */
-void
-NodesToSolver::boolNodeUpdate (bool_node &node, Tvalue &nvar)
-{
-    if (nvar != node_ids[node.id]) {
-	node_ids[node.id] = nvar;
-	node.flag = true;
-    } else
-	node.flag = false;
-}
-
 
 void NodesToSolver::visit( AND_node& node ){
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
-	if(!checkParentsChanged(node, true)){ Dout( cout<<fval<<" AND "<<mval<<" unchanged"<<endl  ); return; }	
+	
 	Tvalue oldnvar(node_ids[node.id]);
 	Tvalue& nvar = node_ids[node.id];
 	nvar = dir.addAndClause(fval.getId (), mval.getId ());
@@ -1070,7 +1057,7 @@ void NodesToSolver::visit( AND_node& node ){
 
 
 void NodesToSolver::visit( OR_node& node ){
-	if(!checkParentsChanged( node, true)){ Dout( cout<<"OR didn't change"<<endl  ); return; }
+	
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
 	Tvalue oldnvar(node_ids[node.id]);
@@ -1081,7 +1068,7 @@ void NodesToSolver::visit( OR_node& node ){
 	return;
 }
 void NodesToSolver::visit( XOR_node& node ){
-	if(!checkParentsChanged( node, true)){ Dout( cout<<"XOR didn't change"<<endl  ); return; }
+	
 	const Tvalue& fval = tval_lookup(node.father);
 	const Tvalue& mval = tval_lookup(node.mother);
 	Tvalue oldnvar(node_ids[node.id]);
@@ -1132,7 +1119,7 @@ NodesToSolver::visit (SRC_node &node)
 			}
 #endif /* HAVE_BVECTARITH */
 		}
-		node_ids[node.id].markInput(dir);
+		
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
@@ -1183,10 +1170,7 @@ void
 NodesToSolver::visit (NOT_node &node)
 {
     Assert (node.mother && ! node.father, "NOT node must have exactly one predecessor");	
-    if (! checkParentsChanged (node, true)) {
-		Dout (cout << "NOT unchanged" << endl);
-		return;
-    }
+
 
     const Tvalue &mval = tval_lookup (node.mother);
     if(!( mval.getType() == TVAL_BVECT && mval.getSize() == 1 )){
@@ -1201,7 +1185,7 @@ NodesToSolver::visit (NOT_node &node)
     }
     Assert( mval.getType() == TVAL_BVECT && mval.getSize() == 1, "Bad Type for NOT "<<mval.getSize()<<" "<<mval.getType());
     Tvalue nvar = -mval.getId ();
-    boolNodeUpdate (node, nvar);
+	node_ids[node.id] = nvar;    
 
     Dout (cout << "PT " << node.get_name() << " " << nvar << " " << &node << endl);
 }
@@ -1211,14 +1195,11 @@ void
 NodesToSolver::visit (NEG_node &node)
 {
     Assert (node.mother && ! node.father, "NEG node must have exactly one predecessor");	
-    if (! checkParentsChanged (node, true)) {
-		Dout (cout << "NEG unchanged" << endl);
-		return;
-    }
+
 
     const Tvalue &mval = tval_lookup (node.mother);
     Tvalue nvar = mval.toComplement(dir);
-    boolNodeUpdate (node, nvar);
+    node_ids[node.id] = nvar;
 
     Dout (cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
 }
@@ -1258,9 +1239,9 @@ NodesToSolver::visit (CTRL_node &node)
 			if(arrSz<0){
 				nvar = dir.newAnonymousVar(nbits);
 				nvar.setSize(nbits);
-        if (nbits > 1) {
-          nvar.makeSparse(dir);
-        }
+				if (nbits > 1) {
+				  nvar.makeSparse(dir);
+				}
 			}else{
 				const int totbits = nbits*arrSz;
 				nvar = dir.newAnonymousVar(totbits);
@@ -1268,18 +1249,8 @@ NodesToSolver::visit (CTRL_node &node)
 				nvar.makeArray(dir, nbits, arrSz);
 			}
 		}else{
-			Assert( dir.getArrSize(node.get_name()) == nbits, "THIS IS basd" );
-			nvar = dir.getArr(node.get_name(), 0);
-			if( nbits > 1 ){ //This could be removed. It's ok to setSize when get_nbits==1.
-				nvar.setSize(nbits);
-				Dout(cout<<"setting control nodes"<<node.get_name()<<endl);
-#ifndef HAVE_BVECTARITH
-				// In the future, I may want to make some of these holes not-sparse.
-				nvar.makeSparse(dir);
-#endif /* HAVE_BVECTARITH */
-			}
-		}
-		nvar.markInput(dir);
+			nvar = dir.getControl(&node);			
+		}		
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
     }
@@ -1289,7 +1260,6 @@ NodesToSolver::visit (CTRL_node &node)
 
 void NodesToSolver::visit( PLUS_node& node ){
 	Dout( cout<<" PLUS: "<<node.get_name()<<endl );
-	if(!checkParentsChanged( node, true)){ return; }
 
 	/* FIXME hard-wired bit-vector arithmetics. */
 #ifdef HAVE_BVECTARITH
@@ -1301,8 +1271,7 @@ void NodesToSolver::visit( PLUS_node& node ){
 	return;
 }
 void NodesToSolver::visit( TIMES_node& node ){
-	Dout( cout<<" TIMES: "<<node.get_name()<<endl );
-	if(!checkParentsChanged( node, true)){ return; }
+	Dout( cout<<" TIMES: "<<node.get_name()<<endl );	
 	processArith<multiplies<int> >(node);
 	return;
 }
@@ -1507,8 +1476,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		}
 
 		bool_node* choice = node.multi_mother[idx];
-		
-		if(!checkParentsChanged( node, ( choice== NULL || !choice->flag ))){ Dout(cout<<"Parents did not change "<<endl); return; }
+				
 		node_ids[node.id] = tval_lookup(choice);				
 		return;
 	}
@@ -1544,13 +1512,13 @@ void NodesToSolver::visit( ARRACC_node& node ){
 
 void NodesToSolver::visit( DIV_node& node ){
     Dout( cout<<" DIV "<<endl );
-    if(!checkParentsChanged( node, true)){ return; }
+    
     processArith<divides<int> >(node);
     return;
 }
 void NodesToSolver::visit( MOD_node& node ){
     Dout( cout<<" MOD "<<endl );
-    if(!checkParentsChanged( node, true)){ return; }
+    
     processArith<modulus<int> >(node);
     return;
 }
@@ -1560,7 +1528,7 @@ void
 NodesToSolver::visit (EQ_node &node)
 {
     Dout (cout << " EQ " << endl);
-    if (checkParentsChanged (node, true))
+    
 #ifdef HAVE_BVECTARITH
 	intBvectEq (node);
 #else
@@ -1571,8 +1539,7 @@ NodesToSolver::visit (EQ_node &node)
 void
 NodesToSolver::visit (LT_node &node)
 {
-    Dout (cout << " LT " << endl);
-    if (checkParentsChanged (node, true))
+    Dout (cout << " LT " << endl);    
 #ifdef HAVE_BVECTARITH
 	intBvectLt (node);
 #else
@@ -1742,7 +1709,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
     }
-    if(!checkParentsChanged( node, parentSame)){ return; }
+    
     int guard;
     if( !mval.isSparse() ){
 		if(quant > 1 || quant < 0){
@@ -1792,8 +1759,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 		}
 		Dout( cout<<"   ids[i]="<<ids[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag );
-	}
-	if(!checkParentsChanged( node, parentSame)){Dout(cout<<"@ACTRL "<<node.get_name()<<"  "<<node_ids[node.id]<<"   "<<&node<<endl);	 return; }
+	}	
 	gvvec& tmp = node_ids[node.id].num_ranges;
 	dir.getSwitchVars(ids, size, tmp);
 	node_ids[node.id].sparsify (dir);
@@ -2244,10 +2210,6 @@ NodesToSolver::visit (ASSERT_node &node)
 	assert (node.mother && ! node.father);
 
 	Tvalue fval = tval_lookup (node.mother);
-	if (! checkParentsChanged (node, true)) {
-		Dout (cout << "ASSERT " << fval << "unchanged" << endl );
-		return;
-	}
 
 
 	{
@@ -2475,17 +2437,6 @@ void NodesToSolver::doNonBoolArrAcc(const Tvalue& mval, vector<Tvalue>& choices,
 	}
 }
 
-
-bool NodesToSolver::checkParentsChanged(bool_node& node, bool more){
-	if(( node.father== NULL || !node.father->flag ) &&
-			( node.mother== NULL || !node.mother->flag )&&
-			more
-			){ 
-				node.flag =false; return false || dir.ignoreOld(); 
-	}else{ 
-		node.flag = true; return true;
-	}
-}
 
 
 void NodesToSolver::process(BooleanDAG& bdag){

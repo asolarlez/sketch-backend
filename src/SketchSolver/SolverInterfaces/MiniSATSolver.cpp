@@ -78,6 +78,10 @@ void MiniSATSolver::annotate(const string& msg){
 					(l2 > 0) ? Lit(l2) : ~Lit(-l2));
  }
 
+void MiniSATSolver::addHelperClause(vec<Lit>& vl){
+	s->addClause(vl);
+}
+
 void MiniSATSolver::addHelperClause(int c[], int sz){
 	vec<Lit> lits;
 	Dout(cout<<"@ helper "; for(int i=0; i<sz; ++i){cout<<c[i]<<", ";}cout<<endl;)
@@ -371,6 +375,7 @@ bool MiniSATSolver::ignoreOld(){
 
  void MiniSATSolver::reset(){
  	finalOr.clear();	
+	s->cancelUntil(0);
 	//cout<<"clause count = "<<clauseCount<<endl;
 	clauseCount=0;
 }

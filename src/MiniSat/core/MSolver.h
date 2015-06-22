@@ -76,7 +76,7 @@ public:
 	void	regInput	(int in);		//Armando: Register an input var. What distinguishes these vars is that conflicts on them are really really valuable.
 
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
-
+	bool tryAssignment(Lit a);
 
     // Extra results: (read-only member variable)
     //
@@ -107,6 +107,7 @@ public:
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
 
 	void writeDIMACS(std::ofstream& dimacs_file);
+	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
 
     // Helper structures:
@@ -167,7 +168,6 @@ protected:
     void     uncheckedEnqueue (Lit p, Clause* from = NULL);                            // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, Clause* from = NULL);                            // Test if fact 'p' contradicts current state, enqueue otherwise.
     Clause*  propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-    void     cancelUntil      (int level);                                             // Backtrack until a certain level.
     void     analyze          (Clause* confl, vec<Lit>& out_learnt, int& out_btlevel); // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
