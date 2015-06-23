@@ -685,7 +685,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         UFUN_node* repFun = new UFUN_node(replaceFunName);
         repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
         string newNameCaps = replaceFunName;
-        std::transform(newNameCaps.begin(), newNameCaps.end(), newNameCaps.begin(), ::toupper);
+        for(int i = 0; i < newNameCaps.size(); i++) {
+          newNameCaps.at(i) = toupper(newNameCaps.at(i));
+        }
         string newOutputType = newNameCaps + "_ANONYMOUS";
         repFun->set_tupleName(newOutputType);
         repFun->mother = optCond;
