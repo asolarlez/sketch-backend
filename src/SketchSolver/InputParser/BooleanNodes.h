@@ -757,10 +757,11 @@ class CTRL_node: public INTER_node{
     bool isTuple;
     string tupleName;
     bool spAngelic;
+    int max;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false) {  this->kind = kind; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize){
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -770,8 +771,9 @@ class CTRL_node: public INTER_node{
 		return name;
 	}
   
-  void special_concretize() {
+  void special_concretize(int max_) {
     spConcretize = true;
+    max = max_;
   }
   
   bool is_sp_concretize() {

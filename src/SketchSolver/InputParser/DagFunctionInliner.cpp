@@ -108,6 +108,11 @@ void HoleHardcoder::printControls(ostream& out){
 
 
 	int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits){
+    if (node.is_sp_concretize()) {
+      Assert(node.max <= bound, "max should be less than bound");
+      bound = node.max;
+    }
+    
 		int rv = rand() % bound;
 		const string& s = node.get_name();
 		Tvalue& glob = globalSat->declareControl(&node);
@@ -749,7 +754,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           repFun->multi_mother.push_back(optAdd(tr1));
         }
         
-        for (int i = 1; i < inputs.size(); i++) {
+        Tuple* outTup = (Tuple*) (OutType::getTuple(newOutputType));
+        
+        for (int i = 1; i < outTup->entries.size(); i++) {
+          Assert(i < inputs.size(), "dfae");
           repFun->multi_mother.push_back(node.multi_mother[i]);
         }
       

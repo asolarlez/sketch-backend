@@ -786,21 +786,21 @@ Term: Constant {
 	delete $3;
 
 }
-| T_sp '<' Ident '>' {
-	$$ = currentBD->create_controls(-1, *$3, false, false, true);
-	delete $3;
+| T_sp Constant '<' Ident '>' {
+	$$ = currentBD->create_controls(-1, *$4, false, false, true, $2);
+	delete $4;
 }
-| T_sp '<' Ident Constant '>' {
-	int nctrls = $4;
+| T_sp Constant '<' Ident Constant '>' {
+	int nctrls = $5;
 	if(overrideNCtrls){
 		nctrls = NCTRLS;
 	}
-	$$ = currentBD->create_controls(nctrls, *$3, false, false, true);
-	delete $3;
+	$$ = currentBD->create_controls(nctrls, *$4, false, false, true, $2);
+	delete $4;
 }
-| T_sp '<' Ident Constant '*' '>' {
-	$$ = currentBD->create_controls($4, *$3, false, false, true);
-	delete $3;
+| T_sp Constant '<' Ident Constant '*' '>' {
+	$$ = currentBD->create_controls($5, *$4, false, false, true, $2);
+	delete $4;
 
 }
 
