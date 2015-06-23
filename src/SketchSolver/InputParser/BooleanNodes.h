@@ -751,15 +751,16 @@ class CTRL_node: public INTER_node{
 	typedef enum{MINIMIZE=1, ANGELIC=2, PCOND=4} Property;
 	unsigned kind;
 	int arrSz;
+  bool spConcretize;
     
 	public:
     bool isTuple;
     string tupleName;
     bool spAngelic;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false) {  this->kind = kind; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic){
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize){
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -768,7 +769,14 @@ class CTRL_node: public INTER_node{
 	string get_name() const {
 		return name;
 	}
-    
+  
+  void special_concretize() {
+    spConcretize = true;
+  }
+  
+  bool is_sp_concretize() {
+    return spConcretize;
+  }
     void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;

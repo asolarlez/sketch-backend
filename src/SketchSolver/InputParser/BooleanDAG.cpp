@@ -725,10 +725,11 @@ INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_na
 	return src;
 }
 
-INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic){
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize){
   INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
   dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
   if (angelic) dynamic_cast<CTRL_node*>(tmp)->set_Special_Angelic();
+  if (spConcretize) dynamic_cast<CTRL_node*>(tmp)->special_concretize();
   return tmp;
 }
 

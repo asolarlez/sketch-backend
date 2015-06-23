@@ -216,6 +216,9 @@ Comment      ("//"[^\n]*)
 "MINVAR"	{
 				return T_Min;
 			}
+"SPVAR" {
+        return T_sp;
+      }
 "typedef" {
                 return T_Typedef;
             }

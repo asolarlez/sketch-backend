@@ -79,6 +79,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_def
 %token T_mdldef
 %token T_Min
+%token T_sp
 %token T_assert
 %token T_assume
 %token T_hassert
@@ -767,7 +768,6 @@ Term: Constant {
 | '<' Ident Constant '+' '>' {
 	$$ = currentBD->create_controls($3, *$2, false, true);
 	delete $2;
-
 }
 | T_Min '<' Ident '>' {		
 	$$ = currentBD->create_controls(-1, *$3, true);
@@ -783,6 +783,23 @@ Term: Constant {
 }
 | T_Min '<' Ident Constant '*' '>' {
 	$$ = currentBD->create_controls($4, *$3, true);
+	delete $3;
+
+}
+| T_sp '<' Ident '>' {
+	$$ = currentBD->create_controls(-1, *$3, false, false, true);
+	delete $3;
+}
+| T_sp '<' Ident Constant '>' {
+	int nctrls = $4;
+	if(overrideNCtrls){
+		nctrls = NCTRLS;
+	}
+	$$ = currentBD->create_controls(nctrls, *$3, false, false, true);
+	delete $3;
+}
+| T_sp '<' Ident Constant '*' '>' {
+	$$ = currentBD->create_controls($4, *$3, false, false, true);
 	delete $3;
 
 }

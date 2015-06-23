@@ -364,6 +364,10 @@ void DagFunctionInliner::visit(CTRL_node& node){
 	if(node.get_Pcond()){
 		rvalue = this->getCnode(true);
 	}else{
+    if (node.is_sp_concretize()) {
+      rvalue = hcoder->checkRandHole(&node, *this);
+      return;
+    }
 		if(randomize){
 			rvalue = hcoder->checkRandHole(&node, *this);
 			return;
@@ -789,7 +793,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					nmap[ctrl->id] = node.mother;
 					continue;
 				}
-				if(randomize){
+        if (ctrl->is_sp_concretize()) {
+          bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+          if(subst != ctrl){
+						nmap[ctrl->id] = subst;
+						continue;
+					}
+        }else if(randomize){
 					bool_node* subst = hcoder->checkRandHole(ctrl, *this);
 					if(subst != ctrl){
 						nmap[ctrl->id] = subst;
