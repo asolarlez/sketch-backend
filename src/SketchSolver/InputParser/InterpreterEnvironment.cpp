@@ -367,7 +367,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, fin, false); // TODO: change this to a param
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, fin, true); // TODO: change this to a param
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){

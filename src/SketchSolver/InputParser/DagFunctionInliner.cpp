@@ -811,18 +811,20 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					nmap[ctrl->id] = node.mother;
 					continue;
 				}
-        if (ctrl->is_sp_concretize()) {
-          bool_node* subst = hcoder->checkRandHole(ctrl, *this);
-          if(subst != ctrl){
-						nmap[ctrl->id] = subst;
-						continue;
-					}
-        }else if(randomize){
-					bool_node* subst = hcoder->checkRandHole(ctrl, *this);
-					if(subst != ctrl){
-						nmap[ctrl->id] = subst;
-						continue;
-					}
+        if(randomize){
+          if (ctrl->is_sp_concretize()) {
+            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+            if(subst != ctrl){
+              nmap[ctrl->id] = subst;
+              continue;
+            }
+          } else if (!onlySpRandomize) {
+            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+            if(subst != ctrl){
+              nmap[ctrl->id] = subst;
+              continue;
+            }
+          }
 				}
 
 				bool_node* actual = dag.unchecked_get_node( ctrl->name );

@@ -143,7 +143,7 @@ struct CommandLineArgs{
 		boundedCount = 80;
 		randomassign =false;
 		randdegree = 100;
-		ntimes = -1;
+		ntimes = 100;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
