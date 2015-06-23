@@ -130,6 +130,11 @@ void HoleHardcoder::printControls(ostream& out){
 		}
 		const gvvec& options = glob.num_ranges;
 		int sz = options.size();
+    if (node.is_sp_concretize()) {
+      if (sz > bound) {
+        sz = bound;
+      }
+    }
 		for(int i=0; i<sz; ++i){
 			const guardedVal& gv = options[(i + rv) % sz];
 			int xx = globalSat->getMng().isValKnown(gv.guard);
