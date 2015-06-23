@@ -87,7 +87,8 @@ libcegis_la_SOURCES =				\
 	InputParser/NodesToSolver.cpp		\
 	InputParser/NodesToEuclid.cpp		\
 	InputParser/NodeVisitor.cpp		\
-	InputParser/SolveFromInput.cpp
+	InputParser/SolveFromInput.cpp \
+    InputParser/Tvalue.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp			

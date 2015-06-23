@@ -448,6 +448,10 @@
 				RelativePath=".\SketchSolver\timerclass.h"
 				>
 			</File>
+            <File
+				RelativePath=".\SketchSolver\InputParser\Tvalue.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\SketchSolver\InputParser\Tvalue.h"
 				>
