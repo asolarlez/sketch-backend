@@ -14,7 +14,7 @@ static const int MAX_NODES = 510000;
 #endif
 
 DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, HoleHardcoder* p_hcoder,
-	bool p_randomize, InlineControl* ict):
+	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize):
 dag(p_dag), 
 DagOptim(p_dag), 
 ufunAll(" ufun all"),
@@ -22,6 +22,7 @@ functionMap(p_functionMap),
 replaceMap(p_replaceMap),
 ictrl(ict),
 randomize(p_randomize),
+onlySpRandomize(p_onlySpRandomize),
 hcoder(p_hcoder)
 {
 	alterARRACS();
@@ -108,12 +109,19 @@ void HoleHardcoder::printControls(ostream& out){
 
 
 	int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits){
+    int rv;
     if (node.is_sp_concretize()) {
       Assert(node.max <= bound, "max should be less than bound");
       bound = node.max;
+      rv = rand() % bound;
+      for (int i = 0; i < 2; i++) {
+        int x = rand() % bound;
+        if (x < rv) rv = x;
+      }
+      cout << "rv for special node " << rv << endl;
+    } else {
+      rv = rand() % bound;
     }
-    
-		int rv = rand() % bound;
 		const string& s = node.get_name();
 		Tvalue& glob = globalSat->declareControl(&node);
 		Tvalue* loc = NULL;
@@ -369,13 +377,15 @@ void DagFunctionInliner::visit(CTRL_node& node){
 	if(node.get_Pcond()){
 		rvalue = this->getCnode(true);
 	}else{
-    if (node.is_sp_concretize()) {
-      rvalue = hcoder->checkRandHole(&node, *this);
-      return;
-    }
 		if(randomize){
-			rvalue = hcoder->checkRandHole(&node, *this);
-			return;
+      if (node.is_sp_concretize()) {
+        rvalue = hcoder->checkRandHole(&node, *this);
+        return;
+      }
+      if (!onlySpRandomize) {
+        rvalue = hcoder->checkRandHole(&node, *this);
+        return;
+      }
 		}
 		DagOptim::visit(node);
 	}
