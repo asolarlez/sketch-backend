@@ -1778,7 +1778,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 }
 
 
-void NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
+void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
 	
 	const gvvec& idv = index.num_ranges;
 	map<int, int> valToID;
@@ -1892,7 +1892,7 @@ void NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& in
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
 
-	if(isInt){
+	if(!isBool){
 		gvvec& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());
@@ -1937,7 +1937,7 @@ NodesToSolver::visit( ARR_R_node &node){
 	if(inarr.isBvect()){
 		inarr.makeSparse(dir);
 	}
-	arrRTvalue(node.getOtype() == OutType::INT, index, inarr, node_ids[node.id]);
+	arrRTvalue(node.getOtype() == OutType::BOOL, index, inarr, node_ids[node.id]);
 //	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 
