@@ -107,81 +107,123 @@ void HoleHardcoder::printControls(ostream& out){
 }
 
 
-	int HoleHardcoder::fixValue(const string& s, int bound, int nbits){
+	int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits){
 		int rv = rand() % bound;
+		const string& s = node.get_name();
+		Tvalue& glob = globalSat->declareControl(&node);
+		Tvalue* loc = NULL;
 		if(sat->checkVar(s)){
-			int H__0_var_idx = sat->getVar(s);			
-			Tvalue tv = H__0_var_idx;
-			tv.setSize(nbits);
-			tv.makeSparse(*sat);			
-			vector<guardedVal>& gvs =tv.num_ranges;
-			for(int i=0; i<gvs.size(); ++i){
-				guardedVal& gv = gvs[i];
-				if(gv.value == rv){
-					int xx = sat->getMng().isValKnown(gv.guard);
-					if(xx==0){
-						//it's ok to set the value to this.						
-						if(!sat->assertIfPossible(gv.guard)){
-							// tried to set it but didn't work. we'll have to try something different.
-							break;
-						}
-						randholes[s] = rv;
-						return rv;
-					}
-					if(xx==1){
-						//the hole is already equal to this.
-						randholes[s] = rv;
-						return rv;
+			loc = &(sat->getControl(&node));
+		}
+		const gvvec& options = glob.num_ranges;
+		int sz = options.size();
+		for(int i=0; i<sz; ++i){
+			const guardedVal& gv = options[(i + rv) % sz];
+			int xx = globalSat->getMng().isValKnown(gv.guard);
+			if(xx==0){
+				//global has no opinion. Should check local.
+				if(loc!= NULL){
+					const gvvec& locopt = loc->num_ranges;
+					const guardedVal& lgv = locopt[(i + rv) % sz];
+					Assert(lgv.value == gv.value, "Can't happen.");
+					int yy = sat->getMng().isValKnown(lgv.guard);
+					if(yy==-1){
+						//local had already decided that this value was bad. Move to the next.
+						continue;
 					}else{
-						cout<<" can't set to "<<rv<<endl;
-						//the hole cannot be equal to this vale. 
-						break;
+						//local also has no opinion. 
+						//record decision.
+						if(!sat->assertIfPossible(lgv.guard)){
+							// tried to set it but didn't work. we'll have to try something different.
+							//this is the same as yy==-1
+							continue;
+						}
+						if(!globalSat->tryAssignment(gv.guard)){
+							if(yy==1){
+								throw BadConcretization();
+							}else{
+								continue;
+							}
+						}
+						if(yy==1){
+							return gv.value;
+						}else{
+							return recordDecision(gv);
+						}
 					}
+				}else{
+					//There is no local, so we take this value.
+					if(!globalSat->tryAssignment(gv.guard)){
+						continue;
+					}
+					return recordDecision(gv);
 				}
 			}
-			//If I get here, it means that rv either didn't match with any of the guarded values, or matched
-			//with a guarded value that was already equal to false, so we need to find another guarded value 
-			//that does match.
-			do{
-				int t = rand() % gvs.size();
-				guardedVal& g2 = gvs[t];
-				Assert(sat->getMng().isOK(), "Could not set hole "<<s);
-				int yy =  sat->getMng().isValKnown(g2.guard);
-				if(yy==0){
-					//it's ok to set the value to this, but let's check
-					if(!sat->assertIfPossible(g2.guard)){
+			if(xx==1){
+				//global says it should be true. local better agree.
+				//no need to record this decision because it was not really a decision.
+				if(loc!= NULL){
+					const gvvec& locopt = loc->num_ranges;
+					const guardedVal& lgv = locopt[(i + rv) % sz];
+					Assert(lgv.value == gv.value, "Can't happen.");
+					int yy = sat->getMng().isValKnown(lgv.guard);
+					if(yy==-1){
+						//local had already decided that this value was bad. 
+						throw BadConcretization();
+					}else{
+						//local has no opinion. return without recording
+						if(!sat->assertIfPossible(lgv.guard)){
 							// tried to set it but didn't work. we'll have to try something different.
-							// cout<<"can't set to "<<g2.value<<endl;
-							continue;
+							//this is the same as yy==-1
+							throw BadConcretization();
+						}
+						return (lgv.value);
+					}					
+				}else{
+					//There is no local, so we take this value.
+					return (gv.value);
+				}
+			}
+			if(xx==-1){
+				//global says it should be false. local better agree.
+				//no need to record this decision because it was not really a decision.
+				if(loc!= NULL){
+					const gvvec& locopt = loc->num_ranges;
+					const guardedVal& lgv = locopt[(i + rv) % sz];
+					Assert(lgv.value == gv.value, "Can't happen.");
+					int yy = sat->getMng().isValKnown(lgv.guard);
+					if(yy==1){
+						//local had also decided that is should be true.
+						throw BadConcretization();
 					}
-					randholes[s] = g2.value;
-					return g2.value;
+					continue;
+				}else{					
+					continue;
 				}
-				if(yy==1){
-					randholes[s] = g2.value;
-					return g2.value;
-				}
-				// cout<<"can't set to "<<g2.value<<endl;
-				//This cannot be an infinite loop because the guards for the guarded values cannot all be false.
-			}while(true);				
-		}else{
-			randholes[s] = rv;
+			}
 		}
-		return rv;
+		//I wasn't able to concretize to anything. 
+		throw BadConcretization();
 	}
+
+
+int HoleHardcoder::recordDecision(const guardedVal& gv){
+	sofar.push( lfromInt(-gv.guard));
+	return gv.value;
+}
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		map<string, int>::iterator it = randholes.find( node->get_name()  );
 		int chsize = node->children.size();							
 			int tchld = 0;
 			int bchld = 0;
-			for(childset::iterator it = node->children.begin(); it != node->children.end(); ++it){
-				bool_node* chld = *it;				
+			for(childset::iterator chit = node->children.begin(); chit != node->children.end(); ++chit){
+				bool_node* chld = *chit;
 				if(chld->type == bool_node::ARRACC){
 					ARRACC_node* an = (ARRACC_node*) chld;
 					bool allconst = true;
-					for(vector<bool_node*>::iterator it = an->multi_mother.begin(); it != an->multi_mother.end(); ++it){
-						if((*it)->type != bool_node::CONST){
+					for(vector<bool_node*>::iterator mit = an->multi_mother.begin(); mit != an->multi_mother.end(); ++mit){
+						if((*mit)->type != bool_node::CONST){
 							allconst = false;
 							break;
 						}
@@ -227,10 +269,9 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				}else{
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
-			}			
-			cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") ";
-			if(rand() % odds == 0 || chsize > 1500){
-				cout<<" try to replace"<<endl;
+			}						
+			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) ){
+				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
 				int nbits = node->get_nbits();
@@ -299,12 +340,16 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				}
 				if(ul > 0 && bound ==obound ){
 					bound = min(bound, ul);
-				}				
-				int rv = fixValue(node->get_name(), bound, nbits);
+				}		
+				totsize*=bound;
+				int rv = fixValue(*node, bound, nbits);		
+				randholes[node->get_name()] = rv;
 				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<endl;
 				return opt.getCnode(rv);
 			}else{
-				cout<<" not replacing"<<endl;
+				if(PARAMS->verbosity>5){
+					cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" not replacing"<<endl;
+				}
 				if(chsize == 0){ chsize = 1; }
 				randholes[node->get_name()] = -chsize;
 				return node;
@@ -861,50 +906,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 
 						bool_node * oldMother = ufun->mother;	
-						if(!ufun->ignoreAsserts){	
-							/*
-							ufun->mother->remove_child( n );
-							bool_node* andCond = new AND_node();
-							andCond->mother = ufun->mother;
-							andCond->father = condition;
-
-							{
-							
-								bool_node* andcondPrime = this->computeOptim(andCond);
-							
-								if(andcondPrime == andCond){
-								
-									this->addNode(andCond);
-									andCond->addToParents();
-								}else{
-									delete andCond;
-								}
-								andCond = andcondPrime;
-							}
-							ufun->mother = andCond;
-							ufun->mother->children.insert(n);
-							if(andCond != oldMother){
-								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
-									if(*it == oldMother){
-  										oldMother->children.insert( n );
-										break;
-									}
-								  }
-							}
-							*/
-						}else{
-							if(!isConst(ufun->mother)){
-								ufun->mother->remove_child(n);
-								ufun->mother = getCnode(1);
-								ufun->mother->children.insert(n);
-								for(vector<bool_node*>::iterator it = ufun->multi_mother.begin(); it != ufun->multi_mother.end(); ++it){
-									if(*it == oldMother){
-  										oldMother->children.insert( n );
-										break;
-									}
-								  }
-							}
-						}
+						
 						DagOptim::visit(*ufun);						
 						const bool_node* nnode = rvalue;
 						if( nnode->type == bool_node::UFUN ){

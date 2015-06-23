@@ -16,12 +16,15 @@
 #include "SATSolver.h"
 #include "guardedVal.h"
 #include "StringHTable.h"
+#include "Tvalue.h"
+
 
 // #define Dout(msg) msg
 
 using namespace std;
 
 class Tvalue;
+class CTRL_node;
 
 class varRange{
 	public:
@@ -39,6 +42,7 @@ class SolverHelper {
 	bool doMemoization;
     map<string, int> varmap;
     map<string, int> arrsize;
+	map<string, Tvalue> controls;
     int varCnt;
 	int lastVar;
     SATSolver& mng;
@@ -97,7 +101,7 @@ public:
 
 
 	bool isOK(){
-		mng.isOK();
+		return mng.isOK();
 	}
 
 	map<string, int>::const_iterator arrsize_end(){
@@ -237,6 +241,9 @@ public:
 		}	
     }
 
+	Tvalue& declareControl(CTRL_node* ctrlnode);
+	Tvalue& getControl(CTRL_node* ctrlnode);
+
     void makeArrNoBranch(const string& arName) {
 	int var = varmap[arName];
 	int sz = arrsize[arName];
@@ -297,7 +304,9 @@ public:
 	bool assertIfPossible(int a){
 		return mng.assertIfPossible(a);
 	}
-
+	virtual bool tryAssignment(int a){
+		return mng.tryAssignment(a);
+	}
 	void addHardAssertClause (int a);
 	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);
@@ -308,7 +317,7 @@ public:
     // int select(int choices[], int control, int nchoices, int bitsPerChoice);
     // int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
-    void getSwitchVars (vector<int>& switchID, int amtsize, vector<guardedVal>& output);
+    void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
 };
 
@@ -675,7 +684,7 @@ SolverHelper::addRetractableAssertClause (int a)
 
 
 inline void
-SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guardedVal>& output )
+SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  gvvec& output )
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
@@ -683,10 +692,10 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	Assert(amtsize <= 16, "Casting an bit-vector to an integer is only supported for up to 16 bits.");
 	for(int i=0; i<amtsize && i<16; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
-	vector<guardedVal> tmpVect(amtrange);
+	gvvec tmpVect(amtrange);
 	int lastsize = 1;
 	//int lastRoundVars = getVarCnt();
-	vector<guardedVal> vals(1);	
+	gvvec vals(1);	
 	if( (-switchID[amtsize-1]) == YES || switchID[amtsize-1]==YES){
 		vals[0].guard = YES;
 		if( switchID[amtsize-1] > 0 ){
@@ -731,7 +740,7 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  vector<guarded
 	}
 	Assert( lastsize <= amtrange, "Sizes don't match: (lastsize > amtrange) ls="<<lastsize<<", ar="<<amtrange<<", as="<<amtsize);	
 	output.clear();
-	for(vector<guardedVal>::iterator it = vals.begin(); it != vals.end(); ++it){
+	for(gvvec::iterator it = vals.begin(); it != vals.end(); ++it){
 		if(it->guard != -YES){
 			output.push_back(*it);
 		}
@@ -754,6 +763,15 @@ class bitVector{
 	int size;
 	unsigned* data;
 	public:
+	bitVector():size(-1){}
+	void init(int s){
+		size = s;
+		int sz = s/32 + ((s%32)==0?0:1);
+		data = new unsigned[sz];
+		for(int i=0; i<sz; ++i){
+			data[i] = 0;
+		}
+	}
 	bitVector(int s):size(s){
 		int sz = s/32 + ((s%32)==0?0:1);
 		data = new unsigned[sz];
@@ -787,7 +805,9 @@ class bitVector{
 		return (data[s/32]>> (s%32) )>0;
 	}
 	virtual ~bitVector(){
-		delete [] data;	
+		if(size>=0){
+			delete [] data;	
+		}
 	}
 };
 

@@ -41,7 +41,8 @@ CONST_node* DagOptim::getCnode(double c){
 
 
 CONST_node* DagOptim::getCnode(int val){
-	if( cnmap.find(val<<1) == cnmap.end() ){
+	map<long long int, CONST_node*>::iterator fit = cnmap.find(val<<1);
+	if( fit == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
@@ -49,7 +50,7 @@ CONST_node* DagOptim::getCnode(int val){
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
 		return cnode;
 	}else{
-		return cnmap[val<<1];	
+		return fit->second;
 	}
 }
 
@@ -1434,8 +1435,7 @@ void DagOptim::checkAndPush(bool_node* bn, stack<bool_node*>& sd, set<bool_node*
 /* Is dest reachable from src? 
 * 
 */
-bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
-	cout<<"CP: "<<src->globalId<<" -> "<<dest->globalId<<endl;
+bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){	
 	stack<bool_node*> sd;
 	set<bool_node*> bnmap;
 	sd.push(dest);	
@@ -1533,10 +1533,7 @@ void DagOptim::visit( UFUN_node& node ){
     if (node.fgid != 0) {
         rvalue  = &node;
 		return;
-    }
-    
-
-
+    }    
 
 	string tmp = node.get_ufname();
 	if(node.ignoreAsserts){
@@ -1571,7 +1568,7 @@ void DagOptim::visit( UFUN_node& node ){
 			}
 			return;
 		}
-		possibleCycles = true;		
+		possibleCycles = true;				
 		if(true /*|| !checkPrecedence(node.mother, brother)*/){
 			
 			brother->dislodge();
@@ -2858,9 +2855,9 @@ node. In this case, suppose f is a function node and e is f's guard.
 
 At the end of the while loop, the state will look like this:
 
-s = a->b->c
+s = a->b
 sp = f->g->h
-tst = e -> d
+tst = e -> d -> c
 
 All the nodes that have been popped from s are now set to bottom.
 
@@ -2931,7 +2928,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 	the function where the loop will be broken.
 	*/
 
-	if(PARAMS->verbosity > 4){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
+	if(PARAMS->verbosity > 5){ cout<<"Found Cycle of size "<< sp.size()<<"; Breaking."<<endl; }
 	// sp.front() is the function that is having trouble.
 	{		
 		bool_node* lastOr = sp.back().first;
@@ -3051,7 +3048,6 @@ void DagOptim::process(BooleanDAG& dag){
 
 
 			if(dag[i] != node){			
-					//cout<<"Replacing "<<dag[i]->lprint()<<" with "<<node->lprint()<<endl;
 					Dout(cout<<"Replacing ["<<dag[i]->globalId<<"] "<<dag[i]->id<<" with ["<<node->globalId<<"] "<<node->id<<endl);
 					dag.replace(i, node);					
 			}else{

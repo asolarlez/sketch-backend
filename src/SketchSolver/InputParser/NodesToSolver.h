@@ -17,9 +17,9 @@ class NodesToSolver : public NodeVisitor {
     const string &outname;
 	
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
-	void addToVals(map<pair<int, int>, int>& vals, vector<guardedVal>::iterator it, int idx, int gval);
-	int compareRange(vector<guardedVal>& mv, int mstart, int mend, vector<guardedVal>& fv, int fstart, int fend);
-	template<typename COMP> void compareArrays (bool_node& node,  Tvalue& tmval,  Tvalue& tfval);
+	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
+	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
+	template<typename COMP> void compareArrays (bool_node& node,  const Tvalue& tmval,  const Tvalue& tfval);
     template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
@@ -72,8 +72,7 @@ protected:
     void intBvectLe (arith_node &);
     void intBvectGt (arith_node &);
     void intBvectGe (arith_node &);
-
-    void boolNodeUpdate (bool_node &, Tvalue &);
+    
 
 public:
    string errorMsg;
@@ -149,17 +148,17 @@ public:
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
-	virtual void mergeTvalues(int guard, const vector<guardedVal>& nr0, int nr0Start, int nr0End, const vector<guardedVal>& nr1, int nr1Start, int nr1End, vector<guardedVal>& out, int idx=-1);
+	virtual void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, int idx=-1);
 	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
-    
-	
-    virtual bool checkParentsChanged (bool_node &node, bool more);	
-	void doArrArrAcc(Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void doNonBoolArrAcc (Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void muxTValues(ARRACC_node* node, Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
- void computeMaxOrMin(vector<guardedVal>& mv, vector<guardedVal>& fv, vector<guardedVal>& out, bool doMax);
- void arrRTvalue(bool isInt, Tvalue& index, Tvalue& inarr, Tvalue& out);
- void arrWTvalue(Tvalue& index, Tvalue& inarr, Tvalue& newval, Tvalue& nvar);
+  
+	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
+ void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
+ void computeMaxOrMin(const gvvec& mv,const gvvec& fv, gvvec& out, bool doMax);
+ void arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& out);
+ void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
+
+
   static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
 
 };

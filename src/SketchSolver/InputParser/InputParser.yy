@@ -81,10 +81,6 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_Min
 %token T_assert
 %token T_assume
-%token T_hassert
-
-%token T_equals
-%token T_replace
 
 %token T_eof
 
@@ -121,13 +117,12 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %%
 
-Program: Typedef MethodList T_eof{  $$=0; return 0;}
+Program: Typedef MethodList T_eof{ solution.start(); int tmp= envt->doallpairs() ; solution.stop(); return tmp; }
 
 
 MethodList: {}
 | Method MethodList {}
 | HLAssertion MethodList {}
-| Replacement MethodList {}
 
 
 InList: T_ident { 
@@ -301,13 +296,9 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 }
 
 TypeLine: T_ident '(' TupleTypeList ')'{
-  //add type
-    OutType::makeTuple(*$1, *$3, -1);
+//add type
+    OutType::makeTuple(*$1, *$3);
 
-}
-| T_ident '(' Constant TupleTypeList ')'{
-    //add type
-    OutType::makeTuple(*$1, *$4, $3);
 }
 
 TypeList: { /* Empty */ }
@@ -316,24 +307,26 @@ TypeList: { /* Empty */ }
 Typedef: {/* Empty */}
 |T_Typedef '{' TypeList '}'{ }
 
-Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' ';' {
-  envt->registerFunctionReplace(*$4, *$2, *$6, $8);
-}
 
 AssertionExpr: T_ident T_Sketches T_ident
 {
-	$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
+	if(PARAMS->interactive){
+		$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
+	}else{
+		envt->addspskpair(*$3, *$1);
+	}		
 }
 
-
-HLAssertion: T_assert {solution.restart();} AssertionExpr ';'
+HLAssertion: T_assert {if(PARAMS->interactive){ solution.restart();} } AssertionExpr ';'
 {
-	int tt = envt->assertDAG($3, std::cout);
-	envt->printControls("");
-	solution.stop();
-	cout<<"COMPLETED"<<endl;
-	if(tt != 0){
-		return tt;
+	if(PARAMS->interactive){
+		int tt = envt->assertDAG($3, std::cout);
+		envt->printControls("");
+		solution.stop();
+		cout<<"COMPLETED"<<endl;
+		if(tt != 0){
+			return tt;
+		}
 	}
 }
 | T_ident '(' TokenList ')' ';'
@@ -419,27 +412,6 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     delete $4;
   }
 } 
-| T_hassert Expression ';' {
-  if ($2) {
-    /* Asserting an expression, construct assert node. */
-    
-    ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
-    bn->makeHardAssert();
-    currentBD->new_node($2, NULL, bn);
-  }
-} 
-| T_hassert Expression ':' T_string ';' {
-  if ($2) {
-    /* Asserting an expression, construct assert node. */
-	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
-		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
-		bn->setMsg(*$4);
-    bn->makeHardAssert();
-		currentBD->new_node ($2, NULL, bn);
-	}    
-    delete $4;
-  }
-}
 | T_assume Expression OptionalMsg ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
@@ -741,10 +713,6 @@ Term: Constant {
 	$$ = currentBD->create_controls(-1, *$2);
 	delete $2;
 }
-| '<' Ident '+' '>' {
-	$$ = currentBD->create_controls(-1, *$2, false, true);
-	delete $2;
-}
 | '<' Ident Constant '>' {
 	int nctrls = $3;
 	if(overrideNCtrls){
@@ -755,11 +723,6 @@ Term: Constant {
 }
 | '<' Ident Constant '*' '>' {
 	$$ = currentBD->create_controls($3, *$2);
-	delete $2;
-
-}
-| '<' Ident Constant '+' '>' {
-	$$ = currentBD->create_controls($3, *$2, false, true);
 	delete $2;
 
 }

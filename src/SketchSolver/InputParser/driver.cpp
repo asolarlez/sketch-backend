@@ -1,5 +1,4 @@
 #include "driver.h"
-#include "SFIOutputSeq.h"
 #include "DagOptimizeCommutAssoc.h"
 #include "BackwardsAnalysis.h"
 #include "InterpreterEnvironment.h"
@@ -134,13 +133,12 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 
 	SolverHelper f(*finder);
 	SolverHelper ch(*checker);
-	SFIOutputSeq solver(out, miter, f, ch, params, rest, skOri);
   						   
 	
   	
 	if(params.outputEuclid){      		
 		ofstream fout("bench.ucl");
-		solver.outputEuclid(fout);
+		
 	}
   	
 //	if(params.output2QBF){
@@ -157,20 +155,20 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 		string fname = params.cptfile;
 		fname += "_";
 		fname += name;
-		solver.setCheckpoint(fname);
+		
 		}
 	// solver.setup();
 	int solveCode = 0;
 	try{
 		if(!params.hasRestore){
-  			solveCode = solver.solve();
+  			
 		}else{	  			
 			string fname = params.restorefile;
 			fname += "_";
 			fname += name;
 			cout<<"restoring from "<<fname<<endl;
 			ifstream input(fname.c_str());
-			solveCode = solver.solveFromCheckpoint(input);
+			
 		}
 	}catch(SolverException* ex){
 		cout<<"ERROR "<<name<<": "<<ex->code<<"  "<<ex->msg<<endl;
@@ -182,10 +180,10 @@ int Driver2::solveSketch(ostream& out, BooleanDAG* spec, BooleanDAG* sketch, map
 		return 3;
 	}
 	if( solveCode ){
-		solver.output_control_map(out);
+		
 	}else{
 		cout<<"** Outputing bad controls"<<endl;
-		solver.output_control_map(out);
+		
 //		ABCSolverEnd();
 		return 1;	
 	}

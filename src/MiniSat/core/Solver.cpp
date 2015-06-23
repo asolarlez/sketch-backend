@@ -1042,6 +1042,45 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
     }
 }
 
+
+bool Solver::tryAssignment(Lit a){
+	lbool lv = value(a);
+	//if it already has a value, we just check that it's compatible.
+	if(lv==l_True){
+		return true;
+	}
+	if(lv==l_False){
+		return false;
+	}
+	newDecisionLevel();
+	uncheckedEnqueue(a);
+	bool rv = true;
+	while(true){
+		Clause* confl = propagate();
+		if(confl==NULL){
+			return rv;
+		}else{
+			if (decisionLevel() == 0){
+				ok = false;
+				return false;
+			}
+			vec<Lit>    learnt_clause;
+			int         backtrack_level;
+			analyze(confl, learnt_clause, backtrack_level);
+			cancelUntil(backtrack_level);
+			if (learnt_clause.size() == 1){
+				uncheckedEnqueue(learnt_clause[0]);
+			}else{
+				Clause* c = Clause::Clause_new(learnt_clause, true);
+				learnts.push(c);
+				attachClause(*c);        
+				uncheckedEnqueue(learnt_clause[0], c);				
+			}
+			rv = false;
+		}
+	}
+}
+
 bool Solver::assertIfPossible(Lit a){
 	lbool lv = value(a);
 	//if it already has a value, we just check that it's compatible.

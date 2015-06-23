@@ -45,12 +45,14 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 			}
 			if(!ctrlnode->get_Angelic()){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
-				declareControl(problemIn[i]->get_name(), nbits);
+
+				declareControl(ctrlnode);
 			}
       if (ctrlnode->spAngelic) {
         Assert(!ctrlnode->isTuple, "NYI");
         declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz());
       }
+
 		}
 		if(PARAMS->verbosity > 2){
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
@@ -86,9 +88,11 @@ CEGISSolver::~CEGISSolver(void)
 }
 
 
-void CEGISSolver::declareControl(const string& cname, int size){
+void CEGISSolver::declareControl(CTRL_node* cnode){
+	const string& cname = cnode->get_name();
+	int size = cnode->get_nbits();
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
-	dirFind.declareInArr(cname, size);
+	dirFind.declareControl(cnode);
 
 	if(!ctrlStore.contains(cname)){
 		ctrlStore.newVar(cname, size);
@@ -449,7 +453,6 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 			if(type == bool_node::CTRL){
 				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
 				if(cn->get_Angelic()){
-          
 					if(cn->children.size() != 0){
             if (cn->spAngelic) {
               // replace it with a src node
@@ -460,6 +463,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
               newdag->replace(cn->id, src);
               continue;
             }
+            
 						Assert(cn->children.size() == 1, "NYI; hafdst");
 						bool_node* bn = *(cn->children.begin());
 						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
@@ -1094,7 +1098,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			case CheckControl::GROW_IN:{
 
 				BooleanDAG* dag = getProblem();
-				if(PARAMS->verbosity > 2){
+				if(PARAMS->verbosity > 5){
 					cout<<"CONTROL: growing l="<<problemLevel()<<" inputs to size "<< (dag->getIntSize()+1) <<endl;
 				}				
 				growInputs(dag, oriProblem, (problemLevel() - (hardcode? 1: 0)) == 1 );
@@ -1112,7 +1116,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 				curProblem = (curProblem + 1) % problems.size() ;
-				if(PARAMS->verbosity > 2){
+				if(PARAMS->verbosity > 5){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}
 				pushProblem(problems[curProblem]->clone());				

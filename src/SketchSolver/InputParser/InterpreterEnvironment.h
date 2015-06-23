@@ -35,6 +35,9 @@ class InterpreterEnvironment
 	vector<BooleanDAG*> history;
 	vector<vector<Tvalue> > statehistory;
 
+
+	
+
 	string findName(){
 		stringstream s;
 		s<<sessionName;
@@ -85,6 +88,29 @@ public:
 		solver = new CEGISSolver(*finder, params);
 	}
 	
+	vector<pair<string, string> > spskpairs;
+
+	void addspskpair(const string& spec, const string& sketch  ){
+		spskpairs.push_back(make_pair(spec, sketch));
+	}
+
+	int doallpairs();
+
+
+	void reset(){
+		delete finder;
+		delete _pfind;
+		delete solver;
+		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
+		finder = new SolverHelper(*_pfind);
+		hardcoder.reset();
+		hardcoder.setSolver(finder);
+		solver = new CEGISSolver(*finder, params);
+		cout<<"ALLRESET"<<endl;
+		status=READY;
+	}
+
+
 	void addFunction(const string& name, BooleanDAG* fun){
 		functionMap[name] = fun;
 	}	

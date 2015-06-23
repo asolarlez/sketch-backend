@@ -9,6 +9,13 @@
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
 
+
+class BadConcretization{
+
+
+};
+
+
 class Caller{
 public:
 	int callergid;
@@ -326,13 +333,13 @@ public:
 			if(val == 0){
 				return false;
 			}else{
-				if(!node.ignoreAsserts){
+				//if(!node.ignoreAsserts){
 					// cout<<"Inlining with true cond "<<node.get_ufname()<<endl;
 					return true;
-				}
+				//}
 			}
 		}
-		if(!node.ignoreAsserts && !recCheck(node.mother)){
+		if(/*!node.ignoreAsserts && */ !recCheck(node.mother)){
 			return false;
 		}
 		return localCheck(node);
@@ -604,16 +611,42 @@ public:
 	void clear(){}
 };
 
-
+#include "MiniSATSolver.h"
 
 class HoleHardcoder{
 	bool LEAVEALONE(int v){ return v < 0; }
 	static const int REALLYLEAVEALONE = -8888888;
-	map<string, int> randholes;
+	map<string, int> randholes;			
 	vector<bool> chkrbuf;
 	SolverHelper* sat;
-	int fixValue(const string& s, int bound, int nbits);
+	SolverHelper* globalSat;
+	vec<Lit> sofar;
+	int fixValue(CTRL_node& node, int bound, int nbits);
+	long long int totsize;
 public:
+	HoleHardcoder(){		
+		totsize = 1;
+		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
+		globalSat = new SolverHelper(*ms);
+	}
+	~HoleHardcoder(){		
+		delete &globalSat->getMng();
+		delete globalSat;
+	}
+	long long int getTotsize(){
+		return totsize;
+	}
+	int recordDecision(const guardedVal& gv);
+	void declareControl(CTRL_node* node){
+		globalSat->declareControl(node);
+	}
+	void reset(){
+		globalSat->getMng().reset();
+		globalSat->getMng().addHelperClause(sofar);
+		randholes.clear();
+		sofar.clear();
+		totsize=1;
+	}
 	void setSolver(SolverHelper* sh){
 		sat = sh;
 	}

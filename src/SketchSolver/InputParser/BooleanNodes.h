@@ -107,7 +107,7 @@ struct bool_node{
 #endif
     
     public:
-    typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, GT, GE, LT, LE, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
+    typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
     
     const Type type;
     
@@ -193,10 +193,7 @@ struct bool_node{
             case DST: return "D";
             case NOT: return "NOT";
             case CTRL: return "CTRL";
-            case GT: return "GT";
-            case GE: return "GE";
             case LT: return "LT";
-            case LE: return "LE";
             case EQ: return "EQ";
             case ASSERT: return "ASSERT";
             case ARRACC: return "ARRACC";
@@ -227,10 +224,7 @@ struct bool_node{
             case DST: return "D";
             case NOT: return "!";
             case CTRL: return "CTRL";
-            case GT: return ">";
-            case GE: return ">=";
             case LT: return "<";
-            case LE: return "<=";
             case EQ: return "==";
             case ASSERT: return "ASSERT";
         }
@@ -264,10 +258,10 @@ struct bool_node{
         printSubDAG(out, s);
     }
     
-    virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
-    virtual void lprintSubDAG(ostream& out)const{
+    virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const;
+    virtual void lprintSubDAG(ostream& out, int bnd)const{
         set<const bool_node* > s;
-        lprintSubDAG(out, s);
+        lprintSubDAG(out, s, bnd);
     }
     
     virtual OutType* getOtype() const;
@@ -337,7 +331,7 @@ class arith_node: public bool_node{
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
 	virtual void switchInputs(BooleanDAG& bdag, map<bool_node*, bool_node*>& replacements);
 	virtual void printSubDAG(ostream& out, set<const bool_node* >& s)const;
-	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s)const;
+	virtual void lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const;
 	
 	virtual OutType* getOtype()const;
 };
@@ -761,11 +755,10 @@ class CTRL_node: public INTER_node{
 	public:
     bool isTuple;
     string tupleName;
-    bool spAngelic;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false) {  this->kind = kind; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic){
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName){
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -792,10 +785,6 @@ class CTRL_node: public INTER_node{
 	}
 	void set_Angelic() {
 		this->kind |= ANGELIC;
-	}
-  void set_Special_Angelic() {
-		this->kind |= ANGELIC;
-    spAngelic = true;
 	}
     
 	bool get_Pcond() const {
@@ -1001,6 +990,9 @@ class UFUN_node: public arith_node, public DllistNode{
 		  	}
 		}
 		str<<")";
+		if(this->ignoreAsserts){
+			str<<" $IA";
+		}
 		return str.str();
 	}
 	virtual string mrprint()const{

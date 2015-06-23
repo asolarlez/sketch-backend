@@ -234,7 +234,6 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		
 	}
-
 	
 	//spec->repOK();
 	//sketch->repOK();
@@ -246,7 +245,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		eufun.process(*spec);
         
         
-     	/* Assumption -- In the sketch if you have uninterpreted functions it 
+     	/* ufunSymmetry optimizes based on the following Assumption: -- In the sketch if you have uninterpreted functions it 
 can only call them with the parameters used in the spec */
 		if(params.ufunSymmetry){ eufun.stopProducingFuns(); }
         eufun.process(*sketch);
@@ -394,10 +393,11 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		}while(dfi.changed());
 		if(params.verbosity> 6){ cout<<"END OF STEP "<<i<<endl; }
 		// fin.ctt.printCtree(cout, dag);
+
 		fin->clear();
 		if(t==1 && params.verbosity> 6){ cout<<"Bailing out"<<endl; break; }
 	}
-	hardcoder.afterInline();
+	hardcoder.afterInline();		
 	{
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
@@ -405,6 +405,47 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	delete fin;
 }
 
+
+int InterpreterEnvironment::doallpairs(){
+	int howmany = params.ntimes;
+	if(howmany < 1 || !params.randomassign){ howmany = 1; }
+	int result=-1;
+
+	if(howmany > 1){
+		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+			BooleanDAG* bd = it->second;
+			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
+			for(int i=0; i<ctrl.size(); ++i){
+				hardcoder.declareControl((CTRL_node*) ctrl[i]);
+			}
+		}
+	}
+
+
+	for(int tt = 0; tt<howmany; ++tt){
+		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
+		timerclass roundtimer("Round");
+		roundtimer.start();
+		for(int i=0; i<spskpairs.size(); ++i){
+			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
+				getCopy(spskpairs[i].second));
+				result = assertDAG(bd, cout);
+				cout<<"RESULT = "<<result<<"  "<<endl;;
+				printControls("");
+				if(result!=0){
+					break;
+				}
+		}
+		roundtimer.stop();
+		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
+		roundtimer.print("time");
+		if(result==0){
+			return result;
+		}
+		if(tt+1 < howmany){ reset(); }
+	}
+	return result;
+}
 
 
 int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){

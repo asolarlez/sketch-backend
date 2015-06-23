@@ -104,7 +104,7 @@ class CEGISSolver
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;	
 protected:
-	void declareControl(const string& cname, int size);
+	void declareControl(CTRL_node* cnode);
 	void declareInput(const string& cname, int size, int arrSz);
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);

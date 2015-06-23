@@ -530,13 +530,14 @@ void bool_node::printSubDAG(ostream& out, set<const bool_node* >& s)const{
 }
 
 
-void bool_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{
+void bool_node::lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const{
+	if (bnd <=0){ return; }
 	s.insert(this);
 	if( father != NULL && s.count(father) == 0 ){
-			father->lprintSubDAG(out, s);
+			father->lprintSubDAG(out, s, bnd-1);
 	}	
 	if(mother != NULL && s.count(mother) == 0){
-			mother->lprintSubDAG(out, s);
+			mother->lprintSubDAG(out, s, bnd-1);
 	}
 	out<<lprint()<<endl;	
 }
@@ -544,15 +545,16 @@ void bool_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{
 
 
 
-void arith_node::lprintSubDAG(ostream& out, set<const bool_node* >& s)const{	
+void arith_node::lprintSubDAG(ostream& out, set<const bool_node* >& s, int bnd)const{	
+	if(bnd <=0){ return; }
 	int i=0;
 	s.insert(this);
 	for(vector<bool_node*>::const_iterator it = multi_mother.begin(); it != multi_mother.end(); ++it, ++i){
 	  	if(*it != NULL && s.count(*it) == 0){
-	  		(*it)->lprintSubDAG(out, s);  		
+	  		(*it)->lprintSubDAG(out, s, bnd-1);  		
 	  	}
 	}
-	bool_node::lprintSubDAG(out, s);
+	bool_node::lprintSubDAG(out, s, bnd);
 }
 
 

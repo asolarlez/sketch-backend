@@ -5,7 +5,8 @@
 
 BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
 {
-	optim.alterARRACS();
+	//
+	// optim.alterARRACS();
 	new_names = 0;
 	new_namesb = 0;
 }
@@ -227,9 +228,9 @@ INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string&
 	return tmp;
 }
 
-INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic){
+INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize, angelic);
+	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
 	if(gen_name == "#PC"){
 		dynamic_cast<CTRL_node*>(tmp)->set_Pcond();
 	}

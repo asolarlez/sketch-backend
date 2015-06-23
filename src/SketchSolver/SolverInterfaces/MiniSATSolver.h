@@ -8,6 +8,8 @@ using namespace std;
 
 #include "MSolver.h"
 #include "SolverTypes.h"
+#include "Vec.h"
+
 
 using namespace MSsolverNS;
 
@@ -48,8 +50,13 @@ public:
 	 virtual void addHelperClause(int c[], int sz);
 
 	 virtual int isValKnown(int i){
-		 if(s->value(i) != MSsolverNS::l_Undef){
-			 return (s->value(i)==MSsolverNS::l_True) ? 1 : -1;
+		 int var = abs(i);
+		 int rv = 1;
+		 if(i<0){
+			 rv = -1;
+		 }
+		 if(s->value(var) != MSsolverNS::l_Undef){
+			 return (s->value(var)==MSsolverNS::l_True) ? rv : -rv;
 		 }
 		 return 0; 
 	 }
@@ -70,6 +77,11 @@ public:
 	 virtual void assumeVarClause(int x);
 
 	 virtual void addHelper2Clause(int l1, int l2);
+	 virtual void addHelperClause(vec<Lit>& vl);
+
+	 virtual bool tryAssignment(int a){
+		 return s->tryAssignment(lfromInt(a));
+	 }
 
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);
