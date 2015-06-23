@@ -575,8 +575,14 @@ public:
 		globalSat->declareControl(node);
 	}
 	void reset(){
+		cout<<"SUMMRY ";
+		for(int i=0; i<sofar.size(); ++i){
+			cout<<", "<<toInt(sofar[i]);
+		}
+		cout<<endl;
 		globalSat->getMng().reset();
 		globalSat->getMng().addHelperClause(sofar);
+		((MiniSATSolver&) globalSat->getMng()).dump();
 		randholes.clear();
 		sofar.clear();
 		totsize=1;

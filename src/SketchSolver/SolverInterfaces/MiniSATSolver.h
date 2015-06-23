@@ -118,6 +118,10 @@ public:
 	 virtual void writeDIMACS(ofstream& dimacs_file){
 		 s->writeDIMACS(dimacs_file);
 	 }
+
+	 void dump(){
+		 s->dump();
+	 }
 	 
 };
 
