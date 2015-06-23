@@ -1318,4 +1318,27 @@ void Solver::writeDIMACS(ofstream& dimacs_file)
     }
 }
 
+
+void Solver::dump(){
+	int tl = 0;
+	cout<<"TRAIL: ";
+	for(int i=0; i<trail.size(); ++i){
+		if(tl > trail_lim.size()){
+			if(trail_lim[tl]==i){
+				tl++;
+				cout<" || ";
+			}
+		}
+		cout<<", "<<toInt(trail[i]);		
+	}
+	cout<<endl;
+	if(ok){
+		cout<<"ALLOK"<<endl;
+	}else{
+		cout<<"NOTOK"<<endl;
+	}
+}
+
+
+
 }

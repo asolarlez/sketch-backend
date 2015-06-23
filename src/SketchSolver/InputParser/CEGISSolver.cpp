@@ -221,7 +221,7 @@ bool CEGISSolver::solveCore(){
 			       	cpt.checkpoint('f', instore_serialized);
 			       	//if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			}
-			if(PARAMS->verbosity > 1 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
+			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart(); 		
 			try{
 				doMore = find(inputStore, ctrlStore, hasInputChanged);
@@ -229,7 +229,7 @@ bool CEGISSolver::solveCore(){
 				doMore = false;
 			}
 			ftimer.stop();
-			if(PARAMS->verbosity > 1 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
+			if(PARAMS->verbosity > 2 || PARAMS->showInputs){  cout<<"END FIND"<<endl; }
 		}
 
 		if(hasInputChanged && !doMore){
@@ -343,7 +343,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	map<bool_node*,  int> node_values;
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
-	cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl;
+	if(PARAMS->verbosity > 2){  cout<<"Level "<< this->problemLevel()<<"  intsize = "<<getProblem()->getIntSize()<<endl; }
 	{
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
 		BackwardsAnalysis ba;
@@ -1325,9 +1325,11 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		{ // Check
 			cout<<"!+";	ctrlStore.printBrief(cout);	cout<<endl;
 			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
-			cout<<"BEG CHECK"<<endl; ctimer.restart();
+			if(PARAMS->verbosity > 2){ cout<<"BEG CHECK"<<endl; }
+			ctimer.restart();
 			doMore = check(ctrlStore, inputStore);
-			ctimer.stop(); cout<<"END CHECK"<<endl;
+			ctimer.stop(); 
+			if(PARAMS->verbosity > 2){ cout<<"END CHECK"<<endl; }
 			ctimer.print();
 		}
 		

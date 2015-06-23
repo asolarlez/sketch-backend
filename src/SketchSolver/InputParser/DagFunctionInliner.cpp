@@ -124,9 +124,16 @@ void HoleHardcoder::printControls(ostream& out){
     }
 		const string& s = node.get_name();
 		Tvalue& glob = globalSat->declareControl(&node);
+		if(!glob.isSparse()){			
+			glob.makeSparse(*globalSat);
+		}
 		Tvalue* loc = NULL;
 		if(sat->checkVar(s)){
-			loc = &(sat->getControl(&node));
+			Tvalue tloc = (sat->getControl(&node));
+			if(!tloc.isSparse()){
+				tloc.makeSparse(*sat);
+			}
+			loc = &tloc;
 		}
 		const gvvec& options = glob.num_ranges;
 		int sz = options.size();

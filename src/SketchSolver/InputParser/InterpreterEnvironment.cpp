@@ -359,7 +359,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
-	InlineControl* fin = new TheBestInliner(steps, params.boundmode == CommandLineArgs::CALLSITE);
+	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
 	/*
 	if(PARAMS->boundedCount > 0){
 		fin = new BoundedCountInliner(PARAMS->boundedCount);
@@ -367,7 +367,8 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, fin, true); // TODO: change this to a param
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, &fin, true); // TODO: change this to a param
+
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
@@ -394,7 +395,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		if(params.verbosity> 6){ cout<<"END OF STEP "<<i<<endl; }
 		// fin.ctt.printCtree(cout, dag);
 
-		fin->clear();
+		fin.clear();
 		if(t==1 && params.verbosity> 6){ cout<<"Bailing out"<<endl; break; }
 	}
 	hardcoder.afterInline();		
@@ -402,7 +403,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		DagFunctionToAssertion makeAssert(dag, functionMap);
 		makeAssert.process(dag);
 	}
-	delete fin;
+	
 }
 
 
@@ -427,11 +428,16 @@ int InterpreterEnvironment::doallpairs(){
 		timerclass roundtimer("Round");
 		roundtimer.start();
 		for(int i=0; i<spskpairs.size(); ++i){
+			try{
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
 				getCopy(spskpairs[i].second));
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");
+			}catch(BadConcretization& bc){
+				result = 1;
+				break;
+			}
 				if(result!=0){
 					break;
 				}
