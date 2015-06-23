@@ -409,10 +409,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SketchSolver\InputParser\NodesToSEQ.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SketchSolver\InputParser\NodesToSolver.cpp"
 				>
 			</File>
@@ -507,10 +503,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SketchSolver\SolverInterfaces\BLIFwriter.h"
-				>
-			</File>
-			<File
 				RelativePath=".\SketchSolver\InputParser\BooleanDAGCreator.h"
 				>
 			</File>
@@ -599,10 +591,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SketchSolver\InputParser\NodesToSEQ.h"
-				>
-			</File>
-			<File
 				RelativePath=".\MiniSat2\mtl\Queue.h"
 				>
 			</File>
@@ -612,10 +600,6 @@
 			</File>
 			<File
 				RelativePath=".\zchaff\SAT_C.h"
-				>
-			</File>
-			<File
-				RelativePath=".\SketchSolver\InputParser\SFIOutputSeq.h"
 				>
 			</File>
 			<File

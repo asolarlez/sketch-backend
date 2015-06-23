@@ -228,9 +228,9 @@ INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string&
 	return tmp;
 }
 
-INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
+INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
+	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize, angelic);
 	if(gen_name == "#PC"){
 		dynamic_cast<CTRL_node*>(tmp)->set_Pcond();
 	}

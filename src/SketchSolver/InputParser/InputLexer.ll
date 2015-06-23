@@ -179,6 +179,9 @@ Comment      ("//"[^\n]*)
     return T_assume;
 }
 
+"hassert" {
+    return T_hassert;
+}
 
 
 "NativeFilter"	{				

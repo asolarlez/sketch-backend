@@ -1103,7 +1103,6 @@ NodesToSolver::visit (SRC_node &node)
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
     } else {
       
-      Tvalue & nvar = node_ids[node.id];
       if (node.isTuple) {
         Assert(false, "Not possible");
       } else {
@@ -1129,6 +1128,7 @@ NodesToSolver::visit (SRC_node &node)
 
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
+    }
     }
     // for input arrays, add the default value (out of bound) to be 0, if not present already
     node_ids[node.id].addArrDefault(YES, 0);
@@ -1778,7 +1778,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 }
 
 
-NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
+void NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
 	
 	const gvvec& idv = index.num_ranges;
 	map<int, int> valToID;
@@ -1892,7 +1892,7 @@ NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, 
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
 
-	if(!isBool){
+	if(isInt){
 		gvvec& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());

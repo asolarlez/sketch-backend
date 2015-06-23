@@ -81,6 +81,10 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_Min
 %token T_assert
 %token T_assume
+%token T_hassert
+
+%token T_equals
+%token T_replace
 
 %token T_eof
 
@@ -123,6 +127,7 @@ Program: Typedef MethodList T_eof{ solution.start(); int tmp= envt->doallpairs()
 MethodList: {}
 | Method MethodList {}
 | HLAssertion MethodList {}
+| Replacement MethodList {}
 
 
 InList: T_ident { 
@@ -297,8 +302,11 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 
 TypeLine: T_ident '(' TupleTypeList ')'{
 //add type
-    OutType::makeTuple(*$1, *$3);
+    OutType::makeTuple(*$1, *$3, -1);
 
+}
+| T_ident '(' Constant TupleTypeList ')' {
+    OutType::makeTuple(*$1, *$4, $3);
 }
 
 TypeList: { /* Empty */ }
@@ -306,6 +314,10 @@ TypeList: { /* Empty */ }
 
 Typedef: {/* Empty */}
 |T_Typedef '{' TypeList '}'{ }
+
+Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' ';' {
+  envt->registerFunctionReplace(*$4, *$2, *$6, $8);
+}
 
 
 AssertionExpr: T_ident T_Sketches T_ident
@@ -412,6 +424,28 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     delete $4;
   }
 } 
+| T_hassert Expression ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+    
+    ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
+    bn->makeHardAssert();
+    currentBD->new_node($2, NULL, bn);
+  }
+} 
+| T_hassert Expression ':' T_string ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
+		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
+		bn->setMsg(*$4);
+    bn->makeHardAssert();
+		currentBD->new_node ($2, NULL, bn);
+	}    
+    delete $4;
+  }
+}
+
 | T_assume Expression OptionalMsg ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
@@ -723,6 +757,15 @@ Term: Constant {
 }
 | '<' Ident Constant '*' '>' {
 	$$ = currentBD->create_controls($3, *$2);
+	delete $2;
+
+}
+| '<' Ident '+' '>' {
+	$$ = currentBD->create_controls(-1, *$2, false, true);
+	delete $2;
+}
+| '<' Ident Constant '+' '>' {
+	$$ = currentBD->create_controls($3, *$2, false, true);
 	delete $2;
 
 }
