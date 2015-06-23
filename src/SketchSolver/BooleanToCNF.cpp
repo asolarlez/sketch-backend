@@ -93,7 +93,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 
 Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
 	Assert(!ctrlnode->get_Angelic(), "not allowed");
-	string& name = ctrlnode->get_name();
+	string name = ctrlnode->get_name();
 	map<string, Tvalue>::iterator mp = controls.find(name);	
 	Assert(mp != controls.end(), "Not here");
 	return mp->second;
@@ -101,7 +101,7 @@ Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){
 
 Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 	Assert(!ctrlnode->get_Angelic(), "not allowed");
-	string& name = ctrlnode->get_name();
+	string name = ctrlnode->get_name();
 	map<string, Tvalue>::iterator mp = controls.find(name);
 	if(mp != controls.end()){
 		return mp->second;
