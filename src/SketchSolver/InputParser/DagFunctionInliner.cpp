@@ -112,13 +112,13 @@ void HoleHardcoder::printControls(ostream& out){
     int rv;
     if (node.is_sp_concretize()) {
       Assert(node.max <= bound, "max should be less than bound");
-      bound = node.max;
+      bound = node.max + 1;
       rv = rand() % bound;
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 0; i++) {
         int x = rand() % bound;
         if (x < rv) rv = x;
       }
-      cout << "rv for special node " << rv << endl;
+      cout << "rv for special node " << rv << " bound " << bound << endl;
     } else {
       rv = rand() % bound;
     }
