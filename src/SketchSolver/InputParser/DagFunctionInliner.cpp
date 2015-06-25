@@ -14,7 +14,7 @@ static const int MAX_NODES = 510000;
 #endif
 
 DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, HoleHardcoder* p_hcoder,
-	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize):
+	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
 DagOptim(p_dag), 
 ufunAll(" ufun all"),
@@ -23,6 +23,7 @@ replaceMap(p_replaceMap),
 ictrl(ict),
 randomize(p_randomize),
 onlySpRandomize(p_onlySpRandomize),
+spRandBias(p_spRandBias),
 hcoder(p_hcoder)
 {
 	alterARRACS();

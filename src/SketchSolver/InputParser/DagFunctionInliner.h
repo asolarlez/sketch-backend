@@ -696,10 +696,11 @@ class DagFunctionInliner : public DagOptim
 	
 	bool randomize;
   bool onlySpRandomize;
+  int spRandBias;
 	HoleHardcoder* hcoder;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, 	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, 	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

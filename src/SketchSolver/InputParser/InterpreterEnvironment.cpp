@@ -342,7 +342,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 		if (dag[i]->type == bool_node::SRC) {
             SRC_node* srcNode = dynamic_cast<SRC_node*>(dag[i]);
             if (srcNode->isTuple) {
-                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), 2, newnodes); // TODO: magic number
+                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), params.srcTupleDepth, newnodes); 
                 dag.replace(i, new_node);
             }
         }
@@ -367,7 +367,8 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, &fin, true); // TODO: change this to a param
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
+                         params.spRandBias); 
 
 	int oldSize = -1;
 	bool nofuns = false;

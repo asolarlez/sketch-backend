@@ -77,6 +77,10 @@ struct CommandLineArgs{
   bool randomassign;
   int randdegree;
   int ntimes;
+  int srcTupleDepth;
+  int angelicTupleDepth;
+  bool onlySpRandAssign;
+  int spRandBias; // greater value means more bias towards lower depths
 
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
@@ -144,6 +148,10 @@ struct CommandLineArgs{
 		randomassign =false;
 		randdegree = 100;
 		ntimes = 100;
+    srcTupleDepth = 2;
+    angelicTupleDepth = 1;
+    onlySpRandAssign = false;
+    spRandBias = 1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -160,6 +168,11 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
+    if( string(argv[ii]) == "-sprandassign" ){
+      onlySpRandAssign = true;
+      input_idx = ii+1;
+      continue;
+    }
 		if( string(argv[ii]) == "-outputSat" ){	      
 	      outputSat = true;
 	      input_idx = ii+1;
@@ -485,7 +498,27 @@ struct CommandLineArgs{
 			cout<<"Unknown flag "<<string(argv[ii])<<endl;
 			input_idx = ii+1;
 		}
-	  }
+    if( string(argv[ii]) == "-srctupledepth" ){
+	      Assert(ii<(argc-1), "-srctupledepth needs an extra parameter");
+	      srcTupleDepth = atoi(argv[ii+1]);
+	      input_idx = ii+2;
+        continue;
+    }
+	  
+    if( string(argv[ii]) == "-angelictupledepth" ){
+      Assert(ii<(argc-1), "-angelictupledepth needs an extra parameter");
+      angelicTupleDepth = atoi(argv[ii+1]);
+      input_idx = ii+2;
+      continue;
+    }
+      
+    if( string(argv[ii]) == "-sprandbias" ){
+      Assert(ii<(argc-1), "-sprandbias needs an extra parameter");
+      spRandBias = atoi(argv[ii+1]);
+      input_idx = ii+2;
+      continue;
+    }
+  
 	  if (NANGELICS<NINPUTS) { NANGELICS=NINPUTS; }
 	  if (angelic_arrsz<=0) { angelic_arrsz=(1<<NANGELICS); }
 	  Assert( input_idx < argc, "No input file specified");
@@ -505,6 +538,7 @@ struct CommandLineArgs{
 	  if(verbosity > 3){
 		cout<<" optimization level = "<<olevel<<endl;
 	  }
+    }
 	}
 	
 	void setPARAMS() {
