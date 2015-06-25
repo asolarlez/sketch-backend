@@ -147,7 +147,7 @@ struct CommandLineArgs{
 		boundedCount = 80;
 		randomassign =false;
 		randdegree = 100;
-		ntimes = 100;
+		ntimes = -1;
     srcTupleDepth = 2;
     angelicTupleDepth = 1;
     onlySpRandAssign = false;
