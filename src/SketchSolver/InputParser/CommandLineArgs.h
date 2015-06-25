@@ -168,7 +168,7 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-    if( string(argv[ii]) == "-sprandassign" ){
+    if( string(argv[ii]) == "-onlysprandassign" ){
       onlySpRandAssign = true;
       input_idx = ii+1;
       continue;
@@ -494,10 +494,7 @@ struct CommandLineArgs{
 	      input_idx = ii+2;
 		  continue;
 	    }        
-		if(argv[ii][0] == '-'){
-			cout<<"Unknown flag "<<string(argv[ii])<<endl;
-			input_idx = ii+1;
-		}
+		
     if( string(argv[ii]) == "-srctupledepth" ){
 	      Assert(ii<(argc-1), "-srctupledepth needs an extra parameter");
 	      srcTupleDepth = atoi(argv[ii+1]);
@@ -518,7 +515,11 @@ struct CommandLineArgs{
       input_idx = ii+2;
       continue;
     }
-  
+    if(argv[ii][0] == '-'){
+      cout<<"Unknown flag "<<string(argv[ii])<<endl;
+      input_idx = ii+1;
+    }
+    }
 	  if (NANGELICS<NINPUTS) { NANGELICS=NINPUTS; }
 	  if (angelic_arrsz<=0) { angelic_arrsz=(1<<NANGELICS); }
 	  Assert( input_idx < argc, "No input file specified");
@@ -538,7 +539,7 @@ struct CommandLineArgs{
 	  if(verbosity > 3){
 		cout<<" optimization level = "<<olevel<<endl;
 	  }
-    }
+    
 	}
 	
 	void setPARAMS() {
