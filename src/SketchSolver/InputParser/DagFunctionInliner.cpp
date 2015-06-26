@@ -777,16 +777,16 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           repFun->multi_mother.push_back(optAdd(tr1));
         }
         
-        Tuple* outTup = (Tuple*) (OutType::getTuple(newOutputType));
-        
-        for (int i = 1; i < outTup->entries.size(); i++) {
+        BooleanDAG& newFun = *functionMap[replaceFunName];
+        vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
+        for (int i = 1; i < new_inputs.size(); i++) {
           Assert(i < inputs.size(), "dfae");
           repFun->multi_mother.push_back(node.multi_mother[i]);
         }
       
         if(ictrl != NULL){
           int numRec = ictrl->numRecursive(node);
-          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec - 1);
+          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec);
         }
         repFun->addToParents();
         this->addNode(repFun);
