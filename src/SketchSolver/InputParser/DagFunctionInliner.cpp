@@ -779,9 +779,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         
         BooleanDAG& newFun = *functionMap[replaceFunName];
         vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
-        for (int i = 1; i < new_inputs.size(); i++) {
-          Assert(i < inputs.size(), "dfae");
-          repFun->multi_mother.push_back(node.multi_mother[i]);
+        for (int i = size-actSize; i < new_inputs.size(); i++) {
+          int j = i + actSize - size + 1;
+          Assert(j < inputs.size(), "dfae");
+          repFun->multi_mother.push_back(node.multi_mother[j]);
         }
       
         if(ictrl != NULL){
