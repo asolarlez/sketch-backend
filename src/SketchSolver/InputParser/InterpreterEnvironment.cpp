@@ -180,6 +180,9 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			}else{
 				inints++;
 			}
+      if (sknode->isTuple) {
+        sknode->depth = params.srcTupleDepth;
+      }
 		}
 
 		if(params.verbosity > 2){
@@ -277,6 +280,7 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
   
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
   TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+  new_node->depth = depth;
   new_node->setName(tuple_name);
   int size = tuple_type->actSize;
   for (int j = 0; j < size ; j++) {

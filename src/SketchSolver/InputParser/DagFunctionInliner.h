@@ -675,6 +675,7 @@ class DagFunctionInliner : public DagOptim
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;
   map<string, map<string, string> > replaceMap;
+  int replaceDepth; // TODO: in general we may need a map for this
 
 	timerclass ufunAll;
 

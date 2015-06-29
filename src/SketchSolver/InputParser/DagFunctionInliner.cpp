@@ -24,6 +24,7 @@ ictrl(ict),
 randomize(p_randomize),
 onlySpRandomize(p_onlySpRandomize),
 spRandBias(p_spRandBias),
+replaceDepth(0),
 hcoder(p_hcoder)
 {
 	alterARRACS();
@@ -618,6 +619,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       }
       
       for (int i = 0; i < oriInpSize; i++) {
+        if (i == 0) {
+          Assert(node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
+          int d = node.multi_mother[0]->depth;
+          if (d == -1 || replaceDepth == -1) replaceDepth = -1;
+          else if (d > replaceDepth) {
+            replaceDepth = d;
+          }
+        }
         tuple_node->multi_mother.push_back(node.multi_mother[i]);
       }
       
@@ -787,7 +796,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           tr1->idx = i;
           tr1->mother = actual;
           tr1->addToParents();
-          repFun->multi_mother.push_back(optAdd(tr1));
+          bool_node* optnode = optAdd(tr1);
+          if (i == actSize) {
+            optnode->depth = replaceDepth;
+          }
+          repFun->multi_mother.push_back(optnode);
         }
         
         BooleanDAG& newFun = *functionMap[replaceFunName];
@@ -820,8 +833,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       }
 			
 			for(int i=0; i<inputs.size(); ++i){
-				
-				bool_node* actual = node.multi_mother[i];
+        bool_node* actual;
+				if (node.multi_mother[i]->getOtype()->isTuple && node.multi_mother[i]->depth == 0) {
+          actual = getCnode(-1);
+        }
+        actual = node.multi_mother[i];
         
         nmap[inputs[i]->id] = actual;
 				actual->children.erase((bool_node*)&node);

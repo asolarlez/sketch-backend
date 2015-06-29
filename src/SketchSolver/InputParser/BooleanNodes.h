@@ -110,7 +110,8 @@ struct bool_node{
     typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
     
     const Type type;
-    
+    int depth;
+  
     protected:
     bool_node(Type t);
     bool_node(const bool_node& bn, bool copyChildren);
@@ -1030,7 +1031,8 @@ class UFUN_node: public arith_node, public DllistNode{
 
 /*mother is an index to the array, multi-mother is the array*/
 class ARRACC_node: public arith_node{
-	public: ARRACC_node():arith_node(ARRACC){ }
+	public:
+  ARRACC_node():arith_node(ARRACC){ }
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out) const{
@@ -1129,13 +1131,17 @@ class CONST_node: public bool_node{
 	bool isInt;
 	public:
     CONST_node():bool_node(CONST), isInt(true){
+        depth = 0;
         v.val = -1;}
     CONST_node(int n):bool_node(CONST), isInt(true){
+        depth = 0;
         v.val = n;}
     CONST_node(double d):bool_node(CONST), isInt(false){
+        depth = 0;
         v.fval = d;}
     CONST_node(const CONST_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), v(bn.v), isInt(bn.isInt){
         //if(val == 13){ cout<<" surprise"<<endl; }
+        depth = 0;
     }
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     void setVal(int n){ v.val = n; }

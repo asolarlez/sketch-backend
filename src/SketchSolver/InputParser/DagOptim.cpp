@@ -978,8 +978,16 @@ void DagOptim::visit( TUPLE_R_node& node){
     
     if(!(node.mother->getOtype()->isTuple)){
         rvalue = getCnode(0);
-		return;
-	}
+        return;
+    }
+    int mdepth = node.mother->depth;
+    if (mdepth == 0) { // mother is null
+      rvalue = getCnode(0);
+      return;
+    } else if (mdepth > 0) {
+      node.depth = mdepth - 1;
+    }
+  
     if(node.mother->type == bool_node::TUPLE_CREATE){
         int idx = node.idx;
         TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother);
@@ -1103,6 +1111,7 @@ void DagOptim::visit( TUPLE_R_node& node){
         }
         
     }
+  
     rvalue = &node;
 }
 
@@ -1950,6 +1959,26 @@ void DagOptim::visit( ARRACC_node& node ){
         
 		return;
 	}
+  
+  if (node.getOtype()->isTuple) {
+    if (node.multi_mother.size() > 0) {
+      int d = node.multi_mother[0]->depth;
+      if (d != -1) {
+        for (int i = 1; i < node.multi_mother.size(); i++) {
+          int dd = node.multi_mother[i]->depth;
+          if (dd == -1) {
+            d = -1;
+            break;
+          }
+          else if (dd > d) d = dd;
+        }
+      }
+      node.depth = d;
+    }
+    
+  } else {
+    node.depth = -1;
+  }
 	bool tmp = true;
 	
 	
