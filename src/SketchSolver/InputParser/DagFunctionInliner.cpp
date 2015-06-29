@@ -836,8 +836,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         bool_node* actual;
 				if (node.multi_mother[i]->getOtype()->isTuple && node.multi_mother[i]->depth == 0) {
           actual = getCnode(-1);
+        } else {
+          actual = node.multi_mother[i];
         }
-        actual = node.multi_mother[i];
         
         nmap[inputs[i]->id] = actual;
 				actual->children.erase((bool_node*)&node);
