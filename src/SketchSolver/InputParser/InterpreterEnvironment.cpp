@@ -412,6 +412,9 @@ int InterpreterEnvironment::doallpairs(){
 				if(result!=0){
 					break;
 				}
+				if(hardcoder.isDone()){
+					break;
+				}
 		}
 		roundtimer.stop();
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
@@ -420,6 +423,9 @@ int InterpreterEnvironment::doallpairs(){
 			return result;
 		}
 		if(tt+1 < howmany){ reset(); }
+		if(hardcoder.isDone()){
+			break;
+		}
 	}
 	return result;
 }
