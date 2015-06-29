@@ -1326,7 +1326,7 @@ void Solver::dump(){
 		if(tl > trail_lim.size()){
 			if(trail_lim[tl]==i){
 				tl++;
-				cout<" || ";
+				cout<<" || ";
 			}
 		}
 		cout<<", "<<toInt(trail[i]);		
