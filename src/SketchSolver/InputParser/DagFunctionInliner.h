@@ -636,7 +636,7 @@ public:
 	long long int getTotsize(){
 		return totsize;
 	}
-	int recordDecision(const guardedVal& gv);
+	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
 	}

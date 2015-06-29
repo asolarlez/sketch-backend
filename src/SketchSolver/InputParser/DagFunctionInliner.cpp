@@ -138,12 +138,16 @@ void HoleHardcoder::printControls(ostream& out){
 		}
 		const gvvec& options = glob.num_ranges;
 		int sz = options.size();
+    cout << "sz " << sz << endl;
+    int bnd = sz;
     if (node.is_sp_concretize()) {
       if (sz > bound) {
         sz = bound;
+        bnd = sz - rv;
       }
     }
-		for(int i=0; i<sz; ++i){
+    
+		for(int i=0; i<bnd; ++i){
 			const guardedVal& gv = options[(i + rv) % sz];
 			int xx = globalSat->getMng().isValKnown(gv.guard);
 			if(xx==0){
@@ -174,7 +178,7 @@ void HoleHardcoder::printControls(ostream& out){
 						if(yy==1){
 							return gv.value;
 						}else{
-							return recordDecision(gv);
+							return recordDecision(options, (i + rv) % sz, sz, node.is_sp_concretize());
 						}
 					}
 				}else{
@@ -182,7 +186,7 @@ void HoleHardcoder::printControls(ostream& out){
 					if(!globalSat->tryAssignment(gv.guard)){
 						continue;
 					}
-					return recordDecision(gv);
+					return recordDecision(options, (i+rv) % sz, sz, node.is_sp_concretize());
 				}
 			}
 			if(xx==1){
@@ -233,9 +237,18 @@ void HoleHardcoder::printControls(ostream& out){
 	}
 
 
-int HoleHardcoder::recordDecision(const guardedVal& gv){
-	sofar.push( lfromInt(-gv.guard));
-	return gv.value;
+int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool special){
+  if (!special) {
+    const guardedVal& gv = options[rv];
+    sofar.push( lfromInt(-gv.guard));
+    return gv.value;
+  } else {
+    for (int i = rv + 1; i < bnd; i++) {
+      const guardedVal& gv = options[i];
+      sofar.push( lfromInt(gv.guard));
+    }
+    return options[rv].value;
+  }
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
