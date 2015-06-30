@@ -423,7 +423,7 @@ int InterpreterEnvironment::doallpairs(){
 			cout<<"return 0"<<endl;
 			return result;
 		}
-		if(tt+1 < howmany){ reset(); }
+		reset(); 
 		if(hardcoder.isDone()){
 			cout<<"return 1"<<endl;
 			return 1;
