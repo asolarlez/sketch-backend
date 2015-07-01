@@ -299,7 +299,12 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		}
 		{							
 			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (tchld>0?tchld:1)  );					
+			int odds;
+      if (node->is_sp_concretize()) {
+        odds = baseline / (tchld>0?tchld:1);
+      } else {
+        odds = max(2, baseline/ (tchld>0?tchld:1)  );
+      }
 			chsize = tchld;
 			if(chsize == 1){
 				bool_node* bn = * node->children.begin();
