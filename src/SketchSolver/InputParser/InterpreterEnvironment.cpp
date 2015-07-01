@@ -447,16 +447,25 @@ int InterpreterEnvironment::doallpairs(){
 				if(result!=0){
 					break;
 				}
+				if(hardcoder.isDone()){
+					break;
+				}
 		}
 		roundtimer.stop();
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
 		if(result==0){
+			cout<<"return 0"<<endl;
 			return result;
 		}
-		if(tt+1 < howmany){ reset(); }
+		reset(); 
+		if(hardcoder.isDone()){
+			cout<<"return 1"<<endl;
+			return 1;
+		}
 	}
-	return result;
+	cout<<"return 2"<<endl;
+	return 2; // undefined.
 }
 
 

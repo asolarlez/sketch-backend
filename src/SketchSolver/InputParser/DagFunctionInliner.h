@@ -633,6 +633,11 @@ public:
 		delete &globalSat->getMng();
 		delete globalSat;
 	}
+
+	bool isDone(){
+		return !globalSat->getMng().isOK();
+	}
+
 	long long int getTotsize(){
 		return totsize;
 	}
