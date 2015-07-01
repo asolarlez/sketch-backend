@@ -302,6 +302,7 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
     if (type == OutType::INT || type == OutType::INT_ARR) {
       nbits = 2;
     }
+      if (nbits == 0) {Assert(false, "NYI"); }
     if (nbits > 1) { nbits = PARAMS->NANGELICS; }
     src->set_nbits(nbits);
     if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
