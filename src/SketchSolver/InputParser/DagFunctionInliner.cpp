@@ -115,6 +115,20 @@ void HoleHardcoder::printControls(ostream& out){
     if (node.is_sp_concretize()) {
       Assert(node.max <= bound, "max should be less than bound");
       bound = node.max + 1;
+      
+      vector<string> parents = node.parents;
+      for (int i = 0; i < parents.size(); i++) {
+        map<string, int>::iterator it = randholes.find(parents[i]);
+        Assert(it != randholes.end(), "Parent hole should have been seen before this node");
+        if (it->second >= 0) {
+          if ((it->second - i) < bound) {
+            bound = it->second - i;
+          }
+        }
+      }
+      if (bound == 0) {
+        bound = 1;
+      }
       rv = rand() % bound;
       for (int i = 0; i < 0; i++) {
         int x = rand() % bound;

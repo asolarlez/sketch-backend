@@ -38,8 +38,9 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 	vartype variableType;
 	BooleanDAG* bdag;
 	bool_node* bnode;
-    OutType* otype;
-    vector<OutType*>* tVector;
+  OutType* otype;
+  vector<OutType*>* tVector;
+  vector<string>* sVector;
 }
 %token <doubleConst> T_dbl
 %token<intConst>  T_int
@@ -105,6 +106,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %type<bdag> AssertionExpr
 %type<otype> TupleType
 %type<tVector> TupleTypeList
+%type<sVector> ParentsList
 
 
 
@@ -786,24 +788,32 @@ Term: Constant {
 	delete $3;
 
 }
-| T_sp Constant '<' Ident '>' {
-	$$ = currentBD->create_controls(-1, *$4, false, false, true, $2);
-	delete $4;
+| T_sp Constant '$' ParentsList '$' '<' Ident '>' {
+	$$ = currentBD->create_controls(-1, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
 }
-| T_sp Constant '<' Ident Constant '>' {
-	int nctrls = $5;
+| T_sp Constant '$' ParentsList '$' '<' Ident Constant '>' {
+	int nctrls = $8;
 	if(overrideNCtrls){
 		nctrls = NCTRLS;
 	}
-	$$ = currentBD->create_controls(nctrls, *$4, false, false, true, $2);
-	delete $4;
+	$$ = currentBD->create_controls(nctrls, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
 }
-| T_sp Constant '<' Ident Constant '*' '>' {
-	$$ = currentBD->create_controls($5, *$4, false, false, true, $2);
-	delete $4;
+| T_sp Constant '$' ParentsList '$' '<' Ident Constant '*' '>' {
+	$$ = currentBD->create_controls($8, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
 
 }
 
+ParentsList: { /* Empty */  	$$ = new vector<string>();	}
+| Ident ParentsList {
+  $2->push_back(*$1);
+	$$ = $2;
+}
 
 ConstantExpr: ConstantTerm { $$ = $1; }
 | ConstantExpr '+' ConstantTerm { $$ = $1 + $3; }

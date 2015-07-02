@@ -759,6 +759,7 @@ class CTRL_node: public INTER_node{
     string tupleName;
     bool spAngelic;
     int max;
+    vector<string> parents;
 	
     CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
 	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind; isTuple = false;}
@@ -771,7 +772,9 @@ class CTRL_node: public INTER_node{
 	string get_name() const {
 		return name;
 	}
-  
+  void setParents(const vector<string>& parents_) {
+    parents = parents_;
+  }
   void special_concretize(int max_) {
     spConcretize = true;
     max = max_;
