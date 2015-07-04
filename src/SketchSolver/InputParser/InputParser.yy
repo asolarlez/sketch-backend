@@ -810,9 +810,9 @@ Term: Constant {
 }
 
 ParentsList: { /* Empty */  	$$ = new vector<string>();	}
-| Ident ParentsList {
-  $2->push_back(*$1);
-	$$ = $2;
+| ParentsList Ident {
+  $1->push_back(*$2);
+	$$ = $1;
 }
 
 ConstantExpr: ConstantTerm { $$ = $1; }

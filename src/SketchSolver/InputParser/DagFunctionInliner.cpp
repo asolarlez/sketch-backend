@@ -122,15 +122,20 @@ void HoleHardcoder::printControls(ostream& out){
         Assert(it != randholes.end(), "Parent hole should have been seen before this node");
         if (it->second >= 0) {
           if ((it->second - i) < bound) {
-            bound = it->second - i;
+            bound = max(1, it->second - i);
           }
         }
       }
-      if (bound == 0) {
-        bound = 1;
+     
+      int nflips = 0;
+      if (bound > 2) {
+        nflips = 1;
       }
+      //if (bound > 4) {
+       // nflips = 2;
+      //}
       rv = rand() % bound;
-      for (int i = 0; i < 0; i++) {
+      for (int i = 0; i < nflips; i++) {
         int x = rand() % bound;
         if (x < rv) rv = x;
       }
@@ -315,7 +320,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			int baseline = PARAMS->randdegree;
 			int odds;
       if (node->is_sp_concretize()) {
-        odds = baseline / (tchld>0?tchld:1);
+        odds = max(1, baseline / (tchld>0?tchld:1));
       } else {
         odds = max(2, baseline/ (tchld>0?tchld:1)  );
       }
