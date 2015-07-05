@@ -40,7 +40,7 @@ public:
 	}
 	void genConflict(int harnid, vec<Lit>& vl);
 	void helper(int harnid, vector<char>& visited, set<int>& out);
-	void declareControl(string& ctrl){
+	void declareControl(string const & ctrl){
 		if(ctrlIdx.count(ctrl)==0){
 			ctrlIdx[ctrl] = ctrlIdx.size();
 			harnessPerHole.push_back(set<int>());
@@ -55,7 +55,7 @@ public:
 	}
 
 
-	void regHoleInHarness(string& hname){
+	void regHoleInHarness(string const & hname){
 		int hole = ctrlIdx[hname];
 		harnessPerHole[hole].insert(curHarness);
 		holesPerHarness[curHarness].insert(hole);

@@ -250,7 +250,7 @@ int HoleHardcoder::recordDecision(const guardedVal& gv){
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
-		string& name = node->get_name();
+		string const & name = node->get_name();
 		dt.regHoleInHarness(name);
 
 		map<string, int>::iterator it = randholes.find( name  );
