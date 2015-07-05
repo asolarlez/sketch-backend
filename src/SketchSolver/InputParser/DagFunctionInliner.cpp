@@ -303,7 +303,7 @@ void DepTracker::genConflict(int harnid, vec<Lit>& out){
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
-		string& name = node->get_name();
+		string name = node->get_name();
 		dt.regHoleInHarness(name);
 
 		map<string, int>::iterator it = randholes.find( name  );

@@ -100,7 +100,8 @@ public:
 	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
-		dt.declareControl(node->get_name());
+    string name = node->get_name();
+		dt.declareControl(name);
 	}
 	void reset(){
 		cout<<"SUMMRY ";
