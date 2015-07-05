@@ -66,11 +66,12 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 }
 
 
-CEGISSolver::CEGISSolver(SolverHelper& finder, CommandLineArgs& args):
+CEGISSolver::CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args):
 dirFind(finder), 
 lastFproblem(NULL),
 mngFind(finder.getMng()),
-params(args)
+params(args),
+hcoder(hc)
 {
 //	cout << "miter:" << endl;
 //	miter->lprint(cout);
@@ -1116,6 +1117,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 				curProblem = (curProblem + 1) % problems.size() ;
+				hcoder.dt.setCurHarness(curProblem);
 				if(PARAMS->verbosity > 5){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}

@@ -8,12 +8,7 @@
 #include "CommandLineArgs.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
-
-
-class BadConcretization{
-
-
-};
+#include "HoleHardcoder.h"
 
 
 class Caller{
@@ -610,68 +605,6 @@ public:
 	}
 	void clear(){}
 };
-
-#include "MiniSATSolver.h"
-
-class HoleHardcoder{
-	bool LEAVEALONE(int v){ return v < 0; }
-	static const int REALLYLEAVEALONE = -8888888;
-	map<string, int> randholes;			
-	vector<bool> chkrbuf;
-	SolverHelper* sat;
-	SolverHelper* globalSat;
-	vec<Lit> sofar;
-	int fixValue(CTRL_node& node, int bound, int nbits);
-	long long int totsize;
-public:
-	HoleHardcoder(){		
-		totsize = 1;
-		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
-		globalSat = new SolverHelper(*ms);
-	}
-	~HoleHardcoder(){		
-		delete &globalSat->getMng();
-		delete globalSat;
-	}
-
-	bool isDone(){
-		return !globalSat->getMng().isOK();
-	}
-
-	long long int getTotsize(){
-		return totsize;
-	}
-	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
-	void declareControl(CTRL_node* node){
-		globalSat->declareControl(node);
-	}
-	void reset(){
-		cout<<"SUMMRY ";
-		for(int i=0; i<sofar.size(); ++i){
-			cout<<", "<<toInt(sofar[i]);
-		}
-		cout<<endl;
-		globalSat->getMng().reset();
-		globalSat->getMng().addHelperClause(sofar);
-		((MiniSATSolver&) globalSat->getMng()).dump();
-		randholes.clear();
-		sofar.clear();
-		totsize=1;
-	}
-	void setSolver(SolverHelper* sh){
-		sat = sh;
-	}
-	bool_node* checkRandHole(CTRL_node* node, DagOptim& opt);
-	void afterInline();
-	void printControls(ostream& out);
-	bool hasValue(const string& s){
-		map<string, int>::iterator it = randholes.find(s);
-		if(it == randholes.end()){ return false; }
-		return (!LEAVEALONE(it->second));
-	}
-};
-
-
 
 class DagFunctionInliner : public DagOptim
 {

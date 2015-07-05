@@ -308,6 +308,7 @@
     <ClInclude Include="minisat\mtl\vec.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMainHelpers.h" />
     <ClInclude Include="SketchSolver\InputParser\DagSuperOptim.h" />
+    <ClInclude Include="SketchSolver\InputParser\HoleHardcoder.h" />
     <ClInclude Include="SketchSolver\InputParser\NodeSuperEvaluator.h" />
     <ClInclude Include="SketchSolver\InputParser\PrintInteresting.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />

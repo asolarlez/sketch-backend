@@ -8,6 +8,7 @@
 #include "VarStore.h"
 #include "CommandLineArgs.h"
 #include "SolverTypes.h"
+#include "HoleHardcoder.h"
 #include <stack>
 #include <ctime>
 
@@ -66,6 +67,7 @@ public:
 
 class CEGISSolver
 {
+	HoleHardcoder& hcoder;
 	int curProblem;
 	vector<BooleanDAG*> problems;
 	stack<BooleanDAG*> problemStack;
@@ -127,7 +129,7 @@ public:
 	VarStore ctrlStore;
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
-	CEGISSolver(SolverHelper& finder, CommandLineArgs& args);
+	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args);
 	~CEGISSolver(void);
 	void addProblem(BooleanDAG* miter);
 
