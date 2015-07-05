@@ -84,7 +84,7 @@ public:
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
-		solver = new CEGISSolver(*finder, params);
+		solver = new CEGISSolver(*finder, hardcoder, params);
 	}
 	
 	vector<pair<string, string> > spskpairs;
@@ -104,7 +104,7 @@ public:
 		finder = new SolverHelper(*_pfind);
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
-		solver = new CEGISSolver(*finder, params);
+		solver = new CEGISSolver(*finder, hardcoder, params);
 		cout<<"ALLRESET"<<endl;
 		status=READY;
 	}

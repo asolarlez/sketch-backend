@@ -393,12 +393,14 @@ int InterpreterEnvironment::doallpairs(){
 		}
 	}
 
+	hardcoder.setHarnesses(spskpairs.size());
 
 	for(int tt = 0; tt<howmany; ++tt){
 		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
 		timerclass roundtimer("Round");
 		roundtimer.start();
 		for(int i=0; i<spskpairs.size(); ++i){
+			hardcoder.dt.setCurHarness(i);
 			try{
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
 				getCopy(spskpairs[i].second));

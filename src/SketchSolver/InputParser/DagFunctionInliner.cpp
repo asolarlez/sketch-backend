@@ -213,13 +213,48 @@ void HoleHardcoder::printControls(ostream& out){
 	}
 
 
+void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
+	visited[harnid] = 1;
+	vector<Lit>& lits = decisionsPerHarness[harnid];
+	for(vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit){
+		out.insert(toInt(*llit));
+	}
+	set<int>& holes = holesPerHarness[harnid];
+	for(set<int>::iterator it = holes.begin(); it != holes.end(); ++it){
+		set<int>& vi = harnessPerHole[*it];
+		if(vi.size()>1){
+			for(set<int>::iterator vvi = vi.begin(); vvi != vi.end(); ++vvi){
+				if(visited[*vvi]==0){
+					helper(*vvi, visited, out);
+				}
+			}
+		}
+	}
+}
+
+void DepTracker::genConflict(int harnid, vec<Lit>& out){	
+	out.clear();
+	vector<char> visited(holesPerHarness.size(), 0);
+	set<int> tout;
+	helper(harnid, visited, tout);
+	for(set<int>::iterator it = tout.begin(); it != tout.end(); ++it){
+		out.push(toLit(*it));
+	}
+}
+
+
 int HoleHardcoder::recordDecision(const guardedVal& gv){
 	sofar.push( lfromInt(-gv.guard));
+	dt.recordDecision(gv);
 	return gv.value;
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
-		map<string, int>::iterator it = randholes.find( node->get_name()  );
+		string& name = node->get_name();
+		dt.regHoleInHarness(name);
+
+		map<string, int>::iterator it = randholes.find( name  );
+
 		int chsize = node->children.size();							
 			int tchld = 0;
 			int bchld = 0;
