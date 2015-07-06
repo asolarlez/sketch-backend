@@ -219,8 +219,8 @@ bool_node* BooleanDAGCreator::create_const(double n){
 }
 
 
-INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
-	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz);
+INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth){
+	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz, tupDepth);
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
 	Assert(!flag, "Two inputs with the same name!");	

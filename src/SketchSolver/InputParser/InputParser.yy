@@ -187,7 +187,14 @@ ParamDecl: T_vartype T_ident {
 }
 | T_ident T_ident{
 
-    currentBD->create_inputs( -1 , OutType::getTuple(*$1) , *$2);
+    currentBD->create_inputs( -1 , OutType::getTuple(*$1), *$2);
+       
+
+    delete $2;
+}
+| T_ident T_ident '<' NegConstant '>' {
+
+    currentBD->create_inputs( -1 , OutType::getTuple(*$1) , *$2, -1, $4);
        
 
     delete $2;

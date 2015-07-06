@@ -181,7 +181,8 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 				inints++;
 			}
       if (sknode->isTuple) {
-        sknode->depth = params.srcTupleDepth;
+        if (sknode->depth == -1)
+          sknode->depth = params.srcTupleDepth;
       }
 		}
 
@@ -291,6 +292,11 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
     
     if (type->isTuple) {
       new_node->multi_mother.push_back(createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes));
+    } else if (type->isArr && ((Arr*) type)->atype->isTuple) {
+      CONST_node* cnode = new CONST_node(-1);
+      newnodes.push_back(cnode);
+      new_node->multi_mother.push_back(cnode);
+      
     } else {
     
     SRC_node* src =  new SRC_node( str.str() );
@@ -302,7 +308,7 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
     if (type == OutType::INT || type == OutType::INT_ARR) {
       nbits = 2;
     }
-      if (nbits == 0) {Assert(false, "NYI"); }
+      
     if (nbits > 1) { nbits = PARAMS->NANGELICS; }
     src->set_nbits(nbits);
     if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
@@ -347,7 +353,9 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 		if (dag[i]->type == bool_node::SRC) {
             SRC_node* srcNode = dynamic_cast<SRC_node*>(dag[i]);
             if (srcNode->isTuple) {
-                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), params.srcTupleDepth, newnodes); 
+                int depth = srcNode->depth;
+                if (depth == -1) depth = params.srcTupleDepth;
+                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), depth, newnodes);
                 dag.replace(i, new_node);
             }
         }
