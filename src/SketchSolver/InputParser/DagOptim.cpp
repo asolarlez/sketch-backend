@@ -972,7 +972,29 @@ void DagOptim::visit( NEG_node& node ){
 	}
 	rvalue = &node;
 }
-	
+
+void DagOptim::visit( TUPLE_CREATE_node& node) {
+  if (node.depth == -1) {
+    int d = 0; bool first = true;
+    for (int i = 0; i < node.multi_mother.size(); i++) {
+      if (node.multi_mother[i]->getOtype()->isTuple) {
+        int dd = node.multi_mother[i]->depth;
+        if (first) {
+          d = dd;
+          first = false;
+        }
+        if (dd == -1) {
+          d = -1;
+          break;
+        } else if (dd > d) d = dd;
+      }
+    }
+    if (d == -1) node.depth = -1;
+    else node.depth = d + 1;
+  }
+  rvalue = &node;
+  return;
+}
 
 void DagOptim::visit( TUPLE_R_node& node){
     
@@ -1959,25 +1981,27 @@ void DagOptim::visit( ARRACC_node& node ){
         
 		return;
 	}
-  
-  if (node.getOtype()->isTuple) {
-    if (node.multi_mother.size() > 0) {
-      int d = node.multi_mother[0]->depth;
-      if (d != -1) {
-        for (int i = 1; i < node.multi_mother.size(); i++) {
-          int dd = node.multi_mother[i]->depth;
-          if (dd == -1) {
-            d = -1;
-            break;
+ if (node.depth == -1 ){
+    if (node.getOtype()->isTuple) {
+      if (node.multi_mother.size() > 0) {
+        int d = node.multi_mother[0]->depth;
+        if (d != -1) {
+          for (int i = 1; i < node.multi_mother.size(); i++) {
+            int dd = node.multi_mother[i]->depth;
+            if (dd == -1) {
+              d = -1;
+              break;
+            }
+            else if (dd > d) d = dd;
           }
-          else if (dd > d) d = dd;
         }
+        node.depth = d;
       }
-      node.depth = d;
+      
+      
+    } else {
+      node.depth = -1;
     }
-    
-  } else {
-    node.depth = -1;
   }
 	bool tmp = true;
 	

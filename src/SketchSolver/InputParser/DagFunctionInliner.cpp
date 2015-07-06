@@ -661,7 +661,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       cout << "Replacing ufun node " << name << endl;
       string oldOutputType = node.getTupleName();
       
-      int oriInpSize = node.multi_mother.size();
+      int oriInpSize = 1; // node.multi_mother.size();
       
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
     
@@ -677,17 +677,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         tuple_node->multi_mother.push_back(getCnode(0));
       }
       
-      for (int i = 0; i < oriInpSize; i++) {
-        if (i == 0) {
-          Assert(node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
+      //for (int i = 0; i < oriInpSize; i++) {
+        //if (i == 0) {
+          Assert(isConst(node.multi_mother[0]) || node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
           int d = node.multi_mother[0]->depth;
           if (d == -1 || replaceDepth == -1) replaceDepth = -1;
           else if (d > replaceDepth) {
             replaceDepth = d;
           }
-        }
-        tuple_node->multi_mother.push_back(node.multi_mother[i]);
-      }
+        //}
+        tuple_node->multi_mother.push_back(node.multi_mother[0]);
+     // }
       
       Assert(tuple_node->multi_mother.size() == size, "Dfqwq");
       
