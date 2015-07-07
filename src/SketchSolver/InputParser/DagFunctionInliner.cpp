@@ -289,14 +289,17 @@ void DepTracker::genConflict(int harnid, vec<Lit>& out){
   int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool special){
     if (!special) {
       const guardedVal& gv = options[rv];
-      sofar.push( lfromInt(-gv.guard));
-      dt.recordDecision(gv);
+      Lit l =  lfromInt(-gv.guard);
+      sofar.push(l);
+      dt.recordDecision(l);
       return gv.value;
     } else {
-      dt.recordDecision(options[rv]);
       for (int i = rv + 1; i < bnd; i++) {
         const guardedVal& gv = options[i];
-        sofar.push( lfromInt(gv.guard));
+        Lit l = lfromInt(gv.guard);
+        sofar.push(l);
+        dt.recordDecision(l);
+        
       }
       return options[rv].value;
     }
