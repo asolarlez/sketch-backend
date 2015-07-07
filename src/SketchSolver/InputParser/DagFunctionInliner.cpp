@@ -303,12 +303,15 @@ void DepTracker::genConflict(int harnid, vec<Lit>& out){
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
+  int chsize = node->children.size();
+  if (chsize == 0) return node;
 		string name = node->get_name();
 		dt.regHoleInHarness(name);
 
 		map<string, int>::iterator it = randholes.find( name  );
 
-		int chsize = node->children.size();							
+		
+  
 			int tchld = 0;
 			int bchld = 0;
 			for(childset::iterator chit = node->children.begin(); chit != node->children.end(); ++chit){
@@ -723,7 +726,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       break;
     }
   }
-  }
+  } 
   
 	ufunAll.restart();
 

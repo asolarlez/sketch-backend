@@ -654,7 +654,14 @@ public:
 	set<string>& getFunsInlined(){
 		return funsInlined;
 	}
+  
+  void turnOffRandomization() {
+    randomize = false;
+  }
 
+  void turnOnRandomization() {
+    randomize = true;
+  }
 	
 	
 };
