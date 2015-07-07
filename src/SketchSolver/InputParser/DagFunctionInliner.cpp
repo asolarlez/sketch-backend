@@ -661,7 +661,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       cout << "Replacing ufun node " << name << endl;
       string oldOutputType = node.getTupleName();
       
-      int oriInpSize = 1; // node.multi_mother.size();
+      int oriInpSize = node.multi_mother.size();
       
       TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
     
@@ -677,17 +677,17 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         tuple_node->multi_mother.push_back(getCnode(0));
       }
       
-      //for (int i = 0; i < oriInpSize; i++) {
-        //if (i == 0) {
+      for (int i = 0; i < oriInpSize; i++) {
+        if (i == 0) {
           Assert(isConst(node.multi_mother[0]) || node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
           int d = node.multi_mother[0]->depth;
           if (d == -1 || replaceDepth == -1) replaceDepth = -1;
           else if (d > replaceDepth) {
             replaceDepth = d;
           }
-        //}
-        tuple_node->multi_mother.push_back(node.multi_mother[0]);
-     // }
+        }
+        tuple_node->multi_mother.push_back(node.multi_mother[i]);
+      }
       
       Assert(tuple_node->multi_mother.size() == size, "Dfqwq");
       
@@ -701,6 +701,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       new_output->addToParents();
       rvalue = optAdd(new_output);
       return;
+    } else {
+      int d = node.multi_mother[0]->depth - 1;
+      if (d == -1 || replaceDepth == -1) replaceDepth = -1;
+      else if (d > replaceDepth) {
+        replaceDepth = d;
+      }
     }
   }
   
@@ -797,9 +803,23 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       
       if (shouldReplaceSpecialNode) {
         Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
-        bool_node* actual = node.multi_mother[0];
+        UFUN_node* repFun = new UFUN_node(replaceFunName);
+        repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
+        string newNameCaps = replaceFunName;
+        for(int i = 0; i < newNameCaps.size(); i++) {
+          newNameCaps.at(i) = toupper(newNameCaps.at(i));
+        }
+        string newOutputType = newNameCaps + "_ANONYMOUS";
+        repFun->set_tupleName(newOutputType);
+        repFun->replaceFun = false;
+        bool_node* actual;
+        for (int i = 0; i < inputs.size(); i++) {
+          actual = node.multi_mother[i];
+          if (actual->getOtype()->isTuple) break;
+          repFun->multi_mother.push_back(actual);
+        }
         
-        Assert(actual->getOtype()->isTuple, "First input should be a tuple");
+        //Assert(actual->getOtype()->isTuple, "First input should be a tuple");
         int size = ((Tuple*) (actual->getOtype()))->entries.size();
         int actSize = ((Tuple*) (actual->getOtype()))->actSize;
         TUPLE_R_node* tr = new TUPLE_R_node();
@@ -840,16 +860,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         not_->addToParents();
         bool_node* optNot = optAdd(not_);
         
-        UFUN_node* repFun = new UFUN_node(replaceFunName);
-        repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
-        string newNameCaps = replaceFunName;
-        for(int i = 0; i < newNameCaps.size(); i++) {
-          newNameCaps.at(i) = toupper(newNameCaps.at(i));
-        }
-        string newOutputType = newNameCaps + "_ANONYMOUS";
-        repFun->set_tupleName(newOutputType);
         repFun->mother = optCond;
-        repFun->replaceFun = false;
+        
         for (int i = actSize; i < size; i++) {
           TUPLE_R_node* tr1 = new TUPLE_R_node();
           tr1->idx = i;
@@ -864,7 +876,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         
         BooleanDAG& newFun = *functionMap[replaceFunName];
         vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
-        for (int i = size-actSize; i < new_inputs.size(); i++) {
+        for (int i = repFun->multi_mother.size(); i < new_inputs.size(); i++) {
           int j = i + actSize - size + 1;
           Assert(j < inputs.size(), "dfae");
           repFun->multi_mother.push_back(node.multi_mother[j]);

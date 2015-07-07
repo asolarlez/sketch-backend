@@ -1002,6 +1002,7 @@ void DagOptim::visit( TUPLE_R_node& node){
         rvalue = getCnode(0);
         return;
     }
+  if (node.depth == -1) {
     int mdepth = node.mother->depth;
     if (mdepth == 0) { // mother is null
       rvalue = getCnode(0);
@@ -1009,6 +1010,7 @@ void DagOptim::visit( TUPLE_R_node& node){
     } else if (mdepth > 0) {
       node.depth = mdepth - 1;
     }
+  }
   
     if(node.mother->type == bool_node::TUPLE_CREATE){
         int idx = node.idx;
