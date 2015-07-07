@@ -824,7 +824,10 @@ void DagFunctionInliner::visit( UFUN_node& node ){
           if (actual->getOtype()->isTuple) break;
           repFun->multi_mother.push_back(actual);
         }
-        
+        if (isConst(actual)) {
+          shouldReplaceSpecialNode = false;
+          delete repFun;
+        } else {
         //Assert(actual->getOtype()->isTuple, "First input should be a tuple");
         int size = ((Tuple*) (actual->getOtype()))->entries.size();
         int actSize = ((Tuple*) (actual->getOtype()))->actSize;
@@ -882,7 +885,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         
         BooleanDAG& newFun = *functionMap[replaceFunName];
         vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
-        for (int i = repFun->multi_mother.size(); i < new_inputs.size(); i++) {
+        int curSize = repFun->multi_mother.size();
+        for (int i = curSize; i < new_inputs.size(); i++) {
           int j = i + actSize - size + 1;
           Assert(j < inputs.size(), "dfae");
           repFun->multi_mother.push_back(node.multi_mother[j]);
@@ -906,6 +910,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         
         node.mother = optAdd(new_mother);
         node.mother->children.insert(&node);
+        }
         
       }
 			
