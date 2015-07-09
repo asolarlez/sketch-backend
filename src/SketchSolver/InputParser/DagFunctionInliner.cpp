@@ -149,16 +149,16 @@ void HoleHardcoder::printControls(ostream& out){
 			glob.makeSparse(*globalSat);
 		}
 		Tvalue* loc = NULL;
+		Tvalue tloc;
 		if(sat->checkVar(s)){
-			Tvalue tloc = (sat->getControl(&node));
+			tloc = (sat->getControl(&node));
 			if(!tloc.isSparse()){
 				tloc.makeSparse(*sat);
 			}
 			loc = &tloc;
 		}
-		const gvvec& options = glob.num_ranges;
+		const gvvec& options = glob.num_ranges;		
 		int sz = options.size();
-    cout << "sz " << sz << endl;
     int bnd = sz;
     if (node.is_sp_concretize()) {
       if (sz > bound) {
@@ -169,13 +169,13 @@ void HoleHardcoder::printControls(ostream& out){
     
 		for(int i=0; i<bnd; ++i){
 			const guardedVal& gv = options[(i + rv) % sz];
-			int xx = globalSat->getMng().isValKnown(gv.guard);
+			int xx = globalSat->getMng().isValKnown(gv.guard);			
 			if(xx==0){
 				//global has no opinion. Should check local.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
-					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					const guardedVal& lgv = locopt[(i + rv) % sz];					
+					Assert(lgv.value == gv.value, "Can't happen. c");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==-1){
 						//local had already decided that this value was bad. Move to the next.
@@ -212,10 +212,10 @@ void HoleHardcoder::printControls(ostream& out){
 			if(xx==1){
 				//global says it should be true. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					Assert(lgv.value == gv.value, "Can't happen. d");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==-1){
 						//local had already decided that this value was bad. 
@@ -237,10 +237,10 @@ void HoleHardcoder::printControls(ostream& out){
 			if(xx==-1){
 				//global says it should be false. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					Assert(lgv.value == gv.value, "Can't happen. b");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==1){
 						//local had also decided that is should be true.
