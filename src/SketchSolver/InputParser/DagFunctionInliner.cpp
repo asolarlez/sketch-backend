@@ -114,8 +114,9 @@ void HoleHardcoder::printControls(ostream& out){
 			glob.makeSparse(*globalSat);
 		}
 		Tvalue* loc = NULL;
+		Tvalue tloc;
 		if(sat->checkVar(s)){
-			Tvalue tloc = (sat->getControl(&node));
+			tloc = (sat->getControl(&node));
 			if(!tloc.isSparse()){
 				tloc.makeSparse(*sat);
 			}
