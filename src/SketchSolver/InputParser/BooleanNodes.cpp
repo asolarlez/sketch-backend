@@ -29,6 +29,7 @@ OutType* OutType::getTuple(const string& name){
     
     Tuple* t = new Tuple();
     t->name = name;
+    t->actSize = 0;
     tupleMap[name] = t;
     return t;
 }
