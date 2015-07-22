@@ -272,7 +272,7 @@ can only call them with the parameters used in the spec */
 	return runOptims(result);
 }
 
-bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes) {
+bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes, bool ufun) {
   if (depth == 0) {
     CONST_node* cnode = new CONST_node(-1);
     newnodes.push_back(cnode);
@@ -291,7 +291,7 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
     OutType* type = tuple_type->entries[j];
     
     if (type->isTuple) {
-      new_node->multi_mother.push_back(createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes));
+      new_node->multi_mother.push_back(createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes, ufun));
     } else if (type->isArr && ((Arr*) type)->atype->isTuple) {
       CONST_node* cnode = new CONST_node(-1);
       newnodes.push_back(cnode);
@@ -329,7 +329,8 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
   new_node->addToParents();
   newnodes.push_back(new_node);
   
-  
+  if (ufun) return new_node;
+
   ARRACC_node* ac = new ARRACC_node();
   stringstream str;
   str<<node_name<<"__";
@@ -355,7 +356,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
             if (srcNode->isTuple) {
                 int depth = srcNode->depth;
                 if (depth == -1) depth = params.srcTupleDepth;
-                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), depth, newnodes);
+                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), depth, newnodes, srcNode->ufun);
                 dag.replace(i, new_node);
             }
         }

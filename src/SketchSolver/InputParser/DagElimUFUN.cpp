@@ -96,7 +96,7 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
         src->setArr(sz);
     }
     
-    src->setTuple(node.getTupleName());
+    src->setTuple(node.getTupleName(), true);
     return src;
 }
 

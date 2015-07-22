@@ -673,11 +673,12 @@ class INTER_node: public bool_node{
 /* Input nodes */
 class SRC_node: public INTER_node{
     public: SRC_node():INTER_node(SRC){isTuple = false; }
-	int arrSz;
+    int arrSz;
     bool isTuple;
     string tupleName;
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName) { }
-	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
+    bool ufun;
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) { }
+	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
 		name = nm;
 		isTuple = false;
 	}
@@ -698,10 +699,11 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-   void setTuple (const string& name) {
+   void setTuple (const string& name, bool ufun_ = false) {
         tupleName = name;
         isTuple = true;
-    }
+        ufun = ufun_;
+   }
 	OutType* getOtype() const {
         
 		if(otype != OutType::BOTTOM){

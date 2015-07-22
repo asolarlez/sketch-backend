@@ -1094,7 +1094,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nm += "_";
 							nm += ufn->outname;
 							SRC_node* sn = new SRC_node(nm);
-                            sn->setTuple(ufn->getTupleName());
+                            sn->setTuple(ufn->getTupleName(), true);
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
 							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
