@@ -29,7 +29,8 @@ class InterpreterEnvironment
 	int assertionStep;
 	string sessionName;
 	HoleHardcoder hardcoder;
-
+	int maxRndSize;
+	int avgRndsSize;
 	/*Debug state: */
 	vector<BooleanDAG*> history;
 	vector<vector<Tvalue> > statehistory;

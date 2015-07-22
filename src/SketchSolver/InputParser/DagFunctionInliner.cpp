@@ -312,7 +312,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
 			}						
-			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) ){
+			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000 ){
 				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
@@ -360,14 +360,14 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 								ul = max(ul, quant);
 							}else{
 							if(!(child->type == bool_node::EQ )){
-
-								if(child->type == bool_node::AND || child->type == bool_node::OR || child->type == bool_node::NOT){
+								/*
+								if(child->type == bool_node::AND || child->type == bool_node::OR || child->type == bool_node::NOT || child->type == bool_node::UFUN){
 									// cout<<"so far so good"<<child->lprint()<<endl;
 								}else{									
 									cout<<"    has a bad child"<<child->lprint()<<endl;
 									randholes[node->get_name()] = REALLYLEAVEALONE;
 									return node;
-								}
+								}*/
 							}else{ //child->type == eq
 								if(child->father->type == bool_node::CONST){
 									chkrbuf[((CONST_node*)child->father)->getVal()] = true;

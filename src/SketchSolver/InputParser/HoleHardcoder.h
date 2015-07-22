@@ -102,6 +102,19 @@ public:
 		globalSat->declareControl(node);
 		dt.declareControl(node->get_name());
 	}
+
+	void tryHarder(){
+		cout<<"Got too big, trying harder to concretize before="<<randholes.size();
+		for(map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ){
+			if(it->second < 0){
+				randholes.erase(it++);
+			}else{
+				++it;
+			}
+		}
+		cout<<"  after ="<<randholes.size()<<endl;
+	}
+
 	void reset(){
 		cout<<"SUMMRY ";
 		for(int i=0; i<sofar.size(); ++i){

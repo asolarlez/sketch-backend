@@ -359,6 +359,9 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
 				}
+				if((dag.size() > 400000 && dag.size() > oldSize * 2)|| dag.size() > 1000000){
+					hardcoder.tryHarder();
+				}
 			}
 			oldSize = dag.size();
 			++t;			
@@ -392,7 +395,7 @@ int InterpreterEnvironment::doallpairs(){
 			}
 		}
 	}
-
+	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
 
 	for(int tt = 0; tt<howmany; ++tt){
