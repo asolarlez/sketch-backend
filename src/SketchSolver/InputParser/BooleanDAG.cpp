@@ -537,8 +537,8 @@ void BooleanDAG::cleanup(){
 	}
   }
   swap(tmpv, nodes);
-  // removeNullNodes();  
-  // sort(nodes.begin(), nodes.end(), comp_id);
+  removeNullNodes();
+  sort(nodes.begin(), nodes.end(), comp_id);
    DllistNode* cur = this->assertions.head;
   DllistNode* last=NULL;
   for(int i=0; i < nodes.size(); ++i){
@@ -650,7 +650,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 	if(named_nodes.find(name) != named_nodes.end()){
 		fth = named_nodes[name];	
 	}else{
-		cout<<"WARNING, DANGEROUS!!"<<endl;
+		cout<<"WARNING, DANGEROUS!! " << name << endl;
 		fth = new CONST_node(-333);
 		nodes.push_back(fth);
 	}
@@ -713,18 +713,26 @@ INTER_node* BooleanDAG::create_inter(int n, const string& gen_name, int& counter
 }
 
 
-INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
+INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth){
 	SRC_node* src = dynamic_cast<SRC_node*>(create_inter(n, gen_name, n_inputs, bool_node::SRC));
 	if(type == OutType::FLOAT || type == OutType::FLOAT_ARR || type->isTuple){
 		src->otype = type;
 	}
+  if (type->isTuple) {
+    src->setTuple(((Tuple*)type)->name);
+    src->depth = tupDepth;
+  }
 	src->setArr(arrSz);
 	return src;
 }
 
-INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize){
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max){
   INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
   dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
+  if (angelic) dynamic_cast<CTRL_node*>(tmp)->set_Special_Angelic();
+  if (spConcretize) {
+    dynamic_cast<CTRL_node*>(tmp)->special_concretize(max);
+  }
   return tmp;
 }
 

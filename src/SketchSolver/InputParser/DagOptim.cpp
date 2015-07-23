@@ -972,14 +972,46 @@ void DagOptim::visit( NEG_node& node ){
 	}
 	rvalue = &node;
 }
-	
+
+void DagOptim::visit( TUPLE_CREATE_node& node) {
+  if (node.depth == -1) {
+    int d = 0; bool first = true;
+    for (int i = 0; i < node.multi_mother.size(); i++) {
+      if (node.multi_mother[i]->getOtype()->isTuple) {
+        int dd = node.multi_mother[i]->depth;
+        if (first) {
+          d = dd;
+          first = false;
+        }
+        if (dd == -1) {
+          d = -1;
+          break;
+        } else if (dd > d) d = dd;
+      }
+    }
+    if (d == -1) node.depth = -1;
+    else node.depth = d + 1;
+  }
+  rvalue = &node;
+  return;
+}
 
 void DagOptim::visit( TUPLE_R_node& node){
     
     if(!(node.mother->getOtype()->isTuple)){
         rvalue = getCnode(0);
-		return;
-	}
+        return;
+    }
+  if (node.depth == -1) {
+    int mdepth = node.mother->depth;
+    if (mdepth == 0) { // mother is null
+      rvalue = getCnode(0);
+      return;
+    } else if (mdepth > 0) {
+      node.depth = mdepth - 1;
+    }
+  }
+  
     if(node.mother->type == bool_node::TUPLE_CREATE){
         int idx = node.idx;
         TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother);
@@ -1048,24 +1080,62 @@ void DagOptim::visit( TUPLE_R_node& node){
             }
         }
         if(allTuple){
-            ARRACC_node* newParent = new ARRACC_node();
-            newParent->mother = parent->mother;
-            for(int i=0; i< parent->multi_mother.size(); i++){
-                TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
-                if(idx >= tuple_i->multi_mother.size()|| idx <0){
-                    rvalue = &node;
-                    return;
+            if (!node.getOtype()->isArr || parent->mother->getOtype() == OutType::BOOL) {
+                ARRACC_node* newParent = new ARRACC_node();
+                newParent->mother = parent->mother;
+                for(int i=0; i< parent->multi_mother.size(); i++){
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
+                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+                        rvalue = &node;
+                        return;
+                    }
+                    
+                    newParent->multi_mother.push_back(tuple_i->multi_mother[idx]);
                 }
+                newParent->addToParents();
+                node.dislodge();
+                rvalue = optAdd(newParent);
+                return;
+              
+            } else {
+                int size = parent->multi_mother.size();
+                bool_node* mother = parent->mother;
+                bool_node* curr;
                 
-                newParent->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                
+                for (int i = size - 1; i >= 0; i--) {
+                    EQ_node* eq_node = new EQ_node();
+                    eq_node->mother = mother;
+                    eq_node->father = getCnode(i);
+                    eq_node->addToParents();
+                    
+                    ARRACC_node* an = new ARRACC_node();
+                    an->mother = optAdd(eq_node);
+                    if (i == size - 1) {
+                        an->multi_mother.push_back(getCnode(0));
+                    } else {
+                        an->multi_mother.push_back(curr);
+                    }
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
+                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+                        rvalue = &node;
+                        return;
+                    }
+                    
+                    an->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                    an->addToParents();
+                    curr = optAdd(an);
+                    
+                }
+                Assert(curr != NULL, "This is not possible");
+                node.dislodge();
+                rvalue = curr;
+                return;
             }
-            newParent->addToParents();
-            node.dislodge();
-            rvalue = optAdd(newParent);
-            return;
         }
         
     }
+  
     rvalue = &node;
 }
 
@@ -1913,6 +1983,28 @@ void DagOptim::visit( ARRACC_node& node ){
         
 		return;
 	}
+ if (node.depth == -1 ){
+    if (node.getOtype()->isTuple) {
+      if (node.multi_mother.size() > 0) {
+        int d = node.multi_mother[0]->depth;
+        if (d != -1) {
+          for (int i = 1; i < node.multi_mother.size(); i++) {
+            int dd = node.multi_mother[i]->depth;
+            if (dd == -1) {
+              d = -1;
+              break;
+            }
+            else if (dd > d) d = dd;
+          }
+        }
+        node.depth = d;
+      }
+      
+      
+    } else {
+      node.depth = -1;
+    }
+  }
 	bool tmp = true;
 	
 	
@@ -2208,6 +2300,9 @@ void DagOptim::visit( ARRASS_node& node ){
 	}
 
 	OutType* ot = node.getOtype();
+    if (ot->isArr) {
+        Assert(false, "This is bad");
+    }
     if(node.quant == 0  &&  (ot == OutType::INT || ot == OutType::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
         
 		vector<bool_node*>  vv;		

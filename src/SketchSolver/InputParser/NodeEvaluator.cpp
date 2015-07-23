@@ -41,22 +41,44 @@ void NodeEvaluator::visit( ARR_R_node &node){
 }
 
 void NodeEvaluator::visit( TUPLE_R_node &node){
+  OutType* otp = node.getOtype();
   int itup = i(*node.mother);
   if(itup == -1){
     setbn(node, 0);
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
     return;
   }
   cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
     setbn(node, 0);
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
 		return;
 	}
 	int idx = node.idx;
   if(idx < 0 || idx >= cpt->size()){
     setbn(node, 0 );
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
     return;
   }
-  OutType* otp = node.getOtype();
+  
   if(otp==OutType::INT || otp ==OutType::BOOL || otp->isTuple){
     setbn(node, cpt->vv[idx]);
   } else {
@@ -120,10 +142,8 @@ void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 	for(int t=0; t<sz; ++t){
     OutType* e = otp->entries[t];
     if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
-      Assert(!e->isArr, "Should not be an array here");
       cpv->vv[t] = i(*node.multi_mother[t]);
     } else {
-      Assert(node.multi_mother[t]->id != -1, "node id is -1");
       cpv->vv[t] = (node.multi_mother[t]->id);
     }
 	}

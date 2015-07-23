@@ -23,6 +23,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 		for(int i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
+      Assert(!srcnode->isTuple, "Not possible");
 			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
 	}
@@ -44,8 +45,14 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 			}
 			if(!ctrlnode->get_Angelic()){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
+
 				declareControl(ctrlnode);
-			}			
+			}
+      if (ctrlnode->spAngelic) {
+        Assert(!ctrlnode->isTuple, "NYI");
+        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz());
+      }
+
 		}
 		if(PARAMS->verbosity > 2){
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
@@ -96,7 +103,7 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
 void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz) {
 	//Inputs can be redeclared to change their sizes, but not controls.
 	if( !inputStore.contains(inname)){
-		if(arrSz >= 0){
+    if(arrSz >= 0){
 			inputStore.newArr(inname, bitsize, arrSz);	
 		}else{
 			inputStore.newVar(inname, bitsize);				
@@ -104,11 +111,10 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 		Dout( cout<<" INPUT "<<inname<<" sz = "<<size<<endl );
 	}else{
 		// cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
-
-		inputStore.resizeVar(inname, bitsize);
-		if(arrSz >= 0){
-			inputStore.resizeArr(inname, arrSz);
-		}
+      inputStore.resizeVar(inname, bitsize);
+      if(arrSz >= 0){
+        inputStore.resizeArr(inname, arrSz);
+      }
 	}
 }
 
@@ -214,7 +220,7 @@ bool CEGISSolver::solveCore(){
 				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
 				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
 			       	cpt.checkpoint('f', instore_serialized);
-			       	if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
+			       	//if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			}
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart(); 		
@@ -379,8 +385,15 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 }
 
 
+
 bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse){
 	int arrsz = -1;
+  if (inode->type == bool_node::SRC) {
+    SRC_node* src_ = dynamic_cast<SRC_node*>(inode);
+    if (src_->isTuple) {
+      Assert(false, "Not possible");
+    }
+  }
 	if(inode->type== bool_node::SRC){	
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
 	}
@@ -442,6 +455,16 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
 				if(cn->get_Angelic()){
 					if(cn->children.size() != 0){
+            if (cn->spAngelic) {
+              // replace it with a src node
+              SRC_node* src = dynamic_cast<SRC_node*>(newdag->create_inputs(cn->get_nbits(), OutType::INT, cn->get_name() + "_src", cn->getArrSz()));
+              if (cn->isTuple) {
+                Assert(false, "Not possible");
+              }
+              newdag->replace(cn->id, src);
+              continue;
+            }
+            
 						Assert(cn->children.size() == 1, "NYI; hafdst");
 						bool_node* bn = *(cn->children.begin());
 						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
@@ -1200,9 +1223,6 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 }
 
 
-
-
-
 void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	int idx = 0;	
 	map<bool_node*,  int> node_values;
@@ -1219,7 +1239,11 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
 			int arsz = srcnode->getArrSz();
 			if(arsz <0){ arsz = 1; }
-			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+      if (srcnode->isTuple) {
+        Assert(false, "Not possible");
+      } else {
+			  dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+      }
 		}
 	}	
 	//cout << "setNewControls: problem=";

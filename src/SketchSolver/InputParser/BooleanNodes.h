@@ -59,7 +59,7 @@ class OutType{
 	// StringHTable2<OutType*> tuples;
 	OutType(bool _isArr, bool _isTuple);
 	static OutType* joinOtype(OutType* t1, OutType* t2);
-    static OutType* makeTuple(const string&, vector<OutType*>& elems);
+    static OutType* makeTuple(const string&, vector<OutType*>& elems, int actFields);
 	static OutType* makeTuple(vector<OutType*>& elems);
     static OutType* getTuple(const string& name);
 };
@@ -73,7 +73,7 @@ class Int: public OutType{public: Int(): OutType(false, false){} string str() co
 
 class Float: public OutType{ public: Float(): OutType(false, false){} string str() const{ return "FLOAT"; }};
 
-class Arr: public OutType{public:  OutType * atype;
+class Arr: public OutType{public:  OutType * atype; int arrSize;
 	Arr(OutType* type):OutType(true, false), atype(type){}
 	string str() const { return atype->str() + "_ARR"; }
 };
@@ -82,6 +82,7 @@ class Tuple: public OutType{
     public:
     string name;
 	OutType* arr;
+  int actSize;
 	Tuple():OutType(false, true){ arr = new Arr(this); }
 	vector<OutType*> entries;
 	string str() const { return name; }
@@ -109,7 +110,8 @@ struct bool_node{
     typedef enum{AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} Type;
     
     const Type type;
-    
+    int depth;
+  
     protected:
     bool_node(Type t);
     bool_node(const bool_node& bn, bool copyChildren);
@@ -568,6 +570,7 @@ class TUPLE_R_node: public bool_node{
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
        otype = ((Tuple*)ot)->entries[idx];
+       Assert(otype != NULL, "dfq");
        return otype;
     }
     virtual string lprint()const{
@@ -670,11 +673,12 @@ class INTER_node: public bool_node{
 /* Input nodes */
 class SRC_node: public INTER_node{
     public: SRC_node():INTER_node(SRC){isTuple = false; }
-	int arrSz;
+    int arrSz;
     bool isTuple;
     string tupleName;
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName) { }
-	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1){
+    bool ufun;
+	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) { }
+	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
 		name = nm;
 		isTuple = false;
 	}
@@ -695,10 +699,11 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-   void setTuple (const string& name) {
+   void setTuple (const string& name, bool ufun_ = false) {
         tupleName = name;
         isTuple = true;
-    }
+        ufun = ufun_;
+   }
 	OutType* getOtype() const {
         
 		if(otype != OutType::BOTTOM){
@@ -749,14 +754,18 @@ class CTRL_node: public INTER_node{
 	typedef enum{MINIMIZE=1, ANGELIC=2, PCOND=4} Property;
 	unsigned kind;
 	int arrSz;
+  bool spConcretize;
     
 	public:
     bool isTuple;
     string tupleName;
+    bool spAngelic;
+    int max;
+    vector<string> parents;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1) {  this->kind = kind; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName){
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -765,7 +774,17 @@ class CTRL_node: public INTER_node{
 	string get_name() const {
 		return name;
 	}
-    
+  void setParents(const vector<string>& parents_) {
+    parents = parents_;
+  }
+  void special_concretize(int max_) {
+    spConcretize = true;
+    max = max_;
+  }
+  
+  bool is_sp_concretize() {
+    return spConcretize;
+  }
     void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;
@@ -783,6 +802,10 @@ class CTRL_node: public INTER_node{
 	}
 	void set_Angelic() {
 		this->kind |= ANGELIC;
+	}
+  void set_Special_Angelic() {
+		this->kind |= ANGELIC;
+    spAngelic = true;
 	}
     
 	bool get_Pcond() const {
@@ -889,22 +912,35 @@ class UFUN_node: public arith_node, public DllistNode{
     string tupleName;
 	//string name;
 	bool isDependent;
+  bool hardAssert;
 	public:
 	bool ignoreAsserts;
 	string outname;
 	int fgid;
+  bool replaceFun;
     
-    UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), isDependent(false){
+    UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
         nbits=1;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), isDependent(bn.isDependent){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
 	
+    void modify_ufname(string& name) {
+      ufname = name;
+    }
     void makeDependent(){
         isDependent = true;
         ignoreAsserts = true;
     }
     bool dependent() const{
         return isDependent;
+    }
+  
+    void makeAssertsHard() {
+      hardAssert = true;
+    }
+  
+    bool hardAsserts() const {
+      return hardAssert;
     }
     
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
@@ -1000,7 +1036,8 @@ class UFUN_node: public arith_node, public DllistNode{
 
 /*mother is an index to the array, multi-mother is the array*/
 class ARRACC_node: public arith_node{
-	public: ARRACC_node():arith_node(ARRACC){ }
+	public:
+  ARRACC_node():arith_node(ARRACC){ }
 	ARRACC_node(const ARRACC_node& bn, bool copyChildren = true): arith_node(bn, copyChildren){ }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual void outDagEntry(ostream& out) const{
@@ -1099,13 +1136,17 @@ class CONST_node: public bool_node{
 	bool isInt;
 	public:
     CONST_node():bool_node(CONST), isInt(true){
+        depth = 0;
         v.val = -1;}
     CONST_node(int n):bool_node(CONST), isInt(true){
+        depth = 0;
         v.val = n;}
     CONST_node(double d):bool_node(CONST), isInt(false){
+        depth = 0;
         v.fval = d;}
     CONST_node(const CONST_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), v(bn.v), isInt(bn.isInt){
         //if(val == 13){ cout<<" surprise"<<endl; }
+        depth = 0;
     }
     virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     void setVal(int n){ v.val = n; }

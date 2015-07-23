@@ -180,6 +180,10 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			}else{
 				inints++;
 			}
+      if (sknode->isTuple) {
+        if (sknode->depth == -1)
+          sknode->depth = params.srcTupleDepth;
+      }
 		}
 
 		if(params.verbosity > 2){
@@ -218,7 +222,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
-			doInline(*sketch, functionMap, params.inlineAmnt);
+			doInline(*sketch, functionMap, params.inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
@@ -226,7 +230,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
-			doInline(*spec, functionMap, params.inlineAmnt);
+			doInline(*spec, functionMap, params.inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
@@ -254,8 +258,8 @@ can only call them with the parameters used in the spec */
     
     {
         //Post processing to replace ufun inputs with tuple of src nodes.
-        replaceSrcWithTuple(*spec);
-        replaceSrcWithTuple(*sketch);
+       replaceSrcWithTuple(*spec);
+       replaceSrcWithTuple(*sketch);
     }
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
     spec->makeMiter(sketch);
@@ -268,56 +272,96 @@ can only call them with the parameters used in the spec */
 	return runOptims(result);
 }
 
+bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes, bool ufun) {
+  if (depth == 0) {
+    CONST_node* cnode = new CONST_node(-1);
+    newnodes.push_back(cnode);
+    return cnode;
+  }
+  
+  Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+  TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+  new_node->depth = depth;
+  new_node->setName(tuple_name);
+  int size = tuple_type->actSize;
+  for (int j = 0; j < size ; j++) {
+    stringstream str;
+    str<<node_name<<"_"<<j;
+    
+    OutType* type = tuple_type->entries[j];
+    
+    if (type->isTuple) {
+      new_node->multi_mother.push_back(createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes, ufun));
+    } else if (type->isArr && ((Arr*) type)->atype->isTuple) {
+      CONST_node* cnode = new CONST_node(-1);
+      newnodes.push_back(cnode);
+      new_node->multi_mother.push_back(cnode);
+      
+    } else {
+    
+    SRC_node* src =  new SRC_node( str.str() );
+    
+    int nbits = 0;
+    if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+      nbits = 1;
+    }
+    if (type == OutType::INT || type == OutType::INT_ARR) {
+      nbits = 2;
+    }
+      
+    if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+    src->set_nbits(nbits);
+    if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+      int sz = 1 << PARAMS->NINPUTS;
+      src->setArr(sz);
+    }
+    newnodes.push_back(src);
+    
+    new_node->multi_mother.push_back(src);
+    }
+  }
+  
+  CONST_node* cnode = new CONST_node(-1);
+  newnodes.push_back(cnode);
+  for (int i = size; i < tuple_type->entries.size(); i++) {
+    new_node->multi_mother.push_back(cnode);
+  }
+  new_node->addToParents();
+  newnodes.push_back(new_node);
+  
+  if (ufun) return new_node;
+
+  ARRACC_node* ac = new ARRACC_node();
+  stringstream str;
+  str<<node_name<<"__";
+
+  SRC_node* src = new SRC_node(str.str());
+  src->set_nbits(1);
+  newnodes.push_back(src);
+  
+  ac->mother = src;
+  ac->multi_mother.push_back(cnode);
+  ac->multi_mother.push_back(new_node);
+  ac->addToParents();
+  newnodes.push_back(ac);
+  return ac;
+}
+
+
 void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
     vector<bool_node*> newnodes;
     for(int i=0; i<dag.size(); ++i ){
 		if (dag[i]->type == bool_node::SRC) {
             SRC_node* srcNode = dynamic_cast<SRC_node*>(dag[i]);
             if (srcNode->isTuple) {
-                Tuple* outputsType = dynamic_cast<Tuple*>(OutType::getTuple(srcNode->tupleName));
-                string name = srcNode->get_name();
-                TUPLE_CREATE_node* outputs = new TUPLE_CREATE_node();
-                outputs->setName(srcNode->tupleName);
-                int size = outputsType->entries.size();
-                for (int j = 0; j < size ; j++) {
-                    stringstream str;
-                    str<<name<<"_"<<j;
-                    SRC_node* src =  new SRC_node( str.str() );
-                    OutType* type = outputsType->entries[j];
-                    int nbits = 0;
-                    if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-                        nbits = 1;
-                    }
-                    if (type == OutType::INT || type == OutType::INT_ARR) {
-                        nbits = 2;
-                    }
-                    if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-                    src->set_nbits(nbits);
-                    //if(node.getOtype() == bool_node::INT_ARR || node.getOtype() == bool_node::BOOL_ARR){
-                    if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-                        // TODO xzl: is this fix correct?
-                        // will this be used with angelic CTRL? see Issue #5 and DagFunctionInliner
-                        //int sz = PARAMS->angelic_arrsz;
-                        
-                        //This should be changed
-                        int sz = 1 << PARAMS->NINPUTS;
-                        //int sz = 1;
-                        //for(int i=0; i<PARAMS->NINPUTS; ++i){
-                        //	sz = sz *2;
-                        //}
-                        src->setArr(sz);
-                    }
-                    newnodes.push_back(src);
-                    outputs->multi_mother.push_back(src);
-                }
-                outputs->addToParents();
-                newnodes.push_back(outputs);
-                dag.replace(i, outputs);
-                
+                int depth = srcNode->depth;
+                if (depth == -1) depth = params.srcTupleDepth;
+                bool_node* new_node = createTupleSrcNode(srcNode->tupleName, srcNode->get_name(), depth, newnodes, srcNode->ufun);
+                dag.replace(i, new_node);
             }
         }
 	}
-    
+  
     dag.addNewNodes(newnodes);
 	newnodes.clear();
     dag.removeNullNodes();
@@ -326,9 +370,7 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps){	
-	
-	
+void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -339,12 +381,23 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, &hardcoder, params.randomassign, &fin);	
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
+                         params.spRandBias); 
+
 	int oldSize = -1;
 	bool nofuns = false;
 	for(int i=0; i<steps; ++i){
 		int t = 0;
+    int ct = 0;
 		do{
+      if (params.randomassign) {
+      if (ct < 2) {
+        dfi.turnOffRandomization();
+        ct++;
+      } else {
+        dfi.turnOnRandomization();
+      }
+      }
             dfi.process(dag);
             // dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();						

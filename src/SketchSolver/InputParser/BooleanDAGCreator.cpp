@@ -219,8 +219,8 @@ bool_node* BooleanDAGCreator::create_const(double n){
 }
 
 
-INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz){
-	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz);
+INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth){
+	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz, tupDepth);
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
 	Assert(!flag, "Two inputs with the same name!");	
@@ -228,9 +228,9 @@ INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string&
 	return tmp;
 }
 
-INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize){
+INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize);
+	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize, angelic, spConcretize, max);
 	if(gen_name == "#PC"){
 		dynamic_cast<CTRL_node*>(tmp)->set_Pcond();
 	}

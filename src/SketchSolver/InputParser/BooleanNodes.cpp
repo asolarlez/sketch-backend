@@ -29,11 +29,12 @@ OutType* OutType::getTuple(const string& name){
     
     Tuple* t = new Tuple();
     t->name = name;
+    t->actSize = 0;
     tupleMap[name] = t;
     return t;
 }
 
-OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
+OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems, int actFields){
     Tuple* t;
 	if(tupleMap.count(name)>0 ){
 		t =  dynamic_cast<Tuple*>(tupleMap[name]);
@@ -43,6 +44,7 @@ OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
         tupleMap[name] = t;
     }
     t->entries = elems;
+    t->actSize = actFields == -1 ? elems.size() : actFields;
     
     return t;
     
@@ -115,6 +117,11 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 			return t1;
 		}
 	}
+    if(t2->isArr){
+        if(((Arr*)t2)->atype->isTuple){
+            return t2;
+        }
+    }
   	if( t2 == t1 ){
         return t1; 
   	}else{ 		
@@ -165,7 +172,7 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 }
 
-bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t)
+bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t), depth(-1)
   {
       
 	  layer = 0;
@@ -175,8 +182,8 @@ bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0),
   }  
   bool_node::bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
   								 father(bn.father), 
-  								 flag(bn.flag), id(bn.id), 
-								 otype(bn.otype), type(bn.type)
+  								 flag(bn.flag), id(bn.id),
+								 otype(bn.otype), type(bn.type), depth(bn.depth)
   {
       
       if(copyChildren){ children = bn.children; }

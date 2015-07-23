@@ -38,8 +38,9 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 	vartype variableType;
 	BooleanDAG* bdag;
 	bool_node* bnode;
-    OutType* otype;
-    vector<OutType*>* tVector;
+  OutType* otype;
+  vector<OutType*>* tVector;
+  vector<string>* sVector;
 }
 %token <doubleConst> T_dbl
 %token<intConst>  T_int
@@ -79,8 +80,13 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_def
 %token T_mdldef
 %token T_Min
+%token T_sp
 %token T_assert
 %token T_assume
+%token T_hassert
+
+%token T_equals
+%token T_replace
 
 %token T_eof
 
@@ -100,6 +106,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %type<bdag> AssertionExpr
 %type<otype> TupleType
 %type<tVector> TupleTypeList
+%type<sVector> ParentsList
 
 
 
@@ -123,6 +130,7 @@ Program: Typedef MethodList T_eof{ solution.start(); int tmp= envt->doallpairs()
 MethodList: {}
 | Method MethodList {}
 | HLAssertion MethodList {}
+| Replacement MethodList {}
 
 
 InList: T_ident { 
@@ -179,7 +187,14 @@ ParamDecl: T_vartype T_ident {
 }
 | T_ident T_ident{
 
-    currentBD->create_inputs( -1 , OutType::getTuple(*$1) , *$2);
+    currentBD->create_inputs( -1 , OutType::getTuple(*$1), *$2);
+       
+
+    delete $2;
+}
+| T_ident T_ident '<' NegConstant '>' {
+
+    currentBD->create_inputs( -1 , OutType::getTuple(*$1) , *$2, -1, $4);
        
 
     delete $2;
@@ -297,8 +312,11 @@ TupleTypeList: {/* Empty */  $$ = new vector<OutType*>(); }
 
 TypeLine: T_ident '(' TupleTypeList ')'{
 //add type
-    OutType::makeTuple(*$1, *$3);
+    OutType::makeTuple(*$1, *$3, -1);
 
+}
+| T_ident '(' Constant TupleTypeList ')' {
+    OutType::makeTuple(*$1, *$4, $3);
 }
 
 TypeList: { /* Empty */ }
@@ -306,6 +324,10 @@ TypeList: { /* Empty */ }
 
 Typedef: {/* Empty */}
 |T_Typedef '{' TypeList '}'{ }
+
+Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' ';' {
+  envt->registerFunctionReplace(*$4, *$2, *$6, $8);
+}
 
 
 AssertionExpr: T_ident T_Sketches T_ident
@@ -412,6 +434,28 @@ WorkStatement:  ';' {  $$=0;  /* */ }
     delete $4;
   }
 } 
+| T_hassert Expression ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+    
+    ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
+    bn->makeHardAssert();
+    currentBD->new_node($2, NULL, bn);
+  }
+} 
+| T_hassert Expression ':' T_string ';' {
+  if ($2) {
+    /* Asserting an expression, construct assert node. */
+	if(!($2->type == bool_node::CONST && dynamic_cast<CONST_node*>($2)->getVal() == 1)){
+		ASSERT_node* bn = dynamic_cast<ASSERT_node*>(newNode(bool_node::ASSERT));
+		bn->setMsg(*$4);
+    bn->makeHardAssert();
+		currentBD->new_node ($2, NULL, bn);
+	}    
+    delete $4;
+  }
+}
+
 | T_assume Expression OptionalMsg ';' {
   if ($2) {
     /* Asserting an expression, construct assert node. */
@@ -726,6 +770,14 @@ Term: Constant {
 	delete $2;
 
 }
+| '<' Ident '+' '>' {
+	$$ = currentBD->create_controls(-1, *$2, false, true);
+	delete $2;
+}
+| '<' Ident Constant '+' '>' {
+	$$ = currentBD->create_controls($3, *$2, false, true);
+	delete $2;
+}
 | T_Min '<' Ident '>' {		
 	$$ = currentBD->create_controls(-1, *$3, true);
 	delete $3;
@@ -743,7 +795,32 @@ Term: Constant {
 	delete $3;
 
 }
+| T_sp Constant '$' ParentsList '$' '<' Ident '>' {
+	$$ = currentBD->create_controls(-1, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
+}
+| T_sp Constant '$' ParentsList '$' '<' Ident Constant '>' {
+	int nctrls = $8;
+	if(overrideNCtrls){
+		nctrls = NCTRLS;
+	}
+	$$ = currentBD->create_controls(nctrls, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
+}
+| T_sp Constant '$' ParentsList '$' '<' Ident Constant '*' '>' {
+	$$ = currentBD->create_controls($8, *$7, false, false, true, $2);
+  ((CTRL_node*) $$)->setParents(*$4);
+	delete $7;
 
+}
+
+ParentsList: { /* Empty */  	$$ = new vector<string>();	}
+| ParentsList Ident {
+  $1->push_back(*$2);
+	$$ = $1;
+}
 
 ConstantExpr: ConstantTerm { $$ = $1; }
 | ConstantExpr '+' ConstantTerm { $$ = $1 + $3; }

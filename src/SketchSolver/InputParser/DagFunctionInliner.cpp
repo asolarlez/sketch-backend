@@ -13,14 +13,18 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
-	bool p_randomize, InlineControl* ict):
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, HoleHardcoder* p_hcoder,
+	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
 DagOptim(p_dag), 
 ufunAll(" ufun all"),
 functionMap(p_functionMap),
+replaceMap(p_replaceMap),
 ictrl(ict),
 randomize(p_randomize),
+onlySpRandomize(p_onlySpRandomize),
+spRandBias(p_spRandBias),
+replaceDepth(0),
 hcoder(p_hcoder)
 {
 	alterARRACS();
@@ -107,7 +111,38 @@ void HoleHardcoder::printControls(ostream& out){
 
 
 	int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits){
-		int rv = rand() % bound;
+    int rv;
+    if (node.is_sp_concretize()) {
+      Assert(node.max <= bound, "max should be less than bound");
+      bound = node.max + 1;
+      
+      vector<string> parents = node.parents;
+      for (int i = 0; i < parents.size(); i++) {
+        map<string, int>::iterator it = randholes.find(parents[i]);
+        Assert(it != randholes.end(), "Parent hole should have been seen before this node");
+        if (it->second >= 0) {
+          if ((it->second - i) < bound) {
+            bound = max(1, it->second - i);
+          }
+        }
+      }
+     
+      int nflips = 0;
+      if (bound > 2) {
+        nflips = 1;
+      }
+      //if (bound > 4) {
+       // nflips = 2;
+      //}
+      rv = rand() % bound;
+      for (int i = 0; i < nflips; i++) {
+        int x = rand() % bound;
+        if (x < rv) rv = x;
+      }
+      cout << "rv for special node " << rv << " bound " << bound << endl;
+    } else {
+      rv = rand() % bound;
+    }
 		const string& s = node.get_name();
 		Tvalue& glob = globalSat->declareControl(&node);
 		if(!glob.isSparse()){			
@@ -122,17 +157,25 @@ void HoleHardcoder::printControls(ostream& out){
 			}
 			loc = &tloc;
 		}
-		const gvvec& options = glob.num_ranges;
+		const gvvec& options = glob.num_ranges;		
 		int sz = options.size();
-		for(int i=0; i<sz; ++i){
+    int bnd = sz;
+    if (node.is_sp_concretize()) {
+      if (sz > bound) {
+        sz = bound;
+        bnd = sz - rv;
+      }
+    }
+    
+		for(int i=0; i<bnd; ++i){
 			const guardedVal& gv = options[(i + rv) % sz];
-			int xx = globalSat->getMng().isValKnown(gv.guard);
+			int xx = globalSat->getMng().isValKnown(gv.guard);			
 			if(xx==0){
 				//global has no opinion. Should check local.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
-					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					const guardedVal& lgv = locopt[(i + rv) % sz];					
+					Assert(lgv.value == gv.value, "Can't happen. c");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==-1){
 						//local had already decided that this value was bad. Move to the next.
@@ -155,7 +198,7 @@ void HoleHardcoder::printControls(ostream& out){
 						if(yy==1){
 							return gv.value;
 						}else{
-							return recordDecision(gv);
+							return recordDecision(options, (i + rv) % sz, sz, node.is_sp_concretize());
 						}
 					}
 				}else{
@@ -163,16 +206,16 @@ void HoleHardcoder::printControls(ostream& out){
 					if(!globalSat->tryAssignment(gv.guard)){
 						continue;
 					}
-					return recordDecision(gv);
+					return recordDecision(options, (i+rv) % sz, sz, node.is_sp_concretize());
 				}
 			}
 			if(xx==1){
 				//global says it should be true. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					Assert(lgv.value == gv.value, "Can't happen. d");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==-1){
 						//local had already decided that this value was bad. 
@@ -194,10 +237,10 @@ void HoleHardcoder::printControls(ostream& out){
 			if(xx==-1){
 				//global says it should be false. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){
+				if(loc!= NULL){					
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
-					Assert(lgv.value == gv.value, "Can't happen.");
+					Assert(lgv.value == gv.value, "Can't happen. b");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==1){
 						//local had also decided that is should be true.
@@ -212,7 +255,6 @@ void HoleHardcoder::printControls(ostream& out){
 		//I wasn't able to concretize to anything. 
 		throw BadConcretization();
 	}
-
 
 void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
 	visited[harnid] = 1;
@@ -244,19 +286,35 @@ void DepTracker::genConflict(int harnid, vec<Lit>& out){
 }
 
 
-int HoleHardcoder::recordDecision(const guardedVal& gv){
-	sofar.push( lfromInt(-gv.guard));
-	dt.recordDecision(gv);
-	return gv.value;
+  int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool special){
+    if (!special) {
+      const guardedVal& gv = options[rv];
+      Lit l =  lfromInt(-gv.guard);
+      sofar.push(l);
+      dt.recordDecision(l);
+      return gv.value;
+    } else {
+      for (int i = rv + 1; i < bnd; i++) {
+        const guardedVal& gv = options[i];
+        Lit l = lfromInt(gv.guard);
+        sofar.push(l);
+        dt.recordDecision(l);
+        
+      }
+      return options[rv].value;
+    }
 }
 
 bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
-		string const & name = node->get_name();
+  int chsize = node->children.size();
+  if (chsize == 0) return node;
+		string name = node->get_name();
 		dt.regHoleInHarness(name);
 
 		map<string, int>::iterator it = randholes.find( name  );
 
-		int chsize = node->children.size();							
+		
+  
 			int tchld = 0;
 			int bchld = 0;
 			for(childset::iterator chit = node->children.begin(); chit != node->children.end(); ++chit){
@@ -301,7 +359,12 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 		}
 		{							
 			int baseline = PARAMS->randdegree;
-			int odds = max(2, baseline/ (tchld>0?tchld:1)  );					
+			int odds;
+      if (node->is_sp_concretize()) {
+        odds = max(1, baseline / (tchld>0?tchld:1));
+      } else {
+        odds = max(2, baseline/ (tchld>0?tchld:1)  );
+      }
 			chsize = tchld;
 			if(chsize == 1){
 				bool_node* bn = * node->children.begin();
@@ -407,8 +470,14 @@ void DagFunctionInliner::visit(CTRL_node& node){
 		rvalue = this->getCnode(true);
 	}else{
 		if(randomize){
-			rvalue = hcoder->checkRandHole(&node, *this);
-			return;
+      if (node.is_sp_concretize()) {
+        rvalue = hcoder->checkRandHole(&node, *this);
+        return;
+      }
+      if (!onlySpRandomize) {
+        rvalue = hcoder->checkRandHole(&node, *this);
+        return;
+      }
 		}
 		DagOptim::visit(node);
 	}
@@ -450,6 +519,128 @@ bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap,
 	return chk;
 }
 
+bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string node_name, int depth) {
+  if (depth == 0) return getCnode(-1);
+  
+  Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+  TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+  new_node->setName(tuple_name);
+  int size = tuple_type->actSize;
+  for (int j = 0; j < size ; j++) {
+    stringstream str;
+    str<<node_name<<"_"<<j;
+    
+    OutType* type = tuple_type->entries[j];
+    
+    if (type->isTuple) {
+      new_node->multi_mother.push_back(createTupleAngelicNode(((Tuple*)type)->name, str.str(), depth - 1));
+    } else {
+      
+      CTRL_node* src =  new CTRL_node();
+      src->name = str.str();
+      src->set_Special_Angelic();
+      
+      int nbits = 0;
+      if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+        nbits = 1;
+      }
+      if (type == OutType::INT || type == OutType::INT_ARR) {
+        nbits = 5;
+      }
+      
+      src->set_nbits(nbits);
+      
+      if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+        src->setArr(PARAMS->angelic_arrsz);
+      }
+      addNode(src);
+      
+      new_node->multi_mother.push_back(src);
+    }
+  }
+  
+  for (int i = size; i < tuple_type->entries.size(); i++) {
+    new_node->multi_mother.push_back(getCnode(-1));
+  }
+  new_node->addToParents();
+  
+  ARRACC_node* ac = new ARRACC_node();
+  stringstream str;
+  str<<node_name<<"__";
+  
+  CTRL_node* src = new CTRL_node();
+  src->name = str.str();
+  src->set_nbits(1);
+  src->set_Special_Angelic();
+  addNode(src);
+  
+  ac->mother = src;
+  ac->multi_mother.push_back(getCnode(-1));
+  ac->multi_mother.push_back(optAdd(new_node));
+  ac->addToParents();
+  return optAdd(ac);
+}
+
+bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, int depth) {
+  if (depth == 0) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = right;
+    eq->addToParents();
+    return optAdd(eq);
+  }
+  OutType* ltype = left->getOtype();
+  OutType* rtype = right->getOtype();
+  
+  if (!ltype->isTuple && !rtype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = right;
+    eq->addToParents();
+    return optAdd(eq);
+  } else if (!ltype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = right;
+    eq->father = getCnode(-1);
+    eq->addToParents();
+    return optAdd(eq);
+  } else if (!rtype->isTuple) {
+    EQ_node* eq = new EQ_node();
+    eq->mother = left;
+    eq->father = getCnode(-1);
+    eq->addToParents();
+    return optAdd(eq);
+  } else {
+    int lentries = ((Tuple*)ltype)->actSize;
+    int rentries = ((Tuple*)rtype)->actSize;
+    Assert(lentries == rentries, "Wrong types");
+    bool_node* cur;
+    for (int i = 0; i < lentries; i++) {
+      TUPLE_R_node* left_r = new TUPLE_R_node();
+      left_r->idx = i;
+      left_r->mother = left;
+      left_r->addToParents();
+      
+      TUPLE_R_node* right_r = new TUPLE_R_node();
+      right_r->idx = i;
+      right_r->mother = right;
+      right_r->addToParents();
+      
+      if (i == 0) {
+        cur = createEqNode(optAdd(left_r), optAdd(right_r), depth - 1);
+      } else {
+        AND_node* an = new AND_node();
+        an->mother = cur;
+        an->father = createEqNode(optAdd(left_r), optAdd(right_r), depth-1);
+        an->addToParents();
+        
+        cur = optAdd(an);
+      }
+      
+    }
+    return cur;
+  }
+}
 
 void DagFunctionInliner::visit( UFUN_node& node ){	
 	Dllist tmpList;
@@ -469,11 +660,82 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		//mpcontroller[node.fgid]["__ALL"] = getCnode(0);
 		return;
 	}
+  
+  map<string, map<string, string> >::iterator it = replaceMap.find(name);
+  if (it != replaceMap.end()) {
+    if (ictrl != NULL && ictrl->isRecursive(node)) {
+      cout << "Replacing ufun node " << name << endl;
+      string oldOutputType = node.getTupleName();
+      
+      int oriInpSize = node.multi_mother.size();
+      
+      TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
+    
+      Tuple* oldOutputTuple = (Tuple*)OutType::getTuple(oldOutputType);
+      Tuple* tup = (Tuple*) (oldOutputTuple->entries[oldOutputTuple->entries.size() - 1]);
+      tuple_node->setName(tup->name);
+      int size = tup->entries.size();
+      tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
+      
+      int actFields = size - oriInpSize;
 
+      for (int i = 1; i <  actFields; i++) {
+        tuple_node->multi_mother.push_back(getCnode(0));
+      }
+      
+      for (int i = 0; i < oriInpSize; i++) {
+        if (i == 0) {
+          Assert(isConst(node.multi_mother[0]) || node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
+          int d = node.multi_mother[0]->depth;
+          if (d == -1 || replaceDepth == -1) replaceDepth = -1;
+          else if (d > replaceDepth) {
+            replaceDepth = d;
+          }
+        }
+        tuple_node->multi_mother.push_back(node.multi_mother[i]);
+      }
+      
+      Assert(tuple_node->multi_mother.size() == size, "Dfqwq");
+      
+     
+      tuple_node->addToParents();
+      
+      TUPLE_CREATE_node* new_output = new TUPLE_CREATE_node();
+      new_output->setName(oldOutputType);
+      
+      new_output->multi_mother.push_back(optAdd(tuple_node));
+      new_output->addToParents();
+      rvalue = optAdd(new_output);
+      return;
+    } else {
+      int d = node.multi_mother[0]->depth - 1;
+      if (d == -1 || replaceDepth == -1) replaceDepth = -1;
+      else if (d > replaceDepth) {
+        replaceDepth = d;
+      }
+    }
+  }
+  
+  bool shouldReplaceSpecialNode = false;
+  string replaceFunName = "";
+  if (node.replaceFun) {
+  map<string, map<string, string > >::iterator it1 = replaceMap.begin();
+  
+  for(; it1 != replaceMap.end(); it1++) {
+    map<string, string> fmap = it1->second;
+    if (fmap.find(name) != fmap.end()) {
+      shouldReplaceSpecialNode = true;
+      replaceFunName = fmap[name];
+      break;
+    }
+  }
+  } 
+  
 	ufunAll.restart();
 
 
 	if( functionMap.find(name) != functionMap.end() ){
+    //cout << "Inlining " << name << endl;
 		/*if(mpcontroller.count(node.fgid) > 0){
 			map<string,bool_node*>::iterator it = mpcontroller[node.fgid].find(node.outname);
 			if(it != mpcontroller[node.fgid].end()){
@@ -534,16 +796,133 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		//oldFun->clone_nodes(clones);		
 		vector<const bool_node*> nmap;
+    bool_node* newOutput;
+    bool_node* spCond;
 		nmap.resize( oldFun.size() );		
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
-			
+			// ADT, int, int ... (state)
 			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
+      
+      
+      vector<bool_node*> inp_arg;
+      
+      if (shouldReplaceSpecialNode) {
+        Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
+        UFUN_node* repFun = new UFUN_node(replaceFunName);
+        repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
+        string newNameCaps = replaceFunName;
+        for(int i = 0; i < newNameCaps.size(); i++) {
+          newNameCaps.at(i) = toupper(newNameCaps.at(i));
+        }
+        string newOutputType = newNameCaps + "_ANONYMOUS";
+        repFun->set_tupleName(newOutputType);
+        repFun->replaceFun = false;
+        bool_node* actual;
+        for (int i = 0; i < inputs.size(); i++) {
+          actual = node.multi_mother[i];
+          if (actual->getOtype()->isTuple) break;
+          repFun->multi_mother.push_back(actual);
+        }
+        if (isConst(actual)) {
+          shouldReplaceSpecialNode = false;
+          delete repFun;
+        } else {
+        //Assert(actual->getOtype()->isTuple, "First input should be a tuple");
+        int size = ((Tuple*) (actual->getOtype()))->entries.size();
+        int actSize = ((Tuple*) (actual->getOtype()))->actSize;
+        TUPLE_R_node* tr = new TUPLE_R_node();
+        tr->idx = 0;
+        tr->mother = actual;
+        tr->addToParents();
+        
+        EQ_node* nullCheck = new EQ_node();
+        nullCheck->mother = actual;
+        nullCheck->father = getCnode(-1);
+        nullCheck->addToParents();
+        
+        NOT_node* notNull = new NOT_node();
+        notNull->mother = optAdd(nullCheck);
+        notNull->addToParents();
+        
+        AND_node* cond = new AND_node();
+        cond->mother = optAdd(notNull);
+        
+        EQ_node* eq = new EQ_node();
+        eq->mother = optAdd(tr);
+        eq->father = getCnode(20); // magic number
+        eq->addToParents();
+        cond->father = optAdd(eq);
+        cond->addToParents();
+        
+        bool_node* optEq = optAdd(cond);
+        spCond = optEq;
+        
+        NOT_node* not_ = new NOT_node();
+        AND_node* and_ = new AND_node();
+        and_->mother = node.mother;
+        and_->father = optEq;
+        and_->addToParents();
+        
+        bool_node* optCond = optAdd(and_);
+        not_->mother = optCond;
+        not_->addToParents();
+        bool_node* optNot = optAdd(not_);
+        
+        repFun->mother = optCond;
+        
+        for (int i = actSize; i < size; i++) {
+          TUPLE_R_node* tr1 = new TUPLE_R_node();
+          tr1->idx = i;
+          tr1->mother = actual;
+          tr1->addToParents();
+          bool_node* optnode = optAdd(tr1);
+          if (i == actSize) {
+            optnode->depth = replaceDepth;
+          }
+          repFun->multi_mother.push_back(optnode);
+        }
+        
+        BooleanDAG& newFun = *functionMap[replaceFunName];
+        vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
+        int curSize = repFun->multi_mother.size();
+        for (int i = curSize; i < new_inputs.size(); i++) {
+          int j = i + actSize - size + 1;
+          Assert(j < inputs.size(), "dfae");
+          repFun->multi_mother.push_back(node.multi_mother[j]);
+        }
+      
+        if(ictrl != NULL){
+          int numRec = ictrl->numRecursive(node);
+          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec);
+        }
+        repFun->addToParents();
+        this->addNode(repFun);
+        newOutput = repFun;
+        
+        node.mother->children.erase((bool_node*)&node);
+        
+        bool_node* new_mother = new AND_node();
+        new_mother->mother = node.mother;
+        new_mother->father = optNot;
+        
+        new_mother->addToParents();
+        
+        node.mother = optAdd(new_mother);
+        node.mother->children.insert(&node);
+        }
+        
+      }
 			
-			for(int i=0; i<inputs.size(); ++i){			
-				
-				bool_node* actual = node.multi_mother[i];
-				nmap[inputs[i]->id] = actual;
+			for(int i=0; i<inputs.size(); ++i){
+        bool_node* actual;
+				if (node.multi_mother[i]->getOtype()->isTuple && node.multi_mother[i]->depth == 0) {
+          actual = getCnode(-1);
+        } else {
+          actual = node.multi_mother[i];
+        }
+        
+        nmap[inputs[i]->id] = actual;
 				actual->children.erase((bool_node*)&node);
 //				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
 			}
@@ -558,12 +937,20 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					nmap[ctrl->id] = node.mother;
 					continue;
 				}
-				if(randomize){
-					bool_node* subst = hcoder->checkRandHole(ctrl, *this);
-					if(subst != ctrl){
-						nmap[ctrl->id] = subst;
-						continue;
-					}
+        if(randomize){
+          if (ctrl->is_sp_concretize()) {
+            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+            if(subst != ctrl){
+              nmap[ctrl->id] = subst;
+              continue;
+            }
+          } else if (!onlySpRandomize) {
+            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+            if(subst != ctrl){
+              nmap[ctrl->id] = subst;
+              continue;
+            }
+          }
 				}
 
 				bool_node* actual = dag.unchecked_get_node( ctrl->name );
@@ -650,6 +1037,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}else{			
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);						
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
+            
+            if (node.hardAsserts()) {
+              ufun->makeAssertsHard();
+            }
+            
+            if (!node.replaceFun) {
+              ufun->replaceFun = false;
+            }
 
 						if(!ufun->ignoreAsserts){													
 							DllistNode* tt = getDllnode(ufun);
@@ -699,7 +1094,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							nm += "_";
 							nm += ufn->outname;
 							SRC_node* sn = new SRC_node(nm);
-                            sn->setTuple(ufn->getTupleName());
+                            sn->setTuple(ufn->getTupleName(), true);
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
 							//cout << "DagFunctionInliner: ufn=" << ufn->lprint() << " nbits=" << ufn->get_nbits() << " isArr=" << ufn->isArr() << endl;
@@ -750,6 +1145,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						n->mother = ornode;
 						*/
 						
+            if (node.hardAsserts()) {
+              dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
+            }
 					}else{
 						bool_node* cur = n->mother;
 						n->mother = nprime->mother;
@@ -814,7 +1212,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                 
                                 qn->name = st.str();
                                 qn->set_Angelic();
-                                qn->setTuple(un->getTupleName());
                             
                                 ARRACC_node* mx = new ARRACC_node();
                                 if(!PARAMS->angelic_model)
@@ -890,7 +1287,20 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		node.add(&tmpList);
 		node.remove();
-		rvalue = output;
+    
+    if (shouldReplaceSpecialNode) {
+      ARRACC_node* an = new ARRACC_node();
+      an->mother = spCond;
+      an->multi_mother.push_back(output);
+      an->multi_mother.push_back(newOutput);
+      
+      an->addToParents();
+      
+      rvalue = optAdd(an);
+      
+    } else {
+      rvalue = output;
+    }
 		if(rvalue == NULL){
 			rvalue = getCnode(0);
 		}

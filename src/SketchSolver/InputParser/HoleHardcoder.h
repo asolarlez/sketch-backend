@@ -35,8 +35,8 @@ public:
 	void genConflict(vec<Lit>& vl){
 		genConflict(curHarness, vl);
 	}
-	void recordDecision(const guardedVal& gv){
-		decisionsPerHarness[curHarness].push_back(lfromInt(-gv.guard));
+	void recordDecision(const Lit l){
+		decisionsPerHarness[curHarness].push_back(l);
 	}
 	void genConflict(int harnid, vec<Lit>& vl);
 	void helper(int harnid, vector<char>& visited, set<int>& out);
@@ -97,10 +97,11 @@ public:
 	void setHarnesses(int nharnesses){
 		dt.setHarnesses(nharnesses);
 	}
-	int recordDecision(const guardedVal& gv);
+	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
-		dt.declareControl(node->get_name());
+    string name = node->get_name();
+		dt.declareControl(name);
 	}
 
 	void tryHarder(){

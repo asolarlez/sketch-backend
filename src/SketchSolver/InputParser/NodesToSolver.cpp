@@ -1079,6 +1079,7 @@ void NodesToSolver::visit( XOR_node& node ){
 	return;
 }
 
+
 void
 NodesToSolver::visit (SRC_node &node)
 {
@@ -1101,6 +1102,11 @@ NodesToSolver::visit (SRC_node &node)
 		}
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
     } else {
+      
+      if (node.isTuple) {
+        Assert(false, "Not possible");
+      } else {
+      
 		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
@@ -1119,9 +1125,10 @@ NodesToSolver::visit (SRC_node &node)
 			}
 #endif /* HAVE_BVECTARITH */
 		}
-		
+
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
+    }
     }
     // for input arrays, add the default value (out of bound) to be 0, if not present already
     node_ids[node.id].addArrDefault(YES, 0);
@@ -1206,8 +1213,6 @@ NodesToSolver::visit (NEG_node &node)
 
 
 
-
-
 void
 NodesToSolver::visit (CTRL_node &node)
 {
@@ -1232,22 +1237,27 @@ NodesToSolver::visit (CTRL_node &node)
     }else{
 		Tvalue & nvar = node_ids[node.id];
 		if(node.get_Angelic()){
-			// BUGFIX: Issue #5
-			// when node is an array, need to create array
-			const int arrSz = node.getArrSz();
-			//cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
-			if(arrSz<0){
-				nvar = dir.newAnonymousVar(nbits);
-				nvar.setSize(nbits);
-				if (nbits > 1) {
-				  nvar.makeSparse(dir);
-				}
-			}else{
-				const int totbits = nbits*arrSz;
-				nvar = dir.newAnonymousVar(totbits);
-				nvar.setSize(totbits);
-				nvar.makeArray(dir, nbits, arrSz);
-			}
+      if (node.isTuple) {
+        Assert(false, "Not possible");
+        
+      } else {
+        // BUGFIX: Issue #5
+        // when node is an array, need to create array
+        const int arrSz = node.getArrSz();
+        //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
+        if(arrSz<0){
+          nvar = dir.newAnonymousVar(nbits);
+          nvar.setSize(nbits);
+          if (nbits > 1) {
+            nvar.makeSparse(dir);
+          }
+        }else{
+          const int totbits = nbits*arrSz;
+          nvar = dir.newAnonymousVar(totbits);
+          nvar.setSize(totbits);
+          nvar.makeArray(dir, nbits, arrSz);
+        }
+      }
 		}else{
 			nvar = dir.getControl(&node);			
 		}		
@@ -1768,8 +1778,7 @@ void NodesToSolver::visit( ACTRL_node& node ){
 }
 
 
-void
-NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
+void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& inarr, Tvalue& nvar){
 	
 	const gvvec& idv = index.num_ranges;
 	map<int, int> valToID;
@@ -1882,7 +1891,8 @@ NodesToSolver::arrRTvalue(bool isInt, const Tvalue& index, const Tvalue& inarr, 
 	// especially when type is BIT
 	// need to consider the case when index falls out of bound
 	// valToID is NOT sufficient. need to make a special case.
-	if(isInt){
+
+	if(!isBool){
 		gvvec& tmp = nvar.num_ranges;
 		tmp.clear();
 		tmp.reserve(valToID.size());
@@ -1927,7 +1937,7 @@ NodesToSolver::visit( ARR_R_node &node){
 	if(inarr.isBvect()){
 		inarr.makeSparse(dir);
 	}
-	arrRTvalue(node.getOtype() == OutType::INT, index, inarr, node_ids[node.id]);
+	arrRTvalue(node.getOtype() == OutType::BOOL, index, inarr, node_ids[node.id]);
 //	cout << "ARR_R(inarr,index,nvar)3: " << node.lprint() << endl << inarr << endl << index << endl << nvar << endl;
 }
 
@@ -2155,7 +2165,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
           binChoice[1] = cval;
           
           Tvalue rhs = tvOne;
-          rhs.intAdjust(i);
+          rhs.intAdjust(tsidx);
           Tvalue cond = tvYES;
           createCond(tid, rhs, cond);
           Tvalue out = tvOne;

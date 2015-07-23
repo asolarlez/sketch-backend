@@ -161,9 +161,25 @@ public:
 		printControls(out);
 	}
 
+  /*
+   * Replaces f1 inside f2 with functions in f3.
+   */
+  void registerFunctionReplace(string f1, string f2, string f3, int stCount) {
+    map<string, map<string, string> >::iterator it = replaceMap.find(f1);
+    if (it == replaceMap.end()) {
+      map<string, string> fmap;
+      fmap[f2] = f3;
+      replaceMap[f1] = fmap;
+    } else {
+      map<string, string> fmap = it->second;
+      Assert(fmap.find(f2) == fmap.end(), "Error: replacing the same functions in two different ways");
+      fmap[f2] = f3;
+    }
+  }
+  
 	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch);
 
-	void doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int i);
+	void doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int i, map<string, map<string, string> > replaceMap);
 
 	BooleanDAG* getCopy(const string& s){
 		return functionMap[s]->clone();
