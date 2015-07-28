@@ -42,8 +42,10 @@ public:
 	void helper(int harnid, vector<char>& visited, set<int>& out);
 	void declareControl(string const & ctrl){
 		if(ctrlIdx.count(ctrl)==0){
-			ctrlIdx[ctrl] = ctrlIdx.size();
+			int newIdx = ctrlIdx.size();
+			ctrlIdx[ctrl] = newIdx;
 			harnessPerHole.push_back(set<int>());
+			Assert(ctrlIdx.size()==harnessPerHole.size(), "Not equal size.");
 		}
 	}
 	void setCurHarness(int hid){
@@ -56,6 +58,7 @@ public:
 
 
 	void regHoleInHarness(string const & hname){
+		Assert(ctrlIdx.count(hname) > 0, "Not registered yet.");
 		int hole = ctrlIdx[hname];
 		harnessPerHole[hole].insert(curHarness);
 		holesPerHarness[curHarness].insert(hole);

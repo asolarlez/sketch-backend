@@ -347,14 +347,14 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		do{
             dfi.process(dag);
             // dag.repOK();
-			set<string>& dones = dfi.getFunsInlined();						
+			set<string>& dones = dfi.getFunsInlined();					
 			if(params.verbosity> 6){ cout<<"inlined "<<dfi.nfuns()<<" new size ="<<dag.size()<<endl; }
 			if (params.bndDAG > 0 && dag.size() > params.bndDAG) {
 				cout << "WARNING: Preemptively stopping CEGIS because the graph size exceeds the limit: " << params.bndDAG << endl;
 				exit(1);
 			}
 			if(oldSize > 0){
-				if(dag.size() > 400000 && dag.size() > oldSize * 10){
+				if(dag.size() > 40000000 && dag.size() > oldSize * 10){
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;

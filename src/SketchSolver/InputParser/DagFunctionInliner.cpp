@@ -552,7 +552,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
-			for(int i=0; i<controls.size(); ++i){	
+			for(int i=0; i<controls.size(); ++i){
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
 					nmap[ctrl->id] = node.mother;
@@ -560,6 +560,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 				if(randomize){
 					bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+					
 					if(subst != ctrl){
 						nmap[ctrl->id] = subst;
 						continue;
@@ -567,8 +568,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 				}
 
 				bool_node* actual = dag.unchecked_get_node( ctrl->name );
-
-				
 
 				if(actual != NULL){
 					nmap[controls[i]->id] = actual;
