@@ -29,6 +29,7 @@ class InterpreterEnvironment
 	int assertionStep;
 	string sessionName;
 	HoleHardcoder hardcoder;
+	map<string, map<string, string> > replaceMap;
 	int maxRndSize;
 	int avgRndsSize;
 	/*Debug state: */
