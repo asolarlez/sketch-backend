@@ -42,7 +42,8 @@ public:
 	void helper(int harnid, vector<char>& visited, set<int>& out);
 	void declareControl(string const & ctrl){
 		if(ctrlIdx.count(ctrl)==0){
-			ctrlIdx[ctrl] = ctrlIdx.size();
+			int sz = ctrlIdx.size();
+			ctrlIdx[ctrl] = sz;
 			harnessPerHole.push_back(set<int>());
 		}
 	}
