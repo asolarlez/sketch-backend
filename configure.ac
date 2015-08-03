@@ -29,7 +29,7 @@ if test "x$LEX" != "xflex"; then
 fi
 
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
+#AC_PROG_RANLIB
 
 AC_CONFIG_MACRO_DIR([m4])
 
