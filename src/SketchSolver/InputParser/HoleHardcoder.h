@@ -57,6 +57,7 @@ public:
 
 
 	void regHoleInHarness(string const & hname){
+		cout<<"Hole in harness "<<hname<<" hid = "<<curHarness<<endl;
 		int hole = ctrlIdx[hname];
 		harnessPerHole[hole].insert(curHarness);
 		holesPerHarness[curHarness].insert(hole);
@@ -75,11 +76,11 @@ class HoleHardcoder{
 	SolverHelper* globalSat;
 	vec<Lit> sofar;
 	int fixValue(CTRL_node& node, int bound, int nbits);
-	long long int totsize;
+	double totsize;
 public:
 	DepTracker dt;
 	HoleHardcoder(){		
-		totsize = 1;
+		totsize = 1.0;
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
 	}
@@ -92,7 +93,7 @@ public:
 		return !globalSat->getMng().isOK();
 	}
 
-	long long int getTotsize(){
+	double getTotsize(){
 		return totsize;
 	}
 	void setHarnesses(int nharnesses){
@@ -138,7 +139,7 @@ public:
 		((MiniSATSolver&) globalSat->getMng()).dump();
 		randholes.clear();
 		sofar.clear();
-		totsize=1;
+		totsize=1.0;
 	}
 	void setSolver(SolverHelper* sh){
 		sat = sh;

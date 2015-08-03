@@ -390,14 +390,14 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		int t = 0;
     int ct = 0;
 		do{
-      if (params.randomassign) {
-      if (ct < 2) {
-        dfi.turnOffRandomization();
-        ct++;
-      } else {
-        dfi.turnOnRandomization();
-      }
-      }
+			if (params.randomassign && params.onlySpRandAssign) {
+				if (ct < 2) {
+				dfi.turnOffRandomization();
+				ct++;
+				} else {
+				dfi.turnOnRandomization();
+				}
+			}
             dfi.process(dag);
             // dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();						
