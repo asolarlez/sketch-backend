@@ -38,6 +38,19 @@ void MiniSATSolver::annotate(const string& msg){
 }
 
 
+ /**
+addExPairConstraints:
+pairs is an array of length 2*npairs that contains consecutive pairs [a0,b0, a1,b1,...ak,bk]
+The output will be true if any of these pairs are both true. 
+There is an assumption that no two ai,aj can be true for i!=j and 
+similarly for bi bj. 
+Concretely, it encodes the following implications:
+ai&bi => out
+out&x => y   
+out&y => x
+(forall i !ai) => !out
+(forall i !bi) => !out
+*/
  void MiniSATSolver::addExPairConstraint(int* pairs, int npairs, int out){
 	int* tb = new int[2*npairs+2];
 	vec<Lit> lits;
@@ -55,7 +68,7 @@ void MiniSATSolver::annotate(const string& msg){
 	}
 	addClause(tb, npairs+1, lits);
 	addClause(tb+npairs+1, npairs+1, lits);
-	delete tb;
+	delete[] tb;
  }
 
  void MiniSATSolver::addCountingHelperClause(int c[], int sz){

@@ -543,7 +543,8 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 //Solve
 	
 	int result = mngFind.solve();
-	
+	hcoder.dismissedPending();
+
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;
 		stringstream str;
@@ -1114,10 +1115,19 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 				continue;
 			}
 			case CheckControl::NEXT_PROBLEM:{
+				
+				int tmpPid = (curProblem + 1) % problems.size() ;				
+				if(!hcoder.checkHarnessSwitch(tmpPid)){
+					if(PARAMS->verbosity > 5){
+						cout<<"Failed from leftover clauses from concretization"<<endl;
+					}
+					rv = true;
+					continue;
+				}
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
-				curProblem = (curProblem + 1) % problems.size() ;
-				hcoder.dt.setCurHarness(curProblem);
+
+				curProblem = tmpPid;
 				if(PARAMS->verbosity > 5){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}

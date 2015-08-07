@@ -98,6 +98,7 @@ void HoleHardcoder::afterInline(){
 			++it;
 		}
 	}
+
 }
 
 
@@ -188,6 +189,7 @@ void HoleHardcoder::printControls(ostream& out){
 							//this is the same as yy==-1
 							continue;
 						}
+						addedConstraint();
 						if(!globalSat->tryAssignment(gv.guard)){
 							if(yy==1){
 								throw BadConcretization();
@@ -227,6 +229,7 @@ void HoleHardcoder::printControls(ostream& out){
 							//this is the same as yy==-1
 							throw BadConcretization();
 						}
+						addedConstraint();
 						return (lgv.value);
 					}					
 				}else{
@@ -259,9 +262,11 @@ void HoleHardcoder::printControls(ostream& out){
 void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
 	visited[harnid] = 1;
 	vector<Lit>& lits = decisionsPerHarness[harnid];
-	for(vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit){
+	
+	for(vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit){	
 		out.insert(toInt(*llit));
 	}
+	
 	set<int>& holes = holesPerHarness[harnid];
 	for(set<int>::iterator it = holes.begin(); it != holes.end(); ++it){
 		set<int>& vi = harnessPerHole[*it];
@@ -276,6 +281,7 @@ void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
 }
 
 void DepTracker::genConflict(int harnid, vec<Lit>& out){	
+	cout<<" charness = "<<harnid<<endl;
 	out.clear();
 	vector<char> visited(holesPerHarness.size(), 0);
 	set<int> tout;
@@ -449,7 +455,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				totsize*=bound;
 				int rv = fixValue(*node, bound, nbits);		
 				randholes[node->get_name()] = rv;
-				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<endl;
+				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<" totsize= "<<totsize<<endl;
 				return opt.getCnode(rv);
 			}else{
 				if(PARAMS->verbosity>5){

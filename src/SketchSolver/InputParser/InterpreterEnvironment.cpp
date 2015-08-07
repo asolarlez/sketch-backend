@@ -456,14 +456,15 @@ int InterpreterEnvironment::doallpairs(){
 		timerclass roundtimer("Round");
 		roundtimer.start();
 		for(int i=0; i<spskpairs.size(); ++i){
-			hardcoder.dt.setCurHarness(i);
+			hardcoder.setCurHarness(i);
 			try{
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
-				getCopy(spskpairs[i].second));
+				getCopy(spskpairs[i].second));			
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");
 			}catch(BadConcretization& bc){
+				hardcoder.dismissedPending();
 				result = 1;
 				break;
 			}

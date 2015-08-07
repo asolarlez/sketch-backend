@@ -20,6 +20,7 @@ class DepTracker{
 	vector<set<int> > holesPerHarness; // harnesId -> {holes}
 	vector<vector<Lit> > decisionsPerHarness;
 	int curHarness;
+
 public:
 
 	void reset(){
@@ -77,16 +78,51 @@ class HoleHardcoder{
 	vec<Lit> sofar;
 	int fixValue(CTRL_node& node, int bound, int nbits);
 	double totsize;
+
+
+	/**
+	When hardcoding a hole that was used by a previous harness, 
+	you introduce additional constraints to (*sat). If you switch
+	harnesses before those constraints are dismissed through calling 
+	solve, you will missattribute those constraints to the wrong harness.
+	*/
+	bool pendingConstraints;
 public:
 	DepTracker dt;
 	HoleHardcoder(){		
 		totsize = 1.0;
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
+		pendingConstraints = false;
 	}
 	~HoleHardcoder(){		
 		delete &globalSat->getMng();
 		delete globalSat;
+	}
+
+	void addedConstraint(){
+		pendingConstraints = true;
+	}
+
+	void dismissedPending(){
+		pendingConstraints=false;
+	}
+
+	bool checkHarnessSwitch(int hid){
+		if(pendingConstraints){
+			int res = sat->getMng().solve();
+			if(res != SATSolver::SATISFIABLE){
+				return false;
+			}
+		}
+		dt.setCurHarness(hid);
+		pendingConstraints = false;
+		return true;
+	}
+
+	void setCurHarness(int hid){
+		dt.setCurHarness(hid);
+		Assert(!pendingConstraints, "There can't be any pending unchecked constraints!");
 	}
 
 	bool isDone(){
