@@ -57,8 +57,7 @@ public:
 	}
 
 
-	void regHoleInHarness(string const & hname){
-		cout<<"Hole in harness "<<hname<<" hid = "<<curHarness<<endl;
+	void regHoleInHarness(string const & hname){		
 		int hole = ctrlIdx[hname];
 		harnessPerHole[hole].insert(curHarness);
 		holesPerHarness[curHarness].insert(hole);
@@ -176,6 +175,7 @@ public:
 		randholes.clear();
 		sofar.clear();
 		totsize=1.0;
+		pendingConstraints = false;
 	}
 	void setSolver(SolverHelper* sh){
 		sat = sh;
