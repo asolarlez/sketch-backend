@@ -726,7 +726,7 @@ Clause* Solver::propagate()
 					goto FoundWatch;
 				}
 
-
+				// At this point, the solver just set false_lit so if some other lit in the clause is also false, we have a conflict.
 				for(int k=0; k<c.size(); ++k){
 					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
 					if(c[k] == false_lit){
@@ -741,17 +741,20 @@ Clause* Solver::propagate()
 						c[k] = c[0];
 						c[0] = false_lit;
 					}
+					//If k is greater than the position of the original false_lit, the original false_lit is now at zero.
 					if (value(c[k]) == l_False && c[k] != false_lit){
 						//I know p is false; that's why I am here. 
 						//If a c[k] different from p also became false, then we have violated the constraint.
+						//If this happens after false_lit, then false_lit is now at zero. Otherwise, false_lit is ahead.
 						//
 						{
 						Lit tt = c[k];
 						c[k] = c[1];
 						c[1] = tt;	
-						}
-
+						}						
+						//The violated entry has now been moved to position 1.
 						if(c[0] != false_lit){
+							//In case we hadn't reached false_lit, we search for false_lit and move it to pos 0.
 							for(int tt = k+1; tt < c.size(); ++tt){
 								if(c[tt] == false_lit){
 									c[tt] = c[0];
@@ -760,16 +763,20 @@ Clause* Solver::propagate()
 								}
 							}
 						}
+						//So at this point c[0] = false_lit and c[1] equals a violated lit.
 						// std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
 						qhead = trail.size();		
 						Fake* f = new (&c[0]) Fake();
 						Clause* nc = Clause::Clause_new(*(f), true);
 						// std::cout<<"     clause ["<<(sign(c[0])?"-":" ")<<var(c[0])<<", "<<(sign(c[1])?"-":" ")<<var(c[1])<<"]"<<std::endl;
+
+						//*j is part of the watches for false_lit which is c[0].
 						*j++ = nc;
 						learnts.push(nc);
 						//Important invariant: This singleset clause is in the watches of all its literals except for the last one.
 						watches[toInt(~c[1])].push(nc);	
 						{
+							//c0 is swapped with c[last], so now false_lit is going to be the not-watched.
 							Lit tt = c[last];
 							c[last] = c[0];
 							c[0] = tt;	
