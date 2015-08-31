@@ -599,6 +599,7 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
     trail.push(p);
 }
 
+vec<char> tc(sizeof(Clause) + sizeof(uint32_t)*(3));
 
 /*_________________________________________________________________________________________________
 |
@@ -767,14 +768,14 @@ Clause* Solver::propagate()
 						// std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
 						qhead = trail.size();		
 						Fake* f = new (&c[0]) Fake();
-						Clause* nc = Clause::Clause_new(*(f), true);
+						Clause* nc = new(&tc[0]) Clause(*f, true);
 						// std::cout<<"     clause ["<<(sign(c[0])?"-":" ")<<var(c[0])<<", "<<(sign(c[1])?"-":" ")<<var(c[1])<<"]"<<std::endl;
 
 						//*j is part of the watches for false_lit which is c[0].
-						*j++ = nc;
-						learnts.push(nc);
+						//XXX *j++ = nc;
+						//XXX learnts.push(nc);
 						//Important invariant: This singleset clause is in the watches of all its literals except for the last one.
-						watches[toInt(~c[1])].push(nc);	
+						//XXX watches[toInt(~c[1])].push(nc);	
 						{
 							//c0 is swapped with c[last], so now false_lit is going to be the not-watched.
 							Lit tt = c[last];
