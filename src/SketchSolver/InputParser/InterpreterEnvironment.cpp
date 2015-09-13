@@ -439,7 +439,7 @@ int InterpreterEnvironment::doallpairs(){
 	if(howmany < 1 || !params.randomassign){ howmany = 1; }
 	int result=-1;
 
-	if(howmany > 1){
+	if(howmany > 1 || params.randomassign){
 		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 			BooleanDAG* bd = it->second;
 			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
