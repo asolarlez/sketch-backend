@@ -365,9 +365,9 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			int baseline = PARAMS->randdegree;
 			int odds;
       if (node->is_sp_concretize()) {
-        odds = max(1, baseline / (tchld>0?tchld:1));
+        odds = max(1, baseline / (tchld > 0 ? tchld : 1));
       } else {
-        odds = max(2, baseline/ (tchld>0?tchld:1)  );
+        odds = baseline / (tchld > 0 ? tchld : 1);
       }
 			chsize = tchld;
 			if(chsize == 1){
@@ -379,7 +379,14 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
 			}
-			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000 ){
+			bool conc_flag;
+			if (node->is_sp_concretize()) {
+				conc_flag = rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000;
+			} else {
+				double p = (1.0 / (1.0 + exp(-odds)) - 0.5) * 2.0;
+				conc_flag = ((double)rand() / RAND_MAX) <= p;
+			}
+			if (conc_flag) {
 				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
