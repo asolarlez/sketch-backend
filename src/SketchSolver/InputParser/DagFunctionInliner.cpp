@@ -65,10 +65,10 @@ int sizeForNode(bool_node* bn){
 }
 
 bool_node* DagFunctionInliner::optAndAddNoMap(bool_node* nnode){ //assumes node is unnattached
-	bool_node* nnodep = this->computeOptim(nnode);						
+	bool_node* nnodep = this->computeOptim(nnode);
 	if(nnodep == nnode){
 		nnode->addToParents();
-		this->addNode(nnode);								
+		this->addNode(nnode);
 	}else{
 		delete nnode;
 	}
@@ -78,10 +78,10 @@ bool_node* DagFunctionInliner::optAndAddNoMap(bool_node* nnode){ //assumes node 
 
 void DagFunctionInliner::optAndAdd(bool_node* n, vector<const bool_node*>& nmap){//Assumes node has already been attached
 	int nodeId = n->id;
-	bool_node* nnode = this->computeOptim(n);						
+	bool_node* nnode = this->computeOptim(n);
 	if(nnode == n){
-		this->addNode( n );							
-		nmap[nodeId] = n;	
+		this->addNode( n );
+		nmap[nodeId] = n;
 	}else{
 		n->dislodge();
 		delete n;
@@ -146,7 +146,7 @@ void HoleHardcoder::printControls(ostream& out){
     }
 		const string& s = node.get_name();
 		Tvalue& glob = globalSat->declareControl(&node);
-		if(!glob.isSparse()){			
+		if(!glob.isSparse()){
 			glob.makeSparse(*globalSat);
 		}
 		Tvalue* loc = NULL;
@@ -158,7 +158,7 @@ void HoleHardcoder::printControls(ostream& out){
 			}
 			loc = &tloc;
 		}
-		const gvvec& options = glob.num_ranges;		
+		const gvvec& options = glob.num_ranges;	
 		int sz = options.size();
     int bnd = sz;
     if (node.is_sp_concretize()) {
@@ -170,12 +170,12 @@ void HoleHardcoder::printControls(ostream& out){
     
 		for(int i=0; i<bnd; ++i){
 			const guardedVal& gv = options[(i + rv) % sz];
-			int xx = globalSat->getMng().isValKnown(gv.guard);			
+			int xx = globalSat->getMng().isValKnown(gv.guard);
 			if(xx==0){
 				//global has no opinion. Should check local.
-				if(loc!= NULL){					
+				if(loc!= NULL){	
 					const gvvec& locopt = loc->num_ranges;
-					const guardedVal& lgv = locopt[(i + rv) % sz];					
+					const guardedVal& lgv = locopt[(i + rv) % sz];
 					Assert(lgv.value == gv.value, "Can't happen. c");
 					int yy = sat->getMng().isValKnown(lgv.guard);
 					if(yy==-1){
@@ -214,7 +214,7 @@ void HoleHardcoder::printControls(ostream& out){
 			if(xx==1){
 				//global says it should be true. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){					
+				if(loc!= NULL){
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
 					Assert(lgv.value == gv.value, "Can't happen. d");
@@ -231,7 +231,7 @@ void HoleHardcoder::printControls(ostream& out){
 						}
 						addedConstraint();
 						return (lgv.value);
-					}					
+					}
 				}else{
 					//There is no local, so we take this value.
 					return (gv.value);
@@ -240,7 +240,7 @@ void HoleHardcoder::printControls(ostream& out){
 			if(xx==-1){
 				//global says it should be false. local better agree.
 				//no need to record this decision because it was not really a decision.
-				if(loc!= NULL){					
+				if(loc!= NULL){
 					const gvvec& locopt = loc->num_ranges;
 					const guardedVal& lgv = locopt[(i + rv) % sz];
 					Assert(lgv.value == gv.value, "Can't happen. b");
@@ -250,7 +250,7 @@ void HoleHardcoder::printControls(ostream& out){
 						throw BadConcretization();
 					}
 					continue;
-				}else{					
+				}else{
 					continue;
 				}
 			}
@@ -263,7 +263,7 @@ void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
 	visited[harnid] = 1;
 	vector<Lit>& lits = decisionsPerHarness[harnid];
 	
-	for(vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit){	
+	for(vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit){
 		out.insert(toInt(*llit));
 	}
 	
@@ -280,7 +280,7 @@ void DepTracker::helper(int harnid,  vector<char>& visited, set<int>& out){
 	}
 }
 
-void DepTracker::genConflict(int harnid, vec<Lit>& out){	
+void DepTracker::genConflict(int harnid, vec<Lit>& out){
 	cout<<" charness = "<<harnid<<endl;
 	out.clear();
 	vector<char> visited(holesPerHarness.size(), 0);
@@ -319,8 +319,6 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 
 		map<string, int>::iterator it = randholes.find( name  );
 
-		
-  
 			int tchld = 0;
 			int bchld = 0;
 			for(childset::iterator chit = node->children.begin(); chit != node->children.end(); ++chit){
@@ -347,7 +345,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 						bchld += 1;
 					}else{
 						tchld += 1;
-					}					
+					}
 				}
 			}	
 			tchld += bchld / 2;
@@ -363,7 +361,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				return opt.getCnode(it->second);
 			}
 		}
-		{							
+		{
 			int baseline = PARAMS->randdegree;
 			int odds;
       if (node->is_sp_concretize()) {
@@ -380,7 +378,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				}else{
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
-			}						
+			}
 			if(rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000 ){
 				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
@@ -411,7 +409,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 								cout<<"    has a bad child"<<child->lprint()<<endl;
 								randholes[node->get_name()] = REALLYLEAVEALONE;
 								return node;
-							}								
+							}
 						}else{
 							cout<<"    has a bad child"<<child->lprint()<<endl;
 							randholes[node->get_name()] = REALLYLEAVEALONE;
@@ -432,7 +430,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 								/*
 								if(child->type == bool_node::AND || child->type == bool_node::OR || child->type == bool_node::NOT || child->type == bool_node::UFUN){
 									// cout<<"so far so good"<<child->lprint()<<endl;
-								}else{									
+								}else{
 									cout<<"    has a bad child"<<child->lprint()<<endl;
 									randholes[node->get_name()] = REALLYLEAVEALONE;
 									return node;
@@ -453,7 +451,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					bound = min(bound, ul);
 				}		
 				totsize*=bound;
-				int rv = fixValue(*node, bound, nbits);		
+				int rv = fixValue(*node, bound, nbits);
 				randholes[node->get_name()] = rv;
 				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<" totsize= "<<totsize<<endl;
 				return opt.getCnode(rv);
@@ -501,7 +499,7 @@ bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap,
 		an = dynamic_cast<arith_node*>(node);
 		for(int i=0; i<an->multi_mother.size(); ++i){
 			tt = an->multi_mother[i];
-			chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);			
+			chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
 		}
 	}
 	if(chk){
@@ -648,14 +646,14 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
   }
 }
 
-void DagFunctionInliner::visit( UFUN_node& node ){	
+void DagFunctionInliner::visit( UFUN_node& node ){
 	Dllist tmpList;
 	const string& name = node.get_ufname();
 	map<int, int> oldToNew;
 
 	if(ictrl != NULL && !ictrl->checkInline(node)){
 		//mpcontroller[node.fgid]["__ALL"] = NULL;
-		DagOptim::visit(node);			
+		DagOptim::visit(node);
 		return;
 	}	
 
@@ -750,7 +748,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}else{
 				bool_node* rv = mpcontroller[node.fgid]["__ALL"];
 				if(rv == NULL){
-					DagOptim::visit(node);	
+					DagOptim::visit(node);
 				}else{
 					rvalue = rv;
 				}
@@ -779,7 +777,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			while(! bns.empty()){
 				bool_node* c = bns.top(); 
 				bns.pop();
-				if(c->mother != NULL && !isConst(c->mother)){					
+				if(c->mother != NULL && !isConst(c->mother)){
 					bns.push(c->mother);
 				}
 				if(c->father != NULL && !isConst(c->father)){
@@ -800,19 +798,18 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 		
 
-		//oldFun->clone_nodes(clones);		
+		//oldFun->clone_nodes(clones);
 		vector<const bool_node*> nmap;
     bool_node* newOutput;
     bool_node* spCond;
-		nmap.resize( oldFun.size() );		
+		nmap.resize( oldFun.size() );
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			// ADT, int, int ... (state)
 			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
-      
-      
+
       vector<bool_node*> inp_arg;
-      
+
       if (shouldReplaceSpecialNode) {
         Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
         UFUN_node* repFun = new UFUN_node(replaceFunName);
@@ -919,7 +916,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         }
         
       }
-			
+
 			for(int i=0; i<inputs.size(); ++i){
         bool_node* actual;
 				if (node.multi_mother[i]->getOtype()->isTuple && node.multi_mother[i]->depth == 0) {
@@ -937,7 +934,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
-			for(int i=0; i<controls.size(); ++i){	
+			for(int i=0; i<controls.size(); ++i){
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
 					nmap[ctrl->id] = node.mother;
@@ -968,7 +965,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					actual->children.erase((bool_node*)&node);
 //					actual->children.insert(controls[i]->children.begin(), controls[i]->children.end());
 				}else{
-					if(seenControls.count(ctrl->name)>0){						
+					if(seenControls.count(ctrl->name)>0){
 						nmap[controls[i]->id] = seenControls[ctrl->name];
 					}else{
 						bool_node* tmp = controls[i]->clone(false);
@@ -1019,29 +1016,29 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}
 			bool_node* n =  oldFun[i]->clone(false);
 			//bool_node* of = oldFun[i];
-			n->redirectParentPointers(oldFun, nmap, true, oldFun[i]);			
+			n->redirectParentPointers(oldFun, nmap, true, oldFun[i]);
 
 			bool_node* nprime = NULL;
 
-			if(doubleCopies){				
+			if(doubleCopies){
 				if(checkParentsInMap(oldFun[i], secondarynmap, nmap)){
-					nprime = oldFun[i]->clone(false);					
+					nprime = oldFun[i]->clone(false);
 					nprime->redirectParentPointers(oldFun, secondarynmap, true, oldFun[i]);
 				}
 			}
 
 			int nodeId = n->id;
-			if( n != NULL &&  n->type != bool_node::DST ){			
+			if( n != NULL &&  n->type != bool_node::DST ){
 				if(n->type != bool_node::ASSERT){
 					if(typeid(*n) != typeid(UFUN_node)){
 						
 						optAndAdd(n, nmap);
 						if(nprime != NULL){
 							optAndAdd(nprime, secondarynmap);
-						}						
+						}
 
-					}else{			
-						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);						
+					}else{
+						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
             
             if (node.hardAsserts()) {
@@ -1052,7 +1049,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
               ufun->replaceFun = false;
             }
 
-						if(!ufun->ignoreAsserts){													
+						if(!ufun->ignoreAsserts){
 							DllistNode* tt = getDllnode(ufun);
 							tmpList.append(tt);
 						}
@@ -1067,9 +1064,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							}*/
 						}
 
-						bool_node * oldMother = ufun->mother;	
+						bool_node * oldMother = ufun->mother;
 						
-						DagOptim::visit(*ufun);						
+						DagOptim::visit(*ufun);
 						const bool_node* nnode = rvalue;
 						if( nnode->type == bool_node::UFUN ){
 							//&& !(isConst(oldMother) && this->getIval(oldMother)==0)
@@ -1081,7 +1078,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							// replaceDummy(n, tmp);
 							
 							this->addNode( n );
-							nmap[nodeId] = n;							
+							nmap[nodeId] = n;
 							nnode = n;
 						}else{
 							n->dislodge();
@@ -1121,22 +1118,22 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 					}
 				}else{
-					n->mother->remove_child( n );		
+					n->mother->remove_child( n );
 					if(nprime != NULL){
 						nprime->mother->remove_child( nprime );
 					}
-					//Assertion.					
+					//Assertion.
 
 
-					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){ 					
+					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){
 						delete n;
-						if(nprime != NULL){							
+						if(nprime != NULL){
 							delete nprime;
 						}
 						continue;
-					}					
+					}
 
-					if(!oldFun.isModel || nprime == NULL){	
+					if(!oldFun.isModel || nprime == NULL){
 						/*
 						bool_node* nnode = new NOT_node();
 						nnode->mother = condition;
@@ -1150,7 +1147,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						ornode = optAndAddNoMap(ornode);
 						n->mother = ornode;
 						*/
-						
+
             if (node.hardAsserts()) {
               dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
             }
@@ -1160,27 +1157,27 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						delete nprime;
 						dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
 						if(assertCond == NULL){
-							assertCond = cur;							
-						}else{			
+							assertCond = cur;
+						}else{
 							bool_node* tt = new AND_node();
 							tt->mother = assertCond;
 							tt->father = cur;
 							tt->addToParents();
-							addNode(tt);							
+							addNode(tt);
 							assertCond = tt;
 						}
 					}
 					
 
-					{							
+					{
 						DllistNode* tt = getDllnode(n);
 						tmpList.append(tt);
 					}
-					n->mother->children.insert(n);	
+					n->mother->children.insert(n);
 					
 					this->addNode(n);
-					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){						
-						callMap.clear();						
+					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){
+						callMap.clear();
 					}
 				}
 			}else{
@@ -1269,14 +1266,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
                              
 						}
-																		
+
 						nprime->dislodge();
 						delete nprime;
 					}
 					//mpcontroller[node.fgid][dn->name] = ttv;
 					if(dn->name == node.outname){
 						output = ttv;
-					}										
+					}
 					n->dislodge();
 					delete n;
 				}
@@ -1314,7 +1311,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	}else{
 		DagOptim::visit(node);
 	}
-	ufunAll.stop();	
+	ufunAll.stop();
 }
 
 
@@ -1339,7 +1336,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				lastDln = getDllnode(dag[i]);
 			}
 
-			// Get the code for this node.				
+			// Get the code for this node.
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
 				//uidcount = max(uidcount, uf.fgid);
