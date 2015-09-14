@@ -383,7 +383,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			if (node->is_sp_concretize()) {
 				conc_flag = rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000;
 			} else {
-				double p = (1.0 / (1.0 + exp(-odds)) - 0.5) * 2.0;
+				double p = (1.0 / (1.0 + exp(-1.0/odds)) - 0.5) * 2.0;
 				conc_flag = ((double)rand() / RAND_MAX) <= p;
 			}
 			if (conc_flag) {
