@@ -210,6 +210,37 @@ struct bool_node{
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
     }
+	virtual string get_smtop() const{
+        switch(type){
+            case PLUS: return "+";
+            case TIMES: return "*";
+            case DIV: return "div";
+            case MOD: return "mod";
+            case NEG: return "-";
+            case CONST: return "CONST";
+            case AND: return "and";
+            case OR: return "or";
+            case XOR: return "xor";
+            case SRC: return "S";
+            case DST: return "D";
+            case NOT: return "not";
+            case CTRL: return "CTRL";
+            case LT: return "<";
+            case EQ: return "=";
+            case ASSERT: return "assert";
+            case ARRACC: return "ite"; //but with different order of m,f
+            case UFUN: return "UF";
+            case ACTRL: return "ACTRL";
+            case ARRASS: return "ite"; //different order of m,f and equality constraint
+            case ARR_R: return "select"; //order of m,f swapped
+            case ARR_W: return "store"; //order of first two parents swapped
+            case ARR_CREATE: return "ARRC";
+            case TUPLE_CREATE: return "TUPC";
+            case TUPLE_R: return "TUPR";
+        }
+        //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
+        throw BasicError("Err", "Err");
+    }
     virtual string get_sym() const{
         switch(type){
             case PLUS: return "+";
@@ -266,7 +297,18 @@ struct bool_node{
     }
     
     virtual OutType* getOtype() const;
-    
+    virtual string smtprint(){
+		//Default print for binary ops
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" ";
+		string op = get_smtop();
+		ss<<" ("<<op<<" ";
+		if(op == "select") {//TODO: Make sure all special nodes have their print functions!
+			ss<<" _n"<<father->id<<" _n"<<mother->id;
+		}
+		else ss<<" _n"<<mother->id<<" _n"<<father->id;
+		return ss.str() + ") ))";
+	}
 	virtual string mrprint()const{
 		stringstream str;
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<father->id;
@@ -432,6 +474,11 @@ class ARR_W_node:public arith_node{
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
         return str.str();
     }
+	virtual string smtprint(){//array index value in SMT, index array value in DAG
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" (store _n"<<multi_mother[0]->id <<" _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" ) ))";
+		return ss.str();
+	}
 };
 
 class ARR_CREATE_node:public arith_node{
@@ -490,6 +537,10 @@ class ARR_CREATE_node:public arith_node{
         str<<" "<<dfltval;
         return str.str();
     }
+	virtual string smtprint(){
+		Assert(false, "ARR_CREATE SMT not supported");
+		return "";
+	}
 };
 
 
@@ -545,6 +596,10 @@ class TUPLE_CREATE_node:public arith_node{
         }
         return str.str();
     }
+	virtual string smtprint(){
+		Assert(false, "TUPLE_CREATE must have been inlined SMT not supported");
+		return "";
+	}
 };
 
 
@@ -583,6 +638,10 @@ class TUPLE_R_node: public bool_node{
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<idx;
 		return str.str();
     }
+	virtual string smtprint(){
+		Assert(false, "TUPLE_R must have been inlined SMT not supported");
+		return "";
+	}
 };
 
 
@@ -725,6 +784,10 @@ class SRC_node: public INTER_node{
 		return otype;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
+	virtual string smtprint(){
+		Assert(false, "SRC nodes for SMT not supported");
+		return "";
+	}
 	virtual bool_node* clone(bool copyChildren = true){
         return new SRC_node(*this, copyChildren);};
 };
@@ -746,6 +809,9 @@ class DST_node: public INTER_node, public DllistNode{
 		stringstream str;
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<mother->id;
 		return str.str();
+	}
+	virtual string smtprint(){
+		return ""; //ignored
 	}
 };
 
@@ -850,6 +916,36 @@ class CTRL_node: public INTER_node{
 		Assert(false, "NYI; egewajyt");
 		return otype;
 	}
+	virtual string smtprint(){
+		//define the variable and add bounds as constraints
+		
+		stringstream ss;
+		ss<<"(declare-fun _n"<<id<<" () ";
+		if(otype == OutType::INT){
+			int k = get_nbits();
+			ss<<" Int) ;" <<get_name() + "\n";
+			ss<<"(assert (and (>= _n"<<id<<" 0) (< _n"<<id<<" "<<int(pow(2.0,1.0*k))<<")))";
+		}
+		else if(otype  == OutType::BOOL){
+			ss<<" Bool) ;" <<get_name();
+		}
+		else if (otype == OutType::BOOL_ARR){
+			ss<<" (Array Int Bool));"<<get_tname();
+		}
+		else if (otype == OutType::INT_ARR){
+			ss<<" (Array Int Int));"<<get_tname();
+		}
+		else if (otype == OutType::FLOAT){
+			ss<<" Real);"<<get_tname();
+		}
+		else if (otype == OutType::FLOAT_ARR){
+			ss<<" (Array Int Float));"<<get_tname();
+		}
+		else{
+			Assert(false,"OutType not identified!");
+		}
+		return ss.str();
+	}
 };
 
 class NOT_node: public bool_node{
@@ -871,7 +967,11 @@ class NOT_node: public bool_node{
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
 		return str.str();
 	}
-    
+    virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" (not _n"<< mother-id <<")))";
+		return ss.str();
+	}
 };
 
 class PLUS_node: public bool_node{
@@ -1031,6 +1131,10 @@ class UFUN_node: public arith_node, public DllistNode{
 		}
 		return str.str();
 	}
+	virtual string smtprint(){
+		Assert(false,"There shouldn't be any UFUNs here");
+		return "";
+	}
 };
 
 
@@ -1080,6 +1184,11 @@ class ARRACC_node: public arith_node{
         return str.str();
     }
 	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
+	virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" (ite _n"<< mother-id <<" _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
+		return ss.str();
+	}
 };
 class DIV_node: public bool_node{
 	public:
@@ -1124,6 +1233,11 @@ class NEG_node: public bool_node{
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
         return str.str();
     }
+	virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" (- _n"<< mother-id <<")))";
+		return ss.str();
+	}
 };
 
 typedef union{
@@ -1225,6 +1339,37 @@ class CONST_node: public bool_node{
         }
         return str.str();
     }
+	virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" ";
+		
+		if(otype==OutType::BOOL){
+			int x = getVal();
+			Assert(x==0 || x==1,"Should be boolean values");
+			ss<<x;
+		}
+		else if(otype==OutType::INT){
+			int x = getVal();
+			if(x>=0){
+				ss<<x;
+			}
+			else{
+				ss<<"(- "<<-x<<")";
+			}
+		}
+		else if(otype==OutType::FLOAT){
+			double x = getFval();
+			if(x>=0){
+				ss<<x;
+			}
+			else{
+				ss<<"(- "<<-x<<")";
+			}
+		}
+		else Assert(false,"OutType invalid");
+		ss<<"))";
+		return ss.str();
+	}
 };
 
 class LT_node: public bool_node{
@@ -1299,6 +1444,15 @@ class ARRASS_node: public arith_node{
         str<<" "<<multi_mother[1]->id;
         return str.str();
     }
+	virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert (= _n"<<id<<" (ite (= _n"<< mother-id <<" ";
+		if (quant >= 0) ss<<quant;
+		else ss<<"(- "<<-quant<<")";
+		ss<<") _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
+		return ss.str();
+	}
+
 };
 
 /* This node typecasts bit to integers. The only thing is used is 'multi-mother'
@@ -1332,6 +1486,10 @@ class ACTRL_node: public arith_node{
         }
         return str.str();
     }
+	virtual string smtprint(){
+		Assert(false,"ACTRL SMT generation not supported");
+		return "";
+	}
 };
 class ASSERT_node: public bool_node, virtual public DllistNode{
 	typedef enum{Normal, Hard, Assume} AssertType;
@@ -1366,6 +1524,11 @@ class ASSERT_node: public bool_node, virtual public DllistNode{
         str<<id<<" = "<<get_tname()<<" "<<mother->id<<" \""<<msg<<"\"";
         return str.str();
     }
+	virtual string smtprint(){
+		stringstream ss;
+		ss<<"(assert _n"<<mother->id<<")";
+		return ss.str();
+	}
 };
 
 

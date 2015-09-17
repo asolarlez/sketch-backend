@@ -49,6 +49,8 @@ struct CommandLineArgs{
   bool showControls;
   bool showDAG;
   bool outputMRDAG;
+  bool outputSMT;
+  string smtfile;
   int bndDAG;
   bool minvarHole;
   string mrdagfile;
@@ -122,6 +124,8 @@ struct CommandLineArgs{
 		showControls = false;
 		showDAG = false;
 		outputMRDAG = false;
+		outputSMT = false;
+		smtfile = "";
 		bndDAG = -1;
 		ufunSymmetry = false;
 		alterARRACS = false;
@@ -364,6 +368,12 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "-writeDAG" ){
 	    	outputMRDAG = true;
 			mrdagfile = argv[ii+1];
+	      input_idx = ii+2;      
+		  continue;
+	    }
+		if( string(argv[ii]) == "-writeSMT" ){
+	    	outputSMT = true;
+			smtfile = argv[ii+1];
 	      input_idx = ii+2;      
 		  continue;
 	    }

@@ -793,6 +793,39 @@ void BooleanDAG::mrprint(ostream& out){
   out.flush();
 }
 
+void BooleanDAG::smtprint(ostream& out){
+    //NOTE: bounds for SRC/CTRL nodes are presented as assertions
+	//Another possible way is to use bitvectors in z3 - need to figure out more details/need
+    //Go over all nodes and output their SMT formulas!
+	//ignore DSTs
+	/*set<string> exist, forall,bounds;
+	string smt = "";
+	vector<bool_node*> vasserts = this->getNodesByType(bool_node::ASSERT);
+	if(vasserts.size() >= 1){
+		smt = ((ASSERT_node*)(vasserts[0]))->smtprint(exist,forall,bounds);
+		for(int i=1; i<vasserts.size();i++){
+			ASSERT_node* anode = (ASSERT_node*)(vasserts[i]);
+			smt = " (and " + anode->smtprint(exist,forall,bounds) + " " + smt +") ";
+		}
+	}
+	string src,ctrl,boundstrs;
+	src=""; ctrl="";boundstrs="";
+	for(set<string>::iterator its = exist.begin();its!=exist.end();++its){
+		ctrl+=" " +(*its)+" ";
+	}
+	for(set<string>::iterator its = forall.begin();its!=forall.end();++its){
+		src+=" " +(*its)+" ";
+	}*/
+	for(int i=0; i<nodes.size(); ++i){
+  		if(nodes[i] != NULL){
+  			out<<nodes[i]->smtprint()<<endl;
+  		}    
+	}
+	out<<"(check-sat)\n(exit)";
+	out.flush();
+}
+
+
 void BooleanDAG::lprint(ostream& out){    
 	out<<"dag"<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
