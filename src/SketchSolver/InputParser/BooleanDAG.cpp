@@ -6,7 +6,7 @@
 #include "BasicError.h"
 #include "SATSolver.h"
 #include "BooleanNodes.h"
-
+#include <map>
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -883,7 +883,10 @@ string getConstSMT(int val){
 	if(val >= 0) return int2str(val);
 	else return "(- "+int2str(val)+")";
 }
-string dag_smt(BooleanDAG* dag, bool_node* node){
+string dag_smt(BooleanDAG* dag, bool_node* node, map<int,string> &seen){
+	if(seen.find(node->id) != seen.end()){
+		return seen[node->id];
+	}
 	bool_node::Type t = node->type;
 	OutType* oB = OutType::BOOL;
 	OutType* oI = OutType::INT;
@@ -891,17 +894,17 @@ string dag_smt(BooleanDAG* dag, bool_node* node){
 	OutType* oBA = OutType::BOOL_ARR;
 	OutType* oF = OutType::FLOAT;
 	OutType* oFA = OutType::FLOAT_ARR;
-
+	string ret = "";
 	if( t == bool_node::ACTRL || t == bool_node::ASSERT){
 		Assert(false,"Not possible to visit ACTRL,ASSERT");
 	} 
 	else if(t == bool_node::DST ){
-		return dag_smt(dag,node->mother);
+		Assert(false,"Not possible to visit DST");
 	}
 	// binop = AND, OR, XOR, PLUS, TIMES, EQ, ARR_R, LT, DIV, MOD : set of two parents
 	else if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::PLUS || t == bool_node::TIMES || t == bool_node::EQ || t == bool_node::ARR_R || t == bool_node::DIV || t == bool_node::MOD || t == bool_node::LT){
-		string mother_smt = dag_smt(dag,node->mother);
-		string father_smt = dag_smt(dag,node->father);
+		string mother_smt = dag_smt(dag,node->mother,seen);
+		string father_smt = dag_smt(dag,node->father,seen);
 		string smtop =smt_op(t);
 		if(t == bool_node::PLUS || t == bool_node::TIMES || t == bool_node::LT || t == bool_node::DIV || t==bool_node::MOD){
 			makeInt(node->mother,mother_smt);
@@ -918,23 +921,22 @@ string dag_smt(BooleanDAG* dag, bool_node* node){
 			makeBool(node->father,father_smt);
 		}
 		if(t==bool_node::EQ) equalize_otypes(node->mother,mother_smt,node->father,father_smt);
-		return "(" + smt_op(t) + " " + mother_smt + " " + father_smt + ")";
+		ret =  "(" + smt_op(t) + " " + mother_smt + " " + father_smt + ")";
 	}
-
 	// unop = NOT, NEG : a single int
 	else if(t == bool_node::NOT){
-		string mother_smt = dag_smt(dag,node->mother);
+		string mother_smt = dag_smt(dag,node->mother,seen);
 		if(node->mother->getOtype() == oI){
 			int_to_bool_smt(mother_smt);
 		}
-		return "(not "+mother_smt+")";
+		ret =  "(not "+mother_smt+")";
 	}
 	else if(t == bool_node::NEG){
-		string mother_smt = dag_smt(dag,node->mother);
+		string mother_smt = dag_smt(dag,node->mother,seen);
 		if(node->mother->getOtype() == oB){
 			bool_to_int_smt(mother_smt);
 		}
-		return "(- "+mother_smt+")";
+		ret =  "(- "+mother_smt+")";
 	}
 	// SRC, CTRL, CONST: 0 parents, matches only s_otype
 	else if(t == bool_node::CONST){
@@ -942,19 +944,19 @@ string dag_smt(BooleanDAG* dag, bool_node* node){
 		int val = cn->getVal();
 		if(cn->getOtype() == oB){
 			Assert(val==0 || val==1,"Constant should be boolean");
-			if(val == 0) return "false";
-			else return "true";
+			if(val == 0) ret = "false";
+			else ret = "true";
 		}
-		return getConstSMT(val);
+		else ret =  getConstSMT(val);
 		
 	}
 	else if( t == bool_node::SRC ){
 		SRC_node* sn = (SRC_node*)(node);
-		return sn->get_name();
+		ret = sn->get_name();
 	}
 	else if(t == bool_node::CTRL){
 		CTRL_node* ctn = (CTRL_node*)(node);
-		return ctn->get_name();
+		ret = ctn->get_name();
 	}
 	// UFUN-> should not be present
 	else if( t == bool_node::UFUN){
@@ -965,12 +967,12 @@ string dag_smt(BooleanDAG* dag, bool_node* node){
 		//mother = index
 		//multi_mother[0,1] -> old-arr,new-val
 		ARR_W_node* in = (dynamic_cast<ARR_W_node*>(node));
-		string mother_smt = dag_smt(dag,in->mother);
-		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
-		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		string mother_smt = dag_smt(dag,in->mother,seen);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0],seen);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1],seen);
 		makeInt(in->mother,mother_smt);
 		makeInt(in->multi_mother[1],mm1_smt);
-		return "(store " + mm0_smt + " " + mother_smt + " " + mm1_smt +")";
+		ret =  "(store " + mm0_smt + " " + mother_smt + " " + mm1_smt +")";
 	}
 	// ARR_CREATE = var size but all indexed
 	else if(t == bool_node::ARR_CREATE){
@@ -979,25 +981,26 @@ string dag_smt(BooleanDAG* dag, bool_node* node){
 	// ARRACC = var size (index and then var num of elts)
 	else if(t == bool_node::ARRACC){
 		ARRACC_node* in = (dynamic_cast<ARRACC_node*>(node));
-		string mother_smt = dag_smt(dag,in->mother);
-		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
-		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		string mother_smt = dag_smt(dag,in->mother,seen);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0],seen);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1],seen);
 		makeBool(in->mother,mother_smt);
 		equalize_otypes(in->multi_mother[0],mm0_smt,in->multi_mother[1],mm1_smt);
-		return "(ite " + mother_smt + " " + mm1_smt + " " + mm0_smt + ")";
+		ret =  "(ite " + mother_smt + " " + mm1_smt + " " + mm0_smt + ")";
 	}
 	else if(t == bool_node::ARRASS){
 		ARRASS_node* in = (dynamic_cast<ARRASS_node*>(node));
-		string mother_smt = dag_smt(dag,in->mother);
+		string mother_smt = dag_smt(dag,in->mother,seen);
 		makeInt(in->mother,mother_smt);
-		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
-		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0],seen);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1],seen);
 		equalize_otypes(in->multi_mother[0],mm0_smt,in->multi_mother[1],mm1_smt);
 		string quant = getConstSMT(in->quant);
-		return "(ite (= "+mother_smt+" "+quant+") "+mm1_smt+" "+mm0_smt+")";
+		ret =  "(ite (= "+mother_smt+" "+quant+") "+mm1_smt+" "+mm0_smt+")";
 	}
 	else Assert(false,"type not identified!");
-
+	seen[node->id] = ret;
+	return ret;
 }
 
 
@@ -1024,8 +1027,9 @@ void BooleanDAG::smtrecprint(ostream &out){
 		}
 	}
 	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
+	map<int,string> seen;
 	for(int i=0;i<assert_nodes.size();i++){
-		asserts.push_back(dag_smt(this,assert_nodes[i]->mother));
+		asserts.push_back(dag_smt(this,assert_nodes[i]->mother,seen));
 	}
 	string assert_str = asserts[0];
 	if(asserts.size() > 1) {
