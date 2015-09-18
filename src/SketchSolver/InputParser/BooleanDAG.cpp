@@ -1050,6 +1050,68 @@ void BooleanDAG::smtrecprint(ostream &out){
 	else Assert(false,"Can't have both srcs and ctrls empty from the DAG");
 	out<<")\n(check-sat)\n(exit)";
 	out.flush();
+	cout<<"Done with Output SMT"<<endl;
+}
+
+void BooleanDAG::smtlinprint(ostream &out){
+	string exists,forall;
+	string asserted = "true";
+	string pre = "true";
+	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
+	for(int i=0;i<ctrls.size();i++){
+		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
+		exists= exists + "(" + cn->get_name() + " " + cn->getSMTOtype() + " )";
+		if(cn->getOtype() == OutType::INT){
+			int k = cn->get_nbits();
+			asserted = "(and "+ asserted +" (and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )))";
+		}
+	}
+	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
+	for(int i=0;i<srcs.size();i++){
+		SRC_node* sn = (SRC_node*)(srcs[i]);
+		forall = forall + "(" + sn->get_name() + " " + sn->getSMTOtype() + " )";
+		if(sn->getOtype() == OutType::INT){
+			int k = sn->get_nbits();
+			pre= "(and " + ("(and (>= "+sn->get_name()+" 0) (< "+sn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )) ") + pre + ")";
+		}
+	}
+	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
+	map<int,string> seen;
+	for(int i=0;i<assert_nodes.size();i++){
+		asserted = "(and "+asserted+" _n"+int2str(assert_nodes[i]->mother->id)+")";
+	}
+	int parentheses = 1;
+	out<<"(assert ";
+	if(exists != "" && forall != ""){
+		out<<"(exists ("<<exists<<") (forall ("<<forall<<") ";
+		parentheses += 2;
+	}
+	else if(exists == ""){
+		out<<"(forall ("<<forall<<") ";
+		parentheses++;
+	}
+	else if(forall == ""){
+		out<<"(exists ("<<exists<<") ";
+		parentheses++;
+	}
+	else Assert(false,"Can't have both srcs and ctrls empty from the DAG");
+	out<<"(implies "<<pre<<" ";
+	parentheses++;
+	//output all asserts after lets
+	for(int i=0; i<nodes.size(); ++i){
+  		if(nodes[i] != NULL){
+			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
+				out<<nodes[i]->smtletprint()<<endl;
+				parentheses++;
+			}
+  		}    
+	}
+	for(int i=0;i<parentheses;i++){
+		out<<")";
+	}
+	out<<"\n(check-sat)\n(exit)";
+	out.flush();
+	cout<<"Done with Output SMT"<<endl;
 }
 void BooleanDAG::smtprint(ostream& out){
     //NOTE: bounds for SRC/CTRL nodes are presented as assertions

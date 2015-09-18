@@ -236,6 +236,7 @@ Dllist assertions;
   void mrprint(ostream& out);
   void smtprint(ostream& out);
   void smtrecprint(ostream& out);
+  void smtlinprint(ostream& out);
   void print_wrapper()const;
   void lprint_wrapper();
   void print_wrapper(const char* fileName)const;
