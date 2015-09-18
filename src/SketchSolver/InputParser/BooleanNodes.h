@@ -309,6 +309,39 @@ struct bool_node{
 		else ss<<" _n"<<mother->id<<" _n"<<father->id;
 		return ss.str() + ") ))";
 	}
+	virtual string getSMTOtype(){
+		otype=getOtype();
+		if(otype == OutType::INT){
+			return " Int ";
+			
+		}
+		else if(otype  == OutType::BOOL){
+			return " Bool ";
+		}
+		else if (otype == OutType::BOOL_ARR){
+			return " (Array Int Bool) ";
+		}
+		else if (otype == OutType::INT_ARR){
+			return " (Array Int Int) ";
+		}
+		else if (otype == OutType::FLOAT){
+			return " Real ";
+		}
+		else if (otype == OutType::FLOAT_ARR){
+			return " (Array Int Float) ";
+		}
+		else{
+			Assert(false,"OutType not identified!");
+			return "";
+		}
+	}
+	virtual string smtdefine(){
+		//define the variable for this node
+		stringstream ss;
+		ss<<"(declare-fun _n"<<id<<" () "<<getSMTOtype()<<")";
+		return ss.str();
+	}
+
 	virtual string mrprint()const{
 		stringstream str;
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<father->id;
@@ -917,34 +950,20 @@ class CTRL_node: public INTER_node{
 		return otype;
 	}
 	virtual string smtprint(){
-		//define the variable and add bounds as constraints
+		//defined the variable, add bounds as constraints
 		
 		stringstream ss;
-		ss<<"(declare-fun _n"<<id<<" () ";
-		otype=getOtype();
 		if(otype == OutType::INT){
 			int k = get_nbits();
-			ss<<" Int) ;" <<get_name() + "\n";
-			ss<<"(assert (and (>= _n"<<id<<" 0) (< _n"<<id<<" "<<int(pow(2.0,1.0*k))<<")))";
+			ss<<"\n(assert (and (>= _n"<<id<<" 0) (< _n"<<id<<" "<<int(pow(2.0,1.0*k))<<")))";
 		}
-		else if(otype  == OutType::BOOL){
-			ss<<" Bool) ;" <<get_name();
-		}
-		else if (otype == OutType::BOOL_ARR){
-			ss<<" (Array Int Bool));"<<get_tname();
-		}
-		else if (otype == OutType::INT_ARR){
-			ss<<" (Array Int Int));"<<get_tname();
-		}
-		else if (otype == OutType::FLOAT){
-			ss<<" Real);"<<get_tname();
-		}
-		else if (otype == OutType::FLOAT_ARR){
-			ss<<" (Array Int Float));"<<get_tname();
-		}
-		else{
-			Assert(false,"OutType not identified!");
-		}
+		return ss.str();
+	}
+	virtual string smtdefine(){
+		stringstream ss;
+		ss<<"(declare-fun _n"<<id<<" () "<<getSMTOtype()<<")\n";
+		ss<<"(declare-fun "<<get_name()<<" () "<<getSMTOtype()<<")\n";
+		ss<<"(assert (= _n"<<id<<" "<<get_name()<<" ))";
 		return ss.str();
 	}
 };

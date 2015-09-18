@@ -818,6 +818,9 @@ void BooleanDAG::smtprint(ostream& out){
 	}*/
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
+			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
+				out<<nodes[i]->smtdefine()<<endl;
+			}
   			out<<nodes[i]->smtprint()<<endl;
   		}    
 	}
