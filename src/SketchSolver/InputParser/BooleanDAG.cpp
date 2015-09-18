@@ -793,6 +793,259 @@ void BooleanDAG::mrprint(ostream& out){
   out.flush();
 }
 
+void bool_to_int_smt(string &smt){
+	smt = "(ite " + smt + "  1 0)";
+}
+void int_to_bool_smt(string &smt){
+	smt = "(ite (> " + smt + " 0)  true false)";
+}
+
+void int_to_real_smt(string &smt){
+	smt = "(to_real " + smt + " )";
+}
+string smt_op(bool_node::Type t){
+	if(t == bool_node::AND){
+		return "and";
+	}
+	else if(t == bool_node::OR){
+		return "or";
+	}
+	else if(t == bool_node::XOR){
+		return "xor";
+	}
+	else if(t == bool_node::ARRACC){
+		return "ite";
+	}
+	else if(t == bool_node::EQ){
+		return "=";
+	}
+	else if(t == bool_node::PLUS){
+		return "+";
+	}
+	else if(t == bool_node::TIMES){
+		return "*";
+	}
+	else if(t == bool_node::MOD){
+		return "mod";
+	}
+	else if(t == bool_node::DIV){
+		return "div";
+	}
+	else if(t == bool_node::LT){
+		return "<";
+	}
+	else if(t == bool_node::NEG){
+		return "-";
+	}
+	else if(t == bool_node::NOT){
+		return "not";
+	}
+	else if(t == bool_node::ARR_R){
+		return "select";
+	}
+	else if(t == bool_node::ARR_W){
+		return "store";
+	}
+	else Assert(false, "Ivalid type for SMT!");
+}
+
+
+
+void makeInt(bool_node* node, string & smt){
+	if(node->getOtype() == OutType::BOOL) bool_to_int_smt(smt);
+}
+void makeBool(bool_node* node, string & smt){
+	if(node->getOtype() == OutType::INT) int_to_bool_smt(smt);
+}
+
+void makeReal(bool_node* node, string & smt){
+	if(node->getOtype() == OutType::BOOL){ bool_to_int_smt(smt); int_to_real_smt(smt); }
+	if(node->getOtype() == OutType::INT) int_to_real_smt(smt);
+}
+
+void equalize_otypes(bool_node* mother,string &msmt,bool_node* father,string &fsmt){
+	//make sure we've applied enough string ops to equalize otypes
+	OutType* om = mother->getOtype();
+	OutType* of = father->getOtype();
+	OutType* oB = OutType::BOOL;
+	OutType* oI = OutType::INT;
+	OutType* oA = OutType::INT_ARR;
+	OutType* oF = OutType::FLOAT;
+	if(om==of) return;
+	if(om==oB && of==oI) makeInt(mother,msmt);
+	if(om==oI && of==oB) makeInt(father,fsmt);
+	if((om==oI||om==oB) && of==oF) makeReal(mother,msmt);
+	if((of==oI||of==oB) && om==oF) makeReal(father,fsmt);
+
+	//Assert(false,"TODO");
+}
+string getConstSMT(int val){
+	if(val >= 0) return int2str(val);
+	else return "(- "+int2str(val)+")";
+}
+string dag_smt(BooleanDAG* dag, bool_node* node){
+	bool_node::Type t = node->type;
+	OutType* oB = OutType::BOOL;
+	OutType* oI = OutType::INT;
+	OutType* oA = OutType::INT_ARR;
+	OutType* oBA = OutType::BOOL_ARR;
+	OutType* oF = OutType::FLOAT;
+	OutType* oFA = OutType::FLOAT_ARR;
+
+	if( t == bool_node::ACTRL || t == bool_node::ASSERT){
+		Assert(false,"Not possible to visit ACTRL,ASSERT");
+	} 
+	else if(t == bool_node::DST ){
+		return dag_smt(dag,node->mother);
+	}
+	// binop = AND, OR, XOR, PLUS, TIMES, EQ, ARR_R, LT, DIV, MOD : set of two parents
+	else if(t == bool_node::AND || t == bool_node::OR || t == bool_node::XOR || t == bool_node::PLUS || t == bool_node::TIMES || t == bool_node::EQ || t == bool_node::ARR_R || t == bool_node::DIV || t == bool_node::MOD || t == bool_node::LT){
+		string mother_smt = dag_smt(dag,node->mother);
+		string father_smt = dag_smt(dag,node->father);
+		string smtop =smt_op(t);
+		if(t == bool_node::PLUS || t == bool_node::TIMES || t == bool_node::LT || t == bool_node::DIV || t==bool_node::MOD){
+			makeInt(node->mother,mother_smt);
+			makeInt(node->father,father_smt);
+		}
+		if(t == bool_node::ARR_R){
+			makeInt(node->mother,mother_smt);
+			string swap = mother_smt;
+			mother_smt = father_smt;
+			father_smt = swap;//SMT format has array first!
+		}
+		if(t == bool_node::AND|| t == bool_node::OR || t == bool_node::XOR ){
+			makeBool(node->mother,mother_smt);
+			makeBool(node->father,father_smt);
+		}
+		if(t==bool_node::EQ) equalize_otypes(node->mother,mother_smt,node->father,father_smt);
+		return "(" + smt_op(t) + " " + mother_smt + " " + father_smt + ")";
+	}
+
+	// unop = NOT, NEG : a single int
+	else if(t == bool_node::NOT){
+		string mother_smt = dag_smt(dag,node->mother);
+		if(node->mother->getOtype() == oI){
+			int_to_bool_smt(mother_smt);
+		}
+		return "(not "+mother_smt+")";
+	}
+	else if(t == bool_node::NEG){
+		string mother_smt = dag_smt(dag,node->mother);
+		if(node->mother->getOtype() == oB){
+			bool_to_int_smt(mother_smt);
+		}
+		return "(- "+mother_smt+")";
+	}
+	// SRC, CTRL, CONST: 0 parents, matches only s_otype
+	else if(t == bool_node::CONST){
+		CONST_node* cn = (CONST_node*)(node);
+		int val = cn->getVal();
+		if(cn->getOtype() == oB){
+			Assert(val==0 || val==1,"Constant should be boolean");
+			if(val == 0) return "false";
+			else return "true";
+		}
+		return getConstSMT(val);
+		
+	}
+	else if( t == bool_node::SRC ){
+		SRC_node* sn = (SRC_node*)(node);
+		return sn->get_name();
+	}
+	else if(t == bool_node::CTRL){
+		CTRL_node* ctn = (CTRL_node*)(node);
+		return ctn->get_name();
+	}
+	// UFUN-> should not be present
+	else if( t == bool_node::UFUN){
+		Assert(false,"These nodes are not allowed: UFUN");
+	}
+	// ARR_W = 3 ints indexed
+	else if(t == bool_node::ARR_W){
+		//mother = index
+		//multi_mother[0,1] -> old-arr,new-val
+		ARR_W_node* in = (dynamic_cast<ARR_W_node*>(node));
+		string mother_smt = dag_smt(dag,in->mother);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		makeInt(in->mother,mother_smt);
+		makeInt(in->multi_mother[1],mm1_smt);
+		return "(store " + mm0_smt + " " + mother_smt + " " + mm1_smt +")";
+	}
+	// ARR_CREATE = var size but all indexed
+	else if(t == bool_node::ARR_CREATE){
+		Assert(false,"ARR_CREATE not allowed?");
+	}
+	// ARRACC = var size (index and then var num of elts)
+	else if(t == bool_node::ARRACC){
+		ARRACC_node* in = (dynamic_cast<ARRACC_node*>(node));
+		string mother_smt = dag_smt(dag,in->mother);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		makeBool(in->mother,mother_smt);
+		equalize_otypes(in->multi_mother[0],mm0_smt,in->multi_mother[1],mm1_smt);
+		return "(ite " + mother_smt + " " + mm1_smt + " " + mm0_smt + ")";
+	}
+	else if(t == bool_node::ARRASS){
+		ARRASS_node* in = (dynamic_cast<ARRASS_node*>(node));
+		string mother_smt = dag_smt(dag,in->mother);
+		makeInt(in->mother,mother_smt);
+		string mm0_smt = dag_smt(dag,in->multi_mother[0]);
+		string mm1_smt = dag_smt(dag,in->multi_mother[1]);
+		equalize_otypes(in->multi_mother[0],mm0_smt,in->multi_mother[1],mm1_smt);
+		string quant = getConstSMT(in->quant);
+		return "(ite (= "+mother_smt+" "+quant+") "+mm1_smt+" "+mm0_smt+")";
+	}
+	else Assert(false,"type not identified!");
+
+}
+
+
+void BooleanDAG::smtrecprint(ostream &out){
+	string exists,forall;
+	vector<string> asserts;
+	string pre = "true";
+	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
+	for(int i=0;i<ctrls.size();i++){
+		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
+		exists= exists + "(" + cn->get_name() + " " + cn->getSMTOtype() + " )";
+		if(cn->getOtype() == OutType::INT){
+			int k = cn->get_nbits();
+			asserts.push_back("(and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" ))");
+		}
+	}
+	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
+	for(int i=0;i<srcs.size();i++){
+		SRC_node* sn = (SRC_node*)(srcs[i]);
+		forall = forall + "(" + sn->get_name() + " " + sn->getSMTOtype() + " )";
+		if(sn->getOtype() == OutType::INT){
+			int k = sn->get_nbits();
+			pre= "(and " + ("(and (>= "+sn->get_name()+" 0) (< "+sn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )) ") + pre + ")";
+		}
+	}
+	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
+	for(int i=0;i<assert_nodes.size();i++){
+		asserts.push_back(dag_smt(this,assert_nodes[i]->mother));
+	}
+	string assert_str = asserts[0];
+	if(asserts.size() > 1) {
+		for(int i=1;i<asserts.size();i++){
+			assert_str = "(and " + assert_str + " " + asserts[i] + ")";
+		}
+	}
+	if(exists != "" && forall != ""){
+		out<<"(exists ("<<exists<<") (forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<")))"<<endl;
+	}
+	else if(exists == ""){
+		out<<"(forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<"))"<<endl;
+	}
+	else if(forall == ""){
+		out<<"(exists ("<<exists<<") (implies "<<pre<<" "<<assert_str<<"))"<<endl;
+	}
+	else Assert(false,"Can't have both srcs and ctrls empty from the DAG");
+	out<<"(check-sat)\n(exit)";
+	out.flush();
+}
 void BooleanDAG::smtprint(ostream& out){
     //NOTE: bounds for SRC/CTRL nodes are presented as assertions
 	//Another possible way is to use bitvectors in z3 - need to figure out more details/need
