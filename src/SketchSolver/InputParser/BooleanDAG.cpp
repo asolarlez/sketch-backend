@@ -1033,17 +1033,18 @@ void BooleanDAG::smtrecprint(ostream &out){
 			assert_str = "(and " + assert_str + " " + asserts[i] + ")";
 		}
 	}
+	out<<"(assert ";
 	if(exists != "" && forall != ""){
-		out<<"(exists ("<<exists<<") (forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<")))"<<endl;
+		out<<"(exists ("<<exists<<") (forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<")))";
 	}
 	else if(exists == ""){
-		out<<"(forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<"))"<<endl;
+		out<<"(forall ("<<forall<<") (implies "<<pre<<" "<<assert_str<<"))";
 	}
 	else if(forall == ""){
-		out<<"(exists ("<<exists<<") (implies "<<pre<<" "<<assert_str<<"))"<<endl;
+		out<<"(exists ("<<exists<<") (implies "<<pre<<" "<<assert_str<<"))";
 	}
 	else Assert(false,"Can't have both srcs and ctrls empty from the DAG");
-	out<<"(check-sat)\n(exit)";
+	out<<")\n(check-sat)\n(exit)";
 	out.flush();
 }
 void BooleanDAG::smtprint(ostream& out){
