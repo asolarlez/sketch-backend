@@ -969,7 +969,7 @@ class NOT_node: public bool_node{
 	}
     virtual string smtprint(){
 		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (not _n"<< mother-id <<")))";
+		ss<<"(assert (= _n"<<id<<" (not _n"<< mother->id <<")))";
 		return ss.str();
 	}
 };
@@ -1186,7 +1186,7 @@ class ARRACC_node: public arith_node{
 	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
 	virtual string smtprint(){
 		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (ite _n"<< mother-id <<" _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
+		ss<<"(assert (= _n"<<id<<" (ite _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
 		return ss.str();
 	}
 };
@@ -1235,7 +1235,7 @@ class NEG_node: public bool_node{
     }
 	virtual string smtprint(){
 		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (- _n"<< mother-id <<")))";
+		ss<<"(assert (= _n"<<id<<" (- _n"<< mother->id <<")))";
 		return ss.str();
 	}
 };
@@ -1446,7 +1446,7 @@ class ARRASS_node: public arith_node{
     }
 	virtual string smtprint(){
 		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (ite (= _n"<< mother-id <<" ";
+		ss<<"(assert (= _n"<<id<<" (ite (= _n"<< mother->id <<" ";
 		if (quant >= 0) ss<<quant;
 		else ss<<"(- "<<-quant<<")";
 		ss<<") _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
