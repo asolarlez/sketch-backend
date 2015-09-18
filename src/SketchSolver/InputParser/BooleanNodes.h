@@ -921,6 +921,7 @@ class CTRL_node: public INTER_node{
 		
 		stringstream ss;
 		ss<<"(declare-fun _n"<<id<<" () ";
+		otype=getOtype();
 		if(otype == OutType::INT){
 			int k = get_nbits();
 			ss<<" Int) ;" <<get_name() + "\n";
@@ -1343,12 +1344,12 @@ class CONST_node: public bool_node{
 		stringstream ss;
 		ss<<"(assert (= _n"<<id<<" ";
 		
-		if(otype==OutType::BOOL){
+		if(getOtype() == OutType::BOOL){
 			int x = getVal();
 			Assert(x==0 || x==1,"Should be boolean values");
 			ss<<x;
 		}
-		else if(otype==OutType::INT){
+		else if(getOtype() == OutType::INT){
 			int x = getVal();
 			if(x>=0){
 				ss<<x;
@@ -1357,7 +1358,7 @@ class CONST_node: public bool_node{
 				ss<<"(- "<<-x<<")";
 			}
 		}
-		else if(otype==OutType::FLOAT){
+		else if(getOtype() == OutType::FLOAT){
 			double x = getFval();
 			if(x>=0){
 				ss<<x;
