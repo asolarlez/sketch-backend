@@ -1060,7 +1060,7 @@ void BooleanDAG::smtlinprint(ostream &out){
 	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
 	for(int i=0;i<ctrls.size();i++){
 		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
-		exists= exists + "(" + cn->get_name() + " " + cn->getSMTOtype() + " )";
+		exists= exists + " (" + cn->get_name() + " " + cn->getSMTOtype() + ") ";
 		if(cn->getOtype() == OutType::INT){
 			int k = cn->get_nbits();
 			if(asserted == ""){
@@ -1118,7 +1118,7 @@ void BooleanDAG::smtlinprint(ostream &out){
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
 			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
-				out<<nodes[i]->smtletprint()<<endl;
+				out<<nodes[i]->smtletprint();
 				parentheses++;
 			}
   		}    
