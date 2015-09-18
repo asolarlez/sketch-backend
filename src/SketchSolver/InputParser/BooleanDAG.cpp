@@ -1106,6 +1106,7 @@ void BooleanDAG::smtlinprint(ostream &out){
 			}
   		}    
 	}
+	out<<" "<<asserted<<" ";
 	for(int i=0;i<parentheses;i++){
 		out<<")";
 	}
