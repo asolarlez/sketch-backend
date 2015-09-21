@@ -210,6 +210,30 @@ struct bool_node{
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
     }
+	string getSMTnode(OutType* ot_needed){
+		//We want to have ot_needed type for this node
+		//compare with it's current type and do appropriate type-casting
+		//in SMT: ideally this should just return _n<id>
+		OutType* ot_current =getOtype();
+		string base = " _n" + int2str(id) + " ";
+		if(ot_current == ot_needed){
+			return base;
+		}
+		else if(ot_current == OutType::BOOL && ot_needed == OutType::INT){
+			return " (ite " +base + " 1 0) ";
+		}
+		else if(ot_current == OutType::INT && ot_needed == OutType::BOOL){
+			return " (ite (> " +base + " 0) true false) ";
+		}
+		else if(ot_current == OutType::INT && ot_needed == OutType::FLOAT){
+			return " (to_real " +base + ") ";
+		}
+		else if(ot_current == OutType::BOOL && ot_needed == OutType::FLOAT){
+			return " (to_real (ite " +base+" 1 0)) ";
+		}
+		else Assert(false, "Type conversion either not supported or implemented: " + ot_current->str() + " -> " + ot_needed->str());
+
+	}
 	virtual string get_smtop() const{
         switch(type){
             case PLUS: return "+";
@@ -297,29 +321,25 @@ struct bool_node{
     }
     
     virtual OutType* getOtype() const;
-    virtual string smtprint(){
-		//Default print for binary ops
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" ";
-		string op = get_smtop();
-		ss<<" ("<<op<<" ";
-		if(op == "select") {//TODO: Make sure all special nodes have their print functions!
-			ss<<" _n"<<father->id<<" _n"<<mother->id;
-		}
-		else ss<<" _n"<<mother->id<<" _n"<<father->id;
-		return ss.str() + ") ))";
-	}
 	virtual string smtletprint(){
 		//Default print for binary ops
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" ";
 		string op = get_smtop();
 		ss<<" ("<<op<<" ";
+		OutType* otm;
+		OutType* otf;
+		if(op == "+" || op == "*" || op == "div" || op == "mod" || op =="<"){ otm= OutType::INT; otf = otm; }
+		else if(op == "and" || op == "or" || op == "xor") { otm= OutType::BOOL; otf = otm; }
+		else if (op == "select"){ otm= OutType::INT; otf = father->getOtype(); }
+		else if (op == "="){ OutType* ot_temp = OutType::joinOtype(mother->getOtype(),father->getOtype()); otm = ot_temp; otf = ot_temp; }
+		else Assert(false,"Common smtletprint shouldn't be called for this operation: " + op);
+		string msmt = mother->getSMTnode(otm);
+		string fsmt = father->getSMTnode(otf);
 		if(op == "select") {//TODO: Make sure all special nodes have their print functions!
-			ss<<" _n"<<father->id<<" _n"<<mother->id;
+			ss<<" "<<fsmt<<" "<<msmt;
 		}
-		else ss<<" _n"<<mother->id<<" _n"<<father->id;
-		return ss.str() + "))) ";
+		else ss<<" "<<msmt<<" "<<fsmt;
+		return ss.str() + ") ";
 	}
 	virtual string getSMTOtype(){
 		otype=getOtype();
@@ -346,12 +366,6 @@ struct bool_node{
 			Assert(false,"OutType not identified!");
 			return "";
 		}
-	}
-	virtual string smtdefine(){
-		//define the variable for this node
-		stringstream ss;
-		ss<<"(declare-fun _n"<<id<<" () "<<getSMTOtype()<<")";
-		return ss.str();
 	}
 
 	virtual string mrprint()const{
@@ -519,14 +533,9 @@ class ARR_W_node:public arith_node{
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother[0]->id<<" "<<multi_mother[1]->id;
         return str.str();
     }
-	virtual string smtprint(){//array index value in SMT, index array value in DAG
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (store _n"<<multi_mother[0]->id <<" _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" ) ))";
-		return ss.str();
-	}
 	virtual string smtletprint(){//array index value in SMT, index array value in DAG
 		stringstream ss;
-		ss<<"(let (( _n"<<id<<" (store _n"<<multi_mother[0]->id <<" _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" ))) ";
+		ss<<" (store "<<multi_mother[0]->getSMTnode(multi_mother[0]->getOtype())<<" "<< mother->getSMTnode(OutType::INT) <<" "<<multi_mother[1]->getSMTnode(OutType::INT)<<") ";
 		return ss.str();
 	}
 };
@@ -985,27 +994,10 @@ class CTRL_node: public INTER_node{
 		Assert(false, "NYI; egewajyt");
 		return otype;
 	}
-	virtual string smtprint(){
-		//defined the variable, add bounds as constraints
-		
-		stringstream ss;
-		if(otype == OutType::INT){
-			int k = get_nbits();
-			ss<<"\n(assert (and (>= _n"<<id<<" 0) (< _n"<<id<<" "<<int(pow(2.0,1.0*k))<<")))";
-		}
-		return ss.str();
-	}
 	virtual string smtletprint(){
 		//defined the variable, add bounds as constraints
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" "<<get_name()<<" )) ";
-		return ss.str();
-	}
-	virtual string smtdefine(){
-		stringstream ss;
-		ss<<"(declare-fun _n"<<id<<" () "<<getSMTOtype()<<")\n";
-		ss<<"(declare-fun "<<get_name()<<" () "<<getSMTOtype()<<")\n";
-		ss<<"(assert (= _n"<<id<<" "<<get_name()<<" ))";
+		ss<<" "<<get_name()<<" ";//")) ";
 		return ss.str();
 	}
 };
@@ -1029,14 +1021,9 @@ class NOT_node: public bool_node{
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
 		return str.str();
 	}
-    virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (not _n"<< mother->id <<")))";
-		return ss.str();
-	}
     virtual string smtletprint(){
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" (not _n"<< mother->id <<"))) ";
+		ss<<" (not "<< mother->getSMTnode(OutType::BOOL) <<") ";
 		return ss.str();
 	}
 };
@@ -1255,14 +1242,10 @@ class ARRACC_node: public arith_node{
         return str.str();
     }
 	virtual bool_node* clone(bool copyChildren = true){return new ARRACC_node(*this, copyChildren);  };
-	virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (ite _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
-		return ss.str();
-	}
 	virtual string smtletprint(){
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" (ite _n"<< mother->id <<" _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" ))) ";
+		OutType* ot_join = OutType::joinOtype(multi_mother[1]->getOtype(),multi_mother[0]->getOtype());
+		ss<<" (ite "<< mother->getSMTnode(OutType::BOOL) <<" "<<multi_mother[1]->getSMTnode(ot_join)<<" "<<multi_mother[0]->getSMTnode(ot_join)<<" ) ";
 		return ss.str();
 	}
 };
@@ -1309,14 +1292,10 @@ class NEG_node: public bool_node{
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id;
         return str.str();
     }
-	virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (- _n"<< mother->id <<")))";
-		return ss.str();
-	}
+
 	virtual string smtletprint(){
 		stringstream ss;
-		ss<<"(let (_n"<<id<<" (- _n"<< mother->id <<")))";
+		ss<<" (- "<< mother->getSMTnode(OutType::INT) <<")";
 		return ss.str();
 	}
 };
@@ -1420,45 +1399,15 @@ class CONST_node: public bool_node{
         }
         return str.str();
     }
-	virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" ";
-		
-		if(getOtype() == OutType::BOOL){
-			int x = getVal();
-			Assert(x==0 || x==1,"Should be boolean values");
-			ss<<x;
-		}
-		else if(getOtype() == OutType::INT){
-			int x = getVal();
-			if(x>=0){
-				ss<<x;
-			}
-			else{
-				ss<<"(- "<<-x<<")";
-			}
-		}
-		else if(getOtype() == OutType::FLOAT){
-			double x = getFval();
-			if(x>=0){
-				ss<<x;
-			}
-			else{
-				ss<<"(- "<<-x<<")";
-			}
-		}
-		else Assert(false,"OutType invalid");
-		ss<<"))";
-		return ss.str();
-	}
 	virtual string smtletprint(){
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" ";
+		ss<<" ";
 		
 		if(getOtype() == OutType::BOOL){
 			int x = getVal();
 			Assert(x==0 || x==1,"Should be boolean values");
-			ss<<x;
+			if(x==1) ss<<"true";
+			else ss<<"false";
 		}
 		else if(getOtype() == OutType::INT){
 			int x = getVal();
@@ -1479,7 +1428,7 @@ class CONST_node: public bool_node{
 			}
 		}
 		else Assert(false,"OutType invalid");
-		ss<<"))";
+		ss<<" ";
 		return ss.str();
 	}
 };
@@ -1556,20 +1505,13 @@ class ARRASS_node: public arith_node{
         str<<" "<<multi_mother[1]->id;
         return str.str();
     }
-	virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert (= _n"<<id<<" (ite (= _n"<< mother->id <<" ";
-		if (quant >= 0) ss<<quant;
-		else ss<<"(- "<<-quant<<")";
-		ss<<") _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
-		return ss.str();
-	}
 	virtual string smtletprint(){
 		stringstream ss;
-		ss<<"(let ((_n"<<id<<" (ite (= _n"<< mother->id <<" ";
+		OutType* ot_join = OutType::joinOtype(multi_mother[1]->getOtype(),multi_mother[0]->getOtype());
+		ss<<" (ite (= "<< mother->getSMTnode(OutType::INT) <<" ";
 		if (quant >= 0) ss<<quant;
 		else ss<<"(- "<<-quant<<")";
-		ss<<") _n"<<multi_mother[1]->id<<" _n"<<multi_mother[0]->id<<" )))";
+		ss<<") "<<multi_mother[1]->getSMTnode(ot_join)<<" "<<multi_mother[0]->getSMTnode(ot_join)<<" ) ";
 		return ss.str();
 	}
 
@@ -1648,11 +1590,6 @@ class ASSERT_node: public bool_node, virtual public DllistNode{
         str<<id<<" = "<<get_tname()<<" "<<mother->id<<" \""<<msg<<"\"";
         return str.str();
     }
-	virtual string smtprint(){
-		stringstream ss;
-		ss<<"(assert _n"<<mother->id<<")";
-		return ss.str();
-	}
 	virtual string smtletprint(){
 		Assert(false,"Assert nodes should be by-passed for SMT generation");
 		return "";
