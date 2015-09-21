@@ -895,8 +895,7 @@ class SRC_node: public INTER_node{
 		return "";
 	}
 	virtual string smtletprint(){
-		Assert(false, "SRC nodes for SMT not supported");
-		return "";
+		return get_name();
 	}
 	virtual bool_node* clone(bool copyChildren = true){
         return new SRC_node(*this, copyChildren);};
