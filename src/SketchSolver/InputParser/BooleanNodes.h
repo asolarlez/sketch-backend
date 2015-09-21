@@ -552,12 +552,27 @@ class ARR_W_node:public arith_node{
 	virtual string smtletprint(){//array index value in SMT, index array value in DAG
 		stringstream ss;
 		string astr;
+		OutType* vtype = multi_mother[1]->getOtype();
+		OutType* varrtype, *aarrtype, *avaltype;
 		OutType* atype = multi_mother[0]->getOtype();
-		if(atype==OutType::BOOL) atype = OutType::BOOL_ARR;
-		else if(atype==OutType::INT) atype = OutType::INT_ARR;
-		else if(atype==OutType::FLOAT) atype = OutType::FLOAT_ARR;
-		else Assert(false,"other types cannot be converted to arrays!");
-		ss<<" (store "<<multi_mother[0]->getSMTnode(atype)<<" "<< mother->getSMTnode(OutType::INT) <<" "<<multi_mother[1]->getSMTnode(OutType::INT)<<") ";
+		if(vtype==OutType::BOOL) varrtype = OutType::BOOL_ARR;
+		else if(vtype==OutType::INT) varrtype = OutType::INT_ARR;
+		else if(vtype==OutType::FLOAT) varrtype = OutType::FLOAT_ARR;
+		else Assert(false,"other val types cannot be converted to arrays!");
+
+		avaltype = atype; aarrtype = atype;
+		if(atype==OutType::BOOL_ARR) avaltype = OutType::BOOL;
+		else if(atype==OutType::INT_ARR) avaltype = OutType::INT;
+		else if(atype==OutType::FLOAT_ARR) avaltype = OutType::FLOAT;
+		else if(atype==OutType::BOOL) aarrtype = OutType::BOOL_ARR;
+		else if(atype==OutType::INT) aarrtype = OutType::INT_ARR;
+		else if(atype==OutType::FLOAT) aarrtype = OutType::FLOAT_ARR;
+		else Assert(false,"other val types cannot be converted to arrays!");
+		
+		atype = OutType::joinOtype(aarrtype,varrtype);
+		vtype = OutType::joinOtype(avaltype,vtype);
+
+		ss<<" (store "<<multi_mother[0]->getSMTnode(atype)<<" "<< mother->getSMTnode(OutType::INT) <<" "<<multi_mother[1]->getSMTnode(vtype)<<") ";
 		return ss.str();
 	}
 };
