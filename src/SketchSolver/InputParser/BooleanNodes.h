@@ -895,7 +895,7 @@ class SRC_node: public INTER_node{
 		return "";
 	}
 	virtual string smtletprint(){
-		return get_name();
+		return " " + get_name() + " ";
 	}
 	virtual bool_node* clone(bool copyChildren = true){
         return new SRC_node(*this, copyChildren);};
