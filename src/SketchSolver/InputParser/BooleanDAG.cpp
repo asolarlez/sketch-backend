@@ -793,16 +793,6 @@ void BooleanDAG::mrprint(ostream& out){
   out.flush();
 }
 
-void bool_to_int_smt(string &smt){
-	smt = "(ite " + smt + "  1 0)";
-}
-void int_to_bool_smt(string &smt){
-	smt = "(ite (> " + smt + " 0)  true false)";
-}
-
-void int_to_real_smt(string &smt){
-	smt = "(to_real " + smt + " )";
-}
 string smt_op(bool_node::Type t){
 	if(t == bool_node::AND){
 		return "and";
@@ -848,9 +838,6 @@ string smt_op(bool_node::Type t){
 	}
 	else Assert(false, "Ivalid type for SMT!");
 }
-
-
-
 
 void BooleanDAG::smtlinprint(ostream &out){
 	string exists,forall;
