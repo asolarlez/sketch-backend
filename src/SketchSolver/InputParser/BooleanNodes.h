@@ -345,7 +345,7 @@ struct bool_node{
 			if(otf==OutType::BOOL) otf = OutType::BOOL_ARR;
 			else if(otf==OutType::INT) otf = OutType::INT_ARR;
 			else if(otf==OutType::FLOAT) otf = OutType::FLOAT_ARR;
-			else Assert(false,"other types cannot be converted to arrays!");
+			else if (!(otf == OutType::INT_ARR || otf==OutType::BOOL_ARR || otf == OutType::FLOAT_ARR)) Assert(false,"other types cannot be converted to arrays!");
 		}
 		else if (op == "="){ OutType* ot_temp = OutType::joinOtype(mother->getOtype(),father->getOtype()); otm = ot_temp; otf = ot_temp; }
 		else Assert(false,"Common smtletprint shouldn't be called for this operation: " + op);
@@ -567,7 +567,7 @@ class ARR_W_node:public arith_node{
 		else if(atype==OutType::BOOL) aarrtype = OutType::BOOL_ARR;
 		else if(atype==OutType::INT) aarrtype = OutType::INT_ARR;
 		else if(atype==OutType::FLOAT) aarrtype = OutType::FLOAT_ARR;
-		else Assert(false,"other val types cannot be converted to arrays!");
+		else Assert(false,"other arr types cannot be converted to arrays!");
 		
 		atype = OutType::joinOtype(aarrtype,varrtype);
 		vtype = OutType::joinOtype(avaltype,vtype);
