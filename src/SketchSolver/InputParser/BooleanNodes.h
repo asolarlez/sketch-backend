@@ -231,6 +231,9 @@ struct bool_node{
 		else if(ot_current == OutType::BOOL && ot_needed == OutType::FLOAT){
 			return " (to_real (ite " +base+" 1 0)) ";
 		}
+		else if(type==bool_node::CONST && ot_needed == OutType::INT_ARR){
+			return "((as const (Array Int Int)) "+ this->smtletprint() +")";
+		}
 		else Assert(false, "Type conversion either not supported or implemented: " + ot_current->str() + " -> " + ot_needed->str());
 
 	}
