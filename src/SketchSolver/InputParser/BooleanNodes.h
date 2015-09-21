@@ -234,6 +234,12 @@ struct bool_node{
 		else if(type==bool_node::CONST && ot_needed == OutType::INT_ARR){
 			return "((as const (Array Int Int)) "+ this->smtletprint() +")";
 		}
+		else if(type==bool_node::CONST && ot_needed == OutType::BOOL_ARR){
+			return "((as const (Array Int Bool)) "+ this->smtletprint() +")";
+		}
+		else if(type==bool_node::CONST && ot_needed == OutType::FLOAT_ARR){
+			return "((as const (Array Int Real)) "+ this->smtletprint() +")";
+		}
 		else Assert(false, "Type conversion either not supported or implemented: " + ot_current->str() + " -> " + ot_needed->str());
 
 	}
@@ -333,7 +339,14 @@ struct bool_node{
 		OutType* otf;
 		if(op == "+" || op == "*" || op == "div" || op == "mod" || op =="<"){ otm= OutType::INT; otf = otm; }
 		else if(op == "and" || op == "or" || op == "xor") { otm= OutType::BOOL; otf = otm; }
-		else if (op == "select"){ otm= OutType::INT; otf = father->getOtype(); }
+		else if (op == "select"){ 
+			otm= OutType::INT; 
+			otf = father->getOtype();
+			if(otf==OutType::BOOL) otf = OutType::BOOL_ARR;
+			else if(otf==OutType::INT) otf = OutType::INT_ARR;
+			else if(otf==OutType::FLOAT) otf = OutType::FLOAT_ARR;
+			else Assert(false,"other types cannot be converted to arrays!");
+		}
 		else if (op == "="){ OutType* ot_temp = OutType::joinOtype(mother->getOtype(),father->getOtype()); otm = ot_temp; otf = ot_temp; }
 		else Assert(false,"Common smtletprint shouldn't be called for this operation: " + op);
 		string msmt = mother->getSMTnode(otm);
@@ -538,7 +551,13 @@ class ARR_W_node:public arith_node{
     }
 	virtual string smtletprint(){//array index value in SMT, index array value in DAG
 		stringstream ss;
-		ss<<" (store "<<multi_mother[0]->getSMTnode(multi_mother[0]->getOtype())<<" "<< mother->getSMTnode(OutType::INT) <<" "<<multi_mother[1]->getSMTnode(OutType::INT)<<") ";
+		string astr;
+		OutType* atype = multi_mother[0]->getOtype();
+		if(atype==OutType::BOOL) atype = OutType::BOOL_ARR;
+		else if(atype==OutType::INT) atype = OutType::INT_ARR;
+		else if(atype==OutType::FLOAT) atype = OutType::FLOAT_ARR;
+		else Assert(false,"other types cannot be converted to arrays!");
+		ss<<" (store "<<multi_mother[0]->getSMTnode(atype)<<" "<< mother->getSMTnode(OutType::INT) <<" "<<multi_mother[1]->getSMTnode(OutType::INT)<<") ";
 		return ss.str();
 	}
 };

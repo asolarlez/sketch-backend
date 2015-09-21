@@ -919,12 +919,9 @@ void BooleanDAG::smtlinprint(ostream &out){
 		parentheses++;
 	}
 	//output all asserts after lets
-	int tabs =1;
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
 			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
-				for(int j=0;j<tabs;j++) out<<" ";
-				tabs++;
 				out<<"(let ((_n"<<nodes[i]->id;
 				out<<nodes[i]->smtletprint();
 				parentheses++;
@@ -932,11 +929,8 @@ void BooleanDAG::smtlinprint(ostream &out){
 			}
   		}    
 	}
-	for(int j=0;j<tabs+1;j++) out<<" ";
 	out<<" "<<asserted<<" ";
 	for(int i=0;i<parentheses;i++){
-		for(int j=0;j<tabs;j++) out<<" ";
-		tabs--;
 		out<<")"<<endl;
 	}
 	out<<"\n(check-sat)\n(exit)";
