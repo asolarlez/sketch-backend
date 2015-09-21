@@ -858,6 +858,7 @@ void BooleanDAG::smtlinprint(ostream &out){
 		}
 	}
 	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
+	//if(srcs.empty()) {smt_exists_print(out); return; }
 	for(int i=0;i<srcs.size();i++){
 		SRC_node* sn = (SRC_node*)(srcs[i]);
 		forall = forall + "(" + sn->get_name() + " " + sn->getSMTOtype() + " )";
@@ -918,12 +919,56 @@ void BooleanDAG::smtlinprint(ostream &out){
 	}
 	out<<" "<<asserted<<" ";
 	for(int i=0;i<parentheses;i++){
-		out<<")"<<endl;
+		out<<")";
 	}
 	out<<"\n(check-sat)\n(exit)";
 	out.flush();
 	cout<<"Done with Output SMT"<<endl;
 }
+
+void BooleanDAG::smt_exists_print(ostream &out){
+	string asserted = "";
+	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
+	for(int i=0;i<ctrls.size();i++){
+		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
+		out<<" (declare-const " + cn->get_name() + " " + cn->getSMTOtype() + ") "<<endl;
+		if(cn->getOtype() == OutType::INT){
+			int k = cn->get_nbits();
+			if(asserted == ""){
+				asserted = " (and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )) ";
+			}
+			else{
+				asserted = " (and "+ asserted +" (and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" ))) ";
+			}
+		}
+	}
+	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
+	Assert(srcs.size() == 0, "Cannot have SRC nodes here");
+	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
+	map<int,string> seen;
+	string assert_str = "";
+	for(int i=0;i<assert_nodes.size();i++){
+		assert_str += " _n"+int2str(assert_nodes[i]->mother->id)+" ";
+	}
+	if(assert_nodes.size() >= 2) assert_str = "(and " + assert_str + ") ";
+	if(asserted=="") asserted = assert_str;
+	else asserted = "(and "+asserted+" " + assert_str+")";
+
+	//output all asserts after declaring each node
+	for(int i=0; i<nodes.size(); ++i){
+  		if(nodes[i] != NULL){
+			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
+				out<<"(declare-const _n"<<nodes[i]->id<<" "<<nodes[i]->getSMTOtype()<<")"<<endl;
+				out<<"(assert (= _n"<<nodes[i]->id<<" "<<nodes[i]->smtletprint()<<"))"<<endl;
+			}
+  		}    
+	}
+	out<<"(assert "<<asserted<<" )"<<endl;
+	out<<"\n(check-sat)\n(exit)";
+	out.flush();
+	cout<<"Done with Output SMT"<<endl;
+}
+
 
 void BooleanDAG::lprint(ostream& out){    
 	out<<"dag"<< this->get_name() <<"{"<<endl;

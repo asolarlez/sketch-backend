@@ -637,6 +637,11 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		result->smtlinprint(of);
 		of.close();
 	}
-    
+    if(params.outputExistsSMT){
+		ofstream of(params.smtfile.c_str());
+		cout<<"Outputing SMT for DAG to file "<<params.smtfile<<endl;
+		result->smt_exists_print(of);
+		of.close();
+	}
 	return result;
 }

@@ -50,6 +50,7 @@ struct CommandLineArgs{
   bool showDAG;
   bool outputMRDAG;
   bool outputSMT;
+  bool outputExistsSMT;
   string smtfile;
   int bndDAG;
   bool minvarHole;
@@ -125,6 +126,7 @@ struct CommandLineArgs{
 		showDAG = false;
 		outputMRDAG = false;
 		outputSMT = false;
+		outputExistsSMT = false;
 		smtfile = "";
 		bndDAG = -1;
 		ufunSymmetry = false;
@@ -373,6 +375,12 @@ struct CommandLineArgs{
 	    }
 		if( string(argv[ii]) == "-writeSMT" ){
 	    	outputSMT = true;
+			smtfile = argv[ii+1];
+	      input_idx = ii+2;      
+		  continue;
+	    }
+		if( string(argv[ii]) == "-writeExistsSMT" ){
+			outputExistsSMT = true;
 			smtfile = argv[ii+1];
 	      input_idx = ii+2;      
 		  continue;
