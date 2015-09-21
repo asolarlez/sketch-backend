@@ -232,13 +232,25 @@ struct bool_node{
 			return " (to_real (ite " +base+" 1 0)) ";
 		}
 		else if(type==bool_node::CONST && ot_needed == OutType::INT_ARR){
-			return "((as const (Array Int Int)) "+ this->smtletprint() +")";
+			OutType* ot_temp = getOtype();
+			otype = OutType::INT;
+			string ret = "((as const (Array Int Int)) "+ this->smtletprint() +")";
+			otype = ot_temp;
+			return ret;
 		}
 		else if(type==bool_node::CONST && ot_needed == OutType::BOOL_ARR){
-			return "((as const (Array Int Bool)) "+ this->smtletprint() +")";
+			OutType* ot_temp = getOtype();
+			otype = OutType::BOOL;
+			string ret = "((as const (Array Int Bool)) "+ this->smtletprint() +")";
+			otype = ot_temp;
+			return ret;
 		}
 		else if(type==bool_node::CONST && ot_needed == OutType::FLOAT_ARR){
-			return "((as const (Array Int Real)) "+ this->smtletprint() +")";
+			OutType* ot_temp = getOtype();
+			otype = OutType::FLOAT;
+			string ret = "((as const (Array Int Real)) "+ this->smtletprint() +")";
+			otype = ot_temp;
+			return ret;
 		}
 		else Assert(false, "Type conversion either not supported or implemented: " + ot_current->str() + " -> " + ot_needed->str());
 
