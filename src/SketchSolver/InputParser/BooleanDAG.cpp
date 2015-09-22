@@ -881,7 +881,7 @@ void getAssertStr(vector<bool_node*> &assert_nodes, string & assert_str, string 
 	for(int i=0;i<assert_nodes.size();i++){
 		ASSERT_node* an = (ASSERT_node*)(assert_nodes[i]);
 		string cur_bool = " _n"+int2str(assert_nodes[i]->mother->id)+" ";
-		if(an->isAssume()){
+		if(an->isAssume() || an->isHard()){
 			assume_ctr++;
 			if(pre=="") pre=cur_bool;
 			else pre = "(and " + pre + cur_bool + ")";
@@ -932,10 +932,7 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 		parentheses++;
 	}
 	else Assert(false,"Can't have both srcs and ctrls empty from the DAG");
-	if(pre != ""){
-		out<<"(implies "<<pre<<" ";
-		parentheses++;
-	}
+
 	//output all asserts after lets
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
@@ -947,11 +944,13 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 			}
   		}    
 	}
+	if(pre != ""){
+		out<<"(implies "<<pre<<" ";
+		parentheses++;
+	}
 	if(asserted != "") out<<" "<<asserted<<" ";
 	else out <<" true "<<endl;
-	for(int i=0;i<parentheses;i++){
-		out<<")";
-	}
+	for(int i=0;i<parentheses;i++) out<<")";
 	opSMTend(out);
 }
 
