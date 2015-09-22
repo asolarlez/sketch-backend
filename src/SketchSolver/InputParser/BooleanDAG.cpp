@@ -838,15 +838,13 @@ string smt_op(bool_node::Type t){
 	}
 	else Assert(false, "Ivalid type for SMT!");
 }
-
-void BooleanDAG::smtlinprint(ostream &out, int &nbits){
-	string exists,forall;
-	string asserted = "";
-	string pre = "";
-	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
+void getCTRLasserts(vector<bool_node*> &ctrls,string &asserted, string &exists, bool letstmts){
 	for(int i=0;i<ctrls.size();i++){
 		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
-		exists= exists + " (" + cn->get_name() + " " + cn->getSMTOtype() + ") ";
+		if(letstmts) exists= exists + " (" + cn->get_name() + " " + cn->getSMTOtype() + ") ";
+		else {
+			exists = exists + " (declare-const " + cn->get_name() + " " + cn->getSMTOtype() + ") \n";
+		}
 		if(cn->getOtype() == OutType::INT){
 			int k = cn->get_nbits();
 			if(asserted == ""){
@@ -857,8 +855,9 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 			}
 		}
 	}
-	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
-	//if(srcs.empty()) {smt_exists_print(out); return; }
+}
+
+void getSRCpre(vector<bool_node*> &srcs, string &pre, string &forall, int &nbits){
 	for(int i=0;i<srcs.size();i++){
 		SRC_node* sn = (SRC_node*)(srcs[i]);
 		forall = forall + "(" + sn->get_name() + " " + sn->getSMTOtype() + " )";
@@ -872,21 +871,52 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 			}
 		}
 	}
-	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
-	map<int,string> seen;
-	string assert_str = "";
+}
+
+
+void getAssertStr(vector<bool_node*> &assert_nodes, string & assert_str, string &asserted, string &pre){
+	//pre is for assumes!
+	int assume_ctr = 0;
+	int assert_ctr = 0;
 	for(int i=0;i<assert_nodes.size();i++){
-		assert_str += " _n"+int2str(assert_nodes[i]->mother->id)+" ";
+		ASSERT_node* an = (ASSERT_node*)(assert_nodes[i]);
+		string cur_bool = " _n"+int2str(assert_nodes[i]->mother->id)+" ";
+		if(an->isAssume()){
+			assume_ctr++;
+			if(pre=="") pre=cur_bool;
+			else pre = "(and " + pre + cur_bool + ")";
+		}
+		else{
+			assert_ctr++;
+			assert_str += cur_bool;
+		}
 	}
-	if(assert_nodes.size() >= 2){
-		assert_str = "(and " + assert_str + ") ";
-	}
-	if(asserted==""){
-		asserted = assert_str;
-	}
-	else{
-		asserted = "(and "+asserted+" " + assert_str+")";
-	}
+	if(assert_ctr >= 2) assert_str = "(and " + assert_str + ") ";
+	if(asserted=="") asserted = assert_str;
+	else asserted = "(and "+asserted+" " + assert_str+")";
+}
+
+void opSMTend(ostream &out){
+	out<<"\n(check-sat)\n(get-model)\n(exit)";
+	out.flush();
+	//cout<<"Done with Output SMT"<<endl;
+}
+
+void BooleanDAG::smtlinprint(ostream &out, int &nbits){
+	string exists,forall; 
+	string asserted = "";
+	string pre = "";
+	
+	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
+	getCTRLasserts(ctrls,asserted,exists,true);
+	
+	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
+	getSRCpre(srcs, pre, forall, nbits);
+	
+	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
+	string assert_str = "";
+	getAssertStr(assert_nodes, assert_str, asserted,pre);
+	
 	int parentheses = 1;
 	out<<"(assert ";
 	if(exists != "" && forall != ""){
@@ -922,38 +952,21 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 	for(int i=0;i<parentheses;i++){
 		out<<")";
 	}
-	out<<"\n(check-sat)\n(get-model)\n(exit)";
-	out.flush();
-	cout<<"Done with Output SMT"<<endl;
+	opSMTend(out);
 }
 
 void BooleanDAG::smt_exists_print(ostream &out){
 	string asserted = "";
+	string exists = "";
 	vector<bool_node*> ctrls = getNodesByType(bool_node::CTRL);
-	for(int i=0;i<ctrls.size();i++){
-		CTRL_node* cn = (CTRL_node*)(ctrls[i]);
-		out<<" (declare-const " + cn->get_name() + " " + cn->getSMTOtype() + ") "<<endl;
-		if(cn->getOtype() == OutType::INT){
-			int k = cn->get_nbits();
-			if(asserted == ""){
-				asserted = " (and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )) ";
-			}
-			else{
-				asserted = " (and "+ asserted +" (and (>= "+cn->get_name()+" 0) (< "+cn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" ))) ";
-			}
-		}
-	}
+	getCTRLasserts(ctrls,asserted,exists,false);
+	out<<exists;
 	vector<bool_node*> srcs = getNodesByType(bool_node::SRC);
 	Assert(srcs.size() == 0, "Cannot have SRC nodes here");
 	vector<bool_node*> assert_nodes = getNodesByType(bool_node::ASSERT);
-	map<int,string> seen;
 	string assert_str = "";
-	for(int i=0;i<assert_nodes.size();i++){
-		assert_str += " _n"+int2str(assert_nodes[i]->mother->id)+" ";
-	}
-	if(assert_nodes.size() >= 2) assert_str = "(and " + assert_str + ") ";
-	if(asserted=="") asserted = assert_str;
-	else asserted = "(and "+asserted+" " + assert_str+")";
+	string pre ="";
+	getAssertStr(assert_nodes, assert_str, asserted,pre);
 
 	//output all asserts after declaring each node
 	for(int i=0; i<nodes.size(); ++i){
@@ -964,10 +977,12 @@ void BooleanDAG::smt_exists_print(ostream &out){
 			}
   		}    
 	}
-	out<<"(assert "<<asserted<<" )"<<endl;
-	out<<"\n(check-sat)\n(get-model)\n(exit)";
-	out.flush();
-	cout<<"Done with Output SMT"<<endl;
+	out<<"(assert ";
+	if(pre != "") out<<"(implies "<<pre<<" ";
+	out<<asserted;
+	if(pre!="") out <<")";
+	out<<" )"<<endl;
+	opSMTend(out);
 }
 
 
