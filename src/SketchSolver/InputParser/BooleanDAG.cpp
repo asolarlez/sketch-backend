@@ -921,7 +921,7 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 	for(int i=0;i<parentheses;i++){
 		out<<")";
 	}
-	out<<"\n(check-sat)\n(exit)";
+	out<<"\n(check-sat)\n(get-model)\n(exit)";
 	out.flush();
 	cout<<"Done with Output SMT"<<endl;
 }
@@ -964,7 +964,7 @@ void BooleanDAG::smt_exists_print(ostream &out){
   		}    
 	}
 	out<<"(assert "<<asserted<<" )"<<endl;
-	out<<"\n(check-sat)\n(exit)";
+	out<<"\n(check-sat)\n(get-model)\n(exit)";
 	out.flush();
 	cout<<"Done with Output SMT"<<endl;
 }
