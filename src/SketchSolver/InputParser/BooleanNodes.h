@@ -1280,7 +1280,7 @@ class ARRACC_node: public arith_node{
 		stringstream ss;
 		Assert(multi_mother.size() >= 2, "ARRACC Must have at least 2 choices");
 		OutType* ot_join = OutType::joinOtype(multi_mother[1]->getOtype(),multi_mother[0]->getOtype());
-		for (int i=2;i<multi_mother.size();i++){
+		for (int i=2;i<multi_mother.si`ze();i++){
 			ot_join = OutType::joinOtype(ot_join,multi_mother[i]->getOtype());
 		}
 		if(multi_mother.size() == 2){
@@ -1293,7 +1293,7 @@ class ARRACC_node: public arith_node{
 				ss<<" (ite (= " << msmt << " "<<i<<") "<<multi_mother[i]->getSMTnode(ot_join)<<" ";
 			}
 			ss<<multi_mother[multi_mother.size()-1]->getSMTnode(ot_join)<<" ";
-			for(int i=0;i<multi_mother.size()-1;i++) ss<")";
+			for(int i=0;i<multi_mother.size()-1;i++) ss<<")";
 		}
 		return ss.str();
 	}
