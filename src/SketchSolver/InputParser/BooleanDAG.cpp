@@ -917,7 +917,8 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 			}
   		}    
 	}
-	out<<" "<<asserted<<" ";
+	if(asserted != "") out<<" "<<asserted<<" ";
+	else out <<" true "<<endl;
 	for(int i=0;i<parentheses;i++){
 		out<<")";
 	}
