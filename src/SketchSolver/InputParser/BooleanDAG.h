@@ -234,7 +234,7 @@ Dllist assertions;
   void print(ostream& out)const;
   void lprint(ostream& out);
   void mrprint(ostream& out);
-  void smtlinprint(ostream& out);
+  void smtlinprint(ostream& out, int &nbits);
   void smt_exists_print(ostream &out);
   void print_wrapper()const;
   void lprint_wrapper();

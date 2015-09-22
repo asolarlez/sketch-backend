@@ -839,7 +839,7 @@ string smt_op(bool_node::Type t){
 	else Assert(false, "Ivalid type for SMT!");
 }
 
-void BooleanDAG::smtlinprint(ostream &out){
+void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 	string exists,forall;
 	string asserted = "";
 	string pre = "";
@@ -863,7 +863,7 @@ void BooleanDAG::smtlinprint(ostream &out){
 		SRC_node* sn = (SRC_node*)(srcs[i]);
 		forall = forall + "(" + sn->get_name() + " " + sn->getSMTOtype() + " )";
 		if(sn->getOtype() == OutType::INT){
-			int k = sn->get_nbits();
+			int k = nbits;//sn->get_nbits();
 			if(pre==""){
 				pre= " (and (>= "+sn->get_name()+" 0) (< "+sn->get_name()+" "+ int2str(int(pow(2.0,1.0*k))) +" )) ";
 			}
