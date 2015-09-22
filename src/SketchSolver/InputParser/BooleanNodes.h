@@ -636,12 +636,16 @@ class ARR_CREATE_node:public arith_node{
         str<<" "<<dfltval;
         return str.str();
     }
-	virtual string smtprint(){
-		Assert(false, "ARR_CREATE SMT not supported");
-		return "";
-	}
 	virtual string smtletprint(){
-		Assert(false, "ARR_CREATE SMT not supported");
+		//just create an array that is dfltval(0) by default and then store all these values!
+		if(getOtype() == OutType::BOOL_ARR || getOtype() == OutType::INT_ARR){
+			string base = "((as const (Array Int Int)) " + int2str(dfltval) + ")";
+			for(int i=0;i<multi_mother.size(); i++){
+				base = "(store " + base + " " + int2str(i) + " " + multi_mother[i]->getSMTnode(OutType::INT) + ")";
+			}
+			return " " + base + " ";
+		}
+		else Assert(false, "ARR_CREATE SMT without BOOL_ARR or INT_ARR not supported: " + getOtype()->str());
 		return "";
 	}
 };
@@ -699,10 +703,6 @@ class TUPLE_CREATE_node:public arith_node{
         }
         return str.str();
     }
-	virtual string smtprint(){
-		Assert(false, "TUPLE_CREATE must have been inlined SMT not supported");
-		return "";
-	}
 	virtual string smtletprint(){
 		Assert(false, "TUPLE_CREATE must have been inlined SMT not supported");
 		return "";
@@ -745,10 +745,6 @@ class TUPLE_R_node: public bool_node{
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<idx;
 		return str.str();
     }
-	virtual string smtprint(){
-		Assert(false, "TUPLE_R must have been inlined SMT not supported");
-		return "";
-	}
 	virtual string smtletprint(){
 		Assert(false, "TUPLE_R must have been inlined SMT not supported");
 		return "";
@@ -895,10 +891,6 @@ class SRC_node: public INTER_node{
 		return otype;
 	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
-	virtual string smtprint(){
-		Assert(false, "SRC nodes for SMT not supported");
-		return "";
-	}
 	virtual string smtletprint(){
 		return " " + get_name() + " ";
 	}
@@ -923,9 +915,6 @@ class DST_node: public INTER_node, public DllistNode{
 		stringstream str;
 		str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<mother->id;
 		return str.str();
-	}
-	virtual string smtprint(){
-		return ""; //ignored
 	}
 	virtual string smtletprint(){
 		return ""; //ignored
@@ -1223,10 +1212,6 @@ class UFUN_node: public arith_node, public DllistNode{
 			}
 		}
 		return str.str();
-	}
-	virtual string smtprint(){
-		Assert(false,"There shouldn't be any UFUNs here");
-		return "";
 	}
 	virtual string smtletprint(){
 		Assert(false,"There shouldn't be any UFUNs here");
@@ -1602,10 +1587,6 @@ class ACTRL_node: public arith_node{
         }
         return str.str();
     }
-	virtual string smtprint(){
-		Assert(false,"ACTRL SMT generation not supported");
-		return "";
-	}
 	virtual string smtletprint(){
 		Assert(false,"ACTRL SMT generation not supported");
 		return "";
