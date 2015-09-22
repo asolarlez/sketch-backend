@@ -241,7 +241,8 @@ struct bool_node{
 		else if(type==bool_node::CONST && ot_needed == OutType::BOOL_ARR){
 			OutType* ot_temp = getOtype();
 			otype = OutType::BOOL;
-			string ret = "((as const (Array Int Bool)) "+ this->smtletprint() +")";
+			//string ret = "((as const (Array Int Bool)) "+ this->smtletprint() +")";
+			string ret = "((as const (Array Int Int)) "+ this->smtletprint() +")";
 			otype = ot_temp;
 			return ret;
 		}
@@ -251,6 +252,9 @@ struct bool_node{
 			string ret = "((as const (Array Int Real)) "+ this->smtletprint() +")";
 			otype = ot_temp;
 			return ret;
+		}
+		else if(ot_current == OutType::BOOL_ARR && ot_needed == OutType::INT_ARR){
+			return base;
 		}
 		else Assert(false, "Type conversion either not supported or implemented: " + ot_current->str() + " -> " + ot_needed->str());
 
@@ -379,7 +383,8 @@ struct bool_node{
 			return " Bool ";
 		}
 		else if (otype == OutType::BOOL_ARR){
-			return " (Array Int Bool) ";
+			return " (Array Int Int) ";
+			//return " (Array Int Bool) ";
 		}
 		else if (otype == OutType::INT_ARR){
 			return " (Array Int Int) ";
