@@ -29,7 +29,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A4D54392-D0C6-43A1-ACCF-743C7195F292}</ProjectGuid>
     <RootNamespace>Sketch</RootNamespace>
-    <ProjectName>Sketch-Latest</ProjectName>
+    <ProjectName>Sketch</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" Label="Configuration">
