@@ -1,0 +1,21 @@
+int W = 4;
+generator bit [4] mult(bit[4] in1, bit[4] in2){ /* automatically rewritten */
+	bit [4] result = 0;
+	for(int i=0; i<W; ++i){
+		if(in2[i]==1){
+			result = result + in1;
+		}
+		in1 = in1 << 1;
+	}
+	return result;
+}
+
+bit[4] reverseSketch(bit[4] in) implements reverse {
+	bit [4] tmp;
+	tmp = {*};
+	return 	mult(in , tmp);
+}
+
+bit[4] reverse (bit[4] in) {
+	return in + in + in;
+}

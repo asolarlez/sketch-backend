@@ -1,0 +1,15 @@
+bit[3] miniTest(bit[3] in) {
+	in[0] = 1;
+    return in ^ (in>>1);
+}
+
+
+generator bit[3] fu(bit[3] x){ /* automatically rewritten */
+	x[0] = 1;
+	return x;
+}
+
+bit[3] miniTestSK (bit[3] x) implements miniTest{
+   x = fu(x);
+   return x ^ (x>>1);
+}

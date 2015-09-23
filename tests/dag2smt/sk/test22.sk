@@ -1,0 +1,17 @@
+int W = 2;
+
+generator bit foo(bit[4] in, int k){ /* automatically rewritten */
+	if(k>0){
+		return foo(in, k-1);
+	}else{
+		return in[2];;
+	}
+}
+
+bit reverseSketch(bit[4] in) implements reverse {		
+	return 	foo(in, 4);
+}
+
+bit reverse (bit[4] in) {
+	return in[2];
+}

@@ -1,0 +1,11 @@
+
+int expr(int n, int [n] x){
+	int i=??; int j=??;
+	assert (i<=j);
+	if(??) return x[i];
+	else if(??) return x[i] + x[j];
+	else return x[i]*x[j];
+}
+harness void main(int[3] v){
+	assert expr(3,v) == v[0]+v[2];
+}

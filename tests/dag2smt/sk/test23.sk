@@ -1,0 +1,10 @@
+bit reverseSketch(bit[5] in) implements reverse {
+	int i1 = {*};
+	int i2 = {*};
+	return in[i1*i2]^in[i1];
+}
+
+
+bit reverse (bit[5] in) {
+	return in[4]^in[2];
+}

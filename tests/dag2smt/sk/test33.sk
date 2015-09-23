@@ -1,0 +1,12 @@
+bit[3] miniTest(bit[3] in) {
+	bit[2] one = {0, 0};
+	one[0] = 1;
+    return in ^ one;
+}
+
+
+bit[3] miniTestSK (bit[3] in) implements miniTest{
+	bit[2] one = {0, 0};
+	one[0] = ??;
+    return in ^ one;
+}

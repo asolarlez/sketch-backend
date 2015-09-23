@@ -1,0 +1,21 @@
+int W = 2;
+
+generator bit[W] moo(bit[4] in){ /* automatically rewritten */
+	bit [2] tmp ;
+	tmp[0] = in[0];
+	tmp[1] = in[2];
+	return tmp;
+}
+
+generator bit foo(bit[4] in){ /* automatically rewritten */
+	bit [2] tmp = moo(in);
+	return tmp[1];;
+}
+
+bit reverseSketch(bit[4] in) implements reverse {		
+	return 	foo(in);
+}
+
+bit reverse (bit[4] in) {
+	return in[2];
+}
