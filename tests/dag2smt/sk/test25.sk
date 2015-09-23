@@ -1,0 +1,15 @@
+int W = 4;
+
+generator bit[W] foo(bit[W] in){ /* automatically rewritten */
+	return (in);
+}
+
+bit[W] reverseSketch(bit[W] in) implements reverse {
+	in[0] = 0;
+	return 	foo(in);
+}
+
+bit[W] reverse (bit[W] in) {	
+	in[0] = 0;
+	return 	in;
+}

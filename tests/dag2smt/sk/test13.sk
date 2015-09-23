@@ -1,0 +1,14 @@
+bit[4] simple(bit[3*4] in) implements simpler 
+{
+	bit[4]   i1;
+	bit x = 1;
+	if(in[0]){
+	  x = 0;
+	}
+	i1 = x;
+	return i1;
+}
+
+bit[4] simpler(bit[3*4] in){
+	return !in[0];
+}  

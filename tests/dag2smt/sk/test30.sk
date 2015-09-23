@@ -1,0 +1,17 @@
+bit[3] miniTest(bit[3] in) {
+    int [3] p = { 2, 1, 3};
+	bit [3] out=0;	
+	for (int i = 0; i < 3; ++i)
+		out[i]=in[p[i]-1];
+	
+	return out;
+}
+
+
+bit[3] miniTestSK (bit[3] x) implements miniTest{
+   int tt = ??;
+   bit [3] tmp2 = (x<<tt) {|} (x>>tt);
+   bit [3] tmp;
+   tmp = tmp2 {|} x;
+   return tmp;
+}

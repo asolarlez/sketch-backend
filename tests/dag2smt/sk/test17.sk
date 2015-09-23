@@ -1,0 +1,10 @@
+bit[4] reverseSketch(bit[4] in) implements reverse {
+	bit[4] tmp1 = {0, 0, 1, 0};
+	return 	in + {*} + tmp1;
+}
+
+bit[4] reverse (bit[4] in) {
+	bit[4] tmp1 = {0, 1, 1, 0};
+	bit[4] tmp2 = {1, 1, 0, 0};
+	return in + tmp1+tmp2;
+}

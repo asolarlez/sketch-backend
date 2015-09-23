@@ -1,0 +1,14 @@
+bit reverseSketch(bit[4] in) implements reverse {	
+	bit t=0;
+	int i=0;
+	repeat(??){
+		t = in[i];
+		i = i+1;
+	}
+	return t;
+}
+
+
+bit reverse (bit[4] in) {
+	return in[2];
+}

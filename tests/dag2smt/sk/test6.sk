@@ -1,0 +1,19 @@
+#define N 4
+/*generator int exp(int n, int [n] x){
+	int i=??; 
+	if(??) return x[i];
+	else if(??) return x[i] + exp(n,x);
+	else return x[i] * exp(n,x);
+}*/
+harness void main(int x, int y, int z, int n){
+	assume n==N;
+	int [n] v;
+	int i=0;
+	repeat(N){
+		v[i]=??;
+		i++;
+	}
+	for(i=0;i<n;i++){
+		assert(v[i] == i);
+	}
+}

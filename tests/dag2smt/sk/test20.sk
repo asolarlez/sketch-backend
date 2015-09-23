@@ -1,0 +1,12 @@
+generator bit foo(bit[4] in){ /* automatically rewritten */
+	return in[??];
+}
+
+bit reverseSketch(bit[4] in) implements reverse {	
+	int tt = ??(3);	assert tt == 3;
+	return 	foo(in) ^ in[tt];
+}
+
+bit reverse (bit[4] in) {
+	return in[2] ^ in[3];
+}
