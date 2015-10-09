@@ -348,7 +348,8 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					}
 				}
 			}	
-			tchld += bchld / 2;
+			// TODO: test different boolean weights: 0.5, 0.75, and 1.0
+			tchld += bchld * 0.5;
 		if( it != randholes.end() ){
 			if(LEAVEALONE(it->second)){
 				int oldchld = -it->second; //how many chlidren it had the first time around.
