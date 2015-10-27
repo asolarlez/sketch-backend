@@ -213,7 +213,7 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 
 	
 	
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT || onode->type == bool_node::UFUN){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		vector<bool_node*>::iterator end = bnv.end();
 		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
@@ -260,7 +260,7 @@ void BooleanDAG::remove(int i){
 			named_nodes.erase(it);
 		}
 	}
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT || onode->type == bool_node::UFUN){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		for(int t=0; t<bnv.size(); ){
 			if( bnv[t] == onode ){
@@ -608,7 +608,7 @@ void BooleanDAG::addNewNode(bool_node* node){
 		}
 	}
 		
-	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT){
+	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT || node->type == bool_node::UFUN){
 		vector<bool_node*>& tmpv = nodesByType[node->type]; 
 		tmpv.push_back(node);			
 	}
@@ -669,7 +669,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   Assert( tmp->id != -22, "This node should not exist anymore");
   tmp->id = nodes.size() + offset;
   nodes.push_back(tmp);  
-  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL || t == bool_node::ASSERT){
+  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL || t == bool_node::ASSERT || t == bool_node::UFUN){
   		nodesByType[t].push_back(tmp);
   }
   return tmp;
@@ -1070,7 +1070,9 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 			}
 			(*node_it)->switchInputs(*this, replacements);
 			if( (*node_it)->type == bool_node::ASSERT ||
-				(*node_it)->type == bool_node::SRC){
+				(*node_it)->type == bool_node::SRC || 
+				(*node_it)->type == bool_node::UFUN 
+				){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if((*node_it)->type == bool_node::SRC){
 					INTER_node* inter = dynamic_cast<INTER_node*>((*node_it));
@@ -1113,7 +1115,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 		if( (*node_it)->type != bool_node::SRC && (*node_it)->type != bool_node::DST){ 
 			nodes.push_back( (*node_it) );
 			(*node_it)->switchInputs(*this, replacements);
-			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT ){
+			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT || (*node_it)->type == bool_node::UFUN  ){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if( (*node_it)->type == bool_node::CTRL ){
 					INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);

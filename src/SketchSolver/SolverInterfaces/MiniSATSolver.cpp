@@ -10,9 +10,55 @@
 #include <vector>
 #include <queue>
 #include "MiniSATSolver.h"
-
+#include "Tvalue.h"
 
 #define Dout( out )  /*    out   */
+
+
+UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
+	int nparams = params.size();
+	int sz = sizeof(UfunSummary) + nparams*sizeof(ParamSummary*);
+	int endof = sz;
+	for(int i=0; i<nparams; ++i){
+		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*params[i].getSize();
+	}
+	sz += sizeof(OutSummary) + out.getSize()*sizeof(Lit);
+	char* buf =  (char*) malloc(sz);
+	UfunSummary* rv = new(buf) UfunSummary(params.size());
+	rv->params = (ParamSummary**) (buf + sizeof(UfunSummary));
+	sz = endof;
+	for(int i=0; i<params.size(); ++i){	
+		Tvalue& cparam = params[i];
+		if(!cparam.isSparse()){
+			cparam.makeSparse(dir);
+		}
+		int nvals = cparam.getSize();
+		ParamSummary* ps = new(buf + sz) ParamSummary(nvals);
+		rv->params[i] = ps;
+		ps->lits = (Lit*) (buf+ sz + sizeof(ParamSummary));
+		ps->vals = (int*) (buf+ sz + sizeof(ParamSummary) + sizeof(Lit)*nvals );
+
+		const gvvec& gvs = cparam.num_ranges;
+		int jj = 0;
+		for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
+			ps->lits[jj] = Lit(it->guard);
+			ps->vals[jj] = it->value;
+			++jj;
+		}				
+		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*nvals;
+	}
+	rv->output = new (buf+sz) OutSummary(out.getSize());
+	gvvec& gvs = out.num_ranges;
+	int jj = 0;
+	for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
+		rv->output->lits[jj] = Lit(it->guard);
+		++jj;
+	}
+
+	return rv;
+}
+
+
 
 
 void MiniSATSolver::markInput(int id){
@@ -303,6 +349,8 @@ void MiniSATSolver::assumeVarClause(int x){
 		finalOr.push_back(-x);
 	}
 }
+
+
 
 
 void MiniSATSolver::hardAssertVarClause(int x){

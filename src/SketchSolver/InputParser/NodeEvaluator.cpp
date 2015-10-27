@@ -191,7 +191,43 @@ void NodeEvaluator::visit( TIMES_node& node ){
 	setbn(node, i(*node.mother) * i(*node.father));
 }
 void NodeEvaluator::visit( UFUN_node& node ){
-	Assert(false, "NYI; jngyttyuy");
+	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
+	vector<int> cargs;
+	for(int ii=0; ii<node.multi_mother.size(); ++ii){
+		cargs.push_back( i(*node.multi_mother[ii]) );
+	}
+	for(int jj = 0; jj<args.size(); ++jj){
+		if(args[jj].second == cargs){
+			setbn(node, args[jj].first);
+			return;
+		}
+	}
+	
+
+	string tuple_name = node.getTupleName();
+
+	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+	int size = tuple_type->actSize;
+
+	cptuple* cpv = new cptuple(size);
+	if(tuplevalues[node.id] != NULL){
+		delete tuplevalues[node.id];
+	}
+	tuplevalues[node.id] = cpv;
+
+	for (int j = 0; j < size ; j++) {
+		stringstream sstr;
+		sstr<<node.get_ufname()<<"_"<<node.get_callsite()<<"_"<<j;
+		OutType* type = tuple_type->entries[j];
+		Assert(!type->isTuple && !type->isArr, "NYS");
+		int val = (*inputs)[sstr.str()];
+		cpv->vv[j] = val;
+	}
+
+	
+	args.push_back(make_pair(node.id, cargs));
+	setbn(node, node.id);
+	return;	
 	/*
 	vector<bool_node*>& mm = node.multi_mother;
 	visitArith(node);

@@ -32,6 +32,9 @@ class NodesToSolver : public NodeVisitor {
 	const int YES;
 	bool stopAddingClauses;
 	bool shortcut;
+
+	map<string, int> ufunids;	
+
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;

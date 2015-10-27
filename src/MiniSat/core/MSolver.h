@@ -38,6 +38,44 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace MSsolverNS{
 
+
+class ParamSummary;
+class OutSummary;
+
+class UfunSummary{
+public:
+	UfunSummary* next;
+	int nparams;
+	ParamSummary** params;
+	OutSummary* output;
+	UfunSummary(int np): nparams(np), next(NULL){}
+};
+
+class ParamSummary{
+public:
+	int nvals;
+	Lit* lits;
+	int* vals;
+	ParamSummary(int nv):nvals(nv){}
+};
+
+class OutSummary{
+public:
+	int nouts;
+	Lit lits[];
+	OutSummary(int no):nouts(no){}
+};
+
+
+
+
+
+
+
+
+
+
+
 class Solver {
 public:
 
@@ -77,6 +115,8 @@ public:
 
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
 	bool tryAssignment(Lit a);
+
+	void addUfun(int funid, UfunSummary* ufs);
 
     // Extra results: (read-only member variable)
     //
@@ -125,12 +165,17 @@ protected:
         bool operator()(Var v) const { return toLbool(s.assigns[v]) == l_Undef && s.decision_var[v]; }
     };
 
+	
+	Clause* newTempClause(vec<Lit>& vl , Lit p);
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
 	vec<Clause*>        lazyors;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
+	vec<UfunSummary*>   allufuns;
+	vec<UfunSummary*>   ufunByID;
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.

@@ -30,6 +30,7 @@ namespace MSsolverNS{
 // Constructor/Destructor:
 
 uint32_t SINGLESET = 3;
+uint32_t UFUNCLAUSE = 2;
 uint32_t LAZYOR = 1;
 
 Solver::Solver() :
@@ -241,6 +242,53 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 
 // int TOTSINGLESET=0;
 
+
+
+
+
+void Solver::addUfun(int funid, UfunSummary* ufs){
+		allufuns.push(ufs);
+		if(ufunByID.size() > funid){
+			if(ufunByID[funid] != NULL){
+				UfunSummary* fst = ufunByID[funid];
+				UfunSummary* cur = fst;
+				while(cur->next != fst){
+					cur = cur->next;
+				}
+				cur->next = ufs;
+				ufs->next = fst;
+			}else{
+				ufunByID[funid] = ufs;
+				ufs->next = ufs;
+			}
+		}else{
+			ufunByID.growTo(funid + 1 , NULL);
+			ufunByID[funid] = ufs;
+			ufs->next = ufs;
+		}
+		vec<Lit> pp;
+		pp.push(Lit(0));
+		pp.push(Lit(0));
+		Clause* cc = Clause::Clause_new(pp, false);
+		cc->mark(UFUNCLAUSE);
+		clauses.push(cc);
+		UfunSummary** ufp = (UfunSummary**) &((*cc)[0]);
+		*ufp = ufs;
+		for(int i=0; i<ufs->nparams; ++i){
+			ParamSummary* ps = ufs->params[i];
+			int nvals = ps->nvals;
+			for(int jj=0; jj<nvals; ++jj){
+				watches[toInt(ps->lits[jj])].push(cc);
+			}
+		}
+		OutSummary* ofs = ufs->output;
+		for(int i=0; i<ofs->nouts; ++i){
+			watches[toInt(ofs->lits[i])].push(cc);
+		}
+	}
+
+
+
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
 	uint32_t mark = c.mark();
@@ -311,6 +359,11 @@ void Solver::removeClause(Clause& c) {
 
 
 bool Solver::satisfied(const Clause& c) {
+
+	if(c.mark() == UFUNCLAUSE){
+		return false;
+	}
+
 	if(c.mark() == SINGLESET){ 
 		for (int i = 0; i < c.size(); i++){
 			lbool cv = value(c[i]);
@@ -601,6 +654,34 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
 
 vec<char> tc(sizeof(Clause) + sizeof(uint32_t)*(3));
 
+
+Clause* Solver::newTempClause(vec<Lit>& ps , Lit q){
+	Lit fst = ps[0];
+	int fstidx = -1;
+	sort(ps);	
+	Lit p; int i, j;
+	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+		if (ps[i] != p){
+			ps[j++] = p = ps[i];
+			if(p==fst){
+				fstidx = j-1;
+			}
+		}
+	}
+	ps.shrink(i - j);
+	ps[fstidx] = ps[0];
+	ps[0] = fst;
+	if(ps[1]==~q){
+		ps[1] = ps[2];
+		ps[2] = ~q;
+	}
+	Clause* c = Clause::Clause_new(ps, true);
+	attachClause(*c);
+	learnts.push(c);
+	return c;
+}
+
+
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -633,6 +714,121 @@ Clause* Solver::propagate()
             Clause& c = **i++;
 
 			Lit false_lit = ~p;
+
+			if(c.mark() == UFUNCLAUSE){
+
+				UfunSummary** ufp = (UfunSummary**) &c[0];
+				UfunSummary* ufs = *ufp;
+				int nparams = ufs->nparams;
+				vec<int> pvals;
+				vec<Lit> plits(nparams*2 + 2);
+				for(int i=0; i<nparams; ++i){
+					ParamSummary* ps = ufs->params[i];
+					bool found = false;
+					for(int jj=0; jj<ps->nvals; ++jj){
+						if(value(ps->lits[jj])==l_True){
+							pvals.push(ps->vals[jj]);
+							plits[2+i] = ~(ps->lits[jj]);
+							found = true;
+							break;
+						}
+					}
+					if(!found){
+						//This means not all parameters are set, so we can ignore.
+						*j++ = &c;
+						goto FoundWatch;
+					}
+				}
+				//If we are here, it means all parameters are set. Now we need to check if other
+				//instances of the same ufun also have all their parameters set.
+				UfunSummary* other = ufs->next;
+				while(other != ufs){
+					bool allMatch = true;
+					for(int ii=0; ii<other->nparams; ++ii){
+						ParamSummary* ps = other->params[ii];
+						bool found = false;
+						for(int jj=0; jj<ps->nvals; ++jj){
+							if(ps->vals[jj] == pvals[ii]){
+								if(value(ps->lits[jj])==l_True){
+									found = true;
+									plits[2 + ii + nparams] = ~(ps->lits[jj]);
+									break;
+								}else{
+									break;
+								}
+							}
+						}
+						if(!found){
+							allMatch = false;
+							break;
+						}
+					}
+					if(allMatch){
+						// other also has all its parameters set to the same thing as ufs.
+						// This means that their outputs should match.
+						OutSummary* osum1 = ufs->output;
+						OutSummary* osum2 = other->output;
+						for(int ii=0; ii<osum2->nouts; ++ii){
+							lbool v1 = value(osum1->lits[ii]);
+							lbool v2 = value(osum2->lits[ii]);
+							if( v1 != v2){
+								if(v1 == l_Undef){
+									if(v2 == l_True){
+										plits[1] = ~(osum2->lits[ii]);
+										plits[0] = (osum1->lits[ii]);
+																				
+										uncheckedEnqueue(osum1->lits[ii], newTempClause( plits, p ) );
+									}else{ // v2 == l_False;
+										plits[1] = (osum2->lits[ii]);
+										plits[0] = ~(osum1->lits[ii]);
+										
+										uncheckedEnqueue(~osum1->lits[ii], newTempClause( plits, p ) );
+									}									
+								}else if(v2 == l_Undef){
+									if(v1 == l_True){
+										plits[1] = ~(osum1->lits[ii]);
+										plits[0] = (osum2->lits[ii]);
+										
+										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p ) );
+									}else{
+										plits[1] = (osum1->lits[ii]);
+										plits[0] = ~(osum2->lits[ii]);
+										
+										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p ));
+									}														
+								}else{
+									//We have a conflict.
+									if(v1 == l_True){
+										plits[1] = ~(osum1->lits[ii]);
+										plits[0] = (osum2->lits[ii]);
+									}else{
+										plits[1] = ~(osum2->lits[ii]);
+										plits[0] = (osum1->lits[ii]);
+									}
+									int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+									if(tc.size() < targetsize){
+										tc.growTo(targetsize);
+									}
+									Clause* cnew = new(&tc[0]) Clause(plits, true);																		
+									*j++ = &c;
+									while (i < end)
+											*j++ = *i++;
+									confl = cnew;			
+									qhead = trail.size();
+									goto FoundWatch;
+								}
+
+							}							
+						}
+						*j++ = &c;
+						goto FoundWatch;
+					}else{
+						other = other->next;
+					}
+				}
+				*j++ = &c;
+				goto FoundWatch;
+			}
 
 
 			if(c.mark() == LAZYOR){

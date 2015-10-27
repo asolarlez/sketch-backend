@@ -10,6 +10,7 @@
 #include "BackwardsAnalysis.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
+#include "NodeHardcoder.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -26,6 +27,21 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
       Assert(!srcnode->isTuple, "Not possible");
 			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 		}
+		vector<bool_node*>& ufunin = problem->getNodesByType(bool_node::UFUN);	
+		for(int i=0; i<ufunin.size(); ++i){
+			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
+			int nbits = 5;
+			string tuple_name = ufunnode->getTupleName();
+
+			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+			int size = tuple_type->actSize;
+			for(int tt = 0; tt<size; ++tt){
+				stringstream sstr;
+				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_callsite()<<"_"<<tt;
+				declareInput( sstr.str() , nbits, -1);
+			}
+		}
+
 	}
 	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
@@ -432,10 +448,9 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 }
 
 
-BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
-	BooleanDAG* newdag = dag->clone();
 
-	vector<bool_node*> inodeList = newdag->getNodesByType(type);
+BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
+	BooleanDAG* newdag = dag->clone();	
 	
 	int oldsize = newdag->size();
 
@@ -445,55 +460,12 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
 	// }
 	
-	{
-		DagOptim cse(*newdag);			
-		cse.isTopLevel = true;
-		for(int i=0; i<inodeList.size(); ++i){
-			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
-			int nbits;
-			if(type == bool_node::CTRL){
-				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
-				if(cn->get_Angelic()){
-					if(cn->children.size() != 0){
-            if (cn->spAngelic) {
-              // replace it with a src node
-              SRC_node* src = dynamic_cast<SRC_node*>(newdag->create_inputs(cn->get_nbits(), OutType::INT, cn->get_name() + "_src", cn->getArrSz()));
-              if (cn->isTuple) {
-                Assert(false, "Not possible");
-              }
-              newdag->replace(cn->id, src);
-              continue;
-            }
-            
-						Assert(cn->children.size() == 1, "NYI; hafdst");
-						bool_node* bn = *(cn->children.begin());
-						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
-						arith_node* an = dynamic_cast<arith_node*>(bn);
-						if(an->multi_mother[0]==cn){
-							Assert(an->multi_mother[0]==cn, "NYI; cvbnm");
-							newdag->replace(cn->id, an->multi_mother[1]);
-						}else{
-							Assert(an->multi_mother[1]==cn, "NYI; weafhgdz");
-							newdag->replace(cn->id, an->multi_mother[0]);
-						}
-						
-						continue;
-					}else{
-						newdag->replace(inode->id, cse.getCnode(0));
-						continue;
-					}
-				}
-			}
-			
-			bool_node * repl= nodeForINode(inode, values, cse);			
-			
-			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
-			newdag->replace(inode->id, repl);
-		}
-				
-		newdag->removeNullNodes();
-		cse.process(*newdag);
-	}
+	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type);
+	nhc.process(*newdag);
+
+
+
+
 	Dout( newdag->print(cout) ); 
 	
 	if(false){

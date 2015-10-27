@@ -257,6 +257,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MiniSat\core\Solver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeHardcoder.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMainHelpers.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />
@@ -293,6 +294,7 @@
     <ClCompile Include="SketchSolver\InputParser\SolveFromInput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SketchSolver\InputParser\NodeHardcoder.h" />
     <ClInclude Include="SketchSolver\InputParser\CounterexampleFinder.h" />
     <ClInclude Include="minisat\core\msolver.h" />
     <ClInclude Include="minisat\core\solvertypes.h" />

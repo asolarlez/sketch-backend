@@ -5,6 +5,7 @@
 #include "Tvalue.h"
 #include "CommandLineArgs.h"
 #include "PrintInteresting.h"
+#include "MiniSATSolver.h"
 
 int TOTBUFFERS = 0;
 
@@ -1343,7 +1344,46 @@ class UFUN_store{
 
 
 void NodesToSolver::visit( UFUN_node& node ){
-	Assert(false, "NYI; ;jlqkweyyyyy");
+	
+	if(dir.getMng().isNegated()){
+		//This means you are in the checking phase.
+		vector<Tvalue> params;
+		for(int i=0; i<node.multi_mother.size(); ++i){
+			params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
+		}
+		int nbits = 5;
+		Tvalue nvar = dir.newAnonymousVar(nbits);
+		nvar.setSize(nbits);
+		nvar.makeSparse(dir);
+		UfunSummary* ufs = newUfun(params, nvar, dir);
+		MiniSATSolver* ms = (MiniSATSolver*) (&dir.getMng());
+		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
+		{
+			int id = -1;
+			if(idit == ufunids.end()){
+				int sz = ufunids.size();
+				ufunids[node.get_ufname()] = sz;
+				id = sz;
+			}else{
+				id = idit->second;
+			}
+			ms->addUfun(id, ufs);
+		}
+
+		Tvalue& outvar = node_ids[node.id];
+		//must be generalized to multiple params.
+		vector<Tvalue>* new_vec = new vector<Tvalue>(1);
+		int outid = tpl_store.size();
+		tpl_store.push_back(new_vec);
+		(*new_vec)[0] = nvar;
+		outvar.makeIntVal(YES, outid);    
+	}else{
+		Assert(false, "should not be here");
+	}
+
+
+
+
 /*
 	Tvalue in = xx; // input tvalue.
 	

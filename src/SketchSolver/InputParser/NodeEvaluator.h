@@ -159,6 +159,7 @@ class NodeEvaluator :
 	public NodeVisitor
 {
 protected:
+	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;
