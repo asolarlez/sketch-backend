@@ -987,10 +987,14 @@ NodesToSolver::processArith (bool_node &node)
 		}		
 		if(refuse != -YES){
 			if(!dir.getMng().isNegated()){
-				int id = rand() % numbers.size();
-				map<int, int>::iterator mit = numbers.begin();
-				for(int i=0; i<id; ++i){ ++mit; }				
-				mit->second = dir.addOrClause(mit->second, refuse);			
+				if(numbers.size()>0){
+					int id = rand() % numbers.size();
+					map<int, int>::iterator mit = numbers.begin();
+					for(int i=0; i<id; ++i){ ++mit; }				
+					mit->second = dir.addOrClause(mit->second, refuse);			
+				}else{
+					numbers[ rand() % PARAMS->randBnd] = refuse;
+				}
 			}else{
 				Assert(numbers.count(PARAMS->randBnd*2)==0, "Lnliurya;");
 				numbers[PARAMS->randBnd*2] = refuse;		

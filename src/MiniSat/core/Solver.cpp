@@ -1327,6 +1327,24 @@ void Solver::writeDIMACS(ofstream& dimacs_file)
 }
 
 
+void Solver::getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline){
+	for(int i=0; i<trail.size(); ++i){
+		single.insert(toInt(trail[i]));
+	}
+	for(int i=0; i<clauses.size(); ++i){		
+		Clause* c = clauses[i];
+		if(c->size() == 2){
+			int x = toInt((*c)[0]);
+			int y = toInt((*c)[1]);
+			pair<int, int> p = make_pair( min(x,y) , max(x,y) );
+			if(baseline.count(p)==0){
+				dble.insert(p);
+			}
+		}
+	}
+}
+
+
 void Solver::dump(){
 	int tl = 0;
 	cout<<"TRAIL: ";

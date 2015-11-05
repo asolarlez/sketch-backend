@@ -363,7 +363,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			}
 		}
 		{
-			int baseline = PARAMS->randdegree;
+			int baseline = randdegree;
 			double odds;
       if (node->is_sp_concretize()) {
         odds = max(1, baseline / (tchld > 0 ? tchld : 1));

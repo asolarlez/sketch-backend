@@ -434,11 +434,149 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 }
 
 
+ClauseExchange::ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf)
+	:msat(ms), infile(inf), outfile(outf)
+{
+	failures = 0;
+
+	msat->getShareable(single, baseline, dble);
+
+	//Wipe the files clean
+	{
+	FILE* f = fopen(infile.c_str(), "w");	
+	fclose(f);
+	}
+	{
+	FILE* f = fopen(outfile.c_str(), "w");	
+	fclose(f);
+	}
+}
+
+void ClauseExchange::exchange(){
+	analyzeLocal();
+	int ssize = single.size();
+	int dsize = dble.size();
+	readInfile();
+	if(ssize > 0 || dsize > 0){
+		pushOutfile();
+	}
+}
+
+void ClauseExchange::readInfile(){
+	int ssize = single.size();
+	int dsize = dble.size();
+	int bufsize = ssize + dsize*2 + 3;
+	bufsize = bufsize * 3;
+	bufsize = max(bufsize, 200);
+	vector<int> sbuf(bufsize);
+	FILE* f = fopen(outfile.c_str(), "r");
+	int rsize = fread(&sbuf[0], sizeof(int), bufsize, f);
+	if(rsize < 3){
+		fclose(f);
+		cout<<"Nothing read"<<endl;
+		return;
+	}
+	ssize = sbuf[0]; dsize=sbuf[1];
+	int realsize = ssize + dsize*2 + 3;
+	if(rsize != realsize){
+		if(rsize > realsize){
+			fclose(f);
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+		if(rsize != bufsize){
+			fclose(f);
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+		sbuf.resize(realsize);
+		rsize = fread(&sbuf[bufsize], sizeof(int), realsize - bufsize, f);
+		fclose(f);
+		if(rsize + bufsize != realsize){
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+	}else{
+		fclose(f);
+	}
+	unsigned chksum = 0;
+	for(int i=0; i<sbuf.size()-1; ++i){
+		chksum += sbuf[i];
+	}
+	if(chksum != sbuf[sbuf.size()-1]){
+		cout<<"Failed checksum"<<endl;
+		return;
+	}
+	{
+		vec<Lit> vl(1);
+		for(int i=2; i < 2+ssize; ++i){
+			int sin = sbuf[i];
+			if(single.count(sin)==0){
+				single.insert(sin);
+				vl[0] = toLit(sin);
+				msat->addHelperClause(vl);
+			}
+		}
+	}
+	{
+		vec<Lit> vl(2);
+		for(int i=2+ssize; i< sbuf.size()-1; i+=2){
+			int f = sbuf[i];
+			int s = sbuf[i+1];
+			pair<int, int> p = make_pair(f, s);
+			if(dble.count(p) ==0){
+				dble.insert(p);
+				vl[0] = toLit(f); vl[1] = toLit(s);
+				msat->addHelperClause(vl);
+			}
+		}
+	}
+}
+
+void ClauseExchange::pushOutfile(){
+	int ssize = single.size();
+	int dsize = dble.size();
+	unsigned chksum = 0;
+	vector<int> sbuf(ssize + dsize*2 + 3);
+	chksum += ssize;
+	chksum += dsize;
+	sbuf[0] = ssize;
+	sbuf[1] = dsize;
+	int i=2;
+	for(set<int>::iterator it = single.begin(); it != single.end(); ++it){
+		chksum += *it;
+		sbuf[i] = *it; ++i;
+	}
+	for(set<pair<int, int> >::iterator it = dble.begin(); it != dble.end(); ++it){
+		chksum += it->first;
+		chksum += it->second;
+		sbuf[i] = it->first; ++i;
+		sbuf[i] = it->second; ++i;
+	}
+	sbuf[i] = chksum;
+	FILE* f = fopen(outfile.c_str(), "w");
+	fwrite(&sbuf[0], sizeof(int), i+1, f);
+	fclose(f);
+}
+
+void ClauseExchange::analyzeLocal(){
+	single.clear(); dble.clear();
+	msat->getShareable(single, dble, baseline);	
+}
+
+
+void InterpreterEnvironment::share(){
+	if(exchanger!=NULL){
+		exchanger->exchange();
+	}
+}
+
 int InterpreterEnvironment::doallpairs(){
 	int howmany = params.ntimes;
 	if(howmany < 1 || !params.randomassign){ howmany = 1; }
 	int result=-1;
-
+	vector<int> rd(2);
+	map<int, vector<double> > scores;
 	if(howmany > 1 || params.randomassign){
 		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 			BooleanDAG* bd = it->second;
@@ -447,12 +585,30 @@ int InterpreterEnvironment::doallpairs(){
 				hardcoder.declareControl((CTRL_node*) ctrl[i]);
 			}
 		}
+		if(exchanger == NULL && howmany > 5){
+			string inf = params.inputFname;
+			inf += ".com";
+			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);			
+			if(params.randdegree == 0){
+				rd[0] = 10;
+				rd[1] = 20;
+			}
+		}			 
 	}
 	maxRndSize = 0;
-	hardcoder.setHarnesses(spskpairs.size());
-
+	hardcoder.setHarnesses(spskpairs.size());	
 	for(int tt = 0; tt<howmany; ++tt){
 		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
+		if(tt % 5 == 4){
+			share();
+			if(params.randdegree == 0){
+				hardcoder.adjust(rd, scores);
+			}
+		}
+		if(params.randdegree == 0){
+			hardcoder.setRanddegree(rd[tt % 2]);			
+		}
+
 		timerclass roundtimer("Round");
 		roundtimer.start();
 		for(int i=0; i<spskpairs.size(); ++i){
@@ -478,6 +634,9 @@ int InterpreterEnvironment::doallpairs(){
 		roundtimer.stop();
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
+		cout<<"RNDDEG = "<<hardcoder.getRanddegree()<<endl;
+		double comp = roundtimer.get_cur_ms() * hardcoder.getTotsize();
+		scores[hardcoder.getRanddegree()].push_back(comp);
 		if(result==0){
 			cout<<"return 0"<<endl;
 			return result;
