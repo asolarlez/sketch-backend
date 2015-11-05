@@ -28,10 +28,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
-
+#include <set>
 #include "SolverTypes.h"
 
-
+using namespace std;
 //=================================================================================================
 // Solver -- the main class:
 
@@ -45,7 +45,8 @@ public:
     //
     Solver();
     ~Solver();
-	void dump();
+	void dump();	
+	void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline);
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.

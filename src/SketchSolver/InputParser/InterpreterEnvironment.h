@@ -20,8 +20,27 @@ extern timerclass modelBuilding;
 
 using namespace std;
 
+class ClauseExchange{
+	string infile;
+	string outfile;
+	int failures;
+	MiniSATSolver* msat;
+	set<int> single;
+	set<pair<int, int> > dble;
+	set<pair<int, int> > baseline;
+	void analyzeLocal();
+	void readInfile();
+	void pushOutfile();
+public:
+	ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf);	
+	void exchange();
+
+
+};
+
+
 class InterpreterEnvironment
-{
+{	
 	map<string, BooleanDAG*> functionMap;
 	CommandLineArgs& params;
 	SolverHelper* finder;
@@ -35,7 +54,7 @@ class InterpreterEnvironment
 	/*Debug state: */
 	vector<BooleanDAG*> history;
 	vector<vector<Tvalue> > statehistory;
-
+	ClauseExchange* exchanger;
 
 	
 
@@ -87,6 +106,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, hardcoder, params);
+		exchanger = NULL;
 	}
 	
 	vector<pair<string, string> > spskpairs;
@@ -96,7 +116,7 @@ public:
 	}
 
 	int doallpairs();
-
+	void share();
 
 	void reset(){
 		delete finder;
