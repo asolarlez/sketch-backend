@@ -15,7 +15,7 @@
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
-	
+	float sparseArray;
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
 	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
@@ -159,7 +159,7 @@ public:
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
 
 
-  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
+  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray=-1.0);
 
 };
 

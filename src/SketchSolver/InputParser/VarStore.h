@@ -165,6 +165,24 @@ public:
 			}
 		}
 
+		/**
+		If it is an array, then after the first N elements, we set to zero with probability 1-sparseDeg
+		*/
+		void makeRandom(float sparseDeg, int n=10){
+			int P  = 10000;
+			int q = P*sparseDeg;
+
+			if(n > 0 || (rand() % P) < q ){
+				for(int i=0; i<vals.size(); ++i){
+					vals[i] = (rand() & 0x3) > 0? -1 : 1;
+				}
+			}else{
+				for(int i=0; i<vals.size(); ++i){
+					vals[i] = -1 ;
+				}
+			}
+			if(next!= NULL){ next->makeRandom(sparseDeg, n-1); }
+		}
 
 		void makeRandom(){/* Bias towards zeros */
 			for(int i=0; i<vals.size(); ++i){
@@ -193,6 +211,11 @@ public:
 	typedef vector<objP>::iterator iterator;
 	iterator begin(){ return objs.begin(); }
 	iterator end(){ return objs.end(); }
+	void makeRandom(float sparseArray){ 
+		for(int i=0; i<objs.size(); ++i){
+			objs[i].makeRandom(sparseArray);
+		}
+	}
 	void makeRandom(){ 
 		for(int i=0; i<objs.size(); ++i){
 			objs[i].makeRandom();

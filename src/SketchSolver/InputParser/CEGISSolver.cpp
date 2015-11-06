@@ -748,11 +748,14 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 	bool hasInput = true;
 	do{
 		++iter;
-		CounterexampleFinder eval(empty, *dag);	
+		CounterexampleFinder eval(empty, *dag, params.sparseArray);	
 		eval.init(tmpin);
 		for(int i=0; i<40; ++i){
-			
-			tmpin.makeRandom();
+			if(params.sparseArray > 0){
+				tmpin.makeRandom(params.sparseArray);
+			}else{
+				tmpin.makeRandom();
+			}
 			
 			bool done;
 			Assert(!hasCtrls, "This can not happen");
@@ -1054,7 +1057,7 @@ public:
 // check verifies that controls satisfies all asserts
 // and if there is a counter-example, it will be put to input
 bool CEGISSolver::check(VarStore& controls, VarStore& input){
-	vector<VarStore> expensive;
+	
 	BooleanDAG* oriProblem = getProblem();
 	bool hardcode = PARAMS->olevel >= 6;
 	bool rv = false;
@@ -1108,7 +1111,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::SOLVE:{
 				if(params.simulate){
-					rv = simulate(controls, input, expensive);
+					rv = simulate(controls, input, expensives[ curProblem ]);
 				}else{
 					rv = (baseCheck(controls, input)==l_True);
 				}
@@ -1258,7 +1261,7 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	}	
 	//cout << "setNewControls: problem=";
 	//getProblem()->lprint(cout);
-	stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids);
+	stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids, params.sparseArray);
 }
 
 

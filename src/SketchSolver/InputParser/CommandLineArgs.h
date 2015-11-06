@@ -84,7 +84,7 @@ struct CommandLineArgs{
   int angelicTupleDepth;
   bool onlySpRandAssign;
   int spRandBias; // greater value means more bias towards lower depths
-
+  double sparseArray;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -158,6 +158,7 @@ struct CommandLineArgs{
     angelicTupleDepth = 1;
     onlySpRandAssign = false;
     spRandBias = 1;
+	sparseArray = -1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -192,6 +193,14 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "-lightverif" ){	      
 	      lightVerif = true;
 	      input_idx = ii+1;
+		  if(sparseArray < 0.0){
+			  sparseArray = 0.5;
+		  }
+		  continue;
+	    }
+		if( string(argv[ii]) == "-sparsearrays" ){	      
+	      sparseArray = strtod(argv[ii+1], NULL);
+	      input_idx = ii+2;
 		  continue;
 	    }
 	    if( string(argv[ii]) == "-nosim" ){	      

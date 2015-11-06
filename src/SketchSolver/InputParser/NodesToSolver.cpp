@@ -75,13 +75,14 @@ void advanceToEndIdx(int& iend, int cidx, const gvvec&tv){
 
 
 
-bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids){
+bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray){
 	//timerclass timer("defineProblem");
 		//timer.start();
 	bool stoppedEarly;
 		int YES = dir.newYES();
 		//getProblem()->lprint(cout);
-		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
+		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
+		nts.sparseArray = sparseArray;
 		try{
 			stoppedEarly =false;
 			nts.process(dag);	
@@ -1125,7 +1126,7 @@ NodesToSolver::visit (SRC_node &node)
 			}else{
 				node_ids[node.id].setSize (node.get_nbits ()*arrSz);
 				Assert( dir.getArrSize(node.get_name()) == arrSz*node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
-				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz);
+				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz, sparseArray);
 			}
 #endif /* HAVE_BVECTARITH */
 		}

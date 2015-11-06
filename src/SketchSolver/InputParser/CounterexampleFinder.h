@@ -82,6 +82,7 @@ inline mybitset* merge(Ostore<unsigned>& store, mybitset* a, mybitset* b){
 class CounterexampleFinder :
 	public NodeEvaluator
 {
+	float sparseArray;
 	Ostore<unsigned> store;
 	vector<mybitset* >  influences;
 	vector<int> jumpids;
@@ -206,7 +207,11 @@ public:
 				}
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
-					inputs->getObj(it).makeRandom();
+					if(sparseArray > 0.000001){
+						inputs->getObj(it).makeRandom(sparseArray);
+					}else{
+						inputs->getObj(it).makeRandom();
+					}
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
 				}
@@ -227,8 +232,8 @@ public:
 		return (failedAssert && !failedHAssert) ? FOUND : NOTFOUND;
 	}
 
-	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-	NodeEvaluator(functionMap_p, bdag_p)
+	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p):
+	NodeEvaluator(functionMap_p, bdag_p), sparseArray(sparseArray_p)
 	{
 	}
 

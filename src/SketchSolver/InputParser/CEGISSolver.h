@@ -20,8 +20,7 @@ public:
 	int iterlimit;
 	bool printDiag;
 	int NINPUTS;
-	int nseeds;
-
+	int nseeds;	
 	bool simulate;
 	int simiters;
 	int simstopsize;
@@ -30,6 +29,7 @@ public:
 	simtype simplifycex;
 	bool superChecks;
 	bool lightVerif;
+	float sparseArray;
 	CEGISparams(CommandLineArgs& args):
 		printDiag(false),
 		nseeds(1),
@@ -40,7 +40,8 @@ public:
 		simplifycex(RECSIM),
 		superChecks(false),
 		setMemo(args.setMemo),
-		lightVerif(args.lightVerif)
+		lightVerif(args.lightVerif),
+		sparseArray(args.sparseArray)
 	{
 		printDiag = args.printDiag;
 		nseeds = args.seedsize;		
@@ -71,6 +72,7 @@ class CEGISSolver
 	int curProblem;
 	vector<BooleanDAG*> problems;
 	stack<BooleanDAG*> problemStack;
+	map<int, vector<VarStore> > expensives;
 	void pushProblem(BooleanDAG* p){		
 		problemStack.push(p);
 	}

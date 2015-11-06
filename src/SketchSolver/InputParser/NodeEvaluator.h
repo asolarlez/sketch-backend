@@ -166,7 +166,7 @@ protected:
 	vector<cpvec*> vecvalues;
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
-	VarStore* inputs;
+	VarStore* inputs;	
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;
