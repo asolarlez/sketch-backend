@@ -403,11 +403,11 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 			}
 
 			if((count/(float)ni->layer) > maxcount){
-				cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
+				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 				highest = i;
 				maxcount = (count/(float)ni->layer);
 			}else{
-				if(count>0) cout<<i<<": TRIED count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
+				// if(count>0) cout<<i<<": TRIED count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 			}
 		}
 	}
