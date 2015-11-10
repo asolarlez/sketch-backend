@@ -936,7 +936,7 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 	//output all asserts after lets
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
-			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
+			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST && nodes[i]->type != bool_node::TUPLE_CREATE){
 				out<<"(let ((_n"<<nodes[i]->id;
 				out<<nodes[i]->smtletprint();
 				parentheses++;
