@@ -75,7 +75,6 @@ class HoleHardcoder{
 	SolverHelper* sat;
 	SolverHelper* globalSat;
 	vec<Lit> sofar;
-	int fixValue(CTRL_node& node, int bound, int nbits);
 	double totsize;
 	int randdegree;
 
@@ -98,6 +97,8 @@ class HoleHardcoder{
 
 public:
 
+    int fixValue(CTRL_node& node, int bound, int nbits);
+	
 	void adjust(vector<int>& rd, map<int, vector<double> >& scores){
 		double avg0 = getAvg(scores[rd[0]]);
 		double avg1 = getAvg(scores[rd[1]]);
@@ -221,6 +222,9 @@ public:
 		if(it == randholes.end()){ return false; }
 		return (!LEAVEALONE(it->second));
 	}
+    int getValue(const string& s) {
+        return randholes[s];
+    }
 };
 
 

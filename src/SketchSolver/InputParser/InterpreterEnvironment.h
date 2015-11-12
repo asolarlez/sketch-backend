@@ -198,7 +198,7 @@ public:
     }
   }
   
-	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch);
+	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt);
 
 	void doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int i, map<string, map<string, string> > replaceMap);
 
@@ -219,5 +219,6 @@ public:
 	}
     
     void replaceSrcWithTuple(BooleanDAG& dag);
+    int inlineAmnt() { return params.inlineAmnt; }
 	virtual ~InterpreterEnvironment(void);
 };

@@ -150,7 +150,7 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
  * single function asserting their equivalence. The Miter is created for
  * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
  */
-BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch){
+BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt){
 	if(params.verbosity > 2){
 		
 		cout<<"* before  EVERYTHING: "<< spec->get_name() <<"::SPEC nodes = "<<spec->size()<<"\t "<< sketch->get_name() <<"::SKETCH nodes = "<<sketch->size()<<endl;
@@ -219,10 +219,10 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	}
 	
  	if(params.olevel >= 3){
-		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
+		if(params.verbosity > 3){ cout<<" Inlining amount = "<<inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
-			doInline(*sketch, functionMap, params.inlineAmnt, replaceMap);
+			doInline(*sketch, functionMap, inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
@@ -230,7 +230,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
-			doInline(*spec, functionMap, params.inlineAmnt, replaceMap);
+			doInline(*spec, functionMap, inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
@@ -577,8 +577,17 @@ int InterpreterEnvironment::doallpairs(){
 	int result=-1;
 	vector<int> rd(2);
 	map<int, vector<double> > scores;
+    
+    // A dummy ctrl for inlining bound
+    CTRL_node* inline_ctrl;
+    if (params.randomInlining) {
+        inline_ctrl = new CTRL_node();
+        inline_ctrl->name = "inline";
+        hardcoder.declareControl(inline_ctrl);
+    }
+    
 	if(howmany > 1 || params.randomassign){
-		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+        for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 			BooleanDAG* bd = it->second;
 			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
 			for(int i=0; i<ctrl.size(); ++i){
@@ -611,11 +620,20 @@ int InterpreterEnvironment::doallpairs(){
 
 		timerclass roundtimer("Round");
 		roundtimer.start();
+        
+        // Fix a random value to the inlining bound
+        int inlineAmnt = params.inlineAmnt;
+        int minInlining = 2;
+        if (params.inlineAmnt > minInlining && params.randomInlining) {
+            inline_ctrl->special_concretize(params.inlineAmnt - minInlining);
+            hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
+            inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
+        }
 		for(int i=0; i<spskpairs.size(); ++i){
 			hardcoder.setCurHarness(i);
 			try{
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
-				getCopy(spskpairs[i].second));			
+				getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");

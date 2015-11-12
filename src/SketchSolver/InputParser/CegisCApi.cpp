@@ -77,7 +77,7 @@ BooleanDAG *evt_get_copy(InterpreterEnvironment *evt, char *s) {
 BooleanDAG *evt_prepare_miter(InterpreterEnvironment *evt,
     BooleanDAG *spec, BooleanDAG *sketch)
 {
-    return evt->prepareMiter(spec, sketch);
+    return evt->prepareMiter(spec, sketch, evt->inlineAmnt());
 }
 
 int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter) {
