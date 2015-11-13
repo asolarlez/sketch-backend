@@ -635,7 +635,7 @@ int InterpreterEnvironment::doallpairs(){
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
 		cout<<"RNDDEG = "<<hardcoder.getRanddegree()<<endl;
-		double comp = roundtimer.get_cur_ms() * hardcoder.getTotsize();
+		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
 		scores[hardcoder.getRanddegree()].push_back(comp);
 		if(result==0){
 			cout<<"return 0"<<endl;
