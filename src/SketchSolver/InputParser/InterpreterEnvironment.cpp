@@ -623,7 +623,7 @@ int InterpreterEnvironment::doallpairs(){
         
         // Fix a random value to the inlining bound
         int inlineAmnt = params.inlineAmnt;
-        int minInlining = 2;
+        int minInlining = 3;
         if (params.inlineAmnt > minInlining && params.randomInlining) {
             inline_ctrl->special_concretize(params.inlineAmnt - minInlining);
             hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
