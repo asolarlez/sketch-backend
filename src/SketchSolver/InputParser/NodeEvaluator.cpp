@@ -6,6 +6,7 @@ functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
+	isset.resize(bdag.size(), false);
 	vecvalues.resize(bdag.size(), NULL);
     tuplevalues.resize(bdag.size(), NULL);
 
@@ -365,7 +366,7 @@ void NodeEvaluator::display(ostream& out){
 
 int NodeEvaluator::scoreNodes(int start /*=0*/){
 	int i=start;
-	int maxcount = -10;
+	float maxcount = -10.0;
 	int highest= -1;
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
@@ -390,6 +391,9 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
             ++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){
+				if((*cit)->type == bool_node::ASSERT && ((ASSERT_node*)(*cit))->isAssume()){
+					break;
+				}
 				if(!changes[(*cit)->id]){
 					++count;
 					if((*cit)->mother == ni || (*cit)->father == ni){
@@ -397,10 +401,13 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 					}
 				}
 			}
-			if(count > maxcount + 3 && count > (ni->layer / 10)){
-				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<"   "<<ni->lprint()<<endl;
+
+			if((count/(float)ni->layer) > maxcount){
+				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 				highest = i;
-				maxcount = count;
+				maxcount = (count/(float)ni->layer);
+			}else{
+				// if(count>0) cout<<i<<": TRIED count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 			}
 		}
 	}

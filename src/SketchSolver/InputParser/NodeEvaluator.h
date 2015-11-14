@@ -166,6 +166,7 @@ protected:
 	vector<cpvec*> vecvalues;
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
+	vector<bool> isset;
 	VarStore* inputs;	
 	bool failedAssert;
 	bool failedHAssert;
@@ -181,10 +182,15 @@ protected:
 		if(trackChange){
 			int id = bn.id;
 			int& t = values[id];
-			changes[id] = changes[id] || (t!=i);
+			if(isset[id]){
+				changes[id] = changes[id] || (t!=i);
+			}else{
+				isset[id] = true;
+			}
 			t = i;
 		}else{
 			values[bn.id] = i;
+			isset[bn.id] = true;
 		}
 	}
 

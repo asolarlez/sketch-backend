@@ -446,6 +446,24 @@ void NodesToSolver::processLT (LT_node& node){
 		node_ids[node.id] = -YES;
 		return;
 	}
+	//if the largest mother equals the smallest father, then it will be true except for that one case
+	if(mv[i+(msz-1)*inci].value == fv[j].value && (fsz==1 || msz==1)){
+		// cout<<"!!! Saved with YES, "<<inci<<endl;
+		int out = -dir.addAndClause(mv[i+(msz-1)*inci].guard, fv[j].guard) ;
+		node_ids[node.id] = out;
+		for(int qq = 0; qq<msz; ++qq){
+			if(qq != i+(msz-1)*inci){
+				dir.addHelperC(out, -mv[qq].guard);
+			}
+		}
+		for(int qq = 0; qq<fsz; ++qq){
+			if(qq != j){
+				dir.addHelperC(out, -fv[qq].guard);
+			}
+		}
+		return;
+	}
+
 
 	vector<char> mc(mval.getSize(), 'n');
 	vector<char> fc(fval.getSize(), 'n');
