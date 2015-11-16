@@ -85,6 +85,7 @@ struct CommandLineArgs{
   bool onlySpRandAssign;
   int spRandBias; // greater value means more bias towards lower depths
   double sparseArray;
+  bool randomInlining;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -159,6 +160,7 @@ struct CommandLineArgs{
     onlySpRandAssign = false;
     spRandBias = 1;
 	sparseArray = -1;
+    randomInlining = false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -175,11 +177,16 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-    if( string(argv[ii]) == "-onlysprandassign" ){
-      onlySpRandAssign = true;
-      input_idx = ii+1;
-      continue;
-    }
+        if( string(argv[ii]) == "-onlysprandassign" ){
+          onlySpRandAssign = true;
+          input_idx = ii+1;
+          continue;
+        }
+        if( string(argv[ii]) == "-randominlining" ){
+          randomInlining = true;
+          input_idx = ii+1;
+          continue;
+        }
 		if( string(argv[ii]) == "-outputSat" ){	      
 	      outputSat = true;
 	      input_idx = ii+1;
