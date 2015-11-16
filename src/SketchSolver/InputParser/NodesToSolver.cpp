@@ -1848,15 +1848,16 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 		moreArr=true;
 	}
 	while(moreIdx){
-		if(moreIdx && moreArr && cidx == idv[idxi].value){
+		guardedVal gvtmp = idv[idxi];
+		if(moreIdx && moreArr && cidx == gvtmp.value){
 			while(inarriter != inarrend && inarriter->idx == cidx){
 				int iatv = inarriter->value;
 				//cout << "found index, val: " << cidx << "," << idv[idxi].guard << " " << iatv << "," << inarriter->guard << endl;
 				map<int, int>::iterator it = valToID.find(iatv);
 				if(it == valToID.end()){
-					valToID[iatv] = dir.addAndClause(idv[idxi].guard, inarriter->guard);
+					valToID[iatv] = dir.addAndClause(gvtmp.guard, inarriter->guard);
 				}else{
-					int cvar = dir.addAndClause(idv[idxi].guard,inarriter->guard);
+					int cvar = dir.addAndClause(gvtmp.guard,inarriter->guard);
 					it->second = dir.addOrClause(cvar, it->second);
 				}
 				//cout << "update valToID[" << iatv << "]=" << valToID[iatv] << endl;
@@ -1874,7 +1875,7 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 			}
 			continue;
 		}
-		if(!moreIdx || (moreArr && cidx < idv[idxi].value)){ 
+		if(!moreIdx || (moreArr && cidx < gvtmp.value)){ 
 			// array entry not contemplated by index.
 			// nothing to do but to increment the array entry.
 			while(inarriter != inarrend && inarriter->idx == cidx){				
@@ -1888,16 +1889,16 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 			}
 			continue;
 		}
-		if(!moreArr || (moreIdx && idv[idxi].value < cidx)){
+		if(!moreArr || (moreIdx && gvtmp.value < cidx)){
 			//The index refers to an entry that doesn't exist in the array.
 			//Need to produce the default value.
 			for(gvvec::const_iterator it = begdef; it < enddef; ++it){
 				int iatv = it->value;
 				map<int, int>::iterator vit = valToID.find(iatv);
 				if(vit == valToID.end()){
-					valToID[iatv] = dir.addAndClause(idv[idxi].guard, it->guard);
+					valToID[iatv] = dir.addAndClause(gvtmp.guard, it->guard);
 				}else{
-					int cvar = dir.addAndClause(idv[idxi].guard,it->guard);
+					int cvar = dir.addAndClause(gvtmp.guard,it->guard);
 					vit->second = dir.addOrClause(cvar, vit->second);
 				}
 			}
