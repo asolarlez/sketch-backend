@@ -2227,15 +2227,26 @@ void NodesToSolver::visit (TUPLE_CREATE_node &node) {
     Tvalue& nvar = node_ids[node.id];
     vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
     int id = tpl_store.size();
-    tpl_store.push_back(new_vec);
     
-    vector<bool_node*>::iterator it = node.multi_mother.begin();
+    
+    vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	stringstream str;
     for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
         (*new_vec)[i] = mval;
+		str<<mval<<"|";
     }
-    
-	nvar.makeIntVal(YES, id);    
+	string ts = str.str();
+	int oldid = -1;
+	if(tplcache.condAdd(ts.c_str(), ts.size(), id, oldid)){
+		delete new_vec;
+		nvar.makeIntVal(YES, oldid);   
+		cout<<"saved "<<ts<<endl;
+	}else{
+		tpl_store.push_back(new_vec);
+		nvar.makeIntVal(YES, id);    
+	}
+	
 }
 
 void

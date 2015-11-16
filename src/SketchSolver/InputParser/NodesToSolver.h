@@ -36,7 +36,7 @@ protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
         vector<vector<Tvalue>*> tpl_store;
-
+	StringHTable2<int> tplcache;
 
     /* Return the value indexed by given node, or a default value (of given type). */
     inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
