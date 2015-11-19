@@ -1195,10 +1195,11 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
 			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);
-			for(int i=0; i<cnt; ++i){
-				
+			VarStore::objP* tmp = &(*it);
+			for(int i=0; i<cnt; ++i){				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
-				it->setBit(i, (val==1)? 1 : 0);						
+				int qq = tmp->size() * tmp->index;
+				tmp = tmp->setBit(i-qq, (val==1)? 1 : 0);
 			}
 			Dout( cout<<" input "<<cname<<"  has value "<<it->getInt()<<endl );
 		}

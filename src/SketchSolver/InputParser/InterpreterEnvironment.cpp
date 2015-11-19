@@ -407,7 +407,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				exit(1);
 			}
 			if(oldSize > 0){
-				if(dag.size() > 400000 && dag.size() > oldSize * 10){
+				if(dag.size() > 400000000 && dag.size() > oldSize * 10){
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
@@ -653,7 +653,7 @@ int InterpreterEnvironment::doallpairs(){
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
 		cout<<"RNDDEG = "<<hardcoder.getRanddegree()<<endl;
-		double comp = roundtimer.get_cur_ms() * hardcoder.getTotsize();
+		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
 		scores[hardcoder.getRanddegree()].push_back(comp);
 		if(result==0){
 			cout<<"return 0"<<endl;

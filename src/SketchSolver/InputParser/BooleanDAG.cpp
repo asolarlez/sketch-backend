@@ -218,7 +218,7 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 		vector<bool_node*>::iterator end = bnv.end();
 		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
 			if(*it == onode){
-				it = bnv.erase(it);
+				*it = NULL;
 				// there are no duplicates, so once we find we can stop.
 				break;
 			}
@@ -248,6 +248,18 @@ void BooleanDAG::removeNullNodes(){
 		swap(newnodes, nodes);
 		Assert(nodes.size() == nullnodes, "If this fails, it means I don't know how to use STL");
 		Dout( cout<<"Removing "<<newnodes.size() - nodes.size()<<" nodes"<<endl );
+	}
+
+	for(map<bool_node::Type, vector<bool_node*> >::iterator mapit = nodesByType.begin(); mapit != nodesByType.end(); ++mapit){
+		vector<bool_node*>& bnv = mapit->second;
+		int out=0;
+		for(int i=0; i<bnv.size(); ++i){
+			if(bnv[i] != NULL){
+				bnv[out] = bnv[i];
+				++out;
+			}
+		}
+		bnv.resize(out);
 	}
 }
 void BooleanDAG::remove(int i){

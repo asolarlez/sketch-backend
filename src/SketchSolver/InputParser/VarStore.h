@@ -73,11 +73,13 @@ public:
 		int size(){ return vals.size(); }
 		int globalSize(){ if(next == NULL){ return size();} return next->globalSize() + size(); }
 		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
-		void setBit(int i, int val){ 
-			if(i<vals.size()){ vals[i] = val; }
-			else{ 
+		objP* setBit(int i, int val){ 
+			if(i<vals.size()){ 
+				vals[i] = val; 
+				return this;
+			}else{ 
 				Assert(next != NULL, "bad bad"); 
-				next->setBit(i-vals.size(), val);
+				return next->setBit(i-vals.size(), val);
 			}
 		}
 		int getInt() const{

@@ -118,7 +118,7 @@ public:
 	}
 	DepTracker dt;
 	HoleHardcoder(){		
-		totsize = 1.0;
+		totsize = 0.0;
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
 		pendingConstraints = false;
@@ -208,7 +208,7 @@ public:
 		((MiniSATSolver&) globalSat->getMng()).dump();
 		randholes.clear();
 		sofar.clear();
-		totsize=1.0;
+		totsize=0.0;
 		pendingConstraints = false;
 	}
 	void setSolver(SolverHelper* sh){
