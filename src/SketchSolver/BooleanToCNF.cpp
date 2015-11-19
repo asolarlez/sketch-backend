@@ -66,7 +66,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){
 			mng.addCountingHelperClause(x, gv.size());
 		}
-		delete x;
+		delete[] x;
 
 		/*
 		gvvec& gv = tv.num_ranges;
