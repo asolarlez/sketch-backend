@@ -1121,7 +1121,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 					INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 					named_nodes[inode->name] = inode;
 				}
-				if( (*node_it)->type == bool_node::ASSERT ){
+				if( (*node_it)->type == bool_node::ASSERT ||  (*node_it)->type == bool_node::UFUN  ){
 					DllistNode* tt = getDllnode((*node_it));
 					tt->remove();
 					assertions.append( tt );

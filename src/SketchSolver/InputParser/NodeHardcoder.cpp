@@ -157,6 +157,7 @@ void NodeHardcoder::visit( UFUN_node& node ){
 			chose->addToParents();			
 			out = optAdd(chose);
 		}
+		out = cse.computeCSE(out);
 		params.push_back(make_pair(out, pars));
 		rvalue = out;		
 	}else{
