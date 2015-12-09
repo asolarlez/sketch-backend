@@ -1089,22 +1089,25 @@ class TIMES_node: public bool_node{
 class UFUN_node: public arith_node, public DllistNode{
 	const int callsite;
 	static int CALLSITES;
+	static int FGID;
 	int nbits;
 	string ufname;
     string tupleName;
 	//string name;
 	bool isDependent;
   bool hardAssert;
+  int uniquefid;
 	public:
 	bool ignoreAsserts;
-	string outname;
 	int fgid;
+	string outname;	
   bool replaceFun;
     
     UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
         nbits=1;
+		uniquefid = FGID++;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
 	
     void modify_ufname(string& name) {
       ufname = name;
@@ -1138,6 +1141,8 @@ class UFUN_node: public arith_node, public DllistNode{
     
 	virtual bool_node* clone(bool copyChildren = true){UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
 	int get_callsite()const{ return callsite; }
+	int get_uniquefid()const{ return uniquefid; }
+	void set_uniquefid(){  uniquefid = ++FGID; }
 	int get_nbits() const { return nbits; }
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }

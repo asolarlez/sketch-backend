@@ -629,7 +629,7 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
     int lentries = ((Tuple*)ltype)->actSize;
     int rentries = ((Tuple*)rtype)->actSize;
     Assert(lentries == rentries, "Wrong types");
-    bool_node* cur;
+    bool_node* cur=NULL;
     for (int i = 0; i < lentries; i++) {
       TUPLE_R_node* left_r = new TUPLE_R_node();
       left_r->idx = i;
@@ -661,6 +661,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	Dllist tmpList;
 	const string& name = node.get_ufname();
 	map<int, int> oldToNew;
+
 
 	if(ictrl != NULL && !ictrl->checkInline(node)){
 		//mpcontroller[node.fgid]["__ALL"] = NULL;
@@ -1051,14 +1052,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					}else{
 						UFUN_node* ufun = dynamic_cast<UFUN_node*>(n);
 						ufun->ignoreAsserts = ufun->ignoreAsserts || node.ignoreAsserts;
+						ufun->set_uniquefid();
+						if (node.hardAsserts()) {
+						  ufun->makeAssertsHard();
+						}
             
-            if (node.hardAsserts()) {
-              ufun->makeAssertsHard();
-            }
-            
-            if (!node.replaceFun) {
-              ufun->replaceFun = false;
-            }
+						if (!node.replaceFun) {
+						  ufun->replaceFun = false;
+						}
 
 						if(!ufun->ignoreAsserts){
 							DllistNode* tt = getDllnode(ufun);

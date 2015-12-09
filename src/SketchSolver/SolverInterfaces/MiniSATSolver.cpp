@@ -41,7 +41,7 @@ UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
 		const gvvec& gvs = cparam.num_ranges;
 		int jj = 0;
 		for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
-			ps->lits[jj] = Lit(it->guard);
+			ps->lits[jj] = lfromInt(it->guard);
 			ps->vals[jj] = it->value;
 			++jj;
 		}				
@@ -51,7 +51,7 @@ UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
 	gvvec& gvs = out.num_ranges;
 	int jj = 0;
 	for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
-		rv->output->lits[jj] = Lit(it->guard);
+		rv->output->lits[jj] = lfromInt(it->guard);
 		++jj;
 	}
 

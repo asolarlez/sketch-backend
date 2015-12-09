@@ -217,7 +217,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
-		sstr<<node.get_ufname()<<"_"<<node.get_callsite()<<"_"<<j;
+		sstr<<node.get_ufname()<<"_"<<node.get_uniquefid()<<"_"<<j;
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple && !type->isArr, "NYS");
 		int val = (*inputs)[sstr.str()];

@@ -109,7 +109,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 	TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
-		sstr<<uf->get_ufname()<<"_"<<uf->get_callsite()<<"_"<<j;
+		sstr<<uf->get_ufname()<<"_"<<uf->get_uniquefid()<<"_"<<j;
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple && !type->isArr, "NYS");		
 		int val = values[sstr.str()];

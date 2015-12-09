@@ -9,6 +9,8 @@ extern const int UNINITIALIZED = 0;
 
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
+int UFUN_node::FGID= 0;
+
 
 OutType* OutType::BOTTOM = new Bottom();
 OutType* OutType::BOOL = new Bool();

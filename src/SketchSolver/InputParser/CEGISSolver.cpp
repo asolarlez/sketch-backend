@@ -37,7 +37,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 			int size = tuple_type->actSize;
 			for(int tt = 0; tt<size; ++tt){
 				stringstream sstr;
-				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_callsite()<<"_"<<tt;
+				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
 				declareInput( sstr.str() , nbits, -1);
 			}
 		}
