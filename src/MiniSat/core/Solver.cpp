@@ -681,7 +681,7 @@ Clause* Solver::newTempClause(vec<Lit>& ps , Lit q){
 	return c;
 }
 
-
+// int DEBUGCOUNT = 0;
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -712,7 +712,7 @@ Clause* Solver::propagate()
         //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
         for (i = j = &ws[0], end = i + ws.size();  i != end;){
             Clause& c = **i++;
-
+			// ++DEBUGCOUNT;
 			Lit false_lit = ~p;
 
 			if(c.mark() == UFUNCLAUSE){
@@ -794,7 +794,7 @@ Clause* Solver::propagate()
 										plits[1] = (osum1->lits[ii]);
 										plits[0] = ~(osum2->lits[ii]);
 										
-										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p ));
+										uncheckedEnqueue(~osum2->lits[ii], newTempClause( plits, p ));
 									}														
 								}else{
 									//We have a conflict.
