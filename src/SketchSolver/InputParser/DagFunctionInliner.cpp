@@ -348,7 +348,8 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					}
 				}
 			}	
-			tchld += bchld / 2;
+			// TODO: test different boolean weights: 0.5, 0.75, and 1.0
+			tchld += bchld * 0.5;
 		if( it != randholes.end() ){
 			if(LEAVEALONE(it->second)){
 				int oldchld = -it->second; //how many chlidren it had the first time around.
@@ -362,12 +363,12 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 			}
 		}
 		{
-			int baseline = PARAMS->randdegree;
-			int odds;
+			int baseline = randdegree;
+			double odds;
       if (node->is_sp_concretize()) {
         odds = max(1, baseline / (tchld > 0 ? tchld : 1));
       } else {
-        odds = baseline / (tchld > 0 ? tchld : 1);
+        odds = (double)baseline / (tchld > 0 ? tchld : 1);
       }
 			chsize = tchld;
 			if(chsize == 1){
@@ -379,15 +380,18 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 					// cout<<"Single child is "<<bn->lprint()<<endl;
 				}
 			}
+			double p;
 			bool conc_flag;
 			if (node->is_sp_concretize()) {
-				conc_flag = rand() % odds == 0 || (chsize > 1500 && totsize< 10000) || chsize > 5000;
+				p = 1.0 / odds;
+				conc_flag = (chsize > 1500 && totsize < log(10000)) || (chsize > 5000);
+				conc_flag = conc_flag || (rand() < p * ((double)RAND_MAX + 1.0));
 			} else {
-				double p = (1.0 / (1.0 + exp(-1.0/odds)) - 0.5) * 2.0;
-				conc_flag = ((double)rand() / RAND_MAX) <= p;
+				p = (1.0 / (1.0 + exp(-1.0/odds)) - 0.5) * 2.0;
+				conc_flag = (p > 0) && (rand() < p * ((double)RAND_MAX + 1.0));
 			}
 			if (conc_flag) {
-				cout<<node->get_name()<<" odds = 1/"<<odds<<"  ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
+				cout<<node->get_name()<<" odds = 1/"<<odds<<" "<<p<<" ("<<chsize<<", "<<tchld<<") "<<" try to replace"<<endl;
 				int bound = 1;
 				
 				int nbits = node->get_nbits();
@@ -457,7 +461,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt){
 				if(ul > 0 && bound ==obound ){
 					bound = min(bound, ul);
 				}		
-				totsize*=bound;
+				totsize+=log(bound);
 				int rv = fixValue(*node, bound, nbits);
 				randholes[node->get_name()] = rv;
 				cout<<node->get_name()<<": replacing with value "<<rv<<" bnd= "<<bound<<" totsize= "<<totsize<<endl;

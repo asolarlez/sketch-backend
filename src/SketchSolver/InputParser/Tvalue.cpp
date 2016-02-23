@@ -24,15 +24,24 @@ void Tvalue::sparsify (SolverHelper& sh) {
 
 
 
-void Tvalue::makeArray (SolverHelper &dir, int nbits, int arrsz) {
+void Tvalue::makeArray (SolverHelper &dir, int nbits, int arrsz, float sparseArray) {
 	Assert (id > 0, "id must be positive, instead it is " << id << " (makeArray)");
 	Assert (this->size == nbits*arrsz, "size=" << size << " != " << nbits << "*" << arrsz);
 	num_ranges.clear();
+	int P = 10000;
+	int q = P*sparseArray;
 	for(int arrid=0; arrid<arrsz; ++arrid){
 		vector<int> ids (nbits);
 		gvvec vg;
 		for (int i = 0; i < nbits; i++)
 			ids[i] = getId (arrid*nbits+i);
+
+		if(arrid > 10 && sparseArray > 0.0 && (rand() % P) >= q){
+			for (int i = 0; i < nbits; i++){
+				dir.addHardAssertClause(-ids[i]);			
+			}
+		}
+
 		dir.getSwitchVars (ids, nbits, vg);
 		for(int t=0; t<vg.size(); ++t){
 			num_ranges.push_back(guardedVal(vg[t].guard , vg[t].value ,arrid));

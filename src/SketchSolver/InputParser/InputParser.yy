@@ -333,7 +333,7 @@ Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' 
 AssertionExpr: T_ident T_Sketches T_ident
 {
 	if(PARAMS->interactive){
-		$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1));
+		$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1), envt->inlineAmnt());
 	}else{
 		envt->addspskpair(*$3, *$1);
 	}		

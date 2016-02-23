@@ -150,7 +150,7 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
  * single function asserting their equivalence. The Miter is created for
  * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
  */
-BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch){
+BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt){
 	if(params.verbosity > 2){
 		
 		cout<<"* before  EVERYTHING: "<< spec->get_name() <<"::SPEC nodes = "<<spec->size()<<"\t "<< sketch->get_name() <<"::SKETCH nodes = "<<sketch->size()<<endl;
@@ -219,10 +219,10 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	}
 	
  	if(params.olevel >= 3){
-		if(params.verbosity > 3){ cout<<" Inlining amount = "<<params.inlineAmnt<<endl; }
+		if(params.verbosity > 3){ cout<<" Inlining amount = "<<inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
-			doInline(*sketch, functionMap, params.inlineAmnt, replaceMap);
+			doInline(*sketch, functionMap, inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
@@ -230,7 +230,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
-			doInline(*spec, functionMap, params.inlineAmnt, replaceMap);
+			doInline(*spec, functionMap, inlineAmnt, replaceMap);
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
@@ -407,7 +407,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				exit(1);
 			}
 			if(oldSize > 0){
-				if(dag.size() > 400000 && dag.size() > oldSize * 10){
+				if(dag.size() > 400000000 && dag.size() > oldSize * 10){
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;
@@ -434,32 +434,206 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 }
 
 
+ClauseExchange::ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf)
+	:msat(ms), infile(inf), outfile(outf)
+{
+	failures = 0;
+
+	msat->getShareable(single, baseline, dble);
+
+	//Wipe the files clean
+	{
+	FILE* f = fopen(infile.c_str(), "w");	
+	fclose(f);
+	}
+	{
+	FILE* f = fopen(outfile.c_str(), "w");	
+	fclose(f);
+	}
+}
+
+void ClauseExchange::exchange(){
+	analyzeLocal();
+	int ssize = single.size();
+	int dsize = dble.size();
+	readInfile();
+	if(ssize > 0 || dsize > 0){
+		pushOutfile();
+	}
+}
+
+void ClauseExchange::readInfile(){
+	int ssize = single.size();
+	int dsize = dble.size();
+	int bufsize = ssize + dsize*2 + 3;
+	bufsize = bufsize * 3;
+	bufsize = max(bufsize, 200);
+	vector<int> sbuf(bufsize);
+	FILE* f = fopen(outfile.c_str(), "r");
+	int rsize = fread(&sbuf[0], sizeof(int), bufsize, f);
+	if(rsize < 3){
+		fclose(f);
+		cout<<"Nothing read"<<endl;
+		return;
+	}
+	ssize = sbuf[0]; dsize=sbuf[1];
+	int realsize = ssize + dsize*2 + 3;
+	if(rsize != realsize){
+		if(rsize > realsize){
+			fclose(f);
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+		if(rsize != bufsize){
+			fclose(f);
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+		sbuf.resize(realsize);
+		rsize = fread(&sbuf[bufsize], sizeof(int), realsize - bufsize, f);
+		fclose(f);
+		if(rsize + bufsize != realsize){
+			cout<<"Corrupted"<<endl;
+			return;
+		}
+	}else{
+		fclose(f);
+	}
+	unsigned chksum = 0;
+	for(int i=0; i<sbuf.size()-1; ++i){
+		chksum += sbuf[i];
+	}
+	if(chksum != sbuf[sbuf.size()-1]){
+		cout<<"Failed checksum"<<endl;
+		return;
+	}
+	{
+		vec<Lit> vl(1);
+		for(int i=2; i < 2+ssize; ++i){
+			int sin = sbuf[i];
+			if(single.count(sin)==0){
+				single.insert(sin);
+				vl[0] = toLit(sin);
+				msat->addHelperClause(vl);
+			}
+		}
+	}
+	{
+		vec<Lit> vl(2);
+		for(int i=2+ssize; i< sbuf.size()-1; i+=2){
+			int f = sbuf[i];
+			int s = sbuf[i+1];
+			pair<int, int> p = make_pair(f, s);
+			if(dble.count(p) ==0){
+				dble.insert(p);
+				vl[0] = toLit(f); vl[1] = toLit(s);
+				msat->addHelperClause(vl);
+			}
+		}
+	}
+}
+
+void ClauseExchange::pushOutfile(){
+	int ssize = single.size();
+	int dsize = dble.size();
+	unsigned chksum = 0;
+	vector<int> sbuf(ssize + dsize*2 + 3);
+	chksum += ssize;
+	chksum += dsize;
+	sbuf[0] = ssize;
+	sbuf[1] = dsize;
+	int i=2;
+	for(set<int>::iterator it = single.begin(); it != single.end(); ++it){
+		chksum += *it;
+		sbuf[i] = *it; ++i;
+	}
+	for(set<pair<int, int> >::iterator it = dble.begin(); it != dble.end(); ++it){
+		chksum += it->first;
+		chksum += it->second;
+		sbuf[i] = it->first; ++i;
+		sbuf[i] = it->second; ++i;
+	}
+	sbuf[i] = chksum;
+	FILE* f = fopen(outfile.c_str(), "w");
+	fwrite(&sbuf[0], sizeof(int), i+1, f);
+	fclose(f);
+}
+
+void ClauseExchange::analyzeLocal(){
+	single.clear(); dble.clear();
+	msat->getShareable(single, dble, baseline);	
+}
+
+
+void InterpreterEnvironment::share(){
+	if(exchanger!=NULL){
+		exchanger->exchange();
+	}
+}
+
 int InterpreterEnvironment::doallpairs(){
 	int howmany = params.ntimes;
 	if(howmany < 1 || !params.randomassign){ howmany = 1; }
 	int result=-1;
-
+	vector<int> rd(2);
+	map<int, vector<double> > scores;
+    
+    // A dummy ctrl for inlining bound
+    CTRL_node* inline_ctrl;
+    if (params.randomInlining) {
+        inline_ctrl = new CTRL_node();
+        inline_ctrl->name = "inline";
+        hardcoder.declareControl(inline_ctrl);
+    }
+    
 	if(howmany > 1 || params.randomassign){
-		for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
+        for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 			BooleanDAG* bd = it->second;
 			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
 			for(int i=0; i<ctrl.size(); ++i){
 				hardcoder.declareControl((CTRL_node*) ctrl[i]);
 			}
 		}
+		if(exchanger == NULL && howmany > 5){
+			string inf = params.inputFname;
+			inf += ".com";
+			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);			
+			if(params.randdegree == 0){
+				rd[0] = 10;
+				rd[1] = 20;
+			}
+		}			 
 	}
 	maxRndSize = 0;
-	hardcoder.setHarnesses(spskpairs.size());
-
+	hardcoder.setHarnesses(spskpairs.size());	
 	for(int tt = 0; tt<howmany; ++tt){
 		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
+		if(tt % 5 == 4){
+			share();
+			if(params.randdegree == 0){
+				hardcoder.adjust(rd, scores);
+			}
+		}
+		if(params.randdegree == 0){
+			hardcoder.setRanddegree(rd[tt % 2]);			
+		}
+
 		timerclass roundtimer("Round");
 		roundtimer.start();
+        
+        // Fix a random value to the inlining bound
+        int inlineAmnt = params.inlineAmnt;
+        int minInlining = 3;
+        if (params.inlineAmnt > minInlining && params.randomInlining) {
+            inline_ctrl->special_concretize(params.inlineAmnt - minInlining);
+            hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
+            inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
+        }
 		for(int i=0; i<spskpairs.size(); ++i){
 			hardcoder.setCurHarness(i);
 			try{
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
-				getCopy(spskpairs[i].second));			
+				getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");
@@ -478,6 +652,9 @@ int InterpreterEnvironment::doallpairs(){
 		roundtimer.stop();
 		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
+		cout<<"RNDDEG = "<<hardcoder.getRanddegree()<<endl;
+		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
+		scores[hardcoder.getRanddegree()].push_back(comp);
 		if(result==0){
 			cout<<"return 0"<<endl;
 			return result;

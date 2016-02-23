@@ -210,6 +210,26 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		return nv.staticCompare<COMP>(C, reverse);
 	}
 
+	if(n1->type == bool_node::ARR_R){
+		AbstractNodeValue& nv = anv[n1];
+		nv.timestamp = n1->globalId;
+		{
+			bool_node* parent = n1->father;
+			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
+
+			if(it == anv.end()){
+				staticCompare<COMP>(parent, C, reverse);
+			}else{
+				if(it->second.timestamp != parent->globalId){
+					anv.erase(it);
+					staticCompare<COMP>(parent, C, reverse);
+				}
+			}
+
+			nv.insert( anv[parent] );
+		}
+		return nv.staticCompare<COMP>(C, reverse);
+	}
 
 
 
