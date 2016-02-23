@@ -247,7 +247,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "--boundmode" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-boundmode needs an extra parameter");
 	      string bm  = argv[ii+1];	  
 		  cout<<"boundmode = "<<bm<<endl;
 		  Assert(bm == "CALLSITE" || bm == "CALLNAME" , 
@@ -262,7 +262,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "-simplifycex" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-simplifycex needs an extra parameter");
 	      simplifycex = argv[ii+1];	  
 		  cout<<"simplifycex = "<<simplifycex<<endl;
 		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 
