@@ -35,10 +35,13 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 
 			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
 			int size = tuple_type->actSize;
+			int ASize =  1 << PARAMS->NINPUTS;
 			for(int tt = 0; tt<size; ++tt){
 				stringstream sstr;
 				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
-				declareInput( sstr.str() , nbits, -1);
+				OutType* ttype = tuple_type->entries[tt];	
+				bool isArr = ttype->isArr ;
+				declareInput( sstr.str() , nbits, (isArr ? ASize : -1) );
 			}
 		}
 

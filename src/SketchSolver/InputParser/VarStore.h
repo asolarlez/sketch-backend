@@ -70,6 +70,7 @@ public:
 				}
 			}
 		}
+		int arrSize(){ if(next==NULL){ return 1; }else{ return next->arrSize() + 1;  } }
 		int size(){ return vals.size(); }
 		int globalSize(){ if(next == NULL){ return size();} return next->globalSize() + size(); }
 		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }

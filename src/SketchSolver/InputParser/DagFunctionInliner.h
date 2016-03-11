@@ -85,7 +85,7 @@ public:
 			}
 		}
 		for(BooleanDAG::iterator it = dag.begin(); it != dag.end(); ++it){
-			if(typeid(**it) == typeid(UFUN_node)){
+			if((*it)->type == bool_node::UFUN){
 				if(cname.count((*it)->globalId)>0){
 				cout<<cname[(*it)->globalId]<<"[shape=record]"<<endl;
 				}else{
@@ -588,7 +588,7 @@ public:
 		
 	}
 	virtual bool checkInline(UFUN_node& node){
-		return (inlineAllFuns) ||  !funsToInline.count(node.get_ufname())==0;
+		return (inlineAllFuns) ||  funsToInline.count(node.get_ufname())!=0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		

@@ -95,9 +95,18 @@ public:
     T&       last  (void)              { return data[sz-1]; }
 
     // Vector interface:
-    const T& operator [] (int index) const  { return data[index]; }
-    T&       operator [] (int index)        { return data[index]; }
-
+    const T& operator [] (int index) const  { 
+#ifdef _DEBUG
+		assert( index >= 0 && index < sz );
+#endif
+		return data[index]; 
+	}
+    T&       operator [] (int index)        { 
+#ifdef _DEBUG
+		assert( index >= 0 && index < sz );
+#endif		
+		return data[index]; }
+	T* begin(){ return data; }
 
     // Duplicatation (preferred instead):
     void copyTo(vec<T>& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) new (&copy[i]) T(data[i]); }

@@ -308,6 +308,7 @@ struct bool_node{
             case LT: return "<";
             case EQ: return "==";
             case ASSERT: return "ASSERT";
+			default: throw BasicError("Err", "Err");
         }
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
@@ -936,7 +937,7 @@ class CTRL_node: public INTER_node{
     vector<string> parents;
 	
     CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind_; isTuple = false;}
 	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		

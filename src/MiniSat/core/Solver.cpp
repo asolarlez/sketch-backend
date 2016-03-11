@@ -710,7 +710,7 @@ Clause* Solver::propagate()
 		
         //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
         //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
-        for (i = j = &ws[0], end = i + ws.size();  i != end;){
+        for (i = j = ws.begin(), end = i + ws.size();  i != end;){
             Clause& c = **i++;
 			// ++DEBUGCOUNT;
 			Lit false_lit = ~p;
@@ -722,13 +722,13 @@ Clause* Solver::propagate()
 				int nparams = ufs->nparams;
 				vec<int> pvals;
 				vec<Lit> plits(nparams*2 + 2);
-				for(int i=0; i<nparams; ++i){
-					ParamSummary* ps = ufs->params[i];
+				for(int ii=0; ii<nparams; ++ii){
+					ParamSummary* ps = ufs->params[ii];
 					bool found = false;
 					for(int jj=0; jj<ps->nvals; ++jj){
 						if(value(ps->lits[jj])==l_True){
 							pvals.push(ps->vals[jj]);
-							plits[2+i] = ~(ps->lits[jj]);
+							plits[2+ii] = ~(ps->lits[jj]);
 							found = true;
 							break;
 						}

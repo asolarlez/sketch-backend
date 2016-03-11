@@ -111,9 +111,30 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 		stringstream sstr;
 		sstr<<uf->get_ufname()<<"_"<<uf->get_uniquefid()<<"_"<<j;
 		OutType* type = tuple_type->entries[j];
-		Assert(!type->isTuple && !type->isArr, "NYS");		
-		int val = values[sstr.str()];
-		new_node->multi_mother.push_back( getCnode(val) );
+		Assert(!type->isTuple, "NYS");	
+		if(type->isArr){
+			VarStore::objP* val = &(values.getObj(sstr.str()));
+			int nbits = val->size();
+			ARR_CREATE_node* acn = new ARR_CREATE_node();
+			while(val != NULL){
+				bool_node* cnst;
+				if(nbits==1){
+					cnst= getCnode( val->getInt() ==1 );
+				}else{
+					cnst= getCnode( val->getInt() );
+				}
+				while(acn->multi_mother.size()< val->index){
+					acn->multi_mother.push_back( getCnode(0) );
+				}
+				acn->multi_mother.push_back( cnst );
+				val = val->next;
+			}
+			acn->addToParents();					
+			return optAdd(acn);
+		}else{
+			int val = values[sstr.str()];
+			new_node->multi_mother.push_back( getCnode(val) );
+		}
 	}
 	new_node->addToParents();
 	return optAdd(new_node);	

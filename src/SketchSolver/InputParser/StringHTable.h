@@ -258,8 +258,9 @@ public:
 		bucket<T>* left = gchelperB(v, a, part, cst, bst);
 		bucket<T>* right = gchelperB(v, part + 1, b, cst, bst);
 		bucket<T>* told = v[part];
-		char* nkey = cst.newObj(strlen(told->label)+1);
-		strcpy(nkey, told->label);
+		int slen = strlen(told->label)+1;
+		char* nkey = cst.newObj(slen);
+		strncpy(nkey, told->label, slen);
 		bucket<T>* tt = new(bst.newObj()) bucket<T>(told->hash, nkey, told->value);
 		tt->left = left;
 		tt->right = right;
@@ -289,7 +290,7 @@ public:
 		bucket<T>*& t = table[tidx];
 		if(t==NULL){
 			char* nkey = store.newObj(len+1);
-			strcpy(nkey, key);
+			strncpy(nkey, key, len+1);
 			t = new(bstore.newObj()) bucket<T>(idx, nkey, val);
 			out = val;
 			return false;
@@ -299,7 +300,7 @@ public:
 				if(tt->hash < idx){
 					if(tt->left == NULL){
 						char* nkey = store.newObj(len+1);
-						strcpy(nkey, key);
+						strncpy(nkey, key, len+1);
 						tt->left = new(bstore.newObj()) bucket<T>(idx, nkey, val);
 						out = val;						
 						return false;
@@ -315,7 +316,7 @@ public:
 					}else{
 						if(tt->right == NULL){
 							char* nkey = store.newObj(len+1);
-							strcpy(nkey, key);
+							strncpy(nkey, key, len+1);
 							tt->right = new(bstore.newObj()) bucket<T>(idx, nkey, val);
 							out = val;
 							return false;
