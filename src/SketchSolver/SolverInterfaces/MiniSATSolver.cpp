@@ -20,18 +20,32 @@ UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
 	int sz = sizeof(UfunSummary) + nparams*sizeof(ParamSummary*);
 	int endof = sz;
 	for(int i=0; i<nparams; ++i){
-		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*params[i].getSize();
-	}
-	sz += sizeof(OutSummary) + out.getSize()*sizeof(Lit);
-	char* buf =  (char*) malloc(sz);
-	UfunSummary* rv = new(buf) UfunSummary(params.size());
-	rv->params = (ParamSummary**) (buf + sizeof(UfunSummary));
-	sz = endof;
-	for(int i=0; i<params.size(); ++i){	
 		Tvalue& cparam = params[i];
 		if(!cparam.isSparse()){
 			cparam.makeSparse(dir);
 		}
+		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*cparam.getSize();
+	}
+	sz += sizeof(OutSummary) + out.getSize()*sizeof(Lit);
+
+	int fuz = 0;
+#ifdef _DEBUG
+	fuz = 10*sizeof(int);
+#endif 
+	char* buf =  (char*) malloc(sz + fuz);
+#ifdef _DEBUG
+	for(int i=0; i<sz + fuz; ++i){
+		buf[i] = 'x';
+	}
+	((int*)buf)[0] = sz;	
+	buf += 4*sizeof(int);
+#endif
+
+	UfunSummary* rv = new(buf) UfunSummary(params.size());
+	rv->params = (ParamSummary**) (buf + sizeof(UfunSummary));
+	sz = endof;
+	for(int i=0; i<params.size(); ++i){	
+		Tvalue& cparam = params[i];		
 		int nvals = cparam.getSize();
 		ParamSummary* ps = new(buf + sz) ParamSummary(nvals);
 		rv->params[i] = ps;

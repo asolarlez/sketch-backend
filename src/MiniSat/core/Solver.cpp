@@ -655,7 +655,11 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
 vec<char> tc(sizeof(Clause) + sizeof(uint32_t)*(3));
 
 
-Clause* Solver::newTempClause(vec<Lit>& ps , Lit q){
+Clause* Solver::newTempClause(vec<Lit>& po , Lit q){
+	vec<Lit> ps(po.size());
+	for(int i=0; i<po.size(); ++i){
+		ps[i] = po[i];
+	}
 	Lit fst = ps[0];
 	int fstidx = -1;
 	sort(ps);	
@@ -719,6 +723,24 @@ Clause* Solver::propagate()
 
 				UfunSummary** ufp = (UfunSummary**) &c[0];
 				UfunSummary* ufs = *ufp;
+#ifdef _DEBUG
+				{
+					char* buf = (char*) ufs;
+					buf -= 4*sizeof(int);
+					int ssz = ((int*)buf)[0];
+					buf += 4;
+					for(int i=0; i<12; ++i){
+						assert(buf[i] == 'x', "not OK");
+					}
+					buf += 12 + ssz;
+					for(int i=0; i<16; ++i){
+						assert(buf[i] == 'x', "not OK");
+					}
+				}
+#endif
+
+
+
 				int nparams = ufs->nparams;
 				vec<int> pvals;
 				vec<Lit> plits(nparams*2 + 2);
