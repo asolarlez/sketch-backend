@@ -1110,6 +1110,8 @@ class UFUN_node: public arith_node, public DllistNode{
     }
     UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
 	
+
+
     void modify_ufname(string& name) {
       ufname = name;
     }
@@ -1144,7 +1146,9 @@ class UFUN_node: public arith_node, public DllistNode{
 	int get_callsite()const{ return callsite; }
 	int get_uniquefid()const{ return uniquefid; }
 	void set_uniquefid(){  uniquefid = ++FGID; }
-	int get_nbits() const { return nbits; }
+	int get_nbits() const { 
+		return nbits; 
+	}
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(string& name){tupleName = name;}

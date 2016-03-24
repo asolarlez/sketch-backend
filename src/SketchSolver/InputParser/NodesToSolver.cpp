@@ -1351,7 +1351,8 @@ void NodesToSolver::visit( UFUN_node& node ){
 		for(int i=0; i<node.multi_mother.size(); ++i){
 			params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
 		}
-		int nbits = 5;
+		
+		int nbits = tmpdag->getIntSize();
 		Tvalue nvar = dir.newAnonymousVar(nbits);
 		nvar.setSize(nbits);
 		nvar.makeSparse(dir);
@@ -2501,9 +2502,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
-		if(TOTBUFFERS > tmpbufs + 1){
-			cout<<"SOMETHING FISHY HERE!!!!"<<endl;
-		}
 
 		//Tvalue& tv = node_ids[(*node_it)->id];
 //		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;

@@ -30,7 +30,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 		vector<bool_node*>& ufunin = problem->getNodesByType(bool_node::UFUN);	
 		for(int i=0; i<ufunin.size(); ++i){
 			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
-			int nbits = 5;
+			int nbits = problem->getIntSize();
 			string tuple_name = ufunnode->getTupleName();
 
 			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
@@ -950,12 +950,34 @@ void CEGISSolver::normalizeInputStore(){
 
 
 void CEGISSolver::redeclareInputs(BooleanDAG* dag){
-	vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
-	for(int i=0; i<specIn.size(); ++i){			
-		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-		int nbits = srcnode->get_nbits();
-		if(nbits >= 2){	
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
+	{
+		vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
+		for(int i=0; i<specIn.size(); ++i){			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			if(nbits >= 2){	
+				declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
+			}
+		}
+	}
+	{
+	
+		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);	
+		for(int i=0; i<ufunin.size(); ++i){
+			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
+			int nbits = dag->getIntSize();
+			string tuple_name = ufunnode->getTupleName();
+
+			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+			int size = tuple_type->actSize;
+			int ASize =  1 << PARAMS->NINPUTS;
+			for(int tt = 0; tt<size; ++tt){
+				stringstream sstr;
+				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
+				OutType* ttype = tuple_type->entries[tt];	
+				bool isArr = ttype->isArr ;
+				declareInput( sstr.str() , nbits, (isArr ? ASize : -1) );
+			}
 		}
 	}
 }

@@ -40,16 +40,18 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
 
 
 void BooleanDAG::growInputIntSizes(){
-	vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
-	++intSize;
-	for(int i=0; i<specIn.size(); ++i){	
-		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-		int nbits = srcnode->get_nbits();
-		// BUGFIX xzl: nbits might be strange for SRC_nodes turned from Angelic CTRLs
-		if(nbits >= 2 && nbits < intSize){
-			srcnode->set_nbits(nbits+1);
-			// NOTE xzl: this might no longer be true for general case since we have Angelic CTRL turned into SRC_node. Hence we added a check in the "if" branch
-			Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
+	{
+		vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
+		++intSize;
+		for(int i=0; i<specIn.size(); ++i){	
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			// BUGFIX xzl: nbits might be strange for SRC_nodes turned from Angelic CTRLs
+			if(nbits >= 2 && nbits < intSize){
+				srcnode->set_nbits(nbits+1);
+				// NOTE xzl: this might no longer be true for general case since we have Angelic CTRL turned into SRC_node. Hence we added a check in the "if" branch
+				Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
+			}
 		}
 	}
 }
@@ -529,7 +531,14 @@ void BooleanDAG::cleanup(){
 			if(it != named_nodes.end() && it->second==inonode){
 				named_nodes.erase(it);
 			}
-		}  			
+		}  		
+		if(onode->type == bool_node::UFUN){
+			vector<bool_node*>& nvec = nodesByType[bool_node::UFUN];
+			auto it = find(nvec.begin(), nvec.end(), onode);
+			if(it != nvec.end()){
+				nvec.erase(it);
+			}
+		}
   		onode->id = -22;	
   		delete onode;		
   	}else{
