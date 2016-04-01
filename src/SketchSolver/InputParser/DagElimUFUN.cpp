@@ -462,7 +462,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
 		bool_node* nn = dag[i];
 		if(nn->type == bool_node::UFUN){
 			UFUN_node* uf = (UFUN_node*)nn;
-			for(auto it = uf->multi_mother.begin(); it != uf->multi_mother.end(); ++it){
+			for(vector<bool_node*>::iterator it = uf->multi_mother.begin(); it != uf->multi_mother.end(); ++it){
 				if( (*it)->getOtype()->isArr ){
 					ufunsToDo.insert(uf->get_ufname());
 				}

@@ -534,7 +534,7 @@ void BooleanDAG::cleanup(){
 		}  		
 		if(onode->type == bool_node::UFUN){
 			vector<bool_node*>& nvec = nodesByType[bool_node::UFUN];
-			auto it = find(nvec.begin(), nvec.end(), onode);
+			vector<bool_node*>::iterator it = find(nvec.begin(), nvec.end(), onode);
 			if(it != nvec.end()){
 				nvec.erase(it);
 			}
