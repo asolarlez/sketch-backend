@@ -20,31 +20,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 
 	{
 		Dout( cout<<"BEFORE declaring input names"<<endl );
-		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);	
-		for(int i=0; i<specIn.size(); ++i){			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-			int nbits = srcnode->get_nbits();
-      Assert(!srcnode->isTuple, "Not possible");
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
-		}
-		vector<bool_node*>& ufunin = problem->getNodesByType(bool_node::UFUN);	
-		for(int i=0; i<ufunin.size(); ++i){
-			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
-			int nbits = problem->getIntSize();
-			string tuple_name = ufunnode->getTupleName();
-
-			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
-			int size = tuple_type->actSize;
-			int ASize =  1 << PARAMS->NINPUTS;
-			for(int tt = 0; tt<size; ++tt){
-				stringstream sstr;
-				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
-				OutType* ttype = tuple_type->entries[tt];	
-				bool isArr = ttype->isArr ;
-				declareInput( sstr.str() , nbits, (isArr ? ASize : -1) );
-			}
-		}
-
+		redeclareInputs(problem, true);		
 	}
 	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
@@ -949,13 +925,13 @@ void CEGISSolver::normalizeInputStore(){
 }
 
 
-void CEGISSolver::redeclareInputs(BooleanDAG* dag){
+void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
 	{
 		vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
 		for(int i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
-			if(nbits >= 2){	
+			if(nbits >= 2 || firstTime){	
 				declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
 			}
 		}
@@ -976,7 +952,8 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag){
 				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
 				OutType* ttype = tuple_type->entries[tt];	
 				bool isArr = ttype->isArr ;
-				declareInput( sstr.str() , nbits, (isArr ? ASize : -1) );
+				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+				declareInput( sstr.str() , isBool ? 1 : nbits, (isArr ? ASize : -1) );
 			}
 		}
 	}

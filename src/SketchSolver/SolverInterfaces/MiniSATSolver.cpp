@@ -15,7 +15,7 @@
 #define Dout( out )  /*    out   */
 
 
-UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
+UfunSummary* newUfun(vector<Tvalue>& params, vector<Tvalue>& out, int outsize, SolverHelper& dir){
 	int nparams = params.size();
 	int sz = sizeof(UfunSummary) + nparams*sizeof(ParamSummary*);
 	int endof = sz;
@@ -26,7 +26,7 @@ UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
 		}
 		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*cparam.getSize();
 	}
-	sz += sizeof(OutSummary) + out.getSize()*sizeof(Lit);
+	sz += sizeof(OutSummary) + outsize*sizeof(Lit);
 
 	int fuz = 0;
 #ifdef _DEBUG
@@ -61,14 +61,21 @@ UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir){
 		}				
 		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*nvals;
 	}
-	rv->output = new (buf+sz) OutSummary(out.getSize());
-	gvvec& gvs = out.num_ranges;
+	rv->output = new (buf+sz) OutSummary(outsize);
 	int jj = 0;
-	for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
-		rv->output->lits[jj] = lfromInt(it->guard);
-		++jj;
+	for(int i=0; i<out.size(); ++i){
+		if(out[i].isSparse()){
+			gvvec& gvs = out[i].num_ranges;	
+			for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
+				rv->output->lits[jj] = lfromInt(it->guard);
+				++jj;
+			}
+		}else{
+			rv->output->lits[jj] = lfromInt(out[i].getId());
+			++jj;
+		}
 	}
-
+	Assert(jj == outsize, "WTF??");
 	return rv;
 }
 

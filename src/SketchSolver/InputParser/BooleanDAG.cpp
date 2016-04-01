@@ -400,7 +400,7 @@ void BooleanDAG::repOK(){
 			if(uf != NULL){
 				if(uf->ignoreAsserts){
 					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
-					Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
+					// Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
 				/*if(uf->dependent()){
 					Assert(uf->ignoreAsserts, "Dependent ufun nodes should ignore asserts");
@@ -1129,8 +1129,8 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 				if( (*node_it)->type == bool_node::CTRL ){
 					INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 					named_nodes[inode->name] = inode;
-				}
-				if( (*node_it)->type == bool_node::ASSERT ||  (*node_it)->type == bool_node::UFUN  ){
+				}				
+				if( isDllnode(*node_it)  ){
 					DllistNode* tt = getDllnode((*node_it));
 					tt->remove();
 					assertions.append( tt );

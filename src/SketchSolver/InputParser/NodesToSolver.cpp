@@ -1347,16 +1347,47 @@ void NodesToSolver::visit( UFUN_node& node ){
 	
 	if(dir.getMng().isNegated()){
 		//This means you are in the checking phase.
+
+		string tuple_name = node.getTupleName();
+		Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+
+		if(tuple_type->entries.size() == 0){
+			Tvalue& outvar = node_ids[node.id];
+			outvar = -YES;
+			return;
+		}
+
+
 		vector<Tvalue> params;
 		for(int i=0; i<node.multi_mother.size(); ++i){
 			params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
 		}
 		
 		int nbits = tmpdag->getIntSize();
-		Tvalue nvar = dir.newAnonymousVar(nbits);
-		nvar.setSize(nbits);
-		nvar.makeSparse(dir);
-		UfunSummary* ufs = newUfun(params, nvar, dir);
+
+		
+
+		
+		int nouts = tuple_type->entries.size();
+		vector<Tvalue> nvars(nouts);
+		int totbits = 0;
+		for(int i=0; i<nouts; ++i){
+			OutType* ttype = tuple_type->entries[i];	
+			bool isArr = ttype->isArr ;
+			bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+			int cbits = isBool ? 1 : nbits;
+			nvars[i] = dir.newAnonymousVar(nbits); 
+			nvars[i].setSize(cbits);
+			if(cbits > 1){
+				nvars[i].makeSparse(dir);
+				totbits += nvars[i].num_ranges.size();
+			}else{
+				totbits = 1;
+			}			
+		}
+
+
+		UfunSummary* ufs = newUfun(params, nvars, totbits, dir);
 		MiniSATSolver* ms = (MiniSATSolver*) (&dir.getMng());
 		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
 		{
@@ -1371,12 +1402,13 @@ void NodesToSolver::visit( UFUN_node& node ){
 			ms->addUfun(id, ufs);
 		}
 
-		Tvalue& outvar = node_ids[node.id];
-		//must be generalized to multiple params.
-		vector<Tvalue>* new_vec = new vector<Tvalue>(1);
+		Tvalue& outvar = node_ids[node.id];		
+		vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
 		int outid = tpl_store.size();
 		tpl_store.push_back(new_vec);
-		(*new_vec)[0] = nvar;
+		for(int i=0; i<nouts; ++i){
+			(*new_vec)[i] = nvars[i];
+		}
 		outvar.makeIntVal(YES, outid);    
 	}else{
 		Assert(false, "should not be here");

@@ -17,7 +17,7 @@ inline void MiniSolverStart(){ cout<<" STARTING SAT "<<endl; }
 inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
 
-UfunSummary* newUfun(vector<Tvalue>& params, Tvalue& out, SolverHelper& dir);
+UfunSummary* newUfun(vector<Tvalue>& params, vector<Tvalue>& out, int outsize, SolverHelper& dir);
 
 
 class MiniSATSolver : public SATSolver{
