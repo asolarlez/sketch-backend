@@ -284,6 +284,7 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 		OutSummary* ofs = ufs->output;
 		for(int i=0; i<ofs->nouts; ++i){
 			watches[toInt(ofs->lits[i])].push(cc);
+			watches[toInt(~ofs->lits[i])].push(cc);
 		}
 	}
 
