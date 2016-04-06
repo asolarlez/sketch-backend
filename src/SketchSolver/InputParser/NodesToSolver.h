@@ -15,7 +15,7 @@
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
-	
+	float sparseArray;
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
 	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
@@ -39,7 +39,7 @@ protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
         vector<vector<Tvalue>*> tpl_store;
-
+	StringHTable2<int> tplcache;
 
     /* Return the value indexed by given node, or a default value (of given type). */
     inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
@@ -162,7 +162,7 @@ public:
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
 
 
-  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids);
+  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray=-1.0);
 
 };
 

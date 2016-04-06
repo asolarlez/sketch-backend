@@ -75,9 +75,8 @@ class HoleHardcoder{
 	SolverHelper* sat;
 	SolverHelper* globalSat;
 	vec<Lit> sofar;
-	int fixValue(CTRL_node& node, int bound, int nbits);
 	double totsize;
-
+	int randdegree;
 
 	/**
 	When hardcoding a hole that was used by a previous harness, 
@@ -86,13 +85,44 @@ class HoleHardcoder{
 	solve, you will missattribute those constraints to the wrong harness.
 	*/
 	bool pendingConstraints;
+
+	double getAvg(vector<double>& vd){
+		double rv = 0.0;
+		if(vd.size()<1){ return 0.0; }
+		for(int i=0; i<vd.size(); ++i){
+			rv += vd[i];
+		}
+		return rv / vd.size();
+	}
+
 public:
+
+    int fixValue(CTRL_node& node, int bound, int nbits);
+	
+	void adjust(vector<int>& rd, map<int, vector<double> >& scores){
+		double avg0 = getAvg(scores[rd[0]]);
+		double avg1 = getAvg(scores[rd[1]]);
+		cout<<"Averages "<<avg0<<", "<<avg1<<endl;
+		if(avg1 < avg0){
+			rd[0] = rd[1];
+			rd[1] = rd[0]*2;
+			cout<<"Climbing to "<<rd[0]<<", "<<rd[1]<<endl;
+		}
+	}
+
+	void setRanddegree(int rd){
+		randdegree = rd;
+	}
+	int getRanddegree(){
+		return randdegree;
+	}
 	DepTracker dt;
 	HoleHardcoder(){		
-		totsize = 1.0;
+		totsize = 0.0;
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
 		pendingConstraints = false;
+		randdegree = PARAMS->randdegree;
 	}
 	~HoleHardcoder(){		
 		delete &globalSat->getMng();
@@ -153,6 +183,10 @@ public:
 		cout<<"  after ="<<randholes.size()<<endl;
 	}
 
+	MiniSATSolver* getMiniSat(){
+		return (MiniSATSolver*) &(globalSat->getMng());
+	}
+
 	void reset(){
 		cout<<"SUMMRY ";
 		for(int i=0; i<sofar.size(); ++i){
@@ -174,7 +208,7 @@ public:
 		((MiniSATSolver&) globalSat->getMng()).dump();
 		randholes.clear();
 		sofar.clear();
-		totsize=1.0;
+		totsize=0.0;
 		pendingConstraints = false;
 	}
 	void setSolver(SolverHelper* sh){
@@ -188,6 +222,9 @@ public:
 		if(it == randholes.end()){ return false; }
 		return (!LEAVEALONE(it->second));
 	}
+    int getValue(const string& s) {
+        return randholes[s];
+    }
 };
 
 

@@ -76,13 +76,14 @@ void advanceToEndIdx(int& iend, int cidx, const gvvec&tv){
 
 
 
-bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids){
+bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray){
 	//timerclass timer("defineProblem");
 		//timer.start();
 	bool stoppedEarly;
 		int YES = dir.newYES();
 		//getProblem()->lprint(cout);
-		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);			
+		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
+		nts.sparseArray = sparseArray;
 		try{
 			stoppedEarly =false;
 			nts.process(dag);	
@@ -446,6 +447,24 @@ void NodesToSolver::processLT (LT_node& node){
 		node_ids[node.id] = -YES;
 		return;
 	}
+	//if the largest mother equals the smallest father, then it will be true except for that one case
+	if(mv[i+(msz-1)*inci].value == fv[j].value && (fsz==1 || msz==1)){
+		// cout<<"!!! Saved with YES, "<<inci<<endl;
+		int out = -dir.addAndClause(mv[i+(msz-1)*inci].guard, fv[j].guard) ;
+		node_ids[node.id] = out;
+		for(int qq = 0; qq<msz; ++qq){
+			if(qq != i+(msz-1)*inci){
+				dir.addHelperC(out, -mv[qq].guard);
+			}
+		}
+		for(int qq = 0; qq<fsz; ++qq){
+			if(qq != j){
+				dir.addHelperC(out, -fv[qq].guard);
+			}
+		}
+		return;
+	}
+
 
 	vector<char> mc(mval.getSize(), 'n');
 	vector<char> fc(fval.getSize(), 'n');
@@ -988,10 +1007,14 @@ NodesToSolver::processArith (bool_node &node)
 		}		
 		if(refuse != -YES){
 			if(!dir.getMng().isNegated()){
-				int id = rand() % numbers.size();
-				map<int, int>::iterator mit = numbers.begin();
-				for(int i=0; i<id; ++i){ ++mit; }				
-				mit->second = dir.addOrClause(mit->second, refuse);			
+				if(numbers.size()>0){
+					int id = rand() % numbers.size();
+					map<int, int>::iterator mit = numbers.begin();
+					for(int i=0; i<id; ++i){ ++mit; }				
+					mit->second = dir.addOrClause(mit->second, refuse);			
+				}else{
+					numbers[ rand() % PARAMS->randBnd] = refuse;
+				}
 			}else{
 				Assert(numbers.count(PARAMS->randBnd*2)==0, "Lnliurya;");
 				numbers[PARAMS->randBnd*2] = refuse;		
@@ -1122,7 +1145,7 @@ NodesToSolver::visit (SRC_node &node)
 			}else{
 				node_ids[node.id].setSize (node.get_nbits ()*arrSz);
 				Assert( dir.getArrSize(node.get_name()) == arrSz*node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
-				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz);
+				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz, sparseArray);
 			}
 #endif /* HAVE_BVECTARITH */
 		}
@@ -1898,15 +1921,16 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 		moreArr=true;
 	}
 	while(moreIdx){
-		if(moreIdx && moreArr && cidx == idv[idxi].value){
+		guardedVal gvtmp = idv[idxi];
+		if(moreIdx && moreArr && cidx == gvtmp.value){
 			while(inarriter != inarrend && inarriter->idx == cidx){
 				int iatv = inarriter->value;
 				//cout << "found index, val: " << cidx << "," << idv[idxi].guard << " " << iatv << "," << inarriter->guard << endl;
 				map<int, int>::iterator it = valToID.find(iatv);
 				if(it == valToID.end()){
-					valToID[iatv] = dir.addAndClause(idv[idxi].guard, inarriter->guard);
+					valToID[iatv] = dir.addAndClause(gvtmp.guard, inarriter->guard);
 				}else{
-					int cvar = dir.addAndClause(idv[idxi].guard,inarriter->guard);
+					int cvar = dir.addAndClause(gvtmp.guard,inarriter->guard);
 					it->second = dir.addOrClause(cvar, it->second);
 				}
 				//cout << "update valToID[" << iatv << "]=" << valToID[iatv] << endl;
@@ -1924,7 +1948,7 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 			}
 			continue;
 		}
-		if(!moreIdx || (moreArr && cidx < idv[idxi].value)){ 
+		if(!moreIdx || (moreArr && cidx < gvtmp.value)){ 
 			// array entry not contemplated by index.
 			// nothing to do but to increment the array entry.
 			while(inarriter != inarrend && inarriter->idx == cidx){				
@@ -1938,16 +1962,16 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 			}
 			continue;
 		}
-		if(!moreArr || (moreIdx && idv[idxi].value < cidx)){
+		if(!moreArr || (moreIdx && gvtmp.value < cidx)){
 			//The index refers to an entry that doesn't exist in the array.
 			//Need to produce the default value.
 			for(gvvec::const_iterator it = begdef; it < enddef; ++it){
 				int iatv = it->value;
 				map<int, int>::iterator vit = valToID.find(iatv);
 				if(vit == valToID.end()){
-					valToID[iatv] = dir.addAndClause(idv[idxi].guard, it->guard);
+					valToID[iatv] = dir.addAndClause(gvtmp.guard, it->guard);
 				}else{
-					int cvar = dir.addAndClause(idv[idxi].guard,it->guard);
+					int cvar = dir.addAndClause(gvtmp.guard,it->guard);
 					vit->second = dir.addOrClause(cvar, vit->second);
 				}
 			}
@@ -2276,15 +2300,26 @@ void NodesToSolver::visit (TUPLE_CREATE_node &node) {
     Tvalue& nvar = node_ids[node.id];
     vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
     int id = tpl_store.size();
-    tpl_store.push_back(new_vec);
     
-    vector<bool_node*>::iterator it = node.multi_mother.begin();
+    
+    vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	stringstream str;
     for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
         (*new_vec)[i] = mval;
+		str<<mval<<"|";
     }
-    
-	nvar.makeIntVal(YES, id);    
+	string ts = str.str();
+	int oldid = -1;
+	if(tplcache.condAdd(ts.c_str(), ts.size(), id, oldid)){
+		delete new_vec;
+		nvar.makeIntVal(YES, oldid);   
+		cout<<"saved "<<ts<<endl;
+	}else{
+		tpl_store.push_back(new_vec);
+		nvar.makeIntVal(YES, id);    
+	}
+	
 }
 
 void

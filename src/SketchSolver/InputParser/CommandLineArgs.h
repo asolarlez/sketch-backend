@@ -84,7 +84,8 @@ struct CommandLineArgs{
   int angelicTupleDepth;
   bool onlySpRandAssign;
   int spRandBias; // greater value means more bias towards lower depths
-
+  double sparseArray;
+  bool randomInlining;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -158,6 +159,8 @@ struct CommandLineArgs{
     angelicTupleDepth = 1;
     onlySpRandAssign = false;
     spRandBias = 1;
+	sparseArray = -1;
+    randomInlining = false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -174,11 +177,16 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-    if( string(argv[ii]) == "-onlysprandassign" ){
-      onlySpRandAssign = true;
-      input_idx = ii+1;
-      continue;
-    }
+        if( string(argv[ii]) == "-onlysprandassign" ){
+          onlySpRandAssign = true;
+          input_idx = ii+1;
+          continue;
+        }
+        if( string(argv[ii]) == "-randominlining" ){
+          randomInlining = true;
+          input_idx = ii+1;
+          continue;
+        }
 		if( string(argv[ii]) == "-outputSat" ){	      
 	      outputSat = true;
 	      input_idx = ii+1;
@@ -192,6 +200,14 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "-lightverif" ){	      
 	      lightVerif = true;
 	      input_idx = ii+1;
+		  if(sparseArray < 0.0){
+			  sparseArray = 0.5;
+		  }
+		  continue;
+	    }
+		if( string(argv[ii]) == "-sparsearrays" ){	      
+	      sparseArray = strtod(argv[ii+1], NULL);
+	      input_idx = ii+2;
 		  continue;
 	    }
 	    if( string(argv[ii]) == "-nosim" ){	      
@@ -247,7 +263,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "--boundmode" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-boundmode needs an extra parameter");
 	      string bm  = argv[ii+1];	  
 		  cout<<"boundmode = "<<bm<<endl;
 		  Assert(bm == "CALLSITE" || bm == "CALLNAME" , 
@@ -262,7 +278,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "-simplifycex" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-simplifycex needs an extra parameter");
 	      simplifycex = argv[ii+1];	  
 		  cout<<"simplifycex = "<<simplifycex<<endl;
 		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 

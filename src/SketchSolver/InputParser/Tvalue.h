@@ -332,7 +332,7 @@ public:
 
     void makeBvectSigned (SolverHelper &dir, unsigned padding = 0);
 
-	void makeArray (SolverHelper &dir, int nbits, int arrsz);
+	void makeArray (SolverHelper &dir, int nbits, int arrsz, float sparseArray=-1.0);
 
     void makeSparse (SolverHelper &dir, int adj = 1);
 

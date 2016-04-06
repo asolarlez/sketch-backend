@@ -129,6 +129,9 @@ public:
 	 void dump(){
 		 s->dump();
 	 }
+	 void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline){
+		 s->getShareable(single, dble, baseline);
+	 }
 	 
 };
 

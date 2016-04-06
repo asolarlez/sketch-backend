@@ -220,7 +220,7 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 		vector<bool_node*>::iterator end = bnv.end();
 		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
 			if(*it == onode){
-				it = bnv.erase(it);
+				*it = NULL;
 				// there are no duplicates, so once we find we can stop.
 				break;
 			}
@@ -250,6 +250,18 @@ void BooleanDAG::removeNullNodes(){
 		swap(newnodes, nodes);
 		Assert(nodes.size() == nullnodes, "If this fails, it means I don't know how to use STL");
 		Dout( cout<<"Removing "<<newnodes.size() - nodes.size()<<" nodes"<<endl );
+	}
+
+	for(map<bool_node::Type, vector<bool_node*> >::iterator mapit = nodesByType.begin(); mapit != nodesByType.end(); ++mapit){
+		vector<bool_node*>& bnv = mapit->second;
+		int out=0;
+		for(int i=0; i<bnv.size(); ++i){
+			if(bnv[i] != NULL){
+				bnv[out] = bnv[i];
+				++out;
+			}
+		}
+		bnv.resize(out);
 	}
 }
 void BooleanDAG::remove(int i){
@@ -945,7 +957,7 @@ void BooleanDAG::smtlinprint(ostream &out, int &nbits){
 	//output all asserts after lets
 	for(int i=0; i<nodes.size(); ++i){
   		if(nodes[i] != NULL){
-			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST){
+			if(nodes[i]->type != bool_node::ASSERT && nodes[i]->type != bool_node::DST && nodes[i]->type != bool_node::TUPLE_CREATE){
 				out<<"(let ((_n"<<nodes[i]->id;
 				out<<nodes[i]->smtletprint();
 				parentheses++;

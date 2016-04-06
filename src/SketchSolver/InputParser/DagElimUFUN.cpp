@@ -259,6 +259,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		OR_node* on = new OR_node();
 		on->mother = res->mother;
 		on->father = ch->mother;
+		// NOTE xzl: should we call addToParents?
+		on->addToParents();
 		cclone->addNewNode(on);
 		
         
