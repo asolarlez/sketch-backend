@@ -671,7 +671,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 	if(named_nodes.find(name) != named_nodes.end()){
 		fth = named_nodes[name];	
 	}else{
-		cout<<"WARNING, DANGEROUS!! " << name << endl;
+		// cout<<"WARNING, DANGEROUS!! " << name << endl;
 		fth = new CONST_node(-333);
 		nodes.push_back(fth);
 	}
