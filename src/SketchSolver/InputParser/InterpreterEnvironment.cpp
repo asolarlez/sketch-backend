@@ -408,7 +408,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				exit(1);
 			}
 			if(oldSize > 0){
-				if(dag.size() > 400000 && dag.size() > oldSize * 10){
+				if(dag.size() > 4000000 && dag.size() > oldSize * 10){
 					i=steps;
 					cout<<"WARNING: Preemptively stopping inlining because the graph was growing too big too fast"<<endl; 
 					break;

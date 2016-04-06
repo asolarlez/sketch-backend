@@ -698,6 +698,11 @@ Clause* Solver::newTempClause(vec<Lit>& po , Lit q){
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
+
+int FCNT = 0;
+int UCNT = 0;
+int SCNT=0;
+
 Clause* Solver::propagate()
 {
     Clause* confl     = NULL;
@@ -718,10 +723,11 @@ Clause* Solver::propagate()
         for (i = j = ws.begin(), end = i + ws.size();  i != end;){
             Clause& c = **i++;
 			// ++DEBUGCOUNT;
+			uint32_t mrk = c.mark();
 			Lit false_lit = ~p;
-
-			if(c.mark() == UFUNCLAUSE){
-
+			
+			if(mrk == UFUNCLAUSE){
+				++FCNT;
 				UfunSummary** ufp = (UfunSummary**) &c[0];
 				UfunSummary* ufs = *ufp;
 #ifdef _DEBUG
@@ -747,19 +753,20 @@ Clause* Solver::propagate()
 				vec<Lit> plits(nparams*2 + 2);
 				for(int ii=0; ii<nparams; ++ii){
 					ParamSummary* ps = ufs->params[ii];
-					bool found = false;
+					bool found = false;					
 					for(int jj=0; jj<ps->nvals; ++jj){
-						if(value(ps->lits[jj])==l_True){
+						lbool vv = value(ps->lits[jj]);
+						if(vv ==l_True){
 							pvals.push(ps->vals[jj]);
 							plits[2+ii] = ~(ps->lits[jj]);
 							found = true;
 							break;
 						}
 					}
-					if(!found){
+					if(!found){						
 						//This means not all parameters are set, so we can ignore.
 						*j++ = &c;
-						goto FoundWatch;
+						goto FoundWatch;						
 					}
 				}
 				//If we are here, it means all parameters are set. Now we need to check if other
@@ -854,68 +861,9 @@ Clause* Solver::propagate()
 			}
 
 
-			if(c.mark() == LAZYOR){
-				/*
-				Lazyor clause has the following structure 
-				c[0] = c[1] or c[2] c[3] ...c[n-1]
-				So we want the following rules for i>0
-				c[i] => if(c[0] == true){ nothing to do }
-						if(c[0] == undef){ c[0] = true }
-						if(c[0] == false){ conflict (c[0], -c[i]) }
-		
-				*/	
-				/*
-				std::cout<<"LAZYOR "<<(sign(p)?"-":" ")<<var(p)<<": ";
-				for(int ii=0; ii<c.size(); ++ii){
-					std::cout<<" "<<(sign(c[ii])?"-":" ")<<var(c[ii])<<", ";
-				}
-				std::cout<<endl;*/
 
-				Lit first = c[0];
-				if (value(first) == l_True){
-					// std::cout<<"SKIP"<<endl;
-					*j++ = &c;
-					goto FoundWatch;
-				}
-				if (value(first) == l_False){
-					// std::cout<<"CONFL"<<endl;
-					int ttf[2];
-					
-					Fake* f = new (ttf) Fake();
-					(*f)[0] = first;
-					(*f)[1] = ~p;					
-					Clause* nc = Clause::Clause_new(*(f), true);
-					*j++ = nc;
-					// We add nc to the watches list, but that means it is no longer
-					// necessary to add c, since it is redundant with this new clause.
-					watches[toInt(~first)].push(nc);	
-					//Since we are no longer watching this on the LAZYOR clause, 
-					//we need to add this as a real clause.
-					clauses.push(nc);
-					while (i < end)
-	                        *j++ = *i++;
-					confl = nc;			
-					qhead = trail.size();
-					goto FoundWatch;
-				}else{
-					// std::cout<<"ADD"<<endl;
-					int ttf[2];
-					Fake* f = new (ttf) Fake();
-					(*f)[0] = first;
-					(*f)[1] = ~p;					
-					Clause* nc = Clause::Clause_new(*(f), true);
-					watches[toInt(~first)].push(nc);
-					clauses.push(nc);
-					*j++ = nc;
-					// We add nc to the watches list, but that means it is no longer
-					// necessary to add c, since it is redundant with this new clause.
-					uncheckedEnqueue(first, nc);
-					goto FoundWatch;
-				}
-			}
-
-
-			if(c.mark() == SINGLESET){
+			if(mrk == SINGLESET){
+				++UCNT;
 				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
 				// std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
 				int last = c.size()-1;
@@ -1036,7 +984,7 @@ Clause* Solver::propagate()
 				goto FoundWatch;
 			}
 			
-
+			++SCNT;
             // Make sure the false literal is data[1]:
             
             if (c[0] == false_lit) {
@@ -1077,8 +1025,7 @@ Clause* Solver::propagate()
         ws.shrink(i - j);		
     }
     propagations += num_props;
-    simpDB_props -= num_props;
-
+    simpDB_props -= num_props;	
     return confl;
 }
 
@@ -1188,6 +1135,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
     for (;;){
         Clause* confl = propagate();
         if (confl != NULL){
+			// cout<<" FCNT ="<<FCNT<<" SCNT = "<<SCNT<<" UCNT = "<<UCNT<<endl;
 			// cout<<"CONFLICT"<<endl;
             // CONFLICT
 			firstTry = false;
