@@ -1406,24 +1406,31 @@ void CEGISSolver::setup2QBF(ofstream& out){
 	BooleanDAG* bd = problems[problems.size()-1];
 	out<<"c 2qbf problem of the form. \\forall C \\exists In, temp.  (not Correct(C,in, temp)) "<<endl;
 	out<<"c vars listed as UV are the C vars; vars listed as EV are the In vars; vars not listed are temps."<<endl;
-	for(BooleanDAG::iterator node_it = bd->begin(); node_it != bd->end(); ++node_it){
-		(*node_it)->flag = true;
-		if(	(*node_it)->type == bool_node::SRC || (*node_it)->type == bool_node::CTRL ){
-			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);							
-			if(	(*node_it)->type == bool_node::CTRL ){
-				dirCheck.declareControl((CTRL_node*)*node_it);				
-			}else{
-				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits());
-			}
+
+	{
+		vector<bool_node*>& inter = bd->getNodesByType(bool_node::CTRL);
+		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
+			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
+			dirCheck.declareControl((CTRL_node*)*node_it);							
 			int base = dirCheck.getVar(srcnode->get_name());
 			int n = dirCheck.getArrSize(srcnode->get_name());
 			out<<"c "<<	(*node_it)->get_name()<<endl;
-			for(int i=0; i<n; ++i){
-				if(	(*node_it)->type == bool_node::SRC ){
-					out<<"EV "<<(i+base)+1<<endl;
-				}else{
-					out<<"UV "<<(i+base)+1<<endl;
-				}
+			for(int i=0; i<n; ++i){				
+				out<<"UV "<<(i+base)+1<<endl;
+			}
+			
+		}
+	}
+	{
+		vector<bool_node*>& inter = bd->getNodesByType(bool_node::SRC);
+		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
+			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
+			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits());			
+			int base = dirCheck.getVar(srcnode->get_name());
+			int n = dirCheck.getArrSize(srcnode->get_name());
+			out<<"c "<<	(*node_it)->get_name()<<endl;
+			for(int i=0; i<n; ++i){		
+				out<<"EV "<<(i+base)+1<<endl;		
 			}
 		}
 	}
