@@ -1373,7 +1373,7 @@ void CEGISSolver::outputEuclid(ostream& fout){
 	}
 
 
-void CEGISSolver::setup2QBF(ostream& out){
+void CEGISSolver::setup2QBF(ofstream& out){
 	MiniSATSolver mngCheck("checker", SATSolver::CHECKER);		
 	SolverHelper dirCheck(mngCheck);
 	dirCheck.setMemo(params.setMemo);
@@ -1400,6 +1400,6 @@ void CEGISSolver::setup2QBF(ostream& out){
 	mngCheck.debugout = &out;
 	NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids);
 	mngCheck.finish();
-	mngCheck.debugout = NULL;
+	mngCheck.writeDIMACS(out);		
 	dirCheck.outputVarMap(out);		
 }

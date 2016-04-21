@@ -151,7 +151,10 @@ public:
 	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
 
-    // Helper structures:
+	bool propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl);
+	bool backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl);
+	void printUfunState(UfunSummary* ufs);
+	// Helper structures:
     //
     struct VarOrderLt {
         const vec<double>&  activity;

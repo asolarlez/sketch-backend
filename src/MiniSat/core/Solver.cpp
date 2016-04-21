@@ -686,51 +686,80 @@ Clause* Solver::newTempClause(vec<Lit>& po , Lit q){
 	return c;
 }
 
-// int DEBUGCOUNT = 0;
-/*_________________________________________________________________________________________________
-|
-|  propagate : [void]  ->  [Clause*]
-|  
-|  Description:
-|    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-|    otherwise NULL.
-|  
-|    Post-conditions:
-|      * the propagation queue is empty, even if there was a conflict.
-|________________________________________________________________________________________________@*/
 
-int FCNT = 0;
-int UCNT = 0;
-int SCNT=0;
+void Solver::printUfunState(UfunSummary* afs){
+	UfunSummary* ufs = afs;
+	cout<<"-----------------------------------"<<endl;
+	do{
+		int nparams = ufs->nparams;
+		cout<<"{";
+		for(int ii=0; ii<nparams; ++ii){
+			ParamSummary* ps = ufs->params[ii];
+			bool found = false;					
+			cout<<"[";
+			for(int jj=0; jj<ps->nvals; ++jj){
+				cout<<"("<<toInt(ps->lits[jj])<<"="<<ps->vals[jj]<<"|"<< (toInt(value(ps->lits[jj])))<<")";
+			}
+			cout<<"]";
+		}
+		OutSummary* os = ufs->output;
+		for(int ii=0; ii<os->nouts; ++ii){		
+			lbool v1 = value(os->lits[ii]);		
+			cout<<"("<<toInt(os->lits[ii])<<"="<<ii<<"|"<< (toInt(value(os->lits[ii])))<<")";
+		}
+		ufs = ufs->next;
+		cout<<endl;
+	}while(ufs != afs);
+}
 
-Clause* Solver::propagate()
-{
-    Clause* confl     = NULL;
-    int     num_props = 0;
-    volatile int avoidGccWeirdness=0;
 
-	bool isLevelZero = (decisionLevel()==0);
+bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){
+	if(ufs->nparams != 1){
+		return true;
+	}
+	vec<int> setidx;
+	OutSummary* os = ufs->output;
+	for(int ii=0; ii<os->nouts; ++ii){		
+		lbool v1 = value(os->lits[ii]);		
+		if(v1==l_True){
+			setidx.push(ii);
+		}
+	}
+	UfunSummary* other = ufs->next;
+	while(other != ufs){
+		bool takeAction  = false;
+		OutSummary* os2 = ufs->output;
+		for(int ii=0; ii<setidx.size(); ++ii){		
+			lbool v1 = value(os2->lits[setidx[ii]]);
+			if(v1 == l_False){
+				//ufs claims this output should be true; this claims the output should be false. That means their inputs can't be equal.
+				takeAction = true;
+				break;
+			}			
+		}
+		if(takeAction){
+			assert (other->nparams == 1);
+			ParamSummary* ps0 = ufs->params[0];			
+			ParamSummary* ps1 = other->params[0];
+			int set0 = -1;
+			int set1 = -1;
+			for(int jj=0; jj<ps0->nvals; ++jj){
+				if(value(ps0->lits[jj])== l_True){
+					set0 = jj;
+				}
+			}
 
-    while (qhead < trail.size()){
-        Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
-		// std::cout<<(sign(p)?var(p):-var(p))<<std::endl;
-        vec<Clause*>&  ws  = watches[toInt(p)];
-        Clause         **i, **j, **end;
-        num_props++;
-		
-        //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
-        //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
-        for (i = j = ws.begin(), end = i + ws.size();  i != end;){
-            Clause& c = **i++;
-			// ++DEBUGCOUNT;
-			uint32_t mrk = c.mark();
-			Lit false_lit = ~p;
-			
-			if(mrk == UFUNCLAUSE){
-				++FCNT;
-				UfunSummary** ufp = (UfunSummary**) &c[0];
-				UfunSummary* ufs = *ufp;
-#ifdef _DEBUG
+		}
+		other = other->next;
+	}
+
+
+	return true;
+}
+
+
+bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){
+	#ifdef _DEBUG
 				{
 					char* buf = (char*) ufs;
 					buf -= 4*sizeof(int);
@@ -746,7 +775,7 @@ Clause* Solver::propagate()
 				}
 #endif
 
-
+				printUfunState(ufs);
 
 				int nparams = ufs->nparams;
 				vec<int> pvals;
@@ -766,7 +795,7 @@ Clause* Solver::propagate()
 					if(!found){						
 						//This means not all parameters are set, so we can ignore.
 						*j++ = &c;
-						goto FoundWatch;						
+						return true;
 					}
 				}
 				//If we are here, it means all parameters are set. Now we need to check if other
@@ -845,25 +874,70 @@ Clause* Solver::propagate()
 											*j++ = *i++;
 									confl = cnew;			
 									qhead = trail.size();
-									goto FoundWatch;
+									return true;
 								}
 
 							}							
-						}
-						*j++ = &c;
-						goto FoundWatch;
-					}else{
-						other = other->next;
+						}						
 					}
+					other = other->next;
 				}
 				*j++ = &c;
-				goto FoundWatch;
+				return true;
+}
+
+
+
+
+
+// int DEBUGCOUNT = 0;
+/*_________________________________________________________________________________________________
+|
+|  propagate : [void]  ->  [Clause*]
+|  
+|  Description:
+|    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+|    otherwise NULL.
+|  
+|    Post-conditions:
+|      * the propagation queue is empty, even if there was a conflict.
+|________________________________________________________________________________________________@*/
+
+
+Clause* Solver::propagate()
+{
+    Clause* confl     = NULL;
+    int     num_props = 0;
+    volatile int avoidGccWeirdness=0;
+
+	bool isLevelZero = (decisionLevel()==0);
+
+    while (qhead < trail.size()){
+        Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+		// std::cout<<(sign(p)?var(p):-var(p))<<std::endl;
+        vec<Clause*>&  ws  = watches[toInt(p)];
+        Clause         **i, **j, **end;
+        num_props++;
+		
+        //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
+        //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
+        for (i = j = ws.begin(), end = i + ws.size();  i != end;){
+            Clause& c = **i++;
+			// ++DEBUGCOUNT;
+			uint32_t mrk = c.mark();
+			Lit false_lit = ~p;
+			
+			if(mrk == UFUNCLAUSE){				
+				UfunSummary** ufp = (UfunSummary**) &c[0];
+				UfunSummary* ufs = *ufp;
+				if(propagateUfun(p, ufs, c, i, j, end, confl)){
+					goto FoundWatch;
+				}
 			}
 
 
 
-			if(mrk == SINGLESET){
-				++UCNT;
+			if(mrk == SINGLESET){				
 				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
 				// std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
 				int last = c.size()-1;
@@ -983,8 +1057,7 @@ Clause* Solver::propagate()
 				
 				goto FoundWatch;
 			}
-			
-			++SCNT;
+						
             // Make sure the false literal is data[1]:
             
             if (c[0] == false_lit) {

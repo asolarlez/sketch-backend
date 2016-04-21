@@ -153,7 +153,7 @@ public:
 
 	void get_control_map(map<string, int>& values);
 	void outputEuclid(ostream& fout);
-	void setup2QBF(ostream& out);
+	void setup2QBF(ofstream& out);
 
 
     VarStore prevCtrlStore;
