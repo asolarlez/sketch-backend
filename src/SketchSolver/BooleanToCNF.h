@@ -11,6 +11,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <algorithm>
 //#include <dirent.h>
 
 #include "SATSolver.h"

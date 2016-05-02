@@ -20,6 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MSolver.h"
 #include "Sort.h"
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -725,15 +726,26 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 			setidx.push(ii);
 		}
 	}
+	if (setidx.size() == 0) {
+		return true;
+	}
+
+	vec<Lit> plits(4);
+	//If there is a conflict, it will be
+	// (out1 ^ -out2 ^ in1) => -in2   ----> -out1 v out2 v -in1 v -in2	
 	UfunSummary* other = ufs->next;
 	while(other != ufs){
 		bool takeAction  = false;
-		OutSummary* os2 = ufs->output;
+		OutSummary* os2 = other->output;
+
 		for(int ii=0; ii<setidx.size(); ++ii){		
-			lbool v1 = value(os2->lits[setidx[ii]]);
+			int vidx = setidx[ii];
+			lbool v1 = value(os2->lits[vidx]);
 			if(v1 == l_False){
 				//ufs claims this output should be true; this claims the output should be false. That means their inputs can't be equal.
 				takeAction = true;
+				plits[0] = ~os->lits[vidx];
+				plits[1] =  os2->lits[vidx];
 				break;
 			}			
 		}
@@ -746,8 +758,64 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 			for(int jj=0; jj<ps0->nvals; ++jj){
 				if(value(ps0->lits[jj])== l_True){
 					set0 = jj;
+					break;
 				}
 			}
+			for (int jj = 0; jj<ps1->nvals; ++jj) {
+				if (value(ps1->lits[jj]) == l_True) {
+					set1 = jj;
+					break;
+				}
+			}
+			
+			if (set0>= 0 && set1 >= 0 && ps0->vals[set0] == ps1->vals[set1]) {
+				//Conflict.		
+				cout << "Houston, we have a conflict." << endl;
+				plits[2] = ~ps0->lits[set0];
+				plits[3] = ~ps1->lits[set1];
+				int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+				if (tc.size() < targetsize) {
+					tc.growTo(targetsize);
+				}
+				Clause* cnew = new(&tc[0]) Clause(plits, true);
+				*j++ = &c;
+				while (i < end)
+					*j++ = *i++;
+				confl = cnew;
+				qhead = trail.size();
+				return false;
+			}
+			if (set0 >= 0 && set1 < 0) {
+				int vv0 = ps0->vals[set0];
+				for (int jj = 0; jj < ps1->nvals; ++jj) {
+					if (vv0 == ps1->vals[jj]) {
+						set1 = jj;
+						break;
+					}
+				}
+				if (set1 >= 0 && value(ps1->lits[set1]) == l_Undef) {
+					plits[2] = ~ps0->lits[set0];
+					plits[3] = plits[0];
+					plits[0] = ~ps1->lits[set1]; // this is not a bug.
+					uncheckedEnqueue(~ps1->lits[set1], newTempClause(plits, p));
+				}
+			}
+			if (set1 >= 0 && set0 < 0) {
+				int vv1 = ps1->vals[set1];
+				for (int jj = 0; jj < ps0->nvals; ++jj) {
+					if (vv1 == ps0->vals[jj]) {
+						set0 = jj;
+						break;
+					}
+				}
+				if (set0 >= 0 && value(ps0->lits[set0]) == l_Undef) {
+					plits[2] = plits[0];
+					plits[0] = ~ps0->lits[set0];
+					plits[3] = ~ps1->lits[set1]; // this is not a bug.
+					uncheckedEnqueue(~ps0->lits[set0], newTempClause(plits, p));
+				}				
+			}
+
 
 		}
 		other = other->next;
@@ -775,7 +843,7 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 				}
 #endif
 
-				printUfunState(ufs);
+				// printUfunState(ufs);
 
 				int nparams = ufs->nparams;
 				vec<int> pvals;
@@ -794,7 +862,9 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 					}
 					if(!found){						
 						//This means not all parameters are set, so we can ignore.
-						*j++ = &c;
+						if (backpropagateUfun(p, ufs, c, i, j, end, confl)) {
+							*j++ = &c;
+						}
 						return true;
 					}
 				}
@@ -882,7 +952,9 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 					}
 					other = other->next;
 				}
-				*j++ = &c;
+				if (backpropagateUfun(p, ufs, c, i, j, end, confl)) {
+					*j++ = &c;
+				}
 				return true;
 }
 

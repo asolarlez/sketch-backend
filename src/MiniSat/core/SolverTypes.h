@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 //=================================================================================================
 // Variables, literals, lifted booleans, clauses:
-
+/*
 #ifdef  _MSC_VER
 typedef unsigned long int uint32_t;
 typedef unsigned long long int uint64_t;
@@ -36,7 +36,7 @@ typedef signed long long int int64_t;
 #else 
 #include "inttypes.h"
 #endif
-
+*/
 
 namespace MSsolverNS{
 
