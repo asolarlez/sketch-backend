@@ -15,17 +15,11 @@
 #define Dout( out )  /*    out   */
 
 
-UfunSummary* newUfun(vector<Tvalue>& params, vector<Tvalue>& out, int outsize, SolverHelper& dir){
-	int nparams = params.size();
-	int sz = sizeof(UfunSummary) + nparams*sizeof(ParamSummary*);
-	int endof = sz;
-	for(int i=0; i<nparams; ++i){
-		Tvalue& cparam = params[i];
-		if(!cparam.isSparse()){
-			cparam.makeSparse(dir);
-		}
-		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*cparam.getSize();
-	}
+UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir){
+
+	int callid = equivs.size();	
+	int sz = sizeof(UfunSummary) + callid*sizeof(Lit);
+	int endof = sz;	
 	sz += sizeof(OutSummary) + outsize*sizeof(Lit);
 
 	int fuz = 0;
@@ -41,25 +35,11 @@ UfunSummary* newUfun(vector<Tvalue>& params, vector<Tvalue>& out, int outsize, S
 	buf += 4*sizeof(int);
 #endif
 
-	UfunSummary* rv = new(buf) UfunSummary(params.size());
-	rv->params = (ParamSummary**) (buf + sizeof(UfunSummary));
+	UfunSummary* rv = new(buf) UfunSummary(callid);
+	rv->equivs = (Lit*) (buf + sizeof(UfunSummary));
 	sz = endof;
-	for(int i=0; i<params.size(); ++i){	
-		Tvalue& cparam = params[i];		
-		int nvals = cparam.getSize();
-		ParamSummary* ps = new(buf + sz) ParamSummary(nvals);
-		rv->params[i] = ps;
-		ps->lits = (Lit*) (buf+ sz + sizeof(ParamSummary));
-		ps->vals = (int*) (buf+ sz + sizeof(ParamSummary) + sizeof(Lit)*nvals );
-
-		const gvvec& gvs = cparam.num_ranges;
-		int jj = 0;
-		for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
-			ps->lits[jj] = lfromInt(it->guard);
-			ps->vals[jj] = it->value;
-			++jj;
-		}				
-		sz += sizeof(ParamSummary) + (sizeof(Lit)+sizeof(int))*nvals;
+	for(int i=0; i<callid; ++i){	
+		rv->equivs[i] = equivs[i];
 	}
 	rv->output = new (buf+sz) OutSummary(outsize);
 	int jj = 0;

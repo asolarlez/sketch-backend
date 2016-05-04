@@ -295,8 +295,8 @@ int NodesToSolver::compareRange(const gvvec& mv, int mstart, int mend, const gvv
 }
 
 
-template<typename COMP> void
-NodesToSolver::compareArrays (bool_node& node,  const Tvalue& tmval,  const Tvalue& tfval){
+void
+NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out){
 //	cout << "compareArrays: " << node.lprint() << endl << "tmval= " << tmval << endl << "tfval= " << tfval << endl;
 	const gvvec& mv = tmval.num_ranges;
 	const gvvec& fv = tfval.num_ranges;
@@ -382,7 +382,7 @@ NodesToSolver::compareArrays (bool_node& node,  const Tvalue& tmval,  const Tval
 		}
 	}while(moreM || moreF);
 
-	node_ids[node.id] = cvar;
+	out = cvar;
 	//cout << "compareArrays: cvar=" << cvar << endl;
 }
 
@@ -528,15 +528,11 @@ void NodesToSolver::processLT (LT_node& node){
 
 }
 
-template<typename COMP> void
-NodesToSolver::processComparissons (bool_node& node, bool revFval)
+void
+NodesToSolver::processEq (Tvalue& mval, Tvalue& fval, Tvalue& out)
 {
     //cout << "comparing " << node.lprint() << endl; 
-    bool_node *mother = node.mother;
-    Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 
-    bool_node *father = node.father;
-    Tvalue fval = tval_lookup (father, TVAL_SPARSE);
     //cout << "comparing " << node.lprint() << " mval=" << mval << " fval=" << fval << endl; 
 	if(mval.isArray() || fval.isArray()){
 		if(mval.isBvect()){
@@ -545,14 +541,13 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 		if(fval.isBvect()){
 			fval.makeSparse(dir);
 		}
-		compareArrays<COMP>(node, mval, fval);
+		compareArrays(mval, fval, out);
 		return;
 	}
 
 	mval.makeSparse (dir);
     fval.makeSparse (dir);
     int cvar = -YES;
-    COMP comp;
     Dout(cout<<"SIZES = "<<mval.getSize ()<<", "<<fval.getSize ()<<endl);
     int orTerms = 0;
 	vector<char> mc(mval.getSize(), 'n');
@@ -560,57 +555,42 @@ NodesToSolver::processComparissons (bool_node& node, bool revFval)
 	int flow = 0;
 	int fhigh = fval.getSize ();
 	int finc = 1;
-	if(revFval){
-		flow = fhigh-1;
-		fhigh = -1;
-		finc = -1;
-	}
+	
 
-	bool isEq = node.type == bool_node::EQ;
+	
 
     for(int i=0; i<mval.getSize (); ++i){
 		for(int j=flow; j!=fhigh; j = j+finc){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
-		    if(comp(mval[i], fval[j])){
+		    if(mval[i] == fval[j]){
 				mc[i] = 'y';
 				fc[j] = 'y';
 				++orTerms;
-				if(isEq){					
+								
 					if(2*orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
 					scratchpad[orTerms*2-2] = mval.getId(i);
 					scratchpad[orTerms*2-1] = fval.getId(j);
-				}else{
-					cvar = dir.addAndClause(mval.getId (i), fval.getId (j));									
-					if(orTerms>=scratchpad.size()){ scratchpad.resize(scratchpad.size()*2); }
-					scratchpad[orTerms] = cvar;
-				}
 			}
 		}
     }
     if( orTerms < 2 ){
-		if(isEq){
-			cvar = dir.addExPairConstraint(&scratchpad[0], orTerms);
-		}
+		
+		cvar = dir.addExPairConstraint(&scratchpad[0], orTerms);
+		
 		for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
 		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
-		node_ids[node.id] = cvar;
+		out = cvar;
     }else{
 		if(orTerms == mval.getSize() * fval.getSize()){
-			node_ids[node.id] = YES;
+			out = YES;
 		}else{
-			int result;
-			if(isEq){
-				result = dir.addExPairConstraint(&scratchpad[0], orTerms);
-			}else{
-				scratchpad[0] = 0;
-				result = dir.addBigOrClause( &scratchpad[0], orTerms);				
-			}
+			int result;			
+			result = dir.addExPairConstraint(&scratchpad[0], orTerms);
 			for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
 			for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
-			node_ids[node.id] = result;
+			out = result;
 		}
-    }
-    Dout( cout<<node.get_name()<<" :=  "<<node_ids[node.id]<<endl);
+    }    
     return;
 }
 
@@ -1410,20 +1390,47 @@ void NodesToSolver::visit( UFUN_node& node ){
 		}
 
 
-		UfunSummary* ufs = newUfun(params, nvars, totbits, dir);
-		MiniSATSolver* ms = (MiniSATSolver*) (&dir.getMng());
 		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
-		{
-			int id = -1;
-			if(idit == ufunids.end()){
-				int sz = ufunids.size();
-				ufunids[node.get_ufname()] = sz;
-				id = sz;
-			}else{
-				id = idit->second;
-			}
-			ms->addUfun(id, ufs);
+
+		int funid = -1;
+		if (idit == ufunids.end()) {
+			Assert(ufunids.size() == ufinfos.size(), ";ly7u8AA?");
+			int sz = ufunids.size();
+			ufunids[node.get_ufname()] = sz;
+			funid = sz;
+			ufinfos.push_back(vector<Ufinfo>());
 		}
+		else {
+			funid = idit->second;
+		}
+		
+		vector<Ufinfo>& oldparams(ufinfos[funid]);
+		vec<Lit> equivs(oldparams.size());
+		int nparams = params.size();
+		for (int cid = 0; cid < oldparams.size(); ++cid) {
+			vector<Tvalue>& other = oldparams[cid].params;
+			int vvar = 0;
+			for (int i = 0; i<nparams; ++i) {
+				Tvalue tmpb;
+				processEq(params[i], other[i], tmpb);
+				if (vvar == 0) {
+					vvar = tmpb.getId();
+				}else {
+					vvar = dir.addAndClause(vvar, tmpb.getId());
+				}
+			}
+			equivs[cid] = lfromInt(vvar);
+		}
+
+
+		UfunSummary* ufs = newUfun(equivs, nvars, totbits, dir);
+		ufinfos[funid].push_back(Ufinfo(params));
+
+
+		MiniSATSolver* ms = (MiniSATSolver*) (&dir.getMng());
+		
+		ms->addUfun(funid, ufs);
+		
 
 		Tvalue& outvar = node_ids[node.id];		
 		vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
@@ -1638,7 +1645,13 @@ NodesToSolver::visit (EQ_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectEq (node);
 #else
-	processComparissons<equal_to<int> > (node, false);
+	bool_node *mother = node.mother;
+	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
+
+	bool_node *father = node.father;
+	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
+	processEq(mval, fval, node_ids[node.id]);
+	Dout(cout << node.get_name() << " :=  " << node_ids[node.id] << endl);
 #endif /* HAVE_BVECTARITH */
 }
 

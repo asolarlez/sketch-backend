@@ -258,6 +258,7 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 				}
 				cur->next = ufs;
 				ufs->next = fst;
+				ufunByID[funid] = ufs; // ufs will be ordered from biggest id to smallest id.
 			}else{
 				ufunByID[funid] = ufs;
 				ufs->next = ufs;
@@ -275,12 +276,8 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 		clauses.push(cc);
 		UfunSummary** ufp = (UfunSummary**) &((*cc)[0]);
 		*ufp = ufs;
-		for(int i=0; i<ufs->nparams; ++i){
-			ParamSummary* ps = ufs->params[i];
-			int nvals = ps->nvals;
-			for(int jj=0; jj<nvals; ++jj){
-				watches[toInt(ps->lits[jj])].push(cc);
-			}
+		for(int i=0; i<ufs->id; ++i){			
+			watches[toInt(ufs->equivs[i])].push(cc);			
 		}
 		OutSummary* ofs = ufs->output;
 		for(int i=0; i<ofs->nouts; ++i){
@@ -692,17 +689,12 @@ void Solver::printUfunState(UfunSummary* afs){
 	UfunSummary* ufs = afs;
 	cout<<"-----------------------------------"<<endl;
 	do{
-		int nparams = ufs->nparams;
-		cout<<"{";
-		for(int ii=0; ii<nparams; ++ii){
-			ParamSummary* ps = ufs->params[ii];
-			bool found = false;					
-			cout<<"[";
-			for(int jj=0; jj<ps->nvals; ++jj){
-				cout<<"("<<toInt(ps->lits[jj])<<"="<<ps->vals[jj]<<"|"<< (toInt(value(ps->lits[jj])))<<")";
-			}
-			cout<<"]";
+		cout << ufs->id <<"{ [";
+
+		for(int ii=0; ii<ufs->id; ++ii){
+			cout << toInt(ufs->equivs[ii]) << "|" << (toInt(value(ufs->equivs[ii]))) << ", ";
 		}
+		cout << "]";
 		OutSummary* os = ufs->output;
 		for(int ii=0; ii<os->nouts; ++ii){		
 			lbool v1 = value(os->lits[ii]);		
@@ -714,10 +706,7 @@ void Solver::printUfunState(UfunSummary* afs){
 }
 
 
-bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){
-	if(ufs->nparams != 1){
-		return true;
-	}
+bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){	
 	vec<int> setidx;
 	OutSummary* os = ufs->output;
 	for(int ii=0; ii<os->nouts; ++ii){		
@@ -730,9 +719,9 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 		return true;
 	}
 
-	vec<Lit> plits(4);
+	vec<Lit> plits(3);
 	//If there is a conflict, it will be
-	// (out1 ^ -out2 ^ in1) => -in2   ----> -out1 v out2 v -in1 v -in2	
+	// (out1 ^ -out2) => -eqlit   ----> -out1 v out2 v -eqlit	
 	UfunSummary* other = ufs->next;
 	while(other != ufs){
 		bool takeAction  = false;
@@ -744,79 +733,26 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 			if(v1 == l_False){
 				//ufs claims this output should be true; this claims the output should be false. That means their inputs can't be equal.
 				takeAction = true;
-				plits[0] = ~os->lits[vidx];
-				plits[1] =  os2->lits[vidx];
+				plits[1] = ~os->lits[vidx];
+				plits[2] =  os2->lits[vidx];
 				break;
 			}			
 		}
 		if(takeAction){
-			assert (other->nparams == 1);
-			ParamSummary* ps0 = ufs->params[0];			
-			ParamSummary* ps1 = other->params[0];
-			int set0 = -1;
-			int set1 = -1;
-			for(int jj=0; jj<ps0->nvals; ++jj){
-				if(value(ps0->lits[jj])== l_True){
-					set0 = jj;
-					break;
-				}
+			Lit eqlit;
+			if (other->id < ufs->id) {
+				eqlit = ufs->equivs[other->id];
 			}
-			for (int jj = 0; jj<ps1->nvals; ++jj) {
-				if (value(ps1->lits[jj]) == l_True) {
-					set1 = jj;
-					break;
-				}
+			else {
+				eqlit = other->equivs[ufs->id];
 			}
-			
-			if (set0>= 0 && set1 >= 0 && ps0->vals[set0] == ps1->vals[set1]) {
-				//Conflict.		
-				cout << "Houston, we have a conflict." << endl;
-				plits[2] = ~ps0->lits[set0];
-				plits[3] = ~ps1->lits[set1];
-				int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
-				if (tc.size() < targetsize) {
-					tc.growTo(targetsize);
-				}
-				Clause* cnew = new(&tc[0]) Clause(plits, true);
-				*j++ = &c;
-				while (i < end)
-					*j++ = *i++;
-				confl = cnew;
-				qhead = trail.size();
-				return false;
+			if (value(eqlit) == l_Undef) {
+				plits[0] = ~eqlit; // this is not a bug.
+				uncheckedEnqueue(~eqlit, newTempClause(plits, p));
 			}
-			if (set0 >= 0 && set1 < 0) {
-				int vv0 = ps0->vals[set0];
-				for (int jj = 0; jj < ps1->nvals; ++jj) {
-					if (vv0 == ps1->vals[jj]) {
-						set1 = jj;
-						break;
-					}
-				}
-				if (set1 >= 0 && value(ps1->lits[set1]) == l_Undef) {
-					plits[2] = ~ps0->lits[set0];
-					plits[3] = plits[0];
-					plits[0] = ~ps1->lits[set1]; // this is not a bug.
-					uncheckedEnqueue(~ps1->lits[set1], newTempClause(plits, p));
-				}
+			else {
+				assert(value(eqlit) != l_True); 
 			}
-			if (set1 >= 0 && set0 < 0) {
-				int vv1 = ps1->vals[set1];
-				for (int jj = 0; jj < ps0->nvals; ++jj) {
-					if (vv1 == ps0->vals[jj]) {
-						set0 = jj;
-						break;
-					}
-				}
-				if (set0 >= 0 && value(ps0->lits[set0]) == l_Undef) {
-					plits[2] = plits[0];
-					plits[0] = ~ps0->lits[set0];
-					plits[3] = ~ps1->lits[set1]; // this is not a bug.
-					uncheckedEnqueue(~ps0->lits[set0], newTempClause(plits, p));
-				}				
-			}
-
-
 		}
 		other = other->next;
 	}
@@ -845,54 +781,20 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 
 				// printUfunState(ufs);
 
-				int nparams = ufs->nparams;
-				vec<int> pvals;
-				vec<Lit> plits(nparams*2 + 2);
-				for(int ii=0; ii<nparams; ++ii){
-					ParamSummary* ps = ufs->params[ii];
-					bool found = false;					
-					for(int jj=0; jj<ps->nvals; ++jj){
-						lbool vv = value(ps->lits[jj]);
-						if(vv ==l_True){
-							pvals.push(ps->vals[jj]);
-							plits[2+ii] = ~(ps->lits[jj]);
-							found = true;
-							break;
-						}
-					}
-					if(!found){						
-						//This means not all parameters are set, so we can ignore.
-						if (backpropagateUfun(p, ufs, c, i, j, end, confl)) {
-							*j++ = &c;
-						}
-						return true;
-					}
-				}
+				vec<Lit> plits(3);				
 				//If we are here, it means all parameters are set. Now we need to check if other
 				//instances of the same ufun also have all their parameters set.
 				UfunSummary* other = ufs->next;
-				while(other != ufs){
-					bool allMatch = true;
-					for(int ii=0; ii<other->nparams; ++ii){
-						ParamSummary* ps = other->params[ii];
-						bool found = false;
-						for(int jj=0; jj<ps->nvals; ++jj){
-							if(ps->vals[jj] == pvals[ii]){
-								if(value(ps->lits[jj])==l_True){
-									found = true;
-									plits[2 + ii + nparams] = ~(ps->lits[jj]);
-									break;
-								}else{
-									break;
-								}
-							}
-						}
-						if(!found){
-							allMatch = false;
-							break;
-						}
+				while(other != ufs){					
+					Lit eqlit;
+					if (other->id < ufs->id) {
+						eqlit = ufs->equivs[other->id];
+					}else {
+						eqlit = other->equivs[ufs->id];
 					}
-					if(allMatch){
+					
+					if (value(eqlit) == l_True){
+						plits[2] = ~eqlit;
 						// other also has all its parameters set to the same thing as ufs.
 						// This means that their outputs should match.
 						OutSummary* osum1 = ufs->output;

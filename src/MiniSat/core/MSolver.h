@@ -39,24 +39,15 @@ using namespace std;
 namespace MSsolverNS{
 
 
-class ParamSummary;
 class OutSummary;
 
 class UfunSummary{
 public:
+	int id;
 	UfunSummary* next;
-	int nparams;
-	ParamSummary** params;
+	Lit* /*[id]*/ equivs;
 	OutSummary* output;
-	UfunSummary(int np): nparams(np), next(NULL){}
-};
-
-class ParamSummary{
-public:
-	int nvals;
-	Lit* lits;
-	int* vals;
-	ParamSummary(int nv):nvals(nv){}
+	UfunSummary(int _id): id(_id) , next(NULL){}
 };
 
 class OutSummary{
