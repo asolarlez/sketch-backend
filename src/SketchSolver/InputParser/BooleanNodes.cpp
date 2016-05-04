@@ -21,7 +21,7 @@ OutType* OutType::INT_ARR = new Arr(INT);
 OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
 vector<OutType*> OutType::store;
 map<string, OutType*> OutType::tupleMap;
-int i;
+
 
 OutType* OutType::getTuple(const string& name){
     if(tupleMap.count(name)>0 ){
