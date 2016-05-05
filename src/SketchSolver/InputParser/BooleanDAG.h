@@ -207,6 +207,7 @@ Dllist assertions;
 
   
 
+
 // interesting are the interesting nodes (stored in [begin, end)) in this dag!
 // and they must be sorted according to the normal order!
   template<typename forward_iter>
@@ -215,6 +216,7 @@ Dllist assertions;
 			(*it)->flag = 0;
 		}
 		BooleanDAG* bd = new BooleanDAG(this->name);
+		bd->intSize = intSize;
 		bd->ownsNodes = false;
 		for (; begin!=end; ++begin) {
 			//cout << "slicing on " << (*begin)->lprint() << endl;
@@ -240,7 +242,6 @@ Dllist assertions;
   void lprint_wrapper();
   void print_wrapper(const char* fileName)const;
   void lprint_wrapper(const char* fileName);
-  void combineFunCalls(map<int, vector<bool_node*> > funCalls);
   
    BooleanDAG(const string& name_="anon", bool isModel_=false);
 
