@@ -1216,22 +1216,40 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	map<bool_node*,  int> node_values;
 	check_node_ids.clear();
 	check_node_ids.resize( getProblem()->size() );	
-	for(BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx){
+	int nbits = getProblem()->getIntSize();
+	for (BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx) {
 		(*node_it)->flag = true;
-		if(	(*node_it)->type == bool_node::CTRL ){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+		if ((*node_it)->type == bool_node::CTRL) {
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);
 			int nbits = ctrlnode->get_nbits();
 			node_values[(*node_it)] = valueForINode(ctrlnode, controls, nbits);
 		}
-		if(	(*node_it)->type == bool_node::SRC ){
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
+		if ((*node_it)->type == bool_node::SRC) {
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);
 			int arsz = srcnode->getArrSz();
-			if(arsz <0){ arsz = 1; }
-      if (srcnode->isTuple) {
-        Assert(false, "Not possible");
-      } else {
-			  dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
-      }
+			if (arsz < 0) { arsz = 1; }
+			if (srcnode->isTuple) {
+				Assert(false, "Not possible");
+			}
+			else {
+				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+			}
+		}
+		if ((*node_it)->type == bool_node::UFUN) {
+			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(*node_it);			
+			string tuple_name = ufunnode->getTupleName();
+
+			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+			int size = tuple_type->actSize;
+			int ASize = 1 << PARAMS->NINPUTS;
+			for (int tt = 0; tt<size; ++tt) {
+				stringstream sstr;
+				sstr << ufunnode->get_ufname() << "_" << ufunnode->get_uniquefid() << "_" << tt;
+				OutType* ttype = tuple_type->entries[tt];
+				bool isArr = ttype->isArr;
+				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1));
+			}
 		}
 	}	
 	//cout << "setNewControls: problem=";

@@ -1376,15 +1376,24 @@ void NodesToSolver::visit( UFUN_node& node ){
 		int totbits = 0;
 		for(int i=0; i<nouts; ++i){
 			OutType* ttype = tuple_type->entries[i];	
+			stringstream sstr;
+			sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
 			bool isArr = ttype->isArr ;
 			bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
 			int cbits = isBool ? 1 : nbits;
-			nvars[i] = dir.newAnonymousVar(nbits); 
-			nvars[i].setSize(cbits);
-			if(cbits > 1){
-				nvars[i].makeSparse(dir);
+			nvars[i] = dir.getArr(sstr.str(), 0);
+			
+			if (isArr || !isBool) {
+				if (isArr) {
+					int arrsz = dir.getArrSize(sstr.str());
+					nvars[i].setSize(arrsz);
+					nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
+				} else {
+					nvars[i].setSize(cbits);
+					nvars[i].makeSparse(dir);
+				}
 				totbits += nvars[i].num_ranges.size();
-			}else{
+			}else {
 				totbits = 1;
 			}			
 		}

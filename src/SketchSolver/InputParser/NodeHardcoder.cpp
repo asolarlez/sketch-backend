@@ -130,7 +130,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 				val = val->next;
 			}
 			acn->addToParents();					
-			return optAdd(acn);
+			new_node->multi_mother.push_back( optAdd(acn) );
 		}else{
 			int val = values[sstr.str()];
 			new_node->multi_mother.push_back( getCnode(val) );
@@ -145,10 +145,8 @@ void NodeHardcoder::visit( UFUN_node& node ){
 		UFUN_node* uf = &node;
 		vector<pair<bool_node*, vector<bool_node*> > >& params = ufunparams[uf->get_ufname()];
 		
-		vector<bool_node*> pars;
-		for(int jj=0; jj<uf->multi_mother.size(); ++jj){
-			pars.push_back(uf->multi_mother[jj]);
-		}
+		vector<bool_node*> pars = uf->multi_mother;
+		
 		bool_node* out = nodeForFun(uf);
 		for(int ii=0; ii<params.size(); ii++){
 			vector<bool_node*>& cpar = params[ii].second;						

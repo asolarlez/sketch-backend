@@ -191,14 +191,54 @@ void NodeEvaluator::visit( PLUS_node& node ){
 void NodeEvaluator::visit( TIMES_node& node ){
 	setbn(node, i(*node.mother) * i(*node.father));
 }
+
+bool arrayComp(cpvec* mv, cpvec* fv, int mdef, int fdef) {
+	int msz = mv == NULL ? 0 : mv->size();
+	int fsz = fv == NULL ? 0 : fv->size();
+	msz = msz > fsz ? msz : fsz;
+
+	bool tt = (mdef == fdef);
+	for (int jj = 0; jj<msz; ++jj) {
+		int tm = mv == NULL ? mdef : mv->get(jj, mdef);
+		int tf = fv == NULL ? fdef : fv->get(jj, fdef);
+		tt = tt && (tm == tf);
+		if (!tt) {
+			break;
+		}
+	}
+	return tt;
+}
+
+bool NodeEvaluator::argcomp(vector<bool_node*>& parents, vector<int>& v1, vector<int>& v2) {
+	for (int jj = 0; jj < v1.size(); ++jj) {
+		if (parents[jj]->isArrType()) {
+			cpvec* vv1 = this->vecvalues[v1[jj]];
+			cpvec* vv2 = this->vecvalues[v2[jj]];
+			if (!arrayComp(vv1, vv2, values[v1[jj]], values[v2[jj]])) {
+				return false;
+			}
+		}else{
+			if (v1[jj] != v2[jj]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void NodeEvaluator::visit( UFUN_node& node ){
 	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
 	vector<int> cargs;
 	for(int ii=0; ii<node.multi_mother.size(); ++ii){
-		cargs.push_back( i(*node.multi_mother[ii]) );
+		bool_node* pred = node.multi_mother[ii];
+		if (pred->isArrType()) {
+			cargs.push_back(pred->id);
+		}else {
+			cargs.push_back(i(*pred));
+		}		
 	}
 	for(int jj = 0; jj<args.size(); ++jj){
-		if(args[jj].second == cargs){
+		if(argcomp(node.multi_mother, args[jj].second, cargs)){
 			setbn(node, args[jj].first);
 			return;
 		}
@@ -234,6 +274,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 				Assert(false, "Multiple return arrays not yet implemented");
 			}
 			arrcnt++;
+			cpv->vv[j] = node.id;
 		}else{
 			int val = (*inputs)[sstr.str()];
 			cpv->vv[j] = val;
@@ -311,6 +352,10 @@ void NodeEvaluator::visit( LT_node& node ){
 	setbn(node, i(*node.mother) < i(*node.father));
 }
 
+
+
+
+
 void NodeEvaluator::visit( EQ_node& node ){
 
 	if(node.mother->getOtype() == OutType::BOOL_ARR 
@@ -319,28 +364,7 @@ void NodeEvaluator::visit( EQ_node& node ){
 		|| node.father->getOtype() == OutType::INT_ARR){
 			cpvec* mv = vecvalues[node.mother->id];
 			cpvec* fv = vecvalues[node.father->id];
-			int msz = mv==NULL? 0 : mv->size() ;
-			int fsz = fv==NULL? 0 : fv->size() ;			
-			msz = msz > fsz ? msz : fsz;
-
-			bool tt = (i(*node.mother) == i(*node.father));
-			for(int jj=0; jj<msz; ++jj){
-				int tm = mv==NULL?  i(*node.mother) :mv->get(jj, i(*node.mother));
-				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
-				tt = tt && (tm == tf);
-				if(!tt){
-					if (false) {
-						cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
-						cout << "i(): " << i(*node.mother) << " " << i(*node.father) << endl;
-						cout << "mv:";
-						mv->print(cout);
-						cout << " fv:";
-						fv->print(cout);
-						cout << endl;
-					}
-					break;
-				}
-			}
+			bool tt = arrayComp(mv, fv, i(*node.mother), i(*node.father));
 		setbn(node, tt);
 	}else{
 		setbn(node, i(*node.mother) == i(*node.father)); 

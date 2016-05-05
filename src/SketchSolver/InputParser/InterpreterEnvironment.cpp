@@ -243,7 +243,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	//sketch->repOK();
     Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
 
-	if(true){
+	if(false){
 		/* Eliminates uninterpreted functions */
         DagElimUFUN eufun;
 		eufun.process(*spec);
