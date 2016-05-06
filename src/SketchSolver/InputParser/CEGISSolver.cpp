@@ -941,10 +941,10 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
 	}
 	{
 	
-		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);	
+		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);
+		int nbits = dag->getIntSize();
 		for(int i=0; i<ufunin.size(); ++i){
 			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
-			int nbits = dag->getIntSize();
 			string tuple_name = ufunnode->getTupleName();
 
 			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
@@ -972,7 +972,7 @@ void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop){
 	if(isTop){
 		problems[this->curProblem]->growInputIntSizes();
 	}
-	redeclareInputs(dag);
+	redeclareInputs(oridag);
 }
 
 class CheckControl{
