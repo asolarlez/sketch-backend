@@ -20,6 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MSolver.h"
 #include "Sort.h"
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 

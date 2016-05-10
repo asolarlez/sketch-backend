@@ -9,6 +9,7 @@
 #include <set>
 #include <cstdlib>
 #include <typeinfo>
+#include <algorithm>
 
 
 #ifdef CONST
