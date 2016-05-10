@@ -706,6 +706,16 @@ void Solver::printUfunState(UfunSummary* afs){
 }
 
 
+Lit getEqLit(UfunSummary* other, UfunSummary* ufs) {
+	if (other->id < ufs->id) {
+		return ufs->equivs[other->id];
+	}
+	else {
+		return other->equivs[ufs->id];
+	}
+}
+
+
 bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){	
 	vec<int> setidx;
 	OutSummary* os = ufs->output;
@@ -739,13 +749,8 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 			}			
 		}
 		if(takeAction){
-			Lit eqlit;
-			if (other->id < ufs->id) {
-				eqlit = ufs->equivs[other->id];
-			}
-			else {
-				eqlit = other->equivs[ufs->id];
-			}
+			Lit eqlit = getEqLit(other, ufs);
+			
 			if (value(eqlit) == l_Undef) {
 				plits[0] = ~eqlit; // this is not a bug.
 				uncheckedEnqueue(~eqlit, newTempClause(plits, p));
@@ -780,21 +785,24 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 #endif
 
 				// printUfunState(ufs);
-
+				vec<int> alleqs;
 				vec<Lit> plits(3);				
+				UfunSummary* pufun = NULL;
+
 				//If we are here, it means all parameters are set. Now we need to check if other
 				//instances of the same ufun also have all their parameters set.
 				UfunSummary* other = ufs->next;
 				while(other != ufs){					
 					Lit eqlit;
-					if (other->id < ufs->id) {
-						eqlit = ufs->equivs[other->id];
-					}else {
-						eqlit = other->equivs[ufs->id];
-					}
+					eqlit = getEqLit(other, ufs);
 					
 					if (value(eqlit) == l_True){
+						if (eqlit == p) {
+							pufun = other;
+						}
+
 						plits[2] = ~eqlit;
+						alleqs.push(other->id);
 						// other also has all its parameters set to the same thing as ufs.
 						// This means that their outputs should match.
 						OutSummary* osum1 = ufs->output;
@@ -854,17 +862,80 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 					}
 					other = other->next;
 				}
+
+				if (alleqs.size() > 1) {
+					int sz = alleqs.size();
+					UfunSummary* ufsni = ufs->next;					
+					for (int ii = 0; ii < sz; ++ii) {
+						while (ufsni->id != alleqs[ii]) { ufsni = ufsni->next;  }
+						UfunSummary* ufsnj = ufsni->next;
+						for (int jj = ii + 1; jj < sz; ++jj) {
+							//ufs == ufs->next^(i+1)   and ufs == ufs->next^(j+1), so we need to set ufs->next^(i+1)==ufs->next^(j+1)
+							while (ufsnj->id != alleqs[jj]) { ufsnj = ufsnj->next; }
+							if (addTransEqClause(ufsnj, ufsni, p, ufs, plits, c, i, j, end, confl)) {
+								return true;
+							}
+							ufsnj = ufsnj->next;
+						}
+						ufsni = ufsni->next;
+					}
+				}
+				if (pufun != NULL){
+					other = pufun->next;
+					while (other != pufun) {
+						if (other != ufs) {
+							Lit loth = getEqLit(pufun, other);
+							if (value(loth) == l_True) {
+								if (addTransEqClause(other, ufs, p, pufun, plits, c, i, j, end, confl)) {
+									return true;
+								}
+							}
+						}
+						other = other->next;
+					}
+				}
+
+
+
 				if (backpropagateUfun(p, ufs, c, i, j, end, confl)) {
 					*j++ = &c;
 				}
 				return true;
 }
 
+bool Solver::addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl) {
+	Lit ieqj = getEqLit(ufsnj, ufsni);
+	lbool ieqjval = value(ieqj);
+	if (ieqjval == l_Undef) {
+		plits[2] = ~getEqLit(ufs, ufsni);
+		plits[1] = ~getEqLit(ufs, ufsnj);
+		plits[0] = ieqj;
+		uncheckedEnqueue(ieqj, newTempClause(plits, p));
+	}
+	else if (ieqjval == l_False) {
+		plits[2] = ~getEqLit(ufs, ufsni);
+		plits[1] = ~getEqLit(ufs, ufsnj);
+		plits[0] = ieqj;
+		//Conflict!!!
+		int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+		if (tc.size() < targetsize) {
+			tc.growTo(targetsize);
+		}
+		Clause* cnew = new(&tc[0]) Clause(plits, true);
+		*j++ = &c;
+		while (i < end)
+			*j++ = *i++;
+		confl = cnew;
+		qhead = trail.size();
+		return true;
+	}
+	return false;
+}
 
 
 
 
-// int DEBUGCOUNT = 0;
+int DEBUGCOUNT = 0;
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -897,7 +968,7 @@ Clause* Solver::propagate()
         //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
         for (i = j = ws.begin(), end = i + ws.size();  i != end;){
             Clause& c = **i++;
-			// ++DEBUGCOUNT;
+			++DEBUGCOUNT;
 			uint32_t mrk = c.mark();
 			Lit false_lit = ~p;
 			
