@@ -286,7 +286,7 @@ public:
 
 	~gvvec(){
 		if(store==NULL){ return; }
-		Assert(store->largest >= sz, "NOT GOOD");
+		assert(store->largest >= sz);
 		if(store->refc<=1){
 			delete store;
 		}else{

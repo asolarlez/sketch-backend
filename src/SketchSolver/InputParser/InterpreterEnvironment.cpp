@@ -599,8 +599,8 @@ int InterpreterEnvironment::doallpairs(){
 			inf += ".com";
 			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);			
 			if(params.randdegree == 0){
-				rd[0] = 10;
-				rd[1] = 20;
+				rd[0] = 5;
+				rd[1] = 10;
 			}
 		}			 
 	}
@@ -632,8 +632,7 @@ int InterpreterEnvironment::doallpairs(){
 		for(int i=0; i<spskpairs.size(); ++i){
 			hardcoder.setCurHarness(i);
 			try{
-			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first),
-				getCopy(spskpairs[i].second), inlineAmnt);
+			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");

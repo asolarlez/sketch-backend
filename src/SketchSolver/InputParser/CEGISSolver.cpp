@@ -693,7 +693,7 @@ void filterHasserts(vector<bool_node*> const & asserts, int id, vector<bool_node
 	}
 }
 
- void mybitset::print(ostream& os){
+ void BitSet::print(ostream& os){
 		int i=next(-1);
 		os<<"{";
 		while(i != -1){

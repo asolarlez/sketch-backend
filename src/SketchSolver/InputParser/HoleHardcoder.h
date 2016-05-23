@@ -4,22 +4,46 @@
 #include "BooleanToCNF.h"
 #include "BooleanDAG.h"
 #include "DagOptim.h"
+#include "CommandLineArgs.h"
+#include "MiniSATSolver.h"
 
-class BadConcretization{
-
+/*
+Excelption class used to signal that a concretization failed.
+*/
+class BadConcretization {
 
 };
 
-
-
-#include "MiniSATSolver.h"
-
+/*
+This class tracks dependencies between holes and harnesses. 
+*/
 class DepTracker{
+	/*Each hole has an index*/
 	map<string, int> ctrlIdx;
 	vector<set<int> > harnessPerHole; // holeId -> [harnesses]
 	vector<set<int> > holesPerHarness; // harnesId -> {holes}
+
+	/*In this variable, we record all the decisions that have been made during each harness.*/
 	vector<vector<Lit> > decisionsPerHarness;
 	int curHarness;
+
+
+	/*
+	out tracks all the literals that were set leading to a concretization failure. 
+	If harnid failed, first, we will add all the holes that were concretized for harness harnid.
+	But then it could also be that the problem was not the concretization of holes in harnid, but of holes somewhere else.
+	For example, suppose you have a harness that says
+	assert H_1 == H_2.
+	Then you have another harness that says 
+	assert H_2 > 5;
+
+	If I concretize H_1 to 3, that could lead to an assertion failure in the second harness despite the fact that 
+	the only hole (H_2) in that harness was not concretized. 
+	Therefore, we must include as dependencies not just the holes in that harness, but holes in all other harnesses
+	that transitively share holes with the currentt harness.
+
+	*/
+	void helper(int harnid, vector<char>& visited, set<int>& out);
 
 public:
 
@@ -40,7 +64,7 @@ public:
 		decisionsPerHarness[curHarness].push_back(l);
 	}
 	void genConflict(int harnid, vec<Lit>& vl);
-	void helper(int harnid, vector<char>& visited, set<int>& out);
+	
 	void declareControl(string const & ctrl){
 		if(ctrlIdx.count(ctrl)==0){
 			int sz = ctrlIdx.size();
@@ -77,6 +101,8 @@ class HoleHardcoder{
 	vec<Lit> sofar;
 	double totsize;
 	int randdegree;
+	DepTracker dt;
+
 
 	/**
 	When hardcoding a hole that was used by a previous harness, 
@@ -95,11 +121,67 @@ class HoleHardcoder{
 		return rv / vd.size();
 	}
 
+
+	int nextRandDegree(int cur) {
+		unsigned int v = rand() % 800;
+		unsigned x = v;
+		int t = 1024;
+		while (x > 0) {
+			t = t / 2;
+			x = x / 2;
+		}
+		if (t < 2) { t = 2; }
+		if (v % 2 == 0) {
+			return cur * t;
+		}
+		else {
+			if (cur / t > 2) {
+				return cur / t;
+			}
+			else {
+				return cur * 2;
+			}
+		}
+	}
+
+	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
+	void addedConstraint() {
+		pendingConstraints = true;
+	}
 public:
 
     int fixValue(CTRL_node& node, int bound, int nbits);
+
 	
+	/*
+	This function updates the current set of rand degrees using an MCMC style search to try to 
+	converge to the best rand degree.
+	*/
 	void adjust(vector<int>& rd, map<int, vector<double> >& scores){
+		int cur = rd[0];
+		int next = nextRandDegree(rd[0]);
+		if (next == cur) {
+			return;
+		}
+		int scorenext = getAvg(scores[next]);
+		int scorecur = getAvg(scores[cur]);
+		cout << "cur=" << cur << " next=" << next << " scorecur=" << scorecur << " scorenext=" << scorenext << endl;
+		if (scorenext < scorecur) {
+			cout << "Switch because next is better"<<endl;
+			rd[0] = next;
+			rd[1] = cur;
+		}else {
+			float ratio = scorecur / (float)scorenext;
+			if (rand() % 1000 < ratio * 1000) {
+				cout << " Switch by luck"<<endl;
+				rd[0] = next;
+				rd[1] = cur;
+			}else{
+				cout << " Stay with what we had " <<rd[0]<<", "<<rd[1]<<endl;
+			}
+		}
+
+
 		double avg0 = getAvg(scores[rd[0]]);
 		double avg1 = getAvg(scores[rd[1]]);
 		cout<<"Averages "<<avg0<<", "<<avg1<<endl;
@@ -116,7 +198,6 @@ public:
 	int getRanddegree(){
 		return randdegree;
 	}
-	DepTracker dt;
 	HoleHardcoder(){		
 		totsize = 0.0;
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
@@ -129,9 +210,7 @@ public:
 		delete globalSat;
 	}
 
-	void addedConstraint(){
-		pendingConstraints = true;
-	}
+	
 
 	void dismissedPending(){
 		pendingConstraints=false;
@@ -164,7 +243,7 @@ public:
 	void setHarnesses(int nharnesses){
 		dt.setHarnesses(nharnesses);
 	}
-	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
+	
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
     string name = node->get_name();
