@@ -142,9 +142,9 @@ public:
 	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
 
-	bool addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl);
-	bool propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl);
-	bool backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl);
+	bool addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
 	void printUfunState(UfunSummary* ufs);
 	// Helper structures:
     //
@@ -162,7 +162,7 @@ protected:
     };
 
 	
-	Clause* newTempClause(vec<Lit>& vl , Lit p);
+	Clause* newTempClause(vec<Lit>& vl , Lit p, Clause**& i, Clause**& j, Clause**& end);
 
     // Solver state:
     //

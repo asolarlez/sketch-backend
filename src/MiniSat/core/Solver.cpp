@@ -654,7 +654,7 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
 vec<char> tc(sizeof(Clause) + sizeof(uint32_t)*(3));
 
 
-Clause* Solver::newTempClause(vec<Lit>& po , Lit q){
+Clause* Solver::newTempClause(vec<Lit>& po , Lit q, Clause**& ii, Clause**& jj, Clause**& end){
 	vec<Lit> ps(po.size());
 	for(int i=0; i<po.size(); ++i){
 		ps[i] = po[i];
@@ -674,10 +674,28 @@ Clause* Solver::newTempClause(vec<Lit>& po , Lit q){
 	ps.shrink(i - j);
 	ps[fstidx] = ps[0];
 	ps[0] = fst;
-	if(ps[1]==~q){
-		ps[1] = ps[2];
-		ps[2] = ~q;
+	if(ps[1]==~q){ // This is very important because we are currently watching on q. we will be adding to the 
+		// negation of the first two locations in ps, so we want to avoid those locations being ~q.
+		if(ps.size() > 2){
+			ps[1] = ps[2];
+			ps[2] = ~q;
+		}else {
+			// if ps.size() is not > 2, that's a problem, requires some complexity. 
+			assert(ps.size() > 1);//this is impossible.
+			//if ps.size()==2, then we need to add that clause to the current ws, but that means we may need to grow it.
+			Clause* c = Clause::Clause_new(ps, true);
+			vec<Clause*>& ws = watches[toInt(q)];
+			int ipos = ii - ws.begin();
+			int jpos = jj- ws.begin();
+			attachClause(*c);
+			ii = ws.begin() + ipos;
+			jj = ws.begin() + jpos;
+			end = ws.begin() + ws.size();
+			learnts.push(c);	
+			return c;
+		}		
 	}
+	assert(fst != ~q);
 	Clause* c = Clause::Clause_new(ps, true);
 	attachClause(*c);
 	learnts.push(c);
@@ -716,7 +734,7 @@ Lit getEqLit(UfunSummary* other, UfunSummary* ufs) {
 }
 
 
-bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){	
+bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl){	
 	vec<int> setidx;
 	OutSummary* os = ufs->output;
 	for(int ii=0; ii<os->nouts; ++ii){		
@@ -753,7 +771,7 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 			
 			if (value(eqlit) == l_Undef) {
 				plits[0] = ~eqlit; // this is not a bug.
-				uncheckedEnqueue(~eqlit, newTempClause(plits, p));
+				uncheckedEnqueue(~eqlit, newTempClause(plits, p, i, j, end));
 			}
 			else {
 				assert(value(eqlit) != l_True); 
@@ -767,7 +785,7 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 }
 
 
-bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl){
+bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl){
 	#ifdef _DEBUG
 				{
 					char* buf = (char*) ufs;
@@ -816,24 +834,24 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 										plits[1] = ~(osum2->lits[ii]);
 										plits[0] = (osum1->lits[ii]);
 																				
-										uncheckedEnqueue(osum1->lits[ii], newTempClause( plits, p ) );
+										uncheckedEnqueue(osum1->lits[ii], newTempClause( plits, p, i, j, end ) );
 									}else{ // v2 == l_False;
 										plits[1] = (osum2->lits[ii]);
 										plits[0] = ~(osum1->lits[ii]);
 										
-										uncheckedEnqueue(~osum1->lits[ii], newTempClause( plits, p ) );
+										uncheckedEnqueue(~osum1->lits[ii], newTempClause( plits, p, i, j, end ) );
 									}									
 								}else if(v2 == l_Undef){
 									if(v1 == l_True){
 										plits[1] = ~(osum1->lits[ii]);
 										plits[0] = (osum2->lits[ii]);
 										
-										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p ) );
+										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p, i, j, end ) );
 									}else{
 										plits[1] = (osum1->lits[ii]);
 										plits[0] = ~(osum2->lits[ii]);
 										
-										uncheckedEnqueue(~osum2->lits[ii], newTempClause( plits, p ));
+										uncheckedEnqueue(~osum2->lits[ii], newTempClause( plits, p, i, j, end ));
 									}														
 								}else{
 									//We have a conflict.
@@ -903,14 +921,14 @@ bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clau
 				return true;
 }
 
-bool Solver::addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause** end, Clause*& confl) {
+bool Solver::addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl) {
 	Lit ieqj = getEqLit(ufsnj, ufsni);
 	lbool ieqjval = value(ieqj);
 	if (ieqjval == l_Undef) {
 		plits[2] = ~getEqLit(ufs, ufsni);
 		plits[1] = ~getEqLit(ufs, ufsnj);
 		plits[0] = ieqj;
-		uncheckedEnqueue(ieqj, newTempClause(plits, p));
+		uncheckedEnqueue(ieqj, newTempClause(plits, p, i, j, end));
 	}
 	else if (ieqjval == l_False) {
 		plits[2] = ~getEqLit(ufs, ufsni);

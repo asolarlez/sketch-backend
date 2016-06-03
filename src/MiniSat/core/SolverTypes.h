@@ -123,8 +123,12 @@ public:
     Lit          operator [] (int i) const   { return data[i]; }
 };
 
+extern int DEBUGCOUNT;
 
 class Clause {
+#ifdef _DEBUG
+	int clauseid;
+#endif
     uint32_t size_etc;
     union { float act; uint32_t abst; } extra;
     Lit     data[0];
@@ -141,7 +145,12 @@ public:
     Clause(const V& ps, bool learnt) {
         size_etc = (ps.size() << 3) | (uint32_t)learnt;
         for (int i = 0; i < ps.size(); i++) data[i] = ps[i];
-        if (learnt) extra.act = 0; else calcAbstraction(); }
+        if (learnt) extra.act = 0; else calcAbstraction(); 
+#ifdef _DEBUG
+		clauseid = DEBUGCOUNT++;
+#endif
+
+	}
 
     // -- use this function instead:
     template<class V>
