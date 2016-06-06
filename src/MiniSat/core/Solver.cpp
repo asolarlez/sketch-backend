@@ -774,6 +774,23 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 				uncheckedEnqueue(~eqlit, newTempClause(plits, p, i, j, end));
 			}
 			else {
+							
+				if (value(eqlit) == l_True) {
+					//We have a conflict. 	
+					//cout << "!!!!!!!!!!!!!!!!!!BACKTRACK GOOD!!!!!!!!!!!!!!!!!!!" << endl;
+					plits[0] = ~eqlit;
+					int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+					if (tc.size() < targetsize) {
+						tc.growTo(targetsize);
+					}
+					Clause* cnew = new(&tc[0]) Clause(plits, true);
+					*j++ = &c;
+					while (i < end)
+						*j++ = *i++;
+					confl = cnew;
+					qhead = trail.size();
+					return false;
+				}
 				assert(value(eqlit) != l_True); 
 			}
 		}
