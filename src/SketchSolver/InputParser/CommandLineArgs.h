@@ -153,7 +153,7 @@ struct CommandLineArgs{
 		boundmode = CALLNAME;
 		boundedCount = 80;
 		randomassign =false;
-		randdegree = 100;
+		randdegree = -1;
 		ntimes = -1;
     srcTupleDepth = 2;
     angelicTupleDepth = 1;
@@ -559,6 +559,14 @@ struct CommandLineArgs{
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];
 	  // outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
+
+	  if (randomassign && randdegree < 0) {
+		  randdegree = 0;
+	  }
+	  if (randomassign && ntimes < 0) {
+		  ntimes = 1000;
+	  }
+
 	  if(verbosity > 4){
 			printDiag = true;
 	  }

@@ -191,20 +191,58 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 			sort(ps);
 			Lit p; int i, j;
 			for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+				lbool cv = value(ps[i]);
+				if (cv == l_True) {
+					continue;
+				}
+				if (cv == l_False) {
+					int k;
+					for (k = 0; k < j - 1; k++) {
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
+					}
+					for (k = i + 1; k < ps.size(); k++) {
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
+					}
+					return true;
+				}
+					 
 				if(ps[i] == p){
-                    uncheckedEnqueue(p);
-                    if (ps[j-1] == p) {
-                        j--;
-                    }
+                    uncheckedEnqueue(p);// no need to check if p is already set because it would have been caught earlier.
+					assert(ps[j - 1] == p); 
+                    j--;
+                    
 				} else if (ps[i] == ~ p) {
                     int k;
-                    for (k = 0; k < j; k++) {
-                        uncheckedEnqueue(ps[k]);
+                    for (k = 0; k < j-1; k++) { // ps[j-1] is p, so we don't want to set that.
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if(ck == l_Undef){
+							uncheckedEnqueue(ps[k]);
+						}                        
                     }
                     for (k = i+1; k < ps.size(); k++) {
-                        uncheckedEnqueue(ps[k]);
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
                     }
-                    
                     return true;
                 }
 				ps[j++] = p = ps[i];

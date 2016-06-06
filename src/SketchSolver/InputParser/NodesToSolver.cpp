@@ -2380,6 +2380,7 @@ NodesToSolver::visit (ASSERT_node &node)
 		if(node.isHard()){
 			//cout << "add hard assert " << fval.getId() << " " << node.lprint() << endl;
 			dir.addHardAssertClause (fval.getId ());
+
 		}else{
 			if(node.isAssume()){
 				dir.addAssumeClause(fval.getId() );
@@ -2388,6 +2389,17 @@ NodesToSolver::visit (ASSERT_node &node)
 			}			
 		}		
 	}
+
+	if (!dir.getMng().isOK()) {
+		if (!dir.getMng().isNegated()) {
+			cout << "  UNSATISFIABLE ASSERTION " << node.getMsg() << endl;
+			errorMsg = "  UNSATISFIABLE ASSERTION ";
+			errorMsg += node.getMsg();
+		}
+		stopAddingClauses = true;
+		cout << "Problem became UNSAT." << node.lprint()<< endl;
+	}
+
 	//cout<<"|"<<node.getMsg()<<"|"<<endl;
 	
 	if(PARAMS->debug){
@@ -2591,6 +2603,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
+				
 
 		//Tvalue& tv = node_ids[(*node_it)->id];
 //		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;
@@ -2604,7 +2617,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 //			cout << e.what() << endl;
 //			throw e;
 //		}
-		if(stopAddingClauses && !isNegated){
+		if(stopAddingClauses){
 			break;
 		}
 	}
