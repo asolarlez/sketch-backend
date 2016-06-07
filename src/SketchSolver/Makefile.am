@@ -55,6 +55,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/VarStore.h	\
 	InputParser/driver.h				\
 	InputParser/NodeHardcoder.h			\
+	InputParser/HoleHardcoder.h			\
 	InputParser/guardedVal.h			
 
 libcegis_la_SOURCES =				\
@@ -90,6 +91,7 @@ libcegis_la_SOURCES =				\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp \
 	InputParser/NodeHardcoder.cpp  \
+	InputParser/HoleHardcoder.cpp \
     InputParser/Tvalue.cpp
 
 
