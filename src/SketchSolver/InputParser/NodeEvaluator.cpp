@@ -416,6 +416,7 @@ void NodeEvaluator::printNodeValue(int i){
 
 
 bool NodeEvaluator::run(VarStore& inputs_p){
+	funargs.clear();
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
