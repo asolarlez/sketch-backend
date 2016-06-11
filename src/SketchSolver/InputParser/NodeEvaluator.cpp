@@ -463,7 +463,7 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 
 
 
-        if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && ni->type != bool_node::TUPLE_CREATE){
+        if(!*it && this->isset[i] && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && !ni->getOtype()->isTuple){
             ++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){

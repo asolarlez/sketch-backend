@@ -768,7 +768,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				if(PARAMS->verbosity > 8){ cout<<"h = "<<h<<"  hasserts.size()= "<<hasserts.size()<<endl; }
 			} 
 			//cout << "TESTING h=" << h << " hold=" << hold << endl;
-			if (h == -1){
+			if (h == -1){//If this happens, nothing is gained from iterating further.
+				iter = params.simiters;
 				break;
 			}
 			if(hold == h){

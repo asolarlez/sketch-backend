@@ -451,13 +451,20 @@ ClauseExchange::ClauseExchange(MiniSATSolver* ms, const string& inf, const strin
 	FILE* f = fopen(outfile.c_str(), "w");	
 	fclose(f);
 	}
+	printToExchange();
 }
 
 void ClauseExchange::exchange(){
 	analyzeLocal();
 	int ssize = single.size();
 	int dsize = dble.size();
+	cout << "Before readInfile" << endl;
+	printToExchange();
+
 	readInfile();
+	cout << "After readInfile" << endl;
+	printToExchange();
+
 	if(ssize > 0 || dsize > 0){
 		pushOutfile();
 	}
@@ -499,7 +506,13 @@ void ClauseExchange::readInfile(){
 		}
 	}else{
 		fclose(f);
+		sbuf.resize(realsize);
 	}
+	cout << "Received: ";
+	for (int i = 0; i < sbuf.size(); ++i) {
+		cout << ", " << sbuf[i];
+	}
+	cout << endl;
 	unsigned chksum = 0;
 	for(int i=0; i<sbuf.size()-1; ++i){
 		chksum += sbuf[i];
@@ -555,6 +568,11 @@ void ClauseExchange::pushOutfile(){
 		sbuf[i] = it->second; ++i;
 	}
 	sbuf[i] = chksum;
+	cout << "Sending: " << endl;
+	for (int ii = 0; ii < sbuf.size(); ++ii) {
+		cout << ", " << sbuf[ii];
+	}
+	cout << endl;
 	FILE* f = fopen(outfile.c_str(), "w");
 	fwrite(&sbuf[0], sizeof(int), i+1, f);
 	fclose(f);

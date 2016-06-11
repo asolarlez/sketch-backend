@@ -34,7 +34,23 @@ class ClauseExchange{
 public:
 	ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf);	
 	void exchange();
-
+	void printToExchange() {
+		cout << "Single: ";
+		for (auto sit = single.begin(); sit != single.end(); ++sit) {
+			cout << ", " << (*sit);
+		}
+		cout << endl;
+		cout << "Double: ";
+		for (auto dit = dble.begin(); dit != dble.end(); ++dit) {
+			cout << ", (" << dit->first << " " << dit->second << ")";
+		}
+		cout << endl;
+		cout << "Baseline: ";
+		for (auto dit = baseline.begin(); dit != baseline.end(); ++dit) {
+			cout << ", (" << dit->first << " " << dit->second << ")";
+		}
+		cout << endl;
+	}
 
 };
 

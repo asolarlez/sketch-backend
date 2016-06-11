@@ -1,12 +1,17 @@
 #ifndef TIMERCLASS_H_
 #define TIMERCLASS_H_
 
+
+
+
 #ifndef  _MSC_VER
 #include <sys/time.h>
 #include <string>
 #include <iostream>
-
+#include <chrono>
 using namespace std;
+
+using namespace std::chrono;
 
 class timerclass{
 	unsigned long long tottime;
@@ -18,22 +23,29 @@ class timerclass{
 		tottime = 0;	
 		ctime = 0;
 	}
+
+	gettimeofdayme(timeval* tv, timeval*) {
+		time_point<high_resolution_clock, milliseconds> msc= time_point_cast<milliseconds>(high_resolution_clock::now());
+		tv->tv_sec = msc.time_since_epoch().count() / 1000;
+		tv->tv_usec = msc.time_since_epoch().count() % 1000;
+	}
+
 	timerclass(const string& pname):name(pname){
 		tottime = 0;	
 		ctime = 0;
 	}
 	
 	inline timerclass& start(){
-		tottime = 0;
-		gettimeofday(&stime, NULL);
+		tottime = 0;		
+		gettimeofdayme(&stime, NULL);
 		return *this;
 	}
 	inline timerclass& restart(){	
-		gettimeofday(&stime, NULL);
+		gettimeofdayme(&stime, NULL);
 		return *this;
 	}
 	inline timerclass& stop(){
-		gettimeofday(&endtime, NULL);
+		gettimeofdayme(&endtime, NULL);
 		ctime =  1000000*(endtime.tv_sec - stime.tv_sec)+
 					   (endtime.tv_usec - stime.tv_usec);		
 		tottime += ctime;
