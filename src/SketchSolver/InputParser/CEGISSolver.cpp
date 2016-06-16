@@ -697,6 +697,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
 	pushProblem(dag);
 	bool hasInput = true;
+	int hold = -1;
 	do{
 		++iter;
 		CounterexampleFinder eval(empty, *dag, params.sparseArray);	
@@ -750,7 +751,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				}
 			}
 		}
-		int hold = -1;
+		
 		int lowerbound = 0;
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS ITER "<<iter<<endl; }
@@ -843,9 +844,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 					}else{
 						expensive.push_back(tmpin);
 					}
+					hold = -1;
 				}else{
 					//In this case, it timed out, 
-					cout<<"IGNORANCE!!!!"<<endl;
+					cout<<"IGNORANCE!!!!"<<endl;					
 					break;
 				}
 			}else{
@@ -882,6 +884,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 						return false;
 					}
 				}
+				hold = -1;
 				break;
 			}
 		}
