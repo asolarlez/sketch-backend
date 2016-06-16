@@ -843,8 +843,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 						return true;
 					}else{
 						expensive.push_back(tmpin);
-					}
-					hold = -1;
+					}					
 				}else{
 					//In this case, it timed out, 
 					cout<<"IGNORANCE!!!!"<<endl;					
