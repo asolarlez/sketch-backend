@@ -1394,7 +1394,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 				}
 				totbits += nvars[i].num_ranges.size();
 			}else {
-				totbits = 1;
+				totbits += 1;
 			}			
 		}
 
