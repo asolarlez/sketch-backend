@@ -45,11 +45,13 @@ public:
 			cout << ", (" << dit->first << " " << dit->second << ")";
 		}
 		cout << endl;
+		/*
 		cout << "Baseline: ";
 		for (auto dit = baseline.begin(); dit != baseline.end(); ++dit) {
 			cout << ", (" << dit->first << " " << dit->second << ")";
 		}
 		cout << endl;
+		*/
 	}
 
 };

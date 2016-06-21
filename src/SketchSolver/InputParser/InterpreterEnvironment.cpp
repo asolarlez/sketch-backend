@@ -450,20 +450,25 @@ ClauseExchange::ClauseExchange(MiniSATSolver* ms, const string& inf, const strin
 	{
 	FILE* f = fopen(outfile.c_str(), "w");	
 	fclose(f);
-	}
-	printToExchange();
+	}	
 }
 
 void ClauseExchange::exchange(){
 	analyzeLocal();
 	int ssize = single.size();
-	int dsize = dble.size();
-	cout << "Before readInfile" << endl;
-	printToExchange();
+	int dsize = dble.size();	
+	if (PARAMS->verbosity > 8) {
+		cout << "Before readInfile" << endl;
+		printToExchange();
+	}
+	
 
 	readInfile();
-	cout << "After readInfile" << endl;
-	printToExchange();
+
+	if (PARAMS->verbosity > 8) {
+		cout << "After readInfile" << endl;
+		printToExchange();
+	}
 
 	if(ssize > 0 || dsize > 0){
 		pushOutfile();
