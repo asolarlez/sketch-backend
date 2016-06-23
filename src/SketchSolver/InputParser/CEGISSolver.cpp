@@ -10,6 +10,7 @@
 #include "BackwardsAnalysis.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
+#include "NodeHardcoder.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -19,13 +20,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 
 	{
 		Dout( cout<<"BEFORE declaring input names"<<endl );
-		vector<bool_node*>& specIn = problem->getNodesByType(bool_node::SRC);	
-		for(int i=0; i<specIn.size(); ++i){			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-			int nbits = srcnode->get_nbits();
-      Assert(!srcnode->isTuple, "Not possible");
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
-		}
+		redeclareInputs(problem, true);		
 	}
 	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
@@ -432,10 +427,9 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 }
 
 
-BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
-	BooleanDAG* newdag = dag->clone();
 
-	vector<bool_node*> inodeList = newdag->getNodesByType(type);
+BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type){
+	BooleanDAG* newdag = dag->clone();	
 	
 	int oldsize = newdag->size();
 
@@ -445,55 +439,12 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
 	// }
 	
-	{
-		DagOptim cse(*newdag);			
-		cse.isTopLevel = true;
-		for(int i=0; i<inodeList.size(); ++i){
-			INTER_node* inode = dynamic_cast<INTER_node*>(inodeList[i]);	
-			int nbits;
-			if(type == bool_node::CTRL){
-				CTRL_node* cn = dynamic_cast<CTRL_node*>(inode);
-				if(cn->get_Angelic()){
-					if(cn->children.size() != 0){
-            if (cn->spAngelic) {
-              // replace it with a src node
-              SRC_node* src = dynamic_cast<SRC_node*>(newdag->create_inputs(cn->get_nbits(), OutType::INT, cn->get_name() + "_src", cn->getArrSz()));
-              if (cn->isTuple) {
-                Assert(false, "Not possible");
-              }
-              newdag->replace(cn->id, src);
-              continue;
-            }
-            
-						Assert(cn->children.size() == 1, "NYI; hafdst");
-						bool_node* bn = *(cn->children.begin());
-						Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
-						arith_node* an = dynamic_cast<arith_node*>(bn);
-						if(an->multi_mother[0]==cn){
-							Assert(an->multi_mother[0]==cn, "NYI; cvbnm");
-							newdag->replace(cn->id, an->multi_mother[1]);
-						}else{
-							Assert(an->multi_mother[1]==cn, "NYI; weafhgdz");
-							newdag->replace(cn->id, an->multi_mother[0]);
-						}
-						
-						continue;
-					}else{
-						newdag->replace(inode->id, cse.getCnode(0));
-						continue;
-					}
-				}
-			}
-			
-			bool_node * repl= nodeForINode(inode, values, cse);			
-			
-			Assert( (*newdag)[inode->id] == inode , "The numbering is wrong!!");
-			newdag->replace(inode->id, repl);
-		}
-				
-		newdag->removeNullNodes();
-		cse.process(*newdag);
-	}
+	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type);
+	nhc.process(*newdag);
+
+
+
+
 	Dout( newdag->print(cout) ); 
 	
 	if(false){
@@ -746,6 +697,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
 	pushProblem(dag);
 	bool hasInput = true;
+	int hold = -1;
 	do{
 		++iter;
 		CounterexampleFinder eval(empty, *dag, params.sparseArray);	
@@ -799,7 +751,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				}
 			}
 		}
-		int hold = -1;
+		
 		int lowerbound = 0;
 		while(true){
 			if(PARAMS->verbosity > 8){ cout<<" TESTING HYPOTHESIS ITER "<<iter<<endl; }
@@ -817,7 +769,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				if(PARAMS->verbosity > 8){ cout<<"h = "<<h<<"  hasserts.size()= "<<hasserts.size()<<endl; }
 			} 
 			//cout << "TESTING h=" << h << " hold=" << hold << endl;
-			if (h == -1){
+			if (h == -1){//If this happens, nothing is gained from iterating further.
+				iter = params.simiters;
 				break;
 			}
 			if(hold == h){
@@ -890,10 +843,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 						return true;
 					}else{
 						expensive.push_back(tmpin);
-					}
+					}					
 				}else{
 					//In this case, it timed out, 
-					cout<<"IGNORANCE!!!!"<<endl;
+					cout<<"IGNORANCE!!!!"<<endl;					
 					break;
 				}
 			}else{
@@ -930,6 +883,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 						return false;
 					}
 				}
+				hold = -1;
 				break;
 			}
 		}
@@ -977,13 +931,36 @@ void CEGISSolver::normalizeInputStore(){
 }
 
 
-void CEGISSolver::redeclareInputs(BooleanDAG* dag){
-	vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
-	for(int i=0; i<specIn.size(); ++i){			
-		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-		int nbits = srcnode->get_nbits();
-		if(nbits >= 2){	
-			declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
+void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
+	{
+		vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
+		for(int i=0; i<specIn.size(); ++i){			
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			if(nbits >= 2 || firstTime){	
+				declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
+			}
+		}
+	}
+	{
+	
+		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);
+		int nbits = dag->getIntSize();
+		for(int i=0; i<ufunin.size(); ++i){
+			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
+			string tuple_name = ufunnode->getTupleName();
+
+			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+			int size = tuple_type->actSize;
+			int ASize =  1 << PARAMS->NINPUTS;
+			for(int tt = 0; tt<size; ++tt){
+				stringstream sstr;
+				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
+				OutType* ttype = tuple_type->entries[tt];	
+				bool isArr = ttype->isArr ;
+				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+				declareInput( sstr.str() , isBool ? 1 : nbits, (isArr ? ASize : -1) );
+			}
 		}
 	}
 }
@@ -998,7 +975,7 @@ void CEGISSolver::growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop){
 	if(isTop){
 		problems[this->curProblem]->growInputIntSizes();
 	}
-	redeclareInputs(dag);
+	redeclareInputs(oridag);
 }
 
 class CheckControl{
@@ -1242,22 +1219,40 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	map<bool_node*,  int> node_values;
 	check_node_ids.clear();
 	check_node_ids.resize( getProblem()->size() );	
-	for(BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx){
+	int nbits = getProblem()->getIntSize();
+	for (BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx) {
 		(*node_it)->flag = true;
-		if(	(*node_it)->type == bool_node::CTRL ){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);	
+		if ((*node_it)->type == bool_node::CTRL) {
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);
 			int nbits = ctrlnode->get_nbits();
 			node_values[(*node_it)] = valueForINode(ctrlnode, controls, nbits);
 		}
-		if(	(*node_it)->type == bool_node::SRC ){
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);	
+		if ((*node_it)->type == bool_node::SRC) {
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);
 			int arsz = srcnode->getArrSz();
-			if(arsz <0){ arsz = 1; }
-      if (srcnode->isTuple) {
-        Assert(false, "Not possible");
-      } else {
-			  dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
-      }
+			if (arsz < 0) { arsz = 1; }
+			if (srcnode->isTuple) {
+				Assert(false, "Not possible");
+			}
+			else {
+				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+			}
+		}
+		if ((*node_it)->type == bool_node::UFUN) {
+			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(*node_it);			
+			string tuple_name = ufunnode->getTupleName();
+
+			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+			int size = tuple_type->actSize;
+			int ASize = 1 << PARAMS->NINPUTS;
+			for (int tt = 0; tt<size; ++tt) {
+				stringstream sstr;
+				sstr << ufunnode->get_ufname() << "_" << ufunnode->get_uniquefid() << "_" << tt;
+				OutType* ttype = tuple_type->entries[tt];
+				bool isArr = ttype->isArr;
+				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1));
+			}
 		}
 	}	
 	//cout << "setNewControls: problem=";

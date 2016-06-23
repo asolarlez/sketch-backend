@@ -148,7 +148,7 @@ public:
 	void printDiagnostics(SATSolver& mng, char c);
 	
 
-	void redeclareInputs(BooleanDAG* dag);
+	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);
 	
 
 	void get_control_map(map<string, int>& values);

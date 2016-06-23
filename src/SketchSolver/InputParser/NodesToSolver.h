@@ -12,6 +12,13 @@
 
 // #define Dout( msg ) msg
 
+class Ufinfo {
+public:
+	vector<Tvalue> params;
+	Ufinfo(vector<Tvalue>& p) :params(p) {}
+};
+
+
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
     const string &outname;
@@ -19,11 +26,11 @@ class NodesToSolver : public NodeVisitor {
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
 	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
-	template<typename COMP> void compareArrays (bool_node& node,  const Tvalue& tmval,  const Tvalue& tfval);
+	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out);
     template<typename THEOP> void processArith (bool_node &node);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
-    template<typename COMP> void processComparissons (bool_node &node, bool revFval);
+	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out);
 	void processLT (LT_node& node);
 	vector<int> lgv;
     Tvalue tvYES;
@@ -32,6 +39,10 @@ class NodesToSolver : public NodeVisitor {
 	const int YES;
 	bool stopAddingClauses;
 	bool shortcut;
+
+	map<string, int> ufunids;
+	vector<vector<Ufinfo> > ufinfos;
+
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;

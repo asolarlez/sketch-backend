@@ -9,6 +9,8 @@ extern const int UNINITIALIZED = 0;
 
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
+int UFUN_node::FGID= 0;
+
 
 OutType* OutType::BOTTOM = new Bottom();
 OutType* OutType::BOOL = new Bool();
@@ -19,7 +21,7 @@ OutType* OutType::INT_ARR = new Arr(INT);
 OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
 vector<OutType*> OutType::store;
 map<string, OutType*> OutType::tupleMap;
-int i;
+
 
 OutType* OutType::getTuple(const string& name){
     if(tupleMap.count(name)>0 ){

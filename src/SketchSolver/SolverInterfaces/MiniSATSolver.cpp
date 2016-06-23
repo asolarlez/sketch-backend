@@ -10,9 +10,56 @@
 #include <vector>
 #include <queue>
 #include "MiniSATSolver.h"
-
+#include "Tvalue.h"
 
 #define Dout( out )  /*    out   */
+
+
+UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir){
+
+	int callid = equivs.size();	
+	int sz = sizeof(UfunSummary) + callid*sizeof(Lit);
+	int endof = sz;	
+	sz += sizeof(OutSummary) + outsize*sizeof(Lit);
+
+	int fuz = 0;
+#ifdef _DEBUG
+	fuz = 10*sizeof(int);
+#endif 
+	char* buf =  (char*) malloc(sz + fuz);
+#ifdef _DEBUG
+	for(int i=0; i<sz + fuz; ++i){
+		buf[i] = 'x';
+	}
+	((int*)buf)[0] = sz;	
+	buf += 4*sizeof(int);
+#endif
+
+	UfunSummary* rv = new(buf) UfunSummary(callid);
+	rv->equivs = (Lit*) (buf + sizeof(UfunSummary));
+	sz = endof;
+	for(int i=0; i<callid; ++i){	
+		rv->equivs[i] = equivs[i];
+	}
+	rv->output = new (buf+sz) OutSummary(outsize);
+	int jj = 0;
+	for(int i=0; i<out.size(); ++i){
+		if(out[i].isSparse() || out[i].isArray()){
+			gvvec& gvs = out[i].num_ranges;	
+			for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
+				rv->output->lits[jj] = lfromInt(it->guard);
+				++jj;
+			}
+		}else{
+			rv->output->lits[jj] = lfromInt(out[i].getId());
+			++jj;
+		}
+	}
+	Assert(jj == outsize, "WTF??");
+	return rv;
+}
+
+
 
 
 void MiniSATSolver::markInput(int id){
@@ -303,6 +350,8 @@ void MiniSATSolver::assumeVarClause(int x){
 		finalOr.push_back(-x);
 	}
 }
+
+
 
 
 void MiniSATSolver::hardAssertVarClause(int x){

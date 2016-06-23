@@ -203,7 +203,7 @@ public:
 	return out;
     }
 
-	int eval(SATSolver* solv){
+	int eval(SATSolver* solv)const{
 		if ( isSparse () ){
 			int tq = 0;
 			bool found = false;
@@ -228,7 +228,7 @@ public:
 	}
 
 
-	void print(ostream &out, SATSolver* solv){
+	void print(ostream &out, SATSolver* solv)const{
 		
 		if ( isSparse () || isArray()){
 			

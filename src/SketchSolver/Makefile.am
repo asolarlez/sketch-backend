@@ -7,12 +7,11 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
-#libcegis_la_LIBADD = ../abc60513/libabc.la ../MiniSat/libminisat.la ../zchaff/libzchaff.la -ldl
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
@@ -41,7 +40,6 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/DagOptimizeCommutAssoc.h		\
 	InputParser/ExtractEvaluationCondition.h	\
 	InputParser/FastSet.h				\
-	InputParser/HoleHardcoder.h                     \
 	InputParser/InputReader.h			\
 	InputParser/InterpreterEnvironment.h \
 	InputParser/CegisMainHelpers.h \
@@ -55,6 +53,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/Tvalue.h				\
 	InputParser/VarStore.h	\
 	InputParser/driver.h				\
+	InputParser/NodeHardcoder.h			\
+	InputParser/HoleHardcoder.h			\
 	InputParser/guardedVal.h			
 
 libcegis_la_SOURCES =				\
@@ -90,6 +90,8 @@ libcegis_la_SOURCES =				\
 	InputParser/NodesToEuclid.cpp		\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp \
+	InputParser/NodeHardcoder.cpp  \
+	InputParser/HoleHardcoder.cpp \
     InputParser/Tvalue.cpp
 
 

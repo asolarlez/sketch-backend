@@ -16,6 +16,7 @@ class CounterexampleFinder :
 		influences.clear();
 		influences.resize(bdag.size());
 		int bssize = inputs->getIntsize();
+		map<string, vector<UFUN_node*> > ufmap;
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 			bool_node* cur = (*node_it);
 			if(cur->type == bool_node::SRC){
@@ -29,6 +30,40 @@ class CounterexampleFinder :
 					jumpids.resize(oid+1);
 				}
 				jumpids[oid] = src->id;
+			}else if (cur->type == bool_node::UFUN) {
+				UFUN_node& node = *((UFUN_node*)cur);
+				string uname = node.get_ufname();
+				vector<UFUN_node*>& uv = ufmap[uname];
+
+				const string& tuple_name = node.getTupleName();
+
+				Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+				int size = tuple_type->actSize;
+				BitSet* nb = mybitsetcreate(store, bssize);
+				uv.push_back(&node);
+
+				for (int tt = 0; tt < uv.size(); ++tt) {
+					UFUN_node* ufn = uv[tt];
+					for (int j = 0; j < size; j++) {
+						stringstream sstr;
+						sstr << ufn->get_ufname() << "_" << ufn->get_uniquefid() << "_" << j;
+						int oid = inputs->getId(sstr.str());
+						nb->insert(oid);
+						if (ufn == &node) {
+							if (jumpids.size() <= oid) {
+								jumpids.resize(oid + 1);
+							}
+							jumpids[oid] = cur->id;
+						}						
+					}
+				}				
+				for (int i = 0; i < node.multi_mother.size(); ++i) {
+					nb->insert(influences[node.multi_mother[i]->id]);
+				}
+
+
+				influences[cur->id] = nb;				
+				
 			}else{
 				BitSet* res = NULL;
 				if(cur->mother != NULL){
@@ -79,6 +114,7 @@ public:
 
 	Result searchLoop(int maxfails){
 		int failcount = 0;
+		funargs.clear();
 		failedHAssert = false;
 		failedAssert = false;
 		int bdsz = bdag.size();
@@ -141,6 +177,17 @@ public:
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
 				}
+
+				for (auto funit = funargs.begin(); funit != funargs.end(); ++funit) {
+					vector<pair<int, vector<int> > >& args = funit->second;
+					for (auto argit = args.begin(); argit != args.end(); ++argit) {
+						if (argit->first >= jmp) {
+							args.resize(argit - args.begin());
+							break;
+						}
+					}
+				}
+
 				node_it = bdag.begin() + jmp;
 				(*node_it)->accept(*this);
 			}

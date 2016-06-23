@@ -73,6 +73,8 @@ public:
 		flip = 0;
 	}
 
+
+
 	cpvec(cpvec* pp, int ii, int v):vv(NULL){		
 		update(pp, ii, v);
 	}
@@ -159,6 +161,7 @@ class NodeEvaluator :
 	public NodeVisitor
 {
 protected:
+	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;
@@ -178,6 +181,8 @@ protected:
 	bool b(bool_node& bn){
 		return values[bn.id] == 1;
 	}
+
+	bool argcomp(vector<bool_node*>& parents, vector<int>& v1, vector<int>& v2);
 	void setbn(bool_node& bn, int i){
 		if(trackChange){
 			int id = bn.id;

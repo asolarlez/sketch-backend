@@ -38,6 +38,35 @@ using namespace std;
 
 namespace MSsolverNS{
 
+
+class OutSummary;
+
+class UfunSummary{
+public:
+	int id;
+	UfunSummary* next;
+	Lit* /*[id]*/ equivs;
+	OutSummary* output;
+	UfunSummary(int _id): id(_id) , next(NULL){}
+};
+
+class OutSummary{
+public:
+	int nouts;
+	Lit lits[];
+	OutSummary(int no):nouts(no){}
+};
+
+
+
+
+
+
+
+
+
+
+
 class Solver {
 public:
 
@@ -79,6 +108,8 @@ public:
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
 	bool tryAssignment(Lit a);
 
+	void addUfun(int funid, UfunSummary* ufs);
+
     // Extra results: (read-only member variable)
     //
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
@@ -111,7 +142,11 @@ public:
 	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
 
-    // Helper structures:
+	bool addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	void printUfunState(UfunSummary* ufs);
+	// Helper structures:
     //
     struct VarOrderLt {
         const vec<double>&  activity;
@@ -126,12 +161,17 @@ protected:
         bool operator()(Var v) const { return toLbool(s.assigns[v]) == l_Undef && s.decision_var[v]; }
     };
 
+	
+	Clause* newTempClause(vec<Lit>& vl , Lit p, Clause**& i, Clause**& j, Clause**& end);
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
 	vec<Clause*>        lazyors;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
+	vec<UfunSummary*>   allufuns;
+	vec<UfunSummary*>   ufunByID;
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.

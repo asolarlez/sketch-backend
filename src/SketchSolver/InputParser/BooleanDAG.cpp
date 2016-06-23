@@ -40,16 +40,18 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
 
 
 void BooleanDAG::growInputIntSizes(){
-	vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
-	++intSize;
-	for(int i=0; i<specIn.size(); ++i){	
-		SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-		int nbits = srcnode->get_nbits();
-		// BUGFIX xzl: nbits might be strange for SRC_nodes turned from Angelic CTRLs
-		if(nbits >= 2 && nbits < intSize){
-			srcnode->set_nbits(nbits+1);
-			// NOTE xzl: this might no longer be true for general case since we have Angelic CTRL turned into SRC_node. Hence we added a check in the "if" branch
-			Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
+	{
+		vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
+		++intSize;
+		for(int i=0; i<specIn.size(); ++i){	
+			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
+			int nbits = srcnode->get_nbits();
+			// BUGFIX xzl: nbits might be strange for SRC_nodes turned from Angelic CTRLs
+			if(nbits >= 2 && nbits < intSize){
+				srcnode->set_nbits(nbits+1);
+				// NOTE xzl: this might no longer be true for general case since we have Angelic CTRL turned into SRC_node. Hence we added a check in the "if" branch
+				Assert(nbits + 1 == intSize, "This is very strange. An abomination indeed.");
+			}
 		}
 	}
 }
@@ -213,7 +215,7 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 
 	
 	
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT || onode->type == bool_node::UFUN){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		vector<bool_node*>::iterator end = bnv.end();
 		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
@@ -272,7 +274,7 @@ void BooleanDAG::remove(int i){
 			named_nodes.erase(it);
 		}
 	}
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT){
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT || onode->type == bool_node::UFUN){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		for(int t=0; t<bnv.size(); ){
 			if( bnv[t] == onode ){
@@ -410,7 +412,7 @@ void BooleanDAG::repOK(){
 			if(uf != NULL){
 				if(uf->ignoreAsserts){
 					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
-					Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
+					// Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
 				/*if(uf->dependent()){
 					Assert(uf->ignoreAsserts, "Dependent ufun nodes should ignore asserts");
@@ -541,7 +543,14 @@ void BooleanDAG::cleanup(){
 			if(it != named_nodes.end() && it->second==inonode){
 				named_nodes.erase(it);
 			}
-		}  			
+		}  		
+		if(onode->type == bool_node::UFUN){
+			vector<bool_node*>& nvec = nodesByType[bool_node::UFUN];
+			vector<bool_node*>::iterator it = find(nvec.begin(), nvec.end(), onode);
+			if(it != nvec.end()){
+				nvec.erase(it);
+			}
+		}
   		onode->id = -22;	
   		delete onode;		
   	}else{
@@ -620,7 +629,7 @@ void BooleanDAG::addNewNode(bool_node* node){
 		}
 	}
 		
-	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT){
+	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT || node->type == bool_node::UFUN){
 		vector<bool_node*>& tmpv = nodesByType[node->type]; 
 		tmpv.push_back(node);			
 	}
@@ -662,7 +671,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 	if(named_nodes.find(name) != named_nodes.end()){
 		fth = named_nodes[name];	
 	}else{
-		cout<<"WARNING, DANGEROUS!! " << name << endl;
+		// cout<<"WARNING, DANGEROUS!! " << name << endl;
 		fth = new CONST_node(-333);
 		nodes.push_back(fth);
 	}
@@ -681,7 +690,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   Assert( tmp->id != -22, "This node should not exist anymore");
   tmp->id = nodes.size() + offset;
   nodes.push_back(tmp);  
-  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL || t == bool_node::ASSERT){
+  if(t == bool_node::SRC || t == bool_node::DST || t == bool_node::CTRL || t == bool_node::ASSERT || t == bool_node::UFUN){
   		nodesByType[t].push_back(tmp);
   }
   return tmp;
@@ -1082,7 +1091,9 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 			}
 			(*node_it)->switchInputs(*this, replacements);
 			if( (*node_it)->type == bool_node::ASSERT ||
-				(*node_it)->type == bool_node::SRC){
+				(*node_it)->type == bool_node::SRC || 
+				(*node_it)->type == bool_node::UFUN 
+				){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if((*node_it)->type == bool_node::SRC){
 					INTER_node* inter = dynamic_cast<INTER_node*>((*node_it));
@@ -1125,13 +1136,13 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 		if( (*node_it)->type != bool_node::SRC && (*node_it)->type != bool_node::DST){ 
 			nodes.push_back( (*node_it) );
 			(*node_it)->switchInputs(*this, replacements);
-			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT ){
+			if( (*node_it)->type == bool_node::CTRL ||  (*node_it)->type == bool_node::ASSERT || (*node_it)->type == bool_node::UFUN  ){
 				nodesByType[(*node_it)->type].push_back((*node_it));
 				if( (*node_it)->type == bool_node::CTRL ){
 					INTER_node* inode = dynamic_cast<INTER_node*>(*node_it);
 					named_nodes[inode->name] = inode;
-				}
-				if( (*node_it)->type == bool_node::ASSERT ){
+				}				
+				if( isDllnode(*node_it)  ){
 					DllistNode* tt = getDllnode((*node_it));
 					tt->remove();
 					assertions.append( tt );

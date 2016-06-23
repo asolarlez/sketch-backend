@@ -309,6 +309,7 @@ struct bool_node{
             case LT: return "<";
             case EQ: return "==";
             case ASSERT: return "ASSERT";
+			default: throw BasicError("Err", "Err");
         }
         //cout<<"ABOUT TO ABORT BECAUSE OF "<<name<<"  "<<type<<endl;
         throw BasicError("Err", "Err");
@@ -937,7 +938,7 @@ class CTRL_node: public INTER_node{
     vector<string> parents;
 	
     CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind; isTuple = false;}
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind_; isTuple = false;}
 	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
@@ -1090,23 +1091,28 @@ class TIMES_node: public bool_node{
 class UFUN_node: public arith_node, public DllistNode{
 	const int callsite;
 	static int CALLSITES;
+	static int FGID;
 	int nbits;
 	string ufname;
     string tupleName;
 	//string name;
 	bool isDependent;
   bool hardAssert;
+  int uniquefid;
 	public:
 	bool ignoreAsserts;
-	string outname;
 	int fgid;
+	string outname;	
   bool replaceFun;
     
     UFUN_node(const string& p_ufname):arith_node(UFUN), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
         nbits=1;
+		uniquefid = FGID++;
     }
-    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
+    UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
 	
+
+
     void modify_ufname(string& name) {
       ufname = name;
     }
@@ -1139,7 +1145,11 @@ class UFUN_node: public arith_node, public DllistNode{
     
 	virtual bool_node* clone(bool copyChildren = true){UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
 	int get_callsite()const{ return callsite; }
-	int get_nbits() const { return nbits; }
+	int get_uniquefid()const{ return uniquefid; }
+	void set_uniquefid(){  uniquefid = ++FGID; }
+	int get_nbits() const { 
+		return nbits; 
+	}
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
     void set_tupleName(string& name){tupleName = name;}

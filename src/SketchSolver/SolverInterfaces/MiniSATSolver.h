@@ -9,13 +9,16 @@ using namespace std;
 #include "MSolver.h"
 #include "SolverTypes.h"
 #include "Vec.h"
-
+#include "Tvalue.h"
 
 using namespace MSsolverNS;
 
 inline void MiniSolverStart(){ cout<<" STARTING SAT "<<endl; }
 inline void MiniSolverEnd(){cout<<" ENDING SAT"<<endl;  }
 
+
+
+UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir);
 
 
 class MiniSATSolver : public SATSolver{
@@ -43,6 +46,11 @@ public:
 		outputProblems = false;
 
 	 }
+
+	 void addUfun(int funid, UfunSummary* ufs){
+		 s->addUfun(funid, ufs);
+	 }
+
 	 virtual void outputSAT(){
 		 cout<<"Outputing problems"<<endl;
 		 outputProblems = true;
