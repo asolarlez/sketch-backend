@@ -157,10 +157,15 @@ public:
 	}
 };
 
+
+
+
 class NodeEvaluator :
 	public NodeVisitor
 {
 protected:
+	float epsilon;
+	FloatManager floats;
 	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
@@ -177,6 +182,11 @@ protected:
 	int i(bool_node& bn){
 		return values[bn.id];
 	}
+
+	
+
+	bool checkKnownFun(UFUN_node& node);
+	void builtinRetVal(UFUN_node& node, float val);
 
 	bool b(bool_node& bn){
 		return values[bn.id] == 1;

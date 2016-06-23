@@ -277,6 +277,7 @@ Method: Mhelp T_ident
 TupleType: T_vartype {
     if( $1 == INT){ $$ = OutType::INT;}
     if( $1 == BIT){ $$ = OutType::BOOL;}
+	if( $1 == FLOAT){ $$ = OutType::FLOAT;}
     if( $1 == INT_ARR){ $$ = OutType::INT_ARR;}
     if( $1 == BIT_ARR){ $$ = OutType::BOOL_ARR;}
     if( $1 == FLOAT_ARR){ $$ = OutType::FLOAT_ARR;}

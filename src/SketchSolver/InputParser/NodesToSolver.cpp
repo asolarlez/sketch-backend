@@ -1202,20 +1202,6 @@ NodesToSolver::visit (NOT_node &node)
 }
 
 
-void
-NodesToSolver::visit (NEG_node &node)
-{
-    Assert (node.mother && ! node.father, "NEG node must have exactly one predecessor");	
-
-
-    const Tvalue &mval = tval_lookup (node.mother);
-    Tvalue nvar = mval.toComplement(dir);
-    node_ids[node.id] = nvar;
-
-    Dout (cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
-}
-
-
 
 void
 NodesToSolver::visit (CTRL_node &node)
@@ -1284,66 +1270,78 @@ void NodesToSolver::visit( PLUS_node& node ){
 
 	return;
 }
+
 void NodesToSolver::visit( TIMES_node& node ){
 	Dout( cout<<" TIMES: "<<node.get_name()<<endl );	
 	processArith<multiplies<int> >(node);
 	return;
 }
 
-/*
-class UFUN_store{
-	vector<Tvalue> symvalues;
-	vector<vector<Tvalue> > arguments;
-	BooleanDAG argComp;
-	int nargs;
-	public:
-	UFUN_store(int p_nargs):nargs(p_nargs){
-		bool_node* peq = NULL
-		for(int i=0; i<nargs; ++i){
-			string ina;
-			string inb;
-			{
-				stringstream str;
-				str<<"ina"<<i;
-				ina = str.str();
-				argComp.create_inputs(nargs, ina);
-			}
-			{
-				stringstream str;
-				str<<"inb"<<i;
-				inb = str.str();
-				argComp.create_inputs(nargs, inb);
-			}
-			EQ_node* eq = new EQ_node();
-			argComp.new_node(ina, inb, bool_node::ARITH, argComp.new_name(), eq);
-			if(peq != NULL){
-				peq = argComp.new_node(peq, eq , bool_node::AND, argComp.new_name());
-			}else{
-				peq = eq;
-			}
-		}
-		
-		peq = argComp.new_node(peq, NULL , bool_node::DST, "DST");
-		argComp.relabel();
-		argComp.sort_graph();		
-	}
-	public Tvalue newCall(Tvalue& symvalue, vector<Tvalue>& args, SATSolver& p_mng, varDir& p_dir,  const string& p_outname){
-		Assert( args.size() == nargs, "This is not correct ");
-		vector<bool_node>& innodes = argComp.getNodesByType(bool_node::SRC);
-		
-		 map<bool_node*,  int>& p_node_values, 
-		 vector<Tvalue>& p_node_ids
-		NodesToSolver nts(p_mng, p_dir, p_outname, 
-		for(int i=0; i<nargs; ++i){
-				
-			
-		}
-		
-	}
-	
-};
 
-*/
+void NodesToSolver::visit(DIV_node& node) {
+	Dout(cout << " DIV " << endl);
+
+	processArith<divides<int> >(node);
+	return;
+}
+void NodesToSolver::visit(MOD_node& node) {
+	Dout(cout << " MOD " << endl);
+
+	processArith<modulus<int> >(node);
+	return;
+}
+
+void
+NodesToSolver::visit(NEG_node &node)
+{
+	Assert(node.mother && !node.father, "NEG node must have exactly one predecessor");
+
+
+	const Tvalue &mval = tval_lookup(node.mother);
+	Tvalue nvar = mval.toComplement(dir);
+	node_ids[node.id] = nvar;
+
+	Dout(cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
+}
+
+
+
+void
+NodesToSolver::visit(LT_node &node)
+{
+	Dout(cout << " LT " << endl);
+#ifdef HAVE_BVECTARITH
+	intBvectLt(node);
+#else
+	processLT(node);
+	//processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
+#endif /* HAVE_BVECTARITH */
+}
+
+
+
+void
+NodesToSolver::visit(EQ_node &node)
+{
+	Dout(cout << " EQ " << endl);
+
+#ifdef HAVE_BVECTARITH
+	intBvectEq(node);
+#else
+	bool_node *mother = node.mother;
+	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
+
+	bool_node *father = node.father;
+	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
+	processEq(mval, fval, node_ids[node.id]);
+	Dout(cout << node.get_name() << " :=  " << node_ids[node.id] << endl);
+#endif /* HAVE_BVECTARITH */
+}
+
+
+
+
+
 
 
 void NodesToSolver::visit( UFUN_node& node ){
@@ -1631,52 +1629,6 @@ void NodesToSolver::visit( ARRACC_node& node ){
 //	aracctimer.stop().print();
 	return;
 }
-
-void NodesToSolver::visit( DIV_node& node ){
-    Dout( cout<<" DIV "<<endl );
-    
-    processArith<divides<int> >(node);
-    return;
-}
-void NodesToSolver::visit( MOD_node& node ){
-    Dout( cout<<" MOD "<<endl );
-    
-    processArith<modulus<int> >(node);
-    return;
-}
-
-
-void
-NodesToSolver::visit (EQ_node &node)
-{
-    Dout (cout << " EQ " << endl);
-    
-#ifdef HAVE_BVECTARITH
-	intBvectEq (node);
-#else
-	bool_node *mother = node.mother;
-	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
-
-	bool_node *father = node.father;
-	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
-	processEq(mval, fval, node_ids[node.id]);
-	Dout(cout << node.get_name() << " :=  " << node_ids[node.id] << endl);
-#endif /* HAVE_BVECTARITH */
-}
-
-void
-NodesToSolver::visit (LT_node &node)
-{
-    Dout (cout << " LT " << endl);    
-#ifdef HAVE_BVECTARITH
-	intBvectLt (node);
-#else
-	processLT(node);
-	//processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
-#endif /* HAVE_BVECTARITH */
-}
-
-
 
 
 
@@ -2422,12 +2374,17 @@ NodesToSolver::visit (ASSERT_node &node)
 void
 NodesToSolver::visit (CONST_node &node)
 {	
-	
-	if( node.getVal() == 1 || node.getVal() == 0){
-		node_ids[node.id].makeBitVal(YES, node.getVal()==1);
-	}else{
-		node_ids[node.id].makeIntVal(YES, node.getVal());
+	if (node.isFloat) {
+		node_ids[node.id].makeIntVal(YES, floats.getIdx(node.getFval()));
 	}
+	else {
+		if (node.getVal() == 1 || node.getVal() == 0) {
+			node_ids[node.id].makeBitVal(YES, node.getVal() == 1);
+		}
+		else {
+			node_ids[node.id].makeIntVal(YES, node.getVal());
+		}
+	}	
 	Dout (cout << "CONST " << node.get_name() << " " << node_ids[node.id]<< endl);
 }
 

@@ -1,14 +1,17 @@
 #include "NodeEvaluator.h"
+#include <cmath>
+
 
 // Class for interpreter of BooleanDAG.
 NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
+functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(0.001)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
 	isset.resize(bdag.size(), false);
 	vecvalues.resize(bdag.size(), NULL);
     tuplevalues.resize(bdag.size(), NULL);
+	epsilon = floats.epsilon;
 
 }
 
@@ -80,7 +83,7 @@ void NodeEvaluator::visit( TUPLE_R_node &node){
     return;
   }
   
-  if(otp==OutType::INT || otp ==OutType::BOOL || otp->isTuple){
+  if(otp==OutType::INT || otp ==OutType::BOOL || otp == OutType::FLOAT || otp->isTuple){
     setbn(node, cpt->vv[idx]);
   } else {
     cpvec* cpvt = vecvalues[node.id];
@@ -185,12 +188,7 @@ void NodeEvaluator::visit( CTRL_node& node ){
 	//cout << "NodeEvaluator CTRL " << node.lprint() << " " << node.get_Angelic() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
 	setbn(node, (*inputs)[node.get_name()]);
 }
-void NodeEvaluator::visit( PLUS_node& node ){
-	setbn(node, i(*node.mother) + i(*node.father));
-}
-void NodeEvaluator::visit( TIMES_node& node ){
-	setbn(node, i(*node.mother) * i(*node.father));
-}
+
 
 bool arrayComp(cpvec* mv, cpvec* fv, int mdef, int fdef) {
 	int msz = mv == NULL ? 0 : mv->size();
@@ -226,7 +224,65 @@ bool NodeEvaluator::argcomp(vector<bool_node*>& parents, vector<int>& v1, vector
 	return true;
 }
 
+
+void NodeEvaluator::builtinRetVal(UFUN_node& node, float val) {
+	string tuple_name = node.getTupleName();
+
+	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+	int size = tuple_type->actSize;
+	Assert(size == 1, "BAD");
+	cptuple* cpv = new cptuple(size);
+	if (tuplevalues[node.id] != NULL) {
+		delete tuplevalues[node.id];
+	}
+	cpv->vv[0] = floats.getIdx(val);
+	tuplevalues[node.id] = cpv;
+	setbn(node, node.id);
+}
+
+
+bool NodeEvaluator::checkKnownFun(UFUN_node& node) {
+	if (node.get_ufname() == "_cast_int_float_math") {
+		int val = i(*node.multi_mother[0]);
+		builtinRetVal(node, (float)val);	
+		return true;
+	}
+	if (node.get_ufname() == "arctan_math") {
+		float val = floats.getFloat(i(*node.multi_mother[0]));
+		builtinRetVal(node, atan(val));
+		return true;
+	}
+	if (node.get_ufname() == "sin_math") {
+		float val = floats.getFloat(i(*node.multi_mother[0]));
+		builtinRetVal(node, sin(val));
+		return true;
+	}
+	if (node.get_ufname() == "cos_math") {
+		float val = floats.getFloat(i(*node.multi_mother[0]));
+		builtinRetVal(node, cos(val));
+		return true;
+	}
+	if (node.get_ufname() == "tan_math") {
+		float val = floats.getFloat(i(*node.multi_mother[0]));
+		builtinRetVal(node, tan(val));
+		return true;
+	}
+	if (node.get_ufname() == "sqrt_math") {
+		float val = floats.getFloat(i(*node.multi_mother[0]));
+		builtinRetVal(node, sqrt(val));
+		return true;
+	}
+	return false;
+}
+
+
 void NodeEvaluator::visit( UFUN_node& node ){
+
+	if (checkKnownFun(node)) {
+		return;
+	}
+
+
 	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
 	vector<int> cargs;
 	for(int ii=0; ii<node.multi_mother.size(); ++ii){
@@ -333,7 +389,42 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 	}	
 }
 
-void NodeEvaluator::visit( DIV_node& node ){
+void NodeEvaluator::visit(PLUS_node& node) {
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		int idx = floats.getIdx(mval + fval);
+		setbn(node, idx);
+		return;
+	}
+	setbn(node, i(*node.mother) + i(*node.father));
+}
+void NodeEvaluator::visit(TIMES_node& node) {
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		int idx = floats.getIdx(mval * fval);
+		setbn(node, idx);
+		return;
+	}
+	setbn(node, i(*node.mother) * i(*node.father));
+}
+
+void NodeEvaluator::visit( DIV_node& node ){	
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		if (abs(fval) < epsilon) {
+			if (fval >= 0.0) {
+				fval = epsilon;
+			}else {
+				fval = -epsilon;
+			}
+		}
+		int idx = floats.getIdx(mval / fval);
+		setbn(node, idx);
+		return;
+	}
 	int tt = i(*node.father);
 	setbn(node, tt == 0 ? 0 : (i(*node.mother) / tt));
 }
@@ -342,10 +433,20 @@ void NodeEvaluator::visit( MOD_node& node ){
 	setbn(node, tt == 0? 0 : (i(*node.mother) % tt));
 }
 void NodeEvaluator::visit( NEG_node& node ){
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		int idx = floats.getIdx(-mval);
+		setbn(node, idx);
+		return;
+	}
 	setbn(node, -i(*node.mother));
 }
 void NodeEvaluator::visit( CONST_node& node ){
-	setbn(node, node.getVal());
+	if (node.isFloat()) {
+		setbn(node, floats.getIdx(node.getFval()));
+	} else {
+		setbn(node, node.getVal());		
+	}	
 }
 
 void NodeEvaluator::visit( LT_node& node ){

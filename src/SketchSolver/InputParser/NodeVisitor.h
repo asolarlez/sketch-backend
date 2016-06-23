@@ -30,6 +30,37 @@ class arith_node;
 struct bool_node;
 class BooleanDAG;
 
+class FloatManager {
+	map<float, int> floatIdx;
+	vector<float> floats;
+
+public:
+	const float epsilon;
+	FloatManager(float _epsilon) :epsilon(_epsilon) {
+
+	}
+	float getFloat(int id) {
+		return floats[id];
+	}
+
+	int getIdx(float x) {
+		auto lbd = floatIdx.lower_bound(x - epsilon);
+
+		if (lbd != floatIdx.end()) {
+			float dist = lbd->first - x;
+			if (-epsilon < dist && dist < epsilon) {
+				return lbd->second;
+			}
+		}
+
+
+		int pos = floatIdx.size();
+		floatIdx[x] = pos;
+		floats.push_back(x);
+		return pos;
+	}
+};
+
 class NodeVisitor{
 	
 	protected:

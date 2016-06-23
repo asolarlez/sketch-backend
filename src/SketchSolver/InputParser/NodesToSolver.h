@@ -21,6 +21,7 @@ public:
 
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
+	FloatManager floats;
     const string &outname;
 	float sparseArray;
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
