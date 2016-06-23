@@ -60,7 +60,7 @@ void AssertionHandler(int signal){
 	mem.stop ();
     totalElapsed.stop ();
     printStats ();
-	exit(3);
+	_Exit(3);
 }
 
 void CtrlCHandler(int signal){
@@ -68,7 +68,7 @@ void CtrlCHandler(int signal){
 	mem.stop ();
     totalElapsed.stop ();
     printStats ();
-	exit(3);
+	_Exit(3);
 }
 
 void TerminationHandler(int signal){
@@ -76,5 +76,5 @@ void TerminationHandler(int signal){
 	mem.stop ();
     totalElapsed.stop ();
     printStats ();
-	exit(3);
+	_Exit(3);
 }
