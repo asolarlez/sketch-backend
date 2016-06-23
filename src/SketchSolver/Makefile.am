@@ -91,8 +91,7 @@ libcegis_la_SOURCES =				\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp \
 	InputParser/NodeHardcoder.cpp  \
-	InputParser/HoleHardcoder.cpp \
-    InputParser/Tvalue.cpp
+	InputParser/Tvalue.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp			
