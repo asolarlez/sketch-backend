@@ -4,6 +4,7 @@
 #include "NodeVisitor.h"
 #include "VarStore.h"
 #include <map>
+#include "FloatSupport.h"
 
 #include <iostream>
 
@@ -186,7 +187,7 @@ protected:
 	
 
 	bool checkKnownFun(UFUN_node& node);
-	void builtinRetVal(UFUN_node& node, float val);
+	void builtinRetVal(UFUN_node& node, int idxval);
 
 	bool b(bool_node& bn){
 		return values[bn.id] == 1;

@@ -861,10 +861,8 @@ NodesToSolver::intBvectMult (arith_node &node)
 #endif
 
 template<typename THEOP> void
-NodesToSolver::processArith (bool_node &node)
-{
-    THEOP comp; // int op int
-
+NodesToSolver::processArith (bool_node &node, THEOP& comp)
+{    
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 	mval.makeSparse (dir);
@@ -883,11 +881,8 @@ NodesToSolver::processArith (bool_node &node)
 	map<int, int> numbers;
 	map<int, vector<int> > qnumbers;
 	Tvalue& oval = node_ids[node.id];
-	gvvec& tmp = oval.num_ranges;
-	tmp.clear();
-	int ttt = mval.getSize ()*fval.getSize ();
-	ttt = ttt > INTEGERBOUND ? INTEGERBOUND : ttt;
-	tmp.reserve(ttt);
+	
+	
 	Dout(cout<<"ARITHOP "<<mval<<"  OP  "<<fval<<endl);
 	Dout(cout<<"OPERATING "<<node.father->get_name()<<"  WITH  "<<node.mother->get_name()<<endl);
 	int vals = 0;
@@ -1005,44 +1000,50 @@ NodesToSolver::processArith (bool_node &node)
 
 	Dout(cout<<"tmp size = "<<numbers.size ()<<endl);
 	Assert( vals > 0 && vals == numbers.size(), "NotesToSolver::processArith: This should not happen here "<<vals<<"  "<<numbers.size());
-	
-	tmp.resize(vals);
-	map<int, int>::iterator it = numbers.begin();
+	populateGuardedVals(oval, numbers);
+}
+
+void NodesToSolver::populateGuardedVals(Tvalue& oval, map<int, int>& numbers ) {
+	gvvec& tmp = oval.num_ranges;
+	tmp.clear();	
+	tmp.resize(numbers.size());
+	auto it = numbers.begin();
 
 	int i;
-	for(i=0; it != numbers.end(); ++it){
-		if(it->second == YES){
+	for (i = 0; it != numbers.end(); ++it) {
+		if (it->second == YES) {
 			tmp.resize(1);
-			tmp[0] = guardedVal(it->second, it->first);	
-			for(map<int, int>::iterator sit = numbers.begin(); sit != numbers.end(); ++sit){
-				if(sit->second != it->second){
+			tmp[0] = guardedVal(it->second, it->first);
+			for (auto sit = numbers.begin(); sit != numbers.end(); ++sit) {
+				if (sit->second != it->second) {
 					dir.addAssertClause(-sit->second);
 				}
 			}
-			i=1;
+			i = 1;
 			break;
 		}
-		if(it->second == -YES){
+		if (it->second == -YES) {
 			continue;
 		}
-		tmp[i] = guardedVal(it->second, it->first);		
+		tmp[i] = guardedVal(it->second, it->first);
 		++i;
 	}
 	tmp.resize(i);
-	if(tmp.size() == 1){
-		if(tmp[0].guard != YES){
+	if (tmp.size() == 1) {
+		if (tmp[0].guard != YES) {
 			dir.addAssertClause(tmp[0].guard);
 			tmp[0].guard = YES;
 		}
 	}
-	oval.sparsify (dir);
-	if(oval.getSize()==0){
+	oval.sparsify(dir);
+	if (oval.getSize() == 0) {
 		stopAddingClauses = true;
 		//This means that the problem has become unsat.
-	}else{
+	}
+	else {
 		dir.addHelperC(oval);
 	}
-	Dout( cout<<" := "<<oval<<endl );	    
+	Dout(cout << " := " << oval << endl);
 }
 
 
@@ -1265,7 +1266,11 @@ void NodesToSolver::visit( PLUS_node& node ){
 #ifdef HAVE_BVECTARITH
 	intBvectPlus (node);
 #else
-	processArith<plus<int> >(node);
+	if (node.getOtype() == OutType::FLOAT) {
+		processArith(node, FloatOp<plus<float> >(floats));
+	}else {
+		processArith(node, plus<int>());
+	}	
 #endif /* HAVE_BVECTARITH */
 
 	return;
@@ -1273,27 +1278,38 @@ void NodesToSolver::visit( PLUS_node& node ){
 
 void NodesToSolver::visit( TIMES_node& node ){
 	Dout( cout<<" TIMES: "<<node.get_name()<<endl );	
-	processArith<multiplies<int> >(node);
+	if (node.getOtype() == OutType::FLOAT) {
+		processArith(node, FloatOp<multiplies<float> >(floats));
+	}
+	else {
+		processArith(node, multiplies<int>());
+	}
 	return;
 }
 
 
 void NodesToSolver::visit(DIV_node& node) {
 	Dout(cout << " DIV " << endl);
-
-	processArith<divides<int> >(node);
+	if (node.getOtype() == OutType::FLOAT) {
+		processArith(node, FloatOp<divides<float> >(floats));
+	} else {
+		processArith(node, divides<int>());
+	}
 	return;
 }
+
 void NodesToSolver::visit(MOD_node& node) {
 	Dout(cout << " MOD " << endl);
 
-	processArith<modulus<int> >(node);
+	processArith(node, modulus<int>());
 	return;
 }
 
 void
 NodesToSolver::visit(NEG_node &node)
 {
+	//No need to check if it is float or not because even if it is a float, negating the index
+	//will have the effect of negating the value.
 	Assert(node.mother && !node.father, "NEG node must have exactly one predecessor");
 
 
@@ -1339,12 +1355,51 @@ NodesToSolver::visit(EQ_node &node)
 }
 
 
-
+bool NodesToSolver::checkKnownFun(UFUN_node& node) {
+	const string& name = node.get_ufname();	
+	if (floats.hasFun(name) || name == "_cast_int_float_math") {
+		Tvalue mval = tval_lookup(node.multi_mother[0], TVAL_SPARSE);
+		mval.makeSparse(dir);
+		
+		map<int, vector<int> > qnumbers;
+		map<int, int> numbers;
+				
+		if (name == "_cast_int_float_math") {
+			for (int i = 0; i < mval.getSize(); ++i) {
+				int quant = floats.getIdx((float)mval[i]);
+				qnumbers[quant].push_back(mval.getId(i));
+			}			
+		}else {
+			FloatFun f = floats.getFun(name);
+			for (int i = 0; i < mval.getSize(); ++i) {
+				int quant = f(mval[i]);
+				qnumbers[quant].push_back(mval.getId(i));
+			}
+		}
+		
+		for (auto qnit = qnumbers.begin(); qnit != qnumbers.end(); ++qnit) {
+			vector<int>& vv = qnit->second;
+			vv.insert(vv.begin(), 0);
+			dir.addBigOrClause(&vv[0], vv.size()-1);
+			numbers[qnit->first] = vv[0];
+		}
+		vector<Tvalue>* new_vec = new vector<Tvalue>(1);
+		populateGuardedVals((*new_vec)[0], numbers);
+		regTuple(new_vec, node_ids[node.id]);
+		return true;
+	}
+	return false;
+}
 
 
 
 
 void NodesToSolver::visit( UFUN_node& node ){
+
+	if (checkKnownFun(node)) {
+		return;
+	}
+
 	
 	if(dir.getMng().isNegated()){
 		//This means you are in the checking phase.
@@ -2273,27 +2328,29 @@ void NodesToSolver::visit( TUPLE_R_node &node){
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {
     Tvalue& nvar = node_ids[node.id];
     vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
-    int id = tpl_store.size();
     
     
     vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	regTuple(new_vec, nvar);	
+}
+
+void NodesToSolver::regTuple(vector<Tvalue>* new_vec, Tvalue& nvar) {
+	int id = tpl_store.size();
 	stringstream str;
-    for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
-		const Tvalue& mval = tval_lookup(*it);
-        (*new_vec)[i] = mval;
-		str<<mval<<"|";
-    }
+	for (auto nit = new_vec->begin(); nit != new_vec->end(); ++nit) {		
+		str << *nit << "|";
+	}
 	string ts = str.str();
 	int oldid = -1;
-	if(tplcache.condAdd(ts.c_str(), ts.size(), id, oldid)){
+	if (tplcache.condAdd(ts.c_str(), ts.size(), id, oldid)) {
 		delete new_vec;
-		nvar.makeIntVal(YES, oldid);   
-		cout<<"saved "<<ts<<endl;
-	}else{
-		tpl_store.push_back(new_vec);
-		nvar.makeIntVal(YES, id);    
+		nvar.makeIntVal(YES, oldid);
+		cout << "saved " << ts << endl;
 	}
-	
+	else {
+		tpl_store.push_back(new_vec);
+		nvar.makeIntVal(YES, id);
+	}
 }
 
 void
@@ -2374,7 +2431,7 @@ NodesToSolver::visit (ASSERT_node &node)
 void
 NodesToSolver::visit (CONST_node &node)
 {	
-	if (node.isFloat) {
+	if (node.isFloat()) {
 		node_ids[node.id].makeIntVal(YES, floats.getIdx(node.getFval()));
 	}
 	else {

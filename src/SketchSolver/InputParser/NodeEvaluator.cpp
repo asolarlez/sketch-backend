@@ -225,7 +225,7 @@ bool NodeEvaluator::argcomp(vector<bool_node*>& parents, vector<int>& v1, vector
 }
 
 
-void NodeEvaluator::builtinRetVal(UFUN_node& node, float val) {
+void NodeEvaluator::builtinRetVal(UFUN_node& node, int idxval) {
 	string tuple_name = node.getTupleName();
 
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
@@ -235,43 +235,24 @@ void NodeEvaluator::builtinRetVal(UFUN_node& node, float val) {
 	if (tuplevalues[node.id] != NULL) {
 		delete tuplevalues[node.id];
 	}
-	cpv->vv[0] = floats.getIdx(val);
+	cpv->vv[0] = idxval;
 	tuplevalues[node.id] = cpv;
 	setbn(node, node.id);
 }
 
 
 bool NodeEvaluator::checkKnownFun(UFUN_node& node) {
-	if (node.get_ufname() == "_cast_int_float_math") {
+	const string& name = node.get_ufname();
+	if (name == "_cast_int_float_math") {
 		int val = i(*node.multi_mother[0]);
-		builtinRetVal(node, (float)val);	
+		builtinRetVal(node, floats.getIdx((float)val));
 		return true;
 	}
-	if (node.get_ufname() == "arctan_math") {
-		float val = floats.getFloat(i(*node.multi_mother[0]));
-		builtinRetVal(node, atan(val));
+	if (floats.hasFun(name)) {
+		int val = i(*node.multi_mother[0]);
+		builtinRetVal(node, floats.getFun(name)(val));
 		return true;
-	}
-	if (node.get_ufname() == "sin_math") {
-		float val = floats.getFloat(i(*node.multi_mother[0]));
-		builtinRetVal(node, sin(val));
-		return true;
-	}
-	if (node.get_ufname() == "cos_math") {
-		float val = floats.getFloat(i(*node.multi_mother[0]));
-		builtinRetVal(node, cos(val));
-		return true;
-	}
-	if (node.get_ufname() == "tan_math") {
-		float val = floats.getFloat(i(*node.multi_mother[0]));
-		builtinRetVal(node, tan(val));
-		return true;
-	}
-	if (node.get_ufname() == "sqrt_math") {
-		float val = floats.getFloat(i(*node.multi_mother[0]));
-		builtinRetVal(node, sqrt(val));
-		return true;
-	}
+	}	
 	return false;
 }
 
@@ -433,12 +414,8 @@ void NodeEvaluator::visit( MOD_node& node ){
 	setbn(node, tt == 0? 0 : (i(*node.mother) % tt));
 }
 void NodeEvaluator::visit( NEG_node& node ){
-	if (node.getOtype() == OutType::FLOAT) {
-		float mval = floats.getFloat(i(*node.mother));
-		int idx = floats.getIdx(-mval);
-		setbn(node, idx);
-		return;
-	}
+	//No need to check if it is float or not, even if it is float, 
+	//negating the index will have the effect of negating the value.
 	setbn(node, -i(*node.mother));
 }
 void NodeEvaluator::visit( CONST_node& node ){

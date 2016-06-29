@@ -4,7 +4,7 @@
 #include "BooleanDAG.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
-
+#include "FloatSupport.h"
 
 #ifndef INTEGERBOUND
 # define INTEGERBOUND  8192*6
@@ -28,7 +28,7 @@ class NodesToSolver : public NodeVisitor {
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
 	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
 	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out);
-    template<typename THEOP> void processArith (bool_node &node);
+    template<typename THEOP> void processArith (bool_node &node, THEOP& comp);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
 	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out);
@@ -43,7 +43,8 @@ class NodesToSolver : public NodeVisitor {
 
 	map<string, int> ufunids;
 	vector<vector<Ufinfo> > ufinfos;
-
+	void populateGuardedVals(Tvalue& oval, map<int, int>& numbers);
+	void regTuple(vector<Tvalue>* new_vec, Tvalue& nvar);
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
@@ -84,7 +85,8 @@ protected:
     void intBvectLe (arith_node &);
     void intBvectGt (arith_node &);
     void intBvectGe (arith_node &);
-    
+
+	bool checkKnownFun(UFUN_node& node);
 
 public:
    string errorMsg;
@@ -110,7 +112,7 @@ public:
 	 ) :
 	dir(p_dir), outname(p_outname), node_values(p_node_values), 
 	node_ids(p_node_ids), YES(p_dir.YES), 
-	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1)
+	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1), floats(0.001)
     {
 	tmprange[0] = 0;
 	tmprange[1] = 1;
