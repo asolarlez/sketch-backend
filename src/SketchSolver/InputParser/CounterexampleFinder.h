@@ -205,8 +205,8 @@ public:
 		return (failedAssert && !failedHAssert) ? FOUND : NOTFOUND;
 	}
 
-	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p):
-	NodeEvaluator(functionMap_p, bdag_p), sparseArray(sparseArray_p)
+	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
+	NodeEvaluator(functionMap_p, bdag_p, _floats), sparseArray(sparseArray_p)
 	{
 	}
 

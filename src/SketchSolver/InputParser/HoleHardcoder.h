@@ -181,15 +181,6 @@ public:
 			}
 		}
 
-
-		double avg0 = getAvg(scores[rd[0]]);
-		double avg1 = getAvg(scores[rd[1]]);
-		cout<<"Averages "<<avg0<<", "<<avg1<<endl;
-		if(avg1 < avg0){
-			rd[0] = rd[1];
-			rd[1] = rd[0]*2;
-			cout<<"Climbing to "<<rd[0]<<", "<<rd[1]<<endl;
-		}
 	}
 
 	void setRanddegree(int rd){

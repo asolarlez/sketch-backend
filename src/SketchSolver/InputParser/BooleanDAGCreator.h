@@ -2,6 +2,7 @@
 
 #include "BooleanDAG.h"
 #include "DagOptim.h"
+#include "FloatSupport.h"
 
 class BooleanDAGCreator
 {
@@ -15,7 +16,7 @@ class BooleanDAGCreator
 					 const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth);
 
 public:
-    BooleanDAGCreator(BooleanDAG* p_dag);
+    BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm);
     
 public:
 	virtual ~BooleanDAGCreator(void);

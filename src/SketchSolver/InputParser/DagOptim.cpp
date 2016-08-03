@@ -2,7 +2,7 @@
 #include "SATSolver.h"
 #include "CommandLineArgs.h"
 
-DagOptim::DagOptim(BooleanDAG& dag):cse(dag), stillPrivate(NULL)
+DagOptim::DagOptim(BooleanDAG& dag, FloatManager& fm):cse(dag), stillPrivate(NULL), floats(fm)
 {
 	ALTER_ARRACS = false;
 	possibleCycles = false;
@@ -22,10 +22,8 @@ DagOptim::~DagOptim()
 //extern CommandLineArgs* PARAMS;
 
 CONST_node* DagOptim::getCnode(double c){
-	long long int code = CONST_node::code(c);
-	if(code == 0){ 
-		return getCnode(0);
-	}
+	long long int code = floats.getIdx(c) << 1 | 1;
+	
 	if( cnmap.find(code) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(c);
 		cnode->id = newnodes.size() + dagsize;		
@@ -36,7 +34,6 @@ CONST_node* DagOptim::getCnode(double c){
 	}else{
 		return cnmap[code];	
 	}
-
 }
 
 
@@ -386,9 +383,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 			NTYPE* pnode = new NTYPE();
 			pnode->mother = mofa;
 			if(momo == node.father ){
-				pnode->father = getCnode(0);
+				pnode->father = getZero(pnode->mother);				
 			}else{
-				pnode->father = getCnode( getIval(node.father) - getIval(momo) );
+				pnode->father = nodeSub(node.father, momo);							
 				//cout<<"I JUST SAVED SOME CLAUSES A"<<endl;
 			}			
 			pnode->addToParents();					
@@ -414,9 +411,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 			NTYPE* pnode = new NTYPE();
 			pnode->father = mofa;
 			if(momo==node.mother){
-				pnode->mother = getCnode(0);
+				pnode->mother = getZero(pnode->father);
 			}else{
-				pnode->mother = getCnode( getIval(node.mother) - getIval(momo) );
+				pnode->mother = nodeSub(node.mother , momo );
 				//cout<<"I JUST SAVED SOME CLAUSES B"<<endl;
 			}
 			pnode->addToParents();	
@@ -426,7 +423,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 	}
 		
 	
-	if(isConst(node.mother)){
+	if(isConst(node.mother) && !isFloat(node.father)){
 		
 		int tmp = staticCompare<COMP>(node.father, getIval(node.mother), true);
 		
@@ -440,7 +437,7 @@ bool DagOptim::compSymplification(NTYPE& node){
 		}
 	}
 	
-	if(isConst(node.father)){
+	if(isConst(node.father) && !isFloat(node.father)){
 		
 		int tmp = staticCompare<COMP>(node.mother, getIval(node.father), false);
 		
@@ -784,10 +781,10 @@ void DagOptim::visit( PLUS_node& node ){
 	
 	if(nc > 0){
 		if(nc > 1){
-			rvalue  = getCnode( getIval( mother ) + getIval( father ) );
+			rvalue = nodeAdd(mother, father);					
 			return;
 		}else{
-			if(getIval( mother ) == 0){
+			if(isZero( mother )){
 				rvalue  = father;
 				return;
 			}
@@ -795,7 +792,8 @@ void DagOptim::visit( PLUS_node& node ){
 				PLUS_node& fathernode = *dynamic_cast<PLUS_node*>(father);
 				if( isConst(fathernode.father) ){
 					//cout<<" DID REPLACEMENT 1"<<endl;
-					bool_node* nconst = getCnode(getIval( fathernode.father ) + getIval( mother ));
+					bool_node* nconst;
+					nconst = nodeAdd(fathernode.father, mother);										
 					PLUS_node* pnode = new PLUS_node();
 					pnode->mother = nconst;
 					Assert(!isConst(fathernode.mother), "This can't happen");
@@ -806,7 +804,8 @@ void DagOptim::visit( PLUS_node& node ){
 				}
 				if( isConst(fathernode.mother) ){
 					//cout<<" DID REPLACEMENT 2"<<endl;
-					bool_node* nconst = getCnode(getIval( fathernode.mother ) + getIval( mother ));
+					bool_node* nconst;
+					nconst = nodeAdd(fathernode.mother, mother);									
 					PLUS_node* pnode = new PLUS_node();
 					pnode->mother = nconst;
 					Assert(!isConst(fathernode.father), "This can't happen");
@@ -826,7 +825,7 @@ void DagOptim::visit( PLUS_node& node ){
 	
 	
 	if( isNegOfEachOther(node.mother, node.father) ){
-		rvalue = getCnode(0);
+		rvalue = getZero(node.mother);				
 		return;
 	}
 	
@@ -871,42 +870,7 @@ void DagOptim::visit( PLUS_node& node ){
 			return;	
 		}
 	}
-	
-	
-	
-	if( isConst(node.mother) ){ // const prop
-		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) + getIval( node.father ) );
-			Assert(false, "Optim is useless");
-			return;
-		}	
-		if(  getIval( node.mother ) == 0 ){
-			rvalue  = node.father;
-			Assert(false, "Optim is useless");
-			return;
-		}		
-		if( typeid(*node.father) == typeid(node) ){
-				PLUS_node& fathernode = *dynamic_cast<PLUS_node*>(node.father);
-				if( isConst(fathernode.father) ){
-					bool_node* nconst = getCnode(getIval( fathernode.father ) + getIval( node.mother ));
-					bool_node* pnode = new PLUS_node();
-					pnode->mother = nconst;
-					Assert(!isConst(fathernode.mother), "This can't happen");
-					pnode->father = fathernode.mother;
-					pnode->addToParents();
-					pnode = optAdd(pnode);
-					Assert(false, "Optim is useless");
-				}
-			
-		}
-	}
-	if( isConst(node.father) ){
-		if(  getIval( node.father ) == 0 ){
-			rvalue  = node.mother;
-			Assert(false, "Optim is useless");
-			return;
-		}	
-	}
+		
 	
 	rvalue = &node;
 }
@@ -914,24 +878,28 @@ void DagOptim::visit( PLUS_node& node ){
 void DagOptim::visit( TIMES_node& node ){
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) * getIval( node.father ) );
+			if (isFloat(&node)) {
+				rvalue = getCnode(getFval(node.mother) * getFval(node.father));
+			} else {
+				rvalue = getCnode(getIval(node.mother) * getIval(node.father));
+			}
 			return;
 		}
-		if(  getIval( node.mother ) == 0 ){
-			rvalue  = getCnode( 0 );
+		if(  isZero( node.mother ) ){
+			rvalue = node.mother;
 			return;
 		}
-		if(  getIval( node.mother ) == 1 ){
+		if(  isOne( node.mother ) ){
 			rvalue  = node.father;
 			return;
 		}	
 	}
 	if( isConst(node.father) ){
-		if(  getIval( node.father ) == 0 ){
-			rvalue  = getCnode( 0 );
+		if(  isZero( node.father ) ){
+			rvalue = node.father;
 			return;
 		}
-		if(  getIval( node.father ) == 1 ){
+		if(  isOne( node.father ) ){
 			rvalue  = node.mother;
 			return;
 		}
@@ -942,12 +910,23 @@ void DagOptim::visit( TIMES_node& node ){
 void DagOptim::visit( DIV_node& node ){
 	if( isConst(node.mother) ){ // const prop
 		if( isConst(node.father) ){
-			int c = getIval( node.father );
-			if(c != 0){
-				rvalue  = getCnode( getIval( node.mother ) / c );
-			}else{
-				rvalue  = getCnode( 0 );
-			}
+			if (isFloat(&node)) {
+				double c = getFval(node.father);				
+				if (floats.getIdx(c) != 0) {
+					rvalue = getCnode(getFval(node.mother) / c);
+				}
+				else {
+					rvalue = getCnode(0.0);
+				}
+			} else {
+				int c = getIval(node.father);
+				if (c != 0) {
+					rvalue = getCnode(getIval(node.mother) / c);
+				}
+				else {
+					rvalue = getCnode(0);
+				}
+			}			
 			return;
 		}			
 	}
@@ -983,7 +962,11 @@ void DagOptim::visit( MOD_node& node ){
 }
 void DagOptim::visit( NEG_node& node ){
 	if( isConst(node.mother) ){	// const prop
-		rvalue  = getCnode( -getIval( node.mother ) );
+		if (isFloat(&node)) {
+			rvalue = getCnode(-getFval(node.mother));
+		} else {
+			rvalue = getCnode(-getIval(node.mother));
+		}	
 		return;
 	}
 	if( typeid(*(node.mother)) == typeid(node)  ){// - -x == x;
@@ -1350,7 +1333,11 @@ void DagOptim::visit( ARR_W_node& node ){
 void DagOptim::visit( LT_node& node ){
 	if( isConst(node.mother) ){
 		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) < getIval( node.father ) );
+			if (isFloat(node.mother)) {
+				rvalue = getCnode(getFval(node.mother) < getFval(node.father));
+			} else {
+				rvalue = getCnode(getIval(node.mother) < getIval(node.father));
+			}		
 			return;
 		}			
 	}
@@ -1381,7 +1368,11 @@ void DagOptim::visit( EQ_node& node ){
 	if( isConst(node.mother) ){
         
 		if( isConst(node.father) ){
-			rvalue  = getCnode( getIval( node.mother ) == getIval( node.father ) );
+			if (isFloat(node.mother)) {
+				rvalue = getCnode(floats.getIdx(getFval(node.mother)) == floats.getIdx(getFval(node.father)));
+			} else {
+				rvalue = getCnode(getIval(node.mother) == getIval(node.father));
+			}		
 			return;
 		}
 		int mvalue = getIval( node.mother );
@@ -2469,6 +2460,11 @@ void DagOptim::visit( ASSERT_node &node){
 			rvalue = this->getCnode(0);
 			return ;
 		}
+		if (cv == 0) {
+			rvalue = &node;
+			failedAssert = &node;
+			return;
+		}
 	}
 	
 	if(!node.isNormal()){
@@ -3110,7 +3106,7 @@ void DagOptim::process(BooleanDAG& dag){
 
 	everything.start();
 	
-	
+	failedAssert = NULL;
 	int k=0;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
@@ -3127,6 +3123,14 @@ void DagOptim::process(BooleanDAG& dag){
 					dag.replace(i, node);					
 			}else{
 					//cout<<"Kept      "<<dag[i]->lprint()<<endl;
+			}
+		}
+
+		if (failedAssert != NULL) {
+			for (++i ; i < dag.size(); ++i) {
+				if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN || dag[i]->type == bool_node::CTRL) {
+					dag.replace(i, getCnode(0));
+				}
 			}
 		}
 	}

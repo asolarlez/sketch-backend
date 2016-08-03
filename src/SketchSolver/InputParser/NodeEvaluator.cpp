@@ -1,10 +1,10 @@
 #include "NodeEvaluator.h"
 #include <cmath>
-
+#include <iomanip>
 
 // Class for interpreter of BooleanDAG.
-NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(0.001)
+NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
+functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
@@ -513,7 +513,14 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 
 void NodeEvaluator::display(ostream& out){
 	for(int i=0; i<values.size(); ++i){
-		cout<<"AVALS= ["<<bdag[i]->globalId<<"]"<<bdag[i]->lprint()<<"	v="<<values[i]<<endl;
+		out << "AVALS= [" << bdag[i]->globalId << "]" << bdag[i]->lprint();
+		if (bdag[i]->getOtype() == OutType::FLOAT) {
+			out<<std::fixed;
+			out << std::setprecision(9);
+			out << "	v=" << floats.getFloat(values[i]) << endl;
+		} else {
+			out << "	v=" << values[i] << endl;
+		}
 	}
 }
 
@@ -541,7 +548,7 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 
 
 
-        if(!*it && this->isset[i] && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && !ni->getOtype()->isTuple){
+        if(!*it && this->isset[i] && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && !ni->getOtype()->isTuple && ni->getOtype() != OutType::FLOAT ){
             ++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){

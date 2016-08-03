@@ -61,12 +61,13 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 }
 
 
-CEGISSolver::CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args):
+CEGISSolver::CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
 dirFind(finder), 
 lastFproblem(NULL),
 mngFind(finder.getMng()),
 params(args),
-hcoder(hc)
+hcoder(hc),
+floats(_floats)
 {
 //	cout << "miter:" << endl;
 //	miter->lprint(cout);
@@ -344,7 +345,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 		BooleanDAG* newdag = hardCodeINode(getProblem(), input, bool_node::SRC);
 		BackwardsAnalysis ba;
 		// ba.process(*newdag);
-		DagOptim fa(*newdag);
+		DagOptim fa(*newdag, floats);
 		fa.process(*newdag);
 		pushProblem(newdag);
 		//cout << "addInputsToTestSet: newdag=";
@@ -359,7 +360,7 @@ void CEGISSolver::addInputsToTestSet(VarStore& input){
 	lastFproblem = getProblem();	
 	
 	try{
-		stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirFind, node_values, find_node_ids);
+		stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirFind, node_values, find_node_ids, floats);
 	}catch(BasicError& e){
 		dirFind.nextIteration();
 		if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
@@ -439,7 +440,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
 	// }
 	
-	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type);
+	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
 	nhc.process(*newdag);
 
 
@@ -452,7 +453,7 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 		ba.process(*newdag);
 	}
 	if(false){
-		DagOptim cse(*newdag);			
+		DagOptim cse(*newdag, floats);			
 		cse.process(*newdag);
 	}
 	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }	
@@ -565,7 +566,7 @@ void CEGISSolver::abstractProblem(){
 	VarStore tmp = join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;	
 	
-	NodeEvaluator eval(empty, *dag);
+	NodeEvaluator eval(empty, *dag, floats);
 	
 	eval.run(tmp);
 	vector<bool_node*> asserts = dag->getNodesByType(bool_node::ASSERT);
@@ -700,7 +701,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 	int hold = -1;
 	do{
 		++iter;
-		CounterexampleFinder eval(empty, *dag, params.sparseArray);	
+		CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);	
 		eval.init(tmpin);
 		for(int i=0; i<40; ++i){
 			if(params.sparseArray > 0){
@@ -726,9 +727,10 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			eval.trackChanges();
 			if(done){
 				if(timesim){ tc.stop().print("found a cex by random testing"); }
-				if (true) {
-					//dag->lprint(cout);
+				if (false) {
 					// useful code for debugging
+					eval.display(cout);
+					//dag->lprint(cout);					
 					for (int i=0; false && i<dag->size(); i++) {
 						bool_node * node = (*dag)[i];
 						int val = eval.getValue(node);
@@ -854,7 +856,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 					bool_node* btoR = (*dag)[h];
 					int nval = eval.getValue(btoR);
 					if(PARAMS->verbosity > 8){ cout<<" FOUND CONST: "<<niq->lprint()<<" = "<<nval<<endl; }
-					DagOptim cse(*dag);
+					DagOptim cse(*dag, floats);
 					int sz = dag->size();					
 					if(btoR->type == bool_node::EQ && nval == 1){
 						if(btoR->mother->type == bool_node::CONST){
@@ -899,7 +901,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 		//cout << "simulate: ba" << endl;
 		//ba.process(*dag);
 		//cout << "simulate: after ba" << endl;
-		DagOptim cse(*dag);
+		DagOptim cse(*dag, floats);
 		//cout << "simulate: cse" << endl;
 		cse.process(*dag);
 		//cout << "simulate: after cse" << endl;
@@ -921,7 +923,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 void CEGISSolver::normalizeInputStore(){
 	VarStore tmp = join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;
-	NodeSlicer slicer(empty, tmp, *getProblem());
+	NodeSlicer slicer(empty, tmp, *getProblem(), floats);
 	slicer.process(*getProblem());
 	for(VarStore::iterator it = inputStore.begin(); it != inputStore.end(); ++it){
 		if(!slicer.isInfluential(it->name)){
@@ -1182,12 +1184,12 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		}
 	}
 	Dout( dirCheck.print() );
-	if(false){ //This is useful code when debugging;
+	if(true){ //This is useful code when debugging;
 		cout << "counter example:" << endl;
 		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
 		BooleanDAG * prob = getProblem();
-		NodeEvaluator eval(empty, *prob);
+		NodeEvaluator eval(empty, *prob, floats);
 		eval.run(input);
 		cout<<"PRINT EVAL"<<endl;
 		for(int i=0; i<check_node_ids.size(); ++i){
@@ -1200,7 +1202,12 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 			int ev = eval.getValue(node);
 			int j;
 			int sv = getSolverVal(node, check_node_ids, mngCheck, &j);
-			cout << " " << sv << " vs " << ev;
+			if (node->getOtype() == OutType::FLOAT) {
+				cout << " " << floats.getFloat(sv) << " vs " << floats.getFloat(ev);
+			}
+			else {
+				cout << " " << sv << " vs " << ev;
+			}			
 			cout << endl;
 			check_node_ids[j].print(cout, &mngCheck);
 			cout<< " NodeEvaluator says:";
@@ -1257,7 +1264,7 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	}	
 	//cout << "setNewControls: problem=";
 	//getProblem()->lprint(cout);
-	stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids, params.sparseArray);
+	stoppedEarly = NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids, floats, params.sparseArray);
 }
 
 
@@ -1433,7 +1440,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 	map<bool_node*,  int> node_values;
 	
 	
-	NodesToSolver::createConstraints(*bd, dirCheck, node_values, check_node_ids);
+	NodesToSolver::createConstraints(*bd, dirCheck, node_values, check_node_ids, floats);
 	mngCheck.finish();
 	mngCheck.writeDIMACS(out);
 	dirCheck.outputVarMap(out);		

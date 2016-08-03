@@ -639,7 +639,7 @@ class DagFunctionInliner : public DagOptim
 	HoleHardcoder* hcoder;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, 	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

@@ -11,7 +11,7 @@ class DagFunctionToAssertion : public DagOptim
 	vector<bool_node*> newnodes;
 	
 public:
-	DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap);
+	DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, FloatManager& fm);
 	virtual ~DagFunctionToAssertion();
 	//virtual void process(BooleanDAG& bdag);
 		

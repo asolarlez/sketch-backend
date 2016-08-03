@@ -142,6 +142,13 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 
 void NodeHardcoder::visit( UFUN_node& node ){
 	if(type == bool_node::SRC){		
+
+		if (floats.hasFun(node.get_ufname())) {
+			DagOptim::visit(node);
+			return;
+		}
+
+
 		UFUN_node* uf = &node;
 		vector<pair<bool_node*, vector<bool_node*> > >& params = ufunparams[uf->get_ufname()];
 		

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BooleanDAG.h"
+#include "FloatSupport.h"
 #include <stack>
 #include <set>
 #include <map>
@@ -72,7 +73,7 @@ public:
 		}
 	}
 
-	void directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funMap);
+	void directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funMap, FloatManager& floats);
 };
 
 class CallGraphAnalysis
@@ -81,7 +82,7 @@ public:
 	CallGraphAnalysis(void);
 	~CallGraphAnalysis(void);
 
-	void process(BooleanDAG& dag, map<string, BooleanDAG*>& funMap);
+	void process(BooleanDAG& dag, map<string, BooleanDAG*>& funMap, FloatManager& floats);
 	void populateCG(BooleanDAG& dag, map<string, BooleanDAG*>& funMap, CallGraph& cg);
 	void printCG(BooleanDAG& dag, map<string, BooleanDAG*>& funMap);
 };

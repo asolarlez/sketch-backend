@@ -76,13 +76,13 @@ void advanceToEndIdx(int& iend, int cidx, const gvvec&tv){
 
 
 
-bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray){
+bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray){
 	//timerclass timer("defineProblem");
 		//timer.start();
 	bool stoppedEarly;
 		int YES = dir.newYES();
 		//getProblem()->lprint(cout);
-		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids);	
+		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids, floats);	
 		nts.sparseArray = sparseArray;
 		try{
 			stoppedEarly =false;
@@ -2328,9 +2328,12 @@ void NodesToSolver::visit( TUPLE_R_node &node){
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {
     Tvalue& nvar = node_ids[node.id];
     vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
+	auto it = node.multi_mother.begin();
+	for (int i = 0; it != node.multi_mother.end(); ++it, ++i) {
+		const Tvalue& mval = tval_lookup(*it);
+		(*new_vec)[i] = mval;
+	}    
     
-    
-    vector<bool_node*>::iterator it = node.multi_mother.begin();	
 	regTuple(new_vec, nvar);	
 }
 

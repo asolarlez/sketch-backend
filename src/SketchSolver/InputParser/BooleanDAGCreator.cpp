@@ -3,7 +3,7 @@
 #include "BackwardsAnalysis.h"
 //extern CommandLineArgs* PARAMS;
 
-BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag):dag(p_dag),optim(*p_dag)
+BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm):dag(p_dag),optim(*p_dag, fm)
 {
 	//
 	// optim.alterARRACS();

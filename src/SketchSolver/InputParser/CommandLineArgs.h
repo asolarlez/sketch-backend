@@ -86,6 +86,7 @@ struct CommandLineArgs{
   int spRandBias; // greater value means more bias towards lower depths
   double sparseArray;
   bool randomInlining;
+  float epsilon;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -161,6 +162,7 @@ struct CommandLineArgs{
     spRandBias = 1;
 	sparseArray = -1;
     randomInlining = false;
+	epsilon = 0.0000001;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;

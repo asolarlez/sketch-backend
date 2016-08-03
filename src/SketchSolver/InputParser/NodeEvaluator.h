@@ -166,7 +166,7 @@ class NodeEvaluator :
 {
 protected:
 	float epsilon;
-	FloatManager floats;
+	FloatManager& floats;
 	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
@@ -214,7 +214,7 @@ protected:
 		setbn(bn, c ? 1 : 0);
 	}
 public:
-	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p);
+	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats);
 	~NodeEvaluator(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );

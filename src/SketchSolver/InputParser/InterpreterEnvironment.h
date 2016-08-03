@@ -73,7 +73,7 @@ class InterpreterEnvironment
 	vector<BooleanDAG*> history;
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
-
+	FloatManager floats;
 	
 
 	string findName(){
@@ -114,7 +114,7 @@ public:
 	map<string, int> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
-	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0){
+	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if(p.outputSat){
 			_pfind->outputSAT();
@@ -123,7 +123,7 @@ public:
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
-		solver = new CEGISSolver(*finder, hardcoder, params);
+		solver = new CEGISSolver(*finder, hardcoder, params, floats);
 		exchanger = NULL;
 	}
 	
@@ -144,7 +144,7 @@ public:
 		finder = new SolverHelper(*_pfind);
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
-		solver = new CEGISSolver(*finder, hardcoder, params);
+		solver = new CEGISSolver(*finder, hardcoder, params, floats);
 		cout<<"ALLRESET"<<endl;
 		status=READY;
 	}
@@ -166,7 +166,7 @@ public:
 		functionMap[name] = tmp;
         
         
-		return new BooleanDAGCreator(tmp);		
+		return new BooleanDAGCreator(tmp, floats);		
 	}
 	
 	void printControls(ostream& out){

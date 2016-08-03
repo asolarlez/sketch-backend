@@ -13,10 +13,10 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, HoleHardcoder* p_hcoder,
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder,
 	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
-DagOptim(p_dag), 
+DagOptim(p_dag, fm), 
 ufunAll(" ufun all"),
 functionMap(p_functionMap),
 replaceMap(p_replaceMap),
@@ -988,7 +988,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	
     //dag.lprint(cout);
 	mpcontroller.clear();
-
+	failedAssert = NULL;
 	for(int i=0; i<dag.size() ; ++i ){
 		// Get the code for this node.
         //cout<<dag[i]->lprint()<<endl;
@@ -997,6 +997,18 @@ void DagFunctionInliner::process(BooleanDAG& dag){
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
+	   if (failedAssert != NULL) {		   
+		   for (++i; i < dag.size(); ++i) {
+			   if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
+				   dag.replace(i, getCnode(0));
+			   }
+		   }
+		   if (failedAssert->isNormal()) {
+			   cout << "Assertion Failure" << failedAssert->getMsg() << endl;
+			   cleanup(dag);
+			   throw BadConcretization();
+		   }
+	   }
 	}
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;

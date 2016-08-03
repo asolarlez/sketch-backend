@@ -11,6 +11,7 @@
 #include "HoleHardcoder.h"
 #include <stack>
 #include <ctime>
+#include "FloatSupport.h"
 
 using namespace MSsolverNS;
 
@@ -29,7 +30,7 @@ public:
 	simtype simplifycex;
 	bool superChecks;
 	bool lightVerif;
-	float sparseArray;
+	float sparseArray;	
 	CEGISparams(CommandLineArgs& args):
 		printDiag(false),
 		nseeds(1),
@@ -68,6 +69,7 @@ public:
 
 class CEGISSolver
 {
+	FloatManager& floats;
 	HoleHardcoder& hcoder;
 	int curProblem;
 	vector<BooleanDAG*> problems;
@@ -131,7 +133,7 @@ public:
 	VarStore ctrlStore;
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
-	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args);
+	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
 	~CEGISSolver(void);
 	void addProblem(BooleanDAG* miter);
 

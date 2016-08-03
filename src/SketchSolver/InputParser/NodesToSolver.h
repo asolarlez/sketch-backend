@@ -21,7 +21,7 @@ public:
 
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
-	FloatManager floats;
+	FloatManager& floats;
     const string &outname;
 	float sparseArray;
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
@@ -108,11 +108,12 @@ public:
 	     SolverHelper& p_dir, 
 	     const string& p_outname, 
 		 map<bool_node*,  int>& p_node_values, 
-		 vector<Tvalue>& p_node_ids
+		 vector<Tvalue>& p_node_ids,
+		 FloatManager& _floats
 	 ) :
 	dir(p_dir), outname(p_outname), node_values(p_node_values), 
 	node_ids(p_node_ids), YES(p_dir.YES), 
-	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1), floats(0.001)
+	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1), floats(_floats)
     {
 	tmprange[0] = 0;
 	tmprange[1] = 1;
@@ -173,7 +174,7 @@ public:
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
 
 
-  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, float sparseArray=-1.0);
+  static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
 
 };
 

@@ -70,7 +70,7 @@ public:
 			x = -x;
 			isNeg = true;
 		}
-		auto lbd = floatIdx.lower_bound(x - epsilon);
+		auto lbd = floatIdx.lower_bound(x - epsilon + (epsilon / 100));
 
 		if (lbd != floatIdx.end()) {
 			float dist = lbd->first - x;
@@ -82,12 +82,25 @@ public:
 					return  lbd->second;
 				}
 			}
+			lbd++;
+			if (lbd != floatIdx.end()) {
+				dist = lbd->first - x;
+				if (-epsilon < dist && dist < epsilon) {
+					if (isNeg) {
+						return -lbd->second;
+					}
+					else {
+						return  lbd->second;
+					}
+				}
+			}
 		}
 
 
 		int pos = floatIdx.size();
 		floatIdx[x] = pos;
 		floats.push_back(x);
+		Assert(floatIdx.size() == floats.size(), "What???");
 		if (isNeg) {
 			return -pos;
 		}

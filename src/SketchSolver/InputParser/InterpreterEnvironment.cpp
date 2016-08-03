@@ -17,8 +17,9 @@
 class Strudel{
 	vector<Tvalue>& vals;
 	SATSolver* solver;
+	FloatManager& floats;
 public:
-	Strudel(vector<Tvalue>& vtv, SATSolver* solv):vals(vtv), solver(solv){
+	Strudel(vector<Tvalue>& vtv, SATSolver* solv, FloatManager& fm):vals(vtv), solver(solv), floats(fm){
 		cout<<"This is strange size="<<vtv.size()<<endl;
 	}
 
@@ -40,7 +41,7 @@ int valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 		// cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; 
 		cout<<" * Before specialization: nodes = "<<newdag->size()<<" Ctrls = "<<  inodeList.size() <<endl;	
 		{
-			DagOptim cse(*newdag);			
+			DagOptim cse(*newdag, floats);			
 			
 			BooleanDAG* cl = newdag->clone();
 			for(int i=0; i<newdag->size() ; ++i ){ 
@@ -213,16 +214,25 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	if(false){
 		CallGraphAnalysis cga;
 		cout<<"sketch:"<<endl;
-		cga.process(*sketch, functionMap);
+		cga.process(*sketch, functionMap, floats);
 		cout<<"spec:"<<endl;
-		cga.process(*spec, functionMap);
+		cga.process(*spec, functionMap, floats);
 	}
 	
  	if(params.olevel >= 3){
 		if(params.verbosity > 3){ cout<<" Inlining amount = "<<inlineAmnt<<endl; }
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the sketch."<<endl; }
-			doInline(*sketch, functionMap, inlineAmnt, replaceMap);
+			try {
+				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
+			}catch (BadConcretization& bc) {
+				sketch->clear();
+				spec->clear();
+				delete sketch;
+				delete spec;
+				throw bc;
+			}
+			
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );	
 			cse.process(*sketch);
@@ -230,7 +240,16 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		{
 			if(params.verbosity > 3){ cout<<" Inlining functions in the spec."<<endl; }
-			doInline(*spec, functionMap, inlineAmnt, replaceMap);
+			try {
+				doInline(*spec, functionMap, inlineAmnt, replaceMap);
+			} catch (BadConcretization& bc) {
+				sketch->clear();
+				spec->clear();
+				delete sketch;
+				delete spec;
+				throw bc;
+			}
+			
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );	
 			cse.process(*spec);
@@ -381,7 +400,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		fin = new OneCallPerCSiteInliner();
 	}	 
 	*/
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
                          params.spRandBias); 
 
 	int oldSize = -1;
@@ -428,7 +447,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	}
 	hardcoder.afterInline();		
 	{
-		DagFunctionToAssertion makeAssert(dag, functionMap);
+		DagFunctionToAssertion makeAssert(dag, functionMap, floats);
 		makeAssert.process(dag);
 	}
 	
@@ -623,8 +642,8 @@ int InterpreterEnvironment::doallpairs(){
 			inf += ".com";
 			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);			
 			if(params.randdegree == 0){
-				rd[0] = 5;
-				rd[1] = 10;
+				rd[0] = 10;
+				rd[1] = 5;
 			}
 		}			 
 	}
@@ -659,7 +678,7 @@ int InterpreterEnvironment::doallpairs(){
 			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
-				printControls("");
+				printControls("");				
 			}catch(BadConcretization& bc){
 				hardcoder.dismissedPending();
 				result = 1;
@@ -754,7 +773,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 			int sz = bd->getNodesByType(bool_node::ASSERT).size();
 			cout<<" ++ Order = "<<i<<" size = "<<sz<<endl;
 			if(sz > 0){
-				Strudel st(statehistory[i], &finder->getMng());
+				Strudel st(statehistory[i], &finder->getMng(), floats);
 				st.checker(history[i] , solver->ctrlStore, bool_node::CTRL);
 			}
 		}
@@ -777,7 +796,7 @@ int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileN
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
 	
 	if(params.olevel >= 3){
-		DagOptim cse(*result);	
+		DagOptim cse(*result, floats);	
 		//cse.alterARRACS();
 		cse.process(*result);
 	}
@@ -813,7 +832,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
 
 	if(params.olevel >= 4){		
-		DagOptim cse(*result);	
+		DagOptim cse(*result, floats);	
 		if(params.alterARRACS){ 
 			cout<<" alterARRACS"<<endl;
 			cse.alterARRACS(); 
