@@ -1393,64 +1393,70 @@ bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 
 
 
-
 void NodesToSolver::visit( UFUN_node& node ){
-
+	
 	if (checkKnownFun(node)) {
 		return;
 	}
 
-	
-	if(dir.getMng().isNegated()){
-		//This means you are in the checking phase.
-
-		string tuple_name = node.getTupleName();
-		Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
-
-		if(tuple_type->entries.size() == 0){
-			Tvalue& outvar = node_ids[node.id];
-			outvar = -YES;
-			return;
-		}
+	bool isVerification = dir.getMng().isNegated();
 
 
-		vector<Tvalue> params;
-		for(int i=0; i<node.multi_mother.size(); ++i){
-			params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
-		}
-		
-		int nbits = tmpdag->getIntSize();
+	string tuple_name = node.getTupleName();
+	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
 
-		
+	if (tuple_type->entries.size() == 0) {
+		Tvalue& outvar = node_ids[node.id];
+		outvar = -YES;
+		return;
+	}
 
-		
-		int nouts = tuple_type->entries.size();
-		vector<Tvalue> nvars(nouts);
-		int totbits = 0;
-		for(int i=0; i<nouts; ++i){
-			OutType* ttype = tuple_type->entries[i];	
-			stringstream sstr;
-			sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
-			bool isArr = ttype->isArr ;
-			bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-			int cbits = isBool ? 1 : nbits;
+
+	vector<Tvalue> params;
+	for (int i = 0; i<node.multi_mother.size(); ++i) {
+		params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
+	}
+
+	int nbits = tmpdag->getIntSize();
+
+	int nouts = tuple_type->entries.size();
+	vector<Tvalue> nvars(nouts);
+	int totbits = 0;
+	for (int i = 0; i<nouts; ++i) {
+		OutType* ttype = tuple_type->entries[i];
+		stringstream sstr;
+		sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
+		bool isArr = ttype->isArr;
+		bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+		int cbits = isBool ? 1 : nbits;
+
+		if (isVerification) {
 			nvars[i] = dir.getArr(sstr.str(), 0);
-			
-			if (isArr || !isBool) {
-				if (isArr) {
-					int arrsz = dir.getArrSize(sstr.str());
-					nvars[i].setSize(arrsz);
-					nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
-				} else {
-					nvars[i].setSize(cbits);
-					nvars[i].makeSparse(dir);
-				}
-				totbits += nvars[i].num_ranges.size();
-			}else {
-				totbits += 1;
-			}			
+		} else {
+			nvars[i] = dir.newAnonymousVar(cbits);
 		}
 
+		if (isArr || !isBool) {
+			if (isArr) {
+				Assert(!isVerification, "NONONO");
+				int arrsz = dir.getArrSize(sstr.str());
+				nvars[i].setSize(arrsz);
+				nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
+			}
+			else {
+				nvars[i].setSize(cbits);
+				nvars[i].makeSparse(dir);
+			}
+			totbits += nvars[i].num_ranges.size();
+		}
+		else {
+			totbits += 1;
+		}
+	}
+
+	
+	if(isVerification){
+		//This means you are in the checking phase.
 
 		map<string, int>::iterator idit = ufunids.find(node.get_ufname());
 
@@ -1492,21 +1498,19 @@ void NodesToSolver::visit( UFUN_node& node ){
 		MiniSATSolver* ms = (MiniSATSolver*) (&dir.getMng());
 		
 		ms->addUfun(funid, ufs);
-		
-
-		Tvalue& outvar = node_ids[node.id];		
-		vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
-		int outid = tpl_store.size();
-		tpl_store.push_back(new_vec);
-		for(int i=0; i<nouts; ++i){
-			(*new_vec)[i] = nvars[i];
-		}
-		outvar.makeIntVal(YES, outid);    
-	}else{
-		Assert(false, "should not be here");
+				
+	}else{		
+		newSynthesis(node.get_ufname(), node.getTupleName(), params, nvars, dir);
 	}
 
-
+	Tvalue& outvar = node_ids[node.id];
+	vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
+	int outid = tpl_store.size();
+	tpl_store.push_back(new_vec);
+	for (int i = 0; i<nouts; ++i) {
+		(*new_vec)[i] = nvars[i];
+	}
+	outvar.makeIntVal(YES, outid);
 
 
 /*
@@ -1532,6 +1536,14 @@ void NodesToSolver::visit( UFUN_node& node ){
 	*/
 	
 }
+
+
+
+
+void NodesToSolver::newSynthesis(const string& name, const string& synthname, vector<Tvalue>& params, vector<Tvalue>& nvars, SolverHelper& dir) {
+	dir.addSynthSolver(name, synthname, params, nvars, floats);
+}
+
 
 
 

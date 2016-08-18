@@ -47,6 +47,14 @@ public:
 
 	 }
 
+	 SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* syn) {
+		 return s->addSynth(inputs, outputs, syn);
+	 }
+
+	 void addSynSolvClause(SynthInSolver* syn, int instid, int inputid, int value, Lit var) {
+		 s->addSynSolvClause(syn, instid, inputid, value, var);
+	 }
+
 	 void addUfun(int funid, UfunSummary* ufs){
 		 s->addUfun(funid, ufs);
 	 }

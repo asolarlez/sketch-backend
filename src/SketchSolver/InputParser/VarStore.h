@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include "BasicError.h"
+#include "SynthInSolver.h"
 
 using namespace std;
 
@@ -27,7 +28,7 @@ int intFromBV(T& bv, int start, int nbits){
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
 class VarStore{
 private:
-
+	
 
 public:
 	class objP{
@@ -207,6 +208,9 @@ private:
 	int bitsize;
 		
 public:
+
+	map<string, SynthInSolver*> synths;
+
 	VarStore(){
 		bitsize=0;
 	}	
@@ -302,7 +306,12 @@ public:
 		for(int i=0; i<objs.size(); ++i){
 			out << objs[i].name << ":";
 			objs[i].printContent(out);
-			cout << endl;
+			out << endl;
+		}
+		for (auto sit = synths.begin(); sit != synths.end(); ++sit) {
+			out << sit->first << ":";
+			sit->second->print(out);
+			out << endl;
 		}
 	}
 

@@ -111,7 +111,7 @@ class InterpreterEnvironment
 public:
 	typedef enum {READY, UNSAT} STATUS;
 	STATUS status;
-	map<string, int> currentControls;
+	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
@@ -172,7 +172,7 @@ public:
 	void printControls(ostream& out){
 		hardcoder.printControls(out);
 
-		for(map<string, int>::iterator it = currentControls.begin(); it != currentControls.end(); ++it){
+		for(auto it = currentControls.begin(); it != currentControls.end(); ++it){
 			if(!hardcoder.hasValue(it->first)){
 				out<<it->first<<"\t"<<it->second<<endl;
 			}

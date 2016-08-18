@@ -35,7 +35,7 @@ public:
 	template<typename T>
 	void dfs(Gnode& gn, T nextFun, set<BooleanDAG*>& visited, vector<BooleanDAG*>& result){
 		vector<BooleanDAG*>& tmp = (gn.*nextFun)(); 
-		for(int i=0; i<tmp.size(); ++i){
+		for(size_t i=0; i<tmp.size(); ++i){
 			if(visited.count(tmp[i])==0){
 				visited.insert(tmp[i]);
 				dfs(gnodes[tmp[i]], nextFun, visited, result);

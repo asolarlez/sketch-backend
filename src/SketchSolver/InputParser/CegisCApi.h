@@ -11,8 +11,7 @@ extern "C" {
     // template
     //-------------------------------------------------- 
     #define STRUCT_PROTOTYPE(X) \
-        struct X; \
-        typedef struct X X;
+        class X;         
 
     STRUCT_PROTOTYPE(bool_node);
     STRUCT_PROTOTYPE(NodeVector); // stl vector<bool_node>

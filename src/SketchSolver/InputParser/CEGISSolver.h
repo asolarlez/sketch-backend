@@ -153,7 +153,7 @@ public:
 	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);
 	
 
-	void get_control_map(map<string, int>& values);
+	void get_control_map(map<string, string>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);
 

@@ -1675,9 +1675,7 @@ void DagOptim::visit( UFUN_node& node ){
 		callMap[tmp] = dynamic_cast<UFUN_node*>(rvalue);
 		return;
 	}
-
-
-	rvalue = &node;	
+	
 }
 
 // m >= f <==> !(m < f);

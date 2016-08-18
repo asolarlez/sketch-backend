@@ -446,7 +446,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         string newOutputType = newNameCaps + "_ANONYMOUS";
         repFun->set_tupleName(newOutputType);
         repFun->replaceFun = false;
-        bool_node* actual;
+        bool_node* actual=NULL;
         for (int i = 0; i < inputs.size(); i++) {
           actual = node.multi_mother[i];
           if (actual->getOtype()->isTuple) break;

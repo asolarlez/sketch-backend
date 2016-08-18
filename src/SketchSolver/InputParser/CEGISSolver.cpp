@@ -536,9 +536,14 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			
 		}
-		
-
 	}
+
+	controls.synths.clear();
+	auto end = dirFind.get_sins().end();
+	for (auto it = dirFind.get_sins().begin(); it != end; ++it) {
+		controls.synths[it->first] = it->second;
+	}
+
 	if(false){ //This is useful code when debugging;		
 		for(int i=0; i<find_history.size(); ++i){
 			cout<<i<<"=";
@@ -1371,17 +1376,24 @@ void CEGISSolver::printDiagnostics(SATSolver& mng, char c){
 }
 
 void CEGISSolver::print_control_map(ostream& out){
-	map<string, int> values;
+	map<string, string> values;
 	get_control_map(values);
-	for(map<string, int>::iterator it = values.begin(); it != values.end(); ++it){
+	for(auto it = values.begin(); it != values.end(); ++it){
 		out<<it->first<<"\t"<<it->second<<endl;
 	}
 }
 
 
-void CEGISSolver::get_control_map(map<string, int>& values){
+void CEGISSolver::get_control_map(map<string, string>& values){
 	for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
-		values[it->name] = it->getInt();
+		stringstream str;
+		str << it->getInt();
+		values[it->name] = str.str();
+	}
+	for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
+		stringstream str;
+		it->second->print(str);
+		values[it->first] = str.str();
 	}
 }
 

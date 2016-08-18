@@ -15,6 +15,8 @@
 #define Dout( out )  /*    out   */
 
 
+
+
 UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir){
 
 	int callid = equivs.size();	
@@ -23,17 +25,9 @@ UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverH
 	sz += sizeof(OutSummary) + outsize*sizeof(Lit);
 
 	int fuz = 0;
-#ifdef _DEBUG
-	fuz = 10*sizeof(int);
-#endif 
+ 
 	char* buf =  (char*) malloc(sz + fuz);
-#ifdef _DEBUG
-	for(int i=0; i<sz + fuz; ++i){
-		buf[i] = 'x';
-	}
-	((int*)buf)[0] = sz;	
-	buf += 4*sizeof(int);
-#endif
+
 
 	UfunSummary* rv = new(buf) UfunSummary(callid);
 	rv->equivs = (Lit*) (buf + sizeof(UfunSummary));

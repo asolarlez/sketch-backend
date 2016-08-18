@@ -30,6 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 #include <set>
 #include "SolverTypes.h"
+#include "SynthInSolver.h"
 
 using namespace std;
 //=================================================================================================
@@ -57,7 +58,13 @@ public:
 	OutSummary(int no):nouts(no){}
 };
 
-
+class SynthClause {
+public :
+	SynthInSolver* s;
+	int instance;
+	int inid;
+	int val;
+};
 
 
 
@@ -81,6 +88,12 @@ public:
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     bool    addClause (vec<Lit>& ps, uint32_t kind = 0);                           // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
 	bool    addCNFBinary(Lit i, Lit j);
+
+	SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* s);
+
+	void addSynSolvClause(SynthInSolver* s, int instid, int inputid, int value, Lit var);
+
+
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -168,7 +181,6 @@ protected:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
-	vec<Clause*>        lazyors;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
 	vec<UfunSummary*>   allufuns;
 	vec<UfunSummary*>   ufunByID;
@@ -193,6 +205,8 @@ protected:
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 	vec<int>			inputvars;        //Armando: This is a list for really important variables. Conflicts involving these variables are really really valuable.
 	bool				firstTry;		  //Armando: This tells the search function whether this is the first try 
+	vec<SynthInSolver*> sins;
+
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
     //
@@ -303,7 +317,7 @@ inline lbool    Solver::value         (Var x) const   { return toLbool(assigns[x
 inline lbool    Solver::value         (Lit p) const   { return toLbool(assigns[var(p)]) ^ sign(p); }
 inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
-inline int      Solver::nClauses      ()      const   { return clauses.size() + lazyors.size(); }
+inline int      Solver::nClauses()      const { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return assigns.size(); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity    [v] = (char)b; }

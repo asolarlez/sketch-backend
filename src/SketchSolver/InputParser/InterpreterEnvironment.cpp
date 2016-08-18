@@ -622,7 +622,7 @@ int InterpreterEnvironment::doallpairs(){
 	map<int, vector<double> > scores;
     
     // A dummy ctrl for inlining bound
-    CTRL_node* inline_ctrl;
+	CTRL_node* inline_ctrl = NULL;
     if (params.randomInlining) {
         inline_ctrl = new CTRL_node();
         inline_ctrl->name = "inline";

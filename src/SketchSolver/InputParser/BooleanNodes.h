@@ -98,7 +98,7 @@ inline OutType::OutType(bool _isArr, bool _isTuple): isArr(_isArr), isTuple(_isT
 
 
 
-struct bool_node{
+class bool_node{
     
     private:
     /** The unique ID to be assigned to the next bool_node created. */
@@ -632,7 +632,7 @@ class ARR_CREATE_node:public arith_node{
     virtual string mrprint()const{
         stringstream str;
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
-        for(int i=0; i<multi_mother.size(); ++i){
+        for(size_t i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
         str<<" "<<dfltval;
@@ -642,7 +642,7 @@ class ARR_CREATE_node:public arith_node{
 		//just create an array that is dfltval(0) by default and then store all these values!
 		if(getOtype() == OutType::BOOL_ARR || getOtype() == OutType::INT_ARR){
 			string base = "((as const (Array Int Int)) " + int2str(dfltval) + ")";
-			for(int i=0;i<multi_mother.size(); i++){
+			for(size_t i=0;i<multi_mother.size(); i++){
 				base = "(store " + base + " " + int2str(i) + " " + multi_mother[i]->getSMTnode(OutType::INT) + ")";
 			}
 			return " " + base + " ";
@@ -700,7 +700,7 @@ class TUPLE_CREATE_node:public arith_node{
     virtual string mrprint()const{
         stringstream str;
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
-        for(int i=0; i<multi_mother.size(); ++i){
+        for(size_t i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
         return str.str();
@@ -867,8 +867,8 @@ class SRC_node: public INTER_node{
 	bool isArr() const{
 		return arrSz >= 0;
 	}
-   void setTuple (const string& name, bool ufun_ = false) {
-        tupleName = name;
+   void setTuple (const string& name_, bool ufun_ = false) {
+        tupleName = name_;
         isTuple = true;
         ufun = ufun_;
    }
@@ -1112,6 +1112,9 @@ class UFUN_node: public arith_node, public DllistNode{
     UFUN_node(const UFUN_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun){ }
 	
 
+	bool isSynNode() {
+		return tupleName.substr(0, 5) == "_GEN_";
+	}
 
     void modify_ufname(string& name) {
       ufname = name;
@@ -1271,7 +1274,7 @@ class ARRACC_node: public arith_node{
 	virtual string mrprint()const{
         stringstream str;
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<mother->id<<" "<<multi_mother.size();
-        for(int i=0; i<multi_mother.size(); ++i){
+        for(size_t i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
         return str.str();
@@ -1281,7 +1284,7 @@ class ARRACC_node: public arith_node{
 		stringstream ss;
 		Assert(multi_mother.size() >= 2, "ARRACC Must have at least 2 choices");
 		OutType* ot_join = OutType::joinOtype(multi_mother[1]->getOtype(),multi_mother[0]->getOtype());
-		for (int i=2;i<multi_mother.size();i++){
+		for (size_t i=2;i<multi_mother.size();i++){
 			ot_join = OutType::joinOtype(ot_join,multi_mother[i]->getOtype());
 		}
 		if(multi_mother.size() == 2){
@@ -1290,11 +1293,11 @@ class ARRACC_node: public arith_node{
 		else{
 			//ite n==0 a[0] else (ite n==1 etc...
 			string msmt = mother->getSMTnode(OutType::INT); 
-			for(int i=0;i<multi_mother.size()-1;i++){
+			for(size_t i=0;i<multi_mother.size()-1;i++){
 				ss<<" (ite (= " << msmt << " "<<i<<") "<<multi_mother[i]->getSMTnode(ot_join)<<" ";
 			}
 			ss<<multi_mother[multi_mother.size()-1]->getSMTnode(ot_join)<<" ";
-			for(int i=0;i<multi_mother.size()-1;i++) ss<<")";
+			for(size_t i=0;i<multi_mother.size()-1;i++) ss<<")";
 		}
 		return ss.str();
 	}
@@ -1593,7 +1596,7 @@ class ACTRL_node: public arith_node{
 	virtual string mrprint()const{
         stringstream str;
         str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<multi_mother.size();
-        for(int i=0; i<multi_mother.size(); ++i){
+        for(size_t i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
         return str.str();

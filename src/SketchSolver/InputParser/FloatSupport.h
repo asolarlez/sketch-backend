@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BasicError.h"
 #include <vector>
 #include <map>
 

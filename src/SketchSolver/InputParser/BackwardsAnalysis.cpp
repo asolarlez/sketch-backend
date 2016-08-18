@@ -389,7 +389,7 @@ void BackwardsAnalysis::visit( ARRACC_node& node ){
 		node.dislodge();
 		//cout << "after dislodge" << endl;
 		node.mother = fmother;
-		for(int i=0; i<tmm.size(); ++i){
+		for(size_t i=0; i<tmm.size(); ++i){
 			//cout << "multi_mother[i]=tmm[i]" << endl;
 			node.multi_mother[i] = tmm[i];
 		}

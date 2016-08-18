@@ -173,6 +173,7 @@ public:
  void arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& inarr, Tvalue& out);
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
 
+ void newSynthesis(const string& name, const string& synthname, vector<Tvalue>& params, vector<Tvalue>& nvars, SolverHelper& dir);
 
   static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
 

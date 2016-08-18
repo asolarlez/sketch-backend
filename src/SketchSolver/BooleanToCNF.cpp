@@ -9,6 +9,8 @@ using namespace std;
 
 #include "BooleanToCNF.h"
 #include "BooleanDAG.h"
+#include "MiniSATSolver.h"
+#include "DagOptim.h"
 
 #ifndef SAT_Manager
 #define SAT_Manager void *
@@ -46,6 +48,116 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 
 }
 
+
+
+class GtpSyn : public Synthesizer {
+	int theta;
+public:
+	GtpSyn(FloatManager& _fm) :Synthesizer(_fm) {
+
+	}
+	virtual bool synthesis() {
+		conflict.clear();
+		int gtmin = 1000000;
+		int gtid = -1;
+		int ltmax = -10000000;
+		int ltid = -1;
+		InputMatrix& im = *inout;
+		int inpt = 0;
+		int outpt = 1;
+		for (int i = 0; i < inout->getNumInstances(); ++i) {
+			int out = im.getVal(i, outpt);
+			int in = im.getVal(i, inpt);
+			if (out == EMPTY || in == EMPTY) {
+				continue;
+			}
+			if (out == 1) {
+				if (in < gtmin) { gtmin = in; gtid = i; }
+			}
+			else {
+				if (in > ltmax) { ltmax = in; ltid = i; }
+			}
+		}
+		if (ltmax < gtmin) {
+			theta = (ltmax + gtmin) / 2;
+			return true;
+		}
+		else {
+			if (gtid == -1) {
+				theta = ltmax + 1;
+				return true;
+			}
+			if (ltid == -1) {
+				theta = gtmin - 1;
+				return true;
+			}
+			conflict.push(im.valueid(gtid, inpt));
+			conflict.push(im.valueid(gtid, outpt));
+			conflict.push(im.valueid(ltid, inpt));
+			conflict.push(im.valueid(ltid, outpt));
+			return false;
+		}
+	}
+	virtual void newInstance() {
+
+	}
+	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+		return dopt->addGT(params[0], dopt->getCnode(theta));
+	}
+
+	virtual void print(ostream& out) {
+		out << "( " << theta << "< IN_0" << ")";
+	}
+};
+
+
+Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
+	if (name == "_GEN_gtp") {
+		return new GtpSyn(_fm);
+	}
+	return NULL;
+}
+
+
+void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
+	auto sit = sins.find(name);
+	SynthInSolver* sin;
+	if (sit == sins.end()) {
+		sin = ((MiniSATSolver&)mng).addSynth(inputs.size(), outputs.size(), newSynthesizer(syntype, _fm));
+		sins[name] = sin;
+	}
+	else {
+		sin = sit->second;
+	}
+	int instid = sin->newInstance(inputs, outputs);
+
+	int inputid = 0;
+	for (auto it = inputs.begin(); it != inputs.end(); ++it, ++inputid) {
+		Tvalue& tv = *it;
+		if (tv.isBvect()) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 1, lfromInt(tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 0, lfromInt(-tv.getId()));
+			continue;
+		}
+		const gvvec& vec = tv.num_ranges;
+		for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, ci->value, lfromInt(ci->guard));
+		}
+	}
+	int outid = 0;
+	for (auto it = outputs.begin(); it != outputs.end(); ++it, ++outid) {
+		Tvalue& tv = *it;
+		if (tv.isBvect()) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 1, lfromInt(tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 0, lfromInt(-tv.getId()));
+			continue;
+		}
+		const gvvec& vec = tv.num_ranges;
+		for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, ci->value, lfromInt(ci->guard));
+		}
+	}
+}
 
 void SolverHelper::addHelperC(Tvalue& tv){
 	if(tv.isSparse() ){

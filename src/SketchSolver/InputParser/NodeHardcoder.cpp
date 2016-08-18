@@ -140,6 +140,36 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 	return optAdd(new_node);	
 }
 
+
+void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
+	auto it = values.synths.find(node.get_ufname());
+	if (it == values.synths.end()) {
+		DagOptim::visit(node);
+	} else {
+		SynthInSolver* sin = it->second;
+		rvalue = sin->getExpression(this, node.multi_mother);
+
+
+
+		Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(node.getTupleName()));
+		int size = tuple_type->actSize;
+		TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+		for (int j = 0; j < size; j++) {
+			OutType* type = tuple_type->entries[j];
+			Assert(!type->isTuple, "NYS");
+			if (type->isArr) {
+				Assert(false, "NYI");
+			} else {				
+				new_node->multi_mother.push_back(rvalue);
+			}
+		}
+		new_node->addToParents();
+		rvalue = optAdd(new_node);
+		return;
+	}
+}
+
+
 void NodeHardcoder::visit( UFUN_node& node ){
 	if(type == bool_node::SRC){		
 
@@ -147,6 +177,12 @@ void NodeHardcoder::visit( UFUN_node& node ){
 			DagOptim::visit(node);
 			return;
 		}
+
+		if (node.isSynNode()) {		
+			DagOptim::visit(node);
+			return;
+		}
+
 
 
 		UFUN_node* uf = &node;
@@ -187,6 +223,10 @@ void NodeHardcoder::visit( UFUN_node& node ){
 		params.push_back(make_pair(out, pars));
 		rvalue = out;		
 	}else{
+		if (node.isSynNode()) {
+			nodeFromSyn(node);
+			return;
+		}
 		DagOptim::visit(node);
 	}
 }

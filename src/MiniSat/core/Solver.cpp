@@ -32,7 +32,19 @@ namespace MSsolverNS{
 
 uint32_t SINGLESET = 3;
 uint32_t UFUNCLAUSE = 2;
-uint32_t LAZYOR = 1;
+uint32_t SYNCLAUSE = 1;
+
+
+
+class SynClauseStruct {
+public:
+	SynthInSolver* s;
+	int instance;
+	int inputid;
+	int value;
+};
+
+
 
 Solver::Solver() :
 
@@ -69,7 +81,8 @@ Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
-	for (int i = 0; i < lazyors.size(); i++) free(lazyors[i]);
+	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
+	for (int i = 0; i < allufuns.size(); ++i) { free(allufuns[i]); }
 }
 
 
@@ -161,6 +174,35 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 }
 
 
+
+
+void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
+
+	if (value(lit) == l_True) {
+		s->pushInput(instid, inputid, val, level[var(lit)]);
+		return;
+	}
+	if (value(lit) == l_False) {
+		return;
+	}
+
+
+	int sz = sizeof(SynClauseStruct) / sizeof(Lit);
+	vec<Lit> pp(sz+1, Lit(0));
+	
+	Clause* cc = Clause::Clause_new(pp, false);
+	cc->mark(SYNCLAUSE);
+	clauses.push(cc);
+	SynClauseStruct* scs = (SynClauseStruct*) &((*cc)[0]);
+	scs->s = s;
+	scs->instance = instid;
+	scs->inputid = inputid;
+	scs->value = val;
+
+	watches[toInt(lit)].push(cc);
+
+}
+
 bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
     assert(decisionLevel() == 0);
@@ -176,7 +218,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         return false;
     else{
         // Check if clause is satisfied and remove false/duplicate literals:
-		if(kind != LAZYOR && kind != SINGLESET){
+		if(kind != SINGLESET){
 			sort(ps);
 			Lit p; int i, j;
 			for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
@@ -268,9 +310,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         Clause* c = Clause::Clause_new(ps, false);
         // bugfix: SINGLESET is only useful when ps.size()>2
         if (kind != SINGLESET || ps.size()>2) { c->mark(kind); }
-		if(kind == LAZYOR){
-			lazyors.push(c);
-		}else{
+		{
 			clauses.push(c);
 		}        
         attachClause(*c);
@@ -282,6 +322,12 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 // int TOTSINGLESET=0;
 
 
+
+SynthInSolver* Solver::addSynth(int inputs, int outputs, Synthesizer* s) {
+	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs);
+	sins.push(syn);
+	return syn;
+}
 
 
 
@@ -329,22 +375,7 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
 	uint32_t mark = c.mark();
-	if(mark==LAZYOR){
-		/*
-		Lazyor clause has the following structure 
-		c[0] = c[1] or c[2] c[3] ...c[n-1]
-		So we want the following rules for i>0
-		c[i] => if(c[0] == undef){ c[0] = true }
-		        if(c[0] == false){ conflict (c[0], -c[i]) }
-		
-		*/		
-		assert(c.size()>2);
-		for(int i=1; i<c.size(); ++i){
-			watches[toInt(c[i])].push(&c);
-		}
-		clauses_literals += c.size();
-		return;
-	}
+	
     watches[toInt(~c[0])].push(&c);
     watches[toInt(~c[1])].push(&c);
 	if(mark==SINGLESET){
@@ -363,15 +394,7 @@ void Solver::attachClause(Clause& c) {
 void Solver::detachClause(Clause& c) {
     assert(c.size() > 1);
 
-	if(c.mark() == LAZYOR){
-		// cout<<"REMOVING LAZYOR"<<endl;
-		for(int ii=1; ii<c.size(); ++ii){
-			maybeRemove(watches[toInt(c[ii])], &c);
-		}
-
-		clauses_literals -= c.size();
-		return;
-	}
+	
 	if(c.mark()==SINGLESET){
 		// cout<<"REMOVING SINGLESET"<<endl;
 		for(int ii=0; ii<c.size()-1; ++ii){
@@ -400,6 +423,9 @@ bool Solver::satisfied(const Clause& c) {
 	if(c.mark() == UFUNCLAUSE){
 		return false;
 	}
+	if (c.mark() == SYNCLAUSE) {
+		return false;
+	}
 
 	if(c.mark() == SINGLESET){ 
 		for (int i = 0; i < c.size(); i++){
@@ -411,30 +437,7 @@ bool Solver::satisfied(const Clause& c) {
 		// cout<<"Removing SINGLESET"<<endl;
 		return true; 
 	}
-	if(c.mark()== LAZYOR){
-		if(value(c[0])==l_True){
-			return true;
-		}
-		if(value(c[0])==l_False){
-			for (int i = 0; i < c.size(); i++){
-				lbool cv = value(c[i]);
-				if(cv == l_Undef){
-					uncheckedEnqueue(~c[i], NULL);
-					// cout<<"Propagating from constant Lazyor"<<endl;
-				}	
-				if(cv == l_True){
-					return false; 
-					//We just discovered an inconsistency
-					//It probably just arose from the unchecked enqueue of some other 
-					//lazyor clause. We leave this clause in place so that
-					//the later propagate will discover the problem.
-				}
-				//if cv == l_False already, there is nothing to do.
-			}
-			return true;			
-		}
-		return false;
-	}
+	
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
@@ -452,7 +455,11 @@ void Solver::cancelUntil(int level) {
         qhead = trail_lim[level];
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
-    } }
+		for (int i = 0; i < sins.size(); ++i) {
+			sins[i]->backtrack(level);
+		}
+    }	
+}
 
 
 //=================================================================================================
@@ -841,21 +848,6 @@ bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, 
 
 
 bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl){
-	#ifdef _DEBUG
-				{
-					char* buf = (char*) ufs;
-					buf -= 4*sizeof(int);
-					int ssz = ((int*)buf)[0];
-					buf += 4;
-					for(int i=0; i<12; ++i){
-						assert(buf[i] == 'x', "not OK");
-					}
-					buf += 12 + ssz;
-					for(int i=0; i<16; ++i){
-						assert(buf[i] == 'x', "not OK");
-					}
-				}
-#endif
 
 				// printUfunState(ufs);
 				vec<int> alleqs;
@@ -1027,8 +1019,9 @@ Clause* Solver::propagate()
     Clause* confl     = NULL;
     int     num_props = 0;
     volatile int avoidGccWeirdness=0;
+	int dlevel = decisionLevel();
 
-	bool isLevelZero = (decisionLevel()==0);
+	bool isLevelZero = (dlevel==0);
 
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
@@ -1051,6 +1044,18 @@ Clause* Solver::propagate()
 				if(propagateUfun(p, ufs, c, i, j, end, confl)){
 					goto FoundWatch;
 				}
+			}
+
+			if (mrk == SYNCLAUSE) {
+				SynClauseStruct* syn = (SynClauseStruct*)&c[0];
+				confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel);
+				if (confl != NULL) {
+					qhead = trail.size();
+					// Copy the remaining watches:
+					while (i < end)
+						*j++ = *i++;					
+				}
+				goto FoundWatch;
 			}
 
 
@@ -1276,7 +1281,7 @@ bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
 	
-	removeSatisfied(lazyors);
+	
     if (!ok || propagate() != NULL)
         return ok = false;
 
@@ -1558,32 +1563,7 @@ void Solver::verifyModel()
 {
     bool failed = false;
 
-	for(int i=0; i<lazyors.size(); ++i){
-		Clause& c = *lazyors[i];
-		for (int j = 1; j < c.size(); j++){
-				if (modelValue(c[j]) == l_True && modelValue(c[0]) == l_True)
-					goto nextB;
-				if (modelValue(c[j]) == l_True && modelValue(c[0]) == l_False){
-					printf("unsatisfied LAZYOR clause: ");
-					printClause(*lazyors[i]);
-					printf("\n");
-					failed = true;
-					goto nextB;
-				}					
-		}
-		if(modelValue(c[0]) == l_True){
-			//All the operands were false, but it was true;
-			//This does not violate the rules of the clause itself, but it is bad anyway.
-			//This is because every lazyor clause should be paired with a normal clause
-			//that enforces that if all c[i] are false, c[0] is false.
-			printf("badness of LAZYOR clause: ");
-					printClause(*lazyors[i]);
-					printf("\n");
-					failed = true;
-		}
-		nextB:;
-	}
-
+	
 
     for (int i = 0; i < clauses.size(); i++){
 		if(clauses[i]->mark()==0){
@@ -1615,7 +1595,7 @@ void Solver::verifyModel()
 
     assert(!failed);
 
-    printf("Verified %d original clauses and %d lazyor clauses.\n", clauses.size(), lazyors.size());
+    printf("Verified %d original clauses.\n", clauses.size());
 }
 
 

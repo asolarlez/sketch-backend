@@ -18,6 +18,7 @@
 #include "guardedVal.h"
 #include "StringHTable.h"
 #include "Tvalue.h"
+#include "SynthInSolver.h"
 
 
 // #define Dout(msg) msg
@@ -44,10 +45,19 @@ class SolverHelper {
     map<string, int> varmap;
     map<string, int> arrsize;
 	map<string, Tvalue> controls;
+	map<string, SynthInSolver*> sins;
     int varCnt;
 	int lastVar;
     SATSolver& mng;
 	vector<char> tmpbuf;	
+
+	/*
+	This function is in charge of instantiating new synthesizers.
+	*/
+	Synthesizer* newSynthesizer(const string& name, FloatManager& _fm);
+
+
+
 
 	int setStr(int id1, char op, int id2){
 		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
@@ -97,6 +107,14 @@ public:
 	map<string, int>::const_iterator arrsize_begin(){
 		return arrsize.begin();
 	}
+
+	const map<string, SynthInSolver*>& get_sins() {
+		return sins;
+	}
+
+
+	void addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
+
 
 	void writeDIMACS(ofstream& dimacs_file);
 

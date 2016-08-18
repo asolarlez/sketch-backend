@@ -27,7 +27,7 @@ class ARR_CREATE_node;
 class TUPLE_CREATE_node;
 class TUPLE_R_node;
 class arith_node;
-struct bool_node;
+class bool_node;
 class BooleanDAG;
 
 class NodeVisitor{

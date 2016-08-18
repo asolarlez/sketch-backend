@@ -295,6 +295,7 @@
     <ClCompile Include="SketchSolver\InputParser\SolveFromInput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MiniSat\core\SynthInSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\BitSet.h" />
     <ClInclude Include="SketchSolver\InputParser\CounterexampleFinder.h" />
     <ClInclude Include="minisat\core\msolver.h" />

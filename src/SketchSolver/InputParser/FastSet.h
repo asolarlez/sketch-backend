@@ -190,7 +190,7 @@ public:
                         unsigned loc = traits::hash (tmp, this->sz);
 			if(loc != (i & m)){ 
 				store[i]= NULL; 
-				int l = loc, lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
+				int lp1 = loc+1, lp2 = loc+2, lp3 = loc+3, lp4 = loc+4, lp5 = loc+5;
 				
 				if(store[lp2] == NULL){
 					store[lp2] = tmp; continue;
