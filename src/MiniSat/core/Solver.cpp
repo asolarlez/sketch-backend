@@ -1052,10 +1052,16 @@ Clause* Solver::propagate()
 				if (confl != NULL) {
 					qhead = trail.size();
 					// Copy the remaining watches:
+					*j++ = &c;
 					while (i < end)
 						*j++ = *i++;					
 				}
-				goto FoundWatch;
+				else {
+					*j++ = &c;
+				}
+
+
+				goto					FoundWatch;
 			}
 
 

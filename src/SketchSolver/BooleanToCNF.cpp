@@ -48,8 +48,9 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 
 }
 
-
-
+namespace MSsolverNS {
+	int ID;
+}
 class GtpSyn : public Synthesizer {
 	int theta;
 public:
@@ -77,7 +78,9 @@ public:
 			else {
 				if (in > ltmax) { ltmax = in; ltid = i; }
 			}
-		}
+		}		
+		//im.print();
+		//cout << ltmax << "-" << gtmin << endl;
 		if (ltmax < gtmin) {
 			theta = (ltmax + gtmin) / 2;
 			return true;

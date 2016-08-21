@@ -12,7 +12,7 @@
 #include "MiniSATSolver.h"
 #include "Tvalue.h"
 
-#define Dout( out )  /*    out   */
+#define Dout( out )    /*  out   */
 
 
 

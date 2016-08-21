@@ -12,7 +12,7 @@ int TOTBUFFERS = 0;
 
 //extern CommandLineArgs* PARAMS;
 
-// #define Dout(msg) msg
+#define Dout(msg) /* msg */
 
 /* 
  * Uncomment this to switch to bit-vector operators / comparators.
@@ -525,7 +525,7 @@ void NodesToSolver::processLT (LT_node& node){
 			}
 	}
 	node_ids[node.id] = cvar;
-
+	Dout(cout << cvar << endl;)
 }
 
 void
@@ -1438,7 +1438,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 
 		if (isArr || !isBool) {
 			if (isArr) {
-				Assert(!isVerification, "NONONO");
+				Assert(isVerification, "NONONO");
 				int arrsz = dir.getArrSize(sstr.str());
 				nvars[i].setSize(arrsz);
 				nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
@@ -1580,7 +1580,6 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 		doNonBoolArrAcc(mval, choices, out);
 //		nonbooltimer.stop().print();
 //		aracctimer.stop().print();
-		Dout(cout<<node.get_name()<<"  "<<out<<endl);
 		return;
 	}
 	Dout(cout<<" is boolean"<<endl);
@@ -1600,7 +1599,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 			}
 		}
 		out = cvar;
-		Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
+		Dout(cout<<"ARRACC "<<pnode->get_name()<<"  "<<out<<"   "<<pnode<<endl);
 //		aracctimer.stop().print();
 		return;
 	}
@@ -1632,7 +1631,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 		int result = dir.addBigOrClause( &scratchpad[0], orTerms);
 		out = result;		
 	}
-	Dout(cout<<"ARRACC "<<node.get_name()<<"  "<<out<<"   "<<&node<<endl);
+	Dout(if (pnode != NULL) { cout << "ARRACC " << pnode->get_name() << "  " << out << "   " << pnode << endl; });
 }
 
 

@@ -66,8 +66,8 @@ public:
 
 	inline bool isArray (void) const { return type == TVAL_ARRAY; }
 
-	Lit litForValue(int v) {
-		if (type == TVAL_SPARSE) {
+	Lit litForValue(int v) const {
+		if (type == TVAL_SPARSE) {			
 			for (gvvec::const_iterator it = num_ranges.begin(); it != num_ranges.end(); ++it) {
 				if (it->value == v) {
 					return lfromInt(it->guard);

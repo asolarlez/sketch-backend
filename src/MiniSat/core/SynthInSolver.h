@@ -32,6 +32,20 @@ namespace MSsolverNS {
 		vec<mstate> stack;
 
 	public:
+
+		void print() {
+			for (int i = 0; i < ninputs; ++i) {
+				for (int j = 0; j < nfuns; ++j) {
+					if (grid[valueid(j, i)] == EMPTY) {
+						cout << "E|\t";
+					} else {
+						cout << grid[valueid(j, i)]<<"|\t";
+					}
+				}
+				cout << endl;
+			}
+		}
+
 		InputMatrix(int inputs, int outputs) 
 			:ninputs(inputs + outputs),
 			nfuns(0){
@@ -47,15 +61,17 @@ namespace MSsolverNS {
 		}
 		void backtrack(int level) {
 			int i;
+			int j = 0;
 			for (i = stack.size() - 1; i >= 0; --i) {
-				mstate& ms = stack[i];
-				if (ms.level >= level) {
+				mstate& ms = stack[i];				
+				if (ms.level > level) {
 					grid[ms.id] = EMPTY;
+					++j;
 				} else {
 					break;
 				}
 			}
-			stack.shrink(stack.size() - i);			
+			stack.shrink(j);			
 		}		
 		int newInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
 			int sz = inputs.size() + outputs.size();
@@ -126,15 +142,19 @@ namespace MSsolverNS {
 		virtual void print(ostream& out) = 0;
 	};
 
+	extern int ID;
+
 	class SynthInSolver {
 		vec<int> tmpbuf;
 		InputMatrix inputOutputs;		
 		Synthesizer* s;
 		int maxlevel;
+		int id;
 	public:
 		SynthInSolver(Synthesizer* syn, int inputs, int outputs) :s(syn), inputOutputs(inputs, outputs) {
 			syn->set_inout(&inputOutputs);
 			maxlevel = 0;
+			id = ++ID;
 		}
 		~SynthInSolver() {
 			delete s;
@@ -162,15 +182,16 @@ namespace MSsolverNS {
 		/* Returns the stack level of the input.
 		*/
 		Clause* pushInput(int instance, int inputid, int val, int dlevel) {
+			//cout << "ID=" << id << endl;
 			maxlevel = dlevel;
 			inputOutputs.pushInput(instance, inputid, val, dlevel);
 			if (!s->synthesis()) {
-				vec<Lit> conf;
+				vec<Lit> conf;				
 				for (int i = 0; i < s->conflict.size(); ++i) {
 					int id = s->conflict[i];
 					Tvalue& tv = inputOutputs.getTval(id);
 					Lit& l = tv.litForValue(inputOutputs.getVal(id));
-					conf.push(l);
+					conf.push(~l);
 				}
 
 				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
