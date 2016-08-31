@@ -56,7 +56,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/driver.h				\
 	InputParser/NodeHardcoder.h			\
 	InputParser/HoleHardcoder.h			\
-	InputParser/guardedVal.h			
+	InputParser/guardedVal.h			\
+    InputParser/FloatSupport.h
 
 libcegis_la_SOURCES =				\
 	$(SOLVER_SRCS)				\

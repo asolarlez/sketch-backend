@@ -28,7 +28,7 @@ class NodesToSolver : public NodeVisitor {
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
 	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
 	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out);
-    template<typename THEOP> void processArith (bool_node &node, THEOP& comp);
+    template<typename THEOP> void processArith (bool_node &node, THEOP comp);
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
 	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out);

@@ -190,7 +190,9 @@ namespace MSsolverNS {
 				for (int i = 0; i < s->conflict.size(); ++i) {
 					int id = s->conflict[i];
 					Tvalue& tv = inputOutputs.getTval(id);
-					Lit& l = tv.litForValue(inputOutputs.getVal(id));
+                    Lit lval = tv.litForValue(inputOutputs.getVal(id));
+                    Lit& l = lval;
+					//Lit& l = tv.litForValue(inputOutputs.getVal(id));
 					conf.push(~l);
 				}
 

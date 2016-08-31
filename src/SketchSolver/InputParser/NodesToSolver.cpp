@@ -12,7 +12,7 @@ int TOTBUFFERS = 0;
 
 //extern CommandLineArgs* PARAMS;
 
-#define Dout(msg) /* msg */
+//#define Dout(msg) /* msg */
 
 /* 
  * Uncomment this to switch to bit-vector operators / comparators.
@@ -861,7 +861,7 @@ NodesToSolver::intBvectMult (arith_node &node)
 #endif
 
 template<typename THEOP> void
-NodesToSolver::processArith (bool_node &node, THEOP& comp)
+NodesToSolver::processArith (bool_node &node, THEOP comp)
 {    
 	bool_node* mother = node.mother;
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
