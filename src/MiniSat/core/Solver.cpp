@@ -1557,6 +1557,10 @@ lbool Solver::solve(const vec<Lit>& assumps)
             ok = false;
     }
 
+	for (int i = 0; i < sins.size(); ++i) {
+		sins[i]->finalize();
+	}
+
     cancelUntil(0);
     return status;
 }

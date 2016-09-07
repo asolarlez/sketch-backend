@@ -104,6 +104,11 @@ public:
 	virtual void newInstance() {
 
 	}
+
+	virtual void finalize() {
+
+	}
+
 	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
 		return dopt->addGT(params[0], dopt->getCnode(theta));
 	}

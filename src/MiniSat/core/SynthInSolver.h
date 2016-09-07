@@ -130,6 +130,13 @@ namespace MSsolverNS {
 		*/
 		virtual void newInstance() = 0;
 
+
+		/*
+		Finished solving, get ready to generate.
+		*/
+		virtual void finalize() = 0;
+
+
 		/*
 		params are the inputs to the generator, and the function should use the DagOptim to add 
 		the necessary nodes to the dag.
@@ -146,7 +153,7 @@ namespace MSsolverNS {
 
 	class SynthInSolver {
 		vec<int> tmpbuf;
-		InputMatrix inputOutputs;		
+		InputMatrix inputOutputs;
 		Synthesizer* s;
 		int maxlevel;
 		int id;
@@ -172,6 +179,11 @@ namespace MSsolverNS {
 		int newInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
 			s->newInstance();
 			return inputOutputs.newInstance(inputs, outputs);
+		}
+
+
+		void finalize() {
+			s->finalize();
 		}
 
 		void backtrack(int level) {
