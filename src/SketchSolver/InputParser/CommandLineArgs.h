@@ -87,6 +87,7 @@ struct CommandLineArgs{
   double sparseArray;
   bool randomInlining;
   float epsilon;
+  string erSimEvalFName;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -163,6 +164,7 @@ struct CommandLineArgs{
 	sparseArray = -1;
     randomInlining = false;
 	epsilon = 0.0000001;
+	erSimEvalFName = "";
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -459,7 +461,13 @@ struct CommandLineArgs{
 	      input_idx = ii+2;
 		  continue;
 	    }
-
+		if(string(argv[ii]) == "--er-simeval-file"){
+			Assert(ii<(argc-1), "--er-simeval-file needs an extra parameter");
+			erSimEvalFName = argv[ii+1];
+			cout<<"ERSYNTH SimEval file added: " << erSimEvalFName<<endl;
+			input_idx = ii+2;
+		  	continue;
+		}
 		if( string(argv[ii]) == "-timeout" ){
 	      Assert(ii<(argc-1), "-timeout needs an extra parameter");
 	      timeout = atoi(argv[ii+1]);
