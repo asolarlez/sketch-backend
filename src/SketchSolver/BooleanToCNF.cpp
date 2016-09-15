@@ -2882,10 +2882,10 @@ public:
 	            }
 	            int val = eval[tupid][attr][simfn];
 	            if (out == 1) { //add it to atmost computation
-	                if (val < atmost) { atmost = val; amid = i; }
+	                if (val <= atmost) { atmost = val; amid = i; }
 	            }
 	            else {//add it to atleast computation
-	                if (val > atleast) { atleast = val+1; alid = i; }
+	                if (val >= atleast) { atleast = val+1; alid = i; }
                     //theta has to be at least val + 1 for this to be a negative example
 	            }
 	        }
