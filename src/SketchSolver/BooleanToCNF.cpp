@@ -2894,16 +2894,18 @@ public:
 	            return true;
 	        }
 	        else {
-				if (amid != -1) {
-					conflictIds.insert(amid);
+				if (amid == -1) {
+                    theta= atleast;
+					return true;
 				}
-				if (alid != -1) {
-					conflictIds.insert(alid);
+				if (alid == -1) {
+					theta= atmost;
+					return true;
 				}
 				//auto cpair = make_pair(gtid,ltid);
 				//conflictPairs[cpair].insert(simfn);
-				//conflictIds.insert(gtid);
-                //conflictIds.insert(ltid);
+				conflictIds.insert(amid);
+                conflictIds.insert(alid);
 				/*conflict.push(im.valueid(gtid, tupidin));
 	            conflict.push(im.valueid(gtid, attrin));
 	            conflict.push(im.valueid(gtid, outpt));
