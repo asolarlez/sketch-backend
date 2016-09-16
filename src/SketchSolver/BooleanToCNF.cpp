@@ -130,6 +130,8 @@ class ERAtomSyn : public Synthesizer {
 public:
     map < int , map < int, map < int , int > > > eval; //(int tupid, int attr, int simfn)
     set < int > simFns;
+    vector < int > finalAttrs;
+    vector < int > finalTupids;
     void addEval(int tupid, int attr, int simfn, int val){
         if (eval.find(tupid) == eval.end()){
             map < int, map < int , int > > masv;
@@ -2830,6 +2832,16 @@ public:
 	}
     
     virtual void finalize() {
+        //Called after inout matrix is final but before it is destroyed
+        InputMatrix& im = *inout;
+        finalAttrs.clear();
+        finalTupids.clear();
+        for (int i = 0; i < inout->getNumInstances(); ++i) {
+            int tupid = im.getVal(i, tupidin);
+            int attr = im.getVal(i, attrin);
+            finalAttrs.push_back(attr);
+            finalTupids.push_back(tupid);
+        }
 
     }
     
@@ -2983,6 +2995,8 @@ public:
         }*/
         //map < int , map < int, map < int , int > > > eval; //(int tupid, int attr, int simfn)
         bool_node* dfun = dopt->getCnode(-1);
+        //#define FULLTABLE 1
+        #ifdef FULLTABLE
         for (auto tupiditr: eval){
         	int tupid = tupiditr.first;
         	for(auto attritr: tupiditr.second){
@@ -2991,6 +3005,15 @@ public:
         		dfun = getITE(tupid,attr,dfun,dopt,params);
         	}
         }
+        #else
+        //Keeping only attr, tupid entries from the matrix
+        int Nattr = finalAttrs.size();
+        for(int i=0;i<Nattr;i++){
+            int attr = finalAttrs[i];
+            int tupid = finalTupids[i];
+            dfun = getITE(tupid,attr,dfun,dopt,params);
+        }
+        #endif
         return dopt->addGE(dfun, dopt->getCnode(theta));
         
 	}
