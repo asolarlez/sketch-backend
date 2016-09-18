@@ -1380,25 +1380,7 @@ class CONST_node: public bool_node{
     int getVal() const { return v.val; }
     bool isFloat() const { return !isInt; }
     double getFval() const { return v.fval; }
-    static long long int code(double d){
-        if(d<1e-100 && d > -1e-100){
-            return 0;
-        }
-        if(d>0.0){
-            double lg = log10(d);
-            return (((long long int)(lg*100000000))<<2 & (-1l)) | 1;
-        }else{
-            double lg = log10(-d);
-            return ((long long int)(lg*100000000))<<2 | 3;
-        }
-    }
-    long long int getCode() const {
-        if(isInt){
-            return v.val <<1;
-        }else{
-            return code(v.fval);
-        }
-    }
+    
     
     string get_name() const{
         stringstream str;

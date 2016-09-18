@@ -504,7 +504,7 @@ void DagOptim::visit( CTRL_node& node ){
 }
 
 void DagOptim::visit( CONST_node& node ){
-	long long int val = node.getCode();	
+	long long int val = getCode(node);	
 	if( cnmap.find(val) == cnmap.end() ){
 		cnmap[val] = &node;
 		rvalue = &node;
@@ -1001,14 +1001,14 @@ void DagOptim::visit( TUPLE_CREATE_node& node) {
 
 void DagOptim::visit( TUPLE_R_node& node){
     
-    if(!(node.mother->getOtype()->isTuple)){
-        rvalue = getCnode(0);
+    if(!(node.mother->getOtype()->isTuple)){		
+		rvalue = getZero(&node);
         return;
     }
   if (node.depth == -1) {
     int mdepth = node.mother->depth;
     if (mdepth == 0) { // mother is null
-      rvalue = getCnode(0);
+      rvalue = getZero(&node);
       return;
     } else if (mdepth > 0) {
       node.depth = mdepth - 1;
@@ -1114,8 +1114,8 @@ void DagOptim::visit( TUPLE_R_node& node){
                     
                     ARRACC_node* an = new ARRACC_node();
                     an->mother = optAdd(eq_node);
-                    if (i == size - 1) {
-                        an->multi_mother.push_back(getCnode(0));
+                    if (i == size - 1) {						
+                        an->multi_mother.push_back(getZero(&node));
                     } else {
                         an->multi_mother.push_back(curr);
                     }
@@ -1987,7 +1987,7 @@ void DagOptim::visit( ARRACC_node& node ){
 		if(val < node.multi_mother.size()){
 			rvalue = node.multi_mother[val];
 		}else{
-			rvalue = getCnode(0);
+			rvalue = getZero(&node);
 		}
         
 		return;
@@ -2037,7 +2037,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				return;	
 			}else{
 				if( isConst(bn) &&  getIval( bn ) == 0){
-					rvalue = getCnode(0);
+					rvalue = getZero(&node);
 					return;
 				}else{
 					
