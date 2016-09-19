@@ -1382,7 +1382,7 @@ class CONST_node: public bool_node{
     double getFval() const { return v.fval; }
     static long long int code(double d){
         if(d<1e-100 && d > -1e-100){
-            return 0 | 1;
+            return 0;
         }
         if(d>0.0){
             double lg = log10(d);
