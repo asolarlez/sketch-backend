@@ -125,10 +125,13 @@ class ERAtomSyn : public Synthesizer {
 	const int tupidin = 0;
     const int attrin = 1;
     const int outpt = 2;
-        
+    const int MaxTheta = 1000; //3 precision after decimal
+    const int MinTheta = 0; //positive values allowed
 public:
     map < int , map < int, map < int , int > > > eval; //(int tupid, int attr, int simfn)
     set < int > simFns;
+    vector < int > finalAttrs;
+    vector < int > finalTupids;
     void addEval(int tupid, int attr, int simfn, int val){
         if (eval.find(tupid) == eval.end()){
             map < int, map < int , int > > masv;
@@ -2829,9 +2832,28 @@ public:
 	}
     
     virtual void finalize() {
+        //Called after inout matrix is final but before it is destroyed
+        InputMatrix& im = *inout;
+        finalAttrs.clear();
+        finalTupids.clear();
+        for (int i = 0; i < inout->getNumInstances(); ++i) {
+            int tupid = im.getVal(i, tupidin);
+            int attr = im.getVal(i, attrin);
+            finalAttrs.push_back(attr);
+            finalTupids.push_back(tupid);
+        }
 
     }
     
+    void addConflicts(set< int > &conflictIds, InputMatrix& im ){
+        for(auto conflictId: conflictIds){
+			//cout<<"("<<im.getVal(conflictId, tupidin)<<","<<im.getVal(conflictId, attrin)<<") ";
+			conflict.push(im.valueid(conflictId, tupidin));
+            conflict.push(im.valueid(conflictId, attrin));
+            conflict.push(im.valueid(conflictId, outpt));
+		}
+    }
+
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
 	virtual bool synthesis() {
 		conflict.clear();
@@ -2859,10 +2881,10 @@ public:
 
         for (auto sfn:simFns){
         	simfn = sfn;
-        	int gtmin = 1000000;
-	        int gtid = -1;
-	        int ltmax = -10000000;
-	        int ltid = -1;
+        	int atmost = MaxTheta;
+	        int amid = -1;
+	        int atleast = MinTheta;
+	        int alid = -1;
 	        for (int i = 0; i < inout->getNumInstances(); ++i) {
 	            int out = im.getVal(i, outpt);
 	            int tupid = im.getVal(i, tupidin);
@@ -2871,30 +2893,31 @@ public:
 	                continue;
 	            }
 	            int val = eval[tupid][attr][simfn];
-	            if (out == 1) { //add it to gtmin computation
-	                if (val < gtmin) { gtmin = val; gtid = i; }
+	            if (out == 1) { //add it to atmost computation
+	                if (val <= atmost) { atmost = val; amid = i; }
 	            }
-	            else {//add it to ltmax computation
-	                if (val > ltmax) { ltmax = val; ltid = i; }
+	            else {//add it to atleast computation
+	                if (val >= atleast) { atleast = val+1; alid = i; }
+                    //theta has to be at least val + 1 for this to be a negative example
 	            }
 	        }
-	        if (ltmax < gtmin) {
-	            theta = (ltmax + gtmin) / 2;
+	        if (atleast <= atmost) {
+	            theta = (atleast + atmost) / 2;
 	            return true;
 	        }
 	        else {
-				if (gtid == -1) {
-					theta = ltmax + 1;
+				if (amid == -1) {
+                    theta= atleast;
 					return true;
 				}
-				if (ltid == -1) {
-					theta = gtmin - 1;
+				if (alid == -1) {
+					theta= atmost;
 					return true;
 				}
 				//auto cpair = make_pair(gtid,ltid);
 				//conflictPairs[cpair].insert(simfn);
-				conflictIds.insert(gtid);
-                conflictIds.insert(ltid);
+				conflictIds.insert(amid);
+                conflictIds.insert(alid);
 				/*conflict.push(im.valueid(gtid, tupidin));
 	            conflict.push(im.valueid(gtid, attrin));
 	            conflict.push(im.valueid(gtid, outpt));
@@ -2912,13 +2935,9 @@ public:
 			conflictIds.insert(cpair.first.second);
 		}*/
 		//cout<<"Added Conflicts:"<<conflictIds.size()<<endl;
-		for(auto conflictId: conflictIds){
-			//cout<<"("<<im.getVal(conflictId, tupidin)<<","<<im.getVal(conflictId, attrin)<<") ";
-			conflict.push(im.valueid(conflictId, tupidin));
-            conflict.push(im.valueid(conflictId, attrin));
-            conflict.push(im.valueid(conflictId, outpt));
-		}
+		
 		//cout<<endl;
+        addConflicts(conflictIds,im);
 		return false;
 
 	}
@@ -2976,6 +2995,8 @@ public:
         }*/
         //map < int , map < int, map < int , int > > > eval; //(int tupid, int attr, int simfn)
         bool_node* dfun = dopt->getCnode(-1);
+        //#define FULLTABLE 1
+        #ifdef FULLTABLE
         for (auto tupiditr: eval){
         	int tupid = tupiditr.first;
         	for(auto attritr: tupiditr.second){
@@ -2984,6 +3005,15 @@ public:
         		dfun = getITE(tupid,attr,dfun,dopt,params);
         	}
         }
+        #else
+        //Keeping only attr, tupid entries from the matrix
+        int Nattr = finalAttrs.size();
+        for(int i=0;i<Nattr;i++){
+            int attr = finalAttrs[i];
+            int tupid = finalTupids[i];
+            dfun = getITE(tupid,attr,dfun,dopt,params);
+        }
+        #endif
         return dopt->addGE(dfun, dopt->getCnode(theta));
         
 	}

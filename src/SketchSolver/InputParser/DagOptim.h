@@ -536,6 +536,16 @@ public:
 	bool_node*  addLE(bool_node* mother, bool_node* father);
 	bool_node*  addGT(bool_node* mother, bool_node* father);
 
+
+
+	int getCode(CONST_node& node) {
+		if (node.isFloat()) {
+			return (floats.getIdx(node.getFval()) << 1) | 1;
+		}else {
+			return node.getVal() << 1;
+		}
+	}
+
 	CONST_node* getZero(bool_node* node) {
 		if (isFloat(node)) {
 			return getCnode(0.0);
@@ -594,6 +604,8 @@ inline
 bool DagOptim::isFloat(const bool_node* n1) {
 	return n1->getOtype() == OutType::FLOAT;
 }
+
+
 
 inline
 bool DagOptim::isConst(const bool_node* n1){

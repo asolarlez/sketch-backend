@@ -427,7 +427,11 @@ void NodeEvaluator::visit( CONST_node& node ){
 }
 
 void NodeEvaluator::visit( LT_node& node ){
-	setbn(node, i(*node.mother) < i(*node.father));
+	if (node.mother->getOtype() == OutType::FLOAT) {
+		setbn(node, floats(i(*node.mother)) < floats(i(*node.father)));
+	} else {
+		setbn(node, i(*node.mother) < i(*node.father));
+	}	
 }
 
 
