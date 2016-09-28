@@ -175,7 +175,8 @@ class bool_node{
     virtual void replace_parent(const bool_node * oldpar, bool_node* newpar);
     virtual void outDagEntry(ostream& out) const;
     virtual void addToParents();
-    
+    virtual vector<bool_node*> parents();
+  
     
     virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
     virtual void redirectPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, childset& tchild);
@@ -463,6 +464,7 @@ class arith_node: public bool_node{
 	virtual void outDagEntry(ostream& out)const;
 	void set_layer(bool isRecursive);
 	virtual void addToParents();
+  virtual vector<bool_node*> parents();
 	virtual void addToParents(bool_node* only_thisone);
 	virtual void redirectParentPointers(BooleanDAG& oribdag, const vector<const bool_node*>& bdag, bool setChildrn, bool_node* childToInsert);
 	virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
@@ -729,9 +731,9 @@ class TUPLE_R_node: public bool_node{
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::BOOL){
-            return ot;
-        }
+       if(ot == OutType::BOOL || ot == OutType::INT){
+        return OutType::BOOL;
+       }
        Assert(ot->isTuple && idx >=0, "LWEKY");
        otype = ((Tuple*)ot)->entries[idx];
        Assert(otype != NULL, "dfq");
@@ -931,15 +933,15 @@ class CTRL_node: public INTER_node{
   bool spConcretize;
     
 	public:
-    bool isTuple;
+    bool isFloat;
     string tupleName;
     bool spAngelic;
     int max;
     vector<string> parents;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1){  if(toMinimize){ this->kind = MINIMIZE;}  isTuple = false; }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1) {  this->kind = kind_; isTuple = false;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), isTuple(bn.isTuple), tupleName(bn.tupleName), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max) {
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false){  if(toMinimize){ this->kind = MINIMIZE;} }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false) {  this->kind = kind_;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -959,10 +961,9 @@ class CTRL_node: public INTER_node{
   bool is_sp_concretize() {
     return spConcretize;
   }
-    void setTuple (const string& name) {
-        tupleName = name;
-        isTuple = true;
-    }
+  void setFloat() {
+    isFloat = true;
+  }
 	bool get_toMinimize() const {
 		return (kind & MINIMIZE) != 0;
 	}
@@ -1007,10 +1008,12 @@ class CTRL_node: public INTER_node{
 		return arrSz >= 0;
 	}
 	OutType* getOtype() const {
+    if (isFloat) {
+      return OutType::FLOAT; // TODO: float array holes is not yet supported
+    }
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
-        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){

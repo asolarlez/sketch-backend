@@ -1108,10 +1108,6 @@ NodesToSolver::visit (SRC_node &node)
 		Dout( cout << " input " << node.get_name () << " = " << node_ids[node.id] << endl );
     } else {
       
-      if (node.isTuple) {
-        Assert(false, "Not possible");
-      } else {
-      
 		int arrSz = node.getArrSz();
 		node_ids[node.id] = dir.getArr (node.get_name(), 0);
 		//This could be removed. It's ok to setSize when get_nbits==1.		
@@ -1134,7 +1130,7 @@ NodesToSolver::visit (SRC_node &node)
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
 	      << "  " << &node << endl);
     }
-    }
+    
     // for input arrays, add the default value (out of bound) to be 0, if not present already
     node_ids[node.id].addArrDefault(YES, 0);
 }
@@ -1228,29 +1224,25 @@ NodesToSolver::visit (CTRL_node &node)
     }else{
 		Tvalue & nvar = node_ids[node.id];
 		if(node.get_Angelic()){
-      if (node.isTuple) {
-        Assert(false, "Not possible");
-        
-      } else {
-        // BUGFIX: Issue #5
-        // when node is an array, need to create array
-        const int arrSz = node.getArrSz();
-        //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
-        if(arrSz<0){
-          nvar = dir.newAnonymousVar(nbits);
-          nvar.setSize(nbits);
-          if (nbits > 1) {
-            nvar.makeSparse(dir);
-          }
-        }else{
-          const int totbits = nbits*arrSz;
-          nvar = dir.newAnonymousVar(totbits);
-          nvar.setSize(totbits);
-          nvar.makeArray(dir, nbits, arrSz);
+      // BUGFIX: Issue #5
+      // when node is an array, need to create array
+      const int arrSz = node.getArrSz();
+      //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
+      if(arrSz<0){
+        nvar = dir.newAnonymousVar(nbits);
+        nvar.setSize(nbits);
+        if (nbits > 1) {
+          nvar.makeSparse(dir);
         }
+      }else{
+        const int totbits = nbits*arrSz;
+        nvar = dir.newAnonymousVar(totbits);
+        nvar.setSize(totbits);
+        nvar.makeArray(dir, nbits, arrSz);
       }
+      
 		}else{
-			nvar = dir.getControl(&node);			
+			nvar = dir.getControl(&node);
 		}		
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;
@@ -1401,22 +1393,78 @@ bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 }
 
 
+void NodesToSolver::preprocessUfun(UFUN_node& node) {
+  bool isVerification = dir.getMng().isNegated();
+  
+  
+  string tuple_name = node.getTupleName();
+  Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+  
+  if (tuple_type->entries.size() == 0) {
+    Tvalue& outvar = node_ids[node.id];
+    outvar = -YES;
+    return;
+  }
+  int nbits = tmpdag->getIntSize();
+  
+  int nouts = tuple_type->entries.size();
+  vector<Tvalue> nvars(nouts);
+  int totbits = 0;
+  for (int i = 0; i<nouts; ++i) {
+    OutType* ttype = tuple_type->entries[i];
+    stringstream sstr;
+    sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
+    bool isArr = ttype->isArr;
+    bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+    int cbits = isBool ? 1 : nbits;
+    
+    if (isVerification) {
+      nvars[i] = dir.getArr(sstr.str(), 0);
+    } else {
+      nvars[i] = dir.newAnonymousVar(cbits);
+    }
+    
+    if (isArr || !isBool) {
+      if (isArr) {
+        Assert(isVerification, "NONONO");
+        int arrsz = dir.getArrSize(sstr.str());
+        nvars[i].setSize(arrsz);
+        nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
+      }
+      else {
+        nvars[i].setSize(cbits);
+        nvars[i].makeSparse(dir);
+      }
+      totbits += nvars[i].num_ranges.size();
+    }
+    else {
+      totbits += 1;
+    }
+  }
+  ufunVarsMap[node.get_ufname()] = nvars;
+  Tvalue& outvar = node_ids[node.id];
+  vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
+  int outid = tpl_store.size();
+  tpl_store.push_back(new_vec);
+  for (int i = 0; i<nouts; ++i) {
+    (*new_vec)[i] = nvars[i];
+  }
+  outvar.makeIntVal(YES, outid);
+}
 
 void NodesToSolver::visit( UFUN_node& node ){
-	
-	if (checkKnownFun(node)) {
-		return;
-	}
-
-	bool isVerification = dir.getMng().isNegated();
+  
+  if (checkKnownFun(node)) {
+    return;
+  }
+  
+  bool isVerification = dir.getMng().isNegated();
 
 
 	string tuple_name = node.getTupleName();
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
 
 	if (tuple_type->entries.size() == 0) {
-		Tvalue& outvar = node_ids[node.id];
-		outvar = -YES;
 		return;
 	}
 
@@ -1425,45 +1473,22 @@ void NodesToSolver::visit( UFUN_node& node ){
 	for (int i = 0; i<node.multi_mother.size(); ++i) {
 		params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
 	}
+  vector<Tvalue> nvars = ufunVarsMap[node.get_ufname()];
+  int totbits = 0;
+  int nouts = nvars.size();
+  for (int i = 0; i<nouts; ++i) {
+    OutType* ttype = tuple_type->entries[i];
+    bool isArr = ttype->isArr;
+    bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
+    
+    if (isArr || !isBool) {
+      totbits += nvars[i].num_ranges.size();
+    }
+    else {
+      totbits += 1;
+    }
+  }
 
-	int nbits = tmpdag->getIntSize();
-
-	int nouts = tuple_type->entries.size();
-	vector<Tvalue> nvars(nouts);
-	int totbits = 0;
-	for (int i = 0; i<nouts; ++i) {
-		OutType* ttype = tuple_type->entries[i];
-		stringstream sstr;
-		sstr << node.get_ufname() << "_" << node.get_uniquefid() << "_" << i;
-		bool isArr = ttype->isArr;
-		bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-		int cbits = isBool ? 1 : nbits;
-
-		if (isVerification) {
-			nvars[i] = dir.getArr(sstr.str(), 0);
-		} else {
-			nvars[i] = dir.newAnonymousVar(cbits);
-		}
-
-		if (isArr || !isBool) {
-			if (isArr) {
-				Assert(isVerification, "NONONO");
-				int arrsz = dir.getArrSize(sstr.str());
-				nvars[i].setSize(arrsz);
-				nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
-			}
-			else {
-				nvars[i].setSize(cbits);
-				nvars[i].makeSparse(dir);
-			}
-			totbits += nvars[i].num_ranges.size();
-		}
-		else {
-			totbits += 1;
-		}
-	}
-
-	
 	if(isVerification){
 		//This means you are in the checking phase.
 
@@ -1511,15 +1536,6 @@ void NodesToSolver::visit( UFUN_node& node ){
 	}else{		
 		newSynthesis(node.get_ufname(), node.getTupleName(), params, nvars, dir);
 	}
-
-	Tvalue& outvar = node_ids[node.id];
-	vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
-	int outid = tpl_store.size();
-	tpl_store.push_back(new_vec);
-	for (int i = 0; i<nouts; ++i) {
-		(*new_vec)[i] = nvars[i];
-	}
-	outvar.makeIntVal(YES, outid);
 
 
 /*
@@ -2368,7 +2384,7 @@ void NodesToSolver::regTuple(vector<Tvalue>* new_vec, Tvalue& nvar) {
 	if (tplcache.condAdd(ts.c_str(), ts.size(), id, oldid)) {
 		delete new_vec;
 		nvar.makeIntVal(YES, oldid);
-		cout << "saved " << ts << endl;
+		//cout << "saved " << ts << endl;
 	}
 	else {
 		tpl_store.push_back(new_vec);
@@ -2634,6 +2650,14 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	stopAddingClauses = false;
 
 	bool isNegated = dir.getMng().isNegated();
+  // Preprocess synth ufun nodes to create tmp out variables
+  for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+    bool_node* node = *node_it;
+    if (node->type == INTER_node::UFUN) {
+      preprocessUfun((*dynamic_cast<UFUN_node*>(node)));
+    }
+  }
+  
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
 	//		if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;

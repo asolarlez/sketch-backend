@@ -257,12 +257,17 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		}
 		
 	}
-	
 	//spec->repOK();
 	//sketch->repOK();
     Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
 
-	if(false){
+  if (params.numericalSolver) {
+    // Abstract the numerical part from the dag
+    // TODO: what is the best place to have this
+    abstractNumericalPart(*sketch);
+  }
+  
+  if(false){
 		/* Eliminates uninterpreted functions */
         DagElimUFUN eufun;
 		eufun.process(*spec);
@@ -283,12 +288,12 @@ can only call them with the parameters used in the spec */
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
     spec->makeMiter(sketch);
 	BooleanDAG* result = spec;
-    
 	
 	if(params.verbosity > 6){ cout<<"after Creating Miter: Problem nodes = "<<result->size()<<endl; }
 		
 
-	return runOptims(result);
+	result = runOptims(result);
+  return result;
 }
 
 bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes, bool ufun) {
@@ -675,7 +680,7 @@ int InterpreterEnvironment::doallpairs(){
 		for(int i=0; i<spskpairs.size(); ++i){
 			hardcoder.setCurHarness(i);
 			try{
-			BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
+        BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");				
@@ -864,3 +869,119 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}
 	return result;
 }
+
+void abstractChild(BooleanDAG& dag, BooleanDAG& dagclone, bool_node* cnode, UFUN_node* unode, vector<bool_node*>& newnodes, set<CTRL_node*>& seenCtrlNodes, set<bool_node*>& seenFunInputs, vector<OutType*>& rettypes, set<bool_node*>& funNodes, TUPLE_CREATE_node* funOutput) {
+  seenFunInputs.insert(cnode);
+  for(child_iter child_it = cnode->children.begin(); child_it != cnode->children.end(); ++child_it){
+    bool_node* child = *child_it;
+    int childid = child->id;
+    //cout << child->lprint() << endl;
+    OutType* childType = child->getOtype();
+    vector<bool_node*> parents = child->parents();
+    
+    for(std::vector<bool_node*>::iterator node_it = parents.begin(); node_it != parents.end(); ++node_it) {
+      bool_node* parent = *node_it;
+      if (parent->type == INTER_node::CTRL && parent->getOtype() == OutType::FLOAT) {
+        funNodes.insert(dagclone[parent->id]);
+        seenCtrlNodes.insert(dynamic_cast<CTRL_node*>(parent));
+      } else if (seenFunInputs.find(parent) == seenFunInputs.end()) {
+        SRC_node* src =  new SRC_node("PARAM_" + std::to_string(seenFunInputs.size()));
+        OutType* type = parent->getOtype();
+        int nbits = 0;
+        if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+          nbits = 1;
+        }
+        if (type == OutType::INT || type == OutType::INT_ARR) {
+          nbits = 2;
+        }
+        
+        if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+        src->set_nbits(nbits);
+        if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+          int sz = 1 << PARAMS->NINPUTS;
+          src->setArr(sz);
+        }
+        funNodes.insert(src);
+        dagclone[childid]->replace_parent(dagclone[parent->id], src);
+        unode->multi_mother.push_back(parent);
+        seenFunInputs.insert(parent);
+      }
+      
+    }
+    funNodes.insert(dagclone[childid]);
+    child->dislodge();
+    if (childType == OutType::FLOAT) {
+      abstractChild(dag, dagclone, child, unode, newnodes, seenCtrlNodes, seenFunInputs, rettypes, funNodes, funOutput);
+    } else {
+      funOutput->multi_mother.push_back(dagclone[childid]);
+      TUPLE_R_node* tnode = new TUPLE_R_node();
+      tnode->idx = rettypes.size();
+      tnode->mother = unode;
+      tnode->addToParents();
+      newnodes.push_back(tnode);
+      dag.replace(childid, tnode);
+      rettypes.push_back(childType);
+    }
+  }
+  dag.remove(cnode->id);
+}
+
+
+void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
+  vector<bool_node*> nodes = dag.getNodesByType(bool_node::CTRL);
+  int ct = 0;
+  vector<bool_node*> newnodes;
+  set<CTRL_node*> seenCtrlNodes;
+  DagOptim op(dag, floats);
+  BooleanDAG* dagclone = dag.clone();
+  for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
+    CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
+    if (seenCtrlNodes.find(cnode) == seenCtrlNodes.end()) {
+      seenCtrlNodes.insert(cnode);
+      if (cnode->getOtype() == OutType::FLOAT) {
+        vector<OutType*> rettypes;
+        string fname = "_GEN_NUM_SYNTH_" + std::to_string(ct);
+        ct++;
+        UFUN_node* unode = new UFUN_node(fname);
+        unode->outname = "_p_out_" + fname;
+        unode->set_tupleName(fname);
+        unode->set_nbits(0);
+        unode->ignoreAsserts = true; // TODO: is this ok?
+        bool_node* pc = op.getCnode(1); // TODO: fix this
+        //newnodes.push_back(pc);
+        unode->mother = pc;
+        BooleanDAG* funDag = new BooleanDAG(fname); // store the abstraction in this dag
+        TUPLE_CREATE_node* output = new TUPLE_CREATE_node();
+        output->setName(fname);
+        set<bool_node*> seenFunInputs;
+        set<bool_node*> funNodes;
+        abstractChild(dag, *dagclone, cnode, unode, newnodes, seenCtrlNodes, seenFunInputs, rettypes, funNodes, output);
+        vector<bool_node*> v(funNodes.begin(), funNodes.end());
+        funDag->addNewNodes(v);
+        output->addToParents();
+        funDag->addNewNode(output);
+        funDag->create_outputs(-1, output);
+        funDag->registerOutputs();
+        OutType::makeTuple(fname, rettypes, -1);
+        unode->addToParents();
+        newnodes.push_back(unode);
+        funDag->cleanup();
+        funDag->cleanup_children();
+        numericalAbsMap[fname] = funDag;
+        //funDag->lprint(cout);
+        //funDag->repOK();
+      }
+    }
+  }
+  dag.addNewNodes(newnodes);
+  newnodes.clear();
+  dag.removeNullNodes();
+  dag.cleanup();
+  //dag.lprint(cout);
+  //dag.repOK();
+  //dag.lprint(cout);
+  
+  finder->setNumericalAbsMap(numericalAbsMap);
+  
+}
+

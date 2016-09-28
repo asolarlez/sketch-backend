@@ -1717,9 +1717,9 @@ bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
 bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 	
     
-		if( isConst(node.multi_mother[0]) ){
+		if( isIntConst(node.multi_mother[0]) ){
 			int val0 = getIval( node.multi_mother[0] );
-			if( isConst(node.multi_mother[1]) ){
+			if( isIntConst(node.multi_mother[1]) ){
                 int val1 = getIval( node.multi_mother[1] );
 				if( (val0 == 0 || val0 == 1) &&  (val1 == 0 || val1 == 1) ){
 				//We know val0 and val1 are different.
@@ -1752,7 +1752,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 
 		}//if( isConst(node.multi_mother[0]) )
     
-		if( isConst(node.multi_mother[1]) ){
+		if( isIntConst(node.multi_mother[1]) ){
             
 			int val1 = getIval( node.multi_mother[1] );	
 			if(val1 == 1 && node.multi_mother[0]->getOtype()==OutType::BOOL && ALTER_ARRACS){
@@ -1793,7 +1793,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
            
 				if(node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL){
                    
-					if(isConst(eqmom->mother) || isConst(eqmom->father)){
+					if(isIntConst(eqmom->mother) || isIntConst(eqmom->father)){
 						bool_node* mother = NULL;
 						int C;
 						if(isConst(eqmom->mother)){
@@ -2340,7 +2340,7 @@ void DagOptim::visit( ARRASS_node& node ){
 	}
 
 
-	if(node.mother->type == bool_node::PLUS && (isConst(node.mother->mother) || isConst(node.mother->father)  )){
+	if(node.mother->type == bool_node::PLUS && (isIntConst(node.mother->mother) || isIntConst(node.mother->father)  )){
 		bool_node* n1 = node.mother;		
 		bool_node* nm;
 		int C;
@@ -2388,7 +2388,7 @@ void DagOptim::visit( ARRASS_node& node ){
 
 	}
 	
-	if(isConst( node.multi_mother[0] ) && isConst( node.multi_mother[1] )){
+	if(isIntConst( node.multi_mother[0] ) && isIntConst( node.multi_mother[1] )){
        
 		int m0 = getIval(node.multi_mother[0]);
 		int m1 = getIval(node.multi_mother[1]);

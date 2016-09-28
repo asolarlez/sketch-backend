@@ -258,4 +258,13 @@ public:
 	int getValue(bool_node* bn){
 		return i(*bn);
 	}
+  
+  vector<int> getTuple(int i) {
+    cptuple* tup = tuplevalues[i];
+    vector<int> res;
+    for (int k = 0; k < tup->size(); k++) {
+      res.push_back(tup->vv[k]);
+    }
+    return res;
+  }
 };

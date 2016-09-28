@@ -46,6 +46,7 @@ class NodesToSolver : public NodeVisitor {
 	vector<vector<Ufinfo> > ufinfos;
 	void populateGuardedVals(Tvalue& oval, map<int, int>& numbers);
 	void regTuple(vector<Tvalue>* new_vec, Tvalue& nvar);
+  map<string, vector<Tvalue>> ufunVarsMap;
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
@@ -175,7 +176,7 @@ public:
  void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
 
  void newSynthesis(const string& name, const string& synthname, vector<Tvalue>& params, vector<Tvalue>& nvars, SolverHelper& dir);
-
+  void preprocessUfun(UFUN_node& node);
   static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
 
 };

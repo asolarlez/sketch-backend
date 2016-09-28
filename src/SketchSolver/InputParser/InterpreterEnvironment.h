@@ -74,7 +74,7 @@ class InterpreterEnvironment
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
 	FloatManager floats;
-	
+	map<string, BooleanDAG*> numericalAbsMap;
 
 	string findName(){
 		stringstream s;
@@ -142,6 +142,7 @@ public:
 		delete solver;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
+    finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
@@ -236,7 +237,8 @@ public:
 		functionMap[s] = dag;
 	}
     
-    void replaceSrcWithTuple(BooleanDAG& dag);
-    int inlineAmnt() { return params.inlineAmnt; }
+  void replaceSrcWithTuple(BooleanDAG& dag);
+  int inlineAmnt() { return params.inlineAmnt; }
+  void abstractNumericalPart(BooleanDAG& dag);
 	virtual ~InterpreterEnvironment(void);
 };

@@ -44,7 +44,6 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 				declareControl(ctrlnode);
 			}
       if (ctrlnode->spAngelic) {
-        Assert(!ctrlnode->isTuple, "NYI");
         declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz());
       }
 
@@ -447,7 +446,9 @@ BooleanDAG* CEGISSolver::hardCodeINode(BooleanDAG* dag, VarStore& values, bool_n
 
 
 	Dout( newdag->print(cout) ); 
-	
+  DagOptim cse(*newdag, floats);
+  cse.process(*newdag);
+  newdag->cleanup();
 	if(false){
 		BackwardsAnalysis ba;
 		ba.process(*newdag);

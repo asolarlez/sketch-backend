@@ -19,6 +19,7 @@
 #include "StringHTable.h"
 #include "Tvalue.h"
 #include "SynthInSolver.h"
+#include "BooleanDAG.h"
 
 
 // #define Dout(msg) msg
@@ -49,7 +50,8 @@ class SolverHelper {
     int varCnt;
 	int lastVar;
     SATSolver& mng;
-	vector<char> tmpbuf;	
+	vector<char> tmpbuf;
+  map<string, BooleanDAG*> numericalAbsMap;
 
 	/*
 	This function is in charge of instantiating new synthesizers.
@@ -141,8 +143,9 @@ public:
 		}		 
 	    return t;
 	}
-
-    SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
+  
+  
+  SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
 	varCnt = 1;
 	YES = 0;
 	lastVar = 0;
@@ -338,6 +341,10 @@ public:
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
+  
+  void setNumericalAbsMap(map<string, BooleanDAG*> numericalAbsMap_p) {
+    numericalAbsMap = numericalAbsMap_p;
+  }
 };
 
 /*
@@ -364,7 +371,7 @@ SolverHelper::addEqualsClause (int a, int x)
 inline int
 SolverHelper::addChoiceClause (int a, int b, int c, int x)
 {
-    Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero (addChoiceClause)");
 	a = sval(a); b = sval(b); c = sval(c);
     /* Check for shortcut cases. */
     if (a == YES || b == c)
@@ -409,7 +416,7 @@ SolverHelper::addChoiceClause (int a, int b, int c, int x)
 inline int
 SolverHelper::addXorClause (int a, int b, int x)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addXorClause)");
 	a = sval(a); b = sval(b); 
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == b)
@@ -573,7 +580,7 @@ SolverHelper::addBigOrClause (int *a, int last)
 inline int
 SolverHelper::addAndClause (int a, int b, int x)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addAndClause)");
 	a = sval(a); b = sval(b);
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == -YES || b == -YES || a == -b)
@@ -607,7 +614,7 @@ SolverHelper::addAndClause (int a, int b, int x)
 inline void
 SolverHelper::addEquateClause (int a, int b)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addEquateClause)");
 
     /* Vacuously true. */
     if (a == b)
