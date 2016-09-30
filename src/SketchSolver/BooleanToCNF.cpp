@@ -389,7 +389,11 @@ public:
     vector<double> newState;
     
     for (int i = 0; i < curState.size(); i++) {
-      double c = curState[i] - 5.0 + (rand() %100)/10.0; // Randomly permutate cur value with +/- 5 (TODO: magic numbers)
+      double c = 0;
+      while(true) {
+        c = curState[i] - 5.0 + (rand() %100)/10.0; // Randomly permutate cur value with +/- 5 (TODO: magic numbers)
+        if (c >= 0.0 && c <= 32.0) break;
+      }
       newState.push_back(c);
     }
     return newState;
@@ -413,6 +417,15 @@ public:
       }
       
       eval.run(inputStore);
+      /*for (int k = 0; k < dag->size(); k++) {
+        bool_node* n = (*dag)[k];
+        cout << n->lprint() << endl;
+        if (n->type == bool_node::SRC || n->getOtype() == OutType::FLOAT) {
+          cout << fm.getFloat(eval.getValue(n)) << endl;
+        } else {
+          cout << eval.getValue(n) << endl;
+        }
+      }*/
       bool_node* output = dag->get_node("OUTPUT")->mother;
       vector<int> outputs = eval.getTuple(eval.getValue(output));
       for (int j = 0; j < outputs.size(); j++) {
@@ -458,7 +471,7 @@ public:
       allInputs.push_back(inputs);
       allOutputs.push_back(outputs);
       conflictids.push_back(i);
-      /*for (int k = 0; k < inputs.size(); k++) {
+      for (int k = 0; k < inputs.size(); k++) {
         cout << "Input" << k << ": " << fm.getFloat(inputs[k]) << endl;
       }
       for (int k = 0; k < outputs.size(); k++) {
@@ -466,14 +479,14 @@ public:
       }
       if (!notset) {
         cout << "Found a input output pair" << endl;
-      }*/
+      }
       
     }
     
     Assert(allInputs.size() == allOutputs.size(), "This should not be possible");
     
     if (allInputs.size() == 0) return true;
-    // Do simulated annealing to minimize Sum((dag(inputs, ctrls) - outputs)**2)
+    // Minimize Sum((dag(inputs, ctrls) - outputs)**2)
     
     double T = 100;
     double coolingRate = 0.01;
@@ -486,6 +499,7 @@ public:
     double curEnergy = getEnergy(curState, allInputs, allOutputs);
     
     for (int i = 0; i < NUM_STEPS; i++) {
+      cout << "state: " << curState[0] << " energy: " << curEnergy << endl;
       if (curEnergy == 0.0) break;
       vector<double> nextState = getNeighboringState(curState);
       double nextEnergy = getEnergy(nextState, allInputs, allOutputs);
