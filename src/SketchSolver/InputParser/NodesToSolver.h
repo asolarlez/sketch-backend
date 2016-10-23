@@ -32,7 +32,8 @@ class NodesToSolver : public NodeVisitor {
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
 	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out);
-	void processLT (LT_node& node);
+	template<typename EVAL>
+	void processLT (LT_node& node, EVAL eval);
 	vector<int> lgv;
     Tvalue tvYES;
     Tvalue tvOne;

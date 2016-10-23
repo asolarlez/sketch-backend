@@ -386,8 +386,8 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 	//cout << "compareArrays: cvar=" << cvar << endl;
 }
 
-
-void NodesToSolver::processLT (LT_node& node){
+template<typename EVAL>
+void NodesToSolver::processLT (LT_node& node, EVAL eval ){
 	bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 
@@ -416,12 +416,12 @@ void NodesToSolver::processLT (LT_node& node){
 	// However, they could be monotonically increasing or monotonically decreasing.
 	// So we need to check. 
 	{
-		if(mend -1 > mstart && mv[mstart].value > mv[mstart+1].value){
+		if(mend -1 > mstart && eval(mv[mstart].value) > eval(mv[mstart+1].value)){
 			inci = -1;
 			i = mend -1;
 		}
 		
-		if(fend -1> fstart && fv[fstart].value > fv[fstart+1].value){
+		if(fend -1> fstart && eval(fv[fstart].value) > eval(fv[fstart+1].value)){
 			incj = -1;
 			j = fend -1;
 		}
@@ -436,19 +436,19 @@ void NodesToSolver::processLT (LT_node& node){
 	// mv[i+(msz-1)*inci] has the biggest mother.
 	// fv[j] has the smallest father.
 	// fv[j+(fsz-1)*incj] has the biggest father.
-	if(mv[i+(msz-1)*inci].value < fv[j].value){
+	if(eval(mv[i+(msz-1)*inci].value) < eval(fv[j].value)){
 		// cout<<"!!! Saved with YES, "<<inci<<endl;
 		node_ids[node.id] = YES;
 		return;
 	}
 	//If all the mothers are >= all the fathers, just return false.
-	if(mv[i].value >= fv[j+(fsz-1)*incj].value){
+	if(eval(mv[i].value) >= eval(fv[j+(fsz-1)*incj].value)){
 		// cout<<"!!! Saved with NO, "<<incj<<endl;
 		node_ids[node.id] = -YES;
 		return;
 	}
 	//if the largest mother equals the smallest father, then it will be true except for that one case
-	if(mv[i+(msz-1)*inci].value == fv[j].value && (fsz==1 || msz==1)){
+	if(eval(mv[i+(msz-1)*inci].value) == eval(fv[j].value) && (fsz==1 || msz==1)){
 		// cout<<"!!! Saved with YES, "<<inci<<endl;
 		int out = -dir.addAndClause(mv[i+(msz-1)*inci].guard, fv[j].guard) ;
 		node_ids[node.id] = out;
@@ -470,9 +470,7 @@ void NodesToSolver::processLT (LT_node& node){
 	vector<char> fc(fval.getSize(), 'n');
 	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
 		    bool avi = i < mend && i >= mstart;
-		    bool avj = j < fend && j >= fstart;
-			int curri = avi ? mv[i].value  : -1;
-			int currj = avj ? fv[j].value  : -1;
+		    bool avj = j < fend && j >= fstart;			
 			if(!avi){
 				dir.addHelperC(cvar, -fv[j].guard);
 				j = j + incj;
@@ -483,6 +481,8 @@ void NodesToSolver::processLT (LT_node& node){
 				i = i + inci;
 				continue;
 			}
+			auto curri = eval(mv[i].value) ;
+			auto currj = eval(fv[j].value) ;
 			if((( curri < currj  ) && avi && avj)){
 				int tmpv = dir.addAndClause(mv[i].guard, fsofar);
 				cvar = dir.addOrClause(cvar, tmpv);												
@@ -1322,6 +1322,10 @@ NodesToSolver::visit(NEG_node &node)
 
 
 
+int ident(int x) {
+	return x;
+}
+
 void
 NodesToSolver::visit(LT_node &node)
 {
@@ -1329,7 +1333,12 @@ NodesToSolver::visit(LT_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectLt(node);
 #else
-	processLT(node);
+	if (node.mother->getOtype()== OutType::FLOAT) {
+		processLT(node, floats);
+	} else {
+		processLT(node, ident);
+	}
+	
 	//processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
 #endif /* HAVE_BVECTARITH */
 }

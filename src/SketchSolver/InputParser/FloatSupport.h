@@ -53,6 +53,10 @@ public:
 		return FloatFun(*this, floatfuns[name]);
 	}
 
+	float operator()(int id) {
+		return getFloat(id);
+	}
+
 	float getFloat(int id) {
 		if (id < 0) {
 			return -floats[-id];
