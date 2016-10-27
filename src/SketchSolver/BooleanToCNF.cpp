@@ -353,7 +353,8 @@ public:
 	                	break;
 			        }
 		        }
-
+		    }
+		    if(simFnWorks){
 		        if (atleast <= atmost) {
 		            theta = (atleast + atmost) / 2;
 		            return true;
