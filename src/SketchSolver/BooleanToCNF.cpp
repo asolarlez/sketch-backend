@@ -365,7 +365,7 @@ class NumericalSolver : public Synthesizer { // TODO: fix this
   int ninputs;
   int noutputs;
   int ncontrols;
-  int NUM_STEPS = 25;
+  int NUM_STEPS = 100;
   map<string, BooleanDAG*> empty;
 public:
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
@@ -427,10 +427,15 @@ public:
         }
       }*/
       bool_node* output = dag->get_node("OUTPUT")->mother;
+      vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
       vector<int> outputs = eval.getTuple(eval.getValue(output));
       for (int j = 0; j < outputs.size(); j++) {
         //cout << outputs[j] << endl;
-        energy += pow((outputs[j] - allOutputs[i][j]), 2);
+        if (outputs[j] != allOutputs[i][j]) {
+          float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother)); // TODO: this assumes all values are floats which is probably true, but still we need to check
+          float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
+          energy += pow((m1 - m2), 2);
+        }
       }
       
     }
@@ -472,10 +477,10 @@ public:
       allOutputs.push_back(outputs);
       conflictids.push_back(i);
       for (int k = 0; k < inputs.size(); k++) {
-        cout << "Input" << k << ": " << fm.getFloat(inputs[k]) << endl;
+        //cout << "Input" << k << ": " << inputs[k] << endl;
       }
       for (int k = 0; k < outputs.size(); k++) {
-        cout << "Output" << k << ": " << outputs[k] << endl;
+        //cout << "Output" << k << ": " << outputs[k] << endl;
       }
       if (!notset) {
         cout << "Found a input output pair" << endl;
@@ -488,8 +493,8 @@ public:
     if (allInputs.size() == 0) return true;
     // Minimize Sum((dag(inputs, ctrls) - outputs)**2)
     
-    double T = 100;
-    double coolingRate = 0.01;
+    double T = 10;
+    double coolingRate = 0.1;
     
     vector<double> curState;
     for (int i = 0; i < ncontrols; i++) {
@@ -499,11 +504,16 @@ public:
     double curEnergy = getEnergy(curState, allInputs, allOutputs);
     
     for (int i = 0; i < NUM_STEPS; i++) {
-      cout << "state: " << curState[0] << " energy: " << curEnergy << endl;
+      //cout << "state: " << curState[0] << " energy: " << curEnergy << endl;
       if (curEnergy == 0.0) break;
       vector<double> nextState = getNeighboringState(curState);
       double nextEnergy = getEnergy(nextState, allInputs, allOutputs);
-      if (acceptanceProb(curEnergy, nextEnergy, T) >= (rand()%10)/10) {
+      //cout << "next state: " << nextState[0] << " energy: " << nextEnergy << endl;
+      double prob = acceptanceProb(curEnergy, nextEnergy, T);
+      double randflip = (rand()%10)/10.0;
+      //cout << "prob: " << prob << " randflip: " << randflip << endl;
+      if (prob >= randflip) {
+        //cout << "Transitioning to next state" << endl;
         curState = nextState;
         curEnergy = nextEnergy;
       }
