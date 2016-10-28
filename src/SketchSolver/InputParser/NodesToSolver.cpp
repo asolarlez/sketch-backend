@@ -1796,7 +1796,7 @@ void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int 
 					break;
 				}
 				int cvar3 = dir.addChoiceClause(guard, nr1[j].guard,nr0[i].guard);
-				if(cvar3!= -YES){ ++added; out.push_back(guardedVal(cvar3, curri, idx));	}
+				if(cvar3!= -YES){ ++added; out.push_back(guardedVal(cvar3, nr0[i].value, idx));	}
 				i = ni;
 				j = nj;
 				continue;
@@ -2708,10 +2708,14 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 				
 
-		//Tvalue& tv = node_ids[(*node_it)->id];
-//		 cout<<(*node_it)->lprint()<<"--->"<<tv.getSize()<<endl;
-//		 cout<<(*node_it)->lprint()<<" -----> "<<tv<<endl;		
-//		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
+		/*Tvalue& tv = node_ids[(*node_it)->id];
+      if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
+      cout << " [ ";
+      for (int i = 0; i < tv.getSize(); i++)
+        cout << floats(tv.num_ranges[i].value) << ", ";
+      cout << " ] " << endl;
+      }*/
+      //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     		}
