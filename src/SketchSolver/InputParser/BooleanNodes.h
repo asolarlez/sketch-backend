@@ -729,8 +729,8 @@ class TUPLE_R_node: public bool_node{
         }
         
        OutType* ot = mother->getOtype();
-       if(ot == OutType::BOOL){
-            return ot;
+       if(ot == OutType::BOOL || ot == OutType::INT){
+            return OutType::BOOL;
         }
        Assert(ot->isTuple && idx >=0, "LWEKY");
        otype = ((Tuple*)ot)->entries[idx];
