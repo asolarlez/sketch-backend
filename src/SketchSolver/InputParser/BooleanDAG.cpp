@@ -494,11 +494,21 @@ void BooleanDAG::cleanUnshared(){
 
 //This routine removes nodes that do not flow to the output.
 void BooleanDAG::cleanup(){
-  //The first optimization is to remove nodes that don't contribute to the output. 	  
+  //The first optimization is to remove nodes that don't contribute to the output.
   for(int i=0; i < nodes.size(); ++i){
     nodes[i]->flag = 0;
   }
-  int idx=0;  
+  int idx=0;
+  {
+    // Need to give higher ids to black box numerical abstractions because these can sometimes create cycles in the dag
+    // So first ignore them
+    for (int i = 0; i < nodes.size(); i++) {
+      bool_node* n = nodes[i];
+      if (n->type == bool_node::UFUN && (dynamic_cast<UFUN_node*>(n))->getTupleName().find("_GEN_NUM_SYNTH") == 0) {
+        n->flag = 1;
+      }
+    }
+  }
   {
 	  vector<bool_node*>& vn = nodesByType[bool_node::ASSERT];
 	  {
@@ -512,10 +522,20 @@ void BooleanDAG::cleanup(){
 			  //}
 			  cur = cur->next;
 		  }
+    
 		  sort(vn.begin(), vn.end(), comp_id);
 	  }
   }
-  
+  {
+    // Now give higher ids to give higher ids to black box numerical abstractions
+    for (int i = 0; i < nodes.size(); i++) {
+      bool_node* n = nodes[i];
+      if (n->type == bool_node::UFUN && (dynamic_cast<UFUN_node*>(n))->getTupleName().find("_GEN_NUM_SYNTH") == 0) {
+        n->flag = 0;
+        idx = n->back_dfs(idx);
+      }
+    }
+  }
   
   for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
@@ -580,6 +600,23 @@ void BooleanDAG::cleanup(){
   }
 }
 
+/* Removes extraneous children that are not part of the dag */
+void BooleanDAG::cleanup_children() {
+  set<bool_node*> nodeset;
+  for(int i=0; i<nodes.size(); ++i){
+    if(nodes[i] != NULL){
+      nodeset.insert(nodes[i]);
+    }
+  }
+  for (int i = 0; i < nodes.size(); i++) {
+    bool_node* n = nodes[i];
+    for(child_iter child = n->children.begin(); child != n->children.end(); ++child) {
+      if (nodeset.count(*child) == 0) {
+        n->children.erase(*child);
+      }
+    }
+  }
+}
 
 
 void BooleanDAG::change_father(const string& father, const string& son){
@@ -747,12 +784,16 @@ INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_na
 	return src;
 }
 
-INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max){
-  INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);  
-  dynamic_cast<CTRL_node*>(tmp)->set_toMinimize(toMinimize);
-  if (angelic) dynamic_cast<CTRL_node*>(tmp)->set_Special_Angelic();
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max, bool isFloat){
+  INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);
+  CTRL_node* cnode = dynamic_cast<CTRL_node*>(tmp);
+  cnode->set_toMinimize(toMinimize);
+  if (angelic) cnode->set_Special_Angelic();
   if (spConcretize) {
-    dynamic_cast<CTRL_node*>(tmp)->special_concretize(max);
+    cnode->special_concretize(max);
+  }
+  if (isFloat) {
+    cnode->setFloat();
   }
   return tmp;
 }

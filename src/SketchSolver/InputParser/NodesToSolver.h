@@ -18,20 +18,28 @@ public:
 	Ufinfo(vector<Tvalue>& p) :params(p) {}
 };
 
+class NormalComp {
+public:
+		bool operator()(const int x,const int y) const { return x < y; }
+};
+
 
 // Visitor for conversion of DAG to SAT.
 class NodesToSolver : public NodeVisitor {
 	FloatManager& floats;
     const string &outname;
 	float sparseArray;
-    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown 
+    map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
-	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend);
-	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out);
-    template<typename THEOP> void processArith (bool_node &node, THEOP comp);
+  template<typename EVAL>
+	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend, EVAL eval);
+  template<typename EVAL>
+	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out, EVAL eval);
+    template<class COMPARE_KEY = NormalComp, typename THEOP> void processArith (bool_node &node, THEOP comp, COMPARE_KEY c = NormalComp());
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
-	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out);
+  template<typename EVAL>
+	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval);
 	template<typename EVAL>
 	void processLT (LT_node& node, EVAL eval);
 	vector<int> lgv;
@@ -44,8 +52,9 @@ class NodesToSolver : public NodeVisitor {
 
 	map<string, int> ufunids;
 	vector<vector<Ufinfo> > ufinfos;
-	void populateGuardedVals(Tvalue& oval, map<int, int>& numbers);
+  template <class COMPARE_KEY = NormalComp> void populateGuardedVals(Tvalue& oval, map<int, int, COMPARE_KEY>& numbers);
 	void regTuple(vector<Tvalue>* new_vec, Tvalue& nvar);
+  map<int, vector<Tvalue>> ufunVarsMap;
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;
@@ -164,18 +173,24 @@ public:
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
-	virtual void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, int idx=-1);
-	virtual void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag);
-  
-	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output);
- void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray);
- void computeMaxOrMin(const gvvec& mv,const gvvec& fv, gvvec& out, bool doMax);
- void arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& inarr, Tvalue& out);
- void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar);
+  template<typename EVAL>
+	void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, EVAL eval, int idx=-1);
+  template<typename EVAL>
+  void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag, EVAL eval);
+  template<typename EVAL>
+	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output, EVAL eval);
+  template<class COMPARE_KEY = NormalComp, typename EVAL>
+ void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output, EVAL eval, COMPARE_KEY c = NormalComp());
+ void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray, bool isFloat);
+ template<typename EVAL>
+ void computeMaxOrMin(const gvvec& mv,const gvvec& fv, gvvec& out, bool doMax, EVAL eval);
+ template<class COMPARE_KEY = NormalComp>
+  void arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& inarr, Tvalue& out, COMPARE_KEY c = NormalComp());
+ template<typename EVAL>
+ void arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar, EVAL eval);
 
  void newSynthesis(const string& name, const string& synthname, vector<Tvalue>& params, vector<Tvalue>& nvars, SolverHelper& dir);
-
+  void preprocessUfun(UFUN_node& node);
   static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, float sparseArray = -1.0);
 
 };

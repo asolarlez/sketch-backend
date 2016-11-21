@@ -269,6 +269,7 @@ public:
 		}else{
 			objs.push_back(objP(name, 5));
 			idx = objs.size()-1;
+      index[name] = idx;
 		}
 		objs[idx].setVal(val);
 	}

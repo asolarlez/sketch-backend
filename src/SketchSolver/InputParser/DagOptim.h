@@ -528,6 +528,7 @@ public:
 	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
 	bool isConst(const bool_node* n1);
 	bool isFloatConst(const bool_node* n1);
+  bool isIntConst(const bool_node* n1);
 	bool isFloat(const bool_node* n1);
 	bool getBval(const bool_node* n1);
 	int getIval(const bool_node* n1);
@@ -625,6 +626,14 @@ bool DagOptim::isFloatConst(const bool_node* n1) {
 	return false;
 }
 
+inline
+bool DagOptim::isIntConst(const bool_node* n1) {
+  if (n1->type == bool_node::CONST) {
+    return !((CONST_node*)n1)->isFloat();
+    // return true;
+  }
+  return false;
+}
 
 
 inline

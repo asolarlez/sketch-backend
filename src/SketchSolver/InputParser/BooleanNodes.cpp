@@ -269,6 +269,27 @@ void bool_node::addToParents(){
     
 }
 
+vector<bool_node*> arith_node::parents(){
+  vector<bool_node*> parents = bool_node::parents();
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+    if(*it != NULL){
+      bool_node* tmp = (*it);
+      parents.push_back(tmp);
+    }
+  }
+  return parents;
+}
+
+vector<bool_node*> bool_node::parents() {
+  vector<bool_node*> parents;
+  if (father != NULL) {
+    parents.push_back(father);
+  }
+  if (mother != NULL && father != mother) {
+    parents.push_back(mother);
+  }
+  return parents;
+}
 
 
 

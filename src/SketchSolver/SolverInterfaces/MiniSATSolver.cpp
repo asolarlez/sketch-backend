@@ -39,7 +39,7 @@ UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverH
 	int jj = 0;
 	for(int i=0; i<out.size(); ++i){
 		if(out[i].isSparse() || out[i].isArray()){
-			gvvec& gvs = out[i].num_ranges;	
+			const gvvec& gvs = out[i].num_ranges;	
 			for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
 				rv->output->lits[jj] = lfromInt(it->guard);
 				++jj;

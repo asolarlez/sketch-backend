@@ -91,7 +91,7 @@ Dllist assertions;
   //Mutators for graph creation.
   ////////////////////////////////////////////////////////////////////////
   INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1, int tupDepth = -1);
-  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1);
+  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloat = false);
 
   void growInputIntSizes();
 
@@ -128,6 +128,7 @@ Dllist assertions;
   void layer_graph();  
   void relabel();
   void cleanup(); //Sorts and cleans up the graph.
+  void cleanup_children();
   void cleanUnshared();
   void clear();
   void rename(const string& oldname,  const string& newname);

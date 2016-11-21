@@ -6,6 +6,7 @@
 #include <map>
 #include <utility>
 #include <Sort.h>
+#include <math.h>
 using namespace std;
 
 #include "BooleanToCNF.h"
@@ -13,6 +14,8 @@ using namespace std;
 #include "MiniSATSolver.h"
 #include "DagOptim.h"
 #include "CommandLineArgs.h"
+#include "VarStore.h"
+#include "NodeEvaluator.h"
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -477,14 +480,236 @@ public:
 	}
 };
 
+class NumericalSolver : public Synthesizer { // TODO: fix this
+  BooleanDAG* dag;
+  map<string, float> ctrlValMap;
+  int ninputs;
+  int noutputs;
+  int ncontrols;
+  int NUM_STEPS = 100;
+  map<string, BooleanDAG*> empty;
+public:
+  NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
+    ninputs = dag->getNodesByType(bool_node::SRC).size();
+    noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother))->multi_mother.size();
+    ncontrols = dag->getNodesByType(bool_node::CTRL).size();
+    vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+    for (int i = 0; i < ctrls.size(); i++) {
+      ctrlValMap[ctrls[i]->get_name()] = 0.0;
+    }
+  }
+  
+  double acceptanceProb(double e, double e1, double T) {
+    if (e1 < e) {
+      return 1.0;
+    }
+    return exp((e - e1)/T);
+  }
+  
+  vector<double> getNeighboringState(const vector<double>& curState) {
+    vector<double> newState;
+    
+    for (int i = 0; i < curState.size(); i++) {
+      double c = 0;
+      while(true) {
+        c = curState[i] - 5.0 + (rand() %100)/10.0; // Randomly permutate cur value with +/- 5 (TODO: magic numbers)
+        if (c >= 0.0 && c <= 32.0) break;
+      }
+      newState.push_back(c);
+    }
+    return newState;
+  }
+  
+  double getEnergy(vector<double> state, vector<vector<int>> allInputs, vector<vector<int>> allOutputs) {
+    // TODO: fix this
+    double energy = 0;
+    NodeEvaluator eval(empty, *dag, fm);
+    for (int i = 0; i < allInputs.size(); i++) {
+      VarStore inputStore;
+      // Store all inputs
+      vector<bool_node*> inputs = dag->getNodesByType(bool_node::SRC);
+      for (int j = 0; j < allInputs[i].size(); j++) {
+        inputStore.setVarVal(inputs[j]->get_name(), allInputs[i][j]);
+      }
+      // Store all controls
+      vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+      for (int j = 0; j < state.size(); j++) {
+        inputStore.setVarVal(ctrls[j]->get_name(), fm.getIdx(state[j]));
+      }
+      
+      eval.run(inputStore);
+      /*for (int k = 0; k < dag->size(); k++) {
+        bool_node* n = (*dag)[k];
+        cout << n->lprint() << endl;
+        if (n->type == bool_node::SRC || n->getOtype() == OutType::FLOAT) {
+          cout << fm.getFloat(eval.getValue(n)) << endl;
+        } else {
+          cout << eval.getValue(n) << endl;
+        }
+      }*/
+      bool_node* output = dag->get_node("OUTPUT")->mother;
+      vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+      vector<int> outputs = eval.getTuple(eval.getValue(output));
+      for (int j = 0; j < outputs.size(); j++) {
+        //cout << outputs[j] << endl;
+        if (outputs[j] != allOutputs[i][j]) {
+          float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother)); // TODO: this assumes all values are floats which is probably true, but still we need to check
+          float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
+          energy += pow((m1 - m2), 2);
+        }
+      }
+      
+    }
+    //cout << energy << endl;
+    return energy;
+  }
+  
+  virtual bool synthesis() {
+    conflict.clear();
+    InputMatrix& im = *inout;
+
+    vector<vector<int>> allInputs;
+    vector<vector<int>> allOutputs;
+    vector<int> conflictids;
+    
+    for (int i = 0; i < inout->getNumInstances(); ++i) {
+      vector<int> inputs;
+      vector<int> outputs;
+      bool notset = false;
+      for (int j = 0; j < ninputs; j++) {
+        int val = im.getVal(i, j);
+        if (val == EMPTY) {
+          notset = true;
+          break;
+        }
+        inputs.push_back(val);
+      }
+      if (notset) continue;
+      for (int j = ninputs; j < ninputs + noutputs; j++) {
+        int val = im.getVal(i, j);
+        if (val == EMPTY) {
+          notset = true;
+          break;
+        }
+        outputs.push_back(val);
+      }
+      if (notset) continue;
+      allInputs.push_back(inputs);
+      allOutputs.push_back(outputs);
+      conflictids.push_back(i);
+      for (int k = 0; k < inputs.size(); k++) {
+        //cout << "Input" << k << ": " << inputs[k] << endl;
+      }
+      for (int k = 0; k < outputs.size(); k++) {
+        //cout << "Output" << k << ": " << outputs[k] << endl;
+      }
+      if (!notset) {
+        cout << "Found a input output pair" << endl;
+      }
+      
+    }
+    
+    Assert(allInputs.size() == allOutputs.size(), "This should not be possible");
+    
+    if (allInputs.size() == 0) return true;
+    // Minimize Sum((dag(inputs, ctrls) - outputs)**2)
+    
+    double T = 10;
+    double coolingRate = 0.1;
+    
+    vector<double> curState;
+    for (int i = 0; i < ncontrols; i++) {
+      double c = (rand() % 320) / 10.0; // random float from 0 to 32 (TODO: magic number)
+      curState.push_back(c);
+    }
+    double curEnergy = getEnergy(curState, allInputs, allOutputs);
+    
+    for (int i = 0; i < NUM_STEPS; i++) {
+      //cout << "state: " << curState[0] << " energy: " << curEnergy << endl;
+      if (curEnergy == 0.0) break;
+      vector<double> nextState = getNeighboringState(curState);
+      double nextEnergy = getEnergy(nextState, allInputs, allOutputs);
+      //cout << "next state: " << nextState[0] << " energy: " << nextEnergy << endl;
+      double prob = acceptanceProb(curEnergy, nextEnergy, T);
+      double randflip = (rand()%10)/10.0;
+      //cout << "prob: " << prob << " randflip: " << randflip << endl;
+      if (prob >= randflip) {
+        //cout << "Transitioning to next state" << endl;
+        curState = nextState;
+        curEnergy = nextEnergy;
+      }
+      T = T*(1 - coolingRate);
+    }
+
+    if (curEnergy == 0.0) {
+       // Update the controls
+      vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+      for (int i = 0; i < ctrls.size(); i++) {
+        ctrlValMap[ctrls[i]->get_name()] = curState[i];
+      }
+      return true;
+    } else {
+      cout << "Found a conflict" << endl;
+      //dag->lprint(cout);
+      // For now, just treat everything as conflict
+      for(auto conflictId: conflictids) {
+        for (int j = 0; j < ninputs + noutputs; j++) {
+          conflict.push(im.valueid(conflictId, j));
+        }
+      }
+      return false;
+    }
+  }
+  virtual void newInstance() {
+    
+  }
+  
+  virtual void finalize() {
+    
+  }
+  
+  virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+    // Add the appropriate expression from the dag after replacing inputs with params and ctrls with synthesized parameters
+    BooleanDAG newdag = *(dag->clone());
+    int src_counter = 0;
+    for (int i = 0; i < newdag.size(); i++) {
+      if (newdag[i]->type == bool_node::SRC) {
+        newdag.replace(i, params[src_counter++]); // TODO: is this correct?
+      } else if (newdag[i]->type == bool_node::CTRL) {
+        newdag.replace(i, dopt->getCnode(ctrlValMap[newdag[i]->get_name()]));
+      } else {
+        if (newdag[i]->type != bool_node::DST) {
+          bool_node* n = dopt->computeOptim(newdag[i]);
+          if (n == newdag[i]) {
+            dopt->addNode(n);
+          }
+          if (newdag[i] != n) {
+            newdag.replace(i, n);
+          }
+        }
+      }
+    }
+    return newdag.get_node("OUTPUT")->mother;
+  }
+  
+  virtual void print(ostream& out) {
+    out << "( ";
+    vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+    for (int i = 0; i < ctrls.size(); i++) {
+      out << ctrlValMap[ctrls[i]->get_name()] << ", ";
+    }
+    out << " )";
+  }
+};
 
 Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
 	if (name == "_GEN_gtp") {
 		return new GtpSyn(_fm);
-	}
-    else if (name == "_GEN_eratom") {
-		return new ERAtomSyn(_fm);
-	}
+	} else if (name == "_GEN_eratom") {
+    return new ERAtomSyn(_fm);
+  } else if (name.find("_GEN_NUM_SYNTH") == 0) {
+    return new NumericalSolver(_fm, numericalAbsMap[name]);
+  }
 	return NULL;
 }
 
@@ -518,8 +743,8 @@ void SolverHelper::addSynthSolver(const string& name, const string& syntype, vec
 	for (auto it = outputs.begin(); it != outputs.end(); ++it, ++outid) {
 		Tvalue& tv = *it;
 		if (tv.isBvect()) {
-			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 1, lfromInt(tv.getId()));
-			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 0, lfromInt(-tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, 1, lfromInt(tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, 0, lfromInt(-tv.getId()));
 			continue;
 		}
 		const gvvec& vec = tv.num_ranges;

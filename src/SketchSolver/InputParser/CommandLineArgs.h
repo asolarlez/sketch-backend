@@ -88,6 +88,7 @@ struct CommandLineArgs{
   bool randomInlining;
   float epsilon;
   string erSimEvalFName;
+  bool numericalSolver;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -164,6 +165,7 @@ struct CommandLineArgs{
 	sparseArray = -1;
     randomInlining = false;
 	epsilon = 0.0000001;
+    numericalSolver = true;
 	erSimEvalFName = "";
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
@@ -181,17 +183,22 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-        if( string(argv[ii]) == "-onlysprandassign" ){
-          onlySpRandAssign = true;
-          input_idx = ii+1;
-          continue;
-        }
-        if( string(argv[ii]) == "-randominlining" ){
-          randomInlining = true;
-          input_idx = ii+1;
-          continue;
-        }
-		if( string(argv[ii]) == "-outputSat" ){	      
+      if( string(argv[ii]) == "-onlysprandassign" ){
+        onlySpRandAssign = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-randominlining" ){
+        randomInlining = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-numericalsolver" ){
+        numericalSolver = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;
 		  continue;

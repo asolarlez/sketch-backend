@@ -116,7 +116,15 @@ public:
 	}
 };
 
-
+class FloatComp {
+protected:
+  FloatManager& fm;
+public:
+  FloatComp(FloatManager& _fm) :fm(_fm) {}
+  bool operator() (const int x, const int y) const {
+    return fm.getFloat(x) < fm.getFloat(y);
+  }
+};
 
 template<typename Op>
 inline

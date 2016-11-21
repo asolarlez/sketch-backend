@@ -71,9 +71,6 @@ void NodeHardcoder::visit( CTRL_node& node ){
 				if (cn->spAngelic) {
 					// replace it with a src node					
 					SRC_node* src = dynamic_cast<SRC_node*>(bdag->create_inputs(cn->get_nbits(), OutType::INT, cn->get_name() + "_src", cn->getArrSz()));
-					if (cn->isTuple) {
-						Assert(false, "Not possible");
-					}
 					rvalue = src;
 					return;				
 				}
@@ -148,7 +145,9 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 	} else {
 		SynthInSolver* sin = it->second;
 		rvalue = sin->getExpression(this, node.multi_mother);
-
+    if(rvalue->type == bool_node::TUPLE_CREATE) {
+      return;
+    }
 
 
 		Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(node.getTupleName()));
