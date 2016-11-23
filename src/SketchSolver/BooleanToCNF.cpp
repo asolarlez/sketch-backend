@@ -400,7 +400,6 @@ public:
   }
   
   double getEnergy(vector<double> state, vector<vector<int>> allInputs, vector<vector<int>> allOutputs) {
-    // TODO: fix this
     double energy = 0;
     NodeEvaluator eval(empty, *dag, fm);
     for (int i = 0; i < allInputs.size(); i++) {
@@ -442,8 +441,63 @@ public:
     //cout << energy << endl;
     return energy;
   }
+  void generateConflict(vector<double> state, vector<vector<int>> allInputs, vector<vector<int>> allOutputs, vector<int> conflictids) {
+    for (int i = 0; i < state.size(); i++) {
+      cout << state[i] << " ";
+    }
+    cout << endl;
+    NodeEvaluator eval(empty, *dag, fm);
+    dag->lprint(cout);
+    for (int i = 0; i < allInputs.size(); i++) {
+      VarStore inputStore;
+      // Store all inputs
+      vector<bool_node*> inputs = dag->getNodesByType(bool_node::SRC);
+      for (int j = 0; j < allInputs[i].size(); j++) {
+        inputStore.setVarVal(inputs[j]->get_name(), allInputs[i][j]);
+      }
+      // Store all controls
+      vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+      for (int j = 0; j < state.size(); j++) {
+        inputStore.setVarVal(ctrls[j]->get_name(), fm.getIdx(state[j]));
+      }
+      
+      eval.run(inputStore);
+      bool_node* output = dag->get_node("OUTPUT")->mother;
+      vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+      vector<int> outputs = eval.getTuple(eval.getValue(output));
+      for (int j = 0; j < outputs.size(); j++) {
+        if (outputs[j] != allOutputs[i][j]) {
+          cout << outputmothers[j]->lprint() << endl;
+          cout <<  " " << outputs[j] << " " << allOutputs[i][j] << endl;
+        }
+      }
+      
+    }
+    InputMatrix& im = *inout;
+    for(auto conflictId: conflictids) {
+      for (int j = 0; j < ninputs + noutputs; j++) {
+        conflict.push(im.valueid(conflictId, j));
+      }
+    }
+  }
   
+  void analyzeOutput(bool_node* node) {
+    vector<bool_node*> parents = node->parents();
+    for (int i = 0; i < parents.size(); i++) {
+      analyzeOutput(parents[i]);
+    }
+    cout << node->lprint() << endl;
+  }
+  void analyzeDAG() {
+    bool_node* output = dag->get_node("OUTPUT")->mother;
+    vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+    for (int i = 0; i < outputmothers.size(); i++) {
+      cout << "Output " << i << endl;
+      analyzeOutput(outputmothers[i]);
+    }
+  }
   virtual bool synthesis() {
+    analyzeDAG();
     conflict.clear();
     InputMatrix& im = *inout;
 
@@ -529,13 +583,7 @@ public:
       return true;
     } else {
       cout << "Found a conflict" << endl;
-      //dag->lprint(cout);
-      // For now, just treat everything as conflict
-      for(auto conflictId: conflictids) {
-        for (int j = 0; j < ninputs + noutputs; j++) {
-          conflict.push(im.valueid(conflictId, j));
-        }
-      }
+      generateConflict(curState, allInputs, allOutputs, conflictids);
       return false;
     }
   }
