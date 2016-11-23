@@ -54,7 +54,7 @@ class NodesToSolver : public NodeVisitor {
 	vector<vector<Ufinfo> > ufinfos;
   template <class COMPARE_KEY = NormalComp> void populateGuardedVals(Tvalue& oval, map<int, int, COMPARE_KEY>& numbers);
 	void regTuple(vector<Tvalue>* new_vec, Tvalue& nvar);
-  map<string, vector<Tvalue>> ufunVarsMap;
+  map<int, vector<Tvalue>> ufunVarsMap;
 protected:
 	SolverHelper &dir;
 	vector<Tvalue> &node_ids;

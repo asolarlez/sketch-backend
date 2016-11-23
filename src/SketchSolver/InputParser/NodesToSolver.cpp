@@ -1449,7 +1449,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
       totbits += 1;
     }
   }
-  ufunVarsMap[node.get_ufname()] = nvars;
+  ufunVarsMap[node.id] = nvars;
   Tvalue& outvar = node_ids[node.id];
   vector<Tvalue>* new_vec = new vector<Tvalue>(nouts);
   int outid = tpl_store.size();
@@ -1481,7 +1481,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 	for (int i = 0; i<node.multi_mother.size(); ++i) {
 		params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
 	}
-  vector<Tvalue> nvars = ufunVarsMap[node.get_ufname()];
+  vector<Tvalue>& nvars = ufunVarsMap[node.id];
   int totbits = 0;
   int nouts = nvars.size();
   for (int i = 0; i<nouts; ++i) {
@@ -1598,7 +1598,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 				node.mother->father == node.multi_mother[1]){
 					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-          if (node.mother->mother->getOtype() == OutType::FLOAT or node.mother->father->getOtype() == OutType::FLOAT) {
+          if (node.mother->mother->getOtype() == OutType::FLOAT || node.mother->father->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true, floats);
           } else {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true, ident);
@@ -1610,7 +1610,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 				node.mother->father == node.multi_mother[0]){
 					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-          if (node.mother->mother->getOtype() == OutType::FLOAT or node.mother->father->getOtype() == OutType::FLOAT) {
+          if (node.mother->mother->getOtype() == OutType::FLOAT || node.mother->father->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false, floats);
           } else {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false, ident);

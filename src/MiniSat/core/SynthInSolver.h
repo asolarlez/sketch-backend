@@ -194,7 +194,23 @@ namespace MSsolverNS {
 		/* Returns the stack level of the input.
 		*/
 		Clause* pushInput(int instance, int inputid, int val, int dlevel) {
+			//id = valueid(instance,inputid)
+			//write only over EMPTY values
 			//cout << "ID=" << id << endl;
+			int idInGrid = inputOutputs.valueid(instance,inputid);
+			if (inputOutputs.getVal(idInGrid) != EMPTY){
+				//writing over EMPTY values
+				vec<Lit> conf;	
+				Tvalue& tv = inputOutputs.getTval(idInGrid);
+				Lit l1 = tv.litForValue(inputOutputs.getVal(idInGrid));
+				conf.push(~l1);
+				Lit l2 = tv.litForValue(val);
+				conf.push(~l2);
+				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
+				tmpbuf.growTo((sz / sizeof(int)) + 1);
+				void* mem = (void*)&tmpbuf[0];
+				return new (mem) Clause(conf, false);
+			}
 			maxlevel = dlevel;
 			inputOutputs.pushInput(instance, inputid, val, dlevel);
 			if (!s->synthesis()) {

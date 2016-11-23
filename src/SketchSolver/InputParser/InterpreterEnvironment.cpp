@@ -798,8 +798,7 @@ int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileN
 	return assertDAG(dag, out);
 }
 
-BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){	
-	
+BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){		
 	if(params.olevel >= 3){
 		DagOptim cse(*result, floats);	
 		//cse.alterARRACS();
@@ -907,9 +906,8 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   unode->outname = "_p_out_" + fname;
   unode->set_tupleName(fname);
   unode->set_nbits(0);
-  unode->ignoreAsserts = true; // TODO: is this ok?
-  bool_node* pc = op.getCnode(1); // TODO: fix this
-  unode->mother = pc;
+  unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
+  unode->mother = op.getCnode(1);
   BooleanDAG* funDag = new BooleanDAG(fname); // store the abstraction in this dag
   TUPLE_CREATE_node* funOutput = new TUPLE_CREATE_node();
   funOutput->setName(fname);
@@ -1021,9 +1019,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   numericalAbsMap[fname] = funDag;
   funDag->lprint(cout);
   dag.addNewNodes(newnodes);
-  newnodes.clear();
-  dag.removeNullNodes();
-  dag.cleanup();
+  op.cleanup(dag);  
   dag.lprint(cout);
   //funDag->repOK();
   

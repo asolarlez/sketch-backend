@@ -133,8 +133,12 @@ class ERAtomSyn : public Synthesizer {
 public:
     map < int , map < int, map < int , int > > > eval; //(int tupid, int attr, int simfn)
     set < int > simFns;
+    set < int > attrIds;
     vector < int > finalAttrs;
     vector < int > finalTupids;
+    map < int , vector < pair < int , int > > > bestThresholds;
+    vector < int > bestAtom;
+    //attr -> [(simfn,threshold)] 
     void addEval(int tupid, int attr, int simfn, int val){
         if (eval.find(tupid) == eval.end()){
             map < int, map < int , int > > masv;
@@ -147,9 +151,19 @@ public:
         if (simFns.find(simfn) == simFns.end()){
             simFns.insert(simfn);
         }
+        if (attrIds.find(attr) == attrIds.end()){
+            attrIds.insert(attr);
+        }
         eval[tupid][attr][simfn] = val;
     }
-  
+
+	void addBestThresholds(int attr, int simfn, int th){
+        if (bestThresholds.find(attr) == bestThresholds.end()){
+            vector < pair < int , int > > msv;
+            bestThresholds[attr] = msv;
+        }
+        bestThresholds[attr].push_back(pair<int,int>(simfn,th));
+    }
 	ERAtomSyn(FloatManager& _fm) :Synthesizer(_fm) {
         //initEval();//get this from a file
         
@@ -158,10 +172,22 @@ public:
         ifstream fin(simfile);
         int tupid, attr, simfn, val;
         while(fin>>tupid){
-            fin>>attr>>simfn>>val;
-            addEval(tupid,attr,simfn,val);
+            if (tupid >= 0 ){
+	            fin>>attr>>simfn>>val;
+	            addEval(tupid,attr,simfn,val);
+        	}
+        	else{
+        		Assert(tupid == -1,"Convention for sending hardcoded thresholds here")
+        		fin>>attr>>simfn>>val; // val is the threshold
+        		if(bestAtom.size() == 0){
+        			bestAtom.push_back(attr);
+        			bestAtom.push_back(simfn);
+    				bestAtom.push_back(val);
+        		}
+        		addBestThresholds(attr, simfn, val);
+        	}
         }
-        cout<<"simFns:"<<simFns.size()<<endl;
+        //cout<<"simFns:"<<simFns.size()<<endl;
 	}
     
     virtual void finalize() {
@@ -187,30 +213,90 @@ public:
 		}
     }
 
+	void addSingleConflict(int conflictId, InputMatrix& im ){
+    	conflict.push(im.valueid(conflictId, tupidin));
+        conflict.push(im.valueid(conflictId, attrin));
+        conflict.push(im.valueid(conflictId, outpt));
+    }
+
+
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
 	virtual bool synthesis() {
+		//ROHIT TODO: check if attr is set on all of them - start checking from end
+		//If not, return conflict as the empty one? 
 		conflict.clear();
-        //Iterate over all possible simFn's and then over inout
-        //For a simFm s: compare max(eval over all non-matching tupleIds) and min(eval over all matching tupleIds)
-        //If found at least one:
-            //collect all simFn s where it is possible to find a value between these max and min 
-            //choose one randomly (?) - some heuristic can be used here
-        //If not found any, generate conflict clause
-        set< int > conflictIds;
-		
-        InputMatrix& im = *inout;
-        //map < pair < int, int >, set <int> > conflictPairs;
-        /*cout<<"ERSYNTH BEGIN"<<endl;
-        for (int i = 0; i < inout->getNumInstances(); ++i) {
-            int out = im.getVal(i, outpt);
-            int tupid = im.getVal(i, tupidin);
-            int attr = im.getVal(i, attrin);
-            if (out == EMPTY || attr == EMPTY || tupid == EMPTY) {
-                continue;
-            }
-            cout<<"ERSYNTH:(out="<<out<<",attr="<<attr<<",tupid="<<tupid<<")"<<endl;
+		InputMatrix& im = *inout;
+		int internalAttr = -1;
+		int nI = inout->getNumInstances();
+		for (int i = nI-1; i >=0 ; --i) {
+			int attr = im.getVal(i, attrin);
+			if (attr == EMPTY){
+				//continue;
+				//addSingleConflict(i,im);
+				simfn=0;
+				theta=500;
+				return true;
+			}
+			else{
+				Assert(internalAttr==-1 || internalAttr==attr,"Multiple attr values not allowed")
+				internalAttr=attr;
+				if (attrIds.find(attr) == attrIds.end()){
+					//Invalid attribute ID
+					conflict.push(im.valueid(i, attrin));
+					return false;
+				}
+			}
+		}
+
+		set< int > conflictIds;
+		//Assert(internalAttr>=0,"internalAttr should be +ve");
+        	
+        //separating the heuristic out
+        if (bestThresholds.size() >0){
+        	//go over these one by one in order to see which one fits all examples
+
+        	//cout<<"bestThresholds.size()="<<bestThresholds.size()<<",internalAttr="<<internalAttr<<endl;
+        	for(auto p: bestThresholds[internalAttr]){
+        		int sfn = p.first;
+        		int th = p.second;
+        		bool atomWorks = true;
+        		for(auto i: conflictIds){
+        			int out = im.getVal(i, outpt);
+		            int tupid = im.getVal(i, tupidin);
+		            int val = eval[tupid][internalAttr][sfn];
+	            	if ((out==1 && val < th) || (out==0 && val >= th)){
+	            		atomWorks = false;
+	            		break;
+	            	}
+        		}
+        		if (atomWorks){
+	        		for (int i = 0; i < inout->getNumInstances(); ++i) {
+	        			if(conflictIds.find(i) != conflictIds.end()){
+	        				continue;
+	        			}
+			            int out = im.getVal(i, outpt);
+			            int tupid = im.getVal(i, tupidin);
+			            if (out == EMPTY || tupid == EMPTY) {
+			                continue;
+			                //Assert(false, "no EMPTY values allowed at this point");
+			            }
+			            int val = eval[tupid][internalAttr][sfn];
+		            	if ((out==1 && val < th) || (out==0 && val >= th)){
+		            		atomWorks = false;
+		            		conflictIds.insert(i);
+		            		break;
+		            	}
+			        }
+		    	}
+		        if (atomWorks){
+		        	simfn = sfn;
+		        	theta = th;
+		        	return true;
+		        }
+        	}
+        	addConflicts(conflictIds,im);
+			return false;
         }
-        cout<<"ERSYNTH END"<<endl;*/
 
         for (auto sfn:simFns){
         	simfn = sfn;
@@ -218,14 +304,11 @@ public:
 	        int amid = -1;
 	        int atleast = MinTheta;
 	        int alid = -1;
-	        for (int i = 0; i < inout->getNumInstances(); ++i) {
-	            int out = im.getVal(i, outpt);
+	        bool simFnWorks = true;
+	        for(auto i: conflictIds){
+    			int out = im.getVal(i, outpt);
 	            int tupid = im.getVal(i, tupidin);
-	            int attr = im.getVal(i, attrin);
-	            if (out == EMPTY || attr == EMPTY || tupid == EMPTY) {
-	                continue;
-	            }
-	            int val = eval[tupid][attr][simfn];
+	            int val = eval[tupid][internalAttr][simfn];
 	            if (out == 1) { //add it to atmost computation
 	                if (val <= atmost) { atmost = val; amid = i; }
 	            }
@@ -233,31 +316,69 @@ public:
 	                if (val >= atleast) { atleast = val+1; alid = i; }
                     //theta has to be at least val + 1 for this to be a negative example
 	            }
-	        }
-	        if (atleast <= atmost) {
-	            theta = (atleast + atmost) / 2;
-	            return true;
-	        }
-	        else {
-				if (amid == -1) {
-                    theta= atleast;
-					return true;
+	            if (atleast > atmost && amid !=-1 && alid !=-1) {
+		            conflictIds.insert(amid);
+                	conflictIds.insert(alid);
+                	simFnWorks=false;
+                	break;
+		        }
+    		}
+    		if(simFnWorks){
+		        for (int i = 0; i < inout->getNumInstances(); ++i) {
+		            if(conflictIds.find(i) != conflictIds.end()){
+		            	continue;
+		            }
+		            int out = im.getVal(i, outpt);
+		            int tupid = im.getVal(i, tupidin);
+		            if (out == EMPTY || tupid == EMPTY ) {
+		                continue;
+		            }
+		            
+		            /*if (internalAttr != -1 && attr != internalAttr){
+			            for (int j = 0; j < inout->getNumInstances(); ++j) {
+			            	Tvalue& Tattr = inout->getTval(im.valueid(j, attrin));
+			            	cout<<"j:"<<j<<" "<<Tattr<<endl;
+			            }
+		        	}*/
+		            
+		            int val = eval[tupid][internalAttr][simfn];
+		            if (out == 1) { //add it to atmost computation
+		                if (val <= atmost) { atmost = val; amid = i; }
+		            }
+		            else {//add it to atleast computation
+		                if (val >= atleast) { atleast = val+1; alid = i; }
+	                    //theta has to be at least val + 1 for this to be a negative example
+		            }
+		            if (atleast > atmost && amid !=-1 && alid !=-1) {
+			            conflictIds.insert(amid);
+	                	conflictIds.insert(alid);
+	                	simFnWorks=false;
+	                	break;
+			        }
+		        }
+		    }
+		    if(simFnWorks){
+		        if (atleast <= atmost) {
+		            theta = (atleast + atmost) / 2;
+		            return true;
+		        }
+		        else {
+					if (amid == -1) {
+	                    //if atleast > maxTheta? It is FALSE.
+	                    theta= atleast;
+						return true;
+					}
+					if (alid == -1) {
+						theta= atmost;
+						return true;
+					}
+					//auto cpair = make_pair(gtid,ltid);
+					//conflictPairs[cpair].insert(simfn);
+					//if (amid != -1 && alid != -1){
+					conflictIds.insert(amid);
+	                conflictIds.insert(alid);
+	            	//}
 				}
-				if (alid == -1) {
-					theta= atmost;
-					return true;
-				}
-				//auto cpair = make_pair(gtid,ltid);
-				//conflictPairs[cpair].insert(simfn);
-				conflictIds.insert(amid);
-                conflictIds.insert(alid);
-				/*conflict.push(im.valueid(gtid, tupidin));
-	            conflict.push(im.valueid(gtid, attrin));
-	            conflict.push(im.valueid(gtid, outpt));
-				conflict.push(im.valueid(ltid, tupidin));
-	            conflict.push(im.valueid(ltid, attrin));
-	            conflict.push(im.valueid(ltid, outpt));
-				return false; */
 			}
 		}
 		//Control comes here only if there's a conflict pair for each simFn

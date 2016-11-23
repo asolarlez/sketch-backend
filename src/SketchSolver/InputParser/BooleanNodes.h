@@ -934,13 +934,14 @@ class CTRL_node: public INTER_node{
     
 	public:
     bool isFloat;
+    bool isTuple;
     string tupleName;
     bool spAngelic;
     int max;
     vector<string> parents;
 	
     CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false){  if(toMinimize){ this->kind = MINIMIZE;} }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false) {  this->kind = kind_;}
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false) {  this->kind = kind_;}
 	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
@@ -964,6 +965,10 @@ class CTRL_node: public INTER_node{
   void setFloat() {
     isFloat = true;
   }
+    void setTuple (const string& name) {
+        tupleName = name;
+        isTuple = true;
+    }
 	bool get_toMinimize() const {
 		return (kind & MINIMIZE) != 0;
 	}
@@ -1014,6 +1019,7 @@ class CTRL_node: public INTER_node{
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
+        if (isTuple) {return  OutType::getTuple(tupleName); }
 		INTER_node::getOtype();
 		if(!isArr()){ return otype; }
 		if(otype == OutType::INT){
