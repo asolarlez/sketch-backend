@@ -4,7 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
-#include <Sort.h>
+#include "Sort.h"
 using namespace std;
 
 #include "BooleanToCNF.h"

@@ -91,7 +91,8 @@ public:
 			if(this->index==idx){
 				return getInt();
 			}else{
-				if(next != NULL){ next->getInt(idx); }
+				if(next != NULL){ return next->getInt(idx); }
+                else {return -1;}
 			}
 		}
 		void setVal(int idx, int v){
