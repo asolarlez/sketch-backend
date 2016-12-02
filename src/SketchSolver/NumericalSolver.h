@@ -7,6 +7,7 @@
 #include <utility>
 #include <Sort.h>
 #include <math.h>
+#include <gsl/gsl_multimin.h>
 using namespace std;
 
 #include "BooleanToCNF.h"
@@ -44,7 +45,34 @@ class SimulatedAnnealing {
     return newState;
   }
 public:
-  double optimize(NumericalSolver* ns, vector<vector<int>> allInputs, vector<vector<int>> allOutputs, vector<double>& curState);
+  double optimize(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, vector<double>& curState);
+};
+
+class GradientDescent {
+  int N; // Total number of components
+  gsl_vector *x;  // The current state
+  gsl_vector *ds; // The step size
+  
+  gsl_multimin_fdfminimizer* minidf;  // The GSL minimizer for when derivatives needed
+  const gsl_multimin_fdfminimizer_type *Tdf ;
+  gsl_multimin_function_fdf myfundf;
+  double INIT_STEP_SIZE = 5.0;
+  double TOLERANCE = 0.1;
+  
+public:
+  GradientDescent(int N_p): N(N_p) {
+    Tdf = gsl_multimin_fdfminimizer_steepest_descent;
+    minidf = gsl_multimin_fdfminimizer_alloc(Tdf, N);
+    myfundf.n = N;
+  }
+  
+  void getResults(vector<double>& state) {
+    state.resize(N);
+    for (int i = 0; i < N; i++) {
+      state[i] = gsl_vector_get(minidf->x, i);
+    }
+  }
+  double optimize(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs);
 };
 
 class NumericalSolver : public Synthesizer {
@@ -65,7 +93,7 @@ class NumericalSolver : public Synthesizer {
     }
   }
   
-  double evalState(vector<double> state, vector<vector<int>> allInputs, vector<vector<int>> allOutputs) {
+  double evalState(const vector<double>& state, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
     double error = 0;
     NodeEvaluator eval(empty, *dag, fm);
     for (int i = 0; i < allInputs.size(); i++) {
@@ -109,8 +137,12 @@ class NumericalSolver : public Synthesizer {
     return error;
   }
 
+  static double f(const gsl_vector* v, void* params) {
+    Parameters* p = (Paramters*) params;
+    
+  }
   
-  /*void generateProfile(vector<double> state, int idx, vector<vector<int>> allInputs, vector<vector<int>> allOutputs, string fname) {
+  /*void generateProfile(vector<double> state, int idx, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, string fname) {
     ofstream out(fname, ios_base::out);
     
     double i = 0.0;
@@ -122,7 +154,7 @@ class NumericalSolver : public Synthesizer {
     out << endl;
   }*/
   
-  void generateConflict(vector<vector<int>> allInputs, vector<vector<int>> allOutputs, vector<int> conflictids) {
+  void generateConflict(const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, const vector<int>& conflictids) {
     InputMatrix& im = *inout;
     for(auto conflictId: conflictids) {
       for (int j = 0; j < ninputs + noutputs; j++) {
@@ -284,7 +316,7 @@ class NumericalSolver : public Synthesizer {
 };
 
 
-double SimulatedAnnealing::optimize(NumericalSolver* ns, vector<vector<int>> allInputs, vector<vector<int>> allOutputs, vector<double>& curState) {
+double SimulatedAnnealing::optimize(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, vector<double>& curState) {
   double curError = ns->evalState(curState, allInputs, allOutputs);
   
   for (int i = 0; i < NUM_STEPS; i++) {
@@ -304,4 +336,22 @@ double SimulatedAnnealing::optimize(NumericalSolver* ns, vector<vector<int>> all
     T = T*(1 - coolingRate);
   }
   return curError;
+}
+
+class Parameters {
+public:
+  vector<vector<int>> allInputs;
+  vector<vector<int>> allOutputs;
+};
+
+double GradientDescent::optimize(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
+  myfundf.f = &ns->f;
+  myfundf.df = &ns->df;
+  myfundf.fdf = &ns->fdf;
+  Parameters* p = new Parameters();
+  p->allInputs = allInputs;
+  p->allOutputs = allOutputs;
+  myfundf.params = p;
+  gsl_multimin_fdfminimizer_set(minidf, &myfundf, x, INIT_STEP_SIZE, TOLERANCE);
+  
 }
