@@ -22,6 +22,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_statistics.h				\
 	memory_sampler.h				\
 	timerclass.h					\
+  NumericalSolver.h     \
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
