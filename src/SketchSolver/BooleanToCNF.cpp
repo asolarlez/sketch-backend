@@ -17,7 +17,8 @@ using namespace std;
 #include "VarStore.h"
 #include "NodeEvaluator.h"
 #include "NumericalSolver.h"
-#include "CustomSolvers.h"
+#include "GTPredicateSolver.h"
+#include "EntityResolutionSolver.h"
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
