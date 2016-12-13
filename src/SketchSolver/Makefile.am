@@ -7,9 +7,9 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -I/usr/local/include -lgsl -lgslcblas
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -I/usr/local/include -lgsl -lgslcblas
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
@@ -46,6 +46,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/InterpreterEnvironment.h \
 	InputParser/CegisMainHelpers.h \
 	InputParser/NodeEvaluator.h \
+  InputParser/AutoDiff.h \
 	InputParser/NodeSlicer.h \
 	InputParser/NodeStore.h				\
 	InputParser/NodeVisitor.h			\
@@ -86,6 +87,7 @@ libcegis_la_SOURCES =				\
 	InputParser/InputReader.cpp		\
 	InputParser/InterpreterEnvironment.cpp \
 	InputParser/NodeEvaluator.cpp \
+  InputParser/AutoDiff.cpp \
 	InputParser/NodeStore.cpp		\
 	InputParser/NodeSlicer.cpp \
 	InputParser/NodesToSolver.cpp		\

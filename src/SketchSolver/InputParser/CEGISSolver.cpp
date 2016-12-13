@@ -30,15 +30,19 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 		}
 		int cints = 0;
 		int cbits = 0;
+    int cfloats = 0;
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
 			if(ctrlnode->getOtype() == OutType::BOOL){
 				cbits++;
-			}else{
+      } else if (ctrlnode->getOtype() == OutType::FLOAT) {
+        cfloats++;
+      } else{
 				cints++;
 			}
-			if(!ctrlnode->get_Angelic()){
+        cout << (ctrlnode->getOtype() == OutType::FLOAT) << endl;
+      if(!ctrlnode->get_Angelic() && ctrlnode->getOtype() != OutType::FLOAT){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 
 				declareControl(ctrlnode);
@@ -49,7 +53,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
 
 		}
 		if(PARAMS->verbosity > 2){
-			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
+			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
 		}
     }
 	for(map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it){
