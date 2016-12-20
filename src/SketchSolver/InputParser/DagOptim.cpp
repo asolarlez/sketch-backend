@@ -17,6 +17,11 @@ DagOptim::DagOptim(BooleanDAG& dag, FloatManager& fm):cse(dag), stillPrivate(NUL
 
 DagOptim::~DagOptim()
 {
+	if (newnodes.size() > 0) {
+		for (auto it = newnodes.begin(); it != newnodes.end(); ++it) {
+			delete *it;
+		}
+	}
 }
 
 //extern CommandLineArgs* PARAMS;
@@ -2380,7 +2385,7 @@ void DagOptim::visit( ARRASS_node& node ){
 			as->mother = node.mother;
 			as->quant = node.quant;
 			as->multi_mother = node.multi_mother;
-			as->multi_mother[0] = this->getCnode(0);
+			as->multi_mother[0] = this->getZero(&node);
 			as->addToParents();
 			rvalue = optAdd(as);			
 			return;

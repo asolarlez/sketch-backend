@@ -26,7 +26,7 @@ class DepTracker{
 	/*In this variable, we record all the decisions that have been made during each harness.*/
 	vector<vector<Lit> > decisionsPerHarness;
 	int curHarness;
-
+	
 
 	/*
 	out tracks all the literals that were set leading to a concretization failure. 
@@ -90,21 +90,57 @@ public:
 };
 
 
+
+class RandDegreeControl {	
+public:
+	vector<int> currentRandDegs;
+	map<int, vector<double> > scores;
+	RandDegreeControl(int randdegree) : currentRandDegs(2) {
+		if (randdegree == 0) {
+			currentRandDegs[0] = 10;
+			currentRandDegs[1] = 5;
+		}	
+	}
+
+};
+
+
 class HoleHardcoder{
 	
 	bool LEAVEALONE(int v){ return v < 0; }
 	static const int REALLYLEAVEALONE = -8888888;
-	map<string, int> randholes;			
+	/*!
+	randholes keeps track of which holes have been considered for concretization.
+	If it was decided that the hole would be concretized, then this stored the value to which it was concretized.
+	If it was decided not to concretize, this records the score. When the hole is revisited, we may change our mind
+	about not concretizing if the score changes significantly.
+	*/
+	map<string, int> randholes;	
+
+	set<string> minholes;
+	bool hardcodeMinholes;
+
+
 	vector<bool> chkrbuf;
+	/*!
+	This is the sat solver from the current cegis solver, which we use to tell us whether a candidate
+	concretization is consistent with the constraints so far.
+	*/
 	SolverHelper* sat;
+	/*!
+	This is a global sat solver that keeps track of 
+	all the concretization attempts by the global SAT solver so that
+	you never try the same assignment twice.
+	*/
 	SolverHelper* globalSat;
 	vec<Lit> sofar;
 	double totsize;
 	int randdegree;
 	DepTracker dt;
+	RandDegreeControl degreeControl;
 
-
-	/**
+	
+	/*!
 	When hardcoding a hole that was used by a previous harness, 
 	you introduce additional constraints to (*sat). If you switch
 	harnesses before those constraints are dismissed through calling 
@@ -144,6 +180,13 @@ class HoleHardcoder{
 		}
 	}
 
+
+	/*!
+	Computes a numerical score that determines how strongly we want to concretize this hole.
+	*/
+	int computeHoleScore(CTRL_node* node);
+	
+
 	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void addedConstraint() {
 		pendingConstraints = true;
@@ -152,19 +195,21 @@ public:
 
     int fixValue(CTRL_node& node, int bound, int nbits);
 
+	void get_control_map(map<string, string>& values);
 	
 	/*
 	This function updates the current set of rand degrees using an MCMC style search to try to 
 	converge to the best rand degree.
 	*/
-	void adjust(vector<int>& rd, map<int, vector<double> >& scores){
+	void adjust(){
+		vector<int>& rd = degreeControl.currentRandDegs;
 		int cur = rd[0];
 		int next = nextRandDegree(rd[0]);
 		if (next == cur) {
 			return;
 		}
-		int scorenext = getAvg(scores[next]);
-		int scorecur = getAvg(scores[cur]);
+		int scorenext = getAvg(degreeControl.scores[next]);
+		int scorecur = getAvg(degreeControl.scores[cur]);
 		cout << "cur=" << cur << " next=" << next << " scorecur=" << scorecur << " scorenext=" << scorenext << endl;
 		if (scorenext < scorecur) {
 			cout << "Switch because next is better"<<endl;
@@ -183,19 +228,28 @@ public:
 
 	}
 
-	void setRanddegree(int rd){
-		randdegree = rd;
+	void addScore(double score) {
+		degreeControl.scores[randdegree].push_back(score);
+	}
+
+	void setRanddegree(int step){
+		randdegree = degreeControl.currentRandDegs[step % 2];
 	}
 	int getRanddegree(){
 		return randdegree;
 	}
-	HoleHardcoder(){		
-		totsize = 0.0;
+	HoleHardcoder():
+		degreeControl(PARAMS->randdegree),
+		totsize(0.0),
+		randdegree(PARAMS->randdegree)
+	{
+		
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
-		pendingConstraints = false;
-		randdegree = PARAMS->randdegree;
+		pendingConstraints = false;		
+		hardcodeMinholes = false;
 	}
+
 	~HoleHardcoder(){		
 		delete &globalSat->getMng();
 		delete globalSat;
@@ -234,6 +288,16 @@ public:
 	void setHarnesses(int nharnesses){
 		dt.setHarnesses(nharnesses);
 	}
+
+	void registerAllControls(map<string, BooleanDAG*>& functionMap) {
+		for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
+			BooleanDAG* bd = it->second;
+			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
+			for (int i = 0; i<ctrl.size(); ++i) {
+				declareControl((CTRL_node*)ctrl[i]);
+			}
+		}
+	}
 	
 	void declareControl(CTRL_node* node){
 		globalSat->declareControl(node);
@@ -257,33 +321,76 @@ public:
 		return (MiniSATSolver*) &(globalSat->getMng());
 	}
 
+	
+	
+	/*!
+	This should be called when minimization is on and concretization succeeds
+	but we want to keep trying to see if a better solution is possible.
+	*/
+	void resetForMinimize(map<string, string>& currentControls) {
+		resetCore();
+		//Now, we need to add constraints that ensure that we never see 
+		//a worse assignment to the minimization variables.
+		cout << "Adding constraints to minimize" << endl;
+		for (auto mhit = minholes.begin(); mhit != minholes.end(); ++mhit) {
+			string& sval = currentControls[*mhit];
+			int val = atoi(sval.c_str());
+			Tvalue& glob = globalSat->getControl(*mhit);
+			if (!glob.isSparse()) {
+				glob.makeSparse(*globalSat);
+			}
+			const gvvec& options = glob.num_ranges;
+			for (int i = 0; i < options.size(); ++i) {
+				const guardedVal& gv = options[i];
+				if (gv.value > val) {
+					cout << *mhit << ":" << -gv.guard << endl;
+					globalSat->addAssertClause(-gv.guard);
+				} else if (gv.value == val) {
+					cout << *mhit << ":sofar:" << -gv.guard << endl;
+					sofar.push(lfromInt(-gv.guard));
+				}
+			}
+		}
+		globalSat->getMng().addHelperClause(sofar);
+		sofar.clear();
+		hardcodeMinholes = true;
+	}
+	
+	void resetCore() {
+		globalSat->getMng().reset();
+		cout << "POST-SUMMRY ";
+		for (int i = 0; i<sofar.size(); ++i) {
+			cout << ", " << toInt(sofar[i]);
+		}
+		cout << endl;
+		globalSat->getMng().addHelperClause(sofar);
+
+		dt.reset();
+
+		((MiniSATSolver&)globalSat->getMng()).dump();
+		randholes.clear();
+		sofar.clear();
+		totsize = 0.0;
+		pendingConstraints = false;
+	}
+	
 	void reset(){
 		cout<<"SUMMRY ";
 		for(int i=0; i<sofar.size(); ++i){
 			cout<<", "<<toInt(sofar[i]);
 		}
-		cout<<endl;
-		globalSat->getMng().reset();
-
+		cout<<endl;		
 		dt.genConflict(sofar);
-		cout<<"POST-SUMMRY ";
-		for(int i=0; i<sofar.size(); ++i){
-			cout<<", "<<toInt(sofar[i]);
-		}
-		cout<<endl;
-		globalSat->getMng().addHelperClause(sofar);
-		
-		dt.reset();
-
-		((MiniSATSolver&) globalSat->getMng()).dump();
-		randholes.clear();
-		sofar.clear();
-		totsize=0.0;
-		pendingConstraints = false;
+		resetCore();		
 	}
+
 	void setSolver(SolverHelper* sh){
 		sat = sh;
 	}
+
+	/*!
+	Attempt to concretize this hole based on how many children it has, among other things.
+	*/
 	bool_node* checkRandHole(CTRL_node* node, DagOptim& opt);
 	void afterInline();
 	void printControls(ostream& out);

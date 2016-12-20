@@ -81,9 +81,10 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 void BooleanDAG::clear(){	
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
-  		nodes[i]->id = -22;
-  		delete nodes[i];
-  		nodes[i] = NULL;
+		  if (nodes[i] != NULL) {			  
+			  delete nodes[i];
+			  nodes[i] = NULL;
+		  }
 	  }
 	}
   nodes.clear();
@@ -359,6 +360,7 @@ void okForARRACC(BooleanDAG * dag, vector<bool_node*> const & nodes, int line /*
 }
 
 void BooleanDAG::repOK(){
+	return;
 	cout<<"*** DOING REPOK ****"<<endl;
 
 	map<bool_node::Type, set<bool_node*> > tsets;

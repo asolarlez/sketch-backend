@@ -23,6 +23,19 @@ void HoleHardcoder::printControls(ostream& out) {
 	}
 }
 
+void HoleHardcoder::get_control_map(map<string, string>& values) {
+	for (map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it) {
+		if (!LEAVEALONE(it->second)) {
+			stringstream str;
+			str << it->second;
+			values[it->first] = str.str();
+		}
+	}	
+}
+
+
+
+
 
 int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 	int rv;
@@ -54,8 +67,7 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 			if (x < rv) rv = x;
 		}
 		cout << "rv for special node " << rv << " bound " << bound << endl;
-	}
-	else {
+	} else {
 		rv = rand() % bound;
 	}
 	const string& s = node.get_name();
@@ -63,10 +75,11 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 	if (!glob.isSparse()) {
 		glob.makeSparse(*globalSat);
 	}
+	//tloc is a copy of the tvalue in the local sat solver; loc is a pointer to that copy.
 	Tvalue* loc = NULL;
 	Tvalue tloc;
 	if (sat->checkVar(s)) {
-		tloc = (sat->getControl(&node));
+		tloc = sat->getControl(s);
 		if (!tloc.isSparse()) {
 			tloc.makeSparse(*sat);
 		}
@@ -95,8 +108,7 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 				if (yy == -1) {
 					//local had already decided that this value was bad. Move to the next.
 					continue;
-				}
-				else {
+				} else {
 					//local also has no opinion. 
 					//record decision.
 					if (!sat->assertIfPossible(lgv.guard)) {
@@ -233,14 +245,7 @@ int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool sp
 	}
 }
 
-bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
-	int chsize = node->children.size();
-	if (chsize == 0 || node->get_Angelic()) return node;
-	string name = node->get_name();
-	dt.regHoleInHarness(name);
-
-	map<string, int>::iterator it = randholes.find(name);
-
+int HoleHardcoder::computeHoleScore(CTRL_node* node) {
 	int tchld = 0;
 	int bchld = 0;
 	for (childset::iterator chit = node->children.begin(); chit != node->children.end(); ++chit) {
@@ -275,7 +280,21 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 		}
 	}
 	// TODO: test different boolean weights: 0.5, 0.75, and 1.0
-	tchld += bchld * 0.5;
+	return tchld + bchld * 0.5;
+}
+
+bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
+	if (node->get_toMinimize()) {
+		minholes.insert(node->get_name());
+	}
+	int chsize = node->children.size();
+	if (chsize == 0 || node->get_Angelic()) return node;
+	string name = node->get_name();
+	dt.regHoleInHarness(name);
+
+	map<string, int>::iterator it = randholes.find(name);
+	int tchld = computeHoleScore(node);
+
 	if (it != randholes.end()) {
 		if (LEAVEALONE(it->second)) {
 			int oldchld = -it->second; //how many chlidren it had the first time around.
@@ -290,13 +309,14 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 			return opt.getCnode(it->second);
 		}
 	}
+	//At this point, either the hole has never been attempted to concretize,
+	//or it was attempted and failed, but we are giving it another chance.
 	{
 		int baseline = randdegree;
 		double odds;
 		if (node->is_sp_concretize()) {
 			odds = max(1, baseline / (tchld > 0 ? tchld : 1));
-		}
-		else {
+		} else {
 			odds = (double)baseline / (tchld > 0 ? tchld : 1);
 		}
 		chsize = tchld;
@@ -305,8 +325,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 			if (bn->type == bool_node::DST || bn->type == bool_node::TUPLE_CREATE || bn->type == bool_node::UFUN) {
 				// cout<<"postponing for later"<<endl;
 				return node;
-			}
-			else {
+			} else {
 				// cout<<"Single child is "<<bn->lprint()<<endl;
 			}
 		}
@@ -316,11 +335,17 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 			p = 1.0 / odds;
 			conc_flag = (chsize > 1500 && totsize < log(10000)) || (chsize > 5000);
 			conc_flag = conc_flag || (rand() < p * ((double)RAND_MAX + 1.0));
-		}
-		else {
+		} else {
 			p = (1.0 / (1.0 + exp(-1.0 / odds)) - 0.5) * 2.0;
 			conc_flag = (p > 0) && (rand() < p * ((double)RAND_MAX + 1.0));
 		}
+		bool reallyConcretize = false;
+		//If hardcodeMinholes is set, concflag is true regardless.
+		if (node->get_toMinimize() && hardcodeMinholes) {
+			conc_flag = true;
+			reallyConcretize = true;
+		}
+
 		if (conc_flag) {
 			cout << node->get_name() << " odds = 1/" << odds << " " << p << " (" << chsize << ", " << tchld << ") " << " try to replace" << endl;
 			int bound = 1;
@@ -351,15 +376,19 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 							ul = max(ul, opt.getIval(child->mother) + 1);
 						}
 						else {
+							if (!reallyConcretize) {
+								cout << "    has a bad child" << child->lprint() << endl;
+								randholes[node->get_name()] = REALLYLEAVEALONE;
+								return node;
+							}
+						}
+					}
+					else {
+						if (!reallyConcretize) {
 							cout << "    has a bad child" << child->lprint() << endl;
 							randholes[node->get_name()] = REALLYLEAVEALONE;
 							return node;
 						}
-					}
-					else {
-						cout << "    has a bad child" << child->lprint() << endl;
-						randholes[node->get_name()] = REALLYLEAVEALONE;
-						return node;
 					}
 					ARRASSEQonly = false;
 				}

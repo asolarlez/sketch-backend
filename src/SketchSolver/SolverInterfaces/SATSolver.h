@@ -87,7 +87,7 @@ public:
     virtual bool ignoreOld()=0;
 
     
-    virtual int solve()=0;
+    virtual SATSolverResult solve()=0;
 
     virtual void reset()=0;
     virtual void retractAssumptions()=0;

@@ -265,6 +265,7 @@ public:
 
 	Tvalue& declareControl(CTRL_node* ctrlnode);
 	Tvalue& getControl(CTRL_node* ctrlnode);
+	Tvalue& getControl(const string& name);
 
     void makeArrNoBranch(const string& arName) {
 	int var = varmap[arName];

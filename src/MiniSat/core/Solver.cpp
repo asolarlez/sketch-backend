@@ -1421,6 +1421,9 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 
 
 bool Solver::tryAssignment(Lit a){
+	if (!ok) {
+		return false;
+	}
 	lbool lv = value(a);
 	//if it already has a value, we just check that it's compatible.
 	if(lv==l_True){

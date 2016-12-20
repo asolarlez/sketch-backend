@@ -117,7 +117,7 @@ public:
 	 
 	 virtual bool ignoreOld();
 	 
-	 virtual int solve();
+	 virtual SATSolver::SATSolverResult solve();
 	
 	 virtual void reset();
 	 virtual void retractAssumptions();
@@ -138,6 +138,11 @@ public:
 	 void dump(){
 		 s->dump();
 	 }
+
+	 /*!
+	 Fills single and dble with all the unary and binary clauses that 
+	 are in the SAT solver but are not part of baseline.
+	 */
 	 void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline){
 		 s->getShareable(single, dble, baseline);
 	 }

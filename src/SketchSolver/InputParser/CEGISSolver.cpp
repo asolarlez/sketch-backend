@@ -495,7 +495,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	}
 //Solve
 	
-	int result = mngFind.solve();
+	SATSolver::SATSolverResult result = mngFind.solve();
 	hcoder.dismissedPending();
 
 	if(PARAMS->outputSat){
@@ -521,7 +521,7 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	    	}    			
     	}
 		if(this->stoppedEarly){
-			cerr<<dirFind.lastErrMsg<<endl;
+			cout<<dirFind.lastErrMsg<<endl;
 		}
     	return false;
     }
@@ -1395,7 +1395,7 @@ void CEGISSolver::get_control_map(map<string, string>& values){
 		stringstream str;
 		it->second->print(str);
 		values[it->first] = str.str();
-	}
+	}	
 }
 
 

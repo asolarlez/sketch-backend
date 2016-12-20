@@ -21,19 +21,53 @@ extern timerclass modelBuilding;
 using namespace std;
 
 class ClauseExchange{
+	/*!
+	File from which to read data from other cores.
+	*/
 	string infile;
+	/*!
+	File from which to write data to other cores. 
+	In some setups, this will be the same as infile, and all cores
+	read and write to the same file. With large numbers of cores, though, 
+	alternative setups are possible, for example, with individual files
+	used to communicate between two neighboring calls.
+	*/
 	string outfile;
 	int failures;
 	MiniSATSolver* msat;
+	/*!
+	Contains the IDs of literals that are known to be true. This is very valuable 
+	information that will be exchanged.
+	*/
 	set<int> single;
+	/*!
+	Contains binary clauses known to the global solver. These are also valuable
+	and should also be exchanged.
+	*/
 	set<pair<int, int> > dble;
+	/*!
+	These are binary clauses that should not be exchanged because everyone knows them already. 
+	*/
 	set<pair<int, int> > baseline;
+
+	/*!
+	Populates single and dble from the contents of the msat SAT solver.
+	*/
 	void analyzeLocal();
+	/*!
+	Read the content of infile into the solver.
+	*/
 	void readInfile();
+	/*!
+	Write the contents of single and dble to the outfile.
+	*/
 	void pushOutfile();
 public:
 	ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf);	
 	void exchange();
+	/*!
+	Print all the information that the exchanger is ready to exchange with others.
+	*/
 	void printToExchange() {
 		cout << "Single: ";
 		for (auto sit = single.begin(); sit != single.end(); ++sit) {
@@ -111,6 +145,7 @@ class InterpreterEnvironment
 public:
 	typedef enum {READY, UNSAT} STATUS;
 	STATUS status;
+	bool hasGoodEnoughSolution;
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
@@ -125,6 +160,7 @@ public:
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
 		exchanger = NULL;
+		hasGoodEnoughSolution = false;
 	}
 	
 	vector<pair<string, string> > spskpairs;
@@ -136,19 +172,44 @@ public:
 	int doallpairs();
 	void share();
 
-	void reset(){
+	/*!
+	Check if adaptive concretization is enabled.
+	*/
+	bool acEnabled() {
+		return (params.ntimes > 1 || params.randomassign);
+	}
+
+
+	void resetCore() {
 		delete finder;
 		delete _pfind;
 		delete solver;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
-    finder->setNumericalAbsMap(numericalAbsMap);
-		hardcoder.reset();
+		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
-		cout<<"ALLRESET"<<endl;
-		status=READY;
+		cout << "ALLRESET" << endl;
+		status = READY;
 	}
+
+	/*!
+	Wipes out the finder SATSolver and SolverHelper as well as the CEGIS solver. 
+	Resets the hardcoder and registers the new finder with it.
+	*/
+	void reset(){
+		hardcoder.reset();	
+		resetCore();
+	}
+
+
+	void resetMinimize() {
+		hasGoodEnoughSolution = true;
+		hardcoder.resetForMinimize(currentControls);
+		resetCore();
+	}
+
+
 
 
 	void addFunction(const string& name, BooleanDAG* fun){
@@ -170,13 +231,20 @@ public:
 		return new BooleanDAGCreator(tmp, floats);		
 	}
 	
-	void printControls(ostream& out){
-		hardcoder.printControls(out);
 
+	void recordSolution() {
+		solver->get_control_map(currentControls);
+		hardcoder.get_control_map(currentControls);
+		cout << "VALUES ";
+		for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
+			cout << it->first << ": " << it->second << ", ";
+		}
+		cout << endl;
+	}
+
+	void printControls(ostream& out){		
 		for(auto it = currentControls.begin(); it != currentControls.end(); ++it){
-			if(!hardcoder.hasValue(it->first)){
-				out<<it->first<<"\t"<<it->second<<endl;
-			}
+			out<<it->first<<"\t"<<it->second<<endl;			
 		}
 	}
 	
@@ -229,7 +297,7 @@ public:
 		This function takes ownership of dag. After this, 
 		dag will be useless, and possibly deallocated.
 	*/
-	int assertDAG(BooleanDAG* dag, ostream& out);
+	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 

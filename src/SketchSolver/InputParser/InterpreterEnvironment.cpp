@@ -619,12 +619,14 @@ void InterpreterEnvironment::share(){
 	}
 }
 
-int InterpreterEnvironment::doallpairs(){
+
+
+
+int InterpreterEnvironment::doallpairs(){		
 	int howmany = params.ntimes;
 	if(howmany < 1 || !params.randomassign){ howmany = 1; }
-	int result=-1;
-	vector<int> rd(2);
-	map<int, vector<double> > scores;
+	SATSolver::SATSolverResult result= SATSolver::UNDETERMINED;
+	
     
     // A dummy ctrl for inlining bound
 	CTRL_node* inline_ctrl = NULL;
@@ -634,36 +636,26 @@ int InterpreterEnvironment::doallpairs(){
         hardcoder.declareControl(inline_ctrl);
     }
     
-	if(howmany > 1 || params.randomassign){
-        for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
-			BooleanDAG* bd = it->second;
-			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
-			for(int i=0; i<ctrl.size(); ++i){
-				hardcoder.declareControl((CTRL_node*) ctrl[i]);
-			}
-		}
+	if(acEnabled()){
+		hardcoder.registerAllControls(functionMap);
 		if(exchanger == NULL && howmany > 5){
 			string inf = params.inputFname;
 			inf += ".com";
-			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);			
-			if(params.randdegree == 0){
-				rd[0] = 10;
-				rd[1] = 5;
-			}
-		}			 
+			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);						
+		}
 	}
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());	
-	for(int tt = 0; tt<howmany; ++tt){
-		if(howmany>1){ cout<<"ATTEMPT "<<tt<<endl; }
-		if(tt % 5 == 4){
+	for(int trailID = 0; trailID<howmany; ++trailID){
+		if(howmany>1){ cout<<"ATTEMPT "<<trailID<<endl; }
+		if(trailID % 5 == 4){
 			share();
 			if(params.randdegree == 0){
-				hardcoder.adjust(rd, scores);
+				hardcoder.adjust();
 			}
 		}
 		if(params.randdegree == 0){
-			hardcoder.setRanddegree(rd[tt % 2]);			
+			hardcoder.setRanddegree(trailID);			
 		}
 
 		timerclass roundtimer("Round");
@@ -680,44 +672,57 @@ int InterpreterEnvironment::doallpairs(){
 		for(int i=0; i<spskpairs.size(); ++i){
 			hardcoder.setCurHarness(i);
 			try{
-        BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
+				BooleanDAG* bd= prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
 				result = assertDAG(bd, cout);
 				cout<<"RESULT = "<<result<<"  "<<endl;;
 				printControls("");				
 			}catch(BadConcretization& bc){
 				hardcoder.dismissedPending();
-				result = 1;
+				result = SATSolver::UNSATISFIABLE;
 				break;
 			}
-				if(result!=0){
-					break;
-				}
-				if(hardcoder.isDone()){
-					break;
-				}
+			if(result!=SATSolver::SATISFIABLE){
+				break;
+			}
+			if(hardcoder.isDone()){
+				break;
+			}
 		}
 		roundtimer.stop();
-		cout<<"**ROUND "<<tt<<" : "<<hardcoder.getTotsize()<<" ";
+		cout<<"**ROUND "<<trailID<<" : "<<hardcoder.getTotsize()<<" ";
 		roundtimer.print("time");
 		cout<<"RNDDEG = "<<hardcoder.getRanddegree()<<endl;
 		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
-		scores[hardcoder.getRanddegree()].push_back(comp);
-		if(result==0){
+		hardcoder.addScore(comp);
+		if(result==SATSolver::SATISFIABLE){
 			cout<<"return 0"<<endl;
-			return result;
-		}
-		reset(); 
-		if(hardcoder.isDone()){
-			cout<<"return 1"<<endl;
-			return 1;
-		}
+			if (params.minvarHole) {
+				resetMinimize();
+				if (hardcoder.isDone()) {
+					return 0;
+				}
+			} else {
+				return 0;
+			}		
+		} else {
+			reset();
+			if (hardcoder.isDone()) {
+				if (hasGoodEnoughSolution) {
+					cout << "return 0" << endl;
+					return 0;
+				} else {
+					cout << "return 1" << endl;
+					return 1;
+				}				
+			}
+		}	
 	}
 	cout<<"return 2"<<endl;
 	return 2; // undefined.
 }
 
 
-int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
+SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	Assert(status==READY, "You can't do this if you are UNSAT");
 	++assertionStep;	
 	
@@ -752,21 +757,24 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 	try{
 		
 		solveCode = solver->solve();
-		
-		solver->get_control_map(currentControls);
+		if (solveCode || !hasGoodEnoughSolution  ) {
+			recordSolution();
+		}
 	}catch(SolverException* ex){
 		cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
 		status=UNSAT;				
-		return ex->code + 2;
+		return ex->code;
 	}catch(BasicError& be){
-		solver->get_control_map(currentControls);
+		if (!hasGoodEnoughSolution) {
+			recordSolution();
+		}
 		cout<<"ERROR: "<<basename()<<endl;
 		status=UNSAT;				
-		return 3;
+		return SATSolver::ABORTED;
 	}
 	if( !solveCode ){
 		status=UNSAT;				
-		return 1;	
+		return SATSolver::UNSATISFIABLE;
 	}
 
 	if(false){
@@ -784,8 +792,7 @@ int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
 		}
 	}
 		
-	return 0;
-
+	return SATSolver::SATISFIABLE;
 }
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag){
@@ -897,8 +904,6 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   vector<bool_node*> newnodes;
   set<bool_node*> seenNodes;
   DagOptim op(dag, floats);
-  
-  dag.lprint(cout);
   BooleanDAG& dagclone = (*dag.clone());
   vector<OutType*> rettypes;
   string fname = "_GEN_NUM_SYNTH";
@@ -920,7 +925,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
       if (node == NULL) continue;
       int nid = node->id;
       OutType* type = node->getOtype();
-      cout << dagclone[nid]->lprint() << endl;
+      //cout << dagclone[nid]->lprint() << endl;
       
       
       if (type == OutType::INT || type == OutType::BOOL  ) {
@@ -1020,7 +1025,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   funDag->lprint(cout);
   dag.addNewNodes(newnodes);
   op.cleanup(dag);  
-  dag.lprint(cout);
+  //dag.lprint(cout);
   //funDag->repOK();
   
   finder->setNumericalAbsMap(numericalAbsMap);

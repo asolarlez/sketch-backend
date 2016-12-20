@@ -798,6 +798,13 @@ void SolverHelper::addHelperC(Tvalue& tv){
 	
 }
 
+
+Tvalue& SolverHelper::getControl(const string& name) {	
+	map<string, Tvalue>::iterator mp = controls.find(name);
+	Assert(mp != controls.end(), "Not here");
+	return mp->second;
+}
+
 Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
 	Assert(!ctrlnode->get_Angelic(), "not allowed");
 	string name = ctrlnode->get_name();
