@@ -11,11 +11,17 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <algorithm>
 //#include <dirent.h>
 
 #include "SATSolver.h"
 #include "guardedVal.h"
 #include "StringHTable.h"
+#include "Tvalue.h"
+
+#include "BooleanDAG.h"
+
+
 
 // #define Dout(msg) msg
 

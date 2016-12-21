@@ -266,7 +266,7 @@ inline lbool    Solver::value         (Var x) const   { return toLbool(assigns[x
 inline lbool    Solver::value         (Lit p) const   { return toLbool(assigns[var(p)]) ^ sign(p); }
 inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
-inline int      Solver::nClauses      ()      const   { return clauses.size() + lazyors.size(); }
+inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return assigns.size(); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity    [v] = (char)b; }
