@@ -1,0 +1,25 @@
+pragma options "--fe-fpencoding AS_FIXPOINT";
+
+generator int g(int  x,ref float c) {
+  if (??) {
+    c = 1.5;
+    return x;
+  }
+  if (??) {
+    c = 3.0;
+    return x + x;
+  }
+  if (??) {
+    c = 1.9;
+    return x + x;
+  }
+  assert false;
+}
+
+int f(int x, ref float c) { return g(x,c); }
+
+harness void main() {
+  float c;
+  assert f(1,c) == 2;
+  assert c <= 2.0;
+}

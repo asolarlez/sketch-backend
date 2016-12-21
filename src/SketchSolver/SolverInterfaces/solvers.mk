@@ -22,8 +22,8 @@ SOLVER_SRCS =
 SOLVER_HDRS = 
 
 ## Interface
-SOLVER_SRCS     += $(SOLVERS)/SATSolver.cpp $(SOLVERS)/BLIFwriter.cpp
-SOLVER_HDRS	+= $(SOLVERS)/SATSolver.h $(SOLVERS)/BLIFwriter.h
+SOLVER_SRCS     += $(SOLVERS)/SATSolver.cpp
+SOLVER_HDRS	+= $(SOLVERS)/SATSolver.h
 
 ## ABC
 #ABC		= ../abc60513

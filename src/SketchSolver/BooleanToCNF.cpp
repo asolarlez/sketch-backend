@@ -4,12 +4,21 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <utility>
 #include <Sort.h>
+#include <math.h>
 using namespace std;
 
 #include "BooleanToCNF.h"
-#include "Tvalue.h"
-
+#include "BooleanDAG.h"
+#include "MiniSATSolver.h"
+#include "DagOptim.h"
+#include "CommandLineArgs.h"
+#include "VarStore.h"
+#include "NodeEvaluator.h"
+#include "NumericalSolver.h"
+#include "GTPredicateSolver.h"
+#include "EntityResolutionSolver.h"
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -46,6 +55,62 @@ SolverHelper::assertVectorsDiffer (int v1, int v2, int size)
 
 }
 
+namespace MSsolverNS {
+	int ID;
+}
+
+
+Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
+	if (name == "_GEN_gtp") {
+		return new GtpSyn(_fm);
+	} else if (name == "_GEN_eratom") {
+    return new ERAtomSyn(_fm);
+  } else if (name.find("_GEN_NUM_SYNTH") == 0) {
+    return new NumericalSolver(_fm, numericalAbsMap[name]);
+  }
+	return NULL;
+}
+
+
+void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
+	auto sit = sins.find(name);
+	SynthInSolver* sin;
+	if (sit == sins.end()) {
+		sin = ((MiniSATSolver&)mng).addSynth(inputs.size(), outputs.size(), newSynthesizer(syntype, _fm));
+		sins[name] = sin;
+	}
+	else {
+		sin = sit->second;
+	}
+	int instid = sin->newInstance(inputs, outputs);
+
+	int inputid = 0;
+	for (auto it = inputs.begin(); it != inputs.end(); ++it, ++inputid) {
+		Tvalue& tv = *it;
+		if (tv.isBvect()) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 1, lfromInt(tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, 0, lfromInt(-tv.getId()));
+			continue;
+		}
+		const gvvec& vec = tv.num_ranges;
+		for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid, ci->value, lfromInt(ci->guard));
+		}
+	}
+	int outid = 0;
+	for (auto it = outputs.begin(); it != outputs.end(); ++it, ++outid) {
+		Tvalue& tv = *it;
+		if (tv.isBvect()) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, 1, lfromInt(tv.getId()));
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, 0, lfromInt(-tv.getId()));
+			continue;
+		}
+		const gvvec& vec = tv.num_ranges;
+		for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
+			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, ci->value, lfromInt(ci->guard));
+		}
+	}
+}
 
 void SolverHelper::addHelperC(Tvalue& tv){
 	if(tv.isSparse() ){
@@ -66,7 +131,7 @@ void SolverHelper::addHelperC(Tvalue& tv){
 		if(!this->memoizer.condAdd(&tmpbuf[0], l, 0, rv)){
 			mng.addCountingHelperClause(x, gv.size());
 		}
-		delete x;
+		delete[] x;
 
 		/*
 		gvvec& gv = tv.num_ranges;
@@ -92,7 +157,38 @@ void SolverHelper::addHelperC(Tvalue& tv){
 }
 
 
+Tvalue& SolverHelper::getControl(const string& name) {	
+	map<string, Tvalue>::iterator mp = controls.find(name);
+	Assert(mp != controls.end(), "Not here");
+	return mp->second;
+}
 
+Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
+	Assert(!ctrlnode->get_Angelic(), "not allowed");
+	string name = ctrlnode->get_name();
+	map<string, Tvalue>::iterator mp = controls.find(name);	
+	Assert(mp != controls.end(), "Not here");
+	return mp->second;
+}
+
+Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
+	Assert(!ctrlnode->get_Angelic(), "not allowed");
+	string name = ctrlnode->get_name();
+	map<string, Tvalue>::iterator mp = controls.find(name);
+	if(mp != controls.end()){
+		return mp->second;
+	}else{
+		int nbits = ctrlnode->get_nbits();
+		declareInArr(name, nbits);
+		Tvalue& rv = controls[name];
+		rv = getArr(name, 0);
+		if(nbits > 1){
+			rv.setSize(nbits);
+			rv.makeSparse(*this);
+		}
+		return rv;
+	}
+}
 
 
 int SolverHelper::setStrTV(Tvalue& tv){

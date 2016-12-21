@@ -8,6 +8,7 @@
 #include <set>
 #include <stack>
 #include <functional>
+#include "FloatSupport.h"
 
 using namespace std;
 
@@ -441,6 +442,9 @@ protected:
 	void findCycles(BooleanDAG& dag);
 	void breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterator> >& s, map<int, UFUN_node*>& dupNodes);
     bool_node* process(UFUN_node* node);
+	FloatManager& floats;
+	ASSERT_node* failedAssert;
+
 public:
 	bool isTopLevel;
 	map<bool_node*, FastSet<bool_node> > funDependencies;
@@ -450,7 +454,7 @@ public:
 	map<string, UFUN_node*> callMap;
     map<int, UFUN_node*> combinedFunCallMap;
 
-	DagOptim(BooleanDAG& dag);
+	DagOptim(BooleanDAG& dag, FloatManager& fm);
 	virtual ~DagOptim();
 	
 	bool_node* quickcse(int idmom, int idpop, bool_node::Type t){
@@ -511,7 +515,7 @@ public:
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ARR_R_node& node );
 	virtual void visit( ARR_W_node& node );
-   // virtual void visit( TUPLE_CREATE_node& node);
+   virtual void visit( TUPLE_CREATE_node& node);
     virtual void visit( TUPLE_R_node& node);
 
 	virtual void visit( ASSERT_node &node);	
@@ -523,22 +527,114 @@ public:
 	virtual bool isNegOfEachOther(bool_node* n1, bool_node* n2);
 	virtual bool isNotOfEachOther(bool_node* n1, bool_node* n2); 
 	bool isConst(const bool_node* n1);
+	bool isFloatConst(const bool_node* n1);
+  bool isIntConst(const bool_node* n1);
+	bool isFloat(const bool_node* n1);
 	bool getBval(const bool_node* n1);
 	int getIval(const bool_node* n1);
+	double getFval(const bool_node* n1);
 	bool_node*  addGE(bool_node* mother, bool_node* father);
 	bool_node*  addLE(bool_node* mother, bool_node* father);
 	bool_node*  addGT(bool_node* mother, bool_node* father);
+
+
+
+	int getCode(CONST_node& node) {
+		if (node.isFloat()) {
+			return (floats.getIdx(node.getFval()) << 1) | 1;
+		}else {
+			return node.getVal() << 1;
+		}
+	}
+
+	CONST_node* getZero(bool_node* node) {
+		if (isFloat(node)) {
+			return getCnode(0.0);
+		} else {
+			return getCnode(0);
+		}
+	}
+
+	CONST_node* nodeSub(bool_node* left, bool_node* right) {
+		if (isFloat(left)) {
+			return getCnode(getFval(left) - getFval(right));
+		} else {
+			return getCnode(getIval(left) - getIval(right));
+		}
+	}
+
+	CONST_node* nodeAdd(bool_node* left, bool_node* right) {
+		if (isFloat(left)) {
+			return getCnode(getFval(left) + getFval(right));
+		}
+		else {
+			return getCnode(getIval(left) + getIval(right));
+		}
+	}
+
+
+	bool isZero(bool_node* node) {
+		if (isFloat(node)) {
+			if (node->type == bool_node::CONST) {
+				return floats.getIdx(((CONST_node*)node)->getFval()) == 0;
+			}
+		}else {
+			if (node->type == bool_node::CONST) {
+				return ((CONST_node*)node)->getVal() == 0;
+			}
+		}
+		return false;
+	}
+	bool isOne(bool_node* node) {
+		if (isFloat(node)) {
+			if (node->type == bool_node::CONST) {
+				return floats.getIdx(((CONST_node*)node)->getFval()-1.0) == 0;
+			}
+		}
+		else {
+			if (node->type == bool_node::CONST) {
+				return ((CONST_node*)node)->getVal() == 1;
+			}
+		}
+		return false;
+	}
 };
+
+
+inline 
+bool DagOptim::isFloat(const bool_node* n1) {
+	return n1->getOtype() == OutType::FLOAT;
+}
+
 
 
 inline
 bool DagOptim::isConst(const bool_node* n1){
 	if( n1->type == bool_node::CONST ){
-		return !((CONST_node*)n1)->isFloat();
+		// return !((CONST_node*)n1)->isFloat();
+		return true;
+	}
+	return false;
+}
+
+inline
+bool DagOptim::isFloatConst(const bool_node* n1) {
+	if (n1->type == bool_node::CONST) {
+		return ((CONST_node*)n1)->isFloat();
 		// return true;
 	}
 	return false;
 }
+
+inline
+bool DagOptim::isIntConst(const bool_node* n1) {
+  if (n1->type == bool_node::CONST) {
+    return !((CONST_node*)n1)->isFloat();
+    // return true;
+  }
+  return false;
+}
+
 
 inline
 bool DagOptim::getBval(const bool_node* n1){
@@ -550,6 +646,13 @@ int  DagOptim::getIval(const bool_node* n1){
 	//Assert( isConst(n1), "This node is not a constant !!");
 	const CONST_node * cn = (CONST_node*)(n1);
 	return cn->getVal()	;
+}
+
+inline
+double  DagOptim::getFval(const bool_node* n1) {
+	//Assert( isConst(n1), "This node is not a constant !!");
+	const CONST_node * cn = (CONST_node*)(n1);
+	return cn->getFval();
 }
 
 

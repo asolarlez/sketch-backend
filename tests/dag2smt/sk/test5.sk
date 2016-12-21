@@ -1,0 +1,12 @@
+/*generator int exp(int n, int [n] x){
+	int i=??; 
+	if(??) return x[i];
+	else if(??) return x[i] + exp(n,x);
+	else return x[i] * exp(n,x);
+}*/
+harness void main(int x, int y, int z){
+	int [3] v = {x,y,z};
+	int a=??; int b=??; int c=??;
+	assert(v[a]+v[b]*v[c] == x+y*z);
+	assert(a<=b && b<=c);
+}

@@ -24,6 +24,7 @@ typedef enum {
 
 class SolverHelper;
 
+class SolverHelper;
 
 class Tvalue {
     valtype_t type;
@@ -78,7 +79,25 @@ public:
 
 	inline bool isArray (void) const { return type == TVAL_ARRAY; }
 
-
+	Lit litForValue(int v) const {
+		if (type == TVAL_SPARSE) {			
+			for (gvvec::const_iterator it = num_ranges.begin(); it != num_ranges.end(); ++it) {
+				if (it->value == v) {
+					return lfromInt(it->guard);
+				}
+			}
+			return Lit();
+		}
+		if (type == TVAL_BVECT) {
+			if (v == 0) {
+				return lfromInt(-getId());
+			}
+			if (v == 1) {
+				return lfromInt(getId());
+			}
+		}
+		return Lit();
+	}
     /*
      * Mutators.
      */
@@ -217,7 +236,7 @@ public:
 	return out;
     }
 
-	int eval(SATSolver* solv) const{
+	int eval(SATSolver* solv)const{
 		if ( isSparse () ){
 			int tq = 0;
 			bool found = false;
@@ -242,7 +261,7 @@ public:
 	}
 
 
-	void print(ostream &out, SATSolver* solv){
+	void print(ostream &out, SATSolver* solv)const{
 		
 		if ( isSparse () || isArray()){
 			
@@ -300,9 +319,8 @@ public:
 		} */
 	}
 
-    /* Sparsify a value.
-     * FIXME seems like a inconsistency pronating method... */
-	inline void sparsify(SolverHelper& sh);
+    /* When we create a sparse value we first populate num_ranges and then we call this method */
+    void sparsify (SolverHelper& sh);
 
     inline void arrayify (void) {
 	type = TVAL_ARRAY;
@@ -344,24 +362,25 @@ public:
     }
 
     /* Invert an integer value. */
-	Tvalue toComplement(SolverHelper &dir) const;
+    Tvalue toComplement (SolverHelper &dir) const;
 
 private:
     /* Convert a sparse into unsigned / signed bit-vector, including padding bits. */
-	Tvalue sparseToBvectAny(SolverHelper &dir, unsigned padding, bool toSigned) const;
+    Tvalue sparseToBvectAny (SolverHelper &dir, unsigned padding,
+	       			    bool toSigned) const;
 
 public:
-	Tvalue toBvect(SolverHelper &dir, unsigned padding = 0) const;
+    Tvalue toBvect (SolverHelper &dir, unsigned padding = 0) const;
 
-	Tvalue toBvectSigned(SolverHelper &dir, unsigned padding = 0) const;
+    Tvalue toBvectSigned (SolverHelper &dir, unsigned padding = 0) const;
 
-	void makeBvectSigned(SolverHelper &dir, unsigned padding = 0);
+    void makeBvectSigned (SolverHelper &dir, unsigned padding = 0);
 
-	void makeArray(SolverHelper &dir, int nbits, int arrsz, float sparseArray);
+	void makeArray (SolverHelper &dir, int nbits, int arrsz, float sparseArray=-1.0);
 
-	void makeSparse(SolverHelper &dir, int adj = 1);
+    void makeSparse (SolverHelper &dir, int adj = 1);
 
-	Tvalue toSparse(SolverHelper &dir, int adj = 1) const;
+    Tvalue toSparse (SolverHelper &dir, int adj = 1) const;
 
     inline void addArrDefault(int g, int v) {
 	    if (isArray()) {

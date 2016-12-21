@@ -8,8 +8,10 @@
 #include "VarStore.h"
 #include "CommandLineArgs.h"
 #include "SolverTypes.h"
+#include "HoleHardcoder.h"
 #include <stack>
 #include <ctime>
+#include "FloatSupport.h"
 
 using namespace MSsolverNS;
 
@@ -19,8 +21,7 @@ public:
 	int iterlimit;
 	bool printDiag;
 	int NINPUTS;
-	int nseeds;
-
+	int nseeds;	
 	bool simulate;
 	int simiters;
 	int simstopsize;
@@ -29,6 +30,7 @@ public:
 	simtype simplifycex;
 	bool superChecks;
 	bool lightVerif;
+	float sparseArray;	
 	CEGISparams(CommandLineArgs& args):
 		printDiag(false),
 		nseeds(1),
@@ -39,7 +41,8 @@ public:
 		simplifycex(RECSIM),
 		superChecks(false),
 		setMemo(args.setMemo),
-		lightVerif(args.lightVerif)
+		lightVerif(args.lightVerif),
+		sparseArray(args.sparseArray)
 	{
 		printDiag = args.printDiag;
 		nseeds = args.seedsize;		
@@ -66,9 +69,12 @@ public:
 
 class CEGISSolver
 {
+	FloatManager& floats;
+	HoleHardcoder& hcoder;
 	int curProblem;
 	vector<BooleanDAG*> problems;
 	stack<BooleanDAG*> problemStack;
+	map<int, vector<VarStore> > expensives;
 	void pushProblem(BooleanDAG* p){		
 		problemStack.push(p);
 	}
@@ -104,7 +110,7 @@ class CEGISSolver
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;	
 protected:
-	void declareControl(const string& cname, int size);
+	void declareControl(CTRL_node* cnode);
 	void declareInput(const string& cname, int size, int arrSz);
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
@@ -127,7 +133,7 @@ public:
 	VarStore ctrlStore;
 	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
 
-	CEGISSolver(SolverHelper& finder, CommandLineArgs& args);
+	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
 	~CEGISSolver(void);
 	void addProblem(BooleanDAG* miter);
 
@@ -144,12 +150,12 @@ public:
 	void printDiagnostics(SATSolver& mng, char c);
 	
 
-	void redeclareInputs(BooleanDAG* dag);
+	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);
 	
 
-	void get_control_map(map<string, int>& values);
+	void get_control_map(map<string, string>& values);
 	void outputEuclid(ostream& fout);
-	void setup2QBF(ostream& out);
+	void setup2QBF(ofstream& out);
 
 
     VarStore prevCtrlStore;

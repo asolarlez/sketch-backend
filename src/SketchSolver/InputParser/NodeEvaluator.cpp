@@ -1,13 +1,17 @@
 #include "NodeEvaluator.h"
+#include <cmath>
+#include <iomanip>
 
 // Class for interpreter of BooleanDAG.
-NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p)
+NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
+functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);
+	isset.resize(bdag.size(), false);
 	vecvalues.resize(bdag.size(), NULL);
     tuplevalues.resize(bdag.size(), NULL);
+	epsilon = floats.epsilon;
 
 }
 
@@ -41,23 +45,45 @@ void NodeEvaluator::visit( ARR_R_node &node){
 }
 
 void NodeEvaluator::visit( TUPLE_R_node &node){
+  OutType* otp = node.getOtype();
   int itup = i(*node.mother);
   if(itup == -1){
     setbn(node, 0);
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
     return;
   }
   cptuple* cpt = tuplevalues[itup];
 	if(cpt==NULL){
     setbn(node, 0);
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
 		return;
 	}
 	int idx = node.idx;
   if(idx < 0 || idx >= cpt->size()){
     setbn(node, 0 );
+    if (otp->isArr) {
+      cpvec* cpvt = vecvalues[node.id];
+      if (cpvt != NULL) {
+        delete cpvt;
+      }
+      vecvalues[node.id] = NULL;
+    }
     return;
   }
-  OutType* otp = node.getOtype();
-  if(otp==OutType::INT || otp ==OutType::BOOL || otp->isTuple){
+  
+  if(otp==OutType::INT || otp ==OutType::BOOL || otp == OutType::FLOAT || otp->isTuple){
     setbn(node, cpt->vv[idx]);
   } else {
     cpvec* cpvt = vecvalues[node.id];
@@ -120,10 +146,8 @@ void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 	for(int t=0; t<sz; ++t){
     OutType* e = otp->entries[t];
     if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
-      Assert(!e->isArr, "Should not be an array here");
       cpv->vv[t] = i(*node.multi_mother[t]);
     } else {
-      Assert(node.multi_mother[t]->id != -1, "node id is -1");
       cpv->vv[t] = (node.multi_mother[t]->id);
     }
 	}
@@ -164,14 +188,140 @@ void NodeEvaluator::visit( CTRL_node& node ){
 	//cout << "NodeEvaluator CTRL " << node.lprint() << " " << node.get_Angelic() << " " << node.getArrSz() << " " << node.get_nbits() << endl;
 	setbn(node, (*inputs)[node.get_name()]);
 }
-void NodeEvaluator::visit( PLUS_node& node ){
-	setbn(node, i(*node.mother) + i(*node.father));
+
+
+bool arrayComp(cpvec* mv, cpvec* fv, int mdef, int fdef) {
+	int msz = mv == NULL ? 0 : mv->size();
+	int fsz = fv == NULL ? 0 : fv->size();
+	msz = msz > fsz ? msz : fsz;
+
+	bool tt = (mdef == fdef);
+	for (int jj = 0; jj<msz; ++jj) {
+		int tm = mv == NULL ? mdef : mv->get(jj, mdef);
+		int tf = fv == NULL ? fdef : fv->get(jj, fdef);
+		tt = tt && (tm == tf);
+		if (!tt) {
+			break;
+		}
+	}
+	return tt;
 }
-void NodeEvaluator::visit( TIMES_node& node ){
-	setbn(node, i(*node.mother) * i(*node.father));
+
+bool NodeEvaluator::argcomp(vector<bool_node*>& parents, vector<int>& v1, vector<int>& v2) {
+	for (int jj = 0; jj < v1.size(); ++jj) {
+		if (parents[jj]->isArrType()) {
+			cpvec* vv1 = this->vecvalues[v1[jj]];
+			cpvec* vv2 = this->vecvalues[v2[jj]];
+			if (!arrayComp(vv1, vv2, values[v1[jj]], values[v2[jj]])) {
+				return false;
+			}
+		}else{
+			if (v1[jj] != v2[jj]) {
+				return false;
+			}
+		}
+	}
+	return true;
 }
+
+
+void NodeEvaluator::builtinRetVal(UFUN_node& node, int idxval) {
+	string tuple_name = node.getTupleName();
+
+	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+	int size = tuple_type->actSize;
+	Assert(size == 1, "BAD");
+	cptuple* cpv = new cptuple(size);
+	if (tuplevalues[node.id] != NULL) {
+		delete tuplevalues[node.id];
+	}
+	cpv->vv[0] = idxval;
+	tuplevalues[node.id] = cpv;
+	setbn(node, node.id);
+}
+
+
+bool NodeEvaluator::checkKnownFun(UFUN_node& node) {
+	const string& name = node.get_ufname();
+	if (name == "_cast_int_float_math") {
+		int val = i(*node.multi_mother[0]);
+		builtinRetVal(node, floats.getIdx((float)val));
+		return true;
+	}
+	if (floats.hasFun(name)) {
+		int val = i(*node.multi_mother[0]);
+		builtinRetVal(node, floats.getFun(name)(val));
+		return true;
+	}	
+	return false;
+}
+
+
 void NodeEvaluator::visit( UFUN_node& node ){
-	Assert(false, "NYI; jngyttyuy");
+
+	if (checkKnownFun(node)) {
+		return;
+	}
+
+
+	vector<pair<int, vector<int> > >& args = funargs[node.get_ufname()];
+	vector<int> cargs;
+	for(int ii=0; ii<node.multi_mother.size(); ++ii){
+		bool_node* pred = node.multi_mother[ii];
+		if (pred->isArrType()) {
+			cargs.push_back(pred->id);
+		}else {
+			cargs.push_back(i(*pred));
+		}		
+	}
+	for(int jj = 0; jj<args.size(); ++jj){
+		if(argcomp(node.multi_mother, args[jj].second, cargs)){
+			setbn(node, args[jj].first);
+			return;
+		}
+	}
+	
+
+	string tuple_name = node.getTupleName();
+
+	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+	int size = tuple_type->actSize;
+
+	cptuple* cpv = new cptuple(size);
+	if(tuplevalues[node.id] != NULL){
+		delete tuplevalues[node.id];
+	}
+	tuplevalues[node.id] = cpv;
+	int arrcnt = 0;
+
+	for (int j = 0; j < size ; j++) {
+		stringstream sstr;
+		sstr<<node.get_ufname()<<"_"<<node.get_uniquefid()<<"_"<<j;
+		OutType* type = tuple_type->entries[j];
+		Assert(!type->isTuple, "NYS");
+		if(type->isArr){
+			if(arrcnt == 0){
+				if(vecvalues[node.id] != NULL){
+					delete vecvalues[node.id];
+				}
+				VarStore::objP& op = inputs->getObj(sstr.str());
+				
+				vecvalues[node.id] = new cpvec(op.arrSize(), &(op));
+			}else{
+				Assert(false, "Multiple return arrays not yet implemented");
+			}
+			arrcnt++;
+			cpv->vv[j] = node.id;
+		}else{
+			int val = (*inputs)[sstr.str()];
+			cpv->vv[j] = val;
+		}
+	}
+
+	
+	args.push_back(make_pair(node.id, cargs));
+	setbn(node, node.id);
+	return;	
 	/*
 	vector<bool_node*>& mm = node.multi_mother;
 	visitArith(node);
@@ -220,7 +370,42 @@ void NodeEvaluator::visit( ARRACC_node& node ){
 	}	
 }
 
-void NodeEvaluator::visit( DIV_node& node ){
+void NodeEvaluator::visit(PLUS_node& node) {
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		int idx = floats.getIdx(mval + fval);
+		setbn(node, idx);
+		return;
+	}
+	setbn(node, i(*node.mother) + i(*node.father));
+}
+void NodeEvaluator::visit(TIMES_node& node) {
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		int idx = floats.getIdx(mval * fval);
+		setbn(node, idx);
+		return;
+	}
+	setbn(node, i(*node.mother) * i(*node.father));
+}
+
+void NodeEvaluator::visit( DIV_node& node ){	
+	if (node.getOtype() == OutType::FLOAT) {
+		float mval = floats.getFloat(i(*node.mother));
+		float fval = floats.getFloat(i(*node.father));
+		if (abs(fval) < epsilon) {
+			if (fval >= 0.0) {
+				fval = epsilon;
+			}else {
+				fval = -epsilon;
+			}
+		}
+		int idx = floats.getIdx(mval / fval);
+		setbn(node, idx);
+		return;
+	}
 	int tt = i(*node.father);
 	setbn(node, tt == 0 ? 0 : (i(*node.mother) / tt));
 }
@@ -229,15 +414,29 @@ void NodeEvaluator::visit( MOD_node& node ){
 	setbn(node, tt == 0? 0 : (i(*node.mother) % tt));
 }
 void NodeEvaluator::visit( NEG_node& node ){
+	//No need to check if it is float or not, even if it is float, 
+	//negating the index will have the effect of negating the value.
 	setbn(node, -i(*node.mother));
 }
 void NodeEvaluator::visit( CONST_node& node ){
-	setbn(node, node.getVal());
+	if (node.isFloat()) {
+		setbn(node, floats.getIdx(node.getFval()));
+	} else {
+		setbn(node, node.getVal());		
+	}	
 }
 
 void NodeEvaluator::visit( LT_node& node ){
-	setbn(node, i(*node.mother) < i(*node.father));
+	if (node.mother->getOtype() == OutType::FLOAT) {
+		setbn(node, floats(i(*node.mother)) < floats(i(*node.father)));
+	} else {
+		setbn(node, i(*node.mother) < i(*node.father));
+	}	
 }
+
+
+
+
 
 void NodeEvaluator::visit( EQ_node& node ){
 
@@ -247,28 +446,7 @@ void NodeEvaluator::visit( EQ_node& node ){
 		|| node.father->getOtype() == OutType::INT_ARR){
 			cpvec* mv = vecvalues[node.mother->id];
 			cpvec* fv = vecvalues[node.father->id];
-			int msz = mv==NULL? 0 : mv->size() ;
-			int fsz = fv==NULL? 0 : fv->size() ;			
-			msz = msz > fsz ? msz : fsz;
-
-			bool tt = (i(*node.mother) == i(*node.father));
-			for(int jj=0; jj<msz; ++jj){
-				int tm = mv==NULL?  i(*node.mother) :mv->get(jj, i(*node.mother));
-				int tf = fv==NULL?  i(*node.father) :fv->get(jj, i(*node.father));
-				tt = tt && (tm == tf);
-				if(!tt){
-					if (false) {
-						cout << "not EQ! " << node.mother->lprint() << "[" << jj << "]=" << tm << " vs " << node.father->lprint() << "[" << jj << "]=" << tf << endl;
-						cout << "i(): " << i(*node.mother) << " " << i(*node.father) << endl;
-						cout << "mv:";
-						mv->print(cout);
-						cout << " fv:";
-						fv->print(cout);
-						cout << endl;
-					}
-					break;
-				}
-			}
+			bool tt = arrayComp(mv, fv, i(*node.mother), i(*node.father));
 		setbn(node, tt);
 	}else{
 		setbn(node, i(*node.mother) == i(*node.father)); 
@@ -320,6 +498,7 @@ void NodeEvaluator::printNodeValue(int i){
 
 
 bool NodeEvaluator::run(VarStore& inputs_p){
+	funargs.clear();
 	inputs = &inputs_p;
 	int i=0;
 	failedAssert = false;
@@ -338,14 +517,21 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 
 void NodeEvaluator::display(ostream& out){
 	for(int i=0; i<values.size(); ++i){
-		cout<<"AVALS= ["<<bdag[i]->globalId<<"]"<<bdag[i]->lprint()<<"	v="<<values[i]<<endl;
+		out << "AVALS= [" << bdag[i]->globalId << "]" << bdag[i]->lprint();
+		if (bdag[i]->getOtype() == OutType::FLOAT) {
+			out<<std::fixed;
+			out << std::setprecision(9);
+			out << "	v=" << floats.getFloat(values[i]) << endl;
+		} else {
+			out << "	v=" << values[i] << endl;
+		}
 	}
 }
 
 
 int NodeEvaluator::scoreNodes(int start /*=0*/){
 	int i=start;
-	int maxcount = -10;
+	float maxcount = -10.0;
 	int highest= -1;
 	int nconsts = 0;
 	for(vector<bool>::iterator it = changes.begin()+start; it != changes.end(); ++it, ++i){
@@ -366,10 +552,13 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 
 
 
-        if(!*it && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && ni->type != bool_node::TUPLE_CREATE){
+        if(!*it && this->isset[i] && ni->type != bool_node::CONST && !ni->isArrType() && ni->type != bool_node::ASSERT && !ni->getOtype()->isTuple && ni->getOtype() != OutType::FLOAT ){
             ++nconsts;
 			int count = 0;
 			for(child_iter cit = ni->children.begin(); cit != ni->children.end(); ++cit){
+				if((*cit)->type == bool_node::ASSERT && ((ASSERT_node*)(*cit))->isAssume()){
+					break;
+				}
 				if(!changes[(*cit)->id]){
 					++count;
 					if((*cit)->mother == ni || (*cit)->father == ni){
@@ -377,10 +566,13 @@ int NodeEvaluator::scoreNodes(int start /*=0*/){
 					}
 				}
 			}
-			if(count > maxcount + 3 && count > (ni->layer / 10)){
-				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<"   "<<ni->lprint()<<endl;
+
+			if((count/(float)ni->layer) > maxcount){
+				// cout<<i<<": count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 				highest = i;
-				maxcount = count;
+				maxcount = (count/(float)ni->layer);
+			}else{
+				// if(count>0) cout<<i<<": TRIED count = "<<count<<" layer = "<<ni->layer<<" ratio "<< (count/(float)ni->layer) <<"   "<<ni->lprint()<<endl;
 			}
 		}
 	}

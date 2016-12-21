@@ -4,6 +4,7 @@
 #include "NodeVisitor.h"
 #include "VarStore.h"
 #include <map>
+#include "FloatSupport.h"
 
 #include <iostream>
 
@@ -72,6 +73,8 @@ public:
 		idx[2] = UNSET;
 		flip = 0;
 	}
+
+
 
 	cpvec(cpvec* pp, int ii, int v):vv(NULL){		
 		update(pp, ii, v);
@@ -155,10 +158,16 @@ public:
 	}
 };
 
+
+
+
 class NodeEvaluator :
 	public NodeVisitor
 {
 protected:
+	float epsilon;
+	FloatManager& floats;
+	map<string, vector<pair<int, vector<int> > > > funargs;
 	map<UFUN_node*, NodeEvaluator> recursives;
 	map<string, BooleanDAG*>& functionMap;
 	BooleanDAG& bdag;
@@ -166,7 +175,8 @@ protected:
 	vector<cpvec*> vecvalues;
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
-	VarStore* inputs;
+	vector<bool> isset;
+	VarStore* inputs;	
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;
@@ -174,17 +184,29 @@ protected:
 		return values[bn.id];
 	}
 
+	
+
+	bool checkKnownFun(UFUN_node& node);
+	void builtinRetVal(UFUN_node& node, int idxval);
+
 	bool b(bool_node& bn){
 		return values[bn.id] == 1;
 	}
+
+	bool argcomp(vector<bool_node*>& parents, vector<int>& v1, vector<int>& v2);
 	void setbn(bool_node& bn, int i){
 		if(trackChange){
 			int id = bn.id;
 			int& t = values[id];
-			changes[id] = changes[id] || (t!=i);
+			if(isset[id]){
+				changes[id] = changes[id] || (t!=i);
+			}else{
+				isset[id] = true;
+			}
 			t = i;
 		}else{
 			values[bn.id] = i;
+			isset[bn.id] = true;
 		}
 	}
 
@@ -192,7 +214,7 @@ protected:
 		setbn(bn, c ? 1 : 0);
 	}
 public:
-	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p);
+	NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats);
 	~NodeEvaluator(void);
 	virtual void visit( AND_node& node );
 	virtual void visit( OR_node& node );
@@ -236,4 +258,13 @@ public:
 	int getValue(bool_node* bn){
 		return i(*bn);
 	}
+  
+  vector<int> getTuple(int i) {
+    cptuple* tup = tuplevalues[i];
+    vector<int> res;
+    for (int k = 0; k < tup->size(); k++) {
+      res.push_back(tup->vv[k]);
+    }
+    return res;
+  }
 };

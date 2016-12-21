@@ -29,6 +29,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A4D54392-D0C6-43A1-ACCF-743C7195F292}</ProjectGuid>
     <RootNamespace>Sketch</RootNamespace>
+    <ProjectName>Sketch</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" Label="Configuration">
@@ -256,13 +257,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MiniSat\core\IntPropagator.cpp" />
-    <ClCompile Include="SketchSolver\InputParser\AltOptim.cpp" />
     <ClCompile Include="MiniSat\core\Solver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMainHelpers.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BackwardsAnalysis.cpp" />
-    <ClCompile Include="SketchSolver\InputParser\DagSuperOptim.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanDAG.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanDAGCreator.cpp" />
     <ClCompile Include="SketchSolver\InputParser\BooleanNodes.cpp" />
@@ -280,8 +279,10 @@
     <ClCompile Include="SketchSolver\InputParser\DeriveImplications.cpp" />
     <ClCompile Include="SketchSolver\InputParser\driver.cpp" />
     <ClCompile Include="SketchSolver\FindCheckSolver.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\HoleHardcoder.cpp" />
     <ClCompile Include="SketchSolver\InputParser\InputReader.cpp" />
     <ClCompile Include="SketchSolver\InputParser\InterpreterEnvironment.cpp" />
+    <ClCompile Include="SketchSolver\InputParser\NodeHardcoder.cpp" />
     <ClCompile Include="SketchSolver\InputParser\Tvalue.cpp" />
     <ClCompile Include="SketchSolver\memory_sampler.cc" />
     <ClCompile Include="SketchSolver\SolverInterfaces\MiniSATSolver.cpp" />
@@ -296,7 +297,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MiniSat\core\IntPropagator.h" />
-    <ClInclude Include="SketchSolver\InputParser\AltOptim.h" />
+    <ClInclude Include="MiniSat\core\SynthInSolver.h" />
+    <ClInclude Include="SketchSolver\InputParser\BitSet.h" />
     <ClInclude Include="SketchSolver\InputParser\CounterexampleFinder.h" />
     <ClInclude Include="minisat\core\msolver.h" />
     <ClInclude Include="minisat\core\solvertypes.h" />
@@ -309,8 +311,9 @@
     <ClInclude Include="MiniSat\mtl\Sort.h" />
     <ClInclude Include="minisat\mtl\vec.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMainHelpers.h" />
-    <ClInclude Include="SketchSolver\InputParser\DagSuperOptim.h" />
     <ClInclude Include="SketchSolver\InputParser\FloatSupport.h" />
+    <ClInclude Include="SketchSolver\InputParser\HoleHardcoder.h" />
+    <ClInclude Include="SketchSolver\InputParser\NodeHardcoder.h" />
     <ClInclude Include="SketchSolver\InputParser\NodeSuperEvaluator.h" />
     <ClInclude Include="SketchSolver\InputParser\PrintInteresting.h" />
     <ClInclude Include="SketchSolver\InputParser\CegisMain.h" />
@@ -362,8 +365,6 @@
     <ClInclude Include="zchaff\zchaff_version.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-    <None Include="ClassDiagram2.cd" />
     <None Include="glucose_1.0\sources\glucose\mtl\template.mk" />
     <None Include="SketchSolver\InputParser\InputParser.yy" />
   </ItemGroup>

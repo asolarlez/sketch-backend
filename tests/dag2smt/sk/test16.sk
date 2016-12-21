@@ -1,0 +1,10 @@
+int W = 4;
+
+bit[4] reverseSketch(bit[4] in) implements reverse {
+	return 	in + {*} + in;
+}
+
+bit[4] reverse (bit[4] in) {
+	bit[4] tmp = {0, 1, 0, 0};
+	return in + tmp+in;
+}

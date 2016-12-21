@@ -4,9 +4,9 @@
 
 int FRACTION = 8;
 
-ComplexInliner::ComplexInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions):
+ComplexInliner::ComplexInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions, FloatManager& fm):
 dag(p_dag), 
-DagOptim(p_dag),
+DagOptim(p_dag, fm),
 functionMap(p_functionMap),
 optimTime(" optim "),
 optAll(" opt all "),
@@ -288,8 +288,8 @@ void ComplexInliner::unify(){
 
 
 void ComplexInliner::immInline(BooleanDAG& dag){
-	
-	DagFunctionInliner dfi(dag, functionMap, NULL);
+	map<string, map<string, string> > replaceMap;
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, NULL);
 	dfi.process(dag);
 	
 	somethingChanged = dfi.changed();
@@ -327,7 +327,7 @@ void ComplexInliner::process(BooleanDAG& dag){
 	// cout<<" funmap has size " << functionMap.size() << endl;
 	somethingChanged = true;
 	{
-		DagOptim optim(dag);
+		DagOptim optim(dag, floats);
 		optim.process(dag);
 	}
 	
@@ -366,7 +366,7 @@ void ComplexInliner::process(BooleanDAG& dag){
 	
 	// dag.print(cout);
 	{
-		DagFunctionToAssertion makeAssert(dag, functionMap);
+		DagFunctionToAssertion makeAssert(dag, functionMap, floats);
 		makeAssert.process(dag);
 	}
 

@@ -30,7 +30,7 @@ class ComplexInliner: public DagOptim
 	virtual void immInline(BooleanDAG& dag);
 	int expectedNFuns;
 public:
-	ComplexInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions);
+	ComplexInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, int p_inlineAmnt, bool p_mergeFunctions, FloatManager& fm);
 	~ComplexInliner(void);
 	virtual void process(BooleanDAG& bdag);
 	virtual void computeSpecialInputs();

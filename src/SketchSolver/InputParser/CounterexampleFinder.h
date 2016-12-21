@@ -2,99 +2,27 @@
 #include "NodeEvaluator.h"
 #include "StringHTable.h"
 
-
-class mybitset{
-	int size;
-	unsigned buf[];
-public:
-	mybitset(int sz):size(sz){
-		memset(buf, 0, sz*sizeof(unsigned));
-	}
-	void insert(int v){
-		int idx = v >> 5;
-		int msk = 1 << (v & 0x1f);
-		buf[idx] |= msk;
-	}
-
-	void print(ostream& os);
-
-	void insert(mybitset* other){
-		if(other==NULL){ return ; }
-		Assert(size == other->size, "e;lkhy");
-		unsigned* oth = other->buf;
-		for(int i=0; i<size; ++i){
-			buf[i] |= oth[i];
-		}
-	}
-	friend mybitset* merge(Ostore<unsigned>& store, mybitset* a, mybitset* b);
-	int next(int v){
-		++v;
-		int msz = size << 5;
-		while(v < msz){
-			int idx = v >> 5;
-			int msk = 1 << (v & 0x1f);
-			if((buf[idx] & msk) != 0){
-				return v;
-			}
-			++v;
-		}
-		return -1;
-	}
-};
-
-
-inline mybitset* mybitsetcreateLL(Ostore<unsigned>& store, int wsize){		
-	mybitset* rv = new(store.newObj(wsize+1 )) mybitset(wsize);
-	return rv;
-}
-
-inline mybitset* mybitsetcreate(Ostore<unsigned>& store, int sz){
-	int wsize = sz > 0 ? (((sz-1)>>5)+1) : 0;	
-	mybitset* rv = new(store.newObj(wsize+1 )) mybitset(wsize);
-	return rv;
-}
-
-inline mybitset* merge(Ostore<unsigned>& store, mybitset* a, mybitset* b){
-	if(b==NULL){
-		return a;
-	}
-	if(a==NULL){
-		return b;
-	}
-	Assert(a->size == b->size, "Clekn");
-	unsigned* ba = a->buf;
-	unsigned* bb = b->buf;
-	int sz = a->size;
-	for(int i=0; i<sz; ++i){
-		if(ba[i] != (ba[i] | bb[i])){
-			mybitset* rv = mybitsetcreateLL(store, sz);
-			for(int j=0; j<sz; ++j){
-				rv->buf[j] = ba[j] | bb[j];
-			}
-			return rv;
-		}
-	}
-	return a;
-}
-
+#include "BitSet.h"
 
 
 class CounterexampleFinder :
 	public NodeEvaluator
 {
+	float sparseArray;
 	Ostore<unsigned> store;
-	vector<mybitset* >  influences;
+	vector<BitSet* >  influences;
 	vector<int> jumpids;
 	void computeInfluences(){
 		influences.clear();
 		influences.resize(bdag.size());
 		int bssize = inputs->getIntsize();
+		map<string, vector<UFUN_node*> > ufmap;
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 			bool_node* cur = (*node_it);
 			if(cur->type == bool_node::SRC){
 				SRC_node* src = dynamic_cast<SRC_node*>(cur);	
 				int oid = inputs->getId(src->get_name());
-				mybitset* nb = mybitsetcreate(store, bssize);
+				BitSet* nb = mybitsetcreate(store, bssize);
 				nb->insert( oid );
 				// nb->print(cout);
 				influences[cur->id] = nb;
@@ -102,8 +30,42 @@ class CounterexampleFinder :
 					jumpids.resize(oid+1);
 				}
 				jumpids[oid] = src->id;
+			}else if (cur->type == bool_node::UFUN) {
+				UFUN_node& node = *((UFUN_node*)cur);
+				string uname = node.get_ufname();
+				vector<UFUN_node*>& uv = ufmap[uname];
+
+				const string& tuple_name = node.getTupleName();
+
+				Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
+				int size = tuple_type->actSize;
+				BitSet* nb = mybitsetcreate(store, bssize);
+				uv.push_back(&node);
+
+				for (int tt = 0; tt < uv.size(); ++tt) {
+					UFUN_node* ufn = uv[tt];
+					for (int j = 0; j < size; j++) {
+						stringstream sstr;
+						sstr << ufn->get_ufname() << "_" << ufn->get_uniquefid() << "_" << j;
+						int oid = inputs->getId(sstr.str());
+						nb->insert(oid);
+						if (ufn == &node) {
+							if (jumpids.size() <= oid) {
+								jumpids.resize(oid + 1);
+							}
+							jumpids[oid] = cur->id;
+						}						
+					}
+				}				
+				for (int i = 0; i < node.multi_mother.size(); ++i) {
+					nb->insert(influences[node.multi_mother[i]->id]);
+				}
+
+
+				influences[cur->id] = nb;				
+				
 			}else{
-				mybitset* res = NULL;
+				BitSet* res = NULL;
 				if(cur->mother != NULL){
 					res = influences[cur->mother->id];					
 				}
@@ -112,7 +74,7 @@ class CounterexampleFinder :
 					if(res == NULL){
 						res = influences[cur->father->id];
 					}else{
-						mybitset* old = res;
+						BitSet* old = res;
 						res = merge(store, res, influences[cur->father->id]);
 						if(old != res){
 							isFresh = true;
@@ -126,7 +88,7 @@ class CounterexampleFinder :
 							res = influences[an->multi_mother[i]->id];
 						}else{
 							if(!isFresh){
-								mybitset* old = res;
+								BitSet* old = res;
 								res = merge(store, res, influences[an->multi_mother[i]->id]);
 								if(old != res){
 									isFresh = true;
@@ -152,6 +114,7 @@ public:
 
 	Result searchLoop(int maxfails){
 		int failcount = 0;
+		funargs.clear();
 		failedHAssert = false;
 		failedAssert = false;
 		int bdsz = bdag.size();
@@ -166,7 +129,7 @@ public:
 				}
 				failedHAssert = false;
 				ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
-				mybitset* inf = influences[an->id];
+				BitSet* inf = influences[an->id];
 				if(inf == NULL){
 					message = &(an->getMsg());
 					return UNSAT;
@@ -206,15 +169,33 @@ public:
 				}
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
-					inputs->getObj(it).makeRandom();
+					if(sparseArray > 0.000001){
+						inputs->getObj(it).makeRandom(sparseArray);
+					}else{
+						inputs->getObj(it).makeRandom();
+					}
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }
 				}
+
+				for (auto funit = funargs.begin(); funit != funargs.end(); ++funit) {
+					vector<pair<int, vector<int> > >& args = funit->second;
+					for (auto argit = args.begin(); argit != args.end(); ++argit) {
+						if (argit->first >= jmp) {
+							args.resize(argit - args.begin());
+							break;
+						}
+					}
+				}
+
 				node_it = bdag.begin() + jmp;
 				(*node_it)->accept(*this);
 			}
 			
 			if(failedAssert){
+        ASSERT_node* an = dynamic_cast<ASSERT_node*>(*node_it);
+        message = &(an->getMsg());
+        cout << (*message) << endl;
 				//cout<<" FAILED BUT WONT REPORT "<<(*node_it)->lprint()<<endl;
 				return FOUND;
 			}
@@ -224,8 +205,8 @@ public:
 		return (failedAssert && !failedHAssert) ? FOUND : NOTFOUND;
 	}
 
-	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p):
-	NodeEvaluator(functionMap_p, bdag_p)
+	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
+	NodeEvaluator(functionMap_p, bdag_p, _floats), sparseArray(sparseArray_p)
 	{
 	}
 

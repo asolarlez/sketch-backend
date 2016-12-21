@@ -179,6 +179,9 @@ Comment      ("//"[^\n]*)
     return T_assume;
 }
 
+"hassert" {
+    return T_hassert;
+}
 
 
 "NativeFilter"	{				
@@ -192,6 +195,14 @@ Comment      ("//"[^\n]*)
 "SKETCHES"	{
 				return T_Sketches;
 			}
+
+"EQUALS" {
+        return T_equals;
+      }
+
+"replace" {
+        return T_replace;
+      }
 						
 
 "def"		{
@@ -205,6 +216,9 @@ Comment      ("//"[^\n]*)
 "MINVAR"	{
 				return T_Min;
 			}
+"SPVAR" {
+        return T_sp;
+      }
 "typedef" {
                 return T_Typedef;
             }

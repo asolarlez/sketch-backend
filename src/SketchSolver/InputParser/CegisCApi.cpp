@@ -77,7 +77,7 @@ BooleanDAG *evt_get_copy(InterpreterEnvironment *evt, char *s) {
 BooleanDAG *evt_prepare_miter(InterpreterEnvironment *evt,
     BooleanDAG *spec, BooleanDAG *sketch)
 {
-    return evt->prepareMiter(spec, sketch);
+    return evt->prepareMiter(spec, sketch, evt->inlineAmnt());
 }
 
 int evt_assert_dag(InterpreterEnvironment *evt, BooleanDAG *miter) {
@@ -99,13 +99,13 @@ void evt_get_controls(InterpreterEnvironment *evt, int *nkeys, char ***keys, int
     (*values) = new int[n];
 
     int i = 0;
-    for (map<string, int>::iterator it = evt->currentControls.begin();
+    for (auto it = evt->currentControls.begin();
          it != evt->currentControls.end();
          it++)
     {
         Assert(i < n, "sanity check");
         (*keys)[i] = (char *)(*it).first.c_str();
-        (*values)[i] = (*it).second;
+        (*values)[i] = atoi((*it).second.c_str());
         i++;
     }
 }

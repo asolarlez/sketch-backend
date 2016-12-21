@@ -3,7 +3,7 @@
 #include "BackwardsAnalysis.h"
 //extern CommandLineArgs* PARAMS;
 
-BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm) :dag(p_dag), optim(*p_dag, fm)
+BooleanDAGCreator::BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm):dag(p_dag),optim(*p_dag, fm)
 {
 	//
 	// optim.alterARRACS();
@@ -40,7 +40,7 @@ bool_node* BooleanDAGCreator::get_node(const string& name) {
 	}
 	else {
 		if (!named_nodes.get(name.c_str(), name.size(), fth)) {
-			// cout<<"WARNING, DANGEROUS!!"<<endl;
+		  cout<<"WARNING, DANGEROUS!!"<<endl;
 			fth = optim.getCnode(-333);
 			dag->setOffset(optim.newNodesSize());
 		}
@@ -223,7 +223,7 @@ bool_node* BooleanDAGCreator::create_const(double n) {
 }
 
 
-INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth) {
+INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string& gen_name, int arrSz, int tupDepth){
 	INTER_node* tmp = dag->create_inputs(n, type, gen_name, arrSz, tupDepth);
 	bool_node* f;
 	bool flag = named_nodes.condAdd(gen_name.c_str(), gen_name.size(), tmp, f);
@@ -232,9 +232,9 @@ INTER_node* BooleanDAGCreator::create_inputs(int n, OutType* type, const string&
 	return tmp;
 }
 
-INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max, bool isFloat) {
+INTER_node* BooleanDAGCreator::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max, bool isFloat){
 	Assert(this->dag->assertions.tail == NULL || this->dag->assertions.tail->next == NULL, "this is bad");
-	INTER_node* tmp = dag->create_controls(n, gen_name, toMinimize, angelic, spConcretize, max, isFloat);
+	INTER_node* tmp =  dag->create_controls(n, gen_name, toMinimize, angelic, spConcretize, max, isFloat);
 	if (gen_name == "#PC") {
 		dynamic_cast<CTRL_node*>(tmp)->set_Pcond();
 	}

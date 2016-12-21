@@ -9,6 +9,8 @@ extern const int UNINITIALIZED = 0;
 
 int bool_node::NEXT_GLOBAL_ID = 0;
 int UFUN_node::CALLSITES = 0;
+int UFUN_node::FGID= 0;
+
 
 OutType* OutType::BOTTOM = new Bottom();
 OutType* OutType::BOOL = new Bool();
@@ -19,7 +21,7 @@ OutType* OutType::INT_ARR = new Arr(INT);
 OutType* OutType::FLOAT_ARR = new Arr(FLOAT);
 vector<OutType*> OutType::store;
 map<string, OutType*> OutType::tupleMap;
-int i;
+
 
 OutType* OutType::getTuple(const string& name){
     if(tupleMap.count(name)>0 ){
@@ -29,11 +31,12 @@ OutType* OutType::getTuple(const string& name){
     
     Tuple* t = new Tuple();
     t->name = name;
+    t->actSize = 0;
     tupleMap[name] = t;
     return t;
 }
 
-OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
+OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems, int actFields){
     Tuple* t;
 	if(tupleMap.count(name)>0 ){
 		t =  dynamic_cast<Tuple*>(tupleMap[name]);
@@ -43,6 +46,7 @@ OutType* OutType::makeTuple(const string& name, vector<OutType*>& elems){
         tupleMap[name] = t;
     }
     t->entries = elems;
+    t->actSize = actFields == -1 ? elems.size() : actFields;
     
     return t;
     
@@ -115,6 +119,11 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
 			return t1;
 		}
 	}
+    if(t2->isArr){
+        if(((Arr*)t2)->atype->isTuple){
+            return t2;
+        }
+    }
   	if( t2 == t1 ){
         return t1; 
   	}else{ 		
@@ -165,7 +174,7 @@ void bool_node::replace_child(bool_node* ori, bool_node* replacement){
 
 }
 
-bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t)
+bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0), father(NULL), flag(0), id(-1), otype(OutType::BOTTOM), type(t), depth(-1)
   {
       
 	  layer = 0;
@@ -175,8 +184,8 @@ bool_node::bool_node(Type t):globalId(NEXT_GLOBAL_ID++), mother(NULL), layer(0),
   }  
   bool_node::bool_node(const bool_node& bn, bool copyChildren):globalId(NEXT_GLOBAL_ID++), mother(bn.mother), layer(bn.layer), 
   								 father(bn.father), 
-  								 flag(bn.flag), id(bn.id), 
-								 otype(bn.otype), type(bn.type)
+  								 flag(bn.flag), id(bn.id),
+								 otype(bn.otype), type(bn.type), depth(bn.depth)
   {
       
       if(copyChildren){ children = bn.children; }
@@ -260,6 +269,27 @@ void bool_node::addToParents(){
     
 }
 
+vector<bool_node*> arith_node::parents(){
+  vector<bool_node*> parents = bool_node::parents();
+  for(vector<bool_node*>::iterator it = multi_mother.begin(); it != multi_mother.end(); ++it){
+    if(*it != NULL){
+      bool_node* tmp = (*it);
+      parents.push_back(tmp);
+    }
+  }
+  return parents;
+}
+
+vector<bool_node*> bool_node::parents() {
+  vector<bool_node*> parents;
+  if (father != NULL) {
+    parents.push_back(father);
+  }
+  if (mother != NULL && father != mother) {
+    parents.push_back(mother);
+  }
+  return parents;
+}
 
 
 

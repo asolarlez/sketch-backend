@@ -2,8 +2,8 @@
 
 
 
-DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap):
-dag(p_dag), DagOptim(p_dag),functionMap(p_functionMap) {
+DagFunctionToAssertion::DagFunctionToAssertion(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, FloatManager& fm):
+dag(p_dag), DagOptim(p_dag, fm),functionMap(p_functionMap) {
 	
 }
 

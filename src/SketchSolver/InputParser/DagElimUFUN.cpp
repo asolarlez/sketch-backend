@@ -96,7 +96,7 @@ SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
         src->setArr(sz);
     }
     
-    src->setTuple(node.getTupleName());
+    src->setTuple(node.getTupleName(), true);
     return src;
 }
 
@@ -259,6 +259,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		OR_node* on = new OR_node();
 		on->mother = res->mother;
 		on->father = ch->mother;
+		// NOTE xzl: should we call addToParents?
+		on->addToParents();
 		cclone->addNewNode(on);
 		
         
@@ -341,6 +343,10 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 
 void DagElimUFUN::visit( UFUN_node& node ){
 	string name = node.get_ufname();
+	if(ufunsToDo.count(name) == 0){
+		rvalue = &node;
+		return;
+	}
 	name += node.outname;
 	if(( functions.find(name) == functions.end()) || functions[name].moreNewFuns ){
 		rvalue = produceNextSFunInfo( node  );
@@ -453,6 +459,20 @@ void DagElimUFUN::process(BooleanDAG& dag){
 	dagsize = dag.size();
 	int k=0;
 	// Dout( dag.print(cout) );
+
+	for(int i=0; i<dag.size(); ++i ){
+		bool_node* nn = dag[i];
+		if(nn->type == bool_node::UFUN){
+			UFUN_node* uf = (UFUN_node*)nn;
+			for(vector<bool_node*>::iterator it = uf->multi_mother.begin(); it != uf->multi_mother.end(); ++it){
+				if( (*it)->getOtype()->isArr ){
+					ufunsToDo.insert(uf->get_ufname());
+				}
+			}
+		}
+	}
+
+
 	Dout( cout<<" BEFORE PROCESS "<<endl );
 	for(int i=0; i<dag.size(); ++i ){
 		// Get the code for this node.

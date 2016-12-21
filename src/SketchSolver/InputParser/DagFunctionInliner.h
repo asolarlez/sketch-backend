@@ -8,6 +8,8 @@
 #include "CommandLineArgs.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
+#include "HoleHardcoder.h"
+
 
 class Caller{
 public:
@@ -83,7 +85,7 @@ public:
 			}
 		}
 		for(BooleanDAG::iterator it = dag.begin(); it != dag.end(); ++it){
-			if(typeid(**it) == typeid(UFUN_node)){
+			if((*it)->type == bool_node::UFUN){
 				if(cname.count((*it)->globalId)>0){
 				cout<<cname[(*it)->globalId]<<"[shape=record]"<<endl;
 				}else{
@@ -115,19 +117,28 @@ public:
 	Call this method is called before starting to inline, just to let the inliner know what's coming.
 	*/
 	virtual void preCheckInline(UFUN_node& node)=0;
+  
+  virtual bool isRecursive(UFUN_node& node) { return false; }
 
 	virtual void clear()=0;
+  
+  virtual int numRecursive(UFUN_node& node) {return 0;}
+  
+  virtual void registerCallWithLimit(const UFUN_node& caller, const UFUN_node* callee, int newLmt) {}
 
 	/**
 	Register the existence of a call.
 	*/
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee)=0;
+  
+  virtual int getLimit() {return 0;}
 };
 
 
 class InlinerNode{
 public:
 	int funid;
+  int limit;
 	InlinerNode* parent;	
 };
 
@@ -194,6 +205,7 @@ public:
 		funidmap.condAdd("$root", 6, nextfunid, nextfunid);
 		nextfunid++;
 		root= inodestore.newObj();
+    root->limit = -1;
 		root->funid = 0;
 		root->parent = NULL;
 		
@@ -208,6 +220,21 @@ public:
 		}else{
 			next->funid = id;
 		}
+    next->limit = -1;
+		next->parent = parent;
+		inodes[node.globalId] = next;
+	}
+  
+  virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt){
+		int id = nextfunid++;
+		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size()+1, id, id);
+		InlinerNode* next = inodestore.newObj();
+		if(boundByCallsite){
+			next->funid = node.get_callsite();
+		}else{
+			next->funid = id;
+		}
+    next->limit = newLmt;
 		next->parent = parent;
 		inodes[node.globalId] = next;
 	}
@@ -230,26 +257,66 @@ public:
 	}
 
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
-		Assert(current == inodes[caller.globalId], "This should never happen");
+    Assert(current == inodes[caller.globalId], "This should never happen");
 		addChild(current, *callee);
 	}
+  
+  virtual void registerCallWithLimit(const UFUN_node& caller, const UFUN_node* callee, int newLmt) {
+    Assert(current == inodes[caller.globalId], "This should never happen");
+    addChildWithLimit(current, *callee, newLmt);
+  }
 
+  bool isRecursive(UFUN_node& node) {
+    InlinerNode* candidate = inodes[node.globalId];
+		Assert(candidate != NULL, "I've never seen this function before!!!");
+    InlinerNode* temp = candidate->parent;
+   
+    if (temp->funid == candidate->funid) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  int numRecursive(UFUN_node& node) {
+    InlinerNode* candidate = inodes[node.globalId];
+		Assert(candidate != NULL, "I've never seen this function before!!!");
+		int cnt = 0;
+		InlinerNode* temp = candidate->parent;
+    while(temp != NULL){
+      
+			if(temp->funid == candidate->funid){
+				cnt++;
+			}
+			temp = temp->parent;
+		}
+		return cnt;
+  }
+  
 	bool localCheck(UFUN_node& node){
 		InlinerNode* candidate = inodes[node.globalId];
 		Assert(candidate != NULL, "I've never seen this function before!!!");
 		int cnt = 0;
 		InlinerNode* temp = candidate->parent;
+    int recLimit = limit;
 		while(temp != NULL){
+      if (temp->limit != -1 && temp->limit < recLimit) {
+        recLimit = temp->limit;
+        if (cnt >= recLimit) {
+          return false;
+        }
+        return true;
+      }
 			if(temp->funid == candidate->funid){
 				cnt++;
-				if(cnt >= limit){
+				if(cnt >= recLimit){
 					// cout<<"Prevented "<<node.get_ufname()<<endl;
 					return false;
 				}
 			}
 			temp = temp->parent;
 		}
-		// cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
+		//cout<<"Inlining with  "<<cnt<<" steps "<<node.get_ufname()<<endl;
 		return true;
 	}
 
@@ -272,6 +339,7 @@ public:
 		}
 		return localCheck(node);
 	}
+  virtual int getLimit() {return limit; }
 	virtual void clear(){ }
 };
 
@@ -520,7 +588,7 @@ public:
 		
 	}
 	virtual bool checkInline(UFUN_node& node){
-		return (inlineAllFuns) ||  !funsToInline.count(node.get_ufname())==0;
+		return (inlineAllFuns) ||  funsToInline.count(node.get_ufname())!=0;
 	}
 	virtual void registerCall(const UFUN_node& caller, const UFUN_node* callee){
 		
@@ -538,60 +606,14 @@ public:
 	void clear(){}
 };
 
-
-
-class HoleHardcoder{
-	bool LEAVEALONE(int v){ return v < 0; }
-	static const int REALLYLEAVEALONE = -8888888;
-	map<string, int> randholes;
-	string justincase;
-	stringstream concsig;
-	int lasthc;
-	map<string, set<int> > badvalues;
-	vector<bool> chkrbuf;
-	SolverHelper* sat;
-	int fixValue(const string& s, int bound, int nbits);
-	long long int totsize;
-public:
-	HoleHardcoder(){
-		lasthc = -1;
-		totsize = 1;
-	}
-	long long int getTotsize(){
-		return totsize;
-	}
-	void reset(){
-		if(randholes.size()>0){						
-			cout<<"Ruling out bad hole values "<<concsig.str()<<"  "<<lasthc<<endl;
-			badvalues[concsig.str()].insert(lasthc);
-		}
-		concsig.str(string());
-		justincase="";
-		lasthc=-1;
-		randholes.clear();
-		totsize=1;
-	}
-	void setSolver(SolverHelper* sh){
-		sat = sh;
-	}
-	bool_node* checkRandHole(CTRL_node* node, DagOptim& opt);
-	void afterInline();
-	void printControls(ostream& out);
-	bool hasValue(const string& s){
-		map<string, int>::iterator it = randholes.find(s);
-		if(it == randholes.end()){ return false; }
-		return (!LEAVEALONE(it->second));
-	}
-};
-
-
-
 class DagFunctionInliner : public DagOptim
 {
 	
 	
 	BooleanDAG& dag;
-	map<string, BooleanDAG*>& functionMap;	
+	map<string, BooleanDAG*>& functionMap;
+  map<string, map<string, string> > replaceMap;
+  int replaceDepth; // TODO: in general we may need a map for this
 
 	timerclass ufunAll;
 
@@ -611,12 +633,13 @@ class DagFunctionInliner : public DagOptim
 	InlineControl* ictrl;
 
 	
-	bool randomize;	
+	bool randomize;
+  bool onlySpRandomize;
+  int spRandBias;
 	HoleHardcoder* hcoder;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, 	HoleHardcoder* p_hcoder,
-	bool p_randomize=false, InlineControl* ict=NULL);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		
@@ -624,13 +647,21 @@ public:
 	virtual void visit(CTRL_node& node);
 	virtual bool changed(){ return somethingChanged; }
 	
-
+  bool_node* createTupleAngelicNode(string tuple_name, string node_name, int depth);
+  bool_node* createEqNode(bool_node* left, bool_node* right, int depth);
 
 
 	set<string>& getFunsInlined(){
 		return funsInlined;
 	}
+  
+  void turnOffRandomization() {
+    randomize = false;
+  }
 
+  void turnOnRandomization() {
+    randomize = true;
+  }
 	
 	
 };

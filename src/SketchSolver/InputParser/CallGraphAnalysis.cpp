@@ -1,7 +1,7 @@
 #include "CallGraphAnalysis.h"
 #include "DagFunctionInliner.h"
 
-void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funmap){
+void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funmap, FloatManager& floats){
 		vector<vector<BooleanDAG*> > scc;
 		computeSCC(root, scc);
 		vector<string> nocycles;
@@ -24,8 +24,8 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 		for(vector<string>::reverse_iterator it = vlist.rbegin(); it!= vlist.rend(); ++it){
 			BooleanDAG* dagToOptim = funmap[*it];
 			InclusiveInliner ict;
-			
-			DagFunctionInliner fi(*(dagToOptim), funmap, NULL, false, &ict);
+			map<string, map<string, string> > replaceMap;
+			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				if(nocycles[i] != dagToOptim->get_name()){
 					ict.addFunToInline(nocycles[i]);
@@ -40,8 +40,8 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 		{
 			BooleanDAG* dagToOptim = root;
 			InclusiveInliner ict;
-			
-			DagFunctionInliner fi(*(dagToOptim), funmap, NULL, false, &ict);
+			map<string, map<string, string> > replaceMap;
+			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				ict.addFunToInline(nocycles[i]);
 			}
@@ -91,7 +91,7 @@ void CallGraphAnalysis::printCG(BooleanDAG& dag, map<string, BooleanDAG*>& funMa
 		populateCG(dag, funMap, cg);
 }
 
-void CallGraphAnalysis::process(BooleanDAG& dag, map<string, BooleanDAG*>& funMap){
+void CallGraphAnalysis::process(BooleanDAG& dag, map<string, BooleanDAG*>& funMap, FloatManager& floats){
 
 	map<string, BooleanDAG*>& tmpmap = funMap;
 	/*
@@ -103,7 +103,7 @@ void CallGraphAnalysis::process(BooleanDAG& dag, map<string, BooleanDAG*>& funMa
 	{
 		CallGraph cg;
 		populateCG(dag, tmpmap, cg);
-		cg.directInlining(&dag, tmpmap);
+		cg.directInlining(&dag, tmpmap, floats);
 	}
 	{
 		cout<<"second stage"<<endl;

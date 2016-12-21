@@ -16,7 +16,7 @@ class BooleanDAGCreator
 		const string& father, /*OUT*/bool_node*& mth, /*OUT*/bool_node*& fth);
 
 public:
-	BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm);
+    BooleanDAGCreator(BooleanDAG* p_dag, FloatManager& fm);
 
 public:
 	virtual ~BooleanDAGCreator(void);
@@ -25,8 +25,8 @@ public:
 	virtual bool_node* create_const(int n);
 	virtual bool_node* create_const(double n);
 
-	INTER_node* create_inputs(int n, OutType* type, const string& gen_name = string("INPUT"), int arrSz = -1, int tupDepth = -1);
-	INTER_node* create_controls(int n, const string& gen_name = string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloast = false);
+  INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1, int tupDepth = -1);
+  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloast = false);
 
 	/**
 	Creates an N-bit output named gen_name, connected to internal node nodeToOutput.

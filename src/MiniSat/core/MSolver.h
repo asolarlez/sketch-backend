@@ -28,10 +28,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
-
+#include <set>
 #include "SolverTypes.h"
+#include "SynthInSolver.h"
 
 #include "IntPropagator.h"
+using namespace std;
 //=================================================================================================
 // Solver -- the main class:
 
@@ -39,6 +41,41 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace MSsolverNS{
 
 class IntPropagator;
+
+
+class OutSummary;
+
+class UfunSummary{
+public:
+	int id;
+	UfunSummary* next;
+	Lit* /*[id]*/ equivs;
+	OutSummary* output;
+	UfunSummary(int _id): id(_id) , next(NULL){}
+};
+
+class OutSummary{
+public:
+	int nouts;
+	Lit lits[];
+	OutSummary(int no):nouts(no){}
+};
+
+class SynthClause {
+public :
+	SynthInSolver* s;
+	int instance;
+	int inid;
+	int val;
+};
+
+
+
+
+
+
+
+
 
 class Solver {
 public:
@@ -49,12 +86,19 @@ public:
     //
     Solver();
     ~Solver();
-
+	void dump();	
+	void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline);
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     bool    addClause (vec<Lit>& ps, uint32_t kind = 0);                           // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
 	bool    addCNFBinary(Lit i, Lit j);
+
+	SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* s);
+
+	void addSynSolvClause(SynthInSolver* s, int instid, int inputid, int value, Lit var);
+
+
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
@@ -80,7 +124,9 @@ public:
 	void	regInput	(int in);		//Armando: Register an input var. What distinguishes these vars is that conflicts on them are really really valuable.
 
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
+	bool tryAssignment(Lit a);
 
+	void addUfun(int funid, UfunSummary* ufs);
 
     // Extra results: (read-only member variable)
     //
@@ -111,9 +157,14 @@ public:
     uint64_t clauses_literals, learnts_literals, max_literals, tot_literals;
 
 	void writeDIMACS(std::ofstream& dimacs_file);
+	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
 
-    // Helper structures:
+	bool addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	bool backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
+	void printUfunState(UfunSummary* ufs);
+	// Helper structures:
     //
     struct VarOrderLt {
         const vec<double>&  activity;
@@ -128,12 +179,16 @@ protected:
         bool operator()(Var v) const { return toLbool(s.assigns[v]) == l_Undef && s.decision_var[v]; }
     };
 
+	
+	Clause* newTempClause(vec<Lit>& vl , Lit p, Clause**& i, Clause**& j, Clause**& end);
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
-	
     vec<Clause*>        learnts;          // List of learnt clauses.
+	vec<UfunSummary*>   allufuns;
+	vec<UfunSummary*>   ufunByID;
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
@@ -155,6 +210,8 @@ protected:
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 	vec<int>			inputvars;        //Armando: This is a list for really important variables. Conflicts involving these variables are really really valuable.
 	bool				firstTry;		  //Armando: This tells the search function whether this is the first try 
+	vec<SynthInSolver*> sins;
+
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
     //
@@ -171,7 +228,6 @@ protected:
     void     uncheckedEnqueue (Lit p, Clause* from = NULL);                            // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, Clause* from = NULL);                            // Test if fact 'p' contradicts current state, enqueue otherwise.
     Clause*  propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-    void     cancelUntil      (int level);                                             // Backtrack until a certain level.
     void     analyze          (Clause* confl, vec<Lit>& out_learnt, int& out_btlevel); // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')

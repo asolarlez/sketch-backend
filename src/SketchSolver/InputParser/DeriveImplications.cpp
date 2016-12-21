@@ -33,13 +33,7 @@ pair<bool_node*, bool_node*> DeriveImplications::idx(bool_node& n){
 bool DeriveImplications::isequiv(bool_node* n1, bool_node* n2){
 	Assert(n1 != n2, "This is bad");
 	if(n1->type == bool_node::LT){
-		if(n2->type == bool_node::GT){
-			return n1->mother == n2->father && n1->father == n2->mother;
-		}
-	}else if(n1->type == bool_node::GT){
-		if(n2->type == bool_node::LT){
-			return n1->mother == n2->father && n1->father == n2->mother;
-		}
+		
 	}
 	return false;
 }

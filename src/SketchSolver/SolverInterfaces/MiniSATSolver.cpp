@@ -10,9 +10,50 @@
 #include <vector>
 #include <queue>
 #include "MiniSATSolver.h"
+#include "Tvalue.h"
+
+#define Dout( out )    /*  out   */
 
 
-#define Dout( out )   /*   out   */
+
+
+UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir){
+
+	int callid = equivs.size();	
+	int sz = sizeof(UfunSummary) + callid*sizeof(Lit);
+	int endof = sz;	
+	sz += sizeof(OutSummary) + outsize*sizeof(Lit);
+
+	int fuz = 0;
+ 
+	char* buf =  (char*) malloc(sz + fuz);
+
+
+	UfunSummary* rv = new(buf) UfunSummary(callid);
+	rv->equivs = (Lit*) (buf + sizeof(UfunSummary));
+	sz = endof;
+	for(int i=0; i<callid; ++i){	
+		rv->equivs[i] = equivs[i];
+	}
+	rv->output = new (buf+sz) OutSummary(outsize);
+	int jj = 0;
+	for(int i=0; i<out.size(); ++i){
+		if(out[i].isSparse() || out[i].isArray()){
+			const gvvec& gvs = out[i].num_ranges;	
+			for(gvvec::const_iterator it = gvs.begin(); it != gvs.end(); ++it){
+				rv->output->lits[jj] = lfromInt(it->guard);
+				++jj;
+			}
+		}else{
+			rv->output->lits[jj] = lfromInt(out[i].getId());
+			++jj;
+		}
+	}
+	Assert(jj == outsize, "WTF??");
+	return rv;
+}
+
+
 
 
 void MiniSATSolver::markInput(int id){
@@ -38,6 +79,19 @@ void MiniSATSolver::annotate(const string& msg){
 }
 
 
+ /**
+addExPairConstraints:
+pairs is an array of length 2*npairs that contains consecutive pairs [a0,b0, a1,b1,...ak,bk]
+The output will be true if any of these pairs are both true. 
+There is an assumption that no two ai,aj can be true for i!=j and 
+similarly for bi bj. 
+Concretely, it encodes the following implications:
+ai&bi => out
+out&x => y   
+out&y => x
+(forall i !ai) => !out
+(forall i !bi) => !out
+*/
  void MiniSATSolver::addExPairConstraint(int* pairs, int npairs, int out){
 	int* tb = new int[2*npairs+2];
 	vec<Lit> lits;
@@ -55,7 +109,7 @@ void MiniSATSolver::annotate(const string& msg){
 	}
 	addClause(tb, npairs+1, lits);
 	addClause(tb+npairs+1, npairs+1, lits);
-	delete tb;
+	delete[] tb;
  }
 
  void MiniSATSolver::addCountingHelperClause(int c[], int sz){
@@ -77,6 +131,10 @@ void MiniSATSolver::annotate(const string& msg){
 	s->addCNFBinary((l1 > 0) ? Lit(l1) : ~Lit(-l1),
 					(l2 > 0) ? Lit(l2) : ~Lit(-l2));
  }
+
+void MiniSATSolver::addHelperClause(vec<Lit>& vl){
+	s->addClause(vl);
+}
 
 void MiniSATSolver::addHelperClause(int c[], int sz){
 	vec<Lit> lits;
@@ -288,6 +346,8 @@ void MiniSATSolver::assumeVarClause(int x){
 }
 
 
+
+
 void MiniSATSolver::hardAssertVarClause(int x){
 	Dout( cout<<"@ assert "<<x<<";"<<endl );
 	FileOutput( output<<"x OUTASSERT "<<x<<" ;"<<endl );	
@@ -346,7 +406,7 @@ bool MiniSATSolver::ignoreOld(){
 	 
 
 
- int MiniSATSolver::solve(){
+SATSolver::SATSolverResult MiniSATSolver::solve(){
  	if(solveNegation){
  		vec<Lit> lits;
 		Dout(cout<<"@asserting "; for(int i=0; i<finalOr.size(); ++i){ cout<<finalOr[i]<<", ";} cout<<endl; )
@@ -371,6 +431,7 @@ bool MiniSATSolver::ignoreOld(){
 
  void MiniSATSolver::reset(){
  	finalOr.clear();	
+	s->cancelUntil(0);
 	//cout<<"clause count = "<<clauseCount<<endl;
 	clauseCount=0;
 }

@@ -20,6 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MSolver.h"
 #include "Sort.h"
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -31,6 +32,20 @@ namespace MSsolverNS{
 
 uint32_t SINGLESET = 3;
 uint32_t INTSPECIAL = 4;
+
+uint32_t UFUNCLAUSE = 2;
+uint32_t SYNCLAUSE = 1;
+
+
+
+class SynClauseStruct {
+public:
+	SynthInSolver* s;
+	int instance;
+	int inputid;
+	int value;
+};
+
 
 
 Solver::Solver() :
@@ -70,6 +85,8 @@ Solver::~Solver()
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	delete intsolve; 
+	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
+	for (int i = 0; i < allufuns.size(); ++i) { free(allufuns[i]); }
 }
 
 
@@ -161,6 +178,35 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 }
 
 
+
+
+void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
+
+	if (value(lit) == l_True) {
+		s->pushInput(instid, inputid, val, level[var(lit)]);
+		return;
+	}
+	if (value(lit) == l_False) {
+		return;
+	}
+
+
+	int sz = sizeof(SynClauseStruct) / sizeof(Lit);
+	vec<Lit> pp(sz+1, Lit(0));
+	
+	Clause* cc = Clause::Clause_new(pp, false);
+	cc->mark(SYNCLAUSE);
+	clauses.push(cc);
+	SynClauseStruct* scs = (SynClauseStruct*) &((*cc)[0]);
+	scs->s = s;
+	scs->instance = instid;
+	scs->inputid = inputid;
+	scs->value = val;
+
+	watches[toInt(lit)].push(cc);
+
+}
+
 bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 {
     assert(decisionLevel() == 0);
@@ -199,20 +245,58 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 			sort(ps);
 			Lit p; int i, j;
 			for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+				lbool cv = value(ps[i]);
+				if (cv == l_True) {
+					continue;
+				}
+				if (cv == l_False) {
+					int k;
+					for (k = 0; k < j - 1; k++) {
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
+					}
+					for (k = i + 1; k < ps.size(); k++) {
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
+					}
+					return true;
+				}
+					 
 				if(ps[i] == p){
-                    uncheckedEnqueue(p);
-                    if (ps[j-1] == p) {
-                        j--;
-                    }
+                    uncheckedEnqueue(p);// no need to check if p is already set because it would have been caught earlier.
+					assert(ps[j - 1] == p); 
+                    j--;
+                    
 				} else if (ps[i] == ~ p) {
                     int k;
-                    for (k = 0; k < j; k++) {
-                        uncheckedEnqueue(ps[k]);
+                    for (k = 0; k < j-1; k++) { // ps[j-1] is p, so we don't want to set that.
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if(ck == l_Undef){
+							uncheckedEnqueue(ps[k]);
+						}                        
                     }
                     for (k = i+1; k < ps.size(); k++) {
-                        uncheckedEnqueue(ps[k]);
+						lbool ck = value(ps[k]);
+						if (ck == l_False) {
+							return ok = false;
+						}
+						if (ck == l_Undef) {
+							uncheckedEnqueue(ps[k]);
+						}
                     }
-                    
                     return true;
                 }
 				ps[j++] = p = ps[i];
@@ -246,6 +330,57 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 }
 
 // int TOTSINGLESET=0;
+
+
+
+SynthInSolver* Solver::addSynth(int inputs, int outputs, Synthesizer* s) {
+	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs);
+	sins.push(syn);
+	return syn;
+}
+
+
+
+void Solver::addUfun(int funid, UfunSummary* ufs){
+		allufuns.push(ufs);
+		if(ufunByID.size() > funid){
+			if(ufunByID[funid] != NULL){
+				UfunSummary* fst = ufunByID[funid];
+				UfunSummary* cur = fst;
+				while(cur->next != fst){
+					cur = cur->next;
+				}
+				cur->next = ufs;
+				ufs->next = fst;
+				ufunByID[funid] = ufs; // ufs will be ordered from biggest id to smallest id.
+			}else{
+				ufunByID[funid] = ufs;
+				ufs->next = ufs;
+			}
+		}else{
+			ufunByID.growTo(funid + 1 , NULL);
+			ufunByID[funid] = ufs;
+			ufs->next = ufs;
+		}
+		vec<Lit> pp;
+		pp.push(Lit(0));
+		pp.push(Lit(0));
+		Clause* cc = Clause::Clause_new(pp, false);
+		cc->mark(UFUNCLAUSE);
+		clauses.push(cc);
+		UfunSummary** ufp = (UfunSummary**) &((*cc)[0]);
+		*ufp = ufs;
+		for(int i=0; i<ufs->id; ++i){			
+			watches[toInt(ufs->equivs[i])].push(cc);			
+		}
+		OutSummary* ofs = ufs->output;
+		for(int i=0; i<ofs->nouts; ++i){
+			watches[toInt(ofs->lits[i])].push(cc);
+			watches[toInt(~ofs->lits[i])].push(cc);
+		}
+	}
+
+
 
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
@@ -304,6 +439,14 @@ void Solver::removeClause(Clause& c) {
 
 
 bool Solver::satisfied(const Clause& c) {
+
+	if(c.mark() == UFUNCLAUSE){
+		return false;
+	}
+	if (c.mark() == SYNCLAUSE) {
+		return false;
+	}
+
 	if(c.mark() == SINGLESET){ 
 		for (int i = 0; i < c.size(); i++){
 			lbool cv = value(c[i]);
@@ -313,7 +456,8 @@ bool Solver::satisfied(const Clause& c) {
 		}
 		// cout<<"Removing SINGLESET"<<endl;
 		return true; 
-	}	
+	}
+	
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
@@ -331,8 +475,12 @@ void Solver::cancelUntil(int level) {
         qhead = trail_lim[level];
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
-    } 
-	intsolve->cancelUntil(level);
+		for (int i = 0; i < sins.size(); ++i) {
+			sins[i]->backtrack(level);
+		}
+    }	
+    intsolve->cancelUntil(level);
+
 }
 
 
@@ -590,10 +738,313 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from)
     trail.push(p);
 }
 
+vec<char> tc(sizeof(Clause) + sizeof(uint32_t)*(3));
+
+
+Clause* Solver::newTempClause(vec<Lit>& po , Lit q, Clause**& ii, Clause**& jj, Clause**& end){
+	vec<Lit> ps(po.size());
+	for(int i=0; i<po.size(); ++i){
+		ps[i] = po[i];
+	}
+	Lit fst = ps[0];
+	int fstidx = -1;
+	sort(ps);	
+	Lit p; int i, j;
+	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+		if (ps[i] != p){
+			ps[j++] = p = ps[i];
+			if(p==fst){
+				fstidx = j-1;
+			}
+		}
+	}
+	ps.shrink(i - j);
+	ps[fstidx] = ps[0];
+	ps[0] = fst;
+	if(ps[1]==~q){ // This is very important because we are currently watching on q. we will be adding to the 
+		// negation of the first two locations in ps, so we want to avoid those locations being ~q.
+		if(ps.size() > 2){
+			ps[1] = ps[2];
+			ps[2] = ~q;
+		}else {
+			// if ps.size() is not > 2, that's a problem, requires some complexity. 
+			assert(ps.size() > 1);//this is impossible.
+			//if ps.size()==2, then we need to add that clause to the current ws, but that means we may need to grow it.
+			Clause* c = Clause::Clause_new(ps, true);
+			vec<Clause*>& ws = watches[toInt(q)];
+			int ipos = ii - ws.begin();
+			int jpos = jj- ws.begin();
+			attachClause(*c);
+			ii = ws.begin() + ipos;
+			jj = ws.begin() + jpos;
+			end = ws.begin() + ws.size();
+			learnts.push(c);	
+			return c;
+		}		
+	}
+	assert(fst != ~q);
+	Clause* c = Clause::Clause_new(ps, true);
+	attachClause(*c);
+	learnts.push(c);
+	return c;
+}
+
+
+void Solver::printUfunState(UfunSummary* afs){
+	UfunSummary* ufs = afs;
+	cout<<"-----------------------------------"<<endl;
+	do{
+		cout << ufs->id <<"{ [";
+
+		for(int ii=0; ii<ufs->id; ++ii){
+			cout << toInt(ufs->equivs[ii]) << "|" << (toInt(value(ufs->equivs[ii]))) << ", ";
+		}
+		cout << "]";
+		OutSummary* os = ufs->output;
+		for(int ii=0; ii<os->nouts; ++ii){		
+			lbool v1 = value(os->lits[ii]);		
+			cout<<"("<<toInt(os->lits[ii])<<"="<<ii<<"|"<< (toInt(value(os->lits[ii])))<<")";
+		}
+		ufs = ufs->next;
+		cout<<endl;
+	}while(ufs != afs);
+}
+
+
+Lit getEqLit(UfunSummary* other, UfunSummary* ufs) {
+	if (other->id < ufs->id) {
+		return ufs->equivs[other->id];
+	}
+	else {
+		return other->equivs[ufs->id];
+	}
+}
+
+
+bool Solver::backpropagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl){	
+	vec<int> setidx;
+	OutSummary* os = ufs->output;
+	for(int ii=0; ii<os->nouts; ++ii){		
+		lbool v1 = value(os->lits[ii]);		
+		if(v1==l_True){
+			setidx.push(ii);
+		}
+	}
+	if (setidx.size() == 0) {
+		return true;
+	}
+
+	vec<Lit> plits(3);
+	//If there is a conflict, it will be
+	// (out1 ^ -out2) => -eqlit   ----> -out1 v out2 v -eqlit	
+	UfunSummary* other = ufs->next;
+	while(other != ufs){
+		bool takeAction  = false;
+		OutSummary* os2 = other->output;
+
+		for(int ii=0; ii<setidx.size(); ++ii){		
+			int vidx = setidx[ii];
+			lbool v1 = value(os2->lits[vidx]);
+			if(v1 == l_False){
+				//ufs claims this output should be true; this claims the output should be false. That means their inputs can't be equal.
+				takeAction = true;
+				plits[1] = ~os->lits[vidx];
+				plits[2] =  os2->lits[vidx];
+				break;
+			}			
+		}
+		if(takeAction){
+			Lit eqlit = getEqLit(other, ufs);
+			
+			if (value(eqlit) == l_Undef) {
+				plits[0] = ~eqlit; // this is not a bug.
+				uncheckedEnqueue(~eqlit, newTempClause(plits, p, i, j, end));
+			}
+			else {
+							
+				if (value(eqlit) == l_True) {
+					//We have a conflict. 	
+					//cout << "!!!!!!!!!!!!!!!!!!BACKTRACK GOOD!!!!!!!!!!!!!!!!!!!" << endl;
+					plits[0] = ~eqlit;
+					int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+					if (tc.size() < targetsize) {
+						tc.growTo(targetsize);
+					}
+					Clause* cnew = new(&tc[0]) Clause(plits, true);
+					*j++ = &c;
+					while (i < end)
+						*j++ = *i++;
+					confl = cnew;
+					qhead = trail.size();
+					return false;
+				}
+				assert(value(eqlit) != l_True); 
+			}
+		}
+		other = other->next;
+	}
+
+
+	return true;
+}
 
 
 vec<char> tempstore;
 
+bool Solver::propagateUfun(Lit p, UfunSummary* ufs, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl){
+
+				// printUfunState(ufs);
+				vec<int> alleqs;
+				vec<Lit> plits(3);				
+				UfunSummary* pufun = NULL;
+
+				//If we are here, it means all parameters are set. Now we need to check if other
+				//instances of the same ufun also have all their parameters set.
+				UfunSummary* other = ufs->next;
+				while(other != ufs){					
+					Lit eqlit;
+					eqlit = getEqLit(other, ufs);
+					
+					if (value(eqlit) == l_True){
+						if (eqlit == p) {
+							pufun = other;
+						}
+
+						plits[2] = ~eqlit;
+						alleqs.push(other->id);
+						// other also has all its parameters set to the same thing as ufs.
+						// This means that their outputs should match.
+						OutSummary* osum1 = ufs->output;
+						OutSummary* osum2 = other->output;
+						for(int ii=0; ii<osum2->nouts; ++ii){
+							lbool v1 = value(osum1->lits[ii]);
+							lbool v2 = value(osum2->lits[ii]);
+							if( v1 != v2){
+								if(v1 == l_Undef){
+									if(v2 == l_True){
+										plits[1] = ~(osum2->lits[ii]);
+										plits[0] = (osum1->lits[ii]);
+																				
+										uncheckedEnqueue(osum1->lits[ii], newTempClause( plits, p, i, j, end ) );
+									}else{ // v2 == l_False;
+										plits[1] = (osum2->lits[ii]);
+										plits[0] = ~(osum1->lits[ii]);
+										
+										uncheckedEnqueue(~osum1->lits[ii], newTempClause( plits, p, i, j, end ) );
+									}									
+								}else if(v2 == l_Undef){
+									if(v1 == l_True){
+										plits[1] = ~(osum1->lits[ii]);
+										plits[0] = (osum2->lits[ii]);
+										
+										uncheckedEnqueue(osum2->lits[ii], newTempClause( plits, p, i, j, end ) );
+									}else{
+										plits[1] = (osum1->lits[ii]);
+										plits[0] = ~(osum2->lits[ii]);
+										
+										uncheckedEnqueue(~osum2->lits[ii], newTempClause( plits, p, i, j, end ));
+									}														
+								}else{
+									//We have a conflict.
+									if(v1 == l_True){
+										plits[1] = ~(osum1->lits[ii]);
+										plits[0] = (osum2->lits[ii]);
+									}else{
+										plits[1] = ~(osum2->lits[ii]);
+										plits[0] = (osum1->lits[ii]);
+									}
+									int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+									if(tc.size() < targetsize){
+										tc.growTo(targetsize);
+									}
+									Clause* cnew = new(&tc[0]) Clause(plits, true);																		
+									*j++ = &c;
+									while (i < end)
+											*j++ = *i++;
+									confl = cnew;			
+									qhead = trail.size();
+									return true;
+								}
+
+							}							
+						}						
+					}
+					other = other->next;
+				}
+
+				if (alleqs.size() > 1) {
+					int sz = alleqs.size();
+					UfunSummary* ufsni = ufs->next;					
+					for (int ii = 0; ii < sz; ++ii) {
+						while (ufsni->id != alleqs[ii]) { ufsni = ufsni->next;  }
+						UfunSummary* ufsnj = ufsni->next;
+						for (int jj = ii + 1; jj < sz; ++jj) {
+							//ufs == ufs->next^(i+1)   and ufs == ufs->next^(j+1), so we need to set ufs->next^(i+1)==ufs->next^(j+1)
+							while (ufsnj->id != alleqs[jj]) { ufsnj = ufsnj->next; }
+							if (addTransEqClause(ufsnj, ufsni, p, ufs, plits, c, i, j, end, confl)) {
+								return true;
+							}
+							ufsnj = ufsnj->next;
+						}
+						ufsni = ufsni->next;
+					}
+				}
+				if (pufun != NULL){
+					other = pufun->next;
+					while (other != pufun) {
+						if (other != ufs) {
+							Lit loth = getEqLit(pufun, other);
+							if (value(loth) == l_True) {
+								if (addTransEqClause(other, ufs, p, pufun, plits, c, i, j, end, confl)) {
+									return true;
+								}
+							}
+						}
+						other = other->next;
+					}
+				}
+
+
+
+				if (backpropagateUfun(p, ufs, c, i, j, end, confl)) {
+					*j++ = &c;
+				}
+				return true;
+}
+
+bool Solver::addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl) {
+	Lit ieqj = getEqLit(ufsnj, ufsni);
+	lbool ieqjval = value(ieqj);
+	if (ieqjval == l_Undef) {
+		plits[2] = ~getEqLit(ufs, ufsni);
+		plits[1] = ~getEqLit(ufs, ufsnj);
+		plits[0] = ieqj;
+		uncheckedEnqueue(ieqj, newTempClause(plits, p, i, j, end));
+	}
+	else if (ieqjval == l_False) {
+		plits[2] = ~getEqLit(ufs, ufsni);
+		plits[1] = ~getEqLit(ufs, ufsnj);
+		plits[0] = ieqj;
+		//Conflict!!!
+		int targetsize = sizeof(Clause) + sizeof(uint32_t)*plits.size();
+		if (tc.size() < targetsize) {
+			tc.growTo(targetsize);
+		}
+		Clause* cnew = new(&tc[0]) Clause(plits, true);
+		*j++ = &c;
+		while (i < end)
+			*j++ = *i++;
+		confl = cnew;
+		qhead = trail.size();
+		return true;
+	}
+	return false;
+}
+
+
+
+
+int DEBUGCOUNT = 0;
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -605,13 +1056,16 @@ vec<char> tempstore;
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
+
+
 Clause* Solver::propagate()
 {
     Clause* confl     = NULL;
     int     num_props = 0;
     volatile int avoidGccWeirdness=0;
+	int dlevel = decisionLevel();
 
-	bool isLevelZero = (decisionLevel()==0);
+	bool isLevelZero = (dlevel==0);
 
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
@@ -622,49 +1076,49 @@ Clause* Solver::propagate()
 		
         //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
         //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
-        for (i = j = &ws[0], end = i + ws.size();  i != end;){
+        for (i = j = ws.begin(), end = i + ws.size();  i != end;){
             Clause& c = **i++;
-
+			++DEBUGCOUNT;
+			uint32_t mrk = c.mark();
 			Lit false_lit = ~p;
 
-
-
-			if(c.mark()==INTSPECIAL){
+			if (mrk == INTSPECIAL) {
 				int ln = intcLen(c);
-				for(int ii=0; ii<ln; ++ii){
+				for (int ii = 0; ii<ln; ++ii) {
 					Lit l = intcLit(c, ii);
-					if(l==p){
+					if (l == p) {
 						int vr = intcIntVar(c);
 						int val = intcVal(c, ii);
 						int ilen = intsolve->interflen();
 						bool goodsofar = intsolve->setVal(vr, val, decisionLevel());
-						Intclause* iconf=NULL;
-//						cout<<"WHERE: "<<(num_props+propagations)<<endl;	
-//						intsolve->dump();
-						if(goodsofar){
+						Intclause* iconf = NULL;
+						//						cout<<"WHERE: "<<(num_props+propagations)<<endl;	
+						//						intsolve->dump();
+						if (goodsofar) {
 							iconf = intsolve->propagate();
-							goodsofar = (iconf==NULL);								
-						}else{
+							goodsofar = (iconf == NULL);
+						}
+						else {
 							//trying to set vr to two different values (it already has one).
 							Lit oth = intsolve->existingLit(vr);
 							vec<Lit> ps;
 							ps.push(~oth); ps.push(~p);
-							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
 							while (i < end)
 								*j++ = *i++;
-								
-							qhead = trail.size();						
+
+							qhead = trail.size();
 							goto FoundWatch;
 						}
-						
-						if(goodsofar){							
+
+						if (goodsofar) {
 							int nilen = intsolve->interflen();
-							for(int jjj=ilen; jjj<nilen; ++jjj){
+							for (int jjj = ilen; jjj<nilen; ++jjj) {
 								Lit ilit = intsolve->interfLit(jjj);
 								lbool vvv = value(ilit);
-								if(vvv==l_False){									
+								if (vvv == l_False) {
 									vec<Lit>& ps = intsolve->getSummary(ilit);
 									// in this case, getSummary returns the causes that led to ilit to have the bad value, but by themselves, they do not
 									//constitute a bad assignment. However, those causes force ilit to be true. Also, by convention, if ilit is the problematic
@@ -672,50 +1126,79 @@ Clause* Solver::propagate()
 									Lit t = ps[0];
 									ps.push(t);
 									ps[0] = ilit;
-									tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+									tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 									confl = new (&tempstore[0]) Clause(ps, true);
 									*j++ = &c;
 									while (i < end)
 										*j++ = *i++;
-								
+
 									qhead = trail.size();
 									goto FoundWatch;
 								}
-								if(vvv==l_Undef){
+								if (vvv == l_Undef) {
 									uncheckedEnqueue(ilit, &c);
 								}
 							}
 							*j++ = &c;
 							goto FoundWatch;
-						}else{
+						}
+						else {
 							//If we are here, there was a conflict. 
 							//if iconf is not null, then it means there was a contradiction inside intsolve, 
 							//so the root causes for the contradiction constitute a bad assignment. 
 							//on the other hand, if iconf is null, it means the value we are setting contradicts
 							// something the solver already had for that value, but if that were the case, 
 							//the solver would have told us? 
-							
-							Assert(iconf!= NULL, "Maybe?");
+
+							Assert(iconf != NULL, "Maybe?");
 							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
-							intsolve->getSummary(iconf, decisionLevel(), ps.size()/2);
-							tempstore.growTo( sizeof(Clause) + sizeof(uint32_t)*(ps.size())  );
+							intsolve->getSummary(iconf, decisionLevel(), ps.size() / 2);
+							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
 							while (i < end)
 								*j++ = *i++;
-								
+
 							qhead = trail.size();
 							goto FoundWatch;
 						}
-						goto FoundWatch;						
+						goto FoundWatch;
 					}
 				}
 				Assert(false, "should never reach here");
 
 			}
 
+			
+			if(mrk == UFUNCLAUSE){				
+				UfunSummary** ufp = (UfunSummary**) &c[0];
+				UfunSummary* ufs = *ufp;
+				if(propagateUfun(p, ufs, c, i, j, end, confl)){
+					goto FoundWatch;
+				}
+			}
 
-			if(c.mark() == SINGLESET){
+			if (mrk == SYNCLAUSE) {
+				SynClauseStruct* syn = (SynClauseStruct*)&c[0];
+				confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel);
+				if (confl != NULL) {
+					qhead = trail.size();
+					// Copy the remaining watches:
+					*j++ = &c;
+					while (i < end)
+						*j++ = *i++;					
+				}
+				else {
+					*j++ = &c;
+				}
+
+
+				goto					FoundWatch;
+			}
+
+
+
+			if(mrk == SINGLESET){				
 				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;
 				// std::cout<<" SINGLESET clause of size "<<c.size()<<std::endl;
 				int last = c.size()-1;
@@ -746,7 +1229,7 @@ Clause* Solver::propagate()
 					goto FoundWatch;
 				}
 
-
+				// At this point, the solver just set false_lit so if some other lit in the clause is also false, we have a conflict.
 				for(int k=0; k<c.size(); ++k){
 					// std::cout<<" c["<<k<<"] = "<<var(c[k])<<std::endl;
 					if(c[k] == false_lit){
@@ -761,17 +1244,20 @@ Clause* Solver::propagate()
 						c[k] = c[0];
 						c[0] = false_lit;
 					}
+					//If k is greater than the position of the original false_lit, the original false_lit is now at zero.
 					if (value(c[k]) == l_False && c[k] != false_lit){
 						//I know p is false; that's why I am here. 
 						//If a c[k] different from p also became false, then we have violated the constraint.
+						//If this happens after false_lit, then false_lit is now at zero. Otherwise, false_lit is ahead.
 						//
 						{
 						Lit tt = c[k];
 						c[k] = c[1];
 						c[1] = tt;	
-						}
-
+						}						
+						//The violated entry has now been moved to position 1.
 						if(c[0] != false_lit){
+							//In case we hadn't reached false_lit, we search for false_lit and move it to pos 0.
 							for(int tt = k+1; tt < c.size(); ++tt){
 								if(c[tt] == false_lit){
 									c[tt] = c[0];
@@ -780,16 +1266,20 @@ Clause* Solver::propagate()
 								}
 							}
 						}
+						//So at this point c[0] = false_lit and c[1] equals a violated lit.
 						// std::cout<<"WIN "<<&c<<"  k= "<<k<<" var = "<<(sign(c[0])?"-":" ")<<var(c[0])<<std::endl;
 						qhead = trail.size();		
 						Fake* f = new (&c[0]) Fake();
-						Clause* nc = Clause::Clause_new(*(f), true);
+						Clause* nc = new(&tc[0]) Clause(*f, true);
 						// std::cout<<"     clause ["<<(sign(c[0])?"-":" ")<<var(c[0])<<", "<<(sign(c[1])?"-":" ")<<var(c[1])<<"]"<<std::endl;
-						*j++ = nc;
-						learnts.push(nc);
+
+						//*j is part of the watches for false_lit which is c[0].
+						//XXX *j++ = nc;
+						//XXX learnts.push(nc);
 						//Important invariant: This singleset clause is in the watches of all its literals except for the last one.
-						watches[toInt(~c[1])].push(nc);	
+						//XXX watches[toInt(~c[1])].push(nc);	
 						{
+							//c0 is swapped with c[last], so now false_lit is going to be the not-watched.
 							Lit tt = c[last];
 							c[last] = c[0];
 							c[0] = tt;	
@@ -828,8 +1318,7 @@ Clause* Solver::propagate()
 				
 				goto FoundWatch;
 			}
-			// End of SINGLESET case.
-
+						
             // Make sure the false literal is data[1]:
             
             if (c[0] == false_lit) {
@@ -981,6 +1470,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
     for (;;){
         Clause* confl = propagate();
         if (confl != NULL){
+			// cout<<" FCNT ="<<FCNT<<" SCNT = "<<SCNT<<" UCNT = "<<UCNT<<endl;
 			// cout<<"CONFLICT"<<endl;
             // CONFLICT
 			firstTry = false;
@@ -1060,6 +1550,48 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             uncheckedEnqueue(next);
         }
     }
+}
+
+
+bool Solver::tryAssignment(Lit a){
+	if (!ok) {
+		return false;
+	}
+	lbool lv = value(a);
+	//if it already has a value, we just check that it's compatible.
+	if(lv==l_True){
+		return true;
+	}
+	if(lv==l_False){
+		return false;
+	}
+	newDecisionLevel();
+	uncheckedEnqueue(a);
+	bool rv = true;
+	while(true){
+		Clause* confl = propagate();
+		if(confl==NULL){
+			return rv;
+		}else{
+			if (decisionLevel() == 0){
+				ok = false;
+				return false;
+			}
+			vec<Lit>    learnt_clause;
+			int         backtrack_level;
+			analyze(confl, learnt_clause, backtrack_level);
+			cancelUntil(backtrack_level);
+			if (learnt_clause.size() == 1){
+				uncheckedEnqueue(learnt_clause[0]);
+			}else{
+				Clause* c = Clause::Clause_new(learnt_clause, true);
+				learnts.push(c);
+				attachClause(*c);        
+				uncheckedEnqueue(learnt_clause[0], c);				
+			}
+			rv = false;
+		}
+	}
 }
 
 bool Solver::assertIfPossible(Lit a){
@@ -1161,6 +1693,10 @@ lbool Solver::solve(const vec<Lit>& assumps)
             ok = false;
     }
 
+	for (int i = 0; i < sins.size(); ++i) {
+		sins[i]->finalize();
+	}
+
     cancelUntil(0);
     return status;
 }
@@ -1173,6 +1709,7 @@ void Solver::verifyModel()
 {
     bool failed = false;
 
+	
     for (int i = 0; i < clauses.size(); i++){
 		if(clauses[i]->mark()==0){
 			Clause& c = *clauses[i];
@@ -1203,7 +1740,7 @@ void Solver::verifyModel()
 
     assert(!failed);
 
-    printf("Verified %d original clauses. \n", clauses.size());
+    printf("Verified %d original clauses.\n", clauses.size());
 }
 
 
@@ -1271,5 +1808,46 @@ void Solver::writeDIMACS(ofstream& dimacs_file)
         cout << "Unable to open file";
     }
 }
+
+
+void Solver::getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline){
+	for(int i=0; i<trail.size(); ++i){
+		single.insert(toInt(trail[i]));
+	}
+	for(int i=0; i<clauses.size(); ++i){		
+		Clause* c = clauses[i];
+		if(c->size() == 2){
+			int x = toInt((*c)[0]);
+			int y = toInt((*c)[1]);
+			pair<int, int> p = make_pair( min(x,y) , max(x,y) );
+			if(baseline.count(p)==0){
+				dble.insert(p);
+			}
+		}
+	}
+}
+
+
+void Solver::dump(){
+	int tl = 0;
+	cout<<"TRAIL: ";
+	for(int i=0; i<trail.size(); ++i){
+		if(tl > trail_lim.size()){
+			if(trail_lim[tl]==i){
+				tl++;
+				cout<<" || ";
+			}
+		}
+		cout<<", "<<toInt(trail[i]);		
+	}
+	cout<<endl;
+	if(ok){
+		cout<<"ALLOK"<<endl;
+	}else{
+		cout<<"NOTOK"<<endl;
+	}
+}
+
+
 
 }

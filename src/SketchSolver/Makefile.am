@@ -7,12 +7,11 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -ISolverInterfaces/ -IInputParser/
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
-#libcegis_la_LIBADD = ../abc60513/libabc.la ../MiniSat/libminisat.la ../zchaff/libzchaff.la -ldl
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
@@ -23,6 +22,9 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_statistics.h				\
 	memory_sampler.h				\
 	timerclass.h					\
+	EntityResolutionSolver.h  			\
+	GTPredicateSolver.h				\
+	NumericalSolver.h     				\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -41,6 +43,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/DagOptimizeCommutAssoc.h		\
 	InputParser/ExtractEvaluationCondition.h	\
 	InputParser/FastSet.h				\
+	InputParser/guardedVal.h			\
 	InputParser/InputReader.h			\
 	InputParser/InterpreterEnvironment.h \
 	InputParser/CegisMainHelpers.h \
@@ -49,14 +52,15 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/NodeStore.h				\
 	InputParser/NodeVisitor.h			\
 	InputParser/NodesToEuclid.h			\
-	InputParser/NodesToSEQ.h			\
 	InputParser/NodesToSolver.h			\
-	InputParser/SFIOutputSeq.h			\
 	InputParser/SolveFromInput.h			\
 	InputParser/Tvalue.h				\
 	InputParser/VarStore.h	\
 	InputParser/driver.h				\
-	InputParser/guardedVal.h			
+	InputParser/NodeHardcoder.h			\
+	InputParser/HoleHardcoder.h			\
+	InputParser/guardedVal.h			\
+    InputParser/FloatSupport.h
 
 libcegis_la_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -86,11 +90,13 @@ libcegis_la_SOURCES =				\
 	InputParser/NodeEvaluator.cpp \
 	InputParser/NodeStore.cpp		\
 	InputParser/NodeSlicer.cpp \
-	InputParser/NodesToSEQ.cpp		\
 	InputParser/NodesToSolver.cpp		\
 	InputParser/NodesToEuclid.cpp		\
 	InputParser/NodeVisitor.cpp		\
-	InputParser/SolveFromInput.cpp
+	InputParser/SolveFromInput.cpp \
+	InputParser/NodeHardcoder.cpp  \
+	InputParser/HoleHardcoder.cpp \
+    InputParser/Tvalue.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp			

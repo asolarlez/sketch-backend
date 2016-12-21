@@ -19,7 +19,7 @@ class Strudel {
 	SATSolver* solver;
 	FloatManager& floats;
 public:
-	Strudel(vector<Tvalue>& vtv, SATSolver* solv, FloatManager& fm) :vals(vtv), solver(solv), floats(fm) {
+	Strudel(vector<Tvalue>& vtv, SATSolver* solv, FloatManager& fm):vals(vtv), solver(solv), floats(fm){
 		cout << "This is strange size=" << vtv.size() << endl;
 	}
 
@@ -41,7 +41,7 @@ public:
 		// cout<<" * Specializing problem for "<<(type == bool_node::CTRL? "controls" : "inputs")<<endl; 
 		cout << " * Before specialization: nodes = " << newdag->size() << " Ctrls = " << inodeList.size() << endl;
 		{
-			DagOptim cse(*newdag, floats);
+			DagOptim cse(*newdag, floats);			
 
 			BooleanDAG* cl = newdag->clone();
 			for (int i = 0; i<newdag->size(); ++i) {
@@ -155,7 +155,7 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
 * single function asserting their equivalence. The Miter is created for
 * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
 */
-BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt) {
+BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt){
 	if (params.verbosity > 2) {
 
 		cout << "* before  EVERYTHING: " << spec->get_name() << "::SPEC nodes = " << spec->size() << "\t " << sketch->get_name() << "::SKETCH nodes = " << sketch->size() << endl;
@@ -186,10 +186,10 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			else {
 				inints++;
 			}
-			if (sknode->isTuple) {
-				if (sknode->depth == -1)
-					sknode->depth = params.srcTupleDepth;
-			}
+      if (sknode->isTuple) {
+        if (sknode->depth == -1)
+          sknode->depth = params.srcTupleDepth;
+      }
 		}
 
 		if (params.verbosity > 2) {
@@ -225,19 +225,19 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	}
 
 	if (params.olevel >= 3) {
-		if (params.verbosity > 3) { cout << " Inlining amount = " << inlineAmnt << endl; }
+		if(params.verbosity > 3){ cout<<" Inlining amount = "<<inlineAmnt<<endl; }
 		{
 			if (params.verbosity > 3) { cout << " Inlining functions in the sketch." << endl; }
 			try {
 				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
-			}
-			catch (BadConcretization& bc) {
+			}catch (BadConcretization& bc) {
 				sketch->clear();
 				spec->clear();
 				delete sketch;
 				delete spec;
 				throw bc;
 			}
+			
 
 			/*
 			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );
@@ -248,14 +248,14 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			if (params.verbosity > 3) { cout << " Inlining functions in the spec." << endl; }
 			try {
 				doInline(*spec, functionMap, inlineAmnt, replaceMap);
-			}
-			catch (BadConcretization& bc) {
+			} catch (BadConcretization& bc) {
 				sketch->clear();
 				spec->clear();
 				delete sketch;
 				delete spec;
 				throw bc;
 			}
+			
 
 			/*
 			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );
@@ -268,13 +268,13 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	//sketch->repOK();
 	Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
 
-	if (params.numericalSolver) {
-		// Abstract the numerical part from the dag
-		// TODO: what is the best place to have this
-		abstractNumericalPart(*sketch);
-	}
-
-	if (false) {
+  if (params.numericalSolver) {
+    // Abstract the numerical part from the dag
+    // TODO: what is the best place to have this
+    abstractNumericalPart(*sketch);
+  }
+  
+  if(false){
 		/* Eliminates uninterpreted functions */
 		DagElimUFUN eufun;
 		eufun.process(*spec);
@@ -289,18 +289,18 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		//Post processing to replace ufun inputs with tuple of src nodes.
-		replaceSrcWithTuple(*spec);
-		replaceSrcWithTuple(*sketch);
+       replaceSrcWithTuple(*spec);
+       replaceSrcWithTuple(*sketch);
 	}
 	//At this point spec and sketch may be inconsistent, because some nodes in spec will have nodes in sketch as their children.
 	spec->makeMiter(sketch);
 	BooleanDAG* result = spec;
-
+	
 	if (params.verbosity > 6) { cout << "after Creating Miter: Problem nodes = " << result->size() << endl; }
 
 
 	result = runOptims(result);
-	return result;
+  return result;
 }
 
 bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes, bool ufun) {
@@ -403,7 +403,8 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap) {
+
+void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -415,23 +416,22 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	}
 	*/
 	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
-		params.spRandBias);
+                         params.spRandBias); 
 
 	int oldSize = -1;
 	bool nofuns = false;
 	for (int i = 0; i<steps; ++i) {
 		int t = 0;
-		int ct = 0;
+    int ct = 0;
 		do {
 			if (params.randomassign && params.onlySpRandAssign) {
 				if (ct < 2) {
-					dfi.turnOffRandomization();
-					ct++;
+				dfi.turnOffRandomization();
+				ct++;
+				} else {
+				dfi.turnOnRandomization();
 				}
-				else {
-					dfi.turnOnRandomization();
-				}
-			}
+			}			
 			dfi.process(dag);
 			// dag.lprint(cout);
 			// dag.repOK();
@@ -442,12 +442,12 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				exit(1);
 			}
 			if (oldSize > 0) {
-				if (dag.size() > 400000000 && dag.size() > oldSize * 10) {
+				if(dag.size() > 400000000 && dag.size() > oldSize * 10){
 					i = steps;
 					cout << "WARNING: Preemptively stopping inlining because the graph was growing too big too fast" << endl;
 					break;
 				}
-				if ((dag.size() > 400000 && dag.size() > oldSize * 2) || dag.size() > 1000000) {
+				if((dag.size() > 400000 && dag.size() > oldSize * 2)|| dag.size() > 1000000){
 					hardcoder.tryHarder();
 				}
 			}
@@ -465,7 +465,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 		DagFunctionToAssertion makeAssert(dag, functionMap, floats);
 		makeAssert.process(dag);
 	}
-
+	
 }
 
 
@@ -478,24 +478,24 @@ ClauseExchange::ClauseExchange(MiniSATSolver* ms, const string& inf, const strin
 
 	//Wipe the files clean
 	{
-		FILE* f = fopen(infile.c_str(), "w");
-		fclose(f);
+	FILE* f = fopen(infile.c_str(), "w");	
+	fclose(f);
 	}
 	{
-		FILE* f = fopen(outfile.c_str(), "w");
-		fclose(f);
-	}
+	FILE* f = fopen(outfile.c_str(), "w");	
+	fclose(f);
+	}	
 }
 
-void ClauseExchange::exchange() {
+void ClauseExchange::exchange(){
 	analyzeLocal();
 	int ssize = single.size();
-	int dsize = dble.size();
+	int dsize = dble.size();	
 	if (PARAMS->verbosity > 8) {
 		cout << "Before readInfile" << endl;
 		printToExchange();
 	}
-
+	
 
 	readInfile();
 
@@ -504,47 +504,46 @@ void ClauseExchange::exchange() {
 		printToExchange();
 	}
 
-	if (ssize > 0 || dsize > 0) {
+	if(ssize > 0 || dsize > 0){
 		pushOutfile();
 	}
 }
 
-void ClauseExchange::readInfile() {
+void ClauseExchange::readInfile(){
 	int ssize = single.size();
 	int dsize = dble.size();
-	int bufsize = ssize + dsize * 2 + 3;
+	int bufsize = ssize + dsize*2 + 3;
 	bufsize = bufsize * 3;
 	bufsize = max(bufsize, 200);
 	vector<int> sbuf(bufsize);
 	FILE* f = fopen(outfile.c_str(), "r");
 	int rsize = fread(&sbuf[0], sizeof(int), bufsize, f);
-	if (rsize < 3) {
+	if(rsize < 3){
 		fclose(f);
-		cout << "Nothing read" << endl;
+		cout<<"Nothing read"<<endl;
 		return;
 	}
-	ssize = sbuf[0]; dsize = sbuf[1];
-	int realsize = ssize + dsize * 2 + 3;
-	if (rsize != realsize) {
-		if (rsize > realsize) {
+	ssize = sbuf[0]; dsize=sbuf[1];
+	int realsize = ssize + dsize*2 + 3;
+	if(rsize != realsize){
+		if(rsize > realsize){
 			fclose(f);
-			cout << "Corrupted" << endl;
+			cout<<"Corrupted"<<endl;
 			return;
 		}
-		if (rsize != bufsize) {
+		if(rsize != bufsize){
 			fclose(f);
-			cout << "Corrupted" << endl;
+			cout<<"Corrupted"<<endl;
 			return;
 		}
 		sbuf.resize(realsize);
 		rsize = fread(&sbuf[bufsize], sizeof(int), realsize - bufsize, f);
 		fclose(f);
-		if (rsize + bufsize != realsize) {
-			cout << "Corrupted" << endl;
+		if(rsize + bufsize != realsize){
+			cout<<"Corrupted"<<endl;
 			return;
 		}
-	}
-	else {
+	}else{
 		fclose(f);
 		sbuf.resize(realsize);
 	}
@@ -554,18 +553,18 @@ void ClauseExchange::readInfile() {
 	}
 	cout << endl;
 	unsigned chksum = 0;
-	for (int i = 0; i<sbuf.size() - 1; ++i) {
+	for(int i=0; i<sbuf.size()-1; ++i){
 		chksum += sbuf[i];
 	}
-	if (chksum != sbuf[sbuf.size() - 1]) {
-		cout << "Failed checksum" << endl;
+	if(chksum != sbuf[sbuf.size()-1]){
+		cout<<"Failed checksum"<<endl;
 		return;
 	}
 	{
 		vec<Lit> vl(1);
-		for (int i = 2; i < 2 + ssize; ++i) {
+		for(int i=2; i < 2+ssize; ++i){
 			int sin = sbuf[i];
-			if (single.count(sin) == 0) {
+			if(single.count(sin)==0){
 				single.insert(sin);
 				vl[0] = toLit(sin);
 				msat->addHelperClause(vl);
@@ -574,11 +573,11 @@ void ClauseExchange::readInfile() {
 	}
 	{
 		vec<Lit> vl(2);
-		for (int i = 2 + ssize; i< sbuf.size() - 1; i += 2) {
+		for(int i=2+ssize; i< sbuf.size()-1; i+=2){
 			int f = sbuf[i];
-			int s = sbuf[i + 1];
+			int s = sbuf[i+1];
 			pair<int, int> p = make_pair(f, s);
-			if (dble.count(p) == 0) {
+			if(dble.count(p) ==0){
 				dble.insert(p);
 				vl[0] = toLit(f); vl[1] = toLit(s);
 				msat->addHelperClause(vl);
@@ -587,21 +586,21 @@ void ClauseExchange::readInfile() {
 	}
 }
 
-void ClauseExchange::pushOutfile() {
+void ClauseExchange::pushOutfile(){
 	int ssize = single.size();
 	int dsize = dble.size();
 	unsigned chksum = 0;
-	vector<int> sbuf(ssize + dsize * 2 + 3);
+	vector<int> sbuf(ssize + dsize*2 + 3);
 	chksum += ssize;
 	chksum += dsize;
 	sbuf[0] = ssize;
 	sbuf[1] = dsize;
-	int i = 2;
-	for (set<int>::iterator it = single.begin(); it != single.end(); ++it) {
+	int i=2;
+	for(set<int>::iterator it = single.begin(); it != single.end(); ++it){
 		chksum += *it;
 		sbuf[i] = *it; ++i;
 	}
-	for (set<pair<int, int> >::iterator it = dble.begin(); it != dble.end(); ++it) {
+	for(set<pair<int, int> >::iterator it = dble.begin(); it != dble.end(); ++it){
 		chksum += it->first;
 		chksum += it->second;
 		sbuf[i] = it->first; ++i;
@@ -614,21 +613,22 @@ void ClauseExchange::pushOutfile() {
 	}
 	cout << endl;
 	FILE* f = fopen(outfile.c_str(), "w");
-	fwrite(&sbuf[0], sizeof(int), i + 1, f);
+	fwrite(&sbuf[0], sizeof(int), i+1, f);
 	fclose(f);
 }
 
-void ClauseExchange::analyzeLocal() {
+void ClauseExchange::analyzeLocal(){
 	single.clear(); dble.clear();
-	msat->getShareable(single, dble, baseline);
+	msat->getShareable(single, dble, baseline);	
 }
 
 
-void InterpreterEnvironment::share() {
-	if (exchanger != NULL) {
+void InterpreterEnvironment::share(){
+	if(exchanger!=NULL){
 		exchanger->exchange();
 	}
 }
+
 
 
 
@@ -822,9 +822,9 @@ int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileN
 	return assertDAG(dag, out);
 }
 
-BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result) {
+BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){		
 	if (params.olevel >= 3) {
-		DagOptim cse(*result, floats);
+		DagOptim cse(*result, floats);	
 		//cse.alterARRACS();
 		cse.process(*result);
 	}
@@ -860,7 +860,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result) {
 	// cout<<"* after CAoptim: Problem nodes = "<<result->size()<<endl;
 
 	if (params.olevel >= 4) {
-		DagOptim cse(*result, floats);
+		DagOptim cse(*result, floats);	
 		if (params.alterARRACS) {
 			cout << " alterARRACS" << endl;
 			cse.alterARRACS();
@@ -878,15 +878,15 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result) {
 		result->mrprint(of);
 		of.close();
 	}
-	if (params.outputSMT) {
+	if(params.outputSMT){
 		ofstream of(params.smtfile.c_str());
-		cout << "Outputing SMT for DAG to file " << params.smtfile << endl;
+		cout<<"Outputing SMT for DAG to file "<<params.smtfile<<endl;
 		result->smtlinprint(of, params.NINPUTS);
 		of.close();
 	}
-	if (params.outputExistsSMT) {
+    if(params.outputExistsSMT){
 		ofstream of(params.smtfile.c_str());
-		cout << "Outputing SMT for DAG to file " << params.smtfile << endl;
+		cout<<"Outputing SMT for DAG to file "<<params.smtfile<<endl;
 		result->smt_exists_print(of);
 		of.close();
 	}
@@ -894,159 +894,159 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result) {
 }
 
 bool hasFloatInputs(bool_node* node) {
-	vector<bool_node*> parents = node->parents();
-	for (int i = 0; i < parents.size(); i++) {
-		if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
-	}
-	return false;
+  vector<bool_node*> parents = node->parents();
+  for (int i = 0; i < parents.size(); i++) {
+    if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
+  }
+  return false;
 }
 
 bool hasFloatChild(bool_node* node) {
-	FastSet<bool_node> children = node->children;
-	for (child_iter it = children.begin(); it != children.end(); ++it) {
-		if ((*it)->getOtype() == OutType::FLOAT) return true;
-	}
-	return false;
+  FastSet<bool_node> children = node->children;
+  for(child_iter it = children.begin(); it != children.end(); ++it){
+    if ((*it)->getOtype() == OutType::FLOAT) return true;
+  }
+  return false;
 }
 
 
 void print(set<bool_node*> nodes) {
-	set<bool_node*>::iterator it;
-	for (it = nodes.begin(); it != nodes.end(); it++) {
-		cout << (*it)->lprint() << endl;
-	}
+  set<bool_node*>::iterator it;
+  for (it = nodes.begin(); it != nodes.end(); it++) {
+    cout << (*it)->lprint() << endl;
+  }
 }
 
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
-	vector<bool_node*> newnodes;
-	set<bool_node*> seenNodes;
-	DagOptim op(dag, floats);
-	BooleanDAG& dagclone = (*dag.clone());
-	vector<OutType*> rettypes;
-	string fname = "_GEN_NUM_SYNTH";
-	UFUN_node* unode = new UFUN_node(fname);
-	unode->outname = "_p_out_" + fname;
-	unode->set_tupleName(fname);
-	unode->set_nbits(0);
-	unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
-	unode->mother = op.getCnode(1);
-	BooleanDAG* funDag = new BooleanDAG(fname); // store the abstraction in this dag
-	TUPLE_CREATE_node* funOutput = new TUPLE_CREATE_node();
-	funOutput->setName(fname);
-	set<bool_node*> funNodes;
-
-	for (int i = 0; i<dag.size(); ++i) {
-		bool_node* node = dag[i];
-		if (seenNodes.find(node) == seenNodes.end()) {
-			seenNodes.insert(node);
-			if (node == NULL) continue;
-			int nid = node->id;
-			OutType* type = node->getOtype();
-			//cout << dagclone[nid]->lprint() << endl;
-
-
-			if (type == OutType::INT || type == OutType::BOOL) {
-				bool hasFlChild = hasFloatChild(node);
-				bool hasFlInputs = hasFloatInputs(dagclone[nid]);
-				if (hasFlChild) {
-					if (hasFlInputs) {
-						CTRL_node* ctrl = new CTRL_node(); // TODO: this ctrl should be angelic
-						ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
-
-						int nbits = 0;
-						if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-							nbits = 1;
-						}
-						if (type == OutType::INT || type == OutType::INT_ARR) {
-							nbits = 5;
-						}
-
-						ctrl->set_nbits(nbits);
-
-						if (type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-							ctrl->setArr(PARAMS->angelic_arrsz);
-						}
-						newnodes.push_back(ctrl);
-						unode->multi_mother.push_back(ctrl);
-					}
-					else {
-						unode->multi_mother.push_back(node);
-					}
-
-
-
-					SRC_node* src = new SRC_node("PARAM_" + std::to_string(seenNodes.size()));
-					int nbits = 0;
-					if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-						nbits = 1;
-					}
-					if (type == OutType::INT || type == OutType::INT_ARR) {
-						nbits = 2;
-					}
-
-					if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-					src->set_nbits(nbits);
-					if (type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-						int sz = 1 << PARAMS->NINPUTS;
-						src->setArr(sz);
-					}
-
-					funNodes.insert(src);
-					dagclone[nid]->neighbor_replace(src);
-				}
-				if (hasFlInputs) {
-					funNodes.insert(dagclone[nid]);
-					funOutput->multi_mother.push_back(dagclone[nid]);
-					TUPLE_R_node* tnode = new TUPLE_R_node();
-					tnode->idx = rettypes.size();
-					tnode->mother = unode;
-					tnode->addToParents();
-					newnodes.push_back(tnode);
-					dag.replace(nid, tnode);
-					rettypes.push_back(type);
-					if (hasFlChild) {
-						EQ_node* eq = new EQ_node();
-						eq->mother = tnode;
-						int sz = unode->multi_mother.size();
-						eq->father = unode->multi_mother[sz - 1];
-						eq->addToParents();
-						newnodes.push_back(eq);
-						ASSERT_node* an = new ASSERT_node();
-						an->mother = eq;
-						an->addToParents();
-						newnodes.push_back(an);
-						dag.assertions.append(getDllnode(an));
-
-					}
-				}
-
-			}
-			if (type == OutType::FLOAT) {
-				funNodes.insert(dagclone[nid]);
-				node->dislodge();
-				//dag.replace(nid, NULL);
-			}
-		}
-	}
-	vector<bool_node*> v(funNodes.begin(), funNodes.end());
-	funDag->addNewNodes(v);
-	funOutput->addToParents();
-	funDag->addNewNode(funOutput);
-	funDag->create_outputs(-1, funOutput);
-	funDag->registerOutputs();
-	OutType::makeTuple(fname, rettypes, -1);
-	unode->addToParents();
-	newnodes.push_back(unode);
-	funDag->cleanup();
-	funDag->cleanup_children();
-	numericalAbsMap[fname] = funDag;
-	funDag->lprint(cout);
-	dag.addNewNodes(newnodes);
-	op.cleanup(dag);
-	//dag.lprint(cout);
-	//funDag->repOK();
-
-	finder->setNumericalAbsMap(numericalAbsMap);
-
+  vector<bool_node*> newnodes;
+  set<bool_node*> seenNodes;
+  DagOptim op(dag, floats);
+  BooleanDAG& dagclone = (*dag.clone());
+  vector<OutType*> rettypes;
+  string fname = "_GEN_NUM_SYNTH";
+  UFUN_node* unode = new UFUN_node(fname);
+  unode->outname = "_p_out_" + fname;
+  unode->set_tupleName(fname);
+  unode->set_nbits(0);
+  unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
+  unode->mother = op.getCnode(1);
+  BooleanDAG* funDag = new BooleanDAG(fname); // store the abstraction in this dag
+  TUPLE_CREATE_node* funOutput = new TUPLE_CREATE_node();
+  funOutput->setName(fname);
+  set<bool_node*> funNodes;
+  
+  for(int i=0; i<dag.size() ; ++i ) {
+    bool_node* node = dag[i];
+    if (seenNodes.find(node) == seenNodes.end()) {
+      seenNodes.insert(node);
+      if (node == NULL) continue;
+      int nid = node->id;
+      OutType* type = node->getOtype();
+      //cout << dagclone[nid]->lprint() << endl;
+      
+      
+      if (type == OutType::INT || type == OutType::BOOL  ) {
+        bool hasFlChild = hasFloatChild(node);
+        bool hasFlInputs = hasFloatInputs(dagclone[nid]);
+        if (hasFlChild) {
+          if (hasFlInputs) {
+          CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
+          ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
+          
+          int nbits = 0;
+          if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+            nbits = 1;
+          }
+          if (type == OutType::INT || type == OutType::INT_ARR) {
+            nbits = 5;
+          }
+          
+          ctrl->set_nbits(nbits);
+          
+          if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+            ctrl->setArr(PARAMS->angelic_arrsz);
+          }
+          newnodes.push_back(ctrl);
+          unode->multi_mother.push_back(ctrl);
+          } else {
+            unode->multi_mother.push_back(node);
+          }
+          
+        
+      
+          SRC_node* src =  new SRC_node("PARAM_" + std::to_string(seenNodes.size()));
+          int nbits = 0;
+          if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+            nbits = 1;
+          }
+          if (type == OutType::INT || type == OutType::INT_ARR) {
+            nbits = 2;
+          }
+          
+          if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+          src->set_nbits(nbits);
+          if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+            int sz = 1 << PARAMS->NINPUTS;
+            src->setArr(sz);
+          }
+          
+          funNodes.insert(src);
+          dagclone[nid]->neighbor_replace(src);
+        }
+        if (hasFlInputs) {
+          funNodes.insert(dagclone[nid]);
+          funOutput->multi_mother.push_back(dagclone[nid]);
+          TUPLE_R_node* tnode = new TUPLE_R_node();
+          tnode->idx = rettypes.size();
+          tnode->mother = unode;
+          tnode->addToParents();
+          newnodes.push_back(tnode);
+          dag.replace(nid, tnode);
+          rettypes.push_back(type);
+          if (hasFlChild) {
+            EQ_node* eq = new EQ_node();
+            eq->mother = tnode;
+            int sz = unode->multi_mother.size();
+            eq->father = unode->multi_mother[sz-1];
+            eq->addToParents();
+            newnodes.push_back(eq);
+            ASSERT_node* an = new ASSERT_node();
+            an->mother = eq;
+            an->addToParents();
+            newnodes.push_back(an);
+            dag.assertions.append(getDllnode(an));
+            
+          }
+        }
+        
+      }
+      if (type == OutType::FLOAT) {
+        funNodes.insert(dagclone[nid]);
+        node->dislodge();
+        //dag.replace(nid, NULL);
+      }
+    }
+  }
+  vector<bool_node*> v(funNodes.begin(), funNodes.end());
+  funDag->addNewNodes(v);
+  funOutput->addToParents();
+  funDag->addNewNode(funOutput);
+  funDag->create_outputs(-1, funOutput);
+  funDag->registerOutputs();
+  OutType::makeTuple(fname, rettypes, -1);
+  unode->addToParents();
+  newnodes.push_back(unode);
+  funDag->cleanup();
+  funDag->cleanup_children();
+  numericalAbsMap[fname] = funDag;
+  funDag->lprint(cout);
+  dag.addNewNodes(newnodes);
+  op.cleanup(dag);  
+  //dag.lprint(cout);
+  //funDag->repOK();
+  
+  finder->setNumericalAbsMap(numericalAbsMap);
+  
 }
+
 

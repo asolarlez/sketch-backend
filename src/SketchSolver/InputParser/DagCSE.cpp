@@ -238,7 +238,7 @@ void DagCSE::visit( ARR_CREATE_node& node ){
     
  	int mid = node.mother == NULL? -1: node.mother->globalId;
     
-	int tempsz = node.multi_mother.size()*7;
+	int tempsz = node.multi_mother.size()*7 + 10;
     
 	if(tempsz > tmpbuf.size()){
 		tmpbuf.resize(tempsz);
@@ -258,6 +258,7 @@ void DagCSE::visit( ARR_CREATE_node& node ){
  	tch[p] = 0;
     
  	ccode = tch;
+	Assert(p < tmpbuf.size(), "CANNOT HAPPEN!!!");
  	Dtime(stimer.stop();)
 }
 

@@ -8,6 +8,8 @@ using namespace std;
 
 #include "MSolver.h"
 #include "SolverTypes.h"
+#include "Vec.h"
+#include "Tvalue.h"
 
 using namespace MSsolverNS;
 
@@ -18,6 +20,9 @@ namespace MSsolverNS{
 
 extern uint32_t INTSPECIAL;
 }
+
+UfunSummary* newUfun(vec<Lit>& equivs, vector<Tvalue>& out, int outsize, SolverHelper& dir);
+
 
 class MiniSATSolver : public SATSolver{
 protected:
@@ -44,6 +49,19 @@ public:
 		outputProblems = false;
 
 	 }
+
+	 SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* syn) {
+		 return s->addSynth(inputs, outputs, syn);
+	 }
+
+	 void addSynSolvClause(SynthInSolver* syn, int instid, int inputid, int value, Lit var) {
+		 s->addSynSolvClause(syn, instid, inputid, value, var);
+	 }
+
+	 void addUfun(int funid, UfunSummary* ufs){
+		 s->addUfun(funid, ufs);
+	 }
+
 	 virtual void outputSAT(){
 		 cout<<"Outputing problems"<<endl;
 		 outputProblems = true;
@@ -133,6 +151,11 @@ public:
 	 }
 
 	 virtual void addHelper2Clause(int l1, int l2);
+	 virtual void addHelperClause(vec<Lit>& vl);
+
+	 virtual bool tryAssignment(int a){
+		 return s->tryAssignment(lfromInt(a));
+	 }
 
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);
@@ -152,7 +175,7 @@ public:
 	 
 	 virtual bool ignoreOld();
 	 
-	 virtual int solve();
+	 virtual SATSolver::SATSolverResult solve();
 	
 	 virtual void reset();
 	 virtual void retractAssumptions();
@@ -168,6 +191,18 @@ public:
 	 virtual void lightSolve();
 	 virtual void writeDIMACS(ofstream& dimacs_file){
 		 s->writeDIMACS(dimacs_file);
+	 }
+
+	 void dump(){
+		 s->dump();
+	 }
+
+	 /*!
+	 Fills single and dble with all the unary and binary clauses that 
+	 are in the SAT solver but are not part of baseline.
+	 */
+	 void getShareable(set<int>& single, set<pair<int, int> >& dble, set<pair<int, int> >& baseline){
+		 s->getShareable(single, dble, baseline);
 	 }
 
 	 virtual void intSpecialClause(vec<Lit>& ps){

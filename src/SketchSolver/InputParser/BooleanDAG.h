@@ -90,8 +90,8 @@ Dllist assertions;
   ////////////////////////////////////////////////////////////////////////
   //Mutators for graph creation.
   ////////////////////////////////////////////////////////////////////////
-  INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1);
-  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false);
+  INTER_node* create_inputs(int n, OutType* type, const string& gen_name=string("INPUT"), int arrSz=-1, int tupDepth = -1);
+  INTER_node* create_controls(int n, const string& gen_name=string("CONTROL"), bool toMinimize = false, bool angelic = false, bool spConcretize = false, int max = -1, bool isFloat = false);
 
   void growInputIntSizes();
 
@@ -128,6 +128,7 @@ Dllist assertions;
   void layer_graph();  
   void relabel();
   void cleanup(); //Sorts and cleans up the graph.
+  void cleanup_children();
   void cleanUnshared();
   void clear();
   void rename(const string& oldname,  const string& newname);
@@ -207,6 +208,7 @@ Dllist assertions;
 
   
 
+
 // interesting are the interesting nodes (stored in [begin, end)) in this dag!
 // and they must be sorted according to the normal order!
   template<typename forward_iter>
@@ -215,6 +217,7 @@ Dllist assertions;
 			(*it)->flag = 0;
 		}
 		BooleanDAG* bd = new BooleanDAG(this->name);
+		bd->intSize = intSize;
 		bd->ownsNodes = false;
 		for (; begin!=end; ++begin) {
 			//cout << "slicing on " << (*begin)->lprint() << endl;
@@ -234,11 +237,12 @@ Dllist assertions;
   void print(ostream& out)const;
   void lprint(ostream& out);
   void mrprint(ostream& out);
+  void smtlinprint(ostream& out, int &nbits);
+  void smt_exists_print(ostream &out);
   void print_wrapper()const;
   void lprint_wrapper();
   void print_wrapper(const char* fileName)const;
   void lprint_wrapper(const char* fileName);
-  void combineFunCalls(map<int, vector<bool_node*> > funCalls);
   
    BooleanDAG(const string& name_="anon", bool isModel_=false);
 

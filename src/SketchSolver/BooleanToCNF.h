@@ -18,7 +18,7 @@
 #include "guardedVal.h"
 #include "StringHTable.h"
 #include "Tvalue.h"
-
+#include "SynthInSolver.h"
 #include "BooleanDAG.h"
 
 
@@ -28,6 +28,7 @@
 using namespace std;
 
 class Tvalue;
+class CTRL_node;
 
 
 
@@ -51,12 +52,23 @@ class SolverHelper {
 	bool doMemoization;
     map<string, int> varmap;
     map<string, int> arrsize;
+	map<string, Tvalue> controls;
+	map<string, SynthInSolver*> sins;
 	map<int, int> bitToInt;
 	map<int, int> iToBit;
     int varCnt;
 	int lastVar;
     SATSolver& mng;
-	vector<char> tmpbuf;	
+	vector<char> tmpbuf;
+  map<string, BooleanDAG*> numericalAbsMap;
+
+	/*
+	This function is in charge of instantiating new synthesizers.
+	*/
+	Synthesizer* newSynthesizer(const string& name, FloatManager& _fm);
+
+
+
 
 	int setStr(int id1, char op, int id2){
 		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
@@ -133,9 +145,14 @@ public:
 	int bitToI(int bitid){
 		return bitToInt[bitid];
 	}
+	const map<string, SynthInSolver*>& get_sins() {
+		return sins;
+	}
 
 
 	int intToBit(int id);
+	void addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
+
 
 	void writeDIMACS(ofstream& dimacs_file);
 
@@ -162,8 +179,9 @@ public:
 		}		 
 	    return t;
 	}
-
-    SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
+  
+  
+  SolverHelper(SATSolver& mng_p):mng(mng_p), tmpbuf(1000) {
 	varCnt = 1;
 	YES = 0;
 	lastVar = 0;
@@ -282,6 +300,10 @@ public:
 		}	
     }
 
+	Tvalue& declareControl(CTRL_node* ctrlnode);
+	Tvalue& getControl(CTRL_node* ctrlnode);
+	Tvalue& getControl(const string& name);
+
     void makeArrNoBranch(const string& arName) {
 	int var = varmap[arName];
 	int sz = arrsize[arName];
@@ -359,7 +381,9 @@ public:
 	bool assertIfPossible(int a){
 		return mng.assertIfPossible(a);
 	}
-
+	virtual bool tryAssignment(int a){
+		return mng.tryAssignment(a);
+	}
 	void addHardAssertClause (int a);
 	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);
@@ -372,6 +396,10 @@ public:
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
+  
+  void setNumericalAbsMap(map<string, BooleanDAG*> numericalAbsMap_p) {
+    numericalAbsMap = numericalAbsMap_p;
+  }
 };
 
 /*
@@ -398,7 +426,7 @@ SolverHelper::addEqualsClause (int a, int x)
 inline int
 SolverHelper::addChoiceClause (int a, int b, int c, int x)
 {
-    Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0 && c != 0, "input ids cannot be zero (addChoiceClause)");
 	a = sval(a); b = sval(b); c = sval(c);
     /* Check for shortcut cases. */
     if (a == YES || b == c)
@@ -443,7 +471,7 @@ SolverHelper::addChoiceClause (int a, int b, int c, int x)
 inline int
 SolverHelper::addXorClause (int a, int b, int x)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addXorClause)");
 	a = sval(a); b = sval(b); 
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == b)
@@ -607,7 +635,7 @@ SolverHelper::addBigOrClause (int *a, int last)
 inline int
 SolverHelper::addAndClause (int a, int b, int x)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addAndClause)");
 	a = sval(a); b = sval(b);
     /* Check for shortcut cases (prefer fixed results first). */
     if (a == -YES || b == -YES || a == -b)
@@ -641,7 +669,7 @@ SolverHelper::addAndClause (int a, int b, int x)
 inline void
 SolverHelper::addEquateClause (int a, int b)
 {
-    Assert (a != 0 && b != 0, "input ids cannot be zero");
+    Assert (a != 0 && b != 0, "input ids cannot be zero (addEquateClause)");
 
     /* Vacuously true. */
     if (a == b)

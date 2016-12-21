@@ -1,5 +1,4 @@
 #include "driver.h"
-
 #include "DagOptimizeCommutAssoc.h"
 #include "BackwardsAnalysis.h"
 #include "InterpreterEnvironment.h"
@@ -75,10 +74,11 @@ void Driver::parseInput(){
 			tmp = fopen(params.inputFname.c_str(), "r");
 			INp::yyset_in(tmp, scanner);
 		}
-		if (INp::yyparse(scanner) != 0) {
+		int rv = INp::yyparse(scanner);
+		if (rv != 0) {
 			INp::yylex_destroy(scanner);
 			cerr<<"\n*** Rejected\n";
-			exit(1);
+			exit(rv);
 		}
 		delete INp::envt;
 	}catch(BasicError& be){
@@ -114,6 +114,7 @@ void PyDriver::parseInput(){
 		  exit(1);
 	}
 }
+
 
 
 

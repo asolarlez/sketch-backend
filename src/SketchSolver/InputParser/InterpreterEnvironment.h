@@ -20,15 +20,15 @@ extern timerclass modelBuilding;
 
 using namespace std;
 
-class ClauseExchange {
+class ClauseExchange{
 	/*!
 	File from which to read data from other cores.
 	*/
 	string infile;
 	/*!
-	File from which to write data to other cores.
+	File from which to write data to other cores. 
 	In some setups, this will be the same as infile, and all cores
-	read and write to the same file. With large numbers of cores, though,
+	read and write to the same file. With large numbers of cores, though, 
 	alternative setups are possible, for example, with individual files
 	used to communicate between two neighboring calls.
 	*/
@@ -36,7 +36,7 @@ class ClauseExchange {
 	int failures;
 	MiniSATSolver* msat;
 	/*!
-	Contains the IDs of literals that are known to be true. This is very valuable
+	Contains the IDs of literals that are known to be true. This is very valuable 
 	information that will be exchanged.
 	*/
 	set<int> single;
@@ -46,7 +46,7 @@ class ClauseExchange {
 	*/
 	set<pair<int, int> > dble;
 	/*!
-	These are binary clauses that should not be exchanged because everyone knows them already.
+	These are binary clauses that should not be exchanged because everyone knows them already. 
 	*/
 	set<pair<int, int> > baseline;
 
@@ -63,7 +63,7 @@ class ClauseExchange {
 	*/
 	void pushOutfile();
 public:
-	ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf);
+	ClauseExchange(MiniSATSolver* ms, const string& inf, const string& outf);	
 	void exchange();
 	/*!
 	Print all the information that the exchanger is ready to exchange with others.
@@ -82,7 +82,7 @@ public:
 		/*
 		cout << "Baseline: ";
 		for (auto dit = baseline.begin(); dit != baseline.end(); ++dit) {
-		cout << ", (" << dit->first << " " << dit->second << ")";
+			cout << ", (" << dit->first << " " << dit->second << ")";
 		}
 		cout << endl;
 		*/
@@ -92,7 +92,7 @@ public:
 
 
 class InterpreterEnvironment
-{
+{	
 	map<string, BooleanDAG*> functionMap;
 	CommandLineArgs& params;
 	SolverHelper* finder;
@@ -149,7 +149,7 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
-	InterpreterEnvironment(CommandLineArgs& p) : bgproblem(NULL), params(p), status(READY), assertionStep(0), floats(p.epsilon) {
+	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if (p.outputSat) {
 			_pfind->outputSAT();
@@ -194,11 +194,11 @@ public:
 	}
 
 	/*!
-	Wipes out the finder SATSolver and SolverHelper as well as the CEGIS solver.
+	Wipes out the finder SATSolver and SolverHelper as well as the CEGIS solver. 
 	Resets the hardcoder and registers the new finder with it.
 	*/
-	void reset() {
-		hardcoder.reset();
+	void reset(){
+		hardcoder.reset();	
 		resetCore();
 	}
 
@@ -228,7 +228,7 @@ public:
 		functionMap[name] = tmp;
 
 
-		return new BooleanDAGCreator(tmp, floats);
+		return new BooleanDAGCreator(tmp, floats);		
 	}
 
 
@@ -242,9 +242,9 @@ public:
 		cout << endl;
 	}
 
-	void printControls(ostream& out) {
-		for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
-			out << it->first << "\t" << it->second << endl;
+	void printControls(ostream& out){		
+		for(auto it = currentControls.begin(); it != currentControls.end(); ++it){
+			out<<it->first<<"\t"<<it->second<<endl;			
 		}
 	}
 
@@ -269,23 +269,23 @@ public:
 		printControls(out);
 	}
 
-	/*
-	* Replaces f1 inside f2 with functions in f3.
-	*/
-	void registerFunctionReplace(string f1, string f2, string f3, int stCount) {
-		map<string, map<string, string> >::iterator it = replaceMap.find(f1);
-		if (it == replaceMap.end()) {
-			map<string, string> fmap;
-			fmap[f2] = f3;
-			replaceMap[f1] = fmap;
-		}
-		else {
-			map<string, string> fmap = it->second;
-			Assert(fmap.find(f2) == fmap.end(), "Error: replacing the same functions in two different ways");
-			fmap[f2] = f3;
-		}
-	}
-
+  /*
+   * Replaces f1 inside f2 with functions in f3.
+   */
+  void registerFunctionReplace(string f1, string f2, string f3, int stCount) {
+    map<string, map<string, string> >::iterator it = replaceMap.find(f1);
+    if (it == replaceMap.end()) {
+      map<string, string> fmap;
+      fmap[f2] = f3;
+      replaceMap[f1] = fmap;
+    } else {
+      map<string, string> fmap = it->second;
+      Assert(fmap.find(f2) == fmap.end(), "Error: replacing the same functions in two different ways");
+      fmap[f2] = f3;
+    }
+  }
+	
+  
 	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt);
 
 	void doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int i, map<string, map<string, string> > replaceMap);
@@ -306,8 +306,8 @@ public:
 		functionMap[s] = dag;
 	}
 
-	void replaceSrcWithTuple(BooleanDAG& dag);
-	int inlineAmnt() { return params.inlineAmnt; }
-	void abstractNumericalPart(BooleanDAG& dag);
+  void replaceSrcWithTuple(BooleanDAG& dag);
+  int inlineAmnt() { return params.inlineAmnt; }
+  void abstractNumericalPart(BooleanDAG& dag);
 	virtual ~InterpreterEnvironment(void);
 };

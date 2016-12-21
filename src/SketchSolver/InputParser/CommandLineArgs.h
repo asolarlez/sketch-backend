@@ -49,6 +49,9 @@ struct CommandLineArgs{
   bool showControls;
   bool showDAG;
   bool outputMRDAG;
+  bool outputSMT;
+  bool outputExistsSMT;
+  string smtfile;
   int bndDAG;
   bool minvarHole;
   string mrdagfile;
@@ -77,7 +80,15 @@ struct CommandLineArgs{
   bool randomassign;
   int randdegree;
   int ntimes;
-
+  int srcTupleDepth;
+  int angelicTupleDepth;
+  bool onlySpRandAssign;
+  int spRandBias; // greater value means more bias towards lower depths
+  double sparseArray;
+  bool randomInlining;
+  float epsilon;
+  string erSimEvalFName;
+  bool numericalSolver;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -118,6 +129,9 @@ struct CommandLineArgs{
 		showControls = false;
 		showDAG = false;
 		outputMRDAG = false;
+		outputSMT = false;
+		outputExistsSMT = false;
+		smtfile = "";
 		bndDAG = -1;
 		ufunSymmetry = false;
 		alterARRACS = false;
@@ -142,8 +156,17 @@ struct CommandLineArgs{
 		boundmode = CALLNAME;
 		boundedCount = 80;
 		randomassign =false;
-		randdegree = 100;
+		randdegree = -1;
 		ntimes = -1;
+    srcTupleDepth = 2;
+    angelicTupleDepth = 1;
+    onlySpRandAssign = false;
+    spRandBias = 1;
+	sparseArray = -1;
+    randomInlining = false;
+	epsilon = 0.0000001;
+    numericalSolver = true;
+	erSimEvalFName = "";
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -160,7 +183,22 @@ struct CommandLineArgs{
 	      input_idx = ii+1;
 		  continue;
 	    }
-		if( string(argv[ii]) == "-outputSat" ){	      
+      if( string(argv[ii]) == "-onlysprandassign" ){
+        onlySpRandAssign = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-randominlining" ){
+        randomInlining = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-numericalsolver" ){
+        numericalSolver = true;
+        input_idx = ii+1;
+        continue;
+      }
+      if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;
 		  continue;
@@ -173,6 +211,14 @@ struct CommandLineArgs{
 		if( string(argv[ii]) == "-lightverif" ){	      
 	      lightVerif = true;
 	      input_idx = ii+1;
+		  if(sparseArray < 0.0){
+			  sparseArray = 0.5;
+		  }
+		  continue;
+	    }
+		if( string(argv[ii]) == "-sparsearrays" ){	      
+	      sparseArray = strtod(argv[ii+1], NULL);
+	      input_idx = ii+2;
 		  continue;
 	    }
 	    if( string(argv[ii]) == "-nosim" ){	      
@@ -228,7 +274,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "--boundmode" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-boundmode needs an extra parameter");
 	      string bm  = argv[ii+1];	  
 		  cout<<"boundmode = "<<bm<<endl;
 		  Assert(bm == "CALLSITE" || bm == "CALLNAME" , 
@@ -243,7 +289,7 @@ struct CommandLineArgs{
 	    }
 
 		if( string(argv[ii]) == "-simplifycex" ){
-	      Assert(ii<(argc-1), "-synth needs an extra parameter");
+	      Assert(ii<(argc-1), "-simplifycex needs an extra parameter");
 	      simplifycex = argv[ii+1];	  
 		  cout<<"simplifycex = "<<simplifycex<<endl;
 		  Assert(simplifycex == "NOSIM" || simplifycex == "SIMSIM" || simplifycex=="RECSIM", 
@@ -354,6 +400,18 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
+		if( string(argv[ii]) == "-writeSMT" ){
+	    	outputSMT = true;
+			smtfile = argv[ii+1];
+	      input_idx = ii+2;      
+		  continue;
+	    }
+		if( string(argv[ii]) == "-writeExistsSMT" ){
+			outputExistsSMT = true;
+			smtfile = argv[ii+1];
+	      input_idx = ii+2;      
+		  continue;
+	    }
 
 	    if( string(argv[ii]) == "--bnd-dag-size" ){
 	      Assert(ii<(argc-1), "--bnd-dag-size needs an extra parameter");
@@ -410,7 +468,13 @@ struct CommandLineArgs{
 	      input_idx = ii+2;
 		  continue;
 	    }
-
+		if(string(argv[ii]) == "--er-simeval-file"){
+			Assert(ii<(argc-1), "--er-simeval-file needs an extra parameter");
+			erSimEvalFName = argv[ii+1];
+			cout<<"ERSYNTH SimEval file added: " << erSimEvalFName<<endl;
+			input_idx = ii+2;
+		  	continue;
+		}
 		if( string(argv[ii]) == "-timeout" ){
 	      Assert(ii<(argc-1), "-timeout needs an extra parameter");
 	      timeout = atoi(argv[ii+1]);
@@ -481,16 +545,45 @@ struct CommandLineArgs{
 	      input_idx = ii+2;
 		  continue;
 	    }        
-		if(argv[ii][0] == '-'){
-			cout<<"Unknown flag "<<string(argv[ii])<<endl;
-			input_idx = ii+1;
-		}
-	  }
+		
+    if( string(argv[ii]) == "-srctupledepth" ){
+	      Assert(ii<(argc-1), "-srctupledepth needs an extra parameter");
+	      srcTupleDepth = atoi(argv[ii+1]);
+	      input_idx = ii+2;
+        continue;
+    }
+	  
+    if( string(argv[ii]) == "-angelictupledepth" ){
+      Assert(ii<(argc-1), "-angelictupledepth needs an extra parameter");
+      angelicTupleDepth = atoi(argv[ii+1]);
+      input_idx = ii+2;
+      continue;
+    }
+      
+    if( string(argv[ii]) == "-sprandbias" ){
+      Assert(ii<(argc-1), "-sprandbias needs an extra parameter");
+      spRandBias = atoi(argv[ii+1]);
+      input_idx = ii+2;
+      continue;
+    }
+    if(argv[ii][0] == '-'){
+      cout<<"Unknown flag "<<string(argv[ii])<<endl;
+      input_idx = ii+1;
+    }
+    }
 	  if (NANGELICS<NINPUTS) { NANGELICS=NINPUTS; }
 	  if (angelic_arrsz<=0) { angelic_arrsz=(1<<NANGELICS); }
 	  Assert( input_idx < argc, "No input file specified");
 	  inputFname = argv[input_idx];
 	  // outputFname = (argc>input_idx+1)?argv[input_idx+1]:"/dev/null";
+
+	  if (randomassign && randdegree < 0) {
+		  randdegree = 0;
+	  }
+	  if (randomassign && ntimes < 0) {
+		  ntimes = 1000;
+	  }
+
 	  if(verbosity > 4){
 			printDiag = true;
 	  }
@@ -505,6 +598,7 @@ struct CommandLineArgs{
 	  if(verbosity > 3){
 		cout<<" optimization level = "<<olevel<<endl;
 	  }
+    
 	}
 	
 	void setPARAMS() {

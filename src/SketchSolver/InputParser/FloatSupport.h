@@ -43,13 +43,13 @@ public:
 		floatfuns["sin_math"] = sin;
 		floatfuns["cos_math"] = cos;
 		floatfuns["tan_math"] = tan;
-		floatfuns["sqrt_math"] = sqrt;
+		floatfuns["sqrt_math"] = sqrt;		
 	}
 
 	bool hasFun(const string& name) {
 		return floatfuns.count(name) > 0;
 	}
-	FloatFun getFun(const string& name) {
+	FloatFun getFun(const string& name) {		
 		return FloatFun(*this, floatfuns[name]);
 	}
 
@@ -118,12 +118,12 @@ public:
 
 class FloatComp {
 protected:
-	FloatManager& fm;
+  FloatManager& fm;
 public:
-	FloatComp(FloatManager& _fm) :fm(_fm) {}
-	bool operator() (const int x, const int y) const {
-		return fm.getFloat(x) < fm.getFloat(y);
-	}
+  FloatComp(FloatManager& _fm) :fm(_fm) {}
+  bool operator() (const int x, const int y) const {
+    return fm.getFloat(x) < fm.getFloat(y);
+  }
 };
 
 template<typename Op>

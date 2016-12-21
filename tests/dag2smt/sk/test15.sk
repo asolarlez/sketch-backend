@@ -1,0 +1,11 @@
+generator bit foo(bit[4] ina){ /* automatically rewritten */
+	return ina[{*}];
+}
+
+bit reverseSketch(bit[4] in) implements reverse {
+	return 	foo(in) ^ foo(in);
+}
+
+bit reverse (bit[4] in) {
+	return in[2] ^ in[2];
+}
