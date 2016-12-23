@@ -616,6 +616,7 @@ public:
 
 	void cleanupConfs(){
 		Intclause** rd, **wr, **end;
+		if (conflicts.size() == 0) return;
 		rd = &conflicts[0];
 		wr = rd;
 		end = rd + conflicts.size();
@@ -1733,6 +1734,7 @@ public:
 		while(qhead < trail.size()){
 			mpair p = trail[qhead++];
 			vec<Intclause*>& ws = watches[p.var];
+			if (ws.size() == 0) { continue; }
 			Intclause  **i, **j, **end;
 			for (i = j = &ws[0], end = i + ws.size();  i != end;){
 				Intclause& c = **i++;

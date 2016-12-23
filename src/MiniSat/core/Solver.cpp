@@ -31,13 +31,26 @@ namespace MSsolverNS{
 // Constructor/Destructor:
 
 uint32_t SINGLESET = 3;
-uint32_t INTSPECIAL = 4;
-
+uint32_t INTSPECIAL = 2;
+uint32_t SPECIALFUN = 1;
+/*
 uint32_t UFUNCLAUSE = 2;
 uint32_t SYNCLAUSE = 1;
+*/
+char UFUNKIND = 'u';
+char SYNKIND = 's';
 
+class UfunSpecialStruct {
+public:
+	char kind;
+	SynthInSolver* s;
+	UfunSummary* uf;
+	int instance;
+	int inputid;
+	int value;
+};
 
-
+/*
 class SynClauseStruct {
 public:
 	SynthInSolver* s;
@@ -45,7 +58,7 @@ public:
 	int inputid;
 	int value;
 };
-
+*/
 
 
 Solver::Solver() :
@@ -191,13 +204,14 @@ void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val
 	}
 
 
-	int sz = sizeof(SynClauseStruct) / sizeof(Lit);
+	int sz = sizeof(UfunSpecialStruct) / sizeof(Lit);
 	vec<Lit> pp(sz+1, Lit(0));
 	
 	Clause* cc = Clause::Clause_new(pp, false);
-	cc->mark(SYNCLAUSE);
+	cc->mark(SPECIALFUN);
 	clauses.push(cc);
-	SynClauseStruct* scs = (SynClauseStruct*) &((*cc)[0]);
+	UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
+	scs->kind = SYNKIND;
 	scs->s = s;
 	scs->instance = instid;
 	scs->inputid = inputid;
@@ -362,14 +376,14 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 			ufunByID[funid] = ufs;
 			ufs->next = ufs;
 		}
-		vec<Lit> pp;
-		pp.push(Lit(0));
-		pp.push(Lit(0));
+		int sz = sizeof(UfunSpecialStruct) / sizeof(Lit);
+		vec<Lit> pp(sz + 1, Lit(0));
 		Clause* cc = Clause::Clause_new(pp, false);
-		cc->mark(UFUNCLAUSE);
+		cc->mark(SPECIALFUN);
 		clauses.push(cc);
-		UfunSummary** ufp = (UfunSummary**) &((*cc)[0]);
-		*ufp = ufs;
+		UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
+		scs->kind = UFUNKIND;
+		scs->uf = ufs;
 		for(int i=0; i<ufs->id; ++i){			
 			watches[toInt(ufs->equivs[i])].push(cc);			
 		}
@@ -440,12 +454,9 @@ void Solver::removeClause(Clause& c) {
 
 bool Solver::satisfied(const Clause& c) {
 
-	if(c.mark() == UFUNCLAUSE){
+	if(c.mark() == SPECIALFUN){
 		return false;
-	}
-	if (c.mark() == SYNCLAUSE) {
-		return false;
-	}
+	}	
 
 	if(c.mark() == SINGLESET){ 
 		for (int i = 0; i < c.size(); i++){
@@ -1170,33 +1181,28 @@ Clause* Solver::propagate()
 			}
 
 			
-			if(mrk == UFUNCLAUSE){				
-				UfunSummary** ufp = (UfunSummary**) &c[0];
-				UfunSummary* ufs = *ufp;
-				if(propagateUfun(p, ufs, c, i, j, end, confl)){
+			if (mrk == SPECIALFUN) {
+				UfunSpecialStruct* syn = (UfunSpecialStruct*)&c[0];
+				if (syn->kind == UFUNKIND) {
+					UfunSummary* ufs = syn->uf;
+					if (propagateUfun(p, ufs, c, i, j, end, confl)) {
+						goto FoundWatch;
+					}
+				} else {
+					// syn->kind == SYNKIND;
+					confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel);
+					if (confl != NULL) {
+						qhead = trail.size();
+						// Copy the remaining watches:
+						*j++ = &c;
+						while (i < end)
+							*j++ = *i++;
+					} else {
+						*j++ = &c;
+					}
 					goto FoundWatch;
 				}
 			}
-
-			if (mrk == SYNCLAUSE) {
-				SynClauseStruct* syn = (SynClauseStruct*)&c[0];
-				confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel);
-				if (confl != NULL) {
-					qhead = trail.size();
-					// Copy the remaining watches:
-					*j++ = &c;
-					while (i < end)
-						*j++ = *i++;					
-				}
-				else {
-					*j++ = &c;
-				}
-
-
-				goto					FoundWatch;
-			}
-
-
 
 			if(mrk == SINGLESET){				
 				// std::cout<<" false_lit = "<<var(false_lit)<<std::endl;

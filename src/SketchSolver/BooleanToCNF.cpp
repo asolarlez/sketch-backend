@@ -242,7 +242,7 @@ int SolverHelper::intToBit(int id){
 
 void SolverHelper::regIclause(int id, Tvalue& tv){
 	Assert(tv.isSparse(), "noqiue");
-	 void* mem = malloc(sizeof(MSsolverNS::Clause) + sizeof(uint32_t)*(tv.getSize()*2+1) );
+	 //void* mem = malloc(sizeof(MSsolverNS::Clause) + sizeof(uint32_t)*(tv.getSize()*2+1) );
 	 vec<Lit> ps;
 	 const gvvec& gv=tv.num_ranges;	 
 	 ps.push(toLit(id));

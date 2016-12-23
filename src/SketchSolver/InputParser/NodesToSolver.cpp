@@ -574,13 +574,11 @@ NodesToSolver::processEq (Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval)
 		
 		if(!fval.isInt()){
 			dir.intClause(fval);
-		}
+		}		
 		
-		if(node.type== bool_node::EQ){
-			 node_ids[node.id]= (dir.inteq(mval.getId(), fval.getId()));
-			 cout<<"EQ  "<<node.id<<" = "<<node_ids[node.id]<<endl;
-			 return;
-		}
+		out = (dir.inteq(mval.getId(), fval.getId()));
+		return;
+		
 		Assert(false, "Aqirueop");
 	}
 
@@ -1116,19 +1114,6 @@ void NodesToSolver::populateGuardedVals(Tvalue& oval, map<int, int, COMPARE_KEY>
 	Dout(cout << " := " << oval << endl);
 }
 
-/*
-* Update node's value and set flag accordingly.
-*/
-void
-NodesToSolver::boolNodeUpdate(bool_node &node, Tvalue &nvar)
-{
-	if (nvar != node_ids[node.id]) {
-		node_ids[node.id] = nvar;
-		node.flag = true;
-	}
-	else
-		node.flag = false;
-}
 
 
 void NodesToSolver::visit( AND_node& node ){
@@ -1288,7 +1273,7 @@ NodesToSolver::visit (NOT_node &node)
 
 	if(mval.isInt()){
 		Tvalue nvar = -dir.intToBit(mval.getId());
-		boolNodeUpdate (node, nvar);
+		node_ids[node.id] = nvar;
 		return;
 	}
 
@@ -1311,14 +1296,27 @@ NodesToSolver::visit (NOT_node &node)
 
 
 
-	if(mval.isInt()){
+void
+NodesToSolver::visit(NEG_node &node)
+{
+	Assert(node.mother && !node.father, "NEG node must have exactly one predecessor");
+	
+	const Tvalue &mval = tval_lookup(node.mother);
+
+	if (mval.isInt()) {
 		Tvalue tv;
-		tv.makeIntVal(YES, 0);			
-		int gid = dir.intClause(tv);					
-		node_ids[node.id].makeSuperInt(dir.minus(gid, mval.getId()) );
+		tv.makeIntVal(YES, 0);
+		int gid = dir.intClause(tv);
+		node_ids[node.id].makeSuperInt(dir.minus(gid, mval.getId()));
 		return;
 
 	}
+
+	Tvalue nvar = mval.toComplement(dir);
+	node_ids[node.id] = nvar;
+
+	Dout(cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
+}
 
 
 void
@@ -1417,22 +1415,6 @@ void NodesToSolver::visit(MOD_node& node) {
 	processArith(node, modulus<int>());
 	return;
 }
-
-void
-NodesToSolver::visit(NEG_node &node)
-{
-	//No need to check if it is float or not because even if it is a float, negating the index
-	//will have the effect of negating the value.
-	Assert(node.mother && !node.father, "NEG node must have exactly one predecessor");
-
-
-	const Tvalue &mval = tval_lookup(node.mother);
-	Tvalue nvar = mval.toComplement(dir);
-	node_ids[node.id] = nvar;
-
-	Dout(cout << "NEG " << node.get_name() << " " << nvar << " " << &node << endl);
-}
-
 
 
 int ident(int x) {
@@ -1882,7 +1864,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
 	}
 
-	muxTValues(&node, omv, choices, node_ids[node.id], isBoolean, isArray, isInt, isFloalt);
+	muxTValues(&node, omv, choices, node_ids[node.id], isBoolean, isArray, isInt, isFloat);
 
 //	elooptimer.stop().print();
 //	aracctimer.stop().print();
@@ -2571,7 +2553,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
           Tvalue cond = tvYES;
           createCond(tid, rhs, cond);
           Tvalue out = tvOne;
-          muxTValues(NULL, cond, binChoice, out, isBoolean, isArray, isFloat);
+          muxTValues(NULL, cond, binChoice, out, isBoolean, isArray, false, isFloat);
           prev = out;
 
         }
@@ -2598,7 +2580,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
         }
     }
     
-    muxTValues(NULL, tid, choices, node_ids[node.id], isBoolean, isArray, isFloat);
+    muxTValues(NULL, tid, choices, node_ids[node.id], isBoolean, isArray, false, isFloat);
 }
 
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {

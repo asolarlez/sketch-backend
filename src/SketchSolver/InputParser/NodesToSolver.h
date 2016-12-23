@@ -97,7 +97,6 @@ protected:
     void intBvectGe (arith_node &);
 
 	bool checkKnownFun(UFUN_node& node);
-	void boolNodeUpdate(bool_node &, Tvalue &);
 
 public:
    string errorMsg;
@@ -182,7 +181,7 @@ public:
 	void doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output, EVAL eval);
   template<class COMPARE_KEY = NormalComp, typename EVAL>
  void doNonBoolArrAcc (const Tvalue& mval, vector<Tvalue>& choices, Tvalue& output, EVAL eval, COMPARE_KEY c = NormalComp());
- void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray, bool isFloat);
+ void muxTValues(ARRACC_node* node, const Tvalue& omv, vector<Tvalue>& choices, Tvalue& out, bool isBoolean, bool isArray, bool isInt, bool isFloat);
  template<typename EVAL>
  void computeMaxOrMin(const gvvec& mv,const gvvec& fv, gvvec& out, bool doMax, EVAL eval);
  template<class COMPARE_KEY = NormalComp>
