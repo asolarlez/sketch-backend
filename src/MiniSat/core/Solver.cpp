@@ -1094,14 +1094,19 @@ Clause* Solver::propagate()
 			Lit false_lit = ~p;
 
 			if (mrk == INTSPECIAL) {
+				/*
+				An INTSPECIAL clause corresponds to a sparse TVALUE. intCLen is the number of guarded
+				values in the tvalue, and for each of them you can get the lit and the value. You can 
+				also get the intid for the whole thing.
+				*/
 				int ln = intcLen(c);
 				for (int ii = 0; ii<ln; ++ii) {
 					Lit l = intcLit(c, ii);
-					if (l == p) {
+					if (l == p) {// We first need to identify which guardedVal was set.
 						int vr = intcIntVar(c);
 						int val = intcVal(c, ii);
 						int ilen = intsolve->interflen();
-						bool goodsofar = intsolve->setVal(vr, val, decisionLevel());
+						bool goodsofar = intsolve->setVal(vr, val, decisionLevel()); //We set the variable to the corresponding value, making sure it is not already set.
 						Intclause* iconf = NULL;
 						//						cout<<"WHERE: "<<(num_props+propagations)<<endl;	
 						//						intsolve->dump();

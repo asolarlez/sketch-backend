@@ -1560,7 +1560,7 @@ private:
 					undef1 = i;
 				}else{
 					if(undef2==-1){
-						undef2 == i;
+						undef2 = i;
 					}
 				}
 			}else{
