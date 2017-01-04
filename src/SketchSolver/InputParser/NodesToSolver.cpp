@@ -907,10 +907,13 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
 	if(true || mval.isInt() || fval.isInt()){
+		cout << node.lprint() << "   ";
 		if(!mval.isInt()){
+			cout << "  mother"<<endl;
 			dir.intClause(mval);
 		}
 		if(!fval.isInt()){
+			cout << "  father" << endl;
 			dir.intClause(fval);
 		}
 		if(node.type== bool_node::PLUS){
@@ -1695,6 +1698,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 	if(isInt){
 		Tvalue mv = mval;
 		if(!mv.isInt()){
+			cout << pnode->mother->lprint() << endl;
 			dir.intClause(mv);
 		}
 		vector<iVar> chs;

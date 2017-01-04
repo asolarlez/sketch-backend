@@ -6,9 +6,14 @@
 #include "SolverTypes.h"
 #include "Vec.h"
 #include <cstddef>
+#include <algorithm>
 
 namespace MSsolverNS{
 
+
+/*!
+Value of an integer variable; includes a flag to tell if the value has been set or not.
+*/
 class Val{
 	int val;
 	bool def;
@@ -26,7 +31,7 @@ class mpair{
 public:
 	iVar var;
 	int level;
-	int val;
+	int val;	
 	mpair(int v, int lv, int value):var(v),level(lv), val(value){}
 	mpair(){}
 };
@@ -68,6 +73,7 @@ public:
 	}
 	double activity(){ return act; }
 	void decay(float f){ act = act * f; }
+	//Increment activity measure for the clause.
 	void moreAct(){ act = act + 1.0; }
 	void print();
 };
@@ -172,21 +178,172 @@ inline int bmuxChildren(Intclause& ic){
 }
 
 
+class Range {
+	int lo;
+	int hi;
+public:
+	Range(int _lo, int _hi): lo(_lo), hi(_hi){}
+	int getLo() const { return lo; }
+	int getHi() const { return hi; }
+	friend Range operator+(const Range& a, const Range& b);
+	friend Range operator*(const Range& a, const Range& b);
+	friend Range operator-(const Range& a, const Range& b);
+	friend bool operator==(const Range& a, const Range& b);
+	friend bool operator<=(const Range& a, const Range& b);
+	friend Range join(const Range& a, const Range& b);
+};
+
+Range TOP_RANGE(MIN_INT, MAX_INT);
+
+inline Range operator+(const Range& a, const Range& b) { 
+	return Range(a.lo + b.lo, a.hi + b.hi); 
+}
+
+inline Range operator-(const Range& a, const Range& b) { 
+	return Range(a.lo - b.hi, a.hi - b.lo); 
+}
+
+inline Range join(const Range& a, const Range& b) {
+	return Range(min(a.lo, b.lo), max(a.hi, b.hi));
+}
+
+inline Range operator*(const Range& a, const Range& b) { 
+	int t1 = a.lo * b.lo;
+	int t2 = a.hi * b.hi;
+	int t3 = a.lo * b.hi;
+	int t4 = a.hi * b.hi;
+	return Range(min(min(t1,t2),min(t3,t4)), max(max(t1, t2), max(t3, t4)));
+}
+
+inline bool operator==(const Range& a, const Range& b) {
+	return a.lo == b.lo && a.hi == b.hi;
+}
+inline bool operator<=(const Range& a, const Range& b) {
+	return (b.lo <= a.lo && a.hi <= b.hi);
+}
+
+class tentry {
+public:
+
+	const Range range;
+	const int prior;
+	const iVar var;
+	const Intclause* rson;
+	tentry(const Range& _r, int _prior, iVar _v, Intclause* _rson) :range(_r), prior(_prior), var(_v), rson(_rson) {
+
+	}
+};
+
+class RangeTracker {
+	//Stores all the Ranges in the order in which they are added.
+	//maps idx to a range and the prior index for the range of that variable.
+	vec<tentry> ranges;
+	//Maps every variable to the latest index within ranges.
+	vec<int> varmap;
+	// Works as a stack. Every time a new level is seen, this stack records the id 
+	// level (first) and the idx where Ranges for that level start (second).
+	// since levels increase monotonically, they will increase monotonically in this array.
+	vec<pair<int, int> > levelmap;
+	int highestlevel;
+public:
+	RangeTracker() {
+		highestlevel = 0;
+	}
+	void addVar() {
+		varmap.push(-1);
+	}
+	void updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson);
+	void popRanges(int level);
+	const Range& getRange(iVar varid);
+};
+
+inline void RangeTracker::updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson) {
+	int newid = ranges.size();
+	if (level != highestlevel) {
+		Assert(level > highestlevel, "WTF");
+		highestlevel = level;
+		levelmap.push(make_pair(level, newid));
+	}
+	int oldid = varmap[varid];
+	ranges.push(tentry(newrange, oldid, varid, rson));
+	varmap[varid] = newid;
+}
+
+inline const Range& RangeTracker::getRange(iVar varid) {
+	int idx = varmap[varid];
+	if (idx < 0) { return TOP_RANGE;  }
+	return ranges[idx].range;
+}
+
+inline void RangeTracker::popRanges(int level) {	
+	int lastidx = ranges.size();
+	int nelems = 0;
+	for (int i = levelmap.size() - 1; i >= 0; --i) {		
+		if (levelmap[i].first == level) {
+			break;
+		}
+		nelems++;
+		lastidx = levelmap[i].second;
+	}
+	levelmap.shrink(nelems);
+	for (int i = ranges.size() - 1; i >= lastidx; --i) {
+		tentry& te = ranges[i];
+		varmap[te.var] = te.prior;
+	}
+	ranges.shrink(ranges.size() - lastidx);
+	highestlevel = level;
+}
+
+
 class IntPropagator{
-	// Map from 
+	// Map from variable id to values.
 	vec<Val> vals;
+
+	//Like the trail in the sat solver; this is a queue that contains all the pending assignments. 
+	//each entry is a triple that includes the variable, its value, and the level.
 	vec<mpair> trail;
+
+	//tpos is a mapping from variabels to their position in the trail. If the variable is not in the
+	//trail, it will return -1.
 	vec<int> tpos;
+
+	//For variables that interface between the SAT solver and the IntPropagator, 
+	//mappings stores the TValue associated with that variable. This is used to 
+	//get the literal that corresponds to a particular integer assignment to this variable.
 	vector<Tvalue> mappings;
+
+	// This is a stack where for every interface variable that gets set we 
+	// push the position in the trail where that variable was set and the SAT 
+	// literal that corresponds to the value of that variable. This is later used 
+	// for conflict analysis in order to produce a conflict clause in terms of the SAT variables.
 	vec<interpair> interf;
+
+	// A temporary buffer used to construct conflict clauses.
 	vec<Lit> explain;
+
+	// Another temporary buffer used to construct conflict clauses. This one tracks whether a given variable.
+	// has been seen as part of conflict clause construction.
 	vec<char> seen;
+
+	// Mapping from a variable to the clause that forced that variable to be set.
 	vec<Intclause*> reason;
+
+	// points to next position in the trail.
 	int qhead;
+
+	// Clause database.
 	vec<Intclause*> clauses;
+
+	// Conflict clause database.
 	vec<Intclause*> conflicts;
+
+	// Like watches in SAT.
 	vec<vec<Intclause*> >  watches;
+
+	// mapping to var to whether that var is a boolean or not.
 	vec<char> isBool;
+
+	RangeTracker ranges;
 public:
 	IntPropagator(){
 		qhead = 0;
@@ -207,6 +364,7 @@ public:
 	}
 	int addVar();
 
+	//Number of interface variables that have been set up to this point.
 	int interflen(){
 		return interf.size();
 	}
@@ -235,20 +393,26 @@ public:
 		reason[vr] = rson;
 		tpos[vr] = trail.size();
 		trail.push(mpair(vr, level, val));	
+		ranges.updateRange(vr, level, Range(val, val), rson);
 		return true;
 	}
 
 	/*
-	Note about helper: 
-	The reasons returned by getSummary should only include variables that come before me in the 
-	trial. However, there are situations when a clause forced an assignment without being fully 
-	assigned (i.e. a mux can force an assignment even if some of its choices are not set), but then 
-	some of those unassigned entries got assigned. so that when I call getSummary, they get returned 
-	as part of the reason even though they came afterward!!!. 
-	This is fixed by checking that vrlev  <maxtpos.
-		
+	Walks up the dependency chain to find the root causes for the assignment to vr. 
+	Any assignment after maxtpos canot be a reason and should be ignored.
+	Modifies seen and explain.
 	*/
 	void helper(iVar vr, int maxtpos){
+		/*
+		Note about helper:
+		The reasons returned by getSummary should only include variables that come before me in the
+		trial. However, there are situations when a clause forced an assignment without being fully
+		assigned (i.e. a mux can force an assignment even if some of its choices are not set), but then
+		some of those unassigned entries got assigned. so that when I call getSummary, they get returned
+		as part of the reason even though they came afterward!!!.
+		This is fixed by checking that vrlev  <maxtpos.
+
+		*/
 		Intclause* ic = reason[vr];
 		if(ic==NULL){
 			//either interface or unset.
@@ -417,7 +581,7 @@ public:
 		}
 	}
 
-	void getSummary(Intclause* ic, int trailLev, int szbnd){				
+	void generateInnerConflict(Intclause* ic, int trailLev, int szbnd){				
 		vec<pair<iVar, int> > ppp;
 		for(int i=0; i< seen.size(); ++i){
 			seen[i] = 0;

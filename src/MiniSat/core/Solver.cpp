@@ -1130,11 +1130,14 @@ Clause* Solver::propagate()
 						}
 
 						if (goodsofar) {
+							//In this case, the assignment did not cause any conflicts within the integer logic, but it forced
+							//the values of some interface variables, so those values need to be propagated to the SAT solver.
 							int nilen = intsolve->interflen();
 							for (int jjj = ilen; jjj<nilen; ++jjj) {
 								Lit ilit = intsolve->interfLit(jjj);
 								lbool vvv = value(ilit);
 								if (vvv == l_False) {
+									// If the literal was already false, that's a problem, we need to get the conflict clause.
 									vec<Lit>& ps = intsolve->getSummary(ilit);
 									// in this case, getSummary returns the causes that led to ilit to have the bad value, but by themselves, they do not
 									//constitute a bad assignment. However, those causes force ilit to be true. Also, by convention, if ilit is the problematic
@@ -1168,7 +1171,7 @@ Clause* Solver::propagate()
 
 							Assert(iconf != NULL, "Maybe?");
 							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
-							intsolve->getSummary(iconf, decisionLevel(), ps.size() / 2);
+							intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
 							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
