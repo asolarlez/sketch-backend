@@ -7,6 +7,7 @@
 #include "Vec.h"
 #include <cstddef>
 #include <algorithm>
+#include <limits>
 
 namespace MSsolverNS{
 
@@ -185,6 +186,10 @@ public:
 	Range(int _lo, int _hi): lo(_lo), hi(_hi){}
 	int getLo() const { return lo; }
 	int getHi() const { return hi; }
+	bool isSingle() const {
+		return lo == hi;
+	}
+	string print() const;
 	friend Range operator+(const Range& a, const Range& b);
 	friend Range operator*(const Range& a, const Range& b);
 	friend Range operator-(const Range& a, const Range& b);
@@ -193,21 +198,25 @@ public:
 	friend Range join(const Range& a, const Range& b);
 };
 
-Range TOP_RANGE(MIN_INT, MAX_INT);
+extern Range TOP_RANGE;
 
 inline Range operator+(const Range& a, const Range& b) { 
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE;  }
 	return Range(a.lo + b.lo, a.hi + b.hi); 
 }
 
 inline Range operator-(const Range& a, const Range& b) { 
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
 	return Range(a.lo - b.hi, a.hi - b.lo); 
 }
 
 inline Range join(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
 	return Range(min(a.lo, b.lo), max(a.hi, b.hi));
 }
 
 inline Range operator*(const Range& a, const Range& b) { 
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
 	int t1 = a.lo * b.lo;
 	int t2 = a.hi * b.hi;
 	int t3 = a.lo * b.hi;
@@ -225,12 +234,22 @@ inline bool operator<=(const Range& a, const Range& b) {
 class tentry {
 public:
 
-	const Range range;
-	const int prior;
-	const iVar var;
-	const Intclause* rson;
+	 Range range;
+	 int prior;
+	 iVar var;
+	 Intclause* rson;
 	tentry(const Range& _r, int _prior, iVar _v, Intclause* _rson) :range(_r), prior(_prior), var(_v), rson(_rson) {
 
+	}
+	tentry(const tentry& other):range(other.range), prior(other.prior), var(other.var), rson(other.rson) {
+
+	}
+	tentry& operator=(const tentry& other) {
+		range = other.range;
+		prior = other.prior;
+		var = other.var;
+		rson = other.rson;
+		return *this;
 	}
 };
 
@@ -255,6 +274,29 @@ public:
 	void updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson);
 	void popRanges(int level);
 	const Range& getRange(iVar varid);
+	void dump() {
+		for (int i = 0; i < varmap.size(); ++i) {
+			cout <<i<< getRange(i).print() << endl;
+		}
+	}
+
+	int getLevel(iVar varid) {
+		int idx = varmap[varid];
+		if (idx < 0) { return -1; }
+		for (int i = levelmap.size() - 1; i >= 0; --i) {
+			if (levelmap[i].second <= idx) {
+				return levelmap[i].first;
+			}
+		}
+		return 0;
+	}
+
+	Intclause* getCause(iVar varid) {
+		int idx = varmap[varid];
+		if (idx < 0) { return NULL;  }
+		return ranges[idx].rson;
+	}
+
 };
 
 inline void RangeTracker::updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson) {
@@ -276,28 +318,32 @@ inline const Range& RangeTracker::getRange(iVar varid) {
 }
 
 inline void RangeTracker::popRanges(int level) {	
-	int lastidx = ranges.size();
-	int nelems = 0;
-	for (int i = levelmap.size() - 1; i >= 0; --i) {		
-		if (levelmap[i].first == level) {
-			break;
+	if (level <= highestlevel) {
+		int lastidx = ranges.size();
+		int nelems = 0;
+		for (int i = levelmap.size() - 1; i >= 0; --i) {		
+			if (levelmap[i].first <= level) {
+				break;
+			}
+			nelems++;
+			lastidx = levelmap[i].second;
 		}
-		nelems++;
-		lastidx = levelmap[i].second;
+		levelmap.shrink(nelems);
+		for (int i = ranges.size() - 1; i >= lastidx; --i) {
+			tentry& te = ranges[i];
+			varmap[te.var] = te.prior;
+		}
+		ranges.shrink(ranges.size() - lastidx);
+	
+		highestlevel = level;
 	}
-	levelmap.shrink(nelems);
-	for (int i = ranges.size() - 1; i >= lastidx; --i) {
-		tentry& te = ranges[i];
-		varmap[te.var] = te.prior;
-	}
-	ranges.shrink(ranges.size() - lastidx);
-	highestlevel = level;
 }
 
 
 class IntPropagator{
 	// Map from variable id to values.
 	vec<Val> vals;
+
 
 	//Like the trail in the sat solver; this is a queue that contains all the pending assignments. 
 	//each entry is a triple that includes the variable, its value, and the level.
@@ -424,8 +470,20 @@ public:
 					//cout<<", "<<vr<<"("<<vv.v()<<")";
 					explain.push(~tmp);
 				}
+			} else {
+				ic = ranges.getCause(vr);
+				if (ic != NULL) {
+					for (int i = 0; i<ic->size(); ++i) {
+						iVar iv = (*ic)[i];
+						int parpos = tpos[iv];
+						if (seen[iv] == 0) {
+							seen[iv] = 1;
+							helper(iv, maxtpos);
+						}
+					}
+				}
 			}
-		}else{
+		}		else {
 			int vrlev = tpos[vr];
 			ic->moreAct();
 			if(ic->tp()==BMUX){
@@ -519,7 +577,7 @@ public:
 			ic->moreAct();
 			if(ic->tp()==BMUX && seen[(*ic)[0]]){
 				int xpos = tpos[(*ic)[0]];
-				int xlev = trail[xpos].level;
+				//int xlev = trail[xpos].level;
 				iVar cond = (*ic)[1];
 				int condpos = tpos[cond];
 				if(condpos < xpos){										
@@ -575,7 +633,13 @@ public:
 								ppp.push(make_pair(iv, vals[iv].v()));
 							}
 						}
+					} else {
+						Intclause* ic= ranges.getCause(iv);
+						if (ic != NULL) {
+							innerhelper(ic, iv, ppp, trailLev);
+						}
 					}
+
 				}
 			}
 		}
@@ -615,12 +679,14 @@ public:
 		}else{
 			v.set(val);
 			tpos[var] = trail.size();
-			trail.push(mpair(var, level, val));					
+			trail.push(mpair(var, level, val));		
+			ranges.updateRange(var, level, Range(val, val), NULL);
 			return true;
 		}
 	}
 	void addMinus(iVar a, iVar b, iVar x){
 		Intclause* c = PlusClause(a, b, x);
+		ranges.updateRange(x, 0, ranges.getRange(a) - ranges.getRange(b), NULL);
 		c->retype(MINUS);
 		clauses.push(c);
 		watches[a].push(c);
@@ -646,6 +712,7 @@ public:
 		Intclause* c = PlusClause(a, b, x);
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
+		ranges.updateRange(x, 0, ranges.getRange(a) + ranges.getRange(b), NULL);
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
 			//for that, we need to retype to EXACTDIV.
@@ -673,6 +740,7 @@ public:
 		Intclause* c = TimesClause(a, b, x);
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
+		ranges.updateRange(x, 0, ranges.getRange(a) * ranges.getRange(b), NULL);
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
 			//for that, we need to retype to EXACTDIV.
@@ -751,6 +819,14 @@ public:
 		clauses.push(c);
 		watches[cond].push(c);
 		watches[x].push(c);
+
+		Assert(!isSet(cond), "This would have been const propagated!");
+		Range out = ranges.getRange(choices[0]);
+		for (int i = 1; i < len; ++i) {
+			out = join(out, ranges.getRange(choices[i]));
+		}
+		ranges.updateRange(x, 0, out, NULL);
+
 		if(isSet(choices[0])){
 			for(int i=1; i<len; ++i){
 				if(!isSet(choices[i])){
@@ -1091,6 +1167,79 @@ private:
 				return CONFL;
 			}
 		}
+
+		const Range& ra = ranges.getRange(a);
+		const Range& rb = ranges.getRange(b);
+		if (vx.isDef()) {
+			if (vx.v() == 1) {				
+				if (rb.getHi() <= ra.getLo()) {
+					return CONFL; // We have a conflict, because v.x should be 0 according to ranges.
+				}
+								
+				// Assert(ra.getLo() < rb.getHi(), "Impossible");
+				if (!vb.isDef() && rb.getLo() <= ra.getLo()) {
+					Range rbnew = Range(ra.getLo()+1, rb.getHi());
+					if (rbnew.isSingle()) {
+						//Range was collapsed to a single value; set that value.
+						uncheckedSetVal(b, rbnew.getLo(), level, c);
+					} else {
+						//Still has a range of values, but if it narrowed, we update.
+						updateIfBetter(b, level, rbnew, *c);
+					}
+				}
+				if (!va.isDef() &&  ra.getHi() >= rb.getHi()) {
+					Range ranew = Range(ra.getLo(), rb.getHi() - 1);
+					if (ranew.isSingle()) {
+						uncheckedSetVal(a, ranew.getLo(), level, c);
+					} else {
+						updateIfBetter(a, level, ranew, *c);
+					}
+				}
+
+			} else { // vx.v() == 0 so a >= b
+				if (ra.getHi() < rb.getLo()) {
+					return CONFL; // We have a conflict, because v.x should be 0 according to ranges.
+				}
+				// Assert(ra.getHi() >= rb.getLo(), "Impossible");
+				if (!va.isDef() && ra.getLo() < rb.getLo()) {
+					Range ranew = Range(rb.getLo(), ra.getHi());
+					if (ranew.isSingle()) {
+						uncheckedSetVal(a, ranew.getLo(), level, c);
+					}
+					else {
+						updateIfBetter(a, level, ranew, *c);
+					}
+				}
+				if (rb.getHi() > ra.getHi()) {
+					Range rbnew = Range(rb.getLo(), ra.getHi());
+					if (rbnew.isSingle()) {
+						//Range was collapsed to a single value; set that value.
+						uncheckedSetVal(b, rbnew.getLo(), level, c);
+					}
+					else {
+						//Still has a range of values, but if it narrowed, we update.
+						updateIfBetter(b, level, rbnew, *c);
+					}
+				}
+
+			}
+		} else {
+			if (ra.getHi() < rb.getLo()) {
+				if (uncheckedSetVal(x, 1, level, c)) {
+					return ADV;
+				} else {
+					return CONFL;
+				}
+			}
+			if (rb.getHi() <= ra.getLo()) {
+				if (uncheckedSetVal(x, 0, level, c)) {
+					return ADV;
+				} else {
+					return CONFL;
+				}
+			}
+		}
+
 		return ADV;
 	}
 
@@ -1787,6 +1936,57 @@ private:
 		Assert(false, "Shouldn't be here");
 	}
 
+	void updateIfBetter(iVar vr, int level, const Range& outnew, Intclause& c) {
+		const Range& outold = ranges.getRange(vr);
+		if (!(outnew == outold) && outnew <= outold) {
+			trail.push(mpair(vr, level, 0));
+			ranges.updateRange(vr, level, outnew, &c);
+		}
+	}
+
+	void propagateTimesInterval(Intclause& c, int level) {
+		iVar vr = c[0];
+		const Range& ina = ranges.getRange(c[1]);
+		const Range& inb = ranges.getRange(c[2]);
+		
+		Range outnew = ina * inb;
+		updateIfBetter(vr, level, outnew, c);
+	}
+
+	void propagatePlusInterval(Intclause& c, int level) {
+		iVar vr = c[0];
+		const Range& ina = ranges.getRange(c[1]);
+		const Range& inb = ranges.getRange(c[2]);
+		
+		Range outnew = ina + inb;
+		updateIfBetter(vr, level, outnew, c);
+	}
+
+	void propagateBMuxInterval(Intclause& c, int level) {
+		iVar vr = c[0];
+		Val vcond = vals[c[1]];
+		
+		if (vcond.isDef()) {
+			const Range& outnew = ranges.getRange(c[vcond.v() + 2]);			
+			updateIfBetter(vr, level, outnew, c);
+		} else {
+			Range outnew = ranges.getRange(c[2]);
+			for (int i = 3; i < c.size(); ++i) {
+				outnew = join(outnew, ranges.getRange(c[i]));
+			}
+			updateIfBetter(vr, level, outnew, c);
+		}
+	}
+
+	void propagateMinusInterval(Intclause& c, int level) {
+		iVar vr = c[0];
+		const Range& ina = ranges.getRange(c[1]);
+		const Range& inb = ranges.getRange(c[2]);
+		
+		Range outnew = ina - inb;
+		updateIfBetter(vr, level, outnew, c);
+	}
+
 	bool propagatePlus(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
 		//p.var can only be c[1] or c[2]
 		action act;
@@ -1898,42 +2098,77 @@ public:
 		while(qhead < trail.size()){
 			mpair p = trail[qhead++];
 			vec<Intclause*>& ws = watches[p.var];
+			Val vp = vals[p.var];
 			if (ws.size() == 0) { continue; }
 			Intclause  **i, **j, **end;
 			for (i = j = &ws[0], end = i + ws.size();  i != end;){
 				Intclause& c = **i++;
 				//unlike sat, we do not reorder vars. too much trouble.
-				
-				bool goodsofar=false;
-				if(c.tp()==PLUS){
-					goodsofar = propagatePlus(c,p,i,j);					
-				}else		
-				if(c.tp()==MINUS){
-					goodsofar = propagateMinus(c,p,i,j);
-				}else
-				if(c.tp()==TIMES){
-					goodsofar = propagateTimes(c,p,i,j);					
-				}else
-				if(c.tp()==EXACTDIV){
-					goodsofar = propagateExactDiv(c,p,i,j);					
-				}else
-				if(c.tp()==EQ){
-					goodsofar = propagateEq(c,p,i,j);
-				}else
-				if(c.tp()==LT){
-					goodsofar = propagateLt(c,p,i,j);
-				}else
-				if(c.tp()==BMUX){
-					goodsofar = propagateBMux(c,p,i,j);
-				}else
-				if(c.tp()==MOD){
-					goodsofar = propagateMod(c,p,i,j);
-				}else
-				if(c.tp()==DIV){
-					goodsofar = propagateDiv(c,p,i,j);
-				}else
-				if(c.tp()==CONF){
-					goodsofar = propagateConf(c,p,i,j);
+				bool goodsofar = false;
+				if (vp.isDef()) {									
+					if(c.tp()==PLUS){
+						goodsofar = propagatePlus(c,p,i,j);	
+						if(goodsofar){ propagatePlusInterval(c, p.level); }
+					}else		
+					if(c.tp()==MINUS){
+						goodsofar = propagateMinus(c,p,i,j);
+						if (goodsofar) { propagateMinusInterval(c, p.level); }
+					}else
+					if(c.tp()==TIMES){
+						goodsofar = propagateTimes(c,p,i,j);					
+					}else
+					if(c.tp()==EXACTDIV){
+						goodsofar = propagateExactDiv(c,p,i,j);					
+					}else
+					if(c.tp()==EQ){
+						goodsofar = propagateEq(c,p,i,j);
+					}else
+					if(c.tp()==LT){
+						goodsofar = propagateLt(c,p,i,j);
+					}else
+					if(c.tp()==BMUX){
+						goodsofar = propagateBMux(c,p,i,j);
+						if(goodsofar){ propagateBMuxInterval(c, p.level); }
+					}else
+					if(c.tp()==MOD){
+						goodsofar = propagateMod(c,p,i,j);
+					}else
+					if(c.tp()==DIV){
+						goodsofar = propagateDiv(c,p,i,j);
+					}else
+					if(c.tp()==CONF){
+						goodsofar = propagateConf(c,p,i,j);
+					}
+				} else {
+					goodsofar = true;
+					if (c.tp() == LT) {
+						goodsofar = propagateLt(c, p, i, j);
+					} else{
+						*j++ = &c;
+						if(c.tp()==PLUS){
+							propagatePlusInterval(c, p.level);
+						}else if(c.tp()==MINUS){
+							propagateMinusInterval(c, p.level);
+						}else
+						if(c.tp()==TIMES){
+							propagateTimesInterval(c, p.level);
+						}else
+						if(c.tp()==EXACTDIV){
+										
+						}else
+						if(c.tp()==EQ){
+						
+						}else					
+						if(c.tp()==BMUX){
+							propagateBMuxInterval(c,p.level);
+						}else
+						if(c.tp()==MOD){
+						
+						}else
+						if(c.tp()==DIV){
+						
+						}
+					}
 				}
 
 				if(!goodsofar){
@@ -1963,6 +2198,7 @@ public:
 			interf.pop();
 		}
 		qhead = trail.size();
+		ranges.popRanges(level);
 	}
 
 	Lit existingLit(iVar vr);
