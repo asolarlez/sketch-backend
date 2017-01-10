@@ -186,8 +186,14 @@ public:
 	Range(int _lo, int _hi): lo(_lo), hi(_hi){}
 	int getLo() const { return lo; }
 	int getHi() const { return hi; }
+	bool contains(int x) {
+		return lo <= x && x <= hi;
+	}
 	bool isSingle() const {
 		return lo == hi;
+	}
+	bool isEmpty() const {
+		return (lo > hi);
 	}
 	string print() const;
 	friend Range operator+(const Range& a, const Range& b);
@@ -196,6 +202,7 @@ public:
 	friend bool operator==(const Range& a, const Range& b);
 	friend bool operator<=(const Range& a, const Range& b);
 	friend Range join(const Range& a, const Range& b);
+	friend Range intersect(const Range& a, const Range& b);
 };
 
 extern Range TOP_RANGE;
@@ -213,6 +220,11 @@ inline Range operator-(const Range& a, const Range& b) {
 inline Range join(const Range& a, const Range& b) {
 	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
 	return Range(min(a.lo, b.lo), max(a.hi, b.hi));
+}
+inline Range intersect(const Range& a, const Range& b) {
+	if (a == TOP_RANGE) { return b; }
+	if (b == TOP_RANGE) { return a; }
+	return Range(max(a.lo, b.lo), min(a.hi, b.hi));
 }
 
 inline Range operator*(const Range& a, const Range& b) { 
@@ -821,10 +833,8 @@ public:
 		watches[x].push(c);
 
 		Assert(!isSet(cond), "This would have been const propagated!");
-		Range out = ranges.getRange(choices[0]);
-		for (int i = 1; i < len; ++i) {
-			out = join(out, ranges.getRange(choices[i]));
-		}
+
+		Range out = joinChoices(ranges.getRange(cond), len, choices);
 		ranges.updateRange(x, 0, out, NULL);
 
 		if(isSet(choices[0])){
@@ -1967,15 +1977,31 @@ private:
 		Val vcond = vals[c[1]];
 		
 		if (vcond.isDef()) {
-			const Range& outnew = ranges.getRange(c[vcond.v() + 2]);			
-			updateIfBetter(vr, level, outnew, c);
+			Val vx = vals[vr];
+			if (!vx.isDef()) {
+				const Range& outnew = ranges.getRange(c[vcond.v() + 2]);
+				updateIfBetter(vr, level, outnew, c);
+			}			
 		} else {
-			Range outnew = ranges.getRange(c[2]);
-			for (int i = 3; i < c.size(); ++i) {
-				outnew = join(outnew, ranges.getRange(c[i]));
-			}
-			updateIfBetter(vr, level, outnew, c);
+			Range cond = ranges.getRange(c[1]);
+			updateIfBetter(vr, level, joinChoices(cond, c.size()-2, &c[2]), c);
 		}
+	}
+
+	Range joinChoices(const Range& cond, int len, iVar* choices) {
+		Range iter = intersect(cond, Range(0, len-1));
+		if (iter.isEmpty()) {
+			return Range(0, 0);
+		}
+		int i = iter.getLo();
+		Range outnew = ranges.getRange(choices[i]);
+		for (++i; i <= iter.getHi(); ++i) {
+			outnew = join(outnew, ranges.getRange(choices[i]));
+		}
+		if (cond.getHi() >= len || cond.getLo() < 0) {
+			outnew = join(outnew, Range(0, 0));
+		}
+		return outnew;
 	}
 
 	void propagateMinusInterval(Intclause& c, int level) {
