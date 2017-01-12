@@ -87,6 +87,7 @@ struct CommandLineArgs{
   double sparseArray;
   bool randomInlining;
   float epsilon;
+  int custIntSize;
   string erSimEvalFName;
   bool numericalSolver;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
@@ -165,8 +166,9 @@ struct CommandLineArgs{
 	sparseArray = -1;
     randomInlining = false;
 	epsilon = 0.0000001;
-    numericalSolver = true;
+    numericalSolver = false;
 	erSimEvalFName = "";
+	custIntSize = 5;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -566,6 +568,12 @@ struct CommandLineArgs{
       input_idx = ii+2;
       continue;
     }
+	if( string(argv[ii]) == "-custintsize" ){
+	  Assert(ii<(argc-1), "-custintsize needs an extra parameter");
+	  custIntSize = atoi(argv[ii+1]);
+	  input_idx = ii+2;
+	  continue;
+	}
     if(argv[ii][0] == '-'){
       cout<<"Unknown flag "<<string(argv[ii])<<endl;
       input_idx = ii+1;

@@ -1,0 +1,80 @@
+
+include "generators2.skh";
+pragma options "--bnd-inline-amnt 3 --bnd-inbits 4 --beopt:custintsize 5 ";
+
+@Gen("arithexpr_4d_3v_plus_times_div_mod")
+generator int arithExpr(int x, int y, int z);
+
+
+
+void partitionCorrect(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< (N%P) ){
+        iend =  (1 + (N / P)) * (1 + p);  
+        ibeg =  (1 + (N / P)) * p;  
+    }else{
+        iend =  (p * (N / P)) + ((N / P) + (N % P));  
+        ibeg =  (p * (N / P)) + (N % P);  
+    }
+}
+
+void partitionCustomSynthFull(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< arithExpr(p,N,P) ){
+        iend =  arithExpr(p,N,P);  
+        ibeg =  arithExpr(p,N,P);  
+    }else{
+        iend =  arithExpr(p,N,P);  
+        ibeg =  arithExpr(p,N,P);  
+    }
+}
+
+void partitionCustomSynthTest(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< arithExpr(p,N,P) ){
+        iend =  (1 + (N / P)) * (1 + p);  
+        ibeg =  (1 + (N / P)) * p;  
+    }else{
+        iend =  (p * (N / P)) + ((N / P) + (N % P));  
+        ibeg =  (p * (N / P)) + (N % P);  
+    }
+}
+
+void partitionTraditional(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< expr({p, P, N, N/P, N%P}, {TIMES, PLUS}) ){
+        iend =  expr({p, P, N, N/P, N%P},  {TIMES, PLUS});  
+        ibeg =  expr({p, P, N, N/P, N%P},  {TIMES, PLUS});  
+    }else{
+        iend =  expr({p, P, N, N/P, N%P}, {TIMES, PLUS});  
+        ibeg =  expr({p, P, N, N/P, N%P}, {TIMES, PLUS});  
+    }
+}
+
+void partition(int p, int P, int N, ref int ibeg, ref int iend){
+	#ifdef CUSTOMTEST
+    	partitionCustomSynthTest(p, P, N, ibeg, iend);
+    #else
+        #ifdef CUSTOMFULL
+        	partitionCustomSynthFull(p, P, N, ibeg, iend);
+        #else
+            #ifdef TRADITIONAL
+            	partitionTraditional(p, P, N, ibeg, iend);
+            #else
+    			partitionCorrect(p, P, N, ibeg, iend);
+    		#endif
+    	#endif
+	#endif
+}
+
+harness void testPartition(int p, int N, int P){
+    if(N<1 || P < 1){ return; }
+    if(p<P){
+        int ibeg, iend;
+        partition(p, P, N, ibeg, iend);
+        assert iend - ibeg < (N/P) + 2;
+        if(p+1 < P){
+            int ibeg2, iend2;
+            partition(p+1, P, N, ibeg2, iend2);
+            assert iend == ibeg2;
+        }
+        if(p==0){ assert ibeg == 0; }
+        if(p==P-1){ assert iend == N; }
+    }
+}
