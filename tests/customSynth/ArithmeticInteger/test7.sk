@@ -19,7 +19,7 @@ void partitionCorrect(int p, int P, int N, ref int ibeg, ref int iend){
 
 void partitionCustomSynthFull(int p, int P, int N, ref int ibeg, ref int iend){
     if(p< arithExpr(p,N,P) ){
-        iend =  arithExpr(p,N,P);  
+        iend =  arithExpr(p,N,P);  //TODO: This will need constants as well
         ibeg =  arithExpr(p,N,P);  
     }else{
         iend =  arithExpr(p,N,P);  
