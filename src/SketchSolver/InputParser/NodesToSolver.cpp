@@ -1414,7 +1414,10 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
     return;
   }
   int nbits = tmpdag->getIntSize();
-  
+  if (!isVerification){
+    nbits = PARAMS->custIntSize;
+  }
+  //TODO: SynthInSynth changed this nbits variable
   int nouts = tuple_type->entries.size();
   vector<Tvalue> nvars(nouts);
   int totbits = 0;
@@ -1425,7 +1428,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
     bool isArr = ttype->isArr;
     bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
     int cbits = isBool ? 1 : nbits;
-    
+	  
     if (isVerification) {
       nvars[i] = dir.getArr(sstr.str(), 0);
     } else {
@@ -1440,6 +1443,7 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
         nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
       }
       else {
+		
         nvars[i].setSize(cbits);
         nvars[i].makeSparse(dir);
       }

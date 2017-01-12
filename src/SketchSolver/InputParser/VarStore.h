@@ -94,6 +94,7 @@ public:
 			}else{
 				if(next != NULL){ next->getInt(idx); }
 			}
+			Assert(false,"Control shouldn't reach here");
 		}
 		void setVal(int idx, int v){
 			if(this->index==idx){

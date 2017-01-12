@@ -5,6 +5,7 @@
 #include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
 #include "InputReader.h" // INp yylex_init, yyparse, etc.
+#include "ArithmeticExpressionBuilder.h"
 
 
 
@@ -100,6 +101,7 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 		bgproblem->clear();
 		delete bgproblem;
 	}
+	ArithExprBuilder::clearStaticMapMemory();
 	delete finder;
 	delete _pfind;
 }

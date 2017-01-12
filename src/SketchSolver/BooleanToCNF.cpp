@@ -5,7 +5,7 @@
 #include <set>
 #include <map>
 #include <utility>
-#include <Sort.h>
+#include "Sort.h"
 #include <math.h>
 using namespace std;
 
@@ -19,6 +19,10 @@ using namespace std;
 #include "NumericalSolver.h"
 #include "GTPredicateSolver.h"
 #include "EntityResolutionSolver.h"
+#include "ArithmeticExpressionSolver.h"
+map < string , map < int, set < ArithExpression* > > >  ArithExprBuilder::ASetMap;
+map < string, ArithExpression *> ArithExprBuilder::ASigMap;
+
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -67,7 +71,26 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
     return new ERAtomSyn(_fm);
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
     return new NumericalSolver(_fm, numericalAbsMap[name]);
+  } else if (name == "_GEN_arithexpr_3d_3v_plus_times") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
+    ArithExprSyn* ret =  new ArithExprSyn(_fm);
+    ret->setupBuilder();
+    return ret;
+  } else if (name == "_GEN_arithexpr_4d_3v_plus_times") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
+	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
+	  ret->setDepth(4);
+	  ret->setupBuilder();
+	  return ret;
+  } //arithexpr_3d_3v_plus_times_div_mod
+  else if (name == "_GEN_arithexpr_3d_3v_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
+	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
+	  //ret->setDepth(4);
+	  set<ArithType> ops = {Plus, Times, Div, Mod};
+	  ret->setOps(ops);
+	  ret->setupBuilder();
+	  return ret;
   }
+	
+
 	return NULL;
 }
 
