@@ -1,5 +1,7 @@
 to run test7.sk (partition example)
 
+sketch-sis uses latest default sketch-frontend + SynthInSynth branch of sketch-backend
+
 sketch-sis -V 10 --fe-def CUSTOMTEST=1 --fe-keep-tmp --fe-inc <path-to-sketchlib-in-Sketch-FE> test7.sk 
 
 other valid --fe-defs are:
