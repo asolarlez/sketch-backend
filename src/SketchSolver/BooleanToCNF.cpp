@@ -89,8 +89,16 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	  ret->setupBuilder();
 	  return ret;
   }
+  else if (name == "_GEN_arithexpr_4d_3v_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
+	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
+	  ret->setDepth(4);
+	  set<ArithType> ops = {Plus, Times, Div, Mod};
+	  ret->setOps(ops);
+	  ret->setupBuilder();
+	  return ret;
+  }
 	
-
+	
 	return NULL;
 }
 
