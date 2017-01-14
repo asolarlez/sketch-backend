@@ -373,9 +373,7 @@ public:
 		string fsig =ae2->getSig();
 		if (ae1->isCommutative(op)){
 			if (msig > fsig){
-				string tmp = msig;
-				msig = fsig;
-				fsig = tmp;
+				return NULL;
 			}
 		}
 		string checkSig = "(" + msig + ArithExpression::AT2str(op) + fsig + ")";
