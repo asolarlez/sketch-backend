@@ -25,15 +25,12 @@ class ArithExprSyn : public Synthesizer {
 	int numvars;
 	set<int> consts;
 	set <ArithType> ops;
-	ArithExprBuilder* ab;public:
-	inline string getIOString(vector<int> &input, int output){
-		string s="";
-		for(auto inp:input){
-			s+="#"+to_string(inp);
-		}
-		s+="#"+to_string(output);
-		return s;
-	}
+	ArithExprBuilder* ab;
+	vector< vector<int> > prevInputs;
+	bool prevWasUNSAT;
+	string name;
+public:
+	
 	ArithExprSyn(FloatManager& _fm) :Synthesizer(_fm) {
 		expr = NULL;
 		depth = 3;
@@ -42,6 +39,7 @@ class ArithExprSyn : public Synthesizer {
 		ops.insert(Times);
 		consts = set<int>();
 		ab = NULL;
+		prevWasUNSAT=false;
 		//TODO: Set these params based on name of the uninterp function
 		//while registering the function
 	}
@@ -49,6 +47,41 @@ class ArithExprSyn : public Synthesizer {
 		if (ab != NULL){
 			delete ab;
 		}
+	}
+	void setupParams(string name){
+		this->name = name;
+		string ncopy = name;
+		replace(ncopy.begin(), ncopy.end(), '_', ' ');
+		stringstream ss(ncopy);
+		string s;
+		ss>>s;
+		Assert(s=="GEN","invalid name: " + name);
+		ss>>s;
+		Assert(s=="arithexpr","invalid name: " + name);
+		ops.clear();
+		while(ss>>s){
+			if(s=="plus") ops.insert(Plus);
+			else if(s=="times") ops.insert(Times);
+			else if(s=="div") ops.insert(Div);
+			else if(s=="mod") ops.insert(Mod);
+			else if(s[s.length()-1] == 'd'){
+				depth = atoi(s.substr(0,s.length()-1).c_str());
+				Assert(depth >= 1,"invalid depth: " + s);
+			}
+			else if(s[s.length()-1] == 'v'){
+				numvars = atoi(s.substr(0,s.length()-1).c_str());
+				Assert(numvars >= 1,"invalid numvars: " + s);
+			}
+			else if(s[0] == 'c'){
+				consts.insert(atoi(s.substr(1,s.length()-1).c_str()));
+			}
+			
+		}
+		if (ops.empty()){
+			ops.insert(Plus);
+			ops.insert(Times);
+		}
+		setupBuilder();
 	}
 	void addConst(int c){
 		consts.insert(c);
@@ -150,7 +183,20 @@ class ArithExprSyn : public Synthesizer {
 			}
 			return true;
 		}
-
+		
+		if(prevInputs.size() > 0 && prevInputs == inputs){
+			ArithExpression* aePrev = ab->getExpressionForOutputs(outputs);
+			if (aePrev != NULL){
+				expr = aePrev;
+				return true;
+			}else{
+				if(prevWasUNSAT){
+					addConflicts(exampleIds,im);//TODO:Can do smarter
+					return false;
+				}
+			}
+		}
+		prevInputs=inputs;
 		Assert(d>=1, "depth should be at least 1");
 		Assert(ab != NULL, "need Arithmetic Builder Instantiated by now");
 		
@@ -162,7 +208,7 @@ class ArithExprSyn : public Synthesizer {
 			
 			if (currExpr !=NULL){
 				expr = currExpr;
-				cout<<"Used "<<nExamples<<" examples. ArithExpr: "<<expr->getSig()<<endl;
+				//cout<<"Used "<<nExamples<<" examples. ArithExpr: "<<expr->getSig()<<endl;
 				return true;
 			}
 			
@@ -180,6 +226,7 @@ class ArithExprSyn : public Synthesizer {
 		//numvars : index for output
 		conflict.clear();
 		bool b = tryExpressions(depth);
+		prevWasUNSAT = !b;
 		return b;
 
 	}

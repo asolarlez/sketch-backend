@@ -1,13 +1,15 @@
 
 //include "generators2.skh";
-pragma options "--bnd-inline-amnt 3 --bnd-inbits 4 --beopt:custintsize 5 ";
+pragma options "--bnd-inline-amnt 3 --bnd-inbits 4 --beopt:custintsize 4 ";
 
 @Gen("arithexpr_3d_3v_plus_times_div_mod")
 generator int arithExpr(int x, int y, int z);
 
+@Gen("arithexpr_3d_3v_c1_plus_times_div_mod")
+generator int arithExprC1(int x, int y, int z);
 
 @Gen("arithexpr_4d_3v_c1_plus_times_div_mod")
-generator int arithExprC1(int x, int y, int z);
+generator int arithExprD4C1(int x, int y, int z);
 
 @Gen("arithexpr_4d_3v_plus_times_div_mod") //TOO SLOW
 generator int arithExprD4(int x, int y, int z);
@@ -35,7 +37,7 @@ void partitionCustomSynthFull(int p, int P, int N, ref int ibeg, ref int iend){
 
 generator int skArithExpr(int x, int y, int z, int d){
     if (d<=3){
-        return arithExpr(x,y,z);
+        return arithExprC1(x,y,z);
     }
     else{
         int e1 = skArithExpr(x,y,z,d-1);
@@ -49,12 +51,12 @@ generator int skArithExpr(int x, int y, int z, int d){
 }
 
 void partitionCustomSynthTest(int p, int P, int N, ref int ibeg, ref int iend){
-    if(p< (N%P) ){
-        iend =  (1 + (N / P)) * (1 + p);  
-        ibeg =   arithExprC1(p,N,P);    
+    if(p< skArithExpr(p,N,P,3) ){
+        iend =  skArithExpr(p,N,P,4);  
+        ibeg =   skArithExpr(p,N,P,4);    
     }else{
-        iend =  (p * (N / P)) + ((N / P) + (N % P));  
-        ibeg =  (p * (N / P)) + (N % P);  
+        iend =  skArithExpr(p,N,P,4);  
+        ibeg =  skArithExpr(p,N,P,4);  
     }
 }
 

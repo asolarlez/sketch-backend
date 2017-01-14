@@ -317,7 +317,7 @@ public:
 				return NULL;
 			}
 			//a+a if 2 \in consts and Times \in ops
-			if(ae1->getSig() == ae2->getSig()) return NULL;
+			if(ae1->getSig() == ae2->getSig() && ops.find(Times) != ops.end() && consts.find(2) != consts.end()) return NULL;
 		}
 		if (op == Div){
 			// x / x (if C1 in consts)
@@ -351,7 +351,7 @@ public:
 			if (lop == Mod) {
 				return NULL;
 			}
-			// x%C1 or C0 (note x%C1 == 0 but if we needed 0, we will just add it)
+			// x%C1 or C0 (note x%C1 == 0 but if we needed 0, we should just add it)
 			if(rop == Const && (ae2->val == 1 || ae2->val == 0)) return NULL;
 		
 			//const % x?
@@ -377,6 +377,7 @@ public:
 			}
 		}
 		string checkSig = "(" + msig + ArithExpression::AT2str(op) + fsig + ")";
+		//cout<<"Adding expression: "<<checkSig<<endl;
 		ArithExpression* ae;
 		if (ASigMap.find(checkSig) == ASigMap.end()){
 			//cannot find sig
@@ -389,11 +390,13 @@ public:
 		ae->getOutputs(inputs, outputs);
 		Assert(inputs.size() == outputs.size(),"outputs not correctly evaluated");
 		if (outputs == neededOutputs){
+			ASetMap[d].insert(ae);
 			return ae;
 		}
 		auto it =outputsAMap.find(outputs);
 		if(it != outputsAMap.end()){
 			//found an expression with equivalent outputs
+			//cout<<"Output based pruning: "<<checkSig<<" : "<<outputsAMap[outputs]->getSig()<<endl;
 			return NULL;
 		}else{
 			outputsAMap[outputs] = ae;
@@ -465,6 +468,21 @@ public:
 			}
 		}
 	}
+	static string getIOString(vector<int> &input, int output){
+		string s="";
+		for(auto& inp:input){
+			s+="|"+to_string(inp);
+		}
+		s+="|->"+to_string(output);
+		return s;
+	}
+	static string getIOStrings(vector< vector<int> > &inputs, vector<int> &outputs){
+		string s="";
+		for (int io=0;io<inputs.size();io++){
+			s+=" ## " + getIOString(inputs[io],outputs[io]);
+		}
+		return s;
+	}
 	ArithExpression* getExpression(int depth, vector< vector<int> > &inputs, vector<int> & neededOutputs){
 		if (ASetMap.find(depth) != ASetMap.end()){
 			Assert(false,"This shouldn't happen since we clear the map");
@@ -501,7 +519,8 @@ public:
 				}
 			}
 		}
-		cout<<"ArithExprCustomSynth: Under "<<inputs.size()<<" examples. Generated expressions of depth: "<<depth<< ", Total Expressions:"<< ASetMap[depth].size()<<endl;
+		//cout<<"ArithExprCustomSynth: Under "<<inputs.size()<<" examples. Generated expressions of depth: "<<depth<< ", Total Expressions:"<< ASetMap[depth].size()<<endl;
+		//cout<<getIOStrings(inputs,neededOutputs)<<endl;
 		return NULL;
 	}
 };

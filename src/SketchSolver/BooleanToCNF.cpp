@@ -65,55 +65,19 @@ namespace MSsolverNS {
 
 
 Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
+	string arithExpr = "_GEN_arithexpr";
 	if (name == "_GEN_gtp") {
 		return new GtpSyn(_fm);
 	} else if (name == "_GEN_eratom") {
     return new ERAtomSyn(_fm);
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
     return new NumericalSolver(_fm, numericalAbsMap[name]);
-  } else if (name == "_GEN_arithexpr_3d_3v_plus_times") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
-    ArithExprSyn* ret =  new ArithExprSyn(_fm);
-    ret->setupBuilder();
-    return ret;
-  } else if (name == "_GEN_arithexpr_4d_3v_plus_times") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
+  }else if (mismatch(arithExpr.begin(), arithExpr.end(), name.begin()).first == arithExpr.end()){
 	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
-	  ret->setDepth(4);
-	  ret->setupBuilder();
+	  ret->setupParams(name);
 	  return ret;
-  } //arithexpr_3d_3v_plus_times_div_mod
-  else if (name == "_GEN_arithexpr_3d_3v_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
-	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
-	  //ret->setDepth(4);
-	  set<ArithType> ops = {Plus, Times, Div, Mod};
-	  ret->setOps(ops);
-	  ret->setupBuilder();
-	  return ret;
-  }
-  else if (name == "_GEN_arithexpr_3d_3v_c1_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
-	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
-	  //ret->setDepth(4);
-	  ret->addConst(1);
-	  set<ArithType> ops = {Plus, Times, Div, Mod};
-	  ret->setOps(ops);
-	  ret->setupBuilder();
-	  return ret;
-  }
-  else if (name == "_GEN_arithexpr_4d_3v_c1_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
-	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
-	  ret->setDepth(4);
-	  ret->addConst(1);
-	  set<ArithType> ops = {Plus, Times, Div, Mod};
-	  ret->setOps(ops);
-	  ret->setupBuilder();
-	  return ret;
-  }
-  else if (name == "_GEN_arithexpr_4d_3v_plus_times_div_mod") { //_c0_c1_c2 for constants _plus_minus_div etc for ops
-	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
-	  ret->setDepth(4);
-	  set<ArithType> ops = {Plus, Times, Div, Mod};
-	  ret->setOps(ops);
-	  ret->setupBuilder();
-	  return ret;
+  }else{
+	  Assert(false,"Invalid synthesizer name: " + name);
   }
 	
 	
