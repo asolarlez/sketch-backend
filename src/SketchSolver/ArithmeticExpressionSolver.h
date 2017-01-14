@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <algorithm>
 #include <utility>
 #include "Sort.h"
 #include <math.h>
@@ -24,10 +25,15 @@ class ArithExprSyn : public Synthesizer {
 	int numvars;
 	set<int> consts;
 	set <ArithType> ops;
-	ArithExprBuilder* ab;
-	int prevNExamples;
-public:
-    
+	ArithExprBuilder* ab;public:
+	inline string getIOString(vector<int> &input, int output){
+		string s="";
+		for(auto inp:input){
+			s+="#"+to_string(inp);
+		}
+		s+="#"+to_string(output);
+		return s;
+	}
 	ArithExprSyn(FloatManager& _fm) :Synthesizer(_fm) {
 		expr = NULL;
 		depth = 3;
@@ -36,7 +42,6 @@ public:
 		ops.insert(Times);
 		consts = set<int>();
 		ab = NULL;
-		prevNExamples=0;
 		//TODO: Set these params based on name of the uninterp function
 		//while registering the function
 	}
@@ -59,14 +64,14 @@ public:
 		numvars = nv;
 	}
 	void setupBuilder(){
-		ab = new ArithExprBuilder(numvars, consts, ops);
+		ab = new ArithExprBuilder(numvars, consts, ops, depth);
 	}
     
     virtual void finalize() {
         //Called after inout matrix is final but before it is destroyed
     }
     
-    void addConflicts(set< int > &conflictIds, InputMatrix& im ){
+    void addConflicts(vector< int > &conflictIds, InputMatrix& im ){
         for(auto conflictId: conflictIds){
 			//cout<<"("<<im.getVal(conflictId, tupidin)<<","<<im.getVal(conflictId, attrin)<<") ";
 			addSingleConflict(conflictId,im);
@@ -106,61 +111,66 @@ public:
 			if (foundEmptyVariable){
 				continue;
 			}
+			
 			exampleIds.push_back(i);
 			inputs.push_back(vals);
 			outputs.push_back(out);
 			
 		}
 		int nExamples = (int)outputs.size();
-		Assert(d>=1, "depth should be at least 1");
-		Assert(ab != NULL, "need Arithmetic Builder Instantiated by now");
-		if (nExamples == prevNExamples){
-			if (expr == NULL){
-				expr=*(ab->getExpressions(1).begin());
+		/*
+		for(int io=0;io<nExamples;io++){
+			cout<<"Inputs: ";
+			for(int inp: inputs[io]){
+				cout<<inp<<" ";
+			}
+			cout<<" Output: "<<outputs[io]<<endl;
+		}*/
+		
+		//Evaluate previous expr on each example and return true if they all satisfy
+		if (expr != NULL){
+			if(nExamples == 0) return true;
+			bool allSatisfied = true;
+			for(int io=0;io<nExamples;io++){
+				int outv = expr->evaluate(inputs[io]);
+				if (outv != outputs[io]){
+					allSatisfied = false;
+					break;
+				}
+			}
+			if(allSatisfied){
+				return true;
+			}
+		}
+		else{
+			Assert(nExamples == 0,"expr == NULL Can only happen in the case when nExamples == 0.");
+			expr=(ab->getExpression(1,inputs,outputs));
+			if(expr == NULL){
+				expr=ab->getFirstExpression();
 			}
 			return true;
 		}
-		else prevNExamples = nExamples;
+
+		Assert(d>=1, "depth should be at least 1");
+		Assert(ab != NULL, "need Arithmetic Builder Instantiated by now");
 		
-		set<int> conflictIds;
+		//clear depth -> expr map
+		ab->clearSetMap();
 		for(int cDepth = 1; cDepth <=d; cDepth++){
 			
-			set<ArithExpression*>&possibleExpressions = ab->getExpressions(cDepth);
-			//Go over all current expressions
-			auto it_ae = possibleExpressions.begin();
-			while (it_ae != possibleExpressions.end()){
-				//Go over all examples, try expression on all examples
-				ArithExpression* ae = *it_ae;
-				bool expWorks = true;
-				for(int ei=0;ei<nExamples;ei++){
-					int evalout = ae->evaluate(inputs[ei]);
-					
-					if (evalout == ArithExpression::Undef || evalout != outputs[ei]){
-						//this expression doesn't work
-						expWorks = false;
-						conflictIds.insert(exampleIds[ei]);
-						break;
-					}			
-				}
-				if (expWorks){
-					//return true if Found an expression that works on the examples
-					expr = ae;
-					cout<<"Used "<<nExamples<<" examples. ArithExpr: "<<ae->getSig()<<endl;
-					return true;
-				}
-				++it_ae;
-				/*else{ //Not sound if there are more than one instances of the same synthesizer and they share this set of expressions
-				 //Also, removing from main source limits the next level : UNSOUND
-					it_ae = possibleExpressions.erase(it_ae);
-				}*/
-			}
+			ArithExpression* currExpr = ab->getExpression(cDepth,inputs,outputs);
 			
+			if (currExpr !=NULL){
+				expr = currExpr;
+				cout<<"Used "<<nExamples<<" examples. ArithExpr: "<<expr->getSig()<<endl;
+				return true;
+			}
 			
 		}
 		//if control comes here i.e.
 		//if no expressions work, TODO: try greedy set cover of examples as conflict
 		//for now, return all examples as the conflict	
-		addConflicts(conflictIds,im);//TODO:Can do smarter
+		addConflicts(exampleIds,im);//TODO:Can do smarter
 		return false;
     }
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
@@ -186,6 +196,7 @@ public:
 	}
 
 	virtual void print(ostream& out) {
+		//cout<<"Giving to FE: "<<expr->getSig()<<" || "<< expr->getFEOut()<<endl;
 		out<<expr->getFEOut();
 		//out << "( SIMTH_SYNTH ( "<< simfn <<" , "<< theta << " ) )"; //IN_0 and IN_1 are inputs
 		//Just text when printing, frontend language 

@@ -1,5 +1,7 @@
 
 //include "generators2.skh";
+pragma options "--beopt:custintsize 11";
+
 #define DEPTH 6
 @Gen("arithexpr_4d_3v_plus_times")
 int arithExpr(int x, int y, int z);
