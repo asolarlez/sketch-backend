@@ -2228,7 +2228,14 @@ public:
 				Intclause& c = **i++;
 				//unlike sat, we do not reorder vars. too much trouble.
 				bool goodsofar = false;
-				if (vp.isDef()) {							
+				if (vp.isDef()) {		
+					//begin hack
+					if (p.val != vp.v()) {
+						//This means p was added because of range computation, but then it got a concrete value, so we need to update p.val
+						p.val = vp.v();
+
+					}
+					//end hack
 					if(c.tp()==PLUS){
 						iVar vr = c[0];
 						iVar a = c[1];
