@@ -203,7 +203,18 @@ public:
 	friend bool operator<=(const Range& a, const Range& b);
 	friend Range join(const Range& a, const Range& b);
 	friend Range intersect(const Range& a, const Range& b);
+	friend Range square(const Range& a);
 };
+
+inline Range square(const Range& ina) {
+	int losq = ina.getLo()*ina.getLo();
+	int hisq = ina.getHi()*ina.getHi();
+	if (ina.getLo() < 0 && ina.getHi() >= 0) {
+		return Range(0, max(losq, hisq));
+	} else {
+		return Range(min(losq, hisq), max(losq, hisq));		
+	}
+}
 
 extern Range TOP_RANGE;
 
@@ -657,7 +668,8 @@ public:
 		}
 	}
 
-	void generateInnerConflict(Intclause* ic, int trailLev, int szbnd){				
+	void generateInnerConflict(Intclause* ic, int trailLev, int szbnd){	
+		if (szbnd <= 1) { return;  }
 		vec<pair<iVar, int> > ppp;
 		for(int i=0; i< seen.size(); ++i){
 			seen[i] = 0;
@@ -671,7 +683,7 @@ public:
 			vi[i] = ppp[i].first;
 			vi[sz+i] = ppp[i].second;
 		}
-		if(ppp.size()< szbnd){
+		if(ppp.size() > 1 && ppp.size()< szbnd){
 			Intclause* conf = ConfClause(ppp.size(), &vi[0]);			
 			addConf(conf);
 		}
@@ -703,6 +715,7 @@ public:
 		clauses.push(c);
 		watches[a].push(c);
 		watches[b].push(c);
+		watches[x].push(c);
 	}
 
 
@@ -734,6 +747,7 @@ public:
 			(*c)[2]=b;
 			watches[x].push(c);
 			watches[b].push(c);
+			watches[a].push(c);
 			return;
 		}
 		if(isSet(b)){
@@ -743,16 +757,22 @@ public:
 			(*c)[2]=a;
 			watches[x].push(c);
 			watches[a].push(c);
+			watches[b].push(c);
 			return;
 		}
 		watches[a].push(c);
 		watches[b].push(c);
+		watches[x].push(c);
 	}
 	void addTimes(iVar a, iVar b, iVar x){
 		Intclause* c = TimesClause(a, b, x);
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
-		ranges.updateRange(x, 0, ranges.getRange(a) * ranges.getRange(b), NULL);
+		if (a == b) {
+			ranges.updateRange(x, 0, square(ranges.getRange(a)), NULL);
+		}else{
+			ranges.updateRange(x, 0, ranges.getRange(a) * ranges.getRange(b), NULL);
+		}		
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
 			//for that, we need to retype to EXACTDIV.
@@ -781,6 +801,7 @@ public:
 		clauses.push(c);
 		watches[a].push(c);
 		watches[b].push(c);
+		watches[x].push(c);
 	}
 
 
@@ -1286,6 +1307,7 @@ private:
 
 
 	bool propagateMinus(Intclause& c, const mpair& p, Intclause**& i, Intclause**& j){
+		if (p.var != c[1] && p.var != c[2]) { *j++ = &c; return true; }
 		//p.var can only be c[1] or c[2]
 		action act;
 		if(p.var == c[1]){//We just set a in x=a-b
@@ -1305,7 +1327,7 @@ private:
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
 				Assert(x != p.var, "NONONO");
-				watches[x].push(&c);
+				*j++ = &c;
 				return true;
 			}
 		}else{ //We just set b in x=a-b
@@ -1324,7 +1346,7 @@ private:
 				c[2] = x;
 				//it is already in watches for a, so we add to watches for x.
 				Assert(x != p.var, "NONONO");
-				watches[x].push(&c);
+				*j++ = &c;
 				return true;
 			}
 		}
@@ -1946,30 +1968,64 @@ private:
 		Assert(false, "Shouldn't be here");
 	}
 
-	void updateIfBetter(iVar vr, int level, const Range& outnew, Intclause& c) {
+
+	typedef enum{ PROPAGATED, NOTPROPAGATED, CONFLICT} RangePropStatus;
+
+	/*!
+	Update range for variable vr with outnew only if outnew is better than the old one. 
+	*/
+	RangePropStatus updateIfBetter(iVar vr, int level, const Range& outnew, Intclause& c) {
+		const Range& outold = ranges.getRange(vr);
+		Range tmp  = intersect(outold, outnew);
+		if (tmp.isEmpty()) {
+			return CONFLICT;
+		} else {
+			if (!(tmp == outold)) {
+				trail.push(mpair(vr, level, 0));
+				ranges.updateRange(vr, level, tmp, &c);
+				return PROPAGATED;
+			}
+			return NOTPROPAGATED;
+		}
+		/*
 		const Range& outold = ranges.getRange(vr);
 		if (!(outnew == outold) && outnew <= outold) {
 			trail.push(mpair(vr, level, 0));
 			ranges.updateRange(vr, level, outnew, &c);
+			return PROPAGATED;
+		} else {
+			if (intersect(outnew, outold).isEmpty()) {
+				return CONFLICT;
+			} else { 
+				return NOTPROPAGATED; 
+			}
 		}
+		
+		*/
+				
 	}
 
 	void propagateTimesInterval(Intclause& c, int level) {
 		iVar vr = c[0];
-		const Range& ina = ranges.getRange(c[1]);
-		const Range& inb = ranges.getRange(c[2]);
-		
-		Range outnew = ina * inb;
-		updateIfBetter(vr, level, outnew, c);
+		iVar a = c[1];
+		iVar b = c[2];
+		const Range& ina = ranges.getRange(a);		
+		if (a == b) {
+			Range outnew = square(ina);
+			updateIfBetter(vr, level, outnew, c);			
+		} else {
+			const Range& inb = ranges.getRange(b);
+			Range outnew = ina * inb;
+			updateIfBetter(vr, level, outnew, c);
+		}
 	}
 
-	void propagatePlusInterval(Intclause& c, int level) {
-		iVar vr = c[0];
-		const Range& ina = ranges.getRange(c[1]);
-		const Range& inb = ranges.getRange(c[2]);
+	RangePropStatus propagatePlusInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
+		const Range& ina = ranges.getRange(a);
+		const Range& inb = ranges.getRange(b);
 		
 		Range outnew = ina + inb;
-		updateIfBetter(vr, level, outnew, c);
+		return updateIfBetter(vr, level, outnew, c);
 	}
 
 	void propagateBMuxInterval(Intclause& c, int level) {
@@ -2004,16 +2060,17 @@ private:
 		return outnew;
 	}
 
-	void propagateMinusInterval(Intclause& c, int level) {
-		iVar vr = c[0];
-		const Range& ina = ranges.getRange(c[1]);
-		const Range& inb = ranges.getRange(c[2]);
+	RangePropStatus propagateMinusInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
+		
+		const Range& ina = ranges.getRange(a);
+		const Range& inb = ranges.getRange(b);
 		
 		Range outnew = ina - inb;
-		updateIfBetter(vr, level, outnew, c);
+		return updateIfBetter(vr, level, outnew, c);
 	}
 
 	bool propagatePlus(Intclause& c, mpair& p, Intclause**& i, Intclause**& j){
+		if (p.var != c[1] && p.var != c[2]) { *j++ = &c; return true; }
 		//p.var can only be c[1] or c[2]
 		action act;
 		if(p.var == c[1]){//We just set a in x=a+b
@@ -2032,7 +2089,7 @@ private:
 				// c[2]  is already b.
 				//it is already in watches for b, so we add to watches for x.
 				Assert(x != p.var , "NONONO");
-				watches[x].push(&c);
+				*j++ = &c;
 				return true;
 			}
 		}else{ // p.var == c[2]
@@ -2050,7 +2107,7 @@ private:
 				c[2] = a;
 				//it is already in watches for a, so we add to watches for x.
 				Assert(x != p.var, "NONONO");
-				watches[x].push(&c);
+				*j++ = &c;
 				return true;
 			}
 		}
@@ -2117,6 +2174,46 @@ private:
 		Assert(false, "Shouln't be here");
 	}
 
+
+	bool propagatePlusMinusInterval(mpair& p, Intclause& c) {
+		iVar vr = c[0];
+		iVar a = c[1];
+		iVar b = c[2];
+		if (c.tp() == MINUS) {
+			// vr = a - b; ,whereas we want 
+			vr = c[1];
+			a = c[0];
+			b = c[2];
+		}
+		//At this point, vr = a + b no matter what.
+		if (p.var == vr) {
+			// so either b = vr - a; or a = vr - b
+			RangePropStatus stat = propagateMinusInterval(a, vr, b, c, p.level);
+			if (stat==NOTPROPAGATED) {
+				stat = propagateMinusInterval(b, vr, a, c, p.level);
+			}
+			return stat != CONFLICT;
+		}
+		else {
+			if (p.var == a) {
+				// so either vr = a + b; or b = vr - a;
+				RangePropStatus stat = propagatePlusInterval(vr, a, b, c, p.level);
+				if (stat == NOTPROPAGATED) {
+					stat = propagateMinusInterval(b, vr, a, c, p.level);
+				}
+				return stat != CONFLICT;
+			}
+			else { // p.var == b;
+				   // so either vr = a + b; or a = vr - b;
+				RangePropStatus stat = propagatePlusInterval(vr, a, b, c, p.level);
+				if (stat == NOTPROPAGATED) {
+					stat = propagateMinusInterval(a, vr, b, c, p.level);
+				}
+				return stat != CONFLICT;
+			}
+		}
+	}
+
 public:
 
 	Intclause* propagate(){
@@ -2131,14 +2228,24 @@ public:
 				Intclause& c = **i++;
 				//unlike sat, we do not reorder vars. too much trouble.
 				bool goodsofar = false;
-				if (vp.isDef()) {									
+				if (vp.isDef()) {							
 					if(c.tp()==PLUS){
+						iVar vr = c[0];
+						iVar a = c[1];
+						iVar b = c[2];
 						goodsofar = propagatePlus(c,p,i,j);	
-						if(goodsofar){ propagatePlusInterval(c, p.level); }
+						if(goodsofar){ 
+							goodsofar = propagatePlusMinusInterval(p, c);
+						}
 					}else		
 					if(c.tp()==MINUS){
+						iVar vr = c[0];
+						iVar a = c[1];
+						iVar b = c[2];
 						goodsofar = propagateMinus(c,p,i,j);
-						if (goodsofar) { propagateMinusInterval(c, p.level); }
+						if (goodsofar) { 
+							goodsofar = propagatePlusMinusInterval(p, c);
+						}
 					}else
 					if(c.tp()==TIMES){
 						goodsofar = propagateTimes(c,p,i,j);					
@@ -2171,10 +2278,8 @@ public:
 						goodsofar = propagateLt(c, p, i, j);
 					} else{
 						*j++ = &c;
-						if(c.tp()==PLUS){
-							propagatePlusInterval(c, p.level);
-						}else if(c.tp()==MINUS){
-							propagateMinusInterval(c, p.level);
+						if (c.tp() == PLUS || c.tp() == MINUS) {
+							goodsofar = propagatePlusMinusInterval(p, c);
 						}else
 						if(c.tp()==TIMES){
 							propagateTimesInterval(c, p.level);
