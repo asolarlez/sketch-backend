@@ -297,11 +297,14 @@ public:
 	void updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson);
 	void popRanges(int level);
 	const Range& getRange(iVar varid);
+	const Range& getRange(iVar varid, int& maxidx);
 	void dump() {
 		for (int i = 0; i < varmap.size(); ++i) {
 			cout <<i<< getRange(i).print() << endl;
 		}
 	}
+
+	int maxrindex() { return ranges.size();  }
 
 	int getLevel(iVar varid) {
 		int idx = varmap[varid];
@@ -314,10 +317,17 @@ public:
 		return 0;
 	}
 
-	Intclause* getCause(iVar varid) {
-		int idx = varmap[varid];
-		if (idx < 0) { return NULL;  }
-		return ranges[idx].rson;
+	Intclause* getCause(iVar varid, int& pos) {
+		if (pos < 0) { pos = ranges.size(); }
+		int idx = varmap[varid];		
+		while(true){
+			if (idx < 0) { return NULL; }
+			if (idx < pos) {
+				pos = idx;
+				return ranges[idx].rson;
+			}
+			idx = ranges[idx].prior;
+		}		
 	}
 
 };
@@ -340,25 +350,42 @@ inline const Range& RangeTracker::getRange(iVar varid) {
 	return ranges[idx].range;
 }
 
+inline const Range& RangeTracker::getRange(iVar varid, int& maxidx) {
+	if (maxidx < 0) { maxidx = ranges.size();  }
+	int idx = varmap[varid];
+	while (true) {
+		if (idx < 0) { return TOP_RANGE; }
+		if (idx < maxidx) {
+			maxidx = idx;
+			return ranges[idx].range;
+		}
+		idx = ranges[idx].prior;
+	}	
+}
+
+
 inline void RangeTracker::popRanges(int level) {	
-	if (level <= highestlevel) {
+	if (level <= highestlevel) {		
 		int lastidx = ranges.size();
 		int nelems = 0;
-		for (int i = levelmap.size() - 1; i >= 0; --i) {		
-			if (levelmap[i].first <= level) {
+		for (int i = levelmap.size() - 1; i >= 0; --i) {	
+			int lvv = levelmap[i].first;
+			highestlevel = lvv;
+			if (lvv <= level) {
 				break;
 			}
 			nelems++;
 			lastidx = levelmap[i].second;
-		}
+		}		
 		levelmap.shrink(nelems);
+		if (levelmap.size() == 0) {
+			highestlevel = 0;
+		}
 		for (int i = ranges.size() - 1; i >= lastidx; --i) {
 			tentry& te = ranges[i];
 			varmap[te.var] = te.prior;
 		}
-		ranges.shrink(ranges.size() - lastidx);
-	
-		highestlevel = level;
+		ranges.shrink(ranges.size() - lastidx);			
 	}
 }
 
@@ -466,6 +493,85 @@ public:
 		return true;
 	}
 
+
+
+	/*
+	This function looks at the dependencies for vr at the time when the trail was at maxpos and the
+	ranges were at maxrpos. 
+	*/
+	void superhelper(iVar vr, int maxrpos) {
+		int newmaxrpos = maxrpos;
+		Intclause* ic = ranges.getCause(vr, newmaxrpos);
+		if (ic == NULL) {
+			//either this was fixed externally or we got to top.
+			++newmaxrpos;
+			Range r = ranges.getRange(vr, newmaxrpos);
+			if (r.isSingle()) {
+				Lit tmp;
+				if (checkLegal(vr, r.getLo(), tmp)) {
+					if (var(tmp) != var_Undef) {
+						//cout<<", "<<vr<<"("<<r.getLo()<<")";
+						explain.push(~tmp);
+					}
+				}
+			}
+		}else{
+			//There is a reason. 
+			for (int i = 0; i<ic->size(); ++i) {
+				iVar iv = (*ic)[i];
+				int newlev = newmaxrpos;
+				ranges.getRange(iv, newlev);
+				if (seen[newlev] ==0) {
+					seen[newlev] = 1;
+					superhelper(iv, newmaxrpos);
+				}
+			}
+		}
+	}
+
+
+	/**
+	if(ic==null){
+	look at the root causes that led to vr to be set to its current value.
+	the return vector contains a list of literals such that if any of those had been true, vr would not have its current value.
+	}else{
+	it is assumed that ic is a conflict that was returned by propagate.
+	we will return a list of literals such that if any of those literals
+	had ben true, that clause would not have failed in the same way.
+	}
+	*/
+	vec<Lit>& getSummaryA(iVar vr, Intclause* ic, int lev = -1) {
+		explain.clear();
+		seen.growTo(ranges.maxrindex());
+		for (int i = 0; i< seen.size(); ++i) {
+			seen[i] = 0;
+		}		
+		if (ic == NULL) {
+			if (lev == -1) {
+				ranges.getRange(vr, lev);
+				++lev;
+				Assert(lev > 0, "WTF!! 33");
+			}
+			seen[lev] = 1;
+			superhelper(vr, lev);			
+		}
+		else {
+			ic->moreAct();
+			for (int i = 0; i<ic->size(); ++i) {
+				int newlev=lev;				
+				iVar iv = (*ic)[i];
+				ranges.getRange(iv, newlev);
+				if (seen[newlev] ==0 ) {
+					seen[newlev] = 1;
+					superhelper(iv, lev);
+				}
+			}
+		}
+		//cout<<endl;
+		return explain;
+	}
+
+
 	/*
 	Walks up the dependency chain to find the root causes for the assignment to vr. 
 	Any assignment after maxtpos canot be a reason and should be ignored.
@@ -494,7 +600,9 @@ public:
 					explain.push(~tmp);
 				}
 			} else {
-				ic = ranges.getCause(vr);
+				Assert(false, "NNN");
+				int l=0;
+				ic = ranges.getCause(vr, l);
 				if (ic != NULL) {
 					for (int i = 0; i<ic->size(); ++i) {
 						iVar iv = (*ic)[i];
@@ -555,7 +663,9 @@ public:
 			interpair& ip = interf[i];
 			if(ip.l == l){	
 				int lev = ip.tlevel;
-				return getSummary(trail[lev].var, NULL, lev);
+				int iv = trail[lev].var;
+				lev = -1;				
+				return getSummaryA(iv, NULL, lev);
 			}
 		}
 		Assert(false, "WTF");
@@ -571,7 +681,7 @@ public:
 		had ben true, that clause would not have failed in the same way.
 	 }
 	*/
-	vec<Lit>& getSummary(iVar vr, Intclause* ic, int lev = -1){		
+	vec<Lit>& getSummaryB(iVar vr, Intclause* ic, int lev = -1){		
 		explain.clear(); 
 		for(int i=0; i< seen.size(); ++i){
 			seen[i] = 0;
@@ -657,7 +767,7 @@ public:
 							}
 						}
 					} else {
-						Intclause* ic= ranges.getCause(iv);
+						Intclause* ic= ranges.getCause(iv, trailLev);
 						if (ic != NULL) {
 							innerhelper(ic, iv, ppp, trailLev);
 						}

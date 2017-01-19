@@ -572,8 +572,8 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 
     do{
         assert(confl != NULL);          // (otherwise should be UIP)
-        Clause& c = *confl;
-
+        Clause& c = *confl;		
+		
 		if(c.mark()==INTSPECIAL){			
 			vec<Lit>& summary = intsolve->getSummary(p);					
 			for(int i=0; i<summary.size(); ++i){
@@ -1170,8 +1170,8 @@ Clause* Solver::propagate()
 							//the solver would have told us? 
 
 							Assert(iconf != NULL, "Maybe?");
-							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
-							intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
+							vec<Lit>& ps = intsolve->getSummaryA(vr, iconf);
+							//intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
 							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
 							*j++ = &c;
