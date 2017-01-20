@@ -20,9 +20,11 @@ using namespace std;
 #include "GTPredicateSolver.h"
 #include "EntityResolutionSolver.h"
 #include "ArithmeticExpressionSolver.h"
+#include "SwapperPredicateSolver.h"
 //map < string , map < int, set < ArithExpression* > > >  ArithExprBuilder::ASetMap;
 map < string, ArithExpression *> ArithExprBuilder::ASigMap;
-
+map < string, SwapperPredicate *> PredicateBuilder::PSigMap;
+int SwapperPredicate::numvars;
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -66,6 +68,7 @@ namespace MSsolverNS {
 
 Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
 	string arithExpr = "_GEN_arithexpr";
+	string swapperExpr = "_GEN_swapperpred";
 	if (name == "_GEN_gtp") {
 		return new GtpSyn(_fm);
 	} else if (name == "_GEN_eratom") {
@@ -76,7 +79,14 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
 	  ret->setupParams(name);
 	  return ret;
-  }else{
+  }
+  else if (mismatch(swapperExpr.begin(), swapperExpr.end(), name.begin()).first == swapperExpr.end()) {
+	  SwapperPredicateSyn* ret = new SwapperPredicateSyn(_fm);
+	  ret->setupParams(name);
+	  return ret;
+  }
+  else{
+
 	  Assert(false,"Invalid synthesizer name: " + name);
   }
 	

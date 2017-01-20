@@ -6,7 +6,7 @@
 #include "DagFunctionToAssertion.h"
 #include "InputReader.h" // INp yylex_init, yyparse, etc.
 #include "ArithmeticExpressionBuilder.h"
-
+#include "SwapperPredicateBuilder.h"
 
 
 #ifdef CONST
@@ -102,6 +102,7 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 		delete bgproblem;
 	}
 	ArithExprBuilder::clearStaticMapMemory();
+	PredicateBuilder::clearStaticMapMemory();
 	delete finder;
 	delete _pfind;
 }
@@ -867,6 +868,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 		cout<<"Outputing SMT for DAG to file "<<params.smtfile<<endl;
 		result->smt_exists_print(of);
 		of.close();
+		exit(1);
 	}
 	return result;
 }
