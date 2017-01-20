@@ -14,7 +14,7 @@ pragma options "--slv-timeout 4 --bnd-inbits 4 --bnd-cbits 3 --bnd-int-range 100
 #define CBITS 3
 #define INPBITS 4
 //(NOT|(AND|(EQ|N_2:INT|N_3:BOOL|)|N_1:BOOL|)|)
-#include "../../../../legacy/sketchlib/example/ast.skh"
+#include "ast.skh"
 //Hardcoded evaluation of d-dag
 Val ddag(Val[NTOTALF] vals){
 	return new BIT(b=(! (checkEq( (vals[1]), (vals[2])) && getBit(vals[0]))));
