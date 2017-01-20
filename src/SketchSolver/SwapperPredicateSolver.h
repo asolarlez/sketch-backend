@@ -30,6 +30,8 @@ class SwapperPredicateSyn : public Synthesizer {
 	vector< vector<int> > prevInputs;
 	bool prevWasUNSAT;
 	string name;
+  timerclass stimer;
+
 public:
 	
 	SwapperPredicateSyn(FloatManager& _fm) :Synthesizer(_fm) {
@@ -113,8 +115,9 @@ public:
 		vector < bool > outputs; 
 		vector<int> exampleIds;
 		int numvars = intsOrbits.size();
+    map<string, int> inputsMap; // track input string to idx to get rid of repeated inputs
 		for (int i = 0; i < nI; ++i) {
-			
+			stringstream ss;
 			int out = im.getVal(i, numvars);
 			if (out == EMPTY){
 				continue;
@@ -127,14 +130,34 @@ public:
 					foundEmptyVariable = true;
 					break;
 				}
+        ss << v << "#";
 				vals.push_back(v);
 			}
 			if (foundEmptyVariable){
 				continue;
 			}
 			Assert(out == 0 || out == 1, "Only boolean output expected!");
-			bool ignoreIO = false;
-			for (int k = 0; k < inputs.size(); k++) {
+      string s = ss.str();
+      if (inputsMap.find(s) != inputsMap.end()) {
+        int idx = inputsMap[s];
+        if (im.getVal(idx, numvars) != out) {
+          //found a conflict
+          addSingleConflict(idx, im);
+          addSingleConflict(i, im);
+          if (DBGCUSTOM) {
+            cout << "CONFLICT: same input different output" << endl;
+          }
+          return false;
+        }
+      } else {
+        exampleIds.push_back(i);
+        inputs.push_back(vals);
+        outputs.push_back(out);
+        inputsMap[s] = i;
+      }
+      
+      /*bool ignoreIO = false;
+			for (int k = 0; k < inputs.size(); k++) {// TODO: may be keep a map instead of iterating multiple times
 				if (inputs[k] == vals) {
 					//same inputs found again
 					if (outputs[k] == out) {
@@ -153,9 +176,10 @@ public:
 			if (ignoreIO) continue;
 			exampleIds.push_back(i);
 			inputs.push_back(vals);
-			outputs.push_back(out);
+			outputs.push_back(out);*/
 			
 		}
+    inputsMap.clear();
 		int nExamples = (int)outputs.size();
 		/*
 		for(int io=0;io<nExamples;io++){
@@ -193,7 +217,8 @@ public:
 			return true;
 		}
 
-		//if there are two equal inputs 
+    /*if (DBGCUSTOM) {
+		//if there are two equal inputs
 		for (int j1 = 0; j1 < nExamples; j1++) {
 			for (int j2 = 0; j2 < j1; j2++) {
 				if (inputs[j1] == inputs[j2]) {
@@ -201,6 +226,7 @@ public:
 				}
 			}
 		}
+    }*/
 		
 		//if we see the same inputs as last time, we check if there's an expression for these outputs
 		if(prevInputs.size() > 0 && prevInputs == inputs){
@@ -212,6 +238,7 @@ public:
 			}else{
 				if(prevWasUNSAT){
 					addConflicts(exampleIds,im);//TODO:Can do smarter
+          if (DBGCUSTOM) cout << "Conflict: Previous inputs based." << endl;
 					return false;
 				}
 			}
@@ -235,8 +262,11 @@ public:
 		}
 		//if control comes here i.e.
 		//if no expressions work, TODO: try greedy set cover of examples as conflict
-		//for now, return all examples as the conflict	
+		//for now, return all examples as the conflict
+      //cout <<"Total exprs:" << (ab->PSetMap[1].size() +  ab->PSetMap[2].size()) << endl;
+    if (DBGCUSTOM) cout << "CONFLICT" << endl;
 		addConflicts(exampleIds,im);//TODO:Can do smarter
+    prevWasUNSAT = true;
 		return false;
     }
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
@@ -244,9 +274,11 @@ public:
 		//x_index = 0, y_index = 1, z_index = 2,...
 		//0 -> numvars-1 : indices for variables
 		//numvars : index for output
+    if (DBGCUSTOM) stimer.restart();
 		conflict.clear();
 		bool b = tryExpressions(depth);
-		prevWasUNSAT = !b;
+    if (b) prevWasUNSAT = false;
+    if (DBGCUSTOM) stimer.stop().print("SwapperTime: ");
 		return b;
 
 	}

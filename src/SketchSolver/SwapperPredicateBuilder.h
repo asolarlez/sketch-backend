@@ -287,7 +287,7 @@ public:
 		sig =  buildPSig(type, i1, i2, mother, father);
 		return sig;
 	}
-	bool evaluate(vector<int> &values){
+	bool evaluate(const vector<int> &values){
 		bool mval = false;
 		bool fval = false;
 		if (type == And || type == Or){
