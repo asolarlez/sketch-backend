@@ -18,7 +18,7 @@ using namespace std;
 #include "VarStore.h"
 #include "NodeEvaluator.h"
 #include "SwapperPredicateBuilder.h"
-#define DBGCUSTOM false
+#define DBGCUSTOM true
 class SwapperPredicateSyn : public Synthesizer {
 	SwapperPredicate* expr;
 	int depth;
@@ -115,7 +115,7 @@ public:
 		vector < bool > outputs; 
 		vector<int> exampleIds;
 		int numvars = intsOrbits.size();
-    map<string, int> inputsMap; // track input string to idx to get rid of repeated inputs
+		map<string, int> inputsMap; // track input string to idx to get rid of repeated inputs
 		for (int i = 0; i < nI; ++i) {
 			stringstream ss;
 			int out = im.getVal(i, numvars);
@@ -130,56 +130,33 @@ public:
 					foundEmptyVariable = true;
 					break;
 				}
-        ss << v << "#";
+				ss << v << "#";
 				vals.push_back(v);
 			}
 			if (foundEmptyVariable){
 				continue;
 			}
 			Assert(out == 0 || out == 1, "Only boolean output expected!");
-      string s = ss.str();
-      if (inputsMap.find(s) != inputsMap.end()) {
-        int idx = inputsMap[s];
-        if (im.getVal(idx, numvars) != out) {
-          //found a conflict
-          addSingleConflict(idx, im);
-          addSingleConflict(i, im);
-          if (DBGCUSTOM) {
-            cout << "CONFLICT: same input different output" << endl;
-          }
-          return false;
-        }
-      } else {
-        exampleIds.push_back(i);
-        inputs.push_back(vals);
-        outputs.push_back(out);
-        inputsMap[s] = i;
-      }
-      
-      /*bool ignoreIO = false;
-			for (int k = 0; k < inputs.size(); k++) {// TODO: may be keep a map instead of iterating multiple times
-				if (inputs[k] == vals) {
-					//same inputs found again
-					if (outputs[k] == out) {
-						ignoreIO = true;
-						break;
-						//this example has already been included
+			string s = ss.str();
+			if (inputsMap.find(s) != inputsMap.end()) {
+				int idx = inputsMap[s];
+				if (im.getVal(idx, numvars) != out) {
+					//found a conflict
+					addSingleConflict(idx, im);
+					addSingleConflict(i, im);
+					if (DBGCUSTOM) {
+					cout << "CONFLICT: same input different output" << endl;
 					}
-					else {
-						//found a conflict
-						addSingleConflict(exampleIds[k], im);
-						addSingleConflict(i, im);
-						return false;
-					}
+					return false;
 				}
+			} else {
+				exampleIds.push_back(i);
+				inputs.push_back(vals);
+				outputs.push_back(out);
+				inputsMap[s] = i;
 			}
-			if (ignoreIO) continue;
-			exampleIds.push_back(i);
-			inputs.push_back(vals);
-			outputs.push_back(out);*/
-			
 		}
-    inputsMap.clear();
+		inputsMap.clear();
 		int nExamples = (int)outputs.size();
 		/*
 		for(int io=0;io<nExamples;io++){
@@ -266,7 +243,7 @@ public:
       //cout <<"Total exprs:" << (ab->PSetMap[1].size() +  ab->PSetMap[2].size()) << endl;
     if (DBGCUSTOM) cout << "CONFLICT" << endl;
 		addConflicts(exampleIds,im);//TODO:Can do smarter
-    prevWasUNSAT = true;
+		prevWasUNSAT = true;
 		return false;
     }
   
@@ -309,9 +286,9 @@ public:
     if (DBGCUSTOM) stimer.restart();
 		conflict.clear();
 		bool b = tryExpressions(depth);
-    if (b) prevWasUNSAT = false;
-    if (DBGCUSTOM) stimer.stop().print("SwapperTime: ");
-    getSuggestions(suggestions);
+		getSuggestions(suggestions);
+		if (b) prevWasUNSAT = false;
+		if (DBGCUSTOM) stimer.stop().print("SwapperTime: ");
 		return b;
 	}
 	
