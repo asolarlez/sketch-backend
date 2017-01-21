@@ -119,7 +119,7 @@ public:
 
 
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
-	virtual bool synthesis() {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		//ROHIT TODO: check if attr is set on all of them - start checking from end
 		//If not, return conflict as the empty one? 
 		conflict.clear();

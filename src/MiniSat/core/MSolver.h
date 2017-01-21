@@ -206,7 +206,7 @@ protected:
 	vec<int>			inputvars;        //Armando: This is a list for really important variables. Conflicts involving these variables are really really valuable.
 	bool				firstTry;		  //Armando: This tells the search function whether this is the first try 
 	vec<SynthInSolver*> sins;
-
+  vec<vec<Lit>> suggestions; // Jeevana: Stores the list of suggestions made by each SynthInSolver
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
     //

@@ -269,8 +269,40 @@ public:
     prevWasUNSAT = true;
 		return false;
     }
+  
+  void getSuggestions(vec<Lit>& suggestions) {
+    int numvars = intsOrbits.size();
+    suggestions.clear();
+    InputMatrix& im = *inout;
+    int nI = inout->getNumInstances();
+    
+    for (int i = 0; i < nI; ++i) {
+      int out = im.getVal(i, numvars);
+      vector<int> vals;
+      bool foundEmptyVariable = false;
+      for(int j=0;j<numvars;j++){
+        int v = im.getVal(i, j);
+        if (v == EMPTY){
+          foundEmptyVariable = true;
+          break;
+        }
+        vals.push_back(v);
+      }
+      if (foundEmptyVariable){
+        continue;
+      }
+      bool eout = expr->evaluate(vals);
+      if (out == EMPTY || out != eout) {
+        Lit v = getLit(im.valueid(i, numvars), eout);
+        suggestions.push(v);
+        if (DBGCUSTOM) {
+          cout << "Suggesting (" << i << ", " << numvars << ") = " << eout << " Lit: " << toInt(v) << endl;
+        }
+      }
+    }
+  }
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
-	virtual bool synthesis() {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		//x_index = 0, y_index = 1, z_index = 2,...
 		//0 -> numvars-1 : indices for variables
 		//numvars : index for output
@@ -279,8 +311,8 @@ public:
 		bool b = tryExpressions(depth);
     if (b) prevWasUNSAT = false;
     if (DBGCUSTOM) stimer.stop().print("SwapperTime: ");
+    getSuggestions(suggestions);
 		return b;
-
 	}
 	
 	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {

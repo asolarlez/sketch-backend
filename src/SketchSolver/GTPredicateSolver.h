@@ -25,7 +25,7 @@ public:
 	GtpSyn(FloatManager& _fm) :Synthesizer(_fm) {
 
 	}
-	virtual bool synthesis() {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		conflict.clear();
 		int gtmin = 1000000;
 		int gtid = -1;

@@ -147,7 +147,7 @@ class NumericalSolver : public Synthesizer {
     }
   }*/
   
-  virtual bool synthesis() {
+  virtual bool synthesis(vec<Lit>& suggestions) {
     //analyzeDAG();
     conflict.clear();
     InputMatrix& im = *inout;

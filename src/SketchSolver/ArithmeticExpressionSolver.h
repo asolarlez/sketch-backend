@@ -220,7 +220,7 @@ public:
 		return false;
     }
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
-	virtual bool synthesis() {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		//x_index = 0, y_index = 1, z_index = 2,...
 		//0 -> numvars-1 : indices for variables
 		//numvars : index for output
