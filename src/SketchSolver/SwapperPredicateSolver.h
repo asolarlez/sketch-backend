@@ -18,7 +18,7 @@ using namespace std;
 #include "VarStore.h"
 #include "NodeEvaluator.h"
 #include "SwapperPredicateBuilder.h"
-#define DBGCUSTOM true
+#define DBGCUSTOM false
 class SwapperPredicateSyn : public Synthesizer {
 	SwapperPredicate* expr;
 	int depth;
