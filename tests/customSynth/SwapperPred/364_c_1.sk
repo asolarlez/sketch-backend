@@ -72,7 +72,7 @@ harness void main(bit N_1,bit N_2,int N_3,int N_4){
 		int sz=NSRC;
 		int cost=0;
 		Node[NTOTALF] dag=dagGen(sz,cost,isBit,isArr,true,false);
-		minimize (cost);
+		//minimize (cost);
 		int CT =NSRC;
 		assert(checkEq(eval(CT,vals,dag,sz),ddag(vals)));
 	}

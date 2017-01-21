@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <utility>
 #include "Sort.h"
 #include <math.h>
@@ -26,6 +27,28 @@ const set<NodeType> recbinops = {And, Or };
 class SwapperPredicate;
 
 
+//using boost::hash_combine
+template <typename T>
+inline void hash_combine(size_t& seed, T const& v)
+{
+	seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename T>
+struct hashVec
+{
+	size_t operator()(vector<T> const& in) const
+	{
+		size_t size = in.size();
+		size_t seed = 0;
+		for (size_t i = 0; i < size; i++)
+			//Combine the hash of the current vector with the hashes of the previous ones
+			hash_combine(seed, in[i]);
+		return seed;
+	}
+};
+
+const int Undef = -457253;
 
 class SwapperPredicate {
 	NodeType type;
@@ -37,7 +60,6 @@ class SwapperPredicate {
 	string sig;
 public:
 	static int numvars;
-	static const int Undef = -457253;
 	static string NT2str(NodeType nt){
 		switch(nt){
 			case Bit: return "B";
@@ -56,6 +78,7 @@ public:
 			case Neqc:
 			case Neq: return "!=";
 		}
+		Assert(false,"Control can't reach here")
 	}
 
 	bool isCommutative(NodeType nt){
@@ -258,7 +281,7 @@ public:
 			outputs.push_back(this->evaluate(input));
 		}
 	}
-	static string buildPSig(NodeType &type, int &i1, int & i2, SwapperPredicate* mother, SwapperPredicate* father) {
+	static string buildPSig(NodeType &type,const int &i1,const int & i2, SwapperPredicate* mother, SwapperPredicate* father) {
 		if (type == Bit) {
 			return "b" + to_string(i1);
 		}
@@ -321,22 +344,26 @@ public:
 			case Eqc: return values[i1] == i2;
 			case Neqc: return values[i1] != i2;
 		}
+		Assert(false, "Control cannot reach here");
 	}
 	//TODO: Optimize this to reuse values from lower depth instead of recursively calling here for mother and father
 };
 
+typedef unordered_map<vector< bool >, SwapperPredicate*, hash< vector< bool > > > PMapType;
 
 class PredicateBuilder {
 	//For a given level of depth - a set of expressions
+	
 	map < int, set < SwapperPredicate* > >  PSetMap;
 	//A static map of signature to Expressions to avoid recomputation
-	static map < string, SwapperPredicate *> PSigMap; //TODO: define in cpp file
+	static unordered_map < string, SwapperPredicate *> PSigMap; //TODO: define in cpp file
 	vector<int> &bits;
 	vector<int> &intsOrbits;
 	set<int> &consts;
 	//set <NodeType> &ops;
 	int maxDepth;
-	map < vector< bool > , SwapperPredicate* > outputsPMap;
+	unordered_map< vector< bool >, SwapperPredicate*, hashVec<bool> > outputsPMap;
+	unordered_map<SwapperPredicate*, vector<bool> > evalMap;
 public:
 	
 	static void clearStaticMapMemory(){
@@ -348,7 +375,7 @@ public:
 		maxDepth = mDepth;
 		SwapperPredicate::numvars = intsOrbits.size();
 	}
-	SwapperPredicate* addToMaps(NodeType op, SwapperPredicate* m, SwapperPredicate* f, int i1, int i2, int d, vector< vector<int> > &inputs, vector<bool> & neededOutputs){
+	SwapperPredicate* addToMaps(NodeType op, SwapperPredicate* m, SwapperPredicate* f, const int &i1, const int &i2, int d, vector< vector<int> > &inputs, vector<bool> & neededOutputs){
 		
 		
 		string checkSig = SwapperPredicate::buildPSig(op, i1, i2, m, f);
@@ -385,6 +412,7 @@ public:
 			return NULL;
 		}else{
 			outputsPMap[outputs] = sp;
+			evalMap[sp] = outputs;
 			PSetMap[d].insert(sp);
 		}
 		return NULL;
@@ -397,6 +425,7 @@ public:
 	void clearSetMap(){
 		PSetMap.clear();
 		outputsPMap.clear();
+		evalMap.clear();
 	}
 	SwapperPredicate* getExpressionForOutputs(vector<bool> &outputs){
 		auto it =outputsPMap.find(outputs);
@@ -444,28 +473,33 @@ public:
 
 		Assert(depth >= 1, "depth should be GTE 1");
 		if (depth == 1){
+			//true pred
+			SwapperPredicate* st = addToMaps(True, NULL, NULL, Undef, Undef,1,inputs,neededOutputs);
+			if (st != NULL) return st;
 			//bits and int ops
 			for (int i1 : bits) {
 				//indices of bits
-				SwapperPredicate* sp = addToMaps(Bit, NULL, NULL, i1, SwapperPredicate::Undef, 1, inputs, neededOutputs);
+				SwapperPredicate* sp = addToMaps(Bit, NULL, NULL, i1, Undef, 1, inputs, neededOutputs);
 				if (sp != NULL) return sp;
 
-				sp = addToMaps(Negbit, NULL, NULL, i1, SwapperPredicate::Undef, 1, inputs, neededOutputs);
+				sp = addToMaps(Negbit, NULL, NULL, i1, Undef, 1, inputs, neededOutputs);
 				if (sp != NULL) return sp;
 			}
 			for (int i1 : intsOrbits) {
 				for (int i2 : intsOrbits) {
 					for (NodeType op : basebinopsNC){
-						if (i1 != i2) {
+						if (i1 != i2 && (find(bits.begin(),bits.end(),i1) == bits.end() || find(bits.begin(), bits.end(), i2) == bits.end()) ) {
 							SwapperPredicate* sp = addToMaps(op, NULL, NULL, i1, i2, 1, inputs, neededOutputs);
 							if (sp != NULL) return sp;
 						}
 					}
 				}
-				for (int i2 : consts) {
-					for (NodeType op : basebinopsC) {
-						SwapperPredicate* sp = addToMaps(op, NULL, NULL, i1, i2, 1, inputs, neededOutputs);
-						if (sp != NULL) return sp;
+				if (find(bits.begin(), bits.end(), i1) == bits.end()) {
+					for (int i2 : consts) {
+						for (NodeType op : basebinopsC) {
+							SwapperPredicate* sp = addToMaps(op, NULL, NULL, i1, i2, 1, inputs, neededOutputs);
+							if (sp != NULL) return sp;
+						}
 					}
 				}
 			}
@@ -476,9 +510,32 @@ public:
 			getExpressionsUpto(depth-1,aeSetdm1);
 			for(SwapperPredicate* ae1: aeSetdm1){
 				for(SwapperPredicate* ae2: aeSetdm1){
-					if(ae1->getDepth() == depth-1 || ae2->getDepth() == depth-1){
+					//"sig < sig" only valid because both And and Or are commutative
+					if((ae1->getDepth() == depth-1 || ae2->getDepth() == depth-1 ) && (ae1->getSig() < ae2->getSig())){
 						for (NodeType op :recbinops) {
-							SwapperPredicate* ae =  addToMaps(op, ae1, ae2,SwapperPredicate::Undef, SwapperPredicate::Undef, depth, inputs, neededOutputs);
+							if (maxDepth == 2) {//this is the last level, we don't have to generate the node unless we need to return it 
+								vector<bool> &om = evalMap[ae1];
+								vector<bool> &of = evalMap[ae2];
+								bool ignoreEx = false;
+								for (int i = 0; i < neededOutputs.size(); i++) {
+									if (op == And && ((om[i] && of[i]) != neededOutputs[i])) {
+										ignoreEx = true;
+										break;
+									}
+									else if (op == Or && ((om[i] || of[i]) != neededOutputs[i])) {
+										ignoreEx = true;
+										break;
+									}
+								}
+								if (ignoreEx) continue;
+								else {
+									SwapperPredicate* ae = addToMaps(op, ae1, ae2, Undef, Undef, depth, inputs, neededOutputs);
+									Assert(ae != NULL, "by construction control comes here iff all outputs are same as the ones needed");
+									return ae;
+								}
+							}
+
+							SwapperPredicate* ae =  addToMaps(op, ae1, ae2,Undef, Undef, depth, inputs, neededOutputs);
 							if(ae != NULL) return ae;
 						}
 					}

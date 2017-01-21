@@ -560,6 +560,7 @@ generator bit predG(Val[NTOTALF] vals,bit[NTOTALF] iB ,bit[NTOTALF] iA, int dept
 			assert(ch2 < NSRC);
 			assert(! iA[ch1] );
 			assert(! iA[ch2]);
+			assert(!iB[ch1] || !iB[ch2]);
 			assert(ch1 < ch2);
 			int i1 = getIntUpCast(vals[ch1]);
 			int i2 = getIntUpCast(vals[ch2]);

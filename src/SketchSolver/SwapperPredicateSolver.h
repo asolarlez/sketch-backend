@@ -3,7 +3,7 @@
 #include <vector>
 #include <queue>
 #include <set>
-#include <map>
+#include <unordered_map>
 #include <algorithm>
 #include <utility>
 #include "Sort.h"
@@ -115,7 +115,7 @@ public:
 		vector < bool > outputs; 
 		vector<int> exampleIds;
 		int numvars = intsOrbits.size();
-		map<string, int> inputsMap; // track input string to idx to get rid of repeated inputs
+		unordered_map<string, int> inputsMap; // track input string to idx to get rid of repeated inputs
 		for (int i = 0; i < nI; ++i) {
 			stringstream ss;
 			int out = im.getVal(i, numvars);
@@ -269,7 +269,7 @@ public:
         continue;
       }
       bool eout = expr->evaluate(vals);
-      if (out == EMPTY || out != eout) {
+      if (out == EMPTY || out != (int)eout) {
         Lit v = getLit(im.valueid(i, numvars), eout);
         suggestions.push(v);
         if (DBGCUSTOM) {

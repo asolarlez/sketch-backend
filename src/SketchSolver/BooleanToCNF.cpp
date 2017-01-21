@@ -4,12 +4,14 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <unordered_map>
+
 #include <utility>
 #include "Sort.h"
 #include <math.h>
 using namespace std;
 
-#include "BooleanToCNF.h"
+#include "BooleanToCNF.h" 
 #include "BooleanDAG.h"
 #include "MiniSATSolver.h"
 #include "DagOptim.h"
@@ -23,7 +25,7 @@ using namespace std;
 #include "SwapperPredicateSolver.h"
 //map < string , map < int, set < ArithExpression* > > >  ArithExprBuilder::ASetMap;
 map < string, ArithExpression *> ArithExprBuilder::ASigMap;
-map < string, SwapperPredicate *> PredicateBuilder::PSigMap;
+unordered_map < string, SwapperPredicate *> PredicateBuilder::PSigMap;
 int SwapperPredicate::numvars;
 #ifndef SAT_Manager
 #define SAT_Manager void *
