@@ -21,6 +21,7 @@ using namespace std;
 #include "VarStore.h"
 #include "NodeEvaluator.h"
 #include "AutoDiff.h"
+#include "RangeDiff.h"
 
 class NumericalSolver;
 
@@ -91,6 +92,8 @@ class NumericalSolver : public Synthesizer {
   int ncontrols;
   GradientDescent* gd;
   map<string, BooleanDAG*> empty;
+  map<string, int> inputs;
+  
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
     ninputs = dag->getNodesByType(bool_node::SRC).size();
     noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother))->multi_mother.size();
@@ -156,6 +159,7 @@ class NumericalSolver : public Synthesizer {
     gsl_vector* t = gsl_vector_alloc(ncontrols);
     double error = 0;
     AutoDiff eval(empty, *dag, fm, ctrlMap);
+    RangeDiff evalR(empty, *dag, fm, ctrlMap);
     for (int i = 0; i < allInputs.size(); i++) {
       VarStore inputStore;
       // Store all inputs
@@ -170,43 +174,152 @@ class NumericalSolver : public Synthesizer {
       for (int j = 0; j < state->size; j++) {
         inputStore.setVarVal(ctrls[j]->get_name(), fm.getIdx(gsl_vector_get(state,j)));
       }
+      if (false) { // Run auto differentiation on value - this requires all inputs and outputs to be non empty
+        eval.run(inputStore);
+        /*for (int k = 0; k < dag->size(); k++) {
+            bool_node* n = (*dag)[k];
+            cout << n->lprint() << endl;
+            if (n->getOtype() == OutType::FLOAT) {
+              cout << "Val: " << fm.getFloat(eval.getValue(n)) << endl;
+            } else {
+              cout << "Val: " << eval.getValue(n) << endl;
+            }
+            cout << "Grad: ";
+            gsl_vector* g = eval.getGrad(n);
+            for (int i = 0; i < g->size; i++) {
+              cout <<  gsl_vector_get(g, i) << " ";
+            }
+            cout << endl;
+        }*/
       
-      eval.run(inputStore);
-      /*for (int k = 0; k < dag->size(); k++) {
-        bool_node* n = (*dag)[k];
-        cout << n->lprint() << endl;
-        if (n->getOtype() == OutType::FLOAT) {
-          cout << "Val: " << fm.getFloat(eval.getValue(n)) << endl;
-        } else {
-          cout << "Val: " << eval.getValue(n) << endl;
-        }
-        cout << "Grad: " << gsl_vector_get(eval.getGrad(n), 0) << endl;
-      }*/
-      bool_node* output = dag->get_node("OUTPUT")->mother;
-      vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
-      vector<int> outputs = eval.getTuple(eval.getValue(output));
-      for (int j = 0; j < outputs.size(); j++) {
-        //cout << outputs[j] << endl;
-        if (allOutputs[i][j] != EMPTY && outputs[j] != allOutputs[i][j]) {
-          float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother)); // TODO: this assumes all values are floats which is probably true, but still we need to check
-          float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
-          float diff = m1 - m2;
-          if (diff == 0.0) diff = 0.1; // Min error
-          error += pow(diff, 2);
-          //cout << m1 << " " << m2 << endl;
-          gsl_vector* d1 = eval.getGrad(outputmothers[j]->mother);
-          gsl_vector* d2 = eval.getGrad(outputmothers[j]->father);
-          //cout << gsl_vector_get(d1, 0) << " " << gsl_vector_get(d2, 0) << endl;
-          gsl_vector_memcpy(t, d1);
-          gsl_vector_sub(t, d2);
-          gsl_vector_scale(t, 2*diff);
-          //cout << gsl_vector_get(t, 0) << endl;
-          gsl_vector_add(d, t);
+
+        bool_node* output = dag->get_node("OUTPUT")->mother;
+        vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+        vector<int> outputs = eval.getTuple(eval.getValue(output));
+        for (int j = 0; j < outputs.size(); j++) {
+         //cout << outputs[j] << endl;
+          if (allOutputs[i][j] != EMPTY && outputs[j] != allOutputs[i][j]) {
+            float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother)); // TODO: this assumes all values are floats which is probably true, but still we need to check
+            float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
+            //cout << j << " " << m1 << " " << m2 << endl;
+            float diff = m1 - m2;
+            if (diff == 0.0) diff = 0.1; // Min error
+            error += pow(diff, 2);
+            gsl_vector* d1 = eval.getGrad(outputmothers[j]->mother);
+            gsl_vector* d2 = eval.getGrad(outputmothers[j]->father);
+            gsl_vector_memcpy(t, d1);
+            gsl_vector_sub(t, d2);
+            gsl_vector_scale(t, 2*diff);
+            gsl_vector_add(d, t);
+            //for (int i = 0; i < t->size; i++) {
+            //  cout <<  gsl_vector_get(t, i) << " ";
+            //}
+            //cout << endl;
+          }
         }
       }
+      if (true) { // Run automatic differentiation on ranges
+      evalR.run(inputStore);
+      bool_node* output = dag->get_node("OUTPUT")->mother;
+      vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+      //evalR.print();
+      for (int j = 0; j < outputmothers.size(); j++) {
+        if (allOutputs[i][j] != EMPTY) {
+          pair<int, int> mrange = evalR.r(outputmothers[j]->mother);
+          pair<int, int> frange = evalR.r(outputmothers[j]->father);
+          
+          float m1 = fm.getFloat(mrange.first);
+          float m2 = fm.getFloat(mrange.second);
+          float f1 = fm.getFloat(frange.first);
+          float f2 = fm.getFloat(frange.second);
+          //cout << f1 << " " << f2 << endl;
+          
+          gsl_vector* md1 = evalR.getLGrad(outputmothers[j]->mother);
+          gsl_vector* md2 = evalR.getHGrad(outputmothers[j]->mother);
+          gsl_vector* fd1 = evalR.getLGrad(outputmothers[j]->father);
+          gsl_vector* fd2 = evalR.getHGrad(outputmothers[j]->father);
+          
+          
+          float v1 = 0.0;
+          float v2 = 0.0;
+          gsl_vector* d1;
+          gsl_vector* d2;
+          bool unsat = false;
+          
+          if (outputmothers[j]->type == bool_node::EQ) {
+            if (allOutputs[i][j] == 1) {
+              if (m2 < f1) {
+                unsat = true;
+                v1 = m2;
+                v2 = f1;
+                d1 = md2;
+                d2 = fd1;
+              }
+              if (m1 > f2) {
+                unsat = true;
+                v1 = m1;
+                v2 = f2;
+                d1 = md1;
+                d2 = fd2;
+              }
+            } else {
+              if (m1 == m2 && m2 == f1 && f1 == f2) { // TODO: check this
+                unsat = true;
+                v1 = m1;
+                v2 = f1;
+                d1 = md1;
+                d2 = fd1;
+              }
+            }
+          } else { // lt case
+            if (allOutputs[i][j] == 1) {
+              if (m1 >= f2) {
+                unsat = true;
+                v1 = m1;
+                v2 = f2;
+                d1 = md1;
+                d2 = fd2;
+              }
+            } else {
+              if (m2 < f1) {
+                unsat = true;
+                v1 = m2;
+                v2 = f1;
+                d1 = md2;
+                d2 = fd1;
+              }
+            }
+          }
+          
+          if (unsat) {
+            //cout << "expOut: " << allOutputs[i][j] << endl;
+            //cout << outputmothers[j]->lprint() << endl;
+            //cout << outputmothers[j]->mother->lprint() << endl;
+            //cout << outputmothers[j]->father->lprint() << endl;
+            //cout << "m: " << fm.getFloat(mrange.first) << " " << fm.getFloat(mrange.second) << endl;
+            //cout << "f: " << fm.getFloat(frange.first) << " " << fm.getFloat(frange.first) << endl;
+
+            float diff = v1 - v2;
+            if (diff == 0.0) diff = 0.1; // Min error
+            error += pow(diff, 2);
+            gsl_vector_memcpy(t, d1);
+            gsl_vector_sub(t, d2);
+            gsl_vector_scale(t, 2*diff);
+            gsl_vector_add(d, t);
+          }
+        }
+      }
+
       //cout << gsl_vector_get(d, 0) << endl;
       
+      }
     }
+    //cout << "error: " << error << endl;
+    //cout << "grad: ";
+    //for (int i = 0; i < d->size; i++) {
+    //  cout <<  gsl_vector_get(d, i) << " ";
+    //}
+    //cout << endl;
     return error;
   }
 
@@ -244,7 +357,10 @@ class NumericalSolver : public Synthesizer {
     InputMatrix& im = *inout;
     for(auto conflictId: conflictids) {
       for (int j = 0; j < ninputs + noutputs; j++) {
-        conflict.push(im.valueid(conflictId, j));
+        if (im.getVal(conflictId, j) != EMPTY) {
+          //cout << "pushing " << j << endl;
+          conflict.push(im.valueid(conflictId, j));
+        }
       }
     }
   }
@@ -270,9 +386,11 @@ class NumericalSolver : public Synthesizer {
     conflict.clear();
     InputMatrix& im = *inout;
     
+    
     vector<vector<int>> allInputs;
     vector<vector<int>> allOutputs;
     vector<int> conflictids;
+    stringstream str;
     for (int i = 0; i < inout->getNumInstances(); ++i) {
       vector<int> inputs;
       vector<int> outputs;
@@ -281,20 +399,26 @@ class NumericalSolver : public Synthesizer {
         int val = im.getVal(i, j);
         if (val == EMPTY) {
           notset = true;
-          break;
+          str << 2;
+          //break;
+        } else {
+          str << val;
         }
         inputs.push_back(val);
       }
-      if (notset) continue;
+      //if (notset) continue;
       for (int j = ninputs; j < ninputs + noutputs; j++) {
         int val = im.getVal(i, j);
         if (val == EMPTY) {
           notset = true;
-          break;
+          str << 2;
+          //break;
+        } else {
+          str << val;
         }
         outputs.push_back(val);
       }
-      if (notset) continue;
+      //if (notset) continue;
       allInputs.push_back(inputs);
       allOutputs.push_back(outputs);
       conflictids.push_back(i);
@@ -304,9 +428,9 @@ class NumericalSolver : public Synthesizer {
       for (int k = 0; k < outputs.size(); k++) {
         //cout << "Output" << k << ": " << outputs[k] << endl;
       }
-      if (!notset) {
-        cout << "Found a input output pair" << endl;
-      }
+      //if (!notset) {
+      //  cout << "Found a input output pair" << endl;
+      //}
       
     }
     
@@ -339,6 +463,24 @@ class NumericalSolver : public Synthesizer {
      outinp << endl;
      
      }*/
+    cout << "Input: ";
+    for (int i = 0; i < allInputs[0].size(); i++) {
+      cout << allInputs[0][i] << " ";
+    }
+    cout << endl;
+    cout << "Output: ";
+    for (int i = 0; i < allOutputs[0].size(); i++) {
+      cout << allOutputs[0][i] << " ";
+    }
+    cout << endl;
+    string instr = str.str();
+    cout << instr << endl;
+    if (inputs.find(instr) != inputs.end()) {
+      cout << "Repeated Input" << endl;
+      inputs[instr]++;
+    } else {
+      inputs[instr] = 1;
+    }
     gd->init(this, allInputs, allOutputs);
     double minError = gd->optimize();
     gsl_vector* curState = gd->getResults();
@@ -348,7 +490,8 @@ class NumericalSolver : public Synthesizer {
       gsl_vector_set(curState, i, c);
     }
     double minError = sa.optimize(this, allInputs, allOutputs, curState);*/
-    if (minError == 0.0) {
+    //cout << "min error: " << minError << endl;
+    if (minError >= -1e-10 && minError <= 1e-10) {
       // Update the controls
       //evalState(curState, allInputs, allOutputs);
       //cout << "Input: " << allInputs[0][0] << endl;
@@ -359,7 +502,7 @@ class NumericalSolver : public Synthesizer {
       }
       return true;
     } else {
-      cout << "Found a conflict" << endl;
+      cout << "******************* Found a conflict *******************" << endl;
       generateConflict(allInputs, allOutputs, conflictids);
      return false;
     }
@@ -397,12 +540,19 @@ class NumericalSolver : public Synthesizer {
   }
   
   virtual void print(ostream& out) {
-    out << "( ";
     vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
     for (int i = 0; i < ctrls.size(); i++) {
-      out << ctrlVals[ctrlMap[ctrls[i]->get_name()]] << ", ";
+      out << ctrls[i]->get_name() << ":" << ctrlVals[ctrlMap[ctrls[i]->get_name()]] << endl;
     }
-    out << " )";
+  }
+  
+  virtual void getControls(map<string, string>& values) {
+    vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+    for (int i = 0; i < ctrls.size(); i++) {
+      stringstream str;
+      str << ctrlVals[ctrlMap[ctrls[i]->get_name()]];
+      values[ctrls[i]->get_name()] = str.str();
+    }
   }
 };
 
@@ -457,7 +607,7 @@ double GradientDescent::optimize() {
   {
     iter++;
     status = gsl_multimin_fdfminimizer_iterate (minidf);
-    cout << gsl_strerror(status) << endl;
+    //cout << gsl_strerror(status) << endl;
     if (status)
       break;
     grad = gsl_multimin_fdfminimizer_gradient(minidf);
