@@ -1396,9 +1396,9 @@ void CEGISSolver::get_control_map(map<string, string>& values){
 		values[it->name] = str.str();
 	}
 	for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
-		stringstream str;
-		it->second->print(str);
-		values[it->first] = str.str();
+		//stringstream str;
+		it->second->getControls(values);
+		//values[it->first] = str.str();
 	}
 }
 

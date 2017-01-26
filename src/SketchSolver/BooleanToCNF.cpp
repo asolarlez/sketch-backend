@@ -121,6 +121,12 @@ public:
 	virtual void print(ostream& out) {
 		out << "( " << theta << "< IN_0" << ")";
 	}
+  
+  virtual void getControls(map<string, string>& values) {
+    stringstream str;
+    print(str);
+    values["_GEN_gtp"] = str.str();
+  }
 };
 
 class ERAtomSyn : public Synthesizer {
@@ -479,6 +485,12 @@ public:
         //Can be any valid Sketch code e.g. an uninterp function
 
 	}
+  
+  virtual void getControls(map<string, string>& values) {
+    stringstream str;
+    print(str);
+    values["_GEN_eratom"] = str.str();
+  }
 };
 
 

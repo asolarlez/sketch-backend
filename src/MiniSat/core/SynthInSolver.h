@@ -147,6 +147,8 @@ namespace MSsolverNS {
 		This outputs the expression for the frontend.
 		*/
 		virtual void print(ostream& out) = 0;
+    
+    virtual void getControls(map<string, string>& values) = 0;
 	};
 
 	extern int ID;
@@ -175,6 +177,10 @@ namespace MSsolverNS {
 		void print(ostream& out) {
 			s->print(out);
 		}
+    
+    void getControls(map<string, string>& values) {
+      s->getControls(values);
+    }
 
 		int newInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
 			s->newInstance();

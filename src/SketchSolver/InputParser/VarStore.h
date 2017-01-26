@@ -310,9 +310,9 @@ public:
 			out << endl;
 		}
 		for (auto sit = synths.begin(); sit != synths.end(); ++sit) {
-			out << sit->first << ":";
+			//out << sit->first << ":";
 			sit->second->print(out);
-			out << endl;
+			//out << endl;
 		}
 	}
 
