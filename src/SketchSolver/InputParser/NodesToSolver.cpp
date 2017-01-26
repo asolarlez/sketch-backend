@@ -1408,6 +1408,10 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   string tuple_name = node.getTupleName();
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
   
+  const string& name = node.get_ufname();
+  if (floats.hasFun(name) || name == "_cast_int_float_math") {
+    return;
+  }
   if (tuple_type->entries.size() == 0) {
     Tvalue& outvar = node_ids[node.id];
     outvar = -YES;
