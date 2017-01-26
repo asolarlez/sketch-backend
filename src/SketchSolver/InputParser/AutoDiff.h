@@ -28,6 +28,8 @@ public:
   virtual void visit( LT_node& node );
   virtual void visit( EQ_node& node );
   virtual void visit( ARRASS_node& node );
+  virtual void visit( UFUN_node& node );
+  virtual void visit( TUPLE_R_node& node );
   
   gsl_vector* getGrad(bool_node* bn) {
     return grads[bn->id];

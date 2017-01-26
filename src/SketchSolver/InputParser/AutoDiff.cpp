@@ -38,6 +38,7 @@ void AutoDiff::visit( CTRL_node& node ) {
   string name = node.get_name();
   if (floatCtrls.find(name) != floatCtrls.end())
     idx = floatCtrls[name];
+  //cout << name << " " << idx << " " << floats.getFloat(getValue(node)) << endl;
   gsl_vector* g = grads[node.id];
   for (int i = 0; i < nctrls; i++) {
     if (i == idx) {
@@ -65,18 +66,17 @@ void AutoDiff::visit( TIMES_node& node ) {
   gsl_vector* g = grads[node.id];
   gsl_vector_memcpy(g, mgrads);
   gsl_vector_memcpy(tmp, fgrads);
+  float mval, fval;
   if (node.getOtype() == OutType::FLOAT) {
-    float mval = floats.getFloat(i(*node.mother));
-    float fval = floats.getFloat(i(*node.father));
-    gsl_vector_scale(g, fval);
-    gsl_vector_scale(tmp, mval);
+    mval = floats.getFloat(i(*node.mother));
+    fval = floats.getFloat(i(*node.father));
   } else {
-    int mval = i(*node.mother);
-    int fval = i(*node.father);
-    gsl_vector_scale(g, fval);
-    gsl_vector_scale(tmp, mval);
+    mval = i(*node.mother);
+    fval = i(*node.father);
   }
-  gsl_vector_add(g, tmp);  
+  gsl_vector_scale(g, fval);
+  gsl_vector_scale(tmp, mval);
+  gsl_vector_add(g, tmp);
 }
 void AutoDiff::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
@@ -91,9 +91,27 @@ void AutoDiff::visit( ARRACC_node& node ) {
 void AutoDiff::visit( DIV_node& node ) {
   //cout << "Visiting DIV node" << endl;
   NodeEvaluator::visit(node);
+  gsl_vector* mgrads = grads[node.mother->id];
+  gsl_vector* fgrads = grads[node.father->id];
+  gsl_vector* g = grads[node.id];
+  gsl_vector_memcpy(g, mgrads);
+  gsl_vector_memcpy(tmp, fgrads);
+  float mval, fval;
+  if (node.getOtype() == OutType::FLOAT) {
+    mval = floats.getFloat(i(*node.mother));
+    fval = floats.getFloat(i(*node.father));
+  } else {
+    mval = i(*node.mother);
+    fval = i(*node.father);
+  }
+  gsl_vector_scale(g, fval);
+  gsl_vector_scale(tmp, mval);
+  gsl_vector_sub(g, tmp);
+  gsl_vector_scale(g, 1.0/(fval*fval));
 }
 void AutoDiff::visit( MOD_node& node ) {
-  //cout << "Visiting MOD node" << endl;
+  cout << "Visiting MOD node" << endl;
+  Assert(false, "NYI");
   NodeEvaluator::visit(node);
 }
 void AutoDiff::visit( NEG_node& node ) {
@@ -111,7 +129,6 @@ void AutoDiff::visit( CONST_node& node ) {
   for (int i = 0; i < nctrls; i++) {
     gsl_vector_set(g, i, 0.0);
   }
-
 }
 void AutoDiff::visit( LT_node& node ) {
   //cout << "Visiting LT node" << endl;
@@ -122,6 +139,52 @@ void AutoDiff::visit( EQ_node& node ) {
   NodeEvaluator::visit(node);
 }
 void AutoDiff::visit( ARRASS_node& node ) {
-  //cout << "Visiting ARRASS node" << endl;
+  cout << "Visiting ARRASS node" << endl;
+  Assert(false, "NYI");
   NodeEvaluator::visit(node);
 }
+
+void AutoDiff::visit( UFUN_node& node ){
+  NodeEvaluator::visit(node);
+  gsl_vector* mgrads = grads[node.multi_mother[0]->id];
+  gsl_vector* g = grads[node.id];
+  gsl_vector_memcpy(g, mgrads);
+  float d = 0.0;
+  const string& name = node.get_ufname();
+  if (name == "_cast_int_float_math") {
+    d = 1.0;
+  }
+  else if (floats.hasFun(name)) {
+    float x = floats.getFloat(i(*node.multi_mother[0]));
+    if (name == "arctan_math") {
+      d = 1.0/(x*x + 1.0);
+    } else if (name == "sin_math") {
+      d = cos(x);
+    } else if (name == "cos_math") {
+      d = -sin(x);
+    } else if (name == "tan_math") {
+      d = 1.0/(cos(x)*cos(x));
+    } else if (name == "sqrt_math") {
+      d = 0.5/sqrt(x);
+    } else {
+      Assert(false, "NYI");
+    }
+  } else {
+    Assert(false, "NYI");
+  }
+  gsl_vector_scale(g, d);
+}
+
+void AutoDiff::visit( TUPLE_R_node& node) {
+  NodeEvaluator::visit(node);
+  gsl_vector* g = grads[node.id];
+  if (node.mother->type == bool_node::UFUN) {
+    Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+    gsl_vector_memcpy(g, grads[node.mother->id]);
+  } else {
+    Assert(false, "NYI");
+  }
+}
+
+
+
