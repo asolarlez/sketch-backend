@@ -898,7 +898,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   set<bool_node*> seenNodes;
   DagOptim op(dag, floats);
   
-  dag.lprint(cout);
+  //dag.lprint(cout);
   BooleanDAG& dagclone = (*dag.clone());
   vector<OutType*> rettypes;
   string fname = "_GEN_NUM_SYNTH";
@@ -912,6 +912,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   TUPLE_CREATE_node* funOutput = new TUPLE_CREATE_node();
   funOutput->setName(fname);
   set<bool_node*> funNodes;
+  vector<int> deletedNodes;
   
   for(int i=0; i<dag.size() ; ++i ) {
     bool_node* node = dag[i];
@@ -920,14 +921,18 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
       if (node == NULL) continue;
       int nid = node->id;
       OutType* type = node->getOtype();
-      cout << dagclone[nid]->lprint() << endl;
-      
+      if (node->type == bool_node::UFUN) {
+        type = ((Tuple*) type)->entries[0];
+      }
+      //cout << dagclone[nid]->lprint() << endl;
+      //cout << (type == OutType::FLOAT) << endl;
       
       if (type == OutType::INT || type == OutType::BOOL  ) {
         bool hasFlChild = hasFloatChild(node);
         bool hasFlInputs = hasFloatInputs(dagclone[nid]);
         if (hasFlChild) {
           if (hasFlInputs) {
+          // create a ctrl node to capture the output
           CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
           ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
           
@@ -973,6 +978,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
         }
         if (hasFlInputs) {
           funNodes.insert(dagclone[nid]);
+          // TODO: instead of adding it as an output - add a assert linking the corresponding src node
           funOutput->multi_mother.push_back(dagclone[nid]);
           TUPLE_R_node* tnode = new TUPLE_R_node();
           tnode->idx = rettypes.size();
@@ -1000,10 +1006,15 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
       }
       if (type == OutType::FLOAT) {
         funNodes.insert(dagclone[nid]);
-        node->dislodge();
-        //dag.replace(nid, NULL);
+        deletedNodes.push_back(nid);
+        //node->dislodge();
+        //cout << "Node removed" << endl;
       }
     }
+  }
+  // Remove all deleted nodes
+  for (int i = deletedNodes.size()-1; i >=0; i--) {
+    dag.remove(deletedNodes[i]);
   }
   vector<bool_node*> v(funNodes.begin(), funNodes.end());
   funDag->addNewNodes(v);
@@ -1020,8 +1031,9 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   funDag->lprint(cout);
   dag.addNewNodes(newnodes);
   op.cleanup(dag);  
-  dag.lprint(cout);
+  //dag.lprint(cout);
   //funDag->repOK();
+  //dag.repOK();
   
   finder->setNumericalAbsMap(numericalAbsMap);
   
