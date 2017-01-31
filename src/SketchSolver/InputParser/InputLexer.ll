@@ -230,7 +230,6 @@ Comment      ("//"[^\n]*)
 }
 
 <<EOF>> {
-			cout<<"End of File"<<endl;
 			return T_eof;
 		}
 
