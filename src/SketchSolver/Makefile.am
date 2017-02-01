@@ -23,6 +23,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_sampler.h				\
 	timerclass.h					\
   NumericalSolver.h     \
+	GradientDescent.h			\
+	SimulatedAnnealing.h		\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -64,6 +66,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 
 libcegis_la_SOURCES =				\
 	$(SOLVER_SRCS)				\
+	GradientDescent.cpp	\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\

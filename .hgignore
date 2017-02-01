@@ -53,3 +53,8 @@ bindings/CegisCApi/API.chs.h
 *.hi
 bindings/CegisCApi/Test
 bindings/hscegis
+sketch-backend-symdiff.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+sketch-backend-symdiff.xcodeproj/project.xcworkspace/xcuserdata/Jeevu.xcuserdatad/UserInterfaceState.xcuserstate
+sketch-backend-symdiff.xcodeproj/project.xcworkspace/xcuserdata/Jeevu.xcuserdatad/WorkspaceSettings.xcsettings
+sketch-backend-symdiff.xcodeproj/xcuserdata/Jeevu.xcuserdatad/xcschemes/sketch-backend-symdiff.xcscheme
+sketch-backend-symdiff.xcodeproj/xcuserdata/Jeevu.xcuserdatad/xcschemes/xcschememanagement.plist

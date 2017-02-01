@@ -913,7 +913,8 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   funOutput->setName(fname);
   set<bool_node*> funNodes;
   vector<int> deletedNodes;
-  
+	vector<bool_node*> funSrcNodes;
+	int srcCounter = 0;
   for(int i=0; i<dag.size() ; ++i ) {
     bool_node* node = dag[i];
     if (seenNodes.find(node) == seenNodes.end()) {
@@ -957,7 +958,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
           
         
       
-          SRC_node* src =  new SRC_node("PARAM_" + std::to_string(seenNodes.size()));
+          SRC_node* src =  new SRC_node("PARAM_" + std::to_string(srcCounter++));
           int nbits = 0;
           if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
             nbits = 1;
@@ -973,7 +974,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
             src->setArr(sz);
           }
           
-          funNodes.insert(src);
+          funSrcNodes.push_back(src);
           dagclone[nid]->neighbor_replace(src);
         }
         if (hasFlInputs) {
@@ -1018,6 +1019,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   }
   vector<bool_node*> v(funNodes.begin(), funNodes.end());
   funDag->addNewNodes(v);
+	funDag->addNewNodes(funSrcNodes);
   funOutput->addToParents();
   funDag->addNewNode(funOutput);
   funDag->create_outputs(-1, funOutput);
