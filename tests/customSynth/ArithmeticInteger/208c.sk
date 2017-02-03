@@ -1,0 +1,97 @@
+pragma options "--slv-timeout 9 --bnd-inbits 3 --bnd-cbits 3 --bnd-int-range 1000 --beopt:simplifycex NOSIM";
+#define ARRSZ 5
+//#define USEARRACC
+#define USEINT
+//#define USEARR
+#define MAXINT 100000
+#define NSRC 4
+#define NTOTALF 6
+#define NBITS 2
+#define NINTS 2
+#define NBARRS 0
+#define NIARRS 0
+#define ARRSZMAX 50
+#define CBITS 3
+#define INPBITS 3
+//(AND|(LT|N_1:BOOL|(TIMES|N_2:INT|N_3:INT|)|)|N_4:BOOL|)
+#include "..//ast.skh"
+//Hardcoded evaluation of d-dag
+Val ddag(Val[NTOTALF] vals){
+	return new BIT(b=((getIntUpCast(vals[0]) < (getIntUpCast(vals[1]) * getIntUpCast(vals[2]))) && getBit(vals[3])));
+}
+harness void prnotimply1(){
+	bit N_1 = ??(1);
+	int N_2 = ??(INPBITS);
+	int N_3 = ??(INPBITS);
+	bit N_4 = ??(1);
+	assert( !pred( N_1, N_2, N_3, N_4) && (((!N_1) && (N_3 >= N_4))));
+}
+harness void prnotimply2(){
+	bit N_1 = ??(1);
+	int N_2 = ??(INPBITS);
+	int N_3 = ??(INPBITS);
+	bit N_4 = ??(1);
+	assert( !pred( N_1, N_2, N_3, N_4) && (((N_3 > N_4) && (!N_1))));
+}
+bit sC1(bit N_1,int N_2,int N_3,bit N_4){
+	bit stat1 = ! N_1 && (N_3 == 2);
+	if(stat1){
+		return (pred( N_1, N_2, N_3, N_4));
+	}
+	else{
+		return true;
+	}
+}
+bit sC2(bit N_1,int N_2,int N_3,bit N_4){
+	bit stat2 = ! N_1 && (N_3 == 3);
+	if(stat2){
+		return (pred( N_1, N_2, N_3, N_4));
+	}
+	else{
+		return true;
+	}
+}
+bit sC3(bit N_1,int N_2,int N_3,bit N_4){
+	bit stat3 = ! N_1;
+	if(stat3){
+		return (pred( N_1, N_2, N_3, N_4));
+	}
+	else{
+		return true;
+	}
+}
+harness void staticFinalCheck(bit N_1_1,int N_2_1,int N_3_1,bit N_4_1,bit N_1_2,int N_2_2,int N_3_2,bit N_4_2,bit N_1_3,int N_2_3,int N_3_3,bit N_4_3){
+	N_2_1=N_2_1-3;
+	N_3_1=N_3_1-3;
+	N_2_2=N_2_2-3;
+	N_3_2=N_3_2-3;
+	N_2_3=N_2_3-3;
+	N_3_3=N_3_3-3;
+	assert(sC1( N_1_1, N_2_1, N_3_1, N_4_1) || sC2( N_1_2, N_2_2, N_3_2, N_4_2) || sC3( N_1_3, N_2_3, N_3_3, N_4_3));
+}
+bit pred(bit N_1,int N_2,int N_3,bit N_4){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	vals[0] = new BIT(b=N_1); SETBIT(0) //N_1 BOOL
+	/*N_2=N_2-3;*/	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	/*N_3=N_3-3;*/	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	vals[3] = new BIT(b=N_4); SETBIT(3) //N_4 BOOL
+	return predG(vals,isBit,isArr,2);
+}
+@Gen("arithexpr_3d_4v_2n_b_i_i_b_not_and_or_xor_lt_eq_neg_plus_times_div_mod_c0_c1_c2_outb")
+bit arithExpr(bit N_1,int N_2,int N_3,bit N_4);
+//harness specifying the synthesis constraints
+harness void main(bit N_1,int N_2,int N_3,bit N_4){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	vals[0] = new BIT(b=N_1); SETBIT(0) //N_1 BOOL
+	N_2=N_2-3;	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	N_3=N_3-3;	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	vals[3] = new BIT(b=N_4); SETBIT(3) //N_4 BOOL
+	if(pred( N_1, N_2, N_3, N_4)){
+Val VAE = new BIT(b=arithExpr( N_1, N_2, N_3, N_4));
+assert(checkEq(VAE,ddag(vals)));
+	}
+}

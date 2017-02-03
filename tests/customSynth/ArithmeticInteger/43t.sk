@@ -1,0 +1,122 @@
+pragma options "--slv-timeout 9 --bnd-inbits 3 --bnd-cbits 3 --bnd-int-range 1000 --beopt:simplifycex NOSIM";
+#define ARRSZ 5
+//#define USEARRACC
+#define USEINT
+//#define USEARR
+#define MAXINT 100000
+#define NSRC 3
+#define NTOTALF 5
+#define NBITS 0
+#define NINTS 3
+#define NBARRS 0
+#define NIARRS 0
+#define ARRSZMAX 50
+#define CBITS 3
+#define INPBITS 3
+//(NOT|(LT|N_1:INT|(TIMES|N_2:INT|N_3:INT|)|)|)
+#include "..//ast.skh"
+//Hardcoded evaluation of d-dag
+Val ddag(Val[NTOTALF] vals){
+	return new BIT(b=(! (getIntUpCast(vals[0]) < (getIntUpCast(vals[1]) * getIntUpCast(vals[2])))));
+}
+bit sC1(int N_1,int N_2,int N_3){
+	bit stat1 = (N_1 == 2);
+	if(stat1){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+bit sC2(int N_1,int N_2,int N_3){
+	bit stat2 = (N_1 == 3) && (N_3 == 2);
+	if(stat2){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+bit sC3(int N_1,int N_2,int N_3){
+	bit stat3 = (N_1 == 3);
+	if(stat3){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+bit sC4(int N_1,int N_2,int N_3){
+	bit stat4 = (N_1 == 2) && (N_3 == 4);
+	if(stat4){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+bit sC5(int N_1,int N_2,int N_3){
+	bit stat5 = (N_1 == 2) && (N_3 == 3);
+	if(stat5){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+bit sC6(int N_1,int N_2,int N_3){
+	bit stat6 = (N_1 == 4);
+	if(stat6){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+harness void staticFinalCheck(int N_1_1,int N_2_1,int N_3_1,int N_1_2,int N_2_2,int N_3_2,int N_1_3,int N_2_3,int N_3_3,int N_1_4,int N_2_4,int N_3_4,int N_1_5,int N_2_5,int N_3_5,int N_1_6,int N_2_6,int N_3_6){
+	N_1_1=N_1_1-3;
+	N_2_1=N_2_1-3;
+	N_3_1=N_3_1-3;
+	N_1_2=N_1_2-3;
+	N_2_2=N_2_2-3;
+	N_3_2=N_3_2-3;
+	N_1_3=N_1_3-3;
+	N_2_3=N_2_3-3;
+	N_3_3=N_3_3-3;
+	N_1_4=N_1_4-3;
+	N_2_4=N_2_4-3;
+	N_3_4=N_3_4-3;
+	N_1_5=N_1_5-3;
+	N_2_5=N_2_5-3;
+	N_3_5=N_3_5-3;
+	N_1_6=N_1_6-3;
+	N_2_6=N_2_6-3;
+	N_3_6=N_3_6-3;
+	assert(sC1( N_1_1, N_2_1, N_3_1) || sC2( N_1_2, N_2_2, N_3_2) || sC3( N_1_3, N_2_3, N_3_3) || sC4( N_1_4, N_2_4, N_3_4) || sC5( N_1_5, N_2_5, N_3_5) || sC6( N_1_6, N_2_6, N_3_6));
+}
+bit pred(int N_1,int N_2,int N_3){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	/*N_1=N_1-3;*/	vals[0] = new INT(N=N_1); SETINT(0) //N_1 INT
+	/*N_2=N_2-3;*/	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	/*N_3=N_3-3;*/	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	return predG(vals,isBit,isArr,2);
+}
+//harness specifying the synthesis constraints
+harness void main(int N_1,int N_2,int N_3){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	N_1=N_1-3;	vals[0] = new INT(N=N_1); SETINT(0) //N_1 INT
+	N_2=N_2-3;	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	N_3=N_3-3;	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	if(pred( N_1, N_2, N_3)){
+		int sz=NSRC;
+		int cost=0;
+		Node[NTOTALF] dag=dagGen(sz,cost,isBit,isArr,true,false);
+		//minimize (cost);
+		int CT =NSRC;
+		assert(checkEq(eval(CT,vals,dag,sz),ddag(vals)));
+	}
+}

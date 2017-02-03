@@ -1,0 +1,13 @@
+pragma options "--slv-timeout 9 --bnd-inbits 3 --bnd-cbits 3 --bnd-int-range 1000 --beopt:simplifycex NOSIM";
+//(PLUS|(PLUS|I:INT|B:BOOL|)|B:BOOL|)
+
+@Gen("arithexpr_2d_2v_2n_i_b_not_and_or_xor_lt_eq_neg_plus_times_div_mod_c0_c1_c2_outi")
+int arithExpr(int I,bit B);
+
+//harness specifying the synthesis constraints
+harness void main(int I,bit B){
+
+	if(/*pred( I, B)*/ B){
+        assert(((I+B)+B) == arithExpr(I,B));
+	}
+}

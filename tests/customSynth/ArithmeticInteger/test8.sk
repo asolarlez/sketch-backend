@@ -98,7 +98,7 @@ void partition(int p, int P, int N, ref int ibeg, ref int iend){
 	#endif
 }
 
-harness void testPartition(int p, int N, int P){
+void testPartition(int p, int N, int P){
     if(N<1 || P < 1){ return; }
     if(p<P){
         int ibeg, iend;
@@ -113,4 +113,19 @@ harness void testPartition(int p, int N, int P){
         if(p==0){ assert ibeg == 0; }
         if(p==P-1){ assert iend == N; }
     }
+}
+
+harness void main() {
+	testPartition(0,1,2);
+	testPartition(1,6,4);
+	testPartition(0,3,5);
+	testPartition(0,6,4);
+	testPartition(0,3,6);
+	testPartition(1,2,4);
+	testPartition(1,7,4);
+	testPartition(2,4,5);
+	testPartition(2,4,7);
+	testPartition(1,7,5);
+	testPartition(0,7,5);
+	testPartition(0,11,9);
 }

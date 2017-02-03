@@ -1,0 +1,80 @@
+pragma options "--slv-timeout 9 --bnd-inbits 3 --bnd-cbits 3 --bnd-int-range 1000 --beopt:simplifycex NOSIM";
+#define ARRSZ 5
+//#define USEARRACC
+#define USEINT
+//#define USEARR
+#define MAXINT 100000
+#define NSRC 3
+#define NTOTALF 6
+#define NBITS 1
+#define NINTS 2
+#define NBARRS 0
+#define NIARRS 0
+#define ARRSZMAX 50
+#define CBITS 3
+#define INPBITS 3
+//(OR|(NOT|(LT|N_2:INT|(TIMES|N_2:INT|N_3:INT|)|)|)|N_1:BOOL|)
+#include "..//ast.skh"
+//Hardcoded evaluation of d-dag
+Val ddag(Val[NTOTALF] vals){
+	return new BIT(b=((! (getIntUpCast(vals[1]) < (getIntUpCast(vals[1]) * getIntUpCast(vals[2])))) || getBit(vals[0])));
+}
+harness void prnotimply1(){
+	bit N_1 = ??(1);
+	int N_2 = ??(INPBITS);
+	int N_3 = ??(INPBITS);
+	assert( !pred( N_1, N_2, N_3) && (((N_1 < N_2) || N_1)));
+}
+harness void prnotimply2(){
+	bit N_1 = ??(1);
+	int N_2 = ??(INPBITS);
+	int N_3 = ??(INPBITS);
+	assert( !pred( N_1, N_2, N_3) && ((N_1 || (N_2 > 1))));
+}
+harness void dpredImplies(bit N_1,int N_2,int N_3){
+	assert( pred( N_1, N_2, N_3) || !((N_2 > 1)));
+}
+harness void prdiff1(){
+	bit N_1 = ??(1);
+	int N_2 = ??(INPBITS);
+	int N_3 = ??(INPBITS);
+	assert( pred( N_1, N_2, N_3) != ((N_2 > 1)));
+}
+bit sC1(bit N_1,int N_2,int N_3){
+	bit stat1 = (N_2 == 3);
+	if(stat1){
+		return (pred( N_1, N_2, N_3));
+	}
+	else{
+		return true;
+	}
+}
+harness void staticFinalCheck(bit N_1_1,int N_2_1,int N_3_1){
+	N_2_1=N_2_1-3;
+	N_3_1=N_3_1-3;
+	assert(sC1( N_1_1, N_2_1, N_3_1));
+}
+bit pred(bit N_1,int N_2,int N_3){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	vals[0] = new BIT(b=N_1); SETBIT(0) //N_1 BOOL
+	/*N_2=N_2-3;*/	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	/*N_3=N_3-3;*/	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	return predG(vals,isBit,isArr,2);
+}
+@Gen("arithexpr_4d_3v_3n_b_i_i_not_and_or_xor_lt_eq_neg_plus_times_div_mod_c0_c1_c2_outb")
+bit arithExpr(bit N_1,int N_2,int N_3);
+//harness specifying the synthesis constraints
+harness void main(bit N_1,int N_2,int N_3){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	vals[0] = new BIT(b=N_1); SETBIT(0) //N_1 BOOL
+	N_2=N_2-3;	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	N_3=N_3-3;	vals[2] = new INT(N=N_3); SETINT(2) //N_3 INT
+	if(pred( N_1, N_2, N_3)){
+Val VAE = new BIT(b=arithExpr( N_1, N_2, N_3));
+assert(checkEq(VAE,ddag(vals)));
+	}
+}
