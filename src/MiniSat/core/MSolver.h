@@ -30,7 +30,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 #include <set>
 #include "SolverTypes.h"
-#include "SynthInSolver.h"
 
 using namespace std;
 //=================================================================================================
@@ -39,7 +38,9 @@ using namespace std;
 
 namespace MSsolverNS{
 
-
+class SynthInSolver;
+class Synthesizer;
+	
 class OutSummary;
 
 class UfunSummary{

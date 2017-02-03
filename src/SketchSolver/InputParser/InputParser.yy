@@ -22,7 +22,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
 %}
 
-%pure_parser
+%pure-parser
 %parse-param {yyscan_t yyscanner}
 %lex-param {yyscan_t yyscanner}
 

@@ -19,6 +19,8 @@ using namespace std;
 #include "NodeEvaluator.h"
 #include "SwapperPredicateBuilder.h"
 #define DBGCUSTOM false
+
+using namespace SwapperPredicateNS;
 class SwapperPredicateSyn : public Synthesizer {
 	SwapperPredicate* expr;
 	int depth;
@@ -103,7 +105,7 @@ public:
 
 	void addSingleConflict(int &conflictId, InputMatrix& im ){
     	for(int j=0;j<=intsOrbits.size();j++){
-			conflict.push(im.valueid(conflictId, j));
+			conflict.push(getLit(im.valueid(conflictId, j)));
 		}
     }
 

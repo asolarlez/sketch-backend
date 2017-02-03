@@ -18,6 +18,7 @@ using namespace std;
 #include "VarStore.h"
 #include "NodeEvaluator.h"
 
+namespace SwapperPredicateNS {
 enum NodeType {Bit, Negbit, True, Lt, Lte, Gt, Gte, Eq, Neq, And, Or, Ltc, Ltec, Gtc, Gtec, Eqc, Neqc};
 const set<NodeType> basebinops = { Lt, Lte, Gt, Gte, Eq, Neq, Ltc, Ltec, Gtc, Gtec, Eqc, Neqc };
 const set<NodeType> basebinopsC = { Ltc, Ltec, Gtc, Gtec, Eqc, Neqc };
@@ -547,3 +548,4 @@ public:
 		return NULL;
 	}
 };
+}

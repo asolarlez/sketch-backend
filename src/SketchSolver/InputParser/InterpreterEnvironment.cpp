@@ -102,7 +102,7 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 		delete bgproblem;
 	}
 	ArithExprBuilder::clearStaticMapMemory();
-	PredicateBuilder::clearStaticMapMemory();
+	SwapperPredicateNS::PredicateBuilder::clearStaticMapMemory();
 	delete finder;
 	delete _pfind;
 }

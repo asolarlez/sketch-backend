@@ -23,7 +23,7 @@ class GtpSyn : public Synthesizer {
 	int theta;
 public:
 	GtpSyn(FloatManager& _fm) :Synthesizer(_fm) {
-
+		
 	}
 	virtual bool synthesis(vec<Lit>& suggestions) {
 		conflict.clear();
@@ -46,7 +46,7 @@ public:
 			else {
 				if (in > ltmax) { ltmax = in; ltid = i; }
 			}
-		}		
+		}
 		//im.print();
 		//cout << ltmax << "-" << gtmin << endl;
 		if (ltmax < gtmin) {
@@ -62,27 +62,26 @@ public:
 				theta = gtmin - 1;
 				return true;
 			}
-			conflict.push(im.valueid(gtid, inpt));
-			conflict.push(im.valueid(gtid, outpt));
-			conflict.push(im.valueid(ltid, inpt));
-			conflict.push(im.valueid(ltid, outpt));
+			conflict.push(getLit(im.valueid(gtid, inpt)));
+			conflict.push(getLit(im.valueid(gtid, outpt)));
+			conflict.push(getLit(im.valueid(ltid, inpt)));
+			conflict.push(getLit(im.valueid(ltid, outpt)));
 			return false;
 		}
 	}
 	virtual void newInstance() {
-
+		
 	}
-
+	
 	virtual void finalize() {
-
+		
 	}
-
+	
 	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
 		return dopt->addGT(params[0], dopt->getCnode(theta));
 	}
-
+	
 	virtual void print(ostream& out) {
 		out << "( " << theta << "< IN_0" << ")";
 	}
 };
-

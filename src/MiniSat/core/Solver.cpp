@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Sort.h"
 #include <cmath>
 #include <algorithm>
+#include "SynthInSolver.h"
 
 using namespace std;
 
@@ -325,7 +326,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 
 SynthInSolver* Solver::addSynth(int inputs, int outputs, Synthesizer* s) {
   int idx = sins.size();
-	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs, idx);
+	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs, idx, this);
 	sins.push(syn);
   suggestions.push();
 	return syn;
