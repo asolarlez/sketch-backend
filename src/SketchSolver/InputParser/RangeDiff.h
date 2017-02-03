@@ -34,6 +34,8 @@ public:
   virtual void visit( TUPLE_R_node& node );
   
   bool run(VarStore& inputs_p);
+	
+	void findMinMax(bool_node& node, vector<float>& vals, vector<gsl_vector*>& grads);
   
   gsl_vector* getLGrad(bool_node* bn) {
     return lgrads[bn->id];

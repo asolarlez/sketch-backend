@@ -3,6 +3,8 @@
 #include <limits>
 #include <math.h>
 
+double pi = 3.1415926535897;
+
 RangeDiff::RangeDiff(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p):NodeEvaluator(functionMap_p, bdag_p, _floats), floatCtrls(floatCtrls_p) {
   lgrads.resize(bdag.size(), NULL);
   hgrads.resize(bdag.size(), NULL);
@@ -102,6 +104,60 @@ void RangeDiff::visit( PLUS_node& node ) {
   gsl_vector_add(h, fhgrads);
 }
 
+
+void RangeDiff::findMinMax(bool_node& node, vector<float>& vals, vector<gsl_vector*>& grads) {
+	gsl_vector* l = lgrads[node.id];
+	gsl_vector* h = hgrads[node.id];
+	
+	float minval = numeric_limits<float>::max();
+	float maxval = -numeric_limits<float>::max();
+	for (int i = 0; i < vals.size(); i++) {
+		if (vals[i] > maxval) {
+			maxval = vals[i];
+		}
+		if (vals[i] < minval) {
+			minval = vals[i];
+		}
+	}
+	//cout << "Values: " << minval << " " << maxval << endl;
+	bool isFloat = node.getOtype() == OutType::FLOAT;
+	if (isFloat) {
+		setrange(node, floats.getIdx(minval), floats.getIdx(maxval));
+	} else {
+		setrange(node, int(minval), int(maxval));
+	}
+	
+	float alpha = 1.0;
+	float explval = 0.0;
+	float exphval = 0.0;
+	for (int i = 0; i < vals.size(); i++) {
+		explval += exp(-alpha * (vals[i] - minval));
+		exphval += exp(alpha * (vals[i] - maxval));
+	}
+	//cout << "ExpVals: " << explval << " " << exphval << endl;
+	for (int i = 0; i < vals.size(); i++) {
+		gsl_vector_memcpy(tmp, grads[i]);
+		gsl_vector_scale(tmp, exp(-alpha*(vals[i] - minval)));
+		if ( i == 0)
+			gsl_vector_memcpy(l, tmp);
+		else
+			gsl_vector_add(l, tmp);
+		//cout << "L ";
+		//for (int k = 0; k < l->size; k++) {
+		//	cout << gsl_vector_get(l,k) << ",";
+		//}
+		//cout << endl;
+		gsl_vector_memcpy(tmp, grads[i]);
+		gsl_vector_scale(tmp, exp(alpha*(vals[i] - maxval)));
+		if ( i == 0)
+			gsl_vector_memcpy(h, tmp);
+		else
+			gsl_vector_add(h, tmp);
+	}
+	gsl_vector_scale(l, 1.0/explval);
+	gsl_vector_scale(h, 1.0/exphval);
+}
+
 void RangeDiff::visit( TIMES_node& node ) {
   //cout << "Visiting TIMES node" << endl;
   NodeEvaluator::visit(node);
@@ -111,16 +167,13 @@ void RangeDiff::visit( TIMES_node& node ) {
   gsl_vector* flgrads = lgrads[node.father->id];
   gsl_vector* mhgrads = hgrads[node.mother->id];
   gsl_vector* fhgrads = hgrads[node.father->id];
-  
-  gsl_vector* l = lgrads[node.id];
-  gsl_vector* h = hgrads[node.id];
-  
+	
   vector<float> vals;
   vector<gsl_vector*> grads;
-  
+	
   bool isFloat = node.getOtype() == OutType::FLOAT;
+	bool isSquare = node.mother == node.father;
   if (isFloat) {
-    // TODO: deal with infinity
     pair<int,int> mrange = r(node.mother);
     float mlval = floats.getFloat(mrange.first);
     float mhval = floats.getFloat(mrange.second);
@@ -131,6 +184,7 @@ void RangeDiff::visit( TIMES_node& node ) {
     float v2 = mlval * fhval;
     float v3 = mhval * flval;
     float v4 = mhval * fhval;
+		
     if (!isfinite(v1)) {
       v1 = v1 > 0 ? numeric_limits<float>::max() : -numeric_limits<float>::max();
     }
@@ -145,11 +199,18 @@ void RangeDiff::visit( TIMES_node& node ) {
     }
     //cout << v1 << " " << v2 << " " << v3 << " " << v4 << endl;
 
-    vals.push_back(v1);
-    vals.push_back(v2);
-    vals.push_back(v3);
-    vals.push_back(v4);
-    
+		vals.push_back(v1);
+		vals.push_back(v4);
+
+		if (isSquare) {
+			if (mlval < 0 && mhval > 0) {
+				vals.push_back(0);
+			}
+		} else {
+			vals.push_back(v2);
+			vals.push_back(v3);
+		}
+		
     gsl_vector* g1 = gsl_vector_alloc(nctrls);
     gsl_vector_memcpy(g1, mlgrads);
     gsl_vector_scale(g1, flval);
@@ -157,27 +218,39 @@ void RangeDiff::visit( TIMES_node& node ) {
     gsl_vector_scale(tmp, mlval);
     gsl_vector_add(g1, tmp);
     grads.push_back(g1);
-    gsl_vector* g2 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g2, mlgrads);
-    gsl_vector_scale(g2, fhval);
-    gsl_vector_memcpy(tmp, fhgrads);
-    gsl_vector_scale(tmp, mlval);
-    gsl_vector_add(g2, tmp);
-    grads.push_back(g2);
-    gsl_vector* g3 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g3, mhgrads);
-    gsl_vector_scale(g3, flval);
-    gsl_vector_memcpy(tmp, flgrads);
-    gsl_vector_scale(tmp, mhval);
-    gsl_vector_add(g3, tmp);
-    grads.push_back(g3);
-    gsl_vector* g4 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g4, mhgrads);
-    gsl_vector_scale(g4, fhval);
-    gsl_vector_memcpy(tmp, fhgrads);
-    gsl_vector_scale(tmp, mhval);
-    gsl_vector_add(g4, tmp);
-    grads.push_back(g4);
+		
+		gsl_vector* g4 = gsl_vector_alloc(nctrls);
+		gsl_vector_memcpy(g4, mhgrads);
+		gsl_vector_scale(g4, fhval);
+		gsl_vector_memcpy(tmp, fhgrads);
+		gsl_vector_scale(tmp, mhval);
+		gsl_vector_add(g4, tmp);
+		grads.push_back(g4);
+		if (isSquare) {
+			if (mlval < 0 && mhval > 0) {
+				gsl_vector* g2 = gsl_vector_alloc(nctrls);
+				for (int i = 0; i < nctrls; i++) { // TODO: is this correct?
+					gsl_vector_set(g2, i, 0);
+				}
+				grads.push_back(g2);
+			}
+		} else {
+			gsl_vector* g2 = gsl_vector_alloc(nctrls);
+			gsl_vector_memcpy(g2, mlgrads);
+			gsl_vector_scale(g2, fhval);
+			gsl_vector_memcpy(tmp, fhgrads);
+			gsl_vector_scale(tmp, mlval);
+			gsl_vector_add(g2, tmp);
+			grads.push_back(g2);
+			
+			gsl_vector* g3 = gsl_vector_alloc(nctrls);
+			gsl_vector_memcpy(g3, mhgrads);
+			gsl_vector_scale(g3, flval);
+			gsl_vector_memcpy(tmp, flgrads);
+			gsl_vector_scale(tmp, mhval);
+			gsl_vector_add(g3, tmp);
+			grads.push_back(g3);
+		}
   } else {
     pair<int,int> mrange = r(node.mother);
     pair<int,int> frange = r(node.father);
@@ -190,9 +263,15 @@ void RangeDiff::visit( TIMES_node& node ) {
     int v3 = mhval * flval;
     int v4 = mhval * fhval;
     vals.push_back(v1);
-    vals.push_back(v2);
-    vals.push_back(v3);
-    vals.push_back(v4);
+		vals.push_back(v4);
+		if (isSquare) {
+			if (mlval < 0 && mhval > 0) {
+				vals.push_back(0);
+			}
+		} else {
+			vals.push_back(v2);
+			vals.push_back(v3);
+		}
     gsl_vector* g1 = gsl_vector_alloc(nctrls);
     gsl_vector_memcpy(g1, mlgrads);
     gsl_vector_scale(g1, flval);
@@ -200,69 +279,42 @@ void RangeDiff::visit( TIMES_node& node ) {
     gsl_vector_scale(tmp, mlval);
     gsl_vector_add(g1, tmp);
     grads.push_back(g1);
-    gsl_vector* g2 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g2, mlgrads);
-    gsl_vector_scale(g2, fhval);
-    gsl_vector_memcpy(tmp, fhgrads);
-    gsl_vector_scale(tmp, mlval);
-    gsl_vector_add(g2, tmp);
-    grads.push_back(g2);
-    gsl_vector* g3 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g3, mhgrads);
-    gsl_vector_scale(g3, flval);
-    gsl_vector_memcpy(tmp, flgrads);
-    gsl_vector_scale(tmp, mhval);
-    gsl_vector_add(g3, tmp);
-    grads.push_back(g3);
-    gsl_vector* g4 = gsl_vector_alloc(nctrls);
-    gsl_vector_memcpy(g4, mhgrads);
-    gsl_vector_scale(g4, fhval);
-    gsl_vector_memcpy(tmp, fhgrads);
-    gsl_vector_scale(tmp, mhval);
-    gsl_vector_add(g4, tmp);
-    grads.push_back(g4);
+		
+		gsl_vector* g4 = gsl_vector_alloc(nctrls);
+		gsl_vector_memcpy(g4, mhgrads);
+		gsl_vector_scale(g4, fhval);
+		gsl_vector_memcpy(tmp, fhgrads);
+		gsl_vector_scale(tmp, mhval);
+		gsl_vector_add(g4, tmp);
+		grads.push_back(g4);
+		
+		if (isSquare) {
+			if (mlval < 0 && mhval > 0) {
+				gsl_vector* g2 = gsl_vector_alloc(nctrls);
+				for (int i = 0; i < nctrls; i++) { // TODO: is this correct?
+					gsl_vector_set(g2, i, 0);
+				}
+				grads.push_back(g2);
+			}
+		} else {
+			gsl_vector* g2 = gsl_vector_alloc(nctrls);
+			gsl_vector_memcpy(g2, mlgrads);
+			gsl_vector_scale(g2, fhval);
+			gsl_vector_memcpy(tmp, fhgrads);
+			gsl_vector_scale(tmp, mlval);
+			gsl_vector_add(g2, tmp);
+			grads.push_back(g2);
+			gsl_vector* g3 = gsl_vector_alloc(nctrls);
+			gsl_vector_memcpy(g3, mhgrads);
+			gsl_vector_scale(g3, flval);
+			gsl_vector_memcpy(tmp, flgrads);
+			gsl_vector_scale(tmp, mhval);
+			gsl_vector_add(g3, tmp);
+			grads.push_back(g3);
+		}
   }
-  
-  float minval = numeric_limits<float>::max();
-  float maxval = -numeric_limits<float>::max();
-  for (int i = 0; i < vals.size(); i++) {
-    if (vals[i] > maxval) {
-      maxval = vals[i];
-    }
-    if (vals[i] < minval) {
-      minval = vals[i];
-    }
-  }
-  if (isFloat) {
-    setrange(node, floats.getIdx(minval), floats.getIdx(maxval));
-  } else {
-    setrange(node, int(minval), int(maxval));
-  }
-
-  float alpha = 1.0;
-  float explval = 0.0;
-  float exphval = 0.0;
-  for (int i = 0; i < vals.size(); i++) {
-    explval += exp(-alpha * (vals[i] - maxval));
-    exphval += exp(alpha * (vals[i] - maxval));
-  }
-  
-  for (int i = 0; i < vals.size(); i++) {
-    gsl_vector_memcpy(tmp, grads[i]);
-    gsl_vector_scale(tmp, exp(-alpha*(vals[i] - maxval)));
-    if ( i == 0)
-      gsl_vector_memcpy(l, tmp);
-    else
-      gsl_vector_add(l, tmp);
-    gsl_vector_memcpy(tmp, grads[i]);
-    gsl_vector_scale(tmp, exp(alpha*(vals[i] - maxval)));
-    if ( i == 0)
-      gsl_vector_memcpy(h, tmp);
-    else
-      gsl_vector_add(h, tmp);
-  }
-  gsl_vector_scale(l, 1.0/explval);
-  gsl_vector_scale(h, 1.0/exphval);
+	
+	findMinMax(node, vals, grads);
 }
 
 void RangeDiff::visit( ARRACC_node& node ) {
@@ -401,7 +453,22 @@ void RangeDiff::visit( DIV_node& node ) {
           gsl_vector_set(l, i, 0.0);
           gsl_vector_set(h, i, 0.0);
         }
-      } else if (mlval >= 0 && flval == 0) {
+			} else if (flval == 0 && fhval == 0) {
+				if (mlval >= 0) {
+					setrange(node, floats.getIdx(numeric_limits<float>::max()), floats.getIdx(numeric_limits<float>::max()));
+					for (int i = 0; i < nctrls; i++) { // TODO: can we do any thing better here?
+						gsl_vector_set(l, i, 0.0);
+						gsl_vector_set(h, i, 0.0);
+					}
+				} else if (mhval <= 0) {
+					setrange(node, floats.getIdx(-numeric_limits<float>::max()), -floats.getIdx(numeric_limits<float>::max()));
+					for (int i = 0; i < nctrls; i++) { // TODO: can we do any thing better here?
+						gsl_vector_set(l, i, 0.0);
+						gsl_vector_set(h, i, 0.0);
+					}
+				}
+				// the case mlval < 0 and mhval > 0 is already handled.
+			} else if (mlval >= 0 && flval == 0) {
         float minv = mlval/fhval;
         setrange(node, floats.getIdx(minv), floats.getIdx(numeric_limits<float>::max()));
         for (int i = 0; i < nctrls; i++) { // TODO: can we do any thing better here?
@@ -547,47 +614,8 @@ void RangeDiff::visit( DIV_node& node ) {
     grads.push_back(g4);
 
   }
+	findMinMax(node, vals, grads);
   
-  float minval = numeric_limits<float>::max();
-  float maxval = -numeric_limits<float>::max();
-  for (int i = 0; i < vals.size(); i++) {
-    if (vals[i] > maxval) {
-      maxval = vals[i];
-    }
-    if (vals[i] < minval) {
-      minval = vals[i];
-    }
-  }
-  if (isFloat) {
-    setrange(node, floats.getIdx(minval), floats.getIdx(maxval));
-  } else {
-    setrange(node, int(minval), int(maxval));
-  }
-  
-  float alpha = 1.0;
-  float explval = 0.0;
-  float exphval = 0.0;
-  for (int i = 0; i < vals.size(); i++) {
-    explval += exp(-alpha * (vals[i] - maxval));
-    exphval += exp(alpha * (vals[i] - maxval));
-  }
-  
-  for (int i = 0; i < vals.size(); i++) {
-    gsl_vector_memcpy(tmp, grads[i]);
-    gsl_vector_scale(tmp, exp(-alpha*(vals[i] - maxval)));
-    if ( i == 0)
-      gsl_vector_memcpy(l, tmp);
-    else
-      gsl_vector_add(l, tmp);
-    gsl_vector_memcpy(tmp, grads[i]);
-    gsl_vector_scale(tmp, exp(alpha*(vals[i] - maxval)));
-    if ( i == 0)
-      gsl_vector_memcpy(h, tmp);
-    else
-      gsl_vector_add(h, tmp);
-  }
-  gsl_vector_scale(l, 1.0/explval);
-  gsl_vector_scale(h, 1.0/exphval);
 }
 void RangeDiff::visit( MOD_node& node ) {
   cout << "Visiting MOD node" << endl;
@@ -673,7 +701,12 @@ void RangeDiff::visit( UFUN_node& node ){
         dh = cos(xh);
         vl = sin(xl);
         vh = sin(xh);
-      } else { // TODO: this is so course grained
+			} else if (xl >= -pi/2 && xl <= pi/2 && xh >= -pi/2 && xh <= pi/2) {
+				vl = sin(xl);
+				vh = sin(xh);
+				dl = cos(xl);
+				dh = cos(xh);
+			}else { // TODO: this is so course grained
         dl = 0.0;
         dh = 0.0;
         vl = -1.0;
@@ -686,7 +719,17 @@ void RangeDiff::visit( UFUN_node& node ){
         dh = -sin(xh);
         vl = cos(xl);
         vh = cos(xh);
-      } else {
+			} else if (xl >= 0 && xl <= pi && xh >= 0 && xh <= pi) {
+				vl = cos(xh);
+				vh = cos(xl);
+				dl = -sin(xh);
+				dh = -sin(xl);
+			} else if (xl <= 0 && xl >= -pi && xh <= 0 && xh >= -pi) {
+				vl = cos(xl);
+				vh = cos(xh);
+				dl = -sin(xl);
+				dh = -sin(xh);
+			} else {
         dl = 0.0;
         dh = 0.0;
         vl = -1.0;
@@ -756,13 +799,26 @@ bool RangeDiff::run(VarStore& inputs_p){
       //if (floats.getFloat(mrange.first) > floats.getFloat(mrange.second)) {
       //  cout << "wrong" << endl;
       //}
-      cout << floats.getFloat(mrange.first) << " " << floats.getFloat(mrange.second) << endl;
-    } else {
+      cout << "Range: " << floats.getFloat(mrange.first) << " " << floats.getFloat(mrange.second) << endl;
+		} else {
       //if (mrange.first > mrange.second) {
       //  cout << "wrong" << endl;
       //}
-      cout << mrange.first << " " << mrange.second << endl;
+      cout << "Range: " << mrange.first << " " << mrange.second << endl;
     }
+			gsl_vector* lgrads = getLGrad((*node_it));
+			cout << "LGrads: ";
+			for (int i = 0; i < lgrads->size; i++) {
+				cout << gsl_vector_get(lgrads, i) << ", ";
+			}
+			cout << endl;
+			gsl_vector* hgrads = getHGrad((*node_it));
+			cout << "HGrads: " ;
+			for (int i = 0; i < hgrads->size; i++) {
+				cout << gsl_vector_get(hgrads, i) << ", ";
+			}
+			cout << endl;
+
     }*/
     if(failedAssert){
       return true;

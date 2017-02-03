@@ -211,9 +211,12 @@ class NumericalSolver : public Synthesizer {
     }
     //cout << "error: " << error << endl;
     //cout << "grad: ";
-    //for (int i = 0; i < d->size; i++) {
-    //  cout <<  gsl_vector_get(d, i) << " ";
-    //}
+    for (int i = 0; i < d->size; i++) {
+			float f = gsl_vector_get(d,i);
+			if (!isfinite(f)) {
+				gsl_vector_set(d, i, numeric_limits<float>::max()); //TODO: check this
+			}
+    }
     //cout << endl;
     return error;
   }
