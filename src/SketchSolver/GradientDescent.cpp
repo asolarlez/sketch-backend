@@ -47,5 +47,5 @@ double GradientDescent::optimize() {
 		cout << "Parameter #" << i << ": " << gsl_vector_get (minidf->x, i) << "; " << endl;
 	}
 	cout << "Optimal value found: " << minidf->f << endl;
-	return fval;
+	return minidf->f;
 }

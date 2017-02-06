@@ -62,11 +62,24 @@ public:
   void print() {
     for (int i = 0; i < bdag.size(); i++) {
       cout << bdag[i]->lprint() << endl;
-      if (bdag[i]->getOtype() == OutType::FLOAT) {
-        cout << floats.getFloat(ranges[i].first) << " " << floats.getFloat(ranges[i].second) << endl;
-      } else {
-        cout << ranges[i].first << " " << ranges[i].second << endl;
-      }
-    }
+			pair<int,int> mrange = r(bdag[i]);
+			if ((bdag[i])->getOtype() == OutType::FLOAT) {
+				cout << "Range: " << floats.getFloat(mrange.first) << " " << floats.getFloat(mrange.second) << endl;
+			} else {
+				cout << "Range: " << mrange.first << " " << mrange.second << endl;
+			}
+			gsl_vector* lgrads = getLGrad((bdag[i]));
+			cout << "LGrads: ";
+			for (int i = 0; i < lgrads->size; i++) {
+				cout << gsl_vector_get(lgrads, i) << ", ";
+			}
+			cout << endl;
+			gsl_vector* hgrads = getHGrad((bdag[i]));
+			cout << "HGrads: " ;
+			for (int i = 0; i < hgrads->size; i++) {
+				cout << gsl_vector_get(hgrads, i) << ", ";
+			}
+			cout << endl;
+		}
   }
 };

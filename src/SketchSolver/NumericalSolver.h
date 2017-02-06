@@ -42,7 +42,9 @@ class NumericalSolver : public Synthesizer {
   //map<string, int> inputs; // To check for repeated inputs
 	gsl_vector* t;  // a temporary vector for storing intermediate results
 	float threshold = 1e-10;
-  
+	int dcounter = 0;
+	AutoDiff* eval;
+	RangeDiff* evalR;
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
     ninputs = dag->getNodesByType(bool_node::SRC).size();
     noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother))->multi_mother.size();
@@ -54,15 +56,49 @@ class NumericalSolver : public Synthesizer {
       ctrlMap[ctrls[i]->get_name()] = i;
       ctrlVals.push_back(0.0);
     }
+		eval = new AutoDiff(empty, *dag, fm, ctrlMap);
+		evalR = new RangeDiff(empty, *dag, fm, ctrlMap);
   }
+	
+	
+	void genData(const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
+		/*vector<vector<int>> allInputs;
+		vector<vector<int>> allOutputs;
+		// Fill in test inputs and outputs
+		vector<int> inputs;
+		for (int i = 0; i < ninputs; i++) {
+			inputs.push_back(EMPTY);
+		}
+		allInputs.push_back(inputs);
+		vector<int> outputs;
+		for (int i = 0; i < noutputs; i++) {
+			outputs.push_back(EMPTY);
+		}
+		outputs[noutputs-2] = 0;
+		outputs[noutputs-1] = 0;
+		allOutputs.push_back(outputs);*/
+		
+		gsl_vector* d = gsl_vector_alloc(ncontrols);
+		gsl_vector* state = gsl_vector_alloc(ncontrols);
+		cout << dcounter << endl;
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/test/t"+ to_string(dcounter++) +".txt");
+		double i = 0.0;
+		while (i < 15) {
+			gsl_vector_set(state, 0, i);
+			double err = evalWithGrad(state, d, allInputs, allOutputs);
+			file << err << ";";
+			i += 0.1;
+		}
+		file << endl;
+		file.close();
+	}
 	
   double evalWithGrad(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
     for (int i = 0; i < ncontrols; i++ ) {
       gsl_vector_set(d, i, 0);
     }
     double error = 0;
-    AutoDiff eval(empty, *dag, fm, ctrlMap);
-    RangeDiff evalR(empty, *dag, fm, ctrlMap);
+		
     for (int i = 0; i < allInputs.size(); i++) {
       VarStore inputStore;
       // Collect all inputs (assumes inputs are not floats)
@@ -79,7 +115,7 @@ class NumericalSolver : public Synthesizer {
       }
 			
       if (false) { // Run auto differentiation on value - this requires all inputs and outputs to be non empty
-        eval.run(inputStore);
+        eval->run(inputStore);
 				
         /*for (int k = 0; k < dag->size(); k++) {
             bool_node* n = (*dag)[k];
@@ -100,16 +136,16 @@ class NumericalSolver : public Synthesizer {
 
         bool_node* output = dag->get_node("OUTPUT")->mother;
         vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
-        vector<int> outputs = eval.getTuple(eval.getValue(output));
+        vector<int> outputs = eval->getTuple(eval->getValue(output));
         for (int j = 0; j < outputs.size(); j++) {
           if (allOutputs[i][j] != EMPTY && outputs[j] != allOutputs[i][j]) { // Assumes all outputs are of the form float1 op float2
-            float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother));
-            float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
+            float m1 = fm.getFloat(eval->getValue(outputmothers[j]->mother));
+            float m2 = fm.getFloat(eval->getValue(outputmothers[j]->father));
             float diff = m1 - m2;
             if (diff == 0.0) diff = 0.1; // Min error
             error += pow(diff, 2);
-            gsl_vector* d1 = eval.getGrad(outputmothers[j]->mother);
-            gsl_vector* d2 = eval.getGrad(outputmothers[j]->father);
+            gsl_vector* d1 = eval->getGrad(outputmothers[j]->mother);
+            gsl_vector* d2 = eval->getGrad(outputmothers[j]->father);
             gsl_vector_memcpy(t, d1);
             gsl_vector_sub(t, d2);
             gsl_vector_scale(t, 2*diff);
@@ -119,24 +155,24 @@ class NumericalSolver : public Synthesizer {
       }
 			
       if (true) { // Run automatic differentiation on ranges
-      evalR.run(inputStore);
+      evalR->run(inputStore);
       bool_node* output = dag->get_node("OUTPUT")->mother;
       vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
       //evalR.print();
       for (int j = 0; j < outputmothers.size(); j++) {
         if (allOutputs[i][j] != EMPTY) {
-          pair<int, int> mrange = evalR.r(outputmothers[j]->mother);
-          pair<int, int> frange = evalR.r(outputmothers[j]->father);
+          pair<int, int> mrange = evalR->r(outputmothers[j]->mother);
+          pair<int, int> frange = evalR->r(outputmothers[j]->father);
           
           float m1 = fm.getFloat(mrange.first);
           float m2 = fm.getFloat(mrange.second);
           float f1 = fm.getFloat(frange.first);
           float f2 = fm.getFloat(frange.second);
 					
-          gsl_vector* md1 = evalR.getLGrad(outputmothers[j]->mother);
-          gsl_vector* md2 = evalR.getHGrad(outputmothers[j]->mother);
-          gsl_vector* fd1 = evalR.getLGrad(outputmothers[j]->father);
-          gsl_vector* fd2 = evalR.getHGrad(outputmothers[j]->father);
+          gsl_vector* md1 = evalR->getLGrad(outputmothers[j]->mother);
+          gsl_vector* md2 = evalR->getHGrad(outputmothers[j]->mother);
+          gsl_vector* fd1 = evalR->getLGrad(outputmothers[j]->father);
+          gsl_vector* fd2 = evalR->getHGrad(outputmothers[j]->father);
           
           
           float v1 = 0.0;
@@ -296,6 +332,8 @@ class NumericalSolver : public Synthesizer {
     cout << endl;
     string instr = str.str();
     cout << instr << endl;
+		
+		//genData(allInputs, allOutputs);
     //if (inputs.find(instr) != inputs.end()) {
     //  cout << "Repeated Input" << endl;
     //  inputs[instr]++;
@@ -306,6 +344,7 @@ class NumericalSolver : public Synthesizer {
     double minError = gd->optimize();
     gsl_vector* curState = gd->getResults();
 		
+		//evalR->print();
     if (minError >= -threshold && minError <= threshold) {
       // Update the controls
       vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
