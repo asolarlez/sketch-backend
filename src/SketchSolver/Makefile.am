@@ -7,9 +7,9 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -I/usr/local/include -lgsl -lgslcblas
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -I/usr/local/include -lgsl -lgslcblas
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
@@ -22,9 +22,13 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_statistics.h				\
 	memory_sampler.h				\
 	timerclass.h					\
-  NumericalSolver.h     \
-	GradientDescent.h			\
-	SimulatedAnnealing.h		\
+  NumericalSynthesis/NumericalSolver.h     \
+	NumericalSynthesis/GradientDescent.h			\
+	NumericalSynthesis/SimulatedAnnealing.h		\
+	NumericalSynthesis/AutoDiff.h \
+	NumericalSynthesis/RangeDiff.h   \
+	NumericalSynthesis/Interval.h		\
+	NumericalSynthesis/IntervalGrad.h		\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -48,8 +52,6 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/InterpreterEnvironment.h \
 	InputParser/CegisMainHelpers.h \
 	InputParser/NodeEvaluator.h \
-  InputParser/AutoDiff.h \
-  InputParser/RangeDiff.h   \
 	InputParser/NodeSlicer.h \
 	InputParser/NodeStore.h				\
 	InputParser/NodeVisitor.h			\
@@ -66,10 +68,14 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 
 libcegis_la_SOURCES =				\
 	$(SOLVER_SRCS)				\
-	GradientDescent.cpp	\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
+	NumericalSynthesis/Interval.cpp \
+	NumericalSynthesis/IntervalGrad.cpp \
+	NumericalSynthesis/AutoDiff.cpp \
+	NumericalSynthesis/RangeDiff.cpp \
+	NumericalSynthesis/GradientDescent.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\
@@ -91,8 +97,6 @@ libcegis_la_SOURCES =				\
 	InputParser/InputReader.cpp		\
 	InputParser/InterpreterEnvironment.cpp \
 	InputParser/NodeEvaluator.cpp \
-  InputParser/AutoDiff.cpp \
-  InputParser/RangeDiff.cpp \
 	InputParser/NodeStore.cpp		\
 	InputParser/NodeSlicer.cpp \
 	InputParser/NodesToSolver.cpp		\
@@ -101,7 +105,7 @@ libcegis_la_SOURCES =				\
 	InputParser/SolveFromInput.cpp \
 	InputParser/NodeHardcoder.cpp  \
 	InputParser/HoleHardcoder.cpp \
-    InputParser/Tvalue.cpp
+	InputParser/Tvalue.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp			

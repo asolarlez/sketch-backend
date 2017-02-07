@@ -158,21 +158,21 @@ class NumericalSolver : public Synthesizer {
       evalR->run(inputStore);
       bool_node* output = dag->get_node("OUTPUT")->mother;
       vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
-      //evalR.print();
+      //evalR->print();
       for (int j = 0; j < outputmothers.size(); j++) {
         if (allOutputs[i][j] != EMPTY) {
-          pair<int, int> mrange = evalR->r(outputmothers[j]->mother);
-          pair<int, int> frange = evalR->r(outputmothers[j]->father);
+          IntervalGrad* mrange = evalR->r(outputmothers[j]->mother);
+          IntervalGrad* frange = evalR->r(outputmothers[j]->father);
           
-          float m1 = fm.getFloat(mrange.first);
-          float m2 = fm.getFloat(mrange.second);
-          float f1 = fm.getFloat(frange.first);
-          float f2 = fm.getFloat(frange.second);
+          float m1 = mrange->getLow();
+          float m2 = mrange->getHigh();
+          float f1 = frange->getLow();
+          float f2 = frange->getHigh();
 					
-          gsl_vector* md1 = evalR->getLGrad(outputmothers[j]->mother);
-          gsl_vector* md2 = evalR->getHGrad(outputmothers[j]->mother);
-          gsl_vector* fd1 = evalR->getLGrad(outputmothers[j]->father);
-          gsl_vector* fd2 = evalR->getHGrad(outputmothers[j]->father);
+          gsl_vector* md1 = mrange->getLGrad();
+          gsl_vector* md2 = mrange->getHGrad();
+          gsl_vector* fd1 = frange->getLGrad();
+          gsl_vector* fd2 = frange->getHGrad();
           
           
           float v1 = 0.0;
