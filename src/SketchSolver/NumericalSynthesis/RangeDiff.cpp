@@ -87,7 +87,11 @@ void RangeDiff::visit( TIMES_node& node ) {
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad* finterval = r(node.father);
-	IntervalGrad::ig_times(minterval, finterval, interval);
+	if (node.mother == node.father) { // square
+		IntervalGrad::ig_square(minterval, interval);
+	} else {
+		IntervalGrad::ig_times(minterval, finterval, interval);
+	}
 }
 
 void RangeDiff::visit( ARRACC_node& node ) {

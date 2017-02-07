@@ -183,10 +183,37 @@ void IntervalGrad::ig_union(const vector<IntervalGrad*>& m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_equal(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
-	
+	float m1 = m->getLow();
+	float m2 = m->getHigh();
+	float f1 = f->getLow();
+	float f2 = f->getHigh();
+
+	if (m2 < f1) {
+		o->update(0, 0); // TODO: What should be the gradient in this case?
+	} else if (m1 > f2) {
+		o->update(0, 0);
+	} else if (m1 == m2 && m2 == f1 && f1 == f2) {
+		o->update(1, 1);
+	} else {
+		// can be anything
+		o->update(0, 1);
+	}
 }
+
 void IntervalGrad::ig_lt(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
-	
+	float m1 = m->getLow();
+	float m2 = m->getHigh();
+	float f1 = f->getLow();
+	float f2 = f->getHigh();
+
+	if (m1 >= f2) { // TODO: What should be the gradient in this case?
+		o->update(0, 0);
+	} else if (m2 < f1) {
+		o->update(1, 1);
+	} else {
+		// can be anything
+		o->update(0, 1);
+	}
 }
 
 void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
@@ -217,7 +244,7 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 	
 	if (mlval < 0 && mhval > 0) {
 		float minv = 0.0;
-		default_grad(o->getHGrad()); // TODO: what should be the gradient in this case?
+		default_grad(o->getLGrad()); // TODO: what should be the gradient in this case?
 		float maxv = findMax(vals, grads, o->getHGrad());
 		o->update(minv, maxv);
 	} else {
@@ -391,7 +418,7 @@ gsl_vector* IntervalGrad::compute_div_grad(float mval, float fval, gsl_vector* m
 }
 
 void IntervalGrad::compute_square_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
-	float dm = 2.0;
+	float dm = 2.0 * mval;
 	gsl_vector_memcpy(out, mgrads);
 	gsl_vector_scale(out, dm);
 }

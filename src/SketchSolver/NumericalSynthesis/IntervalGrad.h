@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Interval.h"
 #include <gsl/gsl_vector.h>
 #include <limits>
 #include <math.h>
@@ -9,7 +8,8 @@
 
 using namespace std;
 class IntervalGrad {
-	Interval* interval;
+	float low;
+	float high;
 	gsl_vector* lgrad;
 	gsl_vector* hgrad;
 	
@@ -19,20 +19,18 @@ class IntervalGrad {
 	
 public:
 	static gsl_vector* tmp;
-	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): lgrad(_lgrad), hgrad(_hgrad) {
-		interval = new Interval(_low, _high);
-	}
+	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {	}
 	~IntervalGrad(void) {
-		delete interval;
 		delete lgrad;
 		delete hgrad;
 	}
-	float getLow() const { return interval->getLow(); }
-	float getHigh() const { return interval->getHigh(); }
+	float getLow() const { return low; }
+	float getHigh() const { return high; }
 	gsl_vector* getLGrad() const { return lgrad; }
 	gsl_vector* getHGrad() const { return hgrad; }
 	void update(float _low, float _high) {
-		interval->update(_low, _high);
+		low = _low;
+		high = _high;
 	}
 	static void ig_plus(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o); // o = m + f
 	static void ig_times(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o); // o = m * f
@@ -52,7 +50,7 @@ public:
 	
 	string print() {
 		stringstream str;
-		str << interval->print() << endl;
+		str << "Range: " << low << " " << high << endl;
 		str << "LGrads: ";
 		for (int i = 0; i < lgrad->size; i++) {
 		 str << gsl_vector_get(lgrad, i) << ", ";
