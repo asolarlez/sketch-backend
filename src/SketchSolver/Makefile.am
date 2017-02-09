@@ -29,6 +29,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/RangeDiff.h   \
 	NumericalSynthesis/Interval.h		\
 	NumericalSynthesis/IntervalGrad.h		\
+	NumericalSynthesis/IntervalPropagator.h	\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\

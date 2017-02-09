@@ -45,6 +45,10 @@ void RangeDiff::visit( DST_node& node ) {
   //cout << "Visiting DST node" << endl;
 }
 
+void RangeDiff::visit( ASSERT_node& node ) {
+	//cout << "Visiting ASSERT node" << endl;
+}
+
 void RangeDiff::visit( CTRL_node& node ) {
   //cout << "Visiting CTRL node" << endl;
 	float val;
@@ -96,7 +100,7 @@ void RangeDiff::visit( TIMES_node& node ) {
 
 void RangeDiff::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-  Assert(node.mother->type == bool_node::SRC, "Something is wrong");
+  Assert(node.mother->type == bool_node::SRC, "Something is wrong arracc");
   SRC_node* inode = dynamic_cast<SRC_node*>(node.mother);
   if (!(*inputs).contains(inode->name)) {
     // take union of the two intervals
@@ -108,7 +112,7 @@ void RangeDiff::visit( ARRACC_node& node ) {
 		IntervalGrad::ig_union(mIntervals, interval);
 	} else {
 		IntervalGrad* minterval = r(node.mother);
-    Assert(minterval->getLow()  == minterval->getHigh(), "Something is wrong");
+    Assert(minterval->getLow()  == minterval->getHigh(), "Something is wrong arracc2");
     int idx = minterval->getLow();
     if (idx < node.multi_mother.size() && idx >= 0) {
 			IntervalGrad* interval = r(node);

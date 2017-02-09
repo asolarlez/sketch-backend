@@ -30,6 +30,7 @@ public:
   virtual void visit( ARRASS_node& node );
   virtual void visit( UFUN_node& node );
   virtual void visit( TUPLE_R_node& node );
+	virtual void visit( ASSERT_node& node );
   
   bool run(VarStore& inputs_p);
 	

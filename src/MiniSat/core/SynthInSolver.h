@@ -123,7 +123,7 @@ namespace MSsolverNS {
 		/*
 		Return true if synthesis succeeds. If false, the conflict tells you what went wrong.
 		*/
-		virtual bool synthesis()=0;
+		virtual bool synthesis(int instance, int inputid, int val, int level)=0;
 
 		/*
 		This is here just in case you need to do something when a new instance gets created.
@@ -136,7 +136,7 @@ namespace MSsolverNS {
 		*/
 		virtual void finalize() = 0;
 
-
+		virtual void backtrack(int level) = 0;
 		/*
 		params are the inputs to the generator, and the function should use the DagOptim to add 
 		the necessary nodes to the dag.
@@ -195,6 +195,7 @@ namespace MSsolverNS {
 		void backtrack(int level) {
 			if (maxlevel <= level) { return;  }
 			inputOutputs.backtrack(level);
+			s->backtrack(level);
 		}
 
 		/* Returns the stack level of the input.
@@ -219,7 +220,7 @@ namespace MSsolverNS {
 			}
 			maxlevel = dlevel;
 			inputOutputs.pushInput(instance, inputid, val, dlevel);
-			if (!s->synthesis()) {
+			if (!s->synthesis(instance, inputid, val, dlevel)) {
 				vec<Lit> conf;				
 				for (int i = 0; i < s->conflict.size(); ++i) {
 					int id = s->conflict[i];

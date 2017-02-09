@@ -914,6 +914,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   set<bool_node*> funNodes;
   vector<int> deletedNodes;
 	vector<bool_node*> funSrcNodes;
+	vector<bool_node*> funAssertNodes;
 	int srcCounter = 0;
   for(int i=0; i<dag.size() ; ++i ) {
     bool_node* node = dag[i];
@@ -931,80 +932,77 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
       if (type == OutType::INT || type == OutType::BOOL  ) {
         bool hasFlChild = hasFloatChild(node);
         bool hasFlInputs = hasFloatInputs(dagclone[nid]);
-        if (hasFlChild) {
-          if (hasFlInputs) {
-          // create a ctrl node to capture the output
-          CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
-          ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
-          
-          int nbits = 0;
-          if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-            nbits = 1;
-          }
-          if (type == OutType::INT || type == OutType::INT_ARR) {
-            nbits = 5;
-          }
-          
-          ctrl->set_nbits(nbits);
-          
-          if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-            ctrl->setArr(PARAMS->angelic_arrsz);
-          }
-          newnodes.push_back(ctrl);
-          unode->multi_mother.push_back(ctrl);
-          } else {
-            unode->multi_mother.push_back(node);
-          }
-          
-        
-      
-          SRC_node* src =  new SRC_node("PARAM_" + std::to_string(srcCounter++));
-          int nbits = 0;
-          if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-            nbits = 1;
-          }
-          if (type == OutType::INT || type == OutType::INT_ARR) {
-            nbits = 2;
-          }
-          
-          if (nbits > 1) { nbits = PARAMS->NANGELICS; }
-          src->set_nbits(nbits);
-          if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-            int sz = 1 << PARAMS->NINPUTS;
-            src->setArr(sz);
-          }
-          
-          funSrcNodes.push_back(src);
-          dagclone[nid]->neighbor_replace(src);
-        }
-        if (hasFlInputs) {
-          funNodes.insert(dagclone[nid]);
-          // TODO: instead of adding it as an output - add a assert linking the corresponding src node
-          funOutput->multi_mother.push_back(dagclone[nid]);
-          TUPLE_R_node* tnode = new TUPLE_R_node();
-          tnode->idx = rettypes.size();
-          tnode->mother = unode;
-          tnode->addToParents();
-          newnodes.push_back(tnode);
-          dag.replace(nid, tnode);
-          rettypes.push_back(type);
-          if (hasFlChild) {
-            EQ_node* eq = new EQ_node();
-            eq->mother = tnode;
-            int sz = unode->multi_mother.size();
-            eq->father = unode->multi_mother[sz-1];
-            eq->addToParents();
-            newnodes.push_back(eq);
-            ASSERT_node* an = new ASSERT_node();
-            an->mother = eq;
-            an->addToParents();
-            newnodes.push_back(an);
-            dag.assertions.append(getDllnode(an));
-            
-          }
-        }
-        
-      }
+				
+				if (hasFlChild) {
+					// create a src node for the node
+					SRC_node* src =  new SRC_node("PARAM_" + std::to_string(srcCounter++));
+					int nbits = 0;
+					if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+						nbits = 1;
+					}
+					if (type == OutType::INT || type == OutType::INT_ARR) {
+						nbits = 2;
+					}
+					
+					if (nbits > 1) { nbits = PARAMS->NANGELICS; }
+					src->set_nbits(nbits);
+					if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+						int sz = 1 << PARAMS->NINPUTS;
+						src->setArr(sz);
+					}
+					cout << "Using " << src->lprint() << " for " << dagclone[nid]->lprint() << endl;
+					funSrcNodes.push_back(src);
+					dagclone[nid]->neighbor_replace(src);
+					
+					if (hasFlInputs) {
+						// create a ctrl node to capture the output and to use it as input to the ufun
+						CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
+						ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
+						
+						int nbits = 0;
+						if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+							nbits = 1;
+						}
+						if (type == OutType::INT || type == OutType::INT_ARR) {
+							nbits = 5;
+						}
+						
+						ctrl->set_nbits(nbits);
+						
+						if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+							ctrl->setArr(PARAMS->angelic_arrsz);
+						}
+						newnodes.push_back(ctrl);
+						// use it as input
+						unode->multi_mother.push_back(ctrl);
+						// use it as output
+						dag.replace(nid, ctrl);
+						// add an assert combining the src node with the actual node to the numerical part
+						funNodes.insert(dagclone[nid]);
+						EQ_node* eq = new EQ_node();
+						eq->mother = src;
+						eq->father = dagclone[nid];
+						eq->addToParents();
+						funNodes.insert(eq);
+						ASSERT_node* an = new ASSERT_node();
+						an->mother = eq;
+						an->addToParents();
+						funAssertNodes.push_back(an);
+					} else {
+						unode->multi_mother.push_back(node);
+					}
+				} else if (hasFlInputs) {
+					funNodes.insert(dagclone[nid]);
+					funOutput->multi_mother.push_back(dagclone[nid]);
+					TUPLE_R_node* tnode = new TUPLE_R_node();
+					tnode->idx = rettypes.size();
+					tnode->mother = unode;
+					tnode->addToParents();
+					newnodes.push_back(tnode);
+					dag.replace(nid, tnode);
+					rettypes.push_back(type);
+				}
+			}
       if (type == OutType::FLOAT) {
         funNodes.insert(dagclone[nid]);
         deletedNodes.push_back(nid);
@@ -1020,6 +1018,10 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   vector<bool_node*> v(funNodes.begin(), funNodes.end());
   funDag->addNewNodes(v);
 	funDag->addNewNodes(funSrcNodes);
+	funDag->addNewNodes(funAssertNodes);
+	for (int i = 0; i < funAssertNodes.size(); i++) {
+		funDag->assertions.append(getDllnode(funAssertNodes[i]));
+	}
   funOutput->addToParents();
   funDag->addNewNode(funOutput);
   funDag->create_outputs(-1, funOutput);

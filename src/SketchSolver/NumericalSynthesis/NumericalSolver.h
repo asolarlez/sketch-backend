@@ -20,6 +20,7 @@ using namespace std;
 #include "AutoDiff.h"
 #include "RangeDiff.h"
 #include "GradientDescent.h"
+#include "IntervalPropagator.h"
 
 class NumericalSolver;
 
@@ -45,6 +46,9 @@ class NumericalSolver : public Synthesizer {
 	int dcounter = 0;
 	AutoDiff* eval;
 	RangeDiff* evalR;
+	
+	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
+	
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
     ninputs = dag->getNodesByType(bool_node::SRC).size();
     noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother))->multi_mother.size();
@@ -93,6 +97,104 @@ class NumericalSolver : public Synthesizer {
 		file.close();
 	}
 	
+	void computeError(bool_node* node, gsl_vector* d, double& error) {
+		float m1 = fm.getFloat(eval->getValue(node->mother));
+		float m2 = fm.getFloat(eval->getValue(node->father));
+		float diff = m1 - m2;
+		if (diff == 0.0) diff = 0.1; // Min error
+		error += pow(diff, 2);
+		gsl_vector* d1 = eval->getGrad(node->mother);
+		gsl_vector* d2 = eval->getGrad(node->father);
+		gsl_vector_memcpy(t, d1);
+		gsl_vector_sub(t, d2);
+		gsl_vector_scale(t, 2*diff);
+		gsl_vector_add(d, t);
+	}
+	
+	void computeErrorRange(bool_node* node, float output, gsl_vector* d, double& error) {
+		IntervalGrad* mrange = evalR->r(node->mother);
+		IntervalGrad* frange = evalR->r(node->father);
+		
+		float m1 = mrange->getLow();
+		float m2 = mrange->getHigh();
+		float f1 = frange->getLow();
+		float f2 = frange->getHigh();
+		
+		gsl_vector* md1 = mrange->getLGrad();
+		gsl_vector* md2 = mrange->getHGrad();
+		gsl_vector* fd1 = frange->getLGrad();
+		gsl_vector* fd2 = frange->getHGrad();
+		
+		
+		float v1 = 0.0;
+		float v2 = 0.0;
+		gsl_vector* d1;
+		gsl_vector* d2;
+		bool unsat = false;
+		
+		if (node->type == bool_node::EQ) {
+			if (output == 1) {
+				if (m2 < f1) {
+					unsat = true;
+					v1 = m2;
+					v2 = f1;
+					d1 = md2;
+					d2 = fd1;
+				}
+				if (m1 > f2) {
+					unsat = true;
+					v1 = m1;
+					v2 = f2;
+					d1 = md1;
+					d2 = fd2;
+				}
+			} else {
+				if (m1 == m2 && m2 == f1 && f1 == f2) {
+					unsat = true;
+					v1 = m1;
+					v2 = f1;
+					d1 = md1;
+					d2 = fd1;
+				}
+			}
+		} else { // lt case
+			if (output == 1) {
+				if (m1 >= f2) {
+					unsat = true;
+					v1 = m1;
+					v2 = f2;
+					d1 = md1;
+					d2 = fd2;
+				}
+			} else {
+				if (m2 < f1) {
+					unsat = true;
+					v1 = m2;
+					v2 = f1;
+					d1 = md2;
+					d2 = fd1;
+				}
+			}
+		}
+		
+		if (unsat) {
+			float diff = v1 - v2;
+			if (diff == 0.0) { // TODO: check this
+				error += 1.0; // min error
+				for (int i = 0; i < ncontrols; i++ ) {
+					gsl_vector_set(t, i, 1.0);
+				}
+				gsl_vector_add(d, t);
+			}else {
+				error += pow(diff, 2);
+				gsl_vector_memcpy(t, d1);
+				gsl_vector_sub(t, d2);
+				gsl_vector_scale(t, 2*diff);
+				gsl_vector_add(d, t);
+			}
+		}
+	}
+	
   double evalWithGrad(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
     for (int i = 0; i < ncontrols; i++ ) {
       gsl_vector_set(d, i, 0);
@@ -139,20 +241,26 @@ class NumericalSolver : public Synthesizer {
         vector<int> outputs = eval->getTuple(eval->getValue(output));
         for (int j = 0; j < outputs.size(); j++) {
           if (allOutputs[i][j] != EMPTY && outputs[j] != allOutputs[i][j]) { // Assumes all outputs are of the form float1 op float2
-            float m1 = fm.getFloat(eval->getValue(outputmothers[j]->mother));
-            float m2 = fm.getFloat(eval->getValue(outputmothers[j]->father));
-            float diff = m1 - m2;
-            if (diff == 0.0) diff = 0.1; // Min error
-            error += pow(diff, 2);
-            gsl_vector* d1 = eval->getGrad(outputmothers[j]->mother);
-            gsl_vector* d2 = eval->getGrad(outputmothers[j]->father);
-            gsl_vector_memcpy(t, d1);
-            gsl_vector_sub(t, d2);
-            gsl_vector_scale(t, 2*diff);
-            gsl_vector_add(d, t);
+						computeError(outputmothers[j], d, error);
           }
         }
-      }
+				
+				DllistNode* cur = dag->assertions.head;
+				while(cur != NULL){
+					bool_node* an = dynamic_cast<bool_node*>(cur);
+					bool_node* sn = dynamic_cast<SRC_node*>(an->mother->mother);
+					if(an->type == bool_node::ASSERT)	{
+						string name = sn->get_name();
+						if (inputStore.contains(name)) {
+							int out = inputStore[name]; // this assumes that the src node is not a float type
+							if (eval->getValue(an->mother->father) == out) {
+								computeError(an->mother->father, d, error);
+							}
+						}
+					}
+					cur = cur->next;
+				}
+			}
 			
       if (true) { // Run automatic differentiation on ranges
       evalR->run(inputStore);
@@ -161,88 +269,22 @@ class NumericalSolver : public Synthesizer {
       //evalR->print();
       for (int j = 0; j < outputmothers.size(); j++) {
         if (allOutputs[i][j] != EMPTY) {
-          IntervalGrad* mrange = evalR->r(outputmothers[j]->mother);
-          IntervalGrad* frange = evalR->r(outputmothers[j]->father);
-          
-          float m1 = mrange->getLow();
-          float m2 = mrange->getHigh();
-          float f1 = frange->getLow();
-          float f2 = frange->getHigh();
-					
-          gsl_vector* md1 = mrange->getLGrad();
-          gsl_vector* md2 = mrange->getHGrad();
-          gsl_vector* fd1 = frange->getLGrad();
-          gsl_vector* fd2 = frange->getHGrad();
-          
-          
-          float v1 = 0.0;
-          float v2 = 0.0;
-          gsl_vector* d1;
-          gsl_vector* d2;
-          bool unsat = false;
-          
-          if (outputmothers[j]->type == bool_node::EQ) {
-            if (allOutputs[i][j] == 1) {
-              if (m2 < f1) {
-                unsat = true;
-                v1 = m2;
-                v2 = f1;
-                d1 = md2;
-                d2 = fd1;
-              }
-              if (m1 > f2) {
-                unsat = true;
-                v1 = m1;
-                v2 = f2;
-                d1 = md1;
-                d2 = fd2;
-              }
-            } else {
-              if (m1 == m2 && m2 == f1 && f1 == f2) {
-                unsat = true;
-                v1 = m1;
-                v2 = f1;
-                d1 = md1;
-                d2 = fd1;
-              }
-            }
-          } else { // lt case
-            if (allOutputs[i][j] == 1) {
-              if (m1 >= f2) {
-                unsat = true;
-                v1 = m1;
-                v2 = f2;
-                d1 = md1;
-                d2 = fd2;
-              }
-            } else {
-              if (m2 < f1) {
-                unsat = true;
-                v1 = m2;
-                v2 = f1;
-                d1 = md2;
-                d2 = fd1;
-              }
-            }
-          }
-          
-          if (unsat) {
-            float diff = v1 - v2;
-						if (diff == 0.0) { // TODO: check this
-							error += 1.0; // min error
-							for (int i = 0; i < ncontrols; i++ ) {
-								gsl_vector_set(d, i, 1.0);
-							}
-						}else {
-							error += pow(diff, 2);
-							gsl_vector_memcpy(t, d1);
-							gsl_vector_sub(t, d2);
-							gsl_vector_scale(t, 2*diff);
-							gsl_vector_add(d, t);
-						}
-          }
-        }
+					computeErrorRange(outputmothers[j], allOutputs[i][j], d, error);
+				}
       }
+			DllistNode* cur = dag->assertions.head;
+			while(cur != NULL){
+				bool_node* an = dynamic_cast<bool_node*>(cur);
+				bool_node* sn = dynamic_cast<SRC_node*>(an->mother->mother);
+				if(an->type == bool_node::ASSERT)	{
+					string name = sn->get_name();
+					if (inputStore.contains(name)) {
+						int out = inputStore[name]; // this assumes that the src node is not a float type
+						computeErrorRange(an->mother->father, out, d, error);
+					}
+				}
+				cur = cur->next;
+			}
       }
     }
     //cout << "error: " << error << endl;
@@ -267,7 +309,38 @@ class NumericalSolver : public Synthesizer {
     *f = p->ns->evalWithGrad(x, df, p->allInputs, p->allOutputs);
   }
 	
-  virtual bool synthesis() {
+	bool_node* getNodeForInput(int inputid) {
+		vector<bool_node*>& srcnodes = dag->getNodesByType(bool_node::SRC);
+		bool_node* output = dag->get_node("OUTPUT")->mother;
+		vector<bool_node*>& outputs = ((TUPLE_CREATE_node*)output)->multi_mother;
+		if (inputid < ninputs) {
+			return srcnodes[inputid];
+		} else {
+			int idx = inputid - ninputs;
+			return outputs[idx];
+		}
+	}
+	
+	int getInputForNode(bool_node* node) {
+		vector<bool_node*>& srcnodes = dag->getNodesByType(bool_node::SRC);
+		bool_node* output = dag->get_node("OUTPUT")->mother;
+		vector<bool_node*>& outputs = ((TUPLE_CREATE_node*)output)->multi_mother;
+		if (node->type == bool_node::SRC) {
+			auto it = find(srcnodes.begin(), srcnodes.end(), node);
+			Assert(it != srcnodes.end(), "Something is wrong src");
+			return it - srcnodes.begin();
+		} else if (node->type == bool_node::CONST){
+			return -1;
+		} else if (node->type == bool_node::ASSERT) {
+			return -1;
+		} else {
+			auto it = find(outputs.begin(), outputs.end(), node);
+			Assert(it != outputs.end(), "Something is wrong output");
+			return it - outputs.begin() + ninputs;
+		}
+	}
+	
+  virtual bool synthesis(int instance, int inputid, int val, int level) {
     conflict.clear();
     InputMatrix& im = *inout;
     
@@ -275,7 +348,6 @@ class NumericalSolver : public Synthesizer {
     vector<vector<int>> allInputs;
     vector<vector<int>> allOutputs;
     vector<int> conflictids;
-    stringstream str;
     for (int i = 0; i < inout->getNumInstances(); ++i) {
       vector<int> inputs;
       vector<int> outputs;
@@ -284,10 +356,7 @@ class NumericalSolver : public Synthesizer {
         int val = im.getVal(i, j);
         if (val == EMPTY) {
           notset = true;
-          str << 2 << ",";
           //break;
-        } else {
-          str << val << ",";
         }
         inputs.push_back(val);
       }
@@ -296,10 +365,7 @@ class NumericalSolver : public Synthesizer {
         int val = im.getVal(i, j);
         if (val == EMPTY) {
           notset = true;
-          str << 2 << ",";
           //break;
-        } else {
-          str << val << ",";
         }
         outputs.push_back(val);
       }
@@ -312,8 +378,9 @@ class NumericalSolver : public Synthesizer {
     Assert(allInputs.size() == allOutputs.size(), "This should not be possible");
     
     if (allInputs.size() == 0) return true;
+		for (int k = 0; k < allInputs.size(); k++) {
 		cout << "Input: ";
-    for (int i = 0; i < allInputs[0].size(); i++) {
+    for (int i = 0; i < allInputs[k].size(); i++) {
 			if (allInputs[0][i] == EMPTY) {
 					cout << "2,";
 			} else {
@@ -322,16 +389,15 @@ class NumericalSolver : public Synthesizer {
     }
     cout << endl;
     cout << "Output: ";
-    for (int i = 0; i < allOutputs[0].size(); i++) {
+    for (int i = 0; i < allOutputs[k].size(); i++) {
 			if (allOutputs[0][i] == EMPTY) {
 				cout << "2,";
 			} else {
 				cout << allOutputs[0][i] << ",";
 			}
     }
-    cout << endl;
-    string instr = str.str();
-    cout << instr << endl;
+		cout << endl;
+		}
 		
 		//genData(allInputs, allOutputs);
     //if (inputs.find(instr) != inputs.end()) {
@@ -340,6 +406,37 @@ class NumericalSolver : public Synthesizer {
     //} else {
     //  inputs[instr] = 1;
     //}
+		
+		// First perform interval propagation to detect any conflicts
+		IntervalPropagator* iprop = propMap[instance];
+		bool_node* node = getNodeForInput(inputid);
+		float fval = (node->getOtype() == OutType::FLOAT) ? fm.getFloat(val) : (float) val;
+#if IP_DEBUG
+		cout << "IP: " << node->lprint() << " " << fval << endl;
+#endif
+		bool success = iprop->setInterval(*node, fval, fval, level);
+		if (!success) {
+			vector<bool_node*>& conflictNodes = iprop->conflictNodes;
+#if IP_DEBUG
+			//cout << "IP CONFLICT" << endl;
+			//cout << conflictNodes.size() << endl;
+#endif
+			for (int i = 0 ; i < conflictNodes.size(); i++) {
+				int iid = getInputForNode(conflictNodes[i]);
+ 				if (iid >= 0) {
+#if IP_DEBUG
+					//cout << conflictNodes[i]->lprint() << " "  << iid << endl;
+#endif
+					conflict.push(im.valueid(instance, iid));
+				}
+			}
+			cout << "***** " << "CONFLICT (IP)" << " ******" << endl;
+			return false;
+		}
+		// TODO: we can intersect the intervals for the ctrl nodes for all instances of interval propagators to detect further conflicts
+		// TODO: use the intervals for ctrl nodes during the gradient descent
+		
+		// If no conflict is found, do gradient descent on intervals
     gd->init(this, allInputs, allOutputs);
     double minError = gd->optimize();
     gsl_vector* curState = gd->getResults();
@@ -371,10 +468,45 @@ class NumericalSolver : public Synthesizer {
 		}
 	}
 
+	IntervalPropagator* createPropagator() {
+		IntervalPropagator* iprop = new IntervalPropagator(*dag);
+		
+		// Initialize constants, assertions and ctrl nodes
+		for (int i = 0; i < dag->size(); i++) {
+			bool_node* n = (*dag)[i];
+			if (n->type == bool_node::CONST) {
+				float fval;
+				if (n->getOtype() == OutType::FLOAT) {
+					fval = ((CONST_node*) n)->getFval();
+				} else {
+					fval = ((CONST_node*) n)->getVal();
+				}
+				Assert(iprop->setInterval(*n, fval, fval, 0), "Setting constant interval failed");
+			}
+			if(n->type == bool_node::ASSERT) {
+				// set the range of mother to 1
+				Assert(iprop->setInterval(*n, 1, 1, 0), "Setting assert failed");
+			}
+			// TODO: set any ranges for ctrl nodes
+		}
+		
+		return iprop;
+	}
 	
-  virtual void newInstance() {}
+	// Note: this method is called before adding the new instance to the input output matrix
+  virtual void newInstance() {
+		// Create a new IntervalPropagator for the instance
+		int idx = inout->getNumInstances();
+		propMap[idx] = createPropagator();
+	}
   
   virtual void finalize() {}
+	
+	virtual void backtrack(int level) {
+		for (auto it = propMap.begin(); it != propMap.end(); it++) {
+			it->second->cancelUntil(level);
+		}
+	}
   
   virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
     // Add the appropriate expression from the dag after replacing inputs with params and ctrls with synthesized parameters

@@ -27,8 +27,13 @@ void AutoDiff::visit( SRC_node& node ) {
   
 }
 void AutoDiff::visit( DST_node& node ) {
-  //cout << "Visiting DST node" << endl;
-  NodeEvaluator::visit(node);
+	//cout << "Visiting DST node" << endl;
+	NodeEvaluator::visit(node);
+}
+
+void AutoDiff::visit( ASSERT_node& node ) {
+	//cout << "Visiting ASSERT node" << endl;
+	NodeEvaluator::visit(node);
 }
 
 void AutoDiff::visit( CTRL_node& node ) {

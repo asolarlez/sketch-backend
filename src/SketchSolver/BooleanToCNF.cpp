@@ -62,7 +62,10 @@ public:
 	GtpSyn(FloatManager& _fm) :Synthesizer(_fm) {
 
 	}
-	virtual bool synthesis() {
+	
+	virtual void backtrack(int level) {}
+	
+	virtual bool synthesis(int instance, int inputid, int val, int level) {
 		conflict.clear();
 		int gtmin = 1000000;
 		int gtid = -1;
@@ -227,8 +230,9 @@ public:
     }
 
 
+	virtual void backtrack(int level) {}
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
-	virtual bool synthesis() {
+	virtual bool synthesis(int instance, int inputid, int val, int level) {
 		//ROHIT TODO: check if attr is set on all of them - start checking from end
 		//If not, return conflict as the empty one? 
 		conflict.clear();
