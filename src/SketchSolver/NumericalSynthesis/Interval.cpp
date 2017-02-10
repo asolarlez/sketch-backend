@@ -6,13 +6,13 @@ Interval* FULL_INTERVAL = new Interval(Interval::MINVAL, Interval::MAXVAL);
 Interval* Interval::i_plus(Interval* m, Interval* f) {
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 	
-	float lval = mlval + flval;
-	float hval = mhval + fhval;
+	double lval = mlval + flval;
+	double hval = mhval + fhval;
 	if (!isfinite(lval)) {
 		lval = lval > 0 ? MAXVAL : MINVAL;
 	}
@@ -25,13 +25,13 @@ Interval* Interval::i_plus(Interval* m, Interval* f) {
 Interval* Interval::i_minus(Interval* m, Interval* f) {
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 	
-	float lval = mlval - fhval;
-	float hval = mhval - flval;
+	double lval = mlval - fhval;
+	double hval = mhval - flval;
 	if (!isfinite(lval)) {
 		lval = lval > 0 ? MAXVAL : MINVAL;
 	}
@@ -48,17 +48,17 @@ Interval* Interval::i_times(Interval* m, Interval* f) {
 	if (f == FULL_INTERVAL && m->getLow() == 0 && m->getHigh() == 0) return new Interval(0, 0);
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return FULL_INTERVAL;
 
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 	
-	vector<float> vals;
+	vector<double> vals;
 
-	float v1 = mlval * flval;
-	float v2 = mlval * fhval;
-	float v3 = mhval * flval;
-	float v4 = mhval * fhval;
+	double v1 = mlval * flval;
+	double v2 = mlval * fhval;
+	double v3 = mhval * flval;
+	double v4 = mhval * fhval;
 	
 	if (!isfinite(v1)) {
 		v1 = v1 > 0 ? MAXVAL : MINVAL;
@@ -78,8 +78,8 @@ Interval* Interval::i_times(Interval* m, Interval* f) {
 	vals.push_back(v3);
 	vals.push_back(v4);
 	
-	float minv = findMin(vals);
-	float maxv = findMax(vals);
+	double minv = findMin(vals);
+	double maxv = findMax(vals);
 	return new Interval(minv, maxv);
 }
 
@@ -87,10 +87,10 @@ Interval* Interval::i_div(Interval* m, Interval* f) {
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 	
 	// Deal with the case when zero can be in the denominator
 	if (flval <= 0 && fhval >= 0) { // Zero in the denomintor
@@ -104,36 +104,36 @@ Interval* Interval::i_div(Interval* m, Interval* f) {
 			}
 			// the case mlval < 0 and mhval > 0 is already handled.
 		} else if (mlval >= 0 && flval == 0) {
-			float minv = mlval/fhval;
+			double minv = mlval/fhval;
 			return new Interval(minv, MAXVAL);
 		} else if (mhval <= 0 && flval == 0) {
-			float maxv = mhval/fhval;
+			double maxv = mhval/fhval;
 			return new Interval(MINVAL, maxv);
 		} else if (mlval >= 0 && fhval == 0) {
-			float maxv = mlval/flval;
+			double maxv = mlval/flval;
 			return new Interval(MINVAL, maxv);
 		} else if (mhval <= 0 && fhval == 0) {
-			float minv = mhval/flval;
+			double minv = mhval/flval;
 			return new Interval(minv, MAXVAL);
 		} else {
 			Assert(false, "NYI: unaccounted case");
 		}
 	}
 	
-	vector<float> vals;
+	vector<double> vals;
 
-	float v1 = mlval / flval;
-	float v2 = mlval / fhval;
-	float v3 = mhval / flval;
-	float v4 = mhval / fhval;
+	double v1 = mlval / flval;
+	double v2 = mlval / fhval;
+	double v3 = mhval / flval;
+	double v4 = mhval / fhval;
 	
 	vals.push_back(v1);
 	vals.push_back(v2);
 	vals.push_back(v3);
 	vals.push_back(v4);
 	
-	float minv = findMin(vals);
-	float maxv = findMax(vals);
+	double minv = findMin(vals);
+	double maxv = findMax(vals);
 	return new Interval(minv, maxv);
 }
 
@@ -145,8 +145,8 @@ Interval* Interval::i_neg(Interval* m) {
 }
 
 Interval* Interval::i_union(const vector<Interval*>& m) {
-	vector<float> lvals;
-	vector<float> hvals;
+	vector<double> lvals;
+	vector<double> hvals;
 	for (int i = 0; i < m.size(); i++) {
 		if (m[i] == FULL_INTERVAL) return FULL_INTERVAL;
 		if (m[i] == EMPTY_INTERVAL) continue;
@@ -154,14 +154,14 @@ Interval* Interval::i_union(const vector<Interval*>& m) {
 		hvals.push_back(m[i]->getHigh());
 	}
 	if (lvals.size() == 0) return EMPTY_INTERVAL;
-	float minv = findMin(lvals);
-	float maxv = findMax(hvals);
+	double minv = findMin(lvals);
+	double maxv = findMax(hvals);
 	return new Interval(minv, maxv);
 }
 
 Interval* Interval::i_intersect(const vector<Interval*>& m) {
-	vector<float> lvals;
-	vector<float> hvals;
+	vector<double> lvals;
+	vector<double> hvals;
 	for (int i = 0; i < m.size(); i++) {
 		if (m[i] == EMPTY_INTERVAL) {
 			return EMPTY_INTERVAL;
@@ -175,9 +175,9 @@ Interval* Interval::i_intersect(const vector<Interval*>& m) {
 	if (lvals.size() == 0) {
 		return FULL_INTERVAL;
 	}
-	float minv = findMax(lvals);
-	float maxv = findMin(hvals);
-	if (minv > maxv) {
+	double minv = findMax(lvals);
+	double maxv = findMin(hvals);
+	if (minv > maxv + PRECISION) {
 		return EMPTY_INTERVAL;
 	} else {
 		return new Interval(minv, maxv);
@@ -195,10 +195,10 @@ Interval* Interval::i_equal(Interval* m, Interval* f) {
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return new Interval(0, 1);
 	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 
-	float m1 = m->getLow();
-	float m2 = m->getHigh();
-	float f1 = f->getLow();
-	float f2 = f->getHigh();
+	double m1 = m->getLow();
+	double m2 = m->getHigh();
+	double f1 = f->getLow();
+	double f2 = f->getHigh();
 	
 	if (m2 < f1) {
 		return new Interval(0, 0);
@@ -216,10 +216,10 @@ Interval* Interval::i_lt(Interval* m, Interval* f) {
 	if (m == FULL_INTERVAL || f == FULL_INTERVAL) return new Interval(0, 1);
 	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float m1 = m->getLow();
-	float m2 = m->getHigh();
-	float f1 = f->getLow();
-	float f2 = f->getHigh();
+	double m1 = m->getLow();
+	double m2 = m->getHigh();
+	double f1 = f->getLow();
+	double f2 = f->getHigh();
 	
 	if (m1 >= f2) {
 		return new Interval(0, 0);
@@ -235,12 +235,12 @@ Interval* Interval::i_square(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(0, MAXVAL);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	vector<float> vals;
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
+	vector<double> vals;
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
 	
-	float v1 = mlval * mlval;
-	float v2 = mhval * mhval;
+	double v1 = mlval * mlval;
+	double v2 = mhval * mhval;
 	
 	if (!isfinite(v1)) {
 		v1 = v1 > 0 ? MAXVAL : MINVAL;
@@ -253,12 +253,12 @@ Interval* Interval::i_square(Interval* m) {
 	vals.push_back(v2);
 	
 	if (mlval < 0 && mhval > 0) {
-		float minv = 0.0;
-		float maxv = findMax(vals);
+		double minv = 0.0;
+		double maxv = findMax(vals);
 		return new Interval(minv, maxv);
 	} else {
-		float minv = findMin(vals);
-		float maxv = findMax(vals);
+		double minv = findMin(vals);
+		double maxv = findMax(vals);
 		return new Interval(minv, maxv);
 	}
 }
@@ -267,8 +267,8 @@ Interval* Interval::i_arctan(Interval* m) {
 	if (m == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	Assert(xl == xh, "NYI: range computation for arctan");
 	return new Interval(atan(xl), atan(xh));
 }
@@ -277,8 +277,8 @@ Interval* Interval::i_sin(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(-1.0, 1.0);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	if (xl == xh) {
 		return new Interval(sin(xl), sin(xh));
 	} else if (xl >= -PI/2 && xl <= PI/2 && xh >= -PI/2 && xh <= PI/2) {
@@ -292,8 +292,8 @@ Interval* Interval::i_cos(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(-1.0, 1.0);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	if (xl == xh) {
 		return new Interval(cos(xl), cos(xh));
 	} else if (xl >= 0 && xl <= PI && xh >= 0 && xh <= PI) {
@@ -309,8 +309,8 @@ Interval* Interval::i_tan(Interval* m) {
 	if (m == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	Assert(xl == xh, "NYI: range computation for tan");
 	return new Interval(tan(xl), tan(xh));
 }
@@ -319,8 +319,8 @@ Interval* Interval::i_sqrt(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(0, MAXVAL);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	Assert(xh >= 0.0, "Invalid range");
 	if (xl < 0.0) {
 		return new Interval(0.0, sqrt(xh));
@@ -350,15 +350,15 @@ Interval* Interval::i_arccos(Interval* m) {
 Interval* Interval::i_invsqrt(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(0, MAXVAL);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	return new Interval(xl*xl, xh*xh);
 }
 
 Interval* Interval::i_invsquare(Interval* m) {
 	if (m == FULL_INTERVAL) return FULL_INTERVAL;
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
-	float xh = m->getHigh();
+	double xh = m->getHigh();
 	return new Interval(-sqrt(xh), sqrt(xh));
 }
 
@@ -369,8 +369,8 @@ Interval* Interval::i_copy(Interval* i1) {
 	return new Interval(i1->getLow(), i1->getHigh());
 }
 
-float Interval::findMin(const vector<float>& vals) {
-	float minv = MAXVAL;
+double Interval::findMin(const vector<double>& vals) {
+	double minv = MAXVAL;
 	for (int i = 0; i < vals.size(); i++) {
 		if (vals[i] < minv) {
 			minv = vals[i];
@@ -379,8 +379,8 @@ float Interval::findMin(const vector<float>& vals) {
 	return minv;
 }
 
-float Interval::findMax(const vector<float>& vals) {
-	float maxv = MINVAL;
+double Interval::findMax(const vector<double>& vals) {
+	double maxv = MINVAL;
 	for (int i = 0; i < vals.size(); i++) {
 		if (vals[i] > maxv) {
 			maxv = vals[i];

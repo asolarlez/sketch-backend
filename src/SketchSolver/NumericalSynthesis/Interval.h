@@ -10,18 +10,19 @@
 
 using namespace std;
 class Interval {
-	float low;
-	float high;
+	double low;
+	double high;
 
 public:
-	static constexpr float MAXVAL = numeric_limits<float>::max();
-	static constexpr float MINVAL = - numeric_limits<float>::max();
-	static constexpr float PI = 3.1415926535897;
+	static constexpr double MAXVAL = numeric_limits<double>::max();
+	static constexpr double MINVAL = - numeric_limits<double>::max();
+	static constexpr double PI = 3.1415926535897;
+	static constexpr double PRECISION = 1e-4;
 	
-	Interval(float _low, float _high): low(_low), high(_high) {}
-	float getLow() const { return low; }
-	float getHigh() const { return high; }
-	void update(float _low, float _high) {
+	Interval(double _low, double _high): low(_low), high(_high) {}
+	double getLow() const { return low; }
+	double getHigh() const { return high; }
+	void update(double _low, double _high) {
 		low = _low;
 		high = _high;
 	}
@@ -60,8 +61,8 @@ public:
 	}
 	string print(); 	
 private:
-	static float findMin(const vector<float>& vals);
-	static float findMax(const vector<float>& vals);
+	static double findMin(const vector<double>& vals);
+	static double findMax(const vector<double>& vals);
 };
 
 extern Interval* EMPTY_INTERVAL;

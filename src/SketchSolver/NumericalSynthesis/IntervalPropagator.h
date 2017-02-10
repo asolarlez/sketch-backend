@@ -168,7 +168,7 @@ public:
 	Interval* getInterval(bool_node* node) {
 		return itracker.getInterval(node->id);
 	}
-	bool setInterval(bool_node& node, float low, float high, int level) {
+	bool setInterval(bool_node& node, double low, double high, int level) {
 		Assert(nodesToPropagate.size() == 0, "All nodes should be propagated");
 		Assert(qhead == 0, "All nodes should be propagated");
 		conflictNodes.clear();
@@ -491,7 +491,7 @@ private:
 			}
 			case bool_node::LT: {
 				if (ninterval->getLow() == ninterval->getHigh()) {
-					float val = ninterval->getLow();
+					double val = ninterval->getLow();
 					Assert(val == 0 || val == 1, "Something is wrong LT");
 					if ((val == 0 && parentIsMother) || (val == 1 && !parentIsMother)) {
 						interval = new Interval(ointerval->getLow(), Interval::MAXVAL);
