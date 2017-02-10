@@ -6,7 +6,7 @@
 #include "BooleanDAG.h"
 #include "Interval.h"
 
-#define IP_DEBUG 1
+#define IP_DEBUG 0
 class ientry {
 public:
 	Interval* interval;
@@ -18,6 +18,7 @@ public:
 };
 
 class IntervalTracker {
+public:
 	//Stores all the Ranges in the order in which they are added.
 	//maps idx to a range and the prior index for the range of that variable.
 	vector<ientry> intervals;
@@ -29,7 +30,6 @@ class IntervalTracker {
 	vector<pair<int, int> > levelmap;
 	int highestlevel;
 	
-public:
 	IntervalTracker(int nNodes) {
 		highestlevel = 0;
 		for (int i = 0; i < nNodes; i++) {
@@ -71,20 +71,6 @@ public:
 				Assert(intervals[idx].nodeid == nodeid, "Something is messed up");
 				maxidx = idx;
 				return intervals[idx].interval;
-			}
-			idx = intervals[idx].prior;
-		}
-	}
-	
-	
-	bool_node* getCause(int nodeid, int& pos) {
-		if (pos < 0) { pos = intervals.size(); }
-		int idx = varmap[nodeid];
-		while(true){
-			if (idx < 0) { return NULL; }
-			if (idx < pos) {
-				pos = idx;
-				return intervals[idx].reason;
 			}
 			idx = intervals[idx].prior;
 		}
@@ -133,6 +119,32 @@ public:
 			cout << "idx: " << i << " nodeid: " << intervals[i].nodeid << " interval: " << intervals[i].interval->print() << " prior: " << intervals[i].prior << " reason: " << (intervals[i].reason != NULL ? intervals[i].reason->lprint() : "NULL") << endl;
 		}
 	}
+	
+	// Prints the trace responsible for ith entry in the intervals list
+	void printAnalysis(int i) {
+		set<int> nodeids;
+		nodeids.insert(intervals[i].nodeid);
+		
+		for (int i = intervals.size() - 1; i >= 0; i--) {
+			ientry& ent = intervals[i];
+			if (nodeids.find(ent.nodeid) != nodeids.end()) {
+				cout << "Setting " << ent.nodeid << " to " << ent.interval->print() << endl;
+				cout << "Reason " << ((ent.reason == NULL) ? "NULL" : ent.reason->lprint()) << endl;
+				if (ent.reason != NULL) {
+					vector<bool_node*> parents = ent.reason->parents();
+					parents.push_back(ent.reason);
+					for (int k = 0; k < parents.size(); k++) {
+						if (parents[k] != NULL){
+							int id = parents[k]->id;
+							nodeids.insert(id);
+							int lev = i;
+							cout << id << " -> " << getInterval(id, lev)->print() << endl;
+						}
+					}
+				}
+			}
+		}
+	}
 };
 
 class IntervalPropagator {
@@ -170,6 +182,16 @@ public:
 		printCurState();
 #endif
 		return success;
+	}
+	
+	void processAllNodes() {
+		for (int i = 0; i < bdag.size(); i++) {
+			bool_node* n = bdag[i];
+			Assert(forwardPropagate(n, 0), "Conflict in " + n->lprint());
+		}
+		if (!propagate(0)) {
+			Assert(false, "Conflict during initial processsing");
+		}
 	}
 	
 	void cancelUntil(int level){
@@ -259,7 +281,11 @@ private:
 				break;
 			}
 			case bool_node::TIMES: {
-				interval = Interval::i_times(minterval, finterval);
+				if (node->mother == node->father) {
+					interval = Interval::i_square(minterval);
+				} else {
+					interval = Interval::i_times(minterval, finterval);
+				}
 				break;
 			}
 			case bool_node::ARRACC: {
@@ -390,10 +416,14 @@ private:
 				break;
 			}
 			case bool_node::TIMES: {
-				if (!(ointerval->getLow() == 0 && ointerval->getHigh() == 0)) {
-					interval = Interval::i_div(ninterval, ointerval);
+				if (node->mother == node->father) {
+					interval = Interval::i_invsquare(ninterval);
 				} else {
-					interval = FULL_INTERVAL;
+					if (!(ointerval->getLow() == 0 && ointerval->getHigh() == 0)) {
+						interval = Interval::i_div(ninterval, ointerval);
+					} else {
+						interval = FULL_INTERVAL;
+					}
 				}
 				break;
 			}
@@ -538,55 +568,27 @@ private:
 	// Collects all node ids that contributed to making the range of this node EMPTY
 	void generateConflict(bool_node* node) {
 #if IP_DEBUG
-		//itracker.print();
+		itracker.printAnalysis(itracker.size()-1);
 #endif
 		conflictNodes.clear();
-		seen.assign(itracker.size(), false);
-		analyzeNodeClause(node, -1);
-	}
-	
-	// Analyzes the node and its parents
-	void analyzeNodeClause(bool_node* node, int lev) {
-		analyzeNode(node, lev);
-		vector<bool_node*> parents = node->parents();
-		for (int i = 0; i < parents.size(); i++) {
-			if (parents[i] != NULL){
-				analyzeNode(parents[i], lev);
+		set<int> nodeids;
+		nodeids.insert(node->id);
+		for (int i = itracker.intervals.size() - 1; i >= 0; i--) {
+			ientry& ent = itracker.intervals[i];
+			if (nodeids.find(ent.nodeid) != nodeids.end()) {
+				if (ent.reason != NULL) {
+					vector<bool_node*> parents = ent.reason->parents();
+					parents.push_back(ent.reason);
+					for (int k = 0; k < parents.size(); k++) {
+						if (parents[k] != NULL){
+							int id = parents[k]->id;
+							nodeids.insert(id);
+						}
+					}
+				} else {
+					conflictNodes.push_back(bdag[ent.nodeid]);
+				}
 			}
-		}
-	}
-	
-	void analyzeNode(bool_node* node, int lev) {
-		int newlev= lev;
-		int nodeid = node->id;
-#if IP_DEBUG
-		//cout << "Doing " << node->lprint() << endl;
-#endif
-		Interval* interval = itracker.getInterval(nodeid, newlev);
-#if IP_DEBUG
-		//cout << " Level: " << lev << " NewLevel: " << newlev << endl;
-#endif
-		if (interval == FULL_INTERVAL) return;
-
-		if (seen[newlev] == 0) {
-			seen[newlev] = 1;
-			bool_node* ic = itracker.getCause(nodeid, lev);
-			Assert(lev == newlev, "Not possible");
-#if IP_DEBUG
-			//cout << "Node: " << node->lprint() << endl;
-			//cout << "Cause: " << (ic != NULL ? ic->lprint() : "null") << endl;
-#endif
-			if (ic == NULL) {
-				// Then, it is one of the interface nodes or constants or asserts
-				conflictNodes.push_back(node);
-				analyzeNode(node, newlev);
-			}else{
-				analyzeNodeClause(ic, lev);
-			}
-		} else {
-#if IP_DEBUG
-			//cout << "Already seen: " << node->lprint() << endl;
-#endif
 		}
 	}
 	

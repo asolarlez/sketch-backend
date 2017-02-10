@@ -232,7 +232,7 @@ Interval* Interval::i_lt(Interval* m, Interval* f) {
 }
 
 Interval* Interval::i_square(Interval* m) {
-	if (m == FULL_INTERVAL) return FULL_INTERVAL;
+	if (m == FULL_INTERVAL) return new Interval(0, MAXVAL);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
 	
 	vector<float> vals;
@@ -353,6 +353,13 @@ Interval* Interval::i_invsqrt(Interval* m) {
 	float xl = m->getLow();
 	float xh = m->getHigh();
 	return new Interval(xl*xl, xh*xh);
+}
+
+Interval* Interval::i_invsquare(Interval* m) {
+	if (m == FULL_INTERVAL) return FULL_INTERVAL;
+	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
+	float xh = m->getHigh();
+	return new Interval(-sqrt(xh), sqrt(xh));
 }
 
 // Copy i1 into i2

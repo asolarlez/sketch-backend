@@ -47,6 +47,7 @@ public:
 	static Interval* i_arcsin(Interval* m);
 	static Interval* i_arccos(Interval* m);
 	static Interval* i_invsqrt(Interval* m);
+	static Interval* i_invsquare(Interval* m);
 	
 	static bool sameInterval(Interval* a, Interval* b) {
 		if (a == b) return true;

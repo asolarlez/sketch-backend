@@ -418,14 +418,14 @@ class NumericalSolver : public Synthesizer {
 		if (!success) {
 			vector<bool_node*>& conflictNodes = iprop->conflictNodes;
 #if IP_DEBUG
-			//cout << "IP CONFLICT" << endl;
-			//cout << conflictNodes.size() << endl;
+			cout << "IP conflict nodes" << endl;
+			cout << conflictNodes.size() << endl;
 #endif
 			for (int i = 0 ; i < conflictNodes.size(); i++) {
 				int iid = getInputForNode(conflictNodes[i]);
  				if (iid >= 0) {
 #if IP_DEBUG
-					//cout << conflictNodes[i]->lprint() << " "  << iid << endl;
+					cout << conflictNodes[i]->lprint() << " "  << iid << endl;
 #endif
 					conflict.push(im.valueid(instance, iid));
 				}
@@ -489,7 +489,7 @@ class NumericalSolver : public Synthesizer {
 			}
 			// TODO: set any ranges for ctrl nodes
 		}
-		
+		iprop->processAllNodes();
 		return iprop;
 	}
 	
