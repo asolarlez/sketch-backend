@@ -178,12 +178,7 @@ public:
 
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
-	void print() {		
-		for (int i = 0; i < size(); ++i) {
-			std::cout << "," << toInt((*this)[i]);
-		}
-		std::cout << std::endl;		
-	}
+	void print();
 };
 
 

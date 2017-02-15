@@ -510,7 +510,7 @@ public:
 				Lit tmp;
 				if (checkLegal(vr, r.getLo(), tmp)) {
 					if (var(tmp) != var_Undef) {
-						//cout<<", "<<vr<<"("<<r.getLo()<<")";
+						// cout<<", "<<vr<<"("<<r.getLo()<<")";
 						explain.push(~tmp);
 					}
 				}
@@ -820,7 +820,7 @@ public:
 	}
 	void addMinus(iVar a, iVar b, iVar x){
 		Intclause* c = PlusClause(a, b, x);
-		ranges.updateRange(x, 0, ranges.getRange(a) - ranges.getRange(b), NULL);
+		ranges.updateRange(x, 0, ranges.getRange(a) - ranges.getRange(b), c);
 		c->retype(MINUS);
 		clauses.push(c);
 		watches[a].push(c);
@@ -847,7 +847,7 @@ public:
 		Intclause* c = PlusClause(a, b, x);
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
-		ranges.updateRange(x, 0, ranges.getRange(a) + ranges.getRange(b), NULL);
+		ranges.updateRange(x, 0, ranges.getRange(a) + ranges.getRange(b), c);
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
 			//for that, we need to retype to EXACTDIV.
@@ -879,9 +879,9 @@ public:
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
 		if (a == b) {
-			ranges.updateRange(x, 0, square(ranges.getRange(a)), NULL);
+			ranges.updateRange(x, 0, square(ranges.getRange(a)), c);
 		}else{
-			ranges.updateRange(x, 0, ranges.getRange(a) * ranges.getRange(b), NULL);
+			ranges.updateRange(x, 0, ranges.getRange(a) * ranges.getRange(b), c);
 		}		
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
@@ -966,7 +966,7 @@ public:
 		Assert(!isSet(cond), "This would have been const propagated!");
 
 		Range out = joinChoices(ranges.getRange(cond), len, choices);
-		ranges.updateRange(x, 0, out, NULL);
+		ranges.updateRange(x, 0, out, c);
 
 		if(isSet(choices[0])){
 			for(int i=1; i<len; ++i){

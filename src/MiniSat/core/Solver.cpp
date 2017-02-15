@@ -61,6 +61,13 @@ public:
 */
 
 
+void Clause::print(){
+	for (int i = 0; i < size(); ++i) {
+		std::cout << "," << toInt((*this)[i]);
+	}
+	std::cout << std::endl;
+}
+
 Solver::Solver() :
 
     // Parameters: (formerly in 'SearchParams')
@@ -569,12 +576,14 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
     out_learnt.push();      // (leave room for the asserting literal)
     int index   = trail.size() - 1;
     out_btlevel = 0;
-
+	//set<int> awaiting;
+	//set<int> visited;
     do{
         assert(confl != NULL);          // (otherwise should be UIP)
         Clause& c = *confl;		
 		
-		if(c.mark()==INTSPECIAL){			
+		if(c.mark()==INTSPECIAL){	
+			//cout << "INTSPEC: ";
 			vec<Lit>& summary = intsolve->getSummary(p);					
 			for(int i=0; i<summary.size(); ++i){
 				Lit q = summary[i];
@@ -582,28 +591,40 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 				if (!seen[var(q)] && qlev > 0){
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if (qlev >= decisionLevel())
+					if (qlev >= decisionLevel()) {
+						//cout << "," << toInt(q);
+						//awaiting.insert(toInt(q)/2);
+						//if (visited.count(toInt(q) / 2) > 0) { 
+						//	cout << "ERROR:A " << toInt(q) << "already in" << endl; 
+						//}
 						pathC++;
-					else{
+					}
+					else {
 						out_learnt.push(q);
 						if (level[var(q)] > out_btlevel)
 							out_btlevel = level[var(q)];
 					}
 				}
 			}
+			//cout << endl;
 		}else{
 			if (c.learnt())
 				claBumpActivity(c);
-
+			//cout << "NORMAL:";			
+			//cout << "[";
 			for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
 				Lit q = c[j];
 
 				if (!seen[var(q)] && level[var(q)] > 0){
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if (level[var(q)] >= decisionLevel())
+					if (level[var(q)] >= decisionLevel()) {
+						//cout << ", " << toInt(q);
+						//awaiting.insert(toInt(q) / 2);
+						//if (visited.count(toInt(q) / 2) > 0) { cout << "ERROR:B " << toInt(q) << "already in" << endl; }
 						pathC++;
-					else{
+					}
+					else {
 						out_learnt.push(q);
 						if (level[var(q)] > out_btlevel)
 							out_btlevel = level[var(q)];
@@ -611,11 +632,27 @@ void Solver::analyze(Clause* confl, vec<Lit>& out_learnt, int& out_btlevel)
 				}
 			}
 		}
-
+		//cout << "]" << endl;
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
         p     = trail[index+1];
+		//cout << "NEXT:" << toInt(p) << endl;
+		//if (awaiting.count(toInt(p) / 2) == 0) { cout << "ERROR:" << toInt(p) << " not in" << endl; }
+		//awaiting.erase(toInt(p) / 2);
+		//visited.insert(toInt(p) / 2);
         confl = reason[var(p)];
+		//if (confl == NULL) {
+		//	cout << "AWAITING: ";
+		//	for (auto it = awaiting.begin(); it != awaiting.end(); ++it) {
+		//		cout << ", " << ((*it)*2);
+		//	}
+		//	cout << endl;
+		//	cout << "VISITED: ";
+		//	for (auto it = visited.begin(); it != visited.end(); ++it) {
+		//		cout << ", " << ((*it)*2);
+		//	}
+		//	cout << endl;
+		//}
         seen[var(p)] = 0;
         pathC--;
 
