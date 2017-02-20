@@ -474,16 +474,25 @@ public:
 
 	void addMapping(int id, Tvalue& tv);
 
-	bool uncheckedSetVal(iVar vr, int val, int level, Intclause* rson){
-
+	bool propagateToInterf(iVar vr, int val) {
 		Lit tmplit;
-		if(!checkLegal(vr, val, tmplit)){
+		if (!checkLegal(vr, val, tmplit)) {
 			return false;
-		}else{
-			if(var(tmplit)!= var_Undef){
+		}
+		else {
+			if (var(tmplit) != var_Undef) {
 				interf.push(interpair(trail.size(), tmplit));
 			}
 		}
+		return true;
+	}
+
+	bool uncheckedSetVal(iVar vr, int val, int level, Intclause* rson){
+
+		if (!propagateToInterf(vr, val)) {
+			return false;
+		}
+		
 		Val& v(vals[vr]);
 		v.set(val);
 		reason[vr] = rson;
@@ -811,6 +820,10 @@ public:
 		if(v.isDef()){
 			return v.v()==val;
 		}else{
+			Range r = ranges.getRange(var);
+			if (!r.contains(val)) {
+				return false;
+			}
 			v.set(val);
 			tpos[var] = trail.size();
 			trail.push(mpair(var, level, val));		
@@ -820,7 +833,14 @@ public:
 	}
 	void addMinus(iVar a, iVar b, iVar x){
 		Intclause* c = PlusClause(a, b, x);
-		ranges.updateRange(x, 0, ranges.getRange(a) - ranges.getRange(b), c);
+		Range out = ranges.getRange(a) - ranges.getRange(b);
+		if (out.isSingle()) {
+			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			return;
+		}
+		else {
+			ranges.updateRange(x, 0, out, NULL);
+		}		
 		c->retype(MINUS);
 		clauses.push(c);
 		watches[a].push(c);
@@ -847,7 +867,15 @@ public:
 		Intclause* c = PlusClause(a, b, x);
 		clauses.push(c);
 		Assert(! (isSet(a) && isSet(b)), "This should have been constant propagated");
-		ranges.updateRange(x, 0, ranges.getRange(a) + ranges.getRange(b), c);
+		Range out = ranges.getRange(a) + ranges.getRange(b);
+		if (out.isSingle()) {
+			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			return;
+		}
+		else {
+			ranges.updateRange(x, 0, out, NULL);
+		}
+				
 		if(isSet(a)){
 			//we can't watch a and b because they a is already set. must watch b,c.
 			//for that, we need to retype to EXACTDIV.
@@ -960,13 +988,21 @@ public:
 
 		Intclause* c = BMuxClause(cond, len, choices, x);
 		clauses.push(c);
-		watches[cond].push(c);
-		watches[x].push(c);
+		
 
 		Assert(!isSet(cond), "This would have been const propagated!");
 
 		Range out = joinChoices(ranges.getRange(cond), len, choices);
-		ranges.updateRange(x, 0, out, c);
+		if (out.isSingle()) {
+			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			return;
+		} else {
+			ranges.updateRange(x, 0, out, NULL);
+		}
+		
+		watches[cond].push(c);
+		watches[x].push(c);
+		
 
 		if(isSet(choices[0])){
 			for(int i=1; i<len; ++i){
@@ -2091,8 +2127,12 @@ private:
 			return CONFLICT;
 		} else {
 			if (!(tmp == outold)) {
-				trail.push(mpair(vr, level, 0));
-				ranges.updateRange(vr, level, tmp, &c);
+				if (tmp.isSingle()) {
+					uncheckedSetVal(vr, tmp.getLo(), level, &c);
+				} else {
+					trail.push(mpair(vr, level, 0));
+					ranges.updateRange(vr, level, tmp, &c);
+				}				
 				return PROPAGATED;
 			}
 			return NOTPROPAGATED;
@@ -2115,10 +2155,7 @@ private:
 				
 	}
 
-	void propagateTimesInterval(Intclause& c, int level) {
-		iVar vr = c[0];
-		iVar a = c[1];
-		iVar b = c[2];
+	void propagateTimesInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
 		const Range& ina = ranges.getRange(a);		
 		if (a == b) {
 			Range outnew = square(ina);
@@ -2284,6 +2321,20 @@ private:
 		Assert(false, "Shouln't be here");
 	}
 
+	bool propagateTimesExactDivInterval(mpair& p, Intclause& c) {
+		iVar vr = c[0];
+		iVar a = c[1];
+		iVar b = c[2];
+		if (c.tp() == EXACTDIV) {
+			// vr = a // b; ,whereas we want 
+			vr = c[1];
+			a = c[0];
+			b = c[2];
+		}
+		propagateTimesInterval(vr, a, b, c, p.level);
+		return true;
+	}
+	
 
 	bool propagatePlusMinusInterval(mpair& p, Intclause& c) {
 		iVar vr = c[0];
@@ -2365,10 +2416,16 @@ public:
 						}
 					}else
 					if(c.tp()==TIMES){
-						goodsofar = propagateTimes(c,p,i,j);					
+						goodsofar = propagateTimes(c,p,i,j);	
+						if (goodsofar) {
+							goodsofar = propagateTimesExactDivInterval(p, c);
+						}
 					}else
 					if(c.tp()==EXACTDIV){
-						goodsofar = propagateExactDiv(c,p,i,j);					
+						goodsofar = propagateExactDiv(c,p,i,j);	
+						if (goodsofar) {
+							goodsofar = propagateTimesExactDivInterval(p, c);
+						}
 					}else
 					if(c.tp()==EQ){
 						goodsofar = propagateEq(c,p,i,j);
@@ -2398,11 +2455,8 @@ public:
 						if (c.tp() == PLUS || c.tp() == MINUS) {
 							goodsofar = propagatePlusMinusInterval(p, c);
 						}else
-						if(c.tp()==TIMES){
-							propagateTimesInterval(c, p.level);
-						}else
-						if(c.tp()==EXACTDIV){
-										
+						if(c.tp()==TIMES || c.tp() == EXACTDIV){
+							goodsofar = propagateTimesExactDivInterval(p, c);
 						}else
 						if(c.tp()==EQ){
 						

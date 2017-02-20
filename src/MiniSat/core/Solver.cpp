@@ -1153,17 +1153,35 @@ Clause* Solver::propagate()
 						}
 						else {
 							//trying to set vr to two different values (it already has one).
-							Lit oth = intsolve->existingLit(vr);
-							vec<Lit> ps;
-							ps.push(~oth); ps.push(~p);
-							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
-							confl = new (&tempstore[0]) Clause(ps, true);
-							*j++ = &c;
-							while (i < end)
-								*j++ = *i++;
+							if (intsolve->isSet(vr)) {
+								Lit oth = intsolve->existingLit(vr);
+								vec<Lit> ps;
+								ps.push(~oth); ps.push(~p);
+								tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
+								confl = new (&tempstore[0]) Clause(ps, true);
+								*j++ = &c;
+								while (i < end)
+									*j++ = *i++;
 
-							qhead = trail.size();
-							goto FoundWatch;
+								qhead = trail.size();
+								goto FoundWatch;
+							} else {
+								int lev = -1;
+								vec<Lit>& ps = intsolve->getSummaryA(vr, NULL, lev);
+								Assert(ps.size() > 0, "NOT BIG");
+								Lit t = ps[0];
+								ps.push(t);
+								ps[0] = false_lit;
+								tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
+								confl = new (&tempstore[0]) Clause(ps, true);
+								*j++ = &c;
+								while (i < end)
+									*j++ = *i++;
+
+								qhead = trail.size();
+								goto FoundWatch;
+							}
+							
 						}
 
 						if (goodsofar) {
