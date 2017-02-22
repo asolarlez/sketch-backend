@@ -9,8 +9,6 @@ using namespace std;
 using namespace MSsolverNS;
 
 #include "BasicError.h"
-#include "vec.h"
-#include "SolverTypes.h"
 
 using namespace MSsolverNS;
 
