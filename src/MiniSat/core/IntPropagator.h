@@ -7,7 +7,7 @@
 #include "Vec.h"
 #include <cstddef>
 #include <algorithm>
-#include <limits>
+#include <climits>
 
 namespace MSsolverNS{
 

@@ -257,6 +257,31 @@ void SolverHelper::regIclause(int id, Tvalue& tv){
 int SolverHelper::intClause(Tvalue& tv){
 	if(tv.isInt()){ return tv.getId(); }
 	
+
+	if (tv.isArray()) {
+		gvvec out;
+		int i = 0;
+		int idx = -2;
+		const gvvec& gvv = tv.num_ranges;
+		while (i < gvv.size()) {
+			Tvalue tmp;
+			gvvec& vnew = tmp.num_ranges;
+			idx = gvv[i].idx;
+			while(i < gvv.size() && gvv[i].idx == idx) {
+				guardedVal gv = gvv[i];
+				gv.idx = 0;
+				vnew.push_back(gv);
+				++i;
+			}
+			tmp.makeSparse(*this);
+			int rv = intClause(tmp);
+			out.push_back(guardedVal(rv, -1, idx));
+		}
+		tv.num_ranges = out;
+		tv.makeSuperInt(0);
+		return 0;
+	}
+
 	if(!tv.isSparse()){
 		tv.makeSparse(*this);
 	}

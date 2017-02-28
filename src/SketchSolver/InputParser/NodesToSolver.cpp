@@ -2415,11 +2415,117 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 	nvar.arrayify();
 }
 
+
+void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, Tvalue& inarr, Tvalue& nvar, ARR_W_node& node) {
+	if (inarr.isArray()) {
+		if (index.isInt()) {
+			gvvec out;
+			for (auto it = inarr.num_ranges.begin(); it != inarr.num_ranges.end(); ++it) {
+				Tvalue c;
+				c.makeIntVal(YES, it->idx);
+				iVar old = it->guard;
+				iVar nv = newval.getId();
+				iVar ov[2] = { old, nv };
+				out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, it->idx));
+			}
+			nvar.num_ranges = out;
+			nvar.intarrayify();
+		}
+		else {
+			dir.intClause(index);
+			const gvvec nr = index.num_ranges;					
+			if (nr.size() == 1) {
+				const guardedVal& idxgv = nr[0];
+				int lastIndex = inarr.num_ranges.size() - 1;
+				const guardedVal& last = inarr.num_ranges[lastIndex];
+				//This means we are appending in a currently empty entry. We can just push back newval 
+				//at the end of inarr.
+				if (last.idx <= idxgv.value - 1) {
+					nvar.num_ranges = inarr.num_ranges;
+					nvar.num_ranges.push_back(guardedVal( newval.getId() , 0, idxgv.value));			
+					nvar.intarrayify();
+					return;
+				
+				}
+			}
+			int inc = 1;
+			int init = 0;
+			int end = nr.size();
+			if (nr.size() > 1 && nr[0].value > nr[1].value) {
+				inc = -1;
+				init = nr.size() - 1;
+				end = -1;
+			}
+			int idx = init;
+			int i = 0;
+			int j = init;
+			gvvec out;
+			iVar defaultval;
+			while (true) {
+				if (i == inarr.getSize() && j == end) {
+					break;
+				}
+				if (i < inarr.getSize() && inarr.num_ranges[i].idx < 0) {
+					defaultval = inarr.num_ranges[i].guard;
+					out.push_back(guardedVal(inarr.num_ranges[i].guard, 0, -1));
+					++i;
+					continue;
+				}
+				if (i == inarr.getSize() || nr[j].value < inarr.num_ranges[i].idx) {
+					if (nr[j].value >= 0) {
+						Tvalue c;
+						c.makeIntVal(YES, nr[j].value);
+						iVar old = defaultval;
+						iVar nv = newval.getId();
+						iVar ov[2] = { old, nv };
+						out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, nr[j].value));
+					}
+					++j;
+					continue;
+				}
+				if (j == end || nr[j].value > inarr.num_ranges[i].idx) {
+					out.push_back(guardedVal(inarr.num_ranges[i].guard, 0, nr[j].value));
+					++i;
+					continue;
+				}
+				if (nr[j].value == inarr.num_ranges[i].idx) {
+					Tvalue c;
+					c.makeIntVal(YES, nr[j].value);
+					iVar old = inarr.num_ranges[i].guard;
+					iVar nv = newval.getId();
+					iVar ov[2] = { old, nv };
+					out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, nr[j].value));
+					++i;
+					++j;
+					continue;
+				}				
+			}
+
+		}
+	}
+
+
+}
+
 void NodesToSolver::visit( ARR_W_node &node){	
 	Tvalue index = tval_lookup(node.mother);		
 	Tvalue inarr = tval_lookup(node.getOldArr());	
 	Tvalue newval = tval_lookup(node.getNewVal());
 	Tvalue& nvar = node_ids[node.id];
+
+	if (index.isInt() || inarr.isInt() || newval.isInt()) {		
+
+		if (!newval.isInt()) {
+			dir.intClause(newval);
+		}
+		if (!inarr.isInt()) {
+			dir.intClause(inarr);
+		}
+
+		intArrW(index, newval, inarr, nvar, node);
+	}
+
+
 	if(!index.isSparse()){
 		index.makeSparse(dir);
 	}	

@@ -171,6 +171,10 @@ public:
     virtual void visit( TUPLE_R_node &node);
 	virtual void visit( TUPLE_CREATE_node &node);
 
+
+	void intArrW(Tvalue& index, Tvalue& newval, Tvalue& inarr, Tvalue& nvar, ARR_W_node& node);
+
+
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
   template<typename EVAL>

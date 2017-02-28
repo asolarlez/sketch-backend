@@ -305,7 +305,7 @@ public:
      * Methods.
      */
     /* Get variable corresponding to the sign bit of a bit-vector. */
-	inline int getSignId(SolverHelper &dir) const;
+	int getSignId(SolverHelper &dir) const;
 
 	inline void markInput(SolverHelper& dir){
 /* This functionality is experimental
@@ -328,6 +328,11 @@ public:
 	id = 0;
 	neg = false;
     }
+
+	inline void intarrayify(void) {
+		arrayify();
+		isint = true;
+	}
 
 
     /* Negate a bit-vector.
