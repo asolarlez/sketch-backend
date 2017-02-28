@@ -4,4 +4,4 @@ noinst_HEADERS = core/MSolver.h mtl/Alg.h mtl/BoxedVec.h mtl/Map.h mtl/Sort.h co
 libminisat_la_CXXFLAGS = -std=gnu++11 -Imtl -Icore -I../SketchSolver/InputParser/ -I../SketchSolver/ -I../SketchSolver/SolverInterfaces
 libminisat_la_CFLAGS = $(libminisat_a_CXXFLAGS)
 
-libminisat_la_SOURCES = core/Solver.cpp
+libminisat_la_SOURCES = core/Solver.cpp core/IntPropagator.cpp
