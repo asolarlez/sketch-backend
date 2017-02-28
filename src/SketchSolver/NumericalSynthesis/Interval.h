@@ -19,7 +19,11 @@ public:
 	static constexpr double PI = 3.1415926535897;
 	static constexpr double PRECISION = 1e-4;
 	
-	Interval(double _low, double _high): low(_low), high(_high) {}
+	Interval(double _low, double _high): low(_low), high(_high) {
+		if (fabs(low - high) < PRECISION) {
+			high = low;
+		}
+	}
 	double getLow() const { return low; }
 	double getHigh() const { return high; }
 	void update(double _low, double _high) {
@@ -53,7 +57,7 @@ public:
 	static bool sameInterval(Interval* a, Interval* b) {
 		if (a == b) return true;
 		if (a == NULL || b == NULL) return false;
-		if (a->getLow() == b->getLow() && a->getHigh() == b->getHigh()) {
+		if (fabs(a->getLow() - b->getLow()) < PRECISION && fabs(a->getHigh() - b->getHigh()) < PRECISION) {
 			return true;
 		} else {
 			return false;

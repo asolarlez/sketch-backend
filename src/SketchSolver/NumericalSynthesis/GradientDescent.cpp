@@ -1,10 +1,10 @@
 #include "GradientDescent.h"
 #include "NumericalSolver.h"
 
-void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
+void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, gsl_vector* prev) {
 	x = gsl_vector_alloc(N);
 	for (int i = 0; i < N; i++) {
-		gsl_vector_set(x, i, 0);
+		gsl_vector_set(x, i, gsl_vector_get(prev, i));
 	}
 	myfundf.f = &ns->eval_f;
 	myfundf.df = &ns->eval_df;

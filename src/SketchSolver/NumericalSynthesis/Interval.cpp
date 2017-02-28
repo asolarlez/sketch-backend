@@ -283,6 +283,20 @@ Interval* Interval::i_sin(Interval* m) {
 		return new Interval(sin(xl), sin(xh));
 	} else if (xl >= -PI/2 && xl <= PI/2 && xh >= -PI/2 && xh <= PI/2) {
 		return new Interval(sin(xl), sin(xh));
+	} else if (xl >= - PI && xl <= -PI/2 && xh >= -PI && xh <= -PI/2 ) {
+		return new Interval(sin(xh), sin(xl));
+	} else if (xl >= PI/2 && xl <= PI && xh >= PI/2 && xh <= PI) {
+		return new Interval(sin(xh), sin(xl));
+	} else if (xl >= -PI && xl <= PI/2 && xh >= -PI && xh <= PI/2) {
+		vector<double> vals;
+		vals.push_back(sin(xl));
+		vals.push_back(sin(xh));
+		return new Interval(-1.0, findMax(vals));
+	} else if (xl >= - PI/2 && xl <= PI && xh >= -PI/2 && xh <= PI) {
+		vector<double> vals;
+		vals.push_back(sin(xl));
+		vals.push_back(sin(xh));
+		return new Interval(findMin(vals), 1.0);
 	}else { // TODO: this is so course grained
 		return new Interval(-1.0, 1.0);
 	}
@@ -300,6 +314,11 @@ Interval* Interval::i_cos(Interval* m) {
 		return new Interval(cos(xh), cos(xl));
 	} else if (xl <= 0 && xl >= -PI && xh <= 0 && xh >= -PI) {
 		return new Interval(cos(xl), cos(xh));
+	} else if (xl >= - PI && xl <= PI && xh >= -PI && xh <= PI) {
+		vector<double> vals;
+		vals.push_back(cos(xl));
+		vals.push_back(cos(xh));
+		return new Interval(findMin(vals), 1.0);
 	} else {
 		return new Interval(-1.0, 1.0);
 	}

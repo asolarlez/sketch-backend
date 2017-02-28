@@ -42,10 +42,13 @@ class NumericalSolver : public Synthesizer {
   map<string, BooleanDAG*> empty; // Empty function map for NodeEvaluator
   //map<string, int> inputs; // To check for repeated inputs
 	gsl_vector* t;  // a temporary vector for storing intermediate results
-	float threshold = 1e-10;
+	float threshold = 1e-5;
 	int dcounter = 0;
 	AutoDiff* eval;
 	RangeDiff* evalR;
+	gsl_vector* prevState;
+	int MAX_TRIES = 5;
+	float cthresh = 0.01;
 	
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
 	
@@ -62,35 +65,31 @@ class NumericalSolver : public Synthesizer {
     }
 		eval = new AutoDiff(empty, *dag, fm, ctrlMap);
 		evalR = new RangeDiff(empty, *dag, fm, ctrlMap);
+		
+		prevState = gsl_vector_alloc(ncontrols);
+		for (int i = 0; i < ncontrols; i++) {
+			gsl_vector_set(prevState, i, 0);
+		}
   }
 	
 	
 	void genData(const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
-		/*vector<vector<int>> allInputs;
-		vector<vector<int>> allOutputs;
-		// Fill in test inputs and outputs
-		vector<int> inputs;
-		for (int i = 0; i < ninputs; i++) {
-			inputs.push_back(EMPTY);
-		}
-		allInputs.push_back(inputs);
-		vector<int> outputs;
-		for (int i = 0; i < noutputs; i++) {
-			outputs.push_back(EMPTY);
-		}
-		outputs[noutputs-2] = 0;
-		outputs[noutputs-1] = 0;
-		allOutputs.push_back(outputs);*/
-		
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << dcounter << endl;
-		ofstream file("/Users/Jeevu/projects/symdiff/scripts/test/t"+ to_string(dcounter++) +".txt");
-		double i = 0.0;
-		while (i < 15) {
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/parallelPark/graphs/t"+ to_string(dcounter++) +".txt");
+		double i = -10.0;
+		double j = -10.0;
+		while (i < 10.0) {
+			cout << i << endl;
+			j = -10.0;
+			while (j < 10.0) {
 			gsl_vector_set(state, 0, i);
+			gsl_vector_set(state, 1, j);
 			double err = evalWithGrad(state, d, allInputs, allOutputs);
 			file << err << ";";
+			j+= 0.1;
+			}
 			i += 0.1;
 		}
 		file << endl;
@@ -194,6 +193,63 @@ class NumericalSolver : public Synthesizer {
 			}
 		}
 	}
+	bool checkOk(bool_node* node, float output) {
+		IntervalGrad* mrange = evalR->r(node->mother);
+		IntervalGrad* frange = evalR->r(node->father);
+		
+		float m1 = mrange->getLow();
+		float m2 = mrange->getHigh();
+		float f1 = frange->getLow();
+		float f2 = frange->getHigh();
+		
+		bool conflict = false;
+		
+		if (node->type == bool_node::EQ) {
+			if (output == 1) {
+				if (m2 < f1) {
+					conflict = true;
+				}
+				if (m1 > f2) {
+					conflict = true;
+				}
+				if (m1 < f1) {
+					if (abs(m2 - f1) < cthresh) {
+						conflict = true;
+					}
+				}
+				if (f1 < m1) {
+					if (abs(m1 - f2) < cthresh) {
+						conflict = true;
+					}
+				}
+			} else {
+				if (m1 == m2 && m2 == f1 && f1 == f2) {
+					conflict = true;
+				}
+				if (abs(m1 - f1) + abs(m2 - f2) < cthresh) {
+					conflict = true;
+				}
+			}
+		} else { // lt case
+			if (output == 1) {
+				if (m1 >= f2) {
+					conflict = true;
+				}
+				if (abs(m1 - f2) < cthresh) {
+					conflict = true;
+				}
+			} else {
+				if (m2 < f1) {
+					conflict = true;
+				}
+				if (abs(m2 - f1) < cthresh) {
+					conflict = true;
+				}
+			}
+		}
+		return conflict;
+	}
+
 	
   double evalWithGrad(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs) {
     for (int i = 0; i < ncontrols; i++ ) {
@@ -287,15 +343,15 @@ class NumericalSolver : public Synthesizer {
 			}
       }
     }
-    //cout << "error: " << error << endl;
-    //cout << "grad: ";
     for (int i = 0; i < d->size; i++) {
 			float f = gsl_vector_get(d,i);
 			if (!isfinite(f)) {
 				gsl_vector_set(d, i, numeric_limits<float>::max()); //TODO: check this
 			}
     }
-    //cout << endl;
+		//cout << "State: " << gsl_vector_get(state, 0) << " " << gsl_vector_get(state, 1) << endl;
+		//cout << "Error: " << error << endl;
+		//cout << "Grad: " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << endl;
     return error;
   }
 
@@ -333,9 +389,11 @@ class NumericalSolver : public Synthesizer {
 			return -1;
 		} else if (node->type == bool_node::ASSERT) {
 			return -1;
+		} else if (node->type == bool_node::CTRL) {
+			return -1;
 		} else {
 			auto it = find(outputs.begin(), outputs.end(), node);
-			Assert(it != outputs.end(), "Something is wrong output");
+			Assert(it != outputs.end(), "Something is wrong output " + node->lprint());
 			return it - outputs.begin() + ninputs;
 		}
 	}
@@ -347,6 +405,23 @@ class NumericalSolver : public Synthesizer {
     
     vector<vector<int>> allInputs;
     vector<vector<int>> allOutputs;
+		/*
+		// test case
+		vector<int> inputs;
+		for (int i = 0; i < ninputs; i++) {
+			inputs.push_back(EMPTY);
+		}
+		allInputs.push_back(inputs);
+		vector<int> outputs;
+		for (int i = 0; i < noutputs; i++) {
+			outputs.push_back(EMPTY);
+		}
+		outputs[noutputs-1] = 0;
+		outputs[noutputs-3] = 1;
+		allOutputs.push_back(outputs);
+		*/
+		
+		
     vector<int> conflictids;
     for (int i = 0; i < inout->getNumInstances(); ++i) {
       vector<int> inputs;
@@ -407,6 +482,7 @@ class NumericalSolver : public Synthesizer {
     //  inputs[instr] = 1;
     //}
 		
+		if (true) {
 		// First perform interval propagation to detect any conflicts
 		IntervalPropagator* iprop = propMap[instance];
 		bool_node* node = getNodeForInput(inputid);
@@ -433,16 +509,34 @@ class NumericalSolver : public Synthesizer {
 			cout << "***** " << "CONFLICT (IP)" << " ******" << endl;
 			return false;
 		}
+		}
 		// TODO: we can intersect the intervals for the ctrl nodes for all instances of interval propagators to detect further conflicts
 		// TODO: use the intervals for ctrl nodes during the gradient descent
 		
 		// If no conflict is found, do gradient descent on intervals
-    gd->init(this, allInputs, allOutputs);
+    gd->init(this, allInputs, allOutputs, prevState);
     double minError = gd->optimize();
     gsl_vector* curState = gd->getResults();
-		
+		int numtries = 0;
+		while (abs(minError) > threshold  && numtries < MAX_TRIES) {
+			cout << "Retry attempt: " << (numtries+1) << endl;
+			// redo gradient descent with random initial point
+			for (int i = 0; i < ncontrols; i++) {
+				float r = 0.0 + (rand()%100)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
+				gsl_vector_set(t, i, r);
+				cout << r << "; ";
+			}
+			cout << endl;
+			
+			gd->init(this, allInputs, allOutputs, t);
+			minError = gd->optimize();
+			curState = gd->getResults();
+			numtries++;
+		}
+
 		//evalR->print();
-    if (minError >= -threshold && minError <= threshold) {
+    if (abs(minError) <= threshold) {
+			prevState = curState;
       // Update the controls
       vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
       for (int i = 0; i < ctrls.size(); i++) {
@@ -451,7 +545,30 @@ class NumericalSolver : public Synthesizer {
       return true;
     } else {
       cout << "******************* Found a conflict *******************" << endl;
-      generateConflict(conflictids);
+			if (true) {
+				bool_node* output = dag->get_node("OUTPUT")->mother;
+				vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+				vector<int> conflictIndices;
+				cout << "Ok:     ";
+				for (int j = 0; j < outputmothers.size(); j++) {
+					if (allOutputs[0][j] != EMPTY) {
+						bool conflict = checkOk(outputmothers[j], allOutputs[0][j]);
+						if (conflict) conflictIndices.push_back(ninputs + j);
+						cout << (!conflict ? 1 : 0) << ",";
+					} else {
+						cout << 2 << ",";
+					}
+				}
+				// TODO: should also analyse inputs
+				cout << endl;
+				// add the just set input if it is not already there (this is required to make the SAT solver happy)
+				if (find(conflictIndices.begin(), conflictIndices.end(), inputid) == conflictIndices.end()) {
+					conflictIndices.push_back(inputid);
+				}
+				generateConflict(conflictids, conflictIndices); //potentially unsound
+			} else {
+				generateConflict(conflictids);
+			}
      return false;
     }
   }
@@ -464,6 +581,22 @@ class NumericalSolver : public Synthesizer {
 					//cout << "pushing " << j << endl;
 					conflict.push(im.valueid(conflictId, j));
 				}
+			}
+		}
+	}
+
+	
+	void generateConflict(const vector<int>& conflictids, const vector<int>& conflictOutputs) {
+		InputMatrix& im = *inout;
+		for(auto conflictId: conflictids) {
+			for (int j = 0; j < ninputs; j++) {
+				if (im.getVal(conflictId, j) != EMPTY) {
+					//cout << "pushing " << j << endl;
+					conflict.push(im.valueid(conflictId, j));
+				}
+			}
+			for (int i = 0; i < conflictOutputs.size(); i++) {
+				conflict.push(im.valueid(conflictId, conflictOutputs[i]));
 			}
 		}
 	}
@@ -487,7 +620,9 @@ class NumericalSolver : public Synthesizer {
 				// set the range of mother to 1
 				Assert(iprop->setInterval(*n, 1, 1, 0), "Setting assert failed");
 			}
-			// TODO: set any ranges for ctrl nodes
+			if (n->type == bool_node::CTRL) {
+				Assert(iprop->setInterval(*n, -32.0, 32.0, 0), "Setting ctrl range failed"); // TODO: Don't hardcode the range here
+			}
 		}
 		iprop->processAllNodes();
 		return iprop;
