@@ -315,6 +315,12 @@ void IntervalGrad::ig_tan(IntervalGrad* m, IntervalGrad* o) {
 void IntervalGrad::ig_sqrt(IntervalGrad* m, IntervalGrad* o) {
 	float xl = m->getLow();
 	float xh = m->getHigh();
+	if (xh < 0.0) { // Ideally, this should raise error
+		o->update(0.0, 0.0);
+		default_grad(o->getLGrad());
+		default_grad(o->getHGrad());
+		return;
+	}
 	Assert(xh >= 0.0, "Invalid range");
 	if (xl < 0.0) {
 		o->update(0.0, sqrt(xh));

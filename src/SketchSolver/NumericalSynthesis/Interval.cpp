@@ -340,7 +340,10 @@ Interval* Interval::i_sqrt(Interval* m) {
 	
 	double xl = m->getLow();
 	double xh = m->getHigh();
-	Assert(xh >= 0.0, "Invalid range");
+	//Assert(xh >= 0.0, "Invalid range");
+	if (xh < 0.0) {
+		return new Interval(0.0, 0.0);
+	}
 	if (xl < 0.0) {
 		return new Interval(0.0, sqrt(xh));
 	} else {
