@@ -186,7 +186,7 @@ public:
 			addClause(finalOr.size() > 0 ? (&finalOr[0]) : NULL  , finalOr.size(), lits);
 		}
 	 }
-	 virtual void clean();	
+	 
 	 virtual void printDiagnostics(char c);
 	 virtual void lightSolve();
 	 virtual void writeDIMACS(ofstream& dimacs_file){

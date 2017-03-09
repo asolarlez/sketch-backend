@@ -110,7 +110,7 @@ public:
     virtual void reset()=0;
     virtual void retractAssumptions()=0;
 	virtual bool tryAssignment(int a)=0;
-    virtual void clean()=0;	
+    
     virtual void printDiagnostics(char c)=0;	 
 	virtual void lightSolve();
 	virtual void writeDIMACS(ofstream& dimacs_file)=0;

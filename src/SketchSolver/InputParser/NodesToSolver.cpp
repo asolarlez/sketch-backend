@@ -1346,25 +1346,28 @@ NodesToSolver::visit (CTRL_node &node)
     }else{
 		Tvalue & nvar = node_ids[node.id];
 		if(node.get_Angelic()){
-      // BUGFIX: Issue #5
-      // when node is an array, need to create array
-      const int arrSz = node.getArrSz();
-      //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
-      if(arrSz<0){
-        nvar = dir.newAnonymousVar(nbits);
-        nvar.setSize(nbits);
-        if (nbits > 1) {
-          nvar.makeSparse(dir);
-        }
-      }else{
-        const int totbits = nbits*arrSz;
-        nvar = dir.newAnonymousVar(totbits);
-        nvar.setSize(totbits);
-        nvar.makeArray(dir, nbits, arrSz);
-      }
+		  // BUGFIX: Issue #5
+		  // when node is an array, need to create array
+		  const int arrSz = node.getArrSz();
+		  //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
+		  if(arrSz<0){
+			nvar = dir.newAnonymousVar(nbits);
+			nvar.setSize(nbits);
+			if (nbits > 1) {
+			  nvar.makeSparse(dir);
+			}
+		  }else{
+			const int totbits = nbits*arrSz;
+			nvar = dir.newAnonymousVar(totbits);
+			nvar.setSize(totbits);
+			nvar.makeArray(dir, nbits, arrSz);
+		  }
       
 		}else{
 			nvar = dir.getControl(&node);
+			if (nvar.isSparse() && nvar.num_ranges.size() > 64) {				
+					dir.intClause(nvar);	
+			}
 		}		
 		Dout(cout<<"CONTROL "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 		return;

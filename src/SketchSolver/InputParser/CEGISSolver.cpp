@@ -315,7 +315,14 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 					bigor.push_back(tv.num_ranges[i].guard);
 				}
 			}	
-		}
+			if (minVarNodeSize > 5 && isSingleMinHole) {
+				Tvalue cnst;
+				cnst.makeIntVal(dirFind.YES, H__0_val);
+				dirFind.intClause(cnst);
+				dirFind.intClause(tv);
+				dirFind.addRetractableAssertClause(dirFind.intlt(tv.getId(), cnst.getId()));
+			}
+		}		
 		catch(BasicError& be){
 			return false;
 		}
@@ -330,7 +337,9 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 			return false;
 		}
 	}
-	
+	if (params.lightVerif) {
+		dirFind.getMng().lightSolve();
+	}
 	
 	return true;
 }
@@ -514,7 +523,14 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
     	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
-	    	   	case SATSolver::UNDETERMINED: throw new SolverException(result, "UNDETERMINED"); break;
+			case SATSolver::UNDETERMINED: {
+					if (params.lightVerif) {
+						return false;
+					}
+					else {
+						throw new SolverException(result, "UNDETERMINED"); break;
+					}
+				}									
 	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
 	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
 	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;

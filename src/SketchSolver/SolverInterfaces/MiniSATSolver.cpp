@@ -438,22 +438,10 @@ SATSolver::SATSolverResult MiniSATSolver::solve(){
 
 
 
- void MiniSATSolver::clean(){
- 	finalOr.clear();
- 	Dout( cout<<" CLEANING UP "<<endl );
- 	delete s;
- 	s = new Solver();
-	if(isNegated()){ s->polarity_mode = Solver::polarity_false; }
- 	s->newVar();
-	Dout(cout<<"clause count = "<<clauseCount<<endl;)
-	clauseCount=0;
-	if(lsolve){
-		s->makeIncomplete();
-	}
-}
+
 
 void MiniSATSolver::lightSolve(){
-	s->makeIncomplete();
+	s->makeIncomplete(35000000);
 	lsolve = true;
 }
 

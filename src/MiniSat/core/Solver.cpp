@@ -1723,7 +1723,8 @@ lbool Solver::solve(const vec<Lit>& assumps)
     double  nof_conflicts = restart_first;
     double  nof_learnts   = nClauses() * learntsize_factor;
     lbool   status        = l_Undef;
-
+	uint16_t decisionsStart = decisions;
+	cout << "DECISIONS START = " << decisionsStart << endl;
     if (verbosity >= 1){
         printf("============================[ Search Statistics ]==============================\n");
         printf("| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
@@ -1737,7 +1738,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
         status = search((int)nof_conflicts, (int)nof_learnts);
         nof_conflicts *= restart_inc;
         nof_learnts   *= learntsize_inc;		
-		if(incompletenessCutoff > 0 && decisions > incompletenessCutoff){
+		if(incompletenessCutoff > 0 && (decisions-decisionsStart) > incompletenessCutoff){
 			printf("WARNING: You are running with the -lightverif flag, so I am bailing\n");
 			printf("out and assuming the problem is UNSAT even though I don't know for sure.\n");
 			cancelUntil(0);
