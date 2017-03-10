@@ -294,6 +294,17 @@ public:
 	void addVar() {
 		varmap.push(-1);
 	}
+
+	typedef tentry*  rangewalker;
+
+	rangewalker rbegin() {
+		return &ranges.last();
+	}
+
+	rangewalker rend() {
+		return ranges.begin()-1;
+	}
+
 	void updateRange(iVar varid, int level, const Range&  newrange, Intclause* rson);
 	void popRanges(int level);
 	const Range& getRange(iVar varid);
@@ -539,6 +550,66 @@ public:
 	}
 
 
+	vec<Lit>& getSummary(iVar vr, Intclause* ic) {
+		explain.clear();
+		seen.growTo(nvars());
+		for (int i = 0; i< seen.size(); ++i) {
+			seen[i] = 0;
+		}
+		int scount = 0;
+		if (ic == NULL) {			
+			seen[vr] = 1;			
+			scount++;
+		} else {
+			ic->moreAct();
+			for (int i = 0; i<ic->size(); ++i) {				
+				iVar iv = (*ic)[i];
+				if (seen[iv]==0) {
+					seen[iv] = 1;
+					++scount;
+				}
+			}
+		}
+
+		for (auto it = ranges.rbegin(); it != ranges.rend(); --it) {
+			iVar iv = it->var;
+			if (seen[iv] == 1) {
+				seen[iv] = 0;
+				--scount;
+				Intclause* ic = it->rson;
+				if (ic == NULL) {
+					Range& r = it->range;
+					if (r.isSingle()) {
+						Lit tmp;
+						if (checkLegal(iv, r.getLo(), tmp)) {
+							if (var(tmp) != var_Undef) {
+								// cout<<", "<<vr<<"("<<r.getLo()<<")";
+								explain.push(~tmp);
+							}
+						}
+					}
+				} else {
+					ic->moreAct();
+					for (int i = 0; i<ic->size(); ++i) {
+						iVar iv = (*ic)[i];
+						if (seen[iv] == 0) {
+							seen[iv] = 1;
+							++scount;
+						}
+					}
+				}
+			}
+
+
+			if (scount == 0) {
+				break;
+			}
+		}
+
+		return explain;
+	}
+
+
 	/**
 	if(ic==null){
 	look at the root causes that led to vr to be set to its current value.
@@ -672,45 +743,14 @@ public:
 			interpair& ip = interf[i];
 			if(ip.l == l){	
 				int lev = ip.tlevel;
-				int iv = trail[lev].var;
-				lev = -1;				
-				return getSummaryA(iv, NULL, lev);
+				int iv = trail[lev].var;							
+				return getSummary(iv, NULL);
 			}
 		}
 		Assert(false, "WTF");
 	}
 
-	/**
-	 if(ic==null){
-		look at the root causes that led to vr to be set to its current value. 
-		the return vector contains a list of literals such that if any of those had been true, vr would not have its current value.
-	 }else{
-	    it is assumed that ic is a conflict that was returned by propagate.
-		we will return a list of literals such that if any of those literals
-		had ben true, that clause would not have failed in the same way.
-	 }
-	*/
-	vec<Lit>& getSummaryB(iVar vr, Intclause* ic, int lev = -1){		
-		explain.clear(); 
-		for(int i=0; i< seen.size(); ++i){
-			seen[i] = 0;
-		}
-		if(ic == NULL){
-			seen[vr] = 1;
-			helper(vr, lev);	
-		}else{	
-			ic->moreAct();
-			for(int i=0; i<ic->size(); ++i){
-				iVar iv = (*ic)[i];
-				if(seen[iv]==0){
-					seen[iv] = 1;
-					helper(iv, lev);
-				}
-			}
-		}		
-		//cout<<endl;
-		return explain;
-	}
+	
 
 	void innerhelper(Intclause* ic, iVar vr, vec<pair<iVar, int> >& ppp, int trailLev){		
 		if(ic==NULL){			

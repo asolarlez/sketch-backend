@@ -541,8 +541,7 @@ void BooleanDAG::cleanup(){
   
   for(int i=0; i < nodes.size(); ++i){
   	if(nodes[i]->flag == 0 && 
-  		nodes[i]->type != bool_node::SRC && 
-  		nodes[i]->type != bool_node::CTRL){
+  		nodes[i]->type != bool_node::SRC){
 		nodes[i]->dislodge();  		
 	}else{
 		if(nodes[i]->flag == 0){
@@ -556,8 +555,7 @@ void BooleanDAG::cleanup(){
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
   	if(onode->flag == 0 && 
-  		onode->type != bool_node::SRC && 
-  		onode->type != bool_node::CTRL){
+  		onode->type != bool_node::SRC){
   		  	
 		if(onode->isInter()){
 			INTER_node* inonode = dynamic_cast<INTER_node*>(onode);	
@@ -566,8 +564,8 @@ void BooleanDAG::cleanup(){
 				named_nodes.erase(it);
 			}
 		}  		
-		if(onode->type == bool_node::UFUN){
-			vector<bool_node*>& nvec = nodesByType[bool_node::UFUN];
+		if(onode->type == bool_node::UFUN || onode->type == bool_node::CTRL){
+			vector<bool_node*>& nvec = nodesByType[onode->type];
 			vector<bool_node*>::iterator it = find(nvec.begin(), nvec.end(), onode);
 			if(it != nvec.end()){
 				nvec.erase(it);

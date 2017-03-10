@@ -1166,8 +1166,8 @@ Clause* Solver::propagate()
 								qhead = trail.size();
 								goto FoundWatch;
 							} else {
-								int lev = -1;
-								vec<Lit>& ps = intsolve->getSummaryA(vr, NULL, lev);
+								
+								vec<Lit>& ps = intsolve->getSummary(vr, NULL);
 								Assert(ps.size() > 0, "NOT BIG");
 								Lit t = ps[0];
 								ps.push(t);
@@ -1225,7 +1225,9 @@ Clause* Solver::propagate()
 							//the solver would have told us? 
 
 							Assert(iconf != NULL, "Maybe?");
-							vec<Lit>& ps = intsolve->getSummaryA(vr, iconf);
+							//vec<Lit> old;
+							//intsolve->getSummaryA(vr, iconf).copyTo(old);
+							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
 							//intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
 							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
@@ -1723,7 +1725,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
     double  nof_conflicts = restart_first;
     double  nof_learnts   = nClauses() * learntsize_factor;
     lbool   status        = l_Undef;
-	uint16_t decisionsStart = decisions;
+	uint64_t decisionsStart = decisions;
 	cout << "DECISIONS START = " << decisionsStart << endl;
     if (verbosity >= 1){
         printf("============================[ Search Statistics ]==============================\n");

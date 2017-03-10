@@ -441,7 +441,7 @@ SATSolver::SATSolverResult MiniSATSolver::solve(){
 
 
 void MiniSATSolver::lightSolve(){
-	s->makeIncomplete(35000000);
+	s->makeIncomplete(30000000);
 	lsolve = true;
 }
 

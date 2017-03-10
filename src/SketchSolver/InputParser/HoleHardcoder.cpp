@@ -377,17 +377,17 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 						}
 						else {
 							if (!reallyConcretize) {
-								cout << "    has a bad child" << child->lprint() << endl;
-								randholes[node->get_name()] = REALLYLEAVEALONE;
-								return node;
+								//cout << "    has a bad child" << child->lprint() << endl;
+								//randholes[node->get_name()] = REALLYLEAVEALONE;
+								//return node;
 							}
 						}
 					}
 					else {
 						if (!reallyConcretize) {
-							cout << "    has a bad child" << child->lprint() << endl;
-							randholes[node->get_name()] = REALLYLEAVEALONE;
-							return node;
+							//cout << "    has a bad child" << child->lprint() << endl;
+							//randholes[node->get_name()] = REALLYLEAVEALONE;
+							//return node;
 						}
 					}
 					ARRASSEQonly = false;
