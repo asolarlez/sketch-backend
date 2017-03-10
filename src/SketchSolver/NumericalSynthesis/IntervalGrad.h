@@ -7,19 +7,54 @@
 #include "BasicError.h"
 
 using namespace std;
+class DistanceGrad {
+public:
+	float dist;
+	gsl_vector* grad;
+	bool set; // TODO: this bit is not necessary if the default dist is 0
+	DistanceGrad(float d, gsl_vector* g): dist(d), grad(g), set(true) {}
+	~DistanceGrad(void) {
+		delete grad;
+	}
+	string print() {
+		stringstream str;
+		if (set) {
+			str << "Dist: " << dist << endl;
+			str << "DGrads: ";
+			for (int i = 0; i < grad->size; i++) {
+				str << gsl_vector_get(grad, i) << ", ";
+			}
+		} else {
+			str << "Dist: NOT SET";
+		}
+		return str.str();
+	}
+};
+
 class IntervalGrad {
 	float low;
 	float high;
 	gsl_vector* lgrad;
 	gsl_vector* hgrad;
 	
-	static constexpr float MAXVAL = numeric_limits<float>::max();
-	static constexpr float MINVAL = - numeric_limits<float>::max();
+	static constexpr float MAXVAL = 1e10;
+	static constexpr float MINVAL = -1e10;
 	static constexpr float PI = 3.1415926535897;
+	static constexpr float MINSIZE = 0.01;
+	
+	static constexpr float DELTA = 0.7;
+	static constexpr float ALPHA = 10;
+	static constexpr float BETA = -10;
 	
 public:
 	static gsl_vector* tmp;
-	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {	}
+	static gsl_vector* tmp1;
+	static gsl_vector* tmp2;
+	static gsl_vector* tmp3;
+	bool singleton;
+	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {
+		singleton = false;
+	}
 	~IntervalGrad(void) {
 		delete lgrad;
 		delete hgrad;
@@ -46,7 +81,28 @@ public:
 	static void ig_tan(IntervalGrad* m, IntervalGrad* o); // o = tan(m)
 	static void ig_sqrt(IntervalGrad* m, IntervalGrad* o); // o = sqrt(m)
 	static void ig_copy(IntervalGrad* i1, IntervalGrad* i2); // copy i1 into i2
-	static void ig_cast_int_float(IntervalGrad* m, IntervalGrad* o); 
+	static void ig_cast_int_float(IntervalGrad* m, IntervalGrad* o);
+	
+	static void ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, DistanceGrad* d, IntervalGrad* o);
+	static void ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o);
+	static IntervalGrad* ig_leftExtend(IntervalGrad* m);
+	static IntervalGrad* ig_rightExtend(IntervalGrad* m);
+	
+	double getSize() {
+		if (high - low < MINSIZE) return MINSIZE;
+		return high - low;
+	}
+	
+	gsl_vector* getSizeGrad() {
+		gsl_vector* g = gsl_vector_alloc(lgrad->size);
+		for (int i = 0; i < lgrad->size; i++) {
+			gsl_vector_set(g, i, 0);
+		}
+		if (high - low < MINSIZE) return g;
+		gsl_vector_memcpy(g, hgrad);
+		gsl_vector_sub(hgrad, lgrad);
+		return g;
+	}
 	
 	string print() {
 		stringstream str;
@@ -63,12 +119,16 @@ public:
 		return str.str();
 	}
 	
-private:
+	static float findMin(float val1, float val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* l);
 	static float findMin(const vector<float>& vals, const vector<gsl_vector*>& grads, gsl_vector* l);
+	static float findMax(float val1, float val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* h);
 	static float findMax(const vector<float>& vals, const vector<gsl_vector*>& grads, gsl_vector* h);
-	static void softMinMax(const vector<float>& vals, const vector<gsl_vector*>& grads, gsl_vector* l, float alpha, float t);
-	
+	static float sigmoid(float d, gsl_vector* grads, gsl_vector* out);
 	static void default_grad(gsl_vector* out);
+
+private:
+	static float softMinMax(const vector<float>& vals, const vector<gsl_vector*>& grads, gsl_vector* l, float alpha, float t);
+	
 	static void compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads, gsl_vector* out);
 	static gsl_vector* compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads);
 	static void compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads, gsl_vector* out);
@@ -78,8 +138,33 @@ private:
 	static gsl_vector* compute_square_grad(float mval, gsl_vector* mgrads);
 	static void compute_arctan_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_sin_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
+	static gsl_vector* compute_sin_grad(float mval, gsl_vector* mgrads);
 	static void compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
+	static gsl_vector* compute_cos_grad(float mval, gsl_vector* mgrads);
 	static void compute_tan_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_sqrt_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	
+	static bool inLimit(float v) {
+		if (!isfinite(v)) return false;
+		if (v > MAXVAL || v < MINVAL) return false;
+		return true;
+	}
+	
+	float bound(float v) {
+		if (!inLimit(v)) {
+			return v > 0 ? MAXVAL : MINVAL;
+		} else {
+			return v;
+		}
+	}
+	
+	void bound() {
+		low = bound(low);
+		high = bound(high);
+		
+		for (int i = 0; i < lgrad->size; i++) {
+			gsl_vector_set(lgrad, i, bound(gsl_vector_get(lgrad, i)));
+			gsl_vector_set(hgrad, i, bound(gsl_vector_get(hgrad, i)));
+		}
+	}
 };

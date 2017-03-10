@@ -3,6 +3,7 @@
 AutoDiff::AutoDiff(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p):NodeEvaluator(functionMap_p, bdag_p, _floats), floatCtrls(floatCtrls_p) {
   grads.resize(bdag.size(), NULL);
   nctrls = floatCtrls_p.size();
+	if (nctrls == 0) nctrls = 1;
   for (int i = 0; i < grads.size(); i++) {
     grads[i] = gsl_vector_alloc(nctrls);
   }

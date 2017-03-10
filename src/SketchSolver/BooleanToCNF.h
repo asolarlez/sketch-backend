@@ -51,7 +51,7 @@ class SolverHelper {
 	int lastVar;
     SATSolver& mng;
 	vector<char> tmpbuf;
-  map<string, BooleanDAG*> numericalAbsMap;
+  map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap;
 
 	/*
 	This function is in charge of instantiating new synthesizers.
@@ -342,7 +342,7 @@ public:
     void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
   
-  void setNumericalAbsMap(map<string, BooleanDAG*> numericalAbsMap_p) {
+  void setNumericalAbsMap(map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap_p) {
     numericalAbsMap = numericalAbsMap_p;
   }
 };

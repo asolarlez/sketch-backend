@@ -145,6 +145,7 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 	} else {
 		SynthInSolver* sin = it->second;
 		rvalue = sin->getExpression(this, node.multi_mother);
+		if (rvalue == NULL) return;
     if(rvalue->type == bool_node::TUPLE_CREATE) {
       return;
     }

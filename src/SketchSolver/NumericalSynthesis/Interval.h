@@ -17,7 +17,7 @@ public:
 	static constexpr double MAXVAL = numeric_limits<double>::max();
 	static constexpr double MINVAL = - numeric_limits<double>::max();
 	static constexpr double PI = 3.1415926535897;
-	static constexpr double PRECISION = 1e-4;
+	static constexpr double PRECISION = 1e-8;
 	
 	Interval(double _low, double _high): low(_low), high(_high) {
 		if (fabs(low - high) < PRECISION) {
@@ -53,6 +53,9 @@ public:
 	static Interval* i_arccos(Interval* m);
 	static Interval* i_invsqrt(Interval* m);
 	static Interval* i_invsquare(Interval* m);
+	static Interval* i_and(Interval* m, Interval* f);
+	static Interval* i_or(Interval* m, Interval* f);
+	static Interval* i_not(Interval* m);
 	
 	static bool sameInterval(Interval* a, Interval* b) {
 		if (a == b) return true;

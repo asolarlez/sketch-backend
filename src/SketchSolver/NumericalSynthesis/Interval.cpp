@@ -231,6 +231,48 @@ Interval* Interval::i_lt(Interval* m, Interval* f) {
 	}
 }
 
+Interval* Interval::i_and(Interval* m, Interval* f) {
+	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
+	if (m != FULL_INTERVAL && m->getLow() == m->getHigh() && m->getLow() == 0) {
+		return new Interval(0, 0);
+	}
+	if (f != FULL_INTERVAL && f->getLow() == f->getHigh() && f->getLow() == 0) {
+		return new Interval(0, 0);
+	}
+	if (m != FULL_INTERVAL && m->getLow() == m->getHigh() && f->getLow() == f->getHigh() && m->getLow() == 1 && f->getLow() == 1) {
+		return new Interval(1, 1);
+	}
+	return new Interval(0, 1);
+}
+
+Interval* Interval::i_or(Interval* m, Interval* f) {
+	if (m == EMPTY_INTERVAL || f == EMPTY_INTERVAL) return EMPTY_INTERVAL;
+	if (m != FULL_INTERVAL && m->getLow() == m->getHigh() && m->getLow() == 1) {
+		return new Interval(1, 1);
+	}
+	if (f != FULL_INTERVAL && f->getLow() == f->getHigh() && f->getLow() == 1) {
+		return new Interval(1, 1);
+	}
+	if (m != FULL_INTERVAL && m->getLow() == m->getHigh() && f->getLow() == f->getHigh() && m->getLow() == 0 && f->getLow() == 0) {
+		return new Interval(0, 0);
+	}
+	return new Interval(0, 1);
+}
+
+Interval* Interval::i_not(Interval* m) {
+	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;
+	if (m == FULL_INTERVAL) return new Interval(0, 1);
+	if (m->getLow() == m->getHigh()) {
+		if (m->getLow() == 0) {
+			return new Interval(1, 1);
+		} else {
+			Assert(m->getLow() == 1, "Something is wrong NOT");
+			return new Interval(0, 0);
+		}
+	}
+	return new Interval(0, 1);
+}
+
 Interval* Interval::i_square(Interval* m) {
 	if (m == FULL_INTERVAL) return new Interval(0, MAXVAL);
 	if (m == EMPTY_INTERVAL) return EMPTY_INTERVAL;

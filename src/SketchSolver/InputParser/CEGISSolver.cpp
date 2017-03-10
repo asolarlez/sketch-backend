@@ -41,7 +41,6 @@ void CEGISSolver::addProblem(BooleanDAG* problem){
       } else{
 				cints++;
 			}
-        cout << (ctrlnode->getOtype() == OutType::FLOAT) << endl;
       if(!ctrlnode->get_Angelic() && ctrlnode->getOtype() != OutType::FLOAT){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 

@@ -4,10 +4,15 @@
 #include <math.h>
 
 
-RangeDiff::RangeDiff(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p):NodeEvaluator(functionMap_p, bdag_p, _floats), floatCtrls(floatCtrls_p) {
+RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p) {
   ranges.resize(bdag.size(), NULL);
+	distances.resize(bdag.size(), NULL);
   nctrls = floatCtrls_p.size();
+	if (nctrls == 0) nctrls = 1;
 	IntervalGrad::tmp = gsl_vector_alloc(nctrls);
+	IntervalGrad::tmp1 = gsl_vector_alloc(nctrls);
+	IntervalGrad::tmp2 = gsl_vector_alloc(nctrls);
+	IntervalGrad::tmp3 = gsl_vector_alloc(nctrls);
 }
 
 RangeDiff::~RangeDiff(void) {
@@ -15,71 +20,89 @@ RangeDiff::~RangeDiff(void) {
 		if (ranges[i] != NULL) {
 			delete ranges[i];
 		}
+		if (distances[i] != NULL) {
+			delete distances[i];
+		}
 	}
 	delete IntervalGrad::tmp;
+	delete IntervalGrad::tmp1;
+	delete IntervalGrad::tmp2;
+	delete IntervalGrad::tmp3;
 }
 
 void RangeDiff::visit( SRC_node& node ) { //TODO: deal with array src nodes
   //cout << "Visiting SRC node" << endl;
-  string name = node.get_name();
-  if (inputs->contains(name)) {
-		float val;
-		int ival = (*inputs)[name];
-		if (isFloat(node)) {
-			val = floats.getFloat(ival);
-		} else {
-			val = (float) ival;
-		}
-		IntervalGrad* interval = r(node);
-		interval->update(val, val);
-		gsl_vector* l = interval->getLGrad();
-		gsl_vector* h = interval->getHGrad();
-		for (int i = 0; i < nctrls; i++) {
-			gsl_vector_set(l, i, 0.0);
-			gsl_vector_set(h, i, 0.0);
-		}
-	}
+	Assert(false, "NYI: rangediff for src");
 }
 
 void RangeDiff::visit( DST_node& node ) {
   //cout << "Visiting DST node" << endl;
+	// Ignore
 }
 
 void RangeDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
+	DistanceGrad* dg = d(node);
+	DistanceGrad* mdist = d(node.mother);
+	int ival = getInputValue(node); // Get the value from SAT solver
+	if (ival != DEFAULT_INP) {
+		Assert(ival == 1, "Did SAT solver set 0 for an assert?");
+	}
+	// Check if the value computed from mother satisfies the assert
+	if (mdist->set) {
+		computeError(mdist->dist, 1, mdist->grad, node);
+	}
+	dg->dist = 1000;
+	IntervalGrad::default_grad(dg->grad);
+	dg->set = true;
 }
 
 void RangeDiff::visit( CTRL_node& node ) {
   //cout << "Visiting CTRL node" << endl;
-	float val;
-  int ival = (*inputs)[node.get_name()];
-	if (isFloat(node)) {
-		val = floats.getFloat(ival);
+	string name = node.get_name();
+	if (ctrls->contains(name)) {
+		Assert(isFloat(node), "Numerical Solver should deal with only float holes");
+		float val = floats.getFloat((*ctrls)[name]);
+		int idx = - 1;
+		if (floatCtrls.find(name) != floatCtrls.end()) {
+			idx = floatCtrls[name];
+		}
+		IntervalGrad* interval = r(node);
+		interval->update(val, val);
+		interval->singleton = true;
+		gsl_vector* l = interval->getLGrad();
+		gsl_vector* h = interval->getHGrad();
+		for (int i = 0; i < nctrls; i++) {
+			if (i == idx) {
+				gsl_vector_set(l, i, 1.0);
+				gsl_vector_set(h, i, 1.0);
+			} else {
+				gsl_vector_set(l, i, 0.0);
+				gsl_vector_set(h, i, 0.0);
+			}
+		}
 	} else {
-		val = (float) ival;
+		Assert(!isFloat(node), "All float holes should be dealt by the numerical solver");
+		DistanceGrad* dg = d(node);
+		int ival = getInputValue(node);
+		if (ival != DEFAULT_INP) {
+			if (node.getOtype() == OutType::BOOL) {
+				dg->dist = (ival == 1) ? 1000 : -1000;
+				IntervalGrad::default_grad(dg->grad);
+				dg->set = true;
+			} else {
+				Assert(false, "NYI: rangediff for integer ctrls");
+				dg->set = false;
+			}
+		} else {
+			dg->set = false;
+		}
 	}
-  int idx = - 1;
-  string name = node.get_name();
-	if (floatCtrls.find(name) != floatCtrls.end()) {
-    idx = floatCtrls[name];
-	}
-	IntervalGrad* interval = r(node);
-	interval->update(val, val);
-	gsl_vector* l = interval->getLGrad();
-	gsl_vector* h = interval->getHGrad();
-  for (int i = 0; i < nctrls; i++) {
-    if (i == idx) {
-      gsl_vector_set(l, i, 1.0);
-      gsl_vector_set(h, i, 1.0);
-    } else {
-      gsl_vector_set(l, i, 0.0);
-      gsl_vector_set(h, i, 0.0);
-    }
-  }
 }
 
 void RangeDiff::visit( PLUS_node& node ) {
   //cout << "Visiting PLUS node" << endl;
+	Assert(isFloat(node), "NYI: plus with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad* finterval = r(node.father);
@@ -88,6 +111,7 @@ void RangeDiff::visit( PLUS_node& node ) {
 
 void RangeDiff::visit( TIMES_node& node ) {
   //cout << "Visiting TIMES node" << endl;
+	Assert(isFloat(node), "NYI: times with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad* finterval = r(node.father);
@@ -100,32 +124,32 @@ void RangeDiff::visit( TIMES_node& node ) {
 
 void RangeDiff::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-  Assert(node.mother->type == bool_node::SRC, "Something is wrong arracc");
-  SRC_node* inode = dynamic_cast<SRC_node*>(node.mother);
-  if (!(*inputs).contains(inode->name)) {
-    // take union of the two intervals
+	Assert(isFloat(node), "NYI: arracc with ints");
+#if FINE_GRAIN_RANGES
+	DistanceGrad* dist = d(node.mother);
+	if (dist->set) {
+		//cout << "Dist: " << dist->dist << endl;
+		// take conditional union of the two intervals
+		Assert(node.multi_mother.size() == 2, "NYI: Fine grained range for ARRACC of size > 2");
 		IntervalGrad* interval = r(node);
-		vector<IntervalGrad*> mIntervals;
-		for (int i = 0; i < node.multi_mother.size(); i++) {
-			mIntervals.push_back(r(node.multi_mother[i]));
-		}
-		IntervalGrad::ig_union(mIntervals, interval);
-	} else {
-		IntervalGrad* minterval = r(node.mother);
-    Assert(minterval->getLow()  == minterval->getHigh(), "Something is wrong arracc2");
-    int idx = minterval->getLow();
-    if (idx < node.multi_mother.size() && idx >= 0) {
-			IntervalGrad* interval = r(node);
-			IntervalGrad* finterval = r(node.multi_mother[idx]);
-			IntervalGrad::ig_copy(finterval, interval);
-		} else {
-			Assert(false, "ARRACC: out of bounds");
-		}
-  }
+		IntervalGrad* minterval = r(node.multi_mother[0]);
+		IntervalGrad* finterval = r(node.multi_mother[1]);
+		IntervalGrad::ig_conditionalUnion(minterval, finterval, dist, interval);
+		return;
+	}
+#endif
+	// take union of the two intervals
+	IntervalGrad* interval = r(node);
+	vector<IntervalGrad*> mIntervals;
+	for (int i = 0; i < node.multi_mother.size(); i++) {
+		mIntervals.push_back(r(node.multi_mother[i]));
+	}
+	IntervalGrad::ig_union(mIntervals, interval);
 }
 
 void RangeDiff::visit( DIV_node& node ) {
   //cout << "Visiting DIV node" << endl;
+	Assert(isFloat(node), "NYI: div with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad* finterval = r(node.father);
@@ -134,45 +158,211 @@ void RangeDiff::visit( DIV_node& node ) {
 
 void RangeDiff::visit( MOD_node& node ) {
   cout << "Visiting MOD node" << endl;
-  Assert(false, "NYI");
+  Assert(false, "NYI: rangediff mod");
 }
 
 void RangeDiff::visit( NEG_node& node ) {
   //cout << "Visiting NEG node" << endl;
+	Assert(isFloat(node), "NYI: neg with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad::ig_neg(minterval, interval);
 }
 
 void RangeDiff::visit( CONST_node& node ) {
-  //cout << "Visiting CONST node" << endl;
-  float val;
-  if (node.isFloat()) {
-    val = node.getFval();
-  } else {
-    val = (float) node.getVal();
-  }
-	IntervalGrad* interval = r(node);
-	interval->update(val, val);
-  gsl_vector* l = interval->getLGrad();
-  gsl_vector* h = interval->getHGrad();
-  for (int i = 0; i < nctrls; i++) {
-    gsl_vector_set(l, i, 0.0);
-    gsl_vector_set(h, i, 0.0);
-  }
+	if (node.isFloat()) {
+		float val = node.getFval();
+		IntervalGrad* interval = r(node);
+		interval->update(val, val);
+		interval->singleton = true;
+		IntervalGrad::default_grad(interval->getLGrad());
+		IntervalGrad::default_grad(interval->getHGrad());
+	} else {
+		int val = node.getVal();
+		DistanceGrad* dg = d(node);
+		int ival = getInputValue(node);
+		if (ival != DEFAULT_INP) {
+			Assert(val == ival, "SAT solver set wrong value for a const?");
+		}
+		if (node.getOtype() == OutType::BOOL) {
+			dg->dist = (val == 1) ? 1000 : -1000;
+			IntervalGrad::default_grad(dg->grad);
+			dg->set = true;
+		} else {
+			Assert(false, "NYI: rangediff integer constants");
+			dg->set = false;
+		}
+	}
 }
 
 void RangeDiff::visit( LT_node& node ) {
-  //cout << "Visiting LT node" << endl;
+	DistanceGrad* dg = d(node);
+	
+	// Comput the value from the parents
+	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: rangediff for lt with integer parents");
+	IntervalGrad* minterval = r(node.mother);
+	IntervalGrad* finterval = r(node.father);
+	
+	if (minterval->getHigh() <= finterval->getLow()) {
+		// Definitely true
+		dg->dist = finterval->getLow()  - minterval->getHigh();
+		gsl_vector_memcpy(dg->grad, finterval->getLGrad());
+		gsl_vector_sub(dg->grad, minterval->getHGrad());
+		dg->set = true;
+	} else if (minterval->getLow() > finterval->getHigh()) {
+		// Definitely false
+		dg->dist = finterval->getHigh() - minterval->getLow();
+		gsl_vector_memcpy(dg->grad, finterval->getHGrad());
+		gsl_vector_sub(dg->grad, minterval->getLGrad());
+		dg->set = true;
+	} else {
+		// can be either
+		dg->dist = 0;
+		IntervalGrad::default_grad(dg->grad);
+		dg->set = true;
+	}
+	
+	int ival = getInputValue(node);
+	if (ival != DEFAULT_INP) {
+		// check that the value computed from parents matches the value set by the SAT solver.
+		if (dg->set) {
+			computeError(dg->dist, ival, dg->grad, node);
+		}
+		dg->dist = (ival == 1) ? 1000 : -1000;
+		IntervalGrad::default_grad(dg->grad);
+		dg->set = true;
+	}
 }
 
 void RangeDiff::visit( EQ_node& node ) {
   //cout << "Visiting EQ node" << endl;
+	Assert(false, "NYI: rangediff for eq");
+}
+
+void RangeDiff::visit( AND_node& node ) {
+	DistanceGrad* dg = d(node);
+	
+	// Compute the value from the parents
+	DistanceGrad* mdist = d(node.mother);
+	DistanceGrad* fdist = d(node.father);
+	
+	if (mdist->set && fdist->set) {
+		vector<float> vals;
+		vector<gsl_vector*> grads;
+		vals.push_back(mdist->dist);
+		vals.push_back(fdist->dist);
+		grads.push_back(mdist->grad);
+		grads.push_back(fdist->grad);
+		dg->dist = IntervalGrad::findMin(vals, grads, dg->grad);
+		dg->set = true;
+	} else if (mdist->set) {
+		if (mdist->dist < 0) {
+			dg->dist = mdist->dist;
+			gsl_vector_memcpy(dg->grad, mdist->grad);
+			dg->set = true;
+		} else {
+			dg->set = false;
+		}
+	} else if (fdist->set) {
+		if (fdist->dist < 0) {
+			dg->dist = fdist->dist;
+			gsl_vector_memcpy(dg->grad, fdist->grad);
+			dg->set = true;
+		} else {
+			dg->set = false;
+		}
+	} else {
+		dg->set = false;
+	}
+	
+	int ival = getInputValue(node);
+	if (ival != DEFAULT_INP) {
+		// check that the value computed from parents matches the value set by the SAT solver.
+		if (dg->set) {
+			computeError(dg->dist, ival, dg->grad, node);
+		}
+		dg->dist = (ival == 1) ? 1000 : -1000;
+		IntervalGrad::default_grad(dg->grad);
+		dg->set = true;
+	}
+}
+
+void RangeDiff::visit( OR_node& node ) {
+	DistanceGrad* dg = d(node);
+	
+	// Compute the value from the parents
+	DistanceGrad* mdist = d(node.mother);
+	DistanceGrad* fdist = d(node.father);
+	
+	if (mdist->set && fdist->set) {
+		vector<float> vals;
+		vector<gsl_vector*> grads;
+		vals.push_back(mdist->dist);
+		vals.push_back(fdist->dist);
+		grads.push_back(mdist->grad);
+		grads.push_back(fdist->grad);
+		dg->dist = IntervalGrad::findMax(vals, grads, dg->grad);
+		dg->set = true;
+	} else if (mdist->set) {
+		if (mdist->dist > 0) {
+			dg->dist = mdist->dist;
+			gsl_vector_memcpy(dg->grad, mdist->grad);
+			dg->set = true;
+		} else {
+			dg->set = false;
+		}
+	} else if (fdist->set) {
+		if (fdist->dist > 0) {
+			dg->dist = fdist->dist;
+			gsl_vector_memcpy(dg->grad, fdist->grad);
+			dg->set = true;
+		} else {
+			dg->set = false;
+		}
+	} else {
+		dg->set = false;
+	}
+	
+	int ival = getInputValue(node);
+	if (ival != DEFAULT_INP) {
+		// check that the value computed from parents matches the value set by the SAT solver.
+		if (dg->set) {
+			computeError(dg->dist, ival, dg->grad, node);
+		}
+		dg->dist = (ival == 1) ? 1000 : -1000;
+		IntervalGrad::default_grad(dg->grad);
+		dg->set = true;
+	}
+}
+
+void RangeDiff::visit( NOT_node& node ) {
+	DistanceGrad* dg = d(node);
+	DistanceGrad* mdist = d(node.mother);
+	
+	if (mdist->set) {
+		dg->dist = - mdist->dist;
+		gsl_vector_memcpy(dg->grad, mdist->grad);
+		gsl_vector_scale(dg->grad, -1.0);
+		dg->set = true;
+	} else {
+		dg->set = false;
+	}
+	
+	int ival = getInputValue(node);
+	if (ival != DEFAULT_INP) {
+		// check that the value computed from parents matches the value set by the SAT solver.
+		if (dg->set) {
+			computeError(dg->dist, ival, dg->grad, node);
+		}
+		dg->dist = (ival == 1) ? 1000 : -1000;
+		IntervalGrad::default_grad(dg->grad);
+		dg->set = true;
+	}
 }
 
 void RangeDiff::visit( ARRASS_node& node ) {
   cout << "Visiting ARRASS node" << endl;
-  Assert(false, "NYI");
+  Assert(false, "NYI: rangediff for arrass");
 }
 
 void RangeDiff::visit( UFUN_node& node ) {
@@ -212,21 +402,28 @@ void RangeDiff::visit( TUPLE_R_node& node) {
   }
 }
 
-bool RangeDiff::run(VarStore& inputs_p) {
-  funargs.clear();
-  inputs = &inputs_p;
-  int i=0;
-  failedAssert = false;
-  failedHAssert = false;
-  for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
+double RangeDiff::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
+  ctrls = &ctrls_p;
+	inputValues = inputValues_p;
+	errorGrad = errorGrad_p;
+	error = 0;
+  for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
     (*node_it)->accept(*this);
-		if(failedAssert){
-      return true;
-    }
-    if(failedHAssert){
-      return false;
-    }
-  }
-  return false;
+	}
+  return error;
 }
 
+void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node) {
+	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
+		/*cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;
+		cout << "Grad: " ;
+		for (int i = 0; i < nctrls; i++) {
+			cout << gsl_vector_get(dg, i) << " ";
+		}
+		cout << endl;*/
+		error += pow(dist, 2);
+		gsl_vector_memcpy(IntervalGrad::tmp3, dg);
+		gsl_vector_scale(IntervalGrad::tmp3, 2*dist);
+		gsl_vector_add(errorGrad, IntervalGrad::tmp3);
+	}
+}

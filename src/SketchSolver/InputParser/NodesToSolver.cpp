@@ -1476,9 +1476,9 @@ void NodesToSolver::visit( UFUN_node& node ){
 	string tuple_name = node.getTupleName();
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
 
-	if (tuple_type->entries.size() == 0) {
-		return;
-	}
+	//if (tuple_type->entries.size() == 0) {
+	//	return;
+	//}
 
 
 	vector<Tvalue> params;

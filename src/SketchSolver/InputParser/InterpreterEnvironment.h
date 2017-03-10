@@ -74,7 +74,7 @@ class InterpreterEnvironment
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
 	FloatManager floats;
-	map<string, BooleanDAG*> numericalAbsMap;
+	map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap;
 
 	string findName(){
 		stringstream s;

@@ -1,7 +1,7 @@
 #include "GradientDescent.h"
 #include "NumericalSolver.h"
 
-void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, gsl_vector* prev) {
+void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allInputs, gsl_vector* prev) {
 	x = gsl_vector_alloc(N);
 	for (int i = 0; i < N; i++) {
 		gsl_vector_set(x, i, gsl_vector_get(prev, i));
@@ -11,7 +11,6 @@ void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allIn
 	myfundf.fdf = &ns->eval_fdf;
 	Parameters* p = new Parameters();
 	p->allInputs = allInputs;
-	p->allOutputs = allOutputs;
 	p->ns = ns;
 	myfundf.params = p;
 	gsl_multimin_fdfminimizer_set(minidf, &myfundf, x, INIT_STEP_SIZE, TOLERANCE);

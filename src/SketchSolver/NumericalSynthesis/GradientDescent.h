@@ -30,7 +30,7 @@ public:
 	gsl_vector* getResults() {
 		return minidf->x;
 	}
-	void init(NumericalSolver* ns, const vector<vector<int>>& allInputs, const vector<vector<int>>& allOutputs, gsl_vector* prev);
+	void init(NumericalSolver* ns, const vector<vector<int>>& allInputs, gsl_vector* prev);
 	double optimize();
 };
 

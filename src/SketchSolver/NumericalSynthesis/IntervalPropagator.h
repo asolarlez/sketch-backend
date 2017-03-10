@@ -179,7 +179,7 @@ public:
 		if (!checkAndAdd(interval, ointerval, &node, level, NULL)) return false;
 		bool success = propagate(level);
 #if IP_DEBUG
-		printCurState();
+		//printCurState();
 #endif
 		return success;
 	}
@@ -199,6 +199,9 @@ public:
 		qhead = 0;
 		int oldsize = itracker.size();
 		itracker.popIntervals(level);
+#if IP_DEBUG
+		printCurState();
+#endif
 	}
 	
 private:
@@ -335,8 +338,20 @@ private:
 				interval = Interval::i_equal(minterval, finterval);
 				break;
 			}
+			case bool_node::AND: {
+				interval = Interval::i_and(minterval, finterval);
+				break;
+			}
+			case bool_node::OR: {
+				interval = Interval::i_or(minterval, finterval);
+				break;
+			}
+			case bool_node::NOT: {
+				interval = Interval::i_not(minterval);
+				break;
+			}
 			case bool_node::ARRASS: {
-				Assert(false, "NYI: arrass");
+				Assert(false, "NYI: arrass " + node->lprint());
 				return false;
 			}
 			case bool_node::UFUN: {
@@ -355,7 +370,8 @@ private:
 				} else if (name == "sqrt_math") {
 					interval = Interval::i_sqrt(minterval);
 				} else {
-						Assert(false, "NYI");
+					cout << name << endl;
+						Assert(false, "NYI: ufun");
 				}
 				break;
 			}
@@ -364,7 +380,7 @@ private:
 					Assert(((UFUN_node*)(node->mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 					interval = Interval::i_copy(minterval);
 				} else {
-					Assert(false, "NYI");
+					Assert(false, "NYI: tupler");
 				}
 				break;
 			}
@@ -372,7 +388,7 @@ private:
 				return true;
 			}
 			default: {
-				Assert(false, "NYI");
+				Assert(false, "NYI: " + node->lprint() );
 				return false;
 			}
 		}
@@ -519,6 +535,44 @@ private:
 				}
 				break;
 			}
+			case bool_node::AND: {
+				if (ninterval->getLow() == ninterval->getHigh()) {
+					if (ninterval->getLow() == 0) {
+						if (ointerval->getLow() == ointerval->getHigh() && ointerval->getLow() == 1) {
+							interval = new Interval(0, 0);
+						} else {
+							interval = new Interval(0, 1);
+						}
+					} else {
+						Assert(ninterval->getLow() == 1, "Something is wrong AND");
+						interval = new Interval(1, 1);
+					}
+				} else {
+					interval = new Interval(0, 1);
+				}
+				break;
+			}
+			case bool_node::OR: {
+				if (ninterval->getLow() == ninterval->getHigh()) {
+					if (ninterval->getLow() == 0) {
+						interval = new Interval(0, 0);
+					} else {
+						Assert(ninterval->getLow() == 1, "Something is wrong AND");
+						if (ointerval->getLow() == ointerval->getHigh() && ointerval->getLow() == 0) {
+							interval = new Interval(1, 1);
+						} else {
+							interval = new Interval(0, 1);
+						}
+					}
+				} else {
+					interval = new Interval(0, 1);
+				}
+				break;
+			}
+			case bool_node::NOT: {
+				interval = Interval::i_not(ninterval);
+				break;
+			}
 			case bool_node::ARRASS: {
 				Assert(false, "NYI: arrass");
 				return false;
@@ -540,7 +594,8 @@ private:
 				} else if (name == "sqrt_math") {
 					interval = Interval::i_invsqrt(ninterval);
 				} else {
-					Assert(false, "NYI");
+					cout << name << " dhajdsfa" << endl;
+					Assert(false, "NYI: ufun2");
 				}
 				break;
 			}
@@ -549,7 +604,7 @@ private:
 					Assert(((UFUN_node*)(node->mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 					interval = Interval::i_copy(ninterval);
 				} else {
-					Assert(false, "NYI");
+					Assert(false, "NYI: tupler2");
 				}
 				break;
 			}
@@ -557,7 +612,7 @@ private:
 				return true;
 			}
 			default: {
-				Assert(false, "NYI");
+				Assert(false, "NYI2: " + node->lprint());
 				return false;
 			}
 		}
@@ -568,6 +623,7 @@ private:
 	// Collects all node ids that contributed to making the range of this node EMPTY
 	void generateConflict(bool_node* node) {
 #if IP_DEBUG
+		printCurState();
 		itracker.printAnalysis(itracker.size()-1);
 #endif
 		conflictNodes.clear();
