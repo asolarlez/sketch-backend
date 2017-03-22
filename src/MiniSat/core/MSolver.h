@@ -121,6 +121,13 @@ public:
     int     nLearnts   ()      const;       // The current number of learnt clauses.
     int     nVars      ()      const;       // The current number of variables.
 
+	void clearLearnts() { cout << "CLEARING LEARNTS" << endl; 
+	for(int i=0; i<learnts.size(); ++i)
+		removeClause(*learnts[i]);
+	
+	learnts.clear(); }
+
+
 	void	regInput	(int in);		//Armando: Register an input var. What distinguishes these vars is that conflicts on them are really really valuable.
 
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
@@ -187,6 +194,7 @@ protected:
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
+	vec<Clause*>		binaryLearnts;
 	vec<UfunSummary*>   allufuns;
 	vec<UfunSummary*>   ufunByID;
     double              cla_inc;          // Amount to bump next clause with.

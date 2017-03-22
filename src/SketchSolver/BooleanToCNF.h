@@ -23,7 +23,7 @@
 
 
 
-// #define Dout(msg) msg
+#define Dout(msg) /* msg */
 
 using namespace std;
 
@@ -395,7 +395,16 @@ public:
     // int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
+
+
+	void getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output);
+
 	void addHelperC(int l1, int l2);
+
+
+	Range getRange(iVar id) {
+		return mng.getRange(id);
+	}
   
   void setNumericalAbsMap(map<string, BooleanDAG*> numericalAbsMap_p) {
     numericalAbsMap = numericalAbsMap_p;
@@ -762,6 +771,49 @@ SolverHelper::addRetractableAssertClause (int a)
 }
 
 
+
+
+
+inline void
+SolverHelper::getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output) {
+	int sz = amtsize;
+	Assert(switchID.size() == amtsize, "This should never happen");
+	Assert(amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
+	int val = 0;
+	output.clear();
+	vec<Lit> vl;
+
+	if (doMemoization) {
+		int l = this->setStrBO(&switchID[0], sz, '!', 0);
+		int rv;
+		int tt = lastVar + 1;
+		if (this->memoizer.condAdd(&tmpbuf[0], l, tt, rv)) {
+			while (((val >> amtsize) & (0x1)) == 0) {
+				int x = rv + val;
+				int xx = mng.isValKnown(x);
+				if (xx != 0) { x = xx*YES; }
+				output.push_back(guardedVal(x, val));
+				++val;
+			}
+			return;
+		}
+	}
+
+	while (((val >> amtsize) & (0x1)) == 0) {
+		int x = newAnonymousVar();
+		for (int i = 0; i < sz; ++i) {
+			if (((val >> i) & (0x1)) == 0) {
+				mng.addHelper2Clause(-x, -switchID[i]);
+			} else {
+				mng.addHelper2Clause(-x, switchID[i]);
+			}
+		}
+		output.push_back(guardedVal(x, val));
+		++val;
+		vl.push(lfromInt(x));
+	}
+	mng.addHelperClause(vl);
+}
 
 
 inline void

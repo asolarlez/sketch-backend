@@ -179,80 +179,6 @@ inline int bmuxChildren(Intclause& ic){
 }
 
 
-class Range {
-	int lo;
-	int hi;
-public:
-	Range(int _lo, int _hi): lo(_lo), hi(_hi){}
-	int getLo() const { return lo; }
-	int getHi() const { return hi; }
-	bool contains(int x) {
-		return lo <= x && x <= hi;
-	}
-	bool isSingle() const {
-		return lo == hi;
-	}
-	bool isEmpty() const {
-		return (lo > hi);
-	}
-	string print() const;
-	friend Range operator+(const Range& a, const Range& b);
-	friend Range operator*(const Range& a, const Range& b);
-	friend Range operator-(const Range& a, const Range& b);
-	friend bool operator==(const Range& a, const Range& b);
-	friend bool operator<=(const Range& a, const Range& b);
-	friend Range join(const Range& a, const Range& b);
-	friend Range intersect(const Range& a, const Range& b);
-	friend Range square(const Range& a);
-};
-
-inline Range square(const Range& ina) {
-	int losq = ina.getLo()*ina.getLo();
-	int hisq = ina.getHi()*ina.getHi();
-	if (ina.getLo() < 0 && ina.getHi() >= 0) {
-		return Range(0, max(losq, hisq));
-	} else {
-		return Range(min(losq, hisq), max(losq, hisq));		
-	}
-}
-
-extern Range TOP_RANGE;
-
-inline Range operator+(const Range& a, const Range& b) { 
-	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE;  }
-	return Range(a.lo + b.lo, a.hi + b.hi); 
-}
-
-inline Range operator-(const Range& a, const Range& b) { 
-	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
-	return Range(a.lo - b.hi, a.hi - b.lo); 
-}
-
-inline Range join(const Range& a, const Range& b) {
-	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
-	return Range(min(a.lo, b.lo), max(a.hi, b.hi));
-}
-inline Range intersect(const Range& a, const Range& b) {
-	if (a == TOP_RANGE) { return b; }
-	if (b == TOP_RANGE) { return a; }
-	return Range(max(a.lo, b.lo), min(a.hi, b.hi));
-}
-
-inline Range operator*(const Range& a, const Range& b) { 
-	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
-	int t1 = a.lo * b.lo;
-	int t2 = a.hi * b.hi;
-	int t3 = a.lo * b.hi;
-	int t4 = a.hi * b.hi;
-	return Range(min(min(t1,t2),min(t3,t4)), max(max(t1, t2), max(t3, t4)));
-}
-
-inline bool operator==(const Range& a, const Range& b) {
-	return a.lo == b.lo && a.hi == b.hi;
-}
-inline bool operator<=(const Range& a, const Range& b) {
-	return (b.lo <= a.lo && a.hi <= b.hi);
-}
 
 class tentry {
 public:
@@ -296,6 +222,30 @@ public:
 	}
 
 	typedef tentry*  rangewalker;
+
+
+	rangewalker rbegin(iVar vr) {
+		int idx = varmap[vr];
+
+		tentry* tent = ranges.begin() + idx;
+		return tent;
+	}
+
+	rangewalker rbegin(iVar vr, int badVal) {
+		int idx = varmap[vr];
+
+		tentry* tent = ranges.begin() + idx;
+		while (true) {
+			int prev = tent->prior;
+			Assert(prev >= 0, "Can't happen");
+			tentry* ptent = ranges.begin() + prev;
+			if (ptent->range.contains(badVal)) {
+				return tent;
+			}
+			tent = ptent;
+		}		
+		return NULL;
+	}
 
 	rangewalker rbegin() {
 		return &ranges.last();
@@ -550,16 +500,23 @@ public:
 	}
 
 
-	vec<Lit>& getSummary(iVar vr, Intclause* ic) {
+	vec<Lit>& getSummary(iVar vr, Intclause* ic, int badVal, bool useBadVal) {
 		explain.clear();
 		seen.growTo(nvars());
 		for (int i = 0; i< seen.size(); ++i) {
 			seen[i] = 0;
 		}
+		auto it = ranges.rbegin();
 		int scount = 0;
 		if (ic == NULL) {			
 			seen[vr] = 1;			
 			scount++;
+			if (useBadVal) {
+				it = ranges.rbegin(vr, badVal);
+			}
+			else {
+				it = ranges.rbegin(vr);
+			}
 		} else {
 			ic->moreAct();
 			for (int i = 0; i<ic->size(); ++i) {				
@@ -571,7 +528,7 @@ public:
 			}
 		}
 
-		for (auto it = ranges.rbegin(); it != ranges.rend(); --it) {
+		for (; it != ranges.rend(); --it) {
 			iVar iv = it->var;
 			if (seen[iv] == 1) {
 				seen[iv] = 0;
@@ -583,7 +540,7 @@ public:
 						Lit tmp;
 						if (checkLegal(iv, r.getLo(), tmp)) {
 							if (var(tmp) != var_Undef) {
-								// cout<<", "<<vr<<"("<<r.getLo()<<")";
+								//cout<<", "<<iv<<"("<<r.getLo()<<")";
 								explain.push(~tmp);
 							}
 						}
@@ -599,13 +556,12 @@ public:
 					}
 				}
 			}
-
-
+			
 			if (scount == 0) {
 				break;
 			}
 		}
-
+		//cout << endl;
 		return explain;
 	}
 
@@ -744,7 +700,7 @@ public:
 			if(ip.l == l){	
 				int lev = ip.tlevel;
 				int iv = trail[lev].var;							
-				return getSummary(iv, NULL);
+				return getSummary(iv, NULL, 0, false);
 			}
 		}
 		Assert(false, "WTF");
@@ -1023,6 +979,11 @@ public:
 		watches[a].push(c);
 		watches[b].push(c);
 	}
+
+	const Range& getRange(iVar id) {
+		return ranges.getRange(id);
+	}
+
 	void addBMux(iVar cond, int len, iVar* choices, iVar x){
 		Assert(len > 1, "Can't have len <=1");
 

@@ -23,6 +23,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <cassert>
 #include "Alg.h"
+#include <algorithm>
+#include <string>
 
 
 
@@ -248,6 +250,87 @@ inline void Clause::strengthen(Lit p)
     MSsolverNS::remove(*this, p);
     calcAbstraction();
 }
+
+using std::min;
+using std::max;
+
+class Range {
+	int lo;
+	int hi;
+public:
+	Range(int _lo, int _hi) : lo(_lo), hi(_hi) {}
+	int getLo() const { return lo; }
+	int getHi() const { return hi; }
+	bool contains(int x) {
+		return lo <= x && x <= hi;
+	}
+	bool isSingle() const {
+		return lo == hi;
+	}
+	bool isEmpty() const {
+		return (lo > hi);
+	}
+	std::string print() const;
+	friend Range operator+(const Range& a, const Range& b);
+	friend Range operator*(const Range& a, const Range& b);
+	friend Range operator-(const Range& a, const Range& b);
+	friend bool operator==(const Range& a, const Range& b);
+	friend bool operator<=(const Range& a, const Range& b);
+	friend Range join(const Range& a, const Range& b);
+	friend Range intersect(const Range& a, const Range& b);
+	friend Range square(const Range& a);
+};
+
+inline Range square(const Range& ina) {
+	int losq = ina.getLo()*ina.getLo();
+	int hisq = ina.getHi()*ina.getHi();
+	if (ina.getLo() < 0 && ina.getHi() >= 0) {
+		return Range(0, max(losq, hisq));
+	}
+	else {
+		return Range(min(losq, hisq), max(losq, hisq));
+	}
+}
+
+extern Range TOP_RANGE;
+
+inline Range operator+(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
+	return Range(a.lo + b.lo, a.hi + b.hi);
+}
+
+inline Range operator-(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
+	return Range(a.lo - b.hi, a.hi - b.lo);
+}
+
+inline Range join(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
+	return Range(min(a.lo, b.lo), max(a.hi, b.hi));
+}
+inline Range intersect(const Range& a, const Range& b) {
+	if (a == TOP_RANGE) { return b; }
+	if (b == TOP_RANGE) { return a; }
+	return Range(max(a.lo, b.lo), min(a.hi, b.hi));
+}
+
+inline Range operator*(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
+	int t1 = a.lo * b.lo;
+	int t2 = a.hi * b.hi;
+	int t3 = a.lo * b.hi;
+	int t4 = a.hi * b.hi;
+	return Range(min(min(t1, t2), min(t3, t4)), max(max(t1, t2), max(t3, t4)));
+}
+
+inline bool operator==(const Range& a, const Range& b) {
+	return a.lo == b.lo && a.hi == b.hi;
+}
+inline bool operator<=(const Range& a, const Range& b) {
+	return (b.lo <= a.lo && a.hi <= b.hi);
+}
+
+
 
 }
 #endif

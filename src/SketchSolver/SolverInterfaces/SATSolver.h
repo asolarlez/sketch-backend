@@ -88,6 +88,7 @@ public:
 	virtual iVar div(iVar x, iVar y)=0;
 	virtual iVar minus(iVar x, iVar y)=0;
 	virtual iVar intmux(iVar cond, int len, iVar* choices)=0;
+	virtual const Range& getRange(iVar cond) = 0;
 	virtual void inteq(iVar x, iVar y, iVar rv)=0;
 	virtual void intlt(iVar x, iVar y, iVar rv)=0;
 	virtual int addIntVar(Tvalue& tv)=0;

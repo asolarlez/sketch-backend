@@ -12,7 +12,7 @@
 #include "MiniSATSolver.h"
 #include "Tvalue.h"
 
-#define Dout( out )    /*  out   */
+#define Dout( out ) /*    out   */
 
 
 
@@ -441,7 +441,7 @@ SATSolver::SATSolverResult MiniSATSolver::solve(){
 
 
 void MiniSATSolver::lightSolve(){
-	s->makeIncomplete(30000000);
+	s->makeIncomplete(25000000);
 	lsolve = true;
 }
 

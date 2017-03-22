@@ -150,6 +150,10 @@ public:
 		 return rv;
 	 }
 
+	 virtual const Range& getRange(iVar id) {
+		 return s->intsolve->getRange(id);
+	 }
+
 	 virtual void addHelper2Clause(int l1, int l2);
 	 virtual void addHelperClause(vec<Lit>& vl);
 

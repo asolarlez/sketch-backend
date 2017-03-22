@@ -173,7 +173,8 @@ public:
 
 
 	void intArrW(Tvalue& index, Tvalue& newval, Tvalue& inarr, Tvalue& nvar, ARR_W_node& node);
-
+	void arrayConstruct(vector<bool_node*>& values, Tvalue& nvar);
+	void arrRead(Tvalue& nvar, Tvalue& index, Tvalue& inarr);
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);

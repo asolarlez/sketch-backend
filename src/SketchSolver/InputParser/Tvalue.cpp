@@ -84,7 +84,7 @@ void Tvalue::makeSparse (SolverHelper &dir, int adj) {
 		vector<int> ids (size);
 		for (int i = 0; i < size; i++)
 		    ids[i] = getId (i);
-		dir.getSwitchVars (ids, size, num_ranges);
+		dir.getSwitchVarsBig (ids, size, num_ranges);
 		id = num_ranges[0].guard;
 		if(id < 0){ id = -id; }
 		int oldsize = size;  /* save previous size (number of bits). */

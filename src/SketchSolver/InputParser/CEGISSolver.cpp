@@ -103,7 +103,7 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 		}else{
 			inputStore.newVar(inname, bitsize);				
 		}
-		Dout( cout<<" INPUT "<<inname<<" sz = "<<size<<endl );
+		Dout( cout<<" INPUT "<<inname<<" sz = "<<bitsize<<endl );
 	}else{
 		// cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
       inputStore.resizeVar(inname, bitsize);
@@ -114,7 +114,7 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 }
 
 void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz) {
-	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<size<<endl);
+	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<bitsize<<endl);
 	cpt.resizeInput(inname, bitsize);
 	::declareInput(inputStore, inname, bitsize, arrSz);
 }
@@ -292,6 +292,7 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 
 bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes){
 	cout << "*********INSIDE minimizeHoleValue, " << "mhsize=" << mhsizes.size() << " current value of ";
+	dirFind.getMng().retractAssumptions();
 	bool isSingleMinHole = (mhsizes.size()==1);
 	vector<int> bigor; bigor.push_back(0);
 	for(int i=0; i<mhsizes.size(); ++i){

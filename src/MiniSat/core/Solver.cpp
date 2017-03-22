@@ -103,6 +103,7 @@ Solver::Solver() :
 Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
+	for (int i = 0; i < binaryLearnts.size(); i++) free(binaryLearnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	delete intsolve; 
 	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
@@ -1166,8 +1167,8 @@ Clause* Solver::propagate()
 								qhead = trail.size();
 								goto FoundWatch;
 							} else {
-								
-								vec<Lit>& ps = intsolve->getSummary(vr, NULL);
+								//cout << vr << "(" << val << ")";
+								vec<Lit>& ps = intsolve->getSummary(vr, NULL, val, true);
 								Assert(ps.size() > 0, "NOT BIG");
 								Lit t = ps[0];
 								ps.push(t);
@@ -1227,7 +1228,7 @@ Clause* Solver::propagate()
 							Assert(iconf != NULL, "Maybe?");
 							//vec<Lit> old;
 							//intsolve->getSummaryA(vr, iconf).copyTo(old);
-							vec<Lit>& ps = intsolve->getSummary(vr, iconf);
+							vec<Lit>& ps = intsolve->getSummary(vr, iconf, 0, false);
 							//intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
 							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
@@ -1500,6 +1501,7 @@ bool Solver::simplify()
 
     // Remove satisfied clauses:
     removeSatisfied(learnts);
+	removeSatisfied(binaryLearnts);
     if (remove_satisfied)        // Can be turned off.
         removeSatisfied(clauses);
 
@@ -1563,7 +1565,12 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                 uncheckedEnqueue(learnt_clause[0]);
             }else{
                 Clause* c = Clause::Clause_new(learnt_clause, true);
-                learnts.push(c);
+				if (c->size() > 2) {
+					learnts.push(c);
+				}
+				else {
+					binaryLearnts.push(c);
+				}                
                 attachClause(*c);
                 claBumpActivity(*c);
                 uncheckedEnqueue(learnt_clause[0], c);
@@ -1584,10 +1591,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             // Simplify the set of problem clauses:
             if (decisionLevel() == 0 && !simplify())
                 return l_False;
-
-            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
-                // Reduce the set of learnt clauses:
-                reduceDB();
+            
 
             Lit next = lit_Undef;
             while (decisionLevel() < assumptions.size()){
@@ -1606,6 +1610,11 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             }
 
             if (next == lit_Undef){
+
+				if (nof_learnts >= 0 && learnts.size() - nAssigns() >= nof_learnts)
+					// Reduce the set of learnt clauses:
+					reduceDB();
+
                 // New variable decision:
                 decisions++;
                 next = pickBranchLit(polarity_mode, random_var_freq);
@@ -1656,7 +1665,12 @@ bool Solver::tryAssignment(Lit a){
 				uncheckedEnqueue(learnt_clause[0]);
 			}else{
 				Clause* c = Clause::Clause_new(learnt_clause, true);
-				learnts.push(c);
+				if (c->size() > 2) {
+					learnts.push(c);
+				}
+				else {
+					binaryLearnts.push(c);
+				}
 				attachClause(*c);        
 				uncheckedEnqueue(learnt_clause[0], c);				
 			}
@@ -1723,7 +1737,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
     assumps.copyTo(assumptions);
 
     double  nof_conflicts = restart_first;
-    double  nof_learnts   = nClauses() * learntsize_factor;
+    double  nof_learnts   = max(nClauses() * learntsize_factor, 1000.0);
     lbool   status        = l_Undef;
 	uint64_t decisionsStart = decisions;
 	cout << "DECISIONS START = " << decisionsStart << endl;
