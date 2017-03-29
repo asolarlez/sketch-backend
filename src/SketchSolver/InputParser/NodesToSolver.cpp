@@ -228,7 +228,31 @@ void NodesToSolver::computeMaxOrMin(const gvvec& mv, const gvvec& fv, gvvec& out
 }
 
 template<typename EVAL>
-int NodesToSolver::compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend, EVAL eval){
+int NodesToSolver::compareRange(const gvvec& mv, int mstart, int mend, bool misInt, const gvvec& fv, int fstart, int fend, bool fisInt, EVAL eval){
+
+	if (misInt) {
+		if (fisInt) {
+			Assert(mend - mstart == 1 && fend - fstart == 1, "Ypoinly;");
+			return dir.inteq(mv[mstart].guard, fv[fstart].guard);
+		}
+		else {
+			Assert(mend - mstart == 1 , "Ypoinly;");
+			Tvalue eu;
+			eu.assignSubrange(fv, fstart, fend);
+			dir.intClause(eu);
+			return dir.inteq(mv[mstart].guard, eu.getId());
+		}
+	} else {
+		if (fisInt) {
+			Assert(fend - fstart == 1, "Ypoinly;");
+			Tvalue eu;
+			eu.assignSubrange(mv, mstart, mend);
+			dir.intClause(eu);
+			return dir.inteq(eu.getId(), fv[fstart].guard);
+		}
+	}
+
+
 	int orTerms = 0;
 	int i=mstart, j=fstart;
 	int inci = 1;
@@ -339,7 +363,7 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 	bool moreF = true;
 	do{
 		if(midx == fidx && moreM && moreF){				
-				int rv = compareRange(mv, mistart, miend, fv, fistart, fiend, eval);
+				int rv = compareRange(mv, mistart, miend, tmval.isInt(), fv, fistart, fiend, tfval.isInt(), eval);
 				cvar = dir.addAndClause(cvar, rv);	
 				if(miend < mv.size()){
 					mistart=miend;
@@ -358,7 +382,7 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 				continue;
 		}
 		if((midx < fidx && moreM) || !moreF){
-			int rv = compareRange(mv, mistart, miend, fdef.num_ranges, 0, fdef.num_ranges.size(), eval);
+			int rv = compareRange(mv, mistart, miend,  tmval.isInt(),  fdef.num_ranges, 0, fdef.num_ranges.size(), tfval.isInt(), eval);
 			cvar = dir.addAndClause(cvar, rv);
 			if(miend < mv.size()){
 				mistart=miend;
@@ -369,7 +393,7 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 			}
 			continue;
 		}else{
-			int rv = compareRange(mdef.num_ranges, 0, mdef.num_ranges.size(), fv, fistart, fiend, eval);
+			int rv = compareRange(mdef.num_ranges, 0, mdef.num_ranges.size(), tmval.isInt(), fv, fistart, fiend, tfval.isInt(), eval);
 			cvar = dir.addAndClause(cvar, rv);
 			if(fiend<fv.size()){
 				fistart=fiend;
@@ -562,6 +586,7 @@ NodesToSolver::processEq (Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval)
 		if(fval.isBvect()){
 			fval.makeSparse(dir);
 		}
+
 		compareArrays(mval, fval, out, eval);
 		return;
 	}
@@ -1693,7 +1718,19 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
     if (isFloat) {
       doArrArrAcc(mval, choices, out, floats);
     } else {
-      doArrArrAcc(mval, choices, out, ident);
+		
+		if (isInt) {
+			for (int i = 0; i < choices.size(); ++i) {
+				Tvalue& tv = choices[i];
+				if (!tv.isInt()) {
+					dir.intClause(tv);
+				}
+			}
+		}
+		
+		doArrArrAcc(mval, choices, out, ident);
+		
+      
     }
 		return;
 	}
@@ -1888,7 +1925,17 @@ void NodesToSolver::visit( ARRACC_node& node ){
 
 
 template<typename EVAL>
-void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out,EVAL eval, int idx){
+void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out,EVAL eval, bool isInt, int idx){
+
+
+	if (isInt) {
+		Tvalue tv = guard;
+		dir.intClause(tv);
+		iVar cho[2] = { nr0[nr0Start].guard, nr1[nr1Start].guard };
+		out.push_back(guardedVal(dir.mux(tv.getId(), 2, cho  ), -1, idx));
+		return;
+	}
+
 	int i=nr0Start, j=nr1Start;
 	out.reserve(out.size()+ (nr0End-nr0Start) + (nr1End-nr1Start) );
 	
@@ -1997,7 +2044,7 @@ void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& 
 		gvvec& out = output.num_ranges;
 		out.clear();
 		
-		mergeTvalues(guard, nr0, 0, nr0.size(), nr1, 0, nr1.size(), out, eval);
+		mergeTvalues(guard, nr0, 0, nr0.size(), nr1, 0, nr1.size(), out, eval, false);
 
 
 		Assert( out.size () > 0, "NotesToSolver::mergeTValues: This should not happen here2");		
@@ -2308,21 +2355,51 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 
 }
 
-void NodesToSolver::arrRead(Tvalue& nvar, Tvalue& index, Tvalue& inarr) {
+void NodesToSolver::arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue& inarr) {
 	if (inarr.isInt()) {
 		if (!index.isInt()) {
 			dir.intClause(index);
 		}
-		int sz = inarr.num_ranges[inarr.getSize() - 1].idx + 1;
-		vector<iVar> inv(sz, inarr.num_ranges.begin()->value);
-		for (auto it = inarr.num_ranges.begin(); it != inarr.num_ranges.end(); ++it) {
-			if (it->idx > 0) {
+		const gvvec& num_ranges = inarr.num_ranges;
+
+		int sz = num_ranges[inarr.getSize() - 1].idx + 1;
+		Range r = dir.getRange(index.getId());
+		if (r.getHi() >= sz) {
+			sz = r.getHi() + 1;
+		}
+		vector<iVar> inv(sz, num_ranges.begin()->guard);
+		Assert(num_ranges.begin()->idx == -1, "qpouyp9u??");
+		for (auto it = num_ranges.begin(); it != num_ranges.end(); ++it) {
+			if (it->idx >= 0) {
 				inv[it->idx] = it->guard;
 			}
 		}
 		nvar.makeSuperInt(dir.mux(index.getId(), sz, &inv[0]));
 	} else {
-		Assert(false, "NYI");
+		Tvalue newidx;
+		int idxid = index.getId();
+		Range ir = dir.getRange(idxid);
+		int last = -1;
+		const gvvec& num_ranges = inarr.num_ranges;
+		vector<int> bigor; bigor.push_back(0);
+		for (auto it = num_ranges.begin(); it != num_ranges.end(); ++it) {
+			if (it->idx > last) {
+				if (ir.contains(it->idx)) {
+					int eqid = dir.inteq(idxid, dir.getIntConst(it->idx));
+					newidx.num_ranges.push_back(guardedVal(eqid, it->idx));
+					bigor.push_back(eqid);
+				}
+				last = it->idx;
+			}
+			if (it->idx == -1) {
+				newidx.num_ranges.push_back(guardedVal(-1, it->idx));
+			}
+		}
+		dir.addBigOrClause(&bigor[0], bigor.size()-1);
+		Assert(newidx.num_ranges[0].idx == -1, "????");
+		newidx.num_ranges[0].guard = -bigor[0];
+		newidx.sparsify(dir);
+		arrRTvalue(node.getOtype() == OutType::BOOL, newidx, inarr, nvar);
 	}
 }
 
@@ -2333,7 +2410,7 @@ NodesToSolver::visit( ARR_R_node &node){
 	Tvalue inarr = tval_lookup(node.father);
 
 	if (index.isInt() || inarr.isInt()) {
-		arrRead(node_ids[node.id], index, inarr);
+		arrRead(node, node_ids[node.id], index, inarr);
 		return;
 	}
 
@@ -2411,14 +2488,14 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 		if(donow){
 			while(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value < cindex){
 				if(defend-defstart > 0){
-					mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, idxgv[idxstart].value);
+					mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
 				}else{
-					mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, idxgv[idxstart].value);
+					mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
 				}
 				idxstart += idxincr;
 			}
 			if(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value == cindex){
-				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.getSize(), out, eval, idxgv[idxstart].value);
+				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
 				idxstart += idxincr;
 			}else{
 				gvvec::const_iterator tit = inarr.num_ranges.begin()+lasti;
@@ -2433,9 +2510,9 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 	}
 	while(idxstart >= 0 && idxstart < idxgv.size()){
 		if(defend-defstart > 0){
-			mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, idxgv[idxstart].value);
+			mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
 		}else{
-			mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, idxgv[idxstart].value);
+			mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
 		}
 		idxstart += idxincr;
 	}
@@ -2443,128 +2520,124 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 }
 
 
-void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, Tvalue& inarr, Tvalue& nvar, ARR_W_node& node) {
-	if (inarr.isArray()) {
-		if (index.isInt()) {
-			gvvec out;
-			Range ir = dir.getRange(index.getId());
-			int rangeit = max(ir.getLo(), 0);
-			int lastidx = -2;
-			int deflt = -100;
-			for (auto it = inarr.num_ranges.begin(); it != inarr.num_ranges.end(); ++it) {
-				if (it->idx == -1) {
-					deflt = it->guard;
-				}
-				while (it->idx > rangeit && rangeit <= ir.getHi() && lastidx < rangeit) {
-					Tvalue c;
-					c.makeIntVal(YES, rangeit);
-					iVar old = deflt;
-					iVar nv = newval.getId();
-					iVar ov[2] = { old, nv };
-					out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, rangeit));
-					++rangeit;
-				}
-
-				Tvalue c;
-				c.makeIntVal(YES, it->idx);
-				iVar old = it->guard;
-				iVar nv = newval.getId();
-				iVar ov[2] = { old, nv };
-				
-				out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, it->idx));
-				rangeit = max(rangeit, it->idx + 1);
-				lastidx = it->idx;
+void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, Tvalue& nvar, ARR_W_node& node) {
+	
+	if (index.isInt()) {
+		gvvec out;
+		const gvvec& innr = inarr.num_ranges;
+		Range ir = dir.getRange(index.getId());
+		int rangeit = max(ir.getLo(), 0);
+		int lastidx = -2;
+		int deflt = -100;
+		for (auto it = innr.begin(); it != innr.end(); ++it) {
+			if (it->idx == -1) {
+				deflt = it->guard;
 			}
-
-			while (rangeit <= ir.getHi() && lastidx < rangeit) {
-				Tvalue c;
-				c.makeIntVal(YES, rangeit);
+			while (it->idx > rangeit && rangeit <= ir.getHi() && lastidx < rangeit) {
+				iVar c = dir.getIntConst(rangeit);
 				iVar old = deflt;
 				iVar nv = newval.getId();
 				iVar ov[2] = { old, nv };
-				out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), 0, rangeit));
+				out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), 0, rangeit));
 				++rangeit;
 			}
 
-			nvar.num_ranges = out;
-			nvar.intarrayify();
-		}
-		else {
-			dir.intClause(index);
-			const gvvec nr = index.num_ranges;					
-			if (nr.size() == 1) {
-				const guardedVal& idxgv = nr[0];
-				int lastIndex = inarr.num_ranges.size() - 1;
-				const guardedVal& last = inarr.num_ranges[lastIndex];
-				//This means we are appending in a currently empty entry. We can just push back newval 
-				//at the end of inarr.
-				if (last.idx <= idxgv.value - 1) {
-					nvar.num_ranges = inarr.num_ranges;
-					nvar.num_ranges.push_back(guardedVal( newval.getId() , -1, idxgv.value));			
-					nvar.intarrayify();
-					return;
+			
+			iVar c = dir.getIntConst(it->idx);
+			
+			iVar old = it->guard;
+			iVar nv = newval.getId();
+			iVar ov[2] = { old, nv };
 				
-				}
+			out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), 0, it->idx));
+			rangeit = max(rangeit, it->idx + 1);
+			lastidx = it->idx;
+		}
+
+		while (rangeit <= ir.getHi() && lastidx < rangeit) {
+			iVar c = dir.getIntConst(rangeit);			
+			iVar old = deflt;
+			iVar nv = newval.getId();
+			iVar ov[2] = { old, nv };
+			out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), 0, rangeit));
+			++rangeit;
+		}
+
+		nvar.num_ranges = out;
+		nvar.intarrayify();
+	}
+	else {
+		const gvvec nr = index.num_ranges;
+		dir.intClause(index);						
+		if (nr.size() == 1) {
+			const guardedVal& idxgv = nr[0];
+			int lastIndex = inarr.num_ranges.size() - 1;
+			const guardedVal& last = inarr.num_ranges[lastIndex];
+			//This means we are appending in a currently empty entry. We can just push back newval 
+			//at the end of inarr.
+			if (last.idx <= idxgv.value - 1) {
+				nvar.num_ranges = inarr.num_ranges;
+				nvar.num_ranges.push_back(guardedVal( newval.getId() , -1, idxgv.value));			
+				nvar.intarrayify();
+				return;
+				
 			}
-			int inc = 1;
-			int init = 0;
-			int end = nr.size();
-			if (nr.size() > 1 && nr[0].value > nr[1].value) {
-				inc = -1;
-				init = nr.size() - 1;
-				end = -1;
+		}
+		int inc = 1;
+		int init = 0;
+		int end = nr.size();
+		if (nr.size() > 1 && nr[0].value > nr[1].value) {
+			inc = -1;
+			init = nr.size() - 1;
+			end = -1;
+		}
+		int idx = init;
+		int i = 0;
+		int j = init;
+		gvvec& out = nvar.num_ranges;
+		out.clear();
+		iVar defaultval;
+		const gvvec& inarrnranges = inarr.num_ranges;
+
+		while (true) {
+			if (i == inarr.getSize() && j == end) {
+				break;
 			}
-			int idx = init;
-			int i = 0;
-			int j = init;
-			gvvec out;
-			iVar defaultval;
-			while (true) {
-				if (i == inarr.getSize() && j == end) {
-					break;
-				}
-				if (i < inarr.getSize() && inarr.num_ranges[i].idx < 0) {
-					defaultval = inarr.num_ranges[i].guard;
-					out.push_back(guardedVal(inarr.num_ranges[i].guard, -1, -1));
-					++i;
-					continue;
-				}
-				if (i == inarr.getSize() || nr[j].value < inarr.num_ranges[i].idx) {
-					if (nr[j].value >= 0) {
-						Tvalue c;
-						c.makeIntVal(YES, nr[j].value);
-						dir.intClause(c);
-						iVar old = defaultval;
-						iVar nv = newval.getId();
-						iVar ov[2] = { old, nv };
-						out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), -1, nr[j].value));
-					}
-					++j;
-					continue;
-				}
-				if (j == end || nr[j].value > inarr.num_ranges[i].idx) {
-					out.push_back(guardedVal(inarr.num_ranges[i].guard, 0, nr[j].value));
-					++i;
-					continue;
-				}
-				if (nr[j].value == inarr.num_ranges[i].idx) {
-					Tvalue c;
-					c.makeIntVal(YES, nr[j].value);
-					dir.intClause(c);
-					iVar old = inarr.num_ranges[i].guard;
+			if (i < inarr.getSize() && inarrnranges[i].idx < 0) {
+				defaultval = inarrnranges[i].guard;
+				out.push_back(guardedVal(inarrnranges[i].guard, -1, -1));
+				++i;
+				continue;
+			}
+			if (i == inarr.getSize() || (j != end && nr[j].value < inarrnranges[i].idx)) {
+				if (nr[j].value >= 0) {
+					iVar c = dir.getIntConst(nr[j].value);					
+					iVar old = defaultval;
 					iVar nv = newval.getId();
 					iVar ov[2] = { old, nv };
-					out.push_back(guardedVal(dir.mux(dir.inteq(index.getId(), c.getId()), 2, ov), -1, nr[j].value));
-					++i;
-					++j;
-					continue;
-				}				
+					out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), -1, nr[j].value));
+				}
+				j+= inc;
+				continue;
 			}
-
+			if (j == end || nr[j].value > inarrnranges[i].idx) {
+				out.push_back(guardedVal(inarrnranges[i].guard, -1, inarrnranges[i].idx));
+				++i;
+				continue;
+			}
+			if (nr[j].value == inarrnranges[i].idx) {
+				iVar c = dir.getIntConst(nr[j].value);
+				iVar old = inarrnranges[i].guard;
+				iVar nv = newval.getId();
+				iVar ov[2] = { old, nv };
+				out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), -1, nr[j].value));
+				++i;
+				j+=inc;
+				continue;
+			}				
 		}
+		nvar.intarrayify();
 	}
-
-
 }
 
 void NodesToSolver::visit( ARR_W_node &node){	
@@ -2575,14 +2648,24 @@ void NodesToSolver::visit( ARR_W_node &node){
 
 	if (index.isInt() || inarr.isInt() || newval.isInt()) {		
 
+		if (!index.isSparse() && !index.isInt()) {
+			index.makeSparse(dir);
+		}
 		if (!newval.isInt()) {
+			if (!newval.isSparse()) {
+				newval.makeSparse(dir);
+			}
 			dir.intClause(newval);
 		}
 		if (!inarr.isInt()) {
+			if (inarr.isBvect()) {
+				inarr.makeSparse(dir);
+			}
 			dir.intClause(inarr);
 		}
 
 		intArrW(index, newval, inarr, nvar, node);
+		return;
 	}
 
 
@@ -2915,6 +2998,8 @@ void NodesToSolver::doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tva
 			choices[i].makeSparse(dir);
 		}		
 	}
+
+	bool isInt = choices[0].isInt();
 	
 	if(mval.isSparse()){
 		Assert(false, "NYI aslkdn;hyp;k");
@@ -2956,25 +3041,30 @@ void NodesToSolver::doArrArrAcc(const Tvalue& mval, vector<Tvalue>& choices, Tva
 				int pil = idxl;
 				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
 				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
-				mergeTvalues(gval, gvl, pil, idxl, gvr, pir, idxr, out, eval, idxval);
+				mergeTvalues(gval, gvl, pil, idxl, gvr, pir, idxr, out, eval, isInt, idxval);
 				continue;
 			}
 			if(idxr>= gvrs ||  (idxl < gvls && gvr[idxr].idx > gvl[idxl].idx) ){
 				int idxval = gvl[idxl].idx;
 				int pil = idxl;
 				while(idxl < gvls && gvl[idxl].idx == idxval){ ++idxl; }
-				mergeTvalues(gval, gvl, pil, idxl, altR.num_ranges, 0, altR.num_ranges.size(), out, eval, idxval);
+				mergeTvalues(gval, gvl, pil, idxl, altR.num_ranges, 0, altR.num_ranges.size(), out, eval, isInt, idxval);
 				continue;
 			}
 			if(idxl >= gvls || (idxr< gvrs && gvr[idxr].idx < gvl[idxl].idx) ){
 				int idxval = gvr[idxr].idx;
 				int pir = idxr;
 				while(idxr < gvrs && gvr[idxr].idx == idxval){ ++idxr; }
-				mergeTvalues(gval, altL.num_ranges, 0, altL.num_ranges.size(), gvr, pir, idxr, out, eval, idxval);
+				mergeTvalues(gval, altL.num_ranges, 0, altL.num_ranges.size(), gvr, pir, idxr, out, eval, isInt, idxval);
 				continue;
 			}
 		}
-		output.arrayify();
+		if (isInt) {
+			output.intarrayify();
+		}
+		else {
+			output.arrayify();
+		}
 	}
 	//cout << "doArrArrAcc " << node.get_name() << ": " << output << endl;
 }

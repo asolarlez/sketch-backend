@@ -47,9 +47,18 @@ public:
 		return isint;
 	}
 
+	void makeSuperIntArr() {
+		type = TVAL_ARRAY;		
+		isint = true;		
+		size = num_ranges.size();
+	}
+
 	void makeSuperInt(int var){
 		id = var;
 		isint = true;
+		num_ranges.clear();
+		num_ranges.push_back(guardedVal(id, -1));
+		size = 1;
 	}
 
     inline valtype_t getType (void) const { return type; }
@@ -66,6 +75,18 @@ public:
 			return (neg ? -ret : ret);
 		}
     }
+
+
+	void assignSubrange(const gvvec& inr, int beg, int end) {
+		type = TVAL_SPARSE;
+		size = end - beg;
+		neg = false;
+		isint = false;
+		num_ranges.clear();
+		for (int i = beg; i < end; ++i) {
+			num_ranges.push_back(inr[i]);
+		}
+	}
 
     inline int getSize (void) const { return size; }
 

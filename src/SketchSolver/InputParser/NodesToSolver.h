@@ -32,7 +32,7 @@ class NodesToSolver : public NodeVisitor {
     map<bool_node *, int> &node_values; // -1=false, 1=true, 0=unknown
 	void addToVals(map<pair<int, int>, int>& vals, gvvec::iterator it, int idx, int gval);
   template<typename EVAL>
-	int compareRange(const gvvec& mv, int mstart, int mend, const gvvec& fv, int fstart, int fend, EVAL eval);
+	int compareRange(const gvvec& mv, int mstart, int mend, bool misInt, const gvvec& fv, int fstart, int fend, bool fisInt, EVAL eval);
   template<typename EVAL>
 	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out, EVAL eval);
     template<class COMPARE_KEY = NormalComp, typename THEOP> void processArith (bool_node &node, THEOP comp, COMPARE_KEY c = NormalComp());
@@ -172,14 +172,14 @@ public:
 	virtual void visit( TUPLE_CREATE_node &node);
 
 
-	void intArrW(Tvalue& index, Tvalue& newval, Tvalue& inarr, Tvalue& nvar, ARR_W_node& node);
+	void intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, Tvalue& nvar, ARR_W_node& node);
 	void arrayConstruct(vector<bool_node*>& values, Tvalue& nvar);
-	void arrRead(Tvalue& nvar, Tvalue& index, Tvalue& inarr);
+	void arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue& inarr);
 
     virtual void visit (ASSERT_node &node);
 	void process(BooleanDAG& bdag);
   template<typename EVAL>
-	void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, EVAL eval, int idx=-1);
+	void mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int nr0End, const gvvec& nr1, int nr1Start, int nr1End, gvvec& out, EVAL eval, bool isInt, int idx=-1);
   template<typename EVAL>
   void mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag, EVAL eval);
   template<typename EVAL>

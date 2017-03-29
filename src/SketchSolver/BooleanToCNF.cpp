@@ -191,24 +191,44 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 }
 
 
+
+iVar SolverHelper::getIntConst(int val) {
+	char* tch = &tmpbuf[0];
+	int p = 0;	
+	addGV(tch, p, guardedVal(YES, val));
+	tch[p] = 0;
+	int rv;
+	int tt = mng.nextIntVar();
+	if (this->intmemo.condAdd(&tmpbuf[0], p, tt, rv)) {		
+		return rv;
+	}
+	iVar id = mng.addIntVar();
+	mng.setIntVal(id, val);
+	return id;
+}
+
+void SolverHelper::addGV(char* tch, int& p, const guardedVal& gv) {
+	{
+		int tt = gv.guard;
+		tt = tt>0 ? (tt << 1) : ((-tt) << 1 | 0x1);
+		writeInt(tch, tt, p);
+		tch[p] = '|'; p++;
+	}
+	{
+		int tt = gv.value;
+		tt = tt>0 ? (tt << 1) : ((-tt) << 1 | 0x1);
+		writeInt(tch, tt, p);
+		tch[p] = ','; p++;
+	}
+}
+
 int SolverHelper::setStrTV(Tvalue& tv){
 	const gvvec& gv=tv.num_ranges;
 	if(gv.size()*20 > tmpbuf.size()){ tmpbuf.resize(gv.size() * 22); }
 	char* tch = &tmpbuf[0];
 	int p=0;
-	for(int i=0; i<gv.size(); ++i){				
-		{
-			int tt = gv[i].guard;
-			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
-			writeInt(tch, tt, p);
-			tch[p] = '|'; p++;
-		}
-		{
-			int tt = gv[i].value;
-			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
-			writeInt(tch, tt, p);
-			tch[p] = ','; p++;
-		}
+	for(int i=0; i<gv.size(); ++i){		
+		addGV(tch, p, gv[i]);		
 	}
 	tch[p] = 0;
 	return p;
@@ -273,12 +293,12 @@ int SolverHelper::intClause(Tvalue& tv){
 				vnew.push_back(gv);
 				++i;
 			}
-			tmp.makeSparse(*this);
+			tmp.sparsify(*this);
 			int rv = intClause(tmp);
 			out.push_back(guardedVal(rv, -1, idx));
 		}
-		tv.num_ranges = out;
-		tv.makeSuperInt(0);
+		tv.num_ranges = out;		
+		tv.makeSuperIntArr();
 		return 0;
 	}
 
@@ -448,7 +468,7 @@ int SolverHelper::div(int x, int y){
 		return mng.div(x, y);
 	}
 
-int SolverHelper::inteq(int x, int y){
+int SolverHelper::inteq(iVar x, iVar y){
 	int vx ;		
 	int vy ;
 		

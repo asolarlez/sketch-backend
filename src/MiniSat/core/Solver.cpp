@@ -1762,6 +1762,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
 		}
     }
 
+	
     if (verbosity >= 1)
         printf("===============================================================================\n");
 

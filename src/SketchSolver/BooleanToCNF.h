@@ -103,6 +103,7 @@ class SolverHelper {
 		tch[p-1] = 0;
 		return p-1;
 	}
+	void addGV(char* tch, int& p, const guardedVal& gv);
 
 	int setStrBO(int* a, int last, char separator = '|', int ofst = 1){
 		int p = 0;
@@ -142,7 +143,13 @@ public:
 		return arrsize.begin();
 	}
 
-	int bitToI(int bitid){
+	iVar bitToI(int bitid){
+		if (bitid == YES) {
+			return getIntConst(1);
+		}
+		if (bitid == -YES) {
+			return getIntConst(0);
+		}
 		return bitToInt[bitid];
 	}
 	const map<string, SynthInSolver*>& get_sins() {
@@ -351,6 +358,8 @@ public:
 
 	int intClause(Tvalue& tv);
 
+	iVar getIntConst(int val);
+
 	int plus(int x, int y);
 	int minus(int x, int y);
 	int times(int x, int y);
@@ -361,7 +370,7 @@ public:
 
 	int mux(iVar cond, int len, iVar* choices);
 
-	int inteq(int x, int y);
+	int inteq(iVar x, iVar y);
 
 	int intlt(int x, int y);
 
