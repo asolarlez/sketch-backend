@@ -17,10 +17,10 @@ using namespace std;
 #include "CommandLineArgs.h"
 #include "VarStore.h"
 #include "NodeEvaluator.h"
-#include "AutoDiff.h"
 #include "RangeDiff.h"
 #include "GradientDescent.h"
 #include "IntervalPropagator.h"
+#include "SimpleEvaluator.h"
 
 class NumericalSolver;
 
@@ -40,7 +40,7 @@ public:
   GradientDescent* gd;
 	float threshold = 1e-5;
 	int dcounter = 0;
-	AutoDiff* eval;
+	SimpleEvaluator* eval;
 	RangeDiff* evalR;
 	gsl_vector* prevState;
 	int MAX_TRIES = 5;
@@ -49,16 +49,15 @@ public:
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
 	gsl_vector* t; // temp vector
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap) :Synthesizer(_fm), dag(_dag), imap(_imap) {
-		dag->lprint(cout);
-		cout << "Input mapping " << endl;
-		for (auto it = imap.begin(); it != imap.end(); it++) {
-			cout << it->first << " -> " << (*dag)[it->second]->lprint() << endl;
-		}
+		//dag->lprint(cout);
+		//cout << "Input mapping " << endl;
+		//for (auto it = imap.begin(); it != imap.end(); it++) {
+		//	cout << it->first << " -> " << (*dag)[it->second]->lprint() << endl;
+		//}
     ninputs = imap.size();
     vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
     for (int i = 0; i < ctrls.size(); i++) {
 			if (ctrls[i]->getOtype() == OutType::FLOAT) {
-				cout << ctrls[i]->lprint() << endl;
 				ctrlMap[ctrls[i]->get_name()] = ctrlVals.size();
 				ctrlVals.push_back(0.0);
 			}
@@ -67,6 +66,7 @@ public:
 		if (ncontrols == 0) ncontrols = 1;
 		gd = new GradientDescent(ncontrols);
 		evalR = new RangeDiff(*dag, fm, ctrlMap);
+		eval = new SimpleEvaluator(*dag, fm);
 		
 		prevState = gsl_vector_alloc(ncontrols);
 		for (int i = 0; i < ncontrols; i++) {
@@ -79,25 +79,43 @@ public:
 	void genData(const vector<vector<int>>& allInputs) {
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
-		cout << dcounter << endl;
+		cout << "Counter " <<  dcounter << endl;
 		ofstream file("/Users/Jeevu/projects/symdiff/scripts/parallelPark/graphs/t"+ to_string(dcounter++) +".txt");
+		{
 		double i = 0.0;
 		double j = 0.0;
 		while (i < 10.0) {
-			cout << i << endl;
+			//cout << i << endl;
 			j = 0.0;
 			while (j < 10.0) {
-			gsl_vector_set(state, 0, 6.08);
-			gsl_vector_set(state, 1, i);
-			gsl_vector_set(state, 2, j);
+			gsl_vector_set(state, 0, i);
+			gsl_vector_set(state, 1, j);
 			double err = evalWithGrad(state, d, allInputs);
 			file << err << ";";
 			j+= 0.1;
 			}
 			i += 0.1;
 		}
+		}
+		file << endl;
+		{
+		double i = 0.0;
+		double j = 0.0;
+		while (i < 10.0) {
+			//cout << i << endl;
+			j = 0.0;
+			while (j < 10.0) {
+				gsl_vector_set(state, 0, i);
+				gsl_vector_set(state, 1, j);
+				double err = simpleEval(state, allInputs);
+				file << err << ";";
+				j+= 0.1;
+			}
+			i += 0.1;
+		}
 		file << endl;
 		file.close();
+		}
 	}
 
 	
@@ -129,6 +147,28 @@ public:
 		//cout << "Grad: " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << " " << gsl_vector_get(d, 2) << endl;
     return error;
   }
+
+	double simpleEval(const gsl_vector* state, const vector<vector<int>>& allInputs) {
+		double error = 0;
+		for (int i = 0; i < allInputs.size(); i++) {
+			VarStore ctrlStore;
+			map<int, int> inputValues; // maps node id to value set by the sat solver
+			// Collect all inputs (assumes inputs are not floats)
+			for (int j = 0; j < allInputs[i].size(); j++) {
+				if (allInputs[i][j] != EMPTY) {
+					inputValues[imap[j]] = allInputs[i][j];
+				}
+			}
+			// Collect all controls (assumes controls are floats)
+			for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
+				ctrlStore.setVarVal(it->first, fm.getIdx(gsl_vector_get(state,it->second)));
+			}
+			
+			// Run automatic differentiation on ranges
+			error += eval->run1(ctrlStore, inputValues);
+		}
+		return error;
+	}
 
 
   static double eval_f(const gsl_vector* x, void* params) {}
@@ -266,12 +306,37 @@ public:
 		}
 	}
 	
-  virtual bool synthesis(int instance, int inputid, int val, int level) {
+	void collectSuggestions(vec<Lit>& suggestions, const vector<vector<int>>& allInputs, const vector<int>& conflictids) {
+		gsl_vector* d = gsl_vector_alloc(ncontrols);
+		for (int i = 0; i < ncontrols; i++) {
+			gsl_vector_set(d, i, 0.0);
+		}
+		for (int i = 0; i < allInputs.size(); i++) {
+			VarStore ctrlStore;
+			// Collect all controls (assumes controls are floats)
+			for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
+				ctrlStore.setVarVal(it->first, fm.getIdx(ctrlVals[it->second]));
+			}
+			vector<tuple<float, int, int>> s = eval->run(ctrlStore, imap);
+			sort(s.begin(), s.end());
+			reverse(s.begin(), s.end());
+			for (int k = 0; k < s.size(); k++) {
+				int idx = get<1>(s[k]);
+				if (allInputs[i][idx] == EMPTY) {
+					//cout << "Suggesting " << idx << " " << get<2>(s[k]) <<  " " << get<0>(s[k]) << endl;
+					suggestions.push(getLit(inout->valueid(conflictids[i], idx), get<2>(s[k])));
+				}
+			}
+		}
+	}
+	
+  virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
     conflict.clear();
+		suggestions.clear();
     vector<vector<int>> allInputs;
     vector<int> conflictids;
 		/*vector<int> inputs;
-		int arr[100] = {1,2,2,2,2,1,2,2,2,2,1,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0};
+		int arr[100] = {1,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0};
 		for (int i = 0; i < ninputs; i++) {
 			if (arr[i] == 2) {
 				inputs.push_back(EMPTY);
@@ -286,9 +351,8 @@ public:
 		
 		/*gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
-		gsl_vector_set(state, 0, 4.51);
-		gsl_vector_set(state, 1, 2.5);
-		gsl_vector_set(state, 2, 6.08);
+		gsl_vector_set(state, 0, 0);
+		gsl_vector_set(state, 1, 0.5);
 		cout << evalWithGrad(state, d, allInputs) << endl;*/
 		//genData(allInputs);
 		// First, do interval propagation to detect any conflicts
@@ -296,7 +360,11 @@ public:
 				return false;
 		}
 		// If no conflict is found, do gradient descent
-		return doGradientDescent(allInputs, conflictids, instance, inputid);
+		bool sat = doGradientDescent(allInputs, conflictids, instance, inputid);
+		if (sat) {
+			collectSuggestions(suggestions, allInputs, conflictids);
+		}
+		return sat;
 	}
 	
 	IntervalPropagator* createPropagator() {
@@ -351,7 +419,7 @@ public:
 				// TODO: what to do with non float ctrls that are solved by the SAT solver??
         newdag.replace(i, dopt->getCnode(ctrlVals[ctrlMap[newdag[i]->get_name()]]));
       } else {
-        if (newdag[i]->type != bool_node::DST) {
+				if (newdag[i]->type != bool_node::DST && newdag[i]->type != bool_node::SRC) {
           bool_node* n = dopt->computeOptim(newdag[i]);
           if (n == newdag[i]) {
             dopt->addNode(n);
@@ -362,7 +430,7 @@ public:
         }
       }
     }
-    return NULL;
+		return dopt->getCnode(0);
   }
   
   virtual void print(ostream& out) {

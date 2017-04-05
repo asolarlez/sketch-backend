@@ -415,8 +415,8 @@ double RangeDiff::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vecto
 
 void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node) {
 	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-		/*cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;
-		cout << "Grad: " ;
+		//cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;
+		/*cout << "Grad: " ;
 		for (int i = 0; i < nctrls; i++) {
 			cout << gsl_vector_get(dg, i) << " ";
 		}

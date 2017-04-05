@@ -27,6 +27,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/SimulatedAnnealing.h		\
 	NumericalSynthesis/AutoDiff.h \
 	NumericalSynthesis/RangeDiff.h   \
+	NumericalSynthesis/SimpleEvaluator.h	\
 	NumericalSynthesis/Interval.h		\
 	NumericalSynthesis/IntervalGrad.h		\
 	NumericalSynthesis/IntervalPropagator.h	\
@@ -76,6 +77,7 @@ libcegis_la_SOURCES =				\
 	NumericalSynthesis/IntervalGrad.cpp \
 	NumericalSynthesis/AutoDiff.cpp \
 	NumericalSynthesis/RangeDiff.cpp \
+	NumericalSynthesis/SimpleEvaluator.cpp	\
 	NumericalSynthesis/GradientDescent.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\

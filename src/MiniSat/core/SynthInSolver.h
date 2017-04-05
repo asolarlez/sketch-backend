@@ -123,7 +123,7 @@ namespace MSsolverNS {
 		/*
 		Return true if synthesis succeeds. If false, the conflict tells you what went wrong.
 		*/
-		virtual bool synthesis(int instance, int inputid, int val, int level)=0;
+		virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions)=0;
 
 		/*
 		This is here just in case you need to do something when a new instance gets created.
@@ -149,6 +149,11 @@ namespace MSsolverNS {
 		virtual void print(ostream& out) = 0;
     
     virtual void getControls(map<string, string>& values) = 0;
+		
+		Lit getLit(int inputid, int val) {
+			Tvalue& tv = inout->getTval(inputid);
+			return tv.litForValue(val);
+		}
 	};
 
 	extern int ID;
@@ -160,7 +165,8 @@ namespace MSsolverNS {
 		int maxlevel;
 		int id;
 	public:
-		SynthInSolver(Synthesizer* syn, int inputs, int outputs) :s(syn), inputOutputs(inputs, outputs) {
+		int solverIdx; // Stores the index of this object in the sins vectors in the miniSAT solver.
+		SynthInSolver(Synthesizer* syn, int inputs, int outputs, int idx) :s(syn), inputOutputs(inputs, outputs), solverIdx(idx) {
 			syn->set_inout(&inputOutputs);
 			maxlevel = 0;
 			id = ++ID;
@@ -192,15 +198,16 @@ namespace MSsolverNS {
 			s->finalize();
 		}
 
-		void backtrack(int level) {
+		void backtrack(int level, vec<Lit>& suggestions) {
 			if (maxlevel <= level) { return;  }
 			inputOutputs.backtrack(level);
 			s->backtrack(level);
+			suggestions.clear();
 		}
 
 		/* Returns the stack level of the input.
 		*/
-		Clause* pushInput(int instance, int inputid, int val, int dlevel) {
+		Clause* pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& suggestions) {
 			//id = valueid(instance,inputid)
 			//write only over EMPTY values
 			//cout << "ID=" << id << endl;
@@ -220,7 +227,7 @@ namespace MSsolverNS {
 			}
 			maxlevel = dlevel;
 			inputOutputs.pushInput(instance, inputid, val, dlevel);
-			if (!s->synthesis(instance, inputid, val, dlevel)) {
+			if (!s->synthesis(instance, inputid, val, dlevel, suggestions)) {
 				vec<Lit> conf;				
 				for (int i = 0; i < s->conflict.size(); ++i) {
 					int id = s->conflict[i];
