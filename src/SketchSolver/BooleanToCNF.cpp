@@ -251,13 +251,26 @@ int SolverHelper::intToBit(int id){
 
 	//Assert that we don't already have a mapping for this int var.
 	 
-	rv = newAnonymousVar ();
-	iToBit[id] = rv;
-	Tvalue tv=rv;
-	tv.makeSparse(*this);
-	mng.addMapping(id, tv);
-	regIclause(id, tv);
-	return rv;
+	Range r = mng.getRange(id);
+	if (r.isSingle()) {
+		if (r.getLo() == 1) {
+			iToBit[id] = YES;
+			return YES;
+		}
+		else {
+			iToBit[id] = -YES;
+			return -YES;
+		}
+	}
+	else {
+		rv = newAnonymousVar();
+		iToBit[id] = rv;
+		Tvalue tv = rv;
+		tv.makeSparse(*this);
+		mng.addMapping(id, tv);
+		regIclause(id, tv);
+		return rv;
+	}	
 }
 
 void SolverHelper::regIclause(int id, Tvalue& tv){

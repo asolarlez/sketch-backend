@@ -91,10 +91,10 @@ namespace MSsolverNS {
 		Assert(!mappings[id].isSparse(), "NONONO");
 		const gvvec& gv = tv.num_ranges;
 		if (gv.size() == 2 && gv[0].value == 0 && gv[1].value == 1) {
-			isBool.push(1);
+			isBool[id] = (1);
 		}
 		else {
-			isBool.push(0);
+			isBool[id] = (0);
 		}
 		mappings[id] = tv;
 	}

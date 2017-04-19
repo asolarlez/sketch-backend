@@ -2382,6 +2382,11 @@ void NodesToSolver::arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue
 		int last = -1;
 		const gvvec& num_ranges = inarr.num_ranges;
 		vector<int> bigor; bigor.push_back(0);
+		if (ir.getLo()<0) {
+			int ltid = dir.intlt(idxid, dir.getIntConst(0));
+			newidx.num_ranges.push_back(guardedVal( ltid , -1));
+			bigor.push_back(ltid);
+		}
 		for (auto it = num_ranges.begin(); it != num_ranges.end(); ++it) {
 			if (it->idx > last) {
 				if (ir.contains(it->idx)) {
@@ -2390,14 +2395,10 @@ void NodesToSolver::arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue
 					bigor.push_back(eqid);
 				}
 				last = it->idx;
-			}
-			if (it->idx == -1) {
-				newidx.num_ranges.push_back(guardedVal(-1, it->idx));
-			}
+			}			
 		}
 		dir.addBigOrClause(&bigor[0], bigor.size()-1);
-		Assert(newidx.num_ranges[0].idx == -1, "????");
-		newidx.num_ranges[0].guard = -bigor[0];
+		newidx.num_ranges.push_back(guardedVal(-bigor[0], last + 1));		
 		newidx.sparsify(dir);
 		arrRTvalue(node.getOtype() == OutType::BOOL, newidx, inarr, nvar);
 	}

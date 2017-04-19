@@ -274,6 +274,7 @@ public:
 	friend Range operator+(const Range& a, const Range& b);
 	friend Range operator*(const Range& a, const Range& b);
 	friend Range operator/(const Range& a, const Range& b);
+	friend Range operator%(const Range& a, const Range& b);
 	friend Range operator-(const Range& a, const Range& b);
 	friend bool operator==(const Range& a, const Range& b);
 	friend bool operator<=(const Range& a, const Range& b);
@@ -326,11 +327,39 @@ inline Range operator*(const Range& a, const Range& b) {
 
 inline Range operator/(const Range& a, const Range& b) {
 	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
-	int t1 = a.lo * b.lo;
-	int t2 = a.hi * b.hi;
-	int t3 = a.lo * b.hi;
-	int t4 = a.hi * b.hi;
-	return Range(min(min(t1, t2), min(t3, t4)), max(max(t1, t2), max(t3, t4)));
+
+	if (a.lo >= 0 && b.lo > 0) {
+		return Range(a.lo/b.hi, a.hi/b.lo);
+	}
+	if (a.hi <= 0 && b.hi < 0) {
+		return Range(a.hi / b.lo, a.lo / b.hi);
+	}
+	if (a.hi <= 0 && b.lo > 0) {
+		return Range(a.lo / b.lo, a.hi / b.hi);
+	}
+	if (a.lo >= 0 && b.hi < 0) {
+		return Range(a.hi / b.hi, a.lo / b.lo);
+	}
+
+	if (-a.lo >= a.hi) {
+		return Range(-a.lo, a.lo);
+	}
+	return Range(-a.hi, a.hi);
+
+}
+
+
+inline Range operator%(const Range& a, const Range& b) {
+	if (a == TOP_RANGE || b == TOP_RANGE) { return TOP_RANGE; }
+
+	if (a.lo >= 0 ) {
+		return Range(0, max(abs(b.hi), abs(b.lo)));
+	}
+	if (a.hi <= 0 ) {
+		return Range(-max(abs(b.hi), abs(b.lo)),0);
+	}
+	return Range(-max(abs(b.hi), abs(b.lo)), max(abs(b.hi), abs(b.lo)));
+
 }
 
 

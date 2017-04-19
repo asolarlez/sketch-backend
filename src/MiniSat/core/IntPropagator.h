@@ -846,6 +846,14 @@ public:
 
 
 	void addMod(iVar a, iVar b, iVar x){
+		Range out = ranges.getRange(a) % ranges.getRange(b);
+		if (out.isSingle()) {
+			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			return;
+		}
+		else {
+			ranges.updateRange(x, 0, out, NULL);
+		}
 		Intclause* c = ModClause(a, b, x);
 		clauses.push(c);
 		watches[a].push(c);
@@ -853,6 +861,16 @@ public:
 	}
 
 	void addDiv(iVar a, iVar b, iVar x){
+		
+
+		Range out = ranges.getRange(a) / ranges.getRange(b);
+		if (out.isSingle()) {
+			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			return;
+		}
+		else {
+			ranges.updateRange(x, 0, out, NULL);
+		}
 		Intclause* c = DivClause(a, b, x);
 		clauses.push(c);
 		watches[a].push(c);
@@ -2156,15 +2174,42 @@ private:
 				
 	}
 
-	void propagateTimesInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
+	RangePropStatus propagateModInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {		
+		if (a == b) {
+			Range outnew = Range(0, 0);
+			return updateIfBetter(vr, level, outnew, c);
+		}
+		else {
+			const Range& ina = ranges.getRange(a);
+			const Range& inb = ranges.getRange(b);
+			Range outnew = ina % inb;
+			return updateIfBetter(vr, level, outnew, c);
+		}
+	}
+
+
+	RangePropStatus propagateDivInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
+		const Range& ina = ranges.getRange(a);
+		if (a == b) {
+			Range outnew = Range(1, 1);
+			return updateIfBetter(vr, level, outnew, c);
+		}
+		else {
+			const Range& inb = ranges.getRange(b);
+			Range outnew = ina / inb;
+			return updateIfBetter(vr, level, outnew, c);
+		}
+	}
+
+	RangePropStatus propagateTimesInterval(iVar vr, iVar a, iVar b, Intclause& c, int level) {
 		const Range& ina = ranges.getRange(a);		
 		if (a == b) {
 			Range outnew = square(ina);
-			updateIfBetter(vr, level, outnew, c);			
+			return updateIfBetter(vr, level, outnew, c);			
 		} else {
 			const Range& inb = ranges.getRange(b);
 			Range outnew = ina * inb;
-			updateIfBetter(vr, level, outnew, c);
+			return updateIfBetter(vr, level, outnew, c);
 		}
 	}
 
@@ -2176,7 +2221,7 @@ private:
 		return updateIfBetter(vr, level, outnew, c);
 	}
 
-	void propagateBMuxInterval(Intclause& c, int level) {
+	RangePropStatus propagateBMuxInterval(Intclause& c, int level) {
 		iVar vr = c[0];
 		Val vcond = vals[c[1]];
 		
@@ -2184,12 +2229,13 @@ private:
 			Val vx = vals[vr];
 			if (!vx.isDef()) {
 				const Range& outnew = ranges.getRange(c[vcond.v() + 2]);
-				updateIfBetter(vr, level, outnew, c);
+				return updateIfBetter(vr, level, outnew, c);
 			}			
 		} else {
 			Range cond = ranges.getRange(c[1]);
-			updateIfBetter(vr, level, joinChoices(cond, c.size()-2, &c[2]), c);
+			return updateIfBetter(vr, level, joinChoices(cond, c.size()-2, &c[2]), c);
 		}
+		return NOTPROPAGATED;
 	}
 
 	Range joinChoices(const Range& cond, int len, iVar* choices) {
@@ -2440,9 +2486,11 @@ public:
 					}else
 					if(c.tp()==MOD){
 						goodsofar = propagateMod(c,p,i,j);
+						if (goodsofar) { propagateModInterval(c[0], c[1], c[2], c, p.level); }
 					}else
 					if(c.tp()==DIV){
 						goodsofar = propagateDiv(c,p,i,j);
+						if (goodsofar) { propagateDivInterval(c[0], c[1], c[2], c, p.level ); }
 					}else
 					if(c.tp()==CONF){
 						goodsofar = propagateConf(c,p,i,j);
@@ -2466,10 +2514,11 @@ public:
 							propagateBMuxInterval(c,p.level);
 						}else
 						if(c.tp()==MOD){
+							goodsofar = (propagateModInterval(c[0], c[1], c[2], c, p.level) != CONFLICT);
 						
 						}else
 						if(c.tp()==DIV){
-						
+							goodsofar = (propagateDivInterval(c[0], c[1], c[2], c, p.level) != CONFLICT);
 						}
 					}
 				}
