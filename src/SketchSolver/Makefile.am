@@ -7,9 +7,9 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
@@ -27,6 +27,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/SimulatedAnnealing.h		\
 	NumericalSynthesis/AutoDiff.h \
 	NumericalSynthesis/RangeDiff.h   \
+	NumericalSynthesis/GlobalEvaluator.h	\
 	NumericalSynthesis/SimpleEvaluator.h	\
 	NumericalSynthesis/Interval.h		\
 	NumericalSynthesis/IntervalGrad.h		\
@@ -77,6 +78,7 @@ libcegis_la_SOURCES =				\
 	NumericalSynthesis/IntervalGrad.cpp \
 	NumericalSynthesis/AutoDiff.cpp \
 	NumericalSynthesis/RangeDiff.cpp \
+	NumericalSynthesis/GlobalEvaluator.cpp	\
 	NumericalSynthesis/SimpleEvaluator.cpp	\
 	NumericalSynthesis/GradientDescent.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\

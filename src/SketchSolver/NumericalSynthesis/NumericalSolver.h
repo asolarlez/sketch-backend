@@ -21,6 +21,7 @@ using namespace std;
 #include "GradientDescent.h"
 #include "IntervalPropagator.h"
 #include "SimpleEvaluator.h"
+#include "GlobalEvaluator.h"
 
 class NumericalSolver;
 
@@ -42,6 +43,7 @@ public:
 	int dcounter = 0;
 	SimpleEvaluator* eval;
 	RangeDiff* evalR;
+	GlobalEvaluator* evalG;
 	gsl_vector* prevState;
 	int MAX_TRIES = 5;
 	float cthresh = 0.01;
@@ -65,8 +67,10 @@ public:
 		ncontrols = ctrlVals.size();
 		if (ncontrols == 0) ncontrols = 1;
 		gd = new GradientDescent(ncontrols);
+		
 		evalR = new RangeDiff(*dag, fm, ctrlMap);
 		eval = new SimpleEvaluator(*dag, fm);
+		evalG = new GlobalEvaluator(*dag, fm, ctrlMap);
 		
 		prevState = gsl_vector_alloc(ncontrols);
 		for (int i = 0; i < ncontrols; i++) {
@@ -90,7 +94,7 @@ public:
 			while (j < 10.0) {
 			gsl_vector_set(state, 0, i);
 			gsl_vector_set(state, 1, j);
-			double err = evalWithGrad(state, d, allInputs);
+			double err = evalLocal(state, d, allInputs);
 			file << err << ";";
 			j+= 0.1;
 			}
@@ -119,7 +123,7 @@ public:
 	}
 
 	
-  double evalWithGrad(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
+  double evalLocal(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
     for (int i = 0; i < ncontrols; i++ ) {
       gsl_vector_set(d, i, 0);
     }
@@ -170,6 +174,34 @@ public:
 		return error;
 	}
 
+	double evalAll(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
+		for (int i = 0; i < ncontrols; i++ ) {
+			gsl_vector_set(d, i, 0);
+		}
+		double error = 0;
+		for (int i = 0; i < allInputs.size(); i++) {
+			VarStore ctrlStore;
+			map<int, int> inputValues; // maps node id to value set by the sat solver
+			// Collect all inputs (assumes inputs are not floats)
+			for (int j = 0; j < allInputs[i].size(); j++) {
+				if (allInputs[i][j] != EMPTY) {
+					inputValues[imap[j]] = allInputs[i][j];
+				}
+			}
+			// Collect all controls (assumes controls are floats)
+			for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
+				ctrlStore.setVarVal(it->first, fm.getIdx(gsl_vector_get(state,it->second)));
+			}
+			
+			// Run automatic differentiation on ranges
+			error += evalG->run(ctrlStore, inputValues, d, state);
+			//evalR->print();
+		}
+		//cout << "State: " << gsl_vector_get(state, 0) << " " << gsl_vector_get(state, 1) << " " << gsl_vector_get(state, 2) << endl;
+		//cout << "Error: " << error << endl;
+		//cout << "Grad: " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << " " << gsl_vector_get(d, 2) << endl;
+		return error;
+	}
 
   static double eval_f(const gsl_vector* x, void* params) {}
   
@@ -177,7 +209,7 @@ public:
   
   static void eval_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* df) {
     Parameters* p = (Parameters*) params;
-    *f = p->ns->evalWithGrad(x, df, p->allInputs);
+    *f = p->ns->evalAll(x, df, p->allInputs);
   }
 	
 	bool_node* getNodeForInput(int inputid) {
@@ -265,7 +297,7 @@ public:
 		double minError = gd->optimize();
 		gsl_vector* curState = gd->getResults();
 		int numtries = 0;
-		while (abs(minError) > threshold  && numtries < MAX_TRIES) {
+		while (minError > threshold  && numtries < MAX_TRIES) {
 			cout << "Retry attempt: " << (numtries+1) << endl;
 			// redo gradient descent with random initial point
 			for (int i = 0; i < ncontrols; i++) {
@@ -282,7 +314,7 @@ public:
 		}
 		
 		//evalR->print();
-		if (abs(minError) <= threshold) {
+		if (minError <= threshold) {
 			prevState = curState;
 			// Update the controls
 			for (int i = 0; i < ncontrols; i++) {
@@ -353,7 +385,7 @@ public:
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		gsl_vector_set(state, 0, 0);
 		gsl_vector_set(state, 1, 0.5);
-		cout << evalWithGrad(state, d, allInputs) << endl;*/
+		cout << evalLocal(state, d, allInputs) << endl;*/
 		//genData(allInputs);
 		// First, do interval propagation to detect any conflicts
 		if (!doIntervalProp(instance, inputid, val, level)) {
