@@ -61,6 +61,12 @@ public:
 	inline void clear(){
 		cse_map.clear();
 	}
+	
+	void addAssert(ASSERT_node* an) {
+		DllistNode* dn = dynamic_cast<DllistNode*>(an);
+		dn->remove();
+		dag.assertions.append(dn);
+	}
 
 	void setStr(int id1, char op, int id2);
 	

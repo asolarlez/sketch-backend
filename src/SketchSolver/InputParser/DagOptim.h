@@ -472,6 +472,9 @@ public:
 		specialization[name] = val;
 	}
 
+	void addAssert(ASSERT_node* an) {
+		cse.addAssert(an);
+	}
 
 	bool_node* computeOptim(bool_node* node);
 	bool_node* optAdd(bool_node* bn);

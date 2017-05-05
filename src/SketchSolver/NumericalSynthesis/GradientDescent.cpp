@@ -39,7 +39,7 @@ double GradientDescent::optimize() {
 		// printOutput(iter);
 		fval = minidf->f;
 	}
-	while (status == GSL_CONTINUE && iter < 4000 && fval > 1e-7);
+	while (status == GSL_CONTINUE && iter < 400 && fval > 1e-5);
 	
 	cout << "Ending search..." << endl;
 	for (int i = 0; i < minidf->x->size; i++) {

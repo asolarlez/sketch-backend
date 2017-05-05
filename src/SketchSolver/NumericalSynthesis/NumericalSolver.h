@@ -269,7 +269,7 @@ public:
 			cout << "Retry attempt: " << (numtries+1) << endl;
 			// redo gradient descent with random initial point
 			for (int i = 0; i < ncontrols; i++) {
-				float r = 0.0 + (rand()%100)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
+				float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
 				gsl_vector_set(t, i, r);
 				cout << r << "; ";
 			}
@@ -426,7 +426,11 @@ public:
           }
           if (newdag[i] != n) {
             newdag.replace(i, n);
-          }
+					}
+					if (n->type == bool_node::ASSERT) {
+						dopt->addAssert((ASSERT_node*)n);
+					}
+					
         }
       }
     }
