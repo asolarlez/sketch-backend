@@ -143,12 +143,36 @@ bool CEGISSolver::solve(){
 //	setNewControls(ctrlStore);	
 	
 	bool succeeded = solveCore();
-	
+	// bool succeeded = solveOptimization();
 	popProblem();
 
 	return succeeded;
 }
 
+bool CEGISSolver::solveOptimization() {
+	timerclass ftimer("* FIND TIME");
+	timerclass ttimer("* TOTAL TIME");
+	ttimer.start();
+	
+	if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
+	ftimer.restart();
+	bool fail = false;
+	try{
+		find(inputStore, ctrlStore, false);
+	}catch(BasicError& e){
+		fail = true;
+	}
+	
+	ttimer.stop();
+	if(!fail){
+		cout<<" *Reporting the minimum found so far"<<endl;
+	}else{
+		cout<<" *FAILED"<<endl;
+	}
+	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
+	dirFind.getMng().retractAssumptions();
+	return !fail;
+}
 
 
 
