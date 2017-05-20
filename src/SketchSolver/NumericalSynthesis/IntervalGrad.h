@@ -37,8 +37,8 @@ class IntervalGrad {
 	gsl_vector* lgrad;
 	gsl_vector* hgrad;
 	
-	static constexpr float MAXVAL = 1e10;
-	static constexpr float MINVAL = -1e10;
+	static constexpr float MAXVAL = 1e30;
+	static constexpr float MINVAL = -1e30;
 	static constexpr float PI = 3.1415926535897;
 	static constexpr float MINSIZE = 0.01;
 	
