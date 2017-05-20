@@ -5,13 +5,17 @@ SOLVERS = SolverInterfaces/
 include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
-bin_PROGRAMS = cegis
+bin_PROGRAMS = cegis gdtest igtest
 lib_LTLIBRARIES = libcegis.la
 cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
+gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
+igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
 libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
+gdtest_LDADD = libcegis.la
+igtest_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
@@ -113,7 +117,9 @@ libcegis_la_SOURCES =				\
 	InputParser/Tvalue.cpp
 
 
-cegis_SOURCES =	InputParser/CegisMain.cpp			
+cegis_SOURCES =	InputParser/CegisMain.cpp
+gdtest_SOURCES = NumericalSynthesis/Test/TestGradientDescent.cpp
+igtest_SOURCES = NumericalSynthesis/Test/TestIntervalArith.cpp
 
 ## Hackery to put the lex/bison generated parser into a C++ namespace
 
