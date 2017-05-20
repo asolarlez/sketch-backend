@@ -7,7 +7,9 @@
 
 using namespace std;
 
-class NumericalSolver;
+typedef double (* GD_F_TYPE)(const gsl_vector*, void*);
+typedef void (* GD_DF_TYPE)(const gsl_vector*, void*, gsl_vector*);
+typedef void (* GD_FDF_TYPE)(const gsl_vector*, void*, double*, gsl_vector*);
 
 class GradientDescent {
 	int N; // Total number of components
@@ -17,21 +19,30 @@ class GradientDescent {
 	gsl_multimin_fdfminimizer* minidf;  // The GSL minimizer for when derivatives needed
 	const gsl_multimin_fdfminimizer_type *Tdf ;
 	gsl_multimin_function_fdf myfundf;
+
+public:
 	double INIT_STEP_SIZE = 5.0;
 	double TOLERANCE = 0.1;
+	double PRECISION = 1e-5;
+	double GRAD_PRECISION = 1e-3;
+	double ITERATIONS = 4000;
 	
-public:
 	GradientDescent(int N_p): N(N_p) {
-		Tdf = gsl_multimin_fdfminimizer_steepest_descent;
+		Tdf = gsl_multimin_fdfminimizer_vector_bfgs2;
 		minidf = gsl_multimin_fdfminimizer_alloc(Tdf, N);
 		myfundf.n = N;
+	}
+	
+	~GradientDescent() {
+		gsl_multimin_fdfminimizer_free(minidf);
+		gsl_vector_free(x);
 	}
 	
 	gsl_vector* getResults() {
 		return minidf->x;
 	}
-	void init(NumericalSolver* ns, const vector<vector<int>>& allInputs, gsl_vector* prev);
-	double optimize();
+	void init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p, gsl_vector* initX);
+	double optimize(); // optimizes until value is 0
 };
 
 

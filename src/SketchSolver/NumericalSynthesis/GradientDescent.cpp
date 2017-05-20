@@ -1,17 +1,14 @@
 #include "GradientDescent.h"
-#include "NumericalSolver.h"
+#include <iostream>
 
-void GradientDescent::init(NumericalSolver* ns, const vector<vector<int>>& allInputs, gsl_vector* prev) {
+void GradientDescent::init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p, gsl_vector* initX) {
 	x = gsl_vector_alloc(N);
 	for (int i = 0; i < N; i++) {
-		gsl_vector_set(x, i, gsl_vector_get(prev, i));
+		gsl_vector_set(x, i, gsl_vector_get(initX, i));
 	}
-	myfundf.f = &ns->eval_f;
-	myfundf.df = &ns->eval_df;
-	myfundf.fdf = &ns->eval_fdf;
-	Parameters* p = new Parameters();
-	p->allInputs = allInputs;
-	p->ns = ns;
+	myfundf.f = f;
+	myfundf.df = df;
+	myfundf.fdf = fdf;
 	myfundf.params = p;
 	gsl_multimin_fdfminimizer_set(minidf, &myfundf, x, INIT_STEP_SIZE, TOLERANCE);
 }
@@ -30,16 +27,15 @@ double GradientDescent::optimize() {
 		//cout << gsl_strerror(status) << endl;
 		if (status)
 			break;
-		grad = gsl_multimin_fdfminimizer_gradient(minidf);
-		size = gsl_blas_dasum(grad);
-		status = gsl_multimin_test_gradient (grad, 1e-5);
+		grad = minidf->gradient;
+		status = gsl_multimin_test_gradient (grad, GRAD_PRECISION);
 		
 		if (status == GSL_SUCCESS)
 			printf ("Minimum found at:\n");
-		// printOutput(iter);
+
 		fval = minidf->f;
 	}
-	while (status == GSL_CONTINUE && iter < 400 && fval > 1e-5);
+	while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION);
 	
 	cout << "Ending search..." << endl;
 	for (int i = 0; i < minidf->x->size; i++) {

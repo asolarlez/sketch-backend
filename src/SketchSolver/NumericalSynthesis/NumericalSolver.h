@@ -25,7 +25,7 @@ using namespace std;
 
 class NumericalSolver;
 
-class Parameters {
+class GDParameters {
 public:
   NumericalSolver* ns;
   vector<vector<int>> allInputs;
@@ -45,11 +45,16 @@ public:
 	RangeDiff* evalR;
 	GlobalEvaluator* evalG;
 	gsl_vector* prevState;
-	int MAX_TRIES = 5;
+	int MAX_TRIES = 10;
 	float cthresh = 0.01;
 	map<int, int> imap; // Maps inputs to actual nodes in the dag
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
 	gsl_vector* t; // temp vector
+	
+	bool onlyOptimize = false;
+	float minErrorSoFar;
+	int counter = 0;
+	static gsl_vector* curGrad;
   NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap) :Synthesizer(_fm), dag(_dag), imap(_imap) {
 		//dag->lprint(cout);
 		//cout << "Input mapping " << endl;
@@ -67,6 +72,7 @@ public:
 		ncontrols = ctrlVals.size();
 		if (ncontrols == 0) ncontrols = 1;
 		gd = new GradientDescent(ncontrols);
+		curGrad = gsl_vector_alloc(ncontrols);
 		
 		evalR = new RangeDiff(*dag, fm, ctrlMap);
 		eval = new SimpleEvaluator(*dag, fm);
@@ -77,6 +83,7 @@ public:
 			gsl_vector_set(prevState, i, 0);
 		}
 		t = gsl_vector_alloc(ncontrols);
+		minErrorSoFar = 1e50;
   }
 	
 	
@@ -203,12 +210,18 @@ public:
 		return error;
 	}
 
-  static double eval_f(const gsl_vector* x, void* params) {}
+  static double eval_f(const gsl_vector* x, void* params) {
+		GDParameters* p = (GDParameters*) params;
+		return p->ns->evalLocal(x, curGrad, p->allInputs);
+	}
   
-  static void eval_df(const gsl_vector* x, void* params, gsl_vector* d) {}
+  static void eval_df(const gsl_vector* x, void* params, gsl_vector* d) {
+		// just use the curGrad - assuming that this function is called immediately after calling eval_f with the same arguments
+		gsl_vector_memcpy(d, curGrad);
+	}
   
   static void eval_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* df) {
-    Parameters* p = (Parameters*) params;
+    GDParameters* p = (GDParameters*) params;
     *f = p->ns->evalLocal(x, df, p->allInputs);
   }
 	
@@ -293,9 +306,18 @@ public:
 	}
 	
 	bool doGradientDescent(const vector<vector<int>>& allInputs, const vector<int>& conflictids, int instance, int inputid) {
-		gd->init(this, allInputs, prevState);
+		GDParameters* p = new GDParameters();
+		p->allInputs = allInputs;
+		p->ns = this;
+		gd->init(this->eval_f, this->eval_df, this->eval_fdf, p, prevState);
 		double minError = gd->optimize();
 		gsl_vector* curState = gd->getResults();
+		if (minError < minErrorSoFar) {
+			minErrorSoFar = minError;
+			for (int i = 0; i < ncontrols; i++) {
+				ctrlVals[i] = gsl_vector_get(curState, i);
+			}
+		}
 		int numtries = 0;
 		while (minError > threshold  && numtries < MAX_TRIES) {
 			cout << "Retry attempt: " << (numtries+1) << endl;
@@ -307,12 +329,23 @@ public:
 			}
 			cout << endl;
 			
-			gd->init(this, allInputs, t);
+			gd->init(this->eval_f, this->eval_df, this->eval_fdf, p, t);
 			minError = gd->optimize();
 			curState = gd->getResults();
+			if (minError < minErrorSoFar) {
+				minErrorSoFar = minError;
+				for (int i = 0; i < ncontrols; i++) {
+					ctrlVals[i] = gsl_vector_get(curState, i);
+				}
+			}
 			numtries++;
 		}
-		
+		if (minError < minErrorSoFar) {
+			minErrorSoFar = minError;
+			for (int i = 0; i < ncontrols; i++) {
+				ctrlVals[i] = gsl_vector_get(curState, i);
+			}
+		}
 		//evalR->print();
 		if (minError <= threshold) {
 			prevState = curState;
@@ -363,6 +396,14 @@ public:
 	}
 	
   virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
+		if (onlyOptimize){ // stop the solver after some retries
+			if (counter >= 3) {
+				cout << "Min error: " << minErrorSoFar << endl;
+				return true;
+			} else {
+				counter++;
+			}
+		}
     conflict.clear();
 		suggestions.clear();
     vector<vector<int>> allInputs;
@@ -388,9 +429,9 @@ public:
 		cout << evalLocal(state, d, allInputs) << endl;*/
 		//genData(allInputs);
 		// First, do interval propagation to detect any conflicts
-		if (!doIntervalProp(instance, inputid, val, level)) {
-				return false;
-		}
+		//if (!doIntervalProp(instance, inputid, val, level)) {
+		//		return false;
+		//}
 		// If no conflict is found, do gradient descent
 		bool sat = doGradientDescent(allInputs, conflictids, instance, inputid);
 		if (sat) {
@@ -431,8 +472,8 @@ public:
 	// Note: this method is called before adding the new instance to the input output matrix
   virtual void newInstance() {
 		// Create a new IntervalPropagator for the instance
-		int idx = inout->getNumInstances();
-		propMap[idx] = createPropagator();
+		//int idx = inout->getNumInstances();
+		//propMap[idx] = createPropagator();
 	}
   
   virtual void finalize() {}
