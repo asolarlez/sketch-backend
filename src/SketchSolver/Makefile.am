@@ -78,6 +78,7 @@ libcegis_la_SOURCES =				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
+  NumericalSynthesis/NumericalSolver.cpp \
 	NumericalSynthesis/Interval.cpp \
 	NumericalSynthesis/IntervalGrad.cpp \
 	NumericalSynthesis/AutoDiff.cpp \
