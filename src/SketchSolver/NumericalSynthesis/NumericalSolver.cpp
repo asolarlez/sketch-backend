@@ -149,6 +149,10 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	GDParameters* p = new GDParameters();
 	p->allInputs = allInputs;
 	p->ns = this;
+	for (int i = 0; i < ncontrols; i++) {
+		cout << gsl_vector_get(prevState, i) << ", ";
+	}
+	cout << endl;
 	gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, prevState);
 	double minError = gd->optimize();
 	gsl_vector* curState = gd->getResults();
@@ -165,7 +169,7 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 		for (int i = 0; i < ncontrols; i++) {
 			float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
 			gsl_vector_set(t, i, r);
-			cout << r << "; ";
+			cout << r << ", ";
 		}
 		cout << endl;
 		
@@ -197,6 +201,11 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	} else {
 		cout << "******************* Found a conflict *******************" << endl;
 		generateConflict(conflictids);
+		for (int i = 0; i < ncontrols; i++) {
+			float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
+			gsl_vector_set(prevState, i, r);
+		}
+
 		return false;
 	}
 }
@@ -273,7 +282,7 @@ bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, v
 	//		return false;
 	//}
 	// If no conflict is found, do gradient descent
-	/*double ctrls[72] = {-6.7, -6.1, 8.4, -7.5, 1.3, -6.7, -8.7, -5.5, 2.7, -3.5, -9.8, 5.9, -5.6, -9.9, 3.1, 8.8, -2.4, 1.8, 8.4, -5.7, 8.5, 5.8, -9.8, 1.2, -9.3, -5.6, 8.5, 6.5, -2.2, -7.1, -6, -4.5, 4.2, -2.6, -8.1, -5.1, -5.6, 9.3, 4.9, 2.9, 3.5, 5.5, 2.3, 2.2, 0.3, 4.5, -8.5, 6.7, -7.9, -5, -2.5, -8.3, -3.1, -8.2, 0.7, 4.8, 6.8, 9.2, 4.6, 0.4, 3.6, -6, -2.7, -2.9, 3, 8, 1.7, -2.8, 3.6, -6.8, 4.7, -9.6};
+	/*double ctrls[72] = {0.5, 6.6, -6.3, 5.5, -1.2, -6.6, 6.6, 1.7, -4.2, 4, 4.3, 2.3, -5.8, -5.2, -8.7, -1.6, -0.3, 9.1, 7.8, -7, 2.2, -6.6, -9.8, 3.4, 6, 0.4, 2.8, 0.9, 4.1, 0.9, 5.4, -0.7, 5.8, 1.2, -6.5, 8.1, -6.6, -7.8, 9.6, 7.7, 2.6, -4.1, -8.9, 5, 8.4, -0.9, 6.3, -9.9, -6.4, -4.6, 1.1, -2.2, -9, 2.3, 4.6, -8.7, -5.3, 5.7, -9.3, -7.4, -7.7, 1.1, 0, 5.1, 9, 4.4, -2.3, -4.1, 2.2, -3.1, 1, -0.6};
 	
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(prevState, i, ctrls[i]);

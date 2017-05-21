@@ -18,6 +18,9 @@ double GradientDescent::optimize() {
 	double size;
 	double fval;
 	const gsl_vector* grad;
+	double diff;
+	
+	bool first = true;
 	
 	do
 	{
@@ -34,10 +37,14 @@ double GradientDescent::optimize() {
 		if (status == GSL_SUCCESS)
 			printf ("Minimum found at:\n");
 
+		diff = fval - minidf->f;
 		fval = minidf->f;
-		//cout << fval << " " << gsl_blas_dnrm2(grad) << endl;
+		if (first) {
+			first = false;
+			diff = 10;
+		}
 	}
-	while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION);
+	while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION && diff >= PRECISION);
 	cout << "Iterations: " << iter << endl;
 	cout << status << endl;
 	cout << "Ending search..." << endl;
@@ -46,5 +53,7 @@ double GradientDescent::optimize() {
 	}
 	cout << endl;
 	cout << "Optimal value found: " << minidf->f << endl;
-	return minidf->f;
+	double val = minidf->f;
+	gsl_multimin_fdfminimizer_restart(minidf);
+	return val;
 }

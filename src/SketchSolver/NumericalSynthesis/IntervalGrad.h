@@ -142,8 +142,16 @@ private:
 	}
 	
 	void bound() {
+		double oldLow = low;
 		low = bound(low);
+		if (oldLow != low) {
+			default_grad(lgrad);
+		}
+		double oldHigh = high;
 		high = bound(high);
+		if (oldHigh != high) {
+			default_grad(hgrad);
+		}
 		
 		for (int i = 0; i < lgrad->size; i++) {
 			gsl_vector_set(lgrad, i, bound(gsl_vector_get(lgrad, i)));
