@@ -142,8 +142,8 @@ bool CEGISSolver::solve(){
 //	cpt.checkpoint('c', ctrlstore_serialized);
 //	setNewControls(ctrlStore);	
 	
-	bool succeeded = solveCore();
-	// bool succeeded = solveOptimization();
+	//bool succeeded = solveCore();
+	bool succeeded = solveOptimization();
 	popProblem();
 
 	return succeeded;
@@ -158,7 +158,7 @@ bool CEGISSolver::solveOptimization() {
 	ftimer.restart();
 	bool fail = false;
 	try{
-		find(inputStore, ctrlStore, false);
+		find(inputStore, ctrlStore, true);
 	}catch(BasicError& e){
 		fail = true;
 	}
