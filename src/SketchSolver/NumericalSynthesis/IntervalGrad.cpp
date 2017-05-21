@@ -4,6 +4,8 @@ gsl_vector* IntervalGrad::tmp;
 gsl_vector* IntervalGrad::tmp1;
 gsl_vector* IntervalGrad::tmp2;
 gsl_vector* IntervalGrad::tmp3;
+gsl_vector* IntervalGrad::tmpT;
+
 
 void IntervalGrad::ig_plus(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	float mlval = m->getLow();
@@ -53,10 +55,14 @@ void IntervalGrad::ig_times(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	vals.push_back(v3);
 	vals.push_back(v4);
 	
-	grads.push_back(compute_mult_grad(mlval, flval, mlgrads, flgrads));
-	grads.push_back(compute_mult_grad(mlval, fhval, mlgrads, fhgrads));
-	grads.push_back(compute_mult_grad(mhval, flval, mhgrads, flgrads));
-	grads.push_back(compute_mult_grad(mhval, fhval, mhgrads, fhgrads));
+	compute_mult_grad(mlval, flval, mlgrads, flgrads, tmp);
+	compute_mult_grad(mlval, fhval, mlgrads, fhgrads, tmp1);
+	compute_mult_grad(mhval, flval, mhgrads, flgrads, tmp2);
+	compute_mult_grad(mhval, fhval, mhgrads, fhgrads, tmp3);
+	grads.push_back(tmp);
+	grads.push_back(tmp1);
+	grads.push_back(tmp2);
+	grads.push_back(tmp3);
 	
 	if (m->singleton && f->singleton) {
 		float minv = vals[0];
@@ -145,10 +151,14 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	vals.push_back(v3);
 	vals.push_back(v4);
 	
-	grads.push_back(compute_div_grad(mlval, flval, mlgrads, flgrads));
-	grads.push_back(compute_div_grad(mlval, fhval, mlgrads, fhgrads));
-	grads.push_back(compute_div_grad(mhval, flval, mhgrads, flgrads));
-	grads.push_back(compute_div_grad(mhval, fhval, mhgrads, fhgrads));
+	compute_div_grad(mlval, flval, mlgrads, flgrads, tmp);
+	compute_div_grad(mlval, fhval, mlgrads, fhgrads, tmp1);
+	compute_div_grad(mhval, flval, mhgrads, flgrads, tmp2);
+	compute_div_grad(mhval, fhval, mhgrads, fhgrads, tmp3);
+	grads.push_back(tmp);
+	grads.push_back(tmp1);
+	grads.push_back(tmp2);
+	grads.push_back(tmp3);
 	
 	
 	if (m->singleton && f->singleton) {
@@ -261,22 +271,8 @@ void IntervalGrad::ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o)
 	o->bound();
 }
 
-IntervalGrad* IntervalGrad::ig_leftExtend(IntervalGrad* m) {
-	gsl_vector* lg = gsl_vector_alloc(m->lgrad->size);
-	default_grad(lg);
-	gsl_vector* hg = gsl_vector_alloc(m->hgrad->size);
-	gsl_vector_memcpy(hg, m->hgrad);
-	return new IntervalGrad(MINVAL, m->getHigh(), lg, hg);
-}
 
-IntervalGrad* IntervalGrad::ig_rightExtend(IntervalGrad* m) {
-	gsl_vector* lg = gsl_vector_alloc(m->lgrad->size);
-	gsl_vector_memcpy(lg, m->lgrad);
-	gsl_vector* hg = gsl_vector_alloc(m->hgrad->size);
-	default_grad(hg);
-	return new IntervalGrad(m->getLow(), MAXVAL, lg, hg);
 
-}
 
 void IntervalGrad::ig_equal(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	float m1 = m->getLow();
@@ -332,8 +328,10 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 	vals.push_back(v1);
 	vals.push_back(v2);
 	
-	grads.push_back(compute_square_grad(mlval, mlgrads));
-	grads.push_back(compute_square_grad(mhval, mhgrads));
+	compute_square_grad(mlval, mlgrads, tmp);
+	compute_square_grad(mhval, mhgrads, tmp1);
+	grads.push_back(tmp);
+	grads.push_back(tmp1);
 	
 	if (mlval < 0 && mhval > 0) {
 		float minv = 0.0;
@@ -392,8 +390,10 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 		vector<gsl_vector*> grads;
 		vals.push_back(sin(xl));
 		vals.push_back(sin(xh));
-		grads.push_back(compute_sin_grad(xl, m->getLGrad()));
-		grads.push_back(compute_sin_grad(xh, m->getHGrad()));
+		compute_sin_grad(xl, m->getLGrad(), tmp);
+		compute_sin_grad(xh, m->getHGrad(), tmp1); 
+		grads.push_back(tmp);
+		grads.push_back(tmp1);
 		float hval = findMax(vals, grads, o->getHGrad());
 		default_grad(o->getLGrad());
 		o->update(-1.0, hval);
@@ -402,8 +402,10 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 		vector<gsl_vector*> grads;
 		vals.push_back(sin(xl));
 		vals.push_back(sin(xh));
-		grads.push_back(compute_sin_grad(xl, m->getLGrad()));
-		grads.push_back(compute_sin_grad(xh, m->getHGrad()));
+		compute_sin_grad(xl, m->getLGrad(), tmp);
+		compute_sin_grad(xh, m->getHGrad(), tmp1);
+		grads.push_back(tmp);
+		grads.push_back(tmp1);
 		float lval = findMin(vals, grads, o->getLGrad());
 		default_grad(o->getHGrad());
 		o->update(lval, 1.0);
@@ -436,8 +438,10 @@ void IntervalGrad::ig_cos(IntervalGrad* m, IntervalGrad* o) {
 		vector<gsl_vector*> grads;
 		vals.push_back(cos(xl));
 		vals.push_back(cos(xh));
-		grads.push_back(compute_cos_grad(xl, m->getLGrad()));
-		grads.push_back(compute_cos_grad(xh, m->getHGrad()));
+		compute_cos_grad(xl, m->getLGrad(), tmp);
+		compute_cos_grad(xh, m->getHGrad(), tmp1);
+		grads.push_back(tmp);
+		grads.push_back(tmp1);
 		float lval = findMin(vals, grads, o->getLGrad());
 		default_grad(o->getHGrad());
 		o->update(lval, 1.0);
@@ -557,13 +561,13 @@ float IntervalGrad::softMinMax(const vector<float>& vals, const vector<gsl_vecto
 	}
 	
 	for (int i = 0; i < vals.size(); i++) {
-		Assert(grads[i] != tmp3, "Error: tmp3 will be overwritten");
-		gsl_vector_memcpy(tmp3, grads[i]);
-		gsl_vector_scale(tmp3, exp(alpha*(vals[i] - t)));
+		Assert(grads[i] != tmpT, "Error: tmpT will be overwritten");
+		gsl_vector_memcpy(tmpT, grads[i]);
+		gsl_vector_scale(tmpT, exp(alpha*(vals[i] - t)));
 		if (i == 0)
-			gsl_vector_memcpy(l, tmp3);
+			gsl_vector_memcpy(l, tmpT);
 		else
-			gsl_vector_add(l, tmp3);
+			gsl_vector_add(l, tmpT);
 	}
 	gsl_vector_scale(l, 1.0/expval);
 	return (log(expval) + alpha * t)/alpha;
@@ -577,36 +581,27 @@ void IntervalGrad::default_grad(gsl_vector* out) {
 
 // computes the grad of mval * fval i.e. mval*fgrads + fval*mgrads
 void IntervalGrad::compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
-	Assert(mgrads != tmp3 && fgrads != tmp3, "Error: tmp3 will be overwritten");
+	Assert(mgrads != tmpT && fgrads != tmpT, "Error: tmpT will be overwritten");
 	gsl_vector_memcpy(out, mgrads);
 	gsl_vector_scale(out, fval);
-	gsl_vector_memcpy(tmp3, fgrads);
-	gsl_vector_scale(tmp3, mval);
-	gsl_vector_add(out, tmp3);
+	gsl_vector_memcpy(tmpT, fgrads);
+	gsl_vector_scale(tmpT, mval);
+	gsl_vector_add(out, tmpT);
 }
 
-gsl_vector* IntervalGrad::compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads) {
-	gsl_vector* out = gsl_vector_alloc(mgrads->size);
-	compute_mult_grad(mval, fval, mgrads, fgrads, out);
-	return out;
-}
 
 // computes the grad of mval / fval i.e (fval * mgrads - mval * fgrads) / (fval * fval)
 void IntervalGrad::compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
-	Assert(mgrads != tmp3 && fgrads != tmp3, "Error: tmp will be overwritten");
+	Assert(mgrads != tmpT && fgrads != tmpT, "Error: tmp will be overwritten");
 	gsl_vector_memcpy(out, mgrads);
 	gsl_vector_scale(out, fval);
-	gsl_vector_memcpy(tmp3, fgrads);
-	gsl_vector_scale(tmp3, mval);
-	gsl_vector_sub(out, tmp3);
+	gsl_vector_memcpy(tmpT, fgrads);
+	gsl_vector_scale(tmpT, mval);
+	gsl_vector_sub(out, tmpT);
 	gsl_vector_scale(out, 1.0/(fval*fval));
 }
 
-gsl_vector* IntervalGrad::compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads) {
-	gsl_vector* out = gsl_vector_alloc(mgrads->size);
-	compute_div_grad(mval, fval, mgrads, fgrads, out);
-	return out;
-}
+
 
 void IntervalGrad::compute_square_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 2.0 * mval;
@@ -614,11 +609,7 @@ void IntervalGrad::compute_square_grad(float mval, gsl_vector* mgrads, gsl_vecto
 	gsl_vector_scale(out, dm);
 }
 
-gsl_vector* IntervalGrad::compute_square_grad(float mval, gsl_vector* mgrads) {
-	gsl_vector* out = gsl_vector_alloc(mgrads->size);
-	compute_square_grad(mval, mgrads, out);
-	return out;
-}
+
 
 void IntervalGrad::compute_arctan_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 1.0/(mval * mval + 1.0);
@@ -632,11 +623,7 @@ void IntervalGrad::compute_sin_grad(float mval, gsl_vector* mgrads, gsl_vector* 
 	gsl_vector_scale(out, dm);
 }
 
-gsl_vector* IntervalGrad::compute_sin_grad(float mval, gsl_vector* mgrads) {
-	gsl_vector* out = gsl_vector_alloc(mgrads->size);
-	compute_sin_grad(mval, mgrads, out);
-	return out;
-}
+
 
 void IntervalGrad::compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = -sin(mval);
@@ -644,11 +631,7 @@ void IntervalGrad::compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* 
 	gsl_vector_scale(out, dm);
 }
 
-gsl_vector* IntervalGrad::compute_cos_grad(float mval, gsl_vector* mgrads) {
-	gsl_vector* out = gsl_vector_alloc(mgrads->size);
-	compute_cos_grad(mval, mgrads, out);
-	return out;
-}
+
 
 void IntervalGrad::compute_tan_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 1.0/(cos(mval)*cos(mval));

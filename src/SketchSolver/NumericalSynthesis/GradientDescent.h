@@ -31,6 +31,7 @@ public:
 		Tdf = gsl_multimin_fdfminimizer_vector_bfgs2;
 		minidf = gsl_multimin_fdfminimizer_alloc(Tdf, N);
 		myfundf.n = N;
+		x = gsl_vector_alloc(N);
 	}
 	
 	~GradientDescent() {

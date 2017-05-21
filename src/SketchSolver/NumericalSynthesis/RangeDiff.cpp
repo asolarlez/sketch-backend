@@ -13,6 +13,7 @@ RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string
 	IntervalGrad::tmp1 = gsl_vector_alloc(nctrls);
 	IntervalGrad::tmp2 = gsl_vector_alloc(nctrls);
 	IntervalGrad::tmp3 = gsl_vector_alloc(nctrls);
+	IntervalGrad::tmpT = gsl_vector_alloc(nctrls);
 }
 
 RangeDiff::~RangeDiff(void) {

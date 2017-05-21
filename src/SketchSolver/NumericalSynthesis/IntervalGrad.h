@@ -37,8 +37,8 @@ class IntervalGrad {
 	gsl_vector* lgrad;
 	gsl_vector* hgrad;
 	
-	static constexpr float MAXVAL = 1e30;
-	static constexpr float MINVAL = -1e30;
+	static constexpr float MAXVAL = 1e10;
+	static constexpr float MINVAL = -1e10;
 	static constexpr float PI = 3.1415926535897;
 	static constexpr float MINSIZE = 0.01;
 	
@@ -51,6 +51,7 @@ public:
 	static gsl_vector* tmp1;
 	static gsl_vector* tmp2;
 	static gsl_vector* tmp3;
+	static gsl_vector* tmpT; // used for internal computations in mult, div - don't use it anywhere else
 	bool singleton;
 	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {
 		singleton = false;
@@ -85,23 +86,10 @@ public:
 	
 	static void ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, DistanceGrad* d, IntervalGrad* o);
 	static void ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o);
-	static IntervalGrad* ig_leftExtend(IntervalGrad* m);
-	static IntervalGrad* ig_rightExtend(IntervalGrad* m);
 	
 	double getSize() {
 		if (high - low < MINSIZE) return MINSIZE;
 		return high - low;
-	}
-	
-	gsl_vector* getSizeGrad() {
-		gsl_vector* g = gsl_vector_alloc(lgrad->size);
-		for (int i = 0; i < lgrad->size; i++) {
-			gsl_vector_set(g, i, 0);
-		}
-		if (high - low < MINSIZE) return g;
-		gsl_vector_memcpy(g, hgrad);
-		gsl_vector_sub(hgrad, lgrad);
-		return g;
 	}
 	
 	string print() {
@@ -130,17 +118,12 @@ private:
 	static float softMinMax(const vector<float>& vals, const vector<gsl_vector*>& grads, gsl_vector* l, float alpha, float t);
 	
 	static void compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads, gsl_vector* out);
-	static gsl_vector* compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads);
 	static void compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads, gsl_vector* out);
-	static gsl_vector* compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* hgrads);
 	
 	static void compute_square_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
-	static gsl_vector* compute_square_grad(float mval, gsl_vector* mgrads);
 	static void compute_arctan_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_sin_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
-	static gsl_vector* compute_sin_grad(float mval, gsl_vector* mgrads);
 	static void compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
-	static gsl_vector* compute_cos_grad(float mval, gsl_vector* mgrads);
 	static void compute_tan_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_sqrt_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	
