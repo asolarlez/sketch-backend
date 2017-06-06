@@ -2612,6 +2612,7 @@ bool_node* DagOptim::process( UFUN_node* node ){
      int fgid = node->fgid;
      if (fgid != 0) {
         if (combinedFunCallMap.count(fgid) > 0) {
+			possibleCycles = true;
              UFUN_node* brother = combinedFunCallMap[fgid];
              brother->dislodge();
              brother->mother->remove_child(brother);

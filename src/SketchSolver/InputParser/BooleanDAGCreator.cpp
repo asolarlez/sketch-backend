@@ -19,7 +19,7 @@ BooleanDAGCreator::~BooleanDAGCreator(void)
 void BooleanDAGCreator::finalize() {
 	dag->registerOutputs();
 	optim.cleanup(*dag);
-	optim.combineFunCalls(*dag);
+//     optim.combineFunCalls(*dag);
 
 	if (PARAMS->verbosity>7) {
 		cout << "size = " << dag->size() << endl;

@@ -43,7 +43,6 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/DagOptimizeCommutAssoc.h		\
 	InputParser/ExtractEvaluationCondition.h	\
 	InputParser/FastSet.h				\
-	InputParser/guardedVal.h			\
 	InputParser/InputReader.h			\
 	InputParser/InterpreterEnvironment.h \
 	InputParser/CegisMainHelpers.h \
@@ -85,6 +84,7 @@ libcegis_la_SOURCES =				\
 	InputParser/DagOptim.cpp		\
 	InputParser/DagOptimizeCommutAssoc.cpp	\
 	InputParser/driver.cpp			\
+	InputParser/HoleHardcoder.cpp             \
 	InputParser/InputReader.cpp		\
 	InputParser/InterpreterEnvironment.cpp \
 	InputParser/NodeEvaluator.cpp \
@@ -95,8 +95,7 @@ libcegis_la_SOURCES =				\
 	InputParser/NodeVisitor.cpp		\
 	InputParser/SolveFromInput.cpp \
 	InputParser/NodeHardcoder.cpp  \
-	InputParser/HoleHardcoder.cpp \
-    InputParser/Tvalue.cpp
+	InputParser/Tvalue.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp			
