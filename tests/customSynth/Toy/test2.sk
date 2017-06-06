@@ -1,0 +1,10 @@
+@Gen("arithexpr_4d_c0_c1_c2_c3_c4_1v_plus_times_div_mod") 
+int arithExpr1(int x);
+
+@Gen("arithexpr_4d_c0_c1_c2_c3_c4_1v_plus_times_div_mod") 
+int arithExpr2(int x);
+
+
+harness void main(int x) {
+	assert(arithExpr1(x) == arithExpr2(x));
+}

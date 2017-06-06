@@ -1,0 +1,614 @@
+
+#define SUB3(a,n) for(int j=0;j<n;j++){a[j]=a[j]-3;} 
+#define SUB7(a,n) for(int j=0;j<n;j++){a[j]=a[j]-7;} 
+void PCHOICE(int chpr);
+adt Val{
+    BIT {bit b;}
+    INT {int N;}
+#ifdef USEARR
+    BARR {int N; bit[N] ba;} 
+    IARR {int N; int[N] ia;}
+#endif
+}
+ 
+
+adt Node{
+    And{int id; int l; int r;} 
+    Or{int id; int l; int r;}
+    Xor{int id; int l; int r;}
+    Lt{int id; int l; int r;}
+    Eq{int id; int l; int r;}
+    Not{int id; int l;}
+    
+    Src{int id;}
+    ConstB{int id; bit vb;}
+    ConstI{int id; int vi;}
+    
+    Plus{int id; int l; int r;}
+    Times{int id; int l; int r;}
+    Div{int id; int l; int r;}
+    Mod{int id; int l; int r;}
+    Neg{int id;int l;}
+    
+    ArrAcc{int id; int b; int l;int r;}
+    ArrAss{int id; int b; int c; int l; int r;}
+#ifdef USEARR
+    ArrR{int id; int l; int r;} //l=index, r=array
+    ArrW{int id; int l; int r; int b;}//l=index, r=array, b=new-value
+#endif
+}
+
+bit isBit(Val v){
+    if(v==null) return false;
+    switch(v){
+        case BIT: return true;
+        default: return false;
+    }
+}
+
+bit isInt(Val v){
+    if(v==null) return false;
+    switch(v){
+        case INT: return true;
+        case BIT: return true;
+        default: return false;
+    }
+}
+
+
+bit getBit(Val v){
+    if(v==null) return 0;
+    switch(v){
+        case BIT: return v.b;
+        default: assert(false);
+    }
+}
+
+int getIntUpCast(Val v){
+    if(v==null) return 0;
+    switch(v){
+        case BIT: return v.b;
+        case INT: return v.N;
+        default: assert(false);
+    }
+}
+int getInt(Val v){
+    return getIntUpCast(v);
+}
+#ifdef USEARR
+bit isBitArr(Val v){
+    if(v==null) return false;
+    switch(v){
+        case BARR: return true;
+        default: return false;
+    }
+}
+
+bit isIntArr(Val v){
+    if(v==null) return false;
+    switch(v){
+        case IARR: return true;
+        default: return false;
+    }
+}
+
+int getIntFromArr(Val arr,int index){
+    if(arr==null) return 0;
+    switch(arr){
+        case IARR:{ 
+            if(index >= 0 && index <arr.N) 
+                return arr.ia[index];
+            else return 0;
+        }
+        default: assert(false);
+    }
+}
+
+
+bit getBitFromArr(Val arr,int index){
+    if(arr==null) return 0;
+    switch(arr){
+        case BARR:{ 
+            if(index >= 0 && index <arr.N) 
+                return arr.ba[index];
+            else return 0;
+        }
+        default: assert(false);
+    }
+}
+
+BARR copyB(BARR B){
+    bit[B.N] ba_new = B.ba;
+    return new BARR(N=B.N,ba=B.ba);
+}
+
+IARR copyI(IARR I){
+    int[I.N] ia_new = I.ia;
+    return new IARR(N=I.N,ia=I.ia);
+}
+
+Val updateBitArr(Val arr,int index, bit newval){
+    if(arr==null) return null;
+    switch(arr){
+        case BARR:{ 
+            if (index < arr.N && index >= 0){
+                //update existing element
+                int sz = arr.N;
+                bit[sz] ba_new = arr.ba;
+                assert(sz < ARRSZMAX);
+                ba_new[index] = newval;
+                return new BARR(N=sz,ba=ba_new);
+            }
+            else if (index >= arr.N){
+                //extend the array
+                int sz = index+1;
+                bit[sz] ba_new = 0;
+                assert(sz < ARRSZMAX);
+                for(int i=0;i<arr.N;i++) ba_new[i] = arr.ba[i];
+                ba_new[index] = newval;
+                return new BARR(N=sz,ba=ba_new);
+            }
+            else return copyB(arr);
+        }
+        default: assert(false);
+    }
+}
+
+Val updateIntArr(Val arr,int index, int newval){
+    if(arr==null) return null;
+    switch(arr){
+        case IARR:{ 
+            if (index < arr.N && index >= 0){
+                //update existing element
+                int sz = arr.N;
+                int[sz] ia_new = arr.ia;
+                assert(sz < ARRSZMAX);
+                ia_new[index] = newval;
+                return new IARR(N=sz,ia=ia_new);
+            }
+            else if (index >= arr.N){
+                //extend the array
+                int sz = index+1;
+                int[sz] ia_new = 0;
+                assert(sz < ARRSZMAX);
+                for(int i=0;i<arr.N;i++) ia_new[i] = arr.ia[i];
+                ia_new[index] = newval;
+                return new IARR(N=sz,ia=ia_new);
+            }
+            else return copyI(arr);
+        }
+        default: assert(false);
+    }
+}
+
+
+//evaluation
+//How to check equality of two arrays!?
+bit bArrCompare(BARR a1, BARR a2){
+    if(a1.N <= a2.N){
+		for(int i=0;i<a1.N;++i){
+			if(a1.ba[i] != a2.ba[i]) return 0;
+		}
+		for(int i=a1.N;i<a2.N;++i){
+			if(a2.ba[i] != 0) return 0;
+		}
+		return 1;
+	}
+	else{
+		for(int i=0;i<a2.N;++i){
+			if(a1.ba[i] != a2.ba[i]) return 0;
+		}
+		for(int i=a2.N;i<a1.N;++i){
+			if(a1.ba[i] != 0) return 0;
+		}
+		return 1;
+	}
+}
+
+bit iArrCompare(IARR a1, IARR a2){
+    if(a1.N <= a2.N){
+		for(int i=0;i<a1.N;++i){
+			if(a1.ia[i] != a2.ia[i]) return 0;
+		}
+		for(int i=a1.N;i<a2.N;++i){
+			if(a2.ia[i] != 0) return 0;
+		}
+		return 1;
+	}
+	else{
+		for(int i=0;i<a2.N;++i){
+			if(a1.ia[i] != a2.ia[i]) return 0;
+		}
+		for(int i=a2.N;i<a1.N;++i){
+			if(a1.ia[i] != 0) return 0;
+		}
+		return 1;
+	}
+}
+Val arrRead( Val index,Val arr){
+    if (isBitArr(arr)){
+        return new BIT(b=getBitFromArr(arr,getIntUpCast(index)));
+    }
+    else if (isIntArr(arr)){
+        return new INT(N=getIntFromArr(arr,getIntUpCast(index)));
+    }
+    else assert(false);
+}
+
+Val arrWrite( Val index,Val arr,Val newval){
+    if (isBitArr(arr)){
+        return updateBitArr(arr,getIntUpCast(index),getBit(newval));
+    }
+    else if (isIntArr(arr)){
+        return updateIntArr(arr,getIntUpCast(index),getIntUpCast(newval));
+    }
+    else assert(false);
+}
+#endif
+
+bit checkEq(Val l,Val r){
+    if (isBit(l) && isBit(r))
+        return getBit(l) == getBit(r);
+    else if ((isInt(l) || isBit(l)) && (isInt(r) || isBit(r)))
+        return getIntUpCast(l) == getIntUpCast(r);
+#ifdef USEARR
+    else if (isBitArr(l) && isBitArr(r))
+        return bArrCompare((BARR)(l),(BARR)(r));
+    else if (isIntArr(l) && isIntArr(r))
+        return iArrCompare((IARR)(l),(IARR)(r));
+#endif
+    else return false;
+}
+
+int divfn(int l,int r){
+    if (r==0) return MAXINT;
+    else return l/r;
+}
+
+int modfn(int l,int r){
+    if (r<=0) return MAXINT;
+    else return l%r;
+}
+
+
+Val eval(int CT, Val[NTOTALF] vals, Node[NTOTALF] dag, int sz){
+    //if(CT == NTOTALF || dag[CT] == null) return vals[CT-1];
+    if(CT == sz || CT == NTOTALF) return vals[CT-1];
+    assert(CT<NTOTALF);
+    Node n = dag[CT];
+    assert(n!=null);
+    switch (n){ 
+        case And: vals[CT] = new BIT(b=getBit(vals[n.l]) && getBit(vals[n.r]));
+        case Or: vals[CT] = new BIT(b=getBit(vals[n.l]) || getBit(vals[n.r]));
+        case Xor: vals[CT] = new BIT(b=getBit(vals[n.l]) ^ getBit(vals[n.r]));
+        case Lt: vals[CT] = new BIT(b=getInt(vals[n.l]) < getInt(vals[n.r]));
+        case Eq: vals[CT] = new BIT(b=checkEq(vals[n.l],vals[n.r]));
+        case Not: vals[CT] = new BIT(b=!getBit(vals[n.l]));
+        case Neg: vals[CT] = new INT(N=-getInt(vals[n.l]));
+        case Plus: vals[CT] = new INT(N=getInt(vals[n.l]) + getInt(vals[n.r]));
+        case Times: vals[CT] = new INT(N=getInt(vals[n.l]) * getInt(vals[n.r]));
+        case Div: vals[CT] = new INT(N=divfn(getInt(vals[n.l]),getInt(vals[n.r])));
+        case Mod: vals[CT] = new INT(N=modfn(getInt(vals[n.l]),getInt(vals[n.r])));
+        case Src: vals[CT] = vals[n.id];
+        case ConstB: vals[CT] = new BIT(b=n.vb);
+        case ConstI: vals[CT] = new INT(N=n.vi);
+        
+        case ArrAcc: {
+            bit b = getBit(vals[n.b]);
+            if(isInt(vals[n.l]) || isInt(vals[n.r])){
+                if(b) vals[CT] = new INT(N=getIntUpCast(vals[n.r]));
+                else vals[CT] = new INT(N=getIntUpCast(vals[n.l]));
+            }
+            else{
+                if(b) vals[CT] = new BIT(b=getBit(vals[n.r]));
+                else vals[CT] = new BIT(b=getBit(vals[n.l]));
+            }
+        }
+        case ArrAss: {
+            bit b = getIntUpCast(vals[n.b]) == getInt(vals[n.c]);
+            if(isInt(vals[n.l]) || isInt(vals[n.r])){
+                if(b) vals[CT] = new INT(N=getIntUpCast(vals[n.r]));
+                else vals[CT] = new INT(N=getIntUpCast(vals[n.l]));
+            }
+            else{
+                if(b) vals[CT] = new BIT(b=getBit(vals[n.r]));
+                else vals[CT] = new BIT(b=getBit(vals[n.l]));
+            }
+        }
+#ifdef USEARR
+        case ArrR: {
+            //l=index, r=array
+            vals[CT] = arrRead(vals[n.l],vals[n.r]);
+        }
+        case ArrW: {
+            //l=index, r=array, b=new-value
+            vals[CT] = arrWrite(vals[n.l],vals[n.r],vals[n.b]);
+        }
+#endif
+    }
+    return eval(CT+1,vals,dag,sz);
+}
+
+#define ISBIT(l) ((isBit[l]) && !(isArr[l]))
+#define ISINTSTRICT(l) (!(isBit[l]) && !(isArr[l]))
+#define ISINT(l) (!(isArr[l]))
+#define ISBARR(l) ((isBit[l]) && (isArr[l]))
+#define ISIARR(l) (!(isBit[l]) && (isArr[l]))
+
+
+#define SETBIT(l) {isBit[l]=true; isArr[l]=false;}
+#define SETINT(l) {isBit[l]=false; isArr[l]=false;}
+#define SETBARR(l) {isBit[l]=true; isArr[l]=true;}
+#define SETIARR(l) {isBit[l]=false; isArr[l]=true;}
+
+//generation
+generator Node stmtGen(int CT,ref int cost,ref bit[NTOTALF] isBit,ref bit[NTOTALF] isArr){
+    assert(CT<NTOTALF);
+    int l = ??(CBITS);
+    assert(l<CT);
+    int ch = ??(4);
+#ifndef USEINT
+    assert(ch != 1 && ch != 4 && ch != 5 && ch !=6 && ch != 7);
+#endif
+#ifndef USEARRACC
+    assert(ch != 14);
+#endif
+    if(ch == 0) {
+        cost +=3;
+        assert(ISBIT(l)); SETBIT(CT)
+        return new Not(id=CT,l=l);
+    }
+
+    else if (ch==1) {
+        cost +=4;
+        assert(ISINT(l)); SETINT(CT)
+        return new Neg(id=CT,l=l);
+    }
+    else if (ch==2){
+        assert(l==0 || l==1);
+        cost +=1;
+        SETBIT(CT)
+        return new ConstB(id=CT,vb=l==1);
+    }
+    else if (ch==3){
+        assert(l<=2);
+        cost +=2;
+        SETINT(CT)
+        return new ConstI(id=CT,vi=l);
+    }
+    else{
+        int r=??(CBITS);
+        assert(r<CT);
+        
+        if(ch==4){
+            assert(l!=r);
+            assert(!isBit[l] || !isBit[r]);
+            assert(ISINT(l) && ISINT(r)); SETINT(CT)
+            cost +=4;
+            return new Plus(id=CT,l=l,r=r);
+        }
+        else if(ch==5){
+            assert(l!=r);
+            assert(!isBit[l] || !isBit[r]);
+            assert(ISINT(l) && ISINT(r)); SETINT(CT)
+            cost +=4;
+            return new Times(id=CT,l=l,r=r);
+        }
+        else if(ch==6){
+            assert(l!=r);
+            assert(ISINT(l) && ISINTSTRICT(r)); SETINT(CT)
+            cost +=4;
+            return new Div(id=CT,l=l,r=r);
+        }
+        else if(ch==7){
+            assert(l!=r);
+            assert(ISINT(l) && ISINTSTRICT(r)); SETINT(CT)
+            cost +=4;
+            return new Mod(id=CT,l=l,r=r);
+        }
+        else if(ch==8){
+            assert(l!=r);
+            assert(ISBIT(l) && ISBIT(r)); SETBIT(CT)
+            cost +=3;
+            return new And(id=CT,l=l,r=r);
+        }
+        else if(ch==9){
+            assert(l!=r);
+            assert(ISBIT(l) && ISBIT(r)); SETBIT(CT)
+            cost +=3;
+            return new Or(id=CT,l=l,r=r);
+        }
+        else if(ch==10){
+            assert(l!=r);
+            assert(ISBIT(l) && ISBIT(r)); SETBIT(CT)
+            cost +=3;
+            return new Xor(id=CT,l=l,r=r);
+        }
+        else if(ch==11){
+            assert(l!=r);
+            assert(!isBit[l] || !isBit[r]);
+            assert(ISINT(l) && ISINT(r)); SETBIT(CT)
+            cost +=3;
+            return new Lt(id=CT,l=l,r=r);
+        }
+        else if(ch==12) {
+            assert(l!=r);
+            assert(isArr[l] == isArr[r]);
+            assert(!isBit[l] || !isBit[r]); SETBIT(CT)
+            cost +=3;
+            return new Eq(id=CT,l=l,r=r);
+        }
+#ifdef USEARR
+        else if(ch==13) {
+            cost +=7;
+            assert(isArr[r] && ISINT(l));
+            if (isBit[r]) {
+                SETBIT(CT)
+            }
+            else{
+                SETINT(CT)
+            }
+            return new ArrR(id=CT,l=l,r=r);
+        }
+#endif
+        else{
+            int b = ??(CBITS);
+            assert(b<CT);
+            if(ch==14){
+                cost +=6;
+                assert(l!=r);
+                assert(ISBIT(b));
+                assert(isArr[l] == isArr[r]);
+                isBit[CT] = isBit[l] && isBit[r]; isArr[CT] = isArr[l];
+                return new ArrAcc(id=CT,b=b,l=l,r=r);
+            }
+#ifdef USEARR
+            else{//ch==15
+                cost +=8;
+                assert(!isArr[b] && isArr[r] && ISINT(l));
+                isBit[CT] = isBit[r]; isArr[CT] = true;
+                return new ArrW(id=CT,b=b,l=l,r=r);
+            }
+#endif
+            /*else{
+                int c = ??(CBITS);
+                assert(c<NSRC);
+                cost +=3;
+                assert(l!=r);
+                return new ArrAss(id=CT,b=b,c=c,l=l,r=r);
+            }*/
+        }
+    }
+    assert(false); 
+}
+
+Node[NTOTALF] dagGen(ref int sz,ref int cost,ref bit[NTOTALF] isBit, ref bit[NTOTALF] isArr,bit outBit,bit outArr){
+    Node[NTOTALF] dag;
+    int i=0;
+    repeat(NSRC){
+        dag[i] = new Src(id=i);
+        i++;
+    }
+    if(??(1)){
+        int src = ??(CBITS);
+        assert(src<NSRC);
+        dag[i] = new Src(id=src);
+        i++;
+        assert(isBit[src] == outBit && isArr[src] == outArr);
+        sz=i;
+        return dag;
+    }
+    else{
+        repeat(NTOTALF-NSRC){
+            dag[i] = stmtGen(i,cost,isBit,isArr);
+            i++;
+            if(??(1)){ 
+                sz=i;
+                assert(isBit[sz-1] == outBit && isArr[sz-1] == outArr);
+                return dag;
+            }
+        }
+    }
+    sz=i;
+     
+    assert(isBit[sz-1] == outBit && isArr[sz-1] == outArr);
+    return dag;
+}
+void PCHOICE_BASE(int l, int op, int r);
+void PCHOICE_CONST(int l, int op, int c);
+void PCHOICE_BT(int l);
+void PCHOICE_BF(int l);
+void PCHOICE_TRUE();
+void PCHOICE_AND();
+void PCHOICE_OR();
+
+generator bit predG(Val[NTOTALF] vals,bit[NTOTALF] iB ,bit[NTOTALF] iA, int depth){
+	if (depth == 1){
+		int ch1 = ??(CBITS);
+		assert(ch1 < NSRC);
+		if(??){
+			//return bit or ! bit 
+			assert(NBITS > 0);
+			assert(iB[ch1] && !iA[ch1]);
+			if (??){
+				PCHOICE_BT(ch1);
+				return getBit(vals[ch1]);
+			}
+			else{
+				PCHOICE_BF(ch1);
+				return ! getBit(vals[ch1]);
+			}
+		}
+		else if (??){
+			//return int op const(0,1), op = < , <=, = , != , > , >= 
+			assert(! iA[ch1] && !iB[ch1]);
+			int i1 = getIntUpCast(vals[ch1]);
+			int c1 = ??(1);
+			int op = ??(3);
+			PCHOICE_CONST(ch1,op,c1);
+			if(op ==0) return i1 == c1;
+			else if(op == 1) return i1 != c1;
+			else if(op == 2) return i1 < c1;
+			else if(op == 3) return i1 <= c1;
+			else if(op == 4) return i1 > c1;
+			else if (op == 5) return i1 >= c1;
+			else assert(false);
+		}
+		else{
+			//return int op int, op = < , <=, = , != , > , >= 
+			int ch2 = ??(CBITS);
+			assert(ch2 < NSRC);
+			assert(! iA[ch1] );
+			assert(! iA[ch2]);
+			assert(!iB[ch1] || !iB[ch2]);
+			assert(ch1 < ch2);
+			int i1 = getIntUpCast(vals[ch1]);
+			int i2 = getIntUpCast(vals[ch2]);
+			int op = ??(3);
+			PCHOICE_BASE(ch1,op,ch2);
+			if(op ==0) return i1 == i2;
+			else if(op == 1) return i1 != i2;
+			else if(op == 2) return i1 < i2;
+			else if(op == 3) return i1 <= i2;
+			else if(op == 4) return i1 > i2;
+			else if (op == 5) return i1 >= i2;
+			else assert(false);
+			
+		}
+	}
+	else if (depth == 2){
+		if(??){
+			PCHOICE_TRUE();
+			return true;
+		}else {
+			bit e1 = predG(vals,iB,iA,1);
+			if(??) return e1;
+			bit e2 = predG(vals,iB,iA,1);
+			if(??){ 
+				PCHOICE_AND();
+				return e1 && e2;
+			}
+			else {
+				PCHOICE_OR();
+				return e1 ||  e2;
+			}
+		}
+	}
+	else{
+		assert(false);
+	}
+}
+
+// bit pred(Val[NTOTALF] vals,bit[NTOTALF] iB ,bit[NTOTALF] iA){
+	// return predG(vals,iB,iA,2);
+// }	
+
+
+
+
+
+
+
+
+
+

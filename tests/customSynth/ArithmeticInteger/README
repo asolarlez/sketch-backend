@@ -1,0 +1,19 @@
+to run test7.sk (partition example)
+
+sketch-sis uses latest default sketch-frontend + SynthInSynth branch of sketch-backend
+
+sketch-sis -V 10 --fe-def CUSTOMTEST=1 --fe-keep-tmp --fe-inc <path-to-sketchlib-in-Sketch-FE> test7.sk 
+
+other valid --fe-defs are:
+
+CUSTOMFULL - replacing all expressions with arithExpr Synthesizer
+TRADITIONAL - uses generators2.skh generator
+<none> - just verifies that the correct function works
+
+
+OTHER tests that work:(test1 and test2 do not test custom synth)
+
+sketch-sis -V 10 --fe-keep-tmp test3.sk
+sketch-sis -V 10 --fe-keep-tmp test4.sk
+sketch-sis -V 10 --fe-keep-tmp test5.sk
+sketch-sis -V 10 --fe-keep-tmp --beopt:custintsize 11 test6.sk

@@ -1,0 +1,91 @@
+pragma options "--slv-timeout 4 --bnd-inbits 3 --bnd-cbits 3 --bnd-int-range 1000 --beopt:simplifycex NOSIM";
+#define ARRSZ 5
+//#define USEARRACC
+#define USEINT
+#define USEARR
+#define MAXINT 100000
+#define NSRC 4
+#define NTOTALF 6
+#define NBITS 0
+#define NINTS 2
+#define NBARRS 0
+#define NIARRS 2
+#define ARRSZMAX 50
+#define CBITS 3
+#define INPBITS 3
+//(ARR_R|(ARR_R|(TIMES|N_1:INT|N_2:INT|)|N_3:INT_ARR|)|N_4:INT_ARR|)
+#include "..//ast.skh"
+//Hardcoded evaluation of d-dag
+Val ddag(Val[NTOTALF] vals){
+	return arrRead(arrRead(new INT(N=(getIntUpCast(vals[0]) * getIntUpCast(vals[1]))),vals[2]),vals[3]);
+}
+#define szN_4 ARRSZ-1
+#define szN_3 ARRSZ-1
+bit sC1(int N_1,int N_2){
+	bit stat1 = (N_1 == -1 || N_1 == 0) && (N_2 == 4);
+	if(stat1){
+		return (pred( N_1, N_2));
+	}
+	else{
+		return true;
+	}
+}
+bit sC2(int N_1,int N_2){
+	bit stat2 = (N_1 == -1 || N_1 == 0 || N_1 == 1 || N_1 == 2) && (N_2 == 4);
+	if(stat2){
+		return (pred( N_1, N_2));
+	}
+	else{
+		return true;
+	}
+}
+bit sC3(int N_1,int N_2){
+	bit stat3 = (N_1 == -1 || N_1 == 0 || N_1 == 1 || N_1 == 2 || N_1 == 3 || N_1 == 4) && (N_2 == 4);
+	if(stat3){
+		return (pred( N_1, N_2));
+	}
+	else{
+		return true;
+	}
+}
+harness void staticFinalCheck(int N_1_1,int N_2_1,int N_1_2,int N_2_2,int N_1_3,int N_2_3){
+	N_1_1=N_1_1-3;
+	N_2_1=N_2_1-3;
+	N_1_2=N_1_2-3;
+	N_2_2=N_2_2-3;
+	N_1_3=N_1_3-3;
+	N_2_3=N_2_3-3;
+	assert(sC1( N_1_1, N_2_1) || sC2( N_1_2, N_2_2) || sC3( N_1_3, N_2_3));
+}
+bit pred(int N_1,int N_2){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	/*N_1=N_1-3;*/	vals[0] = new INT(N=N_1); SETINT(0) //N_1 INT
+	/*N_2=N_2-3;*/	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	 SETBARR(2); //For avoiding using this index in pred 
+	 SETBARR(3); //For avoiding using this index in pred 
+	return predG(vals,isBit,isArr,2);
+}
+//harness specifying the synthesis constraints
+harness void main(int N_1,int N_2,int[szN_3] N_3,int[szN_4] N_4){
+	Val[NTOTALF] vals;
+	bit[NTOTALF] isBit = 0;
+	bit[NTOTALF] isArr = 0;
+	N_1=N_1-3;	vals[0] = new INT(N=N_1); SETINT(0) //N_1 INT
+	N_2=N_2-3;	vals[1] = new INT(N=N_2); SETINT(1) //N_2 INT
+	SUB3(N_3,szN_3);
+	//assert(szN_3 < ARRSZ);
+	vals[2] = new IARR(N=szN_3,ia=N_3); SETIARR(2)//N_3 INT_ARR
+	SUB3(N_4,szN_4);
+	//assert(szN_4 < ARRSZ);
+	vals[3] = new IARR(N=szN_4,ia=N_4); SETIARR(3)//N_4 INT_ARR
+	if(pred( N_1, N_2)){
+		int sz=NSRC;
+		int cost=0;
+		Node[NTOTALF] dag=dagGen(sz,cost,isBit,isArr,false,false);
+		minimize (cost);
+		int CT =NSRC;
+		assert(checkEq(eval(CT,vals,dag,sz),ddag(vals)));
+	}
+}

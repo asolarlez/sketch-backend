@@ -1,0 +1,131 @@
+
+include "generators2.skh";
+pragma options "--bnd-inline-amnt 4 --bnd-inbits 4 --beopt:custintsize 4 ";
+#define CUSTOMTEST 1
+//#define TRADITIONAL 1
+
+@Gen("arithexpr_3d_3v_plus_times_div_mod")
+generator int arithExpr(int x, int y, int z);
+
+@Gen("arithexpr_3d_3v_c1_plus_times_div_mod")
+generator int arithExprC1(int x, int y, int z);
+
+@Gen("arithexpr_4d_3v_c1_plus_times_div_mod")
+generator int arithExprD4C1(int x, int y, int z);
+
+@Gen("arithexpr_4d_3v_plus_times_div_mod") //TOO SLOW
+generator int arithExprD4(int x, int y, int z);
+
+
+void partitionCorrect(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< (N%P) ){
+        iend =  (1 + (N / P)) * (1 + p);  
+        ibeg =  (1 + (N / P)) * p;  
+    }else{
+        iend =  (p * (N / P)) + ((N / P) + (N % P));  
+        ibeg =  (p * (N / P)) + (N % P);  
+    }
+}
+
+void partitionCustomSynthFull(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< arithExpr(p,N,P) ){
+        iend =  arithExprD4(p,N,P);  //TODO: This will need constants as well
+        ibeg =  arithExprD4(p,N,P);  //TODO: This will need constants as well
+    }else{
+        iend =  arithExprD4(p,N,P);  
+        ibeg =  arithExprD4(p,N,P);  
+    }
+}
+
+generator int skArithExpr(int x, int y, int z, int d){
+    if (d<=3){
+        return arithExprC1(x,y,z);
+    }
+    else{
+        int e1 = skArithExpr(x,y,z,d-1);
+        int e2 = skArithExpr(x,y,z,d-1);
+        if (??){
+            return e1+e2;
+        }else{
+            return e1*e2;
+        }
+    }
+}
+
+/*void partitionCustomSynthTest(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< skArithExpr(p,N,P,3) ){
+        iend =  skArithExpr(p,N,P,4);  
+        ibeg =   skArithExpr(p,N,P,4);    
+    }else{
+        iend =  skArithExpr(p,N,P,4);  
+        ibeg =  skArithExpr(p,N,P,4);  
+    }
+}*/
+
+void partitionCustomSynthTest(int p, int P, int N, ref int ibeg, ref int iend){
+    if(p< (N%P) ){
+        iend =  (1 + (N / P)) * (1 + p);  
+        ibeg =  arithExprD4C1(p, P, N); //(1 + (N / P)) * p;  
+    }else{
+        iend =  (p * (N / P)) + ((N / P) + (N % P));  
+        ibeg =  (p * (N / P)) + (N % P);  
+    }
+}
+
+void partitionTraditional(int p, int P, int N, ref int ibeg, ref int iend){
+	if(p< (N%P) ){
+        iend =  (1 + (N / P)) * (1 + p);
+        ibeg =  expr({p, P, N},  {TIMES, PLUS, DIV, MOD});  
+	}else{
+        iend =  (p * (N / P)) + ((N / P) + (N % P));  
+        ibeg =  (p * (N / P)) + (N % P);  
+    }
+}
+
+void partition(int p, int P, int N, ref int ibeg, ref int iend){
+	#ifdef CUSTOMTEST
+    	partitionCustomSynthTest(p, P, N, ibeg, iend);
+    #else
+        #ifdef CUSTOMFULL
+        	partitionCustomSynthFull(p, P, N, ibeg, iend);
+        #else
+            #ifdef TRADITIONAL
+            	partitionTraditional(p, P, N, ibeg, iend);
+            #else
+    			partitionCorrect(p, P, N, ibeg, iend);
+    		#endif
+    	#endif
+	#endif
+}
+
+void testPartition(int p, int N, int P){
+    if(N<1 || P < 1){ return; }
+    if(p<P){
+        int ibeg, iend;
+        partition(p, P, N, ibeg, iend);
+        assert iend - ibeg < (N/P) + 2;
+        assert(iend >= ibeg);
+        if(p+1 < P){
+            int ibeg2, iend2;
+            partition(p+1, P, N, ibeg2, iend2);
+            assert iend == ibeg2;
+        }
+        if(p==0){ assert ibeg == 0; }
+        if(p==P-1){ assert iend == N; }
+    }
+}
+
+harness void main() {
+	testPartition(0,1,2);
+	testPartition(1,6,4);
+	testPartition(0,3,5);
+	testPartition(0,6,4);
+	testPartition(0,3,6);
+	testPartition(1,2,4);
+	testPartition(1,7,4);
+	testPartition(2,4,5);
+	testPartition(2,4,7);
+	testPartition(1,7,5);
+	testPartition(0,7,5);
+	testPartition(0,11,9);
+}

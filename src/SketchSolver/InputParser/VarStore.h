@@ -95,6 +95,7 @@ public:
 				if(next != NULL){ return next->getInt(idx); }
                 else {return -1;}
 			}
+			Assert(false,"Control shouldn't reach here");
 		}
 		void setVal(int idx, int v){
 			if(this->index==idx){
@@ -211,6 +212,7 @@ private:
 public:
 
 	map<string, SynthInSolver*> synths;
+	map<string, string> synthouts;
 
 	VarStore(){
 		bitsize=0;
@@ -302,6 +304,14 @@ public:
 	void printBrief(ostream& out) const{
 		for(int i=0; i<objs.size(); ++i){
 			objs[i].printBit(out);
+		}
+	}
+	void finalizeSynthOutputs() {
+		synthouts.clear();
+		for (auto sit = synths.begin(); sit != synths.end(); ++sit) {
+			stringstream ss;
+			sit->second->print(ss);
+			synthouts[sit->first] = ss.str();
 		}
 	}
 	void printContent(ostream& out) const{

@@ -4,12 +4,14 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <unordered_map>
+
 #include <utility>
-#include <Sort.h>
+#include "Sort.h"
 #include <math.h>
 using namespace std;
 
-#include "BooleanToCNF.h"
+#include "BooleanToCNF.h" 
 #include "BooleanDAG.h"
 #include "MiniSATSolver.h"
 #include "DagOptim.h"
@@ -19,6 +21,12 @@ using namespace std;
 #include "NumericalSolver.h"
 #include "GTPredicateSolver.h"
 #include "EntityResolutionSolver.h"
+#include "ArithmeticExpressionSolver.h"
+#include "SwapperPredicateSolver.h"
+//map < string , map < int, set < ArithExpression* > > >  ArithExprBuilder::ASetMap;
+map < string, ArithExpression *> ArithExprBuilder::ASigMap;
+unordered_map < string, SwapperPredicate *> PredicateBuilder::PSigMap;
+int SwapperPredicate::numvars;
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -61,13 +69,30 @@ namespace MSsolverNS {
 
 
 Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm) {
+	string arithExpr = "_GEN_arithexpr";
+	string swapperExpr = "_GEN_swapperpred";
 	if (name == "_GEN_gtp") {
 		return new GtpSyn(_fm);
 	} else if (name == "_GEN_eratom") {
     return new ERAtomSyn(_fm);
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
     return new NumericalSolver(_fm, numericalAbsMap[name]);
+  }else if (mismatch(arithExpr.begin(), arithExpr.end(), name.begin()).first == arithExpr.end()){
+	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
+	  ret->setupParams(name);
+	  return ret;
   }
+  else if (mismatch(swapperExpr.begin(), swapperExpr.end(), name.begin()).first == swapperExpr.end()) {
+	  SwapperPredicateSyn* ret = new SwapperPredicateSyn(_fm);
+	  ret->setupParams(name);
+	  return ret;
+  }
+  else{
+
+	  Assert(false,"Invalid synthesizer name: " + name);
+  }
+	
+	
 	return NULL;
 }
 

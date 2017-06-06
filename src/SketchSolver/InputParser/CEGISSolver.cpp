@@ -186,7 +186,11 @@ bool CEGISSolver::solveCore(){
 
 		if(doMore) hasInputChanged = true;
 		else hasInputChanged = false;
-
+		
+		if (!doMore) {//To make sure the control store also fleshes out the expressions from custom Synthesizers before being copied
+			ctrlStore.finalizeSynthOutputs();
+		}
+		
 		// Minimization loop-- found a solution, but can i find a better solution?
 		if(PARAMS->minvarHole && !doMore && mhsizes.size() != 0){
 			// store the current solution
@@ -1409,9 +1413,10 @@ void CEGISSolver::get_control_map(map<string, string>& values){
 		values[it->name] = str.str();
 	}
 	for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
-		stringstream str;
-		it->second->print(str);
-		values[it->first] = str.str();
+		//stringstream str;
+		Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
+			//it->second->print(str);
+			values[it->first] = ctrlStore.synthouts[it->first];
 	}	
 }
 

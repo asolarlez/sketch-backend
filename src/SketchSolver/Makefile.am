@@ -25,6 +25,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	EntityResolutionSolver.h  			\
 	GTPredicateSolver.h				\
 	NumericalSolver.h     				\
+	ArithmeticExpressionBuilder.h		\
+	ArithmeticExpressionSolver.h     				\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -66,6 +68,7 @@ libcegis_la_SOURCES =				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
+	ArithmeticExpressionBuilder.cpp		\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\

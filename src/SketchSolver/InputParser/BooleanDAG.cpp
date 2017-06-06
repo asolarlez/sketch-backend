@@ -519,7 +519,10 @@ void BooleanDAG::cleanup(){
 			  //if(typeid(*cur) == typeid(ASSERT_node) || typeid(*cur) == typeid(DST_node)){
 			  bool_node* tbn = dynamic_cast<bool_node*>(cur);
 			  //if(tbn->type != bool_node::ASSERT){ cout<<tbn->lprint()<<endl;}
-				  idx = tbn->back_dfs(idx);
+				// TODO: temporary fix for eliminating unused custom synthesizer calls
+				if (tbn->type != bool_node::UFUN || (dynamic_cast<UFUN_node*>(tbn))->getTupleName().find("_GEN_") != 0){
+					idx = tbn->back_dfs(idx);
+				}
 				//  			  if(tbn->type != bool_node::ASSERT){ cout<<tbn->lprint()<<endl;}
 			  //}
 			  cur = cur->next;

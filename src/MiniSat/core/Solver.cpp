@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Sort.h"
 #include <cmath>
 #include <algorithm>
+#include "SynthInSolver.h"
 
 using namespace std;
 
@@ -204,7 +205,7 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
 
 	if (value(lit) == l_True) {
-		s->pushInput(instid, inputid, val, level[var(lit)]);
+		s->pushInput(instid, inputid, val, level[var(lit)], suggestions[s->solverIdx]);
 		return;
 	}
 	if (value(lit) == l_False) {
@@ -356,8 +357,10 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 
 
 SynthInSolver* Solver::addSynth(int inputs, int outputs, Synthesizer* s) {
-	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs);
+  int idx = sins.size();
+	SynthInSolver* syn = new SynthInSolver(s, inputs, outputs, idx, this);
 	sins.push(syn);
+  suggestions.push();
 	return syn;
 }
 
@@ -495,7 +498,7 @@ void Solver::cancelUntil(int level) {
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
 		for (int i = 0; i < sins.size(); ++i) {
-			sins[i]->backtrack(level);
+			sins[i]->backtrack(level, suggestions[sins[i]->solverIdx]);
 		}
     }	
     intsolve->cancelUntil(level);
@@ -1256,7 +1259,7 @@ Clause* Solver::propagate()
 					}
 				} else {
 					// syn->kind == SYNKIND;
-					confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel);
+					confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel, suggestions[syn->s->solverIdx]);
 					if (confl != NULL) {
 						qhead = trail.size();
 						// Copy the remaining watches:
@@ -1607,6 +1610,24 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                     next = p;
                     break;
                 }
+            }
+          
+            // Use suggestions from custom solver before picking a random lit
+            for (int i = 0; i < sins.size(); ++i) {
+              if (next != lit_Undef) {
+                break;
+              }
+              vec<Lit>& s = suggestions[sins[i]->solverIdx];
+              while(s.size() > 0) {
+                Lit p = s.last();
+                s.pop();
+                if (value(p) == l_Undef) {
+                  next = p;
+                  decisions++;
+                  //cout << "Using suggested literal " << toInt(p) << endl;
+                  break;
+                }
+              }
             }
 
             if (next == lit_Undef){

@@ -1,0 +1,232 @@
+SKETCH version 1.7.2
+Benchmark = ./SAT_NOARR/76a.sk
+    [0;32m[1485080373.3030 - DEBUG] Running stage 'parse' -- Parse the program from a file[0m
+    [0;32m[1485080373.7470 - DEBUG] Running stage 'preproc' -- Preprocessing (used for all further transformations)[0m
+    [0;32m[1485080373.9390 - DEBUG] Running stage SpmdLowLevelCStage[0m
+    [0;32m[1485080373.9440 - DEBUG]    Running visitor FlattenStmtBlocks2[0m
+    [0;32m[1485080373.9470 - DEBUG]    Running visitor SplitAssignFromVarDef[0m
+    [0;32m[1485080373.9510 - DEBUG]    Running visitor EliminateComplexForLoops[0m
+    [0;32m[1485080373.9540 - DEBUG] Running stage 'lowering' -- Lower for SKETCH backend[0m
+    [0;32m[1485080373.9740 - DEBUG] Running stage 'sten' -- Stencil transformations[0m
+[SATBackend] ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[SATBackend] MAX LOOP UNROLLING = 8
+[SATBackend] MAX FUNC INLINING  = 5
+estimated size of main__Wrapper
+stmt cnt: 0
+callee main : 56
+
+estimated size of staticFinalCheck__Wrapper
+stmt cnt: 0
+callee staticFinalCheck : 3
+
+[SATBackend] After prog.accept(partialEval)
+[SATBackend] OFILE = null
+    [0;32m[1485080374.1330 - DEBUG] executing /afs/csail.mit.edu/group/cap/distros//rec/sketch-backend/src/SketchSolver/cegis -simplifycex NOSIM --bnd-inbits 3 --boundmode CALLNAME --verbosity 10 --print-version -simiters 4 --assumebcheck --bnd-inline-amnt 5 --bndwrand 1000 -angelictupledepth 1 -srctupledepth 2 -sprandbias 1 -o /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/solution0-0 /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/input0.tmp[0m
+[SATBackend] Launching: /afs/csail.mit.edu/group/cap/distros//rec/sketch-backend/src/SketchSolver/cegis -simplifycex NOSIM --bnd-inbits 3 --boundmode CALLNAME --verbosity 10 --print-version -simiters 4 --assumebcheck --bnd-inline-amnt 5 --bndwrand 1000 -angelictupledepth 1 -srctupledepth 2 -sprandbias 1 -o /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/solution0-0 /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/input0.tmp 
+starting command line: [/afs/csail.mit.edu/group/cap/distros//rec/sketch-backend/src/SketchSolver/cegis, -simplifycex, NOSIM, --bnd-inbits, 3, --boundmode, CALLNAME, --verbosity, 10, --print-version, -simiters, 4, --assumebcheck, --bnd-inline-amnt, 5, --bndwrand, 1000, -angelictupledepth, 1, -srctupledepth, 2, -sprandbias, 1, -o, /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/solution0-0, /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/input0.tmp]
+simplifycex = NOSIM
+Overriding inputs with 3
+boundmode = CALLNAME
+assuming  bounds checks
+BND W RAND = 1000
+SOLVER RAND SEED = 1485080374
+ optimization level = 6
+Reading SKETCH Program in File /scratch/rohit/sketch-1.7.2/afs-rec/tmp/76a.sk/input0.tmp
+CREATING main__Wrapper
+size = 5
+after ba size = 5
+CREATING main__WrapperNospec
+size = 3
+after ba size = 3
+CREATING staticFinalCheck__Wrapper
+size = 5
+after ba size = 5
+CREATING staticFinalCheck__WrapperNospec
+size = 3
+after ba size = 3
+CREATING main
+size = 24
+after ba size = 24
+CREATING staticFinalCheck
+size = 9
+after ba size = 9
+CREATING pred
+size = 274
+after ba size = 274
+CREATING ddag
+size = 24
+after ba size = 24
+CREATING checkEq
+Found Cycle of size 21; Breaking.
+Found Cycle of size 18; Breaking.
+Found Cycle of size 7; Breaking.
+size = 52
+after ba size = 52
+CREATING sC1
+size = 8
+after ba size = 8
+CREATING getBit
+size = 40
+after ba size = 40
+CREATING getIntUpCast
+size = 60
+after ba size = 60
+CREATING isBit
+size = 30
+after ba size = 30
+CREATING isInt
+size = 48
+after ba size = 48
+End of File
+* before  EVERYTHING: main__WrapperNospec::SPEC nodes = 3	 main__Wrapper::SKETCH nodes = 5
+ INBITS = 3
+ CBITS  = 5
+ input_ints = 0 	 input_bits = 3
+ Inlining amount = 5
+ Inlining functions in the sketch.
+inlined 1 new size =21
+inlined 3 new size =330
+inlined 16 new size =494
+inlined 0 new size =488
+END OF STEP 0
+ Inlining functions in the spec.
+inlined 0 new size =3
+END OF STEP 0
+Bailing out
+after Creating Miter: Problem nodes = 488
+* Final Problem size: Problem nodes = 488
+  # OF CONTROLS:    19
+ control_ints = 8 	 control_bits = 11
+inputSize = 4	ctrlSize = 35
+Random seeds = 1
+!+ 01101000000000100001101100010010100
+!+ H__15_68:0
+H__7_68_59:3
+H__8_68_59:1
+H__9_68_59:0
+H__10_68_59:0
+H__12_68_59:0
+H__11_68_59:0
+H__13_68_59:0
+H__14_68_59:1
+H__16_68:0
+H__7_68_60:6
+H__8_68_60:0
+H__9_68_60:1
+H__10_68_60:1
+H__12_68_60:0
+H__11_68_60:1
+H__13_68_60:4
+H__14_68_60:2
+H__17_68:0
+
+BEG CHECK
+ * After optims it became = 7 was 488
+Assert at 76a.sk:530 (4821769821201980002)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  0	ftime= 0	ctime= 0
+!% 1000
+!% N_1_3_3_0:1
+N_2_4_4_0:0
+N_3_5_5_0:0
+arithExpr_45_0:0
+
+BEG FIND
+Level 1  intsize = 2
+ * After optims it became = 468 was 488
+ * After all optims it became = 468
+Repeat vars: 1
+ArithExprBuilder Built for: 3v0c1c2c+*/%<&&||-
+ finder  hits = 30	 bstoreObjs=345	 sstorePages=1
+hitcount 	0	319	0
+hitcount 	1	22	0
+hitcount 	2	4	0
+bucketsPerDepth 	0	251
+bucketsPerDepth 	1	40
+bucketsPerDepth 	2	4
+* TIME TO ADD INPUT :  0.001 ms 
+f# %assign: 10 clauses: 1016 learn: 11 restart: 1 decision: 78 propagated: 692
+END FIND
+!+ 01001100001010100000011110001000001
+!+ H__15_68:0
+H__7_68_59:1
+H__8_68_59:1
+H__9_68_59:1
+H__10_68_59:0
+H__12_68_59:0
+H__11_68_59:1
+H__13_68_59:2
+H__14_68_59:1
+H__16_68:0
+H__7_68_60:0
+H__8_68_60:1
+H__9_68_60:1
+H__10_68_60:1
+H__12_68_60:1
+H__11_68_60:0
+H__13_68_60:1
+H__14_68_60:0
+H__17_68:1
+arithExpr:( IN_1 )
+
+BEG CHECK
+ * After optims it became = 34 was 488
+ TESTING HYPOTHESIS ITER 1
+dagmain__WrapperNospec{
+N_2_4_4_0
+N_1_3_3_0
+2= N_2_4_4_0 & N_1_3_3_0 
+3= 2 & N_1_3_3_0 
+4= 2 & N_2_4_4_0 
+5= 3 ^ 4 
+6= 5 ! 
+7= ASSERT (!5) : 
+}
+SLICE SIZE = 8
+c# %assign: 87 clauses: 11 learn: 0 restart: 1 decision: 2 propagated: 10
+ FOUND CONST: 20= 19 ^ 18  = 0
+ reduced size from 34 to 28
+ * Simulation optimized it to = 28
+Simulation didn't find a cex:  0.001 ms 
+After all optim
+c# %assign: 91 clauses: 0 learn: 0 restart: 1 decision: 2 propagated: 12
+END CHECK
+********  1	ftime= 0.001	ctime= 0.001
+!% 1111
+!% N_1_3_3_0:1
+N_2_4_4_0:1
+N_3_5_5_0:1
+arithExpr_45_0:1
+
+BEG FIND
+Level 1  intsize = 2
+ * After optims it became = 462 was 488
+ * After all optims it became = 462
+ finder  hits = 237	 bstoreObjs=416	 sstorePages=1
+hitcount 	0	243	0
+hitcount 	1	143	0
+hitcount 	2	4	0
+hitcount 	3	22	0
+hitcount 	5	4	0
+bucketsPerDepth 	0	278
+bucketsPerDepth 	1	60
+bucketsPerDepth 	2	5
+* TIME TO ADD INPUT :  0.001 ms 
+[SATBackend] Stats for last run:
+      [solution stats]
+      successful? ---------------------> false
+      elapsed time (s) ----------------> 0.088
+      model building time (s) ---------> -0.001
+      solution time (s) ---------------> -0.001
+      max memory usage (MiB) ----------> -9.536743E-7
+      [SAT-specific solution stats]
+      initial number of nodes ---------> 5
+      number of nodes after opts ------> 488
+      number of controls --------------> 19
+      total number of control bits ----> 35
+
+[SATBackend] Solver exit value: 139
+[SATBackend] The sketch cannot be resolved.
+[ERROR] [SKETCH] Failed with ExecutionException exception; message: sketch.util.exceptions.SketchNotResolvedException: The sketch could not be resolved.
+Total time = 1023

@@ -1,0 +1,13 @@
+@Gen("arithexpr_4d_c0_c1_c2_c3_c4_1v_plus_times") 
+int arithExpr1(int x);
+
+@Gen("arithexpr_4d_c0_c1_c2_c3_c4_1v_plus_times") 
+int arithExpr2(int x);
+
+
+harness void main() {
+	assert(arithExpr1(1) + arithExpr2(1) > 30);
+	assert(arithExpr1(2) == 21);
+	assert(arithExpr1(3) == 21);
+	assert(arithExpr1(4) == 21);
+}

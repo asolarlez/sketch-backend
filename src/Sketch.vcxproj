@@ -298,6 +298,10 @@
   <ItemGroup>
     <ClInclude Include="MiniSat\core\IntPropagator.h" />
     <ClInclude Include="MiniSat\core\SynthInSolver.h" />
+    <ClInclude Include="SketchSolver\ArithmeticExpressionBuilder.h" />
+    <ClInclude Include="SketchSolver\ArithmeticExpressionSolver.h" />
+    <ClInclude Include="SketchSolver\EntityResolutionSolver.h" />
+    <ClInclude Include="SketchSolver\GTPredicateSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\BitSet.h" />
     <ClInclude Include="SketchSolver\InputParser\CounterexampleFinder.h" />
     <ClInclude Include="minisat\core\msolver.h" />
@@ -326,12 +330,15 @@
     <ClInclude Include="SketchSolver\InputParser\DagOptim.h" />
     <ClInclude Include="SketchSolver\FindCheckSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
+    <ClInclude Include="SketchSolver\NumericalSolver.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\MiniSATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToEuclid.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\NodeVisitor.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\SATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\SolveFromInput.h" />
+    <ClInclude Include="SketchSolver\SwapperPredicateBuilder.h" />
+    <ClInclude Include="SketchSolver\SwapperPredicateSolver.h" />
     <ClInclude Include="SketchSolver\timerclass.h" />
     <ClInclude Include="SketchSolver\InputParser\Tvalue.h" />
     <ClInclude Include="SketchSolver\InputParser\BackwardsAnalysis.h" />

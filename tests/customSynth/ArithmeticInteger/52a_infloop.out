@@ -1,0 +1,1408 @@
+SKETCH version 1.7.2
+Benchmark = 52a.sk
+[SATBackend] ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[SATBackend] MAX LOOP UNROLLING = 8
+[SATBackend] MAX FUNC INLINING  = 5
+estimated size of main__Wrapper
+stmt cnt: 0
+callee main : 71
+
+estimated size of staticFinalCheck__Wrapper
+stmt cnt: 0
+callee staticFinalCheck : 6
+
+[SATBackend] After prog.accept(partialEval)
+[SATBackend] OFILE = null
+[SATBackend] Launching: /afs/csail.mit.edu/group/cap/distros//rec/sketch-backend/src/SketchSolver/cegis -simplifycex NOSIM --bnd-inbits 3 --boundmode CALLNAME --verbosity 10 --print-version -simiters 4 --assumebcheck --bnd-inline-amnt 5 --bndwrand 1000 -angelictupledepth 1 -srctupledepth 2 -sprandbias 1 -o /scratch/rohit/sketch-1.7.2/afs-rec/tmp/52a.sk/solution0-0 /scratch/rohit/sketch-1.7.2/afs-rec/tmp/52a.sk/input0.tmp 
+simplifycex = NOSIM
+Overriding inputs with 3
+boundmode = CALLNAME
+assuming  bounds checks
+BND W RAND = 1000
+SOLVER RAND SEED = 1485068877
+ optimization level = 6
+Reading SKETCH Program in File /scratch/rohit/sketch-1.7.2/afs-rec/tmp/52a.sk/input0.tmp
+CREATING main__Wrapper
+size = 6
+after ba size = 6
+CREATING main__WrapperNospec
+size = 4
+after ba size = 4
+CREATING staticFinalCheck__Wrapper
+size = 6
+after ba size = 6
+CREATING staticFinalCheck__WrapperNospec
+size = 4
+after ba size = 4
+CREATING main
+size = 28
+after ba size = 28
+CREATING staticFinalCheck
+size = 12
+after ba size = 12
+CREATING pred
+size = 277
+after ba size = 277
+CREATING ddag
+size = 29
+after ba size = 29
+CREATING checkEq
+Found Cycle of size 11; Breaking.
+Found Cycle of size 8; Breaking.
+Found Cycle of size 10; Breaking.
+size = 52
+after ba size = 52
+CREATING sC1
+size = 23
+after ba size = 23
+CREATING getBit
+size = 40
+after ba size = 40
+CREATING getIntUpCast
+size = 60
+after ba size = 60
+CREATING isBit
+size = 30
+after ba size = 30
+CREATING isInt
+size = 48
+after ba size = 48
+End of File
+* before  EVERYTHING: main__WrapperNospec::SPEC nodes = 4	 main__Wrapper::SKETCH nodes = 6
+ INBITS = 3
+ CBITS  = 5
+ input_ints = 1 	 input_bits = 3
+ Inlining amount = 5
+ Inlining functions in the sketch.
+inlined 1 new size =25
+inlined 3 new size =339
+inlined 17 new size =502
+inlined 0 new size =496
+END OF STEP 0
+ Inlining functions in the spec.
+inlined 0 new size =4
+END OF STEP 0
+Bailing out
+after Creating Miter: Problem nodes = 496
+* Final Problem size: Problem nodes = 496
+  # OF CONTROLS:    19
+ control_ints = 8 	 control_bits = 11
+inputSize = 6	ctrlSize = 35
+Random seeds = 1
+!+ 00000010010110101010000000100011000
+!+ H__15_69:0
+H__7_69_59:0
+H__8_69_59:0
+H__9_69_59:0
+H__10_69_59:1
+H__12_69_59:4
+H__11_69_59:0
+H__13_69_59:3
+H__14_69_59:5
+H__16_69:0
+H__7_69_60:1
+H__8_69_60:0
+H__9_69_60:0
+H__10_69_60:0
+H__12_69_60:4
+H__11_69_60:0
+H__13_69_60:4
+H__14_69_60:1
+H__17_69:0
+
+BEG CHECK
+ * After optims it became = 10 was 496
+Assert at 52a.sk:544 (-3035062957463197565)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  0	ftime= 0	ctime= 0.001
+!% 000100
+!% N_1_4_4_0:0
+N_2_5_5_0:0
+N_3_6_6_0:1
+N_4_7_7_0:0
+arithExpr_46_0:0
+
+BEG FIND
+Level 1  intsize = 2
+ * After optims it became = 469 was 496
+ * After all optims it became = 469
+Repeat vars: 1
+ArithExprBuilder Built for: 4v0c1c2c+*/%<&&||-
+ finder  hits = 14	 bstoreObjs=426	 sstorePages=1
+hitcount 	0	412	0
+hitcount 	1	14	0
+bucketsPerDepth 	0	284
+bucketsPerDepth 	1	58
+bucketsPerDepth 	2	7
+* TIME TO ADD INPUT :  0.003 ms 
+f# %assign: 13 clauses: 1260 learn: 1 restart: 1 decision: 56 propagated: 476
+END FIND
+!+ 01000110000110000010001000001101001
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:1
+H__12_69_59:0
+H__11_69_59:0
+H__13_69_59:3
+H__14_69_59:0
+H__16_69:0
+H__7_69_60:1
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:0
+H__11_69_60:0
+H__13_69_60:3
+H__14_69_60:1
+H__17_69:1
+arithExpr:( IN_0 )
+
+BEG CHECK
+ * After optims it became = 40 was 496
+ TESTING HYPOTHESIS ITER 1
+dagmain__WrapperNospec{
+N_2_5_5_0
+1= (-3)
+2= N_2_5_5_0 + (-3) 
+3= (0)
+4= 2 == (0) 
+N_4_7_7_0
+6= 2 == N_4_7_7_0 
+7= 6 ! 
+8= 4 & (!6) 
+N_1_4_4_0
+10= 8 & N_1_4_4_0 
+11= 10 ! 
+12= ASSERT (!10) : 
+}
+SLICE SIZE = 13
+c# %assign: 92 clauses: 0 learn: 0 restart: 1 decision: 2 propagated: 13
+Simulation found a cex by solver checking:  0.001 ms 
+END CHECK
+********  1	ftime= 0.004	ctime= 0.002
+!% 111011
+!% N_1_4_4_0:1
+N_2_5_5_0:3
+N_3_6_6_0:0
+N_4_7_7_0:1
+arithExpr_46_0:1
+
+BEG FIND
+Level 1  intsize = 2
+ * After optims it became = 465 was 496
+ * After all optims it became = 465
+ finder  hits = 253	 bstoreObjs=497	 sstorePages=1
+hitcount 	0	272	0
+hitcount 	1	211	0
+hitcount 	3	14	0
+bucketsPerDepth 	0	298
+bucketsPerDepth 	1	79
+bucketsPerDepth 	2	10
+bucketsPerDepth 	4	1
+* TIME TO ADD INPUT :  0.002 ms 
+f# %assign: 11 clauses: 1527 learn: 11 restart: 2 decision: 148 propagated: 1242
+END FIND
+!+ 01000100001110000010001000011101001
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:3
+H__14_69_59:0
+H__16_69:0
+H__7_69_60:1
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:0
+H__11_69_60:1
+H__13_69_60:3
+H__14_69_60:1
+H__17_69:1
+arithExpr:( IN_0 )
+
+BEG CHECK
+ * After optims it became = 15 was 496
+Simulation no cex:  0 ms 
+CONTROL: growing l=2 inputs to size 3
+Simulation no cex:  0 ms 
+END CHECK
+********  2	ftime= 0.003	ctime= 0.001
+ *GOT THE CORRECT ANSWER IN 3 iterations.
+ *FIND TIME 0.007 CHECK TIME 0.004 TOTAL TIME 0.011
+RESULT = 0  
+* before  EVERYTHING: staticFinalCheck__WrapperNospec::SPEC nodes = 4	 staticFinalCheck__Wrapper::SKETCH nodes = 6
+ INBITS = 3
+ CBITS  = 5
+ input_ints = 1 	 input_bits = 3
+ Inlining amount = 5
+ Inlining functions in the sketch.
+inlined 1 new size =10
+inlined 1 new size =20
+inlined 1 new size =283
+inlined 6 new size =491
+inlined 0 new size =485
+END OF STEP 0
+ Inlining functions in the spec.
+inlined 0 new size =4
+END OF STEP 0
+Bailing out
+after Creating Miter: Problem nodes = 485
+* Final Problem size: Problem nodes = 485
+  # OF CONTROLS:    19
+ control_ints = 8 	 control_bits = 11
+inputSize = 12	ctrlSize = 35
+Random seeds = 1
+!+ 01001011101001100000001001000011000
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:1
+H__9_69_59:0
+H__10_69_59:1
+H__12_69_59:3
+H__11_69_59:1
+H__13_69_59:4
+H__14_69_59:1
+H__16_69:0
+H__7_69_60:0
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:2
+H__11_69_60:0
+H__13_69_60:4
+H__14_69_60:1
+H__17_69:0
+arithExpr:( IN_0 )
+
+BEG CHECK
+ * After optims it became = 31 was 485
+Assert at 52a.sk:532 (-5423216525843251407)
+Simulation found a cex by random testing:  0.001 ms 
+END CHECK
+********  0	ftime= 0	ctime= 0.001
+!% 001010101110
+!% N_1_4_4_0:0
+N_2_5_5_0:2
+N_3_6_6_0:1
+N_4_7_7_0:0
+arithExpr_46_0:1
+N_1_1_c_c_0:0
+N_2_1_d_d_0:3
+N_3_1_e_e_0:1
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 2
+ * After optims it became = 457 was 485
+ * After all optims it became = 457
+ finder  hits = 512	 bstoreObjs=245	 sstorePages=1
+hitcount 	1	20	0
+hitcount 	2	211	0
+hitcount 	5	14	0
+bucketsPerDepth 	0	210
+bucketsPerDepth 	1	17
+* TIME TO ADD INPUT :  0.002 ms 
+f# %assign: 10 clauses: 1721 learn: 17 restart: 3 decision: 258 propagated: 2335
+END FIND
+!+ 01000100010110000000010000100010100
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:0
+H__12_69_59:4
+H__11_69_59:0
+H__13_69_59:3
+H__14_69_59:0
+H__16_69:0
+H__7_69_60:0
+H__8_69_60:1
+H__9_69_60:0
+H__10_69_60:0
+H__12_69_60:4
+H__11_69_60:0
+H__13_69_60:4
+H__14_69_60:2
+H__17_69:0
+arithExpr:( IN_0 )
+
+BEG CHECK
+ * After optims it became = 20 was 485
+Simulation no cex:  0 ms 
+CONTROL: growing l=2 inputs to size 3
+Simulation no cex:  0 ms 
+Switching to problem 0
+ * After optims it became = 44 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  1	ftime= 0.003	ctime= 0.002
+!% 0100000000100
+!% N_1_4_4_0:0
+N_2_5_5_0:1
+N_3_6_6_0:0
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:4
+N_3_1_e_e_0:0
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 465 was 496
+ * After all optims it became = 465
+ finder  hits = 751	 bstoreObjs=315	 sstorePages=1
+hitcount 	0	70	0
+hitcount 	1	20	0
+hitcount 	2	4	0
+hitcount 	3	203	0
+hitcount 	4	4	0
+hitcount 	7	14	0
+bucketsPerDepth 	0	240
+bucketsPerDepth 	1	34
+bucketsPerDepth 	2	2
+* TIME TO ADD INPUT :  0.002 ms 
+f# %assign: 9 clauses: 1984 learn: 19 restart: 4 decision: 322 propagated: 3310
+END FIND
+!+ 01101000011111001100001001000000101
+!+ H__15_69:0
+H__7_69_59:3
+H__8_69_59:1
+H__9_69_59:0
+H__10_69_59:0
+H__12_69_59:4
+H__11_69_59:1
+H__13_69_59:7
+H__14_69_59:4
+H__16_69:1
+H__7_69_60:0
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:2
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:2
+H__17_69:1
+arithExpr:( ! ( IN_2 ) )
+
+BEG CHECK
+ * After optims it became = 44 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0.001 ms 
+END CHECK
+********  2	ftime= 0.004	ctime= 0.002
+!% 0011000000000
+!% N_1_4_4_0:0
+N_2_5_5_0:6
+N_3_6_6_0:0
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:0
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 469 was 496
+ * After all optims it became = 469
+ finder  hits = 994	 bstoreObjs=388	 sstorePages=1
+hitcount 	0	139	0
+hitcount 	1	24	0
+hitcount 	2	4	0
+hitcount 	4	203	0
+hitcount 	6	4	0
+hitcount 	9	14	0
+bucketsPerDepth 	0	269
+bucketsPerDepth 	1	51
+bucketsPerDepth 	2	5
+* TIME TO ADD INPUT :  0.003 ms 
+f# %assign: 9 clauses: 2253 learn: 23 restart: 5 decision: 375 propagated: 4122
+END FIND
+!+ 01000110000100001111101010000000011
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:1
+H__12_69_59:0
+H__11_69_59:0
+H__13_69_59:1
+H__14_69_59:4
+H__16_69:1
+H__7_69_60:7
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:1
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:4
+H__17_69:1
+arithExpr:( IN_2 )
+
+BEG CHECK
+ * After optims it became = 42 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0.001 ms 
+END CHECK
+********  3	ftime= 0.004	ctime= 0.002
+!% 1110000000000
+!% N_1_4_4_0:1
+N_2_5_5_0:3
+N_3_6_6_0:0
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:0
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 465 was 496
+ * After all optims it became = 465
+ finder  hits = 1229	 bstoreObjs=249	 sstorePages=1
+hitcount 	1	24	0
+hitcount 	2	4	0
+hitcount 	5	203	0
+hitcount 	7	4	0
+hitcount 	11	14	0
+bucketsPerDepth 	0	208
+bucketsPerDepth 	1	20
+* TIME TO ADD INPUT :  0.003 ms 
+Not valid output: (2, 0) Lit: 1169
+f# %assign: 8 clauses: 2526 learn: 25 restart: 6 decision: 450 propagated: 5188
+END FIND
+!+ 00001000001100100000011000100000010
+!+ H__15_69:0
+H__7_69_59:0
+H__8_69_59:1
+H__9_69_59:0
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:1
+H__14_69_59:1
+H__16_69:0
+H__7_69_60:0
+H__8_69_60:1
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:4
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:4
+H__17_69:0
+arithExpr:( ( ( IN_2 ) + ( IN_3 ) ) < ( ( IN_1 ) < 1 ) )
+
+BEG CHECK
+ * After optims it became = 33 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0.001 ms 
+END CHECK
+********  4	ftime= 0.122	ctime= 0.002
+!% 1001000110010
+!% N_1_4_4_0:1
+N_2_5_5_0:4
+N_3_6_6_0:0
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:1
+N_2_1_d_d_0:1
+N_3_1_e_e_0:1
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 465 was 496
+ * After all optims it became = 465
+ finder  hits = 1464	 bstoreObjs=329	 sstorePages=1
+hitcount 	0	80	0
+hitcount 	1	24	0
+hitcount 	2	4	0
+hitcount 	6	203	0
+hitcount 	8	4	0
+hitcount 	13	14	0
+bucketsPerDepth 	0	251
+bucketsPerDepth 	1	37
+bucketsPerDepth 	2	1
+* TIME TO ADD INPUT :  0.003 ms 
+Not valid output: (5, 0) Lit: 1613
+Not valid output: (4, 0) Lit: 1459
+f# %assign: 7 clauses: 2833 learn: 25 restart: 7 decision: 496 propagated: 6008
+END FIND
+!+ 11111000001100010011000001000000011
+!+ H__15_69:1
+H__7_69_59:7
+H__8_69_59:1
+H__9_69_59:0
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:1
+H__14_69_59:2
+H__16_69:0
+H__7_69_60:3
+H__8_69_60:0
+H__9_69_60:0
+H__10_69_60:0
+H__12_69_60:2
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:4
+H__17_69:1
+arithExpr:( ( ( IN_2 ) + ( IN_3 ) ) < ( ( IN_1 ) < 2 ) )
+
+BEG CHECK
+ * After optims it became = 38 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0.001 ms 
+END CHECK
+********  5	ftime= 999.363	ctime= 0.002
+!% 0001000001000
+!% N_1_4_4_0:0
+N_2_5_5_0:4
+N_3_6_6_0:0
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:2
+N_3_1_e_e_0:0
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 468 was 496
+ * After all optims it became = 468
+ finder  hits = 1707	 bstoreObjs=394	 sstorePages=1
+hitcount 	0	141	0
+hitcount 	1	28	0
+hitcount 	2	4	0
+hitcount 	7	203	0
+hitcount 	10	4	0
+hitcount 	15	14	0
+bucketsPerDepth 	0	277
+bucketsPerDepth 	1	53
+bucketsPerDepth 	2	3
+* TIME TO ADD INPUT :  0.002 ms 
+Not valid output: (6, 1) Lit: 1774
+Not valid output: (2, 0) Lit: 1169
+f# %assign: 7 clauses: 3080 learn: 25 restart: 8 decision: 538 propagated: 6893
+END FIND
+!+ 00001000001100001000011000100000100
+!+ H__15_69:0
+H__7_69_59:0
+H__8_69_59:1
+H__9_69_59:0
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:1
+H__14_69_59:4
+H__16_69:0
+H__7_69_60:0
+H__8_69_60:1
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:4
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:2
+H__17_69:0
+arithExpr:( ( ( IN_1 ) / 2 ) < ( ( ( IN_1 ) * ( IN_2 ) ) + ( ( IN_3 ) < ( IN_0 ) ) ) )
+
+BEG CHECK
+ * After optims it became = 36 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  6	ftime= 6000.64	ctime= 0.001
+!% 0101100000010
+!% N_1_4_4_0:0
+N_2_5_5_0:5
+N_3_6_6_0:1
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:1
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 473 was 496
+ * After all optims it became = 473
+ finder  hits = 1960	 bstoreObjs=253	 sstorePages=1
+hitcount 	1	14	0
+hitcount 	2	14	0
+hitcount 	3	4	0
+hitcount 	8	203	0
+hitcount 	11	4	0
+hitcount 	17	14	0
+bucketsPerDepth 	0	210
+bucketsPerDepth 	1	21
+* TIME TO ADD INPUT :  0.002 ms 
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (4, 0) Lit: 1459
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (5, 0) Lit: 1613
+f# %assign: 6 clauses: 3453 learn: 27 restart: 9 decision: 618 propagated: 8023
+END FIND
+!+ 11000100001111101011100000110000011
+!+ H__15_69:1
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:7
+H__14_69_59:5
+H__16_69:0
+H__7_69_60:7
+H__8_69_60:0
+H__9_69_60:0
+H__10_69_60:0
+H__12_69_60:4
+H__11_69_60:1
+H__13_69_60:0
+H__14_69_60:4
+H__17_69:1
+arithExpr:( ( ( ( IN_3 ) + 2 ) < ( - ( IN_1 ) ) ) < ( ( ( IN_1 ) < 0 ) + ( ( IN_3 ) < ( IN_0 ) ) ) )
+
+BEG CHECK
+ * After optims it became = 42 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  7	ftime= 15000	ctime= 0
+!% 1101101001101
+!% N_1_4_4_0:1
+N_2_5_5_0:5
+N_3_6_6_0:1
+N_4_7_7_0:0
+arithExpr_46_0:1
+N_1_1_c_c_0:0
+N_2_1_d_d_0:6
+N_3_1_e_e_0:0
+N_4_1_f_f_0:1
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 473 was 496
+ * After all optims it became = 473
+ finder  hits = 2195	 bstoreObjs=364	 sstorePages=1
+hitcount 	0	111	0
+hitcount 	1	14	0
+hitcount 	2	14	0
+hitcount 	3	4	0
+hitcount 	9	203	0
+hitcount 	12	4	0
+hitcount 	19	14	0
+bucketsPerDepth 	0	270
+bucketsPerDepth 	1	39
+bucketsPerDepth 	2	3
+bucketsPerDepth 	3	1
+* TIME TO ADD INPUT :  0.002 ms 
+Not valid output: (8, 1) Lit: 2094
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (4, 0) Lit: 1459
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (5, 0) Lit: 1613
+Not valid output: (8, 1) Lit: 2094
+f# %assign: 6 clauses: 3882 learn: 27 restart: 10 decision: 666 propagated: 9112
+END FIND
+!+ 11100000001111100000001001000000100
+!+ H__15_69:1
+H__7_69_59:3
+H__8_69_59:0
+H__9_69_59:0
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:7
+H__14_69_59:1
+H__16_69:0
+H__7_69_60:0
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:2
+H__11_69_60:0
+H__13_69_60:0
+H__14_69_60:2
+H__17_69:0
+arithExpr:( ( ( ( IN_3 ) + 2 ) < ( - ( IN_1 ) ) ) < ( ( ( IN_1 ) / 2 ) < ( ( IN_3 ) < ( IN_0 ) ) ) )
+
+BEG CHECK
+ * After optims it became = 41 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  8	ftime= 16999.3	ctime= 0.001
+!% 0100010000000
+!% N_1_4_4_0:0
+N_2_5_5_0:1
+N_3_6_6_0:0
+N_4_7_7_0:1
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:0
+N_4_1_f_f_0:0
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 466 was 496
+ * After all optims it became = 466
+ finder  hits = 2442	 bstoreObjs=461	 sstorePages=1
+hitcount 	0	200	0
+hitcount 	1	18	0
+hitcount 	2	18	0
+hitcount 	3	4	0
+hitcount 	10	203	0
+hitcount 	13	4	0
+hitcount 	21	14	0
+bucketsPerDepth 	0	304
+bucketsPerDepth 	1	59
+bucketsPerDepth 	2	9
+bucketsPerDepth 	3	1
+* TIME TO ADD INPUT :  0.001 ms 
+f# %assign: 5 clauses: 4261 learn: 32 restart: 11 decision: 749 propagated: 10695
+END FIND
+!+ 00001100001100010001011000010000100
+!+ H__15_69:0
+H__7_69_59:0
+H__8_69_59:1
+H__9_69_59:1
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:1
+H__14_69_59:2
+H__16_69:0
+H__7_69_60:2
+H__8_69_60:1
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:0
+H__11_69_60:1
+H__13_69_60:0
+H__14_69_60:2
+H__17_69:0
+arithExpr:( ( ( ( IN_3 ) + 2 ) < ( - ( IN_1 ) ) ) < ( ( ( IN_1 ) / 2 ) < ( ( IN_3 ) < ( IN_0 ) ) ) )
+
+BEG CHECK
+ * After optims it became = 48 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  9	ftime= 0.002	ctime= 0
+!% 1001100000001
+!% N_1_4_4_0:1
+N_2_5_5_0:4
+N_3_6_6_0:1
+N_4_7_7_0:0
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:0
+N_4_1_f_f_0:1
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 468 was 496
+ * After all optims it became = 468
+ finder  hits = 2691	 bstoreObjs=267	 sstorePages=1
+hitcount 	1	20	0
+hitcount 	2	18	0
+hitcount 	3	8	0
+hitcount 	11	203	0
+hitcount 	14	4	0
+hitcount 	23	14	0
+bucketsPerDepth 	0	222
+bucketsPerDepth 	1	22
+* TIME TO ADD INPUT :  0.001 ms 
+Not valid output: (10, 1) Lit: 2514
+Not valid output: (5, 0) Lit: 1613
+Not valid output: (5, 0) Lit: 1613
+f# %assign: 5 clauses: 4520 learn: 33 restart: 12 decision: 799 propagated: 12076
+END FIND
+!+ 01000110001100000010001011001101010
+!+ H__15_69:0
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:1
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:1
+H__14_69_59:0
+H__16_69:0
+H__7_69_60:1
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:3
+H__11_69_60:0
+H__13_69_60:3
+H__14_69_60:5
+H__17_69:0
+arithExpr:( ( IN_2 ) < ( IN_0 ) )
+
+BEG CHECK
+ * After optims it became = 44 was 496
+Assert at 52a.sk:66 (8493010446954935932)
+Simulation found a cex by random testing:  0 ms 
+END CHECK
+********  10	ftime= 0.023	ctime= 0.013
+!% 1001010000001
+!% N_1_4_4_0:1
+N_2_5_5_0:4
+N_3_6_6_0:0
+N_4_7_7_0:1
+arithExpr_46_0:0
+N_1_1_c_c_0:0
+N_2_1_d_d_0:0
+N_3_1_e_e_0:0
+N_4_1_f_f_0:1
+
+BEG FIND
+Level 1  intsize = 3
+ * After optims it became = 465 was 496
+ * After all optims it became = 465
+ finder  hits = 2934	 bstoreObjs=338	 sstorePages=1
+hitcount 	0	71	0
+hitcount 	1	20	0
+hitcount 	2	18	0
+hitcount 	4	8	0
+hitcount 	12	203	0
+hitcount 	15	4	0
+hitcount 	25	14	0
+bucketsPerDepth 	0	262
+bucketsPerDepth 	1	34
+bucketsPerDepth 	2	2
+* TIME TO ADD INPUT :  0.001 ms 
+Not valid output: (11, 1) Lit: 2646
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (9, 1) Lit: 2318
+Not valid output: (6, 1) Lit: 1774
+Not valid output: (7, 1) Lit: 1906
+Not valid output: (4, 0) Lit: 1459
+Not valid output: (2, 0) Lit: 1169
+Not valid output: (5, 0) Lit: 1613
+Not valid output: (8, 1) Lit: 2094
+Not valid output: (9, 1) Lit: 2318
+Not valid output: (10, 1) Lit: 2514
+f# %assign: 5 clauses: 4785 learn: 33 restart: 13 decision: 860 propagated: 13398
+END FIND
+!+ 11000100001010001011101010110000100
+!+ H__15_69:1
+H__7_69_59:1
+H__8_69_59:0
+H__9_69_59:1
+H__10_69_59:0
+H__12_69_59:0
+H__11_69_59:1
+H__13_69_59:2
+H__14_69_59:4
+H__16_69:0
+H__7_69_60:7
+H__8_69_60:0
+H__9_69_60:1
+H__10_69_60:0
+H__12_69_60:5
+H__11_69_60:1
+H__13_69_60:0
+H__14_69_60:2
+H__17_69:0
+arithExpr:( ( ( IN_3 ) || 0 ) < ( ( ( IN_0 ) < ( IN_1 ) ) < ( ! ( IN_2 ) ) ) )
+
+BEG CHECK
+ * After optims it became = 38 was 496
+ TESTING HYPOTHESIS ITER 1
+dagmain__WrapperNospec{
+N_4_7_7_0
+N_1_4_4_0
+N_2_5_5_0
+3= (-3)
+4= N_2_5_5_0 + (-3) 
+5= N_1_4_4_0 < 4 
+N_3_6_6_0
+7= N_3_6_6_0 ! 
+8= 5 < (!N_3_6_6_0) 
+9= N_4_7_7_0 < 8 
+10= 5 ! 
+11= (!5) & N_3_6_6_0 
+12= 11 | 5 
+13= 12 ! 
+14= (!12) & N_4_7_7_0 
+15= [11]$14, 11, $
+16= [5]$15, 5, $
+17= 16 ! 
+18= 9 ^ (!16) 
+19= 18 ! 
+20= ASSERT (!18) : 
+}
+SLICE SIZE = 21
+c# %assign: 45 clauses: 85 learn: 0 restart: 1 decision: 2 propagated: 30
+ FOUND CONST: 35= 34 ^ (!30)  = 0
+ reduced size from 38 to 21
+Simulation no cex:  0.001 ms 
+Switching to problem 1
+ * After optims it became = 21 was 485
+Simulation no cex:  0 ms 
+END CHECK
+********  11	ftime= 34999.9	ctime= 0.002
+ *GOT THE CORRECT ANSWER IN 12 iterations.
+ *FIND TIME 73999.4 CHECK TIME 0.028 TOTAL TIME 73999.4
+RESULT = 0  
+**ROUND 0 : 0 Round time:  73999.4 ms 
+RNDDEG = -1
+return 0
+
+----- Statistics -----
+Total elapsed time (ms):  80000
+Model building time (ms): 0.009
+Solution time (ms):       73999.4
+Max virtual mem (bytes):  3813076992
+Max resident mem (bytes): 3721601024
+Max private mem (bytes):  3810512896
+ALL CORRECT
+[SATBackend] Stats for last run:
+      [solution stats]
+      successful? ---------------------> true
+      elapsed time (s) ----------------> 82.922
+      model building time (s) ---------> 0.0
+      solution time (s) ---------------> 73.999
+      max memory usage (MiB) ----------> 3636.4336
+      [SAT-specific solution stats]
+      initial number of nodes ---------> 6
+      number of nodes after opts ------> 496
+      number of controls --------------> 19
+      total number of control bits ----> 35
+
+[SATBackend] Solver exit value: 0
+/* BEGIN PACKAGE ANONYMOUS*/
+struct Val {
+}
+struct BIT {
+    bit b;
+}
+struct INT {
+    int N;
+}
+struct Node {
+}
+struct And {
+    int id;
+    int l;
+    int r;
+}
+struct Or {
+    int id;
+    int l;
+    int r;
+}
+struct Xor {
+    int id;
+    int l;
+    int r;
+}
+struct Lt {
+    int id;
+    int l;
+    int r;
+}
+struct Eq {
+    int id;
+    int l;
+    int r;
+}
+struct Not {
+    int id;
+    int l;
+}
+struct Src {
+    int id;
+}
+struct ConstB {
+    int id;
+    bit vb;
+}
+struct ConstI {
+    int id;
+    int vi;
+}
+struct Plus {
+    int id;
+    int l;
+    int r;
+}
+struct Times {
+    int id;
+    int l;
+    int r;
+}
+struct Div {
+    int id;
+    int l;
+    int r;
+}
+struct Mod {
+    int id;
+    int l;
+    int r;
+}
+struct Neg {
+    int id;
+    int l;
+}
+struct ArrAcc {
+    int id;
+    int b;
+    int l;
+    int r;
+}
+struct ArrAss {
+    int id;
+    int b;
+    int c;
+    int l;
+    int r;
+}
+/*52a.sk:4*/
+
+uninterp void PCHOICE (int chpr)/*52a.sk:4*/
+/*52a.sk:522*/
+
+uninterp void PCHOICE_AND ()/*52a.sk:522*/
+/*52a.sk:517*/
+
+uninterp void PCHOICE_BASE (int l, int op, int r)/*52a.sk:517*/
+/*52a.sk:520*/
+
+uninterp void PCHOICE_BF (int l)/*52a.sk:520*/
+/*52a.sk:519*/
+
+uninterp void PCHOICE_BT (int l)/*52a.sk:519*/
+/*52a.sk:518*/
+
+uninterp void PCHOICE_CONST (int l, int op, int c)/*52a.sk:518*/
+/*52a.sk:523*/
+
+uninterp void PCHOICE_OR ()/*52a.sk:523*/
+/*52a.sk:521*/
+
+uninterp void PCHOICE_TRUE ()/*52a.sk:521*/
+/*52a.sk:50*/
+
+void _main (bit N_1, int N_2_0, bit N_3, bit N_4)/*52a.sk:50*/
+{
+  int N_2 = N_2_0;
+  bit[7] isBit = ((bit[7])0);
+  bit[7] isArr = ((bit[7])0);
+  Val[7] vals = {null,null,null,null,null,null,null};
+  vals[0] = new BIT(b=N_1);
+  isBit[0] = 1;
+  isArr[0] = 0;
+  N_2 = N_2_0 - 3;
+  vals[1] = new INT(N=N_2);
+  isBit[1] = 0;
+  isArr[1] = 0;
+  vals[2] = new BIT(b=N_3);
+  isBit[2] = 1;
+  isArr[2] = 0;
+  vals[3] = new BIT(b=N_4);
+  isBit[3] = 1;
+  isArr[3] = 0;
+  bit _out_s4 = 0;
+  pred(N_1, N_2, N_3, N_4, _out_s4);
+  if(_out_s4)/*52a.sk:58*/
+  {
+    Val VAE = new BIT(b=(N_4 || 0) < ((N_1 < N_2) < (!(N_3))));
+    Val _out_s8 = null;
+    ddag(vals, _out_s8);
+    bit _out_s10 = 0;
+    checkEq(VAE, _out_s8, _out_s10);
+    assert (_out_s10); //Assert at 52a.sk:66 (8493010446954935932)
+  }
+}
+/*52a.sk:47*/
+@Gen("arithexpr_4d_4v_not_neg_or_lt_and_xor_eq_plus_times_div_mod_c0_c1_c2") 
+uninterp void arithExpr (bit N_1, int N_2, bit N_3, bit N_4, ref bit _out)/*52a.sk:47*/
+/*52a.sk:249*/
+
+void checkEq (Val l, Val r, ref bit _out)/*52a.sk:249*/
+{
+  _out = 0;
+  bit _pac_sc_s21_s23 = 0;
+  isBit(l, _pac_sc_s21_s23);
+  bit _pac_sc_s21;
+  _pac_sc_s21 = _pac_sc_s21_s23;
+  if(_pac_sc_s21_s23)/*52a.sk:250*/
+  {
+    bit _pac_sc_s21_s25 = 0;
+    isBit(r, _pac_sc_s21_s25);
+    _pac_sc_s21 = _pac_sc_s21_s25;
+  }
+  if(_pac_sc_s21)/*52a.sk:250*/
+  {
+    bit _out_s27 = 0;
+    getBit(l, _out_s27);
+    bit _out_s29 = 0;
+    getBit(r, _out_s29);
+    _out = _out_s27 == _out_s29;
+    return;
+  }
+  else
+  {
+    bit _pac_sc_s31_s33 = 0;
+    isInt(l, _pac_sc_s31_s33);
+    bit _pac_sc_s31;
+    _pac_sc_s31 = _pac_sc_s31_s33;
+    if(!(_pac_sc_s31_s33))/*52a.sk:252*/
+    {
+      bit _pac_sc_s31_s35 = 0;
+      isBit(l, _pac_sc_s31_s35);
+      _pac_sc_s31 = _pac_sc_s31_s35;
+    }
+    bit _pac_sc_s30 = _pac_sc_s31;
+    if(_pac_sc_s31)/*52a.sk:252*/
+    {
+      bit _pac_sc_s36_s38 = 0;
+      isInt(r, _pac_sc_s36_s38);
+      bit _pac_sc_s36;
+      _pac_sc_s36 = _pac_sc_s36_s38;
+      if(!(_pac_sc_s36_s38))/*52a.sk:252*/
+      {
+        bit _pac_sc_s36_s40 = 0;
+        isBit(r, _pac_sc_s36_s40);
+        _pac_sc_s36 = _pac_sc_s36_s40;
+      }
+      _pac_sc_s30 = _pac_sc_s36;
+    }
+    if(_pac_sc_s30)/*52a.sk:252*/
+    {
+      int _out_s42 = 0;
+      getIntUpCast(l, _out_s42);
+      int _out_s44 = 0;
+      getIntUpCast(r, _out_s44);
+      _out = _out_s42 == _out_s44;
+      return;
+    }
+    else
+    {
+      _out = 0;
+      return;
+    }
+  }
+}
+/*52a.sk:20*/
+
+void ddag (Val[7] vals, ref Val _out)/*52a.sk:20*/
+{
+  _out = null;
+  int _pac_sc_s11_s13 = 0;
+  getIntUpCast(vals[0], _pac_sc_s11_s13);
+  int _pac_sc_s11_s15 = 0;
+  getIntUpCast(vals[1], _pac_sc_s11_s15);
+  bit _pac_sc_s11;
+  _pac_sc_s11 = _pac_sc_s11_s13 < _pac_sc_s11_s15;
+  if(!(_pac_sc_s11))/*52a.sk:21*/
+  {
+    bit _pac_sc_s16_s18 = 0;
+    getBit(vals[2], _pac_sc_s16_s18);
+    bit _pac_sc_s16;
+    _pac_sc_s16 = _pac_sc_s16_s18;
+    if(!(_pac_sc_s16_s18))/*52a.sk:21*/
+    {
+      bit _pac_sc_s16_s20 = 0;
+      getBit(vals[3], _pac_sc_s16_s20);
+      _pac_sc_s16 = _pac_sc_s16_s20;
+    }
+    _pac_sc_s11 = _pac_sc_s16;
+  }
+  _out = new BIT(b=!(_pac_sc_s11));
+  return;
+}
+/*52a.sk:59*/
+
+void getBit (Val v, ref bit _out)/*52a.sk:59*/
+{
+  _out = 0;
+  if(v == (null))/*52a.sk:60*/
+  {
+    _out = 0;
+    return;
+  }
+  switch(v){/*52a.sk:61*/
+    case BIT:
+    {
+      _out = v.b;
+      return;
+    }
+    case default:
+    {
+      assert (0); //Assert at 52a.sk:63 (1097527806372718315)
+    }
+  }
+}
+/*52a.sk:67*/
+
+void getIntUpCast (Val v, ref int _out)/*52a.sk:67*/
+{
+  _out = 0;
+  if(v == (null))/*52a.sk:68*/
+  {
+    _out = 0;
+    return;
+  }
+  switch(v){/*52a.sk:69*/
+    case BIT:
+    {
+      _out = v.b;
+      return;
+    }
+    case INT:
+    {
+      _out = v.N;
+      return;
+    }
+    case default:
+    {
+      assert (0); //Assert at 52a.sk:72 (1597207807724748448)
+    }
+  }
+}
+/*52a.sk:41*/
+
+void isBit (Val v, ref bit _out)/*52a.sk:41*/
+{
+  _out = 0;
+  if(v == (null))/*52a.sk:42*/
+  {
+    _out = 0;
+    return;
+  }
+  switch(v){/*52a.sk:43*/
+    case BIT:
+    {
+      _out = 1;
+      return;
+    }
+    case default:
+    {
+      _out = 0;
+      return;
+    }
+  }
+}
+/*52a.sk:49*/
+
+void isInt (Val v, ref bit _out)/*52a.sk:49*/
+{
+  _out = 0;
+  if(v == (null))/*52a.sk:50*/
+  {
+    _out = 0;
+    return;
+  }
+  switch(v){/*52a.sk:51*/
+    case INT:
+    {
+      _out = 1;
+      return;
+    }
+    case BIT:
+    {
+      _out = 1;
+      return;
+    }
+    case default:
+    {
+      _out = 0;
+      return;
+    }
+  }
+}
+/*52a.sk:50*/
+
+void main__Wrapper (bit N_1, int N_2, bit N_3, bit N_4)  implements main__WrapperNospec/*52a.sk:50*/
+{
+  _main(N_1, N_2, N_3, N_4);
+}
+/*52a.sk:50*/
+
+void main__WrapperNospec (bit N_1, int N_2, bit N_3, bit N_4)/*52a.sk:50*/
+{ }
+/*52a.sk:36*/
+
+void pred (bit N_1, int N_2, bit N_3, bit N_4, ref bit _out)/*52a.sk:36*/
+{
+  _out = 0;
+  bit[7] isBit = ((bit[7])0);
+  bit[7] isArr = ((bit[7])0);
+  isBit[0] = 1;
+  isArr[0] = 0;
+  isBit[1] = 0;
+  isArr[1] = 0;
+  isBit[2] = 1;
+  isArr[2] = 0;
+  isBit[3] = 1;
+  isArr[3] = 0;
+  PCHOICE_TRUE();
+  _out = 1;
+  return;
+}
+/*52a.sk:23*/
+
+void sC1 (bit N_1, int N_2, bit N_3, bit N_4, ref bit _out)/*52a.sk:23*/
+{
+  _out = 0;
+  if((!(N_1)) && ((N_2 >= 0) && (N_2 <= 1)))/*52a.sk:25*/
+  {
+    bit _out_s64 = 0;
+    pred(N_1, N_2, N_3, N_4, _out_s64);
+    _out = _out_s64;
+    return;
+  }
+  else
+  {
+    _out = 1;
+    return;
+  }
+}
+/*52a.sk:32*/
+
+void staticFinalCheck (bit N_1_1, int N_2_1_0, bit N_3_1, bit N_4_1)/*52a.sk:32*/
+{
+  int N_2_1 = N_2_1_0;
+  N_2_1 = N_2_1_0 - 3;
+  bit _out_s62 = 0;
+  sC1(N_1_1, N_2_1, N_3_1, N_4_1, _out_s62);
+  assert (_out_s62); //Assert at 52a.sk:34 (-3156216178691979592)
+}
+/*52a.sk:32*/
+
+void staticFinalCheck__Wrapper (bit N_1_1, int N_2_1, bit N_3_1, bit N_4_1)  implements staticFinalCheck__WrapperNospec/*52a.sk:32*/
+{
+  staticFinalCheck(N_1_1, N_2_1, N_3_1, N_4_1);
+}
+/*52a.sk:32*/
+
+void staticFinalCheck__WrapperNospec (bit N_1_1, int N_2_1, bit N_3_1, bit N_4_1)/*52a.sk:32*/
+{ }
+/* END PACKAGE ANONYMOUS*/
+[SKETCH] DONE
+Total time = 84609

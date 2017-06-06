@@ -70,7 +70,7 @@ OutType* OutType::makeTuple(vector<OutType*>& elems){
     
     cout<<"did not match anything"<<endl;
     return NULL;
-
+	Assert(false,"Control shouldn't reach here");
 }
 
 

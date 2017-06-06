@@ -1,0 +1,22 @@
+
+//include "generators2.skh";
+#define DEPTH 4
+
+@Gen("arithexpr_4d_3v_plus_times")
+int arithExpr(int x, int y, int z);
+
+
+int exprFixed(int x, int y, int z){
+	return arithExpr(x,y,z);
+}
+
+harness void main(){
+	
+	//(x+(y*(x+z))) 
+	
+	assert(exprFixed(1,1,2) == 4);//1+1*3
+	assert(exprFixed(2,1,3) == 7);//2+1*5
+	assert(exprFixed(1,2,4) == 11);//1+2*5
+	assert(exprFixed(2,3,4) == 20);//2+3*6
+
+}

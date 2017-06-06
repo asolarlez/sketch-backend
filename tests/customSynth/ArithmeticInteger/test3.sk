@@ -1,0 +1,22 @@
+
+//include "generators2.skh";
+#define DEPTH 3
+
+@Gen("arithexpr_3d_3v_plus_times")
+generator int arithExpr(int x, int y, int z);
+
+
+int exprFixed(int x, int y, int z){
+	//int[3] operands = {x,y,z};
+	//int[2] operations = {PLUS,TIMES};
+	return arithExpr(x,y,z);
+}
+
+harness void main(){
+	
+	//x*y
+	assert(exprFixed(1,1,2) == 1);
+	assert(exprFixed(2,1,3) == 2);
+	assert(exprFixed(1,2,4) == 2);
+
+}

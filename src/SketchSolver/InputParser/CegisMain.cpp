@@ -5,7 +5,6 @@
 #include "driver.h"
 #include "memory_sampler.h"
 #include "timerclass.h"
-
 #include <signal.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
