@@ -342,7 +342,7 @@ inline Range operator/(const Range& a, const Range& b) {
 	}
 
 	if (-a.lo >= a.hi) {
-		return Range(-a.lo, a.lo);
+		return Range(a.lo, -a.lo);
 	}
 	return Range(-a.hi, a.hi);
 

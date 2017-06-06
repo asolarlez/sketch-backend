@@ -832,6 +832,8 @@ public:
 		Range out = ranges.getRange(a) - ranges.getRange(b);
 		if (out.isSingle()) {
 			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			auto worked = propagate();
+			Assert(worked == NULL, "Not worked!!");
 			return;
 		}
 		else {
@@ -849,6 +851,8 @@ public:
 		Range out = ranges.getRange(a) % ranges.getRange(b);
 		if (out.isSingle()) {
 			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			auto worked = propagate();
+			Assert(worked == NULL, "Not worked!!");
 			return;
 		}
 		else {
@@ -866,6 +870,8 @@ public:
 		Range out = ranges.getRange(a) / ranges.getRange(b);
 		if (out.isSingle()) {
 			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			auto worked = propagate();
+			Assert(worked == NULL, "Not worked!!");
 			return;
 		}
 		else {
@@ -884,6 +890,8 @@ public:
 		Range out = ranges.getRange(a) + ranges.getRange(b);
 		if (out.isSingle()) {
 			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			auto worked = propagate();
+			Assert(worked == NULL, "Not worked!!");
 			return;
 		}
 		else {
@@ -1014,6 +1022,8 @@ public:
 		Range out = joinChoices(ranges.getRange(cond), len, choices);
 		if (out.isSingle()) {
 			uncheckedSetVal(x, out.getLo(), 0, NULL);
+			auto worked = propagate();
+			Assert(worked == NULL, "Not worked!!");
 			return;
 		} else {
 			ranges.updateRange(x, 0, out, NULL);
