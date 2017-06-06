@@ -287,6 +287,17 @@ void SolverHelper::regIclause(int id, Tvalue& tv){
 }
 
 
+
+int SolverHelper::freshBoolIntVar(int boolVar) {
+	Tvalue tv = boolVar;
+	tv.makeSparse(*this);
+	int id = mng.addIntVar(tv);
+	regIclause(id, tv);
+	bitToInt[boolVar] = id;
+	return id;
+}
+
+
 int SolverHelper::intClause(Tvalue& tv){
 	if(tv.isInt()){ return tv.getId(); }
 	
@@ -336,14 +347,12 @@ int SolverHelper::intClause(Tvalue& tv){
 		int val = gv[0].value;
 		mng.setIntVal(id, val);
 		tv.makeSuperInt(id);
-		cout<<" TV="<<tv<<endl;
 		return id;
 	}
 
 	int id = mng.addIntVar(tv);
 	regIclause(id, tv);	
 	 tv.makeSuperInt(id);
-	 cout<<" TV="<<tv<<endl;
 	 return id;	
 }
 
@@ -502,12 +511,13 @@ int SolverHelper::inteq(iVar x, iVar y){
 			return rv;
 		}
 	}
+
+
+
 	int rv = newAnonymousVar ();
-	Tvalue tv=rv;
-	tv.makeSparse(*this);	
-	int iv = intClause(tv);
-	mng.inteq(x, y, iv);	
-	bitToInt[rv] = iv;
+
+	int iv = freshBoolIntVar(rv);
+	mng.inteq(x, y, iv);		
 	return rv;
 }
 

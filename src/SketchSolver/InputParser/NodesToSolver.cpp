@@ -433,7 +433,6 @@ void NodesToSolver::processLT (LT_node& node, EVAL eval ){
 		
 		{
 			 node_ids[node.id]= (dir.intlt(mval.getId(), fval.getId()));
-			 cout<<"LT  "<<node.id<<" = "<<node_ids[node.id]<<endl;
 			 return;
 		}
 		Assert(false, "Aqirueop");
@@ -932,13 +931,10 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
 	if(true || mval.isInt() || fval.isInt()){
-		cout << node.lprint() << "   ";
 		if(!mval.isInt()){
-			cout << "  mother"<<endl;
 			dir.intClause(mval);
 		}
 		if(!fval.isInt()){
-			cout << "  father" << endl;
 			dir.intClause(fval);
 		}
 		if(node.type== bool_node::PLUS){
@@ -1738,7 +1734,6 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 	if(isInt){
 		Tvalue mv = mval;
 		if(!mv.isInt()){
-			cout << pnode->mother->lprint() << endl;
 			dir.intClause(mv);
 		}
 		vector<iVar> chs;
@@ -2543,16 +2538,23 @@ void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, 
 				++rangeit;
 			}
 
-			
-			iVar c = dir.getIntConst(it->idx);
-			
-			iVar old = it->guard;
-			iVar nv = newval.getId();
-			iVar ov[2] = { old, nv };
-				
-			out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), 0, it->idx));
-			rangeit = max(rangeit, it->idx + 1);
-			lastidx = it->idx;
+			if (it->idx >= 0) {
+
+				iVar c = dir.getIntConst(it->idx);
+
+				iVar old = it->guard;
+				iVar nv = newval.getId();
+				iVar ov[2] = { old, nv };
+
+				out.push_back(guardedVal(dir.mux(dir.bitToI(dir.inteq(index.getId(), c)), 2, ov), 0, it->idx));
+				rangeit = max(rangeit, it->idx + 1);
+				lastidx = it->idx;
+			}
+			else {
+				out.push_back(guardedVal(it->guard, 0, it->idx));
+				rangeit = max(rangeit, it->idx + 1);
+				lastidx = it->idx;
+			}
 		}
 
 		while (rangeit <= ir.getHi() && lastidx < rangeit) {
@@ -3160,7 +3162,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
 	tmpdag = &bdag;
 	stopAddingClauses = false;
-	bdag.lprint(cout);
 	bool isNegated = dir.getMng().isNegated();
   // Preprocess synth ufun nodes to create tmp out variables
   for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {

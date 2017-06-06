@@ -68,7 +68,7 @@ class SolverHelper {
 	Synthesizer* newSynthesizer(const string& name, FloatManager& _fm);
 
 
-
+	int freshBoolIntVar(int boolVar);
 
 	int setStr(int id1, char op, int id2){
 		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
