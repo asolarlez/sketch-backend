@@ -258,6 +258,7 @@
   <ItemGroup>
     <ClCompile Include="MiniSat\core\IntPropagator.cpp" />
     <ClCompile Include="MiniSat\core\Solver.cpp" />
+    <ClCompile Include="SketchSolver\ArithmeticExpressionBuilder.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMain.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CegisMainHelpers.cpp" />
     <ClCompile Include="SketchSolver\InputParser\CommandLineArgs.cpp" />

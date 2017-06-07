@@ -547,13 +547,42 @@ public:
 					}
 				} else {
 					ic->moreAct();
-					for (int i = 0; i<ic->size(); ++i) {
-						iVar iv = (*ic)[i];
-						if (seen[iv] == 0) {
-							seen[iv] = 1;
+					int tp = tpos[(*ic)[1]];
+					if (ic->tp() == BMUX
+						&& iv == (*ic)[0]
+						&& tp > 0
+						&& tp < tpos[iv]
+						) {
+						//cout << "CA: " << iv<<"  ";
+						//ic->print();
+
+						iVar ivv = (*ic)[1];
+						if (seen[ivv] == 0) {
+							seen[ivv] = 1;
 							++scount;
 						}
+						//cout << "  ivv = " << ivv<<"  ";
+						int val = trail[tp].val;
+						//cout << "  val = " << val << "  ";
+						if (val >= 0 && 2 + val < ic->size()) {
+							ivv = (*ic)[2 + val];
+							//cout << "  ivv = " << ivv;
+							if (seen[ivv] == 0) {
+								seen[ivv] = 1;
+								++scount;
+							}
+						}
+						//cout << endl;
 					}
+					else {
+						for (int i = 0; i<ic->size(); ++i) {
+							iVar iv = (*ic)[i];
+							if (seen[iv] == 0) {
+								seen[iv] = 1;
+								++scount;
+							}
+						}
+					}					
 				}
 			}
 			
