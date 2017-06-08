@@ -552,8 +552,13 @@ public:
 						&& iv == (*ic)[0]
 						&& tp > 0
 						&& tp < tpos[iv]
+						&& it->range.isSingle()
 						) {
-						//cout << "CA: " << iv<<"  ";
+
+						seen[iv] = 1;
+						++scount;
+
+						//cout << "CA: " << iv<<"  "<<" r=("<<it->range.getLo()<<", "<< it->range.getHi() <<") " ;
 						//ic->print();
 
 						iVar ivv = (*ic)[1];
@@ -561,6 +566,9 @@ public:
 							seen[ivv] = 1;
 							++scount;
 						}
+						//cout << " tpos[0]=" << tpos[(*ic)[0]] << 
+						//	" tpos[1]=" << tpos[(*ic)[1]] << " tpos[2]=" << tpos[(*ic)[2]]
+						//	<< " tpos[3]="<< tpos[(*ic)[3]];
 						//cout << "  ivv = " << ivv<<"  ";
 						int val = trail[tp].val;
 						//cout << "  val = " << val << "  ";
@@ -574,7 +582,7 @@ public:
 						}
 						//cout << endl;
 					}
-					else {
+					else{
 						for (int i = 0; i<ic->size(); ++i) {
 							iVar iv = (*ic)[i];
 							if (seen[iv] == 0) {
@@ -2267,7 +2275,11 @@ private:
 		if (vcond.isDef()) {
 			Val vx = vals[vr];
 			if (!vx.isDef()) {
-				const Range& outnew = ranges.getRange(c[vcond.v() + 2]);
+				int v = vcond.v();
+				Range outnew(0,0);
+				if (v >= 0 && v + 2 < c.size()) {
+					outnew =  ranges.getRange(c[vcond.v() + 2]);
+				}
 				return updateIfBetter(vr, level, outnew, c);
 			}			
 		} else {
