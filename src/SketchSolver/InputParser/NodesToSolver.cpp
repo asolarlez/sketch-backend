@@ -930,7 +930,7 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
-	if(true || mval.isInt() || fval.isInt()){
+	if(mval.isInt() || fval.isInt()){
 		if(!mval.isInt()){
 			dir.intClause(mval);
 		}
@@ -1521,7 +1521,9 @@ bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 		}
 		vector<Tvalue>* new_vec = new vector<Tvalue>(1);
 		populateGuardedVals((*new_vec)[0], numbers);
-		regTuple(new_vec, node_ids[node.id]);
+		Tvalue& nvar= node_ids[node.id];
+		nvar.num_ranges.clear();
+		regTuple(new_vec, nvar);
 		return true;
 	}
 	return false;
