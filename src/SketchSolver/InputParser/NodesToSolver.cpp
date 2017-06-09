@@ -1386,7 +1386,7 @@ NodesToSolver::visit (CTRL_node &node)
       
 		}else{
 			nvar = dir.getControl(&node);
-			if (nvar.isSparse() && nvar.num_ranges.size() > 64) {				
+			if (NATIVEINTS && nvar.isSparse() && nvar.num_ranges.size() > 64) {
 					dir.intClause(nvar);	
 			}
 		}		

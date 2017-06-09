@@ -97,7 +97,7 @@ protected:
     void intBvectGe (arith_node &);
 
 	bool checkKnownFun(UFUN_node& node);
-
+	bool NATIVEINTS;
 public:
    string errorMsg;
 
@@ -132,7 +132,7 @@ public:
 	/* Initialize the default "one" integer. */
 	tvOne.num_ranges.push_back (guardedVal(p_dir.YES, 1));
 	tpl_store.push_back(NULL);
-
+	NATIVEINTS = false;
     };
     
 	int lastGoodVal(int id){
