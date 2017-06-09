@@ -40,7 +40,7 @@ bool_node* BooleanDAGCreator::get_node(const string& name) {
 	}
 	else {
 		if (!named_nodes.get(name.c_str(), name.size(), fth)) {
-		  cout<<"WARNING, DANGEROUS!!"<<endl;
+		   //cout<<"WARNING, DANGEROUS!!"<<endl;
 			fth = optim.getCnode(-333);
 			dag->setOffset(optim.newNodesSize());
 		}
