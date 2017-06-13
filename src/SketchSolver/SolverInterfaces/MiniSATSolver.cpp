@@ -11,6 +11,7 @@
 #include <queue>
 #include "MiniSATSolver.h"
 #include "Tvalue.h"
+#include "CommandLineArgs.h"
 
 #define Dout( out ) /*    out   */
 
@@ -437,11 +438,12 @@ SATSolver::SATSolverResult MiniSATSolver::solve(){
 }
 
 
+ extern CommandLineArgs* PARAMS;
 
 
 
 void MiniSATSolver::lightSolve(){
-	s->makeIncomplete(25000000);
+	s->makeIncomplete(PARAMS->lightSolveThreshold);
 	lsolve = true;
 }
 

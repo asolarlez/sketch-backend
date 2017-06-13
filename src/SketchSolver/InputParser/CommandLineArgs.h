@@ -75,6 +75,7 @@ struct CommandLineArgs{
   bool superChecks;  
   int randBnd;
   bool lightVerif;
+  int lightVerifThreshold;
   bool outputSat;
   int boundedCount;
   bool randomassign;
@@ -152,6 +153,7 @@ struct CommandLineArgs{
 		superChecks = false;
 		randBnd = -1;
 		lightVerif = false;
+		lightVerifThreshold = 40000;
 		minvarHole = false;
 		outputSat = false;
 		boundmode = CALLNAME;
@@ -218,6 +220,11 @@ struct CommandLineArgs{
 		  }
 		  continue;
 	    }
+		if (string(argv[ii]) == "-lvthreshold") {
+			lightVerifThreshold = atoi(argv[ii+1]);
+			input_idx = ii + 2;			
+			continue;
+		}
 		if( string(argv[ii]) == "-sparsearrays" ){	      
 	      sparseArray = strtod(argv[ii+1], NULL);
 	      input_idx = ii+2;
