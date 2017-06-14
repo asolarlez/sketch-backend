@@ -276,8 +276,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	map<int, int> oldToNew;
 
 
-	if(ictrl != NULL && !ictrl->checkInline(node)){
-		//mpcontroller[node.fgid]["__ALL"] = NULL;
+	if(ictrl != NULL && !ictrl->checkInline(node)){		
 		DagOptim::visit(node);
 		return;
 	}	
@@ -285,8 +284,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 	bool_node* condition = node.mother;
 	if(isConst(condition) && !getBval(condition)){
-		rvalue = getCnode(0);
-		//mpcontroller[node.fgid]["__ALL"] = getCnode(0);
+		rvalue = getCnode(0);		
 		return;
 	}
   
@@ -365,22 +363,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 	if( functionMap.find(name) != functionMap.end() ){
     //cout << "Inlining " << name << endl;
-		/*if(mpcontroller.count(node.fgid) > 0){
-			map<string,bool_node*>::iterator it = mpcontroller[node.fgid].find(node.outname);
-			if(it != mpcontroller[node.fgid].end()){
-				bool_node* rv = it->second;
-				rvalue = rv;
-			}else{
-				bool_node* rv = mpcontroller[node.fgid]["__ALL"];
-				if(rv == NULL){
-					DagOptim::visit(node);
-				}else{
-					rvalue = rv;
-				}
-			}			
-			return;
-		}*/
-
 				
 		BooleanDAG& oldFun = *functionMap[name];
 
@@ -679,16 +661,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							tmpList.append(tt);
 						}
 
-						{
-							/*if(oldToNew.count(ufun->fgid)>0){
-								ufun->fgid = oldToNew[ufun->fgid];
-							}else{
-								++uidcount;
-								oldToNew[ufun->fgid] = uidcount;
-								ufun->fgid = uidcount;
-							}*/
-						}
-
 						bool_node * oldMother = ufun->mother;
 						
 						DagOptim::visit(*ufun);
@@ -894,8 +866,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 						nprime->dislodge();
 						delete nprime;
-					}
-					//mpcontroller[node.fgid][dn->name] = ttv;
+					}					
 					if(dn->name == node.outname){
 						output = ttv;
 					}
@@ -964,7 +935,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			// Get the code for this node.
 			if(dag[i]->type == bool_node::UFUN){
 				UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
-				//uidcount = max(uidcount, uf.fgid);
+				
 				/*
 				When the inline controller checks a function and the function is 
 				not inlined, the controller makes sure other function with the same path 

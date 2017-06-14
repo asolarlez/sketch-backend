@@ -443,7 +443,7 @@ SATSolver::SATSolverResult MiniSATSolver::solve(){
 
 
 void MiniSATSolver::lightSolve(){
-	s->makeIncomplete(PARAMS->lightSolveThreshold);
+	s->makeIncomplete(PARAMS->lightVerifThreshold);
 	lsolve = true;
 }
 

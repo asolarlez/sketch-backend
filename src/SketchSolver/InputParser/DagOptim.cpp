@@ -1523,61 +1523,7 @@ void DagOptim::visit( UFUN_node& node ){
 			return;
 		}
 	}
-	/*if(node.dependent()){
-		if(isConst(node.multi_mother[0])){
-			//The node on which I depend was eliminated, so I should go away as well.
-			//not strictly necessary since the only way the mother could go away is if the 
-			//path condition is false, in which case whatever I output here will not matter.
-			rvalue = getCnode(0);
-			return;
-		}
-		UFUN_node* mn = dynamic_cast<UFUN_node*>(node.multi_mother[0]);
-		if(mn->fgid != node.fgid){
-			node.fgid = mn->fgid;
-		}
-	}*/
-   
-   /* int fgid = node.fgid;
-    if (fgid !=0 && !node.combined) {
-        if (combinedFunCallMap.count(fgid) > 0) {
-            UFUN_node* brother = combinedFunCallMap[fgid];
-            brother->dislodge();
-                brother->mother->remove_child(brother);
-                bool_node* on = new OR_node();
-                on->mother = brother->mother;
-                on->father = node.mother;
-                on->addToParents();
-                on = optAdd(on);
-                brother->mother = on;
-                int size = brother->multi_mother.size();
-                int size1 = node.multi_mother.size();
-                Assert(size == size1, "Size of inputs of both nodes should be equal");
-                
-                for (int i = 0; i < size; i++) {
-                    ARRACC_node* inputNode = new ARRACC_node();
-                    inputNode->mother = node.mother;
-                    inputNode->multi_mother.push_back(brother->multi_mother[i]);
-                    inputNode->multi_mother.push_back(node.multi_mother[i]);
-                    
-                    inputNode->addToParents();
-                    bool_node* optInputNode = optAdd(inputNode);
-                    
-                    brother->multi_mother[i] = optInputNode;
-                }
-                brother->resetId();
-                brother->addToParents();
-                brother->fgid = 0;
-                rvalue = brother;
-                return;
-            
-        } else {
-            combinedFunCallMap[fgid] = &node;
-            node.combined = true;
-            node.fgid = 0;
-            rvalue  = &node;
-            return;
-        }
-    } */
+	
 
     if (node.fgid != 0) {
         rvalue  = &node;
@@ -2646,21 +2592,7 @@ bool_node* DagOptim::process( UFUN_node* node ){
              return brother;
          
          } else {
-            /* node->dislodge();
-             node->mother->remove_child(node);
-             int size = node->multi_mother.size();
-             for (int i = 0; i < size; i++) {
-                 ARRACC_node* inputNode = new ARRACC_node();
-                 inputNode->mother = node->mother;
-                 inputNode->multi_mother.push_back(getCnode(0));
-                 inputNode->multi_mother.push_back(node->multi_mother[i]);
-                 inputNode->addToParents();
-                 addNode(inputNode);
-                 node->multi_mother[i] = inputNode;
-             }
-             node->resetId();
-             node->addToParents();
-             */
+            
              combinedFunCallMap[fgid] = node;
              node->fgid = 0;
              
@@ -2829,7 +2761,7 @@ void DagOptim::findCycles(BooleanDAG& dag){
 			// Get the code for this node.				
 		if(dag[i]->type == bool_node::UFUN){
 			UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
-			//uidcount = max(uidcount, uf.fgid);
+			
 		}
 	}
 	map<int, UFUN_node*> dupNodes;
@@ -3038,26 +2970,13 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 			newNode->replace_parent(lastOr, this->getCnode(true));
 			dupNodes[oldNode->globalId] = newNode;
 			newNode->addToParents();
-			//It's important that nodes don't have duplicate fgid's.
-			//++uidcount;
-			//oldNode->fgid = uidcount;
+			
 		}		
 		sp.pop_front();		
 		
 
 		for(childset::iterator it = oldNode->children.begin(); it != oldNode->children.end(); ++it){
 			(*it)->replace_parent(oldNode, newNode);
-			/*if(!isRecycled){
-				if((*it)->type==bool_node::UFUN){
-					UFUN_node* un = dynamic_cast<UFUN_node*>(*it);
-					if(un->fgid == newNode->fgid){
-						//Assert(un->mother == lastOr, "I don't believe this!! What's going on here?");
-						un->replace_parent(lastOr, this->getCnode(true));
-						lastOr->remove_child(un);
-						un->ignoreAsserts = true;
-					}					
-				}
-			}*/	
 		}
 		oldNode->children.clear();
 

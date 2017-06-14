@@ -113,12 +113,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
 	int nargs = node.multi_mother.size();
 	vector<bool_node*>* nmm = &node.multi_mother;
-	/*if(node.dependent()){
-		nargs = mothercache[node.fgid].size();
-		nmm = &(mothercache[node.fgid]);
-	}else{
-		mothercache[node.fgid] = node.multi_mother;
-	}*/
+	
 	vector<bool_node*>& nmmother = *nmm;
 	if( functions.find(name) == functions.end() ){
 		//This means this is the first time we see
@@ -358,12 +353,6 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
 		int nargs = node.multi_mother.size();
 		vector<bool_node*>* nmm = &node.multi_mother;
-		/*if(node.dependent()){
-			nargs = mothercache[node.fgid].size();
-			nmm = &(mothercache[node.fgid]);
-		}else{
-			mothercache[node.fgid] = node.multi_mother;
-		}*/
 		vector<bool_node*>& nmmother = *nmm;
 		if(nargs == 0){
 			if(oneMoreFun){
