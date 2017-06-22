@@ -5,9 +5,9 @@
 
 
 RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p) {
-  ranges.resize(bdag.size(), NULL);
+	ranges.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
-  nctrls = floatCtrls_p.size();
+	nctrls = floatCtrls_p.size();
 	if (nctrls == 0) nctrls = 1;
 	IntervalGrad::tmp = gsl_vector_alloc(nctrls);
 	IntervalGrad::tmp1 = gsl_vector_alloc(nctrls);
@@ -17,7 +17,7 @@ RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string
 }
 
 RangeDiff::~RangeDiff(void) {
-  for (int i = 0; i < ranges.size(); i++) {
+	for (int i = 0; i < ranges.size(); i++) {
 		if (ranges[i] != NULL) {
 			delete ranges[i];
 		}
@@ -32,12 +32,12 @@ RangeDiff::~RangeDiff(void) {
 }
 
 void RangeDiff::visit( SRC_node& node ) { //TODO: deal with array src nodes
-  //cout << "Visiting SRC node" << endl;
+	//cout << "Visiting SRC node" << endl;
 	Assert(false, "NYI: rangediff for src");
 }
 
 void RangeDiff::visit( DST_node& node ) {
-  //cout << "Visiting DST node" << endl;
+	//cout << "Visiting DST node" << endl;
 	// Ignore
 }
 
@@ -51,7 +51,7 @@ void RangeDiff::visit( ASSERT_node& node ) {
 	}
 	// Check if the value computed from mother satisfies the assert
 	if (mdist->set) {
-		computeError(mdist->dist, 1, mdist->grad, node);
+		computeError(mdist->dist, 1, mdist->grad, node, node.isHard());
 	}
 	dg->dist = 1000;
 	IntervalGrad::default_grad(dg->grad);
@@ -59,7 +59,7 @@ void RangeDiff::visit( ASSERT_node& node ) {
 }
 
 void RangeDiff::visit( CTRL_node& node ) {
-  //cout << "Visiting CTRL node" << endl;
+	//cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
 	if (ctrls->contains(name)) {
 		Assert(isFloat(node), "Numerical Solver should deal with only float holes");
@@ -102,7 +102,7 @@ void RangeDiff::visit( CTRL_node& node ) {
 }
 
 void RangeDiff::visit( PLUS_node& node ) {
-  //cout << "Visiting PLUS node" << endl;
+	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
@@ -111,7 +111,7 @@ void RangeDiff::visit( PLUS_node& node ) {
 }
 
 void RangeDiff::visit( TIMES_node& node ) {
-  //cout << "Visiting TIMES node" << endl;
+	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
@@ -124,20 +124,30 @@ void RangeDiff::visit( TIMES_node& node ) {
 }
 
 void RangeDiff::visit( ARRACC_node& node ) {
-  //cout << "Visiting ARRACC node" << endl;
+	//cout << "Visiting ARRACC node" << endl;
 	Assert(isFloat(node), "NYI: arracc with ints");
 #if FINE_GRAIN_RANGES
 	DistanceGrad* dist = d(node.mother);
 	if (dist->set) {
-		//cout << "Dist: " << dist->dist << endl;
-		// take conditional union of the two intervals
 		Assert(node.multi_mother.size() == 2, "NYI: Fine grained range for ARRACC of size > 2");
 		IntervalGrad* interval = r(node);
 		IntervalGrad* minterval = r(node.multi_mother[0]);
 		IntervalGrad* finterval = r(node.multi_mother[1]);
+		
+		if (!isFloat(node)) {
+			if (dist->dist >= 0) {
+				IntervalGrad::ig_copy(finterval, interval);
+			} else {
+				IntervalGrad::ig_copy(minterval, interval);
+			}
+			return;
+		}
+		//cout << "Dist: " << dist->dist << endl;
+		// take conditional union of the two intervals
 		IntervalGrad::ig_conditionalUnion(minterval, finterval, dist, interval);
 		return;
 	}
+	
 #endif
 	// take union of the two intervals
 	IntervalGrad* interval = r(node);
@@ -149,7 +159,7 @@ void RangeDiff::visit( ARRACC_node& node ) {
 }
 
 void RangeDiff::visit( DIV_node& node ) {
-  //cout << "Visiting DIV node" << endl;
+	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
@@ -158,12 +168,12 @@ void RangeDiff::visit( DIV_node& node ) {
 }
 
 void RangeDiff::visit( MOD_node& node ) {
-  cout << "Visiting MOD node" << endl;
-  Assert(false, "NYI: rangediff mod");
+	cout << "Visiting MOD node" << endl;
+	Assert(false, "NYI: rangediff mod");
 }
 
 void RangeDiff::visit( NEG_node& node ) {
-  //cout << "Visiting NEG node" << endl;
+	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	IntervalGrad* interval = r(node);
 	IntervalGrad* minterval = r(node.mother);
@@ -236,7 +246,7 @@ void RangeDiff::visit( LT_node& node ) {
 }
 
 void RangeDiff::visit( EQ_node& node ) {
-  //cout << "Visiting EQ node" << endl;
+	//cout << "Visiting EQ node" << endl;
 	Assert(false, "NYI: rangediff for eq");
 }
 
@@ -362,8 +372,8 @@ void RangeDiff::visit( NOT_node& node ) {
 }
 
 void RangeDiff::visit( ARRASS_node& node ) {
-  cout << "Visiting ARRASS node" << endl;
-  Assert(false, "NYI: rangediff for arrass");
+	cout << "Visiting ARRASS node" << endl;
+	Assert(false, "NYI: rangediff for arrass");
 }
 
 void RangeDiff::visit( UFUN_node& node ) {
@@ -384,6 +394,8 @@ void RangeDiff::visit( UFUN_node& node ) {
 			IntervalGrad::ig_tan(minterval, interval);
 		} else if (name == "sqrt_math") {
 			IntervalGrad::ig_sqrt(minterval, interval);
+		} else if (name == "exp_math") {
+			IntervalGrad::ig_exp(minterval, interval);
 		} else {
 			Assert(false, "NYI");
 		}
@@ -394,35 +406,45 @@ void RangeDiff::visit( UFUN_node& node ) {
 
 void RangeDiff::visit( TUPLE_R_node& node) {
 	if (node.mother->type == bool_node::UFUN) {
-    Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 		IntervalGrad* minterval = r(node.mother);
 		IntervalGrad* interval = r(node);
 		IntervalGrad::ig_copy(minterval, interval);
 	} else {
-    Assert(false, "NYI");
-  }
+		Assert(false, "NYI");
+	}
 }
 
 double RangeDiff::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
-  ctrls = &ctrls_p;
+	ctrls = &ctrls_p;
 	inputValues = inputValues_p;
 	errorGrad = errorGrad_p;
 	error = 0;
-  for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-    (*node_it)->accept(*this);
+	assertCtr = 0;//bdag.size();
+	foundFailure = false;
+	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+		//cout << (*node_it)->lprint() << endl;
+		(*node_it)->accept(*this);
 	}
-  return error;
+	return error;
 }
 
-void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node) {
-	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
+void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
+	assertCtr++;
+	if (!foundFailure && (expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 		//cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;
 		/*cout << "Grad: " ;
-		for (int i = 0; i < nctrls; i++) {
+		 for (int i = 0; i < nctrls; i++) {
 			cout << gsl_vector_get(dg, i) << " ";
+		 }
+		 cout << endl;*/
+		if (false && !relax) {
+			error += ASSERT_PENALTY * 1000.0/assertCtr;
+			failedAssert = assertCtr;
+			foundFailure = true;
 		}
-		cout << endl;*/
 		error += pow(dist, 2);
+		
 		gsl_vector_memcpy(IntervalGrad::tmp3, dg);
 		gsl_vector_scale(IntervalGrad::tmp3, 2*dist);
 		gsl_vector_add(errorGrad, IntervalGrad::tmp3);

@@ -43,7 +43,8 @@ public:
 		floatfuns["sin_math"] = sin;
 		floatfuns["cos_math"] = cos;
 		floatfuns["tan_math"] = tan;
-		floatfuns["sqrt_math"] = sqrt;		
+		floatfuns["sqrt_math"] = sqrt;
+		floatfuns["exp_math"] = exp;
 	}
 
 	bool hasFun(const string& name) {

@@ -46,7 +46,7 @@ double GradientDescent::optimize() {
 	}
 	while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION && diff >= PRECISION);
 	cout << "Iterations: " << iter << endl;
-	cout << status << endl;
+	cout << gsl_strerror(status) << endl;
 	cout << "Ending search..." << endl;
 	for (int i = 0; i < minidf->x->size; i++) {
 		cout << gsl_vector_get (minidf->x, i) << ", ";

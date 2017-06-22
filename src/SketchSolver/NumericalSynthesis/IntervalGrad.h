@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_blas.h>
 #include <limits>
 #include <math.h>
 #include <vector>
@@ -81,6 +82,7 @@ public:
 	static void ig_cos(IntervalGrad* m, IntervalGrad* o); // o = cos(m)
 	static void ig_tan(IntervalGrad* m, IntervalGrad* o); // o = tan(m)
 	static void ig_sqrt(IntervalGrad* m, IntervalGrad* o); // o = sqrt(m)
+	static void ig_exp(IntervalGrad* m, IntervalGrad* o);
 	static void ig_copy(IntervalGrad* i1, IntervalGrad* i2); // copy i1 into i2
 	static void ig_cast_int_float(IntervalGrad* m, IntervalGrad* o);
 	
@@ -126,6 +128,7 @@ private:
 	static void compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_tan_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	static void compute_sqrt_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
+	static void compute_exp_grad(float mval, gsl_vector* mgrads, gsl_vector* out);
 	
 	static bool inLimit(float v) {
 		if (!isfinite(v)) return false;
@@ -135,7 +138,8 @@ private:
 	
 	float bound(float v) {
 		if (!inLimit(v)) {
-			return v > 0 ? MAXVAL : MINVAL;
+			//cout << "Bound reached" << endl;
+ 			return v > 0 ? MAXVAL : MINVAL;
 		} else {
 			return v;
 		}

@@ -49,7 +49,6 @@ void SimpleEvaluator::visit( TIMES_node& node ) {
 
 void SimpleEvaluator::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-	Assert(isFloat(node), "NYI: arracc with ints");
 	Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
 	float m = d(node.mother);
 	//cout << node.lprint() << " " << m << endl;
@@ -143,6 +142,8 @@ void SimpleEvaluator::visit( UFUN_node& node ) {
 			d = tan(m);
 		} else if (name == "sqrt_math") {
 			d = sqrt(m);
+		} else if (name == "exp_math") {
+			d = exp(m);
 		} else {
 			Assert(false, "NYI");
 		}

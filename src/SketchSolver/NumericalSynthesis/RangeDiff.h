@@ -28,8 +28,14 @@ class RangeDiff: NodeVisitor
 	gsl_vector* errorGrad;
 	
 	int DEFAULT_INP = -1;
+	int assertCtr;
+	bool foundFailure;
+	
+	static constexpr float ASSERT_PENALTY = 1.0;
 	
 public:
+	int failedAssert;
+
   RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p);
   ~RangeDiff(void);
   
@@ -123,6 +129,6 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	void computeError(float dist, int expected, gsl_vector* dg, bool_node& node);
+	void computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax = false);
 	
 };

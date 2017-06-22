@@ -22,11 +22,11 @@ void IntervalGrad::ig_plus(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	gsl_vector* mhgrads = m->getHGrad();
 	gsl_vector* fhgrads = f->getHGrad();
 	gsl_vector* l = o->getLGrad();
-	gsl_vector_memcpy(l, mlgrads);
-	gsl_vector_add(l, flgrads);
+	gsl_blas_dcopy(mlgrads, l);
+	gsl_blas_daxpy(1.0, flgrads, l);
 	gsl_vector* h = o->getHGrad();
-	gsl_vector_memcpy(h, mhgrads);
-	gsl_vector_add(h, fhgrads);
+	gsl_blas_dcopy(mhgrads, h);
+	gsl_blas_daxpy(1.0, fhgrads, h);
 	o->bound();
 }
 
@@ -67,8 +67,8 @@ void IntervalGrad::ig_times(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	if (m->singleton && f->singleton) {
 		float minv = vals[0];
 		float maxv = vals[0];
-		gsl_vector_memcpy(o->getLGrad(), grads[0]);
-		gsl_vector_memcpy(o->getHGrad(), grads[0]);
+		gsl_blas_dcopy(grads[0], o->getLGrad());
+		gsl_blas_dcopy(grads[0], o->getHGrad());
 		o->update(minv, maxv);
 		o->singleton = true;
 	} else {
@@ -164,8 +164,8 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	if (m->singleton && f->singleton) {
 		float minv = vals[0];
 		float maxv = vals[0];
-		gsl_vector_memcpy(l, grads[0]);
-		gsl_vector_memcpy(h, grads[0]);
+		gsl_blas_dcopy(grads[0], l);
+		gsl_blas_dcopy(grads[0], h);
 		o->update(minv, maxv);
 		o->singleton = true;
 	} else {
@@ -182,10 +182,10 @@ void IntervalGrad::ig_neg(IntervalGrad* m, IntervalGrad* o) {
 	o->singleton = m->singleton;
 	gsl_vector* l = o->getLGrad();
 	gsl_vector* h = o->getHGrad();
-	gsl_vector_memcpy(l, m->getHGrad());
-	gsl_vector_scale(l, -1.0);
-	gsl_vector_memcpy(h, m->getLGrad());
-	gsl_vector_scale(h, -1.0);
+	gsl_blas_dcopy(m->getHGrad(), l);
+	gsl_blas_dscal(-1.0, l);
+	gsl_blas_dcopy(m->getLGrad(), h);
+	gsl_blas_dscal(-1.0, h);
 	o->bound();
 }
 
@@ -208,46 +208,69 @@ void IntervalGrad::ig_union(const vector<IntervalGrad*>& m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, DistanceGrad* d, IntervalGrad* o) {
-	float s1 = IntervalGrad::sigmoid(d->dist - DELTA, d->grad, tmp);
+	float s1 = IntervalGrad::sigmoid(d->dist, d->grad, tmp);
 	float v1 = s1 * f->getLow();
-	float v4 = s1 * f->getHigh();
+	float v2 = s1 * f->getHigh();
 	compute_mult_grad(s1, f->getLow(), tmp, f->getLGrad(), o->getLGrad());
 	compute_mult_grad(s1, f->getHigh(), tmp, f->getHGrad(), o->getHGrad());
-
-	gsl_vector_memcpy(tmp1, d->grad);
-	gsl_vector_scale(tmp1, -1.0);
-	float s2 = IntervalGrad::sigmoid(-d->dist + DELTA, tmp1, tmp);
-	float s3 = IntervalGrad::sigmoid(d->dist + DELTA, d->grad, tmp1);
-	compute_mult_grad(s2, s3, tmp, tmp1, tmp2);
-	float minv = findMin(m->getLow(), f->getLow(), m->getLGrad(), f->getLGrad(), tmp);
-	compute_mult_grad(s2*s3, minv, tmp2, tmp, tmp1);
-	float v2 = s2*s3*minv;
-	gsl_vector_add(o->getLGrad(), tmp1);
 	
-	float maxv = findMax(m->getHigh(), f->getHigh(), m->getHGrad(), f->getHGrad(), tmp);
-	compute_mult_grad(s2*s3, maxv, tmp2, tmp, tmp1);
-	float v5 = s2*s3*maxv;
-	gsl_vector_add(o->getHGrad(), tmp1);
-
-	gsl_vector_memcpy(tmp1, d->grad);
-	gsl_vector_scale(tmp1, -1.0);
-	float s4 = IntervalGrad::sigmoid(-d->dist - DELTA, tmp1, tmp);
-	float v3 = s4*m->getLow();
-	float v6 = s4*m->getHigh();
-	compute_mult_grad(s4, m->getLow(), tmp, m->getLGrad(), tmp1);
-	gsl_vector_add(o->getLGrad(), tmp1);
-	compute_mult_grad(s4, m->getHigh(), tmp, m->getHGrad(), tmp1);
-	gsl_vector_add(o->getHGrad(), tmp1);
-
-	minv = v1 + v2 + v3;
-	maxv = v4 + v5 + v6;
+	gsl_blas_dcopy(d->grad, tmp1);
+	gsl_blas_dscal(-1.0, tmp1);
+	float s2 = IntervalGrad::sigmoid(-d->dist, tmp1, tmp);
+	float v3 = s2*m->getLow();
+	float v4 = s2*m->getHigh();
+	compute_mult_grad(s2, m->getLow(), tmp, m->getLGrad(), tmp1);
+	gsl_blas_daxpy(1.0, tmp1, o->getLGrad());
+	compute_mult_grad(s2, m->getHigh(), tmp, m->getHGrad(), tmp1);
+	gsl_blas_daxpy(1.0, tmp1, o->getHGrad());
+	
+	float minv = v1 + v3;
+	float maxv = v2 + v4;
 	o->update(minv, maxv);
-	if (((d->dist > 5*DELTA && f->singleton) || (d->dist < -5*DELTA && m->singleton))) {
-		o->singleton = true;
-	} else {
-		o->singleton = false; 
-	}
+	Assert(minv == maxv, "sfiahoisf");
+	o->singleton = true;
 	o->bound();
+	
+	/*float s1 = IntervalGrad::sigmoid(d->dist - DELTA, d->grad, tmp);
+	 float v1 = s1 * f->getLow();
+	 float v4 = s1 * f->getHigh();
+	 compute_mult_grad(s1, f->getLow(), tmp, f->getLGrad(), o->getLGrad());
+	 compute_mult_grad(s1, f->getHigh(), tmp, f->getHGrad(), o->getHGrad());
+	 
+	 gsl_vector_memcpy(tmp1, d->grad);
+	 gsl_vector_scale(tmp1, -1.0);
+	 float s2 = IntervalGrad::sigmoid(-d->dist + DELTA, tmp1, tmp);
+	 float s3 = IntervalGrad::sigmoid(d->dist + DELTA, d->grad, tmp1);
+	 compute_mult_grad(s2, s3, tmp, tmp1, tmp2);
+	 float minv = findMin(m->getLow(), f->getLow(), m->getLGrad(), f->getLGrad(), tmp);
+	 compute_mult_grad(s2*s3, minv, tmp2, tmp, tmp1);
+	 float v2 = s2*s3*minv;
+	 gsl_vector_add(o->getLGrad(), tmp1);
+	 
+	 float maxv = findMax(m->getHigh(), f->getHigh(), m->getHGrad(), f->getHGrad(), tmp);
+	 compute_mult_grad(s2*s3, maxv, tmp2, tmp, tmp1);
+	 float v5 = s2*s3*maxv;
+	 gsl_vector_add(o->getHGrad(), tmp1);
+	 
+	 gsl_vector_memcpy(tmp1, d->grad);
+	 gsl_vector_scale(tmp1, -1.0);
+	 float s4 = IntervalGrad::sigmoid(-d->dist - DELTA, tmp1, tmp);
+	 float v3 = s4*m->getLow();
+	 float v6 = s4*m->getHigh();
+	 compute_mult_grad(s4, m->getLow(), tmp, m->getLGrad(), tmp1);
+	 gsl_vector_add(o->getLGrad(), tmp1);
+	 compute_mult_grad(s4, m->getHigh(), tmp, m->getHGrad(), tmp1);
+	 gsl_vector_add(o->getHGrad(), tmp1);
+	 
+	 minv = v1 + v2 + v3;
+	 maxv = v4 + v5 + v6;
+	 o->update(minv, maxv);
+	 if (((d->dist > 5*DELTA && f->singleton) || (d->dist < -5*DELTA && m->singleton))) {
+		o->singleton = true;
+	 } else {
+		o->singleton = false;
+	 }
+	 o->bound();*/
 }
 
 void IntervalGrad::ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o) {
@@ -343,8 +366,8 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 		if (m->singleton) {
 			o->update(vals[0], vals[0]);
 			o->singleton = true;
-			gsl_vector_memcpy(o->getLGrad(), grads[0]);
-			gsl_vector_memcpy(o->getHGrad(), grads[0]);
+			gsl_blas_dcopy(grads[0], o->getLGrad());
+			gsl_blas_dcopy(grads[0], o->getHGrad());
 		} else {
 			float minv = findMin(vals, grads, o->getLGrad());
 			float maxv = findMax(vals, grads, o->getHGrad());
@@ -465,6 +488,16 @@ void IntervalGrad::ig_tan(IntervalGrad* m, IntervalGrad* o) {
 	o->bound();
 }
 
+void IntervalGrad::ig_exp(IntervalGrad* m, IntervalGrad* o) {
+	float xl = m->getLow();
+	float xh = m->getHigh();
+	o->update(exp(xl), exp(xh));
+	compute_exp_grad(xl, m->getLGrad(), o->getLGrad());
+	compute_exp_grad(xh, m->getHGrad(), o->getHGrad());
+	o->singleton = m->singleton;
+	o->bound();
+}
+
 void IntervalGrad::ig_sqrt(IntervalGrad* m, IntervalGrad* o) {
 	float xl = m->getLow();
 	float xh = m->getHigh();
@@ -496,8 +529,8 @@ void IntervalGrad::ig_cast_int_float(IntervalGrad* m, IntervalGrad* o) {
 // Copy i1 into i2
 void IntervalGrad::ig_copy(IntervalGrad* i1, IntervalGrad* i2) {
 	i2->update(i1->getLow(), i1->getHigh());
-	gsl_vector_memcpy(i2->getLGrad(), i1->getLGrad());
-	gsl_vector_memcpy(i2->getHGrad(), i1->getHGrad());
+	gsl_blas_dcopy(i1->getLGrad(), i2->getLGrad());
+	gsl_blas_dcopy(i1->getHGrad(), i2->getHGrad());
 	i2->singleton = i1->singleton;
 }
 
@@ -520,6 +553,7 @@ float IntervalGrad::findMin(const vector<float>& vals, const vector<gsl_vector*>
 		}
 	}
 	return softMinMax(vals, grads, l, -ALPHA, minv);
+	//return minv;
 }
 
 float IntervalGrad::findMax(float val1, float val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* h) {
@@ -541,13 +575,15 @@ float IntervalGrad::findMax(const vector<float>& vals, const vector<gsl_vector*>
 		}
 	}
 	return softMinMax(vals, grads, h, ALPHA, maxv);
+	//return maxv;
 }
 
 float IntervalGrad::sigmoid(float x, gsl_vector* grads, gsl_vector* out) {
-	float v = 1.0/(1.0 + exp(BETA * x));
-	float d = BETA*v*(1-v);
-	gsl_vector_memcpy(out, grads);
-	gsl_vector_scale(out, d);
+	float scale = BETA;// BETA/max(gsl_blas_dnrm2(grads), 1.0); // TODO: is this normalization correct?
+	float v = 1.0/(1.0 + exp(scale * x));
+	float d = -1.0*scale*v*(1-v);
+	gsl_blas_dcopy(grads, out);
+	gsl_blas_dscal(d, out);
 	return v;
 }
 
@@ -559,88 +595,81 @@ float IntervalGrad::softMinMax(const vector<float>& vals, const vector<gsl_vecto
 	for (int i = 0; i < vals.size(); i++) {
 		expval += exp(alpha * (vals[i] - t));
 	}
-	
+	gsl_vector_set_zero(l);
 	for (int i = 0; i < vals.size(); i++) {
-		Assert(grads[i] != tmpT, "Error: tmpT will be overwritten");
-		gsl_vector_memcpy(tmpT, grads[i]);
-		gsl_vector_scale(tmpT, exp(alpha*(vals[i] - t)));
-		if (i == 0)
-			gsl_vector_memcpy(l, tmpT);
-		else
-			gsl_vector_add(l, tmpT);
+		gsl_blas_daxpy(exp(alpha*(vals[i] - t)), grads[i], l);
 	}
-	gsl_vector_scale(l, 1.0/expval);
+	gsl_blas_dscal(1.0/expval, l);
 	return (log(expval) + alpha * t)/alpha;
 }
 
 void IntervalGrad::default_grad(gsl_vector* out) {
-	for (int i = 0; i < out->size; i++) {
-		gsl_vector_set(out, i, 0.0);
-	}
+	gsl_vector_set_zero(out);
 }
 
 // computes the grad of mval * fval i.e. mval*fgrads + fval*mgrads
 void IntervalGrad::compute_mult_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
-	Assert(mgrads != tmpT && fgrads != tmpT, "Error: tmpT will be overwritten");
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, fval);
-	gsl_vector_memcpy(tmpT, fgrads);
-	gsl_vector_scale(tmpT, mval);
-	gsl_vector_add(out, tmpT);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(fval, out);
+	gsl_blas_daxpy(mval, fgrads, out);
 }
 
 
 // computes the grad of mval / fval i.e (fval * mgrads - mval * fgrads) / (fval * fval)
 void IntervalGrad::compute_div_grad(float mval, float fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
 	Assert(mgrads != tmpT && fgrads != tmpT, "Error: tmp will be overwritten");
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, fval);
-	gsl_vector_memcpy(tmpT, fgrads);
-	gsl_vector_scale(tmpT, mval);
-	gsl_vector_sub(out, tmpT);
-	gsl_vector_scale(out, 1.0/(fval*fval));
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(fval, out);
+	gsl_blas_daxpy(-mval, fgrads, out);
+	gsl_blas_dscal(1.0/(fval*fval), out);
 }
 
 
 
 void IntervalGrad::compute_square_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 2.0 * mval;
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
 
 
 
 void IntervalGrad::compute_arctan_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 1.0/(mval * mval + 1.0);
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
 
 void IntervalGrad::compute_sin_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = cos(mval);
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
 
 
 
 void IntervalGrad::compute_cos_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = -sin(mval);
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
 
 
 
 void IntervalGrad::compute_tan_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 1.0/(cos(mval)*cos(mval));
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
 
 void IntervalGrad::compute_sqrt_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
 	float dm = 0.5/sqrt(mval);
-	gsl_vector_memcpy(out, mgrads);
-	gsl_vector_scale(out, dm);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
+}
+
+void IntervalGrad::compute_exp_grad(float mval, gsl_vector* mgrads, gsl_vector* out) {
+	float dm = exp(mval);
+	gsl_blas_dcopy(mgrads, out);
+	gsl_blas_dscal(dm, out);
 }
