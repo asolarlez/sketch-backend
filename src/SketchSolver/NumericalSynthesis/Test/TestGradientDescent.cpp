@@ -74,6 +74,8 @@ void testQuad2() {
 int main() {
 	testQuad();
 	testQuad2();
+	
+	cout << "Passed tests" << endl;
 	return 0;
 }
 
