@@ -23,8 +23,10 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	evalG = new GlobalEvaluator(*dag, fm, ctrlMap);
 	
 	prevState = gsl_vector_alloc(ncontrols);
+	//gsl_vector_set_zero(prevState);
 	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(prevState, i, 0);
+		float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
+		gsl_vector_set(prevState, i, r);
 	}
 	t = gsl_vector_alloc(ncontrols);
 	minErrorSoFar = 1e50;
@@ -56,9 +58,20 @@ double NumericalSolver::evalLocal(const gsl_vector* state, gsl_vector* d, const 
 		error += evalR->run(ctrlStore, inputValues, d);
 		//evalR->print();
 	}
-	//cout << "State: " << gsl_vector_get(state, 0) << " " << gsl_vector_get(state, 1) << " " << gsl_vector_get(state, 2) << endl;
-	//cout << "Error: " << error << endl;
-	//cout << "Grad: " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << " " << gsl_vector_get(d, 2) << endl;
+	//evalR->print();
+
+	/*cout << "State: ";
+	for (int i = 0; i < ncontrols; i++) {
+		cout << gsl_vector_get(state, i) << ", ";
+	}
+	cout << endl;
+	cout << "Error: " << error << endl;
+	cout << "Grad: ";
+	for (int i = 0; i < ncontrols; i++) {
+		cout << gsl_vector_get(d, i) << ", ";
+	}
+	cout << endl;*/
+	//cout << error << endl;
 	return error;
 }
 
@@ -222,9 +235,7 @@ void NumericalSolver::generateConflict(const vector<int>& conflictids) {
 
 void NumericalSolver::collectSuggestions(vec<Lit>& suggestions, const vector<vector<int>>& allInputs, const vector<int>& conflictids) {
 	gsl_vector* d = gsl_vector_alloc(ncontrols);
-	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(d, i, 0.0);
-	}
+	gsl_vector_set_zero(d);
 	for (int i = 0; i < allInputs.size(); i++) {
 		VarStore ctrlStore;
 		// Collect all controls (assumes controls are floats)
@@ -245,44 +256,68 @@ void NumericalSolver::collectSuggestions(vec<Lit>& suggestions, const vector<vec
 }
 
 bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
-	if (onlyOptimize){ // stop the solver after some retries
-		if (counter >= 3) {
+	if (counter >= 1) {
+		if (counter == 1) {
 			cout << "Min error: " << minErrorSoFar << endl;
-			return true;
-		} else {
 			counter++;
 		}
+		return true;
 	}
+	counter++;
+	
 	conflict.clear();
 	suggestions.clear();
 	vector<vector<int>> allInputs;
 	vector<int> conflictids;
 	/*vector<int> inputs;
-		int arr[100] = {1,2,2,2,2,0,2,2,2,2,0,2,2,2,2,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0};
-		for (int i = 0; i < ninputs; i++) {
+	int arr[500] = {1,1,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,1,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,0,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0};
+	for (int i = 0; i < ninputs; i++) {
 	 if (arr[i] == 2) {
-	 inputs.push_back(EMPTY);
+		 inputs.push_back(EMPTY);
 	 } else {
-	 inputs.push_back(arr[i]);
+		 inputs.push_back(arr[i]);
 	 }
-		}
-		allInputs.push_back(inputs);*/
+	}
+	allInputs.push_back(inputs);*/
 	collectAllInputs(allInputs, conflictids);
+	/*bool allSet = true;
+	for (int i = 0; i < allInputs[0].size(); i++) { //TODO: this is only checking the first input set
+		if (allInputs[0][i] == EMPTY) {
+			allSet = false;
+			break;
+		}
+	}
 	if (allInputs.size() == 0) return true;
+	if (!allSet && counter%10 != 0) {
+		counter++;
+		return true;
+	}*/
+	if (onlyOptimize){ // stop the solver after some retries
+		if (counter >= 3) {
+			cout << "Min error: " << minErrorSoFar << endl;
+			return true;
+		} else {
+			//counter++;
+		}
+	}
 	printInputs(allInputs);
 	
-	/*gsl_vector* d = gsl_vector_alloc(ncontrols);
-		gsl_vector* state = gsl_vector_alloc(ncontrols);
-		gsl_vector_set(state, 0, 0);
-		gsl_vector_set(state, 1, 0.5);
-		cout << evalLocal(state, d, allInputs) << endl;*/
-	//genData(allInputs);
+	//gsl_vector* d = gsl_vector_alloc(ncontrols);
+	//gsl_vector* state = gsl_vector_alloc(ncontrols);
+	//gsl_vector_set(state, 0, 0);
+	//cout << evalLocal(state, d, allInputs) << endl;
+	//cout << simpleEval(state, allInputs) << endl;
+	if (ncontrols == 1) {
+		genData1D(allInputs);
+	} else if (ncontrols == 2) {
+		genData2D(allInputs);
+	}
 	// First, do interval propagation to detect any conflicts
 	//if (!doIntervalProp(instance, inputid, val, level)) {
 	//		return false;
 	//}
 	// If no conflict is found, do gradient descent
-	/*double ctrls[72] = {0.5, 6.6, -6.3, 5.5, -1.2, -6.6, 6.6, 1.7, -4.2, 4, 4.3, 2.3, -5.8, -5.2, -8.7, -1.6, -0.3, 9.1, 7.8, -7, 2.2, -6.6, -9.8, 3.4, 6, 0.4, 2.8, 0.9, 4.1, 0.9, 5.4, -0.7, 5.8, 1.2, -6.5, 8.1, -6.6, -7.8, 9.6, 7.7, 2.6, -4.1, -8.9, 5, 8.4, -0.9, 6.3, -9.9, -6.4, -4.6, 1.1, -2.2, -9, 2.3, 4.6, -8.7, -5.3, 5.7, -9.3, -7.4, -7.7, 1.1, 0, 5.1, 9, 4.4, -2.3, -4.1, 2.2, -3.1, 1, -0.6};
+	/*double ctrls[1] = {-10.0};
 	
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(prevState, i, ctrls[i]);

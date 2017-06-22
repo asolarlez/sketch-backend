@@ -44,13 +44,13 @@ class NumericalSolver : public Synthesizer {
 	gsl_vector* t;// temp vector to store intermediate results
 	
 	float threshold = 1e-5; // accuracy for minimizing the error
-	int MAX_TRIES = 10; // Number retries of GD algorithm for each iteration
+	int MAX_TRIES = 9; // Number retries of GD algorithm for each iteration
 	float cthresh = 0.01; // threshold for approximate conflict detection
 	
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
 	
 	// Parameters when trying to just minimize the error (instead of making error = 0)
-	bool onlyOptimize = true;
+	bool onlyOptimize = false;
 	float minErrorSoFar;
 	int counter = 0;
 	
@@ -147,42 +147,72 @@ public:
 	}
 
 	// Debugging: prints out the data to generate graphs
-	void genData(const vector<vector<int>>& allInputs) {
+	void genData2D(const vector<vector<int>>& allInputs) {
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
-		ofstream file("/Users/Jeevu/projects/symdiff/scripts/parallelPark/graphs/t"+ to_string(dcounter++) +".txt");
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
 		{
-			double i = 0.0;
-			double j = 0.0;
-			while (i < 10.0) {
-				//cout << i << endl;
-				j = 0.0;
-				while (j < 10.0) {
-					gsl_vector_set(state, 0, i);
-					gsl_vector_set(state, 1, j);
-					double err = evalLocal(state, d, allInputs);
-					file << err << ";";
-					j+= 0.1;
+			double i = -15.0;
+			double j = -15.0;
+			while (i < 15.0) {
+				j = -15.0;
+				while (j < 15.0) {
+				gsl_vector_set(state, 0, i);
+				gsl_vector_set(state, 1, j);
+				double err = evalLocal(state, d, allInputs);
+				cout << i << " " << j << " " << err << endl;
+				file << err << ";";
+					j+=0.1;
 				}
 				i += 0.1;
 			}
 		}
 		file << endl;
 		{
-			double i = 0.0;
-			double j = 0.0;
-			while (i < 10.0) {
-				//cout << i << endl;
-				j = 0.0;
-				while (j < 10.0) {
-					gsl_vector_set(state, 0, i);
-					gsl_vector_set(state, 1, j);
-					double err = simpleEval(state, allInputs);
-					file << err << ";";
-					j+= 0.1;
+			double i = -15.0;
+			double j = -15.0;
+			while (i < 15.0) {
+				cout << i << endl;
+				j = -15.0;
+				while(j < 15.0) {
+				gsl_vector_set(state, 0, i);
+				gsl_vector_set(state, 1, j);
+				double err = simpleEval(state, allInputs);
+				file << err << ";";
+					j+=0.1;
 				}
 				i += 0.1;
+			}
+			file << endl;
+			file.close();
+		}
+	}
+	
+	void genData1D(const vector<vector<int>>& allInputs) {
+		gsl_vector* d = gsl_vector_alloc(ncontrols);
+		gsl_vector* state = gsl_vector_alloc(ncontrols);
+		cout << "Counter " <<  dcounter << endl;
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
+		{
+			double i = -30.0;
+			while (i < 30.0) {
+				gsl_vector_set(state, 0, i);
+				double err = evalLocal(state, d, allInputs);
+				cout << i << " " << err << endl;
+				file << err << ";";
+				i += 0.01;
+			}
+		}
+		file << endl;
+		{
+			double i = -30.0;
+			while (i < 30.0) {
+				gsl_vector_set(state, 0, i);
+				double err = simpleEval(state, allInputs);
+				cout << i << " " << err << endl;
+				file << err << ";";
+				i += 0.01;
 			}
 			file << endl;
 			file.close();
