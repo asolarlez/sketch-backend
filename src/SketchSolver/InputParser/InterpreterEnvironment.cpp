@@ -722,6 +722,7 @@ int InterpreterEnvironment::doallpairs() {
 			}
 		}
 		else {
+			string errMsg = finder->lastErrMsg;
 			reset();
 			if (hardcoder.isDone()) {
 				if (hasGoodEnoughSolution) {
@@ -729,6 +730,7 @@ int InterpreterEnvironment::doallpairs() {
 					return 0;
 				}
 				else {
+					cerr << errMsg << endl;
 					cout << "return 1" << endl;
 					return 1;
 				}
