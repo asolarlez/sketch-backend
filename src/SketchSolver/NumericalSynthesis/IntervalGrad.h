@@ -44,10 +44,12 @@ class IntervalGrad {
 	static constexpr float MINSIZE = 0.01;
 	
 	static constexpr float DELTA = 0.7;
-	static constexpr float ALPHA = 10;
-	static constexpr float BETA = -10;
+	
 	
 public:
+	static float ALPHA;
+	static float BETA;
+	
 	static gsl_vector* tmp;
 	static gsl_vector* tmp1;
 	static gsl_vector* tmp2;

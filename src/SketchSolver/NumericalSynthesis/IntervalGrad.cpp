@@ -6,6 +6,9 @@ gsl_vector* IntervalGrad::tmp2;
 gsl_vector* IntervalGrad::tmp3;
 gsl_vector* IntervalGrad::tmpT;
 
+float IntervalGrad::BETA;
+float IntervalGrad::ALPHA;
+
 
 void IntervalGrad::ig_plus(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	float mlval = m->getLow();

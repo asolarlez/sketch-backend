@@ -43,8 +43,8 @@ class NumericalSolver : public Synthesizer {
 	gsl_vector* prevState; // keeps track of previous iteration best ctrl values to use it as the init state for the next iteration
 	gsl_vector* t;// temp vector to store intermediate results
 	
-	float threshold = 1e-5; // accuracy for minimizing the error
-	int MAX_TRIES = 9; // Number retries of GD algorithm for each iteration
+	float threshold = 1e-2; // accuracy for minimizing the error
+	int MAX_TRIES = 4; // Number retries of GD algorithm for each iteration
 	float cthresh = 0.01; // threshold for approximate conflict detection
 	
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
@@ -148,16 +148,18 @@ public:
 
 	// Debugging: prints out the data to generate graphs
 	void genData2D(const vector<vector<int>>& allInputs) {
+		IntervalGrad::BETA = -10;
+		IntervalGrad::ALPHA = 10;
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
 		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
 		{
-			double i = -15.0;
-			double j = -15.0;
-			while (i < 15.0) {
-				j = -15.0;
-				while (j < 15.0) {
+			double i = -10.0;
+			double j = -10.0;
+			while (i < 10.0) {
+				j = -10.0;
+				while (j < 10.0) {
 				gsl_vector_set(state, 0, i);
 				gsl_vector_set(state, 1, j);
 				double err = evalLocal(state, d, allInputs);
@@ -170,12 +172,12 @@ public:
 		}
 		file << endl;
 		{
-			double i = -15.0;
-			double j = -15.0;
-			while (i < 15.0) {
+			double i = -10.0;
+			double j = -10.0;
+			while (i < 10.0) {
 				cout << i << endl;
-				j = -15.0;
-				while(j < 15.0) {
+				j = -10.0;
+				while(j < 10.0) {
 				gsl_vector_set(state, 0, i);
 				gsl_vector_set(state, 1, j);
 				double err = simpleEval(state, allInputs);
@@ -190,13 +192,15 @@ public:
 	}
 	
 	void genData1D(const vector<vector<int>>& allInputs) {
+		IntervalGrad::BETA = -10;
+		IntervalGrad::ALPHA = 10;
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
 		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
 		{
-			double i = -30.0;
-			while (i < 30.0) {
+			double i = -10.0;
+			while (i < 10.0) {
 				gsl_vector_set(state, 0, i);
 				double err = evalLocal(state, d, allInputs);
 				cout << i << " " << err << endl;
@@ -206,8 +210,8 @@ public:
 		}
 		file << endl;
 		{
-			double i = -30.0;
-			while (i < 30.0) {
+			double i = -10.0;
+			while (i < 10.0) {
 				gsl_vector_set(state, 0, i);
 				double err = simpleEval(state, allInputs);
 				cout << i << " " << err << endl;
@@ -224,6 +228,8 @@ class GDParameters {
 	public:
 	NumericalSolver* ns;
 	vector<vector<int>> allInputs;
+	double beta;
+	double alpha;
 };
 
 class GDEvaluator {
@@ -236,6 +242,8 @@ class GDEvaluator {
 	
 	static double f(const gsl_vector* x, void* params) {
 		GDParameters* p = (GDParameters*) params;
+		IntervalGrad::BETA = p->beta;
+		IntervalGrad::ALPHA = p->alpha;
 		return p->ns->evalLocal(x, curGrad, p->allInputs);
 	}
 	
@@ -246,6 +254,8 @@ class GDEvaluator {
 	
 	static void fdf(const gsl_vector* x, void* params, double* f, gsl_vector* df) {
 		GDParameters* p = (GDParameters*) params;
+		IntervalGrad::BETA = p->beta;
+		IntervalGrad::ALPHA = p->alpha;
 		*f = p->ns->evalLocal(x, df, p->allInputs);
 	}
 	
