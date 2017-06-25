@@ -15,7 +15,13 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
 	ncontrols = ctrlVals.size();
 	cout << "Ninputs: " << ninputs << " Ncontrols: " << ncontrols << endl;
-	if (ncontrols == 0) ncontrols = 1;
+	for (int i = 0; i < ninputs; i++) {
+		cout << "Input " << i << ": " << (*dag)[imap[i]]->lprint() << endl;
+	}
+	if (ncontrols == 0) {
+		ncontrols = 1;
+		ctrlVals.push_back(0.0);
+	}
 	gd = new GradientDescent(ncontrols);
 	
 	evalR = new RangeDiff(*dag, fm, ctrlMap);
@@ -65,13 +71,12 @@ double NumericalSolver::evalLocal(const gsl_vector* state, gsl_vector* d, const 
 		cout << gsl_vector_get(state, i) << ", ";
 	}
 	cout << endl;
-	cout << "Error: " << error << endl;
-	cout << "Grad: ";
+	cout << "Error: " << error << endl;*/
+	/*cout << "Grad: ";
 	for (int i = 0; i < ncontrols; i++) {
 		cout << gsl_vector_get(d, i) << ", ";
 	}
 	cout << endl;*/
-	//cout << error << endl;
 	return error;
 }
 
@@ -126,37 +131,6 @@ double NumericalSolver::evalAll(const gsl_vector* state, gsl_vector* d, const ve
 	return error;
 }
 
-bool NumericalSolver::doIntervalProp(int instance, int inputid, int val, int level) {
-	IntervalPropagator* iprop = propMap[instance];
-	bool_node* node = getNodeForInput(inputid);
-	float fval = (node->getOtype() == OutType::FLOAT) ? fm.getFloat(val) : (float) val;
-#if IP_DEBUG
-	cout << "IP: " << node->lprint() << " " << fval << endl;
-#endif
-	bool success = iprop->setInterval(*node, fval, fval, level);
-	if (!success) {
-		vector<bool_node*>& conflictNodes = iprop->conflictNodes;
-#if IP_DEBUG
-		cout << "IP conflict nodes" << endl;
-		cout << conflictNodes.size() << endl;
-#endif
-		for (int i = 0 ; i < conflictNodes.size(); i++) {
-			int iid = getInputForNode(conflictNodes[i]);
-			if (iid >= 0) {
-#if IP_DEBUG
-				cout << conflictNodes[i]->lprint() << " "  << iid << endl;
-#endif
-				conflict.push(inout->valueid(instance, iid));
-			}
-		}
-		cout << "***** " << "CONFLICT (IP)" << " ******" << endl;
-		return false;
-	}
-	return true;
-	
-	// TODO: we can intersect the intervals for the ctrl nodes for all instances of interval propagators to detect further conflicts
-	// TODO: use the intervals for ctrl nodes during the gradient descent
-}
 
 bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, const vector<int>& conflictids, int instance, int inputid) {
 	GDParameters* p = new GDParameters();
@@ -169,12 +143,7 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, prevState);
 	double minError = gd->optimize();
 	gsl_vector* curState = gd->getResults();
-	if (minError < minErrorSoFar) {
-		minErrorSoFar = minError;
-		for (int i = 0; i < ncontrols; i++) {
-			ctrlVals[i] = gsl_vector_get(curState, i);
-		}
-	}
+	
 	int numtries = 0;
 	while (minError > threshold  && numtries < MAX_TRIES) {
 		cout << "Retry attempt: " << (numtries+1) << endl;
@@ -189,19 +158,7 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 		gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, t);
 		minError = gd->optimize();
 		curState = gd->getResults();
-		if (minError < minErrorSoFar) {
-			minErrorSoFar = minError;
-			for (int i = 0; i < ncontrols; i++) {
-				ctrlVals[i] = gsl_vector_get(curState, i);
-			}
-		}
 		numtries++;
-	}
-	if (minError < minErrorSoFar) {
-		minErrorSoFar = minError;
-		for (int i = 0; i < ncontrols; i++) {
-			ctrlVals[i] = gsl_vector_get(curState, i);
-		}
 	}
 	//evalR->print();
 	if (minError <= threshold) {
@@ -214,10 +171,10 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	} else {
 		cout << "******************* Found a conflict *******************" << endl;
 		generateConflict(conflictids);
-		for (int i = 0; i < ncontrols; i++) {
-			float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
-			gsl_vector_set(prevState, i, r);
-		}
+		//for (int i = 0; i < ncontrols; i++) {
+		//	float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
+		//	gsl_vector_set(prevState, i, r);
+		//}
 
 		return false;
 	}
@@ -256,15 +213,6 @@ void NumericalSolver::collectSuggestions(vec<Lit>& suggestions, const vector<vec
 }
 
 bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
-	if (counter >= 1) {
-		if (counter == 1) {
-			cout << "Min error: " << minErrorSoFar << endl;
-			counter++;
-		}
-		return true;
-	}
-	counter++;
-	
 	conflict.clear();
 	suggestions.clear();
 	vector<vector<int>> allInputs;
@@ -280,26 +228,9 @@ bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, v
 	}
 	allInputs.push_back(inputs);*/
 	collectAllInputs(allInputs, conflictids);
-	/*bool allSet = true;
-	for (int i = 0; i < allInputs[0].size(); i++) { //TODO: this is only checking the first input set
-		if (allInputs[0][i] == EMPTY) {
-			allSet = false;
-			break;
-		}
-	}
+	
 	if (allInputs.size() == 0) return true;
-	if (!allSet && counter%10 != 0) {
-		counter++;
-		return true;
-	}*/
-	if (onlyOptimize){ // stop the solver after some retries
-		if (counter >= 3) {
-			cout << "Min error: " << minErrorSoFar << endl;
-			return true;
-		} else {
-			//counter++;
-		}
-	}
+	
 	printInputs(allInputs);
 	
 	//gsl_vector* d = gsl_vector_alloc(ncontrols);
@@ -312,16 +243,19 @@ bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, v
 	} else if (ncontrols == 2) {
 		genData2D(allInputs);
 	}
-	// First, do interval propagation to detect any conflicts
-	//if (!doIntervalProp(instance, inputid, val, level)) {
-	//		return false;
-	//}
-	// If no conflict is found, do gradient descent
-	/*double ctrls[1] = {-10.0};
+	
+	gsl_vector* d = gsl_vector_alloc(ncontrols);
+	gsl_vector* state = gsl_vector_alloc(ncontrols);
+
+	/*double ctrls[2] = {6.12274, 9.52221};
 	
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(prevState, i, ctrls[i]);
 	}*/
+	//IntervalGrad::BETA = -100;
+	//IntervalGrad::ALPHA = 100;
+	//cout << evalLocal(state, d, allInputs) << endl;
+	//cout << simpleEval(state, allInputs) << endl;
 	
 	bool sat = doGradientDescent(allInputs, conflictids, instance, inputid);
 	if (sat) {
