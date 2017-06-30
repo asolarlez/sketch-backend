@@ -20,7 +20,7 @@ class RangeDiff: NodeVisitor
 	BooleanDAG& bdag;
   map<string, int> floatCtrls; // Maps float ctrl names to indices with grad vectors
   int nctrls; // number of float ctrls
-	VarStore* ctrls; // Maps ctrl names to values (int abstraction for floating point values)
+	gsl_vector* ctrls; // ctrl values
   vector<IntervalGrad*> ranges; // Keeps track of ranges for each node
 	vector<DistanceGrad*> distances; // Keeps track of distance metric for boolean nodes
 	map<int, int> inputValues; // Maps node id to values set by the SAT solver
@@ -59,7 +59,7 @@ public:
   virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
   
-  double run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p);
+  double run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p);
 	
 	void setrange(bool_node& bn, IntervalGrad* r) {
 		ranges[bn.id] = r;
@@ -99,11 +99,22 @@ public:
 	}
 	
 	void print() {
-    for (int i = 0; i < bdag.size(); i++) {
-      cout << bdag[i]->lprint() << endl;
-			cout << r(bdag[i])->print() << endl;
-			if (bdag[i]->getOtype() != OutType::FLOAT) {
+		for (int i = 0; i < bdag.size(); i++) {
+			cout << bdag[i]->lprint() << " ";
+			if (bdag[i]->getOtype() == OutType::FLOAT) {
+				cout << r(bdag[i])->print() << endl;
+			} else {
 				cout << d(bdag[i])->print() << endl;
+			}
+		}
+	}
+	void printFull() {
+    for (int i = 0; i < bdag.size(); i++) {
+			cout << bdag[i]->lprint() << endl;
+			if (bdag[i]->getOtype() == OutType::FLOAT) {
+				cout << r(bdag[i])->printFull() << endl;
+			} else {
+				cout << d(bdag[i])->printFull() << endl;
 			}
 		}
   }

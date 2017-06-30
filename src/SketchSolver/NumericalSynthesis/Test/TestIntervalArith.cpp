@@ -6,18 +6,18 @@
 using namespace std;
 
 void init(int nctrls) {
-	IntervalGrad::tmp = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp1 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp2 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp3 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmpT = gsl_vector_alloc(nctrls);
+	GradUtil::tmp = gsl_vector_alloc(nctrls);
+	GradUtil::tmp1 = gsl_vector_alloc(nctrls);
+	GradUtil::tmp2 = gsl_vector_alloc(nctrls);
+	GradUtil::tmp3 = gsl_vector_alloc(nctrls);
+	GradUtil::tmpT = gsl_vector_alloc(nctrls);
 }
 
 void destroy() {
-	delete IntervalGrad::tmp;
-	delete IntervalGrad::tmp1;
-	delete IntervalGrad::tmp2;
-	delete IntervalGrad::tmp3;
+	delete GradUtil::tmp;
+	delete GradUtil::tmp1;
+	delete GradUtil::tmp2;
+	delete GradUtil::tmp3;
 }
 
 void testFindMin1() {
@@ -30,7 +30,7 @@ void testFindMin1() {
 	gsl_vector_set(g2, 0, 0.0);
 	gsl_vector* l = gsl_vector_alloc(1);
 	
-	float minv = IntervalGrad::findMin(v1, v2, g1, g2, l);
+	float minv = GradUtil::findMin(v1, v2, g1, g2, l);
 	assert(minv == 1.0);
 	assert(gsl_vector_get(l, 0) == 0.0);
 	destroy();

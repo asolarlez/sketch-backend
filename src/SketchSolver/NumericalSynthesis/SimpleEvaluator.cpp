@@ -4,8 +4,11 @@
 #include <math.h>
 
 
-SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats): bdag(bdag_p), floats(_floats) {
+SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
 	distances.resize(bdag.size(), NULL);
+	int nctrls = floatCtrls.size() + boolCtrls.size();
+	if (nctrls == 0) nctrls = 1;
+	ctrls = gsl_vector_alloc(nctrls);
 }
 
 void SimpleEvaluator::visit( SRC_node& node ) {
@@ -26,12 +29,25 @@ void SimpleEvaluator::visit( ASSERT_node& node ) {
 void SimpleEvaluator::visit( CTRL_node& node ) {
   //cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
-	if (ctrls->contains(name)) {
-		Assert(isFloat(node), "Numerical Solver should deal with only float holes");
-		float val = floats.getFloat((*ctrls)[name]);
+	if (isFloat(node)) {
+		int idx = -1;
+		if (floatCtrls.find(name) != floatCtrls.end()) {
+			idx = floatCtrls[name];
+		} else {
+			Assert(false, "All float ctrls should be handled by the numerical solver");
+		}
+		float val = gsl_vector_get(ctrls, idx);
 		setvalue(node, val);
 	} else {
-		Assert(false, "NYI: SimpleEvaluator for non float ctrl nodes");
+		int idx = -1;
+		if (boolCtrls.find(name) != boolCtrls.end()) {
+			idx = boolCtrls[name];
+		} else {
+			Assert(false, "All bool ctrls should be handled here");
+		}
+		float val = gsl_vector_get(ctrls, idx);
+		float dist = val - 0.5;
+		setvalue(node, dist);
 	}
 }
 
@@ -162,8 +178,11 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
   }
 }
 
-vector<tuple<float, int, int>> SimpleEvaluator::run(VarStore& ctrls_p, map<int, int>& imap_p) {
-  ctrls = &ctrls_p;
+vector<tuple<float, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
+	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
+	for (int i = 0; i < ctrls->size; i++) {
+		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+	}
   for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
     (*node_it)->accept(*this);
 	}
@@ -188,8 +207,11 @@ vector<tuple<float, int, int>> SimpleEvaluator::run(VarStore& ctrls_p, map<int, 
 	return s;
 }
 
-double SimpleEvaluator::run1(VarStore& ctrls_p, map<int, int>& inputValues_p) {
-	ctrls = &ctrls_p;
+double SimpleEvaluator::run1(const gsl_vector* ctrls_p, map<int, int>& inputValues_p) {
+	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
+	for (int i = 0; i < ctrls->size; i++) {
+		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+	}
 	double error = 0;
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		bool_node* node = (*node_it);

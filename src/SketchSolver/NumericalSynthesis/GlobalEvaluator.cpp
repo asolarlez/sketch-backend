@@ -11,6 +11,7 @@ GlobalEvaluator::GlobalEvaluator(BooleanDAG& bdag_p, FloatManager& _floats, cons
 	if (nctrls == 0) nctrls = 1;
 	tmp = gsl_vector_alloc(nctrls);
 	lp = new LP();
+	ctrls = gsl_vector_alloc(nctrls);
 }
 
 GlobalEvaluator::~GlobalEvaluator(void) {
@@ -20,6 +21,7 @@ GlobalEvaluator::~GlobalEvaluator(void) {
 		}
 	}
 	delete tmp;
+	delete ctrls;
 }
 
 void GlobalEvaluator::visit( SRC_node& node ) { //TODO: deal with array src nodes
@@ -36,24 +38,24 @@ void GlobalEvaluator::visit( DST_node& node ) {
 void GlobalEvaluator::visit( CTRL_node& node ) {
   //cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
-	if (ctrls->contains(name)) {
-		Assert(isFloat(node), "Numerical Solver should deal with only float holes");
-		float val = floats.getFloat((*ctrls)[name]);
-		int idx = - 1;
+	if (isFloat(node)) {
+		int idx = -1;
 		if (floatCtrls.find(name) != floatCtrls.end()) {
 			idx = floatCtrls[name];
+		} else {
+			Assert(false, "All float ctlrs should be handled by the numerical solver");
 		}
+		float val = gsl_vector_get(ctrls, idx);
 		gsl_vector* g = default_grad(nctrls); //TODO: try to avoid allocating and reallocating these everytime
 		gsl_vector_set(g, idx, 1);
-		
 		Region* r = new Region();
 		Value* v = new Value(val, g);
 		RegionValuePair* rv = new RegionValuePair(r, v);
 		ValuesList& vl = getvalues(node);
 		vl.clear();
 		vl.push_back(rv);
+
 	} else {
-		Assert(!isFloat(node), "All float holes should be dealt by the numerical solver");
 		Assert(node.getOtype() == OutType::BOOL, "NYI: GlobalEvaluator integer holes");
 		ValuesList& vl = getvalues(node);
 		vl.clear();
@@ -471,9 +473,12 @@ void GlobalEvaluator::truncate(vector<Region*>& vl, const gsl_vector* x0, int nu
 }
 
 
-double GlobalEvaluator::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p, const gsl_vector* x) {
-	cout << gsl_vector_get(x, 0) << " " << gsl_vector_get(x, 1) << " " << gsl_vector_get(x, 2) << endl;
-	ctrls = &ctrls_p;
+double GlobalEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
+	Assert(ctrls->size == ctrls_p->size, "GlobalEvaluator ctrl sizes are not matching");
+
+	for (int i = 0; i < ctrls->size; i++) {
+		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+	}
 	inputValues = inputValues_p;
 	errorGrad = errorGrad_p;
 	error = 0;
@@ -482,7 +487,7 @@ double GlobalEvaluator::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl
 		ValuesList& vl = getvalues(*node_it);
 		cout << (*node_it)->lprint() << endl;
 		cout << "Before: " << vl.size() << endl;
-		truncate(vl, x, 100);
+		truncate(vl, ctrls, 100);
 		cout << "After: " << vl.size() << endl;
 	}
 	// process all asserts
@@ -509,7 +514,7 @@ double GlobalEvaluator::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl
 			trueRegions.clear();
 			trueRegions = newTrueRegions;
 			cout << "Before: " << trueRegions.size() << endl;
-			truncate(trueRegions, x, 100);
+			truncate(trueRegions, ctrls, 100);
 			cout << "After: " << trueRegions.size() << endl;
 			
 			/*double minDist = numeric_limits<double>::max();
@@ -577,7 +582,7 @@ double GlobalEvaluator::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl
 	bool foundFeasbile = false;
 	error = numeric_limits<double>::max();
 	for (int i = 0; i < trueRegions.size(); i++) {
-		if (lp->check(trueRegions[i], x)) {
+		if (lp->check(trueRegions[i], ctrls)) {
 			double maxDist = trueRegions[i]->getMaxDist();
 			if (maxDist < error) {
 				//cout << "Error: " << maxDist << endl;

@@ -33,6 +33,9 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/RangeDiff.h   \
 	NumericalSynthesis/GlobalEvaluator.h	\
 	NumericalSynthesis/SimpleEvaluator.h	\
+	NumericalSynthesis/GradUtil.h		\
+	NumericalSynthesis/DistanceGrad.h		\
+	NumericalSynthesis/ValueGrad.h \
 	NumericalSynthesis/Interval.h		\
 	NumericalSynthesis/IntervalGrad.h		\
 	NumericalSynthesis/IntervalPropagator.h	\
@@ -79,6 +82,9 @@ libcegis_la_SOURCES =				\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
   NumericalSynthesis/NumericalSolver.cpp \
+	NumericalSynthesis/GradUtil.cpp	\
+	NumericalSynthesis/DistanceGrad.cpp		\
+	NumericalSynthesis/ValueGrad.cpp	\
 	NumericalSynthesis/Interval.cpp \
 	NumericalSynthesis/IntervalGrad.cpp \
 	NumericalSynthesis/AutoDiff.cpp \

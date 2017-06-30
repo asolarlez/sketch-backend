@@ -896,7 +896,7 @@ void print(set<bool_node*> nodes) {
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   vector<bool_node*> newnodes;
   DagOptim op(dag, floats);
-  
+	//dag.mrprint(cout);
   //dag.lprint(cout);
   BooleanDAG& dagclone = (*dag.clone());
   string fname = "_GEN_NUM_SYNTH";
@@ -908,6 +908,8 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   unode->mother = op.getCnode(1);
   vector<int> deletedNodes;
 	map<int, int> inputToNodeMap;
+	
+	//bool firstAssert = true;
 	
 	for (int i = 0; i < dag.size(); ++i) {
 		bool_node* node = dag[i];
@@ -923,6 +925,27 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 		if (type == OutType::INT || type == OutType::BOOL  ) {
 			bool hasFlChild = hasFloatChild(node);
 			bool hasFlInputs = hasFloatInputs(dagclone[nid]);
+			bool special = false;
+			if (node->type == bool_node::LT && ((node->mother->type == bool_node::CONST && node->father->type == bool_node::CTRL && ((CTRL_node*) node->father)->isSpecial) || (node->father->type == bool_node::CONST && node->mother->type == bool_node::CTRL && ((CTRL_node*) node->mother)->isSpecial) )){
+				special = true;
+			}
+			/*bool allAssertChildren = true;
+			
+			FastSet<bool_node> children = node->children;
+			for(child_iter it = children.begin(); it != children.end(); ++it){
+				if (!(*it)->type == bool_node::ASSERT) {
+					allAssertChildren = false;
+				}
+			}
+			if (allAssertChildren) {
+				//if (hasFlInputs && firstAssert){
+				//	firstAssert = false;
+				//	cout <<"dfasjha " << node->lprint() << endl;
+				//} else {
+					special = true;
+				//}
+			}*/
+			
 			if (hasFlInputs) {
 				inputToNodeMap[unode->multi_mother.size()] = nid;
 				// create a ctrl node to capture the output and to use it as input to the ufun
@@ -943,8 +966,10 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 					ctrl->setArr(PARAMS->angelic_arrsz);
 				}
 				newnodes.push_back(ctrl);
-				// use it as input
-				unode->multi_mother.push_back(ctrl);
+				if (!special) {
+					// use it as input
+					unode->multi_mother.push_back(ctrl);
+				}
 				// use it as output
 				dag.replace(nid, ctrl);
 			}

@@ -937,12 +937,13 @@ class CTRL_node: public INTER_node{
     bool isTuple;
     string tupleName;
     bool spAngelic;
+		bool isSpecial;
     int max;
     vector<string> parents;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false){  if(toMinimize){ this->kind = MINIMIZE;} }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false) {  this->kind = kind_;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat) {
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false), isSpecial(false){  if(toMinimize){ this->kind = MINIMIZE;} }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false) {  this->kind = kind_;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -965,6 +966,10 @@ class CTRL_node: public INTER_node{
   void setFloat() {
     isFloat = true;
   }
+	
+	void setSpecial() {
+		isSpecial = true;
+	}
     void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;

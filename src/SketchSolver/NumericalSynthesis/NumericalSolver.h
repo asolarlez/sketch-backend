@@ -22,6 +22,8 @@ using namespace std;
 #include "IntervalPropagator.h"
 #include "SimpleEvaluator.h"
 #include "GlobalEvaluator.h"
+#include "AutoDiff.h"
+
 
 
 
@@ -31,7 +33,9 @@ class NumericalSolver : public Synthesizer {
 	int ncontrols;
   vector<float> ctrlVals; // Ordered list of ctrl values found by the numerical solver
 	map<string, int> ctrlMap; // maps ctrl names to indexes
+	map<string, int> boolCtrlMap; // map boolean names to indexes of corresponding float holes
 	map<int, int> imap; // Maps inputs to actual nodes in the dag
+
 
   GradientDescent* gd;
 	
@@ -39,11 +43,12 @@ class NumericalSolver : public Synthesizer {
 	SimpleEvaluator* eval;
 	RangeDiff* evalR;
 	GlobalEvaluator* evalG;
+	AutoDiff* evalA;
 	
 	gsl_vector* prevState; // keeps track of previous iteration best ctrl values to use it as the init state for the next iteration
 	gsl_vector* t;// temp vector to store intermediate results
 	
-	float threshold = 1e-2; // accuracy for minimizing the error
+	float threshold = 1e-5; // accuracy for minimizing the error
 	int MAX_TRIES = 4; // Number retries of GD algorithm for each iteration
 	float cthresh = 0.01; // threshold for approximate conflict detection
 	
@@ -59,8 +64,10 @@ class NumericalSolver : public Synthesizer {
 
 public:
 	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
+	~NumericalSolver(void);
 	
-	double evalLocal(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs);
+	double evalAuto(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs);
+	double evalRange(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs);
 	double simpleEval(const gsl_vector* state, const vector<vector<int>>& allInputs);
 	double evalAll(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs);
 	
@@ -148,8 +155,8 @@ public:
 
 	// Debugging: prints out the data to generate graphs
 	void genData2D(const vector<vector<int>>& allInputs) {
-		IntervalGrad::BETA = -10;
-		IntervalGrad::ALPHA = 10;
+		GradUtil::BETA = -10;
+		GradUtil::ALPHA = 10;
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
@@ -162,8 +169,8 @@ public:
 				while (j < 10.0) {
 				gsl_vector_set(state, 0, i);
 				gsl_vector_set(state, 1, j);
-				double err = evalLocal(state, d, allInputs);
-				cout << i << " " << j << " " << err << endl;
+				double err = evalAuto(state, d, allInputs);
+				cout << i << " " << j << " " << err << " " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << endl;
 				file << err << ";";
 					j+=0.1;
 				}
@@ -192,8 +199,8 @@ public:
 	}
 	
 	void genData1D(const vector<vector<int>>& allInputs) {
-		IntervalGrad::BETA = -10;
-		IntervalGrad::ALPHA = 10;
+		GradUtil::BETA = -10;
+		GradUtil::ALPHA = 10;
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
@@ -202,7 +209,7 @@ public:
 			double i = -10.0;
 			while (i < 10.0) {
 				gsl_vector_set(state, 0, i);
-				double err = evalLocal(state, d, allInputs);
+				double err = evalAuto(state, d, allInputs);
 				cout << i << " " << err << endl;
 				file << err << ";";
 				i += 0.01;
@@ -242,9 +249,9 @@ class GDEvaluator {
 	
 	static double f(const gsl_vector* x, void* params) {
 		GDParameters* p = (GDParameters*) params;
-		IntervalGrad::BETA = p->beta;
-		IntervalGrad::ALPHA = p->alpha;
-		return p->ns->evalLocal(x, curGrad, p->allInputs);
+		GradUtil::BETA = p->beta;
+		GradUtil::ALPHA = p->alpha;
+		return p->ns->evalAuto(x, curGrad, p->allInputs);
 	}
 	
 	static void df(const gsl_vector* x, void* params, gsl_vector* d) {
@@ -254,9 +261,9 @@ class GDEvaluator {
 	
 	static void fdf(const gsl_vector* x, void* params, double* f, gsl_vector* df) {
 		GDParameters* p = (GDParameters*) params;
-		IntervalGrad::BETA = p->beta;
-		IntervalGrad::ALPHA = p->alpha;
-		*f = p->ns->evalLocal(x, df, p->allInputs);
+		GradUtil::BETA = p->beta;
+		GradUtil::ALPHA = p->alpha;
+		*f = p->ns->evalAuto(x, df, p->allInputs);
 	}
 	
 	

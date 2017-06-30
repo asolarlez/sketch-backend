@@ -303,8 +303,8 @@ class GlobalEvaluator: NodeVisitor
 	BooleanDAG& bdag;
   map<string, int> floatCtrls; // Maps float ctrl names to indices with grad vectors
   int nctrls; // number of float ctrls
-	VarStore* ctrls; // Maps ctrl names to values (int abstraction for floating point values)
-  vector<ValuesList> values; // Keeps track of values for each node for different regions
+	gsl_vector* ctrls; // Ctrl values
+	vector<ValuesList> values; // Keeps track of values for each node for different regions
 	map<int, int> inputValues; // Maps node id to values set by the SAT solver
 	double error = 0.0;
 	gsl_vector* errorGrad;
@@ -339,7 +339,7 @@ public:
   virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
   
-  double run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p, const gsl_vector* x);
+  double run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p);
 	void truncate(ValuesList& vl, const gsl_vector* x0, int numRegions);
 	void truncate(vector<Region*>& vl, const gsl_vector* x0, int numRegions);
 	void truncateUnfeasibleRegions(ValuesList& vl, const gsl_vector* x0);

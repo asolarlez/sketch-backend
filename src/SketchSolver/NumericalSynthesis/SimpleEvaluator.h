@@ -7,6 +7,8 @@
 #include "FloatSupport.h"
 #include <tuple>
 #include <iostream>
+#include <gsl/gsl_vector.h>
+
 
 using namespace std;
 
@@ -15,12 +17,14 @@ class SimpleEvaluator: NodeVisitor
 {
 	FloatManager& floats;
 	BooleanDAG& bdag;
-	VarStore* ctrls; // Maps ctrl names to values (int abstraction for floating point values)
+	map<string, int> floatCtrls; // Maps float ctrl names to indices with grad vectors
+	map<string, int> boolCtrls; // Maps bool ctrl names to indices with grad vectors
+	gsl_vector* ctrls; // ctrl values
 	vector<float> distances; // Keeps track of distance metric for boolean nodes
 	float MIN_VALUE = 0.001;
 
 public:
-  SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats);
+  SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
 	
   virtual void visit( SRC_node& node );
   virtual void visit( DST_node& node );
@@ -42,7 +46,7 @@ public:
   virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
   
-  vector<tuple<float, int, int>> run(VarStore& ctrls_p, map<int, int>& imap_p);
+  vector<tuple<float, int, int>> run(const gsl_vector* ctrls_p, map<int, int>& imap_p);
 	
 	void setvalue(bool_node& bn, float d) {
 		distances[bn.id] = d;
@@ -71,6 +75,6 @@ public:
 		return (bn->getOtype() == OutType::FLOAT);
 	}
 	
-	double run1(VarStore& ctrls_p, map<int, int>& inputValues_p);
+	double run1(const gsl_vector* ctrls_p, map<int, int>& inputValues_p);
 	double computeError(float dist, int expected, bool_node* node);
 };

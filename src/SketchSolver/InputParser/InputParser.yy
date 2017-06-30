@@ -783,6 +783,10 @@ Term: Constant {
   $$ = currentBD->create_controls(-1, *$2, false, true, false, -1, true);
   delete $2;
 }
+| '<' Ident '*' '>' {
+	$$ = currentBD->create_controls(-1, *$2, false, true, false, -1, true, true);
+	delete $2;
+}
 | T_Min '<' Ident '>' {
 	$$ = currentBD->create_controls(-1, *$3, true);
 	delete $3;

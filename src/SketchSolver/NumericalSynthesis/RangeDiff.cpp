@@ -9,14 +9,11 @@ RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string
 	distances.resize(bdag.size(), NULL);
 	nctrls = floatCtrls_p.size();
 	if (nctrls == 0) nctrls = 1;
-	IntervalGrad::tmp = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp1 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp2 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmp3 = gsl_vector_alloc(nctrls);
-	IntervalGrad::tmpT = gsl_vector_alloc(nctrls);
+	ctrls = gsl_vector_alloc(nctrls);
 }
 
 RangeDiff::~RangeDiff(void) {
+	delete ctrls;
 	for (int i = 0; i < ranges.size(); i++) {
 		if (ranges[i] != NULL) {
 			delete ranges[i];
@@ -25,10 +22,6 @@ RangeDiff::~RangeDiff(void) {
 			delete distances[i];
 		}
 	}
-	delete IntervalGrad::tmp;
-	delete IntervalGrad::tmp1;
-	delete IntervalGrad::tmp2;
-	delete IntervalGrad::tmp3;
 }
 
 void RangeDiff::visit( SRC_node& node ) { //TODO: deal with array src nodes
@@ -54,20 +47,21 @@ void RangeDiff::visit( ASSERT_node& node ) {
 		computeError(mdist->dist, 1, mdist->grad, node, node.isHard());
 	}
 	dg->dist = 1000;
-	IntervalGrad::default_grad(dg->grad);
+	GradUtil::default_grad(dg->grad);
 	dg->set = true;
 }
 
 void RangeDiff::visit( CTRL_node& node ) {
 	//cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
-	if (ctrls->contains(name)) {
-		Assert(isFloat(node), "Numerical Solver should deal with only float holes");
-		float val = floats.getFloat((*ctrls)[name]);
-		int idx = - 1;
+	if (isFloat(node)) {
+		int idx = -1;
 		if (floatCtrls.find(name) != floatCtrls.end()) {
 			idx = floatCtrls[name];
+		} else {
+			Assert(false, "All float ctlrs should be handled by the numerical solver");
 		}
+		float val = gsl_vector_get(ctrls, idx);
 		IntervalGrad* interval = r(node);
 		interval->update(val, val);
 		interval->singleton = true;
@@ -83,13 +77,12 @@ void RangeDiff::visit( CTRL_node& node ) {
 			}
 		}
 	} else {
-		Assert(!isFloat(node), "All float holes should be dealt by the numerical solver");
 		DistanceGrad* dg = d(node);
 		int ival = getInputValue(node);
 		if (ival != DEFAULT_INP) {
 			if (node.getOtype() == OutType::BOOL) {
 				dg->dist = (ival == 1) ? 1000 : -1000;
-				IntervalGrad::default_grad(dg->grad);
+				GradUtil::default_grad(dg->grad);
 				dg->set = true;
 			} else {
 				Assert(false, "NYI: rangediff for integer ctrls");
@@ -125,9 +118,27 @@ void RangeDiff::visit( TIMES_node& node ) {
 
 void RangeDiff::visit( ARRACC_node& node ) {
 	//cout << "Visiting ARRACC node" << endl;
-	Assert(isFloat(node), "NYI: arracc with ints");
-#if FINE_GRAIN_RANGES
 	DistanceGrad* dist = d(node.mother);
+	if (!isFloat(node)) {
+		Assert(node.getOtype() == OutType::BOOL, "NYI: arrac with ints");
+		DistanceGrad* mdist = d(node.multi_mother[0]);
+		DistanceGrad* fdist = d(node.multi_mother[1]);
+		DistanceGrad* dg = d(node);
+		DistanceGrad::dg_ite(dist, mdist, fdist, dg);
+		
+		int ival = getInputValue(node);
+		if (ival != DEFAULT_INP) {
+			// check that the value computed from parents matches the value set by the SAT solver.
+			if (dg->set) {
+				computeError(dg->dist, ival, dg->grad, node);
+			}
+			dg->dist = (ival == 1) ? 1000 : -1000;
+			GradUtil::default_grad(dg->grad);
+			dg->set = true;
+		}
+		return;
+	}
+#if FINE_GRAIN_RANGES
 	if (dist->set) {
 		Assert(node.multi_mother.size() == 2, "NYI: Fine grained range for ARRACC of size > 2");
 		IntervalGrad* interval = r(node);
@@ -186,8 +197,8 @@ void RangeDiff::visit( CONST_node& node ) {
 		IntervalGrad* interval = r(node);
 		interval->update(val, val);
 		interval->singleton = true;
-		IntervalGrad::default_grad(interval->getLGrad());
-		IntervalGrad::default_grad(interval->getHGrad());
+		GradUtil::default_grad(interval->getLGrad());
+		GradUtil::default_grad(interval->getHGrad());
 	} else {
 		int val = node.getVal();
 		DistanceGrad* dg = d(node);
@@ -197,7 +208,7 @@ void RangeDiff::visit( CONST_node& node ) {
 		}
 		if (node.getOtype() == OutType::BOOL) {
 			dg->dist = (val == 1) ? 1000 : -1000;
-			IntervalGrad::default_grad(dg->grad);
+			GradUtil::default_grad(dg->grad);
 			dg->set = true;
 		} else {
 			Assert(false, "NYI: rangediff integer constants");
@@ -214,24 +225,7 @@ void RangeDiff::visit( LT_node& node ) {
 	IntervalGrad* minterval = r(node.mother);
 	IntervalGrad* finterval = r(node.father);
 	
-	if (minterval->getHigh() <= finterval->getLow()) {
-		// Definitely true
-		dg->dist = finterval->getLow()  - minterval->getHigh();
-		gsl_vector_memcpy(dg->grad, finterval->getLGrad());
-		gsl_vector_sub(dg->grad, minterval->getHGrad());
-		dg->set = true;
-	} else if (minterval->getLow() > finterval->getHigh()) {
-		// Definitely false
-		dg->dist = finterval->getHigh() - minterval->getLow();
-		gsl_vector_memcpy(dg->grad, finterval->getHGrad());
-		gsl_vector_sub(dg->grad, minterval->getLGrad());
-		dg->set = true;
-	} else {
-		// can be either
-		dg->dist = 0;
-		IntervalGrad::default_grad(dg->grad);
-		dg->set = true;
-	}
+	IntervalGrad::ig_lt(minterval, finterval, dg);
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -240,7 +234,7 @@ void RangeDiff::visit( LT_node& node ) {
 			computeError(dg->dist, ival, dg->grad, node);
 		}
 		dg->dist = (ival == 1) ? 1000 : -1000;
-		IntervalGrad::default_grad(dg->grad);
+		GradUtil::default_grad(dg->grad);
 		dg->set = true;
 	}
 }
@@ -257,34 +251,7 @@ void RangeDiff::visit( AND_node& node ) {
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
 	
-	if (mdist->set && fdist->set) {
-		vector<float> vals;
-		vector<gsl_vector*> grads;
-		vals.push_back(mdist->dist);
-		vals.push_back(fdist->dist);
-		grads.push_back(mdist->grad);
-		grads.push_back(fdist->grad);
-		dg->dist = IntervalGrad::findMin(vals, grads, dg->grad);
-		dg->set = true;
-	} else if (mdist->set) {
-		if (mdist->dist < 0) {
-			dg->dist = mdist->dist;
-			gsl_vector_memcpy(dg->grad, mdist->grad);
-			dg->set = true;
-		} else {
-			dg->set = false;
-		}
-	} else if (fdist->set) {
-		if (fdist->dist < 0) {
-			dg->dist = fdist->dist;
-			gsl_vector_memcpy(dg->grad, fdist->grad);
-			dg->set = true;
-		} else {
-			dg->set = false;
-		}
-	} else {
-		dg->set = false;
-	}
+	DistanceGrad::dg_and(mdist, fdist, dg);
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -293,7 +260,7 @@ void RangeDiff::visit( AND_node& node ) {
 			computeError(dg->dist, ival, dg->grad, node);
 		}
 		dg->dist = (ival == 1) ? 1000 : -1000;
-		IntervalGrad::default_grad(dg->grad);
+		GradUtil::default_grad(dg->grad);
 		dg->set = true;
 	}
 }
@@ -305,34 +272,7 @@ void RangeDiff::visit( OR_node& node ) {
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
 	
-	if (mdist->set && fdist->set) {
-		vector<float> vals;
-		vector<gsl_vector*> grads;
-		vals.push_back(mdist->dist);
-		vals.push_back(fdist->dist);
-		grads.push_back(mdist->grad);
-		grads.push_back(fdist->grad);
-		dg->dist = IntervalGrad::findMax(vals, grads, dg->grad);
-		dg->set = true;
-	} else if (mdist->set) {
-		if (mdist->dist > 0) {
-			dg->dist = mdist->dist;
-			gsl_vector_memcpy(dg->grad, mdist->grad);
-			dg->set = true;
-		} else {
-			dg->set = false;
-		}
-	} else if (fdist->set) {
-		if (fdist->dist > 0) {
-			dg->dist = fdist->dist;
-			gsl_vector_memcpy(dg->grad, fdist->grad);
-			dg->set = true;
-		} else {
-			dg->set = false;
-		}
-	} else {
-		dg->set = false;
-	}
+	DistanceGrad::dg_or(mdist, fdist, dg);
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -341,7 +281,7 @@ void RangeDiff::visit( OR_node& node ) {
 			computeError(dg->dist, ival, dg->grad, node);
 		}
 		dg->dist = (ival == 1) ? 1000 : -1000;
-		IntervalGrad::default_grad(dg->grad);
+		GradUtil::default_grad(dg->grad);
 		dg->set = true;
 	}
 }
@@ -350,14 +290,7 @@ void RangeDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
 	DistanceGrad* mdist = d(node.mother);
 	
-	if (mdist->set) {
-		dg->dist = - mdist->dist;
-		gsl_vector_memcpy(dg->grad, mdist->grad);
-		gsl_vector_scale(dg->grad, -1.0);
-		dg->set = true;
-	} else {
-		dg->set = false;
-	}
+	DistanceGrad::dg_not(mdist, dg);
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -366,7 +299,7 @@ void RangeDiff::visit( NOT_node& node ) {
 			computeError(dg->dist, ival, dg->grad, node);
 		}
 		dg->dist = (ival == 1) ? 1000 : -1000;
-		IntervalGrad::default_grad(dg->grad);
+		GradUtil::default_grad(dg->grad);
 		dg->set = true;
 	}
 }
@@ -415,8 +348,11 @@ void RangeDiff::visit( TUPLE_R_node& node) {
 	}
 }
 
-double RangeDiff::run(VarStore& ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
-	ctrls = &ctrls_p;
+double RangeDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
+	Assert(ctrls->size == ctrls_p->size, "RangeDiff ctrl sizes are not matching");
+	for (int i = 0; i < ctrls->size; i++) {
+		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+	}
 	inputValues = inputValues_p;
 	errorGrad = errorGrad_p;
 	error = 0;
@@ -438,15 +374,25 @@ void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node
 			cout << gsl_vector_get(dg, i) << " ";
 		 }
 		 cout << endl;*/
-		if (false && !relax) {
-			error += ASSERT_PENALTY * 1000.0/assertCtr;
-			failedAssert = assertCtr;
-			foundFailure = true;
-		}
+		
 		error += pow(dist, 2);
 		
-		gsl_vector_memcpy(IntervalGrad::tmp3, dg);
-		gsl_vector_scale(IntervalGrad::tmp3, 2*dist);
-		gsl_vector_add(errorGrad, IntervalGrad::tmp3);
+		gsl_vector_memcpy(GradUtil::tmp3, dg);
+		gsl_vector_scale(GradUtil::tmp3, 2*dist);
+		gsl_vector_add(errorGrad, GradUtil::tmp3);
+		
+		//cout << "Faield " << assertCtr  << " " << node.mother->lprint() << endl;
+		
+		/*if (!relax && gsl_blas_dnrm2(errorGrad) > 0.01 && error > 0.01) {
+			//error += ASSERT_PENALTY * 1000.0/assertCtr;
+			failedAssert = assertCtr;
+			foundFailure = true;
+		}*/
+	} else {
+		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
+			//cout << "Ignoring failed " << assertCtr << " " << node.mother->lprint() << endl;
+		} else {
+			//cout << "Passed " << assertCtr << endl;
+		}
 	}
 }
