@@ -89,6 +89,7 @@ struct CommandLineArgs{
   bool randomInlining;
   float epsilon;
   int custIntSize;
+  int nprocs;
   string erSimEvalFName;
   bool numericalSolver;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
@@ -161,6 +162,7 @@ struct CommandLineArgs{
 		randomassign =false;
 		randdegree = -1;
 		ntimes = -1;
+		nprocs = 1;
     srcTupleDepth = 2;
     angelicTupleDepth = 1;
     onlySpRandAssign = false;
@@ -281,6 +283,14 @@ struct CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
+
+		if (string(argv[ii]) == "--nprocs") {
+			Assert(ii<(argc - 1), "--nprocs needs an extra parameter");
+			nprocs = atoi(argv[ii + 1]);
+			cout << "Proc is 1 of = " << nprocs << endl;
+			input_idx = ii + 2;
+			continue;
+		}
 
 		if( string(argv[ii]) == "--boundmode" ){
 	      Assert(ii<(argc-1), "-boundmode needs an extra parameter");

@@ -95,9 +95,13 @@ class RandDegreeControl {
 public:
 	vector<int> currentRandDegs;
 	map<int, vector<double> > scores;
-	RandDegreeControl(int randdegree) : currentRandDegs(2) {
-		if (randdegree == 0) {
-			currentRandDegs[0] = 10;
+	RandDegreeControl(int randdegree, int nprocs) : currentRandDegs(2) {
+		if (randdegree == 0 ) {
+			int rr = rand() % nprocs;
+			int t = 2;
+			rr = min(10, rr / 2);
+			t = t << rr;
+			currentRandDegs[0] = 5*t;
 			currentRandDegs[1] = 5;
 		}	
 	}
@@ -239,7 +243,7 @@ public:
 		return randdegree;
 	}
 	HoleHardcoder():
-		degreeControl(PARAMS->randdegree),
+		degreeControl(PARAMS->randdegree, PARAMS->nprocs),
 		totsize(0.0),
 		randdegree(PARAMS->randdegree)
 	{
