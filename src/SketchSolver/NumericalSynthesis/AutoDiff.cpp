@@ -42,6 +42,7 @@ void AutoDiff::visit( ASSERT_node& node ) {
 	if (ival != DEFAULT_INP) {
 		Assert(ival == 1, "Did SAT solver set 0 for an assert?");
 	}
+	Assert(mdist->set, "NYI: dsakhf");
 	// Check if the value computed from mother satisfies the assert
 	if (mdist->set) {
 		computeError(mdist->dist, 1, mdist->grad, node, node.isHard());
@@ -120,41 +121,71 @@ void AutoDiff::visit( TIMES_node& node ) {
 	ValueGrad::vg_times(mval, fval, val);
 }
 
-void AutoDiff::visit( ARRACC_node& node ) {
-	//cout << "Visiting ARRACC node" << endl;
+void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the two different representations for boolean nodes
+
+	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
 	DistanceGrad* dist = d(node.mother);
-	if (!isFloat(node)) {
-		Assert(node.getOtype() == OutType::BOOL, "NYI: arrac with ints");
-		DistanceGrad* mdist = d(node.multi_mother[0]);
-		DistanceGrad* fdist = d(node.multi_mother[1]);
-		DistanceGrad* dg = d(node);
-		DistanceGrad::dg_ite(dist, mdist, fdist, dg);
-		
-		int ival = getInputValue(node);
-		if (ival != DEFAULT_INP) {
-			// check that the value computed from parents matches the value set by the SAT solver.
-			if (dg->set) {
-				computeError(dg->dist, ival, dg->grad, node);
+	ValueGrad* dval = v(node.mother);
+	DistanceGrad* mdist = d(node.multi_mother[0]);
+	DistanceGrad* fdist = d(node.multi_mother[1]);
+	ValueGrad* mval = v(node.multi_mother[0]);
+	ValueGrad* fval = v(node.multi_mother[1]);
+	DistanceGrad* dg = d(node);
+	ValueGrad* val = v(node);
+	if (dist->set) {
+		if (!isFloat(node)) {
+			Assert(node.getOtype() == OutType::BOOL, "NYI: AutoDiff arracc with ints");
+			if (mdist->set && fdist->set) {
+				DistanceGrad::dg_ite(dist, mdist, fdist, dg); // compute using ands and ors
+			} else if (!mdist->set && !fdist->set) {
+				ValueGrad::vg_ite(mval, fval, dist, val); // sigmoid computation
+				dg->set = false;
+			} else {
+				cout << node.lprint() << endl;
+				Assert(false, "NYI: AutoDiff bool holes");
 			}
-			dg->dist = (ival == 1) ? 1000 : -1000;
-			GradUtil::default_grad(dg->grad);
-			dg->set = true;
+			int ival = getInputValue(node);
+			if (ival != DEFAULT_INP) {
+				// check that the value computed from parents matches the value set by the SAT solver.
+				if (dg->set) {
+					computeError(dg->dist, ival, dg->grad, node);
+				}
+				dg->dist = (ival == 1) ? 1000 : -1000;
+				GradUtil::default_grad(dg->grad);
+				dg->set = true;
+			}
+
+		} else {
+			ValueGrad::vg_ite(mval, fval, dist, val); // sigmoid computation
 		}
 	} else {
-		Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
-		ValueGrad* val = v(node);
-		ValueGrad* mval = v(node.multi_mother[0]);
-		ValueGrad* fval = v(node.multi_mother[1]);
-		if (dist->set) {
-			ValueGrad::vg_ite(mval, fval, dist, val);
-		} else {
 #if RELAX_BOOL
-			ValueGrad* dval = v(node.mother);
-			ValueGrad::vg_ite(mval, fval, dval, val);
-#else
-			Assert(false, "NYI: AutoDiff bool holes");
-#endif
+		if (!isFloat(node)) {
+			Assert(node.getOtype() == OutType::BOOL, "NYI: AutoDiff arracc with ints");
+			if (mdist->set && fdist->set) {
+				ValueGrad::vg_ite(mdist, fdist, dval, dg); // Compute using boolean relaxation
+			} else if (!mdist->set && !fdist->set) {
+				Assert(false, "NYI:yurida");
+			} else {
+				Assert(false, "NYI: qewrq");
+			}
+			int ival = getInputValue(node);
+			if (ival != DEFAULT_INP) {
+				// check that the value computed from parents matches the value set by the SAT solver.
+				if (dg->set) {
+					computeError(dg->dist, ival, dg->grad, node);
+				}
+				dg->dist = (ival == 1) ? 1000 : -1000;
+				GradUtil::default_grad(dg->grad);
+				dg->set = true;
+			}
+
+		} else {
+			ValueGrad::vg_ite(mval, fval, dval, val); // Compute using boolean relaxation
 		}
+#else 
+		Assert(false, "NYI: AutoDiff bool holes");
+#endif
 	}
 }
 
@@ -236,6 +267,7 @@ void AutoDiff::visit( AND_node& node ) {
 	// Compute the value from the parents
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
+	Assert(mdist->set && fdist->set, "hpdaia");
 	
 	DistanceGrad::dg_and(mdist, fdist, dg);
 	
@@ -257,6 +289,7 @@ void AutoDiff::visit( OR_node& node ) {
 	// Compute the value from the parents
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
+	Assert(mdist->set && fdist->set, "hpdaia");
 	
 	DistanceGrad::dg_or(mdist, fdist, dg);
 	
@@ -275,7 +308,8 @@ void AutoDiff::visit( OR_node& node ) {
 void AutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
 	DistanceGrad* mdist = d(node.mother);
-	
+	Assert(mdist->set, "hpdaia");
+
 	DistanceGrad::dg_not(mdist, dg);
 	
 	int ival = getInputValue(node);

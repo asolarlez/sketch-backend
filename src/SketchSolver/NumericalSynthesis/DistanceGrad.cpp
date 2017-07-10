@@ -82,12 +82,10 @@ void DistanceGrad::dg_ite(DistanceGrad* bdist, DistanceGrad* mdist, DistanceGrad
 		DistanceGrad* tmpd3 = new DistanceGrad(0.0, GradUtil::tmp2);
 		dg_or(tmpd2, fdist, tmpd3);
 		dg_and(tmpd1, tmpd3, dg);
-		delete tmpd1;
-		delete tmpd2;
-		delete tmpd3;
 	} else {
 		dg_or(mdist, fdist, dg);
 	}
+	dg->set = true;
 	
 }
 

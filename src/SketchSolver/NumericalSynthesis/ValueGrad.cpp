@@ -74,6 +74,18 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o) {
 	o->bound();
 }
 
+void ValueGrad::vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceGrad* o) {
+	Assert(m->set && f->set, "Something is wrong dsaf");
+	float v1 = d->getVal() * f->dist;
+	GradUtil::compute_mult_grad(d->getVal(), f->dist, d->getGrad(), f->grad, o->grad);
+	GradUtil::compute_neg_grad(d->getGrad(), GradUtil::tmp);
+	float v2 = (1 - d->getVal()) * m->dist;
+	GradUtil::compute_mult_grad(1 - d->getVal(), m->dist, GradUtil::tmp, m->grad, GradUtil::tmp1);
+	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->grad);
+	o->dist = v1 + v2;
+	o->set = true;
+}
+
 
 void ValueGrad::vg_equal(ValueGrad* m, ValueGrad* f, DistanceGrad* o) {
 	Assert(false, "NYI: value grad equal");

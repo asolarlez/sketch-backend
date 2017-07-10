@@ -104,7 +104,11 @@ public:
 			if (bdag[i]->getOtype() == OutType::FLOAT) {
 				cout << v(bdag[i])->print() << endl;
 			} else {
-				cout << d(bdag[i])->print() << endl;
+				if (d(bdag[i])->set) {
+					cout << d(bdag[i])->print() << endl;
+				} else {
+					cout << v(bdag[i])->print() << endl;
+				}
 			}
 		}
 	}
@@ -114,7 +118,11 @@ public:
 			if (bdag[i]->getOtype() == OutType::FLOAT) {
 				cout << v(bdag[i])->printFull() << endl;
 			} else {
-				cout << d(bdag[i])->printFull() << endl;
+				if(d(bdag[i])->set) {
+					cout << d(bdag[i])->printFull() << endl;
+				} else {
+					cout << v(bdag[i])->printFull() << endl;
+				}
 			}
 		}
 	}
