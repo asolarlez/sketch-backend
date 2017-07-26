@@ -977,7 +977,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		   if (failedAssert->isNormal()) {
 			   cout << "Assertion Failure" << failedAssert->getMsg() << endl;
 			   cleanup(dag);
-			   throw BadConcretization();
+			   throw BadConcretization(failedAssert->getMsg());
 		   }
 	   }
 	}

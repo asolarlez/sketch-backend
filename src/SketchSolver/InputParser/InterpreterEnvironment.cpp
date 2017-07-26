@@ -658,6 +658,7 @@ int InterpreterEnvironment::doallpairs() {
 			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);
 		}
 	}
+	string errMsg;
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
 	for (int trailID = 0; trailID<howmany; ++trailID) {
@@ -692,6 +693,7 @@ int InterpreterEnvironment::doallpairs() {
 				printControls("");
 			}
 			catch (BadConcretization& bc) {
+				errMsg = bc.msg;
 				hardcoder.dismissedPending();
 				result = SATSolver::UNSATISFIABLE;
 				break;
@@ -722,7 +724,9 @@ int InterpreterEnvironment::doallpairs() {
 			}
 		}
 		else {
-			string errMsg = finder->lastErrMsg;
+			if (finder->lastErrMsg != "") {
+				errMsg = finder->lastErrMsg;
+			}
 			reset();
 			if (hardcoder.isDone()) {
 				if (hasGoodEnoughSolution) {
