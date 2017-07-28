@@ -72,6 +72,12 @@ void AutoDiff::visit( CTRL_node& node ) {
 		DistanceGrad* dg = d(node);
 		int ival = getInputValue(node);
 		if (ival != DEFAULT_INP) {
+#if RELAX_BOOL
+			dg->set = false;
+			ValueGrad* val = v(node);
+			val->update((float) ival);
+			GradUtil::default_grad(val->getGrad());
+#else
 			if (node.getOtype() == OutType::BOOL) {
 				dg->dist = (ival == 1) ? 1000 : -1000;
 				GradUtil::default_grad(dg->grad);
@@ -80,6 +86,7 @@ void AutoDiff::visit( CTRL_node& node ) {
 				Assert(false, "NYI: AutoDiff for integer ctrls");
 				dg->set = false;
 			}
+#endif
 		} else {
 			dg->set = false;
 #if RELAX_BOOL
@@ -267,9 +274,18 @@ void AutoDiff::visit( AND_node& node ) {
 	// Compute the value from the parents
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
-	Assert(mdist->set && fdist->set, "hpdaia");
-	
-	DistanceGrad::dg_and(mdist, fdist, dg);
+
+	if (mdist->set && fdist->set) {
+		DistanceGrad::dg_and(mdist, fdist, dg);
+	} else if (!mdist->set && !fdist->set) {
+		ValueGrad* val = v(node);
+		ValueGrad* mval = v(node.mother);
+		ValueGrad* fval = v(node.father);
+		ValueGrad::vg_and(mval, fval, val);
+		dg->set = false;
+	} else {
+		Assert(false, "dfahiq");
+	}
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -289,9 +305,21 @@ void AutoDiff::visit( OR_node& node ) {
 	// Compute the value from the parents
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
-	Assert(mdist->set && fdist->set, "hpdaia");
 	
-	DistanceGrad::dg_or(mdist, fdist, dg);
+	if (mdist->set && fdist->set) {
+		DistanceGrad::dg_or(mdist, fdist, dg);
+	} else if (!mdist->set && !fdist->set) {
+		ValueGrad* val = v(node);
+		ValueGrad* mval = v(node.mother);
+		ValueGrad* fval = v(node.father);
+		ValueGrad::vg_or(mval, fval, val);
+		dg->set = false;
+	} else {
+		cout << node.lprint() << endl;
+		cout << node.mother->lprint() << endl;
+		cout << node.father->lprint() << endl;
+		Assert(false, "dauhpw");
+	}
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -308,9 +336,15 @@ void AutoDiff::visit( OR_node& node ) {
 void AutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
 	DistanceGrad* mdist = d(node.mother);
-	Assert(mdist->set, "hpdaia");
 
-	DistanceGrad::dg_not(mdist, dg);
+	if (mdist->set) {
+		DistanceGrad::dg_not(mdist, dg);
+	} else {
+		ValueGrad* val = v(node);
+		ValueGrad* mval = v(node.mother);
+		ValueGrad::vg_not(mval, val);
+		dg->set = false;
+	}
 	
 	int ival = getInputValue(node);
 	if (ival != DEFAULT_INP) {
@@ -397,10 +431,10 @@ void AutoDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node&
 		 }
 		 cout << endl;*/
 		
-		error += pow(dist, 2);
+		error += abs(dist);
 		
 		gsl_vector_memcpy(GradUtil::tmp3, dg);
-		gsl_vector_scale(GradUtil::tmp3, 2*dist);
+		gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
 		gsl_vector_add(errorGrad, GradUtil::tmp3);
 		
 		//cout << "Faield " << assertCtr  << " " << node.mother->lprint() << endl;

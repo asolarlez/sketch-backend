@@ -148,3 +148,29 @@ void ValueGrad::vg_copy(ValueGrad* i1, ValueGrad* i2) {
 	i2->update(i1->getVal());
 	gsl_blas_dcopy(i1->getGrad(), i2->getGrad());
 }
+
+// o = m + f - mf
+void ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	float mval = m->getVal();
+	float fval = f->getVal();
+	float val = mval + fval - mval*fval;
+	o->update(val);
+	GradUtil::compute_plus_grad(m->getGrad(), f->getGrad(), o->getGrad());
+	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), GradUtil::tmp);
+	gsl_blas_daxpy(-1.0, GradUtil::tmp, o->getGrad());
+}
+
+// o = mf
+void ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	float mval = m->getVal();
+	float fval = f->getVal();
+	float val = mval*fval;
+	o->update(val);
+	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), o->getGrad());
+}
+
+// o = 1 - m
+void ValueGrad::vg_not(ValueGrad* m, ValueGrad* o) {
+	o->update(1 - m->getVal());
+	GradUtil::compute_neg_grad(m->getGrad(), o->getGrad());
+}
