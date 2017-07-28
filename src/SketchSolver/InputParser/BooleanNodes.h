@@ -939,11 +939,14 @@ class CTRL_node: public INTER_node{
     bool spAngelic;
 		bool isSpecial;
     int max;
+		bool hasRange;
+		double low;
+		double high;
     vector<string> parents;
 	
-    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false), isSpecial(false){  if(toMinimize){ this->kind = MINIMIZE;} }
-	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false) {  this->kind = kind_;}
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial) {
+    CTRL_node(bool toMinimize = false):INTER_node(CTRL),kind(0),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false), isSpecial(false), hasRange(false){  if(toMinimize){ this->kind = MINIMIZE;} }
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false), hasRange(false) {  this->kind = kind_;}
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high) {
 		this->kind = bn.kind; this->arrSz = bn.arrSz; 
 		
 	}
@@ -951,6 +954,11 @@ class CTRL_node: public INTER_node{
 	virtual bool_node* clone(bool copyChildren = true){return new CTRL_node(*this, copyChildren);};
 	string get_name() const {
 		return name;
+	}
+	void setRange(double low_, double high_) {
+		hasRange = true;
+		low = low_;
+		high = high_;
 	}
   void setParents(const vector<string>& parents_) {
     parents = parents_;

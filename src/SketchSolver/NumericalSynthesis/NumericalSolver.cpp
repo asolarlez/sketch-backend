@@ -42,10 +42,7 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	
 	prevState = gsl_vector_alloc(ncontrols);
 	//gsl_vector_set_zero(prevState);
-	for (int i = 0; i < ncontrols; i++) {
-		float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
-		gsl_vector_set(prevState, i, r);
-	}
+	randomizeCtrls(prevState);
 	t = gsl_vector_alloc(ncontrols);
 	minErrorSoFar = 1e50;
 	
@@ -175,6 +172,20 @@ double NumericalSolver::evalAll(const gsl_vector* state, gsl_vector* d, const ve
 	return error;
 }
 
+void NumericalSolver::randomizeCtrls(gsl_vector* t) {
+	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
+	for (int i = 0; i < ctrls.size(); i++) {
+		if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
+			int idx = ctrlMap[ctrls[i]->get_name()];
+			CTRL_node* cnode = (CTRL_node*) ctrls[i];
+			double low = cnode->hasRange ? cnode->low : -10.0;
+			double high = cnode->hasRange ? cnode->high : 10.0;
+			
+			float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
+			gsl_vector_set(t, idx, r);
+		}
+	}
+}
 
 bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, const vector<int>& conflictids, int instance, int inputid) {
 	GDParameters* p = new GDParameters();
@@ -187,21 +198,32 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, prevState);
 	double minError = gd->optimize();
 	gsl_vector* curState = gd->getResults();
+	if (minError < minErrorSoFar) {
+		minErrorSoFar = minError;
+		for (int i = 0; i < ncontrols; i++) {
+			ctrlVals[i] = gsl_vector_get(curState, i);
+		}
+	}
 	
 	int numtries = 0;
 	while (minError > threshold  && numtries < MAX_TRIES) {
 		cout << "Retry attempt: " << (numtries+1) << endl;
 		// redo gradient descent with random initial point
+		randomizeCtrls(t);
 		for (int i = 0; i < ncontrols; i++) {
-			float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
-			gsl_vector_set(t, i, r);
-			cout << r << ", ";
+			cout << gsl_vector_get(t, i) << ", ";
 		}
 		cout << endl;
 		
 		gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, t);
 		minError = gd->optimize();
 		curState = gd->getResults();
+		if (minError < minErrorSoFar) {
+			minErrorSoFar = minError;
+			for (int i = 0; i < ncontrols; i++) {
+				ctrlVals[i] = gsl_vector_get(curState, i);
+			}
+		}
 		numtries++;
 	}
 	//evalR->print();
@@ -215,11 +237,6 @@ bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, co
 	} else {
 		cout << "******************* Found a conflict *******************" << endl;
 		generateConflict(conflictids);
-		//for (int i = 0; i < ncontrols; i++) {
-		//	float r = -10.0 + (rand()%200)/10.0; // random number between 0 to 10.0  TODO: don't hardcode
-		//	gsl_vector_set(prevState, i, r);
-		//}
-
 		return false;
 	}
 }

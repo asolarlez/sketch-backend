@@ -783,6 +783,11 @@ Term: Constant {
   $$ = currentBD->create_controls(-1, *$2, false, true, false, -1, true);
   delete $2;
 }
+| '<' Ident T_dbl T_dbl '$' '>' {
+	$$ = currentBD->create_controls(-1, *$2, false, true, false, -1, true);
+	((CTRL_node*) $$)->setRange($3, $4);
+	delete $2;
+}
 | '<' Ident '*' '>' {
 	$$ = currentBD->create_controls(-1, *$2, false, true, false, -1, true, true);
 	delete $2;

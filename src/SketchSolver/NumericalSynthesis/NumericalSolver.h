@@ -49,7 +49,7 @@ class NumericalSolver : public Synthesizer {
 	gsl_vector* t;// temp vector to store intermediate results
 	
 	float threshold = 1e-5; // accuracy for minimizing the error
-	int MAX_TRIES = 4; // Number retries of GD algorithm for each iteration
+	int MAX_TRIES = 9; // Number retries of GD algorithm for each iteration
 	float cthresh = 0.01; // threshold for approximate conflict detection
 	
 	map<int, IntervalPropagator*> propMap; // maps each example instance to an inteval propagator
@@ -73,7 +73,7 @@ public:
 	
 	IntervalPropagator* createPropagator();
 	bool doIntervalProp(int instance, int inputid, int val, int level);
-	
+	void randomizeCtrls(gsl_vector* t);
 	bool doGradientDescent(const vector<vector<int>>& allInputs, const vector<int>& conflictids, int instance, int inputid);
 	
 	void generateConflict(const vector<int>& conflictids);
@@ -98,11 +98,15 @@ public:
     }
   }
   virtual void getControls(map<string, string>& values) {
+		cout << "Min Error: " << minErrorSoFar << endl;
+		cout << "Controls: ";
 		for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
       stringstream str;
       str << ctrlVals[it->second];
+			cout << ctrlVals[it->second] << ", ";
       values[it->first] = str.str();
     }
+		cout << endl;
   }
 	
 	bool_node* getNodeForInput(int inputid) {
@@ -160,12 +164,12 @@ public:
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
-		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/sysid/g"+ to_string(dcounter++) +".txt");
 		{
-			double i = -10.0;
-			double j = -10.0;
+			double i = 0.0;
+			double j = 0.0;
 			while (i < 10.0) {
-				j = -10.0;
+				j = 0.0;
 				while (j < 10.0) {
 				gsl_vector_set(state, 0, i);
 				gsl_vector_set(state, 1, j);
@@ -179,11 +183,11 @@ public:
 		}
 		file << endl;
 		{
-			double i = -10.0;
-			double j = -10.0;
+			double i = 0.0;
+			double j = 0.0;
 			while (i < 10.0) {
 				cout << i << endl;
-				j = -10.0;
+				j = 0.0;
 				while(j < 10.0) {
 				gsl_vector_set(state, 0, i);
 				gsl_vector_set(state, 1, j);
@@ -204,9 +208,9 @@ public:
 		gsl_vector* d = gsl_vector_alloc(ncontrols);
 		gsl_vector* state = gsl_vector_alloc(ncontrols);
 		cout << "Counter " <<  dcounter << endl;
-		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/dist/g"+ to_string(dcounter++) +".txt");
+		ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/sysid/g"+ to_string(dcounter++) +".txt");
 		{
-			double i = -10.0;
+			double i = 0.0;
 			while (i < 10.0) {
 				gsl_vector_set(state, 0, i);
 				double err = evalAuto(state, d, allInputs);
@@ -217,7 +221,7 @@ public:
 		}
 		file << endl;
 		{
-			double i = -10.0;
+			double i = 0.0;
 			while (i < 10.0) {
 				gsl_vector_set(state, 0, i);
 				double err = simpleEval(state, allInputs);
