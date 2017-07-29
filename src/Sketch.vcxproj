@@ -114,7 +114,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\gsl\include;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -285,10 +285,16 @@
     <ClCompile Include="SketchSolver\InputParser\Tvalue.cpp" />
     <ClCompile Include="SketchSolver\memory_sampler.cc" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\AutoDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\DistanceGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\GlobalEvaluator.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\GradientDescent.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\GradUtil.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Interval.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\IntervalGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\NumericalSolver.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\RangeDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SimpleEvaluator.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\ValueGrad.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\MiniSATSolver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\NodeEvaluator.cpp" />
     <ClCompile Include="SketchSolver\InputParser\NodeSlicer.cpp" />
@@ -330,13 +336,18 @@
     <ClInclude Include="SketchSolver\FindCheckSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\AutoDiff.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\DistanceGrad.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\GlobalEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\GradientDescent.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\GradUtil.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Interval.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\IntervalGrad.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\IntervalPropagator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\NumericalSolver.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\RangeDiff.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SimpleEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\SimulatedAnnealing.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\ValueGrad.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\MiniSATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToEuclid.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToSolver.h" />
