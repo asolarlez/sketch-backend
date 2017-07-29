@@ -405,9 +405,43 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
+void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) {
 
+	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
+		vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+		if (ctrlvec.size() == 0) {
+			pureFuns.insert(it->first);
+			continue;
+		}
+		if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
+			pureFuns.insert(it->first);
+		}
+	}
 
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int steps, map<string, map<string, string> > replaceMap){
+	set<string> other;
+	do{
+		other = pureFuns;
+		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
+			BooleanDAG* bd = functionMap[*it];
+
+			vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
+			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
+				
+				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
+				if (ufn == NULL) { continue;  }
+				if (other.count(ufn->get_ufname()) == 0) {
+					//calling a non-pure function means you are not pure either.
+					other.erase(*it);
+					break;
+				}
+			}
+		}
+		swap(other, pureFuns);
+	} while (other.size() != pureFuns.size());
+
+}
+
+void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -418,8 +452,17 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 	fin = new OneCallPerCSiteInliner();
 	}
 	*/
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, params.randomassign, &fin, params.onlySpRandAssign,
+
+
+	set<string> pureFuns;
+
+	findPureFuns(functionMap, pureFuns);
+
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, pureFuns, params.randomassign, &fin, params.onlySpRandAssign,
                          params.spRandBias); 
+
+
+
 
 	int oldSize = -1;
 	bool nofuns = false;
@@ -436,10 +479,11 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*> 
 				}
 			}			
 			dfi.process(dag);
-			// dag.lprint(cout);
+			//
 			// dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();
 			if (params.verbosity> 6) { cout << "inlined " << dfi.nfuns() << " new size =" << dag.size() << endl; }
+			dag.lprint(cout);
 			if (params.bndDAG > 0 && dag.size() > params.bndDAG) {
 				cout << "WARNING: Preemptively stopping CEGIS because the graph size exceeds the limit: " << params.bndDAG << endl;
 				exit(1);

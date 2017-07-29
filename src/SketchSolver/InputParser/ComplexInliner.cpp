@@ -289,7 +289,7 @@ void ComplexInliner::unify(){
 
 void ComplexInliner::immInline(BooleanDAG& dag){
 	map<string, map<string, string> > replaceMap;
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, NULL);
+	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, NULL, set<string>());
 	dfi.process(dag);
 	
 	somethingChanged = dfi.changed();

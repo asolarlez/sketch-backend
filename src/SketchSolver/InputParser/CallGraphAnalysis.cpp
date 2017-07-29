@@ -25,7 +25,7 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 			BooleanDAG* dagToOptim = funmap[*it];
 			InclusiveInliner ict;
 			map<string, map<string, string> > replaceMap;
-			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, false, &ict);
+			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, set<string>(), false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				if(nocycles[i] != dagToOptim->get_name()){
 					ict.addFunToInline(nocycles[i]);
@@ -41,7 +41,7 @@ void CallGraph::directInlining(BooleanDAG* root, map<string, BooleanDAG*>& funma
 			BooleanDAG* dagToOptim = root;
 			InclusiveInliner ict;
 			map<string, map<string, string> > replaceMap;
-			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, false, &ict);
+			DagFunctionInliner fi(*(dagToOptim), funmap, replaceMap, floats, NULL, set<string>(), false, &ict);
 			for(int i=0; i<nocycles.size(); ++i){
 				ict.addFunToInline(nocycles[i]);
 			}

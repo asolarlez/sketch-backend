@@ -135,6 +135,13 @@ public:
 };
 
 
+/*
+This is a node in a tree data-structure corresponding to the call tree
+for the program. funid is an id for the call, will either be based on the 
+callsite or on the callname depending on the inlining mode.
+limit can be used to override the inlining limit.
+parent is the parent in the tree.
+*/
 class InlinerNode{
 public:
 	int funid;
@@ -146,12 +153,22 @@ public:
 class TheBestInliner: public InlineControl{
 protected:
 	Ostore<InlinerNode> inodestore;
+
+	//Table maps call name to a unique id. It is only used when bounding 
+	//by callname.
 	StringHTable2<int> funidmap;
+
+
+	//This is an index from a globalID of a function node to a tree data-structure
+	//that represents the call tree.
 	map<int, InlinerNode*> inodes;
+	//root is the root node in the call tree.
+	InlinerNode* root;
+
 	int nextfunid;
 	int limit;
 
-	InlinerNode* root;
+	
 	InlinerNode* current;
 	int currentFun;
 
@@ -177,8 +194,7 @@ protected:
 	candidate for inlining, but we want to make sure it doesn't have bad conditions.
 	*/
 	bool recCheck(bool_node* n){
-		if(badConditions.count(n->globalId)>0){
-			//cout<<"Saved an inline"<<endl;
+		if(badConditions.count(n->globalId)>0){			
 			return false;
 		}else{
 			if(n->type == bool_node::AND){	
@@ -193,9 +209,48 @@ protected:
 	condition C, then any other call that has condition C should not be 
 	inlined either, because C being true would surely cause an assertion, so 
 	any other call that has C as a condition will not be inlined either.
+	The badConditions are the globalIds of those expressions corresponding to bad conditions.
 	*/
 	set<int> badConditions;
+
+	//There are two inlining modes. Inlining by callsite means the bound
+	//controls the number of times a call site appears in the stack. 
+	//If this is false, it means we only care about the number of times a
+	//call name appears on the stack.
 	bool boundByCallsite;
+protected:
+	virtual void addChild(InlinerNode* parent, const UFUN_node& node) {
+		int id = nextfunid++;
+		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		InlinerNode* next = inodestore.newObj();
+		if (boundByCallsite) {
+			next->funid = node.get_callsite();
+		}
+		else {
+			next->funid = id;
+		}
+		next->limit = -1;
+		next->parent = parent;
+		inodes[node.globalId] = next;
+	}
+
+
+
+	virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt) {
+		int id = nextfunid++;
+		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size() + 1, id, id);
+		InlinerNode* next = inodestore.newObj();
+		if (boundByCallsite) {
+			next->funid = node.get_callsite();
+		}
+		else {
+			next->funid = id;
+		}
+		next->limit = newLmt;
+		next->parent = parent;
+		inodes[node.globalId] = next;
+	}
+
 public:
 	TheBestInliner(int& p_limit, bool p_boundByCallsite){
 		boundByCallsite = p_boundByCallsite;
@@ -205,39 +260,15 @@ public:
 		funidmap.condAdd("$root", 6, nextfunid, nextfunid);
 		nextfunid++;
 		root= inodestore.newObj();
-    root->limit = -1;
+		root->limit = -1;
 		root->funid = 0;
 		root->parent = NULL;
 		
 	}
 
-	virtual void addChild(InlinerNode* parent, const UFUN_node& node){
-		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size()+1, id, id);
-		InlinerNode* next = inodestore.newObj();
-		if(boundByCallsite){
-			next->funid = node.get_callsite();
-		}else{
-			next->funid = id;
-		}
-    next->limit = -1;
-		next->parent = parent;
-		inodes[node.globalId] = next;
-	}
+	
   
-  virtual void addChildWithLimit(InlinerNode* parent, const UFUN_node& node, int newLmt){
-		int id = nextfunid++;
-		funidmap.condAdd(node.get_ufname().c_str(), node.get_ufname().size()+1, id, id);
-		InlinerNode* next = inodestore.newObj();
-		if(boundByCallsite){
-			next->funid = node.get_callsite();
-		}else{
-			next->funid = id;
-		}
-    next->limit = newLmt;
-		next->parent = parent;
-		inodes[node.globalId] = next;
-	}
+  
 
 	virtual void preCheckInline(UFUN_node& node){
 		if(node.dependent()){ return; }
@@ -298,18 +329,18 @@ public:
 		Assert(candidate != NULL, "I've never seen this function before!!!");
 		int cnt = 0;
 		InlinerNode* temp = candidate->parent;
-    int recLimit = limit;
-		while(temp != NULL){
-      if (temp->limit != -1 && temp->limit < recLimit) {
-        recLimit = temp->limit;
-        if (cnt >= recLimit) {
-          return false;
-        }
-        return true;
-      }
-			if(temp->funid == candidate->funid){
+		int recLimit = limit;
+		while (temp != NULL) {
+			if (temp->limit != -1 && temp->limit < recLimit) {
+				recLimit = temp->limit;
+				if (cnt >= recLimit) {
+					return false;
+				}
+				return true;
+			}
+			if (temp->funid == candidate->funid) {
 				cnt++;
-				if(cnt >= recLimit){
+				if (cnt >= recLimit) {
 					// cout<<"Prevented "<<node.get_ufname()<<endl;
 					return false;
 				}
@@ -339,7 +370,7 @@ public:
 		}
 		return localCheck(node);
 	}
-  virtual int getLimit() {return limit; }
+	virtual int getLimit() {return limit; }
 	virtual void clear(){ }
 };
 
@@ -637,9 +668,10 @@ class DagFunctionInliner : public DagOptim
   bool onlySpRandomize;
   int spRandBias;
 	HoleHardcoder* hcoder;
+	const set<string>& pureFunctions;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
+	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		

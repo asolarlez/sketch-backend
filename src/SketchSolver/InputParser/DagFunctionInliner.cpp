@@ -3,6 +3,7 @@
 #include "timerclass.h"
 #include "CommandLineArgs.h"
 #include <sstream>
+#include "NodeEvaluator.h"
 
 
 //extern CommandLineArgs* PARAMS;
@@ -13,7 +14,7 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder,
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions,
 	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
 DagOptim(p_dag, fm), 
@@ -25,6 +26,7 @@ randomize(p_randomize),
 onlySpRandomize(p_onlySpRandomize),
 spRandBias(p_spRandBias),
 replaceDepth(0),
+pureFunctions(p_pureFunctions),
 hcoder(p_hcoder)
 {
 	alterARRACS();
@@ -276,6 +278,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	map<int, int> oldToNew;
 
 
+
 	if(ictrl != NULL && !ictrl->checkInline(node)){		
 		DagOptim::visit(node);
 		return;
@@ -375,33 +378,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		if(ictrl != NULL){ ictrl->registerInline(node); }
 
 
-		// cout<<" Inlined "<<node.get_ufname()<<"   mother = "<<node.mother->lprint()<<endl;
-		/*
-		if(!isConst(node.mother)){
-			cout<<" Inlined "<<node.get_ufname()<<"   mother = "<<node.mother->lprint()<<endl;
-			stack<bool_node*> bns;
-			bns.push(node.mother);
-			while(! bns.empty()){
-				bool_node* c = bns.top(); 
-				bns.pop();
-				if(c->mother != NULL && !isConst(c->mother)){
-					bns.push(c->mother);
-				}
-				if(c->father != NULL && !isConst(c->father)){
-					bns.push(c->father);
-				}
-				if(c->isArith() && c->type != bool_node::UFUN){
-					vector<bool_node*>& bn = dynamic_cast<arith_node*>(c)->multi_mother;
-					for(int i=0; i<bn.size(); ++i){
-						if(!isConst(bn[i])){
-							bns.push(bn[i]);
-						}
-					}
-				}
-				cout<<"          "<<c->lprint()<<endl;
-			}
-		}
-		*/
+	
 
 		
 
@@ -663,24 +640,34 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 						bool_node * oldMother = ufun->mother;
 						
-						DagOptim::visit(*ufun);
-						const bool_node* nnode = rvalue;
-						if( nnode->type == bool_node::UFUN ){
-							//&& !(isConst(oldMother) && this->getIval(oldMother)==0)
-							if(ictrl != NULL){ ictrl->registerCall(node, dynamic_cast<const UFUN_node*>(nnode)); }
+						const bool_node* nnode;
+						if (isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
+							cout << "Pre inlining " << ufun->get_ufname() << endl;
+							if (ictrl != NULL) { ictrl->registerCall(node, ufun); }
+							visit(*ufun);
+							nnode = rvalue;
+							if (ictrl != NULL) { ictrl->registerInline(node); }
 						}
-						if(nnode == n){
-							//bool_node* tmp = n->clone();
-							// cse.setCSE(tmp);
-							// replaceDummy(n, tmp);
+						else {
+							DagOptim::visit(*ufun);
+							nnode = rvalue;
+							if (nnode->type == bool_node::UFUN) {
+								//&& !(isConst(oldMother) && this->getIval(oldMother)==0)
+								if (ictrl != NULL) { ictrl->registerCall(node, dynamic_cast<const UFUN_node*>(nnode)); }
+							}
+						}
+
+
+						
+						
+						if(nnode == n){							
 							
 							this->addNode( n );
 							nmap[nodeId] = n;
 							nnode = n;
 						}else{
 							n->dislodge();
-							delete n;
-							//n->removeFromParents(of);
+							delete n;							
 							nmap[nodeId] = nnode;
 						}
 						if(nprime != NULL){
@@ -712,7 +699,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							secondarynmap[nodeId] = sn;
 							ufToSrc[ufn] = sn;
 						}
-
 					}
 				}else{
 					n->mother->remove_child( n );

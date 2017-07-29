@@ -288,7 +288,7 @@ public:
   
 	BooleanDAG* prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt);
 
-	void doInline(BooleanDAG& dag, map<string, BooleanDAG*> functionMap, int i, map<string, map<string, string> > replaceMap);
+	void doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
 
 	BooleanDAG* getCopy(const string& s) {
 		return functionMap[s]->clone();
