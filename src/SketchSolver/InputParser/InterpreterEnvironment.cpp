@@ -483,7 +483,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 			// dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();
 			if (params.verbosity> 6) { cout << "inlined " << dfi.nfuns() << " new size =" << dag.size() << endl; }
-			dag.lprint(cout);
+			//dag.lprint(cout);
 			if (params.bndDAG > 0 && dag.size() > params.bndDAG) {
 				cout << "WARNING: Preemptively stopping CEGIS because the graph size exceeds the limit: " << params.bndDAG << endl;
 				exit(1);

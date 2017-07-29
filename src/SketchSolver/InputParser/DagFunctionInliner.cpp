@@ -642,7 +642,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						
 						const bool_node* nnode;
 						if (isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
-							cout << "Pre inlining " << ufun->get_ufname() << endl;
+							//cout << "Pre inlining " << ufun->get_ufname() << endl;
 							if (ictrl != NULL) { ictrl->registerCall(node, ufun); }
 							visit(*ufun);
 							nnode = rvalue;
