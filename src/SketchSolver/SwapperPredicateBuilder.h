@@ -29,16 +29,15 @@ class SwapperPredicate;
 
 
 //using boost::hash_combine
-template <typename T>
-inline void hash_combine(size_t& seed, T const& v)
+inline void hash_combine(size_t& seed, bool const& v)
 {
-	seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	hash<bool> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-template <typename T>
-struct hashVec
+struct hashVecBool
 {
-	size_t operator()(vector<T> const& in) const
+	size_t operator()(vector<bool> const& in) const
 	{
 		size_t size = in.size();
 		size_t seed = 0;
@@ -363,7 +362,7 @@ class PredicateBuilder {
 	set<int> &consts;
 	//set <NodeType> &ops;
 	int maxDepth;
-	unordered_map< vector< bool >, SwapperPredicate*, hashVec<bool> > outputsPMap;
+	unordered_map< vector< bool >, SwapperPredicate*, hashVecBool > outputsPMap;
 	unordered_map<SwapperPredicate*, vector<bool> > evalMap;
 public:
 	

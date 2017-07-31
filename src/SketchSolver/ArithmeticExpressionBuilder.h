@@ -30,16 +30,14 @@ enum ArithType {Variable, Plus, Times, Minus, Div, Mod, Lt, Gt, And, Or, Const, 
 class ArithExprSyn;
 class ArithExprBuilder;
 //using boost::hash_combine
-template <typename T>
-inline void hash_combine(size_t& seed, T const& v)
+inline void hash_combine(size_t& seed, int const& v)
 {
-	seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	seed ^= hash<int>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-template <typename T>
-struct hashVec
+struct hashVecInt
 {
-	size_t operator()(vector<T> const& in) const
+	size_t operator()(vector<int> const& in) const
 	{
 		size_t size = in.size();
 		size_t seed = 0;
@@ -577,8 +575,8 @@ class ArithExprBuilder {
 	set<int>& consts;
 	vector <ArithType>& ops;
 	int maxDepth;
-	unordered_map < vector< int >, ArithExpression*, hashVec<int> > outputsABigMap;
-	unordered_map< vector<int>, vector<vector<int>>, hashVec<int> > outputsASmallMap;
+	unordered_map < vector< int >, ArithExpression*, hashVecInt > outputsABigMap;
+	unordered_map< vector<int>, vector<vector<int>>, hashVecInt > outputsASmallMap;
 	bool repeatVars;
 	ArithExprSyn* syn;
 	set<string> desiredSigs;
