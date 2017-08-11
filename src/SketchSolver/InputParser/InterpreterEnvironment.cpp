@@ -893,111 +893,56 @@ void print(set<bool_node*> nodes) {
   }
 }
 
+
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
-  vector<bool_node*> newnodes;
-  DagOptim op(dag, floats);
-	//dag.mrprint(cout);
-  //dag.lprint(cout);
-  BooleanDAG& dagclone = (*dag.clone());
-  string fname = "_GEN_NUM_SYNTH";
-  UFUN_node* unode = new UFUN_node(fname);
-  unode->outname = "_p_out_" + fname;
-  unode->set_tupleName(fname);
-  unode->set_nbits(0);
-  unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
-  unode->mother = op.getCnode(1);
-  vector<int> deletedNodes;
-	map<int, int> inputToNodeMap;
+	BooleanDAG& numDag = (*dag.clone());
+	DagOptim op(dag, floats);
+
+	vector<bool_node*> newnodes; // collect new boolean variables
 	
-	//bool firstAssert = true;
-	
-	for (int i = 0; i < dag.size(); ++i) {
+	map<int, int> inputToNodeMap; 	// There are 3 types of input nodes: boolean holes, boolean-input boolean-output nodes or abstraction variables for float-input boolean-output nodes
+
+	// UFUN for interacting with the numerical solver
+	string fname = "_GEN_NUM_SYNTH";
+	UFUN_node* unode = new UFUN_node(fname);
+	unode->outname = "_p_out_" + fname;
+	unode->set_tupleName(fname);
+	unode->set_nbits(0);
+	unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.
+	unode->mother = op.getCnode(1);
+
+
+	for (int i = 0; i < dag.size(); i++) {
 		bool_node* node = dag[i];
 		if (node == NULL) continue;
 		int nid = node->id;
-		OutType* type = node->getOtype();
-		if (node->type == bool_node::UFUN) {
-			type = ((Tuple*) type)->entries[0];
-		}
-		//cout << dagclone[nid]->lprint() << endl;
-		//cout << (type == OutType::FLOAT) << endl;
-		
-		if (type == OutType::INT || type == OutType::BOOL  ) {
-			bool hasFlChild = hasFloatChild(node);
-			bool hasFlInputs = hasFloatInputs(dagclone[nid]);
-			bool special = false;
-			if (node->type == bool_node::LT && ((node->mother->type == bool_node::CONST && node->father->type == bool_node::CTRL && ((CTRL_node*) node->father)->isSpecial) || (node->father->type == bool_node::CONST && node->mother->type == bool_node::CTRL && ((CTRL_node*) node->mother)->isSpecial) )){
-				special = true;
-			}
-			/*bool allAssertChildren = true;
+		// create new boolean variables for any float input-boolean output nodes to create the boolean abstraction
+		if (node->getOtype() == OutType::BOOL) {
 			
-			FastSet<bool_node> children = node->children;
-			for(child_iter it = children.begin(); it != children.end(); ++it){
-				if (!(*it)->type == bool_node::ASSERT) {
-					allAssertChildren = false;
-				}
-			}
-			if (allAssertChildren) {
-				//if (hasFlInputs && firstAssert){
-				//	firstAssert = false;
-				//	cout <<"dfasjha " << node->lprint() << endl;
-				//} else {
-					special = true;
-				//}
-			}*/
-			
-			if (hasFlInputs) {
-				inputToNodeMap[unode->multi_mother.size()] = nid;
-				// create a ctrl node to capture the output and to use it as input to the ufun
+			if (hasFloatInputs(node)) {
+				// Create a ctrl node to capture the output (for the boolean abstraction)
 				CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
 				ctrl->name = "CTRL_" + std::to_string(nid);
-				
-				int nbits = 0;
-				if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-					nbits = 1;
-				}
-				if (type == OutType::INT || type == OutType::INT_ARR) {
-					nbits = 5;
-				}
-				
-				ctrl->set_nbits(nbits);
-				
-				if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-					ctrl->setArr(PARAMS->angelic_arrsz);
-				}
+				ctrl->set_nbits(1);
+			
 				newnodes.push_back(ctrl);
-				if (!special) {
-					// use it as input
-					unode->multi_mother.push_back(ctrl);
-				}
-				// use it as output
 				dag.replace(nid, ctrl);
-			}
-			else if (hasFlChild) {
+			
+				inputToNodeMap[unode->multi_mother.size()] = nid;
+				unode->multi_mother.push_back(ctrl);
+			} else {
 				inputToNodeMap[unode->multi_mother.size()] = nid;
 				unode->multi_mother.push_back(node);
 			}
 		}
-		if (type == OutType::FLOAT) {
-			deletedNodes.push_back(nid);
-		}
 	}
-	
-  // Remove all deleted nodes
-  for (int i = deletedNodes.size()-1; i >=0; i--) {
-    dag.remove(deletedNodes[i]);
-  }
-	
-  unode->addToParents();
-  newnodes.push_back(unode);
-  numericalAbsMap[fname] = make_pair(&dagclone, inputToNodeMap);
-  dag.addNewNodes(newnodes);
-  op.cleanup(dag);  
-  dag.lprint(cout);
-  //funDag->repOK();
-  //dag.repOK();
-  
-  finder->setNumericalAbsMap(numericalAbsMap);
-  
+	unode->addToParents();
+	newnodes.push_back(unode);
+	dag.addNewNodes(newnodes);
+	op.cleanup(dag);
+	dag.lprint(cout);
+	numericalAbsMap[fname] = make_pair(&numDag, inputToNodeMap);
+	finder->setNumericalAbsMap(numericalAbsMap);
 }
+
 
