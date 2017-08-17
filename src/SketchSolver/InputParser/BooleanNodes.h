@@ -412,6 +412,22 @@ class bool_node{
     virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
     void neighbor_replace(bool_node* replacement);
     void replace_child(bool_node* ori, bool_node* replacement);
+	
+	bool hasFloatParent() {
+		const vector<bool_node*>& parents = this->parents();
+		for (int i = 0; i < parents.size(); i++) {
+			if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
+		}
+		return false;
+	}
+	
+	bool hasFloatChild() {
+		FastSet<bool_node> children = this->children;
+		for(child_iter it = children.begin(); it != children.end(); ++it){
+			if ((*it)->getOtype() == OutType::FLOAT) return true;
+		}
+		return false;
+	}
 };
 
 

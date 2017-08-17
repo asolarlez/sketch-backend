@@ -869,21 +869,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	return result;
 }
 
-bool hasFloatInputs(bool_node* node) {
-  vector<bool_node*> parents = node->parents();
-  for (int i = 0; i < parents.size(); i++) {
-    if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
-  }
-  return false;
-}
 
-bool hasFloatChild(bool_node* node) {
-  FastSet<bool_node> children = node->children;
-  for(child_iter it = children.begin(); it != children.end(); ++it){
-    if ((*it)->getOtype() == OutType::FLOAT) return true;
-  }
-  return false;
-}
 
 
 void print(set<bool_node*> nodes) {
@@ -919,7 +905,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 		// create new boolean variables for any float input-boolean output nodes to create the boolean abstraction
 		if (node->getOtype() == OutType::BOOL) {
 			
-			if (hasFloatInputs(node)) {
+			if (node->hasFloatParent()) {
 				// Create a ctrl node to capture the output (for the boolean abstraction)
 				CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
 				ctrl->name = "CTRL_" + std::to_string(nid);
