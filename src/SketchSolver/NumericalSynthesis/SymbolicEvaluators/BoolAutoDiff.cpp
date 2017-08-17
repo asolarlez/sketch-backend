@@ -1,10 +1,10 @@
-#include "AutoDiff.h"
+#include "BoolAutoDiff.h"
 #include <algorithm>
 #include <limits>
 #include <math.h>
 
 
-AutoDiff::AutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
+BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
 	values.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
 	nctrls = floatCtrls_p.size() + boolCtrls_p.size();
@@ -12,7 +12,7 @@ AutoDiff::AutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, 
 	ctrls = gsl_vector_alloc(nctrls);
 }
 
-AutoDiff::~AutoDiff(void) {
+BoolAutoDiff::~BoolAutoDiff(void) {
 	delete ctrls;
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] != NULL) {
@@ -24,17 +24,17 @@ AutoDiff::~AutoDiff(void) {
 	}
 }
 
-void AutoDiff::visit( SRC_node& node ) {
+void BoolAutoDiff::visit( SRC_node& node ) {
 	//cout << "Visiting SRC node" << endl;
-	Assert(false, "NYI: AutoDiff for src");
+	Assert(false, "NYI: BoolAutoDiff for src");
 }
 
-void AutoDiff::visit( DST_node& node ) {
+void BoolAutoDiff::visit( DST_node& node ) {
 	//cout << "Visiting DST node" << endl;
 	// Ignore
 }
 
-void AutoDiff::visit( ASSERT_node& node ) {
+void BoolAutoDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
 	DistanceGrad* dg = d(node);
 	DistanceGrad* mdist = d(node.mother);
@@ -52,7 +52,7 @@ void AutoDiff::visit( ASSERT_node& node ) {
 	dg->set = true;
 }
 
-void AutoDiff::visit( CTRL_node& node ) {
+void BoolAutoDiff::visit( CTRL_node& node ) {
 	//cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
 	
@@ -72,25 +72,13 @@ void AutoDiff::visit( CTRL_node& node ) {
 		DistanceGrad* dg = d(node);
 		int ival = getInputValue(node);
 		if (ival != DEFAULT_INP) {
-#if RELAX_BOOL
 			dg->set = false;
 			ValueGrad* val = v(node);
 			val->update((float) ival);
 			GradUtil::default_grad(val->getGrad());
-#else
-			if (node.getOtype() == OutType::BOOL) {
-				dg->dist = (ival == 1) ? 1000 : -1000;
-				GradUtil::default_grad(dg->grad);
-				dg->set = true;
-			} else {
-				Assert(false, "NYI: AutoDiff for integer ctrls");
-				dg->set = false;
-			}
-#endif
 		} else {
 			dg->set = false;
-#if RELAX_BOOL
-			Assert(node.getOtype() == OutType::BOOL, "NYI: AutoDiff for integer ctrls");
+			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff for integer ctrls");
 			int idx = -1;
 			if (boolCtrls.find(name) != boolCtrls.end()) {
 				idx = boolCtrls[name];
@@ -103,14 +91,13 @@ void AutoDiff::visit( CTRL_node& node ) {
 			GradUtil::default_grad(val->getGrad());
 			gsl_vector_set(val->getGrad(), idx, 1.0);
 			// add errors for ranges of new holes added to approximate boolean holes
-			computeError(cval - 1.0, 0, val->getGrad(), node, false);
-			computeError(cval, 1, val->getGrad(), node, false);
-#endif
+			computeError(100.0*cval - 100.0*1.0, 0, val->getGrad(), node, false);
+			computeError(100.0*cval, 1, val->getGrad(), node, false);
 		}
 	}
 }
 
-void AutoDiff::visit( PLUS_node& node ) {
+void BoolAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
@@ -119,7 +106,7 @@ void AutoDiff::visit( PLUS_node& node ) {
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
-void AutoDiff::visit( TIMES_node& node ) {
+void BoolAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
@@ -128,9 +115,9 @@ void AutoDiff::visit( TIMES_node& node ) {
 	ValueGrad::vg_times(mval, fval, val);
 }
 
-void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the two different representations for boolean nodes
+void BoolAutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the two different representations for boolean nodes
 
-	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
+	Assert(node.multi_mother.size() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
 	DistanceGrad* dist = d(node.mother);
 	ValueGrad* dval = v(node.mother);
 	DistanceGrad* mdist = d(node.multi_mother[0]);
@@ -141,7 +128,7 @@ void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the t
 	ValueGrad* val = v(node);
 	if (dist->set) {
 		if (!isFloat(node)) {
-			Assert(node.getOtype() == OutType::BOOL, "NYI: AutoDiff arracc with ints");
+			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff arracc with ints");
 			if (mdist->set && fdist->set) {
 				DistanceGrad::dg_ite(dist, mdist, fdist, dg); // compute using ands and ors
 			} else if (!mdist->set && !fdist->set) {
@@ -149,7 +136,7 @@ void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the t
 				dg->set = false;
 			} else {
 				cout << node.lprint() << endl;
-				Assert(false, "NYI: AutoDiff bool holes");
+				Assert(false, "NYI: BoolAutoDiff bool holes");
 			}
 			int ival = getInputValue(node);
 			if (ival != DEFAULT_INP) {
@@ -166,9 +153,8 @@ void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the t
 			ValueGrad::vg_ite(mval, fval, dist, val); // sigmoid computation
 		}
 	} else {
-#if RELAX_BOOL
 		if (!isFloat(node)) {
-			Assert(node.getOtype() == OutType::BOOL, "NYI: AutoDiff arracc with ints");
+			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff arracc with ints");
 			if (mdist->set && fdist->set) {
 				ValueGrad::vg_ite(mdist, fdist, dval, dg); // Compute using boolean relaxation
 			} else if (!mdist->set && !fdist->set) {
@@ -190,13 +176,10 @@ void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the t
 		} else {
 			ValueGrad::vg_ite(mval, fval, dval, val); // Compute using boolean relaxation
 		}
-#else 
-		Assert(false, "NYI: AutoDiff bool holes");
-#endif
 	}
 }
 
-void AutoDiff::visit( DIV_node& node ) {
+void BoolAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
@@ -205,12 +188,12 @@ void AutoDiff::visit( DIV_node& node ) {
 	ValueGrad::vg_div(mval, fval, val);
 }
 
-void AutoDiff::visit( MOD_node& node ) {
+void BoolAutoDiff::visit( MOD_node& node ) {
 	cout << "Visiting MOD node" << endl;
-	Assert(false, "NYI: AutoDiff mod");
+	Assert(false, "NYI: BoolAutoDiff mod");
 }
 
-void AutoDiff::visit( NEG_node& node ) {
+void BoolAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
@@ -218,8 +201,8 @@ void AutoDiff::visit( NEG_node& node ) {
 	ValueGrad::vg_neg(mval, val);
 }
 
-void AutoDiff::visit( CONST_node& node ) {
-	if (node.isFloat()) {
+void BoolAutoDiff::visit( CONST_node& node ) {
+	if (node.getOtype() != OutType::BOOL) {
 		ValueGrad* val = v(node);
 		val->update(node.getFval());
 		GradUtil::default_grad(val->getGrad());
@@ -235,17 +218,17 @@ void AutoDiff::visit( CONST_node& node ) {
 			GradUtil::default_grad(dg->grad);
 			dg->set = true;
 		} else {
-			Assert(false, "NYI: AutoDiff integer constants");
+			Assert(false, "NYI: BoolAutoDiff integer constants");
 			dg->set = false;
 		}
 	}
 }
 
-void AutoDiff::visit( LT_node& node ) {
+void BoolAutoDiff::visit( LT_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: AutoDiff for lt with integer parents");
+	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: BoolAutoDiff for lt with integer parents");
 	ValueGrad* mval = v(node.mother);
 	ValueGrad* fval = v(node.father);
 	
@@ -263,12 +246,12 @@ void AutoDiff::visit( LT_node& node ) {
 	}
 }
 
-void AutoDiff::visit( EQ_node& node ) {
+void BoolAutoDiff::visit( EQ_node& node ) {
 	//cout << "Visiting EQ node" << endl;
-	Assert(false, "NYI: AutoDiff for eq");
+	Assert(false, "NYI: BoolAutoDiff for eq");
 }
 
-void AutoDiff::visit( AND_node& node ) {
+void BoolAutoDiff::visit( AND_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Compute the value from the parents
@@ -299,7 +282,7 @@ void AutoDiff::visit( AND_node& node ) {
 	}
 }
 
-void AutoDiff::visit( OR_node& node ) {
+void BoolAutoDiff::visit( OR_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Compute the value from the parents
@@ -333,7 +316,7 @@ void AutoDiff::visit( OR_node& node ) {
 	}
 }
 
-void AutoDiff::visit( NOT_node& node ) {
+void BoolAutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
 	DistanceGrad* mdist = d(node.mother);
 
@@ -358,12 +341,12 @@ void AutoDiff::visit( NOT_node& node ) {
 	}
 }
 
-void AutoDiff::visit( ARRASS_node& node ) {
+void BoolAutoDiff::visit( ARRASS_node& node ) {
 	cout << "Visiting ARRASS node" << endl;
-	Assert(false, "NYI: AutoDiff for arrass");
+	Assert(false, "NYI: BoolAutoDiff for arrass");
 }
 
-void AutoDiff::visit( UFUN_node& node ) {
+void BoolAutoDiff::visit( UFUN_node& node ) {
 	ValueGrad* val = v(node);
 	ValueGrad* mval = v(node.multi_mother[0]);
 	
@@ -391,7 +374,7 @@ void AutoDiff::visit( UFUN_node& node ) {
 	}
 }
 
-void AutoDiff::visit( TUPLE_R_node& node) {
+void BoolAutoDiff::visit( TUPLE_R_node& node) {
 	if (node.mother->type == bool_node::UFUN) {
 		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 		ValueGrad* mval = v(node.mother);
@@ -402,8 +385,8 @@ void AutoDiff::visit( TUPLE_R_node& node) {
 	}
 }
 
-double AutoDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
-	Assert(ctrls->size == ctrls_p->size, "AutoDiff ctrl sizes are not matching");
+double BoolAutoDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
+	Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
 
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
@@ -421,7 +404,7 @@ double AutoDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gs
 	return error;
 }
 
-void AutoDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
+void BoolAutoDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
 	assertCtr++;
 	if (!foundFailure && (expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 		//cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;

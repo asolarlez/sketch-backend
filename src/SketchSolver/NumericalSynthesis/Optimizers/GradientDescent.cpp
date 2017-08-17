@@ -22,9 +22,11 @@ double GradientDescent::optimize() {
 	double fval;
 	const gsl_vector* grad;
 	double diff;
-	double betas[4] = {-1, -10, -50, -100};
-	double alphas[4] = {1, 10, 50, 100};
-	for (int i = 0; i < 4; i++) {
+	//double betas[4] = {-1, -10, -50, -100};
+	//double alphas[4] = {1, 10, 50, 100};
+	double betas[1] = {-10};
+	double alphas[1] = {10};
+	for (int i = 0; i < 1; i++) {
 		cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
 		((GDParameters*)myfundf.params)->beta = betas[i];
 		((GDParameters*)myfundf.params)->alpha = alphas[i];
@@ -59,7 +61,7 @@ double GradientDescent::optimize() {
 		}
 		while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION && diff >= PRECISION);
 		cout << "Iterations: " << iter << endl;
-		cout << gsl_strerror(status) << endl;
+		//cout << gsl_strerror(status) << endl;
 		cout << "Ending search..." << endl;
 		for (int i = 0; i < minidf->x->size; i++) {
 			cout << gsl_vector_get (minidf->x, i) << ", ";

@@ -2,355 +2,39 @@
 
 gsl_vector* GDEvaluator::curGrad;
 
-NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap) :Synthesizer(_fm), dag(_dag), imap(_imap) {
-	ninputs = imap.size();
-	
-	// generate ctrls mapping
-	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrls[i]->getOtype() == OutType::FLOAT) {
-			ctrlMap[ctrls[i]->get_name()] = ctrlVals.size();
-			ctrlVals.push_back(0.0);
-		}
-	}
-	
-#if RELAX_BOOL
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrls[i]->getOtype() == OutType::BOOL) {
-			boolCtrlMap[ctrls[i]->get_name()] = ctrlVals.size();
-			ctrlVals.push_back(0.0);
-		}
-	}
-#endif
-	
-	ncontrols = ctrlVals.size();
-	cout << "Ninputs: " << ninputs << " Ncontrols: " << ncontrols << endl;
-	for (int i = 0; i < ninputs; i++) {
-		cout << "Input " << i << ": " << (*dag)[imap[i]]->lprint() << endl;
-	}
-	if (ncontrols == 0) {
-		ncontrols = 1;
-		ctrlVals.push_back(0.0);
-	}
-	gd = new GradientDescent(ncontrols);
-	
-	evalR = new RangeDiff(*dag, fm, ctrlMap);
-	evalG = new GlobalEvaluator(*dag, fm, ctrlMap);
-	evalA = new AutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
-	eval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-
-	
-	prevState = gsl_vector_alloc(ncontrols);
-	//gsl_vector_set_zero(prevState);
-	randomizeCtrls(prevState);
-	t = gsl_vector_alloc(ncontrols);
-	minErrorSoFar = 1e50;
-	
-	GDEvaluator::init(ncontrols);
-	GradUtil::tmp = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
-
+NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): Synthesizer(_fm), dag(_dag), imap(_imap) {
+	cout << "NInputs: " << imap.size() << endl;
+	helper = new InequalityHelper(_fm, dag, imap);
+	//helper = new BasicNumericalHelper(_fm, dag, imap);
+	//debug();
 }
 
-NumericalSolver::~NumericalSolver(void) {
-	delete GradUtil::tmp;
-	delete GradUtil::tmp1;
-	delete GradUtil::tmp2;
-	delete GradUtil::tmp3;
-	delete GradUtil::tmpT;
-}
-
-double NumericalSolver::evalAuto(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
-	for (int i = 0; i < ncontrols; i++ ) {
-		gsl_vector_set(d, i, 0);
-	}
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		map<int, int> inputValues; // maps node id to value set by the sat solver
-		// Collect all inputs (assumes inputs are not floats)
-		for (int j = 0; j < allInputs[i].size(); j++) {
-			if (allInputs[i][j] != EMPTY) {
-				inputValues[imap[j]] = allInputs[i][j];
-			}
-		}
-		
-		// Run automatic differentiation on ranges
-		error += evalA->run(state, inputValues, d);
-		//evalR->print();
-	}
-	//evalR->print();
-	
-	/*cout << "State: ";
-	 for (int i = 0; i < ncontrols; i++) {
-		cout << gsl_vector_get(state, i) << ", ";
-	 }
-	 cout << endl;
-	 cout << "Error: " << error << endl;
-	 cout << "Grad: ";
-	 for (int i = 0; i < ncontrols; i++) {
-		cout << gsl_vector_get(d, i) << ", ";
-	 }
-	 cout << endl;*/
-	return error;
-}
-
-double NumericalSolver::evalRange(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
-	for (int i = 0; i < ncontrols; i++ ) {
-		gsl_vector_set(d, i, 0);
-	}
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		map<int, int> inputValues; // maps node id to value set by the sat solver
-		// Collect all inputs (assumes inputs are not floats)
-		for (int j = 0; j < allInputs[i].size(); j++) {
-			if (allInputs[i][j] != EMPTY) {
-				inputValues[imap[j]] = allInputs[i][j];
-			}
-		}
-		
-		// Run automatic differentiation on ranges
-		error += evalR->run(state, inputValues, d);
-		//evalR->print();
-	}
-	//evalR->print();
-
-	/*cout << "State: ";
-	for (int i = 0; i < ncontrols; i++) {
-		cout << gsl_vector_get(state, i) << ", ";
-	}
-	cout << endl;
-	cout << "Error: " << error << endl;
-	cout << "Grad: ";
-	for (int i = 0; i < ncontrols; i++) {
-		cout << gsl_vector_get(d, i) << ", ";
-	}
-	cout << endl;*/
-	return error;
-}
-
-double NumericalSolver::simpleEval(const gsl_vector* state, const vector<vector<int>>& allInputs) {
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		map<int, int> inputValues; // maps node id to value set by the sat solver
-		// Collect all inputs (assumes inputs are not floats)
-		for (int j = 0; j < allInputs[i].size(); j++) {
-			if (allInputs[i][j] != EMPTY) {
-				inputValues[imap[j]] = allInputs[i][j];
-			}
-		}
-		
-		// Run straight forward evaluator
-		error += eval->run1(state, inputValues);
-	}
-	return error;
-}
-
-double NumericalSolver::evalAll(const gsl_vector* state, gsl_vector* d, const vector<vector<int>>& allInputs) {
-	for (int i = 0; i < ncontrols; i++ ) {
-		gsl_vector_set(d, i, 0);
-	}
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		map<int, int> inputValues; // maps node id to value set by the sat solver
-		// Collect all inputs (assumes inputs are not floats)
-		for (int j = 0; j < allInputs[i].size(); j++) {
-			if (allInputs[i][j] != EMPTY) {
-				inputValues[imap[j]] = allInputs[i][j];
-			}
-		}
-		
-		// Run automatic differentiation on ranges
-		error += evalG->run(state, inputValues, d);
-		//evalR->print();
-	}
-	//cout << "State: " << gsl_vector_get(state, 0) << " " << gsl_vector_get(state, 1) << " " << gsl_vector_get(state, 2) << endl;
-	//cout << "Error: " << error << endl;
-	//cout << "Grad: " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << " " << gsl_vector_get(d, 2) << endl;
-	return error;
-}
-
-void NumericalSolver::randomizeCtrls(gsl_vector* t) {
-	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
-			int idx = ctrlMap[ctrls[i]->get_name()];
-			CTRL_node* cnode = (CTRL_node*) ctrls[i];
-			double low = cnode->hasRange ? cnode->low : -10.0;
-			double high = cnode->hasRange ? cnode->high : 10.0;
-			
-			float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
-			gsl_vector_set(t, idx, r);
-		}
-	}
-}
-
-bool NumericalSolver::doGradientDescent(const vector<vector<int>>& allInputs, const vector<int>& conflictids, int instance, int inputid) {
-	GDParameters* p = new GDParameters();
-	p->allInputs = allInputs;
-	p->ns = this;
-	for (int i = 0; i < ncontrols; i++) {
-		cout << gsl_vector_get(prevState, i) << ", ";
-	}
-	cout << endl;
-	gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, prevState);
-	double minError = gd->optimize();
-	gsl_vector* curState = gd->getResults();
-	if (minError < minErrorSoFar) {
-		minErrorSoFar = minError;
-		for (int i = 0; i < ncontrols; i++) {
-			ctrlVals[i] = gsl_vector_get(curState, i);
-		}
-	}
-	
-	int numtries = 0;
-	while (minError > threshold  && numtries < MAX_TRIES) {
-		cout << "Retry attempt: " << (numtries+1) << endl;
-		// redo gradient descent with random initial point
-		randomizeCtrls(t);
-		for (int i = 0; i < ncontrols; i++) {
-			cout << gsl_vector_get(t, i) << ", ";
-		}
-		cout << endl;
-		
-		gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p, t);
-		minError = gd->optimize();
-		curState = gd->getResults();
-		if (minError < minErrorSoFar) {
-			minErrorSoFar = minError;
-			for (int i = 0; i < ncontrols; i++) {
-				ctrlVals[i] = gsl_vector_get(curState, i);
-			}
-		}
-		numtries++;
-	}
-	//evalR->print();
-	if (minError <= threshold) {
-		prevState = curState;
-		// Update the controls
-		for (int i = 0; i < ncontrols; i++) {
-			ctrlVals[i] = gsl_vector_get(curState, i);
-		}
-		return true;
-	} else {
-		cout << "******************* Found a conflict *******************" << endl;
-		generateConflict(conflictids);
-		return false;
-	}
-}
-
-void NumericalSolver::generateConflict(const vector<int>& conflictids) {
-	for(auto conflictId: conflictids) {
-		for (int j = 0; j < ninputs; j++) {
-			if (inout->getVal(conflictId, j) != EMPTY) {
-				conflict.push(inout->valueid(conflictId, j));
-			}
-		}
-	}
-}
-
-void NumericalSolver::collectSuggestions(vec<Lit>& suggestions, const vector<vector<int>>& allInputs, const vector<int>& conflictids) {
-	gsl_vector* d = gsl_vector_alloc(ncontrols);
-	gsl_vector* ctrls = gsl_vector_alloc(ncontrols);
-	gsl_vector_set_zero(d);
-	for (int i = 0; i < allInputs.size(); i++) {
-		for (int k = 0; k < ncontrols; k++) {
-			gsl_vector_set(ctrls, k, ctrlVals[k]);
-		}
-		vector<tuple<float, int, int>> s = eval->run(ctrls, imap);
-		sort(s.begin(), s.end());
-		reverse(s.begin(), s.end());
-		for (int k = 0; k < s.size(); k++) {
-			int idx = get<1>(s[k]);
-			if (allInputs[i][idx] == EMPTY) {
-				//cout << "Suggesting " << idx << " " << get<2>(s[k]) <<  " " << get<0>(s[k]) << endl;
-				suggestions.push(getLit(inout->valueid(conflictids[i], idx), get<2>(s[k])));
-			}
-		}
-	}
-}
-
-bool NumericalSolver::synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
+bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Lit>& suggestions) {
 	conflict.clear();
-	suggestions.clear();
 	vector<vector<int>> allInputs;
-	vector<int> conflictids;
-	/*vector<int> inputs;
-	int arr[13] = {1,2,2,0,0,0,0,0,0,1,1,1,1,};
-	for (int i = 0; i < ninputs; i++) {
-	 if (arr[i] == 2) {
-		 inputs.push_back(EMPTY);
-	 } else {
-		 inputs.push_back(arr[i]);
-	 }
-	}
-	allInputs.push_back(inputs);*/
-	collectAllInputs(allInputs, conflictids);
+	vector<int> instanceIds;
 	
-	if (allInputs.size() == 0) return true;
+	collectAllInputs(allInputs, instanceIds);
+	helper->setInputs(allInputs, instanceIds);
+	
+	if (!helper->checkInputs(rowid, colid)) return true;
 	
 	printInputs(allInputs);
+	cout << "Col Id: " << colid << endl;
+	suggestions.clear();
 	
-	//gsl_vector* d = gsl_vector_alloc(ncontrols);
-	//gsl_vector* state = gsl_vector_alloc(ncontrols);
-	//gsl_vector_set(state, 0, 0);
-	//cout << evalLocal(state, d, allInputs) << endl;
-	//cout << simpleEval(state, allInputs) << endl;
-	/*if (ncontrols == 1) {
-		genData1D(allInputs);
-	} else if (ncontrols == 2) {
-		genData2D(allInputs);
-	}*/
-	
-	gsl_vector* d = gsl_vector_alloc(ncontrols);
-	gsl_vector* state = gsl_vector_alloc(ncontrols);
-
-	/*double ctrls[6] = {0.9, 1.83662, 1.16875, 3.7, -8.1, 4.3};
-	
-	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(prevState, i, ctrls[i]);
+	bool sat = helper->checkSAT();
+	if (sat || helper->ignoreConflict()) {
+		helper->getControls(ctrlVals);
+		const vector<tuple<int, int, int>>& s = helper->collectSuggestions(); // <instanceid, inputid, val>
+		convertSuggestions(s, suggestions);
+		return true;
+	} else {
+		cout << "****************CONFLICT****************" << endl;
+		const vector<pair<int, int>>& c = helper->getConflicts(rowid, colid); // <instanceid, inputid>
+		convertConflicts(c);
+		return false;
 	}
-	GradUtil::BETA = -100;
-	GradUtil::ALPHA = 100;
-	cout << evalLocal(state, d, allInputs) << endl;
-	//cout << simpleEval(state, allInputs) << endl;*/
-	
-	bool sat = doGradientDescent(allInputs, conflictids, instance, inputid);
-	if (sat) {
-		collectSuggestions(suggestions, allInputs, conflictids);
-	}
-	return sat;
-}
-
-IntervalPropagator* NumericalSolver::createPropagator() {
-	IntervalPropagator* iprop = new IntervalPropagator(*dag);
-	
-	// Initialize constants, assertions and ctrl nodes
-	for (int i = 0; i < dag->size(); i++) {
-		bool_node* n = (*dag)[i];
-		if (n->type == bool_node::CONST) {
-			float fval;
-			if (n->getOtype() == OutType::FLOAT) {
-				fval = ((CONST_node*) n)->getFval();
-			} else {
-				fval = ((CONST_node*) n)->getVal();
-			}
-			Assert(iprop->setInterval(*n, fval, fval, 0), "Setting constant interval failed");
-		}
-		if(n->type == bool_node::ASSERT) {
-			// set the range of mother to 1
-			Assert(iprop->setInterval(*n, 1, 1, 0), "Setting assert failed");
-		}
-		if (n->type == bool_node::CTRL) {
-			if (n->getOtype() == OutType::FLOAT) {
-				Assert(iprop->setInterval(*n, -32.0, 32.0, 0), "Setting ctrl range failed"); // TODO: Don't hardcode the range here
-			}
-		}
-	}
-	iprop->processAllNodes();
-	return iprop;
 }
 
 bool_node* NumericalSolver::getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
@@ -359,7 +43,7 @@ bool_node* NumericalSolver::getExpression(DagOptim* dopt, const vector<bool_node
 	for (int i = 0; i < newdag.size(); i++) {
 		if (newdag[i]->type == bool_node::CTRL) {
 			// TODO: what to do with non float ctrls that are solved by the SAT solver??
-			newdag.replace(i, dopt->getCnode(ctrlVals[ctrlMap[newdag[i]->get_name()]]));
+			newdag.replace(i, dopt->getCnode(ctrlVals[newdag[i]->get_name()]));
 		} else {
 			if (newdag[i]->type != bool_node::DST && newdag[i]->type != bool_node::SRC) {
 				bool_node* n = dopt->computeOptim(newdag[i]);
@@ -377,4 +61,87 @@ bool_node* NumericalSolver::getExpression(DagOptim* dopt, const vector<bool_node
 		}
 	}
 	return dopt->getCnode(0);
+}
+
+
+void NumericalSolver::collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) {
+	for (int i = 0; i < inout->getNumInstances(); ++i) {
+		vector<int> inputs;
+		for (int j = 0; j < imap.size(); j++) {
+			int val = inout->getVal(i, j);
+			inputs.push_back(val);
+		}
+		allInputs.push_back(inputs);
+		instanceIds.push_back(i);
+	}
+	Assert(allInputs.size() == instanceIds.size(), "This should not be possible");
+}
+
+void NumericalSolver::printInputs(vector<vector<int>>& allInputs) {
+	for (int k = 0; k < allInputs.size(); k++) {
+		cout << "Input: ";
+		for (int i = 0; i < allInputs[k].size(); i++) {
+			if (allInputs[0][i] == EMPTY) {
+				cout << "2,";
+			} else {
+				cout << allInputs[0][i] << ",";
+			}
+		}
+		cout << endl;
+	}
+}
+
+void NumericalSolver::convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions) {
+	for (int k = 0; k < s.size(); k++) {
+		int i = get<0>(s[k]);
+		int j = get<1>(s[k]);
+		int v = get<2>(s[k]);
+		//cout << "Suggesting " << i << " " << j <<  " " << k << endl;
+		suggestions.push(getLit(inout->valueid(i, j), v));
+	}
+}
+
+void NumericalSolver::convertConflicts(const vector<pair<int, int>>& c) {
+	for (int k = 0; k < c.size(); k++) {
+		int i = c[k].first;
+		int j = c[k].second;
+		conflict.push(inout->valueid(i, j));
+	}
+}
+
+// Debug with a fixed input and/or controls
+void NumericalSolver::debug() {
+	vector<vector<int>> allInputs;
+	vector<int> instanceIds;
+	vector<int> inputs;
+	int arr[1000] = {0,0,0,0,0,1,2,2,1,0,1,2,2,1,1,0,0,2,2,2,2,2,1,0,1,0,0,2,1,2,1,0,0,0,2,2,2,2,2,2,2,2,2,2,2,0,0,0,1,2,2,1,2,2,2,2,2,1,1,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,1,0,1,0,0,2,2,2,2,2,0,1,0,1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,1,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,1,0,1,0,0,2,2,2,2,2,0,1,0,1,1,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,1,2,1,1,2,1,1,0,2,2,0,0,1,2,2,1,0,1,0,2,2,0,1,0,1,0,0,0,0,0,0,0,1,2,2,1,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1,0,1,1,0,2,2,0,0,1,2,2,1,0,1,0,2,2,0,1,0,1,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,2,2,1,2,2,2,2,2,1,0,1,2,2,1,2,2,2,2,2,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,0,2,2,0,2,2,2,2,2,0,2,0,2,1,2,1,0,1,2};
+	
+	for (int i = 0; i < imap.size(); i++) {
+		if (arr[i] == 2) {
+			inputs.push_back(EMPTY);
+		} else {
+			inputs.push_back(arr[i]);
+		}
+	}
+	allInputs.push_back(inputs);
+	instanceIds.push_back(0);
+	int colid = 438;
+	int rowid = 0;
+	
+	helper->setInputs(allInputs, instanceIds);
+	
+	if (!helper->checkInputs(rowid, colid)) return;
+	
+	printInputs(allInputs);
+	cout << "Col Id: " << colid << endl;
+	int ncontrols = 16;
+	gsl_vector* s = gsl_vector_alloc(ncontrols);
+	float arr1[16] = {2.3, 44.6, 9.7, 50.7, 1.8, 41.9, -3, 17.2704, 9.1, 56.8, 6.6, 44.3, -9.7, 8.4, 0.2, 42.5334};
+	for (int i = 0; i < ncontrols; i++) {
+		gsl_vector_set(s, i, arr1[i]);
+	}
+	//helper->autodiff(s, 0);
+	
+	//helper->checkSAT();
+	
 }

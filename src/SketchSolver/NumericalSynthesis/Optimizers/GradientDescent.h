@@ -23,7 +23,7 @@ class GradientDescent {
 public:
 	double INIT_STEP_SIZE = 5.0;
 	double TOLERANCE = 0.1;
-	double PRECISION = 1e-5;
+	double PRECISION = 1e-3;
 	double GRAD_PRECISION = 1e-3;
 	double ITERATIONS = 4000;
 	

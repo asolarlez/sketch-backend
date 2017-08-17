@@ -14,7 +14,8 @@ class ValueGrad {
 	float val;
 	gsl_vector* grad;
 public:
-	ValueGrad(float _val, gsl_vector* _grad): val(_val), grad(_grad) {}
+	bool set;
+	ValueGrad(float _val, gsl_vector* _grad): val(_val), grad(_grad), set(false) {}
 	~ValueGrad(void) {
 		delete grad;
 	}
@@ -29,6 +30,7 @@ public:
 	static void vg_neg(ValueGrad* m, ValueGrad* o); // o = -m
 	static void vg_equal(ValueGrad* m, ValueGrad* f, DistanceGrad* o); // o = m == f
 	static void vg_lt(ValueGrad* m, ValueGrad* f, DistanceGrad* o); // o = m < f
+	static void vg_lt(ValueGrad* m, ValueGrad* f, ValueGrad* o);
 	static void vg_square(ValueGrad* m, ValueGrad* o); // o = m * m
 	static void vg_arctan(ValueGrad* m, ValueGrad* o); // o = arctan(m)
 	static void vg_sin(ValueGrad* m, ValueGrad* o); // o = sin(m)

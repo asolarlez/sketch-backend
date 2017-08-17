@@ -42,12 +42,14 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 		int idx = -1;
 		if (boolCtrls.find(name) != boolCtrls.end()) {
 			idx = boolCtrls[name];
+			float val = gsl_vector_get(ctrls, idx);
+			float dist = val - 0.5;
+			setvalue(node, dist);
 		} else {
-			Assert(false, "All bool ctrls should be handled here");
+			setvalue(node, 0);
+			//Assert(false, "All bool ctrls should be handled here");
 		}
-		float val = gsl_vector_get(ctrls, idx);
-		float dist = val - 0.5;
-		setvalue(node, dist);
+		
 	}
 }
 

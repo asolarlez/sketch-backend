@@ -2,6 +2,11 @@
 
 
 void ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float mval = m->getVal();
 	float fval = f->getVal();
 	float val = mval + fval;
@@ -14,6 +19,11 @@ void ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 }
 
 void ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) { // TODO: can set this if one of the values is 0
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float mval = m->getVal();
 	float fval = f->getVal();
 	float val = mval*fval;
@@ -26,6 +36,11 @@ void ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 }
 
 void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float mval = m->getVal();
 	float fval = f->getVal();
 	float val = mval/fval;
@@ -38,6 +53,11 @@ void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 }
 
 void ValueGrad::vg_neg(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	o->update(- m->getVal());
 	GradUtil::compute_neg_grad(m->getGrad(), o->getGrad());
 	o->bound();
@@ -98,7 +118,23 @@ void ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, DistanceGrad* o) {
 	o->set = true;
 }
 
+void ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
+	o->update(f->getVal()  - m->getVal());
+	gsl_vector_memcpy(o->getGrad(), f->getGrad());
+	gsl_vector_sub(o->getGrad(), m->getGrad());
+}
+
 void ValueGrad::vg_arctan(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(atan(x));
 	GradUtil::compute_arctan_grad(x, m->getGrad(), o->getGrad());
@@ -106,6 +142,11 @@ void ValueGrad::vg_arctan(ValueGrad* m, ValueGrad* o) {
 }
 
 void ValueGrad::vg_sin(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(sin(x));
 	GradUtil::compute_sin_grad(x, m->getGrad(), o->getGrad());
@@ -113,6 +154,11 @@ void ValueGrad::vg_sin(ValueGrad* m, ValueGrad* o) {
 }
 
 void ValueGrad::vg_cos(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(cos(x));
 	GradUtil::compute_cos_grad(x, m->getGrad(), o->getGrad());
@@ -120,12 +166,22 @@ void ValueGrad::vg_cos(ValueGrad* m, ValueGrad* o) {
 }
 
 void ValueGrad::vg_tan(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(tan(x));
 	GradUtil::compute_tan_grad(x, m->getGrad(), o->getGrad());
 	o->bound();}
 
 void ValueGrad::vg_exp(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(exp(x));
 	GradUtil::compute_exp_grad(x, m->getGrad(), o->getGrad());
@@ -133,6 +189,11 @@ void ValueGrad::vg_exp(ValueGrad* m, ValueGrad* o) {
 }
 
 void ValueGrad::vg_sqrt(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	float x = m->getVal();
 	o->update(sqrt(x));
 	GradUtil::compute_sqrt_grad(x, m->getGrad(), o->getGrad());
@@ -140,11 +201,21 @@ void ValueGrad::vg_sqrt(ValueGrad* m, ValueGrad* o) {
 }
 
 void ValueGrad::vg_cast_int_float(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
 	vg_copy(m, o);
 }
 
 // Copy i1 into i2
 void ValueGrad::vg_copy(ValueGrad* i1, ValueGrad* i2) {
+	if (!i1->set) {
+		i2->set = false;
+		return;
+	}
+	i2->set = true;
 	i2->update(i1->getVal());
 	gsl_blas_dcopy(i1->getGrad(), i2->getGrad());
 }

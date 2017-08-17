@@ -7,11 +7,11 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis gdtest igtest
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la
@@ -27,18 +27,27 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_sampler.h				\
 	timerclass.h					\
   NumericalSynthesis/NumericalSolver.h     \
-	NumericalSynthesis/GradientDescent.h			\
-	NumericalSynthesis/SimulatedAnnealing.h		\
-	NumericalSynthesis/AutoDiff.h \
-	NumericalSynthesis/RangeDiff.h   \
-	NumericalSynthesis/GlobalEvaluator.h	\
-	NumericalSynthesis/SimpleEvaluator.h	\
+	NumericalSynthesis/NumericalSolverHelper.h	\
+	NumericalSynthesis/BasicNumericalHelper.h		\
+	NumericalSynthesis/InequalityHelper.h	\
 	NumericalSynthesis/GradUtil.h		\
-	NumericalSynthesis/DistanceGrad.h		\
-	NumericalSynthesis/ValueGrad.h \
-	NumericalSynthesis/Interval.h		\
-	NumericalSynthesis/IntervalGrad.h		\
-	NumericalSynthesis/IntervalPropagator.h	\
+	NumericalSynthesis/Util.h	\
+	NumericalSynthesis/Optimizers/GradientDescent.h			\
+	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
+	NumericalSynthesis/Optimizers/GradientDescentWrapper.h	\
+	NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
+	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
+	NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
+	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
+	NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
+	NumericalSynthesis/SymbolicEvaluators/GlobalEvaluator.h	\
+	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
+	NumericalSynthesis/DataStructures/DistanceGrad.h		\
+	NumericalSynthesis/DataStructures/ValueGrad.h \
+	NumericalSynthesis/DataStructures/Interval.h		\
+	NumericalSynthesis/DataStructures/IntervalGrad.h		\
+	NumericalSynthesis/IntervalProp/IntervalPropagator.h	\
+	NumericalSynthesis/ConflictGenerators/ConflictGenerator.h	\
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -82,16 +91,19 @@ libcegis_la_SOURCES =				\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
   NumericalSynthesis/NumericalSolver.cpp \
+	NumericalSynthesis/BasicNumericalHelper.cpp		\
+	NumericalSynthesis/InequalityHelper.cpp		\
 	NumericalSynthesis/GradUtil.cpp	\
-	NumericalSynthesis/DistanceGrad.cpp		\
-	NumericalSynthesis/ValueGrad.cpp	\
-	NumericalSynthesis/Interval.cpp \
-	NumericalSynthesis/IntervalGrad.cpp \
-	NumericalSynthesis/AutoDiff.cpp \
-	NumericalSynthesis/RangeDiff.cpp \
-	NumericalSynthesis/GlobalEvaluator.cpp	\
-	NumericalSynthesis/SimpleEvaluator.cpp	\
-	NumericalSynthesis/GradientDescent.cpp	\
+	NumericalSynthesis/Optimizers/GradientDescent.cpp	\
+	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
+	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
+	NumericalSynthesis/DataStructures/Interval.cpp \
+	NumericalSynthesis/DataStructures/IntervalGrad.cpp \
+	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
+	NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
+	NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \
+	NumericalSynthesis/SymbolicEvaluators/GlobalEvaluator.cpp	\
+	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\
