@@ -131,11 +131,8 @@ public:
 				if (allInputs[i][j] != EMPTY) {
 					if (ignoredBoolNodes.find(imap[j]) == ignoredBoolNodes.end()) {
 						if (conflictNodes.find(imap[j]) != conflictNodes.end()) {
-							// TODO: hacky
-							if (!(*dag)[imap[j]]->hasFloatChild() || allInputs[i][j] == 1) {
 							cout << (*dag)[imap[j]]->lprint() << " " << allInputs[i][j] << endl;
 							conflicts.push_back(make_pair(instanceIds[i], j));
-							}
 						}
 					}
 				}

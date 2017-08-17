@@ -13,6 +13,7 @@
 
 using namespace std;
 
+// AutoDiff through only the numerical structure - ignores all boolean structure
 class AutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
 	FloatManager& floats;

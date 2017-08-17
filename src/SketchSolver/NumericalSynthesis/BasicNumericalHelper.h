@@ -16,6 +16,7 @@
 #include "ConflictGenerator.h"
 
 
+// Only handles the numerical part of the circuit. If the circuit contains any boolean structure, it will wait until the sat solver fixes all the boolean variables at the interface to the boolean structure.
 class BasicNumericalHelper: public NumericalSolverHelper {
 	set<int> ignoredBoolNodes;
 	OptimizationWrapper* opt;
