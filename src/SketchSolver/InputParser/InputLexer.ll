@@ -203,6 +203,11 @@ Comment      ("//"[^\n]*)
 "replace" {
         return T_replace;
       }
+
+
+"fixhole" { 
+		return T_fixes;
+}
 						
 
 "def"		{

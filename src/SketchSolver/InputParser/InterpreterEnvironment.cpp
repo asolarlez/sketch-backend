@@ -678,6 +678,16 @@ void InterpreterEnvironment::share(){
 
 
 
+void InterpreterEnvironment::fixes(const string& holename) {
+	int pos = spskpairs.size();
+	if (holesToHardcode.size() <= pos) {
+		holesToHardcode.resize(pos + 1);
+	}
+	Assert(pos > 0, "CAN'T HAPPEN!");
+	holesToHardcode[pos-1].push_back(holename);
+}
+
+
 
 
 int InterpreterEnvironment::doallpairs() {
@@ -748,6 +758,35 @@ int InterpreterEnvironment::doallpairs() {
 			if (hardcoder.isDone()) {
 				break;
 			}
+			if (i < holesToHardcode.size()) {
+				auto tohardcode = holesToHardcode[i];
+				for (auto holes = tohardcode.begin(); holes != tohardcode.end(); ++holes) {
+					Tvalue& tv = finder->getControl(*holes);
+					auto val = solver->ctrlStore[*holes];
+					hardcoder.settleHole(*holes, val);
+					if (tv.isSparse()) {
+						for (int idx = 0; idx < tv.getSize(); ++idx) {
+							auto gv = tv.num_ranges[idx];
+							if (gv.value == val) {
+								finder->addAssertClause(gv.guard);
+							}
+							else {
+								finder->addAssertClause(-gv.guard);
+							}
+						}
+					}
+					else {
+						if (val == 1) {
+							finder->addAssertClause(tv.getId());
+						}
+						else {
+							finder->addAssertClause(-tv.getId());
+						}
+					}
+
+				}
+			}
+
 		}
 		roundtimer.stop();
 		cout << "**ROUND " << trailID << " : " << hardcoder.getTotsize() << " ";

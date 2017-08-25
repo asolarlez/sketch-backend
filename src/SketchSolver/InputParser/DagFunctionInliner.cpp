@@ -100,15 +100,22 @@ void DagFunctionInliner::visit(CTRL_node& node){
 		rvalue = this->getCnode(true);
 	}else{
 		if(randomize){
-      if (node.is_sp_concretize()) {
-        rvalue = hcoder->checkRandHole(&node, *this);
-        return;
-      }
-      if (!onlySpRandomize) {
-        rvalue = hcoder->checkRandHole(&node, *this);
-        return;
-      }
+		  if (node.is_sp_concretize()) {
+			rvalue = hcoder->checkRandHole(&node, *this);
+			return;
+		  }
+		  if (!onlySpRandomize) {
+			rvalue = hcoder->checkRandHole(&node, *this);
+			return;
+		  }
 		}
+		else {
+			int val;
+			if (hcoder->isSettled(node.get_name(), val)) {
+				rvalue = this->getCnode(val);
+				return;
+			}
+		}		
 		DagOptim::visit(node);
 	}
 }
@@ -641,9 +648,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						bool_node * oldMother = ufun->mother;
 						
 						const bool_node* nnode;
-						if (isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
+						if (!ufun->ignoreAsserts &&  isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
 							//cout << "Pre inlining " << ufun->get_ufname() << endl;
-							if (ictrl != NULL) { ictrl->registerCall(node, ufun); }
+							if (ictrl != NULL) { ictrl->registerCall(node, ufun); }							
 							visit(*ufun);
 							nnode = rvalue;
 							if (ictrl != NULL) { ictrl->registerInline(node); }

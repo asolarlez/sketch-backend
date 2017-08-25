@@ -290,6 +290,10 @@ public:
 
 	void doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int i, map<string, map<string, string> > replaceMap);
 
+	vector<vector<string> > holesToHardcode;
+
+	void fixes(const string& holename);
+
 	BooleanDAG* getCopy(const string& s) {
 		return functionMap[s]->clone();
 	}

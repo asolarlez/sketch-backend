@@ -287,6 +287,14 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 	if (node->get_toMinimize()) {
 		minholes.insert(node->get_name());
 	}
+
+	auto settled = settledHoles.find(node->get_name());
+	if (settled != settledHoles.end()) {
+		return opt.getCnode(settled->second);
+	}
+
+	
+
 	int chsize = node->children.size();
 	if (chsize == 0 || node->get_Angelic()) return node;
 	string name = node->get_name();

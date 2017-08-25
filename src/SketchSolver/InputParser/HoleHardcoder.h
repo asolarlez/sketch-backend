@@ -124,6 +124,13 @@ class HoleHardcoder{
 	*/
 	map<string, int> randholes;	
 
+
+	/*
+	settledHoles keeps track of holes whose value is already known and therefore should be concretized to that value. The reason to keep them as a separate map is that
+	whereas randholes represent just random guesses on the value of a hole, settledHoles represent holes whose value is a consequence of other decisions.
+	*/
+	map<string, int> settledHoles;
+
 	set<string> minholes;
 	bool hardcodeMinholes;
 
@@ -199,6 +206,21 @@ class HoleHardcoder{
 		pendingConstraints = true;
 	}
 public:
+
+
+	void settleHole(const string& name, int value) {
+		settledHoles[name] = value;
+	}
+
+
+	bool isSettled(const string& name, int& out) {
+		auto it = settledHoles.find(name);
+		if (it != settledHoles.end()) {
+			out = it->second;
+			return true;
+		}
+		return false;
+	}
 
     int fixValue(CTRL_node& node, int bound, int nbits);
 

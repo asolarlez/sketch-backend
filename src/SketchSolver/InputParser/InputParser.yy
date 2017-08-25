@@ -69,6 +69,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_For
 %token T_ge
 %token T_le
+%token T_fixes
 
 
 %token T_Native
@@ -130,6 +131,7 @@ Program: Typedef MethodList T_eof{ solution.start(); int tmp= envt->doallpairs()
 MethodList: {}
 | Method MethodList {}
 | HLAssertion MethodList {}
+| FixesClause MethodList {}
 | Replacement MethodList {}
 
 
@@ -330,6 +332,11 @@ Replacement: T_replace T_ident '*' T_ident T_equals T_ident '(' NegConstant ')' 
   envt->registerFunctionReplace(*$4, *$2, *$6, $8);
 }
 
+
+
+FixesClause: T_fixes T_ident ';'{
+	envt->fixes(*$2);
+}
 
 AssertionExpr: T_ident T_Sketches T_ident
 {
