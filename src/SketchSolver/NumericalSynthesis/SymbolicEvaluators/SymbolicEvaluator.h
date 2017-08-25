@@ -9,4 +9,6 @@ public:
 	virtual double errorGD(gsl_vector* d) = 0;
 	virtual bool check(bool_node* n, int expected) = 0;
 	//virtual set<int> getConflicts(int nid) = 0;
+	virtual void print() = 0;
+	virtual void printFull() = 0;
 };

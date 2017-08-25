@@ -78,7 +78,7 @@ public:
 		return v(*bn);
 	}
 	
-	void print() {
+	virtual void print() {
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << " ";
 			ValueGrad* val = v(bdag[i]);
@@ -89,7 +89,7 @@ public:
 			}
 		}
 	}
-	void printFull() {
+	virtual void printFull() {
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << endl;
 			ValueGrad* val = v(bdag[i]);

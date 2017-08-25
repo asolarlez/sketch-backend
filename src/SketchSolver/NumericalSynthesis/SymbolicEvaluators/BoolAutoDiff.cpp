@@ -4,10 +4,10 @@
 #include <math.h>
 
 
-BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
+BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p) {
 	values.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
-	nctrls = floatCtrls_p.size() + boolCtrls_p.size();
+	nctrls = floatCtrls_p.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
 }
@@ -36,20 +36,6 @@ void BoolAutoDiff::visit( DST_node& node ) {
 
 void BoolAutoDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
-	DistanceGrad* dg = d(node);
-	DistanceGrad* mdist = d(node.mother);
-	int ival = getInputValue(node); // Get the value from SAT solver
-	if (ival != DEFAULT_INP) {
-		Assert(ival == 1, "Did SAT solver set 0 for an assert?");
-	}
-	Assert(mdist->set, "NYI: dsakhf");
-	// Check if the value computed from mother satisfies the assert
-	if (mdist->set) {
-		computeError(mdist->dist, 1, mdist->grad, node, node.isHard());
-	}
-	dg->dist = 1000;
-	GradUtil::default_grad(dg->grad);
-	dg->set = true;
 }
 
 void BoolAutoDiff::visit( CTRL_node& node ) {
@@ -65,6 +51,7 @@ void BoolAutoDiff::visit( CTRL_node& node ) {
 		}
 		ValueGrad* val = v(node);
 		val->update(gsl_vector_get(ctrls, idx));
+		val->set = true;
 		GradUtil::default_grad(val->getGrad());
 		gsl_vector_set(val->getGrad(), idx, 1.0);
 		
@@ -72,27 +59,11 @@ void BoolAutoDiff::visit( CTRL_node& node ) {
 		DistanceGrad* dg = d(node);
 		int ival = getInputValue(node);
 		if (ival != DEFAULT_INP) {
-			dg->set = false;
-			ValueGrad* val = v(node);
-			val->update((float) ival);
-			GradUtil::default_grad(val->getGrad());
+			dg->dist = (ival == 1) ? 1000 : -1000;
+			GradUtil::default_grad(dg->grad);
+			dg->set = true;
 		} else {
 			dg->set = false;
-			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff for integer ctrls");
-			int idx = -1;
-			if (boolCtrls.find(name) != boolCtrls.end()) {
-				idx = boolCtrls[name];
-			} else {
-				Assert(false, "All bool holes should have a corresponding float approximate");
-			}
-			float cval = gsl_vector_get(ctrls, idx);
-			ValueGrad* val = v(node);
-			val->update(cval);
-			GradUtil::default_grad(val->getGrad());
-			gsl_vector_set(val->getGrad(), idx, 1.0);
-			// add errors for ranges of new holes added to approximate boolean holes
-			computeError(100.0*cval - 100.0*1.0, 0, val->getGrad(), node, false);
-			computeError(100.0*cval, 1, val->getGrad(), node, false);
 		}
 	}
 }
@@ -115,67 +86,32 @@ void BoolAutoDiff::visit( TIMES_node& node ) {
 	ValueGrad::vg_times(mval, fval, val);
 }
 
-void BoolAutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the two different representations for boolean nodes
-
+void BoolAutoDiff::visit(ARRACC_node& node )  {
 	Assert(node.multi_mother.size() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
-	DistanceGrad* dist = d(node.mother);
-	ValueGrad* dval = v(node.mother);
-	DistanceGrad* mdist = d(node.multi_mother[0]);
-	DistanceGrad* fdist = d(node.multi_mother[1]);
-	ValueGrad* mval = v(node.multi_mother[0]);
-	ValueGrad* fval = v(node.multi_mother[1]);
-	DistanceGrad* dg = d(node);
-	ValueGrad* val = v(node);
-	if (dist->set) {
-		if (!isFloat(node)) {
-			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff arracc with ints");
-			if (mdist->set && fdist->set) {
-				DistanceGrad::dg_ite(dist, mdist, fdist, dg); // compute using ands and ors
-			} else if (!mdist->set && !fdist->set) {
-				ValueGrad::vg_ite(mval, fval, dist, val); // sigmoid computation
-				dg->set = false;
+	if (node.getOtype() == OutType::BOOL) {
+		DistanceGrad* dg = d(node);
+		DistanceGrad* cdist = d(node.mother);
+		if (cdist->set) {
+			DistanceGrad* mdist = d(node.multi_mother[0]);
+			DistanceGrad* fdist = d(node.multi_mother[1]);
+			if (cdist->dist > 100.0) {
+				DistanceGrad::dg_copy(fdist, dg);
+			} else if (cdist->dist < -100.0) {
+				DistanceGrad::dg_copy(mdist, dg);
 			} else {
-				cout << node.lprint() << endl;
-				Assert(false, "NYI: BoolAutoDiff bool holes");
+				Assert(false, "dafuerq");
 			}
-			int ival = getInputValue(node);
-			if (ival != DEFAULT_INP) {
-				// check that the value computed from parents matches the value set by the SAT solver.
-				if (dg->set) {
-					computeError(dg->dist, ival, dg->grad, node);
-				}
-				dg->dist = (ival == 1) ? 1000 : -1000;
-				GradUtil::default_grad(dg->grad);
-				dg->set = true;
-			}
-
 		} else {
-			ValueGrad::vg_ite(mval, fval, dist, val); // sigmoid computation
+			dg->set = false;
 		}
-	} else {
-		if (!isFloat(node)) {
-			Assert(node.getOtype() == OutType::BOOL, "NYI: BoolAutoDiff arracc with ints");
-			if (mdist->set && fdist->set) {
-				ValueGrad::vg_ite(mdist, fdist, dval, dg); // Compute using boolean relaxation
-			} else if (!mdist->set && !fdist->set) {
-				Assert(false, "NYI:yurida");
-			} else {
-				Assert(false, "NYI: qewrq");
-			}
-			int ival = getInputValue(node);
-			if (ival != DEFAULT_INP) {
-				// check that the value computed from parents matches the value set by the SAT solver.
-				if (dg->set) {
-					computeError(dg->dist, ival, dg->grad, node);
-				}
-				dg->dist = (ival == 1) ? 1000 : -1000;
-				GradUtil::default_grad(dg->grad);
-				dg->set = true;
-			}
-
-		} else {
-			ValueGrad::vg_ite(mval, fval, dval, val); // Compute using boolean relaxation
-		}
+	}
+	
+	if (node.getOtype() == OutType::FLOAT) {
+		ValueGrad* val  = v(node);
+		DistanceGrad* cdist = d(node.mother);
+		ValueGrad* mval = v(node.multi_mother[0]);
+		ValueGrad* fval = v(node.multi_mother[1]);
+		ValueGrad::vg_ite(mval, fval, cdist, val);
 	}
 }
 
@@ -205,14 +141,11 @@ void BoolAutoDiff::visit( CONST_node& node ) {
 	if (node.getOtype() != OutType::BOOL) {
 		ValueGrad* val = v(node);
 		val->update(node.getFval());
+		val->set = true;
 		GradUtil::default_grad(val->getGrad());
 	} else {
 		int val = node.getVal();
 		DistanceGrad* dg = d(node);
-		int ival = getInputValue(node);
-		if (ival != DEFAULT_INP) {
-			Assert(val == ival, "SAT solver set wrong value for a const?");
-		}
 		if (node.getOtype() == OutType::BOOL) {
 			dg->dist = (val == 1) ? 1000 : -1000;
 			GradUtil::default_grad(dg->grad);
@@ -233,17 +166,6 @@ void BoolAutoDiff::visit( LT_node& node ) {
 	ValueGrad* fval = v(node.father);
 	
 	ValueGrad::vg_lt(mval, fval, dg);
-	
-	int ival = getInputValue(node);
-	if (ival != DEFAULT_INP) {
-		// check that the value computed from parents matches the value set by the SAT solver.
-		if (dg->set) {
-			computeError(dg->dist, ival, dg->grad, node);
-		}
-		dg->dist = (ival == 1) ? 1000 : -1000;
-		GradUtil::default_grad(dg->grad);
-		dg->set = true;
-	}
 }
 
 void BoolAutoDiff::visit( EQ_node& node ) {
@@ -260,25 +182,8 @@ void BoolAutoDiff::visit( AND_node& node ) {
 
 	if (mdist->set && fdist->set) {
 		DistanceGrad::dg_and(mdist, fdist, dg);
-	} else if (!mdist->set && !fdist->set) {
-		ValueGrad* val = v(node);
-		ValueGrad* mval = v(node.mother);
-		ValueGrad* fval = v(node.father);
-		ValueGrad::vg_and(mval, fval, val);
-		dg->set = false;
 	} else {
-		Assert(false, "dfahiq");
-	}
-	
-	int ival = getInputValue(node);
-	if (ival != DEFAULT_INP) {
-		// check that the value computed from parents matches the value set by the SAT solver.
-		if (dg->set) {
-			computeError(dg->dist, ival, dg->grad, node);
-		}
-		dg->dist = (ival == 1) ? 1000 : -1000;
-		GradUtil::default_grad(dg->grad);
-		dg->set = true;
+		dg->set = false;
 	}
 }
 
@@ -291,28 +196,8 @@ void BoolAutoDiff::visit( OR_node& node ) {
 	
 	if (mdist->set && fdist->set) {
 		DistanceGrad::dg_or(mdist, fdist, dg);
-	} else if (!mdist->set && !fdist->set) {
-		ValueGrad* val = v(node);
-		ValueGrad* mval = v(node.mother);
-		ValueGrad* fval = v(node.father);
-		ValueGrad::vg_or(mval, fval, val);
-		dg->set = false;
 	} else {
-		cout << node.lprint() << endl;
-		cout << node.mother->lprint() << endl;
-		cout << node.father->lprint() << endl;
-		Assert(false, "dauhpw");
-	}
-	
-	int ival = getInputValue(node);
-	if (ival != DEFAULT_INP) {
-		// check that the value computed from parents matches the value set by the SAT solver.
-		if (dg->set) {
-			computeError(dg->dist, ival, dg->grad, node);
-		}
-		dg->dist = (ival == 1) ? 1000 : -1000;
-		GradUtil::default_grad(dg->grad);
-		dg->set = true;
+		dg->set = false;
 	}
 }
 
@@ -323,21 +208,7 @@ void BoolAutoDiff::visit( NOT_node& node ) {
 	if (mdist->set) {
 		DistanceGrad::dg_not(mdist, dg);
 	} else {
-		ValueGrad* val = v(node);
-		ValueGrad* mval = v(node.mother);
-		ValueGrad::vg_not(mval, val);
 		dg->set = false;
-	}
-	
-	int ival = getInputValue(node);
-	if (ival != DEFAULT_INP) {
-		// check that the value computed from parents matches the value set by the SAT solver.
-		if (dg->set) {
-			computeError(dg->dist, ival, dg->grad, node);
-		}
-		dg->dist = (ival == 1) ? 1000 : -1000;
-		GradUtil::default_grad(dg->grad);
-		dg->set = true;
 	}
 }
 
@@ -385,53 +256,51 @@ void BoolAutoDiff::visit( TUPLE_R_node& node) {
 	}
 }
 
-double BoolAutoDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p) {
+void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
 	Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
 
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
 	}
 	inputValues = inputValues_p;
-	errorGrad = errorGrad_p;
-	error = 0;
-	assertCtr = 0;//bdag.size();
-	foundFailure = false;
 
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		//cout << (*node_it)->lprint() << endl;
 		(*node_it)->accept(*this);
 	}
+}
+
+double BoolAutoDiff::errorGD(gsl_vector* errorGrad_p) {
+	errorGrad = errorGrad_p;
+	error = 0;
+	for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+		bool_node* n = *node_it;
+		if (n->type == bool_node::ASSERT) {
+			DistanceGrad* dg = d(n->mother);
+			if (dg->set) {
+				computeError(dg->dist, 1, dg->grad);
+			}
+		}
+	}
 	return error;
 }
 
-void BoolAutoDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
-	assertCtr++;
-	if (!foundFailure && (expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-		//cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;
-		/*cout << "Grad: " ;
-		 for (int i = 0; i < nctrls; i++) {
-			cout << gsl_vector_get(dg, i) << " ";
-		 }
-		 cout << endl;*/
-		
+void BoolAutoDiff::computeError(float dist, int expected, gsl_vector* dg) {
+	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 		error += abs(dist);
-		
 		gsl_vector_memcpy(GradUtil::tmp3, dg);
 		gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
 		gsl_vector_add(errorGrad, GradUtil::tmp3);
-		
-		//cout << "Faield " << assertCtr  << " " << node.mother->lprint() << endl;
-		
-		/*if (!relax && gsl_blas_dnrm2(errorGrad) > 0.01 && error > 0.01) {
-			//error += ASSERT_PENALTY * 1000.0/assertCtr;
-			failedAssert = assertCtr;
-			foundFailure = true;
-		 }*/
-	} else {
+	}
+}
+
+bool BoolAutoDiff::check(bool_node* n, int expected) {
+	DistanceGrad* dg = d(n);
+	if (dg->set) {
+		float dist = dg->dist;
 		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-			//cout << "Ignoring failed " << assertCtr << " " << node.mother->lprint() << endl;
-		} else {
-			//cout << "Passed " << assertCtr << endl;
+			return false;
 		}
 	}
+	return true;
 }

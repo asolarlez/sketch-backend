@@ -72,8 +72,7 @@ void AutoDiff::visit( TIMES_node& node ) {
 	ValueGrad::vg_times(mval, fval, val);
 }
 
-void AutoDiff::visit(ARRACC_node& node )  { // TODO: find a way to combine the two different representations for boolean nodes
-
+void AutoDiff::visit(ARRACC_node& node )  {
 	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
 	ValueGrad* val = v(node);
 	if (node.getOtype() == OutType::BOOL) {
@@ -115,11 +114,13 @@ void AutoDiff::visit( NEG_node& node ) {
 }
 
 void AutoDiff::visit( CONST_node& node ) {
+	ValueGrad* val = v(node);
 	if (node.getOtype() != OutType::BOOL) {
-		ValueGrad* val = v(node);
 		val->update(node.getFval());
 		val->set = true;
 		GradUtil::default_grad(val->getGrad());
+	} else {
+		val->set = false;
 	}
 }
 

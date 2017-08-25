@@ -1,13 +1,14 @@
-#include "BasicNumericalHelper.h"
+#include "BoolApproxHelper.h"
 
 
-BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
 	dag->lprint(cout);
+	
 	// Collect the list of boolean nodes which can be ignored.
+	// Basically all nodes that are not boolean holes can be ignored - is this correct? maybe we want to use the other boolean nodes as well to get rid of softmax/softmin approximation
 	for (int i = 0; i < dag->size(); i++) {
-		// ignore boolean nodes that don't have either float children or float parents
 		bool_node* n = (*dag)[i];
-		if (n->getOtype() == OutType::BOOL && !n->hasFloatParent() && !n->hasFloatChild()) {
+		if (n->getOtype() == OutType::BOOL && n->type != bool_node::CTRL) {
 			ignoredBoolNodes.insert(i);
 		}
 	}
@@ -32,9 +33,8 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	state = gsl_vector_alloc(ncontrols);
 	randomizeCtrls(state);
 	opt = new GradientDescentWrapper(ncontrols);
-	eval = new AutoDiff(*dag, fm, ctrlMap);
-	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-	cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
+	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+	cg = new SimpleConflictGenerator();
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
 	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
@@ -43,7 +43,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
-BasicNumericalHelper::~BasicNumericalHelper(void) {
+BoolApproxHelper::~BoolApproxHelper(void) {
 	delete GradUtil::tmp;
 	delete GradUtil::tmp1;
 	delete GradUtil::tmp2;
@@ -51,12 +51,12 @@ BasicNumericalHelper::~BasicNumericalHelper(void) {
 	delete GradUtil::tmpT;
 }
 
-void BasicNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
 }
 
-bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
+bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
 	if (ignoredBoolNodes.find(nid) != ignoredBoolNodes.end()) {
 		return false;
@@ -66,7 +66,7 @@ bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
-bool BasicNumericalHelper::checkSAT() {
+bool BoolApproxHelper::checkSAT() {
 	bool sat = opt->optimize(this, state);
 	if (sat) {
 		state = opt->getMinState();
@@ -74,36 +74,26 @@ bool BasicNumericalHelper::checkSAT() {
 	return sat;
 }
 
-bool BasicNumericalHelper::ignoreConflict() {
+bool BoolApproxHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
+vector<tuple<int, int, int>> BoolApproxHelper::collectSuggestions() {
+	// No suggestions
 	vector<tuple<int, int, int>> suggestions;
-	for (int i = 0; i < allInputs.size(); i++) {
-		vector<tuple<float, int, int>> s = seval->run(state, imap);
-		sort(s.begin(), s.end());
-		reverse(s.begin(), s.end());
-		for (int k = 0; k < s.size(); k++) {
-			int idx = get<1>(s[k]);
-			if (allInputs[i][idx] == EMPTY) {
-				suggestions.push_back(make_tuple(i, idx, get<2>(s[k])));
-			}
-		}
-	}
 	return suggestions;
 }
 
-vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BasicNumericalHelper::autodiff(const gsl_vector* state, int rowid) {
+void BoolApproxHelper::autodiff(const gsl_vector* state, int rowid) {
 	eval->run(state, Util::getNodeToValMap(imap, allInputs[rowid]));
 	eval->print();
 }
 
-float BasicNumericalHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
+float BoolApproxHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(d, i, 0);
 	}
@@ -115,7 +105,7 @@ float BasicNumericalHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
 	return error;
 }
 
-void BasicNumericalHelper::randomizeCtrls(gsl_vector* state) {
+void BoolApproxHelper::randomizeCtrls(gsl_vector* state) {
 	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
 	int counter = 0;
 	for (int i = 0; i < ctrls.size(); i++) {
@@ -138,7 +128,7 @@ void BasicNumericalHelper::randomizeCtrls(gsl_vector* state) {
 	}
 }
 
-void BasicNumericalHelper::getControls(map<string, float>& ctrls) {
+void BoolApproxHelper::getControls(map<string, float>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}

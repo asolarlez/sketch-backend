@@ -1,3 +1,4 @@
+#pragma once
 class SimulatedAnnealing {
 	double T = 10;
 	double coolingRate = 0.1;

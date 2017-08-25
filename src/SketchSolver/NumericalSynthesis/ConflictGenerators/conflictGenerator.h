@@ -4,12 +4,13 @@
 #include "BooleanDAG.h"
 #include <map>
 #include "SymbolicEvaluator.h"
+#include "AbstractConflictGenerator.h"
 
 #include <iostream>
 #include "Util.h"
 
 
-class ConflictGenerator {
+class ConflictGenerator: public AbstractConflictGenerator {
 	SymbolicEvaluator* eval;
 	map<int, int>& imap;
 	BooleanDAG* dag;
@@ -61,7 +62,7 @@ public:
 		return false;
 	}
 	
-	vector<pair<int, int>> getConflicts(gsl_vector* state, vector<vector<int>>& allInputs, vector<int>& instanceIds, int rowid, int colid) {
+	virtual vector<pair<int, int>> getConflicts(gsl_vector* state, vector<vector<int>>& allInputs, vector<int>& instanceIds, int rowid, int colid) {
 		vector<pair<int, int>> conflicts;
 		for (int i = 0; i < allInputs.size(); i++) {
 			const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[i]);

@@ -7,20 +7,18 @@
 #include "VarStore.h"
 #include <map>
 #include "FloatSupport.h"
-
+#include "SymbolicEvaluator.h"
 
 #include <iostream>
 
-#define RELAX_BOOL 1
 
 using namespace std;
 
-class BoolAutoDiff: NodeVisitor
+class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
 	FloatManager& floats;
 	BooleanDAG& bdag;
 	map<string, int> floatCtrls; // Maps float ctrl names to indices within grad vector
-	map<string, int> boolCtrls; // Maps bool ctrl names to indices within grad vector
 	int nctrls; // number of float ctrls
 	gsl_vector* ctrls; // ctrl values
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
@@ -30,15 +28,11 @@ class BoolAutoDiff: NodeVisitor
 	gsl_vector* errorGrad;
 	
 	int DEFAULT_INP = -1;
-	int assertCtr;
-	bool foundFailure;
-	
-	static constexpr float ASSERT_PENALTY = 1.0;
 	
 public:
 	int failedAssert;
 	
-	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
+	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p);
 	~BoolAutoDiff(void);
 	
 	virtual void visit( SRC_node& node );
@@ -61,7 +55,9 @@ public:
 	virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
 	
-	double run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, gsl_vector* errorGrad_p);
+	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
+	virtual double errorGD(gsl_vector* d);
+	virtual bool check(bool_node* n, int expected);
 	
 	void setvalue(bool_node& bn, ValueGrad* v) {
 		values[bn.id] = v;
@@ -99,30 +95,38 @@ public:
 		return d(*bn);
 	}
 	
-	void print() {
+	virtual void print() {
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << " ";
 			if (bdag[i]->getOtype() == OutType::FLOAT) {
-				cout << v(bdag[i])->print() << endl;
+				if (v(bdag[i])->set) {
+					cout << v(bdag[i])->print() << endl;
+				} else {
+					cout << "UNSET" << endl;
+				}
 			} else {
 				if (d(bdag[i])->set) {
 					cout << d(bdag[i])->print() << endl;
 				} else {
-					cout << v(bdag[i])->print() << endl;
+					cout << "UNSET" << endl;
 				}
 			}
 		}
 	}
-	void printFull() {
+	virtual void printFull() {
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << endl;
 			if (bdag[i]->getOtype() == OutType::FLOAT) {
-				cout << v(bdag[i])->printFull() << endl;
+				if (v(bdag[i])->set) {
+					cout << v(bdag[i])->printFull() << endl;
+				} else {
+					cout << "UNSET" <<endl;
+				}
 			} else {
 				if(d(bdag[i])->set) {
 					cout << d(bdag[i])->printFull() << endl;
 				} else {
-					cout << v(bdag[i])->printFull() << endl;
+					cout << "UNSET" << endl;
 				}
 			}
 		}
@@ -149,6 +153,6 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	void computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax = false);
+	void computeError(float dist, int expected, gsl_vector* dg);
 	
 };

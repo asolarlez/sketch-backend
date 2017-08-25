@@ -45,5 +45,5 @@ public:
 	static void dg_or(DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
 	static void dg_not(DistanceGrad* m, DistanceGrad* d);
 	static void dg_ite(DistanceGrad* b, DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
-
+	static void dg_copy(DistanceGrad* m, DistanceGrad* o);
 };

@@ -9,16 +9,16 @@
 
 #include "BooleanDAG.h"
 #include "CommandLineArgs.h"
-#include "AutoDiff.h"
+#include "BoolAutoDiff.h"
 #include "SimpleEvaluator.h"
 #include "GradientDescentWrapper.h"
 #include "SymbolicEvaluator.h"
 #include "NumericalSolverHelper.h"
-#include "ConflictGenerator.h"
+#include "SimpleConflictGenerator.h"
+#include "Util.h"
 
-
-// Only handles the numerical part of the circuit. If the circuit contains any boolean structure, it will wait until the sat solver fixes all the boolean variables at the interface to the boolean structure.
-class BasicNumericalHelper: public NumericalSolverHelper {
+// Reasons about everything modulo boolean holes
+class BoolApproxHelper: public NumericalSolverHelper {
 	set<int> ignoredBoolNodes;
 	OptimizationWrapper* opt;
 	int ncontrols;
@@ -26,16 +26,14 @@ class BasicNumericalHelper: public NumericalSolverHelper {
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
 	SymbolicEvaluator* eval;
-	SimpleEvaluator* seval;
 	
 	map<string, int> ctrlMap; // Maps float ctrl names to indices with grad vectors
-	map<string, int> boolCtrlMap; // Maps bool ctrl names to indices with grad vectors
 	
 	AbstractConflictGenerator* cg;
 	
 public:
-	BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
-	~BasicNumericalHelper(void);
+	BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
+	~BoolApproxHelper(void);
 	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds);
 	virtual bool checkInputs(int rowid, int colid);
 	virtual bool checkSAT();

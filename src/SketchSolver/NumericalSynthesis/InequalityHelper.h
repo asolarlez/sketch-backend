@@ -40,5 +40,5 @@ public:
 	virtual float evalGD(const gsl_vector* state, gsl_vector* d);
 	virtual void randomizeCtrls(gsl_vector* state);
 	virtual void getControls(map<string, float>& ctrls);
-	//virtual void autodiff(const gsl_vector* state, int rowid);
+	void autodiff(const gsl_vector* state, int rowid) {}
 };

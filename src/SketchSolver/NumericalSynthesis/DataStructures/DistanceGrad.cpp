@@ -84,8 +84,17 @@ void DistanceGrad::dg_ite(DistanceGrad* bdist, DistanceGrad* mdist, DistanceGrad
 		dg_and(tmpd1, tmpd3, dg);
 	} else {
 		dg_or(mdist, fdist, dg);
-	}
-	dg->set = true;
-	
+	}	
 }
+
+void DistanceGrad::dg_copy(DistanceGrad* m, DistanceGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
+	o->set = true;
+	o->dist = m->dist;
+	gsl_blas_dcopy(m->grad, o->grad);
+}
+
 

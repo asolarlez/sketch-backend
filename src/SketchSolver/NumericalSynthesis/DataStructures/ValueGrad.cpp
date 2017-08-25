@@ -66,6 +66,10 @@ void ValueGrad::vg_neg(ValueGrad* m, ValueGrad* o) {
 // Approximate ite with a sigmoid
 // o = f*sigmoid(d) + m*sigmoid(-d)
 void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, DistanceGrad* d, ValueGrad* o) {
+	if (!m->set || !f->set || !d->set) {
+		o->set = false;
+		return;
+	}
 	float s1 = GradUtil::sigmoid(d->dist, d->grad, GradUtil::tmp);
 	float v1 = s1 * f->getVal();
 	GradUtil::compute_mult_grad(s1, f->getVal(), GradUtil::tmp, f->getGrad(), o->getGrad());
@@ -77,11 +81,16 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, DistanceGrad* d, ValueGrad* o
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getGrad());
 	
 	o->update(v1 + v2);
+	o->set = true;
 	o->bound();
 }
 
 // Approximate ite with d*f + (1 - d)*m
 void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o) {
+	if (!m->set || !f->set || !d->set) {
+		o->set = false;
+		return;
+	}
 	float v1 = d->getVal() * f->getVal();
 	GradUtil::compute_mult_grad(d->getVal(), f->getVal(), d->getGrad(), f->getGrad(), o->getGrad());
 	
@@ -92,9 +101,14 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o) {
 	
 	o->update(v1 + v2);
 	o->bound();
+	o->set = true;
 }
 
 void ValueGrad::vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceGrad* o) {
+	if (!m->set || !f->set || !d->set) {
+		o->set = false;
+		return;
+	}
 	Assert(m->set && f->set, "Something is wrong dsaf");
 	float v1 = d->getVal() * f->dist;
 	GradUtil::compute_mult_grad(d->getVal(), f->dist, d->getGrad(), f->grad, o->grad);
@@ -112,6 +126,10 @@ void ValueGrad::vg_equal(ValueGrad* m, ValueGrad* f, DistanceGrad* o) {
 }
 
 void ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, DistanceGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
 	o->dist = f->getVal()  - m->getVal();
 	gsl_vector_memcpy(o->grad, f->getGrad());
 	gsl_vector_sub(o->grad, m->getGrad());
@@ -222,6 +240,10 @@ void ValueGrad::vg_copy(ValueGrad* i1, ValueGrad* i2) {
 
 // o = m + f - mf
 void ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
 	float mval = m->getVal();
 	float fval = f->getVal();
 	float val = mval + fval - mval*fval;
@@ -233,6 +255,10 @@ void ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 
 // o = mf
 void ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
+	if (!m->set || !f->set) {
+		o->set = false;
+		return;
+	}
 	float mval = m->getVal();
 	float fval = f->getVal();
 	float val = mval*fval;
@@ -242,6 +268,10 @@ void ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 
 // o = 1 - m
 void ValueGrad::vg_not(ValueGrad* m, ValueGrad* o) {
+	if (!m->set) {
+		o->set = false;
+		return;
+	}
 	o->update(1 - m->getVal());
 	GradUtil::compute_neg_grad(m->getGrad(), o->getGrad());
 }
