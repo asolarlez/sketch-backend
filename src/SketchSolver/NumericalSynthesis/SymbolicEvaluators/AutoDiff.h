@@ -55,9 +55,8 @@ public:
 	
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
 	
-	virtual double errorGD(gsl_vector* errorGrad_p);
-	
 	virtual bool check(bool_node* n, int expected);
+	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
 	//virtual set<int> getConflicts(int nid);
 	
 	void setvalue(bool_node& bn, ValueGrad* v) {
@@ -122,6 +121,6 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	void computeError(float dist, int expected, gsl_vector* dg);
+	
 	
 };

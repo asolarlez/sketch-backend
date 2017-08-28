@@ -6,8 +6,8 @@
 class SymbolicEvaluator {
 public:
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) = 0;
-	virtual double errorGD(gsl_vector* d) = 0;
 	virtual bool check(bool_node* n, int expected) = 0;
+	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad) = 0;
 	//virtual set<int> getConflicts(int nid) = 0;
 	virtual void print() = 0;
 	virtual void printFull() = 0;

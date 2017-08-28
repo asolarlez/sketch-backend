@@ -42,8 +42,8 @@ public:
 	gsl_vector* getResults() {
 		return minidf->x;
 	}
-	void init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p, gsl_vector* initX);
-	double optimize(); // optimizes until value is 0
+	void init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p);
+	double optimize(gsl_vector* initX); // optimizes until value is 0
 };
 
 

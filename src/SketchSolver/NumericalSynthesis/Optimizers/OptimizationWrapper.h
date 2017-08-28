@@ -4,6 +4,6 @@
 
 class OptimizationWrapper {
 public:
-	virtual bool optimize(NumericalSolverHelper* ns, gsl_vector* initState) = 0;
+	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState) = 0;
 	virtual gsl_vector* getMinState() = 0;
 };

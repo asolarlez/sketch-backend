@@ -31,9 +31,9 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	
 	state = gsl_vector_alloc(ncontrols);
 	randomizeCtrls(state);
-	opt = new GradientDescentWrapper(ncontrols);
 	eval = new AutoDiff(*dag, fm, ctrlMap);
 	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
+	opt = new GradientDescentWrapper(this, eval, dag, imap, ncontrols);
 	cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
@@ -67,7 +67,7 @@ bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 }
 
 bool BasicNumericalHelper::checkSAT() {
-	bool sat = opt->optimize(this, state);
+	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
 		state = opt->getMinState();
 	}
@@ -103,17 +103,6 @@ void BasicNumericalHelper::autodiff(const gsl_vector* state, int rowid) {
 	eval->print();
 }
 
-float BasicNumericalHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
-	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(d, i, 0);
-	}
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		eval->run(state, Util::getNodeToValMap(imap, allInputs[i]));
-		error += eval->errorGD(d);
-	}
-	return error;
-}
 
 void BasicNumericalHelper::randomizeCtrls(gsl_vector* state) {
 	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);

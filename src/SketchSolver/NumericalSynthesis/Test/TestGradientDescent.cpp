@@ -30,8 +30,8 @@ void testQuad() {
 	GradientDescent* gd = new GradientDescent(1);
 	gsl_vector* init = gsl_vector_alloc(1);
 	gsl_vector_set(init, 0, -100.0);
-	gd->init(Quad::eval_f, Quad::eval_df, Quad::eval_fdf, NULL, init);
-	double opt = gd->optimize();
+	gd->init(Quad::eval_f, Quad::eval_df, Quad::eval_fdf, NULL);
+	double opt = gd->optimize(init);
 	assert(abs(opt) <= gd->PRECISION);
 }
 
@@ -66,8 +66,8 @@ void testQuad2() {
 	gsl_vector* init = gsl_vector_alloc(2);
 	gsl_vector_set(init, 0, -100.0);
 	gsl_vector_set(init, 1, -100.0);
-	gd->init(Quad::eval_f, Quad::eval_df, Quad::eval_fdf, NULL, init);
-	double opt = gd->optimize();
+	gd->init(Quad::eval_f, Quad::eval_df, Quad::eval_fdf, NULL);
+	double opt = gd->optimize(init);
 	assert(abs(opt) <= gd->PRECISION);
 }
 

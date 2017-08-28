@@ -32,8 +32,8 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	
 	state = gsl_vector_alloc(ncontrols);
 	randomizeCtrls(state);
-	opt = new GradientDescentWrapper(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+	opt = new GradientDescentWrapper(this, eval, dag, imap, ncontrols);
 	cg = new SimpleConflictGenerator();
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
@@ -67,7 +67,7 @@ bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 }
 
 bool BoolApproxHelper::checkSAT() {
-	bool sat = opt->optimize(this, state);
+	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
 		state = opt->getMinState();
 	}
@@ -91,18 +91,6 @@ vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
 void BoolApproxHelper::autodiff(const gsl_vector* state, int rowid) {
 	eval->run(state, Util::getNodeToValMap(imap, allInputs[rowid]));
 	eval->print();
-}
-
-float BoolApproxHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
-	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(d, i, 0);
-	}
-	double error = 0;
-	for (int i = 0; i < allInputs.size(); i++) {
-		eval->run(state, Util::getNodeToValMap(imap, allInputs[i]));
-		error += eval->errorGD(d);
-	}
-	return error;
 }
 
 void BoolApproxHelper::randomizeCtrls(gsl_vector* state) {

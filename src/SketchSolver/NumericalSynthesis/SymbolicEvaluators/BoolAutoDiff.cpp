@@ -270,28 +270,21 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	}
 }
 
-double BoolAutoDiff::errorGD(gsl_vector* errorGrad_p) {
-	errorGrad = errorGrad_p;
-	error = 0;
-	for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
-		bool_node* n = *node_it;
-		if (n->type == bool_node::ASSERT) {
-			DistanceGrad* dg = d(n->mother);
-			if (dg->set) {
-				computeError(dg->dist, 1, dg->grad);
-			}
+
+double BoolAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
+	double error = 0.0;
+	DistanceGrad* dg = d(n);
+	if (dg->set) {
+		double dist = dg->dist;
+		gsl_vector* distgrad = dg->grad;
+		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
+			error += abs(dist);
+			gsl_vector_memcpy(GradUtil::tmp3, distgrad);
+			gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
+			gsl_vector_add(errorGrad, GradUtil::tmp3);
 		}
 	}
 	return error;
-}
-
-void BoolAutoDiff::computeError(float dist, int expected, gsl_vector* dg) {
-	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-		error += abs(dist);
-		gsl_vector_memcpy(GradUtil::tmp3, dg);
-		gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
-		gsl_vector_add(errorGrad, GradUtil::tmp3);
-	}
 }
 
 bool BoolAutoDiff::check(bool_node* n, int expected) {

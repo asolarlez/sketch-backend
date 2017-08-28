@@ -42,6 +42,5 @@ public:
 	
 	// Called by the optimization solver - TODO: we need to separate this
 	virtual void autodiff(const gsl_vector* state, int rowid) = 0;
-	virtual float evalGD(const gsl_vector* state, gsl_vector* d) = 0;
 	virtual void randomizeCtrls(gsl_vector* state) = 0;
 };

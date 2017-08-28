@@ -56,9 +56,8 @@ public:
 	virtual void visit( ASSERT_node& node );
 	
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
-	virtual double errorGD(gsl_vector* d);
 	virtual bool check(bool_node* n, int expected);
-	
+	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
 	void setvalue(bool_node& bn, ValueGrad* v) {
 		values[bn.id] = v;
 	}
@@ -153,6 +152,6 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	void computeError(float dist, int expected, gsl_vector* dg);
+	
 	
 };
