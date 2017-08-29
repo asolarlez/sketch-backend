@@ -12,14 +12,16 @@
 #include "AutoDiff.h"
 #include "SimpleEvaluator.h"
 #include "GradientDescentWrapper.h"
+#include "SnoptWrapper.h"
 #include "SymbolicEvaluator.h"
 #include "NumericalSolverHelper.h"
 #include "ConflictGenerator.h"
+#include "SimpleConflictGenerator.h"
 
 
 // Only handles the numerical part of the circuit. If the circuit contains any boolean structure, it will wait until the sat solver fixes all the boolean variables at the interface to the boolean structure.
 class BasicNumericalHelper: public NumericalSolverHelper {
-	set<int> ignoredBoolNodes;
+	set<int> boolNodes;
 	OptimizationWrapper* opt;
 	int ncontrols;
 	gsl_vector* state;
@@ -42,7 +44,5 @@ public:
 	virtual bool ignoreConflict();
 	virtual vector<tuple<int, int, int>> collectSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
-	virtual void randomizeCtrls(gsl_vector* state);
 	virtual void getControls(map<string, float>& ctrls);
-	virtual void autodiff(const gsl_vector* state, int rowid);
 };

@@ -5,12 +5,13 @@ SOLVERS = SolverInterfaces/
 include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
-bin_PROGRAMS = cegis gdtest igtest snopttest
+bin_PROGRAMS = cegis gdtest igtest snopttest snoptitest
 lib_LTLIBRARIES = libcegis.la
 cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk -lsnopt_cpp
 gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
+snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
 libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
@@ -18,6 +19,7 @@ cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la
 igtest_LDADD = libcegis.la
 snopttest_LDADD = libcegis.la
+snoptitest_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
@@ -36,8 +38,10 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/GradUtil.h		\
 	NumericalSynthesis/Util.h	\
 	NumericalSynthesis/Optimizers/GradientDescent.h			\
+	NumericalSynthesis/Optimizers/Snopt.h			\
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
 	NumericalSynthesis/Optimizers/GradientDescentWrapper.h	\
+	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
 	NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
 	NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
@@ -99,6 +103,7 @@ libcegis_la_SOURCES =				\
 	NumericalSynthesis/BoolApproxHelper.cpp		\
 	NumericalSynthesis/GradUtil.cpp	\
 	NumericalSynthesis/Optimizers/GradientDescent.cpp	\
+	NumericalSynthesis/Optimizers/Snopt.cpp	\
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \
@@ -144,6 +149,7 @@ cegis_SOURCES =	InputParser/CegisMain.cpp
 gdtest_SOURCES = NumericalSynthesis/Test/TestGradientDescent.cpp
 igtest_SOURCES = NumericalSynthesis/Test/TestIntervalArith.cpp
 snopttest_SOURCES = NumericalSynthesis/Test/TestSnopt.cpp
+snoptitest_SOURCES = NumericalSynthesis/Test/TestSnoptInterface.cpp
 
 ## Hackery to put the lex/bison generated parser into a C++ namespace
 

@@ -39,8 +39,4 @@ public:
 	virtual vector<tuple<int, int, int>> collectSuggestions() = 0;
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
 	virtual void getControls(map<string, float>& ctrls) = 0;
-	
-	// Called by the optimization solver - TODO: we need to separate this
-	virtual void autodiff(const gsl_vector* state, int rowid) = 0;
-	virtual void randomizeCtrls(gsl_vector* state) = 0;
 };

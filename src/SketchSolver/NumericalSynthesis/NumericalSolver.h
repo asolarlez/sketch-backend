@@ -51,8 +51,8 @@ public:
 	void convertConflicts(const vector<pair<int, int>>& c);
 		
 	void debug();
-	void genData(gsl_vector* state, int idx, int ncontrols);
+	/*void genData(gsl_vector* state, int idx, int ncontrols);
 	void genData1D(int ncontrols);
-	void genData2D(int ncontrols);
+	void genData2D(int ncontrols);*/
 };
 

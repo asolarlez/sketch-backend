@@ -8,8 +8,11 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	// Basically all nodes that are not boolean holes can be ignored - is this correct? maybe we want to use the other boolean nodes as well to get rid of softmax/softmin approximation
 	for (int i = 0; i < dag->size(); i++) {
 		bool_node* n = (*dag)[i];
-		if (n->getOtype() == OutType::BOOL && n->type != bool_node::CTRL) {
-			ignoredBoolNodes.insert(i);
+		if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL) {
+			boolNodes.insert(i);
+		}
+		if (n->type == bool_node::ASSERT) {
+			boolNodes.insert(i);
 		}
 	}
 	
@@ -31,9 +34,9 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	cout << "NControls: " << ncontrols << endl;
 	
 	state = gsl_vector_alloc(ncontrols);
-	randomizeCtrls(state);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
-	opt = new GradientDescentWrapper(this, eval, dag, imap, ncontrols);
+	opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	opt->randomizeCtrls(state);
 	cg = new SimpleConflictGenerator();
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
@@ -58,7 +61,7 @@ void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 
 bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
-	if (ignoredBoolNodes.find(nid) != ignoredBoolNodes.end()) {
+	if (boolNodes.find(nid) == boolNodes.end()) {
 		return false;
 	}
 	cout << (*dag)[nid]->lprint() << endl;
@@ -86,34 +89,6 @@ vector<tuple<int, int, int>> BoolApproxHelper::collectSuggestions() {
 
 vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
-}
-
-void BoolApproxHelper::autodiff(const gsl_vector* state, int rowid) {
-	eval->run(state, Util::getNodeToValMap(imap, allInputs[rowid]));
-	eval->print();
-}
-
-void BoolApproxHelper::randomizeCtrls(gsl_vector* state) {
-	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-	int counter = 0;
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
-			int idx = ctrlMap[ctrls[i]->get_name()];
-			CTRL_node* cnode = (CTRL_node*) ctrls[i];
-			double low = cnode->hasRange ? cnode->low : -10.0;
-			double high = cnode->hasRange ? cnode->high : 10.0;
-			float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
-			gsl_vector_set(state, idx, r);
-			counter++;
-		}
-	}
-	
-	if (counter != ncontrols) {
-		Assert(ncontrols == 1, "Missing initialization of some variables");
-		// this can happen if there are no actual controls
-		float r = -10.0 + (rand() % 200)/10.0;
-		gsl_vector_set(state, 0, r);
-	}
 }
 
 void BoolApproxHelper::getControls(map<string, float>& ctrls) {

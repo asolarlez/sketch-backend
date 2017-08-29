@@ -36,9 +36,5 @@ public:
 	virtual bool ignoreConflict();
 	virtual vector<tuple<int, int, int>> collectSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
-	
-	virtual float evalGD(const gsl_vector* state, gsl_vector* d);
-	virtual void randomizeCtrls(gsl_vector* state);
 	virtual void getControls(map<string, float>& ctrls);
-	void autodiff(const gsl_vector* state, int rowid) {}
 };

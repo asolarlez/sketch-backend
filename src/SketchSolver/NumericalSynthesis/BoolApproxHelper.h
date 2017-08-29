@@ -12,6 +12,7 @@
 #include "BoolAutoDiff.h"
 #include "SimpleEvaluator.h"
 #include "GradientDescentWrapper.h"
+#include "SnoptWrapper.h"
 #include "SymbolicEvaluator.h"
 #include "NumericalSolverHelper.h"
 #include "SimpleConflictGenerator.h"
@@ -19,7 +20,7 @@
 
 // Reasons about everything modulo boolean holes
 class BoolApproxHelper: public NumericalSolverHelper {
-	set<int> ignoredBoolNodes;
+	set<int> boolNodes;
 	OptimizationWrapper* opt;
 	int ncontrols;
 	gsl_vector* state;
@@ -40,7 +41,5 @@ public:
 	virtual bool ignoreConflict();
 	virtual vector<tuple<int, int, int>> collectSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
-	virtual void randomizeCtrls(gsl_vector* state);
 	virtual void getControls(map<string, float>& ctrls);
-	virtual void autodiff(const gsl_vector* state, int rowid);
 };

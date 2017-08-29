@@ -7,9 +7,9 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	for (int i = 0; i < dag->size(); i++) {
 		// ignore boolean nodes that don't have either float children or float parents
 		bool_node* n = (*dag)[i];
-		if (n->getOtype() == OutType::BOOL && !n->hasFloatParent() && !n->hasFloatChild()) {
-			ignoredBoolNodes.insert(i);
-		}
+		if (n->getOtype() == OutType::BOOL && (n->hasFloatParent() || n->hasFloatChild())) {
+			boolNodes.insert(i);
+		} 
 	}
 	
 	// generate ctrls mapping
@@ -30,11 +30,13 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	cout << "NControls: " << ncontrols << endl;
 	
 	state = gsl_vector_alloc(ncontrols);
-	randomizeCtrls(state);
 	eval = new AutoDiff(*dag, fm, ctrlMap);
 	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-	opt = new GradientDescentWrapper(this, eval, dag, imap, ncontrols);
-	cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
+	opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
+	cg = new SimpleConflictGenerator();
+	opt->randomizeCtrls(state);
+
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
 	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
@@ -58,7 +60,7 @@ void BasicNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int
 
 bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
-	if (ignoredBoolNodes.find(nid) != ignoredBoolNodes.end()) {
+	if (boolNodes.find(nid) == boolNodes.end()) {
 		return false;
 	}
 	cout << (*dag)[nid]->lprint() << endl;
@@ -96,35 +98,6 @@ vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
 
 vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
-}
-
-void BasicNumericalHelper::autodiff(const gsl_vector* state, int rowid) {
-	eval->run(state, Util::getNodeToValMap(imap, allInputs[rowid]));
-	eval->print();
-}
-
-
-void BasicNumericalHelper::randomizeCtrls(gsl_vector* state) {
-	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-	int counter = 0;
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
-			int idx = ctrlMap[ctrls[i]->get_name()];
-			CTRL_node* cnode = (CTRL_node*) ctrls[i];
-			double low = cnode->hasRange ? cnode->low : -10.0;
-			double high = cnode->hasRange ? cnode->high : 10.0;
-			float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
-			gsl_vector_set(state, idx, r);
-			counter++;
-		}
-	}
-	
-	if (counter != ncontrols) {
-		Assert(ncontrols == 1, "Missing initialization of some variables");
-		// this can happen if there are no actual controls
-		float r = -10.0 + (rand() % 200)/10.0;
-		gsl_vector_set(state, 0, r);
-	}
 }
 
 void BasicNumericalHelper::getControls(map<string, float>& ctrls) {

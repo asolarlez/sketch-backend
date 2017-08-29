@@ -270,6 +270,17 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	}
 }
 
+double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
+	DistanceGrad* dg = d(n);
+	if (dg->set) {
+		gsl_vector_memcpy(distgrad, dg->grad);
+		return dg->dist;
+	} else {
+		gsl_vector_set_zero(distgrad);
+		return 1000;
+	}
+}
+
 
 double BoolAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
 	double error = 0.0;

@@ -21,10 +21,11 @@ public:
 	BooleanDAG* dag;
 	vector<vector<int>>& allInputs;
 	map<int, int>& imap;
+	set<int>& boolNodes;
 	double beta;
 	double alpha;
 	
-	GDParameters(SymbolicEvaluator* eval_, BooleanDAG* dag_, vector<vector<int>>& allInputs_, map<int, int>& imap_): eval(eval_), dag(dag_), allInputs(allInputs_), imap(imap_) {}
+	GDParameters(SymbolicEvaluator* eval_, BooleanDAG* dag_, vector<vector<int>>& allInputs_, map<int, int>& imap_, set<int>& boolNodes_): eval(eval_), dag(dag_), allInputs(allInputs_), imap(imap_), boolNodes(boolNodes_) {}
 };
 
 class GDEvaluator {
@@ -46,18 +47,21 @@ public:
 			p->eval->run(x, nodeValsMap);
 			for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); ++node_it) {
 				bool_node* n = *node_it;
-				if (n->type ==  bool_node::ASSERT) {
-					error += p->eval->computeError(n->mother, 1, curGrad);
-				}
-				if (n->getOtype() == OutType::BOOL) {
-					auto it = nodeValsMap.find(n->id);
-					if (it != nodeValsMap.end()) {
-						int val = it->second;
-						error == p->eval->computeError(n, val, curGrad);
+				if (p->boolNodes.find(n->id) != p->boolNodes.end()) {
+					if (n->type ==  bool_node::ASSERT) {
+						error += p->eval->computeError(n->mother, 1, curGrad);
+					}
+					if (n->getOtype() == OutType::BOOL) {
+						auto it = nodeValsMap.find(n->id);
+						if (it != nodeValsMap.end()) {
+							int val = it->second;
+							error == p->eval->computeError(n, val, curGrad);
+						}
 					}
 				}
 			}
 		}
+		//cout << gsl_vector_get(x, 0) << " " << error << " " << gsl_vector_get(curGrad, 0) << endl;
 		return error;
 	}
 	
@@ -73,7 +77,6 @@ public:
 };
 
 class GradientDescentWrapper: public OptimizationWrapper {
-	NumericalSolverHelper* ns;
 	GradientDescent* gd;
 	float threshold = 1e-5; // accuracy for minimizing the error
 	int MAX_TRIES = 9; // Number retries of GD algorithm for each iteration
@@ -84,19 +87,44 @@ class GradientDescentWrapper: public OptimizationWrapper {
 	SymbolicEvaluator* eval;
 	BooleanDAG* dag;
 	map<int, int>& imap;
+	map<string, int>& ctrlMap;
+	set<int>& boolNodes;
 	
 public:
-	GradientDescentWrapper(NumericalSolverHelper* ns_, SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, int ncontrols_): ns(ns_), eval(eval_), dag(dag_), imap(imap_), ncontrols(ncontrols_) {
+	GradientDescentWrapper(SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, map<string, int>& ctrlMap_, set<int>& boolNodes_, int ncontrols_): eval(eval_), dag(dag_), imap(imap_), ctrlMap(ctrlMap_), boolNodes(boolNodes_), ncontrols(ncontrols_) {
 		GDEvaluator::init(ncontrols);
 		gd = new GradientDescent(ncontrols);
 		minState = gsl_vector_alloc(ncontrols);
 		t = gsl_vector_alloc(ncontrols);
 	}
 	
+	virtual void randomizeCtrls(gsl_vector* state) {
+		vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
+		int counter = 0;
+		for (int i = 0; i < ctrls.size(); i++) {
+			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
+				int idx = ctrlMap[ctrls[i]->get_name()];
+				CTRL_node* cnode = (CTRL_node*) ctrls[i];
+				double low = cnode->hasRange ? cnode->low : -10.0;
+				double high = cnode->hasRange ? cnode->high : 10.0;
+				float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
+				gsl_vector_set(state, idx, r);
+				counter++;
+			}
+		}
+		
+		if (counter != ncontrols) {
+			Assert(ncontrols == 1, "Missing initialization of some variables");
+			// this can happen if there are no actual controls
+			float r = -10.0 + (rand() % 200)/10.0;
+			gsl_vector_set(state, 0, r);
+		}
+	}
+	
 	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState) {
 		minErrorSoFar = 1e50;
 		
-		GDParameters* p = new GDParameters(eval, dag, allInputs, imap);
+		GDParameters* p = new GDParameters(eval, dag, allInputs, imap, boolNodes);
 		gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
 		
 		double betas[4] = {-1, -10, -50, -100};
@@ -117,6 +145,7 @@ public:
 				for (int i = 0; i < ncontrols; i++) {
 					cout << gsl_vector_get(t, i) << ", ";
 				}
+				cout << endl;
 				minError = gd->optimize(t);
 				gsl_vector_memcpy(t, gd->getResults());
 			}
@@ -125,7 +154,7 @@ public:
 				gsl_vector_memcpy(minState, gd->getResults());
 			}
 			numtries++;
-			ns->randomizeCtrls(t);
+			randomizeCtrls(t);
 		}
 		return minError <= threshold;
 	}

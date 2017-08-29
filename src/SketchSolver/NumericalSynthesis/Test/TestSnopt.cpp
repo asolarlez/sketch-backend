@@ -59,8 +59,8 @@ int main(int argc, char **argv) {
 	doublereal *x = new doublereal[n];
 	doublereal *xlow = new doublereal[n];
 	doublereal *xupp = new doublereal[n];
-	doublereal *xmul = new doublereal[n]; // Not sure what this is?
-	integer *xstate = new integer[n]; // Not sure what this is?
+	doublereal *xmul = new doublereal[n];
+	integer *xstate = new integer[n];
 	
 	doublereal *F = new doublereal[neF];
 	doublereal *Flow = new doublereal[neF];
@@ -101,11 +101,18 @@ int main(int argc, char **argv) {
 	ToyProb.setIntParameter("Derivative option", 0);
 	
 	integer Cold = 0, Basis = 1, Warm = 2;
-	ToyProb.solve(Cold);
+	integer status = ToyProb.solve(Cold);
 	
-	integer status;
-	ToyProb.getIntParameter("", status);
-	cout << status << endl;
+	if (status >= 1 && status <= 9) {
+		cout << "Solution found" << endl;
+	} else if (status >= 11 && status <= 19) {
+		cout << "Infeasible constraints" << endl;
+	} else if (status == 91) {
+		cout << "Invalid input" << endl;
+	} else {
+		cout << "Unknown error " << status << endl;
+	}
+
 	
 	
 	for (int i = 0; i < n; i++){
@@ -114,6 +121,61 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < neF; i++){
 		cout << "F = " << F[i] << " Fstate = " << Fstate[i] << endl;
 	}
+	
+	
+	integer neA, neG;
+	xstate[0] = 0; xstate[1] = 0;
+	Fmul[0] = 0; Fmul[1] = 0; Fmul[2] = 0;
+	x[0] = 1.0;
+	x[1] = 1.0;
+	
+	neG = 0;
+	iGfun[neG] = 0;
+	jGvar[neG] = 0;
+	neG++;
+	iGfun[neG] = 0;
+	jGvar[neG] = 1;
+	neG++;
+	iGfun[neG] = 1;
+	jGvar[neG] = 0;
+	neG++;
+	iGfun[neG] = 1;
+	jGvar[neG] = 1;
+	neG++;
+	iGfun[neG] = 2;
+	jGvar[neG] = 0;
+	neG++;
+	iGfun[neG] = 2;
+	jGvar[neG] = 1;
+	neG++;
+	
+	neA = 0;
+	
+	ToyProb.setNeA(neA);
+	ToyProb.setNeG(neG);
+	ToyProb.setUserFun(toyusrfg);
+	ToyProb.setIntParameter("Derivative option", 1);
+	ToyProb.setIntParameter("Major Iteration limit", 250);
+	status = ToyProb.solve(Cold);
+	
+	if (status >= 1 && status <= 9) {
+		cout << "Solution found" << endl;
+	} else if (status >= 11 && status <= 19) {
+		cout << "Infeasible constraints" << endl;
+	} else if (status == 91) {
+		cout << "Invalid input" << endl;
+	} else {
+		cout << "Unknown error " << status << endl;
+	}
+
+	
+	for (int i = 0; i < n; i++){
+		cout << "x = " << x[i] << " xstate = " << xstate[i] << endl;
+	}
+	for (int i = 0; i < neF; i++){
+		cout << "F = " << F[i] << " Fstate = " << Fstate[i] << endl;
+	}
+	
 	
 	delete []iAfun;  delete []jAvar;  delete []A;
 	delete []iGfun;  delete []jGvar;

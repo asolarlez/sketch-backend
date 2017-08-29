@@ -1,11 +1,13 @@
 #include "NumericalSolver.h"
 
 gsl_vector* GDEvaluator::curGrad;
+gsl_vector* SnoptEvaluator::state;
+gsl_vector* SnoptEvaluator::grad;
 
 NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): Synthesizer(_fm), dag(_dag), imap(_imap) {
 	cout << "NInputs: " << imap.size() << endl;
-	//helper = new BoolApproxHelper(_fm, dag, imap);
-	helper = new InequalityHelper(_fm, dag, imap);
+	helper = new BoolApproxHelper(_fm, dag, imap);
+	//helper = new InequalityHelper(_fm, dag, imap);
 	//helper = new BasicNumericalHelper(_fm, dag, imap);
 	//debug();
 }
@@ -141,14 +143,14 @@ void NumericalSolver::debug() {
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
-	genData(s, 0, ncontrols);
+	/*genData(s, 0, ncontrols);
 	gsl_vector_set(s, 0, arr1[0]);
 	genData(s, 1, ncontrols);
 	gsl_vector_set(s, 1, arr1[1]);
 	genData(s, 2, ncontrols);
 	gsl_vector_set(s, 2, arr1[2]);
 	genData(s, 3, ncontrols);
-	gsl_vector_set(s, 3, arr1[3]);
+	gsl_vector_set(s, 3, arr1[3]);*/
 	
 	/*GradUtil::BETA = -100;
 	GradUtil::ALPHA = 100;
@@ -159,7 +161,7 @@ void NumericalSolver::debug() {
 	
 }
 
-
+/*
 // Debugging: prints out the data to generate graphs
 void NumericalSolver::genData2D(int ncontrols) {
 	GradUtil::BETA = -10;
@@ -221,4 +223,4 @@ void NumericalSolver::genData(gsl_vector* state, int idx, int ncontrols) {
 		}
 	}
 	file << endl;
-}
+}*/

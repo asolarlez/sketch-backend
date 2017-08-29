@@ -207,6 +207,17 @@ void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p
 	}
 }
 
+double AutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
+	ValueGrad* val = v(n);
+	if (val->set) {
+		gsl_vector_memcpy(distgrad, val->getGrad());
+		return val->getVal();
+	} else {
+		gsl_vector_set_zero(distgrad);
+		return 1000;
+	}
+}
+
 double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
 	double error = 0.0;
 	ValueGrad* val = v(n);

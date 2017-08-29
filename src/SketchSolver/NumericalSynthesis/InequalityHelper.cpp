@@ -98,7 +98,7 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 		}
 	}
 	
-	cout << "Counter pos nodes ";
+	/*cout << "Counter pos nodes ";
 	for (int i = 0; i < counterPosNodes.size(); i++) {
 		cout << (*dag)[counterPosNodes[i]]->lprint() << ", ";
 	}
@@ -108,7 +108,7 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	for (int i = 0; i < counterNegNodes.size(); i++) {
 		cout << (*dag)[counterNegNodes[i]]->lprint() << ", ";
 	}
-	cout << endl;
+	cout << endl;*/
 	
 	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
 	int ctr = 0;
@@ -127,11 +127,18 @@ void InequalityHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 
 bool InequalityHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
+	if ((*dag)[nid]->type == bool_node::CTRL) {
+		cout << "Setting" << endl;
+		cout << (*dag)[nid]->lprint() << endl;
+		cout << allInputs[rowid][colid] << endl;
+	}
 	if (ignoredBoolNodes.find(nid) != ignoredBoolNodes.end()) {
 		return false;
 	}
+	cout << "Setting" << endl;
 	cout << (*dag)[nid]->lprint() << endl;
 	cout << allInputs[rowid][colid] << endl;
+	
 	return true;
 }
 
@@ -235,7 +242,7 @@ bool InequalityHelper::ignoreConflict() {
 vector<tuple<int, int, int>> InequalityHelper::collectSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	
-	for (int i = 0; i < allInputs[0].size(); i++) {
+	/*for (int i = 0; i < allInputs[0].size(); i++) {
 		if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
 			bool_node* n = (*dag)[imap[i]];
 			if (n->type == bool_node::LT) {
@@ -256,7 +263,7 @@ vector<tuple<int, int, int>> InequalityHelper::collectSuggestions() {
 				}
 			}
 		}
-	}
+	}*/
 	
 	return suggestions;
 }
@@ -275,12 +282,6 @@ vector<pair<int, int>> InequalityHelper::getConflicts(int rowid, int colid) {
 	return conflicts;
 }
 
-float InequalityHelper::evalGD(const gsl_vector* state, gsl_vector* d) {
-	return 0.0;
-}
-
-void InequalityHelper::randomizeCtrls(gsl_vector* state) {
-}
 
 void InequalityHelper::getControls(map<string, float>& ctrls) {
 	for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
