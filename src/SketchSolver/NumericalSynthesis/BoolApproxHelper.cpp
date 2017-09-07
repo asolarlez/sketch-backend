@@ -35,9 +35,9 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
-	opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
 	opt->randomizeCtrls(state);
-	cg = new SimpleConflictGenerator();
+	cg = new SimpleConflictGenerator(imap, boolNodes);
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
 	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);

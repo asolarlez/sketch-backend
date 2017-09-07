@@ -881,6 +881,8 @@ void print(set<bool_node*> nodes) {
 
 
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
+	//ofstream file("/Users/Jeevu/projects/symdiff/scripts/sysid/lanemerge.dag");
+	//dag.mrprint(file);
 	BooleanDAG& numDag = (*dag.clone());
 	DagOptim op(dag, floats);
 

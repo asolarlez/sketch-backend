@@ -34,7 +34,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
-	cg = new SimpleConflictGenerator();
+	cg = new SimpleConflictGenerator(imap, boolNodes);
 	opt->randomizeCtrls(state);
 
 	
