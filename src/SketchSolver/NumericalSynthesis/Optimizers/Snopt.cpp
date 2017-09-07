@@ -68,12 +68,16 @@ bool SnoptSolver::optimize(gsl_vector* initState) {
 		cout << "Unknown error " << status << endl;
 	}
 	
+	cout << "x = ";
 	for (int i = 0; i < n; i++){
-		cout << "x = " << x[i] << " xstate = " << xstate[i] << endl;
+		cout << x[i] << ", ";
 	}
+	cout << endl;
+	cout << "F = ";
 	for (int i = 0; i < neF; i++){
-		cout << "F = " << F[i] << " Fstate = " << Fstate[i] << endl;
+		cout << F[i] << ", ";
 	}
+	cout << endl;
 	
 	return status >= 1 && status <= 9;
 }

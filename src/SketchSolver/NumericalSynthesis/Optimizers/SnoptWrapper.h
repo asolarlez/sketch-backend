@@ -61,7 +61,7 @@ public:
 				bool_node* node = *node_it;
 				if (p->boolNodes.find(node->id) != p->boolNodes.end()) {
 					if (node->type == bool_node::ASSERT) {
-						F[fcounter++] = p->eval->computeDist(node, grad);
+						F[fcounter++] = p->eval->computeDist(node->mother, grad);
 						for (int j = 0; j < *n; j++) {
 							G[gcounter++] = gsl_vector_get(grad, j);
 						}
@@ -105,6 +105,9 @@ class SnoptWrapper: public OptimizationWrapper {
 	map<string, int>& ctrlMap;
 	set<int>& boolNodes;
 	gsl_vector* minState;
+	gsl_vector* t;
+	
+	int MAX_TRIES = 3;
 	
 	doublereal* x;
 	doublereal* xlow;
@@ -151,6 +154,7 @@ public:
 		lenA = 10;
 		snoptSolver = new SnoptSolver(n, neF, lenA);
 		minState = gsl_vector_alloc(n);
+		t = gsl_vector_alloc(n);
 		
 		x = new doublereal[n];
 		xlow = new doublereal[n];
@@ -164,16 +168,39 @@ public:
 	}
 	
 	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState) {
-		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		
+		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
-		bool solved = snoptSolver->optimize(initState);
-		gsl_vector* curState = snoptSolver->getResults();
-		if (solved) {
-			gsl_vector_memcpy(minState, curState);
-			return true;
+		
+		double betas[4] = {-1, -10, -50, -100};
+		double alphas[4] = {1, 10, 50, 100};
+		
+		gsl_vector_memcpy(t, initState);
+		
+		bool solved = false;
+		int numtries = 0;
+		while (!solved && numtries < MAX_TRIES) {
+			cout << "Attempt: " << (numtries + 1) << endl;
+			
+			for (int i = 0; i < 4; i++) {
+				cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+				p->beta = betas[i];
+				p->alpha = alphas[i];
+				for (int i = 0; i < n; i++) {
+					cout << gsl_vector_get(t, i) << ", ";
+				}
+				cout << endl;
+				solved = snoptSolver->optimize(t);
+				gsl_vector_memcpy(t, snoptSolver->getResults());
+			}
+			
+			if (solved) {
+				gsl_vector_memcpy(minState, snoptSolver->getResults());
+			}
+			numtries++;
+			randomizeCtrls(t);
 		}
-		return false;
+		return solved;
 	}
 	
 	virtual gsl_vector* getMinState() {
