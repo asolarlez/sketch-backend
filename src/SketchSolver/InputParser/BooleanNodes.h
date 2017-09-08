@@ -1069,6 +1069,10 @@ class NOT_node: public bool_node{
 
 class PLUS_node: public bool_node{
 	public: PLUS_node():bool_node(PLUS){ }
+	PLUS_node(bool_node* mother, bool_node*father) :bool_node(PLUS) {
+		this->father = father;
+		this->mother = mother;
+	}
 	PLUS_node(const PLUS_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new PLUS_node(*this, copyChildren);  };
@@ -1081,6 +1085,10 @@ class PLUS_node: public bool_node{
 };
 class TIMES_node: public bool_node{
 	public: TIMES_node():bool_node(TIMES){  }
+	TIMES_node(bool_node* mother, bool_node*father) :bool_node(TIMES) {
+		this->father = father;
+		this->mother = mother;
+	}
 	TIMES_node(const TIMES_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
 	virtual bool_node* clone(bool copyChildren = true){return new TIMES_node(*this, copyChildren);  };

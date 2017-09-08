@@ -829,6 +829,296 @@ int InterpreterEnvironment::doallpairs() {
 }
 
 
+class Monomial {
+public:
+	bool_node* coef;
+	vector<pair<int, int>> varpow;
+	Monomial(const Monomial& m2) : coef(m2.coef), varpow(m2.varpow) {}
+	Monomial(int id, DagOptim& dopt) {
+		coef = dopt.getCnode(1.0);
+		varpow.push_back(make_pair(id, 1));
+	}
+	void add(Monomial& other, DagOptim& dopt) {
+		coef = new PLUS_node(coef, other.coef);
+		coef->addToParents();
+		coef = dopt.optAdd(coef);
+	}
+	bool hasCoef() {
+		return coef != NULL;
+	}
+	void addCoef(int var, int coef) {
+		for (auto it = varpow.begin(); it != varpow.end(); ++it) {
+			if (it->first == var) {
+				it->second += coef;
+				return;
+			}
+		}
+		varpow.push_back(make_pair(var, coef));
+	}
+	void lprint(ostream& out) {
+		out << "(" << coef->id << ")";
+		for (auto it = varpow.begin(); it != varpow.end(); ++it) {
+			out << "x_" << it->first << "^" << it->second;
+		}
+	}
+};
+
+
+
+
+Monomial times(Monomial& m1, Monomial& m2, DagOptim& dopt) {
+	Monomial rv(m1);
+	if (m2.hasCoef()) {
+		if (m1.hasCoef()) {
+			rv.coef = new TIMES_node(m1.coef, m2.coef);
+			rv.coef->addToParents();
+			rv.coef = dopt.optAdd(rv.coef);
+		}
+		else {
+			rv.coef = m2.coef;
+		}
+	}
+
+	for (auto it1 = m1.varpow.begin(); it1 != m1.varpow.end(); ++it1) {
+		rv.addCoef(it1->first, it1->second);
+	}
+	return rv;
+}
+
+Monomial times(Monomial& m1, bool_node* m2, DagOptim& dopt) {
+	Monomial rv(m1);
+	rv.coef = new TIMES_node(m1.coef, m2);
+	rv.coef->addToParents();
+	rv.coef = dopt.optAdd(rv.coef);
+	return rv;
+}
+
+bool coefCompare(vector<pair<int, int>>& left, vector<pair<int, int>>& right) {
+	if (left.size() != right.size()) {
+		return false;
+	}
+	int matches = 0;
+	for (auto leftit = left.begin(); leftit != left.end(); ++leftit) {
+		for (auto rightit = right.begin(); rightit != right.end(); ++rightit) {
+			if (leftit->first == rightit->first && leftit->second == rightit->second) {
+				matches++;
+			}
+		}
+	}
+	return matches == left.size();
+}
+
+class Polynomial {
+public:
+	bool_node* rest; //constant term.
+	vector<Monomial> prods;
+	Polynomial() {}
+	Polynomial(int id, DagOptim& dopt) {
+		prods.push_back(Monomial(id, dopt) );
+		rest = NULL;
+	}
+	Polynomial(bool_node* novars) {
+		rest = novars;
+	}
+	bool isConstant() {
+		return rest != NULL && prods.size()==0;
+	}
+	bool hasConstant() {
+		return rest != NULL;
+	}
+	bool hasMonomials() {
+		return prods.size() == 0;
+	}
+
+	Polynomial* neg(bool_node* node, DagOptim& dopt, Ostore<Polynomial>& store) {
+		if (isConstant() && node != NULL) {
+			return new (store.newObj()) Polynomial(node);
+		}
+		Polynomial* rv = new Polynomial(NULL);
+		if (rest != NULL) {
+			rv->rest = new NEG_node();
+			rv->rest->mother = rest;
+			rv->rest->addToParents();
+			rv->rest = dopt.optAdd(rv->rest);
+		}
+		for (auto it = prods.begin(); it != prods.end(); ++it) {
+			Monomial mm(*it);
+			bool_node* tmp = mm.coef;
+			mm.coef = new NEG_node();
+			mm.coef->mother = tmp;
+			mm.coef->addToParents();
+			mm.coef = dopt.optAdd(mm.coef);
+			rv->prods.push_back( mm );
+		}
+		return rv;
+	}
+
+	void lprint(ostream& out) {
+		bool t = false;
+		for (auto it = prods.begin(); it != prods.end(); ++it) {
+			if (t) {
+				out << " + ";
+			}
+			t = true;
+			it->lprint(out);
+		}
+		if (rest != NULL) {
+			if (t) {
+				out << " + ";
+			}
+			out << "(" << rest->id << ")";
+		}
+		out << endl;
+	}
+
+};
+
+Polynomial* nplus(bool_node* node, Polynomial* left, Polynomial* right, DagOptim& dopt, Ostore<Polynomial>& store) {
+	if (left->isConstant() && right->isConstant()) {
+		return new (store.newObj()) Polynomial(node);
+	}
+
+	Polynomial* rv;
+
+
+	if (left->hasConstant()) {
+		if (right->hasConstant()) {
+			bool_node * nn = new PLUS_node(left->rest, right->rest);
+			nn->addToParents();
+			dopt.optAdd(nn);
+			rv = new (store.newObj()) Polynomial(nn );
+		}
+		else {
+			rv = new (store.newObj()) Polynomial(left->rest);
+		}
+	}
+	else {
+		rv = new (store.newObj()) Polynomial(right->rest);
+	}	
+	rv->prods = left->prods;
+	
+	for (auto rightit = right->prods.begin(); rightit != right->prods.end(); ++rightit) {
+		bool matched = false;
+		for (auto rvit = rv->prods.begin(); rvit != rv->prods.end(); ++rvit) {
+			if (coefCompare(rightit->varpow, rvit->varpow)) {
+				// same var, so just add up the coefficients and continue.
+				matched = true;
+				rvit->add(*rightit, dopt);
+				break;
+			}
+		}
+		if (!matched) { // this is a new monomial, so we just add it.
+			rv->prods.push_back(*rightit);
+		}
+	}
+	rv->lprint(cout);
+	return rv;
+}
+
+Polynomial* times(bool_node* node, Polynomial* left, Polynomial* right, DagOptim& dopt,  Ostore<Polynomial>& store) {
+	if (left->isConstant() && right->isConstant()) {
+		return new (store.newObj()) Polynomial(node);
+	}
+
+	Polynomial* rv;
+
+
+	if (left->hasConstant()) {
+		if (right->hasConstant()) {
+			bool_node * nn = new TIMES_node(left->rest, right->rest);
+			nn->addToParents();
+			dopt.optAdd(nn);
+			rv = new (store.newObj()) Polynomial(nn);
+		}
+		else {
+			rv = new (store.newObj()) Polynomial((bool_node*)NULL);
+		}
+		for (auto rightit = right->prods.begin(); rightit != right->prods.end(); ++rightit) {
+			rv->prods.push_back(times(*rightit, left->rest, dopt));
+		}
+	}
+	else {
+		rv = new (store.newObj()) Polynomial((bool_node*)NULL);
+	}
+	
+	for (auto leftit = left->prods.begin(); leftit != left->prods.end(); ++leftit) {
+		for (auto rightit = right->prods.begin(); rightit != right->prods.end(); ++rightit) {				
+			rv->prods.push_back( times(*rightit, *leftit, dopt)  );
+		}		
+		if (right->hasConstant()) {
+			rv->prods.push_back(times(*leftit, right->rest, dopt));
+		}
+	}	
+	return rv;
+}
+
+
+
+
+
+void solveEquations(BooleanDAG* bd, DagOptim& dopt, vector<Polynomial*>& equations) {
+	bd->lprint(cout);
+	dopt.printNewNodes();
+	for (auto it = equations.begin(); it != equations.end(); ++it) {
+		cout << " EQ 0 == ";
+		(*it)->lprint(cout);
+	}
+}
+
+
+
+void symbolicSolve(BooleanDAG* bd, Ostore<Polynomial>& store, DagOptim& dopt) {
+
+	vector<Polynomial*> pernode(bd->size());
+	vector<bool_node*> unknowns;
+	vector<Polynomial*> equations;
+
+
+	for (auto node = bd->begin(); node != bd->end(); ++node) {		
+		bool_node* bn = dopt.computeOptim(*node);				
+		switch (bn->type) {
+			case bool_node::PLUS: {
+				pernode[bn->id] = nplus(bn, pernode[bn->mother->id], pernode[bn->father->id], dopt, store);
+			}
+			continue;
+			case bool_node::TIMES: {
+				pernode[bn->id] = times(bn, pernode[bn->mother->id], pernode[bn->father->id], dopt, store);
+			}
+			continue;
+			case bool_node::NEG: {
+				pernode[bn->id] = pernode[bn->mother->id]->neg(bn, dopt, store);
+			}
+			continue;
+			case bool_node::EQ: {
+				pernode[bn->id] = nplus(bn, pernode[bn->mother->id], pernode[bn->father->id]->neg(NULL, dopt, store), dopt, store);
+			}
+			continue;
+			case bool_node::ASSERT:{
+				equations.push_back(pernode[bn->mother->id]);
+			}
+			continue;
+			case bool_node::TUPLE_R: {
+				//this is a fresh unknown.
+				UFUN_node* ufn = (UFUN_node*)bn->mother;
+				if (ufn->isSynNode()) {
+					unknowns.push_back(bn);
+					pernode[bn->id] = new (store.newObj()) Polynomial(bn->id, dopt);
+				}
+				else {
+					pernode[bn->id] = new (store.newObj()) Polynomial(bn);
+				}
+			}
+			continue;
+			default: {
+				pernode[bn->id] = new (store.newObj()) Polynomial(bn);
+			}
+		}
+		
+	}
+
+	solveEquations(bd, dopt, equations);
+}
+
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out) {
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
@@ -857,6 +1147,13 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		ofstream out(fname.c_str());
 		cout << " OUTPUTING 2QBF problem to file " << fname << endl;
 		solver->setup2QBF(out);
+	}
+
+	if (params.symbolic) {
+		Ostore<Polynomial> ostore;
+		DagOptim dopt(*dag, this->floats);
+		symbolicSolve(dag, ostore, dopt);
+
 	}
 
 

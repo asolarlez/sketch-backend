@@ -23,7 +23,7 @@ extern CommandLineArgs* PARAMS;
 
 const string VERSION_INFO = "vlarrays";
 
-struct CommandLineArgs{
+class CommandLineArgs{
 	public:		
   int input_idx;
   int seedsize;
@@ -94,9 +94,10 @@ struct CommandLineArgs{
   bool numericalSolver;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
+  bool symbolic;
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
-		for(int i = 0; i < args.size(); i++) {
+		for(auto i = 0; i < args.size(); i++) {
 			argv[i] = (char*)malloc(sizeof(char) * args[i].length());
 			argv[i] = (char*)args[i].c_str();
 		}
@@ -173,6 +174,7 @@ struct CommandLineArgs{
     numericalSolver = false;
 	erSimEvalFName = "";
 	custIntSize = 5;
+	symbolic = true;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;

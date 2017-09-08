@@ -21,4 +21,9 @@ public:
 		return newnodes.size();
 	}
 	virtual void addNode(bool_node* node);
+	void printNewNodes() {
+		for (auto it = newnodes.begin(); it != newnodes.end(); ++it) {
+			cout<<(*it)->lprint() << endl;
+		}
+	}
 };
