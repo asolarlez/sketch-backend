@@ -45,28 +45,55 @@ public:
 		GradUtil::BETA = p->beta;
 		GradUtil::ALPHA = p->alpha;
 		
+		//cout << "x: ";
 		for (int i =0 ; i < *n; i++) {
 			gsl_vector_set(state, i, x[i]);
+			//cout << x[i] << ", ";
 		}
+		//cout << endl;
 		int fcounter = 0;
 		int gcounter = 0;
 		F[fcounter++] = 0; // objective
 		for (int j = 0; j < *n; j++) { // objective gradients
 			G[gcounter++] = 0;
 		}
+		//cout << "Snopt values: " << endl;
 		for (int i = 0; i < p->allInputs.size(); i++) {
 			const map<int, int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
 			p->eval->run(state, nodeValsMap);
 			for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
 				bool_node* node = *node_it;
-				if (p->boolNodes.find(node->id) != p->boolNodes.end()) {
+				if (p->boolNodes.find(node->id) != p->boolNodes.end() || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
 					if (node->type == bool_node::ASSERT) {
-						F[fcounter++] = p->eval->computeDist(node->mother, grad);
-						for (int j = 0; j < *n; j++) {
-							G[gcounter++] = gsl_vector_get(grad, j);
+						int fidx;
+						int gidx;
+						if (((ASSERT_node*)node)->isHard()) {
+							//cout << node->lprint() << endl;
+							fidx = 0;
+							gidx = 0;
+						} else {
+							fidx = fcounter++;
+							gidx = gcounter;
+							gcounter += *n;
 						}
-					}
-					if (node->getOtype() == OutType::BOOL) {
+						//cout << node->mother->lprint() << " ";
+						double dist = p->eval->computeDist(node->mother, grad);
+						if (!p->eval->hasDist(node->mother)) {
+							dist = (fidx == 0) ? 0 : 1000;
+						}
+						F[fidx] = dist;
+						///cout << dist;
+						//cout << F[fcounter - 1] << endl;
+						for (int j = 0; j < *n; j++) {
+							G[gidx + j] = gsl_vector_get(grad, j);
+							//cout << " "  << gsl_vector_get(grad, j);
+						}
+						//cout << endl;
+						
+						/*if (dist > 100000) {
+							p->eval->print();
+						}*/
+					} else if (node->getOtype() == OutType::BOOL) {
 						auto it = nodeValsMap.find(node->id);
 						if (it != nodeValsMap.end()) {
 							int val = it->second;
@@ -89,6 +116,7 @@ public:
 				}
 			}
 		}
+		//cout << "Fcounter: " << fcounter << " Gcounter: " << gcounter << endl;
 		return 0;
 	}
 
@@ -107,7 +135,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	gsl_vector* minState;
 	gsl_vector* t;
 	
-	int MAX_TRIES = 3;
+	int MAX_TRIES = 10;
 	
 	doublereal* x;
 	doublereal* xlow;
@@ -115,6 +143,8 @@ class SnoptWrapper: public OptimizationWrapper {
 	
 	doublereal* Flow;
 	doublereal* Fupp;
+	
+	double minObjectiveVal;
 	
 	
 	void getxranges() {
@@ -152,6 +182,9 @@ public:
 		SnoptEvaluator::init(n);
 		neF = boolNodes.size() + 1;
 		lenA = 10;
+		
+		//cout << "nef: " << neF << endl;
+		//cout << "n: " << n << endl;
 		snoptSolver = new SnoptSolver(n, neF, lenA);
 		minState = gsl_vector_alloc(n);
 		t = gsl_vector_alloc(n);
@@ -177,9 +210,11 @@ public:
 		
 		gsl_vector_memcpy(t, initState);
 		
-		bool solved = false;
+		double obj;
 		int numtries = 0;
-		while (!solved && numtries < MAX_TRIES) {
+		minObjectiveVal = 1e50;
+		bool solved;
+		while (minObjectiveVal > 0.5 && numtries < MAX_TRIES) {
 			cout << "Attempt: " << (numtries + 1) << endl;
 			
 			for (int i = 0; i < 4; i++) {
@@ -191,20 +226,26 @@ public:
 				}
 				cout << endl;
 				solved = snoptSolver->optimize(t);
+				obj = snoptSolver->getObjectiveVal();
 				gsl_vector_memcpy(t, snoptSolver->getResults());
 			}
 			
-			if (solved) {
+			if (solved && obj < minObjectiveVal) {
 				gsl_vector_memcpy(minState, snoptSolver->getResults());
+				minObjectiveVal = obj;
 			}
 			numtries++;
 			randomizeCtrls(t);
 		}
-		return solved;
+		return minObjectiveVal < 0.5;
 	}
 	
 	virtual gsl_vector* getMinState() {
 		return minState;
+	}
+	
+	virtual double getObjectiveVal() {
+		return minObjectiveVal;
 	}
 	
 	virtual void randomizeCtrls(gsl_vector* state) {
@@ -216,7 +257,7 @@ public:
 				CTRL_node* cnode = (CTRL_node*) ctrls[i];
 				double low = cnode->hasRange ? cnode->low : -10.0;
 				double high = cnode->hasRange ? cnode->high : 10.0;
-				float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
+				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
 				gsl_vector_set(state, idx, r);
 				counter++;
 			}
@@ -225,7 +266,7 @@ public:
 		if (counter != n) {
 			Assert(n == 1, "Missing initialization of some variables");
 			// this can happen if there are no actual controls
-			float r = -10.0 + (rand() % 200)/10.0;
+			double r = -20.0 + (rand() % 400)/10.0;
 			gsl_vector_set(state, 0, r);
 		}
 	}

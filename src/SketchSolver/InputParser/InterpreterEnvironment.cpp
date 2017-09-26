@@ -880,6 +880,25 @@ void print(set<bool_node*> nodes) {
 }
 
 
+bool boolFloatInterface(bool_node* n) {
+	if (n->getOtype() == OutType::BOOL && (n->hasFloatChild() || n->hasFloatParent())) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+bool boolCtrl(bool_node* n) {
+	if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+typedef bool (* PRED_TYPE)(bool_node*);
+
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	//ofstream file("/Users/Jeevu/projects/symdiff/scripts/sysid/lanemerge.dag");
 	//dag.mrprint(file);
@@ -900,6 +919,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	unode->mother = op.getCnode(1);
 
 
+	PRED_TYPE pred = boolCtrl;
 	for (int i = 0; i < dag.size(); i++) {
 		bool_node* node = dag[i];
 		if (node == NULL) continue;
@@ -913,14 +933,18 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 				ctrl->name = "CTRL_" + std::to_string(nid);
 				ctrl->set_nbits(1);
 			
+				if (pred(node)) {
+					inputToNodeMap[unode->multi_mother.size()] = nid;
+					unode->multi_mother.push_back(ctrl);
+				}
+				
 				newnodes.push_back(ctrl);
 				dag.replace(nid, ctrl);
-			
-				inputToNodeMap[unode->multi_mother.size()] = nid;
-				unode->multi_mother.push_back(ctrl);
 			} else {
-				inputToNodeMap[unode->multi_mother.size()] = nid;
-				unode->multi_mother.push_back(node);
+				if (pred(node)) {
+					inputToNodeMap[unode->multi_mother.size()] = nid;
+					unode->multi_mother.push_back(node);
+				}
 			}
 		}
 	}

@@ -49,14 +49,13 @@ bool SnoptSolver::optimize(gsl_vector* initState) {
 	snoptProb.setIntParameter("Derivative option", 1);
 	snoptProb.setIntParameter("Major Iteration limit", 250);
 	snoptProb.setIntParameter("Summary file", 1);
-	snoptProb.setIntParameter("Print file", 1);
-	snoptProb.setPrintFile   ( "snopt.out" );
 
 	integer status = snoptProb.solve(Cold);
 	
 	for (int i = 0; i < n; i++) {
 		gsl_vector_set(result, i, x[i]);
 	}
+	objectiveVal = F[0];
 	cout << "Status: " << status << endl;
 	if (status >= 1 && status <= 9) {
 		cout << "Solution found" << endl;

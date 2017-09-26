@@ -16,16 +16,19 @@
 
 // Reasons about simple linear inequalities like x < c and an outlier counter
 class InequalityHelper: public NumericalSolverHelper {
-	set<int> ignoredBoolNodes;
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
 
-	map<string, float> ctrlVals; // map from ctrl names to values synthesized
+	map<string, double> ctrlVals; // map from ctrl names to values synthesized
 	map<string, vector<int>> ctrlToNodesMap; // map from ctrl names to list of related inequality nodes
 	vector<int> counterPosNodes; // list of boolean nodes related to the outlier counter
 	vector<int> counterNegNodes;
-	float maxCount; // max outlier count
+	double maxCount; // max outlier count
 	vector<int> conflictNodes;
+	map<string, double> ctrlToMinValues;
+	map<string, double> ctrlToMaxValues;
+	
+	int tcount = 0;
 	
 	
 public:
@@ -36,5 +39,5 @@ public:
 	virtual bool ignoreConflict();
 	virtual vector<tuple<int, int, int>> collectSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
-	virtual void getControls(map<string, float>& ctrls);
+	virtual void getControls(map<string, double>& ctrls);
 };

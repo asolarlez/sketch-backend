@@ -11,10 +11,10 @@ using namespace std;
 
 class DistanceGrad {
 public:
-	float dist;
+	double dist;
 	gsl_vector* grad;
 	bool set; // TODO: this bit is not necessary if the default dist is 0
-	DistanceGrad(float d, gsl_vector* g): dist(d), grad(g), set(true) {}
+	DistanceGrad(double d, gsl_vector* g): dist(d), grad(g), set(true) {}
 	~DistanceGrad(void) {
 		delete grad;
 	}

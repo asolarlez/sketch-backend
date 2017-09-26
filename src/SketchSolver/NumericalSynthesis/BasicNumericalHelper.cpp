@@ -83,7 +83,7 @@ bool BasicNumericalHelper::ignoreConflict() {
 vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	for (int i = 0; i < allInputs.size(); i++) {
-		vector<tuple<float, int, int>> s = seval->run(state, imap);
+		vector<tuple<double, int, int>> s = seval->run(state, imap);
 		sort(s.begin(), s.end());
 		reverse(s.begin(), s.end());
 		for (int k = 0; k < s.size(); k++) {
@@ -100,7 +100,7 @@ vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) 
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BasicNumericalHelper::getControls(map<string, float>& ctrls) {
+void BasicNumericalHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}

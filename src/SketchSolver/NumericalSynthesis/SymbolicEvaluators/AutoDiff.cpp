@@ -207,6 +207,11 @@ void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p
 	}
 }
 
+
+bool AutoDiff::hasDist(bool_node* n) {
+	ValueGrad* val = v(n);
+	return val->set;
+}
 double AutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	ValueGrad* val = v(n);
 	if (val->set) {
@@ -238,7 +243,7 @@ double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad)
 bool AutoDiff::check(bool_node* n, int expected) {
 	ValueGrad* val = v(n);
 	if (val->set) {
-		float dist = val->getVal();
+		double dist = val->getVal();
 		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0))	{
 			return false;
 		}

@@ -2,16 +2,7 @@
 
 
 InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
-	dag->lprint(cout);
-	// Collect the list of boolean nodes which can be ignored.
-	for (int i = 0; i < dag->size(); i++) {
-		// ignore boolean nodes that don't have either float children or float parents
-		bool_node* n = (*dag)[i];
-		if (n->getOtype() == OutType::BOOL && !n->hasFloatParent() && !n->hasFloatChild()) {
-			ignoredBoolNodes.insert(i);
-		}
-	}
-	
+	//dag->lprint(cout);
 	// generate ctrls mapping and counter mapping
 	bool_node* counterNode = NULL;
 	for (int i = 0; i < dag->size(); i++) {
@@ -28,6 +19,8 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 					vector<int> nodes;
 					nodes.push_back(n->id);
 					ctrlToNodesMap[name] = nodes;
+					ctrlToMinValues[name] = 0.0;
+					ctrlToMaxValues[name] = 0.0;
 				}
 			} else if (f->type == bool_node::CTRL) {
 				Assert(m->type == bool_node::CONST, "Not supported inequality");
@@ -64,8 +57,8 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 			Assert(ma->mother->getOtype() == OutType::BOOL, "Not supported counter");
 			Assert(ma->multi_mother[0]->type == bool_node::CONST, "Not supported counter");
 			Assert(ma->multi_mother[1]->type == bool_node::CONST, "Not supported counter");
-			float mval = ((CONST_node*) (ma->multi_mother[0]))->getFval();
-			float fval = ((CONST_node*) (ma->multi_mother[1]))->getFval();
+			double mval = ((CONST_node*) (ma->multi_mother[0]))->getFval();
+			double fval = ((CONST_node*) (ma->multi_mother[1]))->getFval();
 			Assert((mval == 0.0 && fval == 1.0) || (mval == 1.0 && fval == 0.0), "Not supported counter");
 			if (mval == 0.0) {
 				counterPosNodes.push_back(ma->mother->id);
@@ -83,8 +76,8 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 			Assert(fa->mother->getOtype() == OutType::BOOL, "Not supported counter");
 			Assert(fa->multi_mother[0]->type == bool_node::CONST, "Not supported counter");
 			Assert(fa->multi_mother[1]->type == bool_node::CONST, "Not supported counter");
-			float mval = ((CONST_node*) (fa->multi_mother[0]))->getFval();
-			float fval = ((CONST_node*) (fa->multi_mother[1]))->getFval();
+			double mval = ((CONST_node*) (fa->multi_mother[0]))->getFval();
+			double fval = ((CONST_node*) (fa->multi_mother[1]))->getFval();
 			Assert((mval == 0.0 && fval == 1.0) || (mval == 1.0 && fval == 0.0), "Not supported counter");
 			if (mval == 0.0) {
 				counterPosNodes.push_back(fa->mother->id);
@@ -125,29 +118,26 @@ void InequalityHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 	instanceIds = instanceIds_;
 }
 
+
+
 bool InequalityHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
-	if ((*dag)[nid]->type == bool_node::CTRL) {
-		cout << "Setting" << endl;
-		cout << (*dag)[nid]->lprint() << endl;
-		cout << allInputs[rowid][colid] << endl;
+	for (int i = 0; i < allInputs[0].size(); i++) {
+		if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
+			return false;
+		}
 	}
-	if (ignoredBoolNodes.find(nid) != ignoredBoolNodes.end()) {
-		return false;
-	}
-	cout << "Setting" << endl;
-	cout << (*dag)[nid]->lprint() << endl;
-	cout << allInputs[rowid][colid] << endl;
-	
 	return true;
 }
 
 bool InequalityHelper::checkSAT() {
+	cout << tcount++ << endl;
 	conflictNodes.clear();
 	Assert(allInputs.size() == 1, "Multiple inputs not yet supported");
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	if (counterPosNodes.size() > 0 || counterNegNodes.size() > 0) {
 		int count = 0;
+		//cout << counterPosNodes.size() << endl;
 		for (int i : counterPosNodes) {
 			auto it = nodeValsMap.find(i);
 			if (it != nodeValsMap.end() && it->second == 1) {
@@ -155,9 +145,11 @@ bool InequalityHelper::checkSAT() {
 				conflictNodes.push_back(i);
 			}
 			if (count > maxCount) {
+				//cout << count << "  " << maxCount << endl;
 				return false;
 			}
 		}
+		//cout << counterNegNodes.size() << endl;
 		for (int i: counterNegNodes) {
 			auto it = nodeValsMap.find(i);
 			if (it != nodeValsMap.end() && it->second == 0) {
@@ -165,16 +157,19 @@ bool InequalityHelper::checkSAT() {
 				conflictNodes.push_back(i);
 			}
 			if (count > maxCount) {
+				//cout << count << " " << maxCount << endl;
 				return false;
 			}
 		}
+		//cout << count << " " << maxCount << endl;
 	}
+	
 	conflictNodes.clear();
 	for (auto it = ctrlToNodesMap.begin(); it != ctrlToNodesMap.end(); it++) {
 		string name = it->first;
 		vector<int>& nodes = it->second;
-		float min = GradUtil::MINVAL;
-		float max = GradUtil::MAXVAL;
+		double min = GradUtil::MINVAL;
+		double max = GradUtil::MAXVAL;
 		int minId = 0;
 		int maxId = 0;
 		for (int i : nodes) {
@@ -186,7 +181,7 @@ bool InequalityHelper::checkSAT() {
 				bool_node* f = n->father;
 				
 				if (m->type == bool_node::CTRL) {
-					float thres = ((CONST_node*)f)->getFval();
+					double thres = ((CONST_node*)f)->getFval();
 					if (val == 1) {
 						if (thres < max) {
 							max = thres;
@@ -200,7 +195,7 @@ bool InequalityHelper::checkSAT() {
 					}
 				}
 				if (f->type == bool_node::CTRL) {
-					float thres = ((CONST_node*)m)->getFval();
+					double thres = ((CONST_node*)m)->getFval();
 					if (val == 0) {
 						if (thres < max) {
 							max = thres;
@@ -219,9 +214,12 @@ bool InequalityHelper::checkSAT() {
 				conflictNodes.push_back(maxId);
 				return false;
 			}
-			
 		}
-		Assert(min <= max, "Something is wrong here");
+
+		ctrlToMinValues[name] = min;
+		ctrlToMaxValues[name] = max;
+		//Assert(min <= max, "Something is wrong here");
+		if (min <= max) {
 		if (min == GradUtil::MINVAL && max == GradUtil::MAXVAL) {
 			ctrlVals[name] = 0.0;
 		} else if (min == GradUtil::MINVAL) {
@@ -230,6 +228,7 @@ bool InequalityHelper::checkSAT() {
 			ctrlVals[name] = min + 10.0;
 		} else {
 			ctrlVals[name] = (min + max)/2.0;
+		}
 		}
 	}
 	return true;
@@ -250,14 +249,14 @@ vector<tuple<int, int, int>> InequalityHelper::collectSuggestions() {
 				bool_node* f = n->father;
 				if (m->type == bool_node::CTRL) {
 					string name = m->get_name();
-					float val = ctrlVals[name];
+					double val = ctrlVals[name];
 					bool expected = val < ((CONST_node*)f)->getFval();
 					suggestions.push_back(make_tuple(0, i, expected));
 				}
 				
 				if (f->type == bool_node::CTRL) {
 					string name = f->get_name();
-					float val = ctrlVals[name];
+					double val = ctrlVals[name];
 					bool expected = ((CONST_node*)m)->getFval() < val;
 					suggestions.push_back(make_tuple(0, i, expected));
 				}
@@ -274,16 +273,17 @@ vector<pair<int, int>> InequalityHelper::getConflicts(int rowid, int colid) {
 		if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
 			int nid = imap[i];
 			if (find(conflictNodes.begin(), conflictNodes.end(), nid) != conflictNodes.end()) {
-				cout << (*dag)[nid]->lprint() << endl;
+				//cout << (*dag)[nid]->lprint() << endl;
 				conflicts.push_back(make_pair(0, i));
 			}
 		}
 	}
+	conflicts.push_back(make_pair(rowid, colid)); // add the recently set bit to the conflict
 	return conflicts;
 }
 
 
-void InequalityHelper::getControls(map<string, float>& ctrls) {
+void InequalityHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
 		ctrls[it->first] = it->second;
 	}

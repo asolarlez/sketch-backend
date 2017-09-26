@@ -20,8 +20,8 @@ class SimpleEvaluator: NodeVisitor
 	map<string, int> floatCtrls; // Maps float ctrl names to indices with grad vectors
 	map<string, int> boolCtrls; // Maps bool ctrl names to indices with grad vectors
 	gsl_vector* ctrls; // ctrl values
-	vector<float> distances; // Keeps track of distance metric for boolean nodes
-	float MIN_VALUE = 0.001;
+	vector<double> distances; // Keeps track of distance metric for boolean nodes
+	double MIN_VALUE = 0.001;
 
 public:
   SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
@@ -46,17 +46,17 @@ public:
   virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
   
-  vector<tuple<float, int, int>> run(const gsl_vector* ctrls_p, map<int, int>& imap_p);
+  vector<tuple<double, int, int>> run(const gsl_vector* ctrls_p, map<int, int>& imap_p);
 	
-	void setvalue(bool_node& bn, float d) {
+	void setvalue(bool_node& bn, double d) {
 		distances[bn.id] = d;
 	}
 	
-	float d(bool_node& bn) {
+	double d(bool_node& bn) {
 		return distances[bn.id];
 	}
 	
-	float d(bool_node* bn) {
+	double d(bool_node* bn) {
 		return d(*bn);
 	}
 	
@@ -76,5 +76,5 @@ public:
 	}
 	
 	double run1(const gsl_vector* ctrls_p, map<int, int>& inputValues_p);
-	double computeError(float dist, int expected, bool_node* node);
+	double computeError(double dist, int expected, bool_node* node);
 };

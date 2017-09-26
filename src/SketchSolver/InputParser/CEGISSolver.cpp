@@ -158,7 +158,7 @@ bool CEGISSolver::solveOptimization() {
 	ftimer.restart();
 	bool fail = false;
 	try{
-		find(inputStore, ctrlStore, true);
+		fail = !find(inputStore, ctrlStore, true);
 	}catch(BasicError& e){
 		fail = true;
 	}

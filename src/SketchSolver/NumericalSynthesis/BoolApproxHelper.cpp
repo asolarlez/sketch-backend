@@ -12,7 +12,9 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 			boolNodes.insert(i);
 		}
 		if (n->type == bool_node::ASSERT) {
-			boolNodes.insert(i);
+			if (!((ASSERT_node*)n)->isHard()) {
+				boolNodes.insert(i);
+			}
 		}
 	}
 	
@@ -69,8 +71,26 @@ bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
+bool BoolApproxHelper::validObjective() {
+	// if all bool holes are set, we will be solving the full problem
+	for (int i = 0; i < allInputs.size(); i++) {
+		for (int j = 0; j < allInputs[i].size(); j++) {
+			int nid = imap[j];
+			bool_node* n = (*dag)[nid];
+			if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL && allInputs[i][j] != 0 && allInputs[i][j] != 1) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 bool BoolApproxHelper::checkSAT() {
 	bool sat = opt->optimize(allInputs, state);
+	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
+		double objective = opt->getObjectiveVal();
+		cout << "Objective found: " << objective << endl;
+	}
 	if (sat) {
 		state = opt->getMinState();
 	}
@@ -91,7 +111,7 @@ vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BoolApproxHelper::getControls(map<string, float>& ctrls) {
+void BoolApproxHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}

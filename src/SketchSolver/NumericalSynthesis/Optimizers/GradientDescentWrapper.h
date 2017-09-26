@@ -41,7 +41,7 @@ public:
 		GradUtil::BETA = p->beta;
 		GradUtil::ALPHA = p->alpha;
 		gsl_vector_set_zero(curGrad);
-		float error = 0;
+		double error = 0;
 		for (int i = 0; i < p->allInputs.size(); i++) {
 			const map<int ,int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
 			p->eval->run(x, nodeValsMap);
@@ -50,8 +50,7 @@ public:
 				if (p->boolNodes.find(n->id) != p->boolNodes.end()) {
 					if (n->type ==  bool_node::ASSERT) {
 						error += p->eval->computeError(n->mother, 1, curGrad);
-					}
-					if (n->getOtype() == OutType::BOOL) {
+					} else if (n->getOtype() == OutType::BOOL) {
 						auto it = nodeValsMap.find(n->id);
 						if (it != nodeValsMap.end()) {
 							int val = it->second;
@@ -78,9 +77,9 @@ public:
 
 class GradientDescentWrapper: public OptimizationWrapper {
 	GradientDescent* gd;
-	float threshold = 1e-5; // accuracy for minimizing the error
+	double threshold = 1e-5; // accuracy for minimizing the error
 	int MAX_TRIES = 10; // Number retries of GD algorithm for each iteration
-	float minErrorSoFar;
+	double minErrorSoFar;
 	gsl_vector* minState;
 	gsl_vector* t;
 	int ncontrols;
@@ -107,7 +106,7 @@ public:
 				CTRL_node* cnode = (CTRL_node*) ctrls[i];
 				double low = cnode->hasRange ? cnode->low : -10.0;
 				double high = cnode->hasRange ? cnode->high : 10.0;
-				float r = low + (rand()% (int)((high - low) * 10.0))/10.0;
+				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
 				gsl_vector_set(state, idx, r);
 				counter++;
 			}
@@ -116,7 +115,7 @@ public:
 		if (counter != ncontrols) {
 			Assert(ncontrols == 1, "Missing initialization of some variables");
 			// this can happen if there are no actual controls
-			float r = -10.0 + (rand() % 200)/10.0;
+			double r = -10.0 + (rand() % 200)/10.0;
 			gsl_vector_set(state, 0, r);
 		}
 	}
@@ -161,5 +160,9 @@ public:
 	
 	virtual gsl_vector* getMinState() {
 		return minState;
+	}
+	
+	virtual double getObjectiveVal() {
+		return minErrorSoFar;
 	}
 };

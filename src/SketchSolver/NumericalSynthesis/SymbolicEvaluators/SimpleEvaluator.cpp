@@ -36,14 +36,14 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 		} else {
 			Assert(false, "All float ctrls should be handled by the numerical solver");
 		}
-		float val = gsl_vector_get(ctrls, idx);
+		double val = gsl_vector_get(ctrls, idx);
 		setvalue(node, val);
 	} else {
 		int idx = -1;
 		if (boolCtrls.find(name) != boolCtrls.end()) {
 			idx = boolCtrls[name];
-			float val = gsl_vector_get(ctrls, idx);
-			float dist = val - 0.5;
+			double val = gsl_vector_get(ctrls, idx);
+			double dist = val - 0.5;
 			setvalue(node, dist);
 		} else {
 			setvalue(node, 0);
@@ -68,7 +68,7 @@ void SimpleEvaluator::visit( TIMES_node& node ) {
 void SimpleEvaluator::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
 	Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
-	float m = d(node.mother);
+	double m = d(node.mother);
 	//cout << node.lprint() << " " << m << endl;
 	int idx = (m >= 0) ? 1 : 0;
 	setvalue(node, d(node.multi_mother[idx]));
@@ -97,7 +97,7 @@ void SimpleEvaluator::visit( CONST_node& node ) {
 	} else {
 		int val = node.getVal();
 		if (node.getOtype() == OutType::BOOL) {
-			float dist = (val == 1) ? 1000 : -1000;
+			double dist = (val == 1) ? 1000 : -1000;
 			setvalue(node, dist);
 		} else {
 			Assert(false, "NYI: SimpleEvaluator integer constants");
@@ -107,9 +107,9 @@ void SimpleEvaluator::visit( CONST_node& node ) {
 
 void SimpleEvaluator::visit( LT_node& node ) {
 	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SimpleEvaluator for lt with integer parents");
-	float m = d(node.mother);
-	float f = d(node.father);
-	float d = f - m;
+	double m = d(node.mother);
+	double f = d(node.father);
+	double d = f - m;
 	if (d == 0) d = -MIN_VALUE;
 	//cout << node.lprint() << " " << m << " " << f << " " << d << endl;
 	setvalue(node, d);
@@ -121,16 +121,16 @@ void SimpleEvaluator::visit( EQ_node& node ) {
 }
 
 void SimpleEvaluator::visit( AND_node& node ) {
-	float m = d(node.mother);
-	float f = d(node.father);
-	float d = (m < f) ? m : f;
+	double m = d(node.mother);
+	double f = d(node.father);
+	double d = (m < f) ? m : f;
 	setvalue(node, d);
 }
 
 void SimpleEvaluator::visit( OR_node& node ) {
-	float m = d(node.mother);
-	float f = d(node.father);
-	float d = (m > f) ? m : f;
+	double m = d(node.mother);
+	double f = d(node.father);
+	double d = (m > f) ? m : f;
 	setvalue(node, d);
 }
 
@@ -145,8 +145,8 @@ void SimpleEvaluator::visit( ARRASS_node& node ) {
 
 void SimpleEvaluator::visit( UFUN_node& node ) {
 	const string& name = node.get_ufname();
-	float m = d(node.multi_mother[0]);
-	float d;
+	double m = d(node.multi_mother[0]);
+	double d;
 	if (name == "_cast_int_float_math") {
 		d = m;
 	} else if (floats.hasFun(name)) {
@@ -180,7 +180,7 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
   }
 }
 
-vector<tuple<float, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
+vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
 	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
@@ -188,7 +188,7 @@ vector<tuple<float, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, m
   for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
     (*node_it)->accept(*this);
 	}
-	vector<tuple<float, int, int>> s;
+	vector<tuple<double, int, int>> s;
 	for (int i = 0; i < imap_p.size(); i++) {
 		bool_node* n = bdag[imap_p[i]];
 		bool hasArraccChild = false;
@@ -199,8 +199,8 @@ vector<tuple<float, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, m
 				break;
 			}
 		}
-		float dist = d(n);
-		float cost = abs(dist);
+		double dist = d(n);
+		double cost = abs(dist);
 		if (hasArraccChild) {
 			cost = cost/1000.0;
 		}
@@ -232,7 +232,7 @@ double SimpleEvaluator::run1(const gsl_vector* ctrls_p, map<int, int>& inputValu
 	return error;
 }
 
-double SimpleEvaluator::computeError(float dist, int expected, bool_node* node) {
+double SimpleEvaluator::computeError(double dist, int expected, bool_node* node) {
 	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 		//cout << node->lprint() << " " << dist << endl;
 		return pow(dist, 2);

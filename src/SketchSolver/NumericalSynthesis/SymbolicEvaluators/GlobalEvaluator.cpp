@@ -45,7 +45,7 @@ void GlobalEvaluator::visit( CTRL_node& node ) {
 		} else {
 			Assert(false, "All float ctlrs should be handled by the numerical solver");
 		}
-		float val = gsl_vector_get(ctrls, idx);
+		double val = gsl_vector_get(ctrls, idx);
 		gsl_vector* g = default_grad(nctrls); //TODO: try to avoid allocating and reallocating these everytime
 		gsl_vector_set(g, idx, 1);
 		Region* r = new Region();
@@ -71,7 +71,7 @@ void GlobalEvaluator::visit( CTRL_node& node ) {
 }
 
 void GlobalEvaluator::visit( CONST_node& node ) {
-	float val;
+	double val;
 	if (node.isFloat()) {
 		val = node.getFval();
 	} else {
@@ -645,7 +645,7 @@ gsl_vector* GlobalEvaluator::copy_grad(gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::arctan_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = 1.0/(v1 * v1 + 1.0);
+	double dm = 1.0/(v1 * v1 + 1.0);
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;
@@ -653,7 +653,7 @@ gsl_vector* GlobalEvaluator::arctan_grad(double v1, gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::tan_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = 1.0/(cos(v1)*cos(v1));
+	double dm = 1.0/(cos(v1)*cos(v1));
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;
@@ -661,7 +661,7 @@ gsl_vector* GlobalEvaluator::tan_grad(double v1, gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::cos_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = -sin(v1);
+	double dm = -sin(v1);
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;
@@ -669,7 +669,7 @@ gsl_vector* GlobalEvaluator::cos_grad(double v1, gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::sin_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = cos(v1);
+	double dm = cos(v1);
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;
@@ -677,7 +677,7 @@ gsl_vector* GlobalEvaluator::sin_grad(double v1, gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::sqrt_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = 0.5/sqrt(v1);
+	double dm = 0.5/sqrt(v1);
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;
@@ -685,7 +685,7 @@ gsl_vector* GlobalEvaluator::sqrt_grad(double v1, gsl_vector* g1) {
 
 gsl_vector* GlobalEvaluator::square_grad(double v1, gsl_vector* g1) {
 	gsl_vector* g = gsl_vector_alloc(g1->size);
-	float dm = 2*v1;
+	double dm = 2*v1;
 	gsl_vector_memcpy(g, g1);
 	gsl_vector_scale(g, dm);
 	return g;

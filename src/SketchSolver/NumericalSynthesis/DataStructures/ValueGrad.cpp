@@ -7,9 +7,9 @@ void ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float mval = m->getVal();
-	float fval = f->getVal();
-	float val = mval + fval;
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval + fval;
 	o->update(val);
 	
 	gsl_vector* mgrads = m->getGrad();
@@ -24,9 +24,9 @@ void ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float mval = m->getVal();
-	float fval = f->getVal();
-	float val = mval*fval;
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval*fval;
 	o->update(val);
 	
 	gsl_vector* mgrads = m->getGrad();
@@ -41,9 +41,9 @@ void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float mval = m->getVal();
-	float fval = f->getVal();
-	float val = mval/fval;
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval/fval;
 	o->update(val);
 	
 	gsl_vector* mgrads = m->getGrad();
@@ -70,13 +70,13 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, DistanceGrad* d, ValueGrad* o
 		o->set = false;
 		return;
 	}
-	float s1 = GradUtil::sigmoid(d->dist, d->grad, GradUtil::tmp);
-	float v1 = s1 * f->getVal();
+	double s1 = GradUtil::sigmoid(d->dist, d->grad, GradUtil::tmp);
+	double v1 = s1 * f->getVal();
 	GradUtil::compute_mult_grad(s1, f->getVal(), GradUtil::tmp, f->getGrad(), o->getGrad());
 	
 	GradUtil::compute_neg_grad(d->grad, GradUtil::tmp1);
-	float s2 = GradUtil::sigmoid(-d->dist, GradUtil::tmp1, GradUtil::tmp);
-	float v2 = s2*m->getVal();
+	double s2 = GradUtil::sigmoid(-d->dist, GradUtil::tmp1, GradUtil::tmp);
+	double v2 = s2*m->getVal();
 	GradUtil::compute_mult_grad(s2, m->getVal(), GradUtil::tmp, m->getGrad(), GradUtil::tmp1);
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getGrad());
 	
@@ -91,11 +91,11 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o) {
 		o->set = false;
 		return;
 	}
-	float v1 = d->getVal() * f->getVal();
+	double v1 = d->getVal() * f->getVal();
 	GradUtil::compute_mult_grad(d->getVal(), f->getVal(), d->getGrad(), f->getGrad(), o->getGrad());
 	
 	GradUtil::compute_neg_grad(d->getGrad(), GradUtil::tmp);
-	float v2 = (1 - d->getVal()) * m->getVal();
+	double v2 = (1 - d->getVal()) * m->getVal();
 	GradUtil::compute_mult_grad(1 - d->getVal(), m->getVal(), GradUtil::tmp, m->getGrad(), GradUtil::tmp1);
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getGrad());
 	
@@ -110,10 +110,10 @@ void ValueGrad::vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceG
 		return;
 	}
 	Assert(m->set && f->set, "Something is wrong dsaf");
-	float v1 = d->getVal() * f->dist;
+	double v1 = d->getVal() * f->dist;
 	GradUtil::compute_mult_grad(d->getVal(), f->dist, d->getGrad(), f->grad, o->grad);
 	GradUtil::compute_neg_grad(d->getGrad(), GradUtil::tmp);
-	float v2 = (1 - d->getVal()) * m->dist;
+	double v2 = (1 - d->getVal()) * m->dist;
 	GradUtil::compute_mult_grad(1 - d->getVal(), m->dist, GradUtil::tmp, m->grad, GradUtil::tmp1);
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->grad);
 	o->dist = v1 + v2;
@@ -153,7 +153,7 @@ void ValueGrad::vg_arctan(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(atan(x));
 	GradUtil::compute_arctan_grad(x, m->getGrad(), o->getGrad());
 	o->bound();
@@ -165,7 +165,7 @@ void ValueGrad::vg_sin(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(sin(x));
 	GradUtil::compute_sin_grad(x, m->getGrad(), o->getGrad());
 	o->bound();
@@ -177,7 +177,7 @@ void ValueGrad::vg_cos(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(cos(x));
 	GradUtil::compute_cos_grad(x, m->getGrad(), o->getGrad());
 	o->bound();
@@ -189,7 +189,7 @@ void ValueGrad::vg_tan(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(tan(x));
 	GradUtil::compute_tan_grad(x, m->getGrad(), o->getGrad());
 	o->bound();}
@@ -200,7 +200,7 @@ void ValueGrad::vg_exp(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(exp(x));
 	GradUtil::compute_exp_grad(x, m->getGrad(), o->getGrad());
 	o->bound();
@@ -212,7 +212,7 @@ void ValueGrad::vg_sqrt(ValueGrad* m, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	float x = m->getVal();
+	double x = m->getVal();
 	o->update(sqrt(x));
 	GradUtil::compute_sqrt_grad(x, m->getGrad(), o->getGrad());
 	o->bound();
@@ -244,9 +244,9 @@ void ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		o->set = false;
 		return;
 	}
-	float mval = m->getVal();
-	float fval = f->getVal();
-	float val = mval + fval - mval*fval;
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval + fval - mval*fval;
 	o->update(val);
 	GradUtil::compute_plus_grad(m->getGrad(), f->getGrad(), o->getGrad());
 	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), GradUtil::tmp);
@@ -259,9 +259,9 @@ void ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		o->set = false;
 		return;
 	}
-	float mval = m->getVal();
-	float fval = f->getVal();
-	float val = mval*fval;
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval*fval;
 	o->update(val);
 	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), o->getGrad());
 }

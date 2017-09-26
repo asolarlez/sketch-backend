@@ -8,6 +8,8 @@
 class DagOptim;
 class bool_node;
 
+class SolverHelper;
+
 namespace MSsolverNS {
 
 	const int EMPTY=INT32_MIN;
@@ -150,6 +152,8 @@ namespace MSsolverNS {
     
     virtual void getControls(map<string, string>& values) = 0;
 		
+		virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) = 0;
+		
 		Lit getLit(int inputid, int val) {
 			Tvalue& tv = inout->getTval(inputid);
 			return tv.litForValue(val);
@@ -191,6 +195,10 @@ namespace MSsolverNS {
 		int newInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
 			s->newInstance();
 			return inputOutputs.newInstance(inputs, outputs);
+		}
+		
+		void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {
+			s->getConstraintsOnInputs(dir, inputs);
 		}
 
 

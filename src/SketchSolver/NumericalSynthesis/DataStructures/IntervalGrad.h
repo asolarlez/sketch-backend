@@ -11,27 +11,27 @@
 using namespace std;
 
 class IntervalGrad {
-	float low;
-	float high;
+	double low;
+	double high;
 	gsl_vector* lgrad;
 	gsl_vector* hgrad;
 	
-	//static constexpr float DELTA = 0.7;
+	//static constexpr double DELTA = 0.7;
 
 public:
 	bool singleton;
-	IntervalGrad(float _low, float _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {
+	IntervalGrad(double _low, double _high, gsl_vector* _lgrad, gsl_vector* _hgrad): low(_low), high(_high), lgrad(_lgrad), hgrad(_hgrad) {
 		singleton = false;
 	}
 	~IntervalGrad(void) {
 		delete lgrad;
 		delete hgrad;
 	}
-	float getLow() const { return low; }
-	float getHigh() const { return high; }
+	double getLow() const { return low; }
+	double getHigh() const { return high; }
 	gsl_vector* getLGrad() const { return lgrad; }
 	gsl_vector* getHGrad() const { return hgrad; }
-	void update(float _low, float _high) {
+	void update(double _low, double _high) {
 		low = _low;
 		high = _high;
 	}

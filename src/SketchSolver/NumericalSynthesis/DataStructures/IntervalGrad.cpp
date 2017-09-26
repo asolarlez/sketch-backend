@@ -1,12 +1,12 @@
 #include "IntervalGrad.h"
 
 void IntervalGrad::ig_plus(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
-	float lval = mlval + flval;
-	float hval = mhval + fhval;
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
+	double lval = mlval + flval;
+	double hval = mhval + fhval;
 	o->update(lval, hval);
 	o->singleton = m->singleton && f->singleton;
 	
@@ -25,18 +25,18 @@ void IntervalGrad::ig_times(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	gsl_vector* mhgrads = m->getHGrad();
 	gsl_vector* fhgrads = f->getHGrad();
 	
-	vector<float> vals;
+	vector<double> vals;
 	vector<gsl_vector*> grads;
 	
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 	
-	float v1 = mlval * flval;
-	float v2 = mlval * fhval;
-	float v3 = mhval * flval;
-	float v4 = mhval * fhval;
+	double v1 = mlval * flval;
+	double v2 = mlval * fhval;
+	double v3 = mhval * flval;
+	double v4 = mhval * fhval;
 	//cout << v1 << " " << v2 << " " << v3 << " " << v4 << endl;
 		
 	vals.push_back(v1);
@@ -54,15 +54,15 @@ void IntervalGrad::ig_times(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	grads.push_back(GradUtil::tmp3);
 	
 	if (m->singleton && f->singleton) {
-		float minv = vals[0];
-		float maxv = vals[0];
+		double minv = vals[0];
+		double maxv = vals[0];
 		gsl_blas_dcopy(grads[0], o->getLGrad());
 		gsl_blas_dcopy(grads[0], o->getHGrad());
 		o->update(minv, maxv);
 		o->singleton = true;
 	} else {
-		float minv = GradUtil::findMin(vals, grads, o->getLGrad()); // Note: this computes a smooth approximate of min and not the actual value
-		float maxv = GradUtil::findMax(vals, grads, o->getHGrad());
+		double minv = GradUtil::findMin(vals, grads, o->getLGrad()); // Note: this computes a smooth approximate of min and not the actual value
+		double maxv = GradUtil::findMax(vals, grads, o->getHGrad());
 		o->update(minv, maxv);
 		o->singleton = false;
 	}
@@ -75,13 +75,13 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	gsl_vector* mhgrads = m->getHGrad();
 	gsl_vector* fhgrads = f->getHGrad();
 	
-	vector<float> vals;
+	vector<double> vals;
 	vector<gsl_vector*> grads;
 	
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
-	float flval = f->getLow();
-	float fhval = f->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
+	double flval = f->getLow();
+	double fhval = f->getHigh();
 
 	gsl_vector* l = o->getLGrad();
 	gsl_vector* h = o->getHGrad();
@@ -103,22 +103,22 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 			GradUtil::default_grad(l);
 			GradUtil::default_grad(h);
 		} else if (mlval >= 0 && flval == 0) {
-			float minv = mlval/fhval;
+			double minv = mlval/fhval;
 			o->update(minv, GradUtil::MAXVAL);
 			GradUtil::compute_div_grad(mlval, fhval, mlgrads, fhgrads, l);
 			GradUtil::default_grad(h);
 		} else if (mhval <= 0 && flval == 0) {
-			float maxv = mhval/fhval;
+			double maxv = mhval/fhval;
 			o->update(GradUtil::MINVAL, maxv);
 			GradUtil::default_grad(l);
 			GradUtil::compute_div_grad(mhval, fhval, mhgrads, fhgrads, h);
 		} else if (mlval >= 0 && fhval == 0) {
-			float maxv = mlval/flval;
+			double maxv = mlval/flval;
 			o->update(GradUtil::MINVAL, maxv);
 			GradUtil::default_grad(l);
 			GradUtil::compute_div_grad(mlval, flval, flgrads, mlgrads, h);
 		} else if (mhval <= 0 && fhval == 0) {
-			float minv = mhval/flval;
+			double minv = mhval/flval;
 			o->update(minv, GradUtil::MAXVAL);
 			GradUtil::compute_div_grad(mhval, flval, mhgrads, flgrads, l);
 			GradUtil::default_grad(h);
@@ -130,10 +130,10 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 		return;
 	}
 	
-	float v1 = mlval / flval;
-	float v2 = mlval / fhval;
-	float v3 = mhval / flval;
-	float v4 = mhval / fhval;
+	double v1 = mlval / flval;
+	double v2 = mlval / fhval;
+	double v3 = mhval / flval;
+	double v4 = mhval / fhval;
 	
 	vals.push_back(v1);
 	vals.push_back(v2);
@@ -151,15 +151,15 @@ void IntervalGrad::ig_div(IntervalGrad* m, IntervalGrad* f, IntervalGrad* o) {
 	
 	
 	if (m->singleton && f->singleton) {
-		float minv = vals[0];
-		float maxv = vals[0];
+		double minv = vals[0];
+		double maxv = vals[0];
 		gsl_blas_dcopy(grads[0], l);
 		gsl_blas_dcopy(grads[0], h);
 		o->update(minv, maxv);
 		o->singleton = true;
 	} else {
-		float minv = GradUtil::findMin(vals, grads, l); // Note: this computes a smooth approximate of min and not the actual value
-		float maxv = GradUtil::findMax(vals, grads, h);
+		double minv = GradUtil::findMin(vals, grads, l); // Note: this computes a smooth approximate of min and not the actual value
+		double maxv = GradUtil::findMax(vals, grads, h);
 		o->update(minv, maxv);
 		o->singleton = false;
 	}
@@ -177,8 +177,8 @@ void IntervalGrad::ig_neg(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_union(const vector<IntervalGrad*>& m, IntervalGrad* o) {
-	vector<float> lvals;
-	vector<float> hvals;
+	vector<double> lvals;
+	vector<double> hvals;
 	vector<gsl_vector*> lgrads;
 	vector<gsl_vector*> hgrads;
 	for (int i = 0; i < m.size(); i++) {
@@ -187,31 +187,31 @@ void IntervalGrad::ig_union(const vector<IntervalGrad*>& m, IntervalGrad* o) {
 		lgrads.push_back(m[i]->getLGrad());
 		hgrads.push_back(m[i]->getHGrad());
 	}
-	float minv = GradUtil::findMin(lvals, lgrads, o->getLGrad());
-	float maxv = GradUtil::findMax(hvals, hgrads, o->getHGrad());
+	double minv = GradUtil::findMin(lvals, lgrads, o->getLGrad());
+	double maxv = GradUtil::findMax(hvals, hgrads, o->getHGrad());
 	o->update(minv, maxv);
 	o->singleton = false;
 	o->bound();
 }
 
 void IntervalGrad::ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, DistanceGrad* d, IntervalGrad* o) {
-	float s1 = GradUtil::sigmoid(d->dist, d->grad, GradUtil::tmp);
-	float v1 = s1 * f->getLow();
-	float v2 = s1 * f->getHigh();
+	double s1 = GradUtil::sigmoid(d->dist, d->grad, GradUtil::tmp);
+	double v1 = s1 * f->getLow();
+	double v2 = s1 * f->getHigh();
 	GradUtil::compute_mult_grad(s1, f->getLow(), GradUtil::tmp, f->getLGrad(), o->getLGrad());
 	GradUtil::compute_mult_grad(s1, f->getHigh(), GradUtil::tmp, f->getHGrad(), o->getHGrad());
 	
 	GradUtil::compute_neg_grad(d->grad, GradUtil::tmp1);
-	float s2 = GradUtil::sigmoid(-d->dist, GradUtil::tmp1, GradUtil::tmp);
-	float v3 = s2*m->getLow();
-	float v4 = s2*m->getHigh();
+	double s2 = GradUtil::sigmoid(-d->dist, GradUtil::tmp1, GradUtil::tmp);
+	double v3 = s2*m->getLow();
+	double v4 = s2*m->getHigh();
 	GradUtil::compute_mult_grad(s2, m->getLow(), GradUtil::tmp, m->getLGrad(), GradUtil::tmp1);
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getLGrad());
 	GradUtil::compute_mult_grad(s2, m->getHigh(), GradUtil::tmp, m->getHGrad(), GradUtil::tmp1);
 	gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getHGrad());
 	
-	float minv = v1 + v3;
-	float maxv = v2 + v4;
+	double minv = v1 + v3;
+	double maxv = v2 + v4;
 	o->update(minv, maxv);
 	if (m->singleton && f->singleton) {
 		Assert(minv == maxv, "sfiahoisf");
@@ -221,32 +221,32 @@ void IntervalGrad::ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, Distanc
 	}
 	o->bound();
 	
-	/*float s1 = IntervalGrad::sigmoid(d->dist - DELTA, d->grad, tmp);
-	 float v1 = s1 * f->getLow();
-	 float v4 = s1 * f->getHigh();
+	/*double s1 = IntervalGrad::sigmoid(d->dist - DELTA, d->grad, tmp);
+	 double v1 = s1 * f->getLow();
+	 double v4 = s1 * f->getHigh();
 	 compute_mult_grad(s1, f->getLow(), tmp, f->getLGrad(), o->getLGrad());
 	 compute_mult_grad(s1, f->getHigh(), tmp, f->getHGrad(), o->getHGrad());
 	 
 	 gsl_vector_memcpy(tmp1, d->grad);
 	 gsl_vector_scale(tmp1, -1.0);
-	 float s2 = IntervalGrad::sigmoid(-d->dist + DELTA, tmp1, tmp);
-	 float s3 = IntervalGrad::sigmoid(d->dist + DELTA, d->grad, tmp1);
+	 double s2 = IntervalGrad::sigmoid(-d->dist + DELTA, tmp1, tmp);
+	 double s3 = IntervalGrad::sigmoid(d->dist + DELTA, d->grad, tmp1);
 	 compute_mult_grad(s2, s3, tmp, tmp1, tmp2);
-	 float minv = findMin(m->getLow(), f->getLow(), m->getLGrad(), f->getLGrad(), tmp);
+	 double minv = findMin(m->getLow(), f->getLow(), m->getLGrad(), f->getLGrad(), tmp);
 	 compute_mult_grad(s2*s3, minv, tmp2, tmp, tmp1);
-	 float v2 = s2*s3*minv;
+	 double v2 = s2*s3*minv;
 	 gsl_vector_add(o->getLGrad(), tmp1);
 	 
-	 float maxv = findMax(m->getHigh(), f->getHigh(), m->getHGrad(), f->getHGrad(), tmp);
+	 double maxv = findMax(m->getHigh(), f->getHigh(), m->getHGrad(), f->getHGrad(), tmp);
 	 compute_mult_grad(s2*s3, maxv, tmp2, tmp, tmp1);
-	 float v5 = s2*s3*maxv;
+	 double v5 = s2*s3*maxv;
 	 gsl_vector_add(o->getHGrad(), tmp1);
 	 
 	 gsl_vector_memcpy(tmp1, d->grad);
 	 gsl_vector_scale(tmp1, -1.0);
-	 float s4 = IntervalGrad::sigmoid(-d->dist - DELTA, tmp1, tmp);
-	 float v3 = s4*m->getLow();
-	 float v6 = s4*m->getHigh();
+	 double s4 = IntervalGrad::sigmoid(-d->dist - DELTA, tmp1, tmp);
+	 double v3 = s4*m->getLow();
+	 double v6 = s4*m->getHigh();
 	 compute_mult_grad(s4, m->getLow(), tmp, m->getLGrad(), tmp1);
 	 gsl_vector_add(o->getLGrad(), tmp1);
 	 compute_mult_grad(s4, m->getHigh(), tmp, m->getHGrad(), tmp1);
@@ -264,8 +264,8 @@ void IntervalGrad::ig_conditionalUnion(IntervalGrad* m, IntervalGrad* f, Distanc
 }
 
 void IntervalGrad::ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o) {
-	vector<float> lvals;
-	vector<float> hvals;
+	vector<double> lvals;
+	vector<double> hvals;
 	vector<gsl_vector*> lgrads;
 	vector<gsl_vector*> hgrads;
 	for (int i = 0; i < m.size(); i++) {
@@ -274,8 +274,8 @@ void IntervalGrad::ig_intersect(const vector<IntervalGrad*>& m, IntervalGrad* o)
 		lgrads.push_back(m[i]->getLGrad());
 		hgrads.push_back(m[i]->getHGrad());
 	}
-	float minv = GradUtil::findMax(lvals, lgrads, o->getLGrad());
-	float maxv = GradUtil::findMin(hvals, hgrads, o->getHGrad());
+	double minv = GradUtil::findMax(lvals, lgrads, o->getLGrad());
+	double maxv = GradUtil::findMin(hvals, hgrads, o->getHGrad());
 	if (maxv < minv) {
 		// empty set
 	}
@@ -316,14 +316,14 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 	gsl_vector* mlgrads = m->getLGrad();
 	gsl_vector* mhgrads = m->getHGrad();
 	
-	vector<float> vals;
+	vector<double> vals;
 	vector<gsl_vector*> grads;
 	
-	float mlval = m->getLow();
-	float mhval = m->getHigh();
+	double mlval = m->getLow();
+	double mhval = m->getHigh();
 	
-	float v1 = mlval * mlval;
-	float v2 = mhval * mhval;
+	double v1 = mlval * mlval;
+	double v2 = mhval * mhval;
 	
 	vals.push_back(v1);
 	vals.push_back(v2);
@@ -334,9 +334,9 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 	grads.push_back(GradUtil::tmp1);
 	
 	if (mlval < 0 && mhval > 0) {
-		float minv = 0.0;
+		double minv = 0.0;
 		GradUtil::default_grad(o->getLGrad()); // TODO: what should be the gradient in this case?
-		float maxv = GradUtil::findMax(vals, grads, o->getHGrad());
+		double maxv = GradUtil::findMax(vals, grads, o->getHGrad());
 		o->update(minv, maxv);
 		o->singleton = false;
 	} else {
@@ -346,8 +346,8 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 			gsl_blas_dcopy(grads[0], o->getLGrad());
 			gsl_blas_dcopy(grads[0], o->getHGrad());
 		} else {
-			float minv = GradUtil::findMin(vals, grads, o->getLGrad());
-			float maxv = GradUtil::findMax(vals, grads, o->getHGrad());
+			double minv = GradUtil::findMin(vals, grads, o->getLGrad());
+			double maxv = GradUtil::findMax(vals, grads, o->getHGrad());
 			o->update(minv, maxv);
 			o->singleton = false;
 		}
@@ -356,8 +356,8 @@ void IntervalGrad::ig_square(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_arctan(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	Assert(xl == xh, "NYI: range computation for arctan");
 	o->update(atan(xl), atan(xh));
 	o->singleton = m->singleton;
@@ -367,8 +367,8 @@ void IntervalGrad::ig_arctan(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	if (xl == xh) {
 		o->update(sin(xl), sin(xh));
 		GradUtil::compute_sin_grad(xl, m->getLGrad(), o->getLGrad());
@@ -386,7 +386,7 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 		GradUtil::compute_sin_grad(xh, m->getHGrad(), o->getLGrad());
 		GradUtil::compute_sin_grad(xl, m->getLGrad(), o->getHGrad());
 	} else if (xl >= -GradUtil::PI && xl <= GradUtil::PI/2 && xh >= -GradUtil::PI && xh <= GradUtil::PI/2) {
-		vector<float> vals;
+		vector<double> vals;
 		vector<gsl_vector*> grads;
 		vals.push_back(sin(xl));
 		vals.push_back(sin(xh));
@@ -394,11 +394,11 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 		GradUtil::compute_sin_grad(xh, m->getHGrad(), GradUtil::tmp1);
 		grads.push_back(GradUtil::tmp);
 		grads.push_back(GradUtil::tmp1);
-		float hval = GradUtil::findMax(vals, grads, o->getHGrad());
+		double hval = GradUtil::findMax(vals, grads, o->getHGrad());
 		GradUtil::default_grad(o->getLGrad());
 		o->update(-1.0, hval);
 	} else if (xl >= - GradUtil::PI/2 && xl <= GradUtil::PI && xh >= - GradUtil::PI/2 && xh <= GradUtil::PI) {
-		vector<float> vals;
+		vector<double> vals;
 		vector<gsl_vector*> grads;
 		vals.push_back(sin(xl));
 		vals.push_back(sin(xh));
@@ -406,7 +406,7 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 		GradUtil::compute_sin_grad(xh, m->getHGrad(), GradUtil::tmp1);
 		grads.push_back(GradUtil::tmp);
 		grads.push_back(GradUtil::tmp1);
-		float lval = GradUtil::findMin(vals, grads, o->getLGrad());
+		double lval = GradUtil::findMin(vals, grads, o->getLGrad());
 		GradUtil::default_grad(o->getHGrad());
 		o->update(lval, 1.0);
 	} else { // TODO: this is so course grained
@@ -419,8 +419,8 @@ void IntervalGrad::ig_sin(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_cos(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	if (xl == xh) {
 		o->update(cos(xl), cos(xh));
 		GradUtil::compute_cos_grad(xl, m->getLGrad(), o->getLGrad());
@@ -434,7 +434,7 @@ void IntervalGrad::ig_cos(IntervalGrad* m, IntervalGrad* o) {
 		GradUtil::compute_cos_grad(xl, m->getLGrad(), o->getLGrad());
 		GradUtil::compute_cos_grad(xh, m->getHGrad(), o->getHGrad());
 	} else if (xl >= - GradUtil::PI && xl <= GradUtil::PI && xh >= - GradUtil::PI && xh <= GradUtil::PI) {
-		vector<float> vals;
+		vector<double> vals;
 		vector<gsl_vector*> grads;
 		vals.push_back(cos(xl));
 		vals.push_back(cos(xh));
@@ -442,7 +442,7 @@ void IntervalGrad::ig_cos(IntervalGrad* m, IntervalGrad* o) {
 		GradUtil::compute_cos_grad(xh, m->getHGrad(), GradUtil::tmp1);
 		grads.push_back(GradUtil::tmp);
 		grads.push_back(GradUtil::tmp1);
-		float lval = GradUtil::findMin(vals, grads, o->getLGrad());
+		double lval = GradUtil::findMin(vals, grads, o->getLGrad());
 		GradUtil::default_grad(o->getHGrad());
 		o->update(lval, 1.0);
 	} else {
@@ -455,8 +455,8 @@ void IntervalGrad::ig_cos(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_tan(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	Assert(xl == xh, "NYI: range computation for tan");
 	o->update(tan(xl), tan(xh));
 	GradUtil::compute_tan_grad(xl, m->getLGrad(), o->getLGrad());
@@ -466,8 +466,8 @@ void IntervalGrad::ig_tan(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_exp(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	o->update(exp(xl), exp(xh));
 	GradUtil::compute_exp_grad(xl, m->getLGrad(), o->getLGrad());
 	GradUtil::compute_exp_grad(xh, m->getHGrad(), o->getHGrad());
@@ -476,8 +476,8 @@ void IntervalGrad::ig_exp(IntervalGrad* m, IntervalGrad* o) {
 }
 
 void IntervalGrad::ig_sqrt(IntervalGrad* m, IntervalGrad* o) {
-	float xl = m->getLow();
-	float xh = m->getHigh();
+	double xl = m->getLow();
+	double xh = m->getHigh();
 	if (xh < 0.0) { // Ideally, this should raise error
 		o->update(0.0, 0.0);
 		o->singleton = m->singleton;

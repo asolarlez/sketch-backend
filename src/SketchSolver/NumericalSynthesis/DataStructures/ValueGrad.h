@@ -11,17 +11,17 @@
 using namespace std;
 
 class ValueGrad {
-	float val;
+	double val;
 	gsl_vector* grad;
 public:
 	bool set;
-	ValueGrad(float _val, gsl_vector* _grad): val(_val), grad(_grad), set(false) {}
+	ValueGrad(double _val, gsl_vector* _grad): val(_val), grad(_grad), set(false) {}
 	~ValueGrad(void) {
 		delete grad;
 	}
-	float getVal() const { return val; }
+	double getVal() const { return val; }
 	gsl_vector* getGrad() const { return grad; }
-	void update(float _val) {
+	void update(double _val) {
 		val = _val;
 	}
 	static void vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o); // o = m + f

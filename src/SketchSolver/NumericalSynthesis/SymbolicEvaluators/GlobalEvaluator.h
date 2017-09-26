@@ -195,9 +195,9 @@ class LP {
 	glp_prob* lp;
 	int ia[1+1000], ja[1+1000];
 	double ar[1+1000];
-	float LOWBND = -32.0; // TODO: don;t hardcode
-	float HIGHBND = 32.0;
-	float PRECISION = 1e-5;
+	double LOWBND = -32.0; // TODO: don;t hardcode
+	double HIGHBND = 32.0;
+	double PRECISION = 1e-5;
 	
 public:
 	double optimize(RegionValuePair* rv, const gsl_vector* x0) {

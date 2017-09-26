@@ -41,5 +41,7 @@ public:
 	virtual bool ignoreConflict();
 	virtual vector<tuple<int, int, int>> collectSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
-	virtual void getControls(map<string, float>& ctrls);
+	virtual void getControls(map<string, double>& ctrls);
+	
+	bool validObjective();
 };

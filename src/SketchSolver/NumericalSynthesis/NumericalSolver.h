@@ -20,7 +20,7 @@ using namespace std;
 class NumericalSolver : public Synthesizer {
 	BooleanDAG* dag;
 	map<int, int>& imap; // Map boolean inputs to actual nodes in the dag
-	map<string, float> ctrlVals; // maps ctrl names to values found by the numerical solver
+	map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
 	NumericalSolverHelper* helper;
 	
 	
@@ -32,6 +32,8 @@ public:
 	virtual void finalize() {}
 	virtual void backtrack(int level) {}
 	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params);
+	virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs);
+	
 	virtual void print(ostream& out) {
 		for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
 			out << it->first << ":" << it->second << endl;
@@ -51,8 +53,8 @@ public:
 	void convertConflicts(const vector<pair<int, int>>& c);
 		
 	void debug();
-	/*void genData(gsl_vector* state, int idx, int ncontrols);
-	void genData1D(int ncontrols);
+	void genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap);
+	/*void genData1D(int ncontrols);
 	void genData2D(int ncontrols);*/
 };
 

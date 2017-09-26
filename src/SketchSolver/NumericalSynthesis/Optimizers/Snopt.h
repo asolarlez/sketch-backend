@@ -39,6 +39,7 @@ class SnoptSolver {
 	char *Fnames;
 	
 	gsl_vector* result;
+	double objectiveVal;
 	
 	integer Cold = 0, Basis = 1, Warm = 2;
 public:
@@ -89,6 +90,10 @@ public:
 	
 	gsl_vector* getResults() {
 		return result;
+	}
+	
+	double getObjectiveVal() {
+		return objectiveVal;
 	}
 	
 };

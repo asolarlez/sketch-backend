@@ -22,15 +22,15 @@ void destroy() {
 
 void testFindMin1() {
 	init(1);
-	float v1 = 1.0;
-	float v2 = 2.0;
+	double v1 = 1.0;
+	double v2 = 2.0;
 	gsl_vector* g1 = gsl_vector_alloc(1);
 	gsl_vector_set(g1, 0, 0.0);
 	gsl_vector* g2 = gsl_vector_alloc(1);
 	gsl_vector_set(g2, 0, 0.0);
 	gsl_vector* l = gsl_vector_alloc(1);
 	
-	float minv = GradUtil::findMin(v1, v2, g1, g2, l);
+	double minv = GradUtil::findMin(v1, v2, g1, g2, l);
 	assert(minv == 1.0);
 	assert(gsl_vector_get(l, 0) == 0.0);
 	destroy();
@@ -41,8 +41,8 @@ void testFindMin1() {
 
 void testConditionalUnion1() {
 	init(1);
-	float v1 = 1.0;
-	float v2 = 2.0;
+	double v1 = 1.0;
+	double v2 = 2.0;
 	gsl_vector* g1l = gsl_vector_alloc(1);
 	gsl_vector_set(g1l, 0, 0.0);
 	gsl_vector* g1h = gsl_vector_alloc(1);
@@ -53,7 +53,7 @@ void testConditionalUnion1() {
 	gsl_vector_set(g2h, 0, 0.0);
 	IntervalGrad* m = new IntervalGrad(v1, v1, g1l, g1h);
 	IntervalGrad* f = new IntervalGrad(v2, v2, g2l, g2h);
-	float d = 0.0;
+	double d = 0.0;
 	gsl_vector* gd = gsl_vector_alloc(1);
 	gsl_vector_set(gd, 0, 1.0);
 	DistanceGrad* dg = new DistanceGrad(d, gd);

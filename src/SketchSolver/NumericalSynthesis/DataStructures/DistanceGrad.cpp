@@ -2,7 +2,7 @@
 
 void DistanceGrad::dg_and(DistanceGrad* mdist, DistanceGrad* fdist, DistanceGrad* dg) {
 	if (mdist->set && fdist->set) {
-		vector<float> vals;
+		vector<double> vals;
 		vector<gsl_vector*> grads;
 		vals.push_back(mdist->dist);
 		vals.push_back(fdist->dist);
@@ -33,7 +33,7 @@ void DistanceGrad::dg_and(DistanceGrad* mdist, DistanceGrad* fdist, DistanceGrad
 
 void DistanceGrad::dg_or(DistanceGrad* mdist, DistanceGrad* fdist, DistanceGrad* dg) {
 	if (mdist->set && fdist->set) {
-		vector<float> vals;
+		vector<double> vals;
 		vector<gsl_vector*> grads;
 		vals.push_back(mdist->dist);
 		vals.push_back(fdist->dist);

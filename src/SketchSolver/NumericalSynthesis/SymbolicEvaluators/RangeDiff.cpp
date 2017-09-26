@@ -61,7 +61,7 @@ void RangeDiff::visit( CTRL_node& node ) {
 		} else {
 			Assert(false, "All float ctlrs should be handled by the numerical solver");
 		}
-		float val = gsl_vector_get(ctrls, idx);
+		double val = gsl_vector_get(ctrls, idx);
 		IntervalGrad* interval = r(node);
 		interval->update(val, val);
 		interval->singleton = true;
@@ -193,7 +193,7 @@ void RangeDiff::visit( NEG_node& node ) {
 
 void RangeDiff::visit( CONST_node& node ) {
 	if (node.isFloat()) {
-		float val = node.getFval();
+		double val = node.getFval();
 		IntervalGrad* interval = r(node);
 		interval->update(val, val);
 		interval->singleton = true;
@@ -365,7 +365,7 @@ double RangeDiff::run(const gsl_vector* ctrls_p, map<int, int>& inputValues_p, g
 	return error;
 }
 
-void RangeDiff::computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
+void RangeDiff::computeError(double dist, int expected, gsl_vector* dg, bool_node& node, bool relax) {
 	assertCtr++;
 	if (!foundFailure && (expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 		//cout << "Error: " << node.lprint() << " dist: " << dist << " exp: " << expected << endl;

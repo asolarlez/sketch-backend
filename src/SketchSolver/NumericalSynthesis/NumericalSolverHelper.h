@@ -38,5 +38,5 @@ public:
 	virtual bool ignoreConflict() = 0;
 	virtual vector<tuple<int, int, int>> collectSuggestions() = 0;
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
-	virtual void getControls(map<string, float>& ctrls) = 0;
+	virtual void getControls(map<string, double>& ctrls) = 0;
 };

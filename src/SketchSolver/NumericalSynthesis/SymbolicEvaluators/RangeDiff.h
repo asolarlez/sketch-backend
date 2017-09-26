@@ -140,6 +140,6 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	void computeError(float dist, int expected, gsl_vector* dg, bool_node& node, bool relax = false);
+	void computeError(double dist, int expected, gsl_vector* dg, bool_node& node, bool relax = false);
 	
 };

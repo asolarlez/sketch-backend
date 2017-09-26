@@ -88,6 +88,10 @@ void BoolAutoDiff::visit( TIMES_node& node ) {
 
 void BoolAutoDiff::visit(ARRACC_node& node )  {
 	Assert(node.multi_mother.size() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
+	//cout << node.lprint() << endl;
+	//cout << node.mother->lprint() << endl;
+	//cout << node.multi_mother[0]->lprint() << endl;
+	//cout << node.multi_mother[1]->lprint() << endl;
 	if (node.getOtype() == OutType::BOOL) {
 		DistanceGrad* dg = d(node);
 		DistanceGrad* cdist = d(node.mother);
@@ -270,6 +274,11 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	}
 }
 
+bool BoolAutoDiff::hasDist(bool_node* n) {
+	DistanceGrad* dg = d(n);
+	return dg->set;
+}
+
 double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	DistanceGrad* dg = d(n);
 	if (dg->set) {
@@ -301,7 +310,7 @@ double BoolAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorG
 bool BoolAutoDiff::check(bool_node* n, int expected) {
 	DistanceGrad* dg = d(n);
 	if (dg->set) {
-		float dist = dg->dist;
+		double dist = dg->dist;
 		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
 			return false;
 		}

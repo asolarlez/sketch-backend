@@ -124,6 +124,8 @@ public:
 	virtual void print(ostream& out) {
 		out << "( " << theta << "< IN_0" << ")";
 	}
+	
+	virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {}
   
   virtual void getControls(map<string, string>& values) {
     stringstream str;
@@ -483,6 +485,8 @@ public:
         
 	}
 
+	virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) { }
+	
 	virtual void print(ostream& out) {
 		out << "( SIMTH_SYNTH ( "<< simfn <<" , "<< theta << " ) )"; //IN_0 and IN_1 are two inputs
 		//Just text when printing, frontend language 
@@ -520,6 +524,8 @@ void SolverHelper::addSynthSolver(const string& name, const string& syntype, vec
 	else {
 		sin = sit->second;
 	}
+	sin->getConstraintsOnInputs(this, inputs);
+	
 	int instid = sin->newInstance(inputs, outputs);
 
 	int inputid = 0;
