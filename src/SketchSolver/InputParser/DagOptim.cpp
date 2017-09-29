@@ -60,17 +60,28 @@ CONST_node* DagOptim::getCnode(bool c){
 	return getCnode( c ? 1 : 0 );
 }
 
+
+
+
 bool_node* DagOptim::optAdd(bool_node* bn){
 	bn->accept(*this);
     bool_node* tmp = rvalue;
 	if(bn == tmp){
-		stillPrivate = bn;
-		addNode(bn);
-		return bn;
+		bool_node* tbn = cse.computeCSE(bn);
+		if (tbn == bn) {
+			stillPrivate = bn;
+			addNode(bn);
+			return bn;
+		}
+		else {
+			bn->dislodge();
+			delete bn;
+			return tbn;
+		}
 	}else{
 		bn->dislodge();
 		delete bn;
-		return tmp;
+		return cse.computeCSE(tmp);
 	}
 }
 
@@ -909,6 +920,41 @@ void DagOptim::visit( TIMES_node& node ){
 			return;
 		}
 	}
+
+	if (node.mother->type == bool_node::NEG) {
+		if (node.father->type == bool_node::NEG) {
+			bool_node* bn = new TIMES_node(node.mother->mother, node.father->mother);
+			bn->addToParents();
+			bn = optAdd(bn);
+			rvalue = bn;
+			return;
+		}
+		else {
+			bool_node* bn = new TIMES_node(node.mother->mother, node.father);
+			bn->addToParents();
+			bn = optAdd(bn);
+			bool_node* obn = new NEG_node();
+			obn->mother = bn;
+			obn = optAdd(obn);
+			rvalue = obn;
+			return;
+
+		}
+	}
+	else {
+		if (node.father->type == bool_node::NEG) {
+			bool_node* bn = new TIMES_node(node.mother, node.father->mother);
+			bn->addToParents();
+			bn = optAdd(bn);
+			bool_node* obn = new NEG_node();
+			obn->mother = bn;
+			obn = optAdd(obn);
+			rvalue = obn;
+			return;
+		}
+	}
+
+
 	rvalue = &node;
 }
 
@@ -1523,6 +1569,24 @@ void DagOptim::visit( UFUN_node& node ){
 			return;
 		}
 	}
+
+	if (floats.hasFun(node.get_ufname())) {
+		if (isConst(node.multi_mother[0])) {
+			cout << node.lprint() << endl;
+			auto ff = floats.getFun(node.get_ufname());
+			bool_node* tbn  = getCnode(ff.apply(getFval(node.multi_mother[0])));
+			
+			TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+			newOutTuple->setName( node.getTupleName() );
+			newOutTuple->multi_mother.push_back(tbn);
+			newOutTuple->addToParents();
+
+			rvalue = optAdd(newOutTuple);				 
+
+			return;
+		}
+	}
+
 	
 
     if (node.fgid != 0) {

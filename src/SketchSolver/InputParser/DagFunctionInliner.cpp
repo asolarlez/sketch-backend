@@ -55,7 +55,7 @@ int sizeForNode(bool_node* bn){
 		return sizeof(CTRL_node);
 	}	
 	if(typeid(*bn) == typeid(DST_node)){
-		return sizeof(CTRL_node);
+		return sizeof(DST_node);
 	}	
 	if(typeid(*bn) == typeid(CONST_node)){
 		return sizeof(CONST_node);

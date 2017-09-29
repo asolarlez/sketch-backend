@@ -5,6 +5,7 @@
 #include <set>
 #include <map>
 #include <unordered_map>
+#include "DeductiveSolver.h"
 
 #include <utility>
 #include "Sort.h"
@@ -95,6 +96,12 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	
 	return NULL;
 }
+
+
+void addDeductiveSolver(DeductiveSolver& dsolve) {
+
+}
+
 
 
 void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {

@@ -26,6 +26,9 @@ protected:
 public:
 	FloatFun(FloatManager& _fm, floatfun _f) :fm(_fm), f(_f) {}
 	inline int operator()(int x);
+	inline float apply(float in) {
+		return f(in);
+	}
 };
 
 

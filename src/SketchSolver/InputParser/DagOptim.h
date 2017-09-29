@@ -474,7 +474,7 @@ public:
 
 
 	bool_node* computeOptim(bool_node* node);
-	bool_node* optAdd(bool_node* bn);
+	bool_node* optAdd(bool_node* bn);	
 	bool_node* computeCSE(bool_node* node);
 	
 	void initialize(BooleanDAG& dag);

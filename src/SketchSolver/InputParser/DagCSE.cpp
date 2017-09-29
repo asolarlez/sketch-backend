@@ -196,10 +196,41 @@ void DagCSE::visit(  PLUS_node& node ){
 void DagCSE::visit(  TIMES_node& node ){
  	Dtime(stimer.restart();)
  	
- 	int mid = node.mother == NULL? -1: node.mother->globalId;
- 	int fid = node.father == NULL? -1: node.father->globalId;
-	
-	setStr(min(mid, fid), '*' ,max(mid, fid));
+	if (node.mother->type == bool_node::TIMES) {
+		int a = node.mother->mother->globalId;
+		int b = node.mother->father->globalId;
+		int c = node.father->globalId;
+		if (a > b) { int tmp = b; b = a; a = tmp; }
+		if (c < b) {
+			if (c < a) {
+				int tmp = a; a = c; c = b;  b = tmp;
+			}
+			else {
+				int tmp = b; b = c; c = tmp;
+			}
+
+		}
+
+		int p = 0;
+		char* tch = &tmpbuf[0];
+		writeInt(tch, a, p);
+		tch[p] = '*'; p++;
+		writeInt(tch, b, p);
+		tch[p] = '*'; p++;
+		writeInt(tch, c, p);
+		tch[p] = 0;
+		ccode = tch;
+
+	}
+	else {
+		int mid =  node.mother->globalId;
+		int fid =  node.father->globalId;
+
+		setStr(min(mid, fid), '*', max(mid, fid));
+
+	}
+
+ 	
     
  	
  	Dtime(stimer.stop();)

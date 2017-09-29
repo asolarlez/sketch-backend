@@ -332,6 +332,8 @@
     <ClInclude Include="SketchSolver\FindCheckSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
     <ClInclude Include="SketchSolver\NumericalSolver.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\DeductiveSolver.h" />
+    <ClInclude Include="SketchSolver\SolverInterfaces\DeductiveSolverHelpers.h" />
     <ClInclude Include="SketchSolver\SolverInterfaces\MiniSATSolver.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToEuclid.h" />
     <ClInclude Include="SketchSolver\InputParser\NodesToSolver.h" />

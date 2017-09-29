@@ -683,7 +683,7 @@ class TUPLE_CREATE_node:public arith_node{
         str<<">";
         return str.str();
     }
-    void setName(string& n){name = n; }
+    void setName(const string& n){name = n; }
     OutType* getOtype()const {
       if(otype != OutType::BOTTOM){
             return otype;
