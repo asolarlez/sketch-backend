@@ -544,7 +544,7 @@ Lit Solver::pickBranchLit(int polarity_mode, double random_var_freq)
     switch (polarity_mode){
     case polarity_true:  sign = false; break;
     case polarity_false: sign = true;  break;
-    case polarity_user:  sign = polarity[next]; break;
+	case polarity_user: sign = next >= 0? polarity[next] : true; break;
     case polarity_rnd:   sign = irand(random_seed, 2); break;
     default: assert(false); }
 
@@ -1791,7 +1791,12 @@ lbool Solver::solve(const vec<Lit>& assumps)
     if (status == l_True){
         // Extend & copy model:
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++) model[i] = value(i);
+		for (int i = 0; i < nVars(); i++) { 
+			auto val = value(i);
+			model[i] = val;
+			polarity[i] = (char)(val == l_False);
+		}
+		polarity_mode = polarity_user;
 #ifdef _DEBUG
         verifyModel();
 #endif
