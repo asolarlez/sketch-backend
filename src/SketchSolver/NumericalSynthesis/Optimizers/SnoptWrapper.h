@@ -48,7 +48,7 @@ public:
 		//cout << "x: ";
 		for (int i =0 ; i < *n; i++) {
 			gsl_vector_set(state, i, x[i]);
-			//cout << x[i] << ", ";
+			//cout << x[i] << " ";
 		}
 		//cout << endl;
 		int fcounter = 0;
@@ -145,6 +145,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	doublereal* Fupp;
 	
 	double minObjectiveVal;
+	double threshold = 0.01;
 	
 	
 	void getxranges() {
@@ -205,8 +206,8 @@ public:
 		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
 		
-		double betas[4] = {-1, -10, -50, -100};
-		double alphas[4] = {1, 10, 50, 100};
+		double betas[4] = {-1, -10, -100, -1000};
+		double alphas[4] = {1, 10, 100, 1000};
 		
 		gsl_vector_memcpy(t, initState);
 		
@@ -214,7 +215,7 @@ public:
 		int numtries = 0;
 		minObjectiveVal = 1e50;
 		bool solved;
-		while (minObjectiveVal > 0.5 && numtries < MAX_TRIES) {
+		while (minObjectiveVal > threshold && numtries < MAX_TRIES) {
 			cout << "Attempt: " << (numtries + 1) << endl;
 			
 			for (int i = 0; i < 4; i++) {
@@ -237,7 +238,7 @@ public:
 			numtries++;
 			randomizeCtrls(t);
 		}
-		return minObjectiveVal < 0.5;
+		return minObjectiveVal < threshold;
 	}
 	
 	virtual gsl_vector* getMinState() {

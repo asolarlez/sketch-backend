@@ -60,6 +60,7 @@ void BasicNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int
 
 bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
+	if (nid < 0) return true;
 	if (boolNodes.find(nid) == boolNodes.end()) {
 		return false;
 	}

@@ -54,7 +54,7 @@ public:
 						auto it = nodeValsMap.find(n->id);
 						if (it != nodeValsMap.end()) {
 							int val = it->second;
-							error == p->eval->computeError(n, val, curGrad);
+							error += p->eval->computeError(n, val, curGrad);
 						}
 					}
 				}
@@ -104,8 +104,8 @@ public:
 			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
 				int idx = ctrlMap[ctrls[i]->get_name()];
 				CTRL_node* cnode = (CTRL_node*) ctrls[i];
-				double low = cnode->hasRange ? cnode->low : -10.0;
-				double high = cnode->hasRange ? cnode->high : 10.0;
+				double low = cnode->hasRange ? cnode->low : -20.0;
+				double high = cnode->hasRange ? cnode->high : 20.0;
 				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
 				gsl_vector_set(state, idx, r);
 				counter++;

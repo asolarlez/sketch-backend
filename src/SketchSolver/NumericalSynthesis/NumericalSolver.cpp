@@ -5,8 +5,14 @@ gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 
 NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): Synthesizer(_fm), dag(_dag), imap(_imap) {
-	cout << "NInputs: " << imap.size() << endl;
-	helper = new BoolApproxHelper(_fm, dag, imap);
+	if (PARAMS->verbosity > 2) {
+		cout << "NInputs: " << imap.size() << endl;
+	}
+	if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
+		helper = new BoolApproxHelper(_fm, dag, imap);
+	} else {
+		Assert(false, "Error: specify which numerical helper to use for solver mode: " + PARAMS->numericalSolverMode);
+	}
 	//helper = new InequalityHelper(_fm, dag, imap);
 	//helper = new BasicNumericalHelper(_fm, dag, imap);
 	//debug();
@@ -22,8 +28,10 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	
 	if (!helper->checkInputs(rowid, colid)) return true;
 	
-	printInputs(allInputs);
-	cout << "Col Id: " << colid << endl;
+	if (PARAMS->verbosity > 7) {
+		printInputs(allInputs);
+		cout << "Col Id: " << colid << endl;
+	}
 	suggestions.clear();
 	
 	bool sat = helper->checkSAT();
@@ -33,7 +41,9 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 		convertSuggestions(s, suggestions);
 		return true;
 	} else {
-		cout << "****************CONFLICT****************" << endl;
+		if (PARAMS->verbosity > 7) {
+			cout << "****************CONFLICT****************" << endl;
+		}
 		const vector<pair<int, int>>& c = helper->getConflicts(rowid, colid); // <instanceid, inputid>
 		convertConflicts(c);
 		return false;
@@ -73,6 +83,7 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 	
 	// First, group inputs based on ctrl names
 	for (int i = 0; i < inputs.size(); i++) {
+		if (imap[i] < 0) continue;
 		bool_node* n = (*dag)[imap[i]];
 		//cout << n->lprint() << " " << inputs[i] << endl;
 		if (n->type == bool_node::LT) {
@@ -104,17 +115,17 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 			}
 		}
 	}
-	cout << ctrlToInputIds.size() << endl;
+	//cout << ctrlToInputIds.size() << endl;
 	// Next, generate constraints for each pair of inputs that have the same ctrl
 	for (auto it = ctrlToInputIds.begin(); it != ctrlToInputIds.end(); it++) {
 		auto& ids_map = it->second;
 		vector<int> ids;
 		for (auto id_it = ids_map.begin(); id_it != ids_map.end(); id_it++) {
-			cout << id_it->first << ", ";
+			//cout << id_it->first << ", ";
 			ids.push_back(id_it->second);
 		}
-		cout << endl;
-		cout << ids.size() << endl;
+		//cout << endl;
+		//cout << ids.size() << endl;
 		for (int i = 0; i < ids.size() - 1; i++) {
 			double t1;
 			bool reverse1; // straight is ctrl < const, reverse is const < ctrl
@@ -146,7 +157,6 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 					dir->addHelperC(-a, b);
 				}
 				if (t1 == t2) { // a = b
-					cout << "Adding equate clause 1" << endl;
 					dir->addEquateClause(a, b);
 				}
 				if (t1 > t2) { // a = F => b = F
@@ -157,7 +167,6 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 					dir->addHelperC(-a, -b);
 				}
 				if (t1 == t2) { // a = -b
-					cout << "Adding equate clause 2" << endl;
 					dir->addEquateClause(a, -b);
 				}
 				if (t1 > t2) { // a = F => b = T
@@ -168,7 +177,6 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 					dir->addHelperC(a, b);
 				}
 				if (t1 == t2) { // a = -b
-					cout << "Adding equate clause 3" << endl;
 					dir->addEquateClause(a, -b);
 				}
 				if (t1 > t2) { // a = T => b = F
@@ -179,7 +187,6 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 					dir->addHelperC(a, -b);
 				}
 				if (t1 == t2) { // a = b
-					cout << "Adding equate clause 4" << endl;
 					dir->addEquateClause(a, b);
 				}
 				if (t1 > t2) { // a = T => b = T
@@ -272,10 +279,14 @@ void NumericalSolver::debug() {
 	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-	double arr1[6] = {-2.17617, 11.673, -4.33473, 6.59534, -3.55217, 0.644097};
+	double arr1[1] = {8.07094};
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
+	/*GradUtil::BETA = -1000;
+	GradUtil::ALPHA = 1000;
+	eval->run(s, nodeValsMap);
+	eval->print();*/
 	for (int i = 0; i < ncontrols; i++) {
 		genData(s, i, eval, nodeValsMap);
 		gsl_vector_set(s, i, arr1[i]);
@@ -333,25 +344,33 @@ void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eva
 	GradUtil::ALPHA = 10;
 	gsl_vector* d = gsl_vector_alloc(state->size);
 	
-	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/sysid/g" + to_string(idx) + ".txt");
+	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/g" + to_string(idx) + ".txt");
 	{
-		double i = -100.0;
-		while (i < 100.0) {
+		double i = -20.0;
+		while (i < 20.0) {
 			gsl_vector_set(state, idx, i);
 			eval->run(state, nodeValsMap);
 			gsl_vector_set_zero(d);
 			double err = 0.0;
+			bool isValid = true;
 			for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
 				bool_node* node = *node_it;
 				if (node->type == bool_node::ASSERT) {
-					double dist = eval->computeDist(node->mother, d);
-					if (!eval->hasDist(node->mother)) {
-						dist = 0;
+					if (((ASSERT_node*) node)->isHard()) {
+						err = eval->computeDist(node->mother, d);
+					} else {
+						float dist = eval->computeDist(node->mother, d);
+						if (dist < 0) {
+							isValid = false;
+						}
 					}
-					err += dist;
+					//err += eval->computeError(node->mother, 1, d);
 				}
 			}
-			cout << i << " " << err << " " << gsl_vector_get(d, 0) << endl;
+			cout << i << " " << err << " " << isValid << endl;
+			if (!isValid) {
+				err = 1000.0;
+			}
 			file << err << ";";
 			i += 0.1;
 		}

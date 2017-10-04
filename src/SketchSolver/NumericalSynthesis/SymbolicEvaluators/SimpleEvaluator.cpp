@@ -190,6 +190,7 @@ vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, 
 	}
 	vector<tuple<double, int, int>> s;
 	for (int i = 0; i < imap_p.size(); i++) {
+		if (imap_p[i] < 0) continue;
 		bool_node* n = bdag[imap_p[i]];
 		bool hasArraccChild = false;
 		FastSet<bool_node> children = n->children;

@@ -906,6 +906,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	DagOptim op(dag, floats);
 
 	vector<bool_node*> newnodes; // collect new boolean variables
+	vector<int> deletedNodes;
 	
 	map<int, int> inputToNodeMap; 	// There are 3 types of input nodes: boolean holes, boolean-input boolean-output nodes or abstraction variables for float-input boolean-output nodes
 
@@ -919,13 +920,22 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	unode->mother = op.getCnode(1);
 
 
-	PRED_TYPE pred = boolCtrl;
+	PRED_TYPE pred;
+	if (params.numericalSolverMode == "ONLY_SMOOTHING") {
+		pred = boolCtrl;
+	} else {
+		Assert(false, "Error: specify what pred function to use for solver mode = " + params.numericalSolverMode);
+	}
 	for (int i = 0; i < dag.size(); i++) {
 		bool_node* node = dag[i];
 		if (node == NULL) continue;
 		int nid = node->id;
+		OutType* type = node->getOtype();
+		if (node->type == bool_node::UFUN) {
+			type = ((Tuple*) type)->entries[0];
+		}
 		// create new boolean variables for any float input-boolean output nodes to create the boolean abstraction
-		if (node->getOtype() == OutType::BOOL) {
+		if (type == OutType::BOOL) {
 			
 			if (node->hasFloatParent()) {
 				// Create a ctrl node to capture the output (for the boolean abstraction)
@@ -947,6 +957,20 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 				}
 			}
 		}
+		if (type == OutType::FLOAT) {
+			deletedNodes.push_back(nid);
+		}
+	}
+	for (int i = deletedNodes.size()-1; i >=0; i--) {
+		dag.remove(deletedNodes[i]);
+	}
+	if (unode->multi_mother.size() == 0) {
+		// add a dummy boolean hole as an input, so that numerical solver is called at least once
+		CTRL_node* ctrl = new CTRL_node();
+		ctrl->name = "CTRL_tmp_hole";
+		ctrl->set_nbits(1);
+		inputToNodeMap[unode->multi_mother.size()] = -1;
+		unode->multi_mother.push_back(ctrl);
 	}
 	unode->addToParents();
 	newnodes.push_back(unode);

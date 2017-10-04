@@ -78,6 +78,6 @@ bool SnoptSolver::optimize(gsl_vector* initState) {
 	}
 	cout << endl;
 	
-	return status >= 1 && status <= 9;
+	return (status >= 1 && status <= 9) || (status == 32 || status == 41);
 }
 

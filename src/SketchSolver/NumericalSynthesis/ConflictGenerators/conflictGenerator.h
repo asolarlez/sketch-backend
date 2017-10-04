@@ -131,8 +131,10 @@ public:
 			for (int j = 0; j < imap.size(); j++) {
 				if (allInputs[i][j] != EMPTY) {
 					if (ignoredBoolNodes.find(imap[j]) == ignoredBoolNodes.end()) {
-						if (conflictNodes.find(imap[j]) != conflictNodes.end()) {
-							cout << (*dag)[imap[j]]->lprint() << " " << allInputs[i][j] << endl;
+						if (imap[j] < 0 || conflictNodes.find(imap[j]) != conflictNodes.end()) {
+							if (imap[j] >= 0) {
+								cout << (*dag)[imap[j]]->lprint() << " " << allInputs[i][j] << endl;
+							}
 							conflicts.push_back(make_pair(instanceIds[i], j));
 						}
 					}

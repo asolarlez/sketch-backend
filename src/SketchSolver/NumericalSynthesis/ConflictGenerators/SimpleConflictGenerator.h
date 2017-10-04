@@ -14,11 +14,9 @@ public:
 		cout << "Conflict clause ";
 		for (int i = 0; i < allInputs.size(); i++) {
 			for (int j = 0; j < allInputs[i].size(); j++) {
-				if (boolNodes.find(imap[j]) != boolNodes.end()) {
-					if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
-						cout << j << ", ";
-						conflicts.push_back(make_pair(instanceIds[i], j));
-					}
+				if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
+					cout << j << ", ";
+					conflicts.push_back(make_pair(instanceIds[i], j));
 				}
 			}
 		}

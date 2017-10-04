@@ -142,21 +142,27 @@ void BoolAutoDiff::visit( NEG_node& node ) {
 }
 
 void BoolAutoDiff::visit( CONST_node& node ) {
-	if (node.getOtype() != OutType::BOOL) {
+	if (node.getOtype() == OutType::FLOAT) {
 		ValueGrad* val = v(node);
 		val->update(node.getFval());
 		val->set = true;
 		GradUtil::default_grad(val->getGrad());
 	} else {
 		int val = node.getVal();
+		ValueGrad* vg = v(node);
 		DistanceGrad* dg = d(node);
 		if (node.getOtype() == OutType::BOOL) {
 			dg->dist = (val == 1) ? 1000 : -1000;
 			GradUtil::default_grad(dg->grad);
 			dg->set = true;
+			vg->update(val);
+			vg->set = true;
+			GradUtil::default_grad(vg->getGrad());
 		} else {
-			Assert(false, "NYI: BoolAutoDiff integer constants");
 			dg->set = false;
+			vg->update(val);
+			vg->set = true;
+			GradUtil::default_grad(vg->getGrad());
 		}
 	}
 }

@@ -89,6 +89,8 @@ struct CommandLineArgs{
   float epsilon;
   string erSimEvalFName;
   bool numericalSolver;
+	string numericalSolverMode;
+	bool useSnopt;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -166,6 +168,8 @@ struct CommandLineArgs{
     randomInlining = false;
 	epsilon = 0.0000001;
     numericalSolver = true;
+		numericalSolverMode = "";
+		useSnopt = false;
 	erSimEvalFName = "";
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
@@ -198,7 +202,21 @@ struct CommandLineArgs{
         input_idx = ii+1;
         continue;
       }
-      if( string(argv[ii]) == "-outputSat" ){
+			if( string(argv[ii]) == "-numericalsolvermode" ){
+				Assert(ii<(argc-1), "-numericalsolvermode needs an extra parameter");
+				numericalSolverMode = argv[ii+1];
+				cout<<"numerical solver mode = "<<numericalSolverMode<<endl;
+				Assert(numericalSolverMode == "ONLY_SMOOTHING" || numericalSolverMode == "FULLY_SEPARATED" || numericalSolverMode=="INTERACTIVE",
+						 "The argument to numericalsolvermode should be one of ONLY_SMOOTHING, FULLY_SEPARATED, INTERACTIVE.");
+				input_idx = ii+2;
+				continue;
+			}
+			if(	string(argv[ii]) == "-usesnopt" ){
+				useSnopt = true;
+				input_idx = ii+1;
+				continue;
+			}
+			if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;
 		  continue;

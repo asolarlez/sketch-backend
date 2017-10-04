@@ -4,13 +4,10 @@
 BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
 	dag->lprint(cout);
 	
-	// Collect the list of boolean nodes which can be ignored.
-	// Basically all nodes that are not boolean holes can be ignored - is this correct? maybe we want to use the other boolean nodes as well to get rid of softmax/softmin approximation
+	// Collect the list of boolean nodes that contribute to the error
+	// In this case, only the assertions matter
 	for (int i = 0; i < dag->size(); i++) {
 		bool_node* n = (*dag)[i];
-		if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL) {
-			boolNodes.insert(i);
-		}
 		if (n->type == bool_node::ASSERT) {
 			if (!((ASSERT_node*)n)->isHard()) {
 				boolNodes.insert(i);
@@ -37,7 +34,11 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
-	opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	if (PARAMS->useSnopt) {
+		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	} else {
+		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+	}
 	opt->randomizeCtrls(state);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
 	
@@ -62,12 +63,6 @@ void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 }
 
 bool BoolApproxHelper::checkInputs(int rowid, int colid) {
-	int nid = imap[colid];
-	if (boolNodes.find(nid) == boolNodes.end()) {
-		return false;
-	}
-	cout << (*dag)[nid]->lprint() << endl;
-	cout << allInputs[rowid][colid] << endl;
 	return true;
 }
 
@@ -76,6 +71,7 @@ bool BoolApproxHelper::validObjective() {
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
 			int nid = imap[j];
+			if (nid < 0) return true;
 			bool_node* n = (*dag)[nid];
 			if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL && allInputs[i][j] != 0 && allInputs[i][j] != 1) {
 				return false;

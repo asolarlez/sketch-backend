@@ -122,6 +122,7 @@ void InequalityHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 
 bool InequalityHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
+	if (nid < 0) return true;
 	for (int i = 0; i < allInputs[0].size(); i++) {
 		if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
 			return false;
