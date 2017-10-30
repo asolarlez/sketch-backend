@@ -1,17 +1,17 @@
-#include "AutoDiff.h"
+#include "IteAutoDiff.h"
 #include <algorithm>
 #include <limits>
 #include <math.h>
 
 
-AutoDiff::AutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p){
+IteAutoDiff::IteAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<int, int>& iteCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), iteCtrls(iteCtrls_p) {
 	values.resize(bdag.size(), NULL);
-	nctrls = floatCtrls_p.size();
+	nctrls = floatCtrls.size() + iteCtrls.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
 }
 
-AutoDiff::~AutoDiff(void) {
+IteAutoDiff::~IteAutoDiff(void) {
 	delete ctrls;
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] != NULL) {
@@ -20,21 +20,21 @@ AutoDiff::~AutoDiff(void) {
 	}
 }
 
-void AutoDiff::visit( SRC_node& node ) {
+void IteAutoDiff::visit( SRC_node& node ) {
 	//cout << "Visiting SRC node" << endl;
-	Assert(false, "NYI: AutoDiff for src");
+	Assert(false, "NYI: IteAutoDiff for src");
 }
 
-void AutoDiff::visit( DST_node& node ) {
+void IteAutoDiff::visit( DST_node& node ) {
 	//cout << "Visiting DST node" << endl;
 	// Ignore
 }
 
-void AutoDiff::visit( ASSERT_node& node ) {
+void IteAutoDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
 }
 
-void AutoDiff::visit( CTRL_node& node ) {
+void IteAutoDiff::visit( CTRL_node& node ) {
 	//cout << "Visiting CTRL node" << endl;
 	string name = node.get_name();
 	
@@ -54,7 +54,7 @@ void AutoDiff::visit( CTRL_node& node ) {
 	}
 }
 
-void AutoDiff::visit( PLUS_node& node ) {
+void IteAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
@@ -63,7 +63,7 @@ void AutoDiff::visit( PLUS_node& node ) {
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
-void AutoDiff::visit( TIMES_node& node ) {
+void IteAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
@@ -72,8 +72,8 @@ void AutoDiff::visit( TIMES_node& node ) {
 	ValueGrad::vg_times(mval, fval, val);
 }
 
-void AutoDiff::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
+void IteAutoDiff::visit(ARRACC_node& node )  {
+	Assert(node.multi_mother.size() == 2, "NYI: IteAutoDiff ARRACC of size > 2");
 	ValueGrad* val = v(node);
 	if (node.getOtype() == OutType::BOOL) {
 		val->set = false;
@@ -87,11 +87,14 @@ void AutoDiff::visit(ARRACC_node& node )  {
 	} else if (ival == 1) {
 		ValueGrad::vg_copy(m2, val);
 	} else {
-		val->set = false;
+        int idx = iteCtrls[node.id];
+        GradUtil::default_grad(GradUtil::tmp2);
+        gsl_vector_set(GradUtil::tmp2, idx, 1.0);
+        ValueGrad::vg_ite(m1, m2, gsl_vector_get(ctrls, idx), GradUtil::tmp2, val);
 	}
 }
 
-void AutoDiff::visit( DIV_node& node ) {
+void IteAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
@@ -100,12 +103,12 @@ void AutoDiff::visit( DIV_node& node ) {
 	ValueGrad::vg_div(mval, fval, val);
 }
 
-void AutoDiff::visit( MOD_node& node ) {
+void IteAutoDiff::visit( MOD_node& node ) {
 	cout << "Visiting MOD node" << endl;
-	Assert(false, "NYI: AutoDiff mod");
+	Assert(false, "NYI: IteAutoDiff mod");
 }
 
-void AutoDiff::visit( NEG_node& node ) {
+void IteAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
@@ -113,7 +116,7 @@ void AutoDiff::visit( NEG_node& node ) {
 	ValueGrad::vg_neg(mval, val);
 }
 
-void AutoDiff::visit( CONST_node& node ) {
+void IteAutoDiff::visit( CONST_node& node ) {
 	ValueGrad* val = v(node);
 	if (node.getOtype() != OutType::BOOL) {
 		val->update(node.getFval());
@@ -124,37 +127,37 @@ void AutoDiff::visit( CONST_node& node ) {
 	}
 }
 
-void AutoDiff::visit( LT_node& node ) {
+void IteAutoDiff::visit( LT_node& node ) {
 	ValueGrad* val = v(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: AutoDiff for lt with integer parents");
+	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: IteAutoDiff for lt with integer parents");
 	ValueGrad* mval = v(node.mother);
 	ValueGrad* fval = v(node.father);
 	
 	ValueGrad::vg_lt(mval, fval, val);
 }
 
-void AutoDiff::visit( EQ_node& node ) {
+void IteAutoDiff::visit( EQ_node& node ) {
 	//cout << "Visiting EQ node" << endl;
-	Assert(false, "NYI: AutoDiff for eq");
+	Assert(false, "NYI: IteAutoDiff for eq");
 }
 
-void AutoDiff::visit( AND_node& node ) {
+void IteAutoDiff::visit( AND_node& node ) {
 }
 
-void AutoDiff::visit( OR_node& node ) {
+void IteAutoDiff::visit( OR_node& node ) {
 }
 
-void AutoDiff::visit( NOT_node& node ) {
+void IteAutoDiff::visit( NOT_node& node ) {
 }
 
-void AutoDiff::visit( ARRASS_node& node ) {
+void IteAutoDiff::visit( ARRASS_node& node ) {
 	cout << "Visiting ARRASS node" << endl;
-	Assert(false, "NYI: AutoDiff for arrass");
+	Assert(false, "NYI: IteAutoDiff for arrass");
 }
 
-void AutoDiff::visit( UFUN_node& node ) {
+void IteAutoDiff::visit( UFUN_node& node ) {
 	ValueGrad* val = v(node);
 	ValueGrad* mval = v(node.multi_mother[0]);
 	
@@ -182,7 +185,7 @@ void AutoDiff::visit( UFUN_node& node ) {
 	}
 }
 
-void AutoDiff::visit( TUPLE_R_node& node) {
+void IteAutoDiff::visit( TUPLE_R_node& node) {
 	if (node.mother->type == bool_node::UFUN) {
 		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 		ValueGrad* mval = v(node.mother);
@@ -193,8 +196,8 @@ void AutoDiff::visit( TUPLE_R_node& node) {
 	}
 }
 
-void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
-	Assert(ctrls->size == ctrls_p->size, "AutoDiff ctrl sizes are not matching");
+void IteAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
+	Assert(ctrls->size == ctrls_p->size, "IteAutoDiff ctrl sizes are not matching");
 
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
@@ -208,11 +211,11 @@ void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p
 }
 
 
-bool AutoDiff::hasDist(bool_node* n) {
+bool IteAutoDiff::hasDist(bool_node* n) {
 	ValueGrad* val = v(n);
 	return val->set;
 }
-double AutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
+double IteAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	ValueGrad* val = v(n);
 	if (val->set) {
 		gsl_vector_memcpy(distgrad, val->getGrad());
@@ -222,11 +225,11 @@ double AutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	}
 }
 
-bool AutoDiff::hasVal(bool_node* n) {
+bool IteAutoDiff::hasVal(bool_node* n) {
     ValueGrad* val = v(n);
     return val->set;
 }
-double AutoDiff::computeVal(bool_node* n, gsl_vector* distgrad) {
+double IteAutoDiff::computeVal(bool_node* n, gsl_vector* distgrad) {
     ValueGrad* val = v(n);
     if (val->set) {
         gsl_vector_memcpy(distgrad, val->getGrad());
@@ -236,7 +239,7 @@ double AutoDiff::computeVal(bool_node* n, gsl_vector* distgrad) {
     }
 }
 
-double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
+double IteAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
 	double error = 0.0;
 	ValueGrad* val = v(n);
 	if (val->set) {
@@ -253,7 +256,7 @@ double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad)
 }
 
 
-bool AutoDiff::check(bool_node* n, int expected) {
+bool IteAutoDiff::check(bool_node* n, int expected) {
 	ValueGrad* val = v(n);
 	if (val->set) {
 		double dist = val->getVal();

@@ -30,9 +30,11 @@ class SnoptEvaluator {
 	static gsl_vector* state;
 	static gsl_vector* grad;
 public:
+    static int counter;
 	static void init(int size) {
 		state = gsl_vector_alloc(size);
 		grad = gsl_vector_alloc(size);
+        //tmpGrad = gsl_vector_alloc(size);
 	}
 	
 	static int df(integer    *Status, integer *n,    doublereal x[],
@@ -44,11 +46,11 @@ public:
 		SnoptParameters* p = (SnoptParameters*) cu;
 		GradUtil::BETA = p->beta;
 		GradUtil::ALPHA = p->alpha;
-		
+        //cout << counter++ << endl;
 		//cout << "x: ";
 		for (int i =0 ; i < *n; i++) {
 			gsl_vector_set(state, i, x[i]);
-			//cout << x[i] << " ";
+           // cout << x[i] << " ";
 		}
 		//cout << endl;
 		int fcounter = 0;
@@ -57,10 +59,14 @@ public:
 		for (int j = 0; j < *n; j++) { // objective gradients
 			G[gcounter++] = 0;
 		}
-		//cout << "Snopt values: " << endl;
+        //double error = 0;
+        //GradUtil::default_grad(tmpGrad);
+        
+        int bcounter = 0;
 		for (int i = 0; i < p->allInputs.size(); i++) {
 			const map<int, int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
 			p->eval->run(state, nodeValsMap);
+            //p->eval->print();
 			for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
 				bool_node* node = *node_it;
 				if (p->boolNodes.find(node->id) != p->boolNodes.end() || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
@@ -68,7 +74,6 @@ public:
 						int fidx;
 						int gidx;
 						if (((ASSERT_node*)node)->isHard()) {
-							//cout << node->lprint() << endl;
 							fidx = 0;
 							gidx = 0;
 						} else {
@@ -76,29 +81,30 @@ public:
 							gidx = gcounter;
 							gcounter += *n;
 						}
-						//cout << node->mother->lprint() << " ";
-						double dist = p->eval->computeDist(node->mother, grad);
-						if (!p->eval->hasDist(node->mother)) {
-							dist = (fidx == 0) ? 0 : 1000;
-						}
+                        double dist = 0;
+                        if (p->eval->hasDist(node->mother)) {
+                            dist = p->eval->computeDist(node->mother, grad);
+                        } else {
+                            dist = (fidx == 0) ? 0: 1000;
+                            GradUtil::default_grad(grad);
+                        }
 						F[fidx] = dist;
-						///cout << dist;
-						//cout << F[fcounter - 1] << endl;
+                        //cout << node->mother->lprint() << " " << dist << endl;
 						for (int j = 0; j < *n; j++) {
 							G[gidx + j] = gsl_vector_get(grad, j);
-							//cout << " "  << gsl_vector_get(grad, j);
 						}
-						//cout << endl;
-						
-						/*if (dist > 100000) {
-							p->eval->print();
-						}*/
 					} else if (node->getOtype() == OutType::BOOL) {
 						auto it = nodeValsMap.find(node->id);
 						if (it != nodeValsMap.end()) {
 							int val = it->second;
-							double dist = p->eval->computeDist(node, grad);
-							if (val == 0) {
+                            double dist = 0;
+                            if (p->eval->hasDist(node)) {
+                                dist = p->eval->computeDist(node, grad);
+                            } else {
+                                dist = (val == 0) ? -1000 : 1000;
+                                GradUtil::default_grad(grad);
+                            }
+                            if (val == 0) {
 								dist = -dist;
 								gsl_vector_scale(grad, -1.0);
 							}
@@ -107,16 +113,24 @@ public:
 								G[gcounter++] = gsl_vector_get(grad, j);
 							}
 						} else {
-							F[fcounter++] = 1000;
-							for (int j = 0; j < *n; j++) {
-								G[gcounter++] = 0;
-							}
+							//F[fcounter++] = 1000;
+							//for (int j = 0; j < *n; j++) {
+							//	G[gcounter++] = 0;
+							//}
 						}
 					}
 				}
 			}
 		}
-		//cout << "Fcounter: " << fcounter << " Gcounter: " << gcounter << endl;
+        //cout << F[0] << endl;
+        //cout << fcounter << " " << *neF << endl;
+        for (int i = fcounter; i < *neF; i++) {
+            F[i] = 1000;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+        }
+        Assert(fcounter <= *neF, "dfqeurq");
 		return 0;
 	}
 
@@ -135,7 +149,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	gsl_vector* minState;
 	gsl_vector* t;
 	
-	int MAX_TRIES = 10;
+	int MAX_TRIES = 1;
 	
 	doublereal* x;
 	doublereal* xlow;
@@ -160,13 +174,10 @@ class SnoptWrapper: public OptimizationWrapper {
 				counter++;
 			}
 		}
-		
-		if (counter != n) {
-			Assert(n == 1, "Missing initialization of some variables");
-			// this can happen if there are no actual controls
-			xlow[0] = -1e20;
-			xupp[0] = 1e20;
-		}
+        for (; counter < n; counter++) {
+            xlow[counter] = 0;
+            xupp[counter] = 1;
+        }
 	}
 
 	void getFranges() {
@@ -179,13 +190,13 @@ class SnoptWrapper: public OptimizationWrapper {
 	}
 	
 public:
-	SnoptWrapper(SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, map<string, int>& ctrlMap_, set<int>& boolNodes_, int ncontrols_): eval(eval_), dag(dag_), imap(imap_), ctrlMap(ctrlMap_), boolNodes(boolNodes_), n(ncontrols_)  {
+	SnoptWrapper(SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, map<string, int>& ctrlMap_, set<int>& boolNodes_, int ncontrols_, int numConstraints_): eval(eval_), dag(dag_), imap(imap_), ctrlMap(ctrlMap_), boolNodes(boolNodes_), n(ncontrols_)  {
 		SnoptEvaluator::init(n);
-		neF = boolNodes.size() + 1;
+        neF = numConstraints_ + 1;
 		lenA = 10;
 		
-		//cout << "nef: " << neF << endl;
-		//cout << "n: " << n << endl;
+		cout << "nef: " << neF << endl;
+		cout << "n: " << n << endl;
 		snoptSolver = new SnoptSolver(n, neF, lenA);
 		minState = gsl_vector_alloc(n);
 		t = gsl_vector_alloc(n);
@@ -201,7 +212,7 @@ public:
 		getFranges();
 	}
 	
-	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState) {
+	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
 		
 		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
@@ -216,17 +227,24 @@ public:
 		minObjectiveVal = 1e50;
 		bool solved;
 		while (minObjectiveVal > threshold && numtries < MAX_TRIES) {
-			cout << "Attempt: " << (numtries + 1) << endl;
+            if (!suppressPrint){
+                cout << "Attempt: " << (numtries + 1) << endl;
+            }
 			
 			for (int i = 0; i < 4; i++) {
-				cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+                if (!suppressPrint) {
+                    cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+                }
 				p->beta = betas[i];
 				p->alpha = alphas[i];
-				for (int i = 0; i < n; i++) {
-					cout << gsl_vector_get(t, i) << ", ";
-				}
-				cout << endl;
-				solved = snoptSolver->optimize(t);
+                if (!suppressPrint) {
+                    for (int i = 0; i < n; i++) {
+                        cout << gsl_vector_get(t, i) << ", ";
+                    }
+                    cout << endl;
+                }
+                SnoptEvaluator::counter = 0;
+				solved = snoptSolver->optimize(t, suppressPrint);
 				obj = snoptSolver->getObjectiveVal();
 				gsl_vector_memcpy(t, snoptSolver->getResults());
 			}
@@ -238,6 +256,8 @@ public:
 			numtries++;
 			randomizeCtrls(t);
 		}
+		//eval->print();
+		//eval->printFull();
 		return minObjectiveVal < threshold;
 	}
 	
@@ -256,20 +276,20 @@ public:
 			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
 				int idx = ctrlMap[ctrls[i]->get_name()];
 				CTRL_node* cnode = (CTRL_node*) ctrls[i];
-				double low = cnode->hasRange ? cnode->low : -10.0;
-				double high = cnode->hasRange ? cnode->high : 10.0;
+				double low = cnode->hasRange ? cnode->low : -20.0;
+				double high = cnode->hasRange ? cnode->high : 20.0;
 				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
 				gsl_vector_set(state, idx, r);
 				counter++;
 			}
 		}
 		
-		if (counter != n) {
-			Assert(n == 1, "Missing initialization of some variables");
-			// this can happen if there are no actual controls
-			double r = -20.0 + (rand() % 400)/10.0;
-			gsl_vector_set(state, 0, r);
-		}
+        for (; counter < n; counter++) {
+            double low = 0.0;
+            double high = 1.0;
+            double r = low + (rand() % (int)((high - low) * 10.0))/10.0;
+            gsl_vector_set(state, counter, r);
+        }
 	}
 
 };

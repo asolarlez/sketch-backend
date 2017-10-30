@@ -111,16 +111,13 @@ public:
 				counter++;
 			}
 		}
-		
-		if (counter != ncontrols) {
-			Assert(ncontrols == 1, "Missing initialization of some variables");
-			// this can happen if there are no actual controls
-			double r = -10.0 + (rand() % 200)/10.0;
-			gsl_vector_set(state, 0, r);
-		}
+        for (; counter < ncontrols; counter++) {
+            double r = -10.0 + (rand() % 200)/10.0;
+            gsl_vector_set(state, counter, r);
+        }
 	}
 	
-	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState) {
+	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
 		minErrorSoFar = 1e50;
 		
 		GDParameters* p = new GDParameters(eval, dag, allInputs, imap, boolNodes);

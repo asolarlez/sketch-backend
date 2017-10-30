@@ -181,7 +181,7 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
 }
 
 vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
-	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
+	//Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
 	}

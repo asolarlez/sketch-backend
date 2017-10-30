@@ -59,6 +59,8 @@ public:
 	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
 	virtual double computeDist(bool_node*, gsl_vector* distgrad);
 	virtual bool hasDist(bool_node* n);
+    virtual double computeVal(bool_node*, gsl_vector* distgrad);
+    virtual bool hasVal(bool_node* n);
 	//virtual set<int> getConflicts(int nid);
 	
 	void setvalue(bool_node& bn, ValueGrad* v) {

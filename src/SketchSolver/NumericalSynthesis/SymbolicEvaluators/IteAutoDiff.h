@@ -11,10 +11,10 @@
 
 #include <iostream>
 
-
 using namespace std;
 
-class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
+// AutoDiff through only the numerical structure - ignores all boolean structure
+class IteAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
 	FloatManager& floats;
 	BooleanDAG& bdag;
@@ -22,18 +22,17 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	int nctrls; // number of float ctrls
 	gsl_vector* ctrls; // ctrl values
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
-	vector<DistanceGrad*> distances; // Keeps track of distance metric for boolean nodes
 	map<int, int> inputValues; // Maps node id to values set by the SAT solver
+    map<int, int> iteCtrls;
 	double error = 0.0;
 	gsl_vector* errorGrad;
 	
 	int DEFAULT_INP = -1;
 	
-public:
-	int failedAssert;
 	
-	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p);
-	~BoolAutoDiff(void);
+public:	
+	IteAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<int, int>& iteCtrls_p);
+	~IteAutoDiff(void);
 	
 	virtual void visit( SRC_node& node );
 	virtual void visit( DST_node& node );
@@ -56,12 +55,15 @@ public:
 	virtual void visit( ASSERT_node& node );
 	
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
+	
 	virtual bool check(bool_node* n, int expected);
 	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
 	virtual double computeDist(bool_node*, gsl_vector* distgrad);
 	virtual bool hasDist(bool_node* n);
     virtual double computeVal(bool_node*, gsl_vector* distgrad);
     virtual bool hasVal(bool_node* n);
+    //virtual set<int> getConflicts(int nid);
+	
 	void setvalue(bool_node& bn, ValueGrad* v) {
 		values[bn.id] = v;
 	}
@@ -80,73 +82,25 @@ public:
 		return v(*bn);
 	}
 	
-	void setdistance(bool_node& bn, DistanceGrad* d) {
-		distances[bn.id] = d;
-	}
-	
-	DistanceGrad* d(bool_node& bn) {
-		DistanceGrad* dist = distances[bn.id];
-		if (dist == NULL) {
-			gsl_vector* g = gsl_vector_alloc(nctrls);
-			dist = new DistanceGrad(0, g);
-			setdistance(bn, dist);
-		}
-		return dist;
-	}
-	
-	DistanceGrad* d(bool_node* bn) {
-		return d(*bn);
-	}
-	
 	virtual void print() {
-		/*for (int i = 0; i < bdag.size(); i++) {
-			if (bdag[i]->type == bool_node::ASSERT) {
-				DistanceGrad* dist = d(bdag[i]->mother);
-				if (dist->set) {
-				double gmag = gsl_blas_dnrm2(dist->grad);
-				if (dist->dist < 0.1) {
-					cout << bdag[i]->mother->lprint() << endl;
-					cout << dist->printFull() << endl;
-				}
-				}
-			}
-		}
-		return;*/
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << " ";
-			if (bdag[i]->getOtype() == OutType::FLOAT) {
-				if (v(bdag[i])->set) {
-					cout << v(bdag[i])->print() << endl;
-				} else {
-					cout << "UNSET" << endl;
-				}
+			ValueGrad* val = v(bdag[i]);
+			if (val->set) {
+				cout << val->print() << endl;
 			} else {
-				if (d(bdag[i])->set) {
-					cout << d(bdag[i])->print() << endl;
-				} else {
-					cout << "UNSET" << endl;
-				}
+				cout << "UNSET" << endl;
 			}
 		}
 	}
 	virtual void printFull() {
 		for (int i = 0; i < bdag.size(); i++) {
 			cout << bdag[i]->lprint() << endl;
-			if (bdag[i]->getOtype() == OutType::FLOAT) {
-				if (v(bdag[i])->set) {
-					cout << v(bdag[i])->printFull() << endl;
-				} else {
-					cout << "UNSET" <<endl;
-				}
+			ValueGrad* val = v(bdag[i]);
+			if (val->set) {
+				cout << val->printFull() << endl;
 			} else {
-				if(d(bdag[i])->set) {
-					cout << d(bdag[i])->printFull() << endl;
-				} else {
-					cout << "UNSET" << endl;
-				}
-			}
-			if (bdag[i]->type == bool_node::PLUS) {
-				cout << v(bdag[i]->mother)->getVal() << " + " << v(bdag[i]->father)->getVal() << endl;
+				cout << "UNSET" << endl;
 			}
 		}
 	}
@@ -172,6 +126,5 @@ public:
 	int getInputValue(bool_node* bn) {
 		return getInputValue(*bn);
 	}
-	
 	
 };

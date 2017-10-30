@@ -86,7 +86,7 @@ public:
 	}
 	
 	void init(char* workspace, integer nef_, SNOPT_DF_TYPE df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_);
-	bool optimize(gsl_vector* initState);
+	bool optimize(gsl_vector* initState, bool suppressPrint = false);
 	
 	gsl_vector* getResults() {
 		return result;

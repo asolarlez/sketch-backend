@@ -104,6 +104,26 @@ void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o) {
 	o->set = true;
 }
 
+// Approximate ite with d*f + (1 - d)*m
+void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, double dval, gsl_vector* dgrad, ValueGrad* o) {
+    Assert(dgrad != GradUtil::tmp && dgrad != GradUtil::tmp1, "Reusing temp gsl_vectors");
+    if (!m->set || !f->set) {
+        o->set = false;
+        return;
+    }
+    double v1 = dval * f->getVal();
+    GradUtil::compute_mult_grad(dval, f->getVal(), dgrad, f->getGrad(), o->getGrad());
+    
+    GradUtil::compute_neg_grad(dgrad, GradUtil::tmp);
+    double v2 = (1 - dval) * m->getVal();
+    GradUtil::compute_mult_grad(1 - dval, m->getVal(), GradUtil::tmp, m->getGrad(), GradUtil::tmp1);
+    gsl_blas_daxpy(1.0, GradUtil::tmp1, o->getGrad());
+    
+    o->update(v1 + v2);
+    o->bound();
+    o->set = true;
+}
+
 void ValueGrad::vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceGrad* o) {
 	if (!m->set || !f->set || !d->set) {
 		o->set = false;

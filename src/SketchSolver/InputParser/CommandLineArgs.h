@@ -91,6 +91,9 @@ struct CommandLineArgs{
   bool numericalSolver;
 	string numericalSolverMode;
 	bool useSnopt;
+	bool useEager;
+    bool checkInput;
+    string partialInput;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -171,6 +174,8 @@ struct CommandLineArgs{
 		numericalSolverMode = "";
 		useSnopt = false;
 	erSimEvalFName = "";
+        checkInput = false;
+        partialInput = "";
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -206,8 +211,8 @@ struct CommandLineArgs{
 				Assert(ii<(argc-1), "-numericalsolvermode needs an extra parameter");
 				numericalSolverMode = argv[ii+1];
 				cout<<"numerical solver mode = "<<numericalSolverMode<<endl;
-				Assert(numericalSolverMode == "ONLY_SMOOTHING" || numericalSolverMode == "FULLY_SEPARATED" || numericalSolverMode=="INTERACTIVE",
-						 "The argument to numericalsolvermode should be one of ONLY_SMOOTHING, FULLY_SEPARATED, INTERACTIVE.");
+				Assert(numericalSolverMode == "ONLY_SMOOTHING" || numericalSolverMode == "FULLY_SEPARATED" || numericalSolverMode=="INTERACTIVE" || numericalSolverMode == "SMOOTHING_SAT",
+						 "The argument to numericalsolvermode should be one of ONLY_SMOOTHING, FULLY_SEPARATED, INTERACTIVE, SMOOTHING_SAT.");
 				input_idx = ii+2;
 				continue;
 			}
@@ -216,6 +221,22 @@ struct CommandLineArgs{
 				input_idx = ii+1;
 				continue;
 			}
+			if( string(argv[ii]) == "-useeager" ) {
+				useEager = true;
+				input_idx = ii+1;
+				continue;
+			}
+            if (string(argv[ii]) == "-checkinput") {
+                checkInput = true;
+                input_idx = ii+1;
+                continue;
+            }
+            if (string(argv[ii]) == "-partialinput") {
+                Assert(ii < (argc - 1), "-partialinput needs an extra parameter");
+                partialInput = argv[ii+1];
+                input_idx = ii+2;
+                continue;
+            }
 			if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;

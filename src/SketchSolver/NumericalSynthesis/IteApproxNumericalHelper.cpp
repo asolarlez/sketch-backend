@@ -1,7 +1,7 @@
-#include "BasicNumericalHelper.h"
+#include "IteApproxNumericalHelper.h"
 
 
-BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
     for (int i = 0; i < _imap.size(); i++) {
         cout << i << " " << (*dag)[imap[i]]->lprint() << endl;
     }
@@ -24,6 +24,13 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 			ctrlNodeIds.insert(ctrls[i]->id);
 		}
 	}
+    
+    for (int i = 0; i < dag->size(); i++) {
+        bool_node* n = (*dag)[i];
+        if (n->getOtype() == OutType::FLOAT && n->type == bool_node::ARRACC) {
+            extraCtrlMap[n->id] = ctr++;
+        }
+    }
 	ncontrols = ctr;
 	if (ncontrols == 0) {
 		ncontrols = 1;
@@ -32,7 +39,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	cout << "NControls: " << ncontrols << endl;
 	
 	state = gsl_vector_alloc(ncontrols);
-	eval = new AutoDiff(*dag, fm, ctrlMap);
+	eval = new IteAutoDiff(*dag, fm, ctrlMap, extraCtrlMap);
 	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
@@ -51,7 +58,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
-BasicNumericalHelper::~BasicNumericalHelper(void) {
+IteApproxNumericalHelper::~IteApproxNumericalHelper(void) {
 	delete GradUtil::tmp;
 	delete GradUtil::tmp1;
 	delete GradUtil::tmp2;
@@ -59,12 +66,12 @@ BasicNumericalHelper::~BasicNumericalHelper(void) {
 	delete GradUtil::tmpT;
 }
 
-void BasicNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void IteApproxNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
 }
 
-bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
+bool IteApproxNumericalHelper::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
 	if (nid < 0) return true;
 	if (boolNodes.find(nid) == boolNodes.end()) {
@@ -86,7 +93,7 @@ bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
-bool BasicNumericalHelper::checkSAT() {
+bool IteApproxNumericalHelper::checkSAT() {
 	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
 		state = opt->getMinState();
@@ -94,11 +101,11 @@ bool BasicNumericalHelper::checkSAT() {
 	return sat;
 }
 
-bool BasicNumericalHelper::ignoreConflict() {
+bool IteApproxNumericalHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
+vector<tuple<int, int, int>> IteApproxNumericalHelper::collectSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	for (int i = 0; i < allInputs.size(); i++) {
 		vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -114,11 +121,11 @@ vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
 	return suggestions;
 }
 
-vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> IteApproxNumericalHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BasicNumericalHelper::getControls(map<string, double>& ctrls) {
+void IteApproxNumericalHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}

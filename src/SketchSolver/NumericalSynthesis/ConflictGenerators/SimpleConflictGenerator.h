@@ -15,7 +15,7 @@ public:
 		for (int i = 0; i < allInputs.size(); i++) {
 			for (int j = 0; j < allInputs[i].size(); j++) {
 				if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
-					cout << j << ", ";
+					cout << "(" << imap[j] << "," << allInputs[i][j] << "), ";
 					conflicts.push_back(make_pair(instanceIds[i], j));
 				}
 			}

@@ -14,6 +14,8 @@
 #include "BasicNumericalHelper.h"
 #include "InequalityHelper.h"
 #include "BoolApproxHelper.h"
+#include "IteApproxNumericalHelper.h"
+#include "SmoothSatHelper.h"
 
 using namespace std;
 
@@ -22,6 +24,9 @@ class NumericalSolver : public Synthesizer {
 	map<int, int>& imap; // Map boolean inputs to actual nodes in the dag
 	map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
 	NumericalSolverHelper* helper;
+	
+	int counter;
+    timerclass timer;
 	
 	
 public:
@@ -53,8 +58,11 @@ public:
 	void convertConflicts(const vector<pair<int, int>>& c);
 		
 	void debug();
+    void checkInput();
 	void genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap);
 	/*void genData1D(int ncontrols);
 	void genData2D(int ncontrols);*/
+    void analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids);
+    set<int> getRelevantIds();
 };
 

@@ -33,8 +33,10 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
   NumericalSynthesis/NumericalSolver.h     \
 	NumericalSynthesis/NumericalSolverHelper.h	\
 	NumericalSynthesis/BasicNumericalHelper.h		\
+    NumericalSynthesis/IteApproxNumericalHelper.h   \
 	NumericalSynthesis/InequalityHelper.h	\
 	NumericalSynthesis/BoolApproxHelper.h	\
+    NumericalSynthesis/SmoothSatHelper.h    \
 	NumericalSynthesis/GradUtil.h		\
 	NumericalSynthesis/Util.h	\
 	NumericalSynthesis/Optimizers/GradientDescent.h			\
@@ -44,6 +46,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
 	NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
+    NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.h     \
 	NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
 	NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
@@ -99,8 +102,10 @@ libcegis_la_SOURCES =				\
 	memory_sampler.cc			\
   NumericalSynthesis/NumericalSolver.cpp \
 	NumericalSynthesis/BasicNumericalHelper.cpp		\
+    NumericalSynthesis/IteApproxNumericalHelper.cpp \
 	NumericalSynthesis/InequalityHelper.cpp		\
 	NumericalSynthesis/BoolApproxHelper.cpp		\
+    NumericalSynthesis/SmoothSatHelper.cpp      \
 	NumericalSynthesis/GradUtil.cpp	\
 	NumericalSynthesis/Optimizers/GradientDescent.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
@@ -108,6 +113,7 @@ libcegis_la_SOURCES =				\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \
 	NumericalSynthesis/DataStructures/IntervalGrad.cpp \
+    NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.cpp   \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
 	NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
 	NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \

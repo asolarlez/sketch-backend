@@ -897,6 +897,33 @@ bool boolCtrl(bool_node* n) {
 	}
 }
 
+bool allBool(bool_node* n) {
+    if (n->type == bool_node::ASSERT) {
+        return false;
+    }
+    if (n->getOtype() == OutType::BOOL) {
+        // eliminate b in expressions assert(b) and assert(!b)
+        FastSet<bool_node>& children = n->children;
+        if (children.size() == 1) {
+            bool_node* child = (*children.begin());
+            if (child->type == bool_node::ASSERT) {
+                return false;
+            } else {
+                if (child->type == bool_node::NOT) {
+                    FastSet<bool_node>& grandchildren = child->children;
+                    if (grandchildren.size() == 1) {
+                        if ((*grandchildren.begin())->type == bool_node::ASSERT) {
+                            return false;
+                        }
+                    }
+                }
+            }
+         }
+        return true;
+    }
+    return false;
+}
+
 typedef bool (* PRED_TYPE)(bool_node*);
 
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
@@ -919,10 +946,16 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.
 	unode->mother = op.getCnode(1);
 
-
+    bool addDummyAssert = false; // Add a dummy assert to make the  SAT solver call the numerical solver with an empty assignment first
+                                 // kind of hacky, but useful to initiate the interaction from the numerical solver.
 	PRED_TYPE pred;
 	if (params.numericalSolverMode == "ONLY_SMOOTHING") {
 		pred = boolCtrl;
+	} else if (params.numericalSolverMode == "FULLY_SEPARATED" || params.numericalSolverMode == "INTERACTIVE") {
+		pred = boolFloatInterface;
+    } else if (params.numericalSolverMode == "SMOOTHING_SAT") {
+        pred = allBool;
+        addDummyAssert = true;
 	} else {
 		Assert(false, "Error: specify what pred function to use for solver mode = " + params.numericalSolverMode);
 	}
@@ -964,19 +997,30 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	for (int i = deletedNodes.size()-1; i >=0; i--) {
 		dag.remove(deletedNodes[i]);
 	}
-	if (unode->multi_mother.size() == 0) {
+	if (unode->multi_mother.size() == 0 || addDummyAssert) {
 		// add a dummy boolean hole as an input, so that numerical solver is called at least once
 		CTRL_node* ctrl = new CTRL_node();
 		ctrl->name = "CTRL_tmp_hole";
 		ctrl->set_nbits(1);
 		inputToNodeMap[unode->multi_mother.size()] = -1;
 		unode->multi_mother.push_back(ctrl);
+        newnodes.push_back(ctrl);
+        //if (addDummyAssert) {
+            ASSERT_node* an = new ASSERT_node();
+            an->mother = ctrl;
+            an->addToParents();
+            newnodes.push_back(an);
+            dag.getNodesByType(an->type).push_back(an);
+            dag.assertions.append( getDllnode(an) );
+        //}
 	}
 	unode->addToParents();
 	newnodes.push_back(unode);
 	dag.addNewNodes(newnodes);
 	op.cleanup(dag);
 	dag.lprint(cout);
+    ofstream file("/Users/Jeevu/projects/symdiff/scripts/dag.txt");
+    numDag.lprint(file);
 	numericalAbsMap[fname] = make_pair(&numDag, inputToNodeMap);
 	finder->setNumericalAbsMap(numericalAbsMap);
 }

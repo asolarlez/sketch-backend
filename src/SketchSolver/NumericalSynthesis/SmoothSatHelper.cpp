@@ -1,9 +1,11 @@
-#include "BoolApproxHelper.h"
+#include "SmoothSatHelper.h"
 
 
-BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+int SnoptEvaluator::counter;
+
+SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
 	dag->lprint(cout);
-	
+    int numConstraints = 0;
 	// Collect the list of boolean nodes that contribute to the error
 	// In this case, only the assertions matter
 	for (int i = 0; i < dag->size(); i++) {
@@ -11,9 +13,16 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 		if (n->type == bool_node::ASSERT) {
 			if (!((ASSERT_node*)n)->isHard()) {
 				boolNodes.insert(i);
+                numConstraints++;
 			}
-		}
+        } else {
+            if (n->getOtype() == OutType::BOOL) {
+                boolNodes.insert(i);
+            }
+        }
 	}
+    
+    numConstraints = numConstraints + 100; // buffer for additional input variables set
 	
 	// generate ctrls mapping
 	set<int> ctrlNodeIds;
@@ -34,13 +43,14 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+    seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	} else {
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
 	}
-	opt->randomizeCtrls(state);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
+    previousSAT = false;
 	
 	GradUtil::tmp = gsl_vector_alloc(ncontrols);
 	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
@@ -49,7 +59,7 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
-BoolApproxHelper::~BoolApproxHelper(void) {
+SmoothSatHelper::~SmoothSatHelper(void) {
 	delete GradUtil::tmp;
 	delete GradUtil::tmp1;
 	delete GradUtil::tmp2;
@@ -57,16 +67,27 @@ BoolApproxHelper::~BoolApproxHelper(void) {
 	delete GradUtil::tmpT;
 }
 
-void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+            cout << imap[i] << "," << allInputs[0][i] << ";";
+        }
+    }
+    cout << endl;
 }
 
-bool BoolApproxHelper::checkInputs(int rowid, int colid) {
+bool SmoothSatHelper::checkInputs(int rowid, int colid) {
+    if (imap[colid] == -1) {
+        cout << "Setting dummy variable" << endl;
+    } else {
+        cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
+    }
 	return true;
 }
 
-bool BoolApproxHelper::validObjective() {
+bool SmoothSatHelper::validObjective() {
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
@@ -81,8 +102,14 @@ bool BoolApproxHelper::validObjective() {
 	return true;
 }
 
-bool BoolApproxHelper::checkSAT() {
+bool SmoothSatHelper::checkSAT() {
+    if (!previousSAT) {
+        opt->randomizeCtrls(state);
+    }
 	bool sat = opt->optimize(allInputs, state);
+    if (!previousSAT) {
+        previousSAT = sat;
+    }
 	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
 		double objective = opt->getObjectiveVal();
 		cout << "Objective found: " << objective << endl;
@@ -93,21 +120,44 @@ bool BoolApproxHelper::checkSAT() {
 	return sat;
 }
 
-bool BoolApproxHelper::ignoreConflict() {
-	return false;
+bool SmoothSatHelper::ignoreConflict() {
+    int numSet = 0;
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (imap[i] < 0) continue;
+        //if (((*dag)[imap[i]])->hasFloatChild()) {
+            if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+                numSet++;
+            }
+        //}
+    }
+    if (numSet < CONFLICT_CUTOFF) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
-vector<tuple<int, int, int>> BoolApproxHelper::collectSuggestions() {
-	// No suggestions
+vector<tuple<int, int, int>> SmoothSatHelper::collectSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
+    for (int i = 0; i < allInputs.size(); i++) {
+        vector<tuple<double, int, int>> s = seval->run(state, imap);
+        sort(s.begin(), s.end());
+        reverse(s.begin(), s.end());
+        for (int k = 0; k < s.size(); k++) {
+            int idx = get<1>(s[k]);
+            if (allInputs[i][idx] == EMPTY) {
+                suggestions.push_back(make_tuple(i, idx, get<2>(s[k])));
+            }
+        }
+    }
 	return suggestions;
 }
 
-vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> SmoothSatHelper::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BoolApproxHelper::getControls(map<string, double>& ctrls) {
+void SmoothSatHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}
