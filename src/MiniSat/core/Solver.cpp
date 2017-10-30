@@ -1395,8 +1395,8 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                         cout << "Restarting due to soft learnts" << endl;
                         cancelUntil(0);
                         removeSoftLearnts();
-                        return l_Undef;
                         nSoftLearntRestarts++;
+                        return l_Undef;
                     } else {
                         return l_False;
                     }
