@@ -106,7 +106,7 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 				Assert(false, "dafuerq");
 			}
 		} else {
-            Assert(false, "eruiqge");
+            //Assert(false, "eruiqge");
 			dg->set = false;
 		}
 	}
