@@ -77,8 +77,8 @@ public:
 
 class GradientDescentWrapper: public OptimizationWrapper {
 	GradientDescent* gd;
-	double threshold = 1e-5; // accuracy for minimizing the error
-	int MAX_TRIES = 10; // Number retries of GD algorithm for each iteration
+	double threshold = 1e-2; // accuracy for minimizing the error
+	int MAX_TRIES = 1; // Number retries of GD algorithm for each iteration
 	double minErrorSoFar;
 	gsl_vector* minState;
 	gsl_vector* t;
