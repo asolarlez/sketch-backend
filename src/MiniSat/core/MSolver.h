@@ -141,7 +141,11 @@ public:
     bool      expensive_ccmin;    // Controls conflict clause minimization.                                                    (default TRUE)
     int       polarity_mode;      // Controls which polarity the decision heuristic chooses. See enum below for allowed modes. (default polarity_false)
     int       verbosity;          // Verbosity level. 0=silent, 1=some progress report                                         (default 0)
-
+    
+    Var       softLearntSpecialVar; // Variable to detect soft learnts
+    int       nSoftLearntRestarts;  // Track number of restarts due to soft learnt conflicts
+    int       maxSoftLearntRestarts; // (default 10)
+    
 	int incompletenessCutoff;
     enum { polarity_true = 0, polarity_false = 1, polarity_user = 2, polarity_rnd = 3 };
 
@@ -182,6 +186,7 @@ protected:
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<Clause*>        clauses;          // List of problem clauses.
     vec<Clause*>        learnts;          // List of learnt clauses.
+    vec<Clause*>        softLearnts;      // List of soft learnt clauses.
 	vec<UfunSummary*>   allufuns;
 	vec<UfunSummary*>   ufunByID;
     double              cla_inc;          // Amount to bump next clause with.
@@ -207,7 +212,7 @@ protected:
 	bool				firstTry;		  //Armando: This tells the search function whether this is the first try 
 	vec<SynthInSolver*> sins;
 	vec<vec<Lit>> suggestions; // Jeevana: Stores the list of suggestions made by each SynthInSolver
-
+    
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
     //
@@ -230,7 +235,7 @@ protected:
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<Clause*>& cs);                                      // Shrink 'cs' to contain only non-satisfied clauses.
-	
+    void     removeSoftLearnts();
 
     // Maintaining Variable/Clause activity:
     //
@@ -259,6 +264,8 @@ protected:
     void     printClause      (const C& c);
     void     verifyModel      ();
     void     checkLiteralCount();
+    
+    
 
     // Static helpers:
     //
@@ -306,6 +313,8 @@ inline void Solver::claBumpActivity (Clause& c) {
             // Rescale:
             for (int i = 0; i < learnts.size(); i++)
                 learnts[i]->activity() *= 1e-20;
+            for (int i = 0; i < softLearnts.size(); i++)
+                softLearnts[i]->activity() *= 1e-20;
             cla_inc *= 1e-20; } }
 
 inline bool     Solver::enqueue         (Lit p, Clause* from)   { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
@@ -319,14 +328,12 @@ inline lbool    Solver::value         (Lit p) const   { return toLbool(assigns[v
 inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
 inline int      Solver::nClauses()      const { return clauses.size(); }
-inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
+    inline int      Solver::nLearnts      ()      const   { return learnts.size() + softLearnts.size(); }
 inline int      Solver::nVars         ()      const   { return assigns.size(); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity    [v] = (char)b; }
 inline void     Solver::setDecisionVar(Var v, bool b) { decision_var[v] = (char)b; if (b) { insertVarOrder(v); } }
 inline lbool    Solver::solve         ()              { vec<Lit> tmp; return solve(tmp); }
 inline bool     Solver::okay          ()      const   { return ok; }
-
-
 
 //=================================================================================================
 // Debug + etc:

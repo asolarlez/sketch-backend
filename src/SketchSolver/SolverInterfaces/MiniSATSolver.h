@@ -100,6 +100,7 @@ public:
 	 }
 
 	 virtual void retractableAssertClause(int x);
+     virtual int addSpecialAssumption();
 	 void addCountingHelperClause(int c[], int sz);
 
 	 virtual void addExPairConstraint(int* pairs, int npairs, int out);

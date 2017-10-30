@@ -508,7 +508,9 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	} else if (name == "_GEN_eratom") {
     return new ERAtomSyn(_fm);
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
-    return new NumericalSolver(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second);
+      // add a special assumption to deal with soft conflicts
+    int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
+    return new NumericalSolver(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second, lfromInt(specialVar));
   }
 	return NULL;
 }

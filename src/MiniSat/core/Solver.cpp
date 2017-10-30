@@ -51,7 +51,7 @@ Solver::Solver() :
     // Parameters: (formerly in 'SearchParams')
     var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.02)
   , restart_first(200), restart_inc(1.5), learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
-
+   , nSoftLearntRestarts(0), maxSoftLearntRestarts(10)
     // More parameters:
     //
   , expensive_ccmin  (true)
@@ -80,6 +80,7 @@ Solver::Solver() :
 Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
+    for (int i = 0; i < softLearnts.size(); i++) free(softLearnts[i]);
     for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
 	for (int i = 0; i < allufuns.size(); ++i) { free(allufuns[i]); }
@@ -1245,7 +1246,7 @@ struct reduceDB_lt { bool operator () (Clause* x, Clause* y) { return x->size() 
 void Solver::reduceDB()
 {
     int     i, j;
-    double  extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
+    double  extra_lim = cla_inc / (learnts.size() + softLearnts.size());    // Remove any clause below this activity
 
     sort(learnts, reduceDB_lt());
     for (i = j = 0; i < learnts.size() / 2; i++){
@@ -1261,10 +1262,33 @@ void Solver::reduceDB()
             learnts[j++] = learnts[i];
     }
     learnts.shrink(i - j);
+    sort(softLearnts, reduceDB_lt());
+    for (i = j = 0; i < softLearnts.size() / 2; i++){
+        if (softLearnts[i]->size() > 2 && !locked(*softLearnts[i]))
+            removeClause(*softLearnts[i]);
+        else
+            softLearnts[j++] = softLearnts[i];
+    }
+    for (; i < softLearnts.size(); i++){
+        if (softLearnts[i]->size() > 2 && !locked(*softLearnts[i]) && softLearnts[i]->activity() < extra_lim)
+            removeClause(*softLearnts[i]);
+        else
+            softLearnts[j++] = softLearnts[i];
+    }
+    softLearnts.shrink(i - j);
 }
-
-
-void Solver::removeSatisfied(vec<Clause*>& cs)
+    
+void Solver::removeSoftLearnts()
+{
+    int i;
+    for (i  = 0; i < softLearnts.size(); i++) {
+        removeClause(*softLearnts[i]);
+    }
+    softLearnts.shrink(i);
+}
+    
+    
+    void Solver::removeSatisfied(vec<Clause*>& cs)
 {
     int i,j;
     for (i = j = 0; i < cs.size(); i++){
@@ -1298,6 +1322,7 @@ bool Solver::simplify()
 
     // Remove satisfied clauses:
     removeSatisfied(learnts);
+    removeSatisfied(softLearnts);
     if (remove_satisfied)        // Can be turned off.
         removeSatisfied(clauses);
 
@@ -1353,15 +1378,38 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 			
 			
 			analyze(confl, learnt_clause, backtrack_level);
-			          
             cancelUntil(backtrack_level);
             assert(value(learnt_clause[0]) == l_Undef);
-
+            bool softLearnt = false;
+            for (int i = 0; i < learnt_clause.size(); i++) {
+                if (toInt(learnt_clause[i]) == toInt(~Lit(softLearntSpecialVar))) {
+                    softLearnt = true;
+                    break;
+                }
+            }
+            cout << "Soft Learnt: " << softLearnt << endl;
             if (learnt_clause.size() == 1){
-                uncheckedEnqueue(learnt_clause[0]);
+                if (softLearnt) {
+                    if (nSoftLearntRestarts < maxSoftLearntRestarts) {
+                        // time to restart
+                        cout << "Restarting due to soft learnts" << endl;
+                        cancelUntil(0);
+                        removeSoftLearnts();
+                        return l_Undef;
+                        nSoftLearntRestarts++;
+                    } else {
+                        return l_False;
+                    }
+                } else {
+                    uncheckedEnqueue(learnt_clause[0]);
+                }
             }else{
                 Clause* c = Clause::Clause_new(learnt_clause, true);
-                learnts.push(c);
+                if (softLearnt) {
+                    softLearnts.push(c);
+                } else {
+                    learnts.push(c);
+                }
                 attachClause(*c);
                 claBumpActivity(*c);
                 uncheckedEnqueue(learnt_clause[0], c);
@@ -1383,7 +1431,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             if (decisionLevel() == 0 && !simplify())
                 return l_False;
 
-            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
+            if (nof_learnts >= 0 && learnts.size()+softLearnts.size()-nAssigns() >= nof_learnts)
                 // Reduce the set of learnt clauses:
                 reduceDB();
 
@@ -1396,6 +1444,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                     newDecisionLevel();
                 }else if (value(p) == l_False){
                     analyzeFinal(~p, conflict);
+                    cout << "Failed assumption" << endl;
                     return l_False;
                 }else{
                     next = p;
@@ -1533,6 +1582,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
     if (!ok) return l_False;
 
     assumps.copyTo(assumptions);
+    nSoftLearntRestarts = 0;
 
     double  nof_conflicts = restart_first;
     double  nof_learnts   = nClauses() * learntsize_factor;

@@ -30,7 +30,7 @@ class NumericalSolver : public Synthesizer {
 	
 	
 public:
-	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
+	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit);
 	
 	virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions);
 	virtual void newInstance() {}

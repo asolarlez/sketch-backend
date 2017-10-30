@@ -319,6 +319,15 @@ bool MiniSATSolver::isOK(){
 	 assumptions.push( (x > 0) ? Lit(var) : ~Lit(var) );	 
  }
 
+  int MiniSATSolver::addSpecialAssumption() {
+    s->newVar();
+    int var = s->nVars() - 1;
+    assumptions.push(Lit(var));
+    s->softLearntSpecialVar = var;
+    return var;
+      
+  }
+
 void MiniSATSolver::retractAssumptions(){
 	assumptions.clear();
 }

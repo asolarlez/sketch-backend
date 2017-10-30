@@ -113,6 +113,9 @@ namespace MSsolverNS {
 		that were involved in making the problem unsatisfiable.
 		*/
 		vec<int> conflict;
+        
+        Lit softConflictLit;
+        bool softConflict = false;
 
 		Synthesizer(FloatManager& _fm) :fm(_fm) {
 
@@ -121,6 +124,7 @@ namespace MSsolverNS {
 		void set_inout(InputMatrix* _inout) {
 			inout = _inout;
 		}
+        
 
 		/*
 		Return true if synthesis succeeds. If false, the conflict tells you what went wrong.
@@ -243,7 +247,9 @@ namespace MSsolverNS {
                     Lit l = tv.litForValue(inputOutputs.getVal(id));
 					conf.push(~l);
 				}
-
+                if (s->softConflict) {
+                    conf.push(~s->softConflictLit);
+                }
 				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
 				tmpbuf.growTo((sz / sizeof(int)) + 1);
 				void* mem = (void*)&tmpbuf[0];

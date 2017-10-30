@@ -4,8 +4,10 @@ gsl_vector* GDEvaluator::curGrad;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 
-NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): Synthesizer(_fm), dag(_dag), imap(_imap) {
-	if (PARAMS->verbosity > 2) {
+NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
+    softConflictLit = _softConflictLit;
+    cout << "Special lit: " << toInt(softConflictLit) << " " << (toInt(~softConflictLit)) << endl;
+    if (PARAMS->verbosity > 2) {
 		cout << "NInputs: " << imap.size() << endl;
 	}
 	if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
@@ -261,6 +263,7 @@ void NumericalSolver::convertConflicts(const vector<pair<int, int>>& c) {
 		int j = c[k].second;
 		conflict.push(inout->valueid(i, j));
 	}
+    softConflict = true;
 }
 
 void checkOpt(vector<vector<int>>& allInputs, gsl_vector* s, OptimizationWrapper* opt, int idx) {
