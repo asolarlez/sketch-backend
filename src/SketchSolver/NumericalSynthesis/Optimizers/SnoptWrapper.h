@@ -63,65 +63,88 @@ public:
         //GradUtil::default_grad(tmpGrad);
         
         int bcounter = 0;
-		for (int i = 0; i < p->allInputs.size(); i++) {
-			const map<int, int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
-			p->eval->run(state, nodeValsMap);
-            //p->eval->print();
-			for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
-				bool_node* node = *node_it;
-				if (p->boolNodes.find(node->id) != p->boolNodes.end() || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
-					if (node->type == bool_node::ASSERT) {
-						int fidx;
-						int gidx;
-						if (((ASSERT_node*)node)->isHard()) {
-							fidx = 0;
-							gidx = 0;
-						} else {
-							fidx = fcounter++;
-							gidx = gcounter;
-							gcounter += *n;
-						}
-                        double dist = 0;
-                        if (p->eval->hasDist(node->mother)) {
-                            dist = p->eval->computeDist(node->mother, grad);
-                        } else {
-                            dist = (fidx == 0) ? 0: 1000;
-                            GradUtil::default_grad(grad);
+        for (int i = 0; i < p->allInputs.size(); i++) {
+            const map<int, int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
+            p->eval->run(state, nodeValsMap);
+            if (PARAMS->useSnoptUnconstrained) {
+                double error = 0.0;
+                GradUtil::default_grad(grad);
+                for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); ++node_it) {
+                    bool_node* n = *node_it;
+                    if (p->boolNodes.find(n->id) != p->boolNodes.end()) {
+                        if (n->type ==  bool_node::ASSERT) {
+                            error += p->eval->computeError(n->mother, 1, grad);
+                        } else if (n->getOtype() == OutType::BOOL) {
+                            auto it = nodeValsMap.find(n->id);
+                            if (it != nodeValsMap.end()) {
+                                int val = it->second;
+                                error += p->eval->computeError(n, val, grad);
+                            }
                         }
-						F[fidx] = dist;
-                        //cout << node->mother->lprint() << " " << dist << endl;
-						for (int j = 0; j < *n; j++) {
-							G[gidx + j] = gsl_vector_get(grad, j);
-						}
-					} else if (node->getOtype() == OutType::BOOL) {
-						auto it = nodeValsMap.find(node->id);
-						if (it != nodeValsMap.end()) {
-							int val = it->second;
-                            double dist = 0;
-                            if (p->eval->hasDist(node)) {
-                                dist = p->eval->computeDist(node, grad);
+                    }
+                }
+                F[0] = error;
+                for (int j = 0; j < *n; j++) {
+                    G[j] = gsl_vector_get(grad, j);
+                }
+            } else {
+                //p->eval->print();
+                for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
+                    bool_node* node = *node_it;
+                    if (p->boolNodes.find(node->id) != p->boolNodes.end() || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
+                        if (node->type == bool_node::ASSERT) {
+                            int fidx;
+                            int gidx;
+                            if (((ASSERT_node*)node)->isHard()) {
+                                fidx = 0;
+                                gidx = 0;
                             } else {
-                                dist = (val == 0) ? -1000 : 1000;
+                                fidx = fcounter++;
+                                gidx = gcounter;
+                                gcounter += *n;
+                            }
+                            double dist = 0;
+                            if (p->eval->hasDist(node->mother)) {
+                                dist = p->eval->computeDist(node->mother, grad);
+                            } else {
+                                dist = (fidx == 0) ? 0: 1000;
                                 GradUtil::default_grad(grad);
                             }
-                            if (val == 0) {
-								dist = -dist;
-								gsl_vector_scale(grad, -1.0);
-							}
-							F[fcounter++] = dist;
-							for (int j = 0; j < *n; j++) {
-								G[gcounter++] = gsl_vector_get(grad, j);
-							}
-						} else {
-							//F[fcounter++] = 1000;
-							//for (int j = 0; j < *n; j++) {
-							//	G[gcounter++] = 0;
-							//}
-						}
-					}
-				}
-			}
-		}
+                            F[fidx] = dist;
+                            //cout << node->mother->lprint() << " " << dist << endl;
+                            for (int j = 0; j < *n; j++) {
+                                G[gidx + j] = gsl_vector_get(grad, j);
+                            }
+                        } else if (node->getOtype() == OutType::BOOL) {
+                            auto it = nodeValsMap.find(node->id);
+                            if (it != nodeValsMap.end()) {
+                                int val = it->second;
+                                double dist = 0;
+                                if (p->eval->hasDist(node)) {
+                                    dist = p->eval->computeDist(node, grad);
+                                } else {
+                                    dist = (val == 0) ? -1000 : 1000;
+                                    GradUtil::default_grad(grad);
+                                }
+                                if (val == 0) {
+                                    dist = -dist;
+                                    gsl_vector_scale(grad, -1.0);
+                                }
+                                F[fcounter++] = dist;
+                                for (int j = 0; j < *n; j++) {
+                                    G[gcounter++] = gsl_vector_get(grad, j);
+                                }
+                            } else {
+                                //F[fcounter++] = 1000;
+                                //for (int j = 0; j < *n; j++) {
+                                //	G[gcounter++] = 0;
+                                //}
+                            }
+                        }
+                    }
+                }
+            }
+        }
         //cout << F[0] << endl;
         //cout << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
@@ -192,7 +215,11 @@ class SnoptWrapper: public OptimizationWrapper {
 public:
 	SnoptWrapper(SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, map<string, int>& ctrlMap_, set<int>& boolNodes_, int ncontrols_, int numConstraints_): eval(eval_), dag(dag_), imap(imap_), ctrlMap(ctrlMap_), boolNodes(boolNodes_), n(ncontrols_)  {
 		SnoptEvaluator::init(n);
-        neF = numConstraints_ + 1;
+        if (PARAMS->useSnoptUnconstrained) {
+            neF = 1;
+        } else {
+            neF = numConstraints_ + 1;
+        }
 		lenA = 10;
 		
 		cout << "nef: " << neF << endl;

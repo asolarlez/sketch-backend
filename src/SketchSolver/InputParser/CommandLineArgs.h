@@ -94,6 +94,7 @@ struct CommandLineArgs{
 	bool useEager;
     bool checkInput;
     string partialInput;
+    bool useSnoptUnconstrained;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -176,6 +177,7 @@ struct CommandLineArgs{
 	erSimEvalFName = "";
         checkInput = false;
         partialInput = "";
+        useSnoptUnconstrained = true;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
