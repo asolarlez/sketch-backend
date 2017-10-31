@@ -60,6 +60,8 @@ public:
 	void debug();
     void checkInput();
 	void genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt = true);
+    void genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt = true );
+    double getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt = true);
 	/*void genData1D(int ncontrols);
 	void genData2D(int ncontrols);*/
     void analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids);

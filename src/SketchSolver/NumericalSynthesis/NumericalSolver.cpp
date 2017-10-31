@@ -330,7 +330,7 @@ void NumericalSolver::debug() {
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {8.44877, -5.65295, 1.48548, 2.41602, -7.72562, -1.22278, 8.97805, 10.1169, 11.9629, 11.4978};
+    double arr1[2] = {1.33356, 6.65935};
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
@@ -465,6 +465,51 @@ void NumericalSolver::genData1D(int ncontrols) {
 	file << endl;
 }*/
 
+double NumericalSolver::getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt) {
+    double err = 0.0;
+    if (useSnopt) {
+        bool isValid = true;
+        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+            bool_node* node = *node_it;
+            if (node->type == bool_node::ASSERT) {
+                if (((ASSERT_node*) node)->isHard()) {
+                    if (eval->hasDist(node->mother)) {
+                        err = eval->computeDist(node->mother, d);
+                    }
+                } else {
+                    float dist = 0.0;
+                    if (eval->hasDist(node->mother)) {
+                        dist = eval->computeDist(node->mother, d);
+                    }
+                    if (dist < 0) {
+                        isValid = false;
+                    }
+                }
+                //err += eval->computeError(node->mother, 1, d);
+            }
+        }
+        //cout << i << " " << err << " " << isValid << endl;
+        //analyze(eval, d, idx, relevantIds);
+        //if (!isValid) {
+        //    err = 1000.0;
+        //}
+    } else {
+        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+            bool_node* n = *node_it;
+            if (n->type ==  bool_node::ASSERT) {
+                err += eval->computeError(n->mother, 1, d);
+            } else if (n->getOtype() == OutType::BOOL) {
+                auto it = nodeValsMap.find(n->id);
+                if (it != nodeValsMap.end()) {
+                    int val = it->second;
+                    err += eval->computeError(n, val, d);
+                }
+            }
+        }
+    }
+    return err;
+}
+
 
 void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
 	GradUtil::BETA = -100;
@@ -479,53 +524,42 @@ void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eva
 			gsl_vector_set(state, idx, i);
 			eval->run(state, nodeValsMap);
 			gsl_vector_set_zero(d);
-            double err = 0.0;
-            if (useSnopt) {
-                bool isValid = true;
-                for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-                    bool_node* node = *node_it;
-                    if (node->type == bool_node::ASSERT) {
-                        if (((ASSERT_node*) node)->isHard()) {
-                            if (eval->hasDist(node->mother)) {
-                                err = eval->computeDist(node->mother, d);
-                            }
-                        } else {
-                            float dist = 0.0;
-                            if (eval->hasDist(node->mother)) {
-                                dist = eval->computeDist(node->mother, d);
-                            }
-                            if (dist < 0) {
-                                isValid = false;
-                            }
-                        }
-                        //err += eval->computeError(node->mother, 1, d);
-                    }
-                }
-                cout << i << " " << err << " " << isValid << endl;
-                //analyze(eval, d, idx, relevantIds);
-                //if (!isValid) {
-                //    err = 1000.0;
-                //}
-            } else {
-                for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
-                    bool_node* n = *node_it;
-                    if (n->type ==  bool_node::ASSERT) {
-                        err += eval->computeError(n->mother, 1, d);
-                    } else if (n->getOtype() == OutType::BOOL) {
-                        auto it = nodeValsMap.find(n->id);
-                        if (it != nodeValsMap.end()) {
-                            int val = it->second;
-                            err += eval->computeError(n, val, d);
-                        }
-                    }
-                }
-            }
+            double err = getError(eval, nodeValsMap, d, useSnopt);
             
 			file << err << ";";
 			i += 0.1;
 		}
 	}
 	file << endl;
+    file.close();
+}
+
+void NumericalSolver::genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
+    GradUtil::BETA = -100;
+    GradUtil::ALPHA = 100;
+    gsl_vector* d = gsl_vector_alloc(state->size);
+    
+    ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/g" + to_string(idx1) + "_" + to_string(idx2) + ".txt");
+    //const set<int>& relevantIds = getRelevantIds();
+    {
+        double i = -10.0;
+        double j = -10.0;
+        while (i < 10.0) {
+            j = -10.0;
+            while (j < 10.0) {
+                gsl_vector_set(state, idx1, i);
+                gsl_vector_set(state, idx2, j);
+                eval->run(state, nodeValsMap);
+                gsl_vector_set_zero(d);
+                double err = getError(eval, nodeValsMap, d, useSnopt);
+            
+                file << err << ";";
+                j += 0.1;
+            }
+            i += 0.1;
+        }
+    }
+    file << endl;
     file.close();
 }
 
@@ -597,13 +631,18 @@ void NumericalSolver::checkInput() {
     SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
     const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
     gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {8.44877, -5.65295, 1.48548, 2.41602, -7.72562, -1.22278, 8.97805, 10.1169, 11.9629, 11.4978};
+    double arr1[2] = {1.33333, 5.71186};
     for (int i = 0; i < ncontrols; i++) {
         gsl_vector_set(s, i, arr1[i]);
+    }
+    if (ncontrols == 2) {
+        genData2D(s, 0, 1, eval, nodeValsMap, false);
+        gsl_vector_set(s, 0, arr1[0]);
+        gsl_vector_set(s, 1, arr1[1]);
     }
     for (int i = 0; i < ncontrols; i++) {
         genData(s, i, eval, nodeValsMap, false);
         gsl_vector_set(s, i, arr1[i]);
-    }
-     */
+    }*/
+    
 }
