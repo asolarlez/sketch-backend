@@ -177,7 +177,7 @@ struct CommandLineArgs{
 	erSimEvalFName = "";
         checkInput = false;
         partialInput = "";
-        useSnoptUnconstrained = true;
+        useSnoptUnconstrained = false;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;

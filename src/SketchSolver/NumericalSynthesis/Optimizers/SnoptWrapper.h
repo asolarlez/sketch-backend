@@ -71,8 +71,10 @@ public:
                 GradUtil::default_grad(grad);
                 for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); ++node_it) {
                     bool_node* n = *node_it;
-                    if (p->boolNodes.find(n->id) != p->boolNodes.end()) {
-                        if (n->type ==  bool_node::ASSERT) {
+                    if (p->boolNodes.find(n->id) != p->boolNodes.end() || Util::isSqrt(n)) {
+                        if (Util::isSqrt(n)) {
+                            error += p->eval->computeSqrtError(n, grad);
+                        } else if (n->type ==  bool_node::ASSERT) {
                             error += p->eval->computeError(n->mother, 1, grad);
                         } else if (n->getOtype() == OutType::BOOL) {
                             auto it = nodeValsMap.find(n->id);
@@ -91,8 +93,20 @@ public:
                 //p->eval->print();
                 for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
                     bool_node* node = *node_it;
-                    if (p->boolNodes.find(node->id) != p->boolNodes.end() || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
-                        if (node->type == bool_node::ASSERT) {
+                    if (p->boolNodes.find(node->id) != p->boolNodes.end() || (Util::isSqrt(node)) || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
+                        if (Util::isSqrt(node)) {
+                            double dist = 1000;
+                            if (p->eval->hasSqrtDist(node)) {
+                                dist = p->eval->computeSqrtDist(node, grad);
+                            } else {
+                                cout << "No square dist?" << endl;
+                                GradUtil::default_grad(grad);
+                            }
+                            F[fcounter++] = dist;
+                            for (int j = 0; j < *n; j++) {
+                                G[gcounter++] = gsl_vector_get(grad, j);
+                            }
+                        } else if (node->type == bool_node::ASSERT) {
                             int fidx;
                             int gidx;
                             if (((ASSERT_node*)node)->isHard()) {
@@ -192,8 +206,8 @@ class SnoptWrapper: public OptimizationWrapper {
 			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
 				int idx = ctrlMap[ctrls[i]->get_name()];
 				CTRL_node* cnode = (CTRL_node*) ctrls[i];
-				xlow[idx] = cnode->hasRange ? cnode->low : -1e20;
-				xupp[idx] = cnode->hasRange ? cnode->high : 1e20;
+				xlow[idx] = cnode->hasRange ? cnode->low : -20.0;
+				xupp[idx] = cnode->hasRange ? cnode->high : 20.0;
 				counter++;
 			}
 		}
@@ -240,7 +254,54 @@ public:
 	}
 	
 	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
-		
+        /*// select random subset of bool nodes if we don't have the budget for all constraints
+        // TODO: this should be done in a cegis like loop - otherwise it is not sound
+        vector<int> boolConstraints;
+        vector<int> sqrtConstraints;
+        const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
+        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+            bool_node* node = *node_it;
+            if (boolNodes.find(node->id) != boolNodes.end()) {
+                if (node->type == bool_node::ASSERT) {
+                    boolConstraints.push_back(node->id);
+                } else if (node->getOtype() == OutType::BOOL) {
+                    auto it = nodeValsMap.find(node->id);
+                    if (it != nodeValsMap.end()) {
+                        boolConstraints.push_back(node->id);
+                    }
+                }
+            }
+            if (Util::isSqrt(node)) {
+                sqrtConstraints.push_back(node->id);
+            }
+        }
+        cout << "Sqrt constraints: " << sqrtConstraints.size() << endl;
+        Assert(neF - 1 >= sqrtConstraints.size(), "Number of constraints is less than what is required for sqrt constraints");
+        int numToRemove = 0;
+        if (!PARAMS->useSnoptUnconstrained && boolConstraints.size() + sqrtConstraints.size() > neF - 1) {
+            numToRemove = boolConstraints.size() + sqrtConstraints.size() - neF + 1;
+        }
+        cout << "Removing " << numToRemove << " constraints" << endl;
+        while (numToRemove > 0) {
+            int oldsize = boolConstraints.size();
+            int randIdx = rand() % (boolConstraints.size());
+            boolConstraints.erase(boolConstraints.begin() + randIdx);
+            if (boolConstraints.size() != oldsize - 1) {
+                cout << "Did not delete " << randIdx << " size " << oldsize << endl;
+                Assert(false, "Dfqwerq");
+            }
+            numToRemove--;
+        }
+        cout << boolConstraints.size() << endl;
+        //cout << "Selected constraints: ";
+        //for (int i = 0; i < boolConstraints.size(); i++) {
+        //    cout << boolConstraints[i] << ";";
+        //}
+        cout << endl;
+        
+        set<int> boolConstraintsSet(boolConstraints.begin(), boolConstraints.end());*/
+        
+        // start the snopt solving
 		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
 		

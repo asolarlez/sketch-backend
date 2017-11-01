@@ -1018,7 +1018,7 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	newnodes.push_back(unode);
 	dag.addNewNodes(newnodes);
 	op.cleanup(dag);
-	dag.lprint(cout);
+	//dag.lprint(cout);
     ofstream file("/Users/Jeevu/projects/symdiff/scripts/dag.txt");
     numDag.lprint(file);
 	numericalAbsMap[fname] = make_pair(&numDag, inputToNodeMap);

@@ -62,6 +62,9 @@ public:
 	virtual bool hasDist(bool_node* n);
     virtual double computeVal(bool_node*, gsl_vector* distgrad);
     virtual bool hasVal(bool_node* n);
+    virtual bool hasSqrtDist(bool_node* n);
+    virtual double computeSqrtError(bool_node* n, gsl_vector* errorGrad);
+    virtual double computeSqrtDist(bool_node* n, gsl_vector* errorGrad);
 	void setvalue(bool_node& bn, ValueGrad* v) {
 		values[bn.id] = v;
 	}

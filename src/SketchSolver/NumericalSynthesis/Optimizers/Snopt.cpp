@@ -54,6 +54,7 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
     snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);
 
 	integer status = snoptProb.solve(Cold);
+    //status = snoptProb.solve(Warm);
 	
 	for (int i = 0; i < n; i++) {
 		gsl_vector_set(result, i, x[i]);
@@ -77,19 +78,19 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
         }
         cout << endl;
         cout << "F = ";
-        for (int i = 0; i < neF; i++){
+        for (int i = 0; i < 1; i++){
             cout << F[i] << ", ";
         }
         cout << endl;
     }
     bool constraintsSatisfied = true;
     for (int i = 1; i < neF; i++) {
-        if (F[i] < Flow[i] - 0.1 || F[i] > Fupp[i] + 0.1) {
+        if (F[i] < Flow[i] - 0.01 || F[i] > Fupp[i] + 0.01) {
             constraintsSatisfied = false;
         }
     }
     for (int i = 0; i < n; i++) {
-        if (x[i] < xlow[i] - 0.1 || x[i] > xupp[i] + 0.1) {
+        if (x[i] < xlow[i] - 0.01 || x[i] > xupp[i] + 0.01) {
             constraintsSatisfied = false;
         }
     }

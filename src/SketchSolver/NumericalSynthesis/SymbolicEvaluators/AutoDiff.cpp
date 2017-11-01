@@ -252,6 +252,33 @@ double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad)
 	return error;
 }
 
+bool AutoDiff::hasSqrtDist(bool_node* n) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    return hasVal(x);
+}
+double AutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    ValueGrad* xval = v(x);
+    if (xval->set) {
+        double dist = xval->getVal();
+        gsl_vector* distgrad = xval->getGrad();
+        if (dist < 0) {
+            error += abs(dist);
+            gsl_vector_memcpy(GradUtil::tmp3, distgrad);
+            gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
+            gsl_vector_add(errorGrad, GradUtil::tmp3);
+        }
+    }
+    return error;
+}
+double AutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    return computeVal(x, errorGrad);
+}
+
 
 bool AutoDiff::check(bool_node* n, int expected) {
 	ValueGrad* val = v(n);

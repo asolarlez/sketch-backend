@@ -37,6 +37,7 @@ public:
 	}
 	
 	static double f(const gsl_vector* x, void* params) {
+        Assert(false, "Does not handle sqrt constraints yet");
 		GDParameters* p = (GDParameters*) params;
 		GradUtil::BETA = p->beta;
 		GradUtil::ALPHA = p->alpha;

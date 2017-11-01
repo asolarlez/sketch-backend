@@ -13,4 +13,15 @@ public:
 		}
 		return res;
 	}
+    
+    static bool isSqrt(bool_node* n) {
+        if (n->type != bool_node::UFUN) {
+            return false;
+        }
+        UFUN_node* un = (UFUN_node*) n;
+        if (un->get_ufname() == "sqrt_math") {
+            return true;
+        }
+        return false;
+    }
 };

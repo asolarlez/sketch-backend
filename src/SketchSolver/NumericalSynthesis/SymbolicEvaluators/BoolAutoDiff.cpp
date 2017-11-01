@@ -35,6 +35,8 @@ void BoolAutoDiff::visit( DST_node& node ) {
 }
 
 void BoolAutoDiff::visit( ASSERT_node& node ) {
+    DistanceGrad* dg = d(node);
+    GradUtil::default_grad(dg->grad);
 	//cout << "Visiting ASSERT node" << endl;
 }
 
@@ -283,6 +285,8 @@ void BoolAutoDiff::visit( ARRASS_node& node ) {
 }
 
 void BoolAutoDiff::visit( UFUN_node& node ) {
+    DistanceGrad* dg = d(node);
+    GradUtil::default_grad(dg->grad);
 	ValueGrad* val = v(node);
 	ValueGrad* mval = v(node.multi_mother[0]);
 	
@@ -343,6 +347,14 @@ bool BoolAutoDiff::hasDist(bool_node* n) {
 double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	DistanceGrad* dg = d(n);
 	if (dg->set) {
+        /*if (gsl_blas_dnrm2(dg->grad) > 1e4) {
+            cout << "LARGE GRADIENT" << endl;
+            cout << n->lprint() << " " << dg->dist << endl;
+            for (int i = 0; i < dg->grad->size; i++) {
+                cout << gsl_vector_get(dg->grad, i) << ";";
+            }
+            cout << endl;
+        }*/
 		gsl_vector_memcpy(distgrad, dg->grad);
 		return dg->dist;
 	} else {
@@ -381,6 +393,33 @@ double BoolAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorG
 		}
 	}
 	return error;
+}
+
+bool BoolAutoDiff::hasSqrtDist(bool_node* n) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    return hasVal(x);
+}
+double BoolAutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    ValueGrad* xval = v(x);
+    if (xval->set) {
+        double dist = xval->getVal();
+        gsl_vector* distgrad = xval->getGrad();
+        if (dist < 0) {
+            error += abs(dist);
+            gsl_vector_memcpy(GradUtil::tmp3, distgrad);
+            gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
+            gsl_vector_add(errorGrad, GradUtil::tmp3);
+        }
+    }
+    return error;
+}
+double BoolAutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
+    UFUN_node* un = (UFUN_node*) n;
+    bool_node* x = un->multi_mother[0];
+    return computeVal(x, errorGrad);
 }
 
 bool BoolAutoDiff::check(bool_node* n, int expected) {

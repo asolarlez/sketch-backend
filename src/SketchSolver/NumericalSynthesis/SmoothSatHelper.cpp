@@ -4,7 +4,7 @@
 int SnoptEvaluator::counter;
 
 SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
-	dag->lprint(cout);
+	//dag->lprint(cout);
     int numConstraints = 0;
 	// Collect the list of boolean nodes that contribute to the error
 	// In this case, only the assertions matter
@@ -22,7 +22,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
         }
 	}
     
-    numConstraints = numConstraints + 100; // buffer for additional input variables set
+    numConstraints = numConstraints + 200; // buffer for additional input variables set
 	
 	// generate ctrls mapping
 	set<int> ctrlNodeIds;
@@ -45,7 +45,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
     seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
-		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
+		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, numConstraints);
 	} else {
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
 	}

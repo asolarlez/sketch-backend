@@ -330,7 +330,7 @@ void NumericalSolver::debug() {
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[2] = {1.33356, 6.65935};
+    double arr1[10] = {8.1312, -5.48764, 1.33356, 6.65935, -9.71224, -5.8, 8.76646, 10.1233, 11.9636, 11.1991};
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
@@ -589,14 +589,44 @@ void NumericalSolver::checkInput() {
     map<int, int> nodeToInputMap;
     string partialInput = PARAMS->partialInput;
     cout <<partialInput << endl;
-    size_t pos = 0, found;
-    while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
-        string p = partialInput.substr(pos, found - pos);
-        int splitIdx = p.find(",");
-        int nodeid = stoi(p.substr(0, splitIdx));
-        int val = stoi(p.substr(splitIdx + 1, p.length() - splitIdx - 1));
-        nodeToInputMap[nodeid] = val;
-        pos = found + 1;
+    if (partialInput == "FULL") {
+        map<string, int> ctrlMap;
+        vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
+        int ctr = 0;
+        for (int i = 0; i < ctrls.size(); i++) {
+            if (ctrls[i]->getOtype() == OutType::FLOAT) {
+                ctrlMap[ctrls[i]->get_name()] = ctr++;
+            }
+        }
+        int ncontrols = ctr;
+        if (ncontrols == 0) {
+            ncontrols = 1;
+        }
+        cout << "NControls: " << ncontrols << endl;
+
+        gsl_vector* s = gsl_vector_alloc(ncontrols);
+        double arr1[10] = {8.1312, 5.48764, 1.33356, 6.65935, -9.71224, -5.8, 8.76646, 10.1233, 11.9636, 11.1991};
+        for (int i = 0; i < ncontrols; i++) {
+            gsl_vector_set(s, i, arr1[i]);
+        }
+                map<string, int> boolCtrlMap;
+        SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
+        
+        vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
+        for (int k = 0; k < suggestions.size(); k++) {
+            int idx = get<1>(suggestions[k]);
+            nodeToInputMap[imap[idx]] = get<2>(suggestions[k]);
+        }
+    } else {
+        size_t pos = 0, found;
+        while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
+            string p = partialInput.substr(pos, found - pos);
+            int splitIdx = p.find(",");
+            int nodeid = stoi(p.substr(0, splitIdx));
+            int val = stoi(p.substr(splitIdx + 1, p.length() - splitIdx - 1));
+            nodeToInputMap[nodeid] = val;
+            pos = found + 1;
+        }
     }
     
     for (int i = 0; i < imap.size(); i++) {
@@ -631,11 +661,15 @@ void NumericalSolver::checkInput() {
     SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
     const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
     gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[2] = {1.33333, 5.71186};
+    double arr1[10] = {-8.98569, -14.2144, 2.24176, 238.427, -183.134, -3, 10.2, 11.4458, 9.6, 7.2 };
     for (int i = 0; i < ncontrols; i++) {
         gsl_vector_set(s, i, arr1[i]);
     }
-    if (ncontrols == 2) {
+    GradUtil::BETA = -1;
+    GradUtil::ALPHA = 1;
+    eval->run(s, nodeValsMap);
+    eval->printFull();*/
+    /*if (ncontrols == 2) {
         genData2D(s, 0, 1, eval, nodeValsMap, false);
         gsl_vector_set(s, 0, arr1[0]);
         gsl_vector_set(s, 1, arr1[1]);

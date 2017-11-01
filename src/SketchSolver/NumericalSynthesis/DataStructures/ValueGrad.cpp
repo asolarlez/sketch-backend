@@ -233,8 +233,16 @@ void ValueGrad::vg_sqrt(ValueGrad* m, ValueGrad* o) {
 	}
 	o->set = true;
 	double x = m->getVal();
-	o->update(sqrt(x));
-	GradUtil::compute_sqrt_grad(x, m->getGrad(), o->getGrad());
+    if (x < 0.0) { //TODO: what is the right way to deal with this??
+        o->update(x);
+        gsl_blas_dcopy(m->getGrad(), o->getGrad());
+    } else if (x < 0.25) { // TODO: potential loss of gradient
+        o->update(sqrt(x));
+        gsl_blas_dcopy(m->getGrad(), o->getGrad());
+    } else {
+        o->update(sqrt(x));
+        GradUtil::compute_sqrt_grad(x, m->getGrad(), o->getGrad());
+    }
 	o->bound();
 }
 
