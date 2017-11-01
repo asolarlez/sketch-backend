@@ -40,14 +40,14 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	helper->setInputs(allInputs, instanceIds);
 	
 	if (!helper->checkInputs(rowid, colid)) return true;
-    timer.restart();
 
 	if (PARAMS->verbosity > 7) {
+        timer.restart();
 		printInputs(allInputs);
 		cout << "Col Id: " << colid << endl;
+        cout << counter++ << endl;
 	}
 	suggestions.clear();
-    cout << counter++ << endl;
 	bool sat = helper->checkSAT();
 	if (sat || helper->ignoreConflict()) {
 		helper->getControls(ctrlVals);
@@ -223,7 +223,7 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 void NumericalSolver::collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) {
 	for (int i = 0; i < inout->getNumInstances(); ++i) {
 		vector<int> inputs;
-		for (int j = 0; j < imap.size(); j++) {
+		for (int j = 0; j < imap.size(); j++) { // TODO: in some cases (especially in fully separated mode), this looping can be bottleneck
 			int val = inout->getVal(i, j);
 			inputs.push_back(val);
 		}
@@ -252,7 +252,7 @@ void NumericalSolver::convertSuggestions(const vector<tuple<int, int, int>>& s, 
 		int i = get<0>(s[k]);
 		int j = get<1>(s[k]);
 		int v = get<2>(s[k]);
-		//cout << "Suggesting " << i << " " << j <<  " " << k << endl;
+		//cout << "Suggesting " << i << " " << j <<  " " << v << endl;
 		suggestions.push(getLit(inout->valueid(i, j), v));
 	}
 }
@@ -266,6 +266,7 @@ void NumericalSolver::convertConflicts(const vector<pair<int, int>>& c) {
     softConflict = true;
 }
 
+/* Only used for debugging */
 void checkOpt(vector<vector<int>>& allInputs, gsl_vector* s, OptimizationWrapper* opt, int idx) {
     double i = -20.0;
     while (i < 20.0) {
@@ -284,7 +285,7 @@ void checkOpt(vector<vector<int>>& allInputs, gsl_vector* s, OptimizationWrapper
 
 
 // Debug with a fixed input and/or controls
-void NumericalSolver::debug() {
+void NumericalSolver::debug() { // TODO: currently this is doing all kinds of debugging - should separate them
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
 	vector<int> inputs;
@@ -316,7 +317,7 @@ void NumericalSolver::debug() {
 	}
 	cout << "NControls: " << ncontrols << endl;
     
-    set<int> boolNodes;
+    set<int> boolNodes; // This is dependent on different techniques
     for (int i = 0; i < dag->size(); i++) {
         bool_node* n = (*dag)[i];
         if (n->type == bool_node::ASSERT) {
@@ -418,52 +419,6 @@ set<int> NumericalSolver::getRelevantIds() {
     }
     return ids;
 }
-
-/*
-// Debugging: prints out the data to generate graphs
-void NumericalSolver::genData2D(int ncontrols) {
-	GradUtil::BETA = -10;
-	GradUtil::ALPHA = 10;
-	gsl_vector* d = gsl_vector_alloc(ncontrols);
-	gsl_vector* state = gsl_vector_alloc(ncontrols);
-	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/sysid/g.txt");
-	{
-		double i = 0.0;
-		double j = 0.0;
-		while (i < 10.0) {
-			j = 0.0;
-			while (j < 10.0) {
-				gsl_vector_set(state, 0, i);
-				gsl_vector_set(state, 1, j);
-				double err = helper->evalGD(state, d);
-				cout << i << " " << j << " " << err << " " << gsl_vector_get(d, 0) << " " << gsl_vector_get(d, 1) << endl;
-				file << err << ";";
-				j+=0.1;
-			}
-			i += 0.1;
-		}
-	}
-	file << endl;
-}
-
-void NumericalSolver::genData1D(int ncontrols) {
-	GradUtil::BETA = -10;
-	GradUtil::ALPHA = 10;
-	gsl_vector* d = gsl_vector_alloc(ncontrols);
-	gsl_vector* state = gsl_vector_alloc(ncontrols);
-	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/sysid/g.txt");
-	{
-		double i = 0.0;
-		while (i < 10.0) {
-			gsl_vector_set(state, 0, i);
-			double err = helper->evalGD(state, d);
-			cout << i << " " << err << endl;
-			file << err << ";";
-			i += 0.01;
-		}
-	}
-	file << endl;
-}*/
 
 double NumericalSolver::getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt) {
     double err = 0.0;

@@ -13,6 +13,10 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 				boolNodes.insert(i);
 			}
 		}
+        if (Util::isSqrt(n)) {
+            boolNodes.insert(i);
+        }
+        
 	}
 	
 	// generate ctrls mapping
@@ -82,7 +86,8 @@ bool BoolApproxHelper::validObjective() {
 }
 
 bool BoolApproxHelper::checkSAT() {
-	bool sat = opt->optimize(allInputs, state);
+    bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
+	bool sat = opt->optimize(allInputs, state, suppressPrint);
 	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
 		double objective = opt->getObjectiveVal();
 		cout << "Objective found: " << objective << endl;

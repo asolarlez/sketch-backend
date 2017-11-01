@@ -43,7 +43,7 @@ void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 	o->set = true;
 	double mval = m->getVal();
 	double fval = f->getVal();
-	double val = mval/fval;
+	double val = mval/fval; // TODO: deal with division by zero
 	o->update(val);
 	
 	gsl_vector* mgrads = m->getGrad();

@@ -108,7 +108,7 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 				Assert(false, "dafuerq");
 			}
 		} else {
-            //Assert(false, "eruiqge");
+            Assert(false, "eruiqge");
 			dg->set = false;
 		}
 	}
@@ -169,10 +169,11 @@ void BoolAutoDiff::visit( CONST_node& node ) {
 			dg->dist = (val == 1) ? 1000 : -1000;
 			GradUtil::default_grad(dg->grad);
 			dg->set = true;
-			vg->update(val);
-			vg->set = true;
-			GradUtil::default_grad(vg->getGrad());
+			//vg->update(val);
+			//vg->set = true;
+			//GradUtil::default_grad(vg->getGrad());
 		} else {
+            Assert(false, "Integers are not handled yet");
 			dg->set = false;
 			vg->update(val);
 			vg->set = true;
@@ -202,7 +203,7 @@ void BoolAutoDiff::visit( AND_node& node ) {
     int mval = getInputValue(node.mother);
     int fval = getInputValue(node.father);
     
-    if (mval == 0.0 || fval == 0.0) {
+    if (mval == 0 || fval == 0) {
         dg->dist = -1000.0;
         GradUtil::default_grad(dg->grad);
         dg->set = true;
@@ -211,11 +212,11 @@ void BoolAutoDiff::visit( AND_node& node ) {
     // Compute the value from the parents
     DistanceGrad* mdist = d(node.mother);
     DistanceGrad* fdist = d(node.father);
-    if (mval == 1.0) {
+    if (mval == 1) {
         DistanceGrad::dg_copy(fdist, dg);
         return;
     }
-    if (fval == 1.0) {
+    if (fval == 1) {
         DistanceGrad::dg_copy(mdist, dg);
         return;
     }
@@ -231,7 +232,7 @@ void BoolAutoDiff::visit( OR_node& node ) {
     int mval = getInputValue(node.mother);
     int fval = getInputValue(node.father);
     
-    if (mval == 1.0 || fval == 1.0) {
+    if (mval == 1 || fval == 1) {
         dg->dist = 1000.0;
         GradUtil::default_grad(dg->grad);
         dg->set = true;
@@ -240,11 +241,11 @@ void BoolAutoDiff::visit( OR_node& node ) {
 	// Compute the value from the parents
 	DistanceGrad* mdist = d(node.mother);
 	DistanceGrad* fdist = d(node.father);
-    if (mval == 0.0) {
+    if (mval == 0) {
         DistanceGrad::dg_copy(fdist, dg);
         return;
     }
-    if (fval == 0.0) {
+    if (fval == 0) {
         DistanceGrad::dg_copy(mdist, dg);
         return;
     }
@@ -258,13 +259,13 @@ void BoolAutoDiff::visit( OR_node& node ) {
 void BoolAutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
     int mval = getInputValue(node.mother);
-    if (mval == 0.0) {
+    if (mval == 0) {
         dg->dist = 1000.0;
         GradUtil::default_grad(dg->grad);
         dg->set = true;
         return;
     }
-    if (mval == 1.0) {
+    if (mval == 1) {
         dg->dist = -1000.0;
         GradUtil::default_grad(dg->grad);
         dg->set = true;
@@ -331,7 +332,7 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
 	}
-	inputValues = inputValues_p;
+	inputValues = inputValues_p; // this does copying again
 
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
 		//cout << (*node_it)->lprint() << endl;

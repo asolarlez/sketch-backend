@@ -11,7 +11,11 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 		bool_node* n = (*dag)[i];
 		if (n->getOtype() == OutType::BOOL && (n->hasFloatParent() || n->hasFloatChild())) {
 			boolNodes.insert(i);
-		} 
+		}
+        
+        if (Util::isSqrt(n)) {
+            boolNodes.insert(i);
+        }
 	}
 	
 	// generate ctrls mapping

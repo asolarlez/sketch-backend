@@ -11,16 +11,22 @@ public:
 	
 	virtual vector<pair<int, int>> getConflicts(gsl_vector* state, vector<vector<int>>& allInputs, vector<int>& instanceIds, int rowid, int colid) {
 		vector<pair<int, int>> conflicts;
-		cout << "Conflict clause ";
+        if (PARAMS->verbosity > 7) {
+            cout << "Conflict clause ";
+        }
 		for (int i = 0; i < allInputs.size(); i++) {
 			for (int j = 0; j < allInputs[i].size(); j++) {
 				if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
-					cout << "(" << imap[j] << "," << allInputs[i][j] << "), ";
+                    if (PARAMS->verbosity > 7) {
+                        cout << "(" << imap[j] << "," << allInputs[i][j] << "), ";
+                    }
 					conflicts.push_back(make_pair(instanceIds[i], j));
 				}
 			}
 		}
-		cout << endl;
+        if (PARAMS->verbosity > 7) {
+            cout << endl;
+        }
 		return conflicts;
 	}
 };

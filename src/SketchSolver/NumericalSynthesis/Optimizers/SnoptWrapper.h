@@ -99,7 +99,6 @@ public:
                             if (p->eval->hasSqrtDist(node)) {
                                 dist = p->eval->computeSqrtDist(node, grad);
                             } else {
-                                cout << "No square dist?" << endl;
                                 GradUtil::default_grad(grad);
                             }
                             F[fcounter++] = dist;
@@ -234,7 +233,7 @@ public:
         } else {
             neF = numConstraints_ + 1;
         }
-		lenA = 10;
+		lenA = 10; // we don't use this currently
 		
 		cout << "nef: " << neF << endl;
 		cout << "n: " << n << endl;

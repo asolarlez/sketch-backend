@@ -26,7 +26,6 @@ protected:
 	// class to perform optimization
 	// class to generate suggestions
 	// class to generate conflicts
-	// Question: how modular or correlated are these things?
 	
 public:
 	NumericalSolverHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): fm(_fm), dag(_dag), imap(_imap){}

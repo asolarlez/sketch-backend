@@ -20,9 +20,12 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
                 boolNodes.insert(i);
             }
         }
+        if (Util::isSqrt(n)) {
+            numConstraints++;
+        }
 	}
     
-    numConstraints = numConstraints + 200; // buffer for additional input variables set
+    numConstraints = numConstraints + 100; // buffer for additional input variables set
 	
 	// generate ctrls mapping
 	set<int> ctrlNodeIds;
@@ -70,19 +73,25 @@ SmoothSatHelper::~SmoothSatHelper(void) {
 void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
+    if (PARAMS->verbosity > 7) {
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
             cout << imap[i] << "," << allInputs[0][i] << ";";
         }
     }
     cout << endl;
+    }
 }
 
 bool SmoothSatHelper::checkInputs(int rowid, int colid) {
     if (imap[colid] == -1) {
-        cout << "Setting dummy variable" << endl;
+        if (PARAMS->verbosity > 7) {
+            cout << "Setting dummy variable" << endl;
+        }
     } else {
-        cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
+        if (PARAMS->verbosity > 7) {
+            cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
+        }
     }
 	return true;
 }
@@ -106,7 +115,8 @@ bool SmoothSatHelper::checkSAT() {
     if (!previousSAT) {
         opt->randomizeCtrls(state);
     }
-	bool sat = opt->optimize(allInputs, state);
+    bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
+	bool sat = opt->optimize(allInputs, state, suppressPrint);
     if (!previousSAT) {
         previousSAT = sat;
     }
