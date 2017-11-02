@@ -35,6 +35,13 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	}
 	
 	cout << "NControls: " << ncontrols << endl;
+    
+    GradUtil::tmp = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmpT = gsl_vector_alloc(ncontrols);
+
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
@@ -45,12 +52,6 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	}
 	opt->randomizeCtrls(state);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
-	
-	GradUtil::tmp = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
 BoolApproxHelper::~BoolApproxHelper(void) {

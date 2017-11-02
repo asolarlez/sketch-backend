@@ -43,6 +43,12 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
 	
 	cout << "NControls: " << ncontrols << endl;
+    
+    GradUtil::tmp = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
@@ -54,12 +60,6 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
 	cg = new SimpleConflictGenerator(imap, boolNodes);
     previousSAT = false;
-	
-	GradUtil::tmp = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
 SmoothSatHelper::~SmoothSatHelper(void) {

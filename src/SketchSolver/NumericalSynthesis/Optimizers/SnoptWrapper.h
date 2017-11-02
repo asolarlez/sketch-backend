@@ -184,8 +184,11 @@ class SnoptWrapper: public OptimizationWrapper {
 	set<int>& boolNodes;
 	gsl_vector* minState;
 	gsl_vector* t;
+    gsl_vector* t1;
 	
 	int MAX_TRIES = 1;
+    int RANDOM_SEARCH = 10;
+    double RANDOM_TARGET = 100;
 	
 	doublereal* x;
 	doublereal* xlow;
@@ -240,6 +243,7 @@ public:
 		snoptSolver = new SnoptSolver(n, neF, lenA);
 		minState = gsl_vector_alloc(n);
 		t = gsl_vector_alloc(n);
+        t1 = gsl_vector_alloc(n);
 		
 		x = new doublereal[n];
 		xlow = new doublereal[n];
@@ -304,8 +308,8 @@ public:
 		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
 		
-		double betas[4] = {-1, -10, -100, -1000};
-		double alphas[4] = {1, 10, 100, 1000};
+		double betas[4] = {-1, -10, -50, -100};
+		double alphas[4] = {1, 10, 50, 100};
 		
 		gsl_vector_memcpy(t, initState);
 		
@@ -341,7 +345,9 @@ public:
 				minObjectiveVal = obj;
 			}
 			numtries++;
-			randomizeCtrls(t);
+            if (numtries < MAX_TRIES) {
+                randomizeCtrls(t);
+            }
 		}
 		//eval->print();
 		//eval->printFull();
@@ -357,26 +363,57 @@ public:
 	}
 	
 	virtual void randomizeCtrls(gsl_vector* state) {
-		vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-		int counter = 0;
-		for (int i = 0; i < ctrls.size(); i++) {
-			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
-				int idx = ctrlMap[ctrls[i]->get_name()];
-				CTRL_node* cnode = (CTRL_node*) ctrls[i];
-				double low = cnode->hasRange ? cnode->low : -20.0;
-				double high = cnode->hasRange ? cnode->high : 20.0;
-				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
-				gsl_vector_set(state, idx, r);
-				counter++;
-			}
-		}
-		
+        double best = GradUtil::MAXVAL;
+        for (int i = 0; i < RANDOM_SEARCH; i++) {
+            randomize(t1);
+            cout << "Trying: ";
+            for (int j = 0; j < t1->size; j++) {
+                cout << gsl_vector_get(t1, j) << ", ";
+            }
+            const map<int, int> nodeValsMap; // TODO: make this more general by using the actual input
+            GradUtil::BETA = -1;
+            GradUtil::ALPHA = 1;
+            eval->run(t1, nodeValsMap);
+            double error = 0.0;
+            for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+                bool_node* node = *node_it;
+                if (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard()) { // TODO: currenlty we are only using the minimizatin objective -- we should probably also use the other constraints
+                    if (eval->hasDist(node->mother)) {
+                        error = eval->getVal(node->mother);
+                    }
+                    break;
+                }
+            }
+            cout << "Error: " << error << endl;
+            if (error < best) {
+                best = error;
+                gsl_vector_memcpy(state, t1);
+            }
+        }
+    }
+    
+    void randomize(gsl_vector* state) {
+        vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
+        int counter = 0;
+        for (int i = 0; i < ctrls.size(); i++) {
+            if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
+                int idx = ctrlMap[ctrls[i]->get_name()];
+                CTRL_node* cnode = (CTRL_node*) ctrls[i];
+                double low = cnode->hasRange ? cnode->low : -20.0;
+                double high = cnode->hasRange ? cnode->high : 20.0;
+                double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
+                gsl_vector_set(state, idx, r);
+                counter++;
+            }
+        }
+        
         for (; counter < n; counter++) {
             double low = 0.0;
             double high = 1.0;
             double r = low + (rand() % (int)((high - low) * 10.0))/10.0;
             gsl_vector_set(state, counter, r);
         }
-	}
+
+    }
 
 };

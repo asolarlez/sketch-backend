@@ -37,6 +37,12 @@ IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG
 	}
 	
 	cout << "NControls: " << ncontrols << endl;
+    
+    GradUtil::tmp = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
+    GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new IteAutoDiff(*dag, fm, ctrlMap, extraCtrlMap);
@@ -49,13 +55,6 @@ IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
 	opt->randomizeCtrls(state);
-
-	
-	GradUtil::tmp = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
-	GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 }
 
 IteApproxNumericalHelper::~IteApproxNumericalHelper(void) {
