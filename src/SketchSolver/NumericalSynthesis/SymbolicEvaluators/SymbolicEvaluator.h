@@ -15,6 +15,8 @@ public:
     virtual bool hasSqrtDist(bool_node* n) = 0;
     virtual double computeSqrtError(bool_node* n, gsl_vector* errorGrad) = 0;
     virtual double computeSqrtDist(bool_node* n, gsl_vector* errorGrad) = 0;
+    virtual double getVal(bool_node* n) = 0;
+    virtual gsl_vector* getGrad(bool_node* n) = 0;
 	//virtual set<int> getConflicts(int nid) = 0;
 	virtual void print() = 0;
 	virtual void printFull() = 0;

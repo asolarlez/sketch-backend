@@ -64,6 +64,9 @@ public:
 		 str << gsl_vector_get(grad, i) << ", ";
 		}
 		str << endl;
+        if (val > 1e5 || gsl_blas_dnrm2(grad) > 1e5) {
+            str << "LARGE VALUES" << endl;
+        }
 		return str.str();
 	}
 	

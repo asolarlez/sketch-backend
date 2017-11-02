@@ -35,6 +35,9 @@ public:
 			for (int i = 0; i < grad->size; i++) {
 				str << gsl_vector_get(grad, i) << ", ";
 			}
+            if (dist > 1e5 || gsl_blas_dnrm2(grad) > 1e5) {
+                str << "LARGE VALUES" << endl;
+            }
 		} else {
 			str << "Dist: NOT SET";
 		}

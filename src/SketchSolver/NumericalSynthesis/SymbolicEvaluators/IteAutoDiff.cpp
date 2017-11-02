@@ -293,3 +293,14 @@ bool IteAutoDiff::check(bool_node* n, int expected) {
 	}
 	return true;
 }
+
+double IteAutoDiff::getVal(bool_node* n) {
+    ValueGrad* val = v(n);
+    return val->getVal();
+}
+
+gsl_vector* IteAutoDiff::getGrad(bool_node* n) {
+    ValueGrad* val = v(n);
+    return val->getGrad();
+}
+

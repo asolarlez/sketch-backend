@@ -279,6 +279,15 @@ double AutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
     return computeVal(x, errorGrad);
 }
 
+double AutoDiff::getVal(bool_node* n) {
+    ValueGrad* val = v(n);
+    return val->getVal();
+}
+
+gsl_vector* AutoDiff::getGrad(bool_node* n) {
+    ValueGrad* val = v(n);
+    return val->getGrad();
+}
 
 bool AutoDiff::check(bool_node* n, int expected) {
 	ValueGrad* val = v(n);

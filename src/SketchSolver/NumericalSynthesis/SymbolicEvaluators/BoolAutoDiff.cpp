@@ -348,14 +348,14 @@ bool BoolAutoDiff::hasDist(bool_node* n) {
 double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	DistanceGrad* dg = d(n);
 	if (dg->set) {
-        /*if (gsl_blas_dnrm2(dg->grad) > 1e4) {
-            cout << "LARGE GRADIENT" << endl;
+        if (gsl_blas_dnrm2(dg->grad) > 1e10 || dg->dist > 1e10) {
+            cout << "LARGE VALUES" << endl;
             cout << n->lprint() << " " << dg->dist << endl;
             for (int i = 0; i < dg->grad->size; i++) {
                 cout << gsl_vector_get(dg->grad, i) << ";";
             }
             cout << endl;
-        }*/
+        }
 		gsl_vector_memcpy(distgrad, dg->grad);
 		return dg->dist;
 	} else {
@@ -432,4 +432,25 @@ bool BoolAutoDiff::check(bool_node* n, int expected) {
 		}
 	}
 	return true;
+}
+
+
+double BoolAutoDiff::getVal(bool_node* n) {
+    if (n->getOtype() == OutType::FLOAT || n->type == bool_node::UFUN) {
+        ValueGrad* val = v(n);
+        return val->getVal();
+    } else {
+        DistanceGrad* dg = d(n);
+        return dg->dist;
+    }
+}
+
+gsl_vector* BoolAutoDiff::getGrad(bool_node* n) {
+    if (n->getOtype() == OutType::FLOAT || n->type == bool_node::UFUN) {
+        ValueGrad* val = v(n);
+        return val->getGrad();
+    } else {
+        DistanceGrad* dg = d(n);
+        return dg->grad;
+    }
 }

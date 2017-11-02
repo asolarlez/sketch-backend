@@ -1,4 +1,5 @@
 #include "NumericalSolver.h"
+#include "GradientAnalyzer.h"
 
 gsl_vector* GDEvaluator::curGrad;
 gsl_vector* SnoptEvaluator::state;
@@ -325,18 +326,21 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
                 boolNodes.insert(i);
             }
         }
+        if (Util::isSqrt(n)) {
+            boolNodes.insert(i);
+        }
     }
 	
 	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {8.1312, -5.48764, 1.33356, 6.65935, -9.71224, -5.8, 8.76646, 10.1233, 11.9636, 11.1991};
+    double arr1[10] = {14.8, 6.6, 19, 16.5, -15.3, -11.5, 8.3, 12.8, 3.1, 6.2, };
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
     
-    map<string, int> boolCtrlMap;
+    /*map<string, int> boolCtrlMap;
     SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
     
     vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
@@ -344,19 +348,20 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
         int idx = get<1>(suggestions[k]);
         cout << imap[idx] << "," << get<2>(suggestions[k]) << ";";
     }
-    cout << endl;
+    cout << endl;*/
 
-    //opt->optimize(allInputs, s);
+    opt->optimize(allInputs, s);
     /*for (int i = 0; i < ncontrols; i++) {
         cout << "Checking " << i << endl;
         checkOpt(allInputs, s, opt, i);
         gsl_vector_set(s, i, arr1[i]);
     }*/
     
-    /*GradUtil::BETA = -1;
+    GradUtil::BETA = -1;
     GradUtil::ALPHA = 1;
     eval->run(s, nodeValsMap);
-	//eval->printFull();
+    GradientAnalyzer* analyzer = new GradientAnalyzer(*dag, eval);
+    analyzer->run();
     gsl_vector* d = gsl_vector_alloc(ncontrols);
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
         bool_node* node = *node_it;
@@ -372,7 +377,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
                 cout << endl;
             }
         }
-    }*/
+    }
     
     /*for (int i = 0; i < ncontrols; i++) {
 		genData(s, i, eval, nodeValsMap);

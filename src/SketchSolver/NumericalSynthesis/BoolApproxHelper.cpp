@@ -2,7 +2,7 @@
 
 
 BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
-	dag->lprint(cout);
+	//dag->lprint(cout);
 	
 	// Collect the list of boolean nodes that contribute to the error
 	// In this case, only the assertions matter
