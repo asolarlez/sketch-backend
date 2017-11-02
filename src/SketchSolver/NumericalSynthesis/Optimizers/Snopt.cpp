@@ -52,9 +52,9 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
     snoptProb.setRealParameter("Major optimality tolerance", 0.01);
     snoptProb.setRealParameter("Major feasibility tolerance", 0.0001);
     snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);
-
+    snoptProb.setIntParameter("Scale option", 1);
 	integer status = snoptProb.solve(Cold);
-    //status = snoptProb.solve(Warm);
+    status = snoptProb.solve(Warm);
 	
 	for (int i = 0; i < n; i++) {
 		gsl_vector_set(result, i, x[i]);
