@@ -35,7 +35,8 @@ public:
 	virtual bool checkInputs(int rowid, int colid) = 0;
 	virtual bool checkSAT() = 0;
 	virtual bool ignoreConflict() = 0;
-	virtual vector<tuple<int, int, int>> collectSuggestions() = 0;
+	virtual vector<tuple<int, int, int>> collectSatSuggestions() = 0;
+    virtual vector<tuple<int, int, int>> collectUnsatSuggestions() = 0;
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
 	virtual void getControls(map<string, double>& ctrls) = 0;
 };

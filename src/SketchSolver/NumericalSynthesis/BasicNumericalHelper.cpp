@@ -101,7 +101,7 @@ bool BasicNumericalHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
+vector<tuple<int, int, int>> BasicNumericalHelper::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	for (int i = 0; i < allInputs.size(); i++) {
 		vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -115,6 +115,11 @@ vector<tuple<int, int, int>> BasicNumericalHelper::collectSuggestions() {
 		}
 	}
 	return suggestions;
+}
+
+vector<tuple<int, int, int>> BasicNumericalHelper::collectUnsatSuggestions() {
+    vector<tuple<int, int, int>> suggestions;
+    return suggestions;
 }
 
 vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) {

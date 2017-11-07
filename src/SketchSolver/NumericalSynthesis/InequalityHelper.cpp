@@ -239,7 +239,7 @@ bool InequalityHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> InequalityHelper::collectSuggestions() {
+vector<tuple<int, int, int>> InequalityHelper::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	
 	/*for (int i = 0; i < allInputs[0].size(); i++) {
@@ -266,6 +266,12 @@ vector<tuple<int, int, int>> InequalityHelper::collectSuggestions() {
 	}*/
 	
 	return suggestions;
+}
+
+vector<tuple<int, int, int>> InequalityHelper::collectUnsatSuggestions() {
+    // No suggestions
+    vector<tuple<int, int, int>> suggestions;
+    return suggestions;
 }
 
 vector<pair<int, int>> InequalityHelper::getConflicts(int rowid, int colid) {

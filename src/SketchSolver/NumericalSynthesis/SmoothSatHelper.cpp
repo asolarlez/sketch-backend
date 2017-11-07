@@ -147,7 +147,7 @@ bool SmoothSatHelper::ignoreConflict() {
     }
 }
 
-vector<tuple<int, int, int>> SmoothSatHelper::collectSuggestions() {
+vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
     for (int i = 0; i < allInputs.size(); i++) {
         vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -161,6 +161,90 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSuggestions() {
         }
     }
 	return suggestions;
+}
+
+vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
+    // No suggestions
+    vector<tuple<int, int, int>> suggestions;
+    for (int i = 0; i < allInputs.size(); i++) {
+        const map<int, int>& givenNodesMap = Util::getNodeToValMap(imap, allInputs[i]);
+        map<int, int> nodeToInputMap;
+        vector<tuple<double, int, int>> s = seval->run(state, imap);
+        for (int k = 0; k < s.size(); k++) {
+            int idx = get<1>(s[k]);
+            nodeToInputMap[imap[idx]] = get<2>(s[k]);
+        }
+        GradUtil::BETA = -1;
+        GradUtil::ALPHA = 1;
+        eval->run(state, nodeToInputMap);
+        
+        // Collect influential asserts
+        set<bool_node*> influentialNodes;
+        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+            bool_node* node = *node_it;
+            if (node->type == bool_node::ASSERT) {
+                Assert(eval->hasDist(node->mother), "weoqypq");
+                float dist = eval->getVal(node->mother);
+                if (dist < 0.01 || ((ASSERT_node*)node)->isHard()) {
+                    influentialNodes.insert(node->mother);
+                }
+            } else if (node->getOtype() == OutType::BOOL) {
+                Assert(eval->hasDist(node), "uetuoqw");
+                float dist = eval->getVal(node);
+                auto it = givenNodesMap.find(node->id);
+                if (it != givenNodesMap.end()) {
+                    if ((it->second == 1 && dist < 0.01) || (it->second == 0 && dist > -0.01)) {
+                        influentialNodes.insert(node);
+                    }
+                }
+            } // TODO: currently not handling sqrt nodes.
+        }
+        
+        
+        double maxDist = GradUtil::MINVAL;
+        bool_node* maxDistNode = NULL;
+        for (auto it = influentialNodes.begin(); it != influentialNodes.end(); it++)  {
+            const set<int>& nodes = Util::getRelevantNodes(*it);
+            map<int, pair<double, bool_node*>> ctrlToLowestDist;
+            for (auto it1 = nodes.begin(); it1 != nodes.end(); it1++) {
+                bool_node* n = (*dag)[*it1];
+                if (n->getOtype() == OutType::BOOL && Util::hasArraccChild(n)) {
+                    if (givenNodesMap.find(n->id) != givenNodesMap.end()) continue; // already set
+                    double dist = abs(eval->getVal(n));
+                    if (dist < 2.0) continue; // distance is within the smoothing range
+                    gsl_vector* grad = eval->getGrad(n);
+                    for (int j = 0; j < grad->size; j++) {
+                        if (abs(gsl_vector_get(grad, j)) > 0.1) {
+                            auto it2 = ctrlToLowestDist.find(j);
+                            if (it2 == ctrlToLowestDist.end()) {
+                                ctrlToLowestDist[j] = make_pair(dist, n);
+                            } else {
+                                if (dist < it2->second.first) {
+                                    it2->second = make_pair(dist, n);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (auto it3 = ctrlToLowestDist.begin(); it3 != ctrlToLowestDist.end(); it3++) {
+                if (it3->second.first > maxDist) {
+                    maxDist = it3->second.first;
+                    maxDistNode = it3->second.second;
+                }
+            }
+        }
+        
+        if (maxDistNode != NULL) {
+            cout << "Suggesting to flip: " << maxDistNode->lprint() << " cur dist: " << maxDist << endl;
+            for (int idx = 0; idx < imap.size(); idx++) {
+                if (imap[idx] == maxDistNode->id) {
+                    suggestions.push_back(make_tuple(i, idx, !(eval->getVal(maxDistNode) > 0.0)));
+                }
+            }
+        }
+    }
+    return suggestions;
 }
 
 vector<pair<int, int>> SmoothSatHelper::getConflicts(int rowid, int colid) {

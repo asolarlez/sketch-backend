@@ -103,10 +103,16 @@ bool BoolApproxHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> BoolApproxHelper::collectSuggestions() {
+vector<tuple<int, int, int>> BoolApproxHelper::collectSatSuggestions() {
 	// No suggestions
 	vector<tuple<int, int, int>> suggestions;
 	return suggestions;
+}
+
+vector<tuple<int, int, int>> BoolApproxHelper::collectUnsatSuggestions() {
+    // No suggestions
+    vector<tuple<int, int, int>> suggestions;
+    return suggestions;
 }
 
 vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {

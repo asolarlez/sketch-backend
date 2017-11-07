@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include <gsl/gsl_vector.h>
 
 class Util {
 public:
@@ -25,6 +26,16 @@ public:
         return false;
     }
     
+    static bool hasArraccChild(bool_node* n) {
+        FastSet<bool_node>& children = n->children;
+        for(child_iter it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->type == bool_node::ARRACC) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     static set<int> getRelevantNodes(bool_node* n) {
         set<int> ids;
         set<int> visitedIds;
@@ -44,5 +55,13 @@ public:
             }
         }
         return ids;
+    }
+    
+    static string print(gsl_vector* v) {
+        stringstream s;
+        for (int i = 0; i < v->size; i++) {
+            s << gsl_vector_get(v, i) << ", ";
+        }
+        return s.str();
     }
 };

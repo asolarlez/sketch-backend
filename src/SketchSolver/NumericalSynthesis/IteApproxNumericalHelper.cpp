@@ -104,7 +104,7 @@ bool IteApproxNumericalHelper::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> IteApproxNumericalHelper::collectSuggestions() {
+vector<tuple<int, int, int>> IteApproxNumericalHelper::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	for (int i = 0; i < allInputs.size(); i++) {
 		vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -118,6 +118,12 @@ vector<tuple<int, int, int>> IteApproxNumericalHelper::collectSuggestions() {
 		}
 	}
 	return suggestions;
+}
+
+vector<tuple<int, int, int>> IteApproxNumericalHelper::collectUnsatSuggestions() {
+    // No suggestions
+    vector<tuple<int, int, int>> suggestions;
+    return suggestions;
 }
 
 vector<pair<int, int>> IteApproxNumericalHelper::getConflicts(int rowid, int colid) {

@@ -42,7 +42,8 @@ public:
 	virtual bool checkInputs(int rowid, int colid);
 	virtual bool checkSAT();
 	virtual bool ignoreConflict();
-	virtual vector<tuple<int, int, int>> collectSuggestions();
+	virtual vector<tuple<int, int, int>> collectSatSuggestions();
+    virtual vector<tuple<int, int, int>> collectUnsatSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
 	virtual void getControls(map<string, double>& ctrls);
 };

@@ -53,7 +53,10 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	if (sat || helper->ignoreConflict()) {
 		helper->getControls(ctrlVals);
         if (sat) {
-            const vector<tuple<int, int, int>>& s = helper->collectSuggestions(); // <instanceid, inputid, val>
+            const vector<tuple<int, int, int>>& s = helper->collectSatSuggestions(); // <instanceid, inputid, val>
+            convertSuggestions(s, suggestions);
+        } else {
+            const vector<tuple<int, int, int>>& s = helper->collectUnsatSuggestions();
             convertSuggestions(s, suggestions);
         }
         if (PARAMS->verbosity > 7) {
@@ -335,12 +338,12 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {14.8, 6.6, 19, 16.5, -15.3, -11.5, 8.3, 12.8, 3.1, 6.2, };
+    double arr1[10] = {1.46226, 0.879376, 6.41626, -0.382326, -8.79143, 0.9, 6.4332, 9.72375, 14.2813, 3,};
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
     
-    /*map<string, int> boolCtrlMap;
+    map<string, int> boolCtrlMap;
     SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
     
     vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
@@ -348,16 +351,16 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
         int idx = get<1>(suggestions[k]);
         cout << imap[idx] << "," << get<2>(suggestions[k]) << ";";
     }
-    cout << endl;*/
+    cout << endl;
 
-    opt->optimize(allInputs, s);
+    //opt->optimize(allInputs, s);
     /*for (int i = 0; i < ncontrols; i++) {
         cout << "Checking " << i << endl;
         checkOpt(allInputs, s, opt, i);
         gsl_vector_set(s, i, arr1[i]);
     }*/
     
-    GradUtil::BETA = -1;
+    /*GradUtil::BETA = -1;
     GradUtil::ALPHA = 1;
     eval->run(s, nodeValsMap);
     GradientAnalyzer* analyzer = new GradientAnalyzer(*dag, eval);
@@ -377,7 +380,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
                 cout << endl;
             }
         }
-    }
+    }*/
     
     /*for (int i = 0; i < ncontrols; i++) {
 		genData(s, i, eval, nodeValsMap);

@@ -54,6 +54,7 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
     snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);
     snoptProb.setIntParameter("Scale option", 1);
 	integer status = snoptProb.solve(Cold);
+    cout << "Solving again" << endl;
     status = snoptProb.solve(Warm);
 	
 	for (int i = 0; i < n; i++) {
