@@ -930,6 +930,19 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	bool_node* father = node.father;
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
+	if (NATIVEINTS) {
+		if (mval.getSize() > 64 && mval.getSize() > 64) {
+			if (!mval.isInt()) {
+				dir.intClause(mval);
+			}
+			if (!fval.isInt()) {
+				dir.intClause(fval);
+			}
+		}
+	}
+
+
+
 	if(mval.isInt() || fval.isInt()){
 		if(!mval.isInt()){
 			dir.intClause(mval);
@@ -3183,15 +3196,18 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
-				
-
-		/*Tvalue& tv = node_ids[(*node_it)->id];
+			
+		/*
+		cout << (*node_it)->lprint() << "  ";
+		Tvalue& tv = node_ids[(*node_it)->id];
       if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
+		  
       cout << " [ ";
       for (int i = 0; i < tv.getSize(); i++)
         cout << floats(tv.num_ranges[i].value) << ", ";
-      cout << " ] " << endl;
-      }*/
+      cout << " ] ";
+      }
+	  cout << endl; */
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		

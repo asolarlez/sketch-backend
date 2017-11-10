@@ -92,6 +92,7 @@ struct CommandLineArgs{
   int nprocs;
   string erSimEvalFName;
   bool numericalSolver;
+  bool nativeInts;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -169,8 +170,9 @@ struct CommandLineArgs{
     spRandBias = 1;
 	sparseArray = -1;
     randomInlining = false;
-	epsilon = 0.0000001;
+	epsilon = 0.01;
     numericalSolver = false;
+	nativeInts = false;
 	erSimEvalFName = "";
 	custIntSize = 5;
 	  for(int ii=0; ii<argc; ++ii){
@@ -199,6 +201,12 @@ struct CommandLineArgs{
         input_idx = ii+1;
         continue;
       }
+	  if (string(argv[ii]) == "-nativeints") {
+		  cout << "NATIVE INTS ON";
+		  nativeInts = true;
+		  input_idx = ii + 1;
+		  continue;
+	  }
       if( string(argv[ii]) == "-numericalsolver" ){
         numericalSolver = true;
         input_idx = ii+1;
