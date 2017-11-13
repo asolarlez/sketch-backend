@@ -719,7 +719,9 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     while (analyze_stack.size() > 0){
         assert(reason[var(analyze_stack.last())] != NULL);
         Clause& c = *reason[var(analyze_stack.last())]; analyze_stack.pop();
-
+		if (c.mark() == INTSPECIAL) {
+			return false;
+		}
         for (int i = 1; i < c.size(); i++){
             Lit p  = c[i];
             if (!seen[var(p)] && level[var(p)] > 0){
