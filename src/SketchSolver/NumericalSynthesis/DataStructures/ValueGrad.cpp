@@ -234,9 +234,11 @@ void ValueGrad::vg_sqrt(ValueGrad* m, ValueGrad* o) {
 	o->set = true;
 	double x = m->getVal();
     if (x < 0.0) { //TODO: what is the right way to deal with this??
+        //cout << "SQRT < 0" << endl;
         o->update(x);
         gsl_blas_dcopy(m->getGrad(), o->getGrad());
     } else if (x < 0.25) { // TODO: potential loss of gradient
+        //cout << "SQRT < 0.25" << endl;
         o->update(sqrt(x));
         gsl_blas_dcopy(m->getGrad(), o->getGrad());
     } else {

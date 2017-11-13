@@ -29,6 +29,7 @@ class BoolApproxHelper: public NumericalSolverHelper {
 	SymbolicEvaluator* eval;
 	
 	map<string, int> ctrlMap; // Maps float ctrl names to indices with grad vectors
+    map<string, int> boolCtrlMap;
 	
 	AbstractConflictGenerator* cg;
 	
@@ -43,6 +44,7 @@ public:
     virtual vector<tuple<int, int, int>> collectUnsatSuggestions();
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
 	virtual void getControls(map<string, double>& ctrls);
+    virtual void setState(gsl_vector* state) { }
 	
 	bool validObjective();
 };

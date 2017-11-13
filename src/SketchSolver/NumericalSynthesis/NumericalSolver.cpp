@@ -44,20 +44,24 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 
 	if (PARAMS->verbosity > 7) {
         timer.restart();
-		printInputs(allInputs);
-		cout << "Col Id: " << colid << endl;
-        cout << counter++ << endl;
+		//printInputs(allInputs);
+		//cout << "Col Id: " << colid << endl;
+        //cout << counter++ << endl;
 	}
 	suggestions.clear();
 	bool sat = helper->checkSAT();
 	if (sat || helper->ignoreConflict()) {
 		helper->getControls(ctrlVals);
         if (sat) {
-            const vector<tuple<int, int, int>>& s = helper->collectSatSuggestions(); // <instanceid, inputid, val>
-            convertSuggestions(s, suggestions);
+            if (!PARAMS->disableSatSuggestions) {
+                const vector<tuple<int, int, int>>& s = helper->collectSatSuggestions(); // <instanceid, inputid, val>
+                convertSuggestions(s, suggestions);
+            }
         } else {
-            const vector<tuple<int, int, int>>& s = helper->collectUnsatSuggestions();
-            convertSuggestions(s, suggestions);
+            if (!PARAMS->disableUnsatSuggestions) {
+                const vector<tuple<int, int, int>>& s = helper->collectUnsatSuggestions();
+                convertSuggestions(s, suggestions);
+            }
         }
         if (PARAMS->verbosity > 7) {
             timer.stop().print("Numerical solving time:");
@@ -256,7 +260,7 @@ void NumericalSolver::convertSuggestions(const vector<tuple<int, int, int>>& s, 
 		int i = get<0>(s[k]);
 		int j = get<1>(s[k]);
 		int v = get<2>(s[k]);
-		//cout << "Suggesting " << i << " " << j <<  " " << v << endl;
+        //cout << "Suggesting " << i << " " << j <<  " " << v << endl;
 		suggestions.push(getLit(inout->valueid(i, j), v));
 	}
 }
@@ -293,18 +297,31 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
 	vector<int> inputs;
-    int arr[1] = {2};
-	for (int i = 0; i < imap.size(); i++) {
-		//if (arr[i] == 2) {
-			inputs.push_back(EMPTY);
-		//} else {
-		//	inputs.push_back(arr[i]);
-		//}
-	}
+    map<int, int> nodeToInputMap;
+    string partialInput = "0,1;10801,1;11476,0;18206,1;24982,0;-1,1;";
+    size_t pos = 0, found;
+    while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
+        string p = partialInput.substr(pos, found - pos);
+        int splitIdx = p.find(",");
+        int nodeid = stoi(p.substr(0, splitIdx));
+        int val = stoi(p.substr(splitIdx + 1, p.length() - splitIdx - 1));
+        nodeToInputMap[nodeid] = val;
+        pos = found + 1;
+    }
+    
+    for (int i = 0; i < imap.size(); i++) {
+        int nodeid = imap[i];
+        if (nodeToInputMap.find(nodeid) != nodeToInputMap.end()) {
+            inputs.push_back(nodeToInputMap[nodeid]);
+        } else {
+            inputs.push_back(EMPTY);
+        }
+    }
+    
 	allInputs.push_back(inputs);
 	instanceIds.push_back(0);
 	helper->setInputs(allInputs, instanceIds);
-	printInputs(allInputs);
+	//printInputs(allInputs);
 	
 	// generate ctrls mapping
 	map<string, int> ctrlMap;
@@ -333,17 +350,20 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
             boolNodes.insert(i);
         }
     }
+    map<string, int> boolCtrlMap;
 	
-	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {1.46226, 0.879376, 6.41626, -0.382326, -8.79143, 0.9, 6.4332, 9.72375, 14.2813, 3,};
+    double arr1[10] = {-5.6, 0.4, -8.88889, -3.2, -3.3, -9.9, 19.8, 0.5, 4.08, 1.7,  };
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
     
-    map<string, int> boolCtrlMap;
+    //helper->setState(s);
+    //helper->collectUnsatSuggestions();
+    /*
     SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
     
     vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
@@ -351,7 +371,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
         int idx = get<1>(suggestions[k]);
         cout << imap[idx] << "," << get<2>(suggestions[k]) << ";";
     }
-    cout << endl;
+    cout << endl;*/
 
     //opt->optimize(allInputs, s);
     /*for (int i = 0; i < ncontrols; i++) {
@@ -360,12 +380,13 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
         gsl_vector_set(s, i, arr1[i]);
     }*/
     
-    /*GradUtil::BETA = -1;
+    GradUtil::BETA = -1;
     GradUtil::ALPHA = 1;
     eval->run(s, nodeValsMap);
+    // eval->print();
     GradientAnalyzer* analyzer = new GradientAnalyzer(*dag, eval);
     analyzer->run();
-    gsl_vector* d = gsl_vector_alloc(ncontrols);
+    /*gsl_vector* d = gsl_vector_alloc(ncontrols);
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
         bool_node* node = *node_it;
         if (node->type == bool_node::ASSERT) {
@@ -385,7 +406,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
     /*for (int i = 0; i < ncontrols; i++) {
 		genData(s, i, eval, nodeValsMap);
 		gsl_vector_set(s, i, arr1[i]);
-	}*/
+    }*/
     exit(0);
 }
 
@@ -479,16 +500,16 @@ void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eva
 	GradUtil::ALPHA = 100;
 	gsl_vector* d = gsl_vector_alloc(state->size);
 	
-	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/g" + to_string(idx) + ".txt");
+	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/1b" + to_string(idx) + ".txt");
     //const set<int>& relevantIds = getRelevantIds();
 	{
-		double i = -20.0;
-		while (i < 20.0) {
+		double i = 180.0;
+		while (i < 200.0) {
 			gsl_vector_set(state, idx, i);
 			eval->run(state, nodeValsMap);
 			gsl_vector_set_zero(d);
             double err = getError(eval, nodeValsMap, d, useSnopt);
-            
+            cout << i << " " << err << endl;
 			file << err << ";";
 			i += 0.1;
 		}
@@ -621,7 +642,7 @@ void NumericalSolver::checkInput() {
         ncontrols = 1;
     }
     cout << "NControls: " << ncontrols << endl;
-    SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+    SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
     const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
     gsl_vector* s = gsl_vector_alloc(ncontrols);
     double arr1[10] = {-8.98569, -14.2144, 2.24176, 238.427, -183.134, -3, 10.2, 11.4458, 9.6, 7.2 };

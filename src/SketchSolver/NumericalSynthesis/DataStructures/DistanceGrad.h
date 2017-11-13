@@ -49,4 +49,6 @@ public:
 	static void dg_not(DistanceGrad* m, DistanceGrad* d);
 	static void dg_ite(DistanceGrad* b, DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
 	static void dg_copy(DistanceGrad* m, DistanceGrad* o);
+    
+    static void dg_ite(DistanceGrad* m, DistanceGrad* f, double dval, gsl_vector* dgrad, DistanceGrad* o);
 };

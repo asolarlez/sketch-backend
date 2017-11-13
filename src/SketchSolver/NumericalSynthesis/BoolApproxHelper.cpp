@@ -29,6 +29,13 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 			ctrlNodeIds.insert(ctrls[i]->id);
 		}
 	}
+    if (PARAMS->relaxBoolHoles) {
+        for (int i = 0; i < ctrls.size(); i++) {
+            if (ctrls[i]->getOtype() == OutType::BOOL) {
+                boolCtrlMap[ctrls[i]->get_name()] = ctr++;
+            }
+        }
+    }
 	ncontrols = ctr;
 	if (ncontrols == 0) {
 		ncontrols = 1;
@@ -44,13 +51,13 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 
 	
 	state = gsl_vector_alloc(ncontrols);
-	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+	eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	} else {
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
 	}
-	opt->randomizeCtrls(state);
+	//opt->randomizeCtrls(state, allInputs);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
 }
 
@@ -65,9 +72,22 @@ BoolApproxHelper::~BoolApproxHelper(void) {
 void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
+    cout << "I: ";
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+            cout << imap[i] << "," << allInputs[0][i] << ";";
+        }
+    }
+    cout << endl;
 }
 
 bool BoolApproxHelper::checkInputs(int rowid, int colid) {
+    if (PARAMS->relaxBoolHoles) return true;
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
+            return false;
+        }
+    }
 	return true;
 }
 
@@ -87,6 +107,7 @@ bool BoolApproxHelper::validObjective() {
 }
 
 bool BoolApproxHelper::checkSAT() {
+    opt->randomizeCtrls(state, allInputs);
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
 	bool sat = opt->optimize(allInputs, state, suppressPrint);
 	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
@@ -94,13 +115,51 @@ bool BoolApproxHelper::checkSAT() {
 		cout << "Objective found: " << objective << endl;
 	}
 	if (sat) {
-		state = opt->getMinState();
+		gsl_vector_memcpy(state, opt->getMinState());
+        
+        if (validObjective()) {
+            // check if actually good solution // TODO: only debug code, not performance efficient
+            int ctr = ncontrols;
+            if (!PARAMS->relaxBoolHoles) {
+                for (int i = 0; i < allInputs[0].size(); i++) {
+                    if (imap[i] < 0) continue;
+                    bool_node* n = (*dag)[imap[i]];
+                    if (n->type == bool_node::CTRL &&  n->getOtype() == OutType::BOOL) {
+                        boolCtrlMap[n->get_name()] = ctr++;
+                    }
+                }
+            }
+            gsl_vector* newctrls = gsl_vector_alloc(ctr);
+            for (int i = 0; i < ncontrols; i++) {
+                gsl_vector_set(newctrls, i, gsl_vector_get(state, i));
+            }
+            for (int i = 0; i < allInputs[0].size(); i++) {
+                if (imap[i] < 0) continue;
+                bool_node* n = (*dag)[imap[i]];
+                if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+                    gsl_vector_set(newctrls, boolCtrlMap[n->get_name()], allInputs[0][i]);
+                }
+            }
+            cout << Util::print(newctrls) << endl;
+            SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
+            if (seval->check(newctrls)) {
+                cout << "ACTUAL: true" << endl;
+            } else {
+                cout << "ACTUAL: false" << endl;
+            }
+        }
 	}
 	return sat;
 }
 
 bool BoolApproxHelper::ignoreConflict() {
-	return false;
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
+            return true;
+        }
+    }
+    return false;
+
 }
 
 vector<tuple<int, int, int>> BoolApproxHelper::collectSatSuggestions() {

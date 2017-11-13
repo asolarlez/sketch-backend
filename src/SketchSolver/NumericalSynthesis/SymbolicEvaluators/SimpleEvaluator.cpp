@@ -46,8 +46,8 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 			double dist = val - 0.5;
 			setvalue(node, dist);
 		} else {
-			setvalue(node, 0);
-			//Assert(false, "All bool ctrls should be handled here");
+			//setvalue(node, 0);
+			Assert(false, "All bool ctrls should be handled here");
 		}
 		
 	}
@@ -181,30 +181,26 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
 }
 
 vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
-	//Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
+	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
 	}
-  for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-    (*node_it)->accept(*this);
+    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+        (*node_it)->accept(*this);
 	}
 	vector<tuple<double, int, int>> s;
 	for (int i = 0; i < imap_p.size(); i++) {
 		if (imap_p[i] < 0) continue;
 		bool_node* n = bdag[imap_p[i]];
-		bool hasArraccChild = false;
-		FastSet<bool_node> children = n->children;
-		for(child_iter it = children.begin(); it != children.end(); ++it) {
-			if ((*it)->type == bool_node::ARRACC) {
-				hasArraccChild = true;
-				break;
-			}
-		}
+        bool hasArraccChild = Util::hasArraccChild(n);
 		double dist = d(n);
 		double cost = abs(dist);
 		if (hasArraccChild) {
 			cost = cost/1000.0;
 		}
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            cost = cost/10000.0;
+        }
 		s.push_back(make_tuple(cost, i, dist > 0));
 	}
 	return s;
@@ -231,6 +227,40 @@ double SimpleEvaluator::run1(const gsl_vector* ctrls_p, map<int, int>& inputValu
 		}
 	}
 	return error;
+}
+
+bool SimpleEvaluator::check(const gsl_vector* ctrls_p) {
+    Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
+    for (int i = 0; i < ctrls->size; i++) {
+        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+    }
+    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
+        bool_node* node = (*node_it);
+        node->accept(*this);
+        if (node->type == bool_node::ASSERT) {
+            ASSERT_node* an = (ASSERT_node*) node;
+            if (an->isHard()) {
+                if (d(node) > 0.1) {
+                    cout << "Failed " << node->lprint() << " " << d(node) << endl;
+                    return false;
+                }
+            } else {
+                if (d(node) < -0.1) {
+                    cout << "Failed " << node->lprint() << " " << d(node) << endl;
+                    return false;
+
+                }
+            }
+        }
+        if (Util::isSqrt(node)) {
+            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
+            if (d(node) < -0.1) {
+                cout << "Failed " << node->lprint() << " " << d(node) << endl;
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 double SimpleEvaluator::computeError(double dist, int expected, bool_node* node) {

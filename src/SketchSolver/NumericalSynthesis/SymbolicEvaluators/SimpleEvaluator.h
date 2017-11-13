@@ -8,7 +8,7 @@
 #include <tuple>
 #include <iostream>
 #include <gsl/gsl_vector.h>
-
+#include "Util.h"
 
 using namespace std;
 
@@ -77,4 +77,6 @@ public:
 	
 	double run1(const gsl_vector* ctrls_p, map<int, int>& inputValues_p);
 	double computeError(double dist, int expected, bool_node* node);
+    
+    bool check(const gsl_vector* ctrls_p);
 };

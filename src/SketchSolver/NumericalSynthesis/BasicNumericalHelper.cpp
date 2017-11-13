@@ -51,7 +51,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	}
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
-	opt->randomizeCtrls(state);
+	opt->randomizeCtrls(state, allInputs);
 }
 
 BasicNumericalHelper::~BasicNumericalHelper(void) {
@@ -92,7 +92,7 @@ bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 bool BasicNumericalHelper::checkSAT() {
 	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
-		state = opt->getMinState();
+		gsl_vector_memcpy(state, opt->getMinState());
 	}
 	return sat;
 }

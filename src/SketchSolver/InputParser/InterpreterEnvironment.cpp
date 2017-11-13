@@ -927,8 +927,8 @@ bool allBool(bool_node* n) {
 typedef bool (* PRED_TYPE)(bool_node*);
 
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
-	//ofstream file("/Users/Jeevu/projects/symdiff/scripts/sysid/lanemerge.dag");
-	//dag.mrprint(file);
+	//ofstream file1("/Users/Jeevu/projects/symdiff/scripts/sysid/lanemerge.dag");
+	//dag.mrprint(file1);
 	BooleanDAG& numDag = (*dag.clone());
 	DagOptim op(dag, floats);
 
@@ -951,6 +951,9 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 	PRED_TYPE pred;
 	if (params.numericalSolverMode == "ONLY_SMOOTHING") {
 		pred = boolCtrl;
+        if (params.relaxBoolHoles) {
+            addDummyAssert = true;
+        }
 	} else if (params.numericalSolverMode == "FULLY_SEPARATED" || params.numericalSolverMode == "INTERACTIVE") {
 		pred = boolFloatInterface;
     } else if (params.numericalSolverMode == "SMOOTHING_SAT") {

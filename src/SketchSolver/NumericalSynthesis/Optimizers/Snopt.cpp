@@ -96,9 +96,9 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
         }
     }
     
-    if (status >= 1 && status <= 9) {
-        Assert(constraintsSatisfied, "Something is wrong with snopt");
-    }
+    //if (status >= 1 && status <= 9) {
+    //    Assert(constraintsSatisfied, "Something is wrong with snopt");
+    //}
     if (!suppressPrint) {
         if (constraintsSatisfied) {
             cout << "Constraints satisfied" << endl;

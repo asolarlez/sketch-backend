@@ -22,8 +22,9 @@ public:
 	set<int>& boolNodes;
 	double beta;
 	double alpha;
+    bool onlyInputs = false;
 	
-	SnoptParameters(SymbolicEvaluator* eval_, BooleanDAG* dag_, vector<vector<int>>& allInputs_, map<int, int>& imap_, set<int>& boolNodes_): eval(eval_), dag(dag_), allInputs(allInputs_), imap(imap_), boolNodes(boolNodes_) {}
+	SnoptParameters(SymbolicEvaluator* eval_, BooleanDAG* dag_, vector<vector<int>>& allInputs_, map<int, int>& imap_, set<int>& boolNodes_, bool onlyInputs_ = false): eval(eval_), dag(dag_), allInputs(allInputs_), imap(imap_), boolNodes(boolNodes_), onlyInputs(onlyInputs_) {}
 };
 
 class SnoptEvaluator {
@@ -95,6 +96,7 @@ public:
                     bool_node* node = *node_it;
                     if (p->boolNodes.find(node->id) != p->boolNodes.end() || (Util::isSqrt(node)) || (node->type == bool_node::ASSERT && ((ASSERT_node*)node)->isHard())) {
                         if (Util::isSqrt(node)) {
+                            if (p->onlyInputs) continue;
                             double dist = 1000;
                             if (p->eval->hasSqrtDist(node)) {
                                 dist = p->eval->computeSqrtDist(node, grad);
@@ -106,6 +108,8 @@ public:
                                 G[gcounter++] = gsl_vector_get(grad, j);
                             }
                         } else if (node->type == bool_node::ASSERT) {
+                            if (p->onlyInputs) continue;
+
                             int fidx;
                             int gidx;
                             if (((ASSERT_node*)node)->isHard()) {
@@ -127,6 +131,17 @@ public:
                             //cout << node->mother->lprint() << " " << dist << endl;
                             for (int j = 0; j < *n; j++) {
                                 G[gidx + j] = gsl_vector_get(grad, j);
+                            }
+                        } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+                            auto it = nodeValsMap.find(node->id);
+                            if (it == nodeValsMap.end()) {
+                                if (p->onlyInputs) continue;
+                                double dist = p->eval->computeDist(node, grad);
+                                F[fcounter++] = 0.1 - dist*(1-dist); // TODO: magic numbers
+                                gsl_vector_scale(grad, 2*dist - 1);
+                                for (int j = 0; j < *n; j++) {
+                                    G[gcounter++] = gsl_vector_get(grad, j);
+                                }
                             }
                         } else if (node->getOtype() == OutType::BOOL) {
                             auto it = nodeValsMap.find(node->id);
@@ -186,7 +201,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	gsl_vector* t;
     gsl_vector* t1;
 	
-	int MAX_TRIES = 1;
+    int MAX_TRIES = PARAMS->numTries;
     int RANDOM_SEARCH = 10;
     double RANDOM_TARGET = 100;
 	
@@ -200,6 +215,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	double minObjectiveVal;
 	double threshold = 0.01;
 	
+    int MAX_TRIES_ONLY_INPUTS = 5;
 	
 	void getxranges() {
 		vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
@@ -308,8 +324,8 @@ public:
 		SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes);
 		snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
 		
-		double betas[4] = {-1, -10, -50, -100};
-		double alphas[4] = {1, 10, 50, 100};
+		double betas[3] = {-1, -10, -50};
+		double alphas[3] = {1, 10, 50};
 		
 		gsl_vector_memcpy(t, initState);
 		
@@ -322,7 +338,7 @@ public:
                 cout << "Attempt: " << (numtries + 1) << endl;
             }
 			
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < 3; i++) {
                 if (!suppressPrint) {
                     cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
                 }
@@ -339,20 +355,76 @@ public:
 				obj = snoptSolver->getObjectiveVal();
 				gsl_vector_memcpy(t, snoptSolver->getResults());
 			}
-			
+            if (numtries == 0) {
+                gsl_vector_memcpy(minState, snoptSolver->getResults());
+            }
 			if (solved && obj < minObjectiveVal) {
 				gsl_vector_memcpy(minState, snoptSolver->getResults());
 				minObjectiveVal = obj;
 			}
 			numtries++;
             if (numtries < MAX_TRIES) {
-                randomizeCtrls(t);
+                randomizeCtrls(t, allInputs);
             }
 		}
 		//eval->print();
 		//eval->printFull();
 		return minObjectiveVal < threshold;
 	}
+    
+    virtual bool optimizeForInputs(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
+        SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes, true);
+        snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
+        
+        double betas[1] = {-1};
+        double alphas[1] = {1};
+        
+        gsl_vector_memcpy(t, initState);
+        
+        double obj;
+        int numtries = 0;
+        minObjectiveVal = 1e50;
+        bool solved = false;
+        while (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
+            if (!suppressPrint){
+                cout << "Attempt: " << (numtries + 1) << endl;
+            }
+            
+            for (int i = 0; i < 1; i++) {
+                if (!suppressPrint) {
+                    cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+                }
+                p->beta = betas[i];
+                p->alpha = alphas[i];
+                if (!suppressPrint) {
+                    for (int i = 0; i < n; i++) {
+                        cout << gsl_vector_get(t, i) << ", ";
+                    }
+                    cout << endl;
+                }
+                SnoptEvaluator::counter = 0;
+                solved = snoptSolver->optimize(t, suppressPrint);
+                obj = snoptSolver->getObjectiveVal();
+                gsl_vector_memcpy(t, snoptSolver->getResults());
+            }
+            if (numtries == 0) {
+                gsl_vector_memcpy(minState, snoptSolver->getResults());
+            }
+            if (solved) {
+                gsl_vector_memcpy(minState, snoptSolver->getResults());
+                if (obj < minObjectiveVal) {
+                    minObjectiveVal = obj;
+                }
+            }
+            numtries++;
+            if (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
+                randomizeCtrls(t, allInputs);
+            }
+        }
+        //eval->print();
+        //eval->printFull();
+        return solved;
+    }
 	
 	virtual gsl_vector* getMinState() {
 		return minState;
@@ -362,7 +434,7 @@ public:
 		return minObjectiveVal;
 	}
 	
-	virtual void randomizeCtrls(gsl_vector* state) {
+	virtual void randomizeCtrls(gsl_vector* state, vector<vector<int>>& allInputs) {
         double best = GradUtil::MAXVAL;
         for (int i = 0; i < RANDOM_SEARCH; i++) {
             randomize(t1);
@@ -370,7 +442,10 @@ public:
             for (int j = 0; j < t1->size; j++) {
                 cout << gsl_vector_get(t1, j) << ", ";
             }
-            const map<int, int> nodeValsMap; // TODO: make this more general by using the actual input
+            map<int, int> nodeValsMap;
+            if (allInputs.size() > 0) {
+                nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
+            }
             GradUtil::BETA = -1;
             GradUtil::ALPHA = 1;
             eval->run(t1, nodeValsMap);

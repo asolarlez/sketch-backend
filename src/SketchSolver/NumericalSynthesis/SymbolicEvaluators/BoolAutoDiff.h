@@ -19,6 +19,7 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	FloatManager& floats;
 	BooleanDAG& bdag;
 	map<string, int> floatCtrls; // Maps float ctrl names to indices within grad vector
+    map<string, int> boolCtrls;
 	int nctrls; // number of float ctrls
 	gsl_vector* ctrls; // ctrl values
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
@@ -32,7 +33,7 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 public:
 	int failedAssert;
 	
-	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p);
+	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
 	~BoolAutoDiff(void);
 	
 	virtual void visit( SRC_node& node );

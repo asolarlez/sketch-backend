@@ -510,6 +510,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
       // add a special assumption to deal with soft conflicts
     int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
+    ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
     return new NumericalSolver(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second, lfromInt(specialVar));
   }
 	return NULL;

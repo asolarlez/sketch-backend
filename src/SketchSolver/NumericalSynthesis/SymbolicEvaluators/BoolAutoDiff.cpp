@@ -4,10 +4,10 @@
 #include <math.h>
 
 
-BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p) {
+BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
 	values.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
-	nctrls = floatCtrls_p.size();
+	nctrls = floatCtrls.size() + boolCtrls.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
 }
@@ -96,11 +96,11 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 	//cout << node.multi_mother[1]->lprint() << endl;
 	if (node.getOtype() == OutType::BOOL) {
 		DistanceGrad* dg = d(node);
+        DistanceGrad* mdist = d(node.multi_mother[0]);
+        DistanceGrad* fdist = d(node.multi_mother[1]);
         int cval = getInputValue(node.mother);
 		if (cval != DEFAULT_INP) {
-			DistanceGrad* mdist = d(node.multi_mother[0]);
-			DistanceGrad* fdist = d(node.multi_mother[1]);
-			if (cval == 1.0) {
+						if (cval == 1.0) {
 				DistanceGrad::dg_copy(fdist, dg);
 			} else if (cval == 0.0) {
 				DistanceGrad::dg_copy(mdist, dg);
@@ -108,8 +108,25 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 				Assert(false, "dafuerq");
 			}
 		} else {
-            Assert(false, "eruiqge");
-			dg->set = false;
+            if (boolCtrls.size() > 0 && node.mother->type == bool_node::CTRL) {
+                string name = node.mother->get_name();
+                int idx = -1;
+                if (boolCtrls.find(name) != boolCtrls.end()) {
+                    idx = boolCtrls[name];
+                } else {
+                    Assert(false, "qwe8yqwi");
+                }
+                GradUtil::default_grad(GradUtil::tmp2);
+                gsl_vector_set(GradUtil::tmp2, idx, 1.0);
+                DistanceGrad::dg_ite(mdist, fdist, gsl_vector_get(ctrls, idx), GradUtil::tmp2, dg);
+            } else {
+                cout << node.lprint() << endl;
+                cout << node.mother->lprint() << endl;
+                cout << node.multi_mother[0]->lprint() << endl;
+                cout << node.multi_mother[1]->lprint() << endl;
+                Assert(false, "eruiqge");
+                dg->set = false;
+            }
 		}
 	}
 	
@@ -127,8 +144,22 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
                 Assert(false, "Not possible");
             }
         } else {
-            DistanceGrad* cdist = d(node.mother);
-            ValueGrad::vg_ite(mval, fval, cdist, val);
+            if (boolCtrls.size() > 0 && node.mother->type == bool_node::CTRL) {
+                string name = node.mother->get_name();
+                int idx = -1;
+                if (boolCtrls.find(name) != boolCtrls.end()) {
+                    idx = boolCtrls[name];
+                } else {
+                    Assert(false, "qwe8yqwi");
+                }
+                GradUtil::default_grad(GradUtil::tmp2);
+                gsl_vector_set(GradUtil::tmp2, idx, 1.0);
+                ValueGrad::vg_ite(mval, fval, gsl_vector_get(ctrls, idx), GradUtil::tmp2, val);
+                
+            } else {
+                DistanceGrad* cdist = d(node.mother);
+                ValueGrad::vg_ite(mval, fval, cdist, val);
+            }
         }
     }
 }
@@ -348,17 +379,29 @@ bool BoolAutoDiff::hasDist(bool_node* n) {
 double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
 	DistanceGrad* dg = d(n);
 	if (dg->set) {
-        if (gsl_blas_dnrm2(dg->grad) > 1e10 || dg->dist > 1e10) {
+        /*if (gsl_blas_dnrm2(dg->grad) > 1e10 || dg->dist > 1e10) {
             cout << "LARGE VALUES" << endl;
             cout << n->lprint() << " " << dg->dist << endl;
             for (int i = 0; i < dg->grad->size; i++) {
                 cout << gsl_vector_get(dg->grad, i) << ";";
             }
             cout << endl;
-        }
+        }*/
 		gsl_vector_memcpy(distgrad, dg->grad);
 		return dg->dist;
 	} else {
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            string name = n->get_name();
+            int idx = -1;
+            if (boolCtrls.find(name) != boolCtrls.end()) {
+                idx = boolCtrls[name];
+            } else {
+                Assert(false, "qwe8yqwi");
+            }
+            GradUtil::default_grad(distgrad);
+            gsl_vector_set(distgrad, idx, 1.0);
+            return gsl_vector_get(ctrls, idx);
+        }
 		Assert(false, "Value not set -- check hasDist() first");
 	}
 }

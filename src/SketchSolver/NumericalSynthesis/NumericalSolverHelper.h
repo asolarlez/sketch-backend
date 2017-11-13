@@ -39,4 +39,5 @@ public:
     virtual vector<tuple<int, int, int>> collectUnsatSuggestions() = 0;
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
 	virtual void getControls(map<string, double>& ctrls) = 0;
+    virtual void setState(gsl_vector* state) = 0;
 };

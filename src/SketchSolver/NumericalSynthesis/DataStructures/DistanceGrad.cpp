@@ -97,4 +97,22 @@ void DistanceGrad::dg_copy(DistanceGrad* m, DistanceGrad* o) {
 	gsl_blas_dcopy(m->grad, o->grad);
 }
 
+// Approximate ite with d*f + (1 - d)*m
+void DistanceGrad::dg_ite(DistanceGrad* m, DistanceGrad* f, double dval, gsl_vector* dgrad, DistanceGrad* o) {
+    Assert(dgrad != GradUtil::tmp && dgrad != GradUtil::tmp1, "Reusing temp gsl_vectors");
+    if (!m->set || !f->set) {
+        o->set = false;
+        return;
+    }
+    double v1 = dval * f->dist;
+    GradUtil::compute_mult_grad(dval, f->dist, dgrad, f->grad, o->grad);
+    
+    GradUtil::compute_neg_grad(dgrad, GradUtil::tmp);
+    double v2 = (1 - dval) * m->dist;
+    GradUtil::compute_mult_grad(1 - dval, m->dist, GradUtil::tmp, m->grad, GradUtil::tmp1);
+    gsl_blas_daxpy(1.0, GradUtil::tmp1, o->grad);
+    
+    o->dist = v1 + v2;
+    o->set = true;
+}
 

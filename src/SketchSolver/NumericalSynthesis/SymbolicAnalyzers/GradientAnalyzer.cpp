@@ -34,6 +34,11 @@ void GradientAnalyzer::visit( PLUS_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
 }
 
 void GradientAnalyzer::visit( TIMES_node& node ) {
@@ -51,6 +56,12 @@ void GradientAnalyzer::visit( TIMES_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit(ARRACC_node& node )  {
@@ -69,6 +80,12 @@ void GradientAnalyzer::visit(ARRACC_node& node )  {
             cout << "GRADIENT LOSS " << g << " " << gc << " " << gm << " "<< gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold || gc <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gc << " " << gm << " " << gf << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit( DIV_node& node ) {
@@ -86,6 +103,12 @@ void GradientAnalyzer::visit( DIV_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit( MOD_node& node ) {
@@ -106,7 +129,12 @@ void GradientAnalyzer::visit( NEG_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm  << endl;
         }
     }
-    
+    if (printGradBlowup) {
+        if ((gm <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit( CONST_node& node ) {
@@ -128,6 +156,12 @@ void GradientAnalyzer::visit( LT_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
+
     
 }
 
@@ -150,6 +184,12 @@ void GradientAnalyzer::visit( AND_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
+
     
 }
 
@@ -168,6 +208,12 @@ void GradientAnalyzer::visit( OR_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << " " << gf << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold || gf <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << " " << gf << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit( NOT_node& node ) {
@@ -184,6 +230,12 @@ void GradientAnalyzer::visit( NOT_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << endl;
+        }
+    }
+
     
 }
 
@@ -208,6 +260,12 @@ void GradientAnalyzer::visit( UFUN_node& node ) {
             cout << "GRADIENT LOSS " << g << " " << gm << endl;
         }
     }
+    if (printGradBlowup) {
+        if ((gm <= upThreshold) && g >= upThreshold) {
+            cout << "GRADIENT BLOWUP " << g << " " << gm << endl;
+        }
+    }
+
 }
 
 void GradientAnalyzer::visit( TUPLE_R_node& node) {

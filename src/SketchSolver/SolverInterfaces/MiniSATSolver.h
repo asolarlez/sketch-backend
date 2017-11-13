@@ -101,6 +101,10 @@ public:
 
 	 virtual void retractableAssertClause(int x);
      virtual int addSpecialAssumption();
+     void setMaxSoftLearntRestarts(int max_restarts) {
+         s->maxSoftLearntRestarts = max_restarts;
+     }
+    
 	 void addCountingHelperClause(int c[], int sz);
 
 	 virtual void addExPairConstraint(int* pairs, int npairs, int out);

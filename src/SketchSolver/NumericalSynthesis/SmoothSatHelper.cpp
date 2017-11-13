@@ -37,6 +37,14 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 			ctrlNodeIds.insert(ctrls[i]->id);
 		}
 	}
+    
+    for (int i = 0; i < ctrls.size(); i++) {
+        if (ctrls[i]->getOtype() == OutType::BOOL) {
+            boolCtrlMap[ctrls[i]->get_name()] = ctr++;
+        }
+    }
+
+    
 	ncontrols = ctr;
 	if (ncontrols == 0) {
 		ncontrols = 1;
@@ -51,7 +59,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
     GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
-	eval = new BoolAutoDiff(*dag, fm, ctrlMap);
+	eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
     seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, numConstraints);
@@ -60,6 +68,17 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
 	cg = new SimpleConflictGenerator(imap, boolNodes);
     previousSAT = false;
+    fullSAT = false;
+    numConflictsAfterSAT = 0;
+    
+    for (int i = 0; i < imap.size(); i++) {
+        int nodeid = imap[i];
+        if (nodeid < 0) continue;
+        bool_node* node = (*dag)[nodeid];
+        if (Util::hasArraccChild(node)) {
+            nodesToSuggest.push_back(i);
+        }
+    }
 }
 
 SmoothSatHelper::~SmoothSatHelper(void) {
@@ -73,7 +92,7 @@ SmoothSatHelper::~SmoothSatHelper(void) {
 void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
-    if (PARAMS->verbosity > 7) {
+    if (PARAMS->verbosity > 7 && !previousSAT) {
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
             cout << imap[i] << "," << allInputs[0][i] << ";";
@@ -83,7 +102,12 @@ void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& in
     }
 }
 
+void SmoothSatHelper::setState(gsl_vector* s) {
+    gsl_vector_memcpy(state, s);
+}
+
 bool SmoothSatHelper::checkInputs(int rowid, int colid) {
+    if (fullSAT) return false;
     if (imap[colid] == -1) {
         if (PARAMS->verbosity > 7) {
             cout << "Setting dummy variable" << endl;
@@ -97,11 +121,12 @@ bool SmoothSatHelper::checkInputs(int rowid, int colid) {
 }
 
 bool SmoothSatHelper::validObjective() {
+    return true;
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
 			int nid = imap[j];
-			if (nid < 0) return true;
+			if (nid < 0) continue;
 			bool_node* n = (*dag)[nid];
 			if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL && allInputs[i][j] != 0 && allInputs[i][j] != 1) {
 				return false;
@@ -111,26 +136,77 @@ bool SmoothSatHelper::validObjective() {
 	return true;
 }
 
+bool SmoothSatHelper::checkFullSAT() {
+    // First, check if all boolean holes are  set
+    gsl_vector* newState = GradUtil::tmp;
+    gsl_vector_memcpy(newState, state);
+    
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (imap[i] < 0) continue;
+        bool_node* n = (*dag)[imap[i]];
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
+                return false;
+            }
+            gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[0][i]);
+        }
+    }
+    if (seval->check(newState)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool SmoothSatHelper::checkSAT() {
+    inputConflict = false;
     if (!previousSAT) {
-        opt->randomizeCtrls(state);
+        opt->randomizeCtrls(state, allInputs);
     }
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
+    
+    if (!previousSAT) {
+        bool satInputs = opt->optimizeForInputs(allInputs, state, suppressPrint);
+        if (satInputs) {
+            cout << "Inputs satisfiable" << endl;
+            gsl_vector_memcpy(state, opt->getMinState());
+        } else {
+            cout << "Inputs not satisfiable" << endl;
+            inputConflict = true;
+            return false;
+        }
+    }
+    
 	bool sat = opt->optimize(allInputs, state, suppressPrint);
     if (!previousSAT) {
         previousSAT = sat;
+    }
+    if (sat) {
+        cout << "FOUND solution" << endl;
+        if (checkFullSAT()) {
+            fullSAT = true;
+            cout << "FULL SAT" << endl;
+        }
+        numConflictsAfterSAT = 0;
+        gsl_vector_memcpy(state, opt->getMinState());
+    }
+    if (!sat && previousSAT) {
+        numConflictsAfterSAT++;
+        if (numConflictsAfterSAT > 5) {
+            previousSAT = false;
+        }
     }
 	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
 		double objective = opt->getObjectiveVal();
 		cout << "Objective found: " << objective << endl;
 	}
-	if (sat) {
-		state = opt->getMinState();
-	}
+    
 	return sat;
 }
 
 bool SmoothSatHelper::ignoreConflict() {
+    if (previousSAT) return false;
+    if (inputConflict) return false;
     int numSet = 0;
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (imap[i] < 0) continue;
@@ -163,10 +239,72 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
 	return suggestions;
 }
 
+set<int> getRelevantNodes(bool_node* n, SymbolicEvaluator* eval) {
+    set<int> ids;
+    set<int> visitedIds;
+    vector<bool_node*> toVisit;
+    toVisit.push_back(n);
+    
+    while(toVisit.size() > 0) {
+        bool_node* node = toVisit.back();
+        toVisit.pop_back();
+        if (visitedIds.find(node->id) == visitedIds.end()) {
+            visitedIds.insert(node->id);
+            ids.insert(node->id);
+            if (node->type == bool_node::ARRACC) {
+                ARRACC_node* an = (ARRACC_node*) node;
+                toVisit.push_back(an->mother);
+                double dist = eval->getVal(an->mother);
+                if (dist > 2.0) { //TODO: hardcoded
+                    toVisit.push_back(an->multi_mother[1]);
+                } else if (dist < 2.0) {
+                    toVisit.push_back(an->multi_mother[0]);
+                } else {
+                    toVisit.push_back(an->multi_mother[0]);
+                    toVisit.push_back(an->multi_mother[1]);
+                }
+            } else if (node->type == bool_node::OR) {
+                double dist1 = eval->getVal(node->mother);
+                double dist2 = eval->getVal(node->father);
+                if (abs(dist1 - dist2) > 2.0) {
+                    if (dist1 > dist2) toVisit.push_back(node->mother);
+                    else toVisit.push_back(node->father);
+                } else {
+                    toVisit.push_back(node->mother);
+                    toVisit.push_back(node->father);
+                }
+            } else if (node->type == bool_node::AND) {
+                double dist1 = eval->getVal(node->mother);
+                double dist2 = eval->getVal(node->father);
+                if (abs(dist1 - dist2) > 2.0) {
+                    if (dist1 > dist2) toVisit.push_back(node->father);
+                    else toVisit.push_back(node->mother);
+                } else {
+                    toVisit.push_back(node->mother);
+                    toVisit.push_back(node->father);
+                }
+            } else {
+                // just add all parents
+                const vector<bool_node*>& parents = node->parents();
+                for (int i = 0; i < parents.size(); i++) {
+                    toVisit.push_back(parents[i]);
+                }
+            }
+        }
+    }
+    return ids;
+}
+
+
 vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
-    // No suggestions
+    cout << Util::print(state) << endl;
     vector<tuple<int, int, int>> suggestions;
-    for (int i = 0; i < allInputs.size(); i++) {
+    int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
+    int randVal = rand() % 2;
+    cout << "Suggesting: " << ((*dag)[imap[randIdx]])->lprint() << " " << randVal << endl;
+    suggestions.push_back(make_tuple(0, randIdx, randVal));
+    return suggestions;
+    /*for (int i = 0; i < allInputs.size(); i++) {
         const map<int, int>& givenNodesMap = Util::getNodeToValMap(imap, allInputs[i]);
         map<int, int> nodeToInputMap;
         vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -186,6 +324,7 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
                 Assert(eval->hasDist(node->mother), "weoqypq");
                 float dist = eval->getVal(node->mother);
                 if (dist < 0.01 || ((ASSERT_node*)node)->isHard()) {
+                    cout << dist << " " << node->lprint() << " " << node->mother->lprint() << endl;
                     influentialNodes.insert(node->mother);
                 }
             } else if (node->getOtype() == OutType::BOOL) {
@@ -194,28 +333,38 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
                 auto it = givenNodesMap.find(node->id);
                 if (it != givenNodesMap.end()) {
                     if ((it->second == 1 && dist < 0.01) || (it->second == 0 && dist > -0.01)) {
+                        cout << "Input failed" << endl;
+                        cout << dist << " " << node->lprint() << endl;
                         influentialNodes.insert(node);
                     }
                 }
             } // TODO: currently not handling sqrt nodes.
         }
         
-        
+        vector<pair<double, bool_node*>> sg;
         double maxDist = GradUtil::MINVAL;
         bool_node* maxDistNode = NULL;
+        //bool_node* dn = (*dag)[21839];
+        //cout << "sdfquhweq " << dn->lprint() << " " << eval->getVal(dn) << endl;
+        //cout << Util::print(eval->getGrad(dn)) << endl;
         for (auto it = influentialNodes.begin(); it != influentialNodes.end(); it++)  {
-            const set<int>& nodes = Util::getRelevantNodes(*it);
+            cout << (*it)->lprint() << endl;
+            const set<int>& nodes = getRelevantNodes(*it, eval);
             map<int, pair<double, bool_node*>> ctrlToLowestDist;
             for (auto it1 = nodes.begin(); it1 != nodes.end(); it1++) {
                 bool_node* n = (*dag)[*it1];
                 if (n->getOtype() == OutType::BOOL && Util::hasArraccChild(n)) {
                     if (givenNodesMap.find(n->id) != givenNodesMap.end()) continue; // already set
                     double dist = abs(eval->getVal(n));
-                    if (dist < 2.0) continue; // distance is within the smoothing range
+                    if (dist < 2.0) continue; // distance is within the smoothing range TODO: hardcoded value
                     gsl_vector* grad = eval->getGrad(n);
                     for (int j = 0; j < grad->size; j++) {
                         if (abs(gsl_vector_get(grad, j)) > 0.1) {
                             auto it2 = ctrlToLowestDist.find(j);
+                            //if (j == 8) {
+                            //    cout << n->lprint() << " " << eval->getVal(n) << " " << eval->getVal(n->mother) << endl;
+                            //    cout << Util::print(eval->getGrad(n)) << endl;
+                            //}
                             if (it2 == ctrlToLowestDist.end()) {
                                 ctrlToLowestDist[j] = make_pair(dist, n);
                             } else {
@@ -228,23 +377,28 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
                 }
             }
             for (auto it3 = ctrlToLowestDist.begin(); it3 != ctrlToLowestDist.end(); it3++) {
-                if (it3->second.first > maxDist) {
-                    maxDist = it3->second.first;
-                    maxDistNode = it3->second.second;
-                }
+                cout << it3->first << " " << it3->second.first << " " << it3->second.second->lprint() << endl;
+                sg.push_back(it3->second);
             }
         }
-        
-        if (maxDistNode != NULL) {
-            cout << "Suggesting to flip: " << maxDistNode->lprint() << " cur dist: " << maxDist << endl;
-            for (int idx = 0; idx < imap.size(); idx++) {
-                if (imap[idx] == maxDistNode->id) {
-                    suggestions.push_back(make_tuple(i, idx, !(eval->getVal(maxDistNode) > 0.0)));
+        sort(sg.begin(), sg.end());
+        //reverse(sg.begin(), sg.end());
+        cout << "Suggestions: ";
+        for (int j = 0; j < sg.size(); j++) {
+            bool_node* n = sg[j].second;
+            double dist = sg[j].first;
+            if (j == sg.size() - 1) {
+                cout << n->lprint() << " " << eval->getVal(n) << endl;
+            }
+            for (int idx = 0; idx < imap.size(); idx++) { // TODO: this can be optimized
+                if (imap[idx] == n->id) {
+                    //cout << n->lprint() << " " << idx << endl;
+                    suggestions.push_back(make_tuple(i, idx, !(eval->getVal(n) > 0.0)));
                 }
             }
         }
     }
-    return suggestions;
+    return suggestions;*/
 }
 
 vector<pair<int, int>> SmoothSatHelper::getConflicts(int rowid, int colid) {

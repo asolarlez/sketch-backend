@@ -34,8 +34,13 @@ class SmoothSatHelper: public NumericalSolverHelper {
     
 	AbstractConflictGenerator* cg;
 	
-    int CONFLICT_CUTOFF = 5;
+    int CONFLICT_CUTOFF = PARAMS->conflictCutoff;
     bool previousSAT;
+    bool fullSAT;
+    
+    bool inputConflict;
+    int numConflictsAfterSAT;
+    vector<int> nodesToSuggest;
     
 public:
 	SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
@@ -49,4 +54,7 @@ public:
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
 	virtual void getControls(map<string, double>& ctrls);
 	bool validObjective();
+    bool checkFullSAT();
+    virtual void setState(gsl_vector* state);
+    
 };

@@ -54,8 +54,8 @@ double GradUtil::findMax(const vector<double>& vals, const vector<gsl_vector*>& 
 }
 
 double GradUtil::sigmoid(double x, gsl_vector* grads, gsl_vector* out) {
-	double scale = BETA;// BETA/max(gsl_blas_dnrm2(grads), 1.0); // TODO: is this normalization correct?
-	double v = 1.0/(1.0 + exp(scale * x));
+	double scale = BETA;
+    double v = 1.0/(1.0 + exp(scale * x));
 	double d = -1.0*scale*v*(1-v);
     if (d > 1e3) {
         cout << "LARGE GRADIENT FACTOR in sigmoid " << d << endl;

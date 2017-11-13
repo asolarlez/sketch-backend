@@ -21,11 +21,13 @@ class GradientAnalyzer: public NodeVisitor
     
     double threshold = 0.01;
     
+    double upThreshold = 1000;
+    
     bool printVals = true;
     bool printGrads = false;
     bool printGradLoss = false;
-    bool printGradBlowup = true;
-    bool printSqrt = true;
+    bool printGradBlowup = false;
+    bool printSqrt = false;
 	
 public:
 	

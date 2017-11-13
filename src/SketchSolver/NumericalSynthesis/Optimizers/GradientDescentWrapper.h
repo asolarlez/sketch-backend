@@ -79,7 +79,7 @@ public:
 class GradientDescentWrapper: public OptimizationWrapper {
 	GradientDescent* gd;
 	double threshold = 1e-2; // accuracy for minimizing the error
-	int MAX_TRIES = 1; // Number retries of GD algorithm for each iteration
+	int MAX_TRIES = PARAMS->numTries; // Number retries of GD algorithm for each iteration
 	double minErrorSoFar;
 	gsl_vector* minState;
 	gsl_vector* t;
@@ -98,7 +98,7 @@ public:
 		t = gsl_vector_alloc(ncontrols);
 	}
 	
-	virtual void randomizeCtrls(gsl_vector* state) {
+	virtual void randomizeCtrls(gsl_vector* state, vector<vector<int>>& allInputs) {
 		vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
 		int counter = 0;
 		for (int i = 0; i < ctrls.size(); i++) {
@@ -151,10 +151,15 @@ public:
 				gsl_vector_memcpy(minState, gd->getResults());
 			}
 			numtries++;
-			randomizeCtrls(t);
+			randomizeCtrls(t, allInputs);
 		}
 		return minError <= threshold;
 	}
+    
+    virtual bool optimizeForInputs(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
+        Assert(false, "NYI:dfafieq");
+        return true;
+    }
 	
 	virtual gsl_vector* getMinState() {
 		return minState;

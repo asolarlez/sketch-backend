@@ -95,6 +95,13 @@ struct CommandLineArgs{
     bool checkInput;
     string partialInput;
     bool useSnoptUnconstrained;
+    bool relaxBoolHoles;
+    int numTries;
+    bool disableSatSuggestions;
+    bool disableUnsatSuggestions;
+    int conflictCutoff;
+    int maxRestarts;
+    int costOption;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -178,6 +185,13 @@ struct CommandLineArgs{
         checkInput = false;
         partialInput = "";
         useSnoptUnconstrained = false;
+        relaxBoolHoles = false;
+        numTries = 1;
+        disableSatSuggestions = false;
+        disableUnsatSuggestions = false;
+        conflictCutoff = 1;
+        maxRestarts = 10;
+        costOption = 1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -239,6 +253,45 @@ struct CommandLineArgs{
                 input_idx = ii+2;
                 continue;
             }
+            if (string(argv[ii]) == "-relaxboolholes") {
+                relaxBoolHoles = true;
+                input_idx = ii+1;
+                continue;
+            }
+            if (string(argv[ii]) == "-numtries") {
+                Assert(ii < argc - 1, "-numtries needs an extra parameter");
+                numTries = atoi(argv[ii+1]);
+                input_idx = ii+1;
+                continue;
+            }
+          if (string(argv[ii]) == "-disablesatsuggestions") {
+              disableSatSuggestions = true;
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-disableunsatsuggestions") {
+              disableUnsatSuggestions = true;
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-conflictcutoff") {
+              Assert(ii < argc - 1, "-conflictcutoff needs an extra parameter");
+              conflictCutoff = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-maxrestarts") {
+              Assert(ii < argc - 1, "-maxrestarts needs an extra parameter");
+              maxRestarts = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-costoption") {
+              Assert(ii < argc - 1, "-costoption needs an extra parameter");
+              costOption = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
 			if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;

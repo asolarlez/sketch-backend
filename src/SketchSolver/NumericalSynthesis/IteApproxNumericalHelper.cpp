@@ -54,7 +54,7 @@ IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG
 	}
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
-	opt->randomizeCtrls(state);
+	opt->randomizeCtrls(state, allInputs);
 }
 
 IteApproxNumericalHelper::~IteApproxNumericalHelper(void) {
@@ -95,7 +95,7 @@ bool IteApproxNumericalHelper::checkInputs(int rowid, int colid) {
 bool IteApproxNumericalHelper::checkSAT() {
 	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
-		state = opt->getMinState();
+		gsl_vector_memcpy(state, opt->getMinState());
 	}
 	return sat;
 }
