@@ -49,7 +49,7 @@ public:
 Solver::Solver() :
 
     // Parameters: (formerly in 'SearchParams')
-    var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.02)
+    var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.8)
   , restart_first(200), restart_inc(1.5), learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
    , nSoftLearntRestarts(0), maxSoftLearntRestarts(10)
     // More parameters:
