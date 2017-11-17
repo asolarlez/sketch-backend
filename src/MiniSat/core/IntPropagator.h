@@ -528,19 +528,28 @@ public:
 			}
 		}
 
+		bool pp = false;
+		if (pp) {
+			dump();
+		}
 		for (; it != ranges.rend(); --it) {
 			iVar iv = it->var;
 			if (seen[iv] == 1) {
 				seen[iv] = 0;
 				--scount;
 				Intclause* ic = it->rson;
+				if (pp) {
+					cout << iv <<"("<< it->range.getLo()<<", "<<it->range.getHi()<< ") : ";
+					if (ic != NULL) ic->print();
+					else cout << endl;
+				}
 				if (ic == NULL) {
 					Range& r = it->range;
 					if (r.isSingle()) {
 						Lit tmp;
 						if (checkLegal(iv, r.getLo(), tmp)) {
 							if (var(tmp) != var_Undef) {
-								//cout<<", "<<iv<<"("<<r.getLo()<<")";
+								if (pp) { cout << "ADD " << iv <<":"<< toInt(~tmp) << "(" << r.getLo() << ")"<<endl; }
 								explain.push(~tmp);
 							}
 						}
@@ -557,10 +566,10 @@ public:
 
 						seen[iv] = 1;
 						++scount;
-
-						//cout << "CA: " << iv<<"  "<<" r=("<<it->range.getLo()<<", "<< it->range.getHi() <<") " ;
-						//ic->print();
-
+						if (pp) {
+							cout << "CA: " << iv << "  " << " r=(" << it->range.getLo() << ", " << it->range.getHi() << ") ";
+							ic->print();
+						}
 						iVar ivv = (*ic)[1];
 						if (seen[ivv] == 0) {
 							seen[ivv] = 1;
@@ -1747,7 +1756,8 @@ private:
 				if(vnxt.isDef() && vnxt.v() != watched.val){
 					//another choice is also set and has a different value, so they are not all the same.
 					//but if sz==4, then it means all choices are now set, so we can propagate to cond if vx is set.
-					if(sz == 4 && vx.isDef()){
+					//but that only works if vx.v() != 0, because if vx is zero, then it could be that the idx is just out of bounds.
+					if(sz == 4 && vx.isDef() && vx.v() != 0){
 						 if(vnxt.v()==vx.v()){
 							if(uncheckedSetVal(cond, cidx-2, watched.level, c)){								
 								return ADV;
