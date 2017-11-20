@@ -116,6 +116,7 @@ namespace MSsolverNS {
         
         Lit softConflictLit;
         bool softConflict = false;
+        bool clearSoftLearnts = false;
 
 		Synthesizer(FloatManager& _fm) :fm(_fm) {
 
@@ -219,7 +220,7 @@ namespace MSsolverNS {
 
 		/* Returns the stack level of the input.
 		*/
-		Clause* pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& suggestions) {
+		Clause* pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& suggestions, bool& clearSoftLearnts) {
 			//id = valueid(instance,inputid)
 			//write only over EMPTY values
 			//cout << "ID=" << id << endl;
@@ -253,8 +254,12 @@ namespace MSsolverNS {
 				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
 				tmpbuf.growTo((sz / sizeof(int)) + 1);
 				void* mem = (void*)&tmpbuf[0];
+                clearSoftLearnts = false;
+                //clearSoftLearnts = s->clearSoftLearnts;
 				return new (mem) Clause(conf, false);
 			}
+            clearSoftLearnts = false;
+            //clearSoftLearnts = s->clearSoftLearnts;
 			return NULL;
 		}
 

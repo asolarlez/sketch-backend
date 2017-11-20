@@ -40,4 +40,5 @@ public:
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
 	virtual void getControls(map<string, double>& ctrls) = 0;
     virtual void setState(gsl_vector* state) = 0;
+    virtual bool clearSoftLearnts() = 0;
 };

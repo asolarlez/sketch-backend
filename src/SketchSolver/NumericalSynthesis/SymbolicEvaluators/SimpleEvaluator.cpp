@@ -229,11 +229,12 @@ double SimpleEvaluator::run1(const gsl_vector* ctrls_p, map<int, int>& inputValu
 	return error;
 }
 
-bool SimpleEvaluator::check(const gsl_vector* ctrls_p) {
+bool SimpleEvaluator::check(const gsl_vector* ctrls_p, double& error) {
     Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
     for (int i = 0; i < ctrls->size; i++) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
+    bool failed = false;
     for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
         bool_node* node = (*node_it);
         node->accept(*this);
@@ -242,12 +243,14 @@ bool SimpleEvaluator::check(const gsl_vector* ctrls_p) {
             if (an->isHard()) {
                 if (d(node) > 0.1) {
                     cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                    return false;
+                    error += d(node);
+                    failed = true;
                 }
             } else {
                 if (d(node) < -0.1) {
                     cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                    return false;
+                    error -= d(node);
+                    failed = true;
 
                 }
             }
@@ -256,11 +259,12 @@ bool SimpleEvaluator::check(const gsl_vector* ctrls_p) {
             bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
             if (d(node) < -0.1) {
                 cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                return false;
+                error -= d(node);
+                failed =  true;
             }
         }
     }
-    return true;
+    return !failed;
 }
 
 double SimpleEvaluator::computeError(double dist, int expected, bool_node* node) {

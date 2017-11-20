@@ -180,7 +180,11 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
 
 	if (value(lit) == l_True) {
-		s->pushInput(instid, inputid, val, level[var(lit)], suggestions[s->solverIdx]);
+        bool clearSoftLearnts;
+		s->pushInput(instid, inputid, val, level[var(lit)], suggestions[s->solverIdx], clearSoftLearnts);
+        if (clearSoftLearnts) {
+            removeSoftLearnts();
+        }
 		return;
 	}
 	if (value(lit) == l_False) {
@@ -1051,7 +1055,11 @@ Clause* Solver::propagate()
 
 			if (mrk == SYNCLAUSE) {
 				SynClauseStruct* syn = (SynClauseStruct*)&c[0];
-				confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel, suggestions[syn->s->solverIdx]);
+                bool clearSoftLearnts;
+				confl = syn->s->pushInput(syn->instance, syn->inputid, syn->value, dlevel, suggestions[syn->s->solverIdx], clearSoftLearnts);
+                if (clearSoftLearnts) {
+                    removeSoftLearnts();
+                }
 				if (confl != NULL) {
 					qhead = trail.size();
 					// Copy the remaining watches:

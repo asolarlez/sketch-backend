@@ -70,6 +70,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
     previousSAT = false;
     fullSAT = false;
     numConflictsAfterSAT = 0;
+    clearLearnts = false;
     
     for (int i = 0; i < imap.size(); i++) {
         int nodeid = imap[i];
@@ -92,7 +93,8 @@ SmoothSatHelper::~SmoothSatHelper(void) {
 void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
-    if (PARAMS->verbosity > 7 && !previousSAT) {
+    if (PARAMS->verbosity > 7 && !fullSAT) {
+    cout << "I:";
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
             cout << imap[i] << "," << allInputs[0][i] << ";";
@@ -151,7 +153,8 @@ bool SmoothSatHelper::checkFullSAT() {
             gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[0][i]);
         }
     }
-    if (seval->check(newState)) {
+    double error = 0.0;
+    if (seval->check(newState, error)) {
         return true;
     } else {
         return false;
@@ -183,12 +186,15 @@ bool SmoothSatHelper::checkSAT() {
     }
     if (sat) {
         cout << "FOUND solution" << endl;
+        clearLearnts = true;
         if (checkFullSAT()) {
             fullSAT = true;
             cout << "FULL SAT" << endl;
         }
         numConflictsAfterSAT = 0;
         gsl_vector_memcpy(state, opt->getMinState());
+    } else {
+        clearLearnts = false;
     }
     if (!sat && previousSAT) {
         numConflictsAfterSAT++;
@@ -228,10 +234,11 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
     for (int i = 0; i < allInputs.size(); i++) {
         vector<tuple<double, int, int>> s = seval->run(state, imap);
         sort(s.begin(), s.end());
+        cout << ((*dag)[imap[get<1>(s[0])]])->lprint() << " " << get<2>(s[0]) << endl;
         reverse(s.begin(), s.end());
         for (int k = 0; k < s.size(); k++) {
             int idx = get<1>(s[k]);
-            if (allInputs[i][idx] == EMPTY) {
+            if (allInputs[i][idx] != 0 && allInputs[i][idx] != 1) {
                 suggestions.push_back(make_tuple(i, idx, get<2>(s[k])));
             }
         }

@@ -50,6 +50,7 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	}
 	suggestions.clear();
 	bool sat = helper->checkSAT();
+    clearSoftLearnts = helper->clearSoftLearnts();
 	if (sat || helper->ignoreConflict()) {
 		helper->getControls(ctrlVals);
         if (sat) {
@@ -298,7 +299,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
 	vector<int> instanceIds;
 	vector<int> inputs;
     map<int, int> nodeToInputMap;
-    string partialInput = "0,1;10801,1;11476,0;18206,1;24982,0;-1,1;";
+    string partialInput = "0,1;204,0;209,0;";
     size_t pos = 0, found;
     while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
         string p = partialInput.substr(pos, found - pos);
@@ -332,6 +333,12 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
 			ctrlMap[ctrls[i]->get_name()] = ctr++;
 		}
 	}
+    map<string, int> boolCtrlMap;
+    for (int i = 0; i < ctrls.size(); i++) {
+        if (ctrls[i]->getOtype() == OutType::BOOL) {
+            boolCtrlMap[ctrls[i]->get_name()] = ctr++;
+        }
+    }
 	int ncontrols = ctr;
 	if (ncontrols == 0) {
 		ncontrols = 1;
@@ -350,13 +357,13 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
             boolNodes.insert(i);
         }
     }
-    map<string, int> boolCtrlMap;
+    
 	
 	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
     OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {-5.6, 0.4, -8.88889, -3.2, -3.3, -9.9, 19.8, 0.5, 4.08, 1.7,  };
+    double arr1[53] = {14.562, 16.5079, 25.3871, 29.2401, 20.4648, -3.3598, -18.6837, -10.095, 11.9579, 4.63623, -8.17328, -2.32865, 5.2097, 0.297557, 18.5087, -14.6174, 19.6083, 24.0753, 4.62991, 19.0566, 16.8833, 0.325465, 4.96385, 0.0645103, -18.9252, 14.5423, -18.35, 14.871, 19.5413, -4.02595, 10.6367, -0.0281517, 13.3301, -2.96819, 12.8153, -6.52162, 5.17906, 7.28508, 8.15148, 19.3113, 17.4993, 3.21412, 4.74884, -14.2551, 0.000636686, 0.109582, 0.0476067, 0.0434983, 0.916371, 0.908358, 0.00325205, 0.974606, 0.961983, };
 	for (int i = 0; i < ncontrols; i++) {
 		gsl_vector_set(s, i, arr1[i]);
 	}
@@ -380,13 +387,13 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
         gsl_vector_set(s, i, arr1[i]);
     }*/
     
-    GradUtil::BETA = -1;
-    GradUtil::ALPHA = 1;
+    GradUtil::BETA = -50;
+    GradUtil::ALPHA = 50;
     eval->run(s, nodeValsMap);
     // eval->print();
     GradientAnalyzer* analyzer = new GradientAnalyzer(*dag, eval);
     analyzer->run();
-    /*gsl_vector* d = gsl_vector_alloc(ncontrols);
+    gsl_vector* d = gsl_vector_alloc(ncontrols);
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
         bool_node* node = *node_it;
         if (node->type == bool_node::ASSERT) {
@@ -401,7 +408,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
                 cout << endl;
             }
         }
-    }*/
+    }
     
     /*for (int i = 0; i < ncontrols; i++) {
 		genData(s, i, eval, nodeValsMap);

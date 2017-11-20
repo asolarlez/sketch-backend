@@ -86,12 +86,12 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
     }
     bool constraintsSatisfied = true;
     for (int i = 1; i < neF; i++) {
-        if (F[i] < Flow[i] - 0.01 || F[i] > Fupp[i] + 0.01) {
+        if (F[i] < Flow[i] - 0.02 || F[i] > Fupp[i] + 0.02) {
             constraintsSatisfied = false;
         }
     }
     for (int i = 0; i < n; i++) {
-        if (x[i] < xlow[i] - 0.01 || x[i] > xupp[i] + 0.01) {
+        if (x[i] < xlow[i] - 0.02 || x[i] > xupp[i] + 0.02) {
             constraintsSatisfied = false;
         }
     }

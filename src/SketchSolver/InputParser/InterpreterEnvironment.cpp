@@ -6,7 +6,7 @@
 #include "DagFunctionToAssertion.h"
 #include "InputReader.h" // INp yylex_init, yyparse, etc.
 
-
+#include "Util.h"
 
 #ifdef CONST
 #undef CONST
@@ -903,22 +903,8 @@ bool allBool(bool_node* n) {
     }
     if (n->getOtype() == OutType::BOOL) {
         // eliminate b in expressions assert(b) and assert(!b)
-        FastSet<bool_node>& children = n->children;
-        if (children.size() == 1) {
-            bool_node* child = (*children.begin());
-            if (child->type == bool_node::ASSERT) {
-                return false;
-            } else {
-                if (child->type == bool_node::NOT) {
-                    FastSet<bool_node>& grandchildren = child->children;
-                    if (grandchildren.size() == 1) {
-                        if ((*grandchildren.begin())->type == bool_node::ASSERT) {
-                            return false;
-                        }
-                    }
-                }
-            }
-         }
+        if (Util::hasAssertChild(n)) return false;
+        if (Util::hasNotAssertChild(n)) return false;
         return true;
     }
     return false;

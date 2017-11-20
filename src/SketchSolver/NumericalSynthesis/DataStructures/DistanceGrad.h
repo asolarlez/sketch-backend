@@ -6,6 +6,7 @@
 #include <math.h>
 #include <vector>
 #include "BasicError.h"
+#include "Util.h"
 
 using namespace std;
 

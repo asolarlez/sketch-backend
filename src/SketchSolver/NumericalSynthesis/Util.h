@@ -2,6 +2,7 @@
 #include <map>
 #include <vector>
 #include <gsl/gsl_vector.h>
+#include "BooleanNodes.h"
 
 class Util {
 public:
@@ -31,6 +32,31 @@ public:
         for(child_iter it = children.begin(); it != children.end(); ++it) {
             if ((*it)->type == bool_node::ARRACC) {
                 return true;
+            }
+        }
+        return false;
+    }
+    
+    static bool hasAssertChild(bool_node* n) {
+        FastSet<bool_node>& children = n->children;
+        for(child_iter it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->type == bool_node::ASSERT) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    static bool hasNotAssertChild(bool_node* n) {
+        FastSet<bool_node>& children = n->children;
+        for(child_iter it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->type == bool_node::NOT) {
+                FastSet<bool_node>& grandChildren = (*it)->children;
+                for (child_iter it1 = grandChildren.begin(); it1 != grandChildren.end(); ++it1) {
+                    if ((*it1)->type == bool_node::ASSERT) {
+                        return true;
+                    }
+                }
             }
         }
         return false;

@@ -59,6 +59,7 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	}
 	//opt->randomizeCtrls(state, allInputs);
 	cg = new SimpleConflictGenerator(imap, boolNodes);
+    done = false;
 }
 
 BoolApproxHelper::~BoolApproxHelper(void) {
@@ -82,6 +83,7 @@ void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
 }
 
 bool BoolApproxHelper::checkInputs(int rowid, int colid) {
+    if (done) return false;// TODO: hacky remove later
     if (PARAMS->relaxBoolHoles) return true;
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
@@ -92,6 +94,7 @@ bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 }
 
 bool BoolApproxHelper::validObjective() {
+    return true;
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
@@ -116,40 +119,43 @@ bool BoolApproxHelper::checkSAT() {
 	}
 	if (sat) {
 		gsl_vector_memcpy(state, opt->getMinState());
-        
-        if (validObjective()) {
-            // check if actually good solution // TODO: only debug code, not performance efficient
-            int ctr = ncontrols;
-            if (!PARAMS->relaxBoolHoles) {
-                for (int i = 0; i < allInputs[0].size(); i++) {
-                    if (imap[i] < 0) continue;
-                    bool_node* n = (*dag)[imap[i]];
-                    if (n->type == bool_node::CTRL &&  n->getOtype() == OutType::BOOL) {
-                        boolCtrlMap[n->get_name()] = ctr++;
-                    }
-                }
-            }
-            gsl_vector* newctrls = gsl_vector_alloc(ctr);
-            for (int i = 0; i < ncontrols; i++) {
-                gsl_vector_set(newctrls, i, gsl_vector_get(state, i));
-            }
+        cout << "FOUND solution" << endl;
+    }
+    if (validObjective()) {
+        // check if actually good solution // TODO: only debug code, not performance efficient
+        int ctr = ncontrols;
+        if (!PARAMS->relaxBoolHoles) {
             for (int i = 0; i < allInputs[0].size(); i++) {
                 if (imap[i] < 0) continue;
                 bool_node* n = (*dag)[imap[i]];
-                if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-                    gsl_vector_set(newctrls, boolCtrlMap[n->get_name()], allInputs[0][i]);
+                if (n->type == bool_node::CTRL &&  n->getOtype() == OutType::BOOL) {
+                    boolCtrlMap[n->get_name()] = ctr++;
                 }
             }
-            cout << Util::print(newctrls) << endl;
-            SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-            if (seval->check(newctrls)) {
-                cout << "ACTUAL: true" << endl;
-            } else {
-                cout << "ACTUAL: false" << endl;
-            }
         }
-	}
-	return sat;
+        gsl_vector* newctrls = gsl_vector_alloc(ctr);
+        for (int i = 0; i < ncontrols; i++) {
+            gsl_vector_set(newctrls, i, gsl_vector_get(state, i));
+        }
+        /*for (int i = 0; i < allInputs[0].size(); i++) {
+         if (imap[i] < 0) continue;
+         bool_node* n = (*dag)[imap[i]];
+         if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+         gsl_vector_set(newctrls, boolCtrlMap[n->get_name()], allInputs[0][i]);
+         }
+         }*/
+        cout << Util::print(newctrls) << endl;
+        SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
+        double error = 0;
+        if (seval->check(newctrls, error)) {
+            cout << "FULL SAT" << endl;
+        }
+        cout << "ERROR: " << error << endl;
+    }
+	
+    done = true;
+    return true;
+	//return sat;
 }
 
 bool BoolApproxHelper::ignoreConflict() {

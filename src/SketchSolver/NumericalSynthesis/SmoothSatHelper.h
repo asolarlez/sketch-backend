@@ -41,6 +41,7 @@ class SmoothSatHelper: public NumericalSolverHelper {
     bool inputConflict;
     int numConflictsAfterSAT;
     vector<int> nodesToSuggest;
+    bool clearLearnts;
     
 public:
 	SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
@@ -56,5 +57,6 @@ public:
 	bool validObjective();
     bool checkFullSAT();
     virtual void setState(gsl_vector* state);
+    virtual bool clearSoftLearnts() { return clearLearnts; }
     
 };

@@ -32,7 +32,7 @@ class BoolApproxHelper: public NumericalSolverHelper {
     map<string, int> boolCtrlMap;
 	
 	AbstractConflictGenerator* cg;
-	
+    bool done; 
 public:
 	BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
 	~BoolApproxHelper(void);
@@ -47,4 +47,5 @@ public:
     virtual void setState(gsl_vector* state) { }
 	
 	bool validObjective();
+    virtual bool clearSoftLearnts() { return false; }
 };
