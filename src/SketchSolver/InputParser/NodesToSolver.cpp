@@ -3198,33 +3198,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 			
 		
-		cout << (*node_it)->lprint() << "  ";
-		const Tvalue& tv = node_ids[(*node_it)->id];
-      if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
-		  
-      cout << " [ ";
-      for (int i = 0; i < tv.getSize(); i++)
-        cout << floats(tv.num_ranges[i].value) << ", ";
-      cout << " ] ";
-	  }
-	  else {
-		  if (tv.isSparse()) {
-			  for (int i = 0; i < tv.getSize(); i++)
-				  cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
-			  cout << " ] ";
-		  }
-		  else {
-			  if (tv.isInt()) {
-				  cout << "INT=" << tv.getId();
-			  }
-			  else {
-				  cout << "BIT=" << tv.getId();
-			  }
-			  
-		  }
-	  }
-	  
-	  cout << endl; 
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
