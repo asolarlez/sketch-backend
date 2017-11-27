@@ -286,7 +286,6 @@
     <ClCompile Include="SketchSolver\memory_sampler.cc" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\AutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\DistanceGrad.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\GlobalEvaluator.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\GradientDescent.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\GradUtil.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Interval.cpp" />
@@ -337,7 +336,6 @@
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\AutoDiff.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\DistanceGrad.h" />
-    <ClInclude Include="SketchSolver\NumericalSynthesis\GlobalEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\GradientDescent.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\GradUtil.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Interval.h" />

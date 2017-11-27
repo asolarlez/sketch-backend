@@ -7,13 +7,13 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis gdtest igtest snopttest snoptitest
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk -lsnopt_cpp
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
 gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
 snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lglpk
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la
@@ -50,7 +50,6 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
 	NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
-	NumericalSynthesis/SymbolicEvaluators/GlobalEvaluator.h	\
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
 	NumericalSynthesis/DataStructures/DistanceGrad.h		\
 	NumericalSynthesis/DataStructures/ValueGrad.h \
@@ -118,7 +117,6 @@ libcegis_la_SOURCES =				\
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
 	NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
 	NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \
-	NumericalSynthesis/SymbolicEvaluators/GlobalEvaluator.cpp	\
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
     NumericalSynthesis/SymbolicAnalyzers/GradientAnalyzer.cpp    \
 	InputParser/BackwardsAnalysis.cpp	\
