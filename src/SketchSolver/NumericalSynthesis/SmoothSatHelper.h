@@ -56,6 +56,7 @@ public:
 	virtual void getControls(map<string, double>& ctrls);
 	bool validObjective();
     bool checkFullSAT();
+    bool checkCurrentSol();
     virtual void setState(gsl_vector* state);
     virtual bool clearSoftLearnts() { return clearLearnts; }
     

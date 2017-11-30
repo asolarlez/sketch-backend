@@ -30,7 +30,7 @@ public:
     static bool hasArraccChild(bool_node* n) {
         FastSet<bool_node>& children = n->children;
         for(child_iter it = children.begin(); it != children.end(); ++it) {
-            if ((*it)->type == bool_node::ARRACC) {
+            if ((*it)->type == bool_node::ARRACC && (*it)->mother == n) {
                 return true;
             }
         }

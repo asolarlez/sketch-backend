@@ -199,7 +199,7 @@ vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, 
 			cost = cost/1000.0;
 		}
         if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-            cost = cost/10000.0;
+            cost = cost - 5.0;
         }
 		s.push_back(make_tuple(cost, i, dist > 0));
 	}

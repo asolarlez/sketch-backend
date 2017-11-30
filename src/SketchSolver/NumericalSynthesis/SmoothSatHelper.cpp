@@ -123,7 +123,6 @@ bool SmoothSatHelper::checkInputs(int rowid, int colid) {
 }
 
 bool SmoothSatHelper::validObjective() {
-    return true;
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
@@ -138,8 +137,45 @@ bool SmoothSatHelper::validObjective() {
 	return true;
 }
 
+bool SmoothSatHelper::checkCurrentSol() {
+    const map<int, int>& nodeToInputMap = Util::getNodeToValMap(imap, allInputs[0]);
+    GradUtil::BETA = -50;
+    GradUtil::ALPHA = 50;
+    eval->run(state, nodeToInputMap);
+    bool failed = false;
+    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+        bool_node* node = *node_it;
+        if (node->type == bool_node::ASSERT) {
+            ASSERT_node* an = (ASSERT_node*) node;
+            Assert(eval->hasDist(node->mother), "weoqypq");
+            float dist = eval->getVal(node->mother);
+            if (an->isHard()) {
+                if (dist > 0.01) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                }
+            } else {
+                if (dist < -0.01) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                    
+                }
+            }
+        }
+        if (Util::isSqrt(node)) {
+            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
+            Assert(eval->hasVal(node->mother), "weoqypq");
+            float dist = eval->getVal(node->mother);
+            if (dist < -0.01) {
+                cout << "Failed " << node->lprint() << " " << dist << endl;
+                failed =  true;
+            }
+        }
+    }
+    return !failed;
+}
+
 bool SmoothSatHelper::checkFullSAT() {
-    // First, check if all boolean holes are  set
     gsl_vector* newState = GradUtil::tmp;
     gsl_vector_memcpy(newState, state);
     
@@ -147,10 +183,9 @@ bool SmoothSatHelper::checkFullSAT() {
         if (imap[i] < 0) continue;
         bool_node* n = (*dag)[imap[i]];
         if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-            if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
-                return false;
+            if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+                gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[0][i]);
             }
-            gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[0][i]);
         }
     }
     double error = 0.0;
@@ -168,26 +203,31 @@ bool SmoothSatHelper::checkSAT() {
     }
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
     
-    if (!previousSAT) {
-        bool satInputs = opt->optimizeForInputs(allInputs, state, suppressPrint);
-        if (satInputs) {
-            cout << "Inputs satisfiable" << endl;
-            gsl_vector_memcpy(state, opt->getMinState());
-        } else {
-            cout << "Inputs not satisfiable" << endl;
-            inputConflict = true;
-            return false;
+    bool sat = false;
+    if (checkCurrentSol()) {
+        sat = true;
+    } else {
+        if (!previousSAT) {
+            bool satInputs = opt->optimizeForInputs(allInputs, state, suppressPrint);
+            if (satInputs) {
+                cout << "Inputs satisfiable" << endl;
+                gsl_vector_memcpy(state, opt->getMinState());
+            } else {
+                cout << "Inputs not satisfiable" << endl;
+                inputConflict = true;
+                return false;
+            }
         }
+        
+        sat = opt->optimize(allInputs, state, suppressPrint);
     }
-    
-	bool sat = opt->optimize(allInputs, state, suppressPrint);
     if (!previousSAT) {
         previousSAT = sat;
     }
     if (sat) {
         cout << "FOUND solution" << endl;
         clearLearnts = true;
-        if (checkFullSAT()) {
+        if (validObjective() && checkFullSAT()) {
             fullSAT = true;
             cout << "FULL SAT" << endl;
         }
@@ -202,10 +242,8 @@ bool SmoothSatHelper::checkSAT() {
             previousSAT = false;
         }
     }
-	if (validObjective()) { // check whether the current opt problem is valid for considering the objection (i.e. make sure it does not solve a part of the problem)
-		double objective = opt->getObjectiveVal();
-		cout << "Objective found: " << objective << endl;
-	}
+    double objective = opt->getObjectiveVal();
+    cout << "Objective found: " << objective << endl;
     
 	return sat;
 }
@@ -234,7 +272,8 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
     for (int i = 0; i < allInputs.size(); i++) {
         vector<tuple<double, int, int>> s = seval->run(state, imap);
         sort(s.begin(), s.end());
-        cout << ((*dag)[imap[get<1>(s[0])]])->lprint() << " " << get<2>(s[0]) << endl;
+        bool first = true;
+        //cout << ((*dag)[imap[get<1>(s[0])]])->lprint() << " " << get<2>(s[0]) << endl;
         reverse(s.begin(), s.end());
         for (int k = 0; k < s.size(); k++) {
             int idx = get<1>(s[k]);
@@ -243,6 +282,8 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
             }
         }
     }
+    int lastIdx = suggestions.size() - 1;
+    cout << ((*dag)[imap[get<1>(suggestions[lastIdx])]])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
 	return suggestions;
 }
 
