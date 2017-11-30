@@ -55,7 +55,10 @@ public:
 	virtual void visit( ASSERT_node& node );
 	
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
-	
+    virtual bool checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p){
+        Assert(false, "NYI");
+        return true;
+    }
 	virtual bool check(bool_node* n, int expected);
 	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
 	virtual double computeDist(bool_node*, gsl_vector* distgrad);

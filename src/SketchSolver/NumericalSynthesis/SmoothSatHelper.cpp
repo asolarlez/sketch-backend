@@ -119,6 +119,11 @@ bool SmoothSatHelper::checkInputs(int rowid, int colid) {
             cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
         }
     }
+    if (imap[colid] == -1 || Util::hasArraccChild((*dag)[imap[colid]])) {
+        return true;
+    } else {
+        return false;
+    }
 	return true;
 }
 
@@ -141,38 +146,7 @@ bool SmoothSatHelper::checkCurrentSol() {
     const map<int, int>& nodeToInputMap = Util::getNodeToValMap(imap, allInputs[0]);
     GradUtil::BETA = -50;
     GradUtil::ALPHA = 50;
-    eval->run(state, nodeToInputMap);
-    bool failed = false;
-    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-        bool_node* node = *node_it;
-        if (node->type == bool_node::ASSERT) {
-            ASSERT_node* an = (ASSERT_node*) node;
-            Assert(eval->hasDist(node->mother), "weoqypq");
-            float dist = eval->getVal(node->mother);
-            if (an->isHard()) {
-                if (dist > 0.01) {
-                    cout << "Failed " << node->lprint() << " " << dist << endl;
-                    failed = true;
-                }
-            } else {
-                if (dist < -0.01) {
-                    cout << "Failed " << node->lprint() << " " << dist << endl;
-                    failed = true;
-                    
-                }
-            }
-        }
-        if (Util::isSqrt(node)) {
-            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
-            Assert(eval->hasVal(node->mother), "weoqypq");
-            float dist = eval->getVal(node->mother);
-            if (dist < -0.01) {
-                cout << "Failed " << node->lprint() << " " << dist << endl;
-                failed =  true;
-            }
-        }
-    }
-    return !failed;
+    return eval->checkAll(state, nodeToInputMap);
 }
 
 bool SmoothSatHelper::checkFullSAT() {

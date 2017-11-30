@@ -371,6 +371,52 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	}
 }
 
+bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
+    Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
+    
+    for (int i = 0; i < ctrls->size; i++) {
+        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+    }
+    inputValues = inputValues_p; // this does copying again
+    
+    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+        //cout << (*node_it)->lprint() << endl;
+        (*node_it)->accept(*this);
+    }
+    
+    bool failed = false;
+    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
+        bool_node* node = *node_it;
+        if (node->type == bool_node::ASSERT) {
+            ASSERT_node* an = (ASSERT_node*) node;
+            Assert(hasDist(node->mother), "weoqypq");
+            float dist = getVal(node->mother);
+            if (an->isHard()) {
+                if (dist > 0.05) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                }
+            } else {
+                if (dist < -0.05) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                    
+                }
+            }
+        }
+        if (Util::isSqrt(node)) {
+            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
+            Assert(hasVal(node->mother), "weoqypq");
+            float dist = getVal(node->mother);
+            if (dist < -0.05) {
+                cout << "Failed " << node->lprint() << " " << dist << endl;
+                failed =  true;
+            }
+        }
+    }
+    return !failed;
+}
+
 bool BoolAutoDiff::hasDist(bool_node* n) {
 	DistanceGrad* dg = d(n);
 	return dg->set;
