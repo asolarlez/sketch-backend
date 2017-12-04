@@ -55,7 +55,7 @@ public:
 	virtual void visit( ASSERT_node& node );
 	
 	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
-    virtual bool checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p){
+    virtual bool checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p, bool onlyBool = false){
         Assert(false, "NYI");
         return true;
     }

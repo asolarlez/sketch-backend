@@ -94,7 +94,8 @@ public:
                 //p->eval->print();
                 for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); node_it++) {
                     bool_node* node = *node_it;
-                    if (p->boolNodes.find(node->id) != p->boolNodes.end() || (Util::isSqrt(node)) || (node->type == bool_node::ASSERT)) {
+                    if (p->boolNodes.find(node->id) != p->boolNodes.end() || (Util::isSqrt(node)) || (node->type == bool_node::ASSERT)
+                            || (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL)) {
                         if (Util::isSqrt(node)) {
                             if (p->onlyInputs) continue;
                             double dist = 1000;
@@ -282,30 +283,32 @@ public:
             // select random subset of bool nodes if we don't have the budget for all constraints
             // TODO: this should be done in a cegis like loop - otherwise it is not sound
             vector<int> boolConstraints;
-            vector<int> sqrtConstraints;
-            vector<int> assertConstraints;
+            vector<int> hardConstraints;
             const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
             for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
                 bool_node* node = *node_it;
                 if (boolNodes.find(node->id) != boolNodes.end()) {
                     if (node->type == bool_node::ASSERT) {
-                        assertConstraints.push_back(node->id);
-                    } else if (node->getOtype() == OutType::BOOL) {
-                        auto it = nodeValsMap.find(node->id);
-                        if (it != nodeValsMap.end()) {
-                            boolConstraints.push_back(node->id);
+                        hardConstraints.push_back(node->id);
+                    }  else if (node->getOtype() == OutType::BOOL) {
+                        if (node->type == bool_node::CTRL) {
+                            hardConstraints.push_back(node->id);
+                        } else {
+                            auto it = nodeValsMap.find(node->id);
+                            if (it != nodeValsMap.end()) {
+                                boolConstraints.push_back(node->id);
+                            }
                         }
                     }
                 }
                 if (Util::isSqrt(node)) {
-                    sqrtConstraints.push_back(node->id);
+                    hardConstraints.push_back(node->id);
                 }
             }
-            cout << "Sqrt constraints: " << sqrtConstraints.size() << endl;
-            Assert(neF - 1 >= sqrtConstraints.size() + assertConstraints.size(), "Number of constraints is less than what is required for sqrt constraints");
+            Assert(neF - 1 >= hardConstraints.size(), "Number of constraints is less than what is required for hard constraints");
             int numToRemove = 0;
-            if (!PARAMS->useSnoptUnconstrained && boolConstraints.size() + sqrtConstraints.size() + assertConstraints.size() > neF - 1) {
-                numToRemove = boolConstraints.size() + sqrtConstraints.size() + assertConstraints.size() - neF + 1;
+            if (!PARAMS->useSnoptUnconstrained && boolConstraints.size() + hardConstraints.size() > neF - 1) {
+                numToRemove = boolConstraints.size() + hardConstraints.size() - neF + 1;
             }
             cout << "Removing " << numToRemove << " constraints" << endl;
             while (numToRemove > 0) {
@@ -318,7 +321,6 @@ public:
                 }
                 numToRemove--;
             }
-            cout << boolConstraints.size() << endl;
             //cout << "Selected constraints: ";
             //for (int i = 0; i < boolConstraints.size(); i++) {
             //    cout << boolConstraints[i] << ";";
@@ -382,6 +384,7 @@ public:
                 if (eval->checkAll(minState, nodeValsMap)) {
                     return true;
                 }
+                minObjectiveVal = 1e50;
                 cout << "Failed on full constraints - trying again" << endl;
                 numConstraintRetries++;
             }
@@ -392,52 +395,110 @@ public:
     }
     
     virtual bool optimizeForInputs(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
-        SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolNodes, true);
-        snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
-        
-        double betas[1] = {-1};
-        double alphas[1] = {1};
-        
-        gsl_vector_memcpy(t, initState);
-        
-        double obj;
-        int numtries = 0;
-        minObjectiveVal = 1e50;
+        int numConstraintRetries = 0;
         bool solved = false;
-        while (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
-            if (!suppressPrint){
-                cout << "Attempt: " << (numtries + 1) << endl;
-            }
-            
-            for (int i = 0; i < 1; i++) {
-                if (!suppressPrint) {
-                    cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
-                }
-                p->beta = betas[i];
-                p->alpha = alphas[i];
-                if (!suppressPrint) {
-                    for (int i = 0; i < n; i++) {
-                        cout << gsl_vector_get(t, i) << ", ";
+        const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
+        while (numConstraintRetries < MAX_CONSTRAINT_TRIES) {
+            // select random subset of bool nodes if we don't have the budget for all constraints
+            // TODO: this should be done in a cegis like loop - otherwise it is not sound
+            vector<int> boolConstraints;
+            const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
+            for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
+                bool_node* node = *node_it;
+                if (boolNodes.find(node->id) != boolNodes.end()) {
+                    if (node->type == bool_node::ASSERT) {
+                        // do nothing
+                    } else if (node->getOtype() == OutType::BOOL) {
+                        auto it = nodeValsMap.find(node->id);
+                        if (it != nodeValsMap.end()) {
+                            boolConstraints.push_back(node->id);
+                        }
                     }
-                    cout << endl;
-                }
-                SnoptEvaluator::counter = 0;
-                solved = snoptSolver->optimize(t, suppressPrint);
-                obj = snoptSolver->getObjectiveVal();
-                gsl_vector_memcpy(t, snoptSolver->getResults());
-            }
-            if (numtries == 0) {
-                gsl_vector_memcpy(minState, snoptSolver->getResults());
-            }
-            if (solved) {
-                gsl_vector_memcpy(minState, snoptSolver->getResults());
-                if (obj < minObjectiveVal) {
-                    minObjectiveVal = obj;
                 }
             }
-            numtries++;
-            if (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
-                randomizeCtrls(t, allInputs);
+            int numToRemove = 0;
+            if (!PARAMS->useSnoptUnconstrained && boolConstraints.size() > neF - 1) {
+                numToRemove = boolConstraints.size() - neF + 1;
+            }
+            cout << "Removing " << numToRemove << " constraints" << endl;
+            while (numToRemove > 0) {
+                int oldsize = boolConstraints.size();
+                int randIdx = rand() % (boolConstraints.size());
+                boolConstraints.erase(boolConstraints.begin() + randIdx);
+                if (boolConstraints.size() != oldsize - 1) {
+                    cout << "Did not delete " << randIdx << " size " << oldsize << endl;
+                    Assert(false, "Dfqwerq");
+                }
+                numToRemove--;
+            }
+            //cout << "Selected constraints: ";
+            //for (int i = 0; i < boolConstraints.size(); i++) {
+            //    cout << boolConstraints[i] << ";";
+            //}
+            
+            set<int> boolConstraintsSet(boolConstraints.begin(), boolConstraints.end());
+            
+            // start the snopt solving
+            SnoptParameters* p = new SnoptParameters(eval, dag, allInputs, imap, boolConstraintsSet, true);
+            snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
+            
+            double betas[1] = {-1};
+            double alphas[1] = {1};
+            
+            gsl_vector_memcpy(t, initState);
+            
+            double obj;
+            int numtries = 0;
+            minObjectiveVal = 1e50;
+            solved = false;
+            while (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
+                if (!suppressPrint){
+                    cout << "Attempt: " << (numtries + 1) << endl;
+                }
+                
+                for (int i = 0; i < 1; i++) {
+                    if (!suppressPrint) {
+                        cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+                    }
+                    p->beta = betas[i];
+                    p->alpha = alphas[i];
+                    if (!suppressPrint) {
+                        for (int i = 0; i < n; i++) {
+                            cout << gsl_vector_get(t, i) << ", ";
+                        }
+                        cout << endl;
+                    }
+                    SnoptEvaluator::counter = 0;
+                    solved = snoptSolver->optimize(t, suppressPrint);
+                    obj = snoptSolver->getObjectiveVal();
+                    gsl_vector_memcpy(t, snoptSolver->getResults());
+                }
+                if (numtries == 0) {
+                    gsl_vector_memcpy(minState, snoptSolver->getResults());
+                }
+                if (solved) {
+                    gsl_vector_memcpy(minState, snoptSolver->getResults());
+                    if (obj < minObjectiveVal) {
+                        minObjectiveVal = obj;
+                    }
+                }
+                numtries++;
+                if (!solved && numtries < MAX_TRIES_ONLY_INPUTS) {
+                    randomizeCtrls(t, allInputs);
+                }
+            }
+            if (!solved) {
+                return false;
+            } else {
+                // check if it is actually correct
+                GradUtil::BETA = -50;
+                GradUtil::ALPHA = 50;
+                if (eval->checkAll(minState, nodeValsMap, true)) {
+                    return true;
+                }
+                solved = false;
+                cout << "Failed on full constraints - trying again" << endl;
+                numConstraintRetries++;
             }
         }
         //eval->print();

@@ -110,15 +110,6 @@ void SmoothSatHelper::setState(gsl_vector* s) {
 
 bool SmoothSatHelper::checkInputs(int rowid, int colid) {
     if (fullSAT) return false;
-    if (imap[colid] == -1) {
-        if (PARAMS->verbosity > 7) {
-            cout << "Setting dummy variable" << endl;
-        }
-    } else {
-        if (PARAMS->verbosity > 7) {
-            cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
-        }
-    }
     if (imap[colid] == -1 || Util::hasArraccChild((*dag)[imap[colid]])) {
         return true;
     } else {
@@ -321,6 +312,7 @@ set<int> getRelevantNodes(bool_node* n, SymbolicEvaluator* eval) {
 vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
     cout << Util::print(state) << endl;
     vector<tuple<int, int, int>> suggestions;
+    if (nodesToSuggest.size() == 0) return suggestions;
     int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
     int randVal = rand() % 2;
     cout << "Suggesting: " << ((*dag)[imap[randIdx]])->lprint() << " " << randVal << endl;

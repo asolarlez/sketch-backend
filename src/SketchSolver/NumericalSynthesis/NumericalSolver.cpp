@@ -36,11 +36,21 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	conflict.clear();
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
-	
+	if (!helper->checkInputs(rowid, colid)) return true;
 	collectAllInputs(allInputs, instanceIds);
 	helper->setInputs(allInputs, instanceIds);
 	
-	if (!helper->checkInputs(rowid, colid)) return true;
+    if (imap[colid] == -1) {
+        if (PARAMS->verbosity > 7) {
+            cout << "Setting dummy variable" << endl;
+        }
+    } else {
+        if (PARAMS->verbosity > 7) {
+            cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
+        }
+    }
+
+	
 
 	if (PARAMS->verbosity > 7) {
         timer.restart();

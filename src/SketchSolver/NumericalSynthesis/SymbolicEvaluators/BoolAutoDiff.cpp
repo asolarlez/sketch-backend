@@ -371,7 +371,7 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValu
 	}
 }
 
-bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
+bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p, bool onlyBool) {
     Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
     
     for (int i = 0; i < ctrls->size; i++) {
@@ -387,7 +387,7 @@ bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inpu
     bool failed = false;
     for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
         bool_node* node = *node_it;
-        if (node->type == bool_node::ASSERT) {
+        if (!onlyBool && node->type == bool_node::ASSERT) {
             ASSERT_node* an = (ASSERT_node*) node;
             Assert(hasDist(node->mother), "weoqypq");
             float dist = getVal(node->mother);
@@ -404,13 +404,32 @@ bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inpu
                 }
             }
         }
-        if (Util::isSqrt(node)) {
+        if (!onlyBool && Util::isSqrt(node)) {
             bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
             Assert(hasVal(node->mother), "weoqypq");
             float dist = getVal(node->mother);
             if (dist < -0.05) {
                 cout << "Failed " << node->lprint() << " " << dist << endl;
                 failed =  true;
+            }
+        }
+        
+        if (node->type != bool_node::ASSERT && node->getOtype() == OutType::BOOL && node->type != bool_node::CTRL) {
+            auto it = inputValues.find(node->id);
+            if (it != inputValues.end()) {
+                int val = it->second;
+                double dist = 0;
+                if (hasDist(node)) {
+                    dist = getVal(node);
+                    if (val == 0 && dist > 0.05) {
+                        cout << "Failed " << node->lprint() << " " << dist << endl;
+                        failed = true;
+                    }
+                    if (val == 1 && dist < -0.05) {
+                        cout << "Failed " << node->lprint() << " " << dist << endl;
+                        failed = true;
+                    }
+                }
             }
         }
     }
