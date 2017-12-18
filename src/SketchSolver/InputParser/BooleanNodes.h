@@ -1172,7 +1172,7 @@ class UFUN_node: public arith_node, public DllistNode{
 	}
 	const string& get_ufname() const { return ufname; }
 	void set_nbits(int n){ nbits = n; }
-    void set_tupleName(string& name){tupleName = name;}
+    void set_tupleName(const string& name){tupleName = name;}
     const string& getTupleName() const {return tupleName;}
 	void makeArr(){
         /* todo tuple array */

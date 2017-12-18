@@ -154,7 +154,7 @@ public:
 			} else {
 				exampleIds.push_back(i);
 				inputs.push_back(vals);
-				outputs.push_back(out);
+				outputs.push_back(out==1);
 				inputsMap[s] = i;
 			}
 		}

@@ -662,7 +662,7 @@ void BooleanDAG::addNewNode(bool_node* node){
 		
 	if( node->type == bool_node::SRC || node->type == bool_node::DST || node->type == bool_node::CTRL || node->type == bool_node::ASSERT || node->type == bool_node::UFUN){
 		vector<bool_node*>& tmpv = nodesByType[node->type]; 
-		tmpv.push_back(node);			
+		tmpv.push_back(node);		
 	}
 	 
 }

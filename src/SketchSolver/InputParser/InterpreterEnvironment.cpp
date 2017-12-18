@@ -867,9 +867,18 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 
 	if (params.symbolic) {
 		
-		DeductiveSolver solver(dag, this->floats);
-		solver.symbolicSolve();
-		return SATSolver::ABORTED;
+		DeductiveSolver deductive(dag, this->floats);
+		deductive.symbolicSolve(*this->finder);	
+		
+
+		solver->ctrlStore.synths.clear();
+		auto end = this->finder->get_sins().end();
+		for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
+			solver->ctrlStore.synths[it->first] = it->second;
+		}
+		solver->ctrlStore.finalizeSynthOutputs();
+		recordSolution();
+		return SATSolver::SATISFIABLE;
 	}
 
 

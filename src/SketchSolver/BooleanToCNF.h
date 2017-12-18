@@ -158,7 +158,7 @@ public:
 
 
 	int intToBit(int id);
-	void addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
+	SynthInSolver* addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
 
 
 	void writeDIMACS(ofstream& dimacs_file);

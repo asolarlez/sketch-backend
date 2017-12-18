@@ -257,9 +257,19 @@ public:
 
 	bool_node* sqrt(bool_node* bn, DagOptim& dopt) {
 
+		Tuple* ufout = dynamic_cast<Tuple*>( OutType::getTuple("_sqrt_RET") );
+		if (ufout->entries.size() == 0) {
+			vector<OutType*> ot;
+			ot.push_back(OutType::FLOAT);
+			ufout = dynamic_cast<Tuple*>(OutType::makeTuple("_sqrt_RET", ot, -1));
+		}
+
+
 		UFUN_node* uf = new UFUN_node("sqrt_math");
-		uf->multi_mother.push_back(uf);
+		uf->multi_mother.push_back(bn);
 		uf->mother = dopt.getCnode(1);
+		uf->set_tupleName("_sqrt_RET");
+		uf->set_nbits(0);
 		uf->addToParents();
 
 		TUPLE_R_node* rv = new TUPLE_R_node();
@@ -549,7 +559,12 @@ public:
 				for (auto it = prods.begin(); it != prods.end(); ++it) {
 					it->coef = over(minus(it->coef, dopt), denom, dopt);
 				}
-				rest = over(minus(rest, dopt), denom, dopt);
+				if (rest == NULL) {
+					rest = dopt.getCnode(0.0);
+				}
+				else {
+					rest = over(minus(rest, dopt), denom, dopt);
+				}				
 				partialSols.push_back(bestvar.first, this);
 			}
 			else if (bestvar.second.byItself && bestvar.second.highestExp == 1) {

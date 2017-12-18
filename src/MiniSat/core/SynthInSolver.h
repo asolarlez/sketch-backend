@@ -185,6 +185,12 @@ namespace MSsolverNS {
 			maxlevel = 0;
 			id = ++ID;
 		}
+
+
+		Synthesizer* getSynth() {
+			return s;
+		}
+
 		~SynthInSolver() {
 			delete s;
 		}

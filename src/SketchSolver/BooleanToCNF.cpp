@@ -24,6 +24,8 @@ using namespace std;
 #include "EntityResolutionSolver.h"
 #include "ArithmeticExpressionSolver.h"
 #include "SwapperPredicateSolver.h"
+#include "DeductiveSolver.h"
+
 //map < string , map < int, set < ArithExpression* > > >  ArithExprBuilder::ASetMap;
 map < string, ArithExpression *> ArithExprBuilder::ASigMap;
 unordered_map < string, SwapperPredicate *> PredicateBuilder::PSigMap;
@@ -78,6 +80,9 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
     return new ERAtomSyn(_fm);
   } else if (name.find("_GEN_NUM_SYNTH") == 0) {
     return new NumericalSolver(_fm, numericalAbsMap[name]);
+  }
+  else if (name == "_GEN_Algebraic") {
+	  return new DeductiveSolution(name, _fm);
   }else if (mismatch(arithExpr.begin(), arithExpr.end(), name.begin()).first == arithExpr.end()){
 	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
 	  ret->setupParams(name);
@@ -104,7 +109,7 @@ void addDeductiveSolver(DeductiveSolver& dsolve) {
 
 
 
-void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
+SynthInSolver* SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
 	auto sit = sins.find(name);
 	SynthInSolver* sin;
 	if (sit == sins.end()) {
@@ -142,6 +147,7 @@ void SolverHelper::addSynthSolver(const string& name, const string& syntype, vec
 			((MiniSATSolver&)mng).addSynSolvClause(sin, instid, inputid + outid, ci->value, lfromInt(ci->guard));
 		}
 	}
+	return sin;
 }
 
 void SolverHelper::addHelperC(Tvalue& tv){
