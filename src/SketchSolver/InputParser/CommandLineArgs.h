@@ -170,7 +170,7 @@ struct CommandLineArgs{
     spRandBias = 1;
 	sparseArray = -1;
     randomInlining = false;
-	epsilon = 0.01;
+	epsilon = 0.000001;
     numericalSolver = false;
 	nativeInts = false;
 	erSimEvalFName = "";
