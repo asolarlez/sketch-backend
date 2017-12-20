@@ -640,6 +640,7 @@ public:
 class DagFunctionInliner : public DagOptim
 {
 	
+	bool symbolicSolve;
 	
 	BooleanDAG& dag;
 	map<string, BooleanDAG*>& functionMap;

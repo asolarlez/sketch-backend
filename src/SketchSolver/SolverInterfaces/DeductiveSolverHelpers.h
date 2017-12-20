@@ -141,6 +141,13 @@ public:
 		}
 	};
 
+	PartialSolIndex() {
+
+	}
+
+	PartialSolIndex(const PartialSolIndex& other) :idxmap(other.idxmap), order(other.order), sols(other.sols) {
+
+	}
 
 
 	void print();
@@ -202,7 +209,7 @@ class Polynomial {
 public:
 	bool_node* rest; //constant term.
 	vector<Monomial> prods;
-	Polynomial() {}
+	Polynomial() {}	
 	Polynomial(Monomial& mono) {
 		//Polynomial cannot have a mono with empty varpow.
 		if (mono.varpow.size() == 0) {
@@ -219,6 +226,12 @@ public:
 
 	Polynomial(bool_node* novars) {
 		rest = novars;
+	}
+	Polynomial* clone(Ostore<Polynomial>& store) {
+		Polynomial* cl = new(store.newObj())Polynomial();
+		cl->rest = this->rest;
+		cl->prods = this->prods;
+		return cl;
 	}
 
 	bool hasVar(int var) {
@@ -306,6 +319,27 @@ public:
 		rv->father = b;
 		rv->addToParents();
 		return dopt.optAdd(rv);
+	}
+
+	bool_node* and(bool_node* a, bool_node* b, DagOptim& dopt) {
+		bool_node* rv = new AND_node();
+		rv->mother = a;
+		rv->father = b;
+		rv->addToParents();
+		return dopt.optAdd(rv);
+	}
+
+	bool_node* neq(bool_node* a, bool_node* b, DagOptim& dopt) {
+		bool_node* rv = new EQ_node();
+		rv->mother = a;
+		rv->father = b;
+		rv->addToParents();
+		rv = dopt.optAdd(rv);
+
+		bool_node* rv2 = new NOT_node();
+		rv2->mother = rv;
+		rv2->addToParents();
+		return dopt.optAdd(rv2);
 	}
 
 	void simplifyWConstants(PartialSolIndex& partialSols, DagOptim& dopt) {
@@ -480,7 +514,7 @@ public:
 		}
 	}
 
-	pair<int, varstatus> findBestVar() {
+	map<int, varstatus> findBestVars() {
 		//We need to chose the best variable to isolate. 
 		//A variable that only occurs by itself is better than a variable 
 		//that sometimes occurs with other variables.
@@ -509,6 +543,8 @@ public:
 				}
 			}
 		}
+		return vars;
+		/*
 		auto it = vars.begin();
 		auto bestvar = it;
 		for (++it; it != vars.end(); ++it) {
@@ -530,52 +566,10 @@ public:
 			}
 		}
 		return make_pair(bestvar->first, bestvar->second);
+		*/
 	}
 
 
-
-
-	void elimNextVar(PartialSolIndex& partialSols, DagOptim& dopt, Ostore<Polynomial>& store) {
-
-		simplifyWConstants(partialSols, dopt); // first, simplify based on variables for which we already know their value.
-		simplify(partialSols, dopt, store); //then simplify based on variables for which 
-		if (singleVar()) {
-			solveVar(partialSols, dopt);
-		}
-		else {
-			//Now that we have info on all variables, we get to pick the best.
-			auto bestvar = findBestVar();
-			if (bestvar.second.byItself && bestvar.second.highestExp == 1) {
-				//great, we found a linear byitself variable.
-				bool_node* denom = NULL;
-				for (auto it = prods.begin(); it != prods.end(); ++it) {
-					Monomial& mm = *it;
-					if (mm.varpow.size() == 1 && mm.varpow[0].var == bestvar.first) {
-						denom = mm.coef;
-						prods.erase(it);
-						break;
-					}
-				}
-				for (auto it = prods.begin(); it != prods.end(); ++it) {
-					it->coef = over(minus(it->coef, dopt), denom, dopt);
-				}
-				if (rest == NULL) {
-					rest = dopt.getCnode(0.0);
-				}
-				else {
-					rest = over(minus(rest, dopt), denom, dopt);
-				}				
-				partialSols.push_back(bestvar.first, this);
-			}
-			else if (bestvar.second.byItself && bestvar.second.highestExp == 1) {
-				// ok, we found a quadratic byitself var.
-				Assert(false, "NYI");
-			}
-			else {
-				Assert(false, "NYI");
-			}
-		}
-	}
 };
 
 

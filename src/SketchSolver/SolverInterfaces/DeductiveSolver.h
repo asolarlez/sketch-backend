@@ -94,15 +94,37 @@ public:
 					}
 				}
 				else {
-
-					out << "t" << parent->id;
+					if (parent->type == bool_node::NEG) {
+						out << "(!";
+						outParent(out, parent->mother);
+						out << ")";
+					}
+					else {
+						out << "t" << parent->id;
+					}
 				}
 			}			
 		}
 	}
 
+
+
+	void printBoolOp(ostream& out, bool_node* node) {
+		out << "bit t" << node->id << " = ";
+		outParent(out, node->mother);
+		switch (node->type) {
+		case bool_node::EQ: out << " == "; break;	
+		case bool_node::LT: out << " < "; break;
+		default:
+			Assert(false, "NYI");
+		}
+		outParent(out, node->father);
+		out << ";" << endl;
+	}
+
+
 	void printBinop(ostream& out, bool_node* node) {
-		out << "float t" << node->id << " = ";
+		out << "double t" << node->id << " = ";
 		outParent(out, node->mother);
 		switch (node->type) {
 		case bool_node::PLUS: out << " + "; break;
@@ -135,7 +157,7 @@ public:
 		Assert(node->idx == 0, "NYI");
 		Assert(node->mother->type == bool_node::UFUN, "UFUN mother required!");
 		UFUN_node* un = (UFUN_node*) node->mother;
-		out << "float t" << node->id << ";"<<endl;
+		out << "double t" << node->id << ";"<<endl;
 		out << nameTrans(un->get_ufname()) << "(";
 		
 		for (auto it = un->multi_mother.begin(); it != un->multi_mother.end(); ++it) {
@@ -144,6 +166,18 @@ public:
 		}
 		out << "t" << node->id << "); " << endl;
 		
+	}
+
+	void printArracc(ostream& out, ARRACC_node* node) {
+		
+		out << "double t" << node->id << " = (" ;
+		outParent(out, node->mother);
+		out << ") ? ";
+		outParent(out, node->multi_mother[1]);
+		out << " : ";
+		outParent(out, node->multi_mother[0]);		
+		out << "; " << endl;
+
 	}
 	virtual void print(ostream& out) {
 		out << "{" << endl;
@@ -155,8 +189,14 @@ public:
 			case bool_node::TIMES:
 			case bool_node::DIV:
 				printBinop(out, node); break;
+			case bool_node::EQ:
+			case bool_node::LT:
+				printBoolOp(out, node); break;
 			case bool_node::TUPLE_R:
 				printTupleR(out, (TUPLE_R_node*)node); break;
+
+			case bool_node::ARRACC:
+				printArracc(out, (ARRACC_node*)node); break;
 			case bool_node::DST:
 				out << "return ";
 				outParent(out, node->mother);
@@ -194,7 +234,7 @@ class DeductiveSolver {
 
 
 
-	void solveEquations() {
+	vector<pair<PartialSolIndex, bool_node*> > solveEquations() {
 		print();		
 
 		//First, solve all the easy stuff. Find all variables that can be
@@ -222,6 +262,10 @@ class DeductiveSolver {
 
 		print();
 		
+
+		return elimNextVars(equations.begin(), equations.end(), partialSols, dopt, store);
+
+		/*
 		{
 			for (auto it = equations.begin(); it != equations.end(); ++it) {
 				(*it)->elimNextVar(partialSols, dopt, store);
@@ -230,8 +274,81 @@ class DeductiveSolver {
 				partialSols.print();
 			}
 		}
+		*/
 
 	}
+
+	vector<pair<PartialSolIndex, bool_node*> > elimNextVars(vector<Polynomial*>::iterator nextPoly, vector<Polynomial*>::iterator end,  PartialSolIndex& partialSols, DagOptim& dopt, Ostore<Polynomial>& store) {
+		if (nextPoly == end) {
+			vector<pair<PartialSolIndex, bool_node*> > ps;
+			ps.push_back(make_pair(partialSols, dopt.getCnode(true)));
+			return ps;
+		}
+		
+		
+		Polynomial* qq = (*nextPoly)->clone(store);
+		qq->simplifyWConstants(partialSols, dopt); // first, simplify based on variables for which we already know their value.
+		qq->simplify(partialSols, dopt, store); //then simplify based on variables for which 
+		if (qq->singleVar()) {
+			qq->solveVar(partialSols, dopt);
+			return elimNextVars(nextPoly+1, end, partialSols, dopt, store);
+		}
+		else {
+			//Now that we have info on all variables, we get to pick the best.
+			auto bestvars = qq->findBestVars();
+			vector<pair<PartialSolIndex, bool_node*> > ps;
+			for (auto bestvar = bestvars.begin(); bestvar != bestvars.end(); ++bestvar) {
+				Polynomial* next = (qq)->clone(store);
+				ps.push_back(make_pair(partialSols, dopt.getCnode(true)));
+				pair<PartialSolIndex, bool_node*>& last = ps[ps.size() - 1];
+				if (bestvar->second.byItself && bestvar->second.highestExp == 1) {
+					//great, we found a linear byitself variable.
+					bool_node* denom = NULL;
+					for (auto it = next->prods.begin(); it != next->prods.end(); ++it) {
+						Monomial& mm = *it;
+						if (mm.varpow.size() == 1 && mm.varpow[0].var == bestvar->first) {
+							denom = mm.coef;
+							next->prods.erase(it);
+							break;
+						}
+					}
+					for (auto it = next->prods.begin(); it != next->prods.end(); ++it) {
+						it->coef = next->over(next->minus(it->coef, dopt), denom, dopt);
+					}
+					if (next->rest == NULL) {
+						next->rest = dopt.getCnode(0.0);
+					}
+					else {
+						next->rest = next->over(next->minus(next->rest, dopt), denom, dopt);
+					}
+					last.first.push_back(bestvar->first, next);
+					last.second = next->neq(denom, dopt.getCnode(0.0), dopt);
+				}
+				else if (bestvar->second.byItself && bestvar->second.highestExp == 1) {
+					// ok, we found a quadratic byitself var.
+					Assert(false, "NYI");
+				}
+				else {
+					Assert(false, "NYI");
+				}
+			}
+			
+			vector<pair<PartialSolIndex, bool_node*> > output;
+				
+			for (auto it = ps.begin(); it != ps.end(); ++it) {
+				vector<pair<PartialSolIndex, bool_node*> > ps2 = elimNextVars(nextPoly+1, end, it->first, dopt, store);
+				for (auto other = ps2.begin(); other != ps2.end(); ++other) {
+					output.push_back(make_pair(other->first, qq->and(other->second, it->second, dopt) ));
+
+				}
+			}
+
+			return output;
+			
+		}
+	}
+
+
 
 public:
 
@@ -252,11 +369,34 @@ public:
 		}
 	}
 
-	void loadSols(SolverHelper& slv) {
+
+	bool_node* join(vector<pair<PartialSolIndex, bool_node*> >& sols, int id) {
+		if (sols.size() == 0) {
+			Assert(false, "???????");
+			return NULL;
+		}
+		if (sols.size() == 1) {
+			return sols[0].first.get(id);
+		}
+		auto it = sols.begin();
+		bool_node* out = it->first.get(id);
+		for (++it; it != sols.end(); ++it) {
+			PartialSolIndex& partialSol = it->first;
+			ARRACC_node* an = new ARRACC_node();
+			an->mother = it->second;
+			an->multi_mother.push_back(out);
+			an->multi_mother.push_back(partialSol.get(id));
+			an->addToParents();
+			out = dopt.optAdd(an);
+		}
+		return out;
+	}
+
+	void loadSols(SolverHelper& slv, vector<pair<PartialSolIndex, bool_node*> >& sols) {
 		Assert(dag->getNodesByType(bool_node::DST).size() == 0, "NO NO NO!");
 		vector<map<int, int> > inputs;
 		for (auto it = unknowns.begin(); it != unknowns.end(); ++it) {
-			bool_node* expr = partialSols.get((*it)->id);
+			bool_node* expr = join(sols, (*it)->id);
 			UFUN_node* uf = (UFUN_node*)(*it)->mother;			
 			string name = uf->get_ufname();
 			DST_node* dst = new DST_node();
@@ -341,9 +481,9 @@ public:
 
 		}
 
-		solveEquations();
+		vector<pair<PartialSolIndex, bool_node*> > ps = solveEquations();
 
-		loadSols(slv);
+		loadSols(slv, ps);
 		
 
 	}	

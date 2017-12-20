@@ -635,7 +635,12 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						if (node.hardAsserts()) {
 						  ufun->makeAssertsHard();
 						}
-            
+						
+						if (ufun->getOtype()->str() == "_GEN_Solver") {
+							symbolicSolve = true;
+						}
+
+
 						if (!node.replaceFun) {
 						  ufun->replaceFun = false;
 						}
