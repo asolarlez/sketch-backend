@@ -32,6 +32,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
   offset = 0;
   ownsNodes = true;
   intSize = 2;
+  useSymbolicSolver = false;
 #ifdef SCHECKMEM
   cout<<"Checking allocation"<<endl;
   allocated.insert(this);
@@ -1340,6 +1341,7 @@ BooleanDAG* BooleanDAG::clone(){
 	bdag->n_inputs = n_inputs;
 	bdag->n_outputs = n_outputs;
 	bdag->intSize = intSize;
+	bdag->useSymbolicSolver = useSymbolicSolver;
 
 	for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
 		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );

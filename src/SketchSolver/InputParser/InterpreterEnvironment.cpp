@@ -865,8 +865,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		solver->setup2QBF(out);
 	}
 
-	if (params.symbolic) {
-		
+	if (dag->useSymbolic()) {		
 		DeductiveSolver deductive(dag, this->floats);
 		deductive.symbolicSolve(*this->finder);	
 		

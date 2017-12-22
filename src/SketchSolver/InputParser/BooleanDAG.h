@@ -64,7 +64,7 @@ private:
   int offset;
   int intSize;
   bool ownsNodes;
-  
+  bool useSymbolicSolver;
 
   vector<bool_node*> nodes;
   vector<int> layer_sizes;
@@ -244,6 +244,14 @@ Dllist assertions;
   void print_wrapper(const char* fileName)const;
   void lprint_wrapper(const char* fileName);
   
+  void setUseSymbolic() {
+	  useSymbolicSolver = true;
+  }
+
+  bool useSymbolic() {
+	  return useSymbolicSolver;
+  }
+
    BooleanDAG(const string& name_="anon", bool isModel_=false);
 
 	virtual ~BooleanDAG();

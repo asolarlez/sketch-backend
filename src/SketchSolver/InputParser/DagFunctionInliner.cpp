@@ -983,6 +983,9 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	// cout<<" added nodes = "<<newnodes.size()<<endl;
     seenControls.clear();
     cleanup(dag);
+	if (this->symbolicSolve) {
+		dag.setUseSymbolic();
+	}
 }
 
 
