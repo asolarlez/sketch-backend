@@ -27,7 +27,8 @@ onlySpRandomize(p_onlySpRandomize),
 spRandBias(p_spRandBias),
 replaceDepth(0),
 pureFunctions(p_pureFunctions),
-hcoder(p_hcoder)
+hcoder(p_hcoder),
+symbolicSolve(false)
 {
 	alterARRACS();
 }
