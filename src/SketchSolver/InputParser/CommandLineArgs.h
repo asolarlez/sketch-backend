@@ -92,6 +92,7 @@ class CommandLineArgs{
   int nprocs;
   string erSimEvalFName;
   bool numericalSolver;
+  bool nativeInts;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
   bool symbolic;
@@ -170,8 +171,9 @@ class CommandLineArgs{
     spRandBias = 1;
 	sparseArray = -1;
     randomInlining = false;
-	epsilon = 0.0000001;
+	epsilon = 0.000001;
     numericalSolver = false;
+	nativeInts = false;
 	erSimEvalFName = "";
 	custIntSize = 5;
 	symbolic = true;
@@ -201,6 +203,12 @@ class CommandLineArgs{
         input_idx = ii+1;
         continue;
       }
+	  if (string(argv[ii]) == "-nativeints") {
+		  cout << "NATIVE INTS ON";
+		  nativeInts = true;
+		  input_idx = ii + 1;
+		  continue;
+	  }
       if( string(argv[ii]) == "-numericalsolver" ){
         numericalSolver = true;
         input_idx = ii+1;

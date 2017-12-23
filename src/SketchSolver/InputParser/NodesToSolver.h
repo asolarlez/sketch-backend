@@ -5,10 +5,13 @@
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
 #include "FloatSupport.h"
+#include "CommandLineArgs.h"
 
 #ifndef INTEGERBOUND
 # define INTEGERBOUND  8192*6
 #endif
+
+extern CommandLineArgs* PARAMS;
 
 // #define Dout( msg ) msg
 
@@ -132,7 +135,7 @@ public:
 	/* Initialize the default "one" integer. */
 	tvOne.num_ranges.push_back (guardedVal(p_dir.YES, 1));
 	tpl_store.push_back(NULL);
-	NATIVEINTS = false;
+	NATIVEINTS = PARAMS->nativeInts;
     };
     
 	int lastGoodVal(int id){

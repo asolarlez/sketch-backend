@@ -172,7 +172,7 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 void NodeHardcoder::visit( UFUN_node& node ){
 	if(type == bool_node::SRC){		
 
-		if (floats.hasFun(node.get_ufname())) {
+		if (floats.hasFun(node.get_ufname()) || node.get_ufname() == "_cast_int_float_math") {
 			DagOptim::visit(node);
 			return;
 		}

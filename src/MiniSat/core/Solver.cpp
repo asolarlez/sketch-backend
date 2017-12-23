@@ -510,22 +510,12 @@ void Solver::cancelUntil(int level) {
 // Major methods:
 
 
+
 Lit Solver::pickBranchLit(int polarity_mode, double random_var_freq)
 {
     Var next = var_Undef;
 
-	if(false && /*firstTry &&*/ inputvars.size() > 0){
-		next = inputvars.last(); 
-		inputvars.pop();
-		while(toLbool(assigns[next]) != l_Undef && inputvars.size() > 0){
-			next = inputvars.last(); 
-			inputvars.pop();
-		}
-		if(toLbool(assigns[next]) == l_Undef){
-			return Lit(next, irand(random_seed, 2));
-		}
-	}
-
+	
     // Random decision:
     if (drand(random_seed) < random_var_freq && !order_heap.empty()){
         next = order_heap[irand(random_seed,order_heap.size())];
@@ -544,7 +534,7 @@ Lit Solver::pickBranchLit(int polarity_mode, double random_var_freq)
     switch (polarity_mode){
     case polarity_true:  sign = false; break;
     case polarity_false: sign = true;  break;
-    case polarity_user:  sign = polarity[next]; break;
+	case polarity_user: sign = next >= 0? polarity[next] : true; break;
     case polarity_rnd:   sign = irand(random_seed, 2); break;
     default: assert(false); }
 
@@ -719,7 +709,9 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     while (analyze_stack.size() > 0){
         assert(reason[var(analyze_stack.last())] != NULL);
         Clause& c = *reason[var(analyze_stack.last())]; analyze_stack.pop();
-
+		if (c.mark() == INTSPECIAL) {
+			return false;
+		}
         for (int i = 1; i < c.size(); i++){
             Lit p  = c[i];
             if (!seen[var(p)] && level[var(p)] > 0){
@@ -1109,7 +1101,6 @@ int DEBUGCOUNT = 0;
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
 
-
 Clause* Solver::propagate()
 {
     Clause* confl     = NULL;
@@ -1151,6 +1142,7 @@ Clause* Solver::propagate()
 						Intclause* iconf = NULL;
 						//						cout<<"WHERE: "<<(num_props+propagations)<<endl;	
 						//						intsolve->dump();
+						//cout << "vr = " << vr << " val= " << val << endl;
 						if (goodsofar) {
 							iconf = intsolve->propagate();
 							goodsofar = (iconf == NULL);
@@ -1170,8 +1162,11 @@ Clause* Solver::propagate()
 								qhead = trail.size();
 								goto FoundWatch;
 							} else {
-								//cout << vr << "(" << val << ")";
+								
 								vec<Lit>& ps = intsolve->getSummary(vr, NULL, val, true);
+
+								
+
 								Assert(ps.size() > 0, "NOT BIG");
 								Lit t = ps[0];
 								ps.push(t);
@@ -1232,6 +1227,8 @@ Clause* Solver::propagate()
 							//vec<Lit> old;
 							//intsolve->getSummaryA(vr, iconf).copyTo(old);
 							vec<Lit>& ps = intsolve->getSummary(vr, iconf, 0, false);
+
+							
 							//intsolve->generateInnerConflict(iconf, decisionLevel(), ps.size() / 2);
 							tempstore.growTo(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
 							confl = new (&tempstore[0]) Clause(ps, true);
@@ -1560,6 +1557,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 			
 			
 			analyze(confl, learnt_clause, backtrack_level);
+			
 			          
             cancelUntil(backtrack_level);
             assert(value(learnt_clause[0]) == l_Undef);
@@ -1791,7 +1789,16 @@ lbool Solver::solve(const vec<Lit>& assumps)
     if (status == l_True){
         // Extend & copy model:
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++) model[i] = value(i);
+		cout << "sols={";
+		for (int i = 0; i < nVars(); i++) { 
+			auto val = value(i);
+			model[i] = val;
+			polarity[i] = (char)(val == l_False);
+			if (i > 0) { cout << ", "; }
+			cout << ((val == l_False)?"-1":"1");
+		}
+		cout << endl;
+		polarity_mode = polarity_user;
 #ifdef _DEBUG
         verifyModel();
 #endif

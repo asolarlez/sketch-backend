@@ -652,6 +652,9 @@ inline
 double  DagOptim::getFval(const bool_node* n1) {
 	//Assert( isConst(n1), "This node is not a constant !!");
 	const CONST_node * cn = (CONST_node*)(n1);
+	if (!cn->isFloat()) {
+		return 0.0;
+	}
 	return cn->getFval();
 }
 
