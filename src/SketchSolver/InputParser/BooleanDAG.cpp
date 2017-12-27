@@ -1277,7 +1277,7 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 	}
 
 	nodesByType[bool_node::DST].clear();
-	
+	this->useSymbolicSolver = this->useSymbolicSolver || bdag->useSymbolicSolver;
 	removeNullNodes();
 	cleanup();
 	delete bdag;

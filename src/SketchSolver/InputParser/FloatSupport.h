@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <functional>
 
 using namespace std;
 
@@ -137,6 +138,20 @@ int FloatOp<Op>::operator()(int x, int y) {
 	float yf = fm.getFloat(y);
 	return fm.getIdx(op(xf, yf));
 }
+
+template<typename T>
+class FloatOp<std::divides<T> > {
+	FloatManager& fm;
+public:
+	FloatOp(FloatManager& _fm) :fm(_fm) {}
+	int operator()(int x, int y) {
+		if (y == 0) { return 0;  }
+		float xf = fm.getFloat(x);
+		float yf = fm.getFloat(y);
+		return fm.getIdx((xf / yf));
+	}
+};
+
 
 inline int FloatFun::operator()(int x) {
 	float xf = fm.getFloat(x);
