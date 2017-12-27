@@ -528,28 +528,21 @@ public:
 			}
 		}
 
-		bool pp = false;
-		if (pp) {
-			dump();
-		}
+		
 		for (; it != ranges.rend(); --it) {
 			iVar iv = it->var;
 			if (seen[iv] == 1) {
 				seen[iv] = 0;
 				--scount;
 				Intclause* ic = it->rson;
-				if (pp) {
-					cout << iv <<"("<< it->range.getLo()<<", "<<it->range.getHi()<< ") : ";
-					if (ic != NULL) ic->print();
-					else cout << endl;
-				}
+				
 				if (ic == NULL) {
 					Range& r = it->range;
 					if (r.isSingle()) {
 						Lit tmp;
 						if (checkLegal(iv, r.getLo(), tmp)) {
 							if (var(tmp) != var_Undef) {
-								if (pp) { cout << "ADD " << iv <<":"<< toInt(~tmp) << "(" << r.getLo() << ")"<<endl; }
+								
 								explain.push(~tmp);
 							}
 						}
@@ -566,10 +559,7 @@ public:
 
 						seen[iv] = 1;
 						++scount;
-						if (pp) {
-							cout << "CA: " << iv << "  " << " r=(" << it->range.getLo() << ", " << it->range.getHi() << ") ";
-							ic->print();
-						}
+						
 						iVar ivv = (*ic)[1];
 						if (seen[ivv] == 0) {
 							seen[ivv] = 1;
