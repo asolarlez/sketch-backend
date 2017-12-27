@@ -979,8 +979,8 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	}
 	
 	fval.makeSparse (dir);
-	bool isSum = node.type == bool_node::PLUS || node.type == bool_node::TIMES;
-	bool skipZeros = node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD;
+	bool isSum = (node.type == bool_node::PLUS || node.type == bool_node::TIMES) && node.getOtype() != OutType::FLOAT;
+    bool skipZeros = (node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD) && node.getOtype() != OutType::FLOAT;
   
 	map<int, int, COMPARE_KEY> numbers(c);
 	map<int, vector<int> > qnumbers;
@@ -3198,33 +3198,33 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 			
 		
-		//cout << (*node_it)->lprint() << "  ";
+		/*cout << (*node_it)->lprint() << endl;
 		const Tvalue& tv = node_ids[(*node_it)->id];
       if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
 		  
-      //cout << " [ ";
-      //for (int i = 0; i < tv.getSize(); i++)
-        //cout << floats(tv.num_ranges[i].value) << ", ";
-      //cout << " ] ";
+      cout << " [ " << tv.getSize() << " ";
+      for (int i = 0; i < tv.getSize(); i++)
+        cout << tv.num_ranges[i].guard << ":" <<floats(tv.num_ranges[i].value) << ", ";
+      cout << " ] ";
 	  }
 	  else {
 		  if (tv.isSparse()) {
-			  //for (int i = 0; i < tv.getSize(); i++)
-				  //cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
-			  //cout << " ] ";
+			  for (int i = 0; i < tv.getSize(); i++)
+				  cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
+			  cout << " ] ";
 		  }
 		  else {
 			  if (tv.isInt()) {
-				  //cout << "INT=" << tv.getId();
+				  cout << "INT=" << tv.getId();
 			  }
 			  else {
-				  //cout << "BIT=" << tv.getId();
+				  cout << "BIT=" << tv.getId();
 			  }
 			  
 		  }
 	  }
 	  
-	  //cout << endl;
+	  cout << endl;*/
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
