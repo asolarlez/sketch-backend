@@ -39,12 +39,16 @@ class NodesToSolver : public NodeVisitor {
   template<typename EVAL>
 	void compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue& out, EVAL eval);
     template<class COMPARE_KEY = NormalComp, typename THEOP> void processArith (bool_node &node, THEOP comp, COMPARE_KEY c = NormalComp());
+	template<class COMPARE_KEY = NormalComp, typename THEOP> void processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c = NormalComp());
     template<typename THEOP> int doArithExpr (int quant1, int quant2,
 					      int id1, int id2, THEOP comp);
   template<typename EVAL>
 	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval);
 	template<typename EVAL>
 	void processLT (LT_node& node, EVAL eval);
+
+
+
 	vector<int> lgv;
     Tvalue tvYES;
     Tvalue tvOne;

@@ -410,6 +410,13 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 	//cout << "compareArrays: cvar=" << cvar << endl;
 }
 
+
+
+
+
+
+
+
 template<typename EVAL>
 void NodesToSolver::processLT (LT_node& node, EVAL eval ){
 	bool_node *mother = node.mother;
@@ -921,6 +928,148 @@ NodesToSolver::intBvectMult (arith_node &node)
 }
 #endif
 
+
+
+bool tvSimilar(Tvalue& t1, Tvalue& t2) {
+	if (t1.getSize() != t2.getSize()) { return false; }
+	for (int i = 0; i < t1.getSize(); ++i) {
+		if (t1.getId(i) != t2.getId(i)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
+template<class COMPARE_KEY, typename THEOP> void
+NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
+{
+	bool_node* mother = node.mother;
+	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
+
+	bool_node* father = node.father;
+	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
+	mval.makeSparse(dir);
+	fval.makeSparse(dir);
+
+	map<int, int, COMPARE_KEY> numbers(c);
+	map<int, vector<int> > qnumbers;
+	Tvalue& oval = node_ids[node.id];
+
+
+	Dout(cout << "ARITHOP " << mval << "  OP  " << fval << endl);
+	Dout(cout << "OPERATING " << node.father->get_name() << "  WITH  " << node.mother->get_name() << endl);
+	int vals = 0;
+	//cout<<" BEFORE THE LOOPS"<<endl;
+	//				timerclass atimer("TA");
+	//				timerclass btimer("TB");
+	//				timerclass ctimer("TC");
+	//				timerclass dtimer("TD");
+	
+	
+	if (tvSimilar(mval, fval)) {
+
+		for (int i = 0; i < mval.getSize(); ++i) {
+			int j = i;
+
+			int quant = doArithExpr(mval[i], fval[j], mval.getId(i), fval.getId(j), comp);
+
+			qnumbers[quant].push_back(i);
+			qnumbers[quant].push_back(j);
+		}
+	}
+	else {
+
+		for (int i = 0; i < mval.getSize(); ++i) {
+			for (int j = 0; j < fval.getSize(); ++j) {
+
+				int quant = doArithExpr(mval[i], fval[j], mval.getId(i), fval.getId(j), comp);
+				
+				qnumbers[quant].push_back(i);
+				qnumbers[quant].push_back(j);
+			}
+		}
+	}
+
+	vector<int> fidxs(fval.getSize(), 0);
+	vector<int> midxs(mval.getSize(), 0);
+	for (auto it = qnumbers.begin(); it != qnumbers.end(); ++it) {
+		bool multiple = false;
+		vector<pair<int, int> > mallsame;
+		vector<pair<int, int> > fallsame;
+		fidxs.assign(fval.getSize(), 0);
+		midxs.assign(mval.getSize(), 0);
+		for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit+=2) {
+			midxs[*pairit] ++;
+			fidxs[*(pairit + 1)] ++;
+			if (midxs[*pairit] > 1 || fidxs[*(pairit + 1)] > 1) {
+				multiple = true;
+			}
+			if (midxs[*pairit] == fval.getSize()) {
+				mallsame.push_back(make_pair(it->first,*pairit) );
+			}
+			if(fidxs[*(pairit + 1)] == mval.getSize()) {
+				fallsame.push_back(make_pair(it->first, *(pairit + 1)));
+			}
+
+		}
+		if (mallsame.size()>0 || fallsame.size()>0) {
+
+			for (auto it = mallsame.begin(); it != mallsame.end(); ++it) {
+				auto numit = numbers.find(it->first);
+				if (numit == numbers.end()) {
+					numbers[it->first] = mval.getId(it->second);
+				}
+				else {
+					numit->second = dir.addOrClause(numit->second, mval.getId(it->second));
+				}
+			}
+			for (auto it = fallsame.begin(); it != fallsame.end(); ++it) {
+				auto numit = numbers.find(it->first);
+				if (numit == numbers.end()) {
+					numbers[it->first] = fval.getId(it->second);
+				}
+				else {
+					numit->second = dir.addOrClause(numit->second, fval.getId(it->second));
+				}
+			}
+			for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit += 2) {
+				int mv = *pairit;
+				int fv = *(pairit + 1);
+				if (midxs[mv] != fval.getSize() && fidxs[fv] != mval.getSize()) {
+					numbers[it->first] = dir.addOrClause(numbers[it->first], dir.addAndClause(mval.getId(mv), fval.getId(fv)));
+				}				
+			}
+		}else if (!multiple) {
+			for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit += 2) {
+				*pairit = mval.getId(*pairit);
+				*(pairit + 1) = fval.getId(*(pairit + 1));
+			}
+			int id = dir.addExPairConstraint(&(it->second[0]), it->second.size() / 2);
+			numbers[it->first] = id;
+			++vals;
+		}
+		else {
+			int cvar2 = -YES;
+			for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit += 2) {
+				int cvar = dir.addAndClause(mval.getId(*pairit), fval.getId(*(pairit + 1)));
+				cvar2 = dir.addOrClause(cvar, cvar2);				
+			}
+			numbers[it->first] = cvar2;
+			++vals;
+		}
+	}
+
+	
+
+	Dout(cout << "tmp size = " << numbers.size() << endl);
+	populateGuardedVals(oval, numbers);
+
+}
+
+
+
+
 template<class COMPARE_KEY, typename THEOP> void
 NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 {    
@@ -1064,6 +1213,15 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 		//cout<<" ENDLOOP "<<endl;
 	    }
 	}
+
+	/*
+	When 'sum' is true, we have the property that every value appears only once per column and once per row. 
+	This property is exploited by addExPairConstraint. For every output value, qnumbers has the list
+	of row-column pairs that can produce that value. 
+	
+	
+	*/
+
 
 	if(isSum){
 		for(map<int, vector<int> >::iterator it = qnumbers.begin(); it != qnumbers.end(); ++it){
@@ -1418,7 +1576,7 @@ void NodesToSolver::visit( PLUS_node& node ){
 	intBvectPlus (node);
 #else
 	if (node.getOtype() == OutType::FLOAT) {
-		processArith<FloatComp>(node, FloatOp<plus<float> >(floats), FloatComp(floats));
+		processFloatArith<FloatComp>(node, FloatOp<plus<float> >(floats), FloatComp(floats));
 	}else {
 		processArith(node, plus<int>());
 	}	
@@ -1430,7 +1588,7 @@ void NodesToSolver::visit( PLUS_node& node ){
 void NodesToSolver::visit( TIMES_node& node ){
 	Dout( cout<<" TIMES: "<<node.get_name()<<endl );	
 	if (node.getOtype() == OutType::FLOAT) {
-		processArith<FloatComp>(node, FloatOp<multiplies<float> >(floats), FloatComp(floats));
+		processFloatArith<FloatComp>(node, FloatOp<multiplies<float> >(floats), FloatComp(floats));
 	}
 	else {
 		processArith(node, multiplies<int>());
@@ -1442,7 +1600,7 @@ void NodesToSolver::visit( TIMES_node& node ){
 void NodesToSolver::visit(DIV_node& node) {
 	Dout(cout << " DIV " << endl);
 	if (node.getOtype() == OutType::FLOAT) {
-		processArith<FloatComp>(node, FloatOp<divides<float> >(floats), FloatComp(floats));
+		processFloatArith<FloatComp>(node, FloatOp<divides<float> >(floats), FloatComp(floats));
 	} else {
 		processArith(node, divides<int>());
 	}
@@ -3198,20 +3356,20 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 			
 		
-		//cout << (*node_it)->lprint() << "  ";
+		cout << (*node_it)->lprint() << "  ";
 		const Tvalue& tv = node_ids[(*node_it)->id];
       if ((*node_it)->getOtype() == OutType::FLOAT && !tv.isBvect()) {
 		  
-      //cout << " [ ";
-      //for (int i = 0; i < tv.getSize(); i++)
-        //cout << floats(tv.num_ranges[i].value) << ", ";
-      //cout << " ] ";
+      cout << " [ ";
+      for (int i = 0; i < tv.getSize(); i++)
+        cout << floats(tv.num_ranges[i].value) << ", ";
+      cout << " ] "<<endl;
 	  }
 	  else {
 		  if (tv.isSparse()) {
-			  //for (int i = 0; i < tv.getSize(); i++)
-				  //cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
-			  //cout << " ] ";
+			  for (int i = 0; i < tv.getSize(); i++)
+				  cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
+			  cout << " ] " << endl;
 		  }
 		  else {
 			  if (tv.isInt()) {
