@@ -1772,6 +1772,12 @@ private:
 			}
 			if(towatch == -1){
 				//They are all defined and they are all the same.
+				auto crange = ranges.getRange(cond);
+				if (crange.getLo() < 0 || crange.getHi() > 1) {
+					//if there is a posibility that the condition is out of range, there is not much we can do.
+					//but if it is guaranteed to be within range, then we know the output must equal watched.val.
+					return ADV;
+				}
 				if(vx.isDef()){
 					if(vx.v() != watched.val){
 						return CONFL;
@@ -1786,15 +1792,20 @@ private:
 					}
 				}
 			}else{
-				if(sz == 4 && vx.isDef() && watched.val != vx.v()){
-					if(uncheckedSetVal((*c)[towatch], vx.v(), watched.level, c)){
-						if(uncheckedSetVal(cond, towatch-2, watched.level, c)){
-							return ADV;
-						}else{
+				if (sz == 4 && vx.isDef() && watched.val != vx.v()) {
+					auto crange = ranges.getRange(cond);
+					if ((vx.v() != 0 || (crange.getLo() >= 0 && crange.getHi() <= 1))) {
+						if (uncheckedSetVal((*c)[towatch], vx.v(), watched.level, c)) {
+							if (uncheckedSetVal(cond, towatch - 2, watched.level, c)) {
+								return ADV;
+							}
+							else {
+								return CONFL;
+							}
+						}
+						else {
 							return CONFL;
 						}
-					}else{
-						return CONFL;
 					}
 				}
 				//Not all defined, but all the defined ones are the same.
