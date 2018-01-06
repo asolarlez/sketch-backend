@@ -321,7 +321,7 @@ public:
 		return dopt.optAdd(rv);
 	}
 
-	bool_node* and(bool_node* a, bool_node* b, DagOptim& dopt) {
+	bool_node* band(bool_node* a, bool_node* b, DagOptim& dopt) {
 		bool_node* rv = new AND_node();
 		rv->mother = a;
 		rv->father = b;

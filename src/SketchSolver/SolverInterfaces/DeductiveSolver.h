@@ -338,7 +338,7 @@ class DeductiveSolver {
 			for (auto it = ps.begin(); it != ps.end(); ++it) {
 				vector<pair<PartialSolIndex, bool_node*> > ps2 = elimNextVars(nextPoly+1, end, it->first, dopt, store);
 				for (auto other = ps2.begin(); other != ps2.end(); ++other) {
-					output.push_back(make_pair(other->first, qq->and(other->second, it->second, dopt) ));
+					output.push_back(make_pair(other->first, qq->band(other->second, it->second, dopt) ));
 
 				}
 			}
