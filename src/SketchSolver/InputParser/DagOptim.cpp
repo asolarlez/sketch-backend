@@ -1572,7 +1572,6 @@ void DagOptim::visit( UFUN_node& node ){
 
 	if (floats.hasFun(node.get_ufname())) {
 		if (isConst(node.multi_mother[0])) {
-			cout << node.lprint() << endl;
 			auto ff = floats.getFun(node.get_ufname());
 			bool_node* tbn  = getCnode(ff.apply(getFval(node.multi_mother[0])));
 			

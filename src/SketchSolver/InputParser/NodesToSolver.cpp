@@ -418,7 +418,7 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 
 
 template<typename EVAL>
-void NodesToSolver::processLT (LT_node& node, EVAL eval ){
+void NodesToSolver::processLT (LT_node& node, EVAL& eval ){
 	bool_node *mother = node.mother;
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 

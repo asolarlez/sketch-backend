@@ -45,7 +45,7 @@ class NodesToSolver : public NodeVisitor {
   template<typename EVAL>
 	void processEq(Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval);
 	template<typename EVAL>
-	void processLT (LT_node& node, EVAL eval);
+	void processLT (LT_node& node, EVAL& eval);
 
 
 
