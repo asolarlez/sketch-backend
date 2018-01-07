@@ -27,7 +27,8 @@ DagOptim::~DagOptim()
 //extern CommandLineArgs* PARAMS;
 
 CONST_node* DagOptim::getCnode(double c){
-	long long int code = floats.getIdx(c) << 1 | 1;
+	long long int idx = floats.getIdx(c);
+	long long int code = idx << 1 | 1;
 	
 	if( cnmap.find(code) == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(c);
@@ -43,12 +44,14 @@ CONST_node* DagOptim::getCnode(double c){
 
 
 CONST_node* DagOptim::getCnode(int val){
-	map<long long int, CONST_node*>::iterator fit = cnmap.find(val<<1);
+	long long int idx = val;
+	long long int code = idx << 1;
+	map<long long int, CONST_node*>::iterator fit = cnmap.find(code);
 	if( fit == cnmap.end() ){
 		CONST_node* cnode = new CONST_node(val);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
-		cnmap[val<<1] = cnode;
+		cnmap[code] = cnode;
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
 		return cnode;
 	}else{
@@ -780,7 +783,7 @@ void DagOptim::visit( NOT_node& node ){
 
 
 void DagOptim::visit( PLUS_node& node ){
-	
+	cout << " In PLUS " << node.lprint() << endl;
 	bool_node* mother = node.mother;
 	bool_node* father = node.father;
 	int nc = 0;
@@ -2693,12 +2696,15 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 }
 
 bool_node* DagOptim::computeOptim(bool_node* node){
+	cout << " PRE = " << node->lprint() << endl;
     node->accept(*this);
 	node = rvalue;
 	bool_node* tmp = node;
    if(node->type != bool_node::UFUN){
 	   //if it is ufun, accept already called computeCSE.
+	   cout << " BEF = " << node->lprint() << endl;
 		tmp = cse.computeCSE(node);
+		cout << " AFT = " << tmp->lprint() << endl;
    }
 	if(tmp != node){
 		if(newnodes.size() > 0 && node == stillPrivate && stillPrivate == *( newnodes.rbegin() )){

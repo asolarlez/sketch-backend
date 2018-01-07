@@ -29,6 +29,7 @@ void BooleanDAGCreator::finalize() {
 	if (PARAMS->verbosity>7) {
 		cout << "after ba size = " << dag->size() << endl;
 	}
+	dag->lprint(cout);
 }
 
 bool_node* BooleanDAGCreator::get_node(const string& name) {
