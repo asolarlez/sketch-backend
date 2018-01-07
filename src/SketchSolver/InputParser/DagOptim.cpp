@@ -782,8 +782,7 @@ void DagOptim::visit( NOT_node& node ){
 }
 
 
-void DagOptim::visit( PLUS_node& node ){
-	cout << " In PLUS " << node.lprint() << endl;
+void DagOptim::visit( PLUS_node& node ){	
 	bool_node* mother = node.mother;
 	bool_node* father = node.father;
 	int nc = 0;
@@ -2696,15 +2695,12 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 }
 
 bool_node* DagOptim::computeOptim(bool_node* node){
-	cout << " PRE = " << node->lprint() << endl;
     node->accept(*this);
 	node = rvalue;
 	bool_node* tmp = node;
    if(node->type != bool_node::UFUN){
 	   //if it is ufun, accept already called computeCSE.
-	   cout << " BEF = " << node->lprint() << endl;
 		tmp = cse.computeCSE(node);
-		cout << " AFT = " << tmp->lprint() << endl;
    }
 	if(tmp != node){
 		if(newnodes.size() > 0 && node == stillPrivate && stillPrivate == *( newnodes.rbegin() )){
