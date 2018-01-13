@@ -195,6 +195,8 @@ void BooleanDAG::layer_graph(){
 
 
 
+//WARNING: This leaves nodesByType[bool_node::ASSERT] holding garbage pointers.
+//They will get cleaned up by cleanup.
 void BooleanDAG::replace(int original, bool_node* replacement){	
 	int i = original;
 	Assert( i < nodes.size() && i >= 0, "Out of bounds violation "<<i<<" >= "<<nodes.size()<<endl);
@@ -216,8 +218,8 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 	}
 
 	
-	
-	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL || onode->type == bool_node::ASSERT || onode->type == bool_node::UFUN){
+	//The assert list in nodesByType is left intentionally out of date, because it is rebuilt by cleanup later anyway.
+	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL ||  onode->type == bool_node::UFUN){
 		vector<bool_node*>& bnv = nodesByType[onode->type];
 		vector<bool_node*>::iterator end = bnv.end();
 		for(vector<bool_node*>::iterator it = bnv.begin(); it < end; ++it){
@@ -504,7 +506,6 @@ void BooleanDAG::cleanup(){
     }
   }
   {
-	  vector<bool_node*>& vn = nodesByType[bool_node::ASSERT];
 	  {
 		  DllistNode* cur = assertions.head;
 		  while(cur != NULL){
@@ -518,9 +519,7 @@ void BooleanDAG::cleanup(){
 				//  			  if(tbn->type != bool_node::ASSERT){ cout<<tbn->lprint()<<endl;}
 			  //}
 			  cur = cur->next;
-		  }
-    
-		  sort(vn.begin(), vn.end(), comp_id);
+		  }    
 	  }
   }
   {
@@ -575,11 +574,16 @@ void BooleanDAG::cleanup(){
   swap(tmpv, nodes);
   removeNullNodes();
   sort(nodes.begin(), nodes.end(), comp_id);
+  vector<bool_node*>& nvec = nodesByType[bool_node::ASSERT];
+  nvec.clear();
    DllistNode* cur = this->assertions.head;
   DllistNode* last=NULL;
   for(int i=0; i < nodes.size(); ++i){
 	bool_node* onode = nodes[i];
 	if( isDllnode(onode) ){
+			if (onode->type == bool_node::ASSERT) {
+				nvec.push_back(onode);
+			}
 			DllistNode* dn = getDllnode(onode);
 			if(dn != cur){
 				//dn is out of place in the list. we need to put it back in its place.
@@ -591,7 +595,7 @@ void BooleanDAG::cleanup(){
 			}
 			last = cur; 
 			cur = cur->next; 
-		}
+	}
   }
 }
 
