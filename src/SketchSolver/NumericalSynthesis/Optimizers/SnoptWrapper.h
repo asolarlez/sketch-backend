@@ -101,39 +101,35 @@ public:
                             double dist = 1000;
                             if (p->eval->hasSqrtDist(node)) {
                                 dist = p->eval->computeSqrtDist(node, grad);
-                            } else {
-                                GradUtil::default_grad(grad);
-                            }
-                            F[fcounter++] = dist;
-                            for (int j = 0; j < *n; j++) {
-                                G[gcounter++] = gsl_vector_get(grad, j);
+                                F[fcounter++] = dist;
+                                for (int j = 0; j < *n; j++) {
+                                    G[gcounter++] = gsl_vector_get(grad, j);
+                                }
                             }
                         } else if (node->type == bool_node::ASSERT) {
                             if (p->onlyInputs) continue;
-
-                            int fidx;
-                            int gidx;
-                            if (((ASSERT_node*)node)->isHard()) {
-                                fidx = 0;
-                                gidx = 0;
-                            } else {
-                                fidx = fcounter++;
-                                gidx = gcounter;
-                                gcounter += *n;
-                            }
-                            double dist = 0;
                             if (p->eval->hasDist(node->mother)) {
+                                double dist = 0;
+                                int fidx;
+                                int gidx;
+                                if (((ASSERT_node*)node)->isHard()) {
+                                    fidx = 0;
+                                    gidx = 0;
+                                } else {
+                                    fidx = fcounter++;
+                                    gidx = gcounter;
+                                    gcounter += *n;
+                                }
+                                
                                 dist = p->eval->computeDist(node->mother, grad);
-                            } else {
-                                dist = (fidx == 0) ? 0: 1000;
-                                GradUtil::default_grad(grad);
+                            
+                                F[fidx] = dist;
+                                //cout << node->mother->lprint() << " " << dist << endl;
+                                for (int j = 0; j < *n; j++) {
+                                    G[gidx + j] = gsl_vector_get(grad, j);
+                                }
                             }
-                            F[fidx] = dist;
-                            //cout << node->mother->lprint() << " " << dist << endl;
-                            for (int j = 0; j < *n; j++) {
-                                G[gidx + j] = gsl_vector_get(grad, j);
-                            }
-                        } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+                        } else if (PARAMS->relaxBoolHoles && node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
                             auto it = nodeValsMap.find(node->id);
                             if (it == nodeValsMap.end()) {
                                 if (p->onlyInputs) continue;
@@ -174,8 +170,7 @@ public:
                 }
             }
         }
-        //cout << F[0] << endl;
-        //cout << fcounter << " " << *neF << endl;
+        cout << "Fcounter: " << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
             F[i] = 1000;
             for (int j = 0; j < *n; j++) {
