@@ -46,8 +46,8 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 			double dist = val - 0.5;
 			setvalue(node, dist);
 		} else {
-			//setvalue(node, 0);
-			Assert(false, "All bool ctrls should be handled here");
+			setvalue(node, 0);
+			//Assert(false, "All bool ctrls should be handled here");
 		}
 		
 	}
@@ -67,7 +67,7 @@ void SimpleEvaluator::visit( TIMES_node& node ) {
 
 void SimpleEvaluator::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-	Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
+	//Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
 	double m = d(node.mother);
 	//cout << node.lprint() << " " << m << endl;
 	int idx = (m >= 0) ? 1 : 0;
@@ -100,13 +100,13 @@ void SimpleEvaluator::visit( CONST_node& node ) {
 			double dist = (val == 1) ? 1000 : -1000;
 			setvalue(node, dist);
 		} else {
-			Assert(false, "NYI: SimpleEvaluator integer constants");
+            setvalue(node, val);
 		}
 	}
 }
 
 void SimpleEvaluator::visit( LT_node& node ) {
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SimpleEvaluator for lt with integer parents");
+	//Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SimpleEvaluator for lt with integer parents");
 	double m = d(node.mother);
 	double f = d(node.father);
 	double d = f - m;
@@ -189,6 +189,7 @@ vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, 
         (*node_it)->accept(*this);
 	}
 	vector<tuple<double, int, int>> s;
+    cout << "Bool assignment: ";
 	for (int i = 0; i < imap_p.size(); i++) {
 		if (imap_p[i] < 0) continue;
 		bool_node* n = bdag[imap_p[i]];
@@ -199,10 +200,12 @@ vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, 
 			cost = cost/1000.0;
 		}
         if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            cout << n->lprint() << " = " << dist << "; ";
             cost = cost - 5.0;
         }
 		s.push_back(make_tuple(cost, i, dist > 0));
 	}
+    cout << endl;
 	return s;
 }
 

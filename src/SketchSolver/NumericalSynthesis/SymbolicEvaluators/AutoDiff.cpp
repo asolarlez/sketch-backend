@@ -73,8 +73,9 @@ void AutoDiff::visit( TIMES_node& node ) {
 }
 
 void AutoDiff::visit(ARRACC_node& node )  {
+    ValueGrad* val = v(node);
+    if (node.getOtype() == OutType::FLOAT) {
 	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
-	ValueGrad* val = v(node);
 	if (node.getOtype() == OutType::BOOL) {
 		val->set = false;
 		return;
@@ -89,6 +90,9 @@ void AutoDiff::visit(ARRACC_node& node )  {
 	} else {
 		val->set = false;
 	}
+    } else {
+        val->set = false;
+    }
 }
 
 void AutoDiff::visit( DIV_node& node ) {
@@ -128,11 +132,14 @@ void AutoDiff::visit( LT_node& node ) {
 	ValueGrad* val = v(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: AutoDiff for lt with integer parents");
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+    if (isFloat(node.mother) && isFloat(node.father)) {
+        ValueGrad* mval = v(node.mother);
+        ValueGrad* fval = v(node.father);
 	
-	ValueGrad::vg_lt(mval, fval, val);
+        ValueGrad::vg_lt(mval, fval, val);
+    } else {
+        val->set = false;
+    }
 }
 
 void AutoDiff::visit( EQ_node& node ) {
@@ -206,6 +213,72 @@ void AutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p
 		(*node_it)->accept(*this);
 	}
 }
+
+bool AutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p, bool onlyBool) {
+    Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
+    
+    for (int i = 0; i < ctrls->size; i++) {
+        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+    }
+    inputValues = inputValues_p; // this does copying again
+    
+    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
+        //cout << (*node_it)->lprint() << endl;
+        (*node_it)->accept(*this);
+    }
+    
+    bool failed = false;
+    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
+        bool_node* node = *node_it;
+        if (!onlyBool && node->type == bool_node::ASSERT) {
+            ASSERT_node* an = (ASSERT_node*) node;
+            if (!hasDist(node->mother)) continue;
+            float dist = getVal(node->mother);
+            if (an->isHard()) {
+                if (dist > 0.05) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                }
+            } else {
+                if (dist < -0.05) {
+                    cout << "Failed " << node->lprint() << " " << dist << endl;
+                    failed = true;
+                    
+                }
+            }
+        }
+        if (!onlyBool && Util::isSqrt(node)) {
+            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
+            if (!hasVal(node->mother)) continue;
+            float dist = getVal(node->mother);
+            if (dist < -0.05) {
+                cout << "Failed " << node->lprint() << " " << dist << endl;
+                failed =  true;
+            }
+        }
+        
+        if (node->type != bool_node::ASSERT && node->getOtype() == OutType::BOOL && node->type != bool_node::CTRL) {
+            auto it = inputValues.find(node->id);
+            if (it != inputValues.end()) {
+                int val = it->second;
+                double dist = 0;
+                if (hasDist(node)) {
+                    dist = getVal(node);
+                    if (val == 0 && dist > 0.05) {
+                        cout << "Failed " << node->lprint() << " " << dist << endl;
+                        failed = true;
+                    }
+                    if (val == 1 && dist < -0.05) {
+                        cout << "Failed " << node->lprint() << " " << dist << endl;
+                        failed = true;
+                    }
+                }
+            }
+        }
+    }
+    return !failed;
+}
+
 
 
 bool AutoDiff::hasDist(bool_node* n) {

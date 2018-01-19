@@ -59,5 +59,6 @@ public:
     bool checkCurrentSol();
     virtual void setState(gsl_vector* state);
     virtual bool clearSoftLearnts() { return clearLearnts; }
+    void printControls();
     
 };

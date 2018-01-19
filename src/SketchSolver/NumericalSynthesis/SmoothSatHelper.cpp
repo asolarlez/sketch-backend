@@ -17,6 +17,9 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 			}
         } else {
             if (n->getOtype() == OutType::BOOL) {
+                if (n->type == bool_node::CTRL) {
+                    numConstraints++;
+                }
                 boolNodes.insert(i);
             }
         }
@@ -190,14 +193,15 @@ bool SmoothSatHelper::checkSAT() {
         previousSAT = sat;
     }
     if (sat) {
+        gsl_vector_memcpy(state, opt->getMinState());
         cout << "FOUND solution" << endl;
+        printControls();
         clearLearnts = true;
         if (validObjective() && checkFullSAT()) {
             fullSAT = true;
             cout << "FULL SAT" << endl;
         }
         numConflictsAfterSAT = 0;
-        gsl_vector_memcpy(state, opt->getMinState());
     } else {
         clearLearnts = false;
     }
@@ -235,7 +239,19 @@ bool SmoothSatHelper::ignoreConflict() {
 vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
     for (int i = 0; i < allInputs.size(); i++) {
-        vector<tuple<double, int, int>> s = seval->run(state, imap);
+        gsl_vector* newState = GradUtil::tmp;
+        gsl_vector_memcpy(newState, state);
+        for (int j = 0; j < allInputs[i].size(); j++) {
+            if (imap[j] < 0) continue;
+            bool_node* n = (*dag)[imap[j]];
+            if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+                if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
+                    gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[i][j]);
+                }
+            }
+        }
+        cout << "state: " << Util::print(newState) << endl;
+        vector<tuple<double, int, int>> s = seval->run(newState, imap);
         sort(s.begin(), s.end());
         bool first = true;
         //cout << ((*dag)[imap[get<1>(s[0])]])->lprint() << " " << get<2>(s[0]) << endl;
@@ -248,7 +264,9 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
         }
     }
     int lastIdx = suggestions.size() - 1;
-    cout << ((*dag)[imap[get<1>(suggestions[lastIdx])]])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
+    if (lastIdx > 0) {
+        cout << ((*dag)[imap[get<1>(suggestions[lastIdx])]])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
+    }
 	return suggestions;
 }
 
@@ -423,4 +441,34 @@ void SmoothSatHelper::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}
+}
+
+void SmoothSatHelper::printControls() {
+    cout << Util::print(state) << endl;
+    gsl_vector* newState = GradUtil::tmp;
+    gsl_vector_memcpy(newState, state);
+    
+    cout << "Set by input: ";
+    for (int i = 0; i < allInputs[0].size(); i++) {
+        if (imap[i] < 0) continue;
+        bool_node* n = (*dag)[imap[i]];
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
+                cout << n->get_name() << " = " << allInputs[0][i] << "; ";
+                gsl_vector_set(newState, boolCtrlMap[n->get_name()], allInputs[0][i]);
+            }
+        }
+    }
+    cout << endl;
+
+    
+    for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
+        cout << it->first << "," << gsl_vector_get(newState, it->second) << ";";
+    }
+    for (auto it = boolCtrlMap.begin(); it != boolCtrlMap.end(); it++) {
+        double val = gsl_vector_get(newState, it->second);
+        
+        cout << it->first << "," << (val > 0.5) << ";";
+    }
+    cout << endl;
 }
