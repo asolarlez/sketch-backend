@@ -5,6 +5,8 @@ gsl_vector* GDEvaluator::curGrad;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 
+using namespace std;
+
 NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
     softConflictLit = _softConflictLit;
     cout << "Special lit: " << toInt(softConflictLit) << " " << (toInt(~softConflictLit)) << endl;
@@ -12,12 +14,16 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 		cout << "NInputs: " << imap.size() << endl;
 	}
 	if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
+        cout << "Instantiating BoolApproxSolver" << endl;
 		helper = new BoolApproxHelper(_fm, dag, imap);
 	} else if (PARAMS->numericalSolverMode == "FULLY_SEPARATED") {
+        cout << "Instantiating BasicNumericalSolver" << endl;
 		helper = new BasicNumericalHelper(_fm, dag, imap);
     } else if (PARAMS->numericalSolverMode == "INTERACTIVE") {
+        cout << "Instantiating IteApproxNumericalSolver" << endl;
         helper = new IteApproxNumericalHelper(_fm, dag, imap);
     } else if (PARAMS->numericalSolverMode == "SMOOTHING_SAT") {
+        cout << "Instantiating SmoothSatSolver" << endl;
         helper = new SmoothSatHelper(_fm, dag, imap);
     } else {
 		Assert(false, "Error: specify which numerical helper to use for solver mode: " + PARAMS->numericalSolverMode);

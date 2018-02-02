@@ -24,7 +24,9 @@ public:
 	static gsl_vector* tmp3;
 	static gsl_vector* tmpT; // used for internal computations in mult, div - don't use it anywhere else
 	
-	
+    static void allocateTempVectors(int size);
+    static void clearTempVectors();
+    
 	static double findMin(double val1, double val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* l);
 	static double findMin(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* l);
 	static double findMax(double val1, double val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* h);

@@ -1068,6 +1068,14 @@ class CTRL_node: public INTER_node{
 		ss<<" "<<get_name()<<" ";//")) ";
 		return ss.str();
 	}
+    virtual string mrprint()const{
+        stringstream str;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
+        if (hasRange) {
+            str << " " << low << " " << high;
+        }
+        return str.str();
+    }
 };
 
 class NOT_node: public bool_node{

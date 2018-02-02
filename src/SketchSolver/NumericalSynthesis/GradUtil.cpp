@@ -9,6 +9,22 @@ gsl_vector* GradUtil::tmpT;
 double GradUtil::BETA;
 double GradUtil::ALPHA;
 
+void GradUtil::allocateTempVectors(int size) {
+    tmp = gsl_vector_alloc(size);
+    tmp1 = gsl_vector_alloc(size);
+    tmp2 = gsl_vector_alloc(size);
+    tmp3 = gsl_vector_alloc(size);
+    tmpT = gsl_vector_alloc(size);
+}
+
+void GradUtil::clearTempVectors() {
+    delete tmp;
+    delete tmp1;
+    delete tmp2;
+    delete tmp3;
+    delete tmpT;
+}
+
 double GradUtil::findMin(double val1, double val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* l) {
 	vector<double> vals;
 	vector<gsl_vector*> grads;

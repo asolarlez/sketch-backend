@@ -170,7 +170,7 @@ public:
                 }
             }
         }
-        cout << "Fcounter: " << fcounter << " " << *neF << endl;
+        //cout << "Fcounter: " << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
             F[i] = 1000;
             for (int j = 0; j < *n; j++) {

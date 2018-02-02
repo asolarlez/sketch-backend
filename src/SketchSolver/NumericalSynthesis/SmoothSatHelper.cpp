@@ -7,7 +7,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	//dag->lprint(cout);
     int numConstraints = 0;
 	// Collect the list of boolean nodes that contribute to the error
-	// In this case, only the assertions matter
+	// In this case, only the assertions, boolean holes, and sqrt nodes matter
 	for (int i = 0; i < dag->size(); i++) {
 		bool_node* n = (*dag)[i];
 		if (n->type == bool_node::ASSERT) {
@@ -29,15 +29,14 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
     
     numConstraints = numConstraints + 100; // buffer for additional input variables set
+                                            // TODO: magic number
 	
 	// generate ctrls mapping
-	set<int> ctrlNodeIds;
 	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
 	int ctr = 0;
 	for (int i = 0; i < ctrls.size(); i++) {
 		if (ctrls[i]->getOtype() == OutType::FLOAT) {
 			ctrlMap[ctrls[i]->get_name()] = ctr++;
-			ctrlNodeIds.insert(ctrls[i]->id);
 		}
 	}
     
@@ -49,17 +48,14 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 
     
 	ncontrols = ctr;
+    // if ncontrols = 0, make it 1 just so numerical opt does not break
 	if (ncontrols == 0) {
 		ncontrols = 1;
 	}
 	
 	cout << "NControls: " << ncontrols << endl;
     
-    GradUtil::tmp = gsl_vector_alloc(ncontrols);
-    GradUtil::tmp1 = gsl_vector_alloc(ncontrols);
-    GradUtil::tmp2 = gsl_vector_alloc(ncontrols);
-    GradUtil::tmp3 = gsl_vector_alloc(ncontrols);
-    GradUtil::tmpT = gsl_vector_alloc(ncontrols);
+    GradUtil::allocateTempVectors(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
 	eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
@@ -86,11 +82,7 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 }
 
 SmoothSatHelper::~SmoothSatHelper(void) {
-	delete GradUtil::tmp;
-	delete GradUtil::tmp1;
-	delete GradUtil::tmp2;
-	delete GradUtil::tmp3;
-	delete GradUtil::tmpT;
+    GradUtil::clearTempVectors();
 }
 
 void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
@@ -113,12 +105,7 @@ void SmoothSatHelper::setState(gsl_vector* s) {
 
 bool SmoothSatHelper::checkInputs(int rowid, int colid) {
     if (fullSAT) return false;
-    if (imap[colid] == -1 || Util::hasArraccChild((*dag)[imap[colid]])) {
-        return true;
-    } else {
-        return false;
-    }
-	return true;
+    return true;
 }
 
 bool SmoothSatHelper::validObjective() {
@@ -138,7 +125,7 @@ bool SmoothSatHelper::validObjective() {
 
 bool SmoothSatHelper::checkCurrentSol() {
     const map<int, int>& nodeToInputMap = Util::getNodeToValMap(imap, allInputs[0]);
-    GradUtil::BETA = -50;
+    GradUtil::BETA = -50; // TODO: magic numbers
     GradUtil::ALPHA = 50;
     return eval->checkAll(state, nodeToInputMap);
 }
@@ -166,7 +153,7 @@ bool SmoothSatHelper::checkFullSAT() {
 
 bool SmoothSatHelper::checkSAT() {
     inputConflict = false;
-    if (!previousSAT) {
+    if (!previousSAT) { // whether or not we randomize ctrls should be decided by the outer loop I think
         opt->randomizeCtrls(state, allInputs);
     }
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
@@ -188,12 +175,14 @@ bool SmoothSatHelper::checkSAT() {
         }
         
         sat = opt->optimize(allInputs, state, suppressPrint);
+        if (sat) {
+            gsl_vector_memcpy(state, opt->getMinState());
+        }
     }
     if (!previousSAT) {
         previousSAT = sat;
     }
     if (sat) {
-        gsl_vector_memcpy(state, opt->getMinState());
         cout << "FOUND solution" << endl;
         printControls();
         clearLearnts = true;

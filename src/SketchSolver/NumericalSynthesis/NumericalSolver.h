@@ -17,7 +17,6 @@
 #include "IteApproxNumericalHelper.h"
 #include "SmoothSatHelper.h"
 
-using namespace std;
 
 class NumericalSolver : public Synthesizer {
 	BooleanDAG* dag;

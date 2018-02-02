@@ -392,7 +392,7 @@ bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inpu
             Assert(hasDist(node->mother), "weoqypq");
             float dist = getVal(node->mother);
             if (an->isHard()) {
-                if (dist > 0.05) {
+                if (dist > 0.05) { // TODO: magic numbers
                     cout << "Failed " << node->lprint() << " " << dist << endl;
                     failed = true;
                 }
@@ -406,8 +406,8 @@ bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inpu
         }
         if (!onlyBool && Util::isSqrt(node)) {
             bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
-            Assert(hasVal(node->mother), "weoqypq");
-            float dist = getVal(node->mother);
+            Assert(hasVal(xnode), "weoqypq_sqrt");
+            float dist = getVal(xnode);
             if (dist < -0.05) {
                 cout << "Failed " << node->lprint() << " " << dist << endl;
                 failed =  true;
