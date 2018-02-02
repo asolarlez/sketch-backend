@@ -14,12 +14,12 @@
 #include "GradientDescentWrapper.h"
 #include "SnoptWrapper.h"
 #include "SymbolicEvaluator.h"
-#include "NumericalSolverHelper.h"
+#include "NumericalSolver.h"
 #include "SimpleConflictGenerator.h"
 #include "Util.h"
 
 // Reasons about everything modulo boolean holes
-class SmoothSatHelper: public NumericalSolverHelper {
+class SmoothSatSolver: public NumericalSolver {
 	set<int> boolNodes;
 	OptimizationWrapper* opt;
 	int ncontrols;
@@ -44,8 +44,8 @@ class SmoothSatHelper: public NumericalSolverHelper {
     bool clearLearnts;
     
 public:
-	SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
-	~SmoothSatHelper(void);
+	SmoothSatSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
+	~SmoothSatSolver(void);
 	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds);
 	virtual bool checkInputs(int rowid, int colid);
 	virtual bool checkSAT();

@@ -1,7 +1,7 @@
-#include "InequalityHelper.h"
+#include "InequalitySolver.h"
 
 
-InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+InequalitySolver::InequalitySolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolver(_fm, _dag, _imap) {
 	//dag->lprint(cout);
 	// generate ctrls mapping and counter mapping
 	bool_node* counterNode = NULL;
@@ -113,14 +113,14 @@ InequalityHelper::InequalityHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	Assert(ctr == ctrlToNodesMap.size(), "There are some unused float ctrls?");
 }
 
-void InequalityHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void InequalitySolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
 }
 
 
 
-bool InequalityHelper::checkInputs(int rowid, int colid) {
+bool InequalitySolver::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
 	if (nid < 0) return true;
 	for (int i = 0; i < allInputs[0].size(); i++) {
@@ -131,7 +131,7 @@ bool InequalityHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
-bool InequalityHelper::checkSAT() {
+bool InequalitySolver::checkSAT() {
 	cout << tcount++ << endl;
 	conflictNodes.clear();
 	Assert(allInputs.size() == 1, "Multiple inputs not yet supported");
@@ -235,11 +235,11 @@ bool InequalityHelper::checkSAT() {
 	return true;
 }
 
-bool InequalityHelper::ignoreConflict() {
+bool InequalitySolver::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> InequalityHelper::collectSatSuggestions() {
+vector<tuple<int, int, int>> InequalitySolver::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	
 	/*for (int i = 0; i < allInputs[0].size(); i++) {
@@ -268,13 +268,13 @@ vector<tuple<int, int, int>> InequalityHelper::collectSatSuggestions() {
 	return suggestions;
 }
 
-vector<tuple<int, int, int>> InequalityHelper::collectUnsatSuggestions() {
+vector<tuple<int, int, int>> InequalitySolver::collectUnsatSuggestions() {
     // No suggestions
     vector<tuple<int, int, int>> suggestions;
     return suggestions;
 }
 
-vector<pair<int, int>> InequalityHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> InequalitySolver::getConflicts(int rowid, int colid) {
 	vector<pair<int, int>> conflicts;
 	for (int i = 0 ; i < allInputs[0].size(); i++) {
 		if (allInputs[0][i] == 0 || allInputs[0][i] == 1) {
@@ -290,7 +290,7 @@ vector<pair<int, int>> InequalityHelper::getConflicts(int rowid, int colid) {
 }
 
 
-void InequalityHelper::getControls(map<string, double>& ctrls) {
+void InequalitySolver::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
 		ctrls[it->first] = it->second;
 	}

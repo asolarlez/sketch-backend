@@ -13,7 +13,7 @@ using namespace std;
 
 
 // The helper class is collection of different methods/classes to handle different parts of the numerical solver
-class NumericalSolverHelper {
+class NumericalSolver {
 protected:
 	BooleanDAG* dag;
 	map<int, int>& imap;
@@ -28,7 +28,7 @@ protected:
 	// class to generate conflicts
 	
 public:
-	NumericalSolverHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): fm(_fm), dag(_dag), imap(_imap){}
+	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): fm(_fm), dag(_dag), imap(_imap){}
 	
 	// Called by the NumericalSolver
 	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) = 0;

@@ -11,25 +11,25 @@
 #include "MiniSATSolver.h"
 #include "DagOptim.h"
 #include "CommandLineArgs.h"
-#include "BasicNumericalHelper.h"
-#include "InequalityHelper.h"
-#include "BoolApproxHelper.h"
-#include "IteApproxNumericalHelper.h"
-#include "SmoothSatHelper.h"
+#include "BasicSolver.h"
+#include "InequalitySolver.h"
+#include "BoolApproxSolver.h"
+#include "IteApproxSolver.h"
+#include "SmoothSatSolver.h"
 
 
-class NumericalSolver : public Synthesizer {
+class NumericalSynthesizer : public Synthesizer {
 	BooleanDAG* dag;
 	map<int, int>& imap; // Map boolean inputs to actual nodes in the dag
 	map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
-	NumericalSolverHelper* helper;
+	NumericalSolver* solver;
 	
 	int counter;
     timerclass timer;
 	
 	
 public:
-	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit);
+	NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit);
 	
 	virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions);
 	virtual void newInstance() {}

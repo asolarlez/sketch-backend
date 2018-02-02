@@ -1,9 +1,9 @@
-#include "SmoothSatHelper.h"
+#include "SmoothSatSolver.h"
 
 
 int SnoptEvaluator::counter;
 
-SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+SmoothSatSolver::SmoothSatSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolver(_fm, _dag, _imap) {
 	//dag->lprint(cout);
     int numConstraints = 0;
 	// Collect the list of boolean nodes that contribute to the error
@@ -81,11 +81,11 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
     }
 }
 
-SmoothSatHelper::~SmoothSatHelper(void) {
+SmoothSatSolver::~SmoothSatSolver(void) {
     GradUtil::clearTempVectors();
 }
 
-void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void SmoothSatSolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
     if (PARAMS->verbosity > 7 && !fullSAT) {
@@ -99,16 +99,16 @@ void SmoothSatHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& in
     }
 }
 
-void SmoothSatHelper::setState(gsl_vector* s) {
+void SmoothSatSolver::setState(gsl_vector* s) {
     gsl_vector_memcpy(state, s);
 }
 
-bool SmoothSatHelper::checkInputs(int rowid, int colid) {
+bool SmoothSatSolver::checkInputs(int rowid, int colid) {
     if (fullSAT) return false;
     return true;
 }
 
-bool SmoothSatHelper::validObjective() {
+bool SmoothSatSolver::validObjective() {
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
 		for (int j = 0; j < allInputs[i].size(); j++) {
@@ -123,14 +123,14 @@ bool SmoothSatHelper::validObjective() {
 	return true;
 }
 
-bool SmoothSatHelper::checkCurrentSol() {
+bool SmoothSatSolver::checkCurrentSol() {
     const map<int, int>& nodeToInputMap = Util::getNodeToValMap(imap, allInputs[0]);
     GradUtil::BETA = -50; // TODO: magic numbers
     GradUtil::ALPHA = 50;
     return eval->checkAll(state, nodeToInputMap);
 }
 
-bool SmoothSatHelper::checkFullSAT() {
+bool SmoothSatSolver::checkFullSAT() {
     gsl_vector* newState = GradUtil::tmp;
     gsl_vector_memcpy(newState, state);
     
@@ -151,7 +151,7 @@ bool SmoothSatHelper::checkFullSAT() {
     }
 }
 
-bool SmoothSatHelper::checkSAT() {
+bool SmoothSatSolver::checkSAT() {
     inputConflict = false;
     if (!previousSAT) { // whether or not we randomize ctrls should be decided by the outer loop I think
         opt->randomizeCtrls(state, allInputs);
@@ -206,7 +206,7 @@ bool SmoothSatHelper::checkSAT() {
 	return sat;
 }
 
-bool SmoothSatHelper::ignoreConflict() {
+bool SmoothSatSolver::ignoreConflict() {
     if (previousSAT) return false;
     if (inputConflict) return false;
     int numSet = 0;
@@ -225,7 +225,7 @@ bool SmoothSatHelper::ignoreConflict() {
     }
 }
 
-vector<tuple<int, int, int>> SmoothSatHelper::collectSatSuggestions() {
+vector<tuple<int, int, int>> SmoothSatSolver::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
     for (int i = 0; i < allInputs.size(); i++) {
         gsl_vector* newState = GradUtil::tmp;
@@ -316,7 +316,7 @@ set<int> getRelevantNodes(bool_node* n, SymbolicEvaluator* eval) {
 }
 
 
-vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
+vector<tuple<int, int, int>> SmoothSatSolver::collectUnsatSuggestions() {
     cout << Util::print(state) << endl;
     vector<tuple<int, int, int>> suggestions;
     if (nodesToSuggest.size() == 0) return suggestions;
@@ -422,17 +422,17 @@ vector<tuple<int, int, int>> SmoothSatHelper::collectUnsatSuggestions() {
     return suggestions;*/
 }
 
-vector<pair<int, int>> SmoothSatHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> SmoothSatSolver::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void SmoothSatHelper::getControls(map<string, double>& ctrls) {
+void SmoothSatSolver::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}
 }
 
-void SmoothSatHelper::printControls() {
+void SmoothSatSolver::printControls() {
     cout << Util::print(state) << endl;
     gsl_vector* newState = GradUtil::tmp;
     gsl_vector_memcpy(newState, state);

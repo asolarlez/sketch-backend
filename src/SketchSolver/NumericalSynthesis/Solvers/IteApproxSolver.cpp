@@ -1,7 +1,7 @@
-#include "BasicNumericalHelper.h"
+#include "IteApproxSolver.h"
 
 
-BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+IteApproxSolver::IteApproxSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolver(_fm, _dag, _imap) {
     for (int i = 0; i < _imap.size(); i++) {
         cout << i << " " << (*dag)[imap[i]]->lprint() << endl;
     }
@@ -11,11 +11,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 		bool_node* n = (*dag)[i];
 		if (n->getOtype() == OutType::BOOL && (n->hasFloatParent() || n->hasFloatChild())) {
 			boolNodes.insert(i);
-		}
-        
-        if (Util::isSqrt(n)) {
-            boolNodes.insert(i);
-        }
+		} 
 	}
 	
 	// generate ctrls mapping
@@ -28,6 +24,13 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 			ctrlNodeIds.insert(ctrls[i]->id);
 		}
 	}
+    
+    for (int i = 0; i < dag->size(); i++) {
+        bool_node* n = (*dag)[i];
+        if (n->getOtype() == OutType::FLOAT && n->type == bool_node::ARRACC) {
+            extraCtrlMap[n->id] = ctr++;
+        }
+    }
 	ncontrols = ctr;
 	if (ncontrols == 0) {
 		ncontrols = 1;
@@ -42,7 +45,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
     GradUtil::tmpT = gsl_vector_alloc(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
-	eval = new AutoDiff(*dag, fm, ctrlMap);
+	eval = new IteAutoDiff(*dag, fm, ctrlMap, extraCtrlMap);
 	seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
@@ -54,7 +57,7 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	opt->randomizeCtrls(state, allInputs);
 }
 
-BasicNumericalHelper::~BasicNumericalHelper(void) {
+IteApproxSolver::~IteApproxSolver(void) {
 	delete GradUtil::tmp;
 	delete GradUtil::tmp1;
 	delete GradUtil::tmp2;
@@ -62,12 +65,12 @@ BasicNumericalHelper::~BasicNumericalHelper(void) {
 	delete GradUtil::tmpT;
 }
 
-void BasicNumericalHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void IteApproxSolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
 }
 
-bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
+bool IteApproxSolver::checkInputs(int rowid, int colid) {
 	int nid = imap[colid];
 	if (nid < 0) return true;
 	if (boolNodes.find(nid) == boolNodes.end()) {
@@ -89,7 +92,7 @@ bool BasicNumericalHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
-bool BasicNumericalHelper::checkSAT() {
+bool IteApproxSolver::checkSAT() {
 	bool sat = opt->optimize(allInputs, state);
 	if (sat) {
 		gsl_vector_memcpy(state, opt->getMinState());
@@ -97,11 +100,11 @@ bool BasicNumericalHelper::checkSAT() {
 	return sat;
 }
 
-bool BasicNumericalHelper::ignoreConflict() {
+bool IteApproxSolver::ignoreConflict() {
 	return false;
 }
 
-vector<tuple<int, int, int>> BasicNumericalHelper::collectSatSuggestions() {
+vector<tuple<int, int, int>> IteApproxSolver::collectSatSuggestions() {
 	vector<tuple<int, int, int>> suggestions;
 	for (int i = 0; i < allInputs.size(); i++) {
 		vector<tuple<double, int, int>> s = seval->run(state, imap);
@@ -117,16 +120,17 @@ vector<tuple<int, int, int>> BasicNumericalHelper::collectSatSuggestions() {
 	return suggestions;
 }
 
-vector<tuple<int, int, int>> BasicNumericalHelper::collectUnsatSuggestions() {
+vector<tuple<int, int, int>> IteApproxSolver::collectUnsatSuggestions() {
+    // No suggestions
     vector<tuple<int, int, int>> suggestions;
     return suggestions;
 }
 
-vector<pair<int, int>> BasicNumericalHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> IteApproxSolver::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BasicNumericalHelper::getControls(map<string, double>& ctrls) {
+void IteApproxSolver::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}

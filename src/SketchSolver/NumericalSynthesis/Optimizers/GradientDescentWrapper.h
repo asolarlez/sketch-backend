@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <math.h>
-#include "NumericalSolverHelper.h"
+#include "NumericalSolver.h"
 #include "GradientDescent.h"
 #include "OptimizationWrapper.h"
 #include "SymbolicEvaluator.h"

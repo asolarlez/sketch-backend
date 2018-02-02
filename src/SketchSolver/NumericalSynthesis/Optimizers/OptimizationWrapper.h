@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl/gsl_vector.h>
-#include "NumericalSolverHelper.h"
+#include "NumericalSolver.h"
 
 class OptimizationWrapper {
 public:

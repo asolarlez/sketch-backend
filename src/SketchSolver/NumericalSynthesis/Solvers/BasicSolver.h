@@ -9,18 +9,18 @@
 
 #include "BooleanDAG.h"
 #include "CommandLineArgs.h"
-#include "IteAutoDiff.h"
+#include "AutoDiff.h"
 #include "SimpleEvaluator.h"
 #include "GradientDescentWrapper.h"
 #include "SnoptWrapper.h"
 #include "SymbolicEvaluator.h"
-#include "NumericalSolverHelper.h"
+#include "NumericalSolver.h"
 #include "ConflictGenerator.h"
 #include "SimpleConflictGenerator.h"
 
 
 // Only handles the numerical part of the circuit. If the circuit contains any boolean structure, it will wait until the sat solver fixes all the boolean variables at the interface to the boolean structure.
-class IteApproxNumericalHelper: public NumericalSolverHelper {
+class BasicSolver: public NumericalSolver {
 	set<int> boolNodes;
 	OptimizationWrapper* opt;
 	int ncontrols;
@@ -31,14 +31,13 @@ class IteApproxNumericalHelper: public NumericalSolverHelper {
 	SimpleEvaluator* seval;
 	
 	map<string, int> ctrlMap; // Maps float ctrl names to indices with grad vectors
-	map<int, int> extraCtrlMap;
-    map<string, int> boolCtrlMap; // Maps bool ctrl names to indices with grad vectors
+	map<string, int> boolCtrlMap; // Maps bool ctrl names to indices with grad vectors
 	
 	AbstractConflictGenerator* cg;
 	
 public:
-	IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
-	~IteApproxNumericalHelper(void);
+	BasicSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
+	~BasicSolver(void);
 	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds);
 	virtual bool checkInputs(int rowid, int colid);
 	virtual bool checkSAT();

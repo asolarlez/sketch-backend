@@ -9,33 +9,30 @@
 
 #include "BooleanDAG.h"
 #include "CommandLineArgs.h"
-#include "BoolAutoDiff.h"
-#include "SimpleEvaluator.h"
-#include "GradientDescentWrapper.h"
-#include "SnoptWrapper.h"
-#include "SymbolicEvaluator.h"
-#include "NumericalSolverHelper.h"
-#include "SimpleConflictGenerator.h"
+#include "NumericalSolver.h"
+#include "GradUtil.h"
 #include "Util.h"
 
-// Reasons about everything modulo boolean holes
-class BoolApproxHelper: public NumericalSolverHelper {
-	set<int> boolNodes;
-	OptimizationWrapper* opt;
-	int ncontrols;
-	gsl_vector* state;
+
+// Reasons about simple linear inequalities like x < c and an outlier counter
+class InequalitySolver: public NumericalSolver {
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
-	SymbolicEvaluator* eval;
+
+	map<string, double> ctrlVals; // map from ctrl names to values synthesized
+	map<string, vector<int>> ctrlToNodesMap; // map from ctrl names to list of related inequality nodes
+	vector<int> counterPosNodes; // list of boolean nodes related to the outlier counter
+	vector<int> counterNegNodes;
+	double maxCount; // max outlier count
+	vector<int> conflictNodes;
+	map<string, double> ctrlToMinValues;
+	map<string, double> ctrlToMaxValues;
 	
-	map<string, int> ctrlMap; // Maps float ctrl names to indices with grad vectors
-    map<string, int> boolCtrlMap;
+	int tcount = 0;
 	
-	AbstractConflictGenerator* cg;
-    bool done; 
+	
 public:
-	BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
-	~BoolApproxHelper(void);
+	InequalitySolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
 	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds);
 	virtual bool checkInputs(int rowid, int colid);
 	virtual bool checkSAT();
@@ -45,7 +42,5 @@ public:
 	virtual vector<pair<int, int>> getConflicts(int rowid, int colid);
 	virtual void getControls(map<string, double>& ctrls);
     virtual void setState(gsl_vector* state) { }
-	
-	bool validObjective();
     virtual bool clearSoftLearnts() { return false; }
 };

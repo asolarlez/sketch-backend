@@ -1,4 +1,4 @@
-#include "NumericalSolver.h"
+#include "NumericalSynthesizer.h"
 #include "GradientAnalyzer.h"
 
 gsl_vector* GDEvaluator::curGrad;
@@ -7,7 +7,7 @@ gsl_vector* SnoptEvaluator::grad;
 
 using namespace std;
 
-NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
+NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
     softConflictLit = _softConflictLit;
     cout << "Special lit: " << toInt(softConflictLit) << " " << (toInt(~softConflictLit)) << endl;
     if (PARAMS->verbosity > 2) {
@@ -15,20 +15,20 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	}
 	if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
         cout << "Instantiating BoolApproxSolver" << endl;
-		helper = new BoolApproxHelper(_fm, dag, imap);
+		solver = new BoolApproxSolver(_fm, dag, imap);
 	} else if (PARAMS->numericalSolverMode == "FULLY_SEPARATED") {
-        cout << "Instantiating BasicNumericalSolver" << endl;
-		helper = new BasicNumericalHelper(_fm, dag, imap);
+        cout << "Instantiating BasicNumericalSynthesizer" << endl;
+		solver = new BasicSolver(_fm, dag, imap);
     } else if (PARAMS->numericalSolverMode == "INTERACTIVE") {
-        cout << "Instantiating IteApproxNumericalSolver" << endl;
-        helper = new IteApproxNumericalHelper(_fm, dag, imap);
+        cout << "Instantiating IteApproxNumericalSynthesizer" << endl;
+        solver = new IteApproxSolver(_fm, dag, imap);
     } else if (PARAMS->numericalSolverMode == "SMOOTHING_SAT") {
         cout << "Instantiating SmoothSatSolver" << endl;
-        helper = new SmoothSatHelper(_fm, dag, imap);
+        solver = new SmoothSatSolver(_fm, dag, imap);
     } else {
-		Assert(false, "Error: specify which numerical helper to use for solver mode: " + PARAMS->numericalSolverMode);
+		Assert(false, "Error: specify which numerical solver to use for solver mode: " + PARAMS->numericalSolverMode);
 	}
-	//helper = new InequalityHelper(_fm, dag, imap);
+	//solver = new Inequalitysolver(_fm, dag, imap);
 	//debug();
     if (PARAMS->checkInput) {
         checkInput();
@@ -38,13 +38,13 @@ NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
     
 }
 
-bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Lit>& suggestions) {
+bool NumericalSynthesizer::synthesis(int rowid, int colid, int val, int level, vec<Lit>& suggestions) {
 	conflict.clear();
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
-	if (!helper->checkInputs(rowid, colid)) return true;
+	if (!solver->checkInputs(rowid, colid)) return true;
 	collectAllInputs(allInputs, instanceIds);
-	helper->setInputs(allInputs, instanceIds);
+	solver->setInputs(allInputs, instanceIds);
 	
     if (imap[colid] == -1) {
         if (PARAMS->verbosity > 7) {
@@ -65,18 +65,18 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
         //cout << counter++ << endl;
 	}
 	suggestions.clear();
-	bool sat = helper->checkSAT();
-    clearSoftLearnts = helper->clearSoftLearnts();
-	if (sat || helper->ignoreConflict()) {
-		helper->getControls(ctrlVals);
+	bool sat = solver->checkSAT();
+    clearSoftLearnts = solver->clearSoftLearnts();
+	if (sat || solver->ignoreConflict()) {
+		solver->getControls(ctrlVals);
         if (sat) {
             if (!PARAMS->disableSatSuggestions) {
-                const vector<tuple<int, int, int>>& s = helper->collectSatSuggestions(); // <instanceid, inputid, val>
+                const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, inputid, val>
                 convertSuggestions(s, suggestions);
             }
         } else {
             if (!PARAMS->disableUnsatSuggestions) {
-                const vector<tuple<int, int, int>>& s = helper->collectUnsatSuggestions();
+                const vector<tuple<int, int, int>>& s = solver->collectUnsatSuggestions();
                 convertSuggestions(s, suggestions);
             }
         }
@@ -88,7 +88,7 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 		if (PARAMS->verbosity > 7) {
 			cout << "****************CONFLICT****************" << endl;
 		}
-		const vector<pair<int, int>>& c = helper->getConflicts(rowid, colid); // <instanceid, inputid>
+		const vector<pair<int, int>>& c = solver->getConflicts(rowid, colid); // <instanceid, inputid>
 		convertConflicts(c);
         if (PARAMS->verbosity > 7) {
             timer.stop().print("Numerical solving time:");
@@ -97,7 +97,7 @@ bool NumericalSolver::synthesis(int rowid, int colid, int val, int level, vec<Li
 	}
 }
 
-bool_node* NumericalSolver::getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+bool_node* NumericalSynthesizer::getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
 	// Add the appropriate expression from the dag after replacing inputs with params and ctrls with synthesized parameters
 	BooleanDAG newdag = *(dag->clone());
 	for (int i = 0; i < newdag.size(); i++) {
@@ -124,7 +124,7 @@ bool_node* NumericalSolver::getExpression(DagOptim* dopt, const vector<bool_node
 }
 
 
-void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {
+void NumericalSynthesizer::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {
 	return;
 	map<string, multimap<double, int>> ctrlToInputIds;
 	
@@ -245,7 +245,7 @@ void NumericalSolver::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& 
 	}
 }
 
-void NumericalSolver::collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) {
+void NumericalSynthesizer::collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) {
 	for (int i = 0; i < inout->getNumInstances(); ++i) {
 		vector<int> inputs;
 		for (int j = 0; j < imap.size(); j++) { // TODO: in some cases (especially in fully separated mode), this looping can be bottleneck
@@ -258,7 +258,7 @@ void NumericalSolver::collectAllInputs(vector<vector<int>>& allInputs, vector<in
 	Assert(allInputs.size() == instanceIds.size(), "This should not be possible");
 }
 
-void NumericalSolver::printInputs(vector<vector<int>>& allInputs) {
+void NumericalSynthesizer::printInputs(vector<vector<int>>& allInputs) {
 	for (int k = 0; k < allInputs.size(); k++) {
 		cout << "Input: ";
 		for (int i = 0; i < allInputs[k].size(); i++) {
@@ -272,7 +272,7 @@ void NumericalSolver::printInputs(vector<vector<int>>& allInputs) {
 	}
 }
 
-void NumericalSolver::convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions) {
+void NumericalSynthesizer::convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions) {
 	for (int k = 0; k < s.size(); k++) {
 		int i = get<0>(s[k]);
 		int j = get<1>(s[k]);
@@ -282,7 +282,7 @@ void NumericalSolver::convertSuggestions(const vector<tuple<int, int, int>>& s, 
 	}
 }
 
-void NumericalSolver::convertConflicts(const vector<pair<int, int>>& c) {
+void NumericalSynthesizer::convertConflicts(const vector<pair<int, int>>& c) {
 	for (int k = 0; k < c.size(); k++) {
 		int i = c[k].first;
 		int j = c[k].second;
@@ -310,7 +310,7 @@ void checkOpt(vector<vector<int>>& allInputs, gsl_vector* s, OptimizationWrapper
 
 
 // Debug with a fixed input and/or controls
-void NumericalSolver::debug() { // TODO: currently this is doing all kinds of debugging - should separate them
+void NumericalSynthesizer::debug() { // TODO: currently this is doing all kinds of debugging - should separate them
 	vector<vector<int>> allInputs;
 	vector<int> instanceIds;
 	vector<int> inputs;
@@ -337,7 +337,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
     
 	allInputs.push_back(inputs);
 	instanceIds.push_back(0);
-	helper->setInputs(allInputs, instanceIds);
+	solver->setInputs(allInputs, instanceIds);
 	//printInputs(allInputs);
 	
 	// generate ctrls mapping
@@ -384,8 +384,8 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
 		gsl_vector_set(s, i, arr1[i]);
 	}
     
-    //helper->setState(s);
-    //helper->collectUnsatSuggestions();
+    //solver->setState(s);
+    //solver->collectUnsatSuggestions();
     /*
     SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
     
@@ -434,7 +434,7 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
 }
 
 
-set<int> NumericalSolver::getRelevantIds() {
+set<int> NumericalSynthesizer::getRelevantIds() {
     set<int> ids;
     bool_node* minNode = NULL;
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
@@ -472,7 +472,7 @@ set<int> NumericalSolver::getRelevantIds() {
     return ids;
 }
 
-double NumericalSolver::getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt) {
+double NumericalSynthesizer::getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt) {
     double err = 0.0;
     if (useSnopt) {
         bool isValid = true;
@@ -518,7 +518,7 @@ double NumericalSolver::getError(SymbolicEvaluator* eval, const map<int, int>& n
 }
 
 
-void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
+void NumericalSynthesizer::genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
 	GradUtil::BETA = -100;
 	GradUtil::ALPHA = 100;
 	gsl_vector* d = gsl_vector_alloc(state->size);
@@ -541,7 +541,7 @@ void NumericalSolver::genData(gsl_vector* state, int idx, SymbolicEvaluator* eva
     file.close();
 }
 
-void NumericalSolver::genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
+void NumericalSynthesizer::genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
     GradUtil::BETA = -100;
     GradUtil::ALPHA = 100;
     gsl_vector* d = gsl_vector_alloc(state->size);
@@ -571,7 +571,7 @@ void NumericalSolver::genData2D(gsl_vector* state, int idx1, int idx2, SymbolicE
 }
 
 
-void NumericalSolver::analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids) {
+void NumericalSynthesizer::analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids) {
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
         bool_node* node = (*node_it);
         if (nodeids.find(node->id) == nodeids.end()) continue;
@@ -589,7 +589,7 @@ void NumericalSolver::analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, c
 }
 
 
-void NumericalSolver::checkInput() {
+void NumericalSynthesizer::checkInput() {
     vector<vector<int>> allInputs;
     vector<int> instanceIds;
     vector<int> inputs;
@@ -646,9 +646,9 @@ void NumericalSolver::checkInput() {
     }
     allInputs.push_back(inputs);
     instanceIds.push_back(0);
-    helper->setInputs(allInputs, instanceIds);
+    solver->setInputs(allInputs, instanceIds);
     printInputs(allInputs);
-    helper->checkSAT();
+    solver->checkSAT();
     
     /*
     // generate ctrls mapping

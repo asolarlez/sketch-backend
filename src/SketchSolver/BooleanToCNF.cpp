@@ -16,7 +16,7 @@ using namespace std;
 #include "CommandLineArgs.h"
 #include "VarStore.h"
 #include "NodeEvaluator.h"
-#include "NumericalSolver.h"
+#include "NumericalSynthesizer.h"
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -511,7 +511,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
       // add a special assumption to deal with soft conflicts
     int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
     ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
-    return new NumericalSolver(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second, lfromInt(specialVar));
+    return new NumericalSynthesizer(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second, lfromInt(specialVar));
   }
 	return NULL;
 }

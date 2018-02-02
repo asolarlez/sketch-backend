@@ -4,7 +4,7 @@
 #include <map>
 #include "Snopt.h"
 #include "OptimizationWrapper.h"
-#include "NumericalSolverHelper.h"
+#include "NumericalSolver.h"
 #include "SymbolicEvaluator.h"
 #include "BooleanNodes.h"
 #include "BooleanDAG.h"
@@ -187,7 +187,7 @@ class SnoptWrapper: public OptimizationWrapper {
 	SnoptSolver* snoptSolver;
 	integer n; integer neF; integer lenA;
 	
-	NumericalSolverHelper* ns;
+	NumericalSolver* ns;
 	SymbolicEvaluator* eval;
 	BooleanDAG* dag;
 	map<int, int>& imap;

@@ -1,7 +1,7 @@
-#include "BoolApproxHelper.h"
+#include "BoolApproxSolver.h"
 
 
-BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
+BoolApproxSolver::BoolApproxSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolver(_fm, _dag, _imap) {
 	//dag->lprint(cout);
 	
 	// Collect the list of boolean nodes that contribute to the error
@@ -62,7 +62,7 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
     done = false;
 }
 
-BoolApproxHelper::~BoolApproxHelper(void) {
+BoolApproxSolver::~BoolApproxSolver(void) {
 	delete GradUtil::tmp;
 	delete GradUtil::tmp1;
 	delete GradUtil::tmp2;
@@ -70,7 +70,7 @@ BoolApproxHelper::~BoolApproxHelper(void) {
 	delete GradUtil::tmpT;
 }
 
-void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
+void BoolApproxSolver::setInputs(vector<vector<int>>& allInputs_, vector<int>& instanceIds_) {
 	allInputs = allInputs_;
 	instanceIds = instanceIds_;
     cout << "I: ";
@@ -82,7 +82,7 @@ void BoolApproxHelper::setInputs(vector<vector<int>>& allInputs_, vector<int>& i
     cout << endl;
 }
 
-bool BoolApproxHelper::checkInputs(int rowid, int colid) {
+bool BoolApproxSolver::checkInputs(int rowid, int colid) {
     if (done) return false;// TODO: hacky remove later
     if (PARAMS->relaxBoolHoles) return true;
     for (int i = 0; i < allInputs[0].size(); i++) {
@@ -93,7 +93,7 @@ bool BoolApproxHelper::checkInputs(int rowid, int colid) {
 	return true;
 }
 
-bool BoolApproxHelper::validObjective() {
+bool BoolApproxSolver::validObjective() {
     return true;
 	// if all bool holes are set, we will be solving the full problem
 	for (int i = 0; i < allInputs.size(); i++) {
@@ -109,7 +109,7 @@ bool BoolApproxHelper::validObjective() {
 	return true;
 }
 
-bool BoolApproxHelper::checkSAT() {
+bool BoolApproxSolver::checkSAT() {
     opt->randomizeCtrls(state, allInputs);
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
 	bool sat = opt->optimize(allInputs, state, suppressPrint);
@@ -158,7 +158,7 @@ bool BoolApproxHelper::checkSAT() {
 	//return sat;
 }
 
-bool BoolApproxHelper::ignoreConflict() {
+bool BoolApproxSolver::ignoreConflict() {
     for (int i = 0; i < allInputs[0].size(); i++) {
         if (allInputs[0][i] != 0 && allInputs[0][i] != 1) {
             return true;
@@ -168,23 +168,23 @@ bool BoolApproxHelper::ignoreConflict() {
 
 }
 
-vector<tuple<int, int, int>> BoolApproxHelper::collectSatSuggestions() {
+vector<tuple<int, int, int>> BoolApproxSolver::collectSatSuggestions() {
 	// No suggestions
 	vector<tuple<int, int, int>> suggestions;
 	return suggestions;
 }
 
-vector<tuple<int, int, int>> BoolApproxHelper::collectUnsatSuggestions() {
+vector<tuple<int, int, int>> BoolApproxSolver::collectUnsatSuggestions() {
     // No suggestions
     vector<tuple<int, int, int>> suggestions;
     return suggestions;
 }
 
-vector<pair<int, int>> BoolApproxHelper::getConflicts(int rowid, int colid) {
+vector<pair<int, int>> BoolApproxSolver::getConflicts(int rowid, int colid) {
 	return cg->getConflicts(state, allInputs, instanceIds, rowid, colid);
 }
 
-void BoolApproxHelper::getControls(map<string, double>& ctrls) {
+void BoolApproxSolver::getControls(map<string, double>& ctrls) {
 	for (auto it = ctrlMap.begin(); it != ctrlMap.end(); it++) {
 		ctrls[it->first] = gsl_vector_get(state, it->second);
 	}
