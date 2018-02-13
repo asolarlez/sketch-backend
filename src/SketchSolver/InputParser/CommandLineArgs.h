@@ -364,6 +364,14 @@ class CommandLineArgs{
 	      input_idx = ii+2;      
 		  continue;
 	    }
+
+		 if (string(argv[ii]) == "-epsilon") {
+			 Assert(ii<(argc - 1), "-epsilon needs an extra parameter");
+			 epsilon = atof(argv[ii + 1]);
+			 input_idx = ii + 2;
+			 cout << "SETTING EPSILON = " << epsilon << endl;
+			 continue;
+		 }
 	    
 	    if( string(argv[ii]) == "-output2QBF" ){	    	
 	    	output2QBF = true;

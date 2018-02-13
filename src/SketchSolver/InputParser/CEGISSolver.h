@@ -105,7 +105,7 @@ class CEGISSolver
 	
 	Checkpointer cpt;
 	BooleanDAG* lastFproblem;
-	
+	map<int, string> files;
 	vector<Tvalue> find_node_ids;
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;	
@@ -135,7 +135,7 @@ public:
 
 	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
 	~CEGISSolver(void);
-	void addProblem(BooleanDAG* miter);
+	void addProblem(BooleanDAG* miter, const string& file);
 
 
 	virtual bool solve();

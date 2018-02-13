@@ -742,8 +742,8 @@ int InterpreterEnvironment::doallpairs() {
 		for (int i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness(i);
 			try {
-				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].first), getCopy(spskpairs[i].second), inlineAmnt);
-				result = assertDAG(bd, cout);
+				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+				result = assertDAG(bd, cout, spskpairs[i].file);
 				cout << "RESULT = " << result << "  " << endl;;
 				printControls("");
 			}
@@ -835,11 +835,13 @@ int InterpreterEnvironment::doallpairs() {
 
 
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out) {
+SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
-	solver->addProblem(dag);
+	
+	solver->addProblem(dag, file);
+	
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);
@@ -927,12 +929,12 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag) {
 	ostream& out = std::cout;
-	return assertDAG(dag, out);
+	return assertDAG(dag, out, "");
 }
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag, const char* fileName) {
 	ofstream out(fileName, ios_base::out);
-	return assertDAG(dag, out);
+	return assertDAG(dag, out, "");
 }
 
 BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){		

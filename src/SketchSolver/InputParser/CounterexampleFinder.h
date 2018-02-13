@@ -105,12 +105,126 @@ class CounterexampleFinder :
 		}
 	}
 public:
-	typedef enum {FOUND, NOTFOUND, UNSAT} Result;
+	typedef enum {FOUND, NOTFOUND, UNSAT, MOREBITS} Result;
 	const string* message;
 	void init(VarStore& vs){
 		inputs = &vs;
 		computeInfluences();
 	}
+
+
+	bool parseLine(ifstream& in) {
+
+		auto vsi = inputs->begin();
+		VarStore::objP* arrit = NULL;
+
+		char ch;
+		in.get(ch);
+		int cur=0;
+		bool neg = false;
+		int depth = 0;
+		bool hasCaptured = true;
+		bool outOfRange = false;
+
+		auto regval = [&]() {
+			if (!hasCaptured) {
+
+				if (depth == 0) {
+					//we just finished a number, and we are not inside an array.
+					outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
+					++vsi;
+				}
+				else {
+					//we just finished a number, and we are inside an array.
+					outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
+					arrit = arrit->next;
+				}
+			}
+			hasCaptured = true;
+		};
+		auto reset = [&]() {
+			cur = 0;
+			neg = false;
+		};
+
+		while (ch != '\n') {
+			switch (ch) {
+			case '{': {
+				regval();
+				reset();
+				if (depth == 0) {
+					arrit = &(*vsi);
+				}
+				depth++;
+				break;
+			}
+			case '}': {
+				regval();
+				reset();
+				depth--;
+				if (depth == 0) {
+					while (arrit != NULL) {
+						arrit->setValSafe(0);
+						arrit = arrit->next;
+					}
+					++vsi;
+				}
+				break;
+			}
+			case ' ': {
+				regval();
+				reset();
+				break;
+			}
+			case ',': {
+				regval();
+				reset();
+				break;
+			}
+			case '-': {
+				neg = true;
+				break;
+			}
+			default:
+				if (ch >= '0' && ch <= '9') {
+					hasCaptured = false;
+					cur = cur * 10 + (ch - '0');
+				}
+
+			}
+			if (outOfRange) {				
+				return false;
+			}
+			in.get(ch);
+			if (in.eof()) {
+				regval();
+				return true;
+			}
+		}
+		regval();
+		return true;
+	}
+
+
+	Result fromFile(const string& fname) {
+		ifstream file(fname);
+		bool ok = true;
+		while (!file.eof()) {
+			ok = parseLine(file);	
+			if (!ok) {
+				file.close();
+				return MOREBITS;
+			}
+			inputs->printContent(cout);
+			bool rv = this->run(*inputs);
+			if (rv) {
+				return FOUND;
+			}
+		}
+		file.close();
+		return UNSAT;
+	}
+
 
 	Result searchLoop(int maxfails){
 		int failcount = 0;

@@ -191,6 +191,9 @@ Comment      ("//"[^\n]*)
 					return T_NativeMethod;
 				}
 
+"FILE" {
+	return T_File;
+}
 			
 "SKETCHES"	{
 				return T_Sketches;

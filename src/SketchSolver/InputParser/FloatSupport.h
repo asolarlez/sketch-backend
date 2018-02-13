@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include <functional>
+#include "CommandLineArgs.h"
 
 using namespace std;
 
@@ -33,6 +34,23 @@ public:
 };
 
 
+
+
+
+extern CommandLineArgs* PARAMS;
+
+inline
+float tlog(float in) {
+	if (in < PARAMS->epsilon) {
+		return log(PARAMS->epsilon / 2.0);
+	}
+	else {
+		return log(in);
+	}
+
+}
+
+
 class FloatManager {
 	map<float, int> floatIdx;
 	vector<float> floats;
@@ -47,7 +65,8 @@ public:
 		floatfuns["sin_math"] = sin;
 		floatfuns["cos_math"] = cos;
 		floatfuns["tan_math"] = tan;
-		floatfuns["sqrt_math"] = sqrt;		
+		floatfuns["sqrt_math"] = sqrt;	
+		floatfuns["log_math"] = tlog;
 	}
 
 	bool hasFun(const string& name) {

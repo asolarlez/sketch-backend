@@ -70,6 +70,7 @@ extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 %token T_ge
 %token T_le
 %token T_fixes
+%token T_File
 
 
 %token T_Native
@@ -346,11 +347,22 @@ AssertionExpr: T_ident T_Sketches T_ident
 		envt->addspskpair(*$3, *$1);
 	}		
 }
+| T_ident T_Sketches T_ident T_File T_string{
+	
+	if(PARAMS->interactive){
+		$$ = envt->prepareMiter(envt->getCopy(*$3),  envt->getCopy(*$1), envt->inlineAmnt());
+	}else{
+		envt->addspskpair(*$3, *$1, *$5);
+		delete $5;
+	}
+}
+
+
 
 HLAssertion: T_assert {if(PARAMS->interactive){ solution.restart();} } AssertionExpr ';'
 {
 	if(PARAMS->interactive){
-		int tt = envt->assertDAG($3, std::cout);
+		int tt = envt->assertDAG($3, std::cout, "");
 		envt->printControls("");
 		solution.stop();
 		cout<<"COMPLETED"<<endl;

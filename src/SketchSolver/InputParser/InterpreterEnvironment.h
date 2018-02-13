@@ -91,6 +91,29 @@ public:
 };
 
 
+struct spskpair {
+	const string spec;
+	const string sketch;
+	const string file;
+
+	spskpair(const string& _spec, const string& _sketch, const string& _file):
+	spec(_spec),
+	sketch(_sketch),
+	file(_file)
+	{
+
+	}
+	spskpair(const string& _spec, const string& _sketch) :
+		spec(_spec),
+		sketch(_sketch),
+		file("")
+	{
+
+	}
+};
+
+
+
 class InterpreterEnvironment
 {	
 	map<string, BooleanDAG*> functionMap;
@@ -163,10 +186,15 @@ public:
 		hasGoodEnoughSolution = false;
 	}
 
-	vector<pair<string, string> > spskpairs;
+	vector<spskpair > spskpairs;
 
 	void addspskpair(const string& spec, const string& sketch) {
-		spskpairs.push_back(make_pair(spec, sketch));
+		spskpairs.push_back(spskpair(spec, sketch));
+	}
+
+
+	void addspskpair(const string& spec, const string& sketch, const string& file) {
+		spskpairs.push_back(spskpair(spec, sketch, file));
 	}
 
 	int doallpairs();
@@ -302,7 +330,7 @@ public:
 	This function takes ownership of dag. After this,
 	dag will be useless, and possibly deallocated.
 	*/
-	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out);
+	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 
