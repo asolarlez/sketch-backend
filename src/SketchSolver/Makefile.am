@@ -7,13 +7,13 @@ include SolverInterfaces/solvers.mk
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis gdtest igtest snopttest snoptitest
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
 gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
 snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la
@@ -30,15 +30,18 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_statistics.h				\
 	memory_sampler.h				\
 	timerclass.h					\
-  NumericalSynthesis/NumericalSynthesizer.h     \
+    NumericalSynthesis/ReasCore/REASSolver.h       \
+    NumericalSynthesis/BoolAbstraction/BoolAbstractor.h \
+    NumericalSynthesis/BoolAbstraction/Interface.h  \
+    NumericalSynthesis/ReasCore/NumericalSynthesizer.h     \
 	NumericalSynthesis/Solvers/NumericalSolver.h	\
 	NumericalSynthesis/Solvers/BasicSolver.h		\
     NumericalSynthesis/Solvers/IteApproxSolver.h   \
 	NumericalSynthesis/Solvers/InequalitySolver.h	\
 	NumericalSynthesis/Solvers/BoolApproxSolver.h	\
     NumericalSynthesis/Solvers/SmoothSatSolver.h    \
-	NumericalSynthesis/GradUtil.h		\
-	NumericalSynthesis/Util.h	\
+	NumericalSynthesis/Utils/GradUtil.h		\
+	NumericalSynthesis/Utils/Util.h	\
 	NumericalSynthesis/Optimizers/GradientDescent.h			\
 	NumericalSynthesis/Optimizers/Snopt.h			\
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
@@ -100,12 +103,14 @@ libcegis_la_SOURCES =				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
 	memory_sampler.cc			\
-  NumericalSynthesis/NumericalSynthesizer.cpp \
+    NumericalSynthesis/ReasCore/REASSolver.cpp  \
+    NumericalSynthesis/BoolAbstraction/BoolAbstractor.cpp \
+    NumericalSynthesis/ReasCore/NumericalSynthesizer.cpp \
     NumericalSynthesis/Solvers/IteApproxSolver.cpp   \
     NumericalSynthesis/Solvers/InequalitySolver.cpp	\
     NumericalSynthesis/Solvers/BoolApproxSolver.cpp	\
     NumericalSynthesis/Solvers/SmoothSatSolver.cpp    \
-	NumericalSynthesis/GradUtil.cpp	\
+	NumericalSynthesis/Utils/GradUtil.cpp	\
 	NumericalSynthesis/Optimizers/GradientDescent.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\

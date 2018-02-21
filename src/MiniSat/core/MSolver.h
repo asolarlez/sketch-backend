@@ -89,6 +89,7 @@ public:
     bool    addClause (vec<Lit>& ps, uint32_t kind = 0);                           // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
 	bool    addCNFBinary(Lit i, Lit j);
 
+    SynthInSolver* addSynth(Synthesizer* s);
 	SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* s);
 
 	void addSynSolvClause(SynthInSolver* s, int instid, int inputid, int value, Lit var);

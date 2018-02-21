@@ -28,6 +28,7 @@ using namespace std;
 
 class Tvalue;
 class CTRL_node;
+class Interface;
 
 class varRange{
 	public:
@@ -47,11 +48,11 @@ class SolverHelper {
     map<string, int> arrsize;
 	map<string, Tvalue> controls;
 	map<string, SynthInSolver*> sins;
+    SynthInSolver* numsin; // Numerical Synthesizer
     int varCnt;
 	int lastVar;
     SATSolver& mng;
 	vector<char> tmpbuf;
-  map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap;
 
 	/*
 	This function is in charge of instantiating new synthesizers.
@@ -114,6 +115,9 @@ public:
 		return sins;
 	}
 
+    void createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interface);
+    
+    void addNumSynSolvClause(int inputid, int tvId);
 
 	void addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
 
@@ -341,10 +345,6 @@ public:
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
     void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
 	void addHelperC(int l1, int l2);
-  
-  void setNumericalAbsMap(map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap_p) {
-    numericalAbsMap = numericalAbsMap_p;
-  }
 };
 
 /*

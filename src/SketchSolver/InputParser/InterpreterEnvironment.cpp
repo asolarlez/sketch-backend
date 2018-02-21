@@ -260,12 +260,6 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	//spec->repOK();
 	//sketch->repOK();
     Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
-
-  if (params.numericalSolver) {
-    // Abstract the numerical part from the dag
-    // TODO: what is the best place to have this
-    abstractNumericalPart(*sketch);
-  }
   
   if(false){
 		/* Eliminates uninterpreted functions */
@@ -717,7 +711,39 @@ int InterpreterEnvironment::doallpairs(){
 }
 
 
+
+int InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
+    Assert(status==READY, "You can't do this if you are UNSAT");
+    ++assertionStep;
+    
+    reasSolver->addProblem(dag);
+    
+    int solveCode = 0;
+    try{
+        solveCode = reasSolver->solve();
+        reasSolver->get_control_map(currentControls);
+    }catch(SolverException* ex){
+        cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
+        status=UNSAT;
+        return ex->code + 2;
+    }catch(BasicError& be){
+        reasSolver->get_control_map(currentControls);
+        cout<<"ERROR: "<<basename()<<endl;
+        status=UNSAT;
+        return 3;
+    }
+    if( !solveCode ){
+        status=UNSAT;				
+        return 1;	
+    }
+    
+    return 0;
+}
+
 int InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out){
+    if (params.numericalSolver) {
+        return assertDAGNumerical(dag, out);
+    }
 	Assert(status==READY, "You can't do this if you are UNSAT");
 	++assertionStep;	
 	
@@ -868,150 +894,3 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}
 	return result;
 }
-
-
-
-
-void print(set<bool_node*> nodes) {
-  set<bool_node*>::iterator it;
-  for (it = nodes.begin(); it != nodes.end(); it++) {
-    cout << (*it)->lprint() << endl;
-  }
-}
-
-
-bool boolFloatInterface(bool_node* n) {
-	if (n->getOtype() == OutType::BOOL && (n->hasFloatChild() || n->hasFloatParent())) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-
-bool boolCtrl(bool_node* n) {
-	if (n->getOtype() == OutType::BOOL && n->type == bool_node::CTRL) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool allBool(bool_node* n) {
-    if (n->type == bool_node::ASSERT) {
-        return false;
-    }
-    if (n->getOtype() == OutType::BOOL) {
-        // eliminate b in expressions assert(b) and assert(!b)
-        if (Util::hasAssertChild(n)) return false;
-        if (Util::hasNotAssertChild(n)) return false;
-        return true;
-    }
-    return false;
-}
-
-typedef bool (* PRED_TYPE)(bool_node*);
-
-void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
-	//ofstream file1("/Users/Jeevu/projects/symdiff/scripts/sysid/lanemerge.dag");
-	//dag.mrprint(file1);
-	BooleanDAG& numDag = (*dag.clone());
-	DagOptim op(dag, floats);
-
-	vector<bool_node*> newnodes; // collect new boolean variables
-	vector<int> deletedNodes;
-	
-	map<int, int> inputToNodeMap; 	// There are 3 types of input nodes: boolean holes, boolean-input boolean-output nodes or abstraction variables for float-input boolean-output nodes
-
-	// UFUN for interacting with the numerical solver
-	string fname = "_GEN_NUM_SYNTH";
-	UFUN_node* unode = new UFUN_node(fname);
-	unode->outname = "_p_out_" + fname;
-	unode->set_tupleName(fname);
-	unode->set_nbits(0);
-	unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.
-	unode->mother = op.getCnode(1);
-
-    bool addDummyAssert = false; // Add a dummy assert to make the  SAT solver call the numerical solver with an empty assignment first
-                                 // kind of hacky, but useful to initiate the interaction from the numerical solver.
-	PRED_TYPE pred;
-	if (params.numericalSolverMode == "ONLY_SMOOTHING") {
-		pred = boolCtrl;
-        if (params.relaxBoolHoles) {
-            addDummyAssert = true;
-        }
-	} else if (params.numericalSolverMode == "FULLY_SEPARATED" || params.numericalSolverMode == "INTERACTIVE") {
-		pred = boolFloatInterface;
-    } else if (params.numericalSolverMode == "SMOOTHING_SAT") {
-        pred = allBool;
-        addDummyAssert = true;
-	} else {
-		Assert(false, "Error: specify what pred function to use for solver mode = " + params.numericalSolverMode);
-	}
-	for (int i = 0; i < dag.size(); i++) {
-		bool_node* node = dag[i];
-		if (node == NULL) continue;
-		int nid = node->id;
-		OutType* type = node->getOtype();
-		if (node->type == bool_node::UFUN) {
-			type = ((Tuple*) type)->entries[0];
-		}
-		// create new boolean variables for any float input-boolean output nodes to create the boolean abstraction
-		if (type == OutType::BOOL) {
-			
-			if (node->hasFloatParent()) {
-				// Create a ctrl node to capture the output (for the boolean abstraction)
-				CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
-				ctrl->name = "CTRL_" + std::to_string(nid);
-				ctrl->set_nbits(1);
-			
-				if (pred(node)) {
-					inputToNodeMap[unode->multi_mother.size()] = nid;
-					unode->multi_mother.push_back(ctrl);
-				}
-				
-				newnodes.push_back(ctrl);
-				dag.replace(nid, ctrl);
-			} else {
-				if (pred(node)) {
-					inputToNodeMap[unode->multi_mother.size()] = nid;
-					unode->multi_mother.push_back(node);
-				}
-			}
-		}
-		if (type == OutType::FLOAT) {
-			deletedNodes.push_back(nid);
-		}
-	}
-	for (int i = deletedNodes.size()-1; i >=0; i--) {
-		dag.remove(deletedNodes[i]);
-	}
-	if (unode->multi_mother.size() == 0 || addDummyAssert) {
-		// add a dummy boolean hole as an input, so that numerical solver is called at least once
-		CTRL_node* ctrl = new CTRL_node();
-		ctrl->name = "CTRL_tmp_hole";
-		ctrl->set_nbits(1);
-		inputToNodeMap[unode->multi_mother.size()] = -1;
-		unode->multi_mother.push_back(ctrl);
-        newnodes.push_back(ctrl);
-        //if (addDummyAssert) {
-            ASSERT_node* an = new ASSERT_node();
-            an->mother = ctrl;
-            an->addToParents();
-            newnodes.push_back(an);
-            dag.getNodesByType(an->type).push_back(an);
-            dag.assertions.append( getDllnode(an) );
-        //}
-	}
-	unode->addToParents();
-	newnodes.push_back(unode);
-	dag.addNewNodes(newnodes);
-	op.cleanup(dag);
-	//dag.lprint(cout);
-    ofstream file("/Users/Jeevu/projects/symdiff/scripts/dag.txt");
-    numDag.lprint(file);
-	numericalAbsMap[fname] = make_pair(&numDag, inputToNodeMap);
-	finder->setNumericalAbsMap(numericalAbsMap);
-}
-
-

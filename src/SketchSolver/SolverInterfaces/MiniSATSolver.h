@@ -47,6 +47,11 @@ public:
 
 	 }
 
+     SynthInSolver* addSynth(Synthesizer* syn) {
+         return s->addSynth(syn);
+     }
+    
+    
 	 SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* syn) {
 		 return s->addSynth(inputs, outputs, syn);
 	 }

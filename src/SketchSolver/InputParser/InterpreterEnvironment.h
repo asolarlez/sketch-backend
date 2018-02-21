@@ -11,6 +11,7 @@
 #include "BackwardsAnalysis.h"
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
+#include "REASSolver.h"
 
 
 #include <sstream>
@@ -74,7 +75,6 @@ class InterpreterEnvironment
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
 	FloatManager floats;
-	map<string, pair<BooleanDAG*, map<int, int>>> numericalAbsMap;
 
 	string findName(){
 		stringstream s;
@@ -114,6 +114,7 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
+    REASSolver* reasSolver;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if(p.outputSat){
@@ -124,6 +125,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+        reasSolver = new REASSolver(*finder, floats);
 		exchanger = NULL;
 	}
 	
@@ -140,12 +142,13 @@ public:
 		delete finder;
 		delete _pfind;
 		delete solver;
+        delete reasSolver;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
-    finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+        reasSolver = new REASSolver(*finder, floats);
 		cout<<"ALLRESET"<<endl;
 		status=READY;
 	}
@@ -229,6 +232,7 @@ public:
 		This function takes ownership of dag. After this, 
 		dag will be useless, and possibly deallocated.
 	*/
+    int assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
@@ -239,6 +243,5 @@ public:
     
   void replaceSrcWithTuple(BooleanDAG& dag);
   int inlineAmnt() { return params.inlineAmnt; }
-  void abstractNumericalPart(BooleanDAG& dag);
 	virtual ~InterpreterEnvironment(void);
 };

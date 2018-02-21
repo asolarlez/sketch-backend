@@ -155,10 +155,8 @@ namespace MSsolverNS {
 		*/
 		virtual void print(ostream& out) = 0;
     
-    virtual void getControls(map<string, string>& values) = 0;
-		
-		virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) = 0;
-		
+        virtual void getControls(map<string, string>& values) = 0;
+				
 		Lit getLit(int inputid, int val) {
 			Tvalue& tv = inout->getTval(inputid);
 			return tv.litForValue(val);
@@ -202,11 +200,6 @@ namespace MSsolverNS {
 			return inputOutputs.newInstance(inputs, outputs);
 		}
 		
-		void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {
-			s->getConstraintsOnInputs(dir, inputs);
-		}
-
-
 		void finalize() {
 			s->finalize();
 		}

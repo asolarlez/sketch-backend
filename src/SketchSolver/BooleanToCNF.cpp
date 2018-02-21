@@ -125,7 +125,6 @@ public:
 		out << "( " << theta << "< IN_0" << ")";
 	}
 	
-	virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {}
   
   virtual void getControls(map<string, string>& values) {
     stringstream str;
@@ -485,7 +484,6 @@ public:
         
 	}
 
-	virtual void getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) { }
 	
 	virtual void print(ostream& out) {
 		out << "( SIMTH_SYNTH ( "<< simfn <<" , "<< theta << " ) )"; //IN_0 and IN_1 are two inputs
@@ -506,16 +504,23 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	if (name == "_GEN_gtp") {
 		return new GtpSyn(_fm);
 	} else if (name == "_GEN_eratom") {
-    return new ERAtomSyn(_fm);
-  } else if (name.find("_GEN_NUM_SYNTH") == 0) {
-      // add a special assumption to deal with soft conflicts
-    int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
-    ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
-    return new NumericalSynthesizer(_fm, numericalAbsMap[name].first, numericalAbsMap[name].second, lfromInt(specialVar));
-  }
+        return new ERAtomSyn(_fm);
+    }
 	return NULL;
 }
 
+
+void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interface) {
+    int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
+    ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
+    NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interface, lfromInt(specialVar));
+    numsin = ((MiniSATSolver&)mng).addSynth(ns);
+}
+
+void SolverHelper::addNumSynSolvClause(int inputid, int tvId) {
+    ((MiniSATSolver&)mng).addSynSolvClause(numsin, 0, inputid, 1, lfromInt(tvId));
+    ((MiniSATSolver&)mng).addSynSolvClause(numsin, 0, inputid, 0, lfromInt(-tvId));
+}
 
 void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
 	auto sit = sins.find(name);
@@ -527,7 +532,6 @@ void SolverHelper::addSynthSolver(const string& name, const string& syntype, vec
 	else {
 		sin = sit->second;
 	}
-	sin->getConstraintsOnInputs(this, inputs);
 	
 	int instid = sin->newInstance(inputs, outputs);
 
