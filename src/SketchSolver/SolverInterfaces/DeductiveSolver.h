@@ -87,7 +87,14 @@ public:
 				if (parent->type == bool_node::CONST) {
 					CONST_node* cn = (CONST_node*)parent;
 					if (cn->isFloat()) {
-						out << cn->getFval();
+						double  fractpart, intpart;						
+						fractpart = modf(cn->getFval(), &intpart);
+						if (fractpart < 0.0000000000001) {
+							out << intpart << ".0" ;
+						}
+						else {
+							out << cn->getFval();
+						}						
 					}
 					else {
 						out << cn->getVal();
@@ -202,6 +209,8 @@ public:
 				outParent(out, node->mother);
 				out << ";" << endl;
 				break;
+			default:
+				Assert(false, "NYI")
 			}
 
 		}

@@ -14,6 +14,7 @@ libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
 libcegis_la_LDFLAGS = -version-infp 1:0:0
+binary_LDFLAGS = $(AM_LDFLAGS) -static
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\
 	BasicError.h					\

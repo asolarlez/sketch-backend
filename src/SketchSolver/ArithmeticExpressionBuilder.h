@@ -757,6 +757,8 @@ public:
 							skipgen = !ae1->isBoolean || !ae2->isBoolean; break;
 							//both operands need to be bits here!
 						}
+						default:
+							Assert(false, "Shouldn't reach here");
 					}
 					if (!skipgen) {
 						ArithExpression * ae = addToMaps(op, ae1, ae2, depth, inputs, neededOutputs, exampleIds, setOutputs);

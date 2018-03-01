@@ -118,6 +118,10 @@ namespace MSsolverNS {
 		Synthesizer(FloatManager& _fm) :fm(_fm) {
 			
 		}
+
+		virtual ~Synthesizer() {
+
+		}
 		
 		void set_inout(InputMatrix* _inout) {
 			inout = _inout;

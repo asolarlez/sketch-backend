@@ -148,6 +148,7 @@ inline Intclause* ConfClause(int len, iVar* choices){
 
 inline int setConfVal(Intclause& c, int j, int val){
 	c[c.size()+j] = val;
+	return val;
 }
 
 inline void confSwap(Intclause& c, int i, int j){
