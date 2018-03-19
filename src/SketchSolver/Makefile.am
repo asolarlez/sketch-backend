@@ -6,15 +6,14 @@ include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
-lib_LTLIBRARIES = libcegis.la
+noinst_LIBRARIES = libcegis.a
 cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -Wno-narrowing
-libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
-cegis_LDADD = libcegis.la
-libcegis_la_LIBADD = ../MiniSat/libminisat.la -ldl
-libcegis_la_LDFLAGS = -version-infp 1:0:0
-binary_LDFLAGS = $(AM_LDFLAGS) -static
+libcegis_a_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -Wno-narrowing
+libcegis_a_CFLAGS = $(cegis_CXXFLAGS)
+cegis_LDADD = libcegis.a ../MiniSat/libminisat.a
+#libcegis_a_LDFLAGS = -version-infp 1:0:0
+cegis_LDFLAGS = $(AM_LDFLAGS) -static
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
 noinst_HEADERS = $(SOLVER_HDRS)				\
 	BasicError.h					\
@@ -64,7 +63,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	InputParser/guardedVal.h			\
     InputParser/FloatSupport.h
 
-libcegis_la_SOURCES =				\
+libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
 	BooleanToCNF.cpp			\
 	FindCheckSolver.cpp			\
