@@ -6,8 +6,9 @@
 #include "NodeVisitor.h"
 #include "VarStore.h"
 #include <map>
-#include "FloatSupport.h"
+#include <set>
 #include "SymbolicEvaluator.h"
+#include "Interface.h"
 
 #include <iostream>
 
@@ -16,7 +17,6 @@ using namespace std;
 
 class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
-	FloatManager& floats;
 	BooleanDAG& bdag;
 	map<string, int> floatCtrls; // Maps float ctrl names to indices within grad vector
     map<string, int> boolCtrls;
@@ -24,16 +24,14 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	gsl_vector* ctrls; // ctrl values
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
 	vector<DistanceGrad*> distances; // Keeps track of distance metric for boolean nodes
-	map<int, int> inputValues; // Maps node id to values set by the SAT solver
+    Interface* inputValues;
 	double error = 0.0;
 	gsl_vector* errorGrad;
-	
-	int DEFAULT_INP = -1;
-	
+		
 public:
-	int failedAssert;
-	
-	BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
+    int DEFAULT_INP = -32;
+    BoolAutoDiff(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
+    
 	~BoolAutoDiff(void);
 	
 	virtual void visit( SRC_node& node );
@@ -56,19 +54,22 @@ public:
 	virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
 	
-	virtual void run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p);
-    virtual bool checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p, bool onlyBool = false);
-	virtual bool check(bool_node* n, int expected);
-	virtual double computeError(bool_node* n, int expected, gsl_vector* errorGrad);
-	virtual double computeDist(bool_node*, gsl_vector* distgrad);
-	virtual bool hasDist(bool_node* n);
-    virtual double computeVal(bool_node*, gsl_vector* distgrad);
-    virtual bool hasVal(bool_node* n);
-    virtual bool hasSqrtDist(bool_node* n);
-    virtual double computeSqrtError(bool_node* n, gsl_vector* errorGrad);
-    virtual double computeSqrtDist(bool_node* n, gsl_vector* errorGrad);
-    virtual double getVal(bool_node* n);
-    virtual gsl_vector* getGrad(bool_node* n);
+    virtual void setInputs(const Interface* inputValues_p);
+
+	virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset);
+    virtual void run(const gsl_vector* ctrls_p);
+    
+    virtual double getErrorOnConstraint(int nodeid, gsl_vector* grad);
+    double getSqrtError(bool_node* node, gsl_vector* grad);
+    double getAssertError(bool_node* node, gsl_vector* grad);
+    double getBoolCtrlError(bool_node* node, gsl_vector* grad);
+    
+    virtual double getErrorOnConstraint(int nodeid);
+    double getSqrtError(bool_node* node);
+    double getAssertError(bool_node* node);
+    double getBoolCtrlError(bool_node* node);
+
+
     
 	void setvalue(bool_node& bn, ValueGrad* v) {
 		values[bn.id] = v;
@@ -168,9 +169,8 @@ public:
 	}
 	
 	int getInputValue(bool_node& bn) {
-		if (inputValues.find(bn.id) != inputValues.end()) {
-			int val = inputValues[bn.id];
-			//Assert(val == 0 || val == 1, "NYI: Integer values");
+		if (inputValues->hasValue(bn.id)) {
+			int val = inputValues->getValue(bn.id);
 			return val;
 		} else {
 			return DEFAULT_INP;

@@ -11,28 +11,28 @@
 #include "MiniSATSolver.h"
 #include "DagOptim.h"
 #include "CommandLineArgs.h"
-#include "BasicSolver.h"
-#include "InequalitySolver.h"
-#include "BoolApproxSolver.h"
-#include "IteApproxSolver.h"
-#include "SmoothSatSolver.h"
+//#include "BasicSolver.h"
+//#include "InequalitySolver.h"
+//#include "BoolApproxSolver.h"
+//#include "IteApproxSolver.h"
+//#include "SmoothSatSolver.h"
+#include "NumericalSolver.h"
+#include "Interface.h"
 
 
 class NumericalSynthesizer : public Synthesizer {
 	BooleanDAG* dag;
-	map<int, int> imap; // Map boolean inputs to actual nodes in the dag // TODO: this should be by reference
-	map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
+	Interface* interface;
+    map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
 	NumericalSolver* solver;
-	
-	int counter;
+    vector<pair<int, int>> conflicts; // (nodeid, val) pairs
     timerclass timer;
 	
 	
 public:
-	NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit);
     NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit);
 	
-	virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions);
+	virtual bool synthesis(vec<Lit>& suggestions);
 	virtual void newInstance() {}
 	virtual void finalize() {}
 	virtual void backtrack(int level) {}
@@ -51,17 +51,50 @@ public:
 		}
 	}
 	
-	void collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds);
-	void printInputs(vector<vector<int>>& allInputs);
 	void convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions);
-	void convertConflicts(const vector<pair<int, int>>& c);
-		
-	void debug();
-    void checkInput();
-	void genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt = true);
-    void genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt = true );
-    double getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt = true);
-    void analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids);
-    set<int> getRelevantIds();
+
+    virtual void set_inout(int ninputs, int noutputs) {
+        // do nothing - using interface as input output matrix
+    }
+    
+    virtual int newInputOutputInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
+        Assert(false, "This should not be called");
+    }
+    
+    virtual void backtrackInputs(int level) {
+        interface->backtrack(level);
+    }
+    
+    virtual void pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& conf) {
+        int nodeid = interface->getNodeId(inputid);
+        Assert(instance == 0, "Multiple instances is not yet supported");
+        int oldval = interface->getValue(nodeid);
+        if (oldval != EMPTY){
+            //writing over non EMPTY values
+            Lit l1 = interface->getLit(nodeid, val);
+            Lit l2 = interface->getLit(nodeid, oldval);
+            conf.push(~l1);
+            conf.push(~l2);
+        } else {
+            interface->pushInput(inputid, val, dlevel);
+        }
+    }
+    
+    virtual void getConflictLits(vec<Lit>& conf) {
+        for (int i = 0; i < conflicts.size(); ++i) {
+            int instance = conflicts[i].first;
+            int nodeid = conflicts[i].second;
+            Assert(instance == 0, "Multiple instances is not yet supported");
+            int val = interface->getValue(nodeid);
+            Lit l = interface->getLit(nodeid, val);
+            conf.push(~l);
+        }
+        if (softConflict) {
+            conf.push(~softConflictLit);
+        }
+    }
+
+
+
 };
 

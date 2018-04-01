@@ -41,7 +41,6 @@ class SmoothSatSolver: public NumericalSolver {
     bool inputConflict;
     int numConflictsAfterSAT;
     vector<int> nodesToSuggest;
-    bool clearLearnts;
     
 public:
 	SmoothSatSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap);
@@ -58,7 +57,6 @@ public:
     bool checkFullSAT();
     bool checkCurrentSol();
     virtual void setState(gsl_vector* state);
-    virtual bool clearSoftLearnts() { return clearLearnts; }
     void printControls();
     
 };

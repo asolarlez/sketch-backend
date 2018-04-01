@@ -5,15 +5,16 @@ SOLVERS = SolverInterfaces/
 include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
-bin_PROGRAMS = cegis gdtest igtest snopttest snoptitest
+bin_PROGRAMS = cegis
+#gdtest igtest snopttest snoptitest
 lib_LTLIBRARIES = libcegis.la
-cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
+cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
 gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
 igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
 snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la
@@ -35,24 +36,24 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/BoolAbstraction/Interface.h  \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.h     \
 	NumericalSynthesis/Solvers/NumericalSolver.h	\
-	NumericalSynthesis/Solvers/BasicSolver.h		\
-    NumericalSynthesis/Solvers/IteApproxSolver.h   \
-	NumericalSynthesis/Solvers/InequalitySolver.h	\
-	NumericalSynthesis/Solvers/BoolApproxSolver.h	\
-    NumericalSynthesis/Solvers/SmoothSatSolver.h    \
+    #NumericalSynthesis/Solvers/BasicSolver.h		\
+    #NumericalSynthesis/Solvers/IteApproxSolver.h   \
+    #NumericalSynthesis/Solvers/InequalitySolver.h	\
+    #NumericalSynthesis/Solvers/BoolApproxSolver.h	\
+    #NumericalSynthesis/Solvers/SmoothSatSolver.h    \
 	NumericalSynthesis/Utils/GradUtil.h		\
 	NumericalSynthesis/Utils/Util.h	\
-	NumericalSynthesis/Optimizers/GradientDescent.h			\
+    #NumericalSynthesis/Optimizers/GradientDescent.h			\
 	NumericalSynthesis/Optimizers/Snopt.h			\
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
-	NumericalSynthesis/Optimizers/GradientDescentWrapper.h	\
+    #NumericalSynthesis/Optimizers/GradientDescentWrapper.h	\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
-	NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
+    #NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
-    NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.h     \
-	NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
+    #NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.h     \
+    #NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
-	NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
+    #NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
 	NumericalSynthesis/DataStructures/DistanceGrad.h		\
 	NumericalSynthesis/DataStructures/ValueGrad.h \
@@ -60,6 +61,9 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/DataStructures/IntervalGrad.h		\
 	NumericalSynthesis/IntervalProp/IntervalPropagator.h	\
 	NumericalSynthesis/ConflictGenerators/ConflictGenerator.h	\
+    NumericalSynthesis/ConflictGenerators/SimpleConflictGenerator.h	\
+    NumericalSynthesis/SuggestionGenerators/SuggestionGenerator.h	\
+    NumericalSynthesis/SuggestionGenerators/SimpleSuggestionGenerator.h	\
     NumericalSynthesis/SymbolicAnalyzers/GradientAnalyzer.h  \
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
@@ -106,21 +110,22 @@ libcegis_la_SOURCES =				\
     NumericalSynthesis/ReasCore/REASSolver.cpp  \
     NumericalSynthesis/BoolAbstraction/BoolAbstractor.cpp \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.cpp \
-    NumericalSynthesis/Solvers/IteApproxSolver.cpp   \
-    NumericalSynthesis/Solvers/InequalitySolver.cpp	\
-    NumericalSynthesis/Solvers/BoolApproxSolver.cpp	\
-    NumericalSynthesis/Solvers/SmoothSatSolver.cpp    \
+    NumericalSynthesis/Solvers/NumericalSolver.cpp  \
+    #NumericalSynthesis/Solvers/IteApproxSolver.cpp   \
+    #NumericalSynthesis/Solvers/InequalitySolver.cpp	\
+    #NumericalSynthesis/Solvers/BoolApproxSolver.cpp	\
+    #NumericalSynthesis/Solvers/SmoothSatSolver.cpp    \
 	NumericalSynthesis/Utils/GradUtil.cpp	\
-	NumericalSynthesis/Optimizers/GradientDescent.cpp	\
+    #NumericalSynthesis/Optimizers/GradientDescent.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \
 	NumericalSynthesis/DataStructures/IntervalGrad.cpp \
-    NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.cpp   \
+    #NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.cpp   \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
-	NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
-	NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \
+    #NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
+    #NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
     NumericalSynthesis/SymbolicAnalyzers/GradientAnalyzer.cpp    \
 	InputParser/BackwardsAnalysis.cpp	\
@@ -156,10 +161,10 @@ libcegis_la_SOURCES =				\
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp
-gdtest_SOURCES = NumericalSynthesis/Test/TestGradientDescent.cpp
-igtest_SOURCES = NumericalSynthesis/Test/TestIntervalArith.cpp
-snopttest_SOURCES = NumericalSynthesis/Test/TestSnopt.cpp
-snoptitest_SOURCES = NumericalSynthesis/Test/TestSnoptInterface.cpp
+#gdtest_SOURCES = NumericalSynthesis/Test/TestGradientDescent.cpp
+#igtest_SOURCES = NumericalSynthesis/Test/TestIntervalArith.cpp
+#snopttest_SOURCES = NumericalSynthesis/Test/TestSnopt.cpp
+#snoptitest_SOURCES = NumericalSynthesis/Test/TestSnoptInterface.cpp
 
 ## Hackery to put the lex/bison generated parser into a C++ namespace
 

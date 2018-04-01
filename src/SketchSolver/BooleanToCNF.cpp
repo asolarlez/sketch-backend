@@ -65,7 +65,7 @@ public:
 	
 	virtual void backtrack(int level) {}
 	
-	virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		conflict.clear();
 		int gtmin = 1000000;
 		int gtid = -1;
@@ -233,7 +233,7 @@ public:
 
 	virtual void backtrack(int level) {}
     //In[0] = tupleid, In[1] = attr , In[2] = output (bit)
-	virtual bool synthesis(int instance, int inputid, int val, int level, vec<Lit>& suggestions) {
+	virtual bool synthesis(vec<Lit>& suggestions) {
 		//ROHIT TODO: check if attr is set on all of them - start checking from end
 		//If not, return conflict as the empty one? 
 		conflict.clear();

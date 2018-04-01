@@ -15,19 +15,19 @@ using namespace MSsolverNS;
 
 void REASSolver::addProblem(BooleanDAG* problem_){
     problem = problem_;
-    
+    problem->lprint(cout);
    
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
-        vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+        vector<bool_node*>& ctrls = problem->getNodesByType(bool_node::CTRL);
         if(PARAMS->verbosity > 2){
-            cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+            cout<<"  # OF CONTROLS:    "<< ctrls.size() <<endl;
         }
         int cints = 0;
         int cbits = 0;
         int cfloats = 0;
-        for(int i=0; i<problemIn.size(); ++i){
-            CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+        for(int i=0; i<ctrls.size(); ++i){
+            CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(ctrls[i]);
             int nbits = ctrlnode->get_nbits();
             if(ctrlnode->getOtype() == OutType::BOOL){
                 cbits++;
@@ -42,6 +42,7 @@ void REASSolver::addProblem(BooleanDAG* problem_){
                 declareControl(ctrlnode);
             }
             if (ctrlnode->spAngelic) {
+                cout << ctrlnode->lprint() << endl;
                 Assert(false, "NYI: angelic ctrls not supported in REAS");
             }
             
@@ -121,7 +122,7 @@ bool REASSolver::find(VarStore& controls){
     
    timerclass tc("* TIME TO ADD INPUT ");
     tc.start();
-    Interface* interface = new Interface();
+    Interface* interface = new Interface(problem->size());
     dirFind.createNumericalSynthesizer(floats, problem, interface);
     createBooleanAbstraction(interface);
     tc.stop();

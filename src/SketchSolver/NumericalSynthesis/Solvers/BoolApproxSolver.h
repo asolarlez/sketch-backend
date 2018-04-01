@@ -47,5 +47,4 @@ public:
     virtual void setState(gsl_vector* state) { }
 	
 	bool validObjective();
-    virtual bool clearSoftLearnts() { return false; }
 };

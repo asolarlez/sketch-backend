@@ -1,7 +1,7 @@
 #include "NumericalSynthesizer.h"
 #include "GradientAnalyzer.h"
 
-gsl_vector* GDEvaluator::curGrad;
+//gsl_vector* GDEvaluator::curGrad;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 
@@ -9,75 +9,43 @@ using namespace std;
 
 
 NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm) {
+    softConflictLit = _softConflictLit;
+    interface = _interface;
+    
+    if (PARAMS->verbosity > 2) {
+        cout << "NInputs: " << interface->size() << endl;
+    }
+    
+    map<string, int> ctrls;
+    vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
+    int ctr = 0;
+    for (int i = 0; i < ctrlNodes.size(); i++) {
+        if (ctrlNodes[i]->getOtype() == OutType::FLOAT) {
+            ctrls[ctrlNodes[i]->get_name()] = ctr++;
+        }
+    }
+    for (int i = 0; i < ctrlNodes.size(); i++) {
+        if (ctrlNodes[i]->getOtype() == OutType::BOOL) {
+            ctrls[ctrlNodes[i]->get_name()] = ctr++;
+        }
+    }
+    solver = new NumericalSolver(_dag, ctrls, interface, NULL, NULL, NULL, NULL); // TODO: replace NULLs
+    
     Assert(false, "TODO");
 }
 
-
-NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
-    softConflictLit = _softConflictLit;
-    cout << "Special lit: " << toInt(softConflictLit) << " " << (toInt(~softConflictLit)) << endl;
-    if (PARAMS->verbosity > 2) {
-		cout << "NInputs: " << imap.size() << endl;
-	}
-	if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
-        cout << "Instantiating BoolApproxSolver" << endl;
-		solver = new BoolApproxSolver(_fm, dag, imap);
-	} else if (PARAMS->numericalSolverMode == "FULLY_SEPARATED") {
-        cout << "Instantiating BasicNumericalSynthesizer" << endl;
-		solver = new BasicSolver(_fm, dag, imap);
-    } else if (PARAMS->numericalSolverMode == "INTERACTIVE") {
-        cout << "Instantiating IteApproxNumericalSynthesizer" << endl;
-        solver = new IteApproxSolver(_fm, dag, imap);
-    } else if (PARAMS->numericalSolverMode == "SMOOTHING_SAT") {
-        cout << "Instantiating SmoothSatSolver" << endl;
-        solver = new SmoothSatSolver(_fm, dag, imap);
-    } else {
-		Assert(false, "Error: specify which numerical solver to use for solver mode: " + PARAMS->numericalSolverMode);
-	}
-	//solver = new Inequalitysolver(_fm, dag, imap);
-	//debug();
-    if (PARAMS->checkInput) {
-        checkInput();
-        exit(0);
-    }
-    counter = 0;
-    
-}
-
-bool NumericalSynthesizer::synthesis(int rowid, int colid, int val, int level, vec<Lit>& suggestions) {
-	conflict.clear();
-	vector<vector<int>> allInputs;
-	vector<int> instanceIds;
-	if (!solver->checkInputs(rowid, colid)) return true;
-	collectAllInputs(allInputs, instanceIds);
-	solver->setInputs(allInputs, instanceIds);
-	
-    if (imap[colid] == -1) {
-        if (PARAMS->verbosity > 7) {
-            cout << "Setting dummy variable" << endl;
-        }
-    } else {
-        if (PARAMS->verbosity > 7) {
-            cout << "Setting " << (*dag)[imap[colid]]->lprint() << " to " << allInputs[rowid][colid] << endl;
-        }
-    }
-
-	
-
+bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {	
 	if (PARAMS->verbosity > 7) {
         timer.restart();
-		//printInputs(allInputs);
-		//cout << "Col Id: " << colid << endl;
-        //cout << counter++ << endl;
 	}
 	suggestions.clear();
+    conflicts.clear();
 	bool sat = solver->checkSAT();
-    clearSoftLearnts = solver->clearSoftLearnts();
 	if (sat || solver->ignoreConflict()) {
 		solver->getControls(ctrlVals);
         if (sat) {
             if (!PARAMS->disableSatSuggestions) {
-                const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, inputid, val>
+                const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, nodeid, val>
                 convertSuggestions(s, suggestions);
             }
         } else {
@@ -94,8 +62,7 @@ bool NumericalSynthesizer::synthesis(int rowid, int colid, int val, int level, v
 		if (PARAMS->verbosity > 7) {
 			cout << "****************CONFLICT****************" << endl;
 		}
-		const vector<pair<int, int>>& c = solver->getConflicts(rowid, colid); // <instanceid, inputid>
-		convertConflicts(c);
+		solver->getConflicts(conflicts); // <instanceid, nodeid>
         if (PARAMS->verbosity > 7) {
             timer.stop().print("Numerical solving time:");
         }
@@ -129,33 +96,6 @@ bool_node* NumericalSynthesizer::getExpression(DagOptim* dopt, const vector<bool
 	return dopt->getCnode(0);
 }
 
-void NumericalSynthesizer::collectAllInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) {
-    for (int i = 0; i < inout->getNumInstances(); ++i) {
-        vector<int> inputs;
-        for (int j = 0; j < imap.size(); j++) { // TODO: in some cases (especially in fully separated mode), this looping can be bottleneck
-            int val = inout->getVal(i, j);
-            inputs.push_back(val);
-        }
-        allInputs.push_back(inputs);
-        instanceIds.push_back(i);
-    }
-    Assert(allInputs.size() == instanceIds.size(), "This should not be possible");
-}
-
-
-void NumericalSynthesizer::printInputs(vector<vector<int>>& allInputs) {
-	for (int k = 0; k < allInputs.size(); k++) {
-		cout << "Input: ";
-		for (int i = 0; i < allInputs[k].size(); i++) {
-			if (allInputs[0][i] == EMPTY) {
-				cout << "2,";
-			} else {
-				cout << allInputs[0][i] << ",";
-			}
-		}
-		cout << endl;
-	}
-}
 
 void NumericalSynthesizer::convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions) {
 	for (int k = 0; k < s.size(); k++) {
@@ -163,412 +103,9 @@ void NumericalSynthesizer::convertSuggestions(const vector<tuple<int, int, int>>
 		int j = get<1>(s[k]);
 		int v = get<2>(s[k]);
         //cout << "Suggesting " << i << " " << j <<  " " << v << endl;
-		suggestions.push(getLit(inout->valueid(i, j), v));
+        Assert(i == 0, "Multiple instances is not yet supported");
+		suggestions.push(interface->getLit(j, v));
 	}
 }
 
-void NumericalSynthesizer::convertConflicts(const vector<pair<int, int>>& c) {
-	for (int k = 0; k < c.size(); k++) {
-		int i = c[k].first;
-		int j = c[k].second;
-		conflict.push(inout->valueid(i, j));
-	}
-    softConflict = true;
-}
 
-/* Only used for debugging */
-void checkOpt(vector<vector<int>>& allInputs, gsl_vector* s, OptimizationWrapper* opt, int idx) {
-    double i = -20.0;
-    while (i < 20.0) {
-        gsl_vector_set(s, idx, i);
-        bool sat = opt->optimize(allInputs, s, true);
-        cout << i << " " << sat << " " << opt->getObjectiveVal() << " " << gsl_vector_get(opt->getMinState(), idx);
-        if (!sat || opt->getObjectiveVal() > 0.01) {
-            cout << " LOCAL" << endl;
-        } else {
-            cout << endl;
-        }
-        i += 0.1;
-    }
-    
-}
-
-
-// Debug with a fixed input and/or controls
-void NumericalSynthesizer::debug() { // TODO: currently this is doing all kinds of debugging - should separate them
-	vector<vector<int>> allInputs;
-	vector<int> instanceIds;
-	vector<int> inputs;
-    map<int, int> nodeToInputMap;
-    string partialInput = "0,1;204,0;209,0;";
-    size_t pos = 0, found;
-    while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
-        string p = partialInput.substr(pos, found - pos);
-        int splitIdx = p.find(",");
-        int nodeid = stoi(p.substr(0, splitIdx));
-        int val = stoi(p.substr(splitIdx + 1, p.length() - splitIdx - 1));
-        nodeToInputMap[nodeid] = val;
-        pos = found + 1;
-    }
-    
-    for (int i = 0; i < imap.size(); i++) {
-        int nodeid = imap[i];
-        if (nodeToInputMap.find(nodeid) != nodeToInputMap.end()) {
-            inputs.push_back(nodeToInputMap[nodeid]);
-        } else {
-            inputs.push_back(EMPTY);
-        }
-    }
-    
-	allInputs.push_back(inputs);
-	instanceIds.push_back(0);
-	solver->setInputs(allInputs, instanceIds);
-	//printInputs(allInputs);
-	
-	// generate ctrls mapping
-	map<string, int> ctrlMap;
-	vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-	int ctr = 0;
-	for (int i = 0; i < ctrls.size(); i++) {
-		if (ctrls[i]->getOtype() == OutType::FLOAT) {
-			ctrlMap[ctrls[i]->get_name()] = ctr++;
-		}
-	}
-    map<string, int> boolCtrlMap;
-    for (int i = 0; i < ctrls.size(); i++) {
-        if (ctrls[i]->getOtype() == OutType::BOOL) {
-            boolCtrlMap[ctrls[i]->get_name()] = ctr++;
-        }
-    }
-	int ncontrols = ctr;
-	if (ncontrols == 0) {
-		ncontrols = 1;
-	}
-	cout << "NControls: " << ncontrols << endl;
-    
-    set<int> boolNodes; // This is dependent on different techniques
-    for (int i = 0; i < dag->size(); i++) {
-        bool_node* n = (*dag)[i];
-        if (n->type == bool_node::ASSERT) {
-            if (!((ASSERT_node*)n)->isHard()) {
-                boolNodes.insert(i);
-            }
-        }
-        if (Util::isSqrt(n)) {
-            boolNodes.insert(i);
-        }
-    }
-    
-	
-	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
-    OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
-	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
-	gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[53] = {14.562, 16.5079, 25.3871, 29.2401, 20.4648, -3.3598, -18.6837, -10.095, 11.9579, 4.63623, -8.17328, -2.32865, 5.2097, 0.297557, 18.5087, -14.6174, 19.6083, 24.0753, 4.62991, 19.0566, 16.8833, 0.325465, 4.96385, 0.0645103, -18.9252, 14.5423, -18.35, 14.871, 19.5413, -4.02595, 10.6367, -0.0281517, 13.3301, -2.96819, 12.8153, -6.52162, 5.17906, 7.28508, 8.15148, 19.3113, 17.4993, 3.21412, 4.74884, -14.2551, 0.000636686, 0.109582, 0.0476067, 0.0434983, 0.916371, 0.908358, 0.00325205, 0.974606, 0.961983, };
-	for (int i = 0; i < ncontrols; i++) {
-		gsl_vector_set(s, i, arr1[i]);
-	}
-    
-    //solver->setState(s);
-    //solver->collectUnsatSuggestions();
-    /*
-    SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-    
-    vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
-    for (int k = 0; k < suggestions.size(); k++) {
-        int idx = get<1>(suggestions[k]);
-        cout << imap[idx] << "," << get<2>(suggestions[k]) << ";";
-    }
-    cout << endl;*/
-
-    //opt->optimize(allInputs, s);
-    /*for (int i = 0; i < ncontrols; i++) {
-        cout << "Checking " << i << endl;
-        checkOpt(allInputs, s, opt, i);
-        gsl_vector_set(s, i, arr1[i]);
-    }*/
-    
-    GradUtil::BETA = -50;
-    GradUtil::ALPHA = 50;
-    eval->run(s, nodeValsMap);
-    // eval->print();
-    GradientAnalyzer* analyzer = new GradientAnalyzer(*dag, eval);
-    analyzer->run();
-    gsl_vector* d = gsl_vector_alloc(ncontrols);
-    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-        bool_node* node = *node_it;
-        if (node->type == bool_node::ASSERT) {
-            float dist = eval->computeDist(node->mother, d);
-            if (dist < 0.01 || ((ASSERT_node*)node)->isHard()) {
-                cout << node->lprint() << endl;
-                cout << "Dist: " << dist << endl;
-                cout << "Grad: ";
-                for (int i = 0; i < ncontrols; i++) {
-                    cout << gsl_vector_get(d, i) << ", ";
-                }
-                cout << endl;
-            }
-        }
-    }
-    
-    /*for (int i = 0; i < ncontrols; i++) {
-		genData(s, i, eval, nodeValsMap);
-		gsl_vector_set(s, i, arr1[i]);
-    }*/
-    exit(0);
-}
-
-
-set<int> NumericalSynthesizer::getRelevantIds() {
-    set<int> ids;
-    bool_node* minNode = NULL;
-    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-        bool_node* node = (*node_it);
-        if (node->type == bool_node::ASSERT) {
-            if (((ASSERT_node*)node)->isHard()) {
-                minNode = node;
-                break;
-            }
-        }
-    }
-    Assert(minNode != NULL, "uqiep");
-    
-    set<int> visitedIds;
-    vector<bool_node*> toVisit;
-    toVisit.push_back(minNode);
-    
-    while(toVisit.size() > 0) {
-        bool_node* node = toVisit.back();
-        toVisit.pop_back();
-        if (visitedIds.find(node->id) == visitedIds.end()) {
-            visitedIds.insert(node->id);
-            if (node->type == bool_node::ARRACC) {
-                ids.insert(node->id);
-                ids.insert(node->mother->id);
-                ids.insert(((ARRACC_node*)node)->multi_mother[0]->id);
-                ids.insert(((ARRACC_node*)node)->multi_mother[1]->id);
-            }
-            const vector<bool_node*>& parents = node->parents();
-            for (int i = 0; i < parents.size(); i++) {
-                toVisit.push_back(parents[i]);
-            }
-        }
-    }
-    return ids;
-}
-
-double NumericalSynthesizer::getError(SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, gsl_vector* d, bool useSnopt) {
-    double err = 0.0;
-    if (useSnopt) {
-        bool isValid = true;
-        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-            bool_node* node = *node_it;
-            if (node->type == bool_node::ASSERT) {
-                if (((ASSERT_node*) node)->isHard()) {
-                    if (eval->hasDist(node->mother)) {
-                        err = eval->computeDist(node->mother, d);
-                    }
-                } else {
-                    float dist = 0.0;
-                    if (eval->hasDist(node->mother)) {
-                        dist = eval->computeDist(node->mother, d);
-                    }
-                    if (dist < 0) {
-                        isValid = false;
-                    }
-                }
-                //err += eval->computeError(node->mother, 1, d);
-            }
-        }
-        //cout << i << " " << err << " " << isValid << endl;
-        //analyze(eval, d, idx, relevantIds);
-        //if (!isValid) {
-        //    err = 1000.0;
-        //}
-    } else {
-        for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
-            bool_node* n = *node_it;
-            if (n->type ==  bool_node::ASSERT) {
-                err += eval->computeError(n->mother, 1, d);
-            } else if (n->getOtype() == OutType::BOOL) {
-                auto it = nodeValsMap.find(n->id);
-                if (it != nodeValsMap.end()) {
-                    int val = it->second;
-                    err += eval->computeError(n, val, d);
-                }
-            }
-        }
-    }
-    return err;
-}
-
-
-void NumericalSynthesizer::genData(gsl_vector* state, int idx, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
-	GradUtil::BETA = -100;
-	GradUtil::ALPHA = 100;
-	gsl_vector* d = gsl_vector_alloc(state->size);
-	
-	ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/1b" + to_string(idx) + ".txt");
-    //const set<int>& relevantIds = getRelevantIds();
-	{
-		double i = 180.0;
-		while (i < 200.0) {
-			gsl_vector_set(state, idx, i);
-			eval->run(state, nodeValsMap);
-			gsl_vector_set_zero(d);
-            double err = getError(eval, nodeValsMap, d, useSnopt);
-            cout << i << " " << err << endl;
-			file << err << ";";
-			i += 0.1;
-		}
-	}
-	file << endl;
-    file.close();
-}
-
-void NumericalSynthesizer::genData2D(gsl_vector* state, int idx1, int idx2, SymbolicEvaluator* eval, const map<int, int>& nodeValsMap, bool useSnopt) {
-    GradUtil::BETA = -100;
-    GradUtil::ALPHA = 100;
-    gsl_vector* d = gsl_vector_alloc(state->size);
-    
-    ofstream file("/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/g" + to_string(idx1) + "_" + to_string(idx2) + ".txt");
-    //const set<int>& relevantIds = getRelevantIds();
-    {
-        double i = -10.0;
-        double j = -10.0;
-        while (i < 10.0) {
-            j = -10.0;
-            while (j < 10.0) {
-                gsl_vector_set(state, idx1, i);
-                gsl_vector_set(state, idx2, j);
-                eval->run(state, nodeValsMap);
-                gsl_vector_set_zero(d);
-                double err = getError(eval, nodeValsMap, d, useSnopt);
-            
-                file << err << ";";
-                j += 0.1;
-            }
-            i += 0.1;
-        }
-    }
-    file << endl;
-    file.close();
-}
-
-
-void NumericalSynthesizer::analyze(SymbolicEvaluator* eval, gsl_vector* d, int idx, const set<int>& nodeids) {
-    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); node_it++) {
-        bool_node* node = (*node_it);
-        if (nodeids.find(node->id) == nodeids.end()) continue;
-        string fname = "/Users/Jeevu/projects/symdiff/scripts/graphs/controllers/nodes" + to_string(idx);
-        ofstream file(fname + "/" + node->lprint() + ".txt", std::ios::app);
-        if (node->getOtype() == OutType::BOOL && eval->hasDist(node)) {
-            //cout << node->lprint() << " dist" << endl;
-            file << eval->computeDist(node, d) << ";";
-        } else if (node->getOtype() == OutType::FLOAT && eval->hasVal(node)) {
-            //cout << node->lprint() << " val" << endl;
-            file << eval->computeVal(node, d) << ";";
-        }
-        file.close();
-    }
-}
-
-
-void NumericalSynthesizer::checkInput() {
-    vector<vector<int>> allInputs;
-    vector<int> instanceIds;
-    vector<int> inputs;
-    map<int, int> nodeToInputMap;
-    string partialInput = PARAMS->partialInput;
-    cout <<partialInput << endl;
-    if (partialInput == "FULL") {
-        map<string, int> ctrlMap;
-        vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-        int ctr = 0;
-        for (int i = 0; i < ctrls.size(); i++) {
-            if (ctrls[i]->getOtype() == OutType::FLOAT) {
-                ctrlMap[ctrls[i]->get_name()] = ctr++;
-            }
-        }
-        int ncontrols = ctr;
-        if (ncontrols == 0) {
-            ncontrols = 1;
-        }
-        cout << "NControls: " << ncontrols << endl;
-
-        gsl_vector* s = gsl_vector_alloc(ncontrols);
-        double arr1[10] = {8.1312, 5.48764, 1.33356, 6.65935, -9.71224, -5.8, 8.76646, 10.1233, 11.9636, 11.1991};
-        for (int i = 0; i < ncontrols; i++) {
-            gsl_vector_set(s, i, arr1[i]);
-        }
-                map<string, int> boolCtrlMap;
-        SimpleEvaluator* seval = new SimpleEvaluator(*dag, fm, ctrlMap, boolCtrlMap);
-        
-        vector<tuple<double, int, int>> suggestions = seval->run(s, imap);
-        for (int k = 0; k < suggestions.size(); k++) {
-            int idx = get<1>(suggestions[k]);
-            nodeToInputMap[imap[idx]] = get<2>(suggestions[k]);
-        }
-    } else {
-        size_t pos = 0, found;
-        while ((found = partialInput.find_first_of(";", pos)) != string::npos) {
-            string p = partialInput.substr(pos, found - pos);
-            int splitIdx = p.find(",");
-            int nodeid = stoi(p.substr(0, splitIdx));
-            int val = stoi(p.substr(splitIdx + 1, p.length() - splitIdx - 1));
-            nodeToInputMap[nodeid] = val;
-            pos = found + 1;
-        }
-    }
-    
-    for (int i = 0; i < imap.size(); i++) {
-        int nodeid = imap[i];
-        if (nodeToInputMap.find(nodeid) != nodeToInputMap.end()) {
-            inputs.push_back(nodeToInputMap[nodeid]);
-        } else {
-            inputs.push_back(EMPTY);
-        }
-    }
-    allInputs.push_back(inputs);
-    instanceIds.push_back(0);
-    solver->setInputs(allInputs, instanceIds);
-    printInputs(allInputs);
-    solver->checkSAT();
-    
-    /*
-    // generate ctrls mapping
-    map<string, int> ctrlMap;
-    vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-    int ctr = 0;
-    for (int i = 0; i < ctrls.size(); i++) {
-        if (ctrls[i]->getOtype() == OutType::FLOAT) {
-            ctrlMap[ctrls[i]->get_name()] = ctr++;
-        }
-    }
-    int ncontrols = ctr;
-    if (ncontrols == 0) {
-        ncontrols = 1;
-    }
-    cout << "NControls: " << ncontrols << endl;
-    SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
-    const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
-    gsl_vector* s = gsl_vector_alloc(ncontrols);
-    double arr1[10] = {-8.98569, -14.2144, 2.24176, 238.427, -183.134, -3, 10.2, 11.4458, 9.6, 7.2 };
-    for (int i = 0; i < ncontrols; i++) {
-        gsl_vector_set(s, i, arr1[i]);
-    }
-    GradUtil::BETA = -1;
-    GradUtil::ALPHA = 1;
-    eval->run(s, nodeValsMap);
-    eval->printFull();*/
-    /*if (ncontrols == 2) {
-        genData2D(s, 0, 1, eval, nodeValsMap, false);
-        gsl_vector_set(s, 0, arr1[0]);
-        gsl_vector_set(s, 1, arr1[1]);
-    }
-    for (int i = 0; i < ncontrols; i++) {
-        genData(s, i, eval, nodeValsMap, false);
-        gsl_vector_set(s, i, arr1[i]);
-    }*/
-    
-}

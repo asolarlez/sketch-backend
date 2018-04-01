@@ -1,32 +1,27 @@
 #pragma once
 
-#include "AbstractConflictGenerator.h"
+#include "ConflictGenerator.h"
+#include "CommandLineArgs.h"
 
 // Generates the trivial conflict i.e. all set assignments
-class SimpleConflictGenerator: public AbstractConflictGenerator {
-	map<int, int>& imap;
-	set<int>& boolNodes;
+class SimpleConflictGenerator: public ConflictGenerator {
+	Interface* interface
 public:
-	SimpleConflictGenerator(map<int, int>& imap_, set<int>& boolNodes_):imap(imap_), boolNodes(boolNodes_) {}
+	SimpleConflictGenerator(Interface* _interface): interface(_interface){}
 	
-	virtual vector<pair<int, int>> getConflicts(gsl_vector* state, vector<vector<int>>& allInputs, vector<int>& instanceIds, int rowid, int colid) {
-		vector<pair<int, int>> conflicts;
+	virtual void getConflicts(vector<pair<int, int>>& conflicts) {
         if (PARAMS->verbosity > 7) {
             cout << "Conflict clause ";
         }
-		for (int i = 0; i < allInputs.size(); i++) {
-			for (int j = 0; j < allInputs[i].size(); j++) {
-				if (allInputs[i][j] == 0 || allInputs[i][j] == 1) {
-                    if (PARAMS->verbosity > 7) {
-                        cout << "(" << imap[j] << "," << allInputs[i][j] << "), ";
-                    }
-					conflicts.push_back(make_pair(instanceIds[i], j));
-				}
-			}
-		}
+        set<int>& inputNodes = interface->getInputConstraints();
+        for (auto it = inputNodes.begin(); it != inputNodes.end(); it++) {
+            if (PARAMS->verbosity > 7) {
+                cout << (*it) << ", ";
+            }
+            conflicts.push_back(make_pair(0, (*it)));
+        }
         if (PARAMS->verbosity > 7) {
             cout << endl;
         }
-		return conflicts;
 	}
 };

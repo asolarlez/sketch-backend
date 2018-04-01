@@ -224,6 +224,7 @@ BoolAbstractor::visit (CONST_node &node)
 }
 
 
+/*
 void NumericalSynthesizer::getConstraintsOnInputs(SolverHelper* dir, vector<Tvalue>& inputs) {
     return;
     map<string, multimap<double, int>> ctrlToInputIds;
@@ -344,5 +345,6 @@ void NumericalSynthesizer::getConstraintsOnInputs(SolverHelper* dir, vector<Tval
         
     }
 }
+*/
 
 

@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
+BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
 	values.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
 	nctrls = floatCtrls.size() + boolCtrls.size();
@@ -90,17 +90,13 @@ void BoolAutoDiff::visit( TIMES_node& node ) {
 
 void BoolAutoDiff::visit(ARRACC_node& node )  {
 	Assert(node.multi_mother.size() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
-	//cout << node.lprint() << endl;
-	//cout << node.mother->lprint() << endl;
-	//cout << node.multi_mother[0]->lprint() << endl;
-	//cout << node.multi_mother[1]->lprint() << endl;
 	if (node.getOtype() == OutType::BOOL) {
 		DistanceGrad* dg = d(node);
         DistanceGrad* mdist = d(node.multi_mother[0]);
         DistanceGrad* fdist = d(node.multi_mother[1]);
         int cval = getInputValue(node.mother);
 		if (cval != DEFAULT_INP) {
-						if (cval == 1.0) {
+            if (cval == 1.0) {
 				DistanceGrad::dg_copy(fdist, dg);
 			} else if (cval == 0.0) {
 				DistanceGrad::dg_copy(mdist, dg);
@@ -325,25 +321,21 @@ void BoolAutoDiff::visit( UFUN_node& node ) {
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
 		ValueGrad::vg_cast_int_float(mval, val);
-	} else if (floats.hasFun(name)) {
-		if (name == "arctan_math") {
-			ValueGrad::vg_arctan(mval, val);
-		} else if (name == "sin_math") {
-			ValueGrad::vg_sin(mval, val);
-		} else if (name == "cos_math") {
-			ValueGrad::vg_cos(mval, val);
-		} else if (name == "tan_math") {
-			ValueGrad::vg_tan(mval, val);
-		} else if (name == "sqrt_math") {
-			ValueGrad::vg_sqrt(mval, val);
-		} else if (name == "exp_math") {
-			ValueGrad::vg_exp(mval, val);
-		} else {
-			Assert(false, "NYI");
-		}
-	} else {
-		Assert(false, "NYI");
-	}
+	} else if (name == "arctan_math") {
+        ValueGrad::vg_arctan(mval, val);
+    } else if (name == "sin_math") {
+        ValueGrad::vg_sin(mval, val);
+    } else if (name == "cos_math") {
+        ValueGrad::vg_cos(mval, val);
+    } else if (name == "tan_math") {
+        ValueGrad::vg_tan(mval, val);
+    } else if (name == "sqrt_math") {
+        ValueGrad::vg_sqrt(mval, val);
+    } else if (name == "exp_math") {
+        ValueGrad::vg_exp(mval, val);
+    } else {
+        Assert(false, "NYI");
+    }
 }
 
 void BoolAutoDiff::visit( TUPLE_R_node& node) {
@@ -357,208 +349,151 @@ void BoolAutoDiff::visit( TUPLE_R_node& node) {
 	}
 }
 
-void BoolAutoDiff::run(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p) {
-	Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
 
-	for (int i = 0; i < ctrls->size; i++) {
-		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
-	}
-	inputValues = inputValues_p; // this does copying again
-
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-		//cout << (*node_it)->lprint() << endl;
-		(*node_it)->accept(*this);
-	}
+void BoolAutoDiff::setInputs(const Interface* inputValues_p) {
+    inputValues = inputValues_p;
 }
 
-bool BoolAutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputValues_p, bool onlyBool) {
+
+// assumes nodesSubset forms a complete DAG (i.e. no dangling parent pointers) and in ascending order
+void BoolAutoDiff::run(const gsl_vector* ctrls_p, const set<int>& nodesSubset) {
+    Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
+    
+    for (int i = 0; i < ctrls->size; i++) { // why this copying?
+        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+    }
+    
+    for (auto it = nodesSubset.begin(); it != nodesSubset.end(); it++) {
+        bdag[*it]->accept(*this);
+    }
+}
+
+void BoolAutoDiff::run(const gsl_vector* ctrls_p) {
     Assert(ctrls->size == ctrls_p->size, "BoolAutoDiff ctrl sizes are not matching");
     
     for (int i = 0; i < ctrls->size; i++) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
-    inputValues = inputValues_p; // this does copying again
     
-    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-        //cout << (*node_it)->lprint() << endl;
-        (*node_it)->accept(*this);
+    for (int i = 0; i < bdag.size; i++) {
+        bdag[i]->accept(*this);
     }
+}
+
+double BoolAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // Negative means errors TODO: name is confusing
+    bool_node* node = bdag[nodeid];
+    if (Util::isSqrt(node)) {
+        return getSqrtError(node, grad);
+    } else if (node->type == bool_node::ASSERT) {
+        return getAssertError(node, grad);
+    } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+        return getBoolCtrlError(node, grad);
+    } else if (node->getOtype() == OutType::BOOL) {
+        return getBoolExprError(node, grad);
+    } else {
+        Assert(false, "Unknown node for computing error");
+    }
+}
+
+double BoolAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
+    UFUN_node* un = (UFUN_node*) node;
+    bool_node* x = un->multi_mother[0];
+    ValueGrad* val = v(x);
+    Assert(val->set, "Sqrt node is not set");
+    gsl_vector_memcpy(grad, val->getGrad());
+    return val->getVal();
+}
+
+double BoolAutoDiff::getAssertError(bool_node* node, gsl_vector* grad) {
+    DistanceGrad* dg = d(node->mother);
+    Assert(dg->set, "Assert node is not set");
+    gsl_vector_memcpy(grad, dg->grad);
+    return dg->dist;
+}
+
+double BoolAutoDiff::getBoolCtrlError(bool_node* node, gsl_vector* grad) {
+    string name = n->get_name();
+    int idx = -1;
+    if (boolCtrls.find(name) != boolCtrls.end()) {
+        idx = boolCtrls[name];
+    } else {
+        Assert(false, "qwe8yqwi");
+    }
+    GradUtil::default_grad(grad);
+    gsl_vector_set(grad, idx, 1.0);
+    double dist = gsl_vector_get(ctrls, idx);
     
-    bool failed = false;
-    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); node_it++) {
-        bool_node* node = *node_it;
-        if (!onlyBool && node->type == bool_node::ASSERT) {
-            ASSERT_node* an = (ASSERT_node*) node;
-            Assert(hasDist(node->mother), "weoqypq");
-            float dist = getVal(node->mother);
-            if (an->isHard()) {
-                if (dist > 0.05) { // TODO: magic numbers
-                    cout << "Failed " << node->lprint() << " " << dist << endl;
-                    failed = true;
-                }
-            } else {
-                if (dist < -0.05) {
-                    cout << "Failed " << node->lprint() << " " << dist << endl;
-                    failed = true;
-                    
-                }
-            }
-        }
-        if (!onlyBool && Util::isSqrt(node)) {
-            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
-            Assert(hasVal(xnode), "weoqypq_sqrt");
-            float dist = getVal(xnode);
-            if (dist < -0.05) {
-                cout << "Failed " << node->lprint() << " " << dist << endl;
-                failed =  true;
-            }
-        }
-        
-        if (node->type != bool_node::ASSERT && node->getOtype() == OutType::BOOL && node->type != bool_node::CTRL) {
-            auto it = inputValues.find(node->id);
-            if (it != inputValues.end()) {
-                int val = it->second;
-                double dist = 0;
-                if (hasDist(node)) {
-                    dist = getVal(node);
-                    if (val == 0 && dist > 0.05) {
-                        cout << "Failed " << node->lprint() << " " << dist << endl;
-                        failed = true;
-                    }
-                    if (val == 1 && dist < -0.05) {
-                        cout << "Failed " << node->lprint() << " " << dist << endl;
-                        failed = true;
-                    }
-                }
-            }
-        }
-    }
-    return !failed;
+    gsl_vector_scale(grad, 2*dist - 1);
+    return 0.1 - dist*(1-dist); // TODO: magic numbers
 }
 
-bool BoolAutoDiff::hasDist(bool_node* n) {
-	DistanceGrad* dg = d(n);
-	return dg->set;
-}
-
-double BoolAutoDiff::computeDist(bool_node* n, gsl_vector* distgrad) {
-	DistanceGrad* dg = d(n);
-	if (dg->set) {
-        /*if (gsl_blas_dnrm2(dg->grad) > 1e10 || dg->dist > 1e10) {
-            cout << "LARGE VALUES" << endl;
-            cout << n->lprint() << " " << dg->dist << endl;
-            for (int i = 0; i < dg->grad->size; i++) {
-                cout << gsl_vector_get(dg->grad, i) << ";";
-            }
-            cout << endl;
-        }*/
-		gsl_vector_memcpy(distgrad, dg->grad);
-		return dg->dist;
-	} else {
-        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-            string name = n->get_name();
-            int idx = -1;
-            if (boolCtrls.find(name) != boolCtrls.end()) {
-                idx = boolCtrls[name];
-            } else {
-                Assert(false, "qwe8yqwi");
-            }
-            GradUtil::default_grad(distgrad);
-            gsl_vector_set(distgrad, idx, 1.0);
-            return gsl_vector_get(ctrls, idx);
-        }
-		Assert(false, "Value not set -- check hasDist() first");
-	}
-}
-
-bool BoolAutoDiff::hasVal(bool_node* n) {
-    ValueGrad* val = v(n);
-    return val->set;
-}
-
-double BoolAutoDiff::computeVal(bool_node* n, gsl_vector* distgrad) {
-    ValueGrad* val = v(n);
-    if (val->set) {
-        gsl_vector_memcpy(distgrad, val->getGrad());
-        return val->getVal();
-    } else {
-        Assert(false, "Value not set -- check hasDist() first");
-    }
-}
-
-
-
-double BoolAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad) {
-	double error = 0.0;
-	DistanceGrad* dg = d(n);
-	if (dg->set) {
-		double dist = dg->dist;
-		gsl_vector* distgrad = dg->grad;
-		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-			error += abs(dist);
-			gsl_vector_memcpy(GradUtil::tmp3, distgrad);
-			gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
-			gsl_vector_add(errorGrad, GradUtil::tmp3);
-		}
-	}
-	return error;
-}
-
-bool BoolAutoDiff::hasSqrtDist(bool_node* n) {
-    UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
-    return hasVal(x);
-}
-double BoolAutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
-    UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
-    ValueGrad* xval = v(x);
-    if (xval->set) {
-        double dist = xval->getVal();
-        gsl_vector* distgrad = xval->getGrad();
-        if (dist < 0) {
-            error += abs(dist);
-            gsl_vector_memcpy(GradUtil::tmp3, distgrad);
-            gsl_vector_scale(GradUtil::tmp3, dist >= 0 ? 1 : -1);
-            gsl_vector_add(errorGrad, GradUtil::tmp3);
-        }
-    }
-    return error;
-}
-double BoolAutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
-    UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
-    return computeVal(x, errorGrad);
-}
-
-bool BoolAutoDiff::check(bool_node* n, int expected) {
-	DistanceGrad* dg = d(n);
-	if (dg->set) {
-		double dist = dg->dist;
-		if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-			return false;
-		}
-	}
-	return true;
-}
-
-
-double BoolAutoDiff::getVal(bool_node* n) {
-    if (n->getOtype() == OutType::FLOAT || n->type == bool_node::UFUN) {
-        ValueGrad* val = v(n);
-        return val->getVal();
-    } else {
-        DistanceGrad* dg = d(n);
+double BoolAutoDiff::getBoolExprError(bool_node* node, gsl_vector* grad) {
+    assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    DistanceGrad* dg = d(node);
+    Assert(dg->set, "Boolean expression distance is not set");
+    gsl_vector_memcpy(grad, dg->grad);
+    if (val == 1) {
         return dg->dist;
+    } else {
+        gsl_vector_scale(grad, -1.0);
+        return -dg->dist;
     }
 }
 
-gsl_vector* BoolAutoDiff::getGrad(bool_node* n) {
-    if (n->getOtype() == OutType::FLOAT || n->type == bool_node::UFUN) {
-        ValueGrad* val = v(n);
-        return val->getGrad();
+
+double BoolAutoDiff::getErrorOnConstraint(int nodeid) {
+    bool_node* node = bdag[nodeid];
+    if (Util::isSqrt(node)) {
+        return getSqrtError(node);
+    } else if (node->type == bool_node::ASSERT) {
+        return getAssertError(node);
+    } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+        return getBoolCtrlError(node);
+    } else if (node->getOtype() == OutType::BOOL) {
+        return getBoolExprError(node);
     } else {
-        DistanceGrad* dg = d(n);
-        return dg->grad;
+        Assert(false, "Unknown node for computing error");
     }
 }
+
+double BoolAutoDiff::getSqrtError(bool_node* node) {
+    UFUN_node* un = (UFUN_node*) node;
+    bool_node* x = un->multi_mother[0];
+    ValueGrad* val = v(x);
+    Assert(val->set, "Sqrt node is not set");
+    return val->getVal();
+}
+
+double BoolAutoDiff::getAssertError(bool_node* node) {
+    DistanceGrad* dg = d(node->mother);
+    Assert(dg->set, "Assert node is not set");
+    return dg->dist;
+}
+
+double BoolAutoDiff::getBoolCtrlError(bool_node* node) {
+    string name = n->get_name();
+    int idx = -1;
+    if (boolCtrls.find(name) != boolCtrls.end()) {
+        idx = boolCtrls[name];
+    } else {
+        Assert(false, "qwe8yqwi");
+    }
+    double dist = gsl_vector_get(ctrls, idx);
+    return 0.1 - dist*(1-dist); // TODO: magic numbers
+}
+
+double BoolAutoDiff::getBoolExprError(bool_node* node) {
+    assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    DistanceGrad* dg = d(node);
+    Assert(dg->set, "Boolean expression distance is not set");
+    if (val == 1) {
+        return dg->dist;
+    } else {
+        return -dg->dist;
+    }
+}
+

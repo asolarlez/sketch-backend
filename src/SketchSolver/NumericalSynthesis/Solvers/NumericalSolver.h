@@ -8,17 +8,42 @@
 #include <math.h>
 #include "FloatSupport.h"
 #include "BooleanDAG.h"
+#include "Interface.h"
+#include "SnoptWrapper.h"
+#include "OptimizationWrapper.h"
+#include "ConflictGenerator.h"
+#include "SuggestionGenerator.h"
+#include "SimpleEvaluator.h"
+#include "CommandLineArgs.h"
+
 
 using namespace std;
 
-
-// The helper class is collection of different methods/classes to handle different parts of the numerical solver
 class NumericalSolver {
 protected:
 	BooleanDAG* dag;
-	map<int, int>& imap;
-	FloatManager& fm;
-	
+	Interface* interface;
+    
+    int ncontrols;
+    gsl_vector* state;
+    
+    bool previousSAT;
+    bool fullSAT;
+    int numConflictsAfterSAT;
+    bool inputConflict;
+    
+    int CONFLICT_CUTOFF = PARAMS->conflictCutoff;
+
+    
+    map<string, int>& ctrls;
+    SymbolicEvaluator* eval;
+    OptimizationWrapper* opt;
+    ConflictGenerator* cg;
+    SuggestionGenerator* sg;
+    
+    SimpleEvaluator* seval;
+    
+    set<int> assertConstraints;
 	
 	// class for picking the part of the numerical problem to handle
 	// class to do symbolic evaluation
@@ -28,17 +53,23 @@ protected:
 	// class to generate conflicts
 	
 public:
-	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): fm(_fm), dag(_dag), imap(_imap){}
-	
+    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg);
+    ~NumericalSolver(void);
+    
 	// Called by the NumericalSolver
-	virtual void setInputs(vector<vector<int>>& allInputs, vector<int>& instanceIds) = 0;
-	virtual bool checkInputs(int rowid, int colid) = 0;
-	virtual bool checkSAT() = 0;
-	virtual bool ignoreConflict() = 0;
-	virtual vector<tuple<int, int, int>> collectSatSuggestions() = 0;
-    virtual vector<tuple<int, int, int>> collectUnsatSuggestions() = 0;
-	virtual vector<pair<int, int>> getConflicts(int rowid, int colid) = 0;
-	virtual void getControls(map<string, double>& ctrls) = 0;
-    virtual void setState(gsl_vector* state) = 0;
-    virtual bool clearSoftLearnts() = 0;
+    bool checkSAT();
+	bool ignoreConflict();
+	vector<tuple<int, int, int>> collectSatSuggestions();
+    vector<tuple<int, int, int>> collectUnsatSuggestions();
+	void getConflicts(vector<pair<int, int>>& conflicts);
+	void getControls(map<string, double>& ctrlVals);
+    void setState(gsl_vector* state);
+    
+    // helper functions
+    bool checkInputs();
+    bool checkCurrentSol();
+    bool checkFullSAT();
+    bool initializeState(bool suppressPrint);
+    void printControls();
+
 };

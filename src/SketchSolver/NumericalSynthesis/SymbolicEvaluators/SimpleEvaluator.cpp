@@ -4,9 +4,9 @@
 #include <math.h>
 
 
-SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floats(_floats), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
+SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
 	distances.resize(bdag.size(), NULL);
-	int nctrls = floatCtrls.size() + boolCtrls.size();
+    int nctrls = floatCtrls.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
 }
@@ -40,8 +40,11 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 		setvalue(node, val);
 	} else {
 		int idx = -1;
-		if (boolCtrls.find(name) != boolCtrls.end()) {
-			idx = boolCtrls[name];
+        int ival = getInputValue(node);
+        if (ival != DEFAULT_INPUT) {
+            setvalue(node, ival - 0.5);
+        } else if (floatCtrls.find(name) != floatCtrls.end()) {
+			idx = floatCtrls[name];
 			double val = gsl_vector_get(ctrls, idx);
 			double dist = val - 0.5;
 			setvalue(node, dist);
@@ -67,9 +70,8 @@ void SimpleEvaluator::visit( TIMES_node& node ) {
 
 void SimpleEvaluator::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-	//Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
+	Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
 	double m = d(node.mother);
-	//cout << node.lprint() << " " << m << endl;
 	int idx = (m >= 0) ? 1 : 0;
 	setvalue(node, d(node.multi_mother[idx]));
 }
@@ -149,25 +151,22 @@ void SimpleEvaluator::visit( UFUN_node& node ) {
 	double d;
 	if (name == "_cast_int_float_math") {
 		d = m;
-	} else if (floats.hasFun(name)) {
-		if (name == "arctan_math") {
-			d = atan(m);
-		} else if (name == "sin_math") {
-			d = sin(m);
-		} else if (name == "cos_math") {
-			d = cos(m);
-		} else if (name == "tan_math") {
-			d = tan(m);
-		} else if (name == "sqrt_math") {
-			d = sqrt(m);
-		} else if (name == "exp_math") {
-			d = exp(m);
-		} else {
-			Assert(false, "NYI");
-		}
-	} else {
-		Assert(false, "NYI");
-	}
+    } else if (name == "arctan_math") {
+        d = atan(m);
+    } else if (name == "sin_math") {
+        d = sin(m);
+    } else if (name == "cos_math") {
+        d = cos(m);
+    } else if (name == "tan_math") {
+        d = tan(m);
+    } else if (name == "sqrt_math") {
+        d = sqrt(m);
+    } else if (name == "exp_math") {
+        d = exp(m);
+    } else {
+        Assert(false, "NYI");
+    }
+    
 	setvalue(node, d);
 }
 
@@ -180,7 +179,44 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
   }
 }
 
-vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
+void SimpleEvaluator::setInputs(const Interface* inputValues_p) {
+    inputValues = inputValues_p;
+}
+
+void SimpleEvaluator::run(const gsl_vector* ctrls_p) {
+    Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrls sizes are not matching");
+    
+    for (int i = 0; i < ctrls->size; i++) {
+        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
+    }
+    
+    for (int i = 0; i < bdag.size; i++) {
+        bdag[i]->accept(*this);
+    }
+}
+
+double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
+    bool_node* node = bdag[nodeid];
+    if (Util::isSqrt(node)) {
+        return getSqrtError(node);
+    } else if (node->type == bool_node::ASSERT) {
+        return getAssertError(node);
+    } else {
+        Assert(false, "Unknonwn node for computing error in Simple Evaluator");
+    }
+}
+
+double SimpleEvaluator::getSqrtError(bool_node* node) {
+    UFUN_node* un = (UFUN_node*) node;
+    bool_node* x = un->multi_mother[0];
+    return d(x);
+}
+
+double SimpleEvaluator::getAssertError(bool_node* node) {
+    return d(node->mother);
+}
+
+/*vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
 	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
 	for (int i = 0; i < ctrls->size; i++) {
 		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
@@ -207,74 +243,5 @@ vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, 
 	}
     cout << endl;
 	return s;
-}
+}*/
 
-double SimpleEvaluator::run1(const gsl_vector* ctrls_p, map<int, int>& inputValues_p) {
-	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
-	for (int i = 0; i < ctrls->size; i++) {
-		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
-	}
-	double error = 0;
-	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-		bool_node* node = (*node_it);
-		node->accept(*this);
-		
-		if (inputValues_p.find(node->id) != inputValues_p.end()) {
-			int val = inputValues_p[node->id];
-			error += computeError(d(node), val, node);
-			setvalue(*node, (val == 1) ? 1000 : -1000);
-		}
-		if (node->type == bool_node::ASSERT) {
-			error += computeError(d(node), 1, node);
-			setvalue(*node, 1000);
-		}
-	}
-	return error;
-}
-
-bool SimpleEvaluator::check(const gsl_vector* ctrls_p, double& error) {
-    Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
-    for (int i = 0; i < ctrls->size; i++) {
-        gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
-    }
-    bool failed = false;
-    for (BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it) {
-        bool_node* node = (*node_it);
-        node->accept(*this);
-        if (node->type == bool_node::ASSERT) {
-            ASSERT_node* an = (ASSERT_node*) node;
-            if (an->isHard()) {
-                if (d(node) > 0.1) {
-                    cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                    error += d(node);
-                    failed = true;
-                }
-            } else {
-                if (d(node) < -0.1) {
-                    cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                    error -= d(node);
-                    failed = true;
-
-                }
-            }
-        }
-        if (Util::isSqrt(node)) {
-            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
-            if (d(node) < -0.1) {
-                cout << "Failed " << node->lprint() << " " << d(node) << endl;
-                error -= d(node);
-                failed =  true;
-            }
-        }
-    }
-    return !failed;
-}
-
-double SimpleEvaluator::computeError(double dist, int expected, bool_node* node) {
-	if ((expected == 1 && dist < 0) || (expected == 0 && dist > 0)) {
-		//cout << node->lprint() << " " << dist << endl;
-		return pow(dist, 2);
-	} else {
-		return 0.0;
-	}
-}

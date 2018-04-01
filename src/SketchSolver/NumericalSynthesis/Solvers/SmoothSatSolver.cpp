@@ -69,7 +69,6 @@ SmoothSatSolver::SmoothSatSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, i
     previousSAT = false;
     fullSAT = false;
     numConflictsAfterSAT = 0;
-    clearLearnts = false;
     
     for (int i = 0; i < imap.size(); i++) {
         int nodeid = imap[i];
@@ -185,15 +184,12 @@ bool SmoothSatSolver::checkSAT() {
     if (sat) {
         cout << "FOUND solution" << endl;
         printControls();
-        clearLearnts = true;
         if (validObjective() && checkFullSAT()) {
             fullSAT = true;
             cout << "FULL SAT" << endl;
         }
         numConflictsAfterSAT = 0;
-    } else {
-        clearLearnts = false;
-    }
+    } 
     if (!sat && previousSAT) {
         numConflictsAfterSAT++;
         if (numConflictsAfterSAT > 5) {

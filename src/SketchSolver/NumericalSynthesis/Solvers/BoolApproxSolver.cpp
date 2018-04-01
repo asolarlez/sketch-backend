@@ -1,9 +1,7 @@
 #include "BoolApproxSolver.h"
 
 
-BoolApproxSolver::BoolApproxSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolver(_fm, _dag, _imap) {
-	//dag->lprint(cout);
-	
+BoolApproxSolver::BoolApproxSolver(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface): NumericalSolver(_fm, _dag, _interface) {	
 	// Collect the list of boolean nodes that contribute to the error
 	// In this case, only the assertions matter
 	for (int i = 0; i < dag->size(); i++) {
