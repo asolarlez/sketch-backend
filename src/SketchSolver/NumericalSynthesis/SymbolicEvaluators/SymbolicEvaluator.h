@@ -6,13 +6,13 @@
 
 class SymbolicEvaluator {
 public:
-    virtual void setInputs(Interface* inputValues_p);
+    virtual void setInputs(Interface* inputValues_p) = 0;
     
-    virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset);
-    virtual void run(const gsl_vector* ctrls_p);
+    virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset) = 0;
+    virtual void run(const gsl_vector* ctrls_p) = 0;
     
-    virtual double getErrorOnConstraint(int nodeid, gsl_vector* grad);
-    virtual double getErrorOnConstraint(int nodeid);
+    virtual double getErrorOnConstraint(int nodeid, gsl_vector* grad) = 0;
+    virtual double getErrorOnConstraint(int nodeid) = 0;
     
 	virtual void print() = 0;
 	virtual void printFull() = 0;

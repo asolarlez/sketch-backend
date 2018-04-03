@@ -208,8 +208,12 @@ public:
             GradUtil::ALPHA = 1;
             eval->run(t1);
             double error = 0.0;
+            double e;
             for (auto it = constraints.begin(); it != constraints.end(); it++) {
-                error += eval->getErrorOnConstraint(*it);
+                e = eval->getErrorOnConstraint(*it);
+                if (e < 0.0) {
+                    error += -e;
+                }
             }
             cout << "Error: " << error << endl;
             if (error < best) {

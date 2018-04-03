@@ -103,7 +103,6 @@ public:
     }
     
     int getValue(int nodeid) {
-        Assert(inputNodeIds.find(nodeid) != inputNodeIds.end(), "Missing input node"); // TODO: remove it
         return nodeVals[nodeid];
     }
     

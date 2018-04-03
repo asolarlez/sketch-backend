@@ -32,6 +32,7 @@ class NumericalSynthesizer : public Synthesizer {
     vector<pair<int, int>> conflicts; // (nodeid, val) pairs
     timerclass timer;
 	
+    map<string, int> ctrls;
 	
 public:
     NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit);

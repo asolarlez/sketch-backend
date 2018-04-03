@@ -140,6 +140,7 @@ bool NumericalSolver::initializeState(bool suppressPrint) {
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
         gsl_vector_memcpy(state, opt->getMinState());
+        return true;
     } else {
         cout << "Inputs not satisfiable" << endl;
         inputConflict = true;

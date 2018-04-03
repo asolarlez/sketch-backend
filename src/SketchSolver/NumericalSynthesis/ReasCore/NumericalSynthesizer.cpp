@@ -7,15 +7,14 @@ gsl_vector* SnoptEvaluator::grad;
 using namespace std;
 
 
-NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm) {
+NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interface(_interface) {
     softConflictLit = _softConflictLit;
-    interface = _interface;
     
     if (PARAMS->verbosity > 2) {
         cout << "NInputs: " << interface->size() << endl;
     }
     
-    map<string, int> ctrls;
+    
     vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
     int ctr = 0;
     for (int i = 0; i < ctrlNodes.size(); i++) {

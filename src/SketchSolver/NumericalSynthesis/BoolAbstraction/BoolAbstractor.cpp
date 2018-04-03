@@ -4,6 +4,8 @@ bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<b
     //timerclass timer("defineProblem");
     //timer.start();
     bool stoppedEarly;
+    int YES = dir.newYES();
+    
     //getProblem()->lprint(cout);
     
     BoolAbstractor nts(dir, "PROBLEM", node_values, node_ids, floats, interface);

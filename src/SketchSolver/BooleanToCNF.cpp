@@ -512,6 +512,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 
 void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interface) {
     int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
+    lastVar = specialVar;
     ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
     NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interface, lfromInt(specialVar));
     numsin = ((MiniSATSolver&)mng).addSynth(ns);
