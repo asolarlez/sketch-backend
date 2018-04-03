@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
+SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
 	distances.resize(bdag.size(), NULL);
     int nctrls = floatCtrls.size();
 	if (nctrls == 0) nctrls = 1;
@@ -179,7 +179,7 @@ void SimpleEvaluator::visit( TUPLE_R_node& node) {
   }
 }
 
-void SimpleEvaluator::setInputs(const Interface* inputValues_p) {
+void SimpleEvaluator::setInputs(Interface* inputValues_p) {
     inputValues = inputValues_p;
 }
 
@@ -190,7 +190,7 @@ void SimpleEvaluator::run(const gsl_vector* ctrls_p) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
     
-    for (int i = 0; i < bdag.size; i++) {
+    for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
     }
 }

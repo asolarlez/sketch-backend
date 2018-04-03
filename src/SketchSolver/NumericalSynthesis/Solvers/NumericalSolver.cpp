@@ -28,6 +28,9 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
         if (n->type == bool_node::ASSERT || Util::isSqrt(n)) {
             assertConstraints.insert(i);
         }
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            assertConstraints.insert(i);
+        }
     }
 }
 

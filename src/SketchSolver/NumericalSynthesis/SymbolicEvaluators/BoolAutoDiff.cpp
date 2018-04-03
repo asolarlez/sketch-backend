@@ -4,11 +4,11 @@
 #include <math.h>
 
 
-BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p), boolCtrls(boolCtrls_p) {
+BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
 	values.resize(bdag.size(), NULL);
 	distances.resize(bdag.size(), NULL);
-	nctrls = floatCtrls.size() + boolCtrls.size();
-	if (nctrls == 0) nctrls = 1;
+    nctrls = floatCtrls.size();
+    if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
 }
 
@@ -104,11 +104,11 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 				Assert(false, "dafuerq");
 			}
 		} else {
-            if (boolCtrls.size() > 0 && node.mother->type == bool_node::CTRL) {
+            if (node.mother->type == bool_node::CTRL) {
                 string name = node.mother->get_name();
                 int idx = -1;
-                if (boolCtrls.find(name) != boolCtrls.end()) {
-                    idx = boolCtrls[name];
+                if (floatCtrls.find(name) != floatCtrls.end()) {
+                    idx = floatCtrls[name];
                 } else {
                     Assert(false, "qwe8yqwi");
                 }
@@ -140,11 +140,11 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
                 Assert(false, "Not possible");
             }
         } else {
-            if (boolCtrls.size() > 0 && node.mother->type == bool_node::CTRL) {
+            if (node.mother->type == bool_node::CTRL) {
                 string name = node.mother->get_name();
                 int idx = -1;
-                if (boolCtrls.find(name) != boolCtrls.end()) {
-                    idx = boolCtrls[name];
+                if (floatCtrls.find(name) != floatCtrls.end()) {
+                    idx = floatCtrls[name];
                 } else {
                     Assert(false, "qwe8yqwi");
                 }
@@ -350,7 +350,7 @@ void BoolAutoDiff::visit( TUPLE_R_node& node) {
 }
 
 
-void BoolAutoDiff::setInputs(const Interface* inputValues_p) {
+void BoolAutoDiff::setInputs(Interface* inputValues_p) {
     inputValues = inputValues_p;
 }
 
@@ -375,7 +375,7 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
     
-    for (int i = 0; i < bdag.size; i++) {
+    for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
     }
 }
@@ -412,10 +412,10 @@ double BoolAutoDiff::getAssertError(bool_node* node, gsl_vector* grad) {
 }
 
 double BoolAutoDiff::getBoolCtrlError(bool_node* node, gsl_vector* grad) {
-    string name = n->get_name();
+    string name = node->get_name();
     int idx = -1;
-    if (boolCtrls.find(name) != boolCtrls.end()) {
-        idx = boolCtrls[name];
+    if (floatCtrls.find(name) != floatCtrls.end()) {
+        idx = floatCtrls[name];
     } else {
         Assert(false, "qwe8yqwi");
     }
@@ -428,7 +428,7 @@ double BoolAutoDiff::getBoolCtrlError(bool_node* node, gsl_vector* grad) {
 }
 
 double BoolAutoDiff::getBoolExprError(bool_node* node, gsl_vector* grad) {
-    assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
     int val = inputValues->getValue(node->id);
     
     DistanceGrad* dg = d(node);
@@ -473,10 +473,10 @@ double BoolAutoDiff::getAssertError(bool_node* node) {
 }
 
 double BoolAutoDiff::getBoolCtrlError(bool_node* node) {
-    string name = n->get_name();
+    string name = node->get_name();
     int idx = -1;
-    if (boolCtrls.find(name) != boolCtrls.end()) {
-        idx = boolCtrls[name];
+    if (floatCtrls.find(name) != floatCtrls.end()) {
+        idx = floatCtrls[name];
     } else {
         Assert(false, "qwe8yqwi");
     }
@@ -485,7 +485,7 @@ double BoolAutoDiff::getBoolCtrlError(bool_node* node) {
 }
 
 double BoolAutoDiff::getBoolExprError(bool_node* node) {
-    assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
     int val = inputValues->getValue(node->id);
     
     DistanceGrad* dg = d(node);

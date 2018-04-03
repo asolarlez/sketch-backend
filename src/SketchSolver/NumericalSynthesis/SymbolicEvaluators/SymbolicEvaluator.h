@@ -2,10 +2,11 @@
 #include <gsl/gsl_vector.h>
 #include <map>
 #include <set>
+#include "Interface.h"
 
 class SymbolicEvaluator {
 public:
-    virtual void setInputs(const Interface* inputValues_p);
+    virtual void setInputs(Interface* inputValues_p);
     
     virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset);
     virtual void run(const gsl_vector* ctrls_p);

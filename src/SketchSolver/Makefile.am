@@ -36,24 +36,13 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/BoolAbstraction/Interface.h  \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.h     \
 	NumericalSynthesis/Solvers/NumericalSolver.h	\
-    #NumericalSynthesis/Solvers/BasicSolver.h		\
-    #NumericalSynthesis/Solvers/IteApproxSolver.h   \
-    #NumericalSynthesis/Solvers/InequalitySolver.h	\
-    #NumericalSynthesis/Solvers/BoolApproxSolver.h	\
-    #NumericalSynthesis/Solvers/SmoothSatSolver.h    \
-	NumericalSynthesis/Utils/GradUtil.h		\
+ 	NumericalSynthesis/Utils/GradUtil.h		\
 	NumericalSynthesis/Utils/Util.h	\
-    #NumericalSynthesis/Optimizers/GradientDescent.h			\
 	NumericalSynthesis/Optimizers/Snopt.h			\
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
-    #NumericalSynthesis/Optimizers/GradientDescentWrapper.h	\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
-    #NumericalSynthesis/Optimizers/SimulatedAnnealing.h		\
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
-    #NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.h     \
-    #NumericalSynthesis/SymbolicEvaluators/AutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
-    #NumericalSynthesis/SymbolicEvaluators/RangeDiff.h   \
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
 	NumericalSynthesis/DataStructures/DistanceGrad.h		\
 	NumericalSynthesis/DataStructures/ValueGrad.h \
@@ -64,7 +53,6 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/ConflictGenerators/SimpleConflictGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SuggestionGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SimpleSuggestionGenerator.h	\
-    NumericalSynthesis/SymbolicAnalyzers/GradientAnalyzer.h  \
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\
@@ -111,23 +99,14 @@ libcegis_la_SOURCES =				\
     NumericalSynthesis/BoolAbstraction/BoolAbstractor.cpp \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.cpp \
     NumericalSynthesis/Solvers/NumericalSolver.cpp  \
-    #NumericalSynthesis/Solvers/IteApproxSolver.cpp   \
-    #NumericalSynthesis/Solvers/InequalitySolver.cpp	\
-    #NumericalSynthesis/Solvers/BoolApproxSolver.cpp	\
-    #NumericalSynthesis/Solvers/SmoothSatSolver.cpp    \
 	NumericalSynthesis/Utils/GradUtil.cpp	\
-    #NumericalSynthesis/Optimizers/GradientDescent.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \
 	NumericalSynthesis/DataStructures/IntervalGrad.cpp \
-    #NumericalSynthesis/SymbolicEvaluators/IteAutoDiff.cpp   \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
-    #NumericalSynthesis/SymbolicEvaluators/AutoDiff.cpp \
-    #NumericalSynthesis/SymbolicEvaluators/RangeDiff.cpp \
-	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
-    NumericalSynthesis/SymbolicAnalyzers/GradientAnalyzer.cpp    \
+   	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\
@@ -158,6 +137,7 @@ libcegis_la_SOURCES =				\
 	InputParser/NodeHardcoder.cpp  \
 	InputParser/HoleHardcoder.cpp \
 	InputParser/Tvalue.cpp
+
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp

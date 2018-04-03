@@ -16,11 +16,11 @@ using namespace std;
 class SnoptParameters {
 public:
     SymbolicEvaluator* eval;
-    set<int>& boolNodes;
+    const set<int>& boolNodes;
     double beta;
     double alpha;
     
-    SnoptParameters(SymbolicEvaluator* eval_, set<int>& boolNodes_): eval(eval_), boolNodes(boolNodes_) {}
+    SnoptParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_): eval(eval_), boolNodes(boolNodes_) {}
 };
 
 class SnoptEvaluator {
@@ -134,7 +134,7 @@ public:
         getFranges();
     }
     
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, set<int>& constraints, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries) {
         Assert(neF > constraints.size(), "Increase neF");
         eval->setInputs(inputs);
         // start the snopt solving
@@ -195,7 +195,7 @@ public:
         return minObjectiveVal;
     }
     
-    virtual void randomizeCtrls(gsl_vector* state, Interface* inputs, set<int>& constraints) {
+    virtual void randomizeCtrls(gsl_vector* state, Interface* inputs, const set<int>& constraints) {
         double best = GradUtil::MAXVAL;
         eval->setInputs(inputs);
         for (int i = 0; i < RANDOM_SEARCH; i++) {

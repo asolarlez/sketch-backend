@@ -17,16 +17,15 @@ using namespace std;
 class SimpleEvaluator: NodeVisitor
 {
     BooleanDAG& bdag;
-    map<string, int> floatCtrls; // Maps float ctrl names to indices with grad vectors
-    map<string, int> boolCtrls; // Maps bool ctrl names to indices with grad vectors
+    map<string, int>& floatCtrls; // Maps float ctrl names to indices with grad vectors
     gsl_vector* ctrls; // ctrl values
     vector<double> distances; // Keeps track of distance metric for boolean nodes
     double MIN_VALUE = 0.001;
     Interface* inputValues;
-    int DEFAULT_INP = -32;
+    int DEFAULT_INPUT = -32;
     
 public:
-    SimpleEvaluator(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p);
+    SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
     
     virtual void visit( SRC_node& node );
     virtual void visit( DST_node& node );
@@ -49,7 +48,7 @@ public:
     virtual void visit( ASSERT_node& node );
     
     
-    void setInputs(const Interface* inputValues_p);
+    void setInputs(Interface* inputValues_p);
     void run(const gsl_vector* ctrls_p);
     
     
@@ -89,7 +88,7 @@ public:
             int val = inputValues->getValue(bn.id);
             return val;
         } else {
-            return DEFAULT_INP;
+            return DEFAULT_INPUT;
         }
     }
     

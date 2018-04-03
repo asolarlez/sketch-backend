@@ -1,5 +1,4 @@
 #include "NumericalSynthesizer.h"
-#include "GradientAnalyzer.h"
 
 //gsl_vector* GDEvaluator::curGrad;
 gsl_vector* SnoptEvaluator::state;
@@ -29,9 +28,42 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
             ctrls[ctrlNodes[i]->get_name()] = ctr++;
         }
     }
-    solver = new NumericalSolver(_dag, ctrls, interface, NULL, NULL, NULL, NULL); // TODO: replace NULLs
+    int ncontrols = ctrls.size();
     
-    Assert(false, "TODO");
+    doublereal* xlow = new doublereal[ncontrols];
+    doublereal* xupp = new doublereal[ncontrols];
+    
+    for (int i = 0; i < ctrlNodes.size(); i++) {
+        CTRL_node* cnode = (CTRL_node*) ctrlNodes[i];
+        if (cnode->getOtype() == OutType::FLOAT) {
+            int idx = ctrls[cnode->get_name()];
+            xlow[idx] = cnode->hasRange ? cnode->low : -20.0;
+            xupp[idx] = cnode->hasRange ? cnode->high : 20.0;
+        } else if (cnode->getOtype() == OutType::BOOL) {
+            int idx = ctrls[cnode->get_name()];
+            xlow[idx] = 0;
+            xupp[idx] = 1;
+        }
+    }
+    
+    int numConstraints = 0;
+    for (int i = 0; i < dag->size(); i++) {
+        bool_node* n = (*dag)[i];
+        if (n->type == bool_node::ASSERT || Util::isSqrt(n)) {
+            numConstraints++;
+        }
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+            numConstraints++;
+        }
+    }
+    numConstraints += 100; // TODO: magic number
+    
+    SymbolicEvaluator* eval = new BoolAutoDiff(*dag, ctrls);
+    OptimizationWrapper* opt = new SnoptWrapper(eval, ncontrols, xlow, xupp, numConstraints);
+    ConflictGenerator* cg = new SimpleConflictGenerator(interface);
+    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
+    
+    solver = new NumericalSolver(_dag, ctrls, interface, eval, opt, cg, sg); 
 }
 
 bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {	

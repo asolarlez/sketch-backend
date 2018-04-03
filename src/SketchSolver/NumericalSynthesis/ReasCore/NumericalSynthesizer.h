@@ -18,6 +18,10 @@
 //#include "SmoothSatSolver.h"
 #include "NumericalSolver.h"
 #include "Interface.h"
+#include "BoolAutoDiff.h"
+#include "SnoptWrapper.h"
+#include "SimpleConflictGenerator.h"
+#include "SimpleSuggestionGenerator.h"
 
 
 class NumericalSynthesizer : public Synthesizer {

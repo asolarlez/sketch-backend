@@ -18,8 +18,7 @@ using namespace std;
 class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
 	BooleanDAG& bdag;
-	map<string, int> floatCtrls; // Maps float ctrl names to indices within grad vector
-    map<string, int> boolCtrls;
+	map<string, int>& floatCtrls; // Maps float ctrl names to indices within grad vector
 	int nctrls; // number of float ctrls
 	gsl_vector* ctrls; // ctrl values
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
@@ -30,7 +29,7 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 		
 public:
     int DEFAULT_INP = -32;
-    BoolAutoDiff(BooleanDAG& bdag_p, const map<string, int>& floatCtrls_p, const map<string, int>& boolCtrls_p);
+    BoolAutoDiff(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
     
 	~BoolAutoDiff(void);
 	
@@ -54,7 +53,7 @@ public:
 	virtual void visit( TUPLE_R_node& node );
 	virtual void visit( ASSERT_node& node );
 	
-    virtual void setInputs(const Interface* inputValues_p);
+    virtual void setInputs(Interface* inputValues_p);
 
 	virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset);
     virtual void run(const gsl_vector* ctrls_p);
@@ -63,11 +62,13 @@ public:
     double getSqrtError(bool_node* node, gsl_vector* grad);
     double getAssertError(bool_node* node, gsl_vector* grad);
     double getBoolCtrlError(bool_node* node, gsl_vector* grad);
+    double getBoolExprError(bool_node* node, gsl_vector* grad);
     
     virtual double getErrorOnConstraint(int nodeid);
     double getSqrtError(bool_node* node);
     double getAssertError(bool_node* node);
     double getBoolCtrlError(bool_node* node);
+    double getBoolExprError(bool_node* node);
 
 
     

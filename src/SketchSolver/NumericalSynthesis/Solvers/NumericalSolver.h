@@ -15,6 +15,7 @@
 #include "SuggestionGenerator.h"
 #include "SimpleEvaluator.h"
 #include "CommandLineArgs.h"
+#include "SymbolicEvaluator.h"
 
 
 using namespace std;

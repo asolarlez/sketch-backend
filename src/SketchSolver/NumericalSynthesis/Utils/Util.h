@@ -83,7 +83,7 @@ public:
         return ids;
     }
     
-    static string print(gsl_vector* v) {
+    static string print(const gsl_vector* v) {
         stringstream s;
         for (int i = 0; i < v->size; i++) {
             s << gsl_vector_get(v, i) << ", ";

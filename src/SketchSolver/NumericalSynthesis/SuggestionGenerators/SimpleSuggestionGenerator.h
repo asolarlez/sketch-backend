@@ -9,15 +9,22 @@
 #include <gsl/gsl_vector.h>
 
 class SimpleSuggestionGenerator: public SuggestionGenerator {
-    set<int>& nodesToSuggest;
+    vector<int> nodesToSuggest;
     Interface* interface;
     BooleanDAG* dag;
     map<string, int>& ctrls;
     SimpleEvaluator* seval;
 public:
-    SimpleSuggestionGenerator(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls, set<int>& _nodesToSuggest): dag(_dag), interface(_interface), ctrls(_ctrls), nodesToSuggest(_nodesToSuggest) {
+    SimpleSuggestionGenerator(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls): dag(_dag), interface(_interface), ctrls(_ctrls) {
         seval = new SimpleEvaluator(*dag, ctrls);
         seval->setInputs(interface);
+        for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
+            int nodeid = it->second->nodeid;
+            bool_node* n = (*dag)[nodeid];
+            if (Util::hasArraccChild(n)) {
+                nodesToSuggest.push_back(nodeid);
+            }
+        }
     }
     
     virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
@@ -29,7 +36,7 @@ public:
         vector<tuple<double, int, int>> s;
         
         for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
-            int nodeid = it->second.nodeid;
+            int nodeid = it->second->nodeid;
             bool_node* n = (*dag)[nodeid];
             bool hasArraccChild = Util::hasArraccChild(n);
             
@@ -40,7 +47,7 @@ public:
                 cost = cost / 1000.0;
             }
             if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-                cout << n->lprint() << " = " <<  dist ";";
+                cout << n->lprint() << " = " <<  dist << ";";
                 cost = cost - 5.0;
             }
             s.push_back(make_tuple(cost, nodeid, dist > 0));
@@ -59,7 +66,7 @@ public:
         }
         int lastIdx = suggestions.size() - 1;
         if (lastIdx > 0) {
-            cout << ((*dag)[imap[get<1>(suggestions[lastIdx])]])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
+            cout << ((*dag)[get<1>(suggestions[lastIdx])])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
         }
         return suggestions;
     }
@@ -73,4 +80,4 @@ public:
         return suggestions;
 
     }
-}
+};
