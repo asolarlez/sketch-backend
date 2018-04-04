@@ -121,6 +121,7 @@ namespace MSsolverNS {
 
 		}
         
+        virtual void initSuggestions(vec<Lit>& suggestions) {}
 		/*
 		Return true if synthesis succeeds. If false, the conflict tells you what went wrong.
 		*/
@@ -246,6 +247,10 @@ namespace MSsolverNS {
 			s->backtrack(level);
 			suggestions.clear();
 		}
+        
+        void initSuggestions(vec<Lit>& suggestions) {
+            s->initSuggestions(suggestions);
+        }
 
 		/* Returns the stack level of the input.
 		*/

@@ -37,8 +37,9 @@ public:
         return false;
     }
     
-    static bool hasAssertChild(bool_node* n) {
-        FastSet<bool_node>& children = n->children;
+    static bool hasAssertChild(bool_node& n) {
+        FastSet<bool_node>& children = n.children;
+        if (children.size() > 1) return false;
         for(child_iter it = children.begin(); it != children.end(); ++it) {
             if ((*it)->type == bool_node::ASSERT) {
                 return true;
@@ -47,11 +48,13 @@ public:
         return false;
     }
     
-    static bool hasNotAssertChild(bool_node* n) {
-        FastSet<bool_node>& children = n->children;
+    static bool hasNotAssertChild(bool_node& n) {
+        FastSet<bool_node>& children = n.children;
+        if (children.size() > 1) return false;
         for(child_iter it = children.begin(); it != children.end(); ++it) {
             if ((*it)->type == bool_node::NOT) {
                 FastSet<bool_node>& grandChildren = (*it)->children;
+                if (grandChildren.size() > 1) return false;
                 for (child_iter it1 = grandChildren.begin(); it1 != grandChildren.end(); ++it1) {
                     if ((*it1)->type == bool_node::ASSERT) {
                         return true;
@@ -60,6 +63,14 @@ public:
             }
         }
         return false;
+    }
+    
+    static bool hasAssertChild(bool_node* n) {
+        return hasAssertChild(*n);
+    }
+    
+    static bool hasNotAssertChild(bool_node* n) {
+        return hasNotAssertChild(*n);
     }
     
     static set<int> getRelevantNodes(bool_node* n) {

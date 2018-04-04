@@ -134,7 +134,7 @@ public:
         getFranges();
     }
     
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
         Assert(neF > constraints.size(), "Increase neF");
         eval->setInputs(inputs);
         // start the snopt solving
@@ -145,6 +145,9 @@ public:
         double alphas[3] = {1, 10, 50};
         
         gsl_vector_memcpy(t, initState);
+        if (initRandomize) {
+            randomizeCtrls(t, inputs, constraints);
+        }
         
         double obj;
         int numtries = 0;
@@ -180,7 +183,7 @@ public:
                 minObjectiveVal = obj;
             }
             numtries++;
-            if (numtries < MAX_TRIES) {
+            if (minObjectiveVal > threshold && numtries < MAX_TRIES) {
                 randomizeCtrls(t, inputs, constraints);
             }
         }

@@ -62,6 +62,9 @@ void BoolAbstractor::visit( DST_node& node ){
 void
 BoolAbstractor::visit (NOT_node &node)
 {
+    if (node.mother->type == bool_node::LT && Util::hasNotAssertChild(node.mother)) {
+        return;
+    }
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
 }
@@ -125,6 +128,9 @@ void
 BoolAbstractor::visit(LT_node &node)
 {
     if (node.mother->getOtype() == OutType::FLOAT) {
+        if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
+            return;
+        }
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
@@ -139,6 +145,9 @@ void
 BoolAbstractor::visit(EQ_node &node)
 {
     if (node.mother->getOtype() == OutType::FLOAT) {
+        if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
+            return;
+        }
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
@@ -210,6 +219,12 @@ void BoolAbstractor::visit (TUPLE_CREATE_node &node) {
 void
 BoolAbstractor::visit (ASSERT_node &node)
 {
+    if (node.mother->type == bool_node::LT && Util::hasAssertChild(node.mother)) { // TODO: there should be better ways of doing this
+        return;
+    }
+    if (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::LT && Util::hasNotAssertChild(node.mother->mother)) {
+        return;
+    }
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
 }

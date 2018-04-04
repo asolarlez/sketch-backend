@@ -174,7 +174,11 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 	return true;
 }
 
-
+void Solver::initSuggestions() {
+    for (int i = 0; i < sins.size(); ++i) {
+        sins[i]->initSuggestions(suggestions[sins[i]->solverIdx]);
+    }
+}
 
 
 void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
@@ -1590,6 +1594,7 @@ lbool Solver::solve(const vec<Lit>& assumps)
 
     assumps.copyTo(assumptions);
     nSoftLearntRestarts = 0;
+    initSuggestions();
 
     double  nof_conflicts = restart_first;
     double  nof_learnts   = nClauses() * learntsize_factor;

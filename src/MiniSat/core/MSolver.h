@@ -93,7 +93,7 @@ public:
 	SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* s);
 
 	void addSynSolvClause(SynthInSolver* s, int instid, int inputid, int value, Lit var);
-
+    void initSuggestions();
 
     // Solving:
     //

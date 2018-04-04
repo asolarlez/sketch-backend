@@ -42,6 +42,7 @@ public:
 	virtual void finalize() {}
 	virtual void backtrack(int level) {}
 	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params);
+    virtual void initSuggestions(vec<Lit>& suggestions);
     
 	virtual void print(ostream& out) {
 		for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {

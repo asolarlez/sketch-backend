@@ -65,7 +65,29 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     solver = new NumericalSolver(_dag, ctrls, interface, eval, opt, cg, sg); 
 }
 
-bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {	
+void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
+    cout << "Initializing suggestions" << endl;
+    suggestions.clear();
+    bool sat = solver->checkSAT();
+    if (sat) {
+        solver->getControls(ctrlVals);
+    }
+    if (sat) {
+        if (!PARAMS->disableSatSuggestions) {
+            const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, nodeid, val>
+            convertSuggestions(s, suggestions);
+        }
+    } else {
+        if (!PARAMS->disableUnsatSuggestions) {
+            const vector<tuple<int, int, int>>& s = solver->collectUnsatSuggestions();
+            convertSuggestions(s, suggestions);
+        }
+    }
+}
+
+
+bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
+    cout << "Running numerical synthesis" << endl;
 	if (PARAMS->verbosity > 7) {
         timer.restart();
 	}

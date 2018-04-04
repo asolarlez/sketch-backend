@@ -51,6 +51,7 @@ bool NumericalSolver::checkSAT() {
         return true;
     }
     if (checkCurrentSol()) {
+        cout << "Current sol passed" << endl;
         sat = true;
     } else {
         if (!previousSAT) {
@@ -59,6 +60,7 @@ bool NumericalSolver::checkSAT() {
             }
         }
         
+        cout << "Running optimization" << endl;
         set<int> allConstraints;
         allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
         const set<int>& inputConstraints = interface->getInputConstraints();
@@ -101,6 +103,7 @@ bool NumericalSolver::checkInputs() {
 }
 
 bool NumericalSolver::checkCurrentSol() {
+    cout << "Checking current solution" << endl;
     GradUtil::BETA = -50; // TODO: magic numbers
     GradUtil::ALPHA = 50;
     eval->setInputs(interface); // TODO: since this is a pointer, we don't have to set it everytime
@@ -122,6 +125,7 @@ bool NumericalSolver::checkCurrentSol() {
 }
 
 bool NumericalSolver::checkFullSAT() {
+    cout << "Checking full SAT" << endl;
     seval->setInputs(interface); // TODO: can be folded into init function of seval
     seval->run(state);
     
@@ -136,7 +140,8 @@ bool NumericalSolver::checkFullSAT() {
 }
 
 bool NumericalSolver::initializeState(bool suppressPrint) {
-    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(), suppressPrint, 5); // TODO: magic number
+    cout << "Initializing state" << endl;
+    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(), suppressPrint, 5, true); // TODO: magic number
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
         gsl_vector_memcpy(state, opt->getMinState());
