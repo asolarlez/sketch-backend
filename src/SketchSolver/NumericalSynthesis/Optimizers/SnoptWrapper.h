@@ -17,10 +17,11 @@ class SnoptParameters {
 public:
     SymbolicEvaluator* eval;
     const set<int>& boolNodes;
+    int minimizeNode;
     double beta;
     double alpha;
     
-    SnoptParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_): eval(eval_), boolNodes(boolNodes_) {}
+    SnoptParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_, int minimizeNode_): eval(eval_), boolNodes(boolNodes_), minimizeNode(minimizeNode_) {}
 };
 
 class SnoptEvaluator {
@@ -49,26 +50,29 @@ public:
             // cout << x[i] << " ";
         }
         //cout << endl;
+        p->eval->run(state);
+
         int fcounter = 0;
         int gcounter = 0;
-        F[fcounter++] = 0; // objective
-        for (int j = 0; j < *n; j++) { // objective gradients
-            G[gcounter++] = 0;
-        }
-        //double error = 0;
-        //GradUtil::default_grad(tmpGrad);
-        
-        int bcounter = 0;
-        p->eval->run(state);
-        //p->eval->print();
-        for (auto it = p->boolNodes.begin(); it != p->boolNodes.end(); it++) {
-            double dist = p->eval->getErrorOnConstraint(*it, grad); // TODO: deal with minimize
+        if (p->minimizeNode < 0) {
+            F[fcounter++] = 0; // objective
+            for (int j = 0; j < *n; j++) { // objective gradients
+                G[gcounter++] = 0;
+            }
+        } else {
+            double dist = p->eval->getErrorOnConstraint(p->minimizeNode, grad);
             F[fcounter++] = dist;
             for (int j = 0; j < *n; j++) {
                 G[gcounter++] = gsl_vector_get(grad, j);
             }
         }
-        
+        for (auto it = p->boolNodes.begin(); it != p->boolNodes.end(); it++) {
+            double dist = p->eval->getErrorOnConstraint(*it, grad);
+            F[fcounter++] = dist;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+        }
         
         //cout << "Fcounter: " << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
@@ -134,11 +138,11 @@ public:
         getFranges();
     }
     
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
         Assert(neF > constraints.size(), "Increase neF");
         eval->setInputs(inputs);
         // start the snopt solving
-        SnoptParameters* p = new SnoptParameters(eval, constraints);
+        SnoptParameters* p = new SnoptParameters(eval, constraints, minimizeNode);
         snoptSolver->init((char *) p, neF, SnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
         
         double betas[3] = {-1, -10, -50};
@@ -146,7 +150,7 @@ public:
         
         gsl_vector_memcpy(t, initState);
         if (initRandomize) {
-            randomizeCtrls(t, inputs, constraints);
+            randomizeCtrls(t, inputs, constraints, minimizeNode);
         }
         
         double obj;
@@ -184,7 +188,7 @@ public:
             }
             numtries++;
             if (minObjectiveVal > threshold && numtries < MAX_TRIES) {
-                randomizeCtrls(t, inputs, constraints);
+                randomizeCtrls(t, inputs, constraints, minimizeNode);
             }
         }
         return minObjectiveVal < threshold;
@@ -198,7 +202,7 @@ public:
         return minObjectiveVal;
     }
     
-    virtual void randomizeCtrls(gsl_vector* state, Interface* inputs, const set<int>& constraints) {
+    virtual void randomizeCtrls(gsl_vector* state, Interface* inputs, const set<int>& constraints, int minimizeNode) {
         double best = GradUtil::MAXVAL;
         eval->setInputs(inputs);
         for (int i = 0; i < RANDOM_SEARCH; i++) {
@@ -212,6 +216,9 @@ public:
             eval->run(t1);
             double error = 0.0;
             double e;
+            if (minimizeNode >= 0) {
+                error += eval->getErrorOnConstraint(minimizeNode);
+            }
             for (auto it = constraints.begin(); it != constraints.end(); it++) {
                 e = eval->getErrorOnConstraint(*it);
                 if (e < 0.0) {

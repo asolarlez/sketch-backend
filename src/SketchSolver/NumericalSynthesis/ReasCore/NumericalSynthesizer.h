@@ -32,11 +32,13 @@ class NumericalSynthesizer : public Synthesizer {
     vector<pair<int, int>> conflicts; // (nodeid, val) pairs
     timerclass timer;
 	
-    map<string, int> ctrls;
+    map<string, int> ctrls; // maps ctrl names to index in the state vector
+    
+    bool initialized;
 	
 public:
     NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit);
-	
+    void init();
 	virtual bool synthesis(vec<Lit>& suggestions);
 	virtual void newInstance() {}
 	virtual void finalize() {}
@@ -76,7 +78,7 @@ public:
         Assert(instance == 0, "Multiple instances is not yet supported");
         int oldval = interface->getValue(nodeid);
         if (oldval != EMPTY){
-            //writing over non EMPTY values
+            //writing over non EMPTY values - create conflict
             Lit l1 = interface->getLit(nodeid, val);
             Lit l2 = interface->getLit(nodeid, oldval);
             conf.push(~l1);

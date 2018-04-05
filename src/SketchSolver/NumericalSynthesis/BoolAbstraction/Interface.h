@@ -29,7 +29,7 @@ class Interface {
     map<int, map<int, Lit>> reverseVarsMapping; // node id -> val -> Lit (TODO: we should have one mapping for each instance)
                                                 //                      (or have an interface for each instance)
     vector<int> nodeVals; // node id -> val
-    set<int> inputNodeIds;
+    set<int> inputNodeIds; // node ids that have been set by the SAT solver
     int counter;
     vec<vstate> stack;
     const int EMPTY = INT32_MIN;
@@ -89,8 +89,8 @@ public:
         return reverseVarsMapping[nodeid][val];
     }
     
-    // Has an invariant that a node's value will not be rewritten
-    // This is method is very critical for performace
+    // Caller should maintain the invariant that a node's value will not be rewritten
+    // This is method is critical for performace
     void pushInput(int inputid, int val, int dlevel) {
         Assert(val == 0 || val == 1, "val should be a binary");
         int nodeid = varsMapping[inputid]->nodeid;
@@ -111,7 +111,7 @@ public:
     }
     
     
-    const set<int> getInputConstraints() {
+    const set<int>& getInputConstraints() {
         return inputNodeIds;
     }
     

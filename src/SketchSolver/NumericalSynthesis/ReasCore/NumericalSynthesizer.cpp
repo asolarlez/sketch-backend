@@ -9,7 +9,11 @@ using namespace std;
 
 NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interface(_interface) {
     softConflictLit = _softConflictLit;
-    
+    initialized = false;
+}
+
+void NumericalSynthesizer::init() {
+    initialized = true;
     if (PARAMS->verbosity > 2) {
         cout << "NInputs: " << interface->size() << endl;
     }
@@ -28,6 +32,10 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         }
     }
     int ncontrols = ctrls.size();
+    // if ncontrols = 0, make it 1 just so numerical opt does not break
+    if (ncontrols == 0) {
+        ncontrols = 1;
+    }
     
     doublereal* xlow = new doublereal[ncontrols];
     doublereal* xupp = new doublereal[ncontrols];
@@ -62,10 +70,11 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     ConflictGenerator* cg = new SimpleConflictGenerator(interface);
     SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
     
-    solver = new NumericalSolver(_dag, ctrls, interface, eval, opt, cg, sg); 
+    solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg);
 }
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
+    init(); // TODO: there should be a better position for this
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
     bool sat = solver->checkSAT();
@@ -87,6 +96,7 @@ void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
 
 
 bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
+    Assert(initialized, "Numerical solver is not yet properly initialized");
     cout << "Running numerical synthesis" << endl;
 	if (PARAMS->verbosity > 7) {
         timer.restart();

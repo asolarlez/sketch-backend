@@ -161,9 +161,11 @@ BoolAbstractor::visit(EQ_node &node)
 void
 BoolAbstractor::visit( UFUN_node& node )
 {
-    if (checkKnownFun(node)) {
+    const string& name = node.get_ufname();
+    if (name == "_cast_int_float_math" || name == "arctan_math" || name == "sin_math" || name == "cos_math" || name == "tan_math" || name == "sqrt_math" || name == "exp_math") {
         return;
     }
+    
     Assert(false, "This should not happen");
 }
 
@@ -204,8 +206,7 @@ void BoolAbstractor::visit( ARR_CREATE_node &node){
 
 void BoolAbstractor::visit( TUPLE_R_node &node){
     if (node.getOtype() == OutType::FLOAT) {
-        NodesToSolver::visit(node);
-        addToInterface(node_ids[node.id], node);
+        return;
     } else {
         Assert(false, "This should not happen");
     }
@@ -237,7 +238,7 @@ BoolAbstractor::visit (CONST_node &node)
         return;
     }
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    //addToInterface(node_ids[node.id], node);
 }
 
 

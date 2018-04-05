@@ -42,7 +42,6 @@ void REASSolver::addProblem(BooleanDAG* problem_){
                 declareControl(ctrlnode);
             }
             if (ctrlnode->spAngelic) {
-                cout << ctrlnode->lprint() << endl;
                 Assert(false, "NYI: angelic ctrls not supported in REAS");
             }
             

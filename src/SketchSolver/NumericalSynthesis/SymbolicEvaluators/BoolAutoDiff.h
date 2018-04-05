@@ -24,8 +24,6 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
 	vector<DistanceGrad*> distances; // Keeps track of distance metric for boolean nodes
     Interface* inputValues;
-	double error = 0.0;
-	gsl_vector* errorGrad;
 		
 public:
     int DEFAULT_INP = -32;

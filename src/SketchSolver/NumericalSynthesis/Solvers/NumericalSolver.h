@@ -45,6 +45,7 @@ protected:
     SimpleEvaluator* seval;
     
     set<int> assertConstraints;
+    int minimizeNode;
 	
 	// class for picking the part of the numerical problem to handle
 	// class to do symbolic evaluation

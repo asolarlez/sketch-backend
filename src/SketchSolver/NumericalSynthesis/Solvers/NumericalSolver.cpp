@@ -22,13 +22,15 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
     inputConflict = false;
     
     seval = new SimpleEvaluator(*dag, ctrls);
+    minimizeNode = -1;
     
-    for (int i = 0; i < dag->size(); i++) {
+    for (int i = 0; i < dag->size(); i++) { // TODO: this should also be set by caller class
         bool_node* n = (*dag)[i];
-        if (n->type == bool_node::ASSERT || Util::isSqrt(n)) {
+        if (n->type == bool_node::ASSERT && ((ASSERT_node*)n)->isHard()) {
+            minimizeNode = i;
+        } else if (n->type == bool_node::ASSERT || Util::isSqrt(n)) {
             assertConstraints.insert(i);
-        }
-        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
+        } else if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
             assertConstraints.insert(i);
         }
     }
@@ -66,7 +68,7 @@ bool NumericalSolver::checkSAT() {
         const set<int>& inputConstraints = interface->getInputConstraints();
         allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
         
-        sat = opt->optimize(interface, state, allConstraints, suppressPrint);
+        sat = opt->optimize(interface, state, allConstraints, minimizeNode, suppressPrint);
         if (sat) {
             gsl_vector_memcpy(state, opt->getMinState());
         }
@@ -115,6 +117,12 @@ bool NumericalSolver::checkCurrentSol() {
     allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
     
     double error;
+    if (minimizeNode >= 0) {
+        error = eval->getErrorOnConstraint(minimizeNode);
+        if (error > 0.01) {
+            return false;
+        }
+    }
     for (auto it = allConstraints.begin(); it != allConstraints.end(); it++) {
         error = eval->getErrorOnConstraint(*it);
         if (error < -0.01) { // TODO: magic numbers
@@ -130,18 +138,24 @@ bool NumericalSolver::checkFullSAT() {
     seval->run(state);
     
     double error;
+    if (minimizeNode >= 0) {
+        error = seval->getErrorOnConstraint(minimizeNode);
+        if (error > 0.01) {
+            return false;
+        }
+    }
     for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
         error = seval->getErrorOnConstraint(*it);
         if (error < -0.01) { // TODO: magic number
             return false;
         }
     }
-    return false;
+    return true;
 }
 
 bool NumericalSolver::initializeState(bool suppressPrint) {
     cout << "Initializing state" << endl;
-    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(), suppressPrint, 5, true); // TODO: magic number
+    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(),  minimizeNode, suppressPrint, 5, true); // TODO: magic number
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
         gsl_vector_memcpy(state, opt->getMinState());
