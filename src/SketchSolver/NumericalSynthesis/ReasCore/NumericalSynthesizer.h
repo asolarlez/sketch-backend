@@ -20,6 +20,7 @@
 #include "Interface.h"
 #include "BoolAutoDiff.h"
 #include "SnoptWrapper.h"
+#include "GradientDescentWrapper.h"
 #include "SimpleConflictGenerator.h"
 #include "SimpleSuggestionGenerator.h"
 

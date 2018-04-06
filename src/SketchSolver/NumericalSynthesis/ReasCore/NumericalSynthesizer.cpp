@@ -1,6 +1,7 @@
 #include "NumericalSynthesizer.h"
 
-//gsl_vector* GDEvaluator::curGrad;
+gsl_vector* GDEvaluator::curGrad;
+gsl_vector* GDEvaluator::grad;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 
@@ -66,7 +67,12 @@ void NumericalSynthesizer::init() {
     numConstraints += 100; // TODO: magic number
     
     SymbolicEvaluator* eval = new BoolAutoDiff(*dag, ctrls);
-    OptimizationWrapper* opt = new SnoptWrapper(eval, ncontrols, xlow, xupp, numConstraints);
+    OptimizationWrapper* opt;
+    if (PARAMS->useSnopt) {
+        opt = new SnoptWrapper(eval, ncontrols, xlow, xupp, numConstraints);
+    } else {
+        opt = new GradientDescentWrapper(eval, ncontrols, xlow, xupp);
+    }
     ConflictGenerator* cg = new SimpleConflictGenerator(interface);
     SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
     

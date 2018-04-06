@@ -4,13 +4,11 @@
 #include <vector>
 #include <map>
 #include <math.h>
-#include "NumericalSolver.h"
 #include "GradientDescent.h"
 #include "OptimizationWrapper.h"
 #include "SymbolicEvaluator.h"
-#include "BooleanNodes.h"
-#include "BooleanDAG.h"
 #include "Util.h"
+#include "Interface.h"
 
 using namespace std;
 
@@ -18,50 +16,47 @@ using namespace std;
 class GDParameters {
 public:
 	SymbolicEvaluator* eval;
-	BooleanDAG* dag;
-	vector<vector<int>>& allInputs;
-	map<int, int>& imap;
-	set<int>& boolNodes;
-	double beta;
+    const set<int>& boolNodes;
+    int minimizeNode;
+    double beta;
 	double alpha;
 	
-	GDParameters(SymbolicEvaluator* eval_, BooleanDAG* dag_, vector<vector<int>>& allInputs_, map<int, int>& imap_, set<int>& boolNodes_): eval(eval_), dag(dag_), allInputs(allInputs_), imap(imap_), boolNodes(boolNodes_) {}
+	GDParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_, int minimizeNode_): eval(eval_), boolNodes(boolNodes_), minimizeNode(minimizeNode_) {}
 };
 
 class GDEvaluator {
 	static gsl_vector* curGrad;
+    static gsl_vector* grad;
 public:
 	
 	static void init(int size) {
 		curGrad = gsl_vector_alloc(size);
+        grad = gsl_vector_alloc(size);
 	}
 	
 	static double f(const gsl_vector* x, void* params) {
-        Assert(false, "Does not handle sqrt constraints yet");
-		GDParameters* p = (GDParameters*) params;
+        GDParameters* p = (GDParameters*) params;
 		GradUtil::BETA = p->beta;
 		GradUtil::ALPHA = p->alpha;
 		gsl_vector_set_zero(curGrad);
 		double error = 0;
-		for (int i = 0; i < p->allInputs.size(); i++) {
-			const map<int ,int>& nodeValsMap = Util::getNodeToValMap(p->imap, p->allInputs[i]);
-			p->eval->run(x, nodeValsMap);
-			for (BooleanDAG::iterator node_it = p->dag->begin(); node_it != p->dag->end(); ++node_it) {
-				bool_node* n = *node_it;
-				if (p->boolNodes.find(n->id) != p->boolNodes.end()) {
-					if (n->type ==  bool_node::ASSERT) {
-						error += p->eval->computeError(n->mother, 1, curGrad);
-					} else if (n->getOtype() == OutType::BOOL) {
-						auto it = nodeValsMap.find(n->id);
-						if (it != nodeValsMap.end()) {
-							int val = it->second;
-							error += p->eval->computeError(n, val, curGrad);
-						}
-					}
-				}
-			}
-		}
-		//cout << gsl_vector_get(x, 0) << " " << error << " " << gsl_vector_get(curGrad, 0) << endl;
+        double e;
+        p->eval->run(x);
+        
+        if (p->minimizeNode >= 0) {
+            e = p->eval->getErrorOnConstraint(p->minimizeNode, grad);
+            error += e;
+            gsl_vector_add(curGrad, grad);
+        }
+        
+        for (auto it = p->boolNodes.begin(); it != p->boolNodes.end(); it++) {
+            e = p->eval->getErrorOnConstraint(*it, grad);
+            if (e < 0.0) { // TODO: this is a sharp edge - we should smooth it
+                error += -e;
+                gsl_vector_scale(grad, -1.0);
+                gsl_vector_add(curGrad, grad);
+            }
+        }
 		return error;
 	}
 	
@@ -78,94 +73,131 @@ public:
 
 class GradientDescentWrapper: public OptimizationWrapper {
 	GradientDescent* gd;
-	double threshold = 1e-2; // accuracy for minimizing the error
-	int MAX_TRIES = PARAMS->numTries; // Number retries of GD algorithm for each iteration
-	double minErrorSoFar;
-	gsl_vector* minState;
-	gsl_vector* t;
-	int ncontrols;
-	SymbolicEvaluator* eval;
-	BooleanDAG* dag;
-	map<int, int>& imap;
-	map<string, int>& ctrlMap;
-	set<int>& boolNodes;
+    int ncontrols;
+    
+    SymbolicEvaluator* eval;
+    gsl_vector* minState;
+    gsl_vector* t;
+    gsl_vector* t1;
+    
+    int RANDOM_SEARCH = 10;
+    
+    doublereal* xlow;
+    doublereal* xupp;
+    
+    double minObjectiveVal;
+    double threshold = 1e-2; // accuracy for minimizing the error
 	
 public:
-	GradientDescentWrapper(SymbolicEvaluator* eval_, BooleanDAG* dag_, map<int, int>& imap_, map<string, int>& ctrlMap_, set<int>& boolNodes_, int ncontrols_): eval(eval_), dag(dag_), imap(imap_), ctrlMap(ctrlMap_), boolNodes(boolNodes_), ncontrols(ncontrols_) {
+	GradientDescentWrapper(SymbolicEvaluator* eval_, int ncontrols_, doublereal* xlow_, doublereal* xupp_): eval(eval_), ncontrols(ncontrols_), xlow(xlow_), xupp(xupp_) {
 		GDEvaluator::init(ncontrols);
 		gd = new GradientDescent(ncontrols);
 		minState = gsl_vector_alloc(ncontrols);
 		t = gsl_vector_alloc(ncontrols);
-	}
-	
-	virtual void randomizeCtrls(gsl_vector* state, vector<vector<int>>& allInputs) {
-		vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::CTRL);
-		int counter = 0;
-		for (int i = 0; i < ctrls.size(); i++) {
-			if (ctrlMap.find(ctrls[i]->get_name()) != ctrlMap.end()) {
-				int idx = ctrlMap[ctrls[i]->get_name()];
-				CTRL_node* cnode = (CTRL_node*) ctrls[i];
-				double low = cnode->hasRange ? cnode->low : -20.0;
-				double high = cnode->hasRange ? cnode->high : 20.0;
-				double r = low + (rand()% (int)((high - low) * 10.0))/10.0;
-				gsl_vector_set(state, idx, r);
-				counter++;
-			}
-		}
-        for (; counter < ncontrols; counter++) {
-            double r = -10.0 + (rand() % 200)/10.0;
-            gsl_vector_set(state, counter, r);
-        }
-	}
-	
-	virtual bool optimize(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
-		minErrorSoFar = 1e50;
-		
-		GDParameters* p = new GDParameters(eval, dag, allInputs, imap, boolNodes);
-		gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
-		
-		double betas[4] = {-1, -10, -50, -100};
-		double alphas[4] = {1, 10, 50, 100};
-		
-		gsl_vector_memcpy(t, initState);
-
-		
-		double minError = 1e10;
-		int numtries = 0;
-		while (minError > threshold && numtries < MAX_TRIES) {
-			cout << "Attempt: " << (numtries + 1) << endl;
-			
-			for (int i = 0; i < 4; i++) {
-				cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
-				p->beta = betas[i];
-				p->alpha = alphas[i];
-				for (int i = 0; i < ncontrols; i++) {
-					cout << gsl_vector_get(t, i) << ", ";
-				}
-				cout << endl;
-				minError = gd->optimize(t);
-				gsl_vector_memcpy(t, gd->getResults());
-			}
-			if (minError < minErrorSoFar) {
-				minErrorSoFar = minError;
-				gsl_vector_memcpy(minState, gd->getResults());
-			}
-			numtries++;
-			randomizeCtrls(t, allInputs);
-		}
-		return minError <= threshold;
+        t1 = gsl_vector_alloc(ncontrols);
 	}
     
-    virtual bool optimizeForInputs(vector<vector<int>>& allInputs, gsl_vector* initState, bool suppressPrint = false) {
-        Assert(false, "NYI:dfafieq");
-        return true;
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
+        eval->setInputs(inputs);
+        GDParameters* p = new GDParameters(eval, constraints, minimizeNode);
+        gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
+        
+        double betas[3] = {-1, -10, -50};
+        double alphas[3] = {1, 10, 50};
+        
+        gsl_vector_memcpy(t, initState);
+        if (initRandomize) {
+            randomizeCtrls(t, inputs, constraints, minimizeNode);
+        }
+        
+        
+        int numtries = 0;
+        minObjectiveVal = 1e50;
+        double obj;
+        while (minObjectiveVal > threshold && numtries < MAX_TRIES) {
+            if (!suppressPrint) {
+                cout << "Attempt: " << (numtries + 1) << endl;
+            }
+            
+            for (int i = 0; i < 3; i++) {
+                if (!suppressPrint) {
+                    cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
+                }
+                p->beta = betas[i];
+                p->alpha = alphas[i];
+                if (!suppressPrint) {
+                    for (int i = 0; i < ncontrols; i++) {
+                        cout << gsl_vector_get(t, i) << ", ";
+                    }
+                }
+                cout << endl;
+                obj = gd->optimize(t);
+                gsl_vector_memcpy(t, gd->getResults());
+            }
+            if (numtries == 0) {
+                gsl_vector_memcpy(minState, gd->getResults());
+            }
+            if (obj < minObjectiveVal) {
+                minObjectiveVal = obj;
+                gsl_vector_memcpy(minState, gd->getResults());
+            }
+            numtries++;
+            if (minObjectiveVal > threshold && numtries < MAX_TRIES) {
+                randomizeCtrls(t, inputs, constraints, minimizeNode);
+            }
+        }
+        return minObjectiveVal < threshold;
+    }
+    
+    virtual gsl_vector* getMinState() {
+        return minState;
+    }
+    
+    virtual double getObjectiveVal() {
+        return minObjectiveVal;
+    }
+
+    virtual void randomizeCtrls(gsl_vector* state, Interface* inputs, const set<int>& constraints, int minimizeNode) {
+        double best = GradUtil::MAXVAL;
+        eval->setInputs(inputs);
+        for (int i = 0; i < RANDOM_SEARCH; i++) {
+            randomize(t1);
+            cout << "Trying: ";
+            for (int j = 0; j < t1->size; j++) {
+                cout << gsl_vector_get(t1, j) << ", ";
+            }
+            GradUtil::BETA = -1;
+            GradUtil::ALPHA = 1;
+            eval->run(t1);
+            double error = 0.0;
+            double e;
+            if (minimizeNode >= 0) {
+                error += eval->getErrorOnConstraint(minimizeNode);
+            }
+            for (auto it = constraints.begin(); it != constraints.end(); it++) {
+                e = eval->getErrorOnConstraint(*it);
+                if (e < 0.0) {
+                    error += -e;
+                }
+            }
+            cout << "Error: " << error << endl;
+            if (error < best) {
+                best = error;
+                gsl_vector_memcpy(state, t1);
+            }
+        }
     }
 	
-	virtual gsl_vector* getMinState() {
-		return minState;
-	}
+    void randomize(gsl_vector* state) {
+        for (int i = 0; i < state->size; i++) {
+            double low = xlow[i];
+            if (low < -100.0) low = -100.0;
+            double high = xupp[i];
+            if (high > 100.0) high = 100.0;
+            double r = low + (rand() % (int)((high - low) * 10.0))/10.0;
+            gsl_vector_set(state, i, r);
+        }
+    }
+		
 	
-	virtual double getObjectiveVal() {
-		return minErrorSoFar;
-	}
 };

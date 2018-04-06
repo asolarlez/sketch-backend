@@ -39,8 +39,10 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
  	NumericalSynthesis/Utils/GradUtil.h		\
 	NumericalSynthesis/Utils/Util.h	\
 	NumericalSynthesis/Optimizers/Snopt.h			\
+    NumericalSynthesis/Optimizers/GradientDescent.h    \
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
+    NumericalSynthesis/Optimizers/GradientDescentWrapper.h  \
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
@@ -101,6 +103,7 @@ libcegis_la_SOURCES =				\
     NumericalSynthesis/Solvers/NumericalSolver.cpp  \
 	NumericalSynthesis/Utils/GradUtil.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
+    NumericalSynthesis/Optimizers/GradientDescent.cpp       \
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \

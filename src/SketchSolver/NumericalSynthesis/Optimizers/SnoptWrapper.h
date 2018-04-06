@@ -97,7 +97,6 @@ class SnoptWrapper: public OptimizationWrapper {
     gsl_vector* t1;
     
     int RANDOM_SEARCH = 10;
-    double RANDOM_TARGET = 100;
         
     doublereal* x;
     doublereal* xlow;
