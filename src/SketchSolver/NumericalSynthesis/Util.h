@@ -1,7 +1,11 @@
 #pragma once
 #include <map>
 #include <vector>
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "FakeGSL.h"
+#endif
 #include "BooleanNodes.h"
 
 class Util {

@@ -11,8 +11,16 @@
 #include "CommandLineArgs.h"
 #include "BoolAutoDiff.h"
 #include "SimpleEvaluator.h"
+
+#ifndef _NOGSL
 #include "GradientDescentWrapper.h"
+#else
+#include "CustomSolver.h"
+#endif
+
+#ifndef _NOSNOPT
 #include "SnoptWrapper.h"
+#endif
 #include "SymbolicEvaluator.h"
 #include "NumericalSolverHelper.h"
 #include "SimpleConflictGenerator.h"

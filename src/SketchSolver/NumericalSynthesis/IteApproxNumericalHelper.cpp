@@ -12,6 +12,9 @@ IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG
 		if (n->getOtype() == OutType::BOOL && (n->hasFloatParent() || n->hasFloatChild())) {
 			boolNodes.insert(i);
 		} 
+		if (n->type == bool_node::ASSERT) {
+			boolNodes.insert(i);
+		}
 	}
 	
 	// generate ctrls mapping
@@ -50,7 +53,9 @@ IteApproxNumericalHelper::IteApproxNumericalHelper(FloatManager& _fm, BooleanDAG
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	} else {
+#ifndef _NOGSL
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+#endif
 	}
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	cg = new SimpleConflictGenerator(imap, boolNodes);

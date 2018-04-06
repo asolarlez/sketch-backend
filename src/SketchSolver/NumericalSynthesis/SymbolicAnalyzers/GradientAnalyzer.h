@@ -1,6 +1,12 @@
 #pragma once
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
+#else
+#include "CustomSolver.h"
+#endif
+
 #include "BooleanNodes.h"
 #include "BooleanDAG.h"
 #include "NodeVisitor.h"

@@ -3,6 +3,7 @@
 
 int SnoptEvaluator::counter;
 
+
 SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap): NumericalSolverHelper(_fm, _dag, _imap) {
 	//dag->lprint(cout);
     int numConstraints = 0;
@@ -64,7 +65,9 @@ SmoothSatHelper::SmoothSatHelper(FloatManager& _fm, BooleanDAG* _dag, map<int, i
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, numConstraints);
 	} else {
+#ifndef _NOGSL
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+#endif
 	}
 	cg = new SimpleConflictGenerator(imap, boolNodes);
     previousSAT = false;

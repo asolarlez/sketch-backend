@@ -1,9 +1,14 @@
 #include "NumericalSolver.h"
 #include "GradientAnalyzer.h"
 
+#ifndef _NOGSL
 gsl_vector* GDEvaluator::curGrad;
+#endif
+
+
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
+
 
 NumericalSolver::NumericalSolver(FloatManager& _fm, BooleanDAG* _dag, map<int, int>& _imap, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), imap(_imap) {
     softConflictLit = _softConflictLit;
@@ -370,7 +375,12 @@ void NumericalSolver::debug() { // TODO: currently this is doing all kinds of de
     
 	
 	SymbolicEvaluator* eval = new BoolAutoDiff(*dag, fm, ctrlMap, boolCtrlMap);
-    OptimizationWrapper* opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
+	OptimizationWrapper* opt =
+#ifndef _NOSNOPT
+		new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
+#else
+		NULL;
+#endif
 	const map<int, int>& nodeValsMap = Util::getNodeToValMap(imap, allInputs[0]);
 	gsl_vector* s = gsl_vector_alloc(ncontrols);
     double arr1[53] = {14.562, 16.5079, 25.3871, 29.2401, 20.4648, -3.3598, -18.6837, -10.095, 11.9579, 4.63623, -8.17328, -2.32865, 5.2097, 0.297557, 18.5087, -14.6174, 19.6083, 24.0753, 4.62991, 19.0566, 16.8833, 0.325465, 4.96385, 0.0645103, -18.9252, 14.5423, -18.35, 14.871, 19.5413, -4.02595, 10.6367, -0.0281517, 13.3301, -2.96819, 12.8153, -6.52162, 5.17906, 7.28508, 8.15148, 19.3113, 17.4993, 3.21412, 4.74884, -14.2551, 0.000636686, 0.109582, 0.0476067, 0.0434983, 0.916371, 0.908358, 0.00325205, 0.974606, 0.961983, };

@@ -55,7 +55,9 @@ BoolApproxHelper::BoolApproxHelper(FloatManager& _fm, BooleanDAG* _dag, map<int,
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	} else {
+#ifndef _NOGSL
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+#endif
 	}
 	//opt->randomizeCtrls(state, allInputs);
 	cg = new SimpleConflictGenerator(imap, boolNodes);

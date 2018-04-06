@@ -1,6 +1,12 @@
 #pragma once
 #include "IntervalGrad.h"
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "CustomSolver.h"
+#endif
+
 #include "BooleanNodes.h"
 #include "BooleanDAG.h"
 #include "NodeVisitor.h"

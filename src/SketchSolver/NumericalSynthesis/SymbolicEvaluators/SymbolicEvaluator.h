@@ -1,7 +1,12 @@
 #pragma once
-#include <gsl/gsl_vector.h>
+
+
+
 #include <map>
 #include <set>
+
+class gsl_vector;
+
 
 class SymbolicEvaluator {
 public:

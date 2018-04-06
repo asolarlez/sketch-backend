@@ -47,7 +47,9 @@ BasicNumericalHelper::BasicNumericalHelper(FloatManager& _fm, BooleanDAG* _dag, 
 	if (PARAMS->useSnopt) {
 		opt = new SnoptWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols, boolNodes.size());
 	} else {
+#ifndef _NOGSL
 		opt = new GradientDescentWrapper(eval, dag, imap, ctrlMap, boolNodes, ncontrols);
+#endif
 	}
 	//cg = new ConflictGenerator(eval, imap, dag, ignoredBoolNodes, ctrlNodeIds);
 	cg = new SimpleConflictGenerator(imap, boolNodes);

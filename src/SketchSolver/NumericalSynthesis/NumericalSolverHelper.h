@@ -1,6 +1,10 @@
 #pragma once 
 
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "CustomSolver.h"
+#endif
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -11,6 +15,8 @@
 
 using namespace std;
 
+
+class gsl_vector;
 
 // The helper class is collection of different methods/classes to handle different parts of the numerical solver
 class NumericalSolverHelper {

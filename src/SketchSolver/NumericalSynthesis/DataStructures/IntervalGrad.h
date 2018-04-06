@@ -1,8 +1,14 @@
 #pragma once
 #include "GradUtil.h"
 #include "DistanceGrad.h"
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
+#else
+#include "CustomSolver.h"
+#endif
+
 #include <limits>
 #include <math.h>
 #include <vector>
