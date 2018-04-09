@@ -30,6 +30,9 @@ void BoolAbstractor::addToInterface(Tvalue& tv, bool_node& node) {
 
 
 void BoolAbstractor::visit( AND_node& node ){
+    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
+        return;
+    }
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
     return;
@@ -37,11 +40,17 @@ void BoolAbstractor::visit( AND_node& node ){
 
 
 void BoolAbstractor::visit( OR_node& node ){
+    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
+        return;
+    }
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
 }
 
 void BoolAbstractor::visit( XOR_node& node ){
+    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
+        return;
+    }
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
 }
@@ -62,9 +71,10 @@ void BoolAbstractor::visit( DST_node& node ){
 void
 BoolAbstractor::visit (NOT_node &node)
 {
-    if (node.mother->type == bool_node::LT && Util::hasNotAssertChild(node.mother)) {
+    if (Util::hasNotAssertChild(node.mother)) {
         return;
     }
+    
     NodesToSolver::visit(node);
     addToInterface(node_ids[node.id], node);
 }
@@ -220,10 +230,10 @@ void BoolAbstractor::visit (TUPLE_CREATE_node &node) {
 void
 BoolAbstractor::visit (ASSERT_node &node)
 {
-    if (node.mother->type == bool_node::LT && Util::hasAssertChild(node.mother)) { // TODO: there should be better ways of doing this
+    if (Util::hasAssertChild(node.mother)) { // TODO: there should be better ways of doing this
         return;
     }
-    if (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::LT && Util::hasNotAssertChild(node.mother->mother)) {
+    if (Util::hasNotAssertChild(node.mother->mother)) {
         return;
     }
     NodesToSolver::visit(node);

@@ -516,6 +516,7 @@ void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag
     ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
     NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interface, lfromInt(specialVar));
     numsin = ((MiniSATSolver&)mng).addSynth(ns);
+    sins["NUMSIN"] = numsin;
 }
 
 void SolverHelper::addNumSynSolvClause(int inputid, int tvId) {

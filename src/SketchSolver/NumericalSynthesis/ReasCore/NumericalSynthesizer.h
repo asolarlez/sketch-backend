@@ -98,7 +98,7 @@ public:
             Lit l = interface->getLit(nodeid, val);
             conf.push(~l);
         }
-        if (softConflict) {
+        if (true) { //(softConflict) {
             conf.push(~softConflictLit);
         }
     }

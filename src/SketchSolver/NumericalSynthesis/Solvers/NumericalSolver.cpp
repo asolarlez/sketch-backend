@@ -155,7 +155,7 @@ bool NumericalSolver::checkFullSAT() {
 
 bool NumericalSolver::initializeState(bool suppressPrint) {
     cout << "Initializing state" << endl;
-    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(),  minimizeNode, suppressPrint, 5, true); // TODO: magic number
+    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(),  -1, suppressPrint, 5, true); // TODO: magic number
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
         gsl_vector_memcpy(state, opt->getMinState());
