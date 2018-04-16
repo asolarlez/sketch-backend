@@ -15,17 +15,16 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
         set<int> ctrls;
-        
         const vector<bool_node*>& parents = n->parents();
         if (n->type == bool_node::CTRL && n->getOtype() == OutType::FLOAT) {
             ctrls.insert(n->id);
         }
         for (int i = 0; i < parents.size(); i++) {
             bool_node* parent = parents[i];
-            set<int>& parentCtrls = dependentCtrls[parent->id];
+            vector<int>& parentCtrls = dependentCtrls[parent->id];
             ctrls.insert(parentCtrls.begin(), parentCtrls.end());
         }
-        dependentCtrls.push_back(ctrls);
+        dependentCtrls.push_back(vector<int>(ctrls.begin(), ctrls.end()));
     }
 }
 
@@ -93,9 +92,28 @@ void NumericalSynthesizer::init() {
         opt = new GradientDescentWrapper(eval, ncontrols, xlow, xupp);
     }
     ConflictGenerator* cg = new SimpleConflictGenerator(interface);
-    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
+    
+    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+        bool_node* n = *node_it;
+        set<int> inputs;
+        const vector<bool_node*>& parents = n->parents();
+        for (int i = 0; i < parents.size(); i++) {
+            bool_node* parent = parents[i];
+            if (interface->isInput(parent->id)) {
+                inputs.insert(parent->id);
+            } else {
+                vector<int>& parentInputs = dependentInputs[parent->id];
+                inputs.insert(parentInputs.begin(), parentInputs.end());
+            }
+        }
+        dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
+    }
+    
+    SuggestionGenerator* sg = new SmartSuggestionGenerator1(dag, interface, ctrls, dependentInputs);
     
     solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg);
+    
+    
 }
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {

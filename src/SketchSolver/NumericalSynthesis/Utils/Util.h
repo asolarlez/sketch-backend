@@ -102,7 +102,7 @@ public:
         return s.str();
     }
     
-    static string print(const set<int>& v) {
+    static string print(const vector<int>& v) {
         stringstream s;
         for (auto it = v.begin(); it != v.end(); it++) {
             s << *it << ", ";

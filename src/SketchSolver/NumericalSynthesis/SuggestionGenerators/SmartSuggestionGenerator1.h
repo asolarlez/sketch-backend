@@ -8,23 +8,16 @@
 #include <set>
 #include <gsl/gsl_vector.h>
 
-class SimpleSuggestionGenerator: public SuggestionGenerator {
-    vector<int> nodesToSuggest;
+class SmartSuggestionGenerator1: public SuggestionGenerator {
     Interface* interface;
     BooleanDAG* dag;
     map<string, int>& ctrls;
     SimpleEvaluator* seval;
+    const vector<vector<int>>& dependentInputs;
 public:
-    SimpleSuggestionGenerator(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls): dag(_dag), interface(_interface), ctrls(_ctrls) {
+    SmartSuggestionGenerator1(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls, const vector<vector<int>>& _dependentInputs): dag(_dag), interface(_interface), ctrls(_ctrls), dependentInputs(_dependentInputs) {
         seval = new SimpleEvaluator(*dag, ctrls);
         seval->setInputs(interface);
-        for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
-            //bool_node* n = (*dag)[nodeid];
-            //if (Util::hasArraccChild(n)) {
-                nodesToSuggest.push_back(nodeid);
-            //}
-        }
     }
     
     virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
@@ -73,12 +66,34 @@ public:
     
     virtual vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
         vector<tuple<int, int, int>> suggestions;
-        if (nodesToSuggest.size() == 0) return suggestions;
-        int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
-        int randVal = rand() % 2;
-        cout << "Suggesting: " << ((*dag)[randIdx])->lprint() << " " << randVal << endl;
-        suggestions.push_back(make_tuple(0, randIdx, randVal));
+        cout << "state: " << Util::print(state) << endl;
+        seval->run(state);
+        
+        double minNegDist = GradUtil::MAXVAL;
+        int minNegDistId = -1;
+        for (int i = 0; i < dag->size(); i++) {
+            bool_node* n = (*dag)[i];
+            if (n->type == bool_node::ASSERT) {
+                double dist = seval->d(n);
+                if (dist < 0.0) {
+                    if (dist < minNegDist) {
+                        minNegDist = dist;
+                        minNegDistId = n->id;
+                    }
+                }
+            }
+        }
+        
+        cout << "MinNegNode: " << minNegDistId << " with error " << minNegDist << endl;
+        
+        const vector<int>& influentialInputs = dependentInputs[minNegDistId];
+        cout << influentialInputs.size() << endl;
+        int randInput = influentialInputs[rand() % influentialInputs.size()];
+        double inputDist = seval->d((*dag)[randInput]);
+        int val = inputDist >= 0.0 ? 0 : 1;
+        cout << "Suggesting: " << ((*dag)[randInput])->lprint() << " " << val << endl;
+        suggestions.push_back(make_tuple(0, randInput, val));
         return suggestions;
-
+        
     }
 };

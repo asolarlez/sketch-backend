@@ -23,6 +23,7 @@
 #include "GradientDescentWrapper.h"
 #include "SimpleConflictGenerator.h"
 #include "SimpleSuggestionGenerator.h"
+#include "SmartSuggestionGenerator1.h"
 
 
 class NumericalSynthesizer : public Synthesizer {
@@ -34,7 +35,8 @@ class NumericalSynthesizer : public Synthesizer {
     timerclass timer;
 	
     map<string, int> ctrls; // maps ctrl names to index in the state vector
-    vector<set<int>> dependentCtrls; // maps nodes to dependent ctrls
+    vector<vector<int>> dependentCtrls; // maps nodes to dependent ctrls
+    vector<vector<int>> dependentInputs; // maps nodes to dependent input nodes
 
     bool initialized;
 	

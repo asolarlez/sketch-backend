@@ -189,7 +189,7 @@ vector<tuple<int, int, int>> NumericalSolver::collectSatSuggestions() {
 
 
 vector<tuple<int, int, int>> NumericalSolver::collectUnsatSuggestions() {
-    return sg->getUnsatSuggestions();
+    return sg->getUnsatSuggestions(state);
 }
 
 void NumericalSolver::getConflicts(vector<pair<int, int>>& conflicts) {

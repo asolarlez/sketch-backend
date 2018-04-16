@@ -55,6 +55,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/ConflictGenerators/SimpleConflictGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SuggestionGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SimpleSuggestionGenerator.h	\
+    NumericalSynthesis/SuggestionGenerators/SmartSuggestionGenerator1.h \
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\

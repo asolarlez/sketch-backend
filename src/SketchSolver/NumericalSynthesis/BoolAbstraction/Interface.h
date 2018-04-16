@@ -135,6 +135,9 @@ public:
         return nodeVals[nodeid] != EMPTY;
     }
     
+    bool isInput(int nodeid) {
+        return reverseVarsMapping.find(nodeid) != reverseVarsMapping.end();
+    }
     
     
 };
