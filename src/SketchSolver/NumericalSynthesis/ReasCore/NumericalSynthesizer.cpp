@@ -11,6 +11,22 @@ using namespace std;
 NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interface(_interface) {
     softConflictLit = _softConflictLit;
     initialized = false;
+    
+    for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
+        bool_node* n = *node_it;
+        set<int> ctrls;
+        
+        const vector<bool_node*>& parents = n->parents();
+        if (n->type == bool_node::CTRL && n->getOtype() == OutType::FLOAT) {
+            ctrls.insert(n->id);
+        }
+        for (int i = 0; i < parents.size(); i++) {
+            bool_node* parent = parents[i];
+            set<int>& parentCtrls = dependentCtrls[parent->id];
+            ctrls.insert(parentCtrls.begin(), parentCtrls.end());
+        }
+        dependentCtrls.push_back(ctrls);
+    }
 }
 
 void NumericalSynthesizer::init() {
@@ -19,6 +35,9 @@ void NumericalSynthesizer::init() {
         cout << "NInputs: " << interface->size() << endl;
     }
     
+    for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
+        cout << it->first << " -> " << (*dag)[it->second->nodeid]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->second->nodeid]) << "]" << endl;
+    }
     
     vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
     int ctr = 0;
@@ -81,6 +100,8 @@ void NumericalSynthesizer::init() {
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
     init(); // TODO: there should be a better position for this
+    interface->resetInputConstraints();
+    cout << "Variables already set: "  << (interface->numSet()) <<  endl;
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
     bool sat = solver->checkSAT();
@@ -102,13 +123,17 @@ void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
 
 
 bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
-    Assert(initialized, "Numerical solver is not yet properly initialized");
+    suggestions.clear();
+    conflicts.clear();
+    if (!initialized) {
+        return true;
+    }
+    //return true;
     cout << "Running numerical synthesis" << endl;
 	if (PARAMS->verbosity > 7) {
         timer.restart();
 	}
-	suggestions.clear();
-    conflicts.clear();
+	
 	bool sat = solver->checkSAT();
 	if (sat || solver->ignoreConflict()) {
 		solver->getControls(ctrlVals);

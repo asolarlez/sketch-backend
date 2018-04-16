@@ -15,7 +15,7 @@ using namespace MSsolverNS;
 
 void REASSolver::addProblem(BooleanDAG* problem_){
     problem = problem_;
-    problem->lprint(cout);
+    //problem->lprint(cout);
    
     Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {

@@ -30,29 +30,26 @@ void BoolAbstractor::addToInterface(Tvalue& tv, bool_node& node) {
 
 
 void BoolAbstractor::visit( AND_node& node ){
-    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
-        return;
-    }
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    if (!Util::hasAssertChild(node) && !Util::hasNotAssertChild(node)) {
+        addToInterface(node_ids[node.id], node);
+    }
     return;
 }
 
 
 void BoolAbstractor::visit( OR_node& node ){
-    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
-        return;
-    }
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    if (!Util::hasAssertChild(node) && !Util::hasNotAssertChild(node)) {
+        addToInterface(node_ids[node.id], node);
+    }
 }
 
 void BoolAbstractor::visit( XOR_node& node ){
-    if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
-        return;
-    }
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    if (!Util::hasAssertChild(node) && !Util::hasNotAssertChild(node)) {
+        addToInterface(node_ids[node.id], node);
+    }
 }
 
 
@@ -71,12 +68,8 @@ void BoolAbstractor::visit( DST_node& node ){
 void
 BoolAbstractor::visit (NOT_node &node)
 {
-    if (Util::hasNotAssertChild(node.mother)) {
-        return;
-    }
-    
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    //addToInterface(node_ids[node.id], node); // We don't have to add this to the interface because NOT node does not introduce any discontinuities
 }
 
 void
@@ -138,9 +131,6 @@ void
 BoolAbstractor::visit(LT_node &node)
 {
     if (node.mother->getOtype() == OutType::FLOAT) {
-        if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
-            return;
-        }
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
@@ -148,16 +138,15 @@ BoolAbstractor::visit(LT_node &node)
     } else {
         NodesToSolver::visit(node);
     }
-    addToInterface(node_ids[node.id], node);
+    if (!Util::hasAssertChild(node) && !Util::hasNotAssertChild(node)) {
+        addToInterface(node_ids[node.id], node);
+    }
 }
 
 void
 BoolAbstractor::visit(EQ_node &node)
 {
     if (node.mother->getOtype() == OutType::FLOAT) {
-        if (Util::hasAssertChild(node) || Util::hasNotAssertChild(node)) {
-            return;
-        }
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
@@ -165,7 +154,9 @@ BoolAbstractor::visit(EQ_node &node)
     } else {
         NodesToSolver::visit(node);
     }
-    addToInterface(node_ids[node.id], node);
+    if (!Util::hasAssertChild(node) && !Util::hasNotAssertChild(node)) {
+        addToInterface(node_ids[node.id], node);
+    }
 }
 
 void
@@ -230,14 +221,8 @@ void BoolAbstractor::visit (TUPLE_CREATE_node &node) {
 void
 BoolAbstractor::visit (ASSERT_node &node)
 {
-    if (Util::hasAssertChild(node.mother)) { // TODO: there should be better ways of doing this
-        return;
-    }
-    if (Util::hasNotAssertChild(node.mother->mother)) {
-        return;
-    }
     NodesToSolver::visit(node);
-    addToInterface(node_ids[node.id], node);
+    //addToInterface(node_ids[node.id], node);
 }
 
 

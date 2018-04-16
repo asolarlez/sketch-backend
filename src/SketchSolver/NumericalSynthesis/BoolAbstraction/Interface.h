@@ -30,6 +30,7 @@ class Interface {
                                                 //                      (or have an interface for each instance)
     vector<int> nodeVals; // node id -> val
     set<int> inputNodeIds; // node ids that have been set by the SAT solver
+    set<int> assertedNodeIds; // nodes ids for values that are set just by propagating asserts
     int counter;
     vec<vstate> stack;
     const int EMPTY = INT32_MIN;
@@ -45,20 +46,23 @@ public:
     
     void add(Tvalue& tv, bool_node& node, SolverHelper& dir) {
         Assert(node.getOtype() != OutType::FLOAT, "This should not happen");
+        if (node.type != bool_node::LT) {
+            return; // Ignore all nodes other than LT (TODO: remove this)
+        }
         if (tv.isBvect()) {
-            dir.addNumSynSolvClause(counter, tv.getId());
             varsMapping[counter] = new NodeValPair(node.id, 1, 0);
             map<int, Lit> m;
             m[1] = lfromInt(tv.getId()); m[0] = lfromInt(-tv.getId());
             reverseVarsMapping[node.id] = m;
+            dir.addNumSynSolvClause(counter, tv.getId());
             counter++;
         } else {
             const gvvec& vec = tv.num_ranges;
             map<int, Lit> m;
             for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
-                dir.addNumSynSolvClause(counter, ci->guard);
                 varsMapping[counter] = new NodeValPair(node.id, ci->value, EMPTY);
                 m[ci->value] = lfromInt(ci->guard);
+                dir.addNumSynSolvClause(counter, ci->guard);
                 counter++;
             }
             reverseVarsMapping[node.id] = m;
@@ -115,6 +119,14 @@ public:
         return inputNodeIds;
     }
     
+    const set<int>& getAssertedInputConstraints() {
+        return assertedNodeIds;
+    }
+    
+    void resetInputConstraints() {
+        assertedNodeIds.insert(inputNodeIds.begin(), inputNodeIds.end());
+        inputNodeIds.clear();
+    }
     int numSet() {
         return inputNodeIds.size();
     }

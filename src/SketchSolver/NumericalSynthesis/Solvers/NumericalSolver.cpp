@@ -56,8 +56,9 @@ bool NumericalSolver::checkSAT() {
         cout << "Current sol passed" << endl;
         sat = true;
     } else {
+        bool noInputs = interface->numSet() == 0;
         if (!previousSAT) {
-            if (!initializeState(suppressPrint)) {
+            if (!noInputs && !initializeState(suppressPrint)) {
                 return false;
             }
         }
@@ -67,9 +68,11 @@ bool NumericalSolver::checkSAT() {
         allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
         const set<int>& inputConstraints = interface->getInputConstraints();
         allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
+        const set<int>& assertedInputConstraints = interface->getAssertedInputConstraints();
+        allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
         
-        sat = opt->optimize(interface, state, allConstraints, minimizeNode, suppressPrint);
-        if (sat) {
+        sat = opt->optimize(interface, state, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, noInputs); 
+        if (sat || !previousSAT) {
             gsl_vector_memcpy(state, opt->getMinState());
         }
     }
@@ -110,11 +113,14 @@ bool NumericalSolver::checkCurrentSol() {
     GradUtil::ALPHA = 50;
     eval->setInputs(interface); // TODO: since this is a pointer, we don't have to set it everytime
     eval->run(state);
+    cout << Util::print(state) << endl;
     
     set<int> allConstraints; // TODO: this could be further optimized to check only those constraints whose eval changed since last iteration
     allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
     const set<int>& inputConstraints = interface->getInputConstraints();
     allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
+    const set<int>& assertedInputConstraints = interface->getAssertedInputConstraints();
+    allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
     
     double error;
     if (minimizeNode >= 0) {
@@ -155,7 +161,7 @@ bool NumericalSolver::checkFullSAT() {
 
 bool NumericalSolver::initializeState(bool suppressPrint) {
     cout << "Initializing state" << endl;
-    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(),  -1, suppressPrint, 5, true); // TODO: magic number
+    bool satInputs = opt->optimize(interface, state, interface->getInputConstraints(),  minimizeNode, suppressPrint, 5, true); // TODO: magic number
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
         gsl_vector_memcpy(state, opt->getMinState());
@@ -170,7 +176,7 @@ bool NumericalSolver::initializeState(bool suppressPrint) {
 bool NumericalSolver::ignoreConflict() {
     if (previousSAT) return false;
     if (inputConflict) return false;
-    if (interface->numSet() < CONFLICT_CUTOFF) {
+    if (interface->numSet() < CONFLICT_CUTOFF) { 
         return true;
     } else {
         return false;

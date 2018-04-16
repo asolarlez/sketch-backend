@@ -20,10 +20,10 @@ public:
         seval->setInputs(interface);
         for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
             int nodeid = it->second->nodeid;
-            bool_node* n = (*dag)[nodeid];
-            if (Util::hasArraccChild(n)) {
+            //bool_node* n = (*dag)[nodeid];
+            //if (Util::hasArraccChild(n)) {
                 nodesToSuggest.push_back(nodeid);
-            }
+            //}
         }
     }
     
@@ -76,6 +76,7 @@ public:
         if (nodesToSuggest.size() == 0) return suggestions;
         int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
         int randVal = rand() % 2;
+        cout << "Suggesting: " << ((*dag)[randIdx])->lprint() << " " << randVal << endl;
         suggestions.push_back(make_tuple(0, randIdx, randVal));
         return suggestions;
 

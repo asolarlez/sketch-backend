@@ -101,4 +101,12 @@ public:
         }
         return s.str();
     }
+    
+    static string print(const set<int>& v) {
+        stringstream s;
+        for (auto it = v.begin(); it != v.end(); it++) {
+            s << *it << ", ";
+        }
+        return s.str();
+    }
 };
