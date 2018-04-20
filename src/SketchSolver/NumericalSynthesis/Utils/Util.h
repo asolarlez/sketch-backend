@@ -97,7 +97,7 @@ public:
     static string print(const gsl_vector* v) {
         stringstream s;
         for (int i = 0; i < v->size; i++) {
-            s << gsl_vector_get(v, i) << ", ";
+            s << gsl_vector_get(v, i) << ";";
         }
         return s.str();
     }
@@ -105,7 +105,7 @@ public:
     static string print(const vector<int>& v) {
         stringstream s;
         for (auto it = v.begin(); it != v.end(); it++) {
-            s << *it << ", ";
+            s << *it << ";";
         }
         return s.str();
     }

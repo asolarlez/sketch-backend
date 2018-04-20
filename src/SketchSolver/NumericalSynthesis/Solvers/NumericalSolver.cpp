@@ -3,7 +3,7 @@
 
 int SnoptEvaluator::counter;
 
-NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg): dag(_dag), ctrls(_ctrls), interface(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg) {
+NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls): dag(_dag), ctrls(_ctrls), interface(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls) {
 	ncontrols = ctrls.size();
     // if ncontrols = 0, make it 1 just so numerical opt does not break
 	if (ncontrols == 0) {
@@ -23,6 +23,7 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
     
     seval = new SimpleEvaluator(*dag, ctrls);
     minimizeNode = -1;
+    counter = 0;
     
     for (int i = 0; i < dag->size(); i++) { // TODO: this should also be set by caller class
         bool_node* n = (*dag)[i];
@@ -34,6 +35,18 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
             assertConstraints.insert(i);
         }
     }
+    
+    inputsToAsserts.resize(dag->size(), -1);
+    for (int i = 0; i < dag->size(); i++) {
+        bool_node* n = (*dag)[i];
+        if (n->type == bool_node::ASSERT) {
+            const vector<int>& inputs = dependentInputs[i];
+            for (int j = 0; j < inputs.size(); j++) {
+                inputsToAsserts[inputs[j]] = i;
+            }
+        }
+    }
+
 }
 
 NumericalSolver::~NumericalSolver(void) {
@@ -70,11 +83,12 @@ bool NumericalSolver::checkSAT() {
         allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
         const set<int>& assertedInputConstraints = interface->getAssertedInputConstraints();
         allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
-        
-        sat = opt->optimize(interface, state, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, noInputs); 
+        //printGraphCmd("before");
+        sat = opt->optimize(interface, state, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, noInputs);
         if (sat || !previousSAT) {
             gsl_vector_memcpy(state, opt->getMinState());
         }
+        //printGraphCmd("after");
     }
     if (!previousSAT) {
         previousSAT = sat;
@@ -99,6 +113,25 @@ bool NumericalSolver::checkSAT() {
     cout << "Objective found: " << objective << endl;
     
     return sat;
+}
+
+void NumericalSolver::printGraphCmd(string prefix) {
+    cout << "python test.py " << counter++ << "_" << prefix << "_"  << " \"" << Util::print(state) << "\" data.txt \"\"";
+    
+    const set<int>& inputConstraints = interface->getInputConstraints();
+    cout << " \"";
+    for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+        string line = to_string(dependentCtrls[*it][0]);
+        string assertMsg = ((ASSERT_node*)(*dag)[inputsToAsserts[*it]])->getMsg();
+        string point = "";
+        size_t start = assertMsg.find("(");
+        if (start != string::npos) {
+            size_t end = assertMsg.find(")");
+            point = assertMsg.substr(start, end - start + 1);
+        }
+        cout << line << ":" << point << ":" << interface->getValue(*it) << ";" ;
+    }
+    cout << "\"" << endl;
 }
 
 

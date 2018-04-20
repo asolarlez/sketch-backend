@@ -46,6 +46,11 @@ protected:
     
     set<int> assertConstraints;
     int minimizeNode;
+    int counter;
+    
+    const vector<vector<int>>& dependentInputs;
+    const vector<vector<int>>& dependentCtrls;
+    vector<int> inputsToAsserts; // TODO: this is pretty local hack
 	
 	// class for picking the part of the numerical problem to handle
 	// class to do symbolic evaluation
@@ -55,7 +60,7 @@ protected:
 	// class to generate conflicts
 	
 public:
-    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg);
+    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls);
     ~NumericalSolver(void);
     
 	// Called by the NumericalSolver
@@ -73,5 +78,7 @@ public:
     bool checkFullSAT();
     bool initializeState(bool suppressPrint);
     void printControls();
+    
+    void printGraphCmd(string prefix);
 
 };

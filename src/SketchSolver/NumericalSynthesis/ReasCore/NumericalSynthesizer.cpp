@@ -109,9 +109,9 @@ void NumericalSynthesizer::init() {
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
     
-    SuggestionGenerator* sg = new SmartSuggestionGenerator1(dag, interface, ctrls, dependentInputs);
+    SuggestionGenerator* sg = new SmartSuggestionGenerator1(dag, interface, ctrls, dependentInputs, dependentCtrls);
     
-    solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg);
+    solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg, dependentInputs, dependentCtrls);
     
     
 }
@@ -123,9 +123,9 @@ void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
     bool sat = solver->checkSAT();
-    if (sat) {
+    //if (sat) {
         solver->getControls(ctrlVals);
-    }
+    //}
     if (sat) {
         if (!PARAMS->disableSatSuggestions) {
             const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, nodeid, val>
