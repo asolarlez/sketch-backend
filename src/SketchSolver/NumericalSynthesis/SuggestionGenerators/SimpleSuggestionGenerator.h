@@ -20,10 +20,10 @@ public:
         seval->setInputs(interface);
         for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
             int nodeid = it->second->nodeid;
-            //bool_node* n = (*dag)[nodeid];
-            //if (Util::hasArraccChild(n)) {
+            bool_node* n = (*dag)[nodeid];
+            if (Util::hasArraccChild(n)) {
                 nodesToSuggest.push_back(nodeid);
-            //}
+            }
         }
     }
     

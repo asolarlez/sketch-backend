@@ -109,7 +109,7 @@ void NumericalSynthesizer::init() {
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
     
-    SuggestionGenerator* sg = new SmartSuggestionGenerator1(dag, interface, ctrls, dependentInputs, dependentCtrls);
+    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
     
     solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg, dependentInputs, dependentCtrls);
     

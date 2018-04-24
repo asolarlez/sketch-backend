@@ -14,7 +14,7 @@ igtest_CXXFLAGS = $(cegis_CXXFLAGS)
 snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
 snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
-libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas
+libcegis_la_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
 libcegis_la_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.la
 gdtest_LDADD = libcegis.la

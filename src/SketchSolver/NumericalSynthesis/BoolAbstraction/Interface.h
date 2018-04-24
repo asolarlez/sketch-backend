@@ -46,9 +46,9 @@ public:
     
     void add(Tvalue& tv, bool_node& node, SolverHelper& dir) {
         Assert(node.getOtype() != OutType::FLOAT, "This should not happen");
-        if (node.type != bool_node::LT) {
-            return; // Ignore all nodes other than LT (TODO: remove this)
-        }
+        //if (node.type != bool_node::LT) {
+        //    return; // Ignore all nodes other than LT (TODO: remove this)
+        //}
         if (tv.isBvect()) {
             varsMapping[counter] = new NodeValPair(node.id, 1, 0);
             map<int, Lit> m;
