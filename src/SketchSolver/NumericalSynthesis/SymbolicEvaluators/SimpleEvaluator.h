@@ -7,7 +7,11 @@
 #include "FloatSupport.h"
 #include <tuple>
 #include <iostream>
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "CustomSolver.h"
+#endif
 #include "Util.h"
 #include "Interface.h"
 

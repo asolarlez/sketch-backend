@@ -77,6 +77,9 @@ main(int argc, char** argv)
     if (rv==0) {
         cout<<"ALL CORRECT"<<endl;
     }
+	if (rv != rv) {
+		vfprintf(NULL, NULL, NULL);
+	}
     return rv;
 }
 

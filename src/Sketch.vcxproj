@@ -114,8 +114,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\gsl\include;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\SketchSolver\NumericalSynthesis;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicEvaluators;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicAnalyzers;$(SolutionDir)\SketchSolver\NumericalSynthesis\Optimizers;$(SolutionDir)\SketchSolver\NumericalSynthesis\IntervalProp;$(SolutionDir)\SketchSolver\NumericalSynthesis\DataStructures;$(SolutionDir)\SketchSolver\NumericalSynthesis\ConflictGenerators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _NOSNOPT; _NOGSL; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -284,16 +284,22 @@
     <ClCompile Include="SketchSolver\InputParser\NodeHardcoder.cpp" />
     <ClCompile Include="SketchSolver\InputParser\Tvalue.cpp" />
     <ClCompile Include="SketchSolver\memory_sampler.cc" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\AutoDiff.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\DistanceGrad.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\GradientDescent.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\BasicNumericalHelper.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\BoolApproxHelper.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\DistanceGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\Interval.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\IntervalGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\ValueGrad.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\GradUtil.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\Interval.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\IntervalGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\IteApproxNumericalHelper.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\NumericalSolver.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\RangeDiff.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\SimpleEvaluator.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\ValueGrad.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SmoothSatHelper.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicAnalyzers\GradientAnalyzer.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\AutoDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\BoolAutoDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\IteAutoDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\RangeDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SimpleEvaluator.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\MiniSATSolver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\NodeEvaluator.cpp" />
     <ClCompile Include="SketchSolver\InputParser\NodeSlicer.cpp" />
@@ -342,6 +348,8 @@
     <ClInclude Include="SketchSolver\NumericalSynthesis\IntervalGrad.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\IntervalPropagator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\NumericalSolver.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\CustomSolver.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\FakeGSL.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\RangeDiff.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\SimpleEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\SimulatedAnnealing.h" />

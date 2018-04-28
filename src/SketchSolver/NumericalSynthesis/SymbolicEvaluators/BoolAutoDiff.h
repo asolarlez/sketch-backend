@@ -1,5 +1,10 @@
 #pragma once
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "CustomSolver.h"
+#endif
 #include "ValueGrad.h"
 #include "BooleanNodes.h"
 #include "BooleanDAG.h"
