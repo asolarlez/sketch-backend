@@ -1,6 +1,11 @@
 #pragma once 
 
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "FakeGSL.h"
+#endif
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -23,7 +28,7 @@ using namespace std;
 class NumericalSolver {
 protected:
 	BooleanDAG* dag;
-	Interface* interface;
+	Interface* interf;
     
     int ncontrols;
     gsl_vector* state;

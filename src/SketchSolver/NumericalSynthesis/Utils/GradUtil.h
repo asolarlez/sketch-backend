@@ -1,7 +1,14 @@
 #pragma once
 
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
+#else
+#include "FakeGSL.h"
+#endif
+
+
 #include <limits>
 #include <math.h>
 #include <vector>

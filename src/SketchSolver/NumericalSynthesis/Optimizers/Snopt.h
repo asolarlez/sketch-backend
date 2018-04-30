@@ -1,8 +1,17 @@
 #pragma once
+
+
+
+#ifndef _NOSNOPT
 #include <fstream>
 #include <iostream>
 #include "BasicError.h"
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "FakeGSL.h"
+#endif
+
 #include "snopt.hh"
 #include "snoptProblem.hh"
 
@@ -97,3 +106,8 @@ public:
 	}
 	
 };
+
+
+#endif
+
+

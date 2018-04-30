@@ -1,4 +1,6 @@
 #pragma once
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_multimin.h>
 #include <gsl/gsl_errno.h>
@@ -46,4 +48,5 @@ public:
 	double optimize(gsl_vector* initX); // optimizes until value is 0
 };
 
+#endif
 

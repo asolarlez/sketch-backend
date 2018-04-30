@@ -1,5 +1,8 @@
 #include "Snopt.h"
 
+
+#ifndef _NOSNOPT
+
 void SnoptSolver::init(char* workspace, integer neF_, SNOPT_DF_TYPE df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
 	Assert(neF_ <= neF, "Error: small nef");
 	neF = neF_;
@@ -109,4 +112,6 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
 	
 	return constraintsSatisfied;
 }
+
+#endif
 

@@ -10,6 +10,9 @@
 #include "Util.h"
 #include "Interface.h"
 
+
+
+
 using namespace std;
 
 
@@ -70,6 +73,8 @@ public:
 		df(x, params, g);
 	}
 };
+
+#ifndef _NOGSL
 
 class GradientDescentWrapper: public OptimizationWrapper {
 	GradientDescent* gd;
@@ -201,3 +206,5 @@ public:
 		
 	
 };
+
+#endif

@@ -5,15 +5,15 @@
 
 // Generates the trivial conflict i.e. all set assignments
 class SimpleConflictGenerator: public ConflictGenerator {
-    Interface* interface;
+    Interface* interf;
 public:
-	SimpleConflictGenerator(Interface* _interface): interface(_interface){}
+	SimpleConflictGenerator(Interface* _interface): interf(_interface){}
 	
 	virtual void getConflicts(vector<pair<int, int>>& conflicts) {
         if (PARAMS->verbosity > 7) {
             cout << "Conflict clause ";
         }
-        const set<int>& inputNodes = interface->getInputConstraints();
+        const set<int>& inputNodes = interf->getInputConstraints();
         for (auto it = inputNodes.begin(); it != inputNodes.end(); it++) {
             if (PARAMS->verbosity > 7) {
                 cout << (*it) << ", ";

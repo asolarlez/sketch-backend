@@ -510,11 +510,11 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 }
 
 
-void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interface) {
+void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interf) {
     int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
     lastVar = specialVar;
     ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
-    NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interface, lfromInt(specialVar));
+    NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interf, lfromInt(specialVar));
     numsin = ((MiniSATSolver&)mng).addSynth(ns);
     sins["NUMSIN"] = numsin;
 }

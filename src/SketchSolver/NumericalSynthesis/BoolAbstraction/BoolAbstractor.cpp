@@ -1,6 +1,6 @@
 #include "BoolAbstractor.h"
 
-bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, Interface* interface){
+bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, Interface* interf){
     //timerclass timer("defineProblem");
     //timer.start();
     bool stoppedEarly;
@@ -8,7 +8,7 @@ bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<b
     
     //getProblem()->lprint(cout);
     
-    BoolAbstractor nts(dir, "PROBLEM", node_values, node_ids, floats, interface);
+    BoolAbstractor nts(dir, "PROBLEM", node_values, node_ids, floats, interf);
 
     try{
         stoppedEarly =false;
@@ -25,7 +25,7 @@ bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<b
 }
 
 void BoolAbstractor::addToInterface(Tvalue& tv, bool_node& node) {
-    interface->add(tv, node, dir);
+    interf->add(tv, node, dir);
 }
 
 

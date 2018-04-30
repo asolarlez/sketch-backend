@@ -1,14 +1,18 @@
 #pragma once
 #include <map>
 #include <vector>
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "FakeGSL.h"
+#endif
 #include "BooleanNodes.h"
 
 class Util {
 public:
 	static map<int, int> getNodeToValMap(map<int, int>& inputMap, vector<int>& inputs) {
 		map<int, int> res;
-		for(int i = 0; i < inputs.size(); i++) {
+		for(auto i = 0; i < inputs.size(); i++) {
 			if (inputs[i] == 0 || inputs[i] == 1) {
 				res[inputMap[i]] = inputs[i];
 			}
@@ -86,7 +90,7 @@ public:
                 visitedIds.insert(node->id);
                 ids.insert(node->id);
                 const vector<bool_node*>& parents = node->parents();
-                for (int i = 0; i < parents.size(); i++) {
+                for (auto i = 0; i < parents.size(); i++) {
                     toVisit.push_back(parents[i]);
                 }
             }

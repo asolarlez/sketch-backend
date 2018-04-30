@@ -9,7 +9,7 @@
 
 // Visitor for conversion of DAG to SAT.
 class BoolAbstractor : public NodesToSolver {
-    Interface* interface;
+    Interface* interf;
     
 public:
     /*
@@ -28,7 +28,7 @@ public:
                     vector<Tvalue>& p_node_ids,
                     FloatManager& _floats,
                     Interface* _interface
-                    ) : NodesToSolver(p_dir, p_outname, p_node_values, p_node_ids, _floats), interface(_interface) {}
+                    ) : NodesToSolver(p_dir, p_outname, p_node_values, p_node_ids, _floats), interf(_interface) {}
     
     virtual void visit (AND_node &node);
     virtual void visit (OR_node &node);
@@ -61,7 +61,7 @@ public:
     
     void addToInterface(Tvalue& tv, bool_node& node);
     
-    static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, Interface* interface);
+    static bool createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bool_node*,  int>& node_values, vector<Tvalue>& node_ids, FloatManager& floats, Interface* interf);
     
 };
 

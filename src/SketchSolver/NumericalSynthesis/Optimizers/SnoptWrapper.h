@@ -2,13 +2,22 @@
 #include <iostream>
 #include <vector>
 #include <map>
+
+#ifndef _NOSNOPT
 #include "Snopt.h"
+#else
+#include "CustomSolver.h"
+#endif
+
 #include "OptimizationWrapper.h"
 #include "SymbolicEvaluator.h"
 #include "Util.h"
 #include "Interface.h"
 #include "GradUtil.h"
 #include "CommandLineArgs.h"
+
+
+
 
 using namespace std;
 
@@ -88,7 +97,11 @@ public:
 };
 
 class SnoptWrapper: public OptimizationWrapper {
+#ifndef _NOSNOPT
     SnoptSolver* snoptSolver;
+#else
+	NotSnoptSolver* snoptSolver;
+#endif
     integer n; integer neF; integer lenA;
     
     SymbolicEvaluator* eval;
@@ -125,7 +138,14 @@ public:
         
         cout << "nef: " << neF << endl;
         cout << "n: " << n << endl;
-        snoptSolver = new SnoptSolver(n, neF, lenA);
+
+#ifndef _NOSNOPT
+		snoptSolver = new SnoptSolver(n, neF, lenA);
+#else
+		snoptSolver = new NotSnoptSolver(n, neF, lenA);
+#endif
+
+        
         minState = gsl_vector_alloc(n);
         t = gsl_vector_alloc(n);
         t1 = gsl_vector_alloc(n);
@@ -244,3 +264,5 @@ public:
     }
     
 };
+
+

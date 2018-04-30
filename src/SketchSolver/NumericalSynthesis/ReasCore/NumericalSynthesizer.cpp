@@ -8,7 +8,7 @@ gsl_vector* SnoptEvaluator::grad;
 using namespace std;
 
 
-NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interface(_interface) {
+NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interf(_interface) {
     softConflictLit = _softConflictLit;
     initialized = false;
     
@@ -31,10 +31,10 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 void NumericalSynthesizer::init() {
     initialized = true;
     if (PARAMS->verbosity > 2) {
-        cout << "NInputs: " << interface->size() << endl;
+        cout << "NInputs: " << interf->size() << endl;
     }
     
-    for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
+    for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
         cout << it->first << " -> " << (*dag)[it->second->nodeid]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->second->nodeid]) << "]" << endl;
     }
     
@@ -89,9 +89,13 @@ void NumericalSynthesizer::init() {
     if (PARAMS->useSnopt) {
         opt = new SnoptWrapper(eval, ncontrols, xlow, xupp, numConstraints);
     } else {
+#ifndef _NOGSL
         opt = new GradientDescentWrapper(eval, ncontrols, xlow, xupp);
+#else
+		Assert(false, "NO GSL");
+#endif
     }
-    ConflictGenerator* cg = new SimpleConflictGenerator(interface);
+    ConflictGenerator* cg = new SimpleConflictGenerator(interf);
     
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
@@ -99,7 +103,7 @@ void NumericalSynthesizer::init() {
         const vector<bool_node*>& parents = n->parents();
         for (int i = 0; i < parents.size(); i++) {
             bool_node* parent = parents[i];
-            if (interface->isInput(parent->id)) {
+            if (interf->isInput(parent->id)) {
                 inputs.insert(parent->id);
             } else {
                 vector<int>& parentInputs = dependentInputs[parent->id];
@@ -109,17 +113,17 @@ void NumericalSynthesizer::init() {
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
     
-    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interface, ctrls);
+    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
     
-    solver = new NumericalSolver(dag, ctrls, interface, eval, opt, cg, sg, dependentInputs, dependentCtrls);
+    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls);
     
     
 }
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
     init(); // TODO: there should be a better position for this
-    interface->resetInputConstraints();
-    cout << "Variables already set: "  << (interface->numSet()) <<  endl;
+    interf->resetInputConstraints();
+    cout << "Variables already set: "  << (interf->numSet()) <<  endl;
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
     bool sat = solver->checkSAT();
@@ -216,7 +220,7 @@ void NumericalSynthesizer::convertSuggestions(const vector<tuple<int, int, int>>
 		int v = get<2>(s[k]);
         //cout << "Suggesting " << i << " " << j <<  " " << v << endl;
         Assert(i == 0, "Multiple instances is not yet supported");
-		suggestions.push(interface->getLit(j, v));
+		suggestions.push(interf->getLit(j, v));
 	}
 }
 

@@ -28,7 +28,7 @@
 
 class NumericalSynthesizer : public Synthesizer {
 	BooleanDAG* dag;
-	Interface* interface;
+	Interface* interf;
     map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
 	NumericalSolver* solver;
     vector<pair<int, int>> conflicts; // (nodeid, val) pairs
@@ -74,23 +74,23 @@ public:
     }
     
     virtual void backtrackInputs(int level) {
-        interface->backtrack(level);
+        interf->backtrack(level);
     }
     
     virtual void pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& conf) {
-        int nodeid = interface->getNodeId(inputid);
+        int nodeid = interf->getNodeId(inputid);
         Assert(instance == 0, "Multiple instances is not yet supported");
-        int oldval = interface->getValue(nodeid);
+        int oldval = interf->getValue(nodeid);
         if (oldval != EMPTY){
             //writing over non EMPTY values - create conflict
-            Lit l1 = interface->getLit(nodeid, val);
-            Lit l2 = interface->getLit(nodeid, oldval);
+            Lit l1 = interf->getLit(nodeid, val);
+            Lit l2 = interf->getLit(nodeid, oldval);
             conf.push(~l1);
             conf.push(~l2);
         } else {
             cout << "Setting: " << (*dag)[nodeid]->lprint() << " to " << val << endl;
             cout << "[" << Util::print(dependentCtrls[nodeid]) << "]" << endl;
-            interface->pushInput(inputid, val, dlevel);
+            interf->pushInput(inputid, val, dlevel);
         }
     }
     
@@ -99,8 +99,8 @@ public:
             int instance = conflicts[i].first;
             int nodeid = conflicts[i].second;
             Assert(instance == 0, "Multiple instances is not yet supported");
-            int val = interface->getValue(nodeid);
-            Lit l = interface->getLit(nodeid, val);
+            int val = interf->getValue(nodeid);
+            Lit l = interf->getLit(nodeid, val);
             conf.push(~l);
         }
         if (true) { //(softConflict) {

@@ -1,6 +1,9 @@
 #pragma once
 
-#include "NumericalSolver.h"
+
+#include <set>
+
+class Interface;
 
 
 class gsl_vector;

@@ -29,7 +29,7 @@ class REASSolver
     void declareControl(CTRL_node* cnode);
     bool solveOptimization();
     bool find(VarStore& controls);
-    void createBooleanAbstraction(Interface* interface);
+    void createBooleanAbstraction(Interface* interf);
     
     
     public:

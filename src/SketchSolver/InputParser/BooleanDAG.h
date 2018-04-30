@@ -51,7 +51,7 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
 
 //extern timerclass TTMMPP;
 
-struct BooleanDAG  
+class BooleanDAG  
 {
 private:
 #ifdef SCHECKMEM

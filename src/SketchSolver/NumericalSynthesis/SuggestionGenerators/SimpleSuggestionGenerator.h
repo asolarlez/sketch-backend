@@ -6,19 +6,24 @@
 #include "SuggestionGenerator.h"
 #include <map>
 #include <set>
+
+#ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#else
+#include "FakeGSL.h"
+#endif
 
 class SimpleSuggestionGenerator: public SuggestionGenerator {
     vector<int> nodesToSuggest;
-    Interface* interface;
+    Interface* interf;
     BooleanDAG* dag;
     map<string, int>& ctrls;
     SimpleEvaluator* seval;
 public:
-    SimpleSuggestionGenerator(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls): dag(_dag), interface(_interface), ctrls(_ctrls) {
+    SimpleSuggestionGenerator(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls): dag(_dag), interf(_interface), ctrls(_ctrls) {
         seval = new SimpleEvaluator(*dag, ctrls);
-        seval->setInputs(interface);
-        for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
+        seval->setInputs(interf);
+        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
             int nodeid = it->second->nodeid;
             bool_node* n = (*dag)[nodeid];
             if (Util::hasArraccChild(n)) {
@@ -35,7 +40,7 @@ public:
         
         vector<tuple<double, int, int>> s;
         
-        for (auto it = interface->varsMapping.begin(); it != interface->varsMapping.end(); it++) {
+        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
             int nodeid = it->second->nodeid;
             bool_node* n = (*dag)[nodeid];
             bool hasArraccChild = Util::hasArraccChild(n);
@@ -60,7 +65,7 @@ public:
         reverse(s.begin(), s.end());
         for (int k = 0; k < s.size(); k++) {
             int nodeid = get<1>(s[k]);
-            if (!interface->hasValue(nodeid)) {
+            if (!interf->hasValue(nodeid)) {
                 suggestions.push_back(make_tuple(0, nodeid, get<2>(s[k])));
             }
         }

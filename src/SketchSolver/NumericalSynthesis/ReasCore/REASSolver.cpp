@@ -121,9 +121,9 @@ bool REASSolver::find(VarStore& controls){
     
    timerclass tc("* TIME TO ADD INPUT ");
     tc.start();
-    Interface* interface = new Interface(problem->size());
-    dirFind.createNumericalSynthesizer(floats, problem, interface);
-    createBooleanAbstraction(interface);
+    Interface* interf = new Interface(problem->size());
+    dirFind.createNumericalSynthesizer(floats, problem, interf);
+    createBooleanAbstraction(interf);
     tc.stop();
     if(PARAMS->verbosity > 2){ tc.print(); }
     //Solve
@@ -171,10 +171,10 @@ bool REASSolver::find(VarStore& controls){
     return true;
 }
 
-void REASSolver::createBooleanAbstraction(Interface* interface){
+void REASSolver::createBooleanAbstraction(Interface* interf){
     node_ids.resize(problem->size());
     try{
-        stoppedEarly = BoolAbstractor::createConstraints(*problem, dirFind, node_values, node_ids, floats, interface);
+        stoppedEarly = BoolAbstractor::createConstraints(*problem, dirFind, node_values, node_ids, floats, interf);
     }catch(BasicError& e){
         dirFind.nextIteration();
         if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }

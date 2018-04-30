@@ -1,6 +1,8 @@
 #include "GradientDescent.h"
 #include <iostream>
 
+#ifndef _NOGSL
+
 void GradientDescent::init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p) {
 	myfundf.f = f;
 	myfundf.df = df;
@@ -56,3 +58,5 @@ double GradientDescent::optimize(gsl_vector* initX) {
 	gsl_multimin_fdfminimizer_restart(minidf);
 	return val;
 }
+
+#endif
