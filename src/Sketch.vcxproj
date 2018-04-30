@@ -294,7 +294,6 @@
     <ClCompile Include="SketchSolver\NumericalSynthesis\ReasCore\NumericalSynthesizer.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\ReasCore\REASSolver.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Solvers\NumericalSolver.cpp" />
-    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicAnalyzers\GradientAnalyzer.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\AutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\BoolAutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\IteAutoDiff.cpp" />
