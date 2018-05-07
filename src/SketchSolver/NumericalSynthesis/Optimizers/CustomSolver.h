@@ -259,16 +259,17 @@ public:
 		return sqrt(rv);
 	}
 
-	void normalize(doublereal*v, integer len) {
+	double normalize(doublereal*v, integer len) {
 		double norm = l2norm(v, len);
 		if (norm > 0.0001) {
 			for (int i = 0; i < len; ++i) {
 				v[i] = v[i] / norm;
 			}
 		}
+		return norm;
 	}
 
-	void reduce(double* in, double*Fval, int lenOut, int lenIn, double* out) {
+	double reduce(double* in, double*Fval, int lenOut, int lenIn, double* out) {
 		double minval = 0.0;
 		for (int j = 0; j < lenIn; ++j) {
 			if (Fval[j] < minval) {
@@ -276,14 +277,21 @@ public:
 			}
 		}
 
+		double rv = 0.0;
+		for (int j = 0; j < lenIn; ++j) {
+			if (Fval[j] < 0.0) {
+				rv += (Fval[j] / minval)*Fval[j];
+			}
+		}
 		for (int i = 0; i < lenOut; ++i) {
 			out[i] = 0.0;
-			for (int j = 0; j < lenIn; ++j) {
+			for (int j = 0; j < lenIn; ++j) {				
 				if (Fval[j] < 0.0) {
 					out[i] += (Fval[j] / minval) * in[i + j*lenOut];
 				}
 			}
 		}
+		return 0.01-rv;
 	}
 
 	void update(doublereal* x, doublereal* G, doublereal gamma, int n) {
@@ -330,16 +338,17 @@ public:
 				workspace, &lencu, iu, &leniu, ru, &lenru);
 			
 			
-			reduce(G, F, n, neF, Gtotal);
+			double fv = reduce(G, F, n, neF, Gtotal);
 
 			if (checkexit(G, F, neF, lenG)) {
+				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;
 				return 2;
 			}
 			if (checkstall(Gtotal, F, neF, n)) {
 				return 12;
 			}
 			int zigzag = 0;
-			normalize(Gtotal, n);			
+			double gnorm = normalize(Gtotal, n);			
 			if (frst) {
 				gamma = 1.0;
 				frst = false;
@@ -369,8 +378,8 @@ public:
 				
 			}
 			
-			double fgamma = gamma * max(1.0, partialNorm(F, neF)) / 100.0;
-			cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << " "<<Gtotal[0]<<"  "<<Gtotal[1]<<"  "<< gamma<< "  "<< fgamma<<endl;
+			double fgamma = gamma * (fv / gnorm);
+			//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << " "<<Gtotal[0]<<"  "<<Gtotal[1]<<"  "<< gamma<< "  "<< fgamma<<"  "<<fv<<"  "<<gnorm<<endl;
 			update(x, Gtotal, fgamma, n);
 			// x = x - \gamma * G. 
 		} while (true);

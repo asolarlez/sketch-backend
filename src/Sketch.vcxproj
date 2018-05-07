@@ -179,8 +179,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\core;$(SolutionDir)\MiniSat\mtl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\core;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\SketchSolver\NumericalSynthesis\BoolAbstraction;$(SolutionDir)\SketchSolver\NumericalSynthesis\ConflictGenerators;$(SolutionDir)\SketchSolver\NumericalSynthesis\DataStructures;$(SolutionDir)\SketchSolver\NumericalSynthesis\IntervalProp;$(SolutionDir)\SketchSolver\NumericalSynthesis\Optimizers;$(SolutionDir)\SketchSolver\NumericalSynthesis\ReasCore;$(SolutionDir)\SketchSolver\NumericalSynthesis\Solvers;$(SolutionDir)\SketchSolver\NumericalSynthesis\SuggestionGenerators;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicAnalyzers;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicEvaluators;$(SolutionDir)\SketchSolver\NumericalSynthesis\Test;$(SolutionDir)\SketchSolver\NumericalSynthesis\Utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_NOGSL;_NOSNOPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
