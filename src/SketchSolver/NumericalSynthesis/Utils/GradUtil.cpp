@@ -18,11 +18,11 @@ void GradUtil::allocateTempVectors(int size) {
 }
 
 void GradUtil::clearTempVectors() {
-    delete tmp;
-    delete tmp1;
-    delete tmp2;
-    delete tmp3;
-    delete tmpT;
+    gsl_vector_free(tmp);
+	gsl_vector_free(tmp1);
+	gsl_vector_free(tmp2);
+	gsl_vector_free(tmp3);
+	gsl_vector_free(tmpT);
 }
 
 double GradUtil::findMin(double val1, double val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* l) {

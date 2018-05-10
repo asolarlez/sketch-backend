@@ -23,7 +23,7 @@ public:
 	bool set; // TODO: this bit is not necessary if the default dist is 0
 	DistanceGrad(double d, gsl_vector* g): dist(d), grad(g), set(true) {}
 	~DistanceGrad(void) {
-		delete grad;
+		gsl_vector_free(grad);
 	}
 	string print() {
 		stringstream str;

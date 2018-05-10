@@ -13,7 +13,7 @@ RangeDiff::RangeDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string
 }
 
 RangeDiff::~RangeDiff(void) {
-	delete ctrls;
+	gsl_vector_free(ctrls);
 	for (int i = 0; i < ranges.size(); i++) {
 		if (ranges[i] != NULL) {
 			delete ranges[i];

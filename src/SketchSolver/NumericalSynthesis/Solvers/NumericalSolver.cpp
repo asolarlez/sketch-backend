@@ -51,6 +51,7 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
 
 NumericalSolver::~NumericalSolver(void) {
     GradUtil::clearTempVectors();
+	gsl_vector_free(state);
 }
 
 void NumericalSolver::setState(gsl_vector* s) {

@@ -30,8 +30,8 @@ public:
 		singleton = false;
 	}
 	~IntervalGrad(void) {
-		delete lgrad;
-		delete hgrad;
+		gsl_vector_free(lgrad);
+		gsl_vector_free(hgrad);
 	}
 	double getLow() const { return low; }
 	double getHigh() const { return high; }

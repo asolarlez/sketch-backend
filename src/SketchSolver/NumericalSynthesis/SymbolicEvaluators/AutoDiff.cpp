@@ -12,7 +12,7 @@ AutoDiff::AutoDiff(BooleanDAG& bdag_p, FloatManager& _floats, const map<string, 
 }
 
 AutoDiff::~AutoDiff(void) {
-	delete ctrls;
+	gsl_vector_free(ctrls);
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] != NULL) {
 			delete values[i];

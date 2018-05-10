@@ -11,6 +11,10 @@ SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrl
 	ctrls = gsl_vector_alloc(nctrls);
 }
 
+SimpleEvaluator::~SimpleEvaluator(){
+	gsl_vector_free(ctrls); 
+}
+
 void SimpleEvaluator::visit( SRC_node& node ) {
   //cout << "Visiting SRC node" << endl;
 	Assert(false, "NYI: SimpleEvaluator for src");

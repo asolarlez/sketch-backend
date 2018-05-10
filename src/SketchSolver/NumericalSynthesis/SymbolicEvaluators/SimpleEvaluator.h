@@ -30,7 +30,8 @@ class SimpleEvaluator: NodeVisitor
     
 public:
     SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
-    
+	virtual ~SimpleEvaluator();
+
     virtual void visit( SRC_node& node );
     virtual void visit( DST_node& node );
     virtual void visit( CTRL_node& node );

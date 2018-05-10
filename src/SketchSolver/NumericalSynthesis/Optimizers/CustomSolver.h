@@ -182,6 +182,7 @@ public:
 	}
 
 	~NotSnoptSolver() {
+		gsl_vector_free(result);
 		delete[]iAfun; delete[]jAvar; delete[]A;
 		delete[] Gtotal; delete[] GtotOld;
 		delete[]iGfun; delete[]jGvar;
@@ -333,18 +334,34 @@ public:
 		doublereal ru[2];
 		doublereal gamma = 1.0;
 		bool frst = true;
+		double prevfv = 100000000.0;
+ 
+		int regressions = 0;
 		do {
 			mydf(&status, &this->n, x, &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
 				workspace, &lencu, iu, &leniu, ru, &lenru);
 			
+
+			
+
 			
 			double fv = reduce(G, F, n, neF, Gtotal);
+
+			if (fv > prevfv*5.0) {
+				regressions++;				
+			}
+
+			prevfv = fv;
+			
+			
+
+
 
 			if (checkexit(G, F, neF, lenG)) {
 				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;
 				return 2;
 			}
-			if (checkstall(Gtotal, F, neF, n)) {
+			if (checkstall(Gtotal, F, neF, n) || gamma < 0.0000001 || regressions > 10) {
 				return 12;
 			}
 			int zigzag = 0;

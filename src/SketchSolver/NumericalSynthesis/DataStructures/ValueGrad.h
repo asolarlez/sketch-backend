@@ -23,7 +23,7 @@ public:
 	bool set;
 	ValueGrad(double _val, gsl_vector* _grad): val(_val), grad(_grad), set(false) {}
 	~ValueGrad(void) {
-		delete grad;
+		gsl_vector_free(grad);
 	}
 	double getVal() const { return val; }
 	gsl_vector* getGrad() const { return grad; }

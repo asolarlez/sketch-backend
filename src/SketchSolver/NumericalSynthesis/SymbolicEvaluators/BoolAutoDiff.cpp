@@ -13,7 +13,7 @@ BoolAutoDiff::BoolAutoDiff(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p): 
 }
 
 BoolAutoDiff::~BoolAutoDiff(void) {
-	delete ctrls;
+	gsl_vector_free(ctrls);
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] != NULL) {
 			delete values[i];
