@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(SKETCH, 1.4.0, arnold@cs.berkeley.edu)
+AC_INIT(SKETCH, 1.7.5, asolar@csail.mit.edu)
 AC_CONFIG_HEADER([config.h])
-LT_INIT([shared static])
+LT_INIT([disable-shared static])
 AM_INIT_AUTOMAKE
 AC_PREFIX_DEFAULT(/usr)
 

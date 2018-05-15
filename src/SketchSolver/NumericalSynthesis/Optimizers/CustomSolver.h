@@ -22,7 +22,7 @@ typedef int(DFT)(integer*, integer *, doublereal [],
 	integer    [], integer *,
 	doublereal [], integer *);
 
-#include "util.h"
+#include "Util.h"
 
 
 #if 0
