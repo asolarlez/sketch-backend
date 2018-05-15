@@ -6,22 +6,20 @@ include SolverInterfaces/solvers.mk
 
 # TODO: the SBit executable is "no install" for now; it should be a library
 bin_PROGRAMS = cegis
-#gdtest igtest snopttest snoptitest
-noinst_LTLIBRARIES = libcegis.a
+noinst_LIBRARIES = libcegis.a
 cegis_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
-gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
-igtest_CXXFLAGS = $(cegis_CXXFLAGS)
-snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
-snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
+#gdtest_CXXFLAGS = $(cegis_CXXFLAGS)
+#igtest_CXXFLAGS = $(cegis_CXXFLAGS)
+#snopttest_CXXFLAGS = $(cegis_CXXFLAGS)
+#snoptitest_CXXFLAGS = $(cegis_CXXFLAGS)
 #cegis_CFLAGS = $(cegis_CXXFLAGS)
 libcegis_a_CXXFLAGS = $(SOLVER) $(SOLVER_INCS) -std=gnu++11 -ISolverInterfaces/ -IInputParser/ -INumericalSynthesis/ReasCore/ -INumericalSynthesis/BoolAbstraction/ -INumericalSynthesis/Solvers/ -INumericalSynthesis/SymbolicEvaluators/ -INumericalSynthesis/SymbolicAnalyzers/ -INumericalSynthesis/DataStructures/ -INumericalSynthesis/Optimizers/ -INumericalSynthesis/IntervalProp/ -INumericalSynthesis/ConflictGenerators/ -INumericalSynthesis/SuggestionGenerators/ -INumericalSynthesis/Utils/ -INumericalSynthesis/ -I/usr/local/include -lgsl -lgslcblas -lsnopt_cpp
 libcegis_a_CFLAGS = $(cegis_CXXFLAGS)
 cegis_LDADD = libcegis.a ../MiniSat/libminisat.a
-gdtest_LDADD = libcegis.a
-igtest_LDADD = libcegis.a
-snopttest_LDADD = libcegis.a
-snoptitest_LDADD = libcegis.a
-libcegis_a_LIBADD = ../MiniSat/libminisat.la -ldl
+#gdtest_LDADD = libcegis.a
+#igtest_LDADD = libcegis.a
+#snopttest_LDADD = libcegis.a
+#snoptitest_LDADD = libcegis.a
 #libcegis_la_LDFLAGS = -version-infp 1:0:0
 cegis_LDFLAGS = $(AM_LDFLAGS) -static
 EXTRA_DIST = InputParser/InputLexer.ll InputParser/InputParser.yy
