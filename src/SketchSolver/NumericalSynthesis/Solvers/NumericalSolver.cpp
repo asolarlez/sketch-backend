@@ -15,6 +15,7 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
     GradUtil::allocateTempVectors(ncontrols);
 	
 	state = gsl_vector_alloc(ncontrols);
+	gsl_vector_set_zero(state);
 	
     previousSAT = false;
     fullSAT = false;

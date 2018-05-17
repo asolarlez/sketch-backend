@@ -272,21 +272,21 @@ public:
 
 	double reduce(double* in, double*Fval, int lenOut, int lenIn, double* out) {
 		double minval = 0.0;
-		for (int j = 0; j < lenIn; ++j) {
+		for (int j = 1; j < lenIn; ++j) {
 			if (Fval[j] < minval) {
 				minval = Fval[j];
 			}
 		}
 
 		double rv = 0.0;
-		for (int j = 0; j < lenIn; ++j) {
+		for (int j = 1; j < lenIn; ++j) {
 			if (Fval[j] < 0.0) {
 				rv += (Fval[j] / minval)*Fval[j];
 			}
 		}
 		for (int i = 0; i < lenOut; ++i) {
 			out[i] = 0.0;
-			for (int j = 0; j < lenIn; ++j) {				
+			for (int j = 1; j < lenIn; ++j) {				
 				if (Fval[j] < 0.0) {
 					out[i] += (Fval[j] / minval) * in[i + j*lenOut];
 				}
@@ -307,18 +307,28 @@ public:
 		}
 	}
 
-	bool checkexit(doublereal* G, doublereal* F, int neF, int lenG) {
-		for (int i = 0; i < neF; ++i) {
+	bool checkexit(doublereal* G, doublereal* F, int neF, int n) {
+		for (int i = 1; i < neF; ++i) {
 			if (F[i] < 0.0) {
+				return false;
+			}
+		}
+		for (int i = 0; i < n; ++i) {
+			if (G[i] * G[i] > 0.00001) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	bool checkstall(doublereal* G, doublereal* F, int neF, int lenG) {
+	bool checkstall(doublereal* G, doublereal* Gopt, int neF, int lenG) {
 		for (int i = 0; i < lenG; ++i) {
 			if (G[i]*G[i] > 0.00001) {
+				return false;
+			}
+		}
+		for (int i = 0; i < lenG; ++i) {
+			if (Gopt[i] * Gopt[i] > 0.00001) {
 				return false;
 			}
 		}
@@ -337,6 +347,9 @@ public:
 		double prevfv = 100000000.0;
  
 		int regressions = 0;
+		int satflip = 0;
+		bool lastsat = true;
+		cout << "[ ";
 		do {
 			mydf(&status, &this->n, x, &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
 				workspace, &lencu, iu, &leniu, ru, &lenru);
@@ -353,51 +366,79 @@ public:
 
 			prevfv = fv;
 			
-			
 
 
-
-			if (checkexit(G, F, neF, lenG)) {
+			if (checkexit(G, F, neF, n)) {
 				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;
 				return 2;
 			}
-			if (checkstall(Gtotal, F, neF, n) || gamma < 0.0000001 || regressions > 10) {
+			if (checkstall(Gtotal, G, neF, n) || gamma < 0.0000001 || regressions > 10) {
 				return 12;
 			}
 			int zigzag = 0;
 			double gnorm = normalize(Gtotal, n);			
-			if (frst) {
-				gamma = 1.0;
-				frst = false;
-				cpy(GtotOld, Gtotal, n);
-			}else {
-				double dd = dot(Gtotal, GtotOld, n);
-				double oldGamma = gamma;
-				if (dd > 0.2) {
-					gamma = gamma * 1.2;
-					zigzag = 0;
+			
+
+			double optnorm = normalize(G, n);
+
+			auto updOld = [&](double* GVal) {
+				if (frst) {
+					gamma = 1.0;
+					frst = false;
+					cpy(GtotOld, GVal, n);
 				}
-				if (dd < -0.2) {
-					gamma = gamma * 0.8;
-				}
-				if(dd < 0.0){
-					zigzag += 1;					
-				}
-				if (zigzag > 4) {					
-					gamma = oldGamma;
-					for (int i = 0; i < n; ++i) {
-						Gtotal[i] += GtotOld[i] * 0.4;
+				else {
+					double dd = dot(GVal, GtotOld, n);
+					double oldGamma = gamma;
+					if (dd > 0.2) {
+						gamma = gamma * 1.2;
+						zigzag = 0;
 					}
-					normalize(Gtotal, n);
+					if (dd < -0.2) {
+						gamma = gamma * 0.8;
+					}
+					if (dd < 0.0) {
+						zigzag += 1;
+					}
+					if (zigzag > 4) {
+						gamma = oldGamma;
+						for (int i = 0; i < n; ++i) {
+							GVal[i] += GtotOld[i] * 0.4;
+						}
+						normalize(GVal, n);
+					}
+
+					cpy(GtotOld, GVal, n);
 				}
-				
-				cpy(GtotOld, Gtotal, n);
-				
+			};
+
+			
+			if (gnorm > 0) {
+				lastsat = false;
+				updOld(Gtotal);
+
+				double fgamma = gamma * (fv / gnorm);
+				update(x, Gtotal, fgamma, n);
+				if (optnorm > 0) {
+					update(x, G, -fgamma/10.0, n);
+				}
+			}
+			else {
+				if (lastsat == false) {
+					satflip++;
+					if (satflip > 5) {
+						return 2;
+					}
+				}
+
+				lastsat = true;
+				for (int i = 0; i < n; ++i) { G[i] = -G[i]; }
+				updOld(G);
+				if (optnorm > 0) {
+					update(x, G, gamma*optnorm, n);
+				}
 			}
 			
-			double fgamma = gamma * (fv / gnorm);
-			//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << " "<<Gtotal[0]<<"  "<<Gtotal[1]<<"  "<< gamma<< "  "<< fgamma<<"  "<<fv<<"  "<<gnorm<<endl;
-			update(x, Gtotal, fgamma, n);
 			// x = x - \gamma * G. 
 		} while (true);
 		return 0;
