@@ -3,9 +3,11 @@
 #include "BasicError.h"
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <cmath>
 #include <functional>
 #include "CommandLineArgs.h"
+#include "FastSet.h"
 
 using namespace std;
 
@@ -51,22 +53,24 @@ float tlog(float in) {
 }
 
 
-class FloatManager {
-	map<float, int> floatIdx;
-	vector<float> floats;
+
+
+
+class FloatManager {	
+	vector<uint64_t> floats;
 	map<string, floatfun> floatfuns;
+	
 
 public:
 	const float epsilon;
-	FloatManager(float _epsilon) :epsilon(_epsilon) {
-		floatIdx[0.0] = 0;
+	FloatManager(float _epsilon) :epsilon(_epsilon) {				
 		floats.push_back(0.0);
 		floatfuns["arctan_math"] = atan;
 		floatfuns["sin_math"] = sin;
 		floatfuns["cos_math"] = cos;
 		floatfuns["tan_math"] = tan;
 		floatfuns["sqrt_math"] = sqrt;	
-		floatfuns["log_math"] = tlog;
+		floatfuns["log_math"] = tlog;	
 	}
 
 	bool hasFun(const string& name) {
@@ -80,17 +84,23 @@ public:
 		return getFloat(id);
 	}
 
-	float getFloat(int id) {
+	float getFloat(int id) {		
 		if (id < 0) {
-			return -floats[-id];
+			double v = ((double)floats[-id])*epsilon;
+			return -v;
 		}
 		else {
-			return	floats[id];
+			double v = ((double)floats[id])*epsilon;
+			return	v;
 		}
 
 	}
 
-	int getIdx(float x) {
+	int getIdx(double x) {
+		const int NPRIMES = 7;
+		int FLSIZES[NPRIMES] = { 997, 2029, 4049, 8093, 16063, 32999, 64091};
+		const uint64_t FLEMPTY = UINT64_MAX;
+
 		//floatIdx only stores positive values. Negative values will yield negative indices. 
 		//This means that negating the index will automatically negate the value that the index corresponds to.
 		//That's why zero must always be stored in index zero.
@@ -99,6 +109,48 @@ public:
 			x = -x;
 			isNeg = true;
 		}
+
+		auto maybeneg = [=](int val) {
+			return isNeg ? val : -val;
+		};
+		
+		double iidx = (x-(epsilon/2)) / epsilon;		
+		uint64_t idx = max(0.0, floor(iidx));		
+		
+		Assert(idx != FLEMPTY, "Doesn't work! nuyftgjk,;atg");
+		int lidx;
+		for (int i = 0; i < NPRIMES + 20; ++i) {
+			if (i < NPRIMES) {
+				lidx = idx % FLSIZES[i];
+			}
+			else {
+				lidx = (idx % FLSIZES[NPRIMES-3]) + FLSIZES[NPRIMES - 2] + i;
+			}
+			
+			if (lidx < floats.size()) {
+				if (floats[lidx] == FLEMPTY) {
+					floats[lidx] = idx;
+					return maybeneg(lidx);
+				}
+				if (floats[lidx] == idx) {
+					return maybeneg(lidx);
+				}
+				else {
+					continue;
+				}
+			}
+			else {
+				floats.resize(lidx + 2, FLEMPTY);
+				floats[lidx] = idx;
+				return maybeneg(lidx);
+			}
+		}		
+		Assert(false, "NO MORE ROOM!!");
+		return -1;
+		
+
+		/*
+
 		auto lbd = floatIdx.lower_bound(x - epsilon + (epsilon / 100));
 
 		if (lbd != floatIdx.end()) {
@@ -124,6 +176,7 @@ public:
 				}
 			}
 		}
+		
 
 
 		int pos = floatIdx.size();
@@ -136,6 +189,7 @@ public:
 		else {
 			return pos;
 		}
+		*/
 	}
 };
 

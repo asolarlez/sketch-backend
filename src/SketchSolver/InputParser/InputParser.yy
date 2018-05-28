@@ -145,7 +145,7 @@ InList: T_ident {
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$1); 
 	}else{
 		if(Gvartype==FLOAT){
-			currentBD->create_inputs(-1, OutType::FLOAT, *$1); 
+			currentBD->create_inputs(2, OutType::FLOAT, *$1); 
 		}else{
 			currentBD->create_inputs(-1, OutType::BOOL, *$1); 
 		}
@@ -161,7 +161,7 @@ InList: T_ident {
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$1); 
 	}else{
 		if(Gvartype==FLOAT){
-			currentBD->create_inputs(-1, OutType::FLOAT, *$1); 
+			currentBD->create_inputs(2, OutType::FLOAT, *$1); 
 		}else{
 			currentBD->create_inputs(-1, OutType::BOOL, *$1); 
 		}
@@ -181,7 +181,7 @@ ParamDecl: T_vartype T_ident {
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$2); 
 	}else{
 		if($1 == FLOAT){
-			currentBD->create_inputs(-1, OutType::FLOAT, *$2); 
+			currentBD->create_inputs(2, OutType::FLOAT, *$2); 
 		}else{
 			currentBD->create_inputs(-1, OutType::BOOL, *$2); 
 		}
@@ -224,7 +224,7 @@ ParamDecl: T_vartype T_ident {
 		currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT_ARR , *$6, $4); 
 	}else{
 		if($1 == FLOAT){
-			currentBD->create_inputs(-1, OutType::FLOAT_ARR, *$6, $4); 
+			currentBD->create_inputs(2, OutType::FLOAT_ARR, *$6, $4); 
 		}else{
 			currentBD->create_inputs(-1, OutType::BOOL_ARR, *$6, $4); 
 		}
@@ -718,7 +718,7 @@ Term: Constant {
 			$$ = currentBD->create_inputs( 2 /*NINPUTS*/, OutType::INT , *$1); 
 		}else{
 			if($3==FLOAT){
-				$$ = currentBD->create_inputs(-1,OutType::FLOAT, *$1);
+				$$ = currentBD->create_inputs(2,OutType::FLOAT, *$1);
 			}else{
 				$$ = currentBD->create_inputs(-1,OutType::BOOL, *$1);
 			}

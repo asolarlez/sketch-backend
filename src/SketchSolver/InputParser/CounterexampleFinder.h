@@ -113,7 +113,7 @@ public:
 	}
 
 
-	bool parseLine(ifstream& in) {
+	bool parseLine(ifstream& in, FloatManager& floats) {
 
 		auto vsi = inputs->begin();
 		VarStore::objP* arrit = NULL;
@@ -125,9 +125,15 @@ public:
 		int depth = 0;
 		bool hasCaptured = true;
 		bool outOfRange = false;
+		bool isFloat = false;
+		double floatVal = 0.0;
 
 		auto regval = [&]() {
 			if (!hasCaptured) {
+
+				if (isFloat) {
+					cur = floats.getIdx(floatVal);
+				}
 
 				if (depth == 0) {
 					//we just finished a number, and we are not inside an array.
@@ -145,6 +151,7 @@ public:
 		auto reset = [&]() {
 			cur = 0;
 			neg = false;
+			isFloat = false;
 		};
 
 		while (ch != '\n') {
@@ -187,8 +194,19 @@ public:
 			}
 			default:
 				if (ch >= '0' && ch <= '9') {
-					hasCaptured = false;
-					cur = cur * 10 + (ch - '0');
+					if (isFloat) {
+						floatVal = floatVal + ((double)(ch - '0') / cur);
+						cur = cur * 10;
+					}
+					else {
+						hasCaptured = false;
+						cur = cur * 10 + (ch - '0');
+					}
+				}
+				if (ch =='.') {
+					isFloat = true;
+					floatVal = (double)cur;
+					cur = 10;
 				}
 
 			}
@@ -206,16 +224,24 @@ public:
 	}
 
 
-	Result fromFile(const string& fname) {
+	Result fromFile(const string& fname, FloatManager& floats) {
 		ifstream file(fname);
 		bool ok = true;
+
+		if (!file.is_open() || file.fail()) {
+			Assert(false, "File " << fname << " could not be opened!!");
+			return UNSAT;
+		}
+
 		while (!file.eof()) {
-			ok = parseLine(file);	
+			ok = parseLine(file, floats);	
 			if (!ok) {
 				file.close();
 				return MOREBITS;
 			}
-			inputs->printContent(cout);
+			if (PARAMS->verbosity > 12) {
+				inputs->printContent(cout);
+			}
 			bool rv = this->run(*inputs);
 			if (rv) {
 				return FOUND;

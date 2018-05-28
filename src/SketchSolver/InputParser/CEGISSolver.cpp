@@ -14,6 +14,9 @@
 
 //extern CommandLineArgs* PARAMS;
 
+
+
+
 void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 	curProblem = problems.size();
 	problems.push_back(problem);
@@ -1128,7 +1131,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
 					VarStore& tmpin = input;
 					eval.init(tmpin);
-					CounterexampleFinder::Result res = eval.fromFile(files[curProblem]);
+					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats);
 					
 					while (res == CounterexampleFinder::MOREBITS) {
 						BooleanDAG* dag = getProblem();
@@ -1136,7 +1139,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 							cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (dag->getIntSize() + 1) << endl;
 						}
 						growInputs(dag, oriProblem, (problemLevel() - (hardcode ? 1 : 0)) == 1);
-						res = eval.fromFile(files[curProblem]);
+						res = eval.fromFile(files[curProblem], floats);
 					}					
 					
 					rv = (res == CounterexampleFinder::FOUND);
