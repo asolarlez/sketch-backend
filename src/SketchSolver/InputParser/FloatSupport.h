@@ -111,7 +111,7 @@ public:
 		}
 
 		auto maybeneg = [=](int val) {
-			return isNeg ? val : -val;
+			return isNeg ? -val : val;
 		};
 		
 		double iidx = (x-(epsilon/2)) / epsilon;		
