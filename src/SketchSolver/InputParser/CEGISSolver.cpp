@@ -1261,10 +1261,10 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 			int j;
 			int sv = getSolverVal(node, check_node_ids, mngCheck, &j);
 			if (node->getOtype() == OutType::FLOAT) {
-				cout << " " << floats.getFloat(sv) << " vs " << floats.getFloat(ev);
+				cout << "FLT " << floats.getFloat(sv) << " vs " << floats.getFloat(ev);
 			}
 			else {
-				cout << " " << sv << " vs " << ev;
+				cout << "INT " << sv << " vs " << ev;
 			}			
 			cout << endl;
 			check_node_ids[j].print(cout, &mngCheck);

@@ -5,6 +5,7 @@
 #include <cassert>
 #include "guardedVal.h"
 #include "SATSolver.h"
+#include "FloatSupport.h"
 using namespace std;
 
 
@@ -256,6 +257,16 @@ public:
 
 	return out;
     }
+
+	void printFloats(ostream& out, FloatManager& fm) const {
+		out << "{" << (neg ? -id : id);
+		out << " [ ";
+		for (int i = 0; i < size; i++)  
+			out << num_ranges[i].guard<<":"<< fm.getFloat(num_ranges[i].value)<<"("<< num_ranges[i].value<<"), ";
+		out << " ] ";
+		out << "}";
+
+	}
 
 	int eval(SATSolver* solv)const{
 		if ( isSparse () ){

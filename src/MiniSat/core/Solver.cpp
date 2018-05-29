@@ -1659,6 +1659,45 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 }
 
 
+bool Solver::checkIfPossible(Lit* aa, int n) {
+	
+
+	auto lightTry = [=](Lit a) {
+		if (!ok) {
+			return false;
+		}
+		lbool lv = value(a);
+		//if it already has a value, we just check that it's compatible.
+		if (lv == l_True) {
+			return true;
+		}
+		if (lv == l_False) {
+			return false;
+		}
+		newDecisionLevel();
+		uncheckedEnqueue(a);
+		Clause* confl = propagate();
+		if (confl == NULL) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	};
+
+	int lv = this->decisionLevel();
+	for (int i = 0; i < n; ++i) {
+		bool tmp = lightTry(aa[i]);
+		if (!tmp) {
+			cancelUntil(lv);//go back to the level where we started;
+			return false;
+		}
+	}
+	cancelUntil(lv);
+	return true;
+}
+
+
 bool Solver::tryAssignment(Lit a){
 	if (!ok) {
 		return false;

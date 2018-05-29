@@ -59,7 +59,7 @@ float tlog(float in) {
 class FloatManager {	
 	vector<uint64_t> floats;
 	map<string, floatfun> floatfuns;
-	
+	int count;
 
 public:
 	const float epsilon;
@@ -71,6 +71,11 @@ public:
 		floatfuns["tan_math"] = tan;
 		floatfuns["sqrt_math"] = sqrt;	
 		floatfuns["log_math"] = tlog;	
+		count = 0;
+	}
+
+	int size() {
+		return count;
 	}
 
 	bool hasFun(const string& name) {
@@ -80,11 +85,11 @@ public:
 		return FloatFun(*this, floatfuns[name]);
 	}
 
-	float operator()(int id) {
+	double operator()(int id) {
 		return getFloat(id);
 	}
 
-	float getFloat(int id) {		
+	double getFloat(int id) {		
 		if (id < 0) {
 			double v = ((double)floats[-id])*epsilon;
 			return -v;
@@ -97,8 +102,11 @@ public:
 	}
 
 	int getIdx(double x) {
-		const int NPRIMES = 7;
-		int FLSIZES[NPRIMES] = { 997, 2029, 4049, 8093, 16063, 32999, 64091};
+		const int NPRIMES = 9;
+		const int FLSIZES[NPRIMES] = { 997, 2029, 4049, 8093, 16063, 32999, 64091, 125659, 265117};
+		const int NSTEPS = 36;
+		int STEPS[NSTEPS] = { 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+			                //0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 		const uint64_t FLEMPTY = UINT64_MAX;
 
 		//floatIdx only stores positive values. Negative values will yield negative indices. 
@@ -119,17 +127,21 @@ public:
 		
 		Assert(idx != FLEMPTY, "Doesn't work! nuyftgjk,;atg");
 		int lidx;
-		for (int i = 0; i < NPRIMES + 20; ++i) {
-			if (i < NPRIMES) {
-				lidx = idx % FLSIZES[i];
+		int prev = -1;		
+		for (int i = 0; i < NSTEPS; ++i) {
+			int cur = STEPS[i];
+			if (cur != prev) {				
+				lidx = idx %FLSIZES[cur];
 			}
 			else {
-				lidx = (idx % FLSIZES[NPRIMES-3]) + FLSIZES[NPRIMES - 2] + i;
+				lidx = (idx %FLSIZES[cur-1]) + FLSIZES[cur - 1] + i;
 			}
+			prev = cur;
 			
 			if (lidx < floats.size()) {
 				if (floats[lidx] == FLEMPTY) {
 					floats[lidx] = idx;
+					++count;
 					return maybeneg(lidx);
 				}
 				if (floats[lidx] == idx) {
@@ -142,10 +154,11 @@ public:
 			else {
 				floats.resize(lidx + 2, FLEMPTY);
 				floats[lidx] = idx;
+				++count;
 				return maybeneg(lidx);
 			}
 		}		
-		Assert(false, "NO MORE ROOM!!");
+		Assert(false, "NO MORE ROOM!! size="<<count);
 		return -1;
 		
 

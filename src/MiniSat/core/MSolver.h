@@ -131,8 +131,9 @@ public:
 
 	void	regInput	(int in);		//Armando: Register an input var. What distinguishes these vars is that conflicts on them are really really valuable.
 
-	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
-	bool tryAssignment(Lit a);
+	bool assertIfPossible(Lit a);		// Asserts lit a if possible, but if not possible, then returns false and also sets ~a (since it knows ~a must be true).
+	bool tryAssignment(Lit a); // Tries to set a. If it succeeds, sets it and returns true. If it fails, returns false, but may also end up backtracking other assignments it knows to be false.
+	bool checkIfPossible(Lit* a, int n); // Checks if a series of assignments is possible without actually making those assignments. 
 
 	void addUfun(int funid, UfunSummary* ufs);
 

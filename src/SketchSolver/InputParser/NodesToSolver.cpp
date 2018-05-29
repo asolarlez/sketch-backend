@@ -979,10 +979,18 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 		}
 	}
 	else {
-
+		bool checkFeasible = false;
+		if (mval.getSize() * fval.getSize() > 256) {
+			checkFeasible = true;
+		}
 		for (int i = 0; i < mval.getSize(); ++i) {
-			for (int j = 0; j < fval.getSize(); ++j) {
+			for (int j = 0; j < fval.getSize(); ++j) {				
 
+				if (checkFeasible) {
+					if (!dir.checkIfPossible(mval.getId(i), fval.getId(j))) {
+						continue;
+					}
+				}
 				int quant = doArithExpr(mval[i], fval[j], mval.getId(i), fval.getId(j), comp);
 				
 				qnumbers[quant].push_back(i);
@@ -1680,7 +1688,7 @@ bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 			FloatFun f = floats.getFun(name);
 			for (int i = 0; i < mval.getSize(); ++i) {
 				int quant = f(mval[i]);
-				qnumbers[quant].push_back(mval.getId(i));
+				qnumbers[quant].push_back(mval.getId(i));				
 			}
 		}
 		
@@ -3354,7 +3362,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
-			
 		
 		//cout << (*node_it)->lprint() << "  ";
 		//const Tvalue& tv = node_ids[(*node_it)->id];

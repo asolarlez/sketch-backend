@@ -161,6 +161,13 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
+	 virtual bool checkIfPossible(int a, int b) {
+		 Lit la = lfromInt(a);
+		 Lit lb = lfromInt(b);
+		 Lit ll[2] = { la, lb };
+		 return s->checkIfPossible(ll, 2);
+	 }
+
 	 virtual void retractableAssertClause(int x);
 	 void addCountingHelperClause(int c[], int sz);
 
