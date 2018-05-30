@@ -161,11 +161,13 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
-	 virtual bool checkIfPossible(int a, int b) {
-		 Lit la = lfromInt(a);
-		 Lit lb = lfromInt(b);
-		 Lit ll[2] = { la, lb };
-		 return s->checkIfPossible(ll, 2);
+	 virtual bool checkIfPossible(int a, int& outlv) {
+		 Lit la = lfromInt(a);		 
+		 return s->checkIfPossible(la, outlv);
+	 }
+
+	 virtual void popCheckIfPossible(int lv) {
+		 s->popCheckIfPossible(lv);
 	 }
 
 	 virtual void retractableAssertClause(int x);

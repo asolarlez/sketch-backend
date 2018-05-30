@@ -984,17 +984,29 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 			checkFeasible = true;
 		}
 		for (int i = 0; i < mval.getSize(); ++i) {
+			int lv = -1;
+			if (checkFeasible) {
+				if (!dir.checkIfPossible(mval.getId(i), lv)) {
+					continue;
+				}
+			}
+
 			for (int j = 0; j < fval.getSize(); ++j) {				
 
 				if (checkFeasible) {
-					if (!dir.checkIfPossible(mval.getId(i), fval.getId(j))) {
+					int lv;
+					if (!dir.checkIfPossible(fval.getId(j), lv)) {
 						continue;
 					}
+					dir.popCheckIfPossible(lv);
 				}
 				int quant = doArithExpr(mval[i], fval[j], mval.getId(i), fval.getId(j), comp);
 				
 				qnumbers[quant].push_back(i);
 				qnumbers[quant].push_back(j);
+			}
+			if (checkFeasible) {
+				dir.popCheckIfPossible(lv);
 			}
 		}
 	}

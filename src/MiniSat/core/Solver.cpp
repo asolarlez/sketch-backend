@@ -1659,7 +1659,11 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 }
 
 
-bool Solver::checkIfPossible(Lit* aa, int n) {
+void Solver::popCheckIfPossible(int lv) {	
+	cancelUntil(lv);
+}
+
+bool Solver::checkIfPossible(Lit aa, int& outlv) {
 	
 
 	auto lightTry = [=](Lit a) {
@@ -1686,15 +1690,15 @@ bool Solver::checkIfPossible(Lit* aa, int n) {
 	};
 
 	int lv = this->decisionLevel();
-	for (int i = 0; i < n; ++i) {
-		bool tmp = lightTry(aa[i]);
-		if (!tmp) {
-			cancelUntil(lv);//go back to the level where we started;
-			return false;
-		}
+	bool tmp = lightTry(aa);
+	if (!tmp) {
+		cancelUntil(lv);//go back to the level where we started;
+		return false;
 	}
-	cancelUntil(lv);
-	return true;
+	else {		
+		outlv = lv;
+		return true;
+	}
 }
 
 

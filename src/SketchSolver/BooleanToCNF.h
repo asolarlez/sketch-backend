@@ -393,9 +393,13 @@ public:
 	virtual bool tryAssignment(int a){
 		return mng.tryAssignment(a);
 	}
-	virtual bool checkIfPossible(int a, int b) {
-		return mng.checkIfPossible(a, b);
+	virtual bool checkIfPossible(int a, int& outlv) {
+		return mng.checkIfPossible(a, outlv);
 	}
+	virtual void popCheckIfPossible(int lv) {
+		mng.popCheckIfPossible(lv);
+	}
+
 	void addHardAssertClause (int a);
 	void addAssumeClause (int a);
 	void addRetractableAssertClause (int a);
