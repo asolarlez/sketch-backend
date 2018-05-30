@@ -58,7 +58,7 @@ float tlog(float in) {
 
 class FloatManager {	
 	vector<uint64_t> floats;
-	vector<double> actualfloats;
+	//vector<double> actualfloats;
 	map<string, floatfun> floatfuns;
 	int count;
 
@@ -92,11 +92,11 @@ public:
 
 	double getFloat(int id) {		
 		if (id < 0) {
-			double v = actualfloats[-id]; // ((double)floats[-id])*epsilon;
+			double v =  ((double)floats[-id])*epsilon;
 			return -v;
 		}
 		else {
-			double v = actualfloats[id]; // ((double)floats[id])*epsilon;
+			double v =  ((double)floats[id])*epsilon;
 			return	v;
 		}
 
@@ -104,7 +104,7 @@ public:
 
 	int getIdx(double x) {
 		const int NPRIMES = 9;
-		const int FLSIZES[NPRIMES] = { 997, 2029, 4049, 8093, 16063, 32999, 64091, 125659, 265117};
+		const int FLSIZES[NPRIMES] = {2029, 4049, 8093, 16063, 32999, 64091, 125659, 265117, 500083};
 		const int NSTEPS = 36;
 		int STEPS[NSTEPS] = { 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
 			                //0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
@@ -140,13 +140,14 @@ public:
 			prev = cur;
 			
 			if (lidx < floats.size()) {
-				if (floats[lidx] == FLEMPTY) {
+				uint64_t tmp = floats[lidx];
+				if (tmp == FLEMPTY) {
 					floats[lidx] = idx;
-					actualfloats[lidx] = x;
+					// actualfloats[lidx] = x;
 					++count;
 					return maybeneg(lidx);
 				}
-				if (floats[lidx] == idx) {
+				if (tmp == idx) {
 					return maybeneg(lidx);
 				}
 				else {
@@ -155,9 +156,9 @@ public:
 			}
 			else {
 				floats.resize(lidx + 2, FLEMPTY);
-				actualfloats.resize(lidx + 2);
+				// actualfloats.resize(lidx + 2);
 				floats[lidx] = idx;
-				actualfloats[lidx] = x;
+				// actualfloats[lidx] = x;
 				++count;
 				return maybeneg(lidx);
 			}

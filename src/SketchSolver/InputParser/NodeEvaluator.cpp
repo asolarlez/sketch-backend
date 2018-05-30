@@ -419,6 +419,11 @@ void NodeEvaluator::visit( NEG_node& node ){
 	setbn(node, -i(*node.mother));
 }
 void NodeEvaluator::visit( CONST_node& node ){
+	if (isset[node.id]) {
+		//if it's already set, no need to set it again. it's a constant after all.
+		return;
+	}
+
 	if (node.isFloat()) {
 		setbn(node, floats.getIdx(node.getFval()));
 	} else {
