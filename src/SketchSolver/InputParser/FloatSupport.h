@@ -58,6 +58,7 @@ float tlog(float in) {
 
 class FloatManager {	
 	vector<uint64_t> floats;
+	vector<double> actualfloats;
 	map<string, floatfun> floatfuns;
 	int count;
 
@@ -91,11 +92,11 @@ public:
 
 	double getFloat(int id) {		
 		if (id < 0) {
-			double v = ((double)floats[-id])*epsilon;
+			double v = actualfloats[-id]; // ((double)floats[-id])*epsilon;
 			return -v;
 		}
 		else {
-			double v = ((double)floats[id])*epsilon;
+			double v = actualfloats[id]; // ((double)floats[id])*epsilon;
 			return	v;
 		}
 
@@ -141,6 +142,7 @@ public:
 			if (lidx < floats.size()) {
 				if (floats[lidx] == FLEMPTY) {
 					floats[lidx] = idx;
+					actualfloats[lidx] = x;
 					++count;
 					return maybeneg(lidx);
 				}
@@ -153,7 +155,9 @@ public:
 			}
 			else {
 				floats.resize(lidx + 2, FLEMPTY);
+				actualfloats.resize(lidx + 2);
 				floats[lidx] = idx;
+				actualfloats[lidx] = x;
 				++count;
 				return maybeneg(lidx);
 			}
