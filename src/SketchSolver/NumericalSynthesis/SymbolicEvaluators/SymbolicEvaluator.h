@@ -6,8 +6,11 @@
 #include <set>
 #include "Interface.h"
 
+#ifdef _NOGSL
 class gsl_vector;
-
+#else
+#include <gsl/gsl_vector.h>
+#endif
 
 class SymbolicEvaluator {
 public:

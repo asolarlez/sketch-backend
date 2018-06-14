@@ -85,7 +85,7 @@ public:
         
         //cout << "Fcounter: " << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
-            F[i] = 0.0;
+            F[i] = 1000.0;
             for (int j = 0; j < *n; j++) {
                 G[gcounter++] = gsl_vector_get(grad, j);
             }

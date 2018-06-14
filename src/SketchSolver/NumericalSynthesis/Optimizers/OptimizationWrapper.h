@@ -2,13 +2,16 @@
 
 
 #include <set>
-
+#ifndef _NOGSL
+#include <gsl/gsl_vector.h>
+#endif
 using namespace std;
 
 class Interface;
 
-
+#ifdef _NOGSL
 class gsl_vector;
+#endif
 
 class OptimizationWrapper {
 public:
