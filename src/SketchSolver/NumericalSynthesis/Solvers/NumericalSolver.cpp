@@ -46,6 +46,30 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
             }
         }
     }
+    /*int ctrlsCounter = 0;
+    for (int i = 0; i < dag->size(); i++) { 
+        bool_node* n = (*dag)[i];
+        if (n->type == bool_node::LT && interf->isInput(i)) { 
+            int ctrlId = -1;
+            if (n->mother->type == bool_node::CTRL) { 
+                string name = n->mother->get_name();
+                name.replace(name.begin(), name.begin() + 3, "");
+                ctrlId = stoi(name);
+            } else if (n->father->type == bool_node::CTRL) { 
+                string name = n->father->get_name();
+                name.replace(name.begin(), name.begin() + 3, "");
+                ctrlId = stoi(name);
+            }
+            if (ctrlId != -1) { 
+                if (ctrlId == 0) { 
+                    ctrlsCounter++;
+                }
+                inputStrings[i] = to_string(ctrlsCounter) + "," + to_string(ctrlId);
+                cout << "InputToString " << i << ":" << inputStrings[i] << endl;
+            }
+        }
+    }*/
+
 
 }
 
@@ -110,10 +134,22 @@ bool NumericalSolver::checkSAT() {
             previousSAT = false;
         }
     }
+    //cout << "Analyze " << counter++ << " 0 0 "; 
+    //printInput(); 
+    //cout << Util::print(state, " ") << endl;
     double objective = opt->getObjectiveVal();
     cout << "Objective found: " << objective << endl;
     
     return sat;
+}
+
+void NumericalSolver::printInput() { 
+    const set<int>& inputConstraints = interf->getInputConstraints();
+    for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+        if (inputStrings.find(*it) != inputStrings.end()) {
+            cout << inputStrings[*it] << "," << interf->getValue(*it) << ";";
+        }
+    }
 }
 
 void NumericalSolver::printGraphCmd(string prefix) {

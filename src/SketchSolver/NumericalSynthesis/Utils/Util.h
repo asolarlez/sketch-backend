@@ -105,6 +105,13 @@ public:
         }
         return s.str();
     }
+    static string print(const gsl_vector* v, string delimiter) {
+        stringstream s;
+        for (int i = 0; i < v->size; i++) {
+            s << gsl_vector_get(v, i) << delimiter;
+        }
+        return s.str();
+    }
     
     static string print(const vector<int>& v) {
         stringstream s;

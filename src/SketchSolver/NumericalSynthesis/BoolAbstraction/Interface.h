@@ -138,6 +138,10 @@ public:
     bool isInput(int nodeid) {
         return reverseVarsMapping.find(nodeid) != reverseVarsMapping.end();
     }
+
+    int assertedNodesSize() {
+        return assertedNodeIds.size();
+    }
     
     
 };

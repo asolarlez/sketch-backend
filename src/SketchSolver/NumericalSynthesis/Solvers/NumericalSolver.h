@@ -56,6 +56,8 @@ protected:
     const vector<vector<int>>& dependentInputs;
     const vector<vector<int>>& dependentCtrls;
     vector<int> inputsToAsserts; // TODO: this is pretty local hack
+
+    map<int, string> inputStrings; // TODO: local info for debugging input node id to <iteration,ctrlid>
 	
 	// class for picking the part of the numerical problem to handle
 	// class to do symbolic evaluation
@@ -85,5 +87,6 @@ public:
     void printControls();
     
     void printGraphCmd(string prefix);
+    void printInput();
 
 };

@@ -205,6 +205,8 @@ double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
         return getSqrtError(node);
     } else if (node->type == bool_node::ASSERT) {
         return getAssertError(node);
+    } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+    	return getBoolCtrlError(node);
     } else {
         Assert(false, "Unknonwn node for computing error in Simple Evaluator");
     }
@@ -218,6 +220,14 @@ double SimpleEvaluator::getSqrtError(bool_node* node) {
 
 double SimpleEvaluator::getAssertError(bool_node* node) {
     return d(node->mother);
+}
+
+double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
+	// return an error if the bool ctrl is not fixed by the sat solver
+	int ival = getInputValue(*node);
+    if (ival == DEFAULT_INPUT) {
+    	return -1.0;
+    }
 }
 
 /*vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {

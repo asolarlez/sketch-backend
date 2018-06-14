@@ -82,7 +82,7 @@ void NumericalSynthesizer::init() {
             numConstraints++;
         }
     }
-    numConstraints += 100; // TODO: magic number
+    numConstraints += interf->assertedNodesSize() + 1000; // TODO: magic number
     
     SymbolicEvaluator* eval = new BoolAutoDiff(*dag, ctrls);
     OptimizationWrapper* opt;
@@ -121,8 +121,8 @@ void NumericalSynthesizer::init() {
 }
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
-    init(); // TODO: there should be a better position for this
     interf->resetInputConstraints();
+    init(); // TODO: there should be a better position for this
     cout << "Variables already set: "  << (interf->numSet()) <<  endl;
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
