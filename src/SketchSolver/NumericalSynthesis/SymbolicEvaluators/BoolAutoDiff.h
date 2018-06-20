@@ -73,6 +73,7 @@ public:
     double getBoolCtrlError(bool_node* node);
     double getBoolExprError(bool_node* node);
 
+    virtual double getErrorOnConstraint(int nodeid, int val, gsl_vector* grad);
 
     
 	void setvalue(bool_node& bn, ValueGrad* v) {

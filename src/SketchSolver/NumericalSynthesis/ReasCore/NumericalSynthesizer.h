@@ -24,6 +24,9 @@
 #include "SimpleConflictGenerator.h"
 #include "SimpleSuggestionGenerator.h"
 #include "SmartSuggestionGenerator1.h"
+#include "SuggestionGeneratorUsingMax.h"
+
+#include "NumDebugger.h"
 
 
 class NumericalSynthesizer : public Synthesizer {
@@ -39,6 +42,8 @@ class NumericalSynthesizer : public Synthesizer {
     vector<vector<int>> dependentInputs; // maps nodes to dependent input nodes
 
     bool initialized;
+
+    NumDebugger* debugger;
 	
 public:
     NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit);
@@ -89,7 +94,7 @@ public:
             conf.push(~l2);
         } else {
             cout << "Setting: " << (*dag)[nodeid]->lprint() << " to " << val << endl;
-            cout << "[" << Util::print(dependentCtrls[nodeid]) << "]" << endl;
+            //cout << "[" << Util::print(dependentCtrls[nodeid]) << "]" << endl;
             interf->pushInput(inputid, val, dlevel);
         }
     }

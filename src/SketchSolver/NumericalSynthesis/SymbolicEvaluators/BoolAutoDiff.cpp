@@ -380,6 +380,19 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p) {
     }
 }
 
+double BoolAutoDiff::getErrorOnConstraint(int nodeid, int val, gsl_vector* grad) {
+    DistanceGrad* dg = d(bdag[nodeid]);
+    Assert(dg->set, "Boolean expression distance is not set");
+    gsl_vector_memcpy(grad, dg->grad);
+    if (val == 1) {
+        return dg->dist;
+    } else {
+        gsl_vector_scale(grad, -1.0);
+        return -dg->dist;
+    }
+
+}
+
 double BoolAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // Negative means errors TODO: name is confusing
     bool_node* node = bdag[nodeid];
     if (Util::isSqrt(node)) {

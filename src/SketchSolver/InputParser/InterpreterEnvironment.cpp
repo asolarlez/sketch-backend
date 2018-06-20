@@ -716,6 +716,10 @@ int InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
     
+    ofstream dagfile;
+    dagfile.open("/afs/csail.mit.edu/u/j/jinala/symdiff/dreal/" + benchName() + ".dag");
+    dag->mrprint(dagfile);
+    dagfile.close();
     reasSolver->addProblem(dag);
     
     int solveCode = 0;

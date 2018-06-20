@@ -207,7 +207,10 @@ double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
         return getAssertError(node);
     } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
     	return getBoolCtrlError(node);
+    } else if (node->getOtype() == OutType::BOOL) {
+        return getBoolExprError(node);
     } else {
+    	cout << node->lprint() << endl;
         Assert(false, "Unknonwn node for computing error in Simple Evaluator");
     }
 }
@@ -229,6 +232,19 @@ double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
     	return -1.0;
     }
 }
+
+double SimpleEvaluator::getBoolExprError(bool_node* node) {
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    double dist = d(node);
+    if (val == 1) {
+        return dist;
+    } else {
+        return -dist;
+    }
+}
+
 
 /*vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
 	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");

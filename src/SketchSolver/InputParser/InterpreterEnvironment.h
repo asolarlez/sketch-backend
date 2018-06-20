@@ -106,6 +106,14 @@ class InterpreterEnvironment
 		return fname.substr(x1, x3-x1);
 	}
 
+	string benchName() {
+		string s = params.inputFname;
+		int x1 = s.rfind(".sk");
+		int x2 = s.rfind("/tmp/");
+		return s.substr(x2+5, x1-x2 - 5);
+
+	}
+
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:

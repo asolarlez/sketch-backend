@@ -3,7 +3,7 @@
 
 int SnoptEvaluator::counter;
 
-NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls): dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls) {
+NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger): dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls), debugger(_debugger) {
 	ncontrols = ctrls.size();
     // if ncontrols = 0, make it 1 just so numerical opt does not break
 	if (ncontrols == 0) {
@@ -23,7 +23,8 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
     
     seval = new SimpleEvaluator(*dag, ctrls);
     minimizeNode = -1;
-    counter = 0;
+
+    GradUtil::counter = 0;
     
     for (int i = 0; i < dag->size(); i++) { // TODO: this should also be set by caller class
         bool_node* n = (*dag)[i];
@@ -85,7 +86,6 @@ void NumericalSolver::setState(gsl_vector* s) {
 bool NumericalSolver::checkSAT() {
     inputConflict = false;
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
-    
     bool sat = false;
     if (!checkInputs()) {
         return true;
@@ -100,8 +100,10 @@ bool NumericalSolver::checkSAT() {
                 return false;
             }
         }
-        
-        cout << "Running optimization" << endl;
+        if (PARAMS->numdebug) { 
+            debugger->getGraphs(GradUtil::counter);
+        }
+        cout << "Running optimization " << GradUtil::counter << endl;
         set<int> allConstraints;
         allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
         const set<int>& inputConstraints = interf->getInputConstraints();
@@ -110,6 +112,7 @@ bool NumericalSolver::checkSAT() {
         allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
         //printGraphCmd("before");
         sat = opt->optimize(interf, state, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, noInputs);
+        GradUtil::counter++;
         if (sat || !previousSAT) {
             gsl_vector_memcpy(state, opt->getMinState());
         }
@@ -153,7 +156,7 @@ void NumericalSolver::printInput() {
 }
 
 void NumericalSolver::printGraphCmd(string prefix) {
-    cout << "python test.py " << counter++ << "_" << prefix << "_"  << " \"" << Util::print(state) << "\" data.txt \"\"";
+    cout << "python test.py " << GradUtil::counter++ << "_" << prefix << "_"  << " \"" << Util::print(state) << "\" data.txt \"\"";
     
     const set<int>& inputConstraints = interf->getInputConstraints();
     cout << " \"";
@@ -201,7 +204,8 @@ bool NumericalSolver::checkCurrentSol() {
     }
     for (auto it = allConstraints.begin(); it != allConstraints.end(); it++) {
         error = eval->getErrorOnConstraint(*it);
-        if (error < -0.01) { // TODO: magic numbers
+        if (error < 0.008) { // TODO: magic numbers
+            cout << (*dag)[*it]->mother->lprint() << " " << error << endl;
             return false;
         }
     }
@@ -222,7 +226,7 @@ bool NumericalSolver::checkFullSAT() {
     }
     for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
         error = seval->getErrorOnConstraint(*it);
-        if (error < -0.01) { // TODO: magic number
+        if (error < 0.008) { // TODO: magic number
             return false;
         }
     }

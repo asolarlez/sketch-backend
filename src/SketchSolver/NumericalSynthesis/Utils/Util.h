@@ -19,6 +19,49 @@ public:
 		}
 		return res;
 	}
+
+    static bool isAbsolute(bool_node* n) {
+        if (n->type != bool_node::LT) {
+            return false;
+        }
+        bool_node* v;
+        if (n->mother->type == bool_node::CONST && ((CONST_node*) (n->mother))->getFval() == 0) {
+            v = n->father;
+        } else if (n->father->type == bool_node::CONST && ((CONST_node*) (n->father))->getFval() == 0) {
+            v = n->mother;
+        } else {
+            return false;
+        }
+        FastSet<bool_node>& children = n->children;
+        if (children.size() > 1) return false;
+        for(child_iter it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->type == bool_node::ARRACC) {
+                ARRACC_node* ac = (ARRACC_node*)(*it);
+                if (ac->mother != n) {
+                    return false;
+                }
+                bool_node* m = ac->multi_mother[0];
+                bool_node* f = ac->multi_mother[1];
+                if (m != v && f != v) {
+                    return false;
+                }
+                if (m == v) {
+                    if (f->type != bool_node::NEG || f->mother != v) {
+                        return false;
+                    }
+                }
+                if (f == v) {
+                    if (m->type != bool_node::NEG || m->mother != v) {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+        cout << "Absolute node: " << n->lprint() << endl;
+        return true;
+    }
     
     static bool isSqrt(bool_node* n) {
         if (n->type != bool_node::UFUN) {

@@ -18,7 +18,6 @@
 
 
 
-
 using namespace std;
 
 
@@ -38,6 +37,7 @@ class SnoptEvaluator {
     static gsl_vector* grad;
 public:
     static int counter;
+    static ofstream file;
     static void init(int size) {
         state = gsl_vector_alloc(size);
         grad = gsl_vector_alloc(size);
@@ -57,6 +57,10 @@ public:
         for (int i =0 ; i < *n; i++) {
             gsl_vector_set(state, i, x[i]);
             // cout << x[i] << " ";
+        }
+        if (PARAMS->numdebug)  { 
+            cout << Util::print(state) << endl;
+            file << Util::print(state) << endl;
         }
         //cout << endl;
         p->eval->run(state);
@@ -82,7 +86,7 @@ public:
                 G[gcounter++] = gsl_vector_get(grad, j);
             }
         }
-        
+
         //cout << "Fcounter: " << fcounter << " " << *neF << endl;
         for (int i = fcounter; i < *neF; i++) {
             F[i] = 1000.0;
@@ -95,6 +99,126 @@ public:
     }
     
 };
+
+
+class MaxSnoptParameters {
+public:
+    SymbolicEvaluator* eval;
+    const set<int>& inputConstraints;
+    const set<int>& assertConstraints;
+    int minimizeNode;
+    int condNode;
+    int condVal;
+    double beta;
+    double alpha;
+    
+    MaxSnoptParameters(SymbolicEvaluator* eval_, const set<int>& inputConstraints_, const set<int>& assertConstraints_, int minimizeNode_, int condNode_, int condVal_): eval(eval_), inputConstraints(inputConstraints_), assertConstraints(assertConstraints_), minimizeNode(minimizeNode_), condNode(condNode_), condVal(condVal_) {}
+};
+
+class MaxSnoptEvaluator {
+    static gsl_vector* state;
+    static gsl_vector* grad;
+public:
+    static ofstream file;
+    static void init(int size) {
+        state = gsl_vector_alloc(size);
+        grad = gsl_vector_alloc(size);
+    }
+    
+    static int df(integer    *Status, integer *n,    doublereal x[],
+                  integer    *needF,  integer *neF,  doublereal F[],
+                  integer    *needG,  integer *neG,  doublereal G[],
+                  char      *cu,             integer *lencu,
+                  integer    iu[],    integer *leniu,
+                  doublereal ru[],    integer *lenru) {
+        MaxSnoptParameters* p = (MaxSnoptParameters*) cu;
+        GradUtil::BETA = p->beta;
+        GradUtil::ALPHA = p->alpha;
+        //cout << counter++ << endl;
+        //cout << "x: ";
+        for (int i =0 ; i < *n; i++) {
+            gsl_vector_set(state, i, x[i]);
+            // cout << x[i] << " ";
+        }
+        if (PARAMS->numdebug)  { 
+            cout << Util::print(state) << endl;
+            file << Util::print(state) << endl;
+        }
+        //cout << endl;
+        p->eval->run(state);
+
+        int fcounter = 0;
+        int gcounter = 0;
+        F[fcounter] = 0;
+        for (int j = 0; j < *n; j++) {
+            G[gcounter++] = 0;
+        }
+        fcounter = 0;
+        gcounter = 0;
+        if (p->minimizeNode >= 0) {
+            double dist = p->eval->getErrorOnConstraint(p->minimizeNode, grad);
+            F[fcounter] += dist;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] += gsl_vector_get(grad, j);
+            }
+        }
+        for (auto it = p->assertConstraints.begin(); it != p->assertConstraints.end(); it++) {
+            fcounter = 0;
+            gcounter = 0;
+            double dist = p->eval->getErrorOnConstraint(*it, grad);
+            if (dist < 0.0) {
+                F[fcounter] += -dist;
+                for (int j = 0; j < *n; j++) { 
+                    G[gcounter++] += -gsl_vector_get(grad, j);
+                }
+            }
+        }
+        fcounter = 0;
+        gcounter = 0;
+        F[fcounter] = -F[fcounter];
+        for (int j = 0; j < *n; j++) {
+            G[j] = -G[j];
+            gcounter++;
+        }
+        fcounter++;
+        for (auto it = p->inputConstraints.begin(); it != p->inputConstraints.end(); it++) {
+            double dist = p->eval->getErrorOnConstraint(*it, grad);
+            F[fcounter++] = dist;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+        }
+        if (p->condNode >= 0) {
+            double dist = p->eval->getErrorOnConstraint(p->condNode, p->condVal, grad);
+            F[fcounter++] = dist;
+            for (int j  = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+        }
+
+        /*for (int i = 0; i < fcounter; i++) {
+            cout << F[i] << " ";
+        }
+        cout << endl;
+
+        for (int i = 0; i < fcounter; i++) {
+            cout << G[i] << " ";
+        }
+        cout << endl;*/
+
+        //cout << "Fcounter: " << fcounter << " " << *neF << endl;
+        for (int i = fcounter; i < *neF; i++) {
+            F[i] = 1000.0;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+        }
+        Assert(fcounter <= *neF, "dfqeurq");
+        return 0;
+    }
+    
+};
+
 
 class SnoptWrapper: public OptimizationWrapper {
 #ifndef _NOSNOPT
@@ -125,7 +249,7 @@ class SnoptWrapper: public OptimizationWrapper {
         Flow[0] = -1e20;
         Fupp[0] = 1e20;
         for (int i = 1; i < neF; i++) {
-            Flow[i] = 0;
+            Flow[i] = 0.01;
             Fupp[i] = 1e20;
         }
     }
@@ -133,6 +257,7 @@ class SnoptWrapper: public OptimizationWrapper {
 public:
     SnoptWrapper(SymbolicEvaluator* eval_, int ncontrols_,  doublereal* xlow_, doublereal* xupp_, int numConstraints_): eval(eval_), n(ncontrols_), xlow(xlow_), xupp(xupp_) {
         SnoptEvaluator::init(n);
+        MaxSnoptEvaluator::init(n);
         neF = numConstraints_ + 1;
         lenA = 10; // we don't use this currently
         
@@ -156,7 +281,30 @@ public:
         Fupp = new doublereal[neF];
         getFranges();
     }
-    
+    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int condNode, int condVal) { 
+        eval->setInputs(inputs);
+        MaxSnoptParameters* p = new MaxSnoptParameters(eval, inputs->getInputConstraints(), assertConstraints, minimizeNode, condNode, condVal);
+        snoptSolver->init((char *) p, neF, MaxSnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
+
+        gsl_vector_memcpy(t, initState);
+
+        p->beta = beta;
+        p->alpha = -beta;
+        if (PARAMS->numdebug) { 
+            MaxSnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/max_" + to_string(GradUtil::counter - 1) + "_" + to_string(condNode) + "_" + to_string(int(-beta)) + ".txt");
+        }
+
+        bool solved = snoptSolver->optimize(t);
+        double obj = snoptSolver->getObjectiveVal();
+        gsl_vector_memcpy(minState, snoptSolver->getResults());
+        cout << "Max objective found: " << obj << endl;
+        if (PARAMS->numdebug) {
+            MaxSnoptEvaluator::file << Util::print(minState) << endl;
+            MaxSnoptEvaluator::file.close();
+        }
+        return solved;
+        
+    }
     virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
         Assert(neF > constraints.size(), "Increase neF");
         eval->setInputs(inputs);
@@ -185,6 +333,9 @@ public:
                 if (!suppressPrint) {
                     cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
                 }
+                if (PARAMS->numdebug) { 
+                    SnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/opt_" + to_string(GradUtil::counter) + "_" + to_string(int(alphas[i])) + ".txt");
+                }
                 p->beta = betas[i];
                 p->alpha = alphas[i];
                 if (!suppressPrint) {
@@ -197,6 +348,11 @@ public:
                 solved = snoptSolver->optimize(t, suppressPrint);
                 obj = snoptSolver->getObjectiveVal();
                 gsl_vector_memcpy(t, snoptSolver->getResults());
+                if (PARAMS->numdebug) {
+                    SnoptEvaluator::file << Util::print(t) << endl;
+                    SnoptEvaluator::file.close();
+                }
+
             }
             if (numtries == 0) {
                 gsl_vector_memcpy(minState, snoptSolver->getResults());

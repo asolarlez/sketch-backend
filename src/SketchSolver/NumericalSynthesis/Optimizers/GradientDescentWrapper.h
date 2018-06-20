@@ -23,14 +23,16 @@ public:
     int minimizeNode;
     double beta;
 	double alpha;
+    bool maximize;
 	
-	GDParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_, int minimizeNode_): eval(eval_), boolNodes(boolNodes_), minimizeNode(minimizeNode_) {}
+	GDParameters(SymbolicEvaluator* eval_, const set<int>& boolNodes_, int minimizeNode_, bool maximize_ = false): eval(eval_), boolNodes(boolNodes_), minimizeNode(minimizeNode_), maximize(maximize_) {}
 };
 
 class GDEvaluator {
 	static gsl_vector* curGrad;
     static gsl_vector* grad;
 public:
+    static ofstream file;
 	
 	static void init(int size) {
 		curGrad = gsl_vector_alloc(size);
@@ -45,6 +47,8 @@ public:
 		double error = 0;
         double e;
         p->eval->run(x);
+        cout << Util::print(x) << endl;
+        file << Util::print(x) << endl;
         
         if (p->minimizeNode >= 0) {
             e = p->eval->getErrorOnConstraint(p->minimizeNode, grad);
@@ -59,6 +63,10 @@ public:
                 gsl_vector_scale(grad, -1.0);
                 gsl_vector_add(curGrad, grad);
             }
+        }
+        if (p->maximize) {
+            gsl_vector_scale(curGrad, -1.0);
+            error = -error;
         }
 		return error;
 	}
@@ -101,6 +109,30 @@ public:
 		t = gsl_vector_alloc(ncontrols);
         t1 = gsl_vector_alloc(ncontrols);
 	}
+
+    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int condNode, int condVal) { 
+        Assert(false, "under construction");
+        eval->setInputs(inputs);
+        GDParameters* p = new GDParameters(eval, assertConstraints, -1, true);
+        gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
+
+        gsl_vector_memcpy(t, initState);
+
+        p->beta = beta;
+        p->alpha = -beta;
+        GDEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/opt_" + to_string(int(-beta)) + ".txt");
+        for (int i = 0; i < ncontrols; i++) {
+            cout << gsl_vector_get(t, i) << ", ";
+        }
+                
+        cout << endl;
+        double obj = gd->optimize(t);
+        gsl_vector_memcpy(t, gd->getResults());
+            
+        gsl_vector_memcpy(minState, gd->getResults());
+        GDEvaluator::file << Util::print(t) << endl;
+        GDEvaluator::file.close();
+    }
     
     virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
         eval->setInputs(inputs);

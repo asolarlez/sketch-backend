@@ -18,6 +18,7 @@ using namespace std;
 
 class GradUtil {
 public:
+	static int counter;
 	static constexpr double MAXVAL = 1e30;
 	static constexpr double MINVAL = -1e30;
 	static constexpr double PI = 3.1415926535897;

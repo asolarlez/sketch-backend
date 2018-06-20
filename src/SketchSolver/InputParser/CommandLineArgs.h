@@ -102,6 +102,7 @@ struct CommandLineArgs{
     int conflictCutoff;
     int maxRestarts;
     int costOption;
+    bool numdebug;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -161,6 +162,7 @@ struct CommandLineArgs{
 		simplifycex = "NOSIM";
 		setMemo = true;
 		debug = false;
+		numdebug = false;
 		superChecks = false;
 		randBnd = -1;
 		lightVerif = false;
@@ -200,6 +202,11 @@ struct CommandLineArgs{
         }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
+	      input_idx = ii+1;
+		  continue;
+	    }
+	    if( string(argv[ii]) == "-numdebug" ){	      
+	      numdebug = true;
 	      input_idx = ii+1;
 		  continue;
 	    }

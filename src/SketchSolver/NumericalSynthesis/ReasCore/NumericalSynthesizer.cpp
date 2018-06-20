@@ -2,8 +2,15 @@
 
 gsl_vector* GDEvaluator::curGrad;
 gsl_vector* GDEvaluator::grad;
+ofstream GDEvaluator::file;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
+ofstream SnoptEvaluator::file;
+gsl_vector* MaxSnoptEvaluator::state;
+gsl_vector* MaxSnoptEvaluator::grad;
+ofstream MaxSnoptEvaluator::file;
+
+int GradUtil::counter;
 
 using namespace std;
 
@@ -112,12 +119,20 @@ void NumericalSynthesizer::init() {
         }
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
-    
     SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
+    //SuggestionGenerator* sg = new SuggestionGeneratorUsingMax(dag, interf, ctrls, opt);
+
+
+    debugger = new NumDebugger(dag, ctrls, interf, eval, opt);
     
-    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls);
+    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls, debugger);
+
     
-    
+    //debugger->plotConditions();
+    //debugger->doMaxOpt();
+    //debugger->doOpt();
+    //debugger->getGraphs(0);
+    //exit(0);
 }
 
 void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
@@ -126,7 +141,17 @@ void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
     cout << "Variables already set: "  << (interf->numSet()) <<  endl;
     cout << "Initializing suggestions" << endl;
     suggestions.clear();
-    bool sat = solver->checkSAT();
+    int numTries = 1;
+    if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
+        numTries = PARAMS->maxRestarts;
+    }
+    bool sat;
+    for (int i = 0; i < numTries; i++) {
+        sat = solver->checkSAT();
+        if (sat) {
+            break;
+        }
+    }
     //if (sat) {
         solver->getControls(ctrlVals);
     //}
@@ -151,10 +176,6 @@ bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
         return true;
     }
     //return true;
-    cout << "Running numerical synthesis" << endl;
-	if (PARAMS->verbosity > 7) {
-        timer.restart();
-	}
 	
 	bool sat = solver->checkSAT();
 	if (sat || solver->ignoreConflict()) {
@@ -170,18 +191,12 @@ bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
                 convertSuggestions(s, suggestions);
             }
         }
-        if (PARAMS->verbosity > 7) {
-            timer.stop().print("Numerical solving time:");
-        }
 		return true;
 	} else {
 		if (PARAMS->verbosity > 7) {
 			cout << "****************CONFLICT****************" << endl;
 		}
 		solver->getConflicts(conflicts); // <instanceid, nodeid>
-        if (PARAMS->verbosity > 7) {
-            timer.stop().print("Numerical solving time:");
-        }
 		return false;
 	}
 }

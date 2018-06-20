@@ -31,6 +31,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	memory_sampler.h				\
 	timerclass.h					\
     NumericalSynthesis/ReasCore/REASSolver.h       \
+    NumericalSynthesis/ReasCore/NumDebugger.h 		\
     NumericalSynthesis/BoolAbstraction/BoolAbstractor.h \
     NumericalSynthesis/BoolAbstraction/Interface.h  \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.h     \
@@ -55,6 +56,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/SuggestionGenerators/SuggestionGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SimpleSuggestionGenerator.h	\
     NumericalSynthesis/SuggestionGenerators/SmartSuggestionGenerator1.h \
+    NumericalSynthesis/SuggestionGenerators/SuggestionGeneratorUsingMax.h \
 	InputParser/BackwardsAnalysis.h			\
 	InputParser/BooleanDAG.h			\
 	InputParser/BooleanDAGCreator.h			\

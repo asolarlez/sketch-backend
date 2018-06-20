@@ -35,7 +35,7 @@ public:
     virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
         vector<tuple<int, int, int>> suggestions;
         
-        cout << "state: " << Util::print(state) << endl;
+        //cout << "state: " << Util::print(state) << endl;
         seval->run(state);
         
         vector<tuple<double, int, int>> s;
@@ -71,7 +71,10 @@ public:
         }
         int lastIdx = suggestions.size() - 1;
         if (lastIdx > 0) {
-            cout << ((*dag)[get<1>(suggestions[lastIdx])])->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
+            int nodeid = get<1>(suggestions[lastIdx]);
+            bool_node* n = (*dag)[nodeid];
+            cout << n->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
+            cout << "val: " << seval->d(n) << endl;
         }
         return suggestions;
     }

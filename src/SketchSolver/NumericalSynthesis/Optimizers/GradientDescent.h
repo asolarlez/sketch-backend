@@ -45,7 +45,7 @@ public:
 		return minidf->x;
 	}
 	void init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p);
-	double optimize(gsl_vector* initX); // optimizes until value is 0
+	double optimize(gsl_vector* initX, bool stopAtZero = true); // optimizes until value is 0
 };
 
 #endif
