@@ -133,7 +133,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
-        reasSolver = new REASSolver(*finder, floats);
+        reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 	}
 	
@@ -156,7 +156,7 @@ public:
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
-        reasSolver = new REASSolver(*finder, floats);
+        reasSolver = new REASSolver(floats);
 		cout<<"ALLRESET"<<endl;
 		status=READY;
 	}

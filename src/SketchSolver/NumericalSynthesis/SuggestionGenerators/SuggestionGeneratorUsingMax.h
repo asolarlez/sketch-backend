@@ -28,7 +28,7 @@ public:
         seval = new SimpleEvaluator(*dag, ctrls);
         seval->setInputs(interf);
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
             if (Util::hasArraccChild(n)) {
                 nodesToSuggest.push_back(nodeid);
@@ -58,7 +58,7 @@ public:
         vector<tuple<double, int, int>> s;
         
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
             bool hasArraccChild = Util::hasArraccChild(n);
             
@@ -102,7 +102,7 @@ public:
 		vector<tuple<double, int, int>> s;
                 
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
             
             double dist = seval->d(n);
@@ -123,7 +123,11 @@ public:
         return s;
     }
     
-    virtual vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
+    virtual void initUnsatSuggestions(LocalState* state) { }
+    virtual pair<int, int> getNextUnsatSuggestion() {
+        return make_pair(-1, 0);
+    }
+    vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
         vector<tuple<int, int, int>> suggestions;
         const vector<tuple<double, int, int>>& distances = getDistances(state);
         

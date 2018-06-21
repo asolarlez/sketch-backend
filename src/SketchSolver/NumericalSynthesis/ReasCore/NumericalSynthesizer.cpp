@@ -15,10 +15,7 @@ int GradUtil::counter;
 using namespace std;
 
 
-NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface, Lit _softConflictLit): Synthesizer(_fm), dag(_dag), interf(_interface) {
-    softConflictLit = _softConflictLit;
-    initialized = false;
-    
+NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface): dag(_dag), interf(_interface) {    
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
         set<int> ctrls;
@@ -33,16 +30,13 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         }
         dependentCtrls.push_back(vector<int>(ctrls.begin(), ctrls.end()));
     }
-}
 
-void NumericalSynthesizer::init() {
-    initialized = true;
     if (PARAMS->verbosity > 2) {
         cout << "NInputs: " << interf->size() << endl;
     }
     
     for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-        cout << it->first << " -> " << (*dag)[it->second->nodeid]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->second->nodeid]) << "]" << endl;
+        cout << (*dag)[it->first]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->first]) << "]" << endl;
     }
     
     vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
@@ -62,6 +56,7 @@ void NumericalSynthesizer::init() {
     if (ncontrols == 0) {
         ncontrols = 1;
     }
+    state = gsl_vector_alloc(ncontrols);
     
     doublereal* xlow = new doublereal[ncontrols];
     doublereal* xupp = new doublereal[ncontrols];
@@ -89,7 +84,7 @@ void NumericalSynthesizer::init() {
             numConstraints++;
         }
     }
-    numConstraints += interf->assertedNodesSize() + 1000; // TODO: magic number
+    numConstraints +=  1000; // TODO: magic number
     
     SymbolicEvaluator* eval = new BoolAutoDiff(*dag, ctrls);
     OptimizationWrapper* opt;
@@ -99,10 +94,9 @@ void NumericalSynthesizer::init() {
 #ifndef _NOGSL
         opt = new GradientDescentWrapper(eval, ncontrols, xlow, xupp);
 #else
-		Assert(false, "NO GSL");
+        Assert(false, "NO GSL");
 #endif
     }
-    ConflictGenerator* cg = new SimpleConflictGenerator(interf);
     
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
@@ -119,13 +113,13 @@ void NumericalSynthesizer::init() {
         }
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
-    SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
+    sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
     //SuggestionGenerator* sg = new SuggestionGeneratorUsingMax(dag, interf, ctrls, opt);
 
 
     debugger = new NumDebugger(dag, ctrls, interf, eval, opt);
     
-    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls, debugger);
+    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, dependentInputs, dependentCtrls, debugger);
 
     
     //debugger->plotConditions();
@@ -135,108 +129,83 @@ void NumericalSynthesizer::init() {
     //exit(0);
 }
 
-void NumericalSynthesizer::initSuggestions(vec<Lit>& suggestions) {
-    interf->resetInputConstraints();
-    init(); // TODO: there should be a better position for this
-    cout << "Variables already set: "  << (interf->numSet()) <<  endl;
-    cout << "Initializing suggestions" << endl;
-    suggestions.clear();
-    int numTries = 1;
-    if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
-        numTries = PARAMS->maxRestarts;
+bool NumericalSynthesizer::solve() {
+    bool success = search();
+    if (success) {
+        success = concretize();
     }
-    bool sat;
-    for (int i = 0; i < numTries; i++) {
+    return success;
+}
+
+bool NumericalSynthesizer::searchWithOnlySmoothing() {
+    bool sat = false;
+    for (int i = 0; i < PARAMS->maxRestarts; i++) {
         sat = solver->checkSAT();
         if (sat) {
-            break;
+            gsl_vector_memcpy(state, solver->getResult());
+            return true;
         }
-    }
-    //if (sat) {
-        solver->getControls(ctrlVals);
-    //}
-    if (sat) {
-        if (!PARAMS->disableSatSuggestions) {
-            const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, nodeid, val>
-            convertSuggestions(s, suggestions);
-        }
-    } else {
-        if (!PARAMS->disableUnsatSuggestions) {
-            const vector<tuple<int, int, int>>& s = solver->collectUnsatSuggestions();
-            convertSuggestions(s, suggestions);
-        }
-    }
+    } 
+    return false;
 }
 
-
-bool NumericalSynthesizer::synthesis(vec<Lit>& suggestions) {
-    suggestions.clear();
-    conflicts.clear();
-    if (!initialized) {
-        return true;
-    }
-    //return true;
-	
-	bool sat = solver->checkSAT();
-	if (sat || solver->ignoreConflict()) {
-		solver->getControls(ctrlVals);
+bool NumericalSynthesizer::searchWithPredicates() {
+    bool sat = false;
+    bool first = true;
+    while(true) {
+        sat = solver->checkSAT(first ? NULL : state);
+        first = false;
         if (sat) {
-            if (!PARAMS->disableSatSuggestions) {
-                const vector<tuple<int, int, int>>& s = solver->collectSatSuggestions(); // <instanceid, nodeid, val>
-                convertSuggestions(s, suggestions);
-            }
-        } else {
-            if (!PARAMS->disableUnsatSuggestions) {
-                const vector<tuple<int, int, int>>& s = solver->collectUnsatSuggestions();
-                convertSuggestions(s, suggestions);
+            gsl_vector_memcpy(state, solver->getResult());
+            return true;
+        }
+        else {
+            if (interf->numSet() >= CONFLICT_THRESHOLD) {
+                cout << "Reach conflict threshold -- restarting" << endl;
+                interf->restartInputs();
+                first = true;
+                continue;
+            } else {
+                sg->initUnsatSuggestions(solver->getLocalState());
+                bool foundValidPredicate = false;
+                for (int i = 0; i < NUM_SUGGESTIONS_THRESHOLD; i++) {
+                    const pair<int, int>& s = sg->getNextUnsatSuggestion();
+                    cout << "Suggestion " << s.first << " " << s.second << endl;
+                    if (s.first >= 0 && interf->tryInput(s.first, s.second)) {
+                        bool hasInput = solver->initializeState();
+                        if (hasInput) {
+                            foundValidPredicate = true;
+                            gsl_vector_memcpy(state, solver->getResult());
+                            break;
+                        } else {
+                            interf->clearLastInput();
+                        }
+                    }
+                }
+                if (!foundValidPredicate) {
+                    cout << "None of the suggestions worked -- restarting" << endl;
+                    interf->restartInputs();
+                    first = true;
+                    continue;
+                }
             }
         }
-		return true;
-	} else {
-		if (PARAMS->verbosity > 7) {
-			cout << "****************CONFLICT****************" << endl;
-		}
-		solver->getConflicts(conflicts); // <instanceid, nodeid>
-		return false;
-	}
+    }
 }
 
-bool_node* NumericalSynthesizer::getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
-	// Add the appropriate expression from the dag after replacing inputs with params and ctrls with synthesized parameters
-	BooleanDAG newdag = *(dag->clone());
-	for (int i = 0; i < newdag.size(); i++) {
-		if (newdag[i]->type == bool_node::CTRL) {
-			// TODO: what to do with non float ctrls that are solved by the SAT solver??
-			newdag.replace(i, dopt->getCnode(ctrlVals[newdag[i]->get_name()]));
-		} else {
-			if (newdag[i]->type != bool_node::DST && newdag[i]->type != bool_node::SRC) {
-				bool_node* n = dopt->computeOptim(newdag[i]);
-				if (n == newdag[i]) {
-					dopt->addNode(n);
-				}
-				if (newdag[i] != n) {
-					newdag.replace(i, n);
-				}
-				if (n->type == bool_node::ASSERT) {
-					dopt->addAssert((ASSERT_node*)n);
-				}
-				
-			}
-		}
-	}
-	return dopt->getCnode(0);
+bool NumericalSynthesizer::search() {
+    if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
+        return searchWithOnlySmoothing();
+    } else if (PARAMS->numericalSolverMode == "SMOOTHING_SAT") {
+        return searchWithPredicates();
+    }
+    Assert(false, "NYI for solver mode " + PARAMS->numericalSolverMode);
+    return true;
 }
 
-
-void NumericalSynthesizer::convertSuggestions(const vector<tuple<int, int, int>>& s, vec<Lit>& suggestions) {
-	for (int k = 0; k < s.size(); k++) {
-		int i = get<0>(s[k]);
-		int j = get<1>(s[k]);
-		int v = get<2>(s[k]);
-        //cout << "Suggesting " << i << " " << j <<  " " << v << endl;
-        Assert(i == 0, "Multiple instances is not yet supported");
-		suggestions.push(interf->getLit(j, v));
-	}
+bool NumericalSynthesizer::concretize() {
+    return solver->checkFullSAT(state);
 }
+
 
 

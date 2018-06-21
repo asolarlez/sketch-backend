@@ -134,7 +134,7 @@ public:
         GDEvaluator::file.close();
     }
     
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState) {
         eval->setInputs(inputs);
         GDParameters* p = new GDParameters(eval, constraints, minimizeNode);
         gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
@@ -142,8 +142,9 @@ public:
         double betas[3] = {-1, -10, -50};
         double alphas[3] = {1, 10, 50};
         
-        gsl_vector_memcpy(t, initState);
-        if (initRandomize) {
+        if (initState != NULL) {
+            gsl_vector_memcpy(t, initState);
+        } else {
             randomizeCtrls(t, inputs, constraints, minimizeNode);
         }
         
@@ -170,6 +171,9 @@ public:
                 cout << endl;
                 obj = gd->optimize(t);
                 gsl_vector_memcpy(t, gd->getResults());
+                if (localState != NULL) {
+                    gsl_vector_memcpy(localState->localSols[i], t); // TODO: this does not work with multiple retries and we want best local state so far. 
+                }
             }
             if (numtries == 0) {
                 gsl_vector_memcpy(minState, gd->getResults());

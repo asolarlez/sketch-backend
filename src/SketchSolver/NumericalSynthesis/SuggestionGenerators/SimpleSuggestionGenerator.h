@@ -24,9 +24,9 @@ public:
         seval = new SimpleEvaluator(*dag, ctrls);
         seval->setInputs(interf);
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
-            if (Util::hasArraccChild(n)) {
+            if (n->type == bool_node::LT) {
                 nodesToSuggest.push_back(nodeid);
             }
         }
@@ -41,7 +41,7 @@ public:
         vector<tuple<double, int, int>> s;
         
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
             bool hasArraccChild = Util::hasArraccChild(n);
             
@@ -78,15 +78,16 @@ public:
         }
         return suggestions;
     }
-    
-    virtual vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
-        vector<tuple<int, int, int>> suggestions;
-        if (nodesToSuggest.size() == 0) return suggestions;
+    virtual void initUnsatSuggestions(LocalState* state) { 
+        seval->run(state->localSols[2]);
+    }
+    virtual pair<int, int> getNextUnsatSuggestion() {
+        if (nodesToSuggest.size() == 0) return make_pair(-1, 0);
         int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
-        int randVal = rand() % 2;
-        cout << "Suggesting: " << ((*dag)[randIdx])->lprint() << " " << randVal << endl;
-        suggestions.push_back(make_tuple(0, randIdx, randVal));
-        return suggestions;
-
+        //int randVal = rand() % 2;
+        int randVal = seval->d((*dag)[randIdx]) < 0; // flip the current assignment
+        return make_pair(randIdx, randVal);
     }
 };
+    
+    

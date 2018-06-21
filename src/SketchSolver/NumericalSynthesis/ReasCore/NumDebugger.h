@@ -62,7 +62,7 @@ public:
 			gsl_vector_set(s, i, arr1[i]);
 		}
 
-		bool sat = opt->optimize(interf, s, assertConstraints, minimizeNode); 
+		bool sat = opt->optimize(interf, s, assertConstraints, minimizeNode, false, 1, NULL); 
 	}
 	void doMaxOpt() {
 		gsl_vector* s = gsl_vector_alloc(ncontrols);
@@ -86,7 +86,7 @@ public:
 		vector<pair<double, int>> s;
                 
         for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->second->nodeid;
+            int nodeid = it->first;
             bool_node* n = (*dag)[nodeid];
             
             double dist = seval->d(n);

@@ -104,6 +104,11 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
+	 virtual void cancelLastDecisionLevel() {
+	 	int curDecisionLevel = s->decisionLevel();
+	 	s->cancelUntil(curDecisionLevel-1);
+	 }
+
 	 virtual void retractableAssertClause(int x);
      virtual int addSpecialAssumption();
      void setMaxSoftLearntRestarts(int max_restarts) {

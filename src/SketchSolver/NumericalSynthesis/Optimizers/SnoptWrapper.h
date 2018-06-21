@@ -220,6 +220,7 @@ public:
 };
 
 
+
 class SnoptWrapper: public OptimizationWrapper {
 #ifndef _NOSNOPT
     SnoptSolver* snoptSolver;
@@ -305,7 +306,7 @@ public:
         return solved;
         
     }
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState) {
         Assert(neF > constraints.size(), "Increase neF");
         eval->setInputs(inputs);
         // start the snopt solving
@@ -315,8 +316,9 @@ public:
         double betas[3] = {-1, -10, -50};
         double alphas[3] = {1, 10, 50};
         
-        gsl_vector_memcpy(t, initState);
-        if (initRandomize) {
+        if (initState != NULL) {
+            gsl_vector_memcpy(t, initState);
+        } else {
             randomizeCtrls(t, inputs, constraints, minimizeNode);
         }
         
@@ -351,6 +353,9 @@ public:
                 if (PARAMS->numdebug) {
                     SnoptEvaluator::file << Util::print(t) << endl;
                     SnoptEvaluator::file.close();
+                }
+                if (localState != NULL) {
+                    gsl_vector_memcpy(localState->localSols[i], t); // TODO: this does not work with multiple retries and we want best local state so far. 
                 }
 
             }

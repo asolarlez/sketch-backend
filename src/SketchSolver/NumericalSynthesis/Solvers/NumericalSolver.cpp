@@ -3,7 +3,7 @@
 
 int SnoptEvaluator::counter;
 
-NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger): dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls), debugger(_debugger) {
+NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger): dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls), debugger(_debugger) {
 	ncontrols = ctrls.size();
     // if ncontrols = 0, make it 1 just so numerical opt does not break
 	if (ncontrols == 0) {
@@ -13,14 +13,7 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
 	cout << "NControls: " << ncontrols << endl;
     
     GradUtil::allocateTempVectors(ncontrols);
-	
-	state = gsl_vector_alloc(ncontrols);
-	
-    previousSAT = false;
-    fullSAT = false;
-    numConflictsAfterSAT = 0;
-    inputConflict = false;
-    
+	localState = new LocalState(ncontrols, 3);
     seval = new SimpleEvaluator(*dag, ctrls);
     minimizeNode = -1;
 
@@ -36,151 +29,50 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
             assertConstraints.insert(i);
         }
     }
-    
-    inputsToAsserts.resize(dag->size(), -1);
-    for (int i = 0; i < dag->size(); i++) {
-        bool_node* n = (*dag)[i];
-        if (n->type == bool_node::ASSERT) {
-            const vector<int>& inputs = dependentInputs[i];
-            for (int j = 0; j < inputs.size(); j++) {
-                inputsToAsserts[inputs[j]] = i;
-            }
-        }
-    }
-    /*int ctrlsCounter = 0;
-    for (int i = 0; i < dag->size(); i++) { 
-        bool_node* n = (*dag)[i];
-        if (n->type == bool_node::LT && interf->isInput(i)) { 
-            int ctrlId = -1;
-            if (n->mother->type == bool_node::CTRL) { 
-                string name = n->mother->get_name();
-                name.replace(name.begin(), name.begin() + 3, "");
-                ctrlId = stoi(name);
-            } else if (n->father->type == bool_node::CTRL) { 
-                string name = n->father->get_name();
-                name.replace(name.begin(), name.begin() + 3, "");
-                ctrlId = stoi(name);
-            }
-            if (ctrlId != -1) { 
-                if (ctrlId == 0) { 
-                    ctrlsCounter++;
-                }
-                inputStrings[i] = to_string(ctrlsCounter) + "," + to_string(ctrlId);
-                cout << "InputToString " << i << ":" << inputStrings[i] << endl;
-            }
-        }
-    }*/
-
-
 }
 
 NumericalSolver::~NumericalSolver(void) {
     GradUtil::clearTempVectors();
-	gsl_vector_free(state);
+	delete(localState);
 }
 
-void NumericalSolver::setState(gsl_vector* s) {
-    gsl_vector_memcpy(state, s);
-}
-
-bool NumericalSolver::checkSAT() {
-    inputConflict = false;
+bool NumericalSolver::checkSAT(gsl_vector* initState) {
+    cout << "Check SAT" << endl;
+    interf->printInputs();
+    if (initState != NULL) {
+        cout << "Init state: " << Util::print(initState) << endl;
+    }
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
     bool sat = false;
-    if (!checkInputs()) {
-        return true;
-    }
-    if (checkCurrentSol()) {
+    if (initState != NULL && checkCurrentSol(initState)) {
         cout << "Current sol passed" << endl;
-        sat = true;
-    } else {
-        bool noInputs = interf->numSet() == 0;
-        if (!previousSAT) {
-            if (!noInputs && !initializeState(suppressPrint)) {
-                return false;
-            }
-        }
-        if (PARAMS->numdebug) { 
-            debugger->getGraphs(GradUtil::counter);
-        }
-        cout << "Running optimization " << GradUtil::counter << endl;
-        set<int> allConstraints;
-        allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
-        const set<int>& inputConstraints = interf->getInputConstraints();
-        allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
-        const set<int>& assertedInputConstraints = interf->getAssertedInputConstraints();
-        allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
-        //printGraphCmd("before");
-        sat = opt->optimize(interf, state, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, noInputs);
-        GradUtil::counter++;
-        if (sat || !previousSAT) {
-            gsl_vector_memcpy(state, opt->getMinState());
-        }
-        //printGraphCmd("after");
+        result = opt->getMinState();
+        return true;
+    } 
+    if (PARAMS->numdebug) { 
+        debugger->getGraphs(GradUtil::counter);
     }
-    if (!previousSAT) {
-        previousSAT = sat;
-    }
+    cout << "Running optimization " << GradUtil::counter << endl;
+    set<int> allConstraints;
+    allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
+    const set<int>& inputConstraints = interf->getInputConstraints();
+    allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
+    //printGraphCmd("before");
+    sat = opt->optimize(interf, initState, allConstraints, minimizeNode, suppressPrint, PARAMS->numTries, localState);
+    GradUtil::counter++;
     if (sat) {
-        cout << "FOUND solution" << endl;
-        printControls();
-        if (checkFullSAT()) {
-            fullSAT = true;
-            cout << "FULL SAT" << endl;
-        }
-        numConflictsAfterSAT = 0;
-    }
-    
-    if (!sat && previousSAT) {
-        numConflictsAfterSAT++;
-        if (numConflictsAfterSAT > 5) { // TODO: magic number
-            previousSAT = false;
-        }
-    }
-    //cout << "Analyze " << counter++ << " 0 0 "; 
-    //printInput(); 
-    //cout << Util::print(state, " ") << endl;
-    double objective = opt->getObjectiveVal();
-    cout << "Objective found: " << objective << endl;
-    
-    return sat;
-}
-
-void NumericalSolver::printInput() { 
-    const set<int>& inputConstraints = interf->getInputConstraints();
-    for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
-        if (inputStrings.find(*it) != inputStrings.end()) {
-            cout << inputStrings[*it] << "," << interf->getValue(*it) << ";";
-        }
+        result = opt->getMinState();
+        cout << "Found solution" << endl;
+        cout << Util::print(result) << endl;
+        return true;
+    } else {
+        cout << "Local solution" << endl;
+        localState->print();
+        return false;
     }
 }
 
-void NumericalSolver::printGraphCmd(string prefix) {
-    cout << "python test.py " << GradUtil::counter++ << "_" << prefix << "_"  << " \"" << Util::print(state) << "\" data.txt \"\"";
-    
-    const set<int>& inputConstraints = interf->getInputConstraints();
-    cout << " \"";
-    for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
-        string line = to_string(dependentCtrls[*it][0]);
-        string assertMsg = ((ASSERT_node*)(*dag)[inputsToAsserts[*it]])->getMsg();
-        string point = "";
-        size_t start = assertMsg.find("(");
-        if (start != string::npos) {
-            size_t end = assertMsg.find(")");
-            point = assertMsg.substr(start, end - start + 1);
-        }
-        cout << line << ":" << point << ":" << interf->getValue(*it) << ";" ;
-    }
-    cout << "\"" << endl;
-}
-
-
-bool NumericalSolver::checkInputs() {
-    if (fullSAT) return false;
-    return true;
-}
-
-bool NumericalSolver::checkCurrentSol() {
+bool NumericalSolver::checkCurrentSol(gsl_vector* state) {
     cout << "Checking current solution" << endl;
     GradUtil::BETA = -50; // TODO: magic numbers
     GradUtil::ALPHA = 50;
@@ -192,8 +84,6 @@ bool NumericalSolver::checkCurrentSol() {
     allConstraints.insert(assertConstraints.begin(), assertConstraints.end());
     const set<int>& inputConstraints = interf->getInputConstraints();
     allConstraints.insert(inputConstraints.begin(), inputConstraints.end());
-    const set<int>& assertedInputConstraints = interf->getAssertedInputConstraints();
-    allConstraints.insert(assertedInputConstraints.begin(), assertedInputConstraints.end());
     
     double error;
     if (minimizeNode >= 0) {
@@ -212,8 +102,9 @@ bool NumericalSolver::checkCurrentSol() {
     return true;
 }
 
-bool NumericalSolver::checkFullSAT() {
+bool NumericalSolver::checkFullSAT(gsl_vector* state) {
     cout << "Checking full SAT" << endl;
+    cout << Util::print(state) << endl;
     seval->setInputs(interf); // TODO: can be folded into init function of seval
     seval->run(state);
     
@@ -230,57 +121,31 @@ bool NumericalSolver::checkFullSAT() {
             return false;
         }
     }
+    cout << "FULL SAT" << endl;
     return true;
 }
 
-bool NumericalSolver::initializeState(bool suppressPrint) {
+bool NumericalSolver::initializeState() {
+    bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
     cout << "Initializing state" << endl;
-    bool satInputs = opt->optimize(interf, state, interf->getInputConstraints(),  -1, suppressPrint, 5, true); // TODO: magic number
+    interf->printInputs();
+    bool satInputs = opt->optimize(interf, NULL, interf->getInputConstraints(),  -1, suppressPrint, 5, NULL); // TODO: magic number
     if (satInputs) {
         cout << "Inputs satisfiable" << endl;
-        gsl_vector_memcpy(state, opt->getMinState());
+        result = opt->getMinState();
+        cout << Util::print(result) << endl;
         return true;
     } else {
         cout << "Inputs not satisfiable" << endl;
-        inputConflict = true;
         return false;
     }
 }
 
-bool NumericalSolver::ignoreConflict() {
-    if (previousSAT) return false;
-    if (inputConflict) return false;
-    if (interf->numSet() < CONFLICT_CUTOFF) { 
-        return true;
-    } else {
-        return false;
-    }
+gsl_vector* NumericalSolver::getResult() {
+    return result;
 }
 
-vector<tuple<int, int, int>> NumericalSolver::collectSatSuggestions() {
-    return sg->getSatSuggestions(state);
+LocalState* NumericalSolver::getLocalState() {
+    return localState;
 }
 
-
-vector<tuple<int, int, int>> NumericalSolver::collectUnsatSuggestions() {
-    return sg->getUnsatSuggestions(state);
-}
-
-void NumericalSolver::getConflicts(vector<pair<int, int>>& conflicts) {
-    cg->getConflicts(conflicts);
-}
-
-void NumericalSolver::getControls(map<string, double>& ctrlVals) {
-	for (auto it = ctrls.begin(); it != ctrls.end(); it++) {
-		ctrlVals[it->first] = gsl_vector_get(state, it->second);
-	}
-}
-
-void NumericalSolver::printControls() {
-    cout << Util::print(state) << endl;
-    
-    for (auto it = ctrls.begin(); it != ctrls.end(); it++) {
-        cout << it->first << "," << gsl_vector_get(state, it->second) << ";";
-    }
-    cout << endl;
-}

@@ -11,19 +11,19 @@
 #include "FloatSupport.h"
 #include "FindCheckSolver.h"
 #include "Interface.h"
+#include "NumericalSynthesizer.h"
 
 class REASSolver
 {
     FloatManager& floats;
     BooleanDAG* problem;
-    
-    SolverHelper& dirFind;
-    SATSolver& mngFind;
-    
+        
     bool stoppedEarly;
     
     vector<Tvalue> node_ids;
     map<bool_node*, int> node_values;
+
+    NumericalSynthesizer* ns;
     
     protected:
     void declareControl(CTRL_node* cnode);
@@ -35,7 +35,7 @@ class REASSolver
     public:
     VarStore ctrlStore;
     
-    REASSolver(SolverHelper& finder, FloatManager& _floats);
+    REASSolver(FloatManager& _floats);
     ~REASSolver(void);
     void addProblem(BooleanDAG* miter);
     

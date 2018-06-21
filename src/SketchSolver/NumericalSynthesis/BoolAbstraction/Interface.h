@@ -8,14 +8,7 @@
 #include "CommandLineArgs.h"
 #include "Util.h"
 #include "BooleanToCNF.h"
-
-class NodeValPair {
-public:
-    int nodeid;
-    int valTrue;
-    int valFalse;
-    NodeValPair(int nodeid_, int valTrue_, int valFalse_): nodeid(nodeid_), valTrue(valTrue_), valFalse(valFalse_) { }
-};
+#include "MiniSATSolver.h"
 
 
 class vstate{
@@ -26,22 +19,25 @@ public:
 };
 
 class Interface {
-    map<int, map<int, Lit>> reverseVarsMapping; // node id -> val -> Lit (TODO: we should have one mapping for each instance)
-                                                //                      (or have an interface for each instance)
     vector<int> nodeVals; // node id -> val
     set<int> inputNodeIds; // node ids that have been set by the SAT solver
-    set<int> assertedNodeIds; // nodes ids for values that are set just by propagating asserts
-    int counter;
     vec<vstate> stack;
     const int EMPTY = INT32_MIN;
 
+
 public:
-    map<int, NodeValPair*> varsMapping; // input id -> (node, val)
-    
+    SolverHelper* satSolver;  
+    map<int, map<int, int>> varsMapping; // node id -> val -> Lit 
+  
     
     Interface(int dagSize) {
-        counter = 0;
         nodeVals.resize(dagSize, EMPTY);
+        MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
+        satSolver = new SolverHelper(*ms);
+    }
+    ~Interface() {
+        delete &satSolver->getMng();
+        delete satSolver;
     }
     
     void add(Tvalue& tv, bool_node& node, SolverHelper& dir) {
@@ -49,26 +45,18 @@ public:
         if (Util::isAbsolute(&node)) { // if the node is part of abs(x) do not add to the interface. 
             return;
         }
-        if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING" && node.type != bool_node::CTRL) {
-            return; // In only_smoothing mode, only add boolean ctrls to the interface.
-        }
         if (tv.isBvect()) {
-            varsMapping[counter] = new NodeValPair(node.id, 1, 0);
-            map<int, Lit> m;
-            m[1] = lfromInt(tv.getId()); m[0] = lfromInt(-tv.getId());
-            reverseVarsMapping[node.id] = m;
-            dir.addNumSynSolvClause(counter, tv.getId());
-            counter++;
+            map<int, int> m;
+            m[1] = tv.getId(); m[0] = -tv.getId();
+            cout << node.id << " " << m[1] << " " << m[0] << endl;
+            varsMapping[node.id] = m;
         } else {
             const gvvec& vec = tv.num_ranges;
-            map<int, Lit> m;
+            map<int, int> m;
             for (gvvec::const_iterator ci = vec.begin(); ci != vec.end(); ++ci) {
-                varsMapping[counter] = new NodeValPair(node.id, ci->value, EMPTY);
-                m[ci->value] = lfromInt(ci->guard);
-                dir.addNumSynSolvClause(counter, ci->guard);
-                counter++;
+                m[ci->value] = ci->guard;
             }
-            reverseVarsMapping[node.id] = m;
+            varsMapping[node.id] = m;
         }
     }
     
@@ -91,30 +79,54 @@ public:
         }
         stack.shrink(j);
     }
-    
-    Lit getLit(int nodeid, int val) {
-        return reverseVarsMapping[nodeid][val];
+
+    void popLast() {
+        int stack_size = stack.size();
+        vstate& ms = stack[stack_size - 1];
+        nodeVals[ms.nodeid] = EMPTY;
+        inputNodeIds.erase(ms.nodeid);
+        stack.shrink(1);
     }
     
-    // Caller should maintain the invariant that a node's value will not be rewritten
-    // This is method is critical for performace
-    void pushInput(int inputid, int val, int dlevel) {
-        Assert(val == 0 || val == 1, "val should be a binary");
-        int nodeid = varsMapping[inputid]->nodeid;
-        int nodeval = val == 1 ? varsMapping[inputid]->valTrue : varsMapping[inputid]->valFalse;
-        if (nodeval != EMPTY) {
-            nodeVals[nodeid] = nodeval;
-            stack.push(vstate(nodeid, dlevel));
+    int getLit(int nodeid, int val) {
+        return varsMapping[nodeid][val];
+    }
+
+    bool tryInput(int nodeid, int val) {
+        if (hasValue(nodeid)) {
+            return false;
+        } else {
+            nodeVals[nodeid] = val;
+            stack.push(vstate(nodeid, 1));
             inputNodeIds.insert(nodeid);
+            return true;
         }
+        /*int lit = getLit(nodeid, val);
+        cout << "Trying: " << lit << endl;
+        if (satSolver->tryAssignment(lit)) {
+            nodeVals[nodeid] = val;
+            stack.push(vstate(nodeid, 1));
+            inputNodeIds.insert(nodeid);
+            return true;
+        } 
+        return false;*/
     }
+
+    void restartInputs() {
+        // clean inputs in the interface
+        backtrack(0);
+        // clear assignments in the sat solver
+        //satSolver->getMng().reset();
+    }
+
+    void clearLastInput() {
+        popLast();
+        //satSolver->getMng().cancelLastDecisionLevel();
+    }
+    
     
     int getValue(int nodeid) {
         return nodeVals[nodeid];
-    }
-    
-    int getNodeId(int inputid) {
-        return varsMapping[inputid]->nodeid;
     }
     
     
@@ -122,14 +134,7 @@ public:
         return inputNodeIds;
     }
     
-    const set<int>& getAssertedInputConstraints() {
-        return assertedNodeIds;
-    }
     
-    void resetInputConstraints() {
-        assertedNodeIds.insert(inputNodeIds.begin(), inputNodeIds.end());
-        inputNodeIds.clear();
-    }
     int numSet() {
         return inputNodeIds.size();
     }
@@ -139,12 +144,14 @@ public:
     }
     
     bool isInput(int nodeid) {
-        return reverseVarsMapping.find(nodeid) != reverseVarsMapping.end();
-    }
+        return varsMapping.find(nodeid) != varsMapping.end();
+    }    
 
-    int assertedNodesSize() {
-        return assertedNodeIds.size();
+    void printInputs() {
+        cout << "Inputs: ";
+        for (auto it = inputNodeIds.begin(); it != inputNodeIds.end(); it++) {
+            cout << "(" << *it << "," << nodeVals[*it] << "); ";
+        }
+        cout << endl;
     }
-    
-    
 };

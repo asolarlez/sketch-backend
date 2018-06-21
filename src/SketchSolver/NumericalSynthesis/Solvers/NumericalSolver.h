@@ -24,27 +24,16 @@
 
 using namespace std;
 
+
 class NumericalSolver {
 protected:
 	BooleanDAG* dag;
 	Interface* interf;
     
     int ncontrols;
-    gsl_vector* state;
-    
-    bool previousSAT;
-    bool fullSAT;
-    int numConflictsAfterSAT;
-    bool inputConflict;
-    
-    int CONFLICT_CUTOFF = PARAMS->conflictCutoff;
-
-    
     map<string, int>& ctrls;
     SymbolicEvaluator* eval;
     OptimizationWrapper* opt;
-    ConflictGenerator* cg;
-    SuggestionGenerator* sg;
     
     SimpleEvaluator* seval;
     
@@ -53,33 +42,26 @@ protected:
     
     const vector<vector<int>>& dependentInputs;
     const vector<vector<int>>& dependentCtrls;
-    vector<int> inputsToAsserts; // TODO: this is pretty local hack
 
-    map<int, string> inputStrings; // TODO: local info for debugging input node id to <iteration,ctrlid>
+    gsl_vector* result;
+    LocalState* localState;
 	
 	NumDebugger* debugger;
 	
 public:
-    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger);
+    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger);
     ~NumericalSolver(void);
     
 	// Called by the NumericalSolver
-    bool checkSAT();
-	bool ignoreConflict();
-	vector<tuple<int, int, int>> collectSatSuggestions();
-    vector<tuple<int, int, int>> collectUnsatSuggestions();
-	void getConflicts(vector<pair<int, int>>& conflicts);
-	void getControls(map<string, double>& ctrlVals);
-    void setState(gsl_vector* state);
+    bool checkSAT(gsl_vector* initState = NULL);
     
     // helper functions
-    bool checkInputs();
-    bool checkCurrentSol();
-    bool checkFullSAT();
-    bool initializeState(bool suppressPrint);
-    void printControls();
+    bool checkCurrentSol(gsl_vector* state);
+    bool checkFullSAT(gsl_vector* state);
+    bool initializeState();
+
+    gsl_vector* getResult();
+    LocalState* getLocalState();
     
-    void printGraphCmd(string prefix);
-    void printInput();
 
 };
