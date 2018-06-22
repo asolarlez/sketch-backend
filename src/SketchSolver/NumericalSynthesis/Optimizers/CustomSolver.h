@@ -110,6 +110,9 @@ public:
 #endif 
 
 
+typedef enum {STALL=(12), DONE=(2), SATISFIED=(5)}  NoSnoptStatus;
+
+
 class NotSnoptSolver {
 
 	integer n; integer neF; integer lenA; integer lenG; integer neG;
@@ -121,7 +124,7 @@ class NotSnoptSolver {
 	integer *iGfun;
 	integer *jGvar;
 
-	doublereal *x;
+	vec<doublereal> x;
 	doublereal *xlow;	// lower bound on unknowns
 	doublereal *xupp;	// upper bound on unknowns
 	doublereal *xmul;
@@ -132,8 +135,8 @@ class NotSnoptSolver {
 	doublereal *Fupp;	// upper bound on constraint outputs
 	doublereal *Fmul;
 	doublereal *G;
-	doublereal *Gtotal;
-	doublereal *GtotOld;
+	vec<doublereal> Gtotal;
+	vec<doublereal> GtotOld;
 	integer *Fstate;
 
 	integer nxnames;
@@ -151,15 +154,15 @@ public:
 		iAfun = new integer[lenA];
 		jAvar = new integer[lenA];
 		A = new doublereal[lenA];
-		Gtotal = new doublereal[lenA];
-		GtotOld = new doublereal[lenA];
+		Gtotal.growTo(n); 
+		GtotOld.growTo(n); 
 
 		lenG = n*neF;
 		iGfun = new integer[lenG];
 		jGvar = new integer[lenG];
 		G = new doublereal[lenG];
 
-		x = new doublereal[n];
+		x.growTo(n);
 		xlow = new doublereal[n]; // lower bounds for every unknown.
 		xupp = new doublereal[n]; // upper bounds for every unknown.
 		xmul = new doublereal[n];
@@ -183,10 +186,9 @@ public:
 
 	~NotSnoptSolver() {
 		gsl_vector_free(result);
-		delete[]iAfun; delete[]jAvar; delete[]A;
-		delete[] Gtotal; delete[] GtotOld;
+		delete[]iAfun; delete[]jAvar; delete[]A;		
 		delete[]iGfun; delete[]jGvar;
-		delete[]x; delete[]xlow; delete[]xupp;
+		delete[]xlow; delete[]xupp;
 		delete[]xmul; delete[]xstate;
 		delete[]F; delete[]Flow; delete[]Fupp;
 		delete[]Fmul; delete[]Fstate;
@@ -272,9 +274,11 @@ public:
 
 	double reduce(double* in, double*Fval, int lenOut, int lenIn, double* out) {
 		double minval = 0.0;
+		int minj = -1;
 		for (int j = 1; j < lenIn; ++j) {
 			if (Fval[j] < minval) {
 				minval = Fval[j];
+				minj = j;
 			}
 		}
 
@@ -284,15 +288,37 @@ public:
 				rv += (Fval[j] / minval)*Fval[j];
 			}
 		}
+
+
+		// For the when j == minj, out[i] += in[j][i]
+		// when j != minj, rv += F[j]^2 / F[minj]
+		//             so out[i] = (2*F[j]*in[j][i]*F[minj] - F[j]^2*in[minj][i]) / F[minj]^2
+		//                       = 2*F[j]*in[j][i]/minval  - F[j]*F[j]*in[minj][i]/(minval*minval)
 		for (int i = 0; i < lenOut; ++i) {
 			out[i] = 0.0;
+			double in_i_minj = in[i + minj*lenOut];
 			for (int j = 1; j < lenIn; ++j) {				
 				if (Fval[j] < 0.0) {
-					out[i] += (Fval[j] / minval) * in[i + j*lenOut];
+					if (j == minj) {
+						out[i] += in[i + j*lenOut];
+					}
+					else {
+						double Fval_j = Fval[j];
+						out[i] += 2 * Fval_j*in[i + j*lenOut] / minval - Fval_j*Fval_j*in_i_minj / (minval*minval);
+					}					
 				}
 			}
 		}
 		return 0.01-rv;
+	}
+
+	double dist(vec<doublereal>& v1, vec<doublereal>& v2) {
+		double rv = 0.0;
+		for (int i = 0; i < v1.size(); ++i) {
+			auto t = v1[i] - v2[i];
+			rv += t*t;
+		}
+		return sqrt(rv);
 	}
 
 	void update(doublereal* x, doublereal* G, doublereal gamma, int n) {
@@ -335,51 +361,121 @@ public:
 		return true;
 	}
 
-	integer solve(integer param) {
+
+	void display(vec<doublereal>& in) {
+		cout << "[";
+		for (int i = 0; i < n; ++i) {
+			cout << in[i]; 
+			if (i < n - 1) {
+				cout << ", ";
+			}
+		}
+		cout << "], \\"<<endl;
+	}
+
+
+
+	NoSnoptStatus solveConstraints() {
 		integer status;
 		integer lencu = 0;
 		integer leniu = 0;
 		integer lenru = 0;
 		integer iu[2];
 		doublereal ru[2];
-		doublereal gamma = 1.0;
-		bool frst = true;
 		double prevfv = 100000000.0;
- 
-		int regressions = 0;
-		int satflip = 0;
-		bool lastsat = true;
-		cout << "[ ";
-		do {
-			mydf(&status, &this->n, x, &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
-				workspace, &lencu, iu, &leniu, ru, &lenru);
-			
+		doublereal gamma = 1.0;
+		vec<doublereal> bestx;
+		bestx.growTo(n);
+		doublereal bestfv = 1000.0;
+		int sinceLastImprovement = 0;
+		bool frst = true;
 
-			
 
-			
-			double fv = reduce(G, F, n, neF, Gtotal);
+		auto supercheck = [&]() {
 
-			if (fv > prevfv*5.0) {
-				regressions++;				
+			for (int i = 1; i < neF; ++i) {
+				bestx.copyTo(x);
+				mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+					workspace, &lencu, iu, &leniu, ru, &lenru);
+				double fv = F[i];
+
+				double gnorm = normalize(G + i*n, n);
+				update(x, G + i*n, 1e-6, n);
+				mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+					workspace, &lencu, iu, &leniu, ru, &lenru);
+				double newfv = F[i];
+				if (newfv > fv) {
+					cout << "OK: " << i << endl;
+				}
+				else {
+					cout << " BAD: " << i << endl;
+				}
 			}
 
-			prevfv = fv;
+
+		};
+
+
+
+
+		auto lineSearch = [&]() {
+			bestx.copyTo(x);
+			mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+				workspace, &lencu, iu, &leniu, ru, &lenru);
+			double fv = reduce(G, F, n, neF, Gtotal);
+			double gnorm = normalize(Gtotal, n);
+			double fgamma = gamma * (fv / gnorm);
+			cpy(GtotOld, Gtotal.begin(), n);
+			do {
+				update(x, Gtotal, fgamma, n);				
+				mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+					workspace, &lencu, iu, &leniu, ru, &lenru);
+				fv = reduce(G, F, n, neF, Gtotal);
+				gnorm = normalize(Gtotal, n);				
+
+				if (fv < bestfv || gnorm < 0.0000001) {
+					return;
+				}
+				else {
+					double dd = dot(Gtotal.begin(), GtotOld, n);
+					bestx.copyTo(x);
+					fgamma = fgamma * 0.65;
+					cpy(Gtotal.begin(), GtotOld, n);
+				}
+			} while (true);			
+		};
+
+
+		do {
+			display(x);
+			mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+				workspace, &lencu, iu, &leniu, ru, &lenru);
+
+			double fv = reduce(G, F, n, neF, Gtotal);
+			if (fv < bestfv) {
+				bestfv = fv;
+				x.copyTo(bestx);
+				sinceLastImprovement = 0;
+			}
+			else {
+				sinceLastImprovement++;
+			}
 			
 
+			prevfv = fv;
 
 			if (checkexit(G, F, neF, n)) {
 				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;
-				return 2;
+				return DONE;
 			}
-			if (checkstall(Gtotal, G, neF, n) || gamma < 0.0000001 || regressions > 10) {
-				return 12;
+			bool chkst = checkstall(Gtotal, G, neF, n);
+			if (chkst || gamma < 0.0000001 || sinceLastImprovement > 150) {
+				bestx.copyTo(x);
+				lineSearch();
+				return STALL;
 			}
 			int zigzag = 0;
-			double gnorm = normalize(Gtotal, n);			
-			
 
-			double optnorm = normalize(G, n);
 
 			auto updOld = [&](double* GVal) {
 				if (frst) {
@@ -411,35 +507,219 @@ public:
 					cpy(GtotOld, GVal, n);
 				}
 			};
+			double gnorm = normalize(Gtotal, n);
+			double optnorm = normalize(G, n);
 
-			
-			if (gnorm > 0) {
-				lastsat = false;
+
+			auto checkBounds = [&]() {
+				double mag = 0.0;
+				for (int i = 0; i < n; ++i) {
+					if (x[i] > xupp[i]) {
+						x[i] = xupp[i];
+						if (gamma > 1.0) { gamma = 1.0; }
+					}
+					else {
+						if (x[i] < xlow[i]) {
+							x[i] = xlow[i];
+							if (gamma > 1.0) { gamma = 1.0; }
+						}
+						else {
+							mag += Gtotal[i] * Gtotal[i];
+						}
+					}					
+				}
+				return mag < 0.0001;
+			};
+
+			if (gnorm > 0) {				
 				updOld(Gtotal);
-
 				double fgamma = gamma * (fv / gnorm);
 				update(x, Gtotal, fgamma, n);
 				if (optnorm > 0) {
-					update(x, G, -fgamma/10.0, n);
+					update(x, G, -fgamma / 20.0, n);
+				}
+				if (checkBounds()) {
+					if (sinceLastImprovement > 10) {
+						bestx.copyTo(x);
+						return STALL;
+					}					
 				}
 			}
 			else {
-				if (lastsat == false) {
-					satflip++;
-					if (satflip > 5) {
-						return 2;
-					}
-				}
+				return SATISFIED;
+			}
+		} while (true);
+	}
 
-				lastsat = true;
-				for (int i = 0; i < n; ++i) { G[i] = -G[i]; }
-				updOld(G);
-				if (optnorm > 0) {
-					update(x, G, gamma*optnorm, n);
+	
+
+
+
+	integer solve(integer param) {
+		integer status;
+		integer lencu = 0;
+		integer leniu = 0;
+		integer lenru = 0;
+		integer iu[2];
+		doublereal ru[2];
+		doublereal gamma = 1.0;
+		bool frst = true;
+		double prevfv = 100000000.0;
+
+		vec<doublereal> tempx;
+		tempx.growTo(n);
+		vec<doublereal> tempG;
+		tempG.growTo(n);
+		vec<doublereal> tempPar;
+		tempPar.growTo(n);
+
+
+		vec<doublereal> ttempx;
+		tempx.growTo(n);
+
+		vec<doublereal> ttempPar;
+		tempPar.growTo(n);
+
+ 
+		int regressions = 0;
+		int satflip = 0;
+		bool lastsat = true;	
+
+		auto rv = solveConstraints();
+		if (rv == DONE) {
+			return (integer)DONE;
+		}
+		if (rv == STALL) {
+			return (integer)STALL;
+		}
+		int zigzag = 0;
+
+		
+
+
+		double THRESHOLD = 0.0001;
+		double GOODFV = 0.01;
+
+
+		//Outputs a final x and a final direction. It is also assumed that after this call, G will have the 
+		//gradients computed on that final x.
+		auto lineSearch = [&](vec<doublereal>& inx, doublereal scale, vec<doublereal>& direction, vec<doublereal>& outx, vec<doublereal>& outG) {
+
+
+
+			auto run = [&]() {
+				display(outx);
+				mydf(&status, &this->n, outx.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
+					workspace, &lencu, iu, &leniu, ru, &lenru);
+			};
+
+			//First we check if we are really close to a condition violation, in which case we will just return with the outG vector without moving further.
+			inx.copyTo(outx);
+			update(outx, direction.begin(), THRESHOLD, n);
+			run();
+			double nearfv = reduce(G, F, n, neF, Gtotal);
+			if (nearfv > GOODFV && outG.size() > 0) {
+				inx.copyTo(outx);
+				double ggn = normalize(Gtotal, n);
+				double dd = dot(direction.begin(), Gtotal, n);
+				if (dd < 0.0 && dd > -0.99) {
+					for (int ii = 0; ii < n; ++ii) { outG[ii] = direction[ii] - Gtotal[ii] * dd; }
+					run();
+					return true;
+				}
+				else {
+					run();
+					return false;
 				}
 			}
+			//If that did not fail, we do the standard binary search. 
+			double oldF0 = F[0];
+			bool hitBoundary = false;
+			do {
+				inx.copyTo(outx);
+				update(outx, direction.begin(), scale, n);				
+				run();
+				double newfv = reduce(G, F, n, neF, Gtotal);
+
+				if (newfv > GOODFV || F[0] > oldF0) {
+					//Not as good as it was before. 
+					scale = scale * 0.6;
+					if (newfv > GOODFV && outG.size() > 0) {
+						//This means we got back to the region where the constraints are not satisfied. 
+						double ggn = normalize(Gtotal, n);
+						double dd = dot(direction.begin(), Gtotal, n);
+						if (dd < 0.0 && dd > -0.99) {							
+							hitBoundary = true;
+							for (int ii = 0; ii < n; ++ii) { outG[ii] = direction[ii] - Gtotal[ii] * dd; }
+						}
+					}
+					if (scale < THRESHOLD) {
+						inx.copyTo(outx);
+						run();
+						return hitBoundary;
+					}
+				}else{
+					return hitBoundary;
+				}
+			} while (true);	
+		};
+
+
+		gamma = 1.0;
+
+		do {
 			
-			// x = x - \gamma * G. 
+			double fv = reduce(G, F, n, neF, Gtotal);
+
+			if (fv > prevfv*5.0) {
+				regressions++;				
+			}
+
+			prevfv = fv;
+			
+			if (checkexit(G, F, neF, n)) {				
+				return 2;
+			}
+			if (checkstall(Gtotal, G, neF, n) || gamma < 0.0000001 || regressions > 10) {
+				return 12;
+			}
+			
+						
+			double optnorm = normalize(G, n);
+
+			for (int i = 0; i < n; ++i) { tempG[i] = -G[i]; }
+			
+			double factor = gamma*optnorm;
+			bool hit = lineSearch(x, factor, tempG, tempx, tempPar);
+
+			if (hit) {
+				normalize(tempPar.begin(), n);
+				lineSearch(tempx, factor, tempPar, ttempx, ttempPar);
+				double traveled = dist(ttempx, x);
+				if (traveled < THRESHOLD) {
+					return 2;
+				}
+				if (traveled < factor) {
+					gamma = traveled / optnorm;
+				}
+
+				ttempx.copyTo(x);
+			}
+			else {				
+				double traveled = dist(tempx, x);
+				if (traveled < THRESHOLD) {
+					return 2;
+				}
+				if (traveled < factor) {
+					gamma = traveled / optnorm;
+				}
+				else {
+					gamma = gamma*1.2;
+				}
+				tempx.copyTo(x);
+			}
+
+
 		} while (true);
 		return 0;
 	}
