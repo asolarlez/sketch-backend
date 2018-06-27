@@ -17,11 +17,13 @@ class gsl_vector;
 class LocalState {
 public:
 	vector<gsl_vector*> localSols; // local sol for different betas
+	vector<double> errors;
 
 	LocalState(int ncontrols, int nbetas) {
 		for (int i = 0; i < nbetas; i++) {
 			localSols.push_back(gsl_vector_alloc(ncontrols));
 		}
+		errors.resize(nbetas);
 	}
 	~LocalState() {
 		for (int i = 0; i < localSols.size(); i++) {
@@ -38,9 +40,9 @@ public:
 
 class OptimizationWrapper {
 public:
-	virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState) = 0;
+	virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState, int level = -1) = 0;
 	virtual gsl_vector* getMinState() = 0;
 	virtual void randomizeCtrls(gsl_vector* x, Interface* inputs, const set<int>& constraints, int minimizeNode) = 0;
 	virtual double getObjectiveVal() = 0;
-	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int condNode, int condVal) = 0;
+	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, Predicate* pred, int predVal, int level) = 0;
 };

@@ -3,6 +3,7 @@
 #include <vector>
 #ifndef _NOGSL
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_blas.h>
 #else
 #include "FakeGSL.h"
 #endif
@@ -162,5 +163,18 @@ public:
             s << *it << ";";
         }
         return s.str();
+    }
+
+    static double norm(const gsl_vector* v) {
+        return gsl_blas_dnrm2(v);
+    }
+
+    static bool sameDir(const gsl_vector* v1, const gsl_vector* v2) {
+        double dp = 0.0;
+        gsl_blas_ddot(v1, v2, &dp);
+        dp = dp/(norm(v1) * norm(v2));
+        cout << "dot product: " << dp << endl;
+        if (dp > 0.9) return true;
+        return false;
     }
 };

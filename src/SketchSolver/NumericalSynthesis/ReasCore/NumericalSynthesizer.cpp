@@ -1,14 +1,18 @@
 #include "NumericalSynthesizer.h"
 
-gsl_vector* GDEvaluator::curGrad;
-gsl_vector* GDEvaluator::grad;
-ofstream GDEvaluator::file;
+//gsl_vector* GDEvaluator::curGrad;
+//gsl_vector* GDEvaluator::grad;
+//ofstream GDEvaluator::file;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 ofstream SnoptEvaluator::file;
 gsl_vector* MaxSnoptEvaluator::state;
 gsl_vector* MaxSnoptEvaluator::grad;
 ofstream MaxSnoptEvaluator::file;
+
+gsl_vector* MaxEvaluator::state;
+gsl_vector* MaxEvaluator::grad;
+ofstream MaxEvaluator::file;
 
 int GradUtil::counter;
 
@@ -34,11 +38,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     if (PARAMS->verbosity > 2) {
         cout << "NInputs: " << interf->size() << endl;
     }
-    
-    for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-        cout << (*dag)[it->first]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->first]) << "]" << endl;
-    }
-    
+
     vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
     int ctr = 0;
     for (int i = 0; i < ctrlNodes.size(); i++) {
@@ -86,18 +86,21 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     }
     numConstraints +=  1000; // TODO: magic number
     
-    SymbolicEvaluator* eval = new BoolAutoDiff(*dag, ctrls);
+    SmoothEvaluators* smoothEval = new SmoothEvaluators(dag, interf, ctrls, ncontrols);
+    smoothEval->addEvaluator(dag);
+
+    ActualEvaluators* actualEval = new ActualEvaluators(dag, interf, ctrls);
+    actualEval->addEvaluator(dag);
+
     OptimizationWrapper* opt;
     if (PARAMS->useSnopt) {
-        opt = new SnoptWrapper(eval, ncontrols, xlow, xupp, numConstraints);
-    } else {
-#ifndef _NOGSL
-        opt = new GradientDescentWrapper(eval, ncontrols, xlow, xupp);
-#else
-        Assert(false, "NO GSL");
-#endif
+        opt = new SnoptWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
+    }  else {
+        Assert(false, "No gradient descent wrapper");
     }
     
+    MaxSolverWrapper* maxOpt = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
+
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
         set<int> inputs;
@@ -113,20 +116,55 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         }
         dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
     }
-    sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
-    //SuggestionGenerator* sg = new SuggestionGeneratorUsingMax(dag, interf, ctrls, opt);
+
+    for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+        Predicate* p = *it;
+        if (p->isBasic()) {
+            BasicPredicate* bp = (BasicPredicate*)(p);
+            if (dependentInputs[bp->nid].size() > 0) {
+                bp->makeImpure();
+            }
+        } else if (p->isDiff()) {
+            DiffPredicate* dp = (DiffPredicate*)(p);
+            if (!dp->p1->isPure() || !dp->p2->isPure()) {
+                dp->makeImpure();
+            }
+        }
+    }
+    // Need to do this twice because predicates maynot be topologically ordered
+    for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+        Predicate* p = *it;
+        if (p->isDiff()) {
+            DiffPredicate* dp = (DiffPredicate*)(p);
+            if (!dp->p1->isPure() || !dp->p2->isPure()) {
+                dp->makeImpure();
+            }
+        }
+    }
 
 
-    debugger = new NumDebugger(dag, ctrls, interf, eval, opt);
     
-    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, dependentInputs, dependentCtrls, debugger);
-
+    for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+        cout << (*it)->print();
+        if ((*it)->isPure()) {
+            cout << " PURE" << endl;
+        } else {
+            cout << " IMPURE" << endl;
+        }
+    }
     
-    //debugger->plotConditions();
-    //debugger->doMaxOpt();
-    //debugger->doOpt();
-    //debugger->getGraphs(0);
-    //exit(0);
+
+    //sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
+    sg = new SuggestionGeneratorUsingMax(dag, _fm, interf, ctrls, opt, maxOpt, actualEval, smoothEval, ncontrols);
+
+
+    debugger = new NumDebugger(dag, ctrls, interf, smoothEval, actualEval, opt);
+    
+    solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
+
+    if (PARAMS->numdebug) {
+        debugger->getPredicatesGraphs();
+    }
 }
 
 bool NumericalSynthesizer::solve() {
@@ -140,56 +178,51 @@ bool NumericalSynthesizer::solve() {
 bool NumericalSynthesizer::searchWithOnlySmoothing() {
     bool sat = false;
     for (int i = 0; i < PARAMS->maxRestarts; i++) {
-        sat = solver->checkSAT();
+        sat = solver->checkSAT(-1);
         if (sat) {
             gsl_vector_memcpy(state, solver->getResult());
             return true;
         }
+        GradUtil::counter++;
     } 
     return false;
 }
 
+
 bool NumericalSynthesizer::searchWithPredicates() {
-    bool sat = false;
-    bool first = true;
     while(true) {
-        sat = solver->checkSAT(first ? NULL : state);
-        first = false;
-        if (sat) {
+        int num_levels = interf->numLevels();
+        bool sat = true;
+        bool first = true;
+        int level;
+        int num_ignored = 0;
+        for (level = num_levels - 1; level >= -1; level--) {
+            sat = solver->checkSAT(level, first ? NULL : state);
+            first = false;
+            if (!sat) break;
             gsl_vector_memcpy(state, solver->getResult());
-            return true;
         }
-        else {
-            if (interf->numSet() >= CONFLICT_THRESHOLD) {
-                cout << "Reach conflict threshold -- restarting" << endl;
-                interf->restartInputs();
-                first = true;
-                continue;
+
+        if (sat) {
+            cout << "Found solution" << endl;
+            return true;
+        } else {
+            cout << "Unsat in level " << level << endl;
+            if (level >= 0) {
+                num_ignored++;
+                cout << "Ignoring" << endl;
+                if (num_ignored > 5) {
+                    cout << "TOO MANY UNSATS IN LEVEL 0" << endl;
+                }
             } else {
-                sg->initUnsatSuggestions(solver->getLocalState());
-                bool foundValidPredicate = false;
-                for (int i = 0; i < NUM_SUGGESTIONS_THRESHOLD; i++) {
-                    const pair<int, int>& s = sg->getNextUnsatSuggestion();
-                    cout << "Suggestion " << s.first << " " << s.second << endl;
-                    if (s.first >= 0 && interf->tryInput(s.first, s.second)) {
-                        bool hasInput = solver->initializeState();
-                        if (hasInput) {
-                            foundValidPredicate = true;
-                            gsl_vector_memcpy(state, solver->getResult());
-                            break;
-                        } else {
-                            interf->clearLastInput();
-                        }
-                    }
-                }
-                if (!foundValidPredicate) {
-                    cout << "None of the suggestions worked -- restarting" << endl;
-                    interf->restartInputs();
-                    first = true;
-                    continue;
-                }
+                num_ignored = 0;
+                IClause* c = sg->getConflictClause(level, solver->getLocalState());
+                cout << "Suggested clause: " << c->print() << endl;
+                interf->addClause(c, level + 1);
             }
         }
+        interf->removeOldClauses();
+        GradUtil::counter++;
     }
 }
 

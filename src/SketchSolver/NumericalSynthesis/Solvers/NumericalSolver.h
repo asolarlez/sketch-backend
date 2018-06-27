@@ -16,9 +16,9 @@
 #include "Interface.h"
 #include "ConflictGenerator.h"
 #include "SuggestionGenerator.h"
-#include "SimpleEvaluator.h"
+#include "ActualEvaluators.h"
 #include "CommandLineArgs.h"
-#include "SymbolicEvaluator.h"
+#include "SmoothEvaluators.h"
 #include "NumDebugger.h"
 
 
@@ -32,7 +32,8 @@ protected:
     
     int ncontrols;
     map<string, int>& ctrls;
-    SymbolicEvaluator* eval;
+    SmoothEvaluators* smoothEval;
+    ActualEvaluators* actualEval;
     OptimizationWrapper* opt;
     
     SimpleEvaluator* seval;
@@ -49,16 +50,13 @@ protected:
 	NumDebugger* debugger;
 	
 public:
-    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger);
+    NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SmoothEvaluators* _smoothEval, ActualEvaluators* _actualEval, OptimizationWrapper* _opt, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls, NumDebugger* _debugger);
     ~NumericalSolver(void);
     
 	// Called by the NumericalSolver
-    bool checkSAT(gsl_vector* initState = NULL);
+    bool checkSAT(int level, gsl_vector* initState = NULL);
     
-    // helper functions
-    bool checkCurrentSol(gsl_vector* state);
     bool checkFullSAT(gsl_vector* state);
-    bool initializeState();
 
     gsl_vector* getResult();
     LocalState* getLocalState();

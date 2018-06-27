@@ -18,15 +18,17 @@
 //#include "SmoothSatSolver.h"
 #include "NumericalSolver.h"
 #include "Interface.h"
-#include "BoolAutoDiff.h"
+#include "SmoothEvaluators.h"
+#include "ActualEvaluators.h"
 #include "SnoptWrapper.h"
-#include "GradientDescentWrapper.h"
+#include "MaxSolverWrapper.h"
 #include "SimpleConflictGenerator.h"
 #include "SimpleSuggestionGenerator.h"
 #include "SmartSuggestionGenerator1.h"
 #include "SuggestionGeneratorUsingMax.h"
 
 #include "NumDebugger.h"
+#include "BoolNodeSimplifier.h"
 
 
 class NumericalSynthesizer  {

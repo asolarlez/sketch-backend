@@ -5,6 +5,8 @@
 #include "Interface.h"
 #include "SuggestionGenerator.h"
 #include "OptimizationWrapper.h"
+#include "MaxSolverWrapper.h"
+#include "BoolNodeSimplifier.h"
 #include <map>
 #include <set>
 
@@ -15,25 +17,24 @@
 #endif
 
 class SuggestionGeneratorUsingMax: public SuggestionGenerator {
-    vector<int> nodesToSuggest;
     Interface* interf;
     BooleanDAG* dag;
     map<string, int>& ctrls;
-    SimpleEvaluator* seval;
+    FloatManager& fm;
+
+    ActualEvaluators* actualEval;
+    SmoothEvaluators* smoothEval;
+
     OptimizationWrapper* opt;
+    MaxSolverWrapper* maxOpt;
+
     int minimizeNode;
     set<int> assertConstraints;
+
+    vector<gsl_vector*> dirGrads;
+
 public:
-    SuggestionGeneratorUsingMax(BooleanDAG* _dag, Interface* _interface, map<string, int>& _ctrls, OptimizationWrapper* _opt): dag(_dag), interf(_interface), ctrls(_ctrls), opt(_opt) {
-        seval = new SimpleEvaluator(*dag, ctrls);
-        seval->setInputs(interf);
-        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->first;
-            bool_node* n = (*dag)[nodeid];
-            if (Util::hasArraccChild(n)) {
-                nodesToSuggest.push_back(nodeid);
-            }
-        }
+    SuggestionGeneratorUsingMax(BooleanDAG* _dag, FloatManager& _fm, Interface* _interface, map<string, int>& _ctrls, OptimizationWrapper* _opt, MaxSolverWrapper* _maxOpt, ActualEvaluators* _actualEval, SmoothEvaluators* _smoothEval, int ncontrols): dag(_dag), fm(_fm), interf(_interface), ctrls(_ctrls), opt(_opt), maxOpt(_maxOpt), actualEval(_actualEval), smoothEval(_smoothEval) {
 
         minimizeNode = -1;
 
@@ -47,136 +48,209 @@ public:
 	    		assertConstraints.insert(i);
 	    	}
 	    }
+
+        dirGrads.push_back(gsl_vector_alloc(ncontrols));
+        dirGrads.push_back(gsl_vector_alloc(ncontrols));
+        dirGrads.push_back(gsl_vector_alloc(ncontrols));
+        dirGrads.push_back(gsl_vector_alloc(ncontrols));
+        dirGrads.push_back(gsl_vector_alloc(ncontrols));
+    }
+    ~SuggestionGeneratorUsingMax() {
+        for (int i = 0; i < dirGrads.size(); i++) {
+            gsl_vector_free(dirGrads[i]);
+        }
+    }
+
+    
+    BooleanDAG* getNewDag(BooleanDAG* origDag, int origNid, const gsl_vector* s) {
+        BooleanDAG* newDag = origDag->clone();
+        SimpleEvaluator* seval = actualEval->getEvaluator(origDag);
+        seval->run(s);
+        BoolNodeSimplifier simplifier(*newDag, fm);
+        simplifier.process(*newDag, origNid, seval);
+        newDag->lprint(cout);
+        return newDag;
     }
     
-    virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
-        vector<tuple<int, int, int>> suggestions;
-        
-        //cout << "state: " << Util::print(state) << endl;
-        seval->run(state);
-        
-        vector<tuple<double, int, int>> s;
-        
-        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->first;
-            bool_node* n = (*dag)[nodeid];
-            bool hasArraccChild = Util::hasArraccChild(n);
-            
-            double dist = seval->d(n);
-            double cost = abs(dist);
-            
-            if (hasArraccChild) {
-                cost = cost / 1000.0;
+    Predicate* make_pure(Predicate* p, const gsl_vector* s) {
+        if (p->isBasic()) {
+            BasicPredicate* bp = (BasicPredicate*) p;
+            BooleanDAG* newDag = getNewDag(bp->dag, bp->nid, s);
+            // register newDag
+            actualEval->addEvaluator(newDag);
+            smoothEval->addEvaluator(newDag);
+            return new BasicPredicate(newDag, newDag->size() - 2);
+        } else {
+            DiffPredicate* dp = (DiffPredicate*)p;
+            Predicate* new_p1;
+            Predicate* new_p2;
+            if (dp->p1->isPure()) {
+                new_p1 = dp->p1;
+            } else {
+                new_p1 = make_pure(dp->p1, s);
             }
-            if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-                cout << n->lprint() << " = " <<  dist << ";";
-                cost = cost - 5.0;
+            if (dp->p2->isPure()) {
+                new_p2 = dp->p2;
+            } else {
+                new_p2 = make_pure(dp->p2, s);
             }
-            s.push_back(make_tuple(cost, nodeid, dist > 0));
-            
+            return new DiffPredicate(new_p1, new_p2, max(ctrls.size(), 1));
         }
-        cout << endl;
-        
-        sort(s.begin(), s.end());
-        //cout << ((*dag)[imap[get<1>(s[0])]])->lprint() << " " << get<2>(s[0]) << endl;
-        reverse(s.begin(), s.end());
-        for (int k = 0; k < s.size(); k++) {
-            int nodeid = get<1>(s[k]);
-            if (!interf->hasValue(nodeid)) {
-                suggestions.push_back(make_tuple(0, nodeid, get<2>(s[k])));
-            }
-        }
-        int lastIdx = suggestions.size() - 1;
-        if (lastIdx > 0) {
-            int nodeid = get<1>(suggestions[lastIdx]);
-            bool_node* n = (*dag)[nodeid];
-            cout << n->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
-            cout << "val: " << seval->d(n) << endl;
-        }
-        return suggestions;
     }
 
-    vector<tuple<double, int, int>> getDistances(const gsl_vector* state) {
-    	seval->run(state);
+    int getDirectionsLevel0(const gsl_vector* state, double beta) {
+        GradUtil::BETA = beta;
+        GradUtil::ALPHA = -beta;
+        smoothEval->run(state);
 
-		vector<tuple<double, int, int>> s;
-                
-        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-            int nodeid = it->first;
-            bool_node* n = (*dag)[nodeid];
-            
-            double dist = seval->d(n);
+        vector<tuple<double, Predicate*, int>> s;
+               
+        for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+            Predicate* p = *it;
+           
+            double dist = smoothEval->dist(p);
             double cost = abs(dist);
-            s.push_back(make_tuple(cost, nodeid, dist > 0));
+            s.push_back(make_tuple(cost, p, dist > 0));
         }
 
         sort(s.begin(), s.end());
         cout << "Distances: " << endl;
         int end = 5;
         if (end > s.size()) {
-        	end = s.size();
+            end = s.size();
         }
         for (int i = 0; i < end; i++) {
-        	cout << (*dag)[get<1>(s[i])]->lprint() << " " << get<0>(s[i]) << " " << get<2>(s[i]) << endl;
+            cout << get<1>(s[i])->print() << " " << get<0>(s[i]) << " " << get<2>(s[i]) << endl;
+        }
+
+        int numDirs = 0;
+        for (int i = 0; i < end; i++) {
+            if (numDirs == 5) break;
+            double dist = get<0>(s[i]);
+            Predicate* p = get<1>(s[i]);
+            int val = !get<2>(s[i]);
+            if (dist < 0.1) continue;
+            smoothEval->getErrorOnPredicate(p, val, dirGrads[numDirs]);
+            cout << "G: " << Util::print(dirGrads[numDirs]) << endl;
+            bool newDir = true;
+            for (int j = 0; j < numDirs; j++) {
+                if (Util::sameDir(dirGrads[j], dirGrads[numDirs])) {
+                    newDir = false;
+                    cout << "Not a new dir" << endl;
+                    break;
+                }
+            }
+            if (newDir) {
+                numDirs++;
+            }
+        }
+        Assert(numDirs > 0, "No dirs?");
+        return numDirs;
+    }
+
+    vector<tuple<double, Predicate*, int>> getDistancesLevel0(const gsl_vector* state) {
+        actualEval->run(state);
+
+        vector<tuple<double, Predicate*, int>> s;
+               
+        for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+            Predicate* p = *it;
+           
+            double dist = actualEval->dist(p);
+            double cost = abs(dist);
+            s.push_back(make_tuple(cost, p, dist > 0));
+        }
+
+        sort(s.begin(), s.end());
+        cout << "Distances: " << endl;
+        int end = 5;
+        if (end > s.size()) {
+            end = s.size();
+        }
+        for (int i = 0; i < end; i++) {
+            cout << get<1>(s[i])->print() << " " << get<0>(s[i]) << " " << get<2>(s[i]) << endl;
         }
 
         return s;
     }
-    
-    virtual void initUnsatSuggestions(LocalState* state) { }
-    virtual pair<int, int> getNextUnsatSuggestion() {
-        return make_pair(-1, 0);
+
+
+    void getPredicatesNearToMaxLevel0(int idx,  double beta, gsl_vector* state, gsl_vector* dir, set<Predicate*>& preds) {
+        cout << "Doing max along dir: " << Util::print(dir) << endl;
+        maxOpt->maximize(interf, state, assertConstraints, minimizeNode, beta, dir, -1, idx); 
+        gsl_vector* sol = maxOpt->getMinState();
+        cout << "Max at " << Util::print(sol) << endl;
+        const vector<tuple<double, Predicate*, int>>& distances = getDistancesLevel0(sol);
+        int num_preds = min(4, distances.size());
+        preds.insert(get<1>(distances[0]));
+        for (int i = 1; i < num_preds; i++) {
+            if (get<0>(distances[i]) < 0.5) {
+                preds.insert(get<1>(distances[i]));
+            }
+        } 
     }
-    vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
-        vector<tuple<int, int, int>> suggestions;
-        const vector<tuple<double, int, int>>& distances = getDistances(state);
-        
-        vector<tuple<double, int, int>> s;
 
+   
 
-        bool solved = opt->maximize(interf, state, assertConstraints, minimizeNode, -1, get<1>(distances[0]), !get<2>(distances[0])); 
-        gsl_vector* sol = opt->getMinState();
-        cout << "Max at " << Util::print(sol) << endl;
-        const vector<tuple<double, int, int>>& distances1 = getDistances(sol);
+    int chooseBeta(LocalState* ls) {
+       double error1 = ls->errors[0];
+       double error2 = ls->errors[1];
+       double error3 = ls->errors[2];
+       cout << "Errors: " << error1 << " " << error2 << " " << error3 << endl;
 
+       if (error3 <= 0.0) {
+            Assert(false, "Zero error?");
+       } 
+       if (error3 < 1.0 || error2 <= 0.01) {
+            return 2;
+       }
+       if (error2 < 5.0 || error1 <= 0.01) {
+            return 1;
+       } else {
+            return 0;
+       }
+    }
 
-
-        solved = opt->maximize(interf, state, assertConstraints, minimizeNode, -1, get<1>(distances[1]), !get<2>(distances[1])); 
-        sol = opt->getMinState();
-        cout << "Max at " << Util::print(sol) << endl;
-        const vector<tuple<double, int, int>>& distances2 = getDistances(sol);
-
-        seval->run(state);
-        for (int i = 0; i < 5; i++) {
-        	double cost = get<0>(distances1[i]);
-        	int nodeid = get<1>(distances1[i]);
-        	int val = seval->d((*dag)[nodeid]) < 0;
-        	s.push_back(make_tuple(cost, nodeid, val));
+    virtual IClause* getConflictClause(int level, LocalState * ls) { 
+        Assert(level == -1, "Other levels is not yet supported");
+        int betaIdx = chooseBeta(ls);
+        double beta;
+        gsl_vector* state;
+        if (betaIdx == 0) {
+            beta = -1;
+            state = ls->localSols[0];
+        } else if (betaIdx == 1) {
+            beta = -10;
+            state = ls->localSols[1];
+        } else if (betaIdx == 2) {
+            beta = -50;
+            state = ls->localSols[2];
+        }
+        cout << "Choosing beta = " << beta << endl;
+        int numDirs = getDirectionsLevel0(state, beta);
+        cout << "Num dirs: " << numDirs << endl;
+        set<Predicate*> preds;
+        for (int i = 0; i < numDirs; i++) {
+            getPredicatesNearToMaxLevel0(i, beta, state, dirGrads[i], preds);
         }
 
-        for (int i = 0; i < 5; i++) {
-        	double cost = get<0>(distances2[i]);
-        	int nodeid = get<1>(distances2[i]);
-        	int val = seval->d((*dag)[nodeid]) < 0;
-        	s.push_back(make_tuple(cost, nodeid, val));
-        }
+        actualEval->run(state);
 
-        sort(s.begin(), s.end());
-		reverse(s.begin(), s.end());
-        for (int k = 0; k < s.size(); k++) {
-            int nodeid = get<1>(s[k]);
-            if (!interf->hasValue(nodeid)) {
-                suggestions.push_back(make_tuple(0, nodeid, get<2>(s[k])));
+        IClause* c = new IClause(GradUtil::counter);
+        for (auto it = preds.begin(); it != preds.end(); it++) {
+            int val = actualEval->dist(*it) < 0;
+            if (!(*it)->isPure()) {
+                c->add(make_pure(*it, state), val);
+            } else {
+                c->add(*it, val);
             }
         }
-        int lastIdx = suggestions.size() - 1;
-        if (lastIdx > 0) {
-            int nodeid = get<1>(suggestions[lastIdx]);
-            bool_node* n = (*dag)[nodeid];
-            cout << n->lprint() << " " << get<2>(suggestions[lastIdx]) << endl;
-            cout << "val: " << seval->d(n) << endl;
+        if (c->size() == 0) {
+            Assert(false, "Empty clause?");
         }
-        return suggestions;
-
+        return c;
     }
+
+    
+    
 };

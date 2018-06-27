@@ -98,7 +98,7 @@ bool REASSolver::find(VarStore& controls){
     
    timerclass tc("* TIME TO ADD INPUT ");
     tc.start();
-    Interface* interf = new Interface(problem->size());
+    Interface* interf = new Interface(problem);
     createBooleanAbstraction(interf);
 
     ns = new NumericalSynthesizer(floats, problem, interf);

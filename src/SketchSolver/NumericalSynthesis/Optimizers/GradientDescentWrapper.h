@@ -134,7 +134,7 @@ public:
         GDEvaluator::file.close();
     }
     
-    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState) {
+    virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState, int level = -1) {
         eval->setInputs(inputs);
         GDParameters* p = new GDParameters(eval, constraints, minimizeNode);
         gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);

@@ -32,7 +32,7 @@ public:
         }
     }
     
-    virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
+    vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
         vector<tuple<int, int, int>> suggestions;
         
         //cout << "state: " << Util::print(state) << endl;
@@ -78,15 +78,8 @@ public:
         }
         return suggestions;
     }
-    virtual void initUnsatSuggestions(LocalState* state) { 
-        seval->run(state->localSols[2]);
-    }
-    virtual pair<int, int> getNextUnsatSuggestion() {
-        if (nodesToSuggest.size() == 0) return make_pair(-1, 0);
-        int randIdx = nodesToSuggest[rand() % (nodesToSuggest.size())];
-        //int randVal = rand() % 2;
-        int randVal = seval->d((*dag)[randIdx]) < 0; // flip the current assignment
-        return make_pair(randIdx, randVal);
+    virtual IClause* getConflictClause(int level, LocalState * state) { 
+        return NULL;
     }
 };
     

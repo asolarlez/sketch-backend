@@ -207,8 +207,6 @@ double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
         return getAssertError(node);
     } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
     	return getBoolCtrlError(node);
-    } else if (node->getOtype() == OutType::BOOL) {
-        return getBoolExprError(node);
     } else {
     	cout << node->lprint() << endl;
         Assert(false, "Unknonwn node for computing error in Simple Evaluator");
@@ -233,45 +231,6 @@ double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
     }
 }
 
-double SimpleEvaluator::getBoolExprError(bool_node* node) {
-    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
-    int val = inputValues->getValue(node->id);
-    
-    double dist = d(node);
-    if (val == 1) {
-        return dist;
-    } else {
-        return -dist;
-    }
-}
 
 
-/*vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
-	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
-	for (int i = 0; i < ctrls->size; i++) {
-		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
-	}
-    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-        (*node_it)->accept(*this);
-	}
-	vector<tuple<double, int, int>> s;
-    cout << "Bool assignment: ";
-	for (int i = 0; i < imap_p.size(); i++) {
-		if (imap_p[i] < 0) continue;
-		bool_node* n = bdag[imap_p[i]];
-        bool hasArraccChild = Util::hasArraccChild(n);
-		double dist = d(n);
-		double cost = abs(dist);
-		if (hasArraccChild) {
-			cost = cost/1000.0;
-		}
-        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-            cout << n->lprint() << " = " << dist << "; ";
-            cost = cost - 5.0;
-        }
-		s.push_back(make_tuple(cost, i, dist > 0));
-	}
-    cout << endl;
-	return s;
-}*/
 

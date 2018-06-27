@@ -33,6 +33,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/ReasCore/REASSolver.h       \
     NumericalSynthesis/ReasCore/NumDebugger.h 		\
     NumericalSynthesis/BoolAbstraction/BoolAbstractor.h \
+    NumericalSynthesis/BoolAbstraction/BoolNodeSimplifier.h \
+    NumericalSynthesis/BoolAbstraction/Predicate.h 	\
     NumericalSynthesis/BoolAbstraction/Interface.h  \
     NumericalSynthesis/ReasCore/NumericalSynthesizer.h     \
 	NumericalSynthesis/Solvers/NumericalSolver.h	\
@@ -42,10 +44,13 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/Optimizers/GradientDescent.h    \
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
-    NumericalSynthesis/Optimizers/GradientDescentWrapper.h  \
+	NumericalSynthesis/Optimizers/MaxSolver.h		\
+	NumericalSynthesis/Optimizers/MaxSolverWrapper.h \
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
+	NumericalSynthesis/SymbolicEvaluators/ActualEvaluators.h \
+	NumericalSynthesis/SymbolicEvaluators/SmoothEvaluators.h \
 	NumericalSynthesis/DataStructures/DistanceGrad.h		\
 	NumericalSynthesis/DataStructures/ValueGrad.h \
 	NumericalSynthesis/DataStructures/Interval.h		\
@@ -101,11 +106,14 @@ libcegis_a_SOURCES =				\
 	memory_sampler.cc			\
     NumericalSynthesis/ReasCore/REASSolver.cpp  \
     NumericalSynthesis/BoolAbstraction/BoolAbstractor.cpp \
+    NumericalSynthesis/BoolAbstraction/BoolNodeSimplifier.cpp \
+    NumericalSynthesis/BoolAbstraction/Predicate.cpp 	\
     NumericalSynthesis/ReasCore/NumericalSynthesizer.cpp \
     NumericalSynthesis/Solvers/NumericalSolver.cpp  \
 	NumericalSynthesis/Utils/GradUtil.cpp	\
 	NumericalSynthesis/Optimizers/Snopt.cpp	\
     NumericalSynthesis/Optimizers/GradientDescent.cpp       \
+    NumericalSynthesis/Optimizers/MaxSolver.cpp 			\
 	NumericalSynthesis/DataStructures/DistanceGrad.cpp		\
 	NumericalSynthesis/DataStructures/ValueGrad.cpp	\
 	NumericalSynthesis/DataStructures/Interval.cpp \

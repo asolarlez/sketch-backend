@@ -61,8 +61,11 @@ public:
     double getSqrtError(bool_node* node);
     double getAssertError(bool_node* node);
     double getBoolCtrlError(bool_node* node);
-    double getBoolExprError(bool_node* node);
 
+
+    double dist(int nodeid) {
+        return d(bdag[nodeid]);
+    }
         
     void setvalue(bool_node& bn, double d) {
         distances[bn.id] = d;

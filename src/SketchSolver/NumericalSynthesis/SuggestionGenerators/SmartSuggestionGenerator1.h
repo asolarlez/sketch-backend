@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "SimpleEvaluator.h"
@@ -38,7 +39,7 @@ public:
         }
     }
     
-    virtual vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
+    vector<tuple<int, int, int>> getSatSuggestions(const gsl_vector* state) {
         vector<tuple<int, int, int>> suggestions;
         
         cout << "state: " << Util::print(state) << endl;
@@ -113,9 +114,8 @@ public:
         return responsibleNodes;
     }
     
-    virtual void initUnsatSuggestions(LocalState* state) { }
-    virtual pair<int, int> getNextUnsatSuggestion() {
-        return make_pair(-1, 0);
+    virtual IClause* getConflictClause(int level, LocalState * state) {
+        return NULL;
     }
     
     vector<tuple<int, int, int>> getUnsatSuggestions(const gsl_vector* state) {
