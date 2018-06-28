@@ -43,6 +43,10 @@ public:
 		return evals[mainDag]->getErrorOnConstraint(nodeid);
 	}
 
+	double dist(int nodeid) {
+		return evals[mainDag]->dist(nodeid);
+	}
+
 	double getErrorOnClause(IClause* clause) {
 		double error = -1e30;
 

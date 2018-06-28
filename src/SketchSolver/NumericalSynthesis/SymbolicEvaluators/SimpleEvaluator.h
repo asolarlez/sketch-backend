@@ -61,6 +61,7 @@ public:
     double getSqrtError(bool_node* node);
     double getAssertError(bool_node* node);
     double getBoolCtrlError(bool_node* node);
+    double getBoolExprError(bool_node* node);
 
 
     double dist(int nodeid) {

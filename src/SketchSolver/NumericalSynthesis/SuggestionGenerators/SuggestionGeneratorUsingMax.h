@@ -61,6 +61,43 @@ public:
         }
     }
 
+    pair<int, int> getSuggestion(const gsl_vector* state) {
+        actualEval->run(state);
+        
+        vector<tuple<double, int, int>> s;
+        
+        for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
+            int nodeid = it->first;
+            if (interf->hasValue(nodeid)) continue;
+
+            bool_node* n = (*dag)[nodeid];
+            bool hasArraccChild = Util::hasArraccChild(n);
+            
+            double dist = actualEval->dist(n->id);
+            double cost = abs(dist);
+            if (hasArraccChild && cost < 0.1) {
+                return make_pair(nodeid, dist >= 0.0);
+            }
+            
+            if (hasArraccChild) {
+                cost = cost / 1000.0;
+            }
+            
+            s.push_back(make_tuple(cost, nodeid, dist > 0));
+            
+        }
+        cout << endl;
+        
+        sort(s.begin(), s.end());
+        if (s.size() > 0) {
+            return make_pair(get<1>(s[0]), get<2>(s[1]));
+        } else {
+            Assert(false, "weqhqp");
+            return make_pair(-1, 0);
+        }
+         
+    }
+
     
     BooleanDAG* getNewDag(BooleanDAG* origDag, int origNid, const gsl_vector* s) {
         BooleanDAG* newDag = origDag->clone();
@@ -110,7 +147,9 @@ public:
            
             double dist = smoothEval->dist(p);
             double cost = abs(dist);
-            s.push_back(make_tuple(cost, p, dist > 0));
+            if (cost >= 0.1) {
+                s.push_back(make_tuple(cost, p, dist > 0));
+            }
         }
 
         sort(s.begin(), s.end());

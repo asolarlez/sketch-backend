@@ -65,6 +65,8 @@ public:
     bool solve();
     bool search();
     bool concretize();
+    bool search_concretize();
+    bool simple_concretize();
 
 	
 	void print(ostream& out) {

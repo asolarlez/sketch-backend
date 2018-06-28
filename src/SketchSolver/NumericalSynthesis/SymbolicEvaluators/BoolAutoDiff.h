@@ -67,11 +67,13 @@ public:
     double getSqrtError(bool_node* node, gsl_vector* grad);
     double getAssertError(bool_node* node, gsl_vector* grad);
     double getBoolCtrlError(bool_node* node, gsl_vector* grad);
+    double getBoolExprError(bool_node* node, gsl_vector* grad);
     
     virtual double getErrorOnConstraint(int nodeid);
     double getSqrtError(bool_node* node);
     double getAssertError(bool_node* node);
     double getBoolCtrlError(bool_node* node);
+    double getBoolExprError(bool_node* node);
 
     
 

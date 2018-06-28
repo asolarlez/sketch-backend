@@ -391,6 +391,8 @@ double BoolAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // Neg
         return getAssertError(node, grad);
     } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
         return getBoolCtrlError(node, grad);
+    } else if (node->getOtype() == OutType::BOOL) {
+        return getBoolExprError(node, grad);
     } else {
         Assert(false, "Unknown node for computing error");
     }
@@ -428,6 +430,22 @@ double BoolAutoDiff::getBoolCtrlError(bool_node* node, gsl_vector* grad) {
     return 0.1 - dist*(1-dist); // TODO: magic numbers
 }
 
+double BoolAutoDiff::getBoolExprError(bool_node* node, gsl_vector* grad) {
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    DistanceGrad* dg = d(node);
+    Assert(dg->set, "Boolean expression distance is not set");
+    gsl_vector_memcpy(grad, dg->grad);
+    if (val == 1) {
+        return dg->dist;
+    } else {
+        gsl_vector_scale(grad, -1.0);
+        return -dg->dist;
+    }
+}
+
+
 
 
 double BoolAutoDiff::getErrorOnConstraint(int nodeid) {
@@ -438,6 +456,8 @@ double BoolAutoDiff::getErrorOnConstraint(int nodeid) {
         return getAssertError(node);
     } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
         return getBoolCtrlError(node);
+    } else if (node->getOtype() == OutType::BOOL) {
+        return getBoolExprError(node);
     } else {
         Assert(false, "Unknown node for computing error");
     }
@@ -468,4 +488,19 @@ double BoolAutoDiff::getBoolCtrlError(bool_node* node) {
     double dist = gsl_vector_get(ctrls, idx);
     return 0.1 - dist*(1-dist); // TODO: magic numbers
 }
+
+double BoolAutoDiff::getBoolExprError(bool_node* node) {
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    DistanceGrad* dg = d(node);
+    Assert(dg->set, "Boolean expression distance is not set");
+    if (val == 1) {
+        return dg->dist;
+    } else {
+        return -dg->dist;
+    }
+}
+
+
 

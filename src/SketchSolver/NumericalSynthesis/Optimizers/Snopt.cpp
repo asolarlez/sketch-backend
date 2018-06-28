@@ -50,7 +50,7 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
 	}
 	
 	snoptProb.setIntParameter("Derivative option", 1);
-	snoptProb.setIntParameter("Major Iteration limit", 250);
+	snoptProb.setIntParameter("Major Iteration limit", 100);
     //snoptProb.setRealParameter("Function precision", 0.0001);
     //snoptProb.setRealParameter("Major optimality tolerance", 0.0001);
     //snoptProb.setRealParameter("Major feasibility tolerance", 0.0001);

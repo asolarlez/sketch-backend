@@ -64,6 +64,7 @@ class Interface {
     BooleanDAG* dag;
     map<int, Predicate*> nodeToPredicates;
     int ncontrols;
+    int curStackLevel = 0;
 
 public:
     SolverHelper* satSolver;  
@@ -116,10 +117,14 @@ public:
         nodeToPredicates[node.id] = p;
         levelPredicates[0].insert(p);
         if (node.type == bool_node::AND || node.type == bool_node::OR) {
-            Predicate* p1 = nodeToPredicates[node.mother->id];
+            /*Predicate* p1 = nodeToPredicates[node.mother->id];
             Predicate* p2 = nodeToPredicates[node.father->id];
+            cout << node.lprint() << endl;
             Predicate* dp = new DiffPredicate(p1, p2, ncontrols);
-            levelPredicates[0].insert(dp);
+            cout << p1->print() << endl;
+            cout << p2->print() << endl;
+            cout << dp->print() << endl;
+            //levelPredicates[0].insert(dp);*/
         } 
         
         if (tv.isBvect()) {
@@ -151,12 +156,14 @@ public:
         return varsMapping.size();
     }
     
-    void backtrack(int level) {
+    pair<int, int> backtrack(int level) {
         int i;
         int j = 0;
+        pair<int, int> res;
         for (i = stack.size() - 1; i >= 0; --i) {
             vstate& ms = stack[i];
             if (ms.level > level) {
+                res = make_pair(ms.nodeid, nodeVals[ms.nodeid]);
                 nodeVals[ms.nodeid] = EMPTY;
                 inputNodeIds.erase(ms.nodeid);
                 ++j;
@@ -165,29 +172,23 @@ public:
             }
         }
         stack.shrink(j);
-    }
-
-    void popLast() {
-        int stack_size = stack.size();
-        vstate& ms = stack[stack_size - 1];
-        nodeVals[ms.nodeid] = EMPTY;
-        inputNodeIds.erase(ms.nodeid);
-        stack.shrink(1);
+        curStackLevel = level;
+        return res;
     }
     
     int getLit(int nodeid, int val) {
         return varsMapping[nodeid][val];
     }
 
-    bool tryInput(int nodeid, int val) {
-        if (hasValue(nodeid)) {
-            return false;
-        } else {
-            nodeVals[nodeid] = val;
-            stack.push(vstate(nodeid, 1));
-            inputNodeIds.insert(nodeid);
-            return true;
-        }
+    
+    void setInput(int nodeid, int val, int level) {
+        Assert(!hasValue(nodeid), "Node already has a value");
+        Assert(level == curStackLevel || level == curStackLevel + 1, "Wrong stack level");
+
+        nodeVals[nodeid] = val;
+        stack.push(vstate(nodeid, level));
+        inputNodeIds.insert(nodeid);
+        curStackLevel = level;
         /*int lit = getLit(nodeid, val);
         cout << "Trying: " << lit << endl;
         if (satSolver->tryAssignment(lit)) {
@@ -198,6 +199,30 @@ public:
         } 
         return false;*/
     }
+
+    void setInput(int nodeid, int val) {
+        setInput(nodeid, val, curStackLevel + 1);
+    }
+
+    bool clearLastLevel() {
+        pair<int, int> last = backtrack(curStackLevel - 1);
+        if (curStackLevel == -1) {
+            curStackLevel = 0;
+            return false;
+        } else {
+            setInput(last.first, !last.second, curStackLevel);
+            return true;
+        }
+        //satSolver->getMng().cancelLastDecisionLevel();
+    }
+
+    void restartInputs() {
+        // clean inputs in the interface
+        backtrack(0);
+        // clear assignments in the sat solver
+        //satSolver->getMng().reset();
+    }
+
 
     void addClause(IClause* clause, int level) {
         if (level < numLevels()) {
@@ -227,29 +252,13 @@ public:
         // TODO: need to also remove predicates from levelPredicates
     }
     
-
-    void restartInputs() {
-        // clean inputs in the interface
-        backtrack(0);
-        // clear assignments in the sat solver
-        //satSolver->getMng().reset();
-    }
-
-    void clearLastInput() {
-        popLast();
-        //satSolver->getMng().cancelLastDecisionLevel();
-    }
-    
-    
     int getValue(int nodeid) {
         return nodeVals[nodeid];
     }
     
-    
     const set<int>& getInputConstraints() {
         return inputNodeIds;
     }
-    
     
     int numSet() {
         return inputNodeIds.size();

@@ -169,19 +169,19 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 
 bool NumericalSynthesizer::solve() {
     bool success = search();
-    if (success) {
-        success = concretize();
-    }
     return success;
 }
 
 bool NumericalSynthesizer::searchWithOnlySmoothing() {
     bool sat = false;
-    for (int i = 0; i < PARAMS->maxRestarts; i++) {
+    for (int i = 0; i < 1000; i++) {
         sat = solver->checkSAT(-1);
         if (sat) {
             gsl_vector_memcpy(state, solver->getResult());
-            return true;
+            cout << "Found solution" << endl;
+            if (concretize()) {
+                return true;
+            }
         }
         GradUtil::counter++;
     } 
@@ -205,21 +205,22 @@ bool NumericalSynthesizer::searchWithPredicates() {
 
         if (sat) {
             cout << "Found solution" << endl;
-            return true;
-        } else {
-            cout << "Unsat in level " << level << endl;
-            if (level >= 0) {
-                num_ignored++;
-                cout << "Ignoring" << endl;
-                if (num_ignored > 5) {
-                    cout << "TOO MANY UNSATS IN LEVEL 0" << endl;
-                }
-            } else {
-                num_ignored = 0;
-                IClause* c = sg->getConflictClause(level, solver->getLocalState());
-                cout << "Suggested clause: " << c->print() << endl;
-                interf->addClause(c, level + 1);
+            if (concretize()) {
+                return true;
             }
+        } 
+        cout << "Unsat in level " << level << endl;
+        if (level >= 0) {
+            num_ignored++;
+            cout << "Ignoring" << endl;
+            if (num_ignored > 5) {
+                cout << "TOO MANY UNSATS IN LEVEL 0" << endl;
+            }
+        } else {
+            num_ignored = 0;
+            IClause* c = sg->getConflictClause(level, solver->getLocalState());
+            cout << "Suggested clause: " << c->print() << endl;
+            interf->addClause(c, level + 1);
         }
         interf->removeOldClauses();
         GradUtil::counter++;
@@ -236,9 +237,42 @@ bool NumericalSynthesizer::search() {
     return true;
 }
 
-bool NumericalSynthesizer::concretize() {
+bool NumericalSynthesizer::simple_concretize() {
     return solver->checkFullSAT(state);
 }
 
+bool NumericalSynthesizer::search_concretize() {
+    if (solver->checkFullSAT(state)) {
+        return true;
+    }
+    const pair<int, int>& nodeVal = sg->getSuggestion(state);
+    cout << "Suggested concretization: " << nodeVal.first << " " << nodeVal.second << endl;
+    interf->setInput(nodeVal.first, nodeVal.second);
+    while (true) { 
+        GradUtil::counter++;
+        bool sat = solver->checkSAT(-1, state);
+        if (sat) {
+            gsl_vector_memcpy(state, solver->getResult());
+            if (solver->checkFullSAT(state)) {
+                return true;
+            } else {
+                const pair<int, int>& nodeVal = sg->getSuggestion(state);
+                cout << "Suggested concretization: " << nodeVal.first << " " << nodeVal.second << endl;
+                interf->setInput(nodeVal.first, nodeVal.second);
+            }
+        } else {
+            cout << "CONFLICT" << endl;
+            bool r = interf->clearLastLevel();
+            if (!r) return false;
+        }
+    
+    }
+}
+
+
+
+bool NumericalSynthesizer::concretize() {
+    return search_concretize();
+}
 
 

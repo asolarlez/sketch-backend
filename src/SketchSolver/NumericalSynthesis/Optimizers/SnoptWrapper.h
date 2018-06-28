@@ -89,7 +89,15 @@ public:
                     G[gcounter++] = gsl_vector_get(grad, j);
                 }
             }
-        }
+            const set<int>& inputConstraints = p->interf->getInputConstraints();
+            for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+                double dist = p->eval->getErrorOnConstraint(*it, grad);
+                F[fcounter++] = dist;
+                for (int j = 0; j < *n; j++) {
+                    G[gcounter++] = gsl_vector_get(grad, j);
+                }
+            }
+        } 
 
         for (int i = p->level; i < p->interf->numLevels(); i++) {
             if (i < 0) continue;
@@ -339,7 +347,7 @@ public:
         
     }
     virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState, int level = -1) {
-        Assert(neF > constraints.size() + inputs->totalClauses(), "Increase neF");
+        Assert(neF > constraints.size() + inputs->numSet() + inputs->totalClauses(), "Increase neF");
         // start the snopt solving
         SnoptParameters* p = new SnoptParameters(eval, constraints, minimizeNode, inputs, level);
         

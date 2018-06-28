@@ -154,6 +154,13 @@ public:
         			error += -e;
         		}
         	}	
+        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+        		e = smoothEval->getErrorOnConstraint(*it);
+        		if (e < 0.0) {
+        			error += -e;
+        		}
+        	}
         }
         if (level >= 0) {
         	for (auto it = interf->clauseLevels[level].begin(); it != interf->clauseLevels[level].end(); it++) {
@@ -187,6 +194,13 @@ public:
 			for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
 				e = actualEval->getErrorOnConstraint(*it);
         		if (e < 0.0) { // TODO: magic numbers
+        			error += -e;
+        		}
+        	}
+        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+        		e = actualEval->getErrorOnConstraint(*it);
+        		if (e < 0.0) {
         			error += -e;
         		}
         	}	
