@@ -1,12 +1,13 @@
 #pragma once
 #include "BooleanDAG.h"
 #include "Interface.h"
-#include "BoolAutoDiff.h"
+//#include "BoolAutoDiff.h"
+#include "SmoothAutoDiff.h"
 
 
 class SmoothEvaluators {
 	BooleanDAG* mainDag;
-	map<BooleanDAG*, BoolAutoDiff*> evals;
+	map<BooleanDAG*, SmoothAutoDiff*> evals;
 	map<string, int>& ctrls;
 	Interface* interf;
 	int MAX_CLAUSE_VALS = 20;
@@ -29,7 +30,7 @@ public:
 
 	void addEvaluator(BooleanDAG* dag) {
 		Assert(evals.find(dag) == evals.end(), "This should not be possible");
-		BoolAutoDiff* se = new BoolAutoDiff(*dag, ctrls);
+		SmoothAutoDiff* se = new SmoothAutoDiff(*dag, ctrls);
 		se->setInputs(interf);
 		evals[dag] = se;
 	}

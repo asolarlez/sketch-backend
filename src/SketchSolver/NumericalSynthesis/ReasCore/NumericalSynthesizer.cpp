@@ -163,7 +163,8 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
 
     if (PARAMS->numdebug) {
-        debugger->getPredicatesGraphs();
+        //debugger->checkSmoothing();
+        //debugger->getPredicatesGraphs();
     }
 }
 
@@ -208,6 +209,7 @@ bool NumericalSynthesizer::searchWithPredicates() {
             if (concretize()) {
                 return true;
             }
+            level = -1;
         } 
         cout << "Unsat in level " << level << endl;
         if (level >= 0) {

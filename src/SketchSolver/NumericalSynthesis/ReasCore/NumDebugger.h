@@ -103,6 +103,18 @@ public:
     	file << endl;
     	file.close();
 	}
+
+	void checkSmoothing() {
+		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		double arr1[2] = {5.0};
+		for (int i = 0; i < ncontrols; i++) {
+			gsl_vector_set(s, i, arr1[i]);
+		}
+		GradUtil::BETA = -1;
+		GradUtil::ALPHA = 1;
+		smoothEval->run(s);
+		exit(0);
+	}
 	
 	void getGraphs(int level, int iterationId) { 
 		gsl_vector* s = gsl_vector_alloc(ncontrols);
@@ -183,6 +195,59 @@ public:
         return error;
 	}
 
+	double getError(int level, gsl_vector* grad) {
+		double error = 0.0;
+		double e;
+		gsl_vector* t = gsl_vector_alloc(grad->size);
+		GradUtil::default_grad(grad);
+		if (level == -1) {
+			if (minimizeNode >= 0) {
+				e = smoothEval->getErrorOnConstraint(minimizeNode, t);
+				error += e;
+				gsl_vector_add(grad, t);
+			}
+			for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+				e = smoothEval->getErrorOnConstraint(*it, t);
+        		if (e < 0.0) { // TODO: magic numbers
+        			error += -e;
+        			gsl_vector_scale(t, -1);
+        			gsl_vector_add(grad, t);
+        		}
+        	}	
+        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
+        		e = smoothEval->getErrorOnConstraint(*it, t);
+        		if (e < 0.0) {
+        			error += -e;
+        			gsl_vector_scale(t, -1);
+        			gsl_vector_add(grad, t);
+        		}
+        	}
+        }
+        if (level >= 0) {
+        	for (auto it = interf->clauseLevels[level].begin(); it != interf->clauseLevels[level].end(); it++) {
+        		e = smoothEval->getErrorOnClause(*it, t);
+        		if (e < 0.0) {
+        			error += -e;
+        			gsl_vector_scale(t, -1);
+        			gsl_vector_add(grad, t);
+        		}
+        	}
+        }
+        for (int i = level+1; i < interf->numLevels(); i++) {
+        	if (i < 0) continue;
+        	for (auto it = interf->clauseLevels[i].begin(); it != interf->clauseLevels[i].end(); it++) {
+        		e = smoothEval->getErrorOnClause(*it);
+        		if (e < 0.0) {
+        			error = -2.0;
+        			GradUtil::default_grad(grad);
+        			break;
+        		}
+        	}
+        }
+        return error;
+	}
+
 	double getActualError(int level) {
 		double error = 0.0;
 		double e;
@@ -228,17 +293,21 @@ public:
 	void genSmoothData(gsl_vector* state, int idx, float beta, int iterationId, int level) {
 		GradUtil::BETA = -beta;
 		GradUtil::ALPHA = beta;
+		cout << "Beta: " << beta << endl;
+		gsl_vector* grad = gsl_vector_alloc(state->size);
 
 		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level+1) + "_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		ofstream gfile("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level+1) + "_smooth_grad_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
 			double i = 0.0;
-			while (i < 20.0) {
+			while (i < 10.0) {
 				gsl_vector_set(state, idx, i);
 				smoothEval->run(state);
-				double error = getError(level);
+				double error = getError(level, grad);
         		//cout << i << " " << error << endl;
         		file << i << "," << error << endl;
+        		gfile << i << "," << gsl_vector_get(grad, 0) << endl;
         		i += 0.01;
        		}
     	}
@@ -251,7 +320,7 @@ public:
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
 			double i = 0.0;
-			while (i < 20.0) {
+			while (i < 10.0) {
 				gsl_vector_set(state, idx, i);
 				actualEval->run(state);
 				double error = getActualError(level);
