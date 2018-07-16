@@ -184,7 +184,7 @@ public:
         p->beta = beta;
         p->alpha = -beta;
         if (PARAMS->numdebug) { 
-            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_max_" + to_string(GradUtil::counter) + "_" + to_string(id) + "_" + to_string(int(-beta)) + ".txt");
+            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/" + Util::benchName() + "_" + to_string(level + 1) + "_max_" + to_string(GradUtil::counter) + "_" + to_string(id) + "_" + to_string(int(-beta)) + ".txt");
         }
 
         bool solved = maxSolver->optimize(t, initGrad);

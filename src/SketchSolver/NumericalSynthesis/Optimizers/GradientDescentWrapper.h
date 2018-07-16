@@ -120,7 +120,7 @@ public:
 
         p->beta = beta;
         p->alpha = -beta;
-        GDEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/opt_" + to_string(int(-beta)) + ".txt");
+        GDEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/opt_" + to_string(int(-beta)) + ".txt");
         for (int i = 0; i < ncontrols; i++) {
             cout << gsl_vector_get(t, i) << ", ";
         }

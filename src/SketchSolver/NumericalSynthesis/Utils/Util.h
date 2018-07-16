@@ -8,6 +8,8 @@
 #include "FakeGSL.h"
 #endif
 #include "BooleanNodes.h"
+#include "CommandLineArgs.h"
+
 
 class Util {
 public:
@@ -165,6 +167,14 @@ public:
         return s.str();
     }
 
+    static string print(const set<int>& v) {
+        stringstream s;
+        for (auto it = v.begin(); it != v.end(); it++) {
+            s << *it << ";";
+        }
+        return s.str();
+    }
+
     static double norm(const gsl_vector* v) {
         return gsl_blas_dnrm2(v);
     }
@@ -176,5 +186,13 @@ public:
         cout << "dot product: " << dp << endl;
         if (dp > 0.9) return true;
         return false;
+    }
+
+    static string benchName() {
+        string s = PARAMS->inputFname;
+        int x1 = s.rfind(".sk");
+        int x2 = s.rfind("/tmp/");
+        return s.substr(x2+5, x1-x2 - 5);
+
     }
 };

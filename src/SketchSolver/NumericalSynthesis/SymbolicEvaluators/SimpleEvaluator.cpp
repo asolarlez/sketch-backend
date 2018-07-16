@@ -196,6 +196,7 @@ void SimpleEvaluator::run(const gsl_vector* ctrls_p) {
     
     for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
+        //cout << bdag[i]->lprint() << " " << d(bdag[i]) << endl;
     }
 }
 

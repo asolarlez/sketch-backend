@@ -374,10 +374,20 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p) {
     for (int i = 0; i < ctrls->size; i++) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
-    
     for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
     }
+    
+    /*for (int i = 0; i < bdag.size(); i++) {
+        DistanceGrad* dg = d(bdag[i]);
+        ValueGrad* vg = v(bdag[i]);
+        cout << bdag[i]->lprint();
+        if (dg->set && bdag[i]->getOtype() == OutType::BOOL) {
+            cout << " " << dg->dist << endl;
+        } else {
+            cout << " " << vg->getVal() << endl;
+        }
+    }*/ 
 }
 
 

@@ -1,4 +1,5 @@
 #include "DistanceGrad.h"
+#include "ValueGrad.h"
 
 void DistanceGrad::dg_and(DistanceGrad* mdist, DistanceGrad* fdist, DistanceGrad* dg) {
 	if (mdist->set && fdist->set) {
@@ -116,3 +117,97 @@ void DistanceGrad::dg_ite(DistanceGrad* m, DistanceGrad* f, double dval, gsl_vec
     o->set = true;
 }
 
+bool DistanceGrad::same(DistanceGrad* m, DistanceGrad* f) {
+	if (m == f) return true;
+
+	if (abs(m->dist - f->dist) > 1e-2) return false;
+
+	for (int i = 0; i < m->grad->size; i++) {
+		double g1 = gsl_vector_get(m->grad, i);
+		double g2 = gsl_vector_get(f->grad, i);
+		if (abs(g1 - g2) > 1e-2) return false;
+	}
+	return true;
+}
+
+double DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f) {
+	if (same(m, f)) return m->dist;
+	return m->dist  * f->dist;
+}
+
+// o = mf
+void DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f, DistanceGrad* o) {
+	if (!m->set || !f->set) {
+        o->set = false;
+        Assert(false, "iehwp");
+        return;
+    }
+    if (same(m, f)) {
+    	dg_copy(m, o);
+    	return;
+    }
+    double v = m->dist * f->dist;
+    GradUtil::compute_mult_grad(m->dist, f->dist, m->grad, f->grad, o->grad);
+    o->dist = v;
+    o->set = true;
+}
+
+// o = m*f* sigmoid(cval) if bv = 1
+// o = m*f* sigmoid(-cval) if bv = 0 
+double DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f, double cval, gsl_vector* grad, int bv, gsl_vector* o) {
+
+	Assert(o != GradUtil::tmp, "Reusing tmp vectors");
+	Assert(o != GradUtil::tmp1, "Reusing tmp vectors");
+	Assert(o != GradUtil::tmp2, "Reusing tmp vectors");
+
+	Assert(grad != GradUtil::tmp, "Reusing tmp vectors");
+	Assert(grad != GradUtil::tmp1, "Reusing tmp vectors");
+	Assert(grad != GradUtil::tmp2, "Reusing tmp vectors");
+	if (!m->set || !f->set) {
+        Assert(false, "iehwp");
+    }
+    double v;
+    if (same(m, f)) {
+    	v = m->dist;
+    	gsl_vector_memcpy(GradUtil::tmp, m->grad);
+    } else {
+    	v = m->dist * f->dist;
+    	GradUtil::compute_mult_grad(m->dist, f->dist, m->grad, f->grad, GradUtil::tmp);
+    }
+    double s;
+    if (bv == 1) {
+    	s = GradUtil::sigmoid(cval, grad, GradUtil::tmp1);
+    } else {
+    	GradUtil::compute_neg_grad(grad, GradUtil::tmp2);
+    	s = GradUtil::sigmoid(-cval, GradUtil::tmp2, GradUtil::tmp1);
+    }
+	GradUtil::compute_mult_grad(s, v, GradUtil::tmp1, GradUtil::tmp, o);
+	return v*s;
+}
+
+void DistanceGrad::dg_combine(vector<DistanceGrad*>& cdists, DistanceGrad* vdist, vector<ValueGrad*>& cvals, int bv, DistanceGrad* o) {
+	double sum = 0;
+	GradUtil::default_grad(o->grad);
+	for (int i = 0; i < cdists.size(); i++) {
+		sum += dg_combine(cdists[i], vdist, cvals[i]->getVal(), cvals[i]->getGrad(), bv, GradUtil::tmp3);
+		gsl_blas_daxpy(1.0, GradUtil::tmp3, o->grad);
+	}
+	o->dist = sum;
+	o->set = true;
+}
+
+double DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f, double cval, int bv) {
+	double v;
+    if (same(m, f)) {
+    	v = m->dist;
+    } else {
+    	v = m->dist * f->dist;
+    }
+    double s;
+    if (bv == 1) {
+    	s = GradUtil::sigmoid(cval);
+    } else {
+    	s = GradUtil::sigmoid(-cval);
+    }
+	return v*s;
+}

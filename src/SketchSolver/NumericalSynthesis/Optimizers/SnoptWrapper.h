@@ -332,7 +332,7 @@ public:
         p->beta = beta;
         p->alpha = -beta;
         if (PARAMS->numdebug) { 
-            MaxSnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_max_" + to_string(GradUtil::counter) + "_" + pred->print() + "_" + to_string(int(-beta)) + ".txt");
+            MaxSnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/" + Util::benchName() + "_" + to_string(level + 1) + "_max_" + to_string(GradUtil::counter) + "_" + pred->print() + "_" + to_string(int(-beta)) + ".txt");
         }
 
         bool solved = snoptSolver->optimize(t);
@@ -376,7 +376,7 @@ public:
                     cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
                 }
                 if (PARAMS->numdebug) { 
-                    SnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_opt_" + to_string(GradUtil::counter) + "_" + to_string(int(alphas[i])) + ".txt");
+                    SnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/" + Util::benchName() + "_" + to_string(level + 1) + "_opt_" + to_string(GradUtil::counter) + "_" + to_string(int(alphas[i])) + ".txt");
                 }
                 p->beta = betas[i];
                 p->alpha = alphas[i];

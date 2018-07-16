@@ -20,7 +20,77 @@
 
 using namespace std;
 
-class SmoothAutoDiff: public NodeVisitor, public SymbolicEvaluator
+class Path {
+public:
+	map<int, int> nodeToVal;
+
+	Path() { }
+	void add(map<int, int>& initMap) {
+		nodeToVal.insert(initMap.begin(), initMap.end());
+	}
+	void addCond(int nodeid, int val) {
+		Assert(nodeToVal.find(nodeid) == nodeToVal.end(), "Node already has value");
+		nodeToVal[nodeid] = val;
+	}
+
+	int getVal(int nodeid) {
+		if (nodeToVal.find(nodeid) == nodeToVal.end()) {
+			return -1;
+		} else {
+			return nodeToVal[nodeid];
+		}
+	}
+
+	void empty() {
+		nodeToVal.clear();
+	}
+	
+	static bool isCompatible(Path* p1, Path* p2) {
+		int size1 = p1->nodeToVal.size();
+		int size2 = p2->nodeToVal.size();
+		if (size1 == 0 || size2 == 0) {
+			return true;
+		}
+		Path* pl;
+		Path* ps;
+		if (size1 > size2) {
+			pl = p1;
+			ps = p2;
+		} else {
+			pl = p2;
+			ps = p1;
+		}
+		for (auto it = pl->nodeToVal.begin(); it != pl->nodeToVal.end(); it++) {
+			int nodeid = it->first;
+			int val = it->second;
+			int val1 = ps->getVal(nodeid);
+			if (val1 != -1 && val != val1) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	static void combinePaths(Path* p1, Path* p2, Path* p) {
+		// assumes that paths are compatible
+		p->nodeToVal.clear();
+		p->add(p1->nodeToVal);
+		p->add(p2->nodeToVal);
+	}
+
+	static void combinePath(Path* p1, Path* p) {
+		p->nodeToVal.clear();
+		p->add(p1->nodeToVal);
+	}
+
+	static void combinePaths(vector<Path*>& paths, Path* p2, Path* p) {
+		p->nodeToVal.clear();
+		p->add(p2->nodeToVal);
+		// TODO: need to add common conditions in paths to p
+	}
+};
+
+class KLocalityAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
 	BooleanDAG& bdag;
 	map<string, int>& floatCtrls; // Maps float ctrl names to indices within grad vector
@@ -28,16 +98,17 @@ class SmoothAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	gsl_vector* ctrls; // ctrl values
 	vector<vector<ValueGrad*>> values; // Keeps track of values along with gradients for each node
 	vector<vector<DistanceGrad*>> distances; // Keeps track of distance metric for boolean nodes
+	vector<vector<Path*>> paths;
+	vector<set<int>> conds;
+	vector<int> sizes;
     Interface* inputValues;
-    int MAX_CONDS = 1;
-    int MAX_REGIONS = pow(2, MAX_CONDS) + 1;
-    int cur_idx = 0;
-    vector<int> condNodes;
+    int MAX_REGIONS = 256 + 1; // 0th idx is for final merging
+
 public:
     int DEFAULT_INP = -32;
-    SmoothAutoDiff(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
+    KLocalityAutoDiff(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
     
-	~SmoothAutoDiff(void);
+	~KLocalityAutoDiff(void);
 	
 	virtual void visit( SRC_node& node );
 	virtual void visit( DST_node& node );
@@ -116,16 +187,46 @@ public:
 	DistanceGrad* d(bool_node* bn, int idx) {
 		return d(*bn, idx);
 	}
+
+	int size(bool_node& bn) {
+		return sizes[bn.id];
+	}
+
+	int size(bool_node* bn) {
+		return size(*bn);
+	}
+
+	void setsize(bool_node& bn, int sz) {
+		sizes[bn.id] = sz;
+	}
+
+	void setpath(bool_node& bn, int idx, Path* p) {
+		paths[bn.id][idx] = p;
+	}
+
+	Path* path(bool_node& bn, int idx) {
+		Path* p = paths[bn.id][idx];
+		if (p == NULL) {
+			p = new Path();
+			setpath(bn, idx, p);
+		}
+		return p;
+	}
+
+	Path* path(bool_node* bn, int idx) {
+		return path(*bn, idx);
+	}
+
 	
 	double dist(int nid) {
-		DistanceGrad* dg = d(bdag[nid], 0);
-		return dg->dist;
+		ValueGrad* val = v(bdag[nid], 0);
+		return val->getVal();
 	}
 
 	double dist(int nid, gsl_vector* grad) {
-		DistanceGrad* dg = d(bdag[nid], 0);
-		gsl_vector_memcpy(grad, dg->grad);
-		return dg->dist;
+		ValueGrad* val = v(bdag[nid], 0);
+		gsl_vector_memcpy(grad, val->getGrad());
+		return val->getVal();
 	}
 
 	virtual void print() {
@@ -202,9 +303,10 @@ public:
 		return getInputValue(*bn);
 	}
 
-	bool getAssignment(int v, int idx) {
-		return v >> idx & 1;
-	}
+
+	void doUfun(UFUN_node& node, ValueGrad* mval, ValueGrad* val);
 	
-	
+	void copyNodes(bool_node& node, bool_node* m);
+	double merge(bool_node* n, gsl_vector* grad);
+
 };

@@ -307,6 +307,8 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
     for (int i = 0; i < condDists.size(); i++) {
         int nodeid = get<1>(condDists[i]);
         double dist = get<0>(condDists[i]);
+        DistanceGrad* dg = d(bdag[nodeid], 1);
+        //cout << bdag[nodeid]->lprint() << " " << dg->dist << " " << gsl_vector_get(dg->grad, 0) << endl;
         ctr++;
         if (dist*GradUtil::BETA < -5) break;
         if (condNodes.size() < MAX_CONDS) {
@@ -378,6 +380,24 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
             }
         }
     }
+
+    /*for (int i = 0; i < bdag.size(); i++) {
+        ValueGrad* vg0 = v(bdag[i], 0);
+        DistanceGrad* dg0 = d(bdag[i], 0);
+        if (bdag[i]->getOtype() == OutType::BOOL && dg0->set) {
+            cout << bdag[i]->lprint() << " " << dg0->dist;
+            for (int j = 1; j <= numRegions; j++) {
+                cout << d(bdag[i], j)->dist << " ";
+            }
+            cout << endl;
+        } else {
+            cout << bdag[i]->lprint() << " " << vg0->getVal();
+            for (int j = 1; j <= numRegions; j++) {
+                cout << v(bdag[i], j)->getVal() << " ";
+            }
+            cout << endl;
+        }
+    }*/
 }
 
 

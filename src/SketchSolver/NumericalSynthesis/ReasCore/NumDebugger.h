@@ -63,7 +63,7 @@ public:
 		}
 	}
 	void plotPredicate1d(Predicate* p, gsl_vector* state) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/pred_" + p->print() + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/pred_" + p->print() + ".txt");
 		{
 			double i = -10.0;
 			while (i < 10.0) {
@@ -81,7 +81,7 @@ public:
 	}
 
 	void plotPredicate2d(Predicate* p, gsl_vector* state) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/pred_" + p->print() + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/pred_" + p->print() + ".txt");
 		{
 			double i = -10.0;
 			double j = -10.0;
@@ -106,12 +106,13 @@ public:
 
 	void checkSmoothing() {
 		gsl_vector* s = gsl_vector_alloc(ncontrols);
-		double arr1[2] = {5.0};
+		double arr1[1] = {-6.0};
 		for (int i = 0; i < ncontrols; i++) {
 			gsl_vector_set(s, i, arr1[i]);
 		}
 		GradUtil::BETA = -1;
 		GradUtil::ALPHA = 1;
+		actualEval->run(s);
 		smoothEval->run(s);
 		exit(0);
 	}
@@ -296,19 +297,19 @@ public:
 		cout << "Beta: " << beta << endl;
 		gsl_vector* grad = gsl_vector_alloc(state->size);
 
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level+1) + "_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
-		ofstream gfile("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level+1) + "_smooth_grad_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_drop_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		ofstream gfile("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_drop_smooth_grad_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
-			double i = 0.0;
-			while (i < 10.0) {
+			double i = -20.0;
+			while (i < 20.0) {
 				gsl_vector_set(state, idx, i);
 				smoothEval->run(state);
 				double error = getError(level, grad);
         		//cout << i << " " << error << endl;
         		file << i << "," << error << endl;
         		gfile << i << "," << gsl_vector_get(grad, 0) << endl;
-        		i += 0.01;
+        		i += 0.1;
        		}
     	}
     	file << endl;
@@ -316,17 +317,17 @@ public:
 	}
 
 	void genActualData(gsl_vector* state, int idx, int iterationId, int level) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_actual_" + to_string(iterationId) + "_" + to_string(idx) + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level + 1) + "_actual_" + to_string(iterationId) + "_" + to_string(idx) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
-			double i = 0.0;
-			while (i < 10.0) {
+			double i = -20.0;
+			while (i < 20.0) {
 				gsl_vector_set(state, idx, i);
 				actualEval->run(state);
 				double error = getActualError(level);
         		//cout << i << " " << error << endl;
         		file << i << "," << error << endl;
-        		i += 0.01;
+        		i += 0.1;
        		}
     	}
     	file << endl;
@@ -337,14 +338,14 @@ public:
 		GradUtil::BETA = -beta;
 		GradUtil::ALPHA = beta;
 
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level + 1) + "_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		const set<int>& inputConstraints = interf->getInputConstraints();
 		{
-			double i = -10.0;
-			double j = -10.0;
+			double i = 0.0;
+			double j = 0.0;
 			while (i < 10.0) {
-				j = -10.0;
+				j = 0.0;
 				while (j < 10.0) {
 				gsl_vector_set(state, idx, i);
 				gsl_vector_set(state, idx + 1, j);
@@ -363,13 +364,13 @@ public:
 	}
 
 	void genActualData2D(gsl_vector* state, int idx, int iterationId, int level) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/popl_scripts/data/" + to_string(level + 1) + "_actual_" + to_string(iterationId) + "_" + to_string(idx) + ".txt");
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level + 1) + "_actual_" + to_string(iterationId) + "_" + to_string(idx) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
-			double i = -10.0;
-			double j = -10.0;
+			double i = 0.0;
+			double j = 0.0;
 			while (i < 10.0) {
-				j = -10.0;
+				j = 0.0;
 				while (j < 10.0) {
 				gsl_vector_set(state, idx, i);
 				gsl_vector_set(state, idx + 1, j);

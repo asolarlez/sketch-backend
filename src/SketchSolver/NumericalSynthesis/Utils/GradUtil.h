@@ -41,6 +41,7 @@ public:
 	static double findMax(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* h);
 	static double findMax(const vector<double>& vals);
 	static double sigmoid(double d, gsl_vector* grads, gsl_vector* out);
+	static double sigmoid(double d);
 	static void default_grad(gsl_vector* out);
 
 	static double softMinMax(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* l, double alpha, double t);

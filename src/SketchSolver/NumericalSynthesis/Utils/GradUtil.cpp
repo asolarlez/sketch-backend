@@ -91,6 +91,12 @@ double GradUtil::sigmoid(double x, gsl_vector* grads, gsl_vector* out) {
 	return v;
 }
 
+double GradUtil::sigmoid(double x) {
+	double scale = BETA;
+    double v = 1.0/(1.0 + exp(scale * x));
+    return v;
+}
+
 /* Computes the gradient of log(e^(alpha*(v1 - t)) + e^(alpha*(v2 - t)) ... )
  If alpha > 0, the result is the soft max of the values
  If alpha < 0, the result is the soft min of the values */

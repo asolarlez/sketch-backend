@@ -163,6 +163,8 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
 
     if (PARAMS->numdebug) {
+        debugger->getGraphs(-1, 0);
+        exit(0);
         //debugger->checkSmoothing();
         //debugger->getPredicatesGraphs();
     }
@@ -274,6 +276,7 @@ bool NumericalSynthesizer::search_concretize() {
 
 
 bool NumericalSynthesizer::concretize() {
+    //return true;
     return search_concretize();
 }
 

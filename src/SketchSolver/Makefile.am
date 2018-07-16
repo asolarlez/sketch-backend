@@ -48,6 +48,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/Optimizers/MaxSolverWrapper.h \
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
+	NumericalSynthesis/SymbolicEvaluators/KLocalityAutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
 	NumericalSynthesis/SymbolicEvaluators/ActualEvaluators.h \
 	NumericalSynthesis/SymbolicEvaluators/SmoothEvaluators.h \
@@ -121,6 +122,7 @@ libcegis_a_SOURCES =				\
 	NumericalSynthesis/DataStructures/IntervalGrad.cpp \
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.cpp	\
 	NumericalSynthesis/SymbolicEvaluators/SmoothAutoDiff.cpp \
+	NumericalSynthesis/SymbolicEvaluators/KLocalityAutoDiff.cpp \
    	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\

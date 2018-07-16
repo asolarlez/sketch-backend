@@ -51,6 +51,7 @@ public:
 	static void vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o); // o = ite(d, m, f)
 	static void vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceGrad* o);
     static void vg_ite(ValueGrad* m, ValueGrad* f, double dval, gsl_vector* dgrad, ValueGrad* o);
+    static double vg_ite(ValueGrad* m, ValueGrad* f, double cval, gsl_vector* cgrad,  gsl_vector* ograd);
 	
 	static void vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o);
 	static void vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o);
