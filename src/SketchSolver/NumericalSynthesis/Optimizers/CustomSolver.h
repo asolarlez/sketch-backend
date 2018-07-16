@@ -262,9 +262,9 @@ public:
 		return sqrt(rv);
 	}
 
-	double normalize(doublereal*v, integer len) {
+	double normalize(doublereal*v, integer len, double threshold=0.0001) {
 		double norm = l2norm(v, len);
-		if (norm > 0.0001) {
+		if (norm > threshold) {
 			for (int i = 0; i < len; ++i) {
 				v[i] = v[i] / norm;
 			}
@@ -289,6 +289,9 @@ public:
 			}
 		}
 
+		if (minj == -1) {
+			return 0.01;
+		}
 
 		// For the when j == minj, out[i] += in[j][i]
 		// when j != minj, rv += F[j]^2 / F[minj]
@@ -363,7 +366,8 @@ public:
 
 
 	void display(vec<doublereal>& in) {
-		cout << "[";
+		/*
+		cout << "HH [";
 		for (int i = 0; i < n; ++i) {
 			cout << in[i]; 
 			if (i < n - 1) {
@@ -371,6 +375,7 @@ public:
 			}
 		}
 		cout << "], \\"<<endl;
+		*/
 	}
 
 
@@ -433,7 +438,7 @@ public:
 				fv = reduce(G, F, n, neF, Gtotal);
 				gnorm = normalize(Gtotal, n);				
 
-				if (fv < bestfv || gnorm < 0.0000001) {
+				if (fv < bestfv || gnorm < 0.0000001 || fgamma < 1e-14) {
 					return;
 				}
 				else {
@@ -445,7 +450,7 @@ public:
 			} while (true);			
 		};
 
-
+		int zigzag = 0;
 		do {
 			display(x);
 			mydf(&status, &this->n, x.begin(), &this->neF, &this->neF, F, &this->lenG, &this->lenG, this->G,
@@ -465,7 +470,7 @@ public:
 			prevfv = fv;
 
 			if (checkexit(G, F, neF, n)) {
-				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;
+				//cout << x[0] << "  " << x[1] << "  " << F[1] << "  " << F[2] << "  " << F[3] << "  " << F[4] << "  " << F[5] << "  " << F[6] << endl;				
 				return DONE;
 			}
 			bool chkst = checkstall(Gtotal, G, neF, n);
@@ -474,7 +479,7 @@ public:
 				lineSearch();
 				return STALL;
 			}
-			int zigzag = 0;
+			
 
 
 			auto updOld = [&](double* GVal) {
@@ -497,6 +502,7 @@ public:
 						zigzag += 1;
 					}
 					if (zigzag > 4) {
+						//cout << "NFZZAG" << endl;
 						gamma = oldGamma;
 						for (int i = 0; i < n; ++i) {
 							GVal[i] += GtotOld[i] * 0.4;
@@ -531,7 +537,37 @@ public:
 				return mag < 0.0001;
 			};
 
-			if (gnorm > 0) {				
+			if (gnorm > 0) {	
+
+				{					
+					double epsilon = 0.00000000001;
+					double mag=0.0;
+					for (int i = 0; i < n; ++i) {
+						if (x[i] + epsilon >= xupp[i]) {
+							Gtotal[i] = 0.0;							
+						}
+						else {
+							if (x[i] - epsilon <= xlow[i]) {
+								Gtotal[i] = 0.0;
+							}
+							else {
+								mag += Gtotal[i] * Gtotal[i];
+							}
+						}
+					}					
+					if (mag < 0.9999999) {
+						double threshold = 1e-9;
+						double newnorm = normalize(Gtotal.begin(), n, threshold);
+						if (newnorm < threshold) {
+							cout << "CORNER REACHED " << endl;
+							bestx.copyTo(x);
+							return STALL;
+						}
+						gnorm = gnorm * newnorm;
+					}
+					//cout <<"NFAT "<< bestfv << ", " << sinceLastImprovement << "\t" << gamma <<"\t"<<mag<< endl;
+				}
+
 				updOld(Gtotal);
 				double fgamma = gamma * (fv / gnorm);
 				update(x, Gtotal, fgamma, n);
@@ -587,9 +623,11 @@ public:
 
 		auto rv = solveConstraints();
 		if (rv == DONE) {
+			cout << "SUCCESS" << endl;
 			return (integer)DONE;
 		}
 		if (rv == STALL) {
+			cout << "STALLED" << endl;
 			return (integer)STALL;
 		}
 		int zigzag = 0;

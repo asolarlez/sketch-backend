@@ -35,8 +35,12 @@ class NumericalSynthesizer : public Synthesizer {
     timerclass timer;
 	
     map<string, int> ctrls; // maps ctrl names to index in the state vector
-    vector<vector<int>> dependentCtrls; // maps nodes to dependent ctrls
-    vector<vector<int>> dependentInputs; // maps nodes to dependent input nodes
+
+	SetSet ctrlsetset;
+	SetSet inputsetset;
+
+    vector<SetSet::set> dependentCtrls; // maps nodes to dependent ctrls
+    vector<SetSet::set> dependentInputs; // maps nodes to dependent input nodes
 
     bool initialized;
 	
@@ -89,7 +93,8 @@ public:
             conf.push(~l2);
         } else {
             cout << "Setting: " << (*dag)[nodeid]->lprint() << " to " << val << endl;
-            cout << "[" << Util::print(dependentCtrls[nodeid]) << "]" << endl;
+			ctrlsetset.print(dependentCtrls[nodeid]);
+            cout << endl;
             interf->pushInput(inputid, val, dlevel);
         }
     }

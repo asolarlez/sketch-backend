@@ -76,6 +76,22 @@ public:
 		return str.str();
 	}
 	
+#ifdef _NOGSL
+	void bound() {
+		double oldVal = val;
+		val = GradUtil::bound(val);
+		if (oldVal != val) {
+			GradUtil::default_grad(grad);
+		}
+		int sz = grad->size;
+		double* it = grad->data;
+		for (int i = 0; i < sz; i++) {
+			*it = GradUtil::bound(*it);
+			++it;
+		}
+	}
+
+#else
 	void bound() {
 		double oldVal = val;
 		val = GradUtil::bound(val);
@@ -86,5 +102,6 @@ public:
 			gsl_vector_set(grad, i, GradUtil::bound(gsl_vector_get(grad, i)));
 		}
 	}
+#endif
 
 };

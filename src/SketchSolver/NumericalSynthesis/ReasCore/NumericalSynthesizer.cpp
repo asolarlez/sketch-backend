@@ -1,4 +1,5 @@
 #include "NumericalSynthesizer.h"
+#include <unordered_set>
 
 gsl_vector* GDEvaluator::curGrad;
 gsl_vector* GDEvaluator::grad;
@@ -14,17 +15,17 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
-        set<int> ctrls;
+		SetSet::set ctrls = ctrlsetset.empty();
+        
         const vector<bool_node*>& parents = n->parents();
         if (n->type == bool_node::CTRL && n->getOtype() == OutType::FLOAT) {
-            ctrls.insert(n->id);
+			ctrls = ctrlsetset.s_union(ctrls, ctrlsetset.singleton(n->id));            
         }
         for (int i = 0; i < parents.size(); i++) {
             bool_node* parent = parents[i];
-            vector<int>& parentCtrls = dependentCtrls[parent->id];
-            ctrls.insert(parentCtrls.begin(), parentCtrls.end());
+			ctrls = ctrlsetset.s_union(ctrls, dependentCtrls[parent->id]);
         }
-        dependentCtrls.push_back(vector<int>(ctrls.begin(), ctrls.end()));
+        dependentCtrls.push_back(ctrls);
     }
 }
 
@@ -35,7 +36,9 @@ void NumericalSynthesizer::init() {
     }
     
     for (auto it = interf->varsMapping.begin(); it != interf->varsMapping.end(); it++) {
-        cout << it->first << " -> " << (*dag)[it->second->nodeid]->lprint()  << "    " << "[" << Util::print(dependentCtrls[it->second->nodeid]) << "]" << endl;
+		cout << it->first << " -> " << (*dag)[it->second->nodeid]->lprint() << "    ";
+			ctrlsetset.print(dependentCtrls[it->second->nodeid]);			
+			cout<< endl;
     }
     
     vector<bool_node*>& ctrlNodes = dag->getNodesByType(bool_node::CTRL);
@@ -99,23 +102,25 @@ void NumericalSynthesizer::init() {
     
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
-        set<int> inputs;
+		SetSet::set inputs = inputsetset.empty();
+
         const vector<bool_node*>& parents = n->parents();
         for (int i = 0; i < parents.size(); i++) {
             bool_node* parent = parents[i];
             if (interf->isInput(parent->id)) {
-                inputs.insert(parent->id);
+				inputs = inputsetset.s_union(inputs, inputsetset.singleton(parent->id));                
             } else {
-                vector<int>& parentInputs = dependentInputs[parent->id];
-                inputs.insert(parentInputs.begin(), parentInputs.end());
+                
+				inputs = inputsetset.s_union(inputs, dependentInputs[parent->id]);
+                
             }
         }
-        dependentInputs.push_back(vector<int>(inputs.begin(), inputs.end()));
+        dependentInputs.push_back(inputs);
     }
     
     SuggestionGenerator* sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
     
-    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls);
+    solver = new NumericalSolver(dag, ctrls, interf, eval, opt, cg, sg, dependentInputs, dependentCtrls, inputsetset, ctrlsetset);
     
     
 }

@@ -159,6 +159,7 @@ public:
     
     virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint = false, int MAX_TRIES = PARAMS->numTries, bool initRandomize = false) {
         Assert(neF > constraints.size(), "Increase neF");
+		cout << "CONSTRAINTS " << constraints.size() << endl;
         eval->setInputs(inputs);
         // start the snopt solving
         SnoptParameters* p = new SnoptParameters(eval, constraints, minimizeNode);

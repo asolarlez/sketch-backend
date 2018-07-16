@@ -3,7 +3,8 @@
 
 int SnoptEvaluator::counter;
 
-NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<vector<int>>& _dependentInputs, const vector<vector<int>>& _dependentCtrls): dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls) {
+NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SymbolicEvaluator* _eval, OptimizationWrapper* _opt, ConflictGenerator* _cg, SuggestionGenerator* _sg, const vector<SetSet::set>& _dependentInputs, const vector<SetSet::set>& _dependentCtrls, SetSet& _inputsetset, SetSet& _ctrlsetset):
+	dag(_dag), ctrls(_ctrls), interf(_interface), eval(_eval), opt(_opt), cg(_cg), sg(_sg), dependentInputs(_dependentInputs), dependentCtrls(_dependentCtrls), inputsetset(_inputsetset), ctrlsetset(_ctrlsetset) {
 	ncontrols = ctrls.size();
     // if ncontrols = 0, make it 1 just so numerical opt does not break
 	if (ncontrols == 0) {
@@ -41,9 +42,9 @@ NumericalSolver::NumericalSolver(BooleanDAG* _dag, map<string, int>& _ctrls, Int
     for (int i = 0; i < dag->size(); i++) {
         bool_node* n = (*dag)[i];
         if (n->type == bool_node::ASSERT) {
-            const vector<int>& inputs = dependentInputs[i];
-            for (int j = 0; j < inputs.size(); j++) {
-                inputsToAsserts[inputs[j]] = i;
+            const auto& inputs = dependentInputs[i];
+			for (auto it = inputsetset.begin(inputs); it != inputsetset.end(inputs); it++) {
+                inputsToAsserts[*it] = i;
             }
         }
     }
@@ -123,7 +124,7 @@ void NumericalSolver::printGraphCmd(string prefix) {
     const set<int>& inputConstraints = interf->getInputConstraints();
     cout << " \"";
     for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
-        string line = to_string(dependentCtrls[*it][0]);
+        string line = to_string(*ctrlsetset.begin(dependentCtrls[*it]));
         string assertMsg = ((ASSERT_node*)(*dag)[inputsToAsserts[*it]])->getMsg();
         string point = "";
         size_t start = assertMsg.find("(");

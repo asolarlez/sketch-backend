@@ -30,9 +30,9 @@ public:
         for (int i = 0; i < dag->size(); i++) {
             bool_node* n = (*dag)[i];
             if (n->type == bool_node::ASSERT) {
-                const vector<int>& inputs = dependentInputs[i];
-                for (int j = 0; j < inputs.size(); j++) {
-                    inputsToAsserts[inputs[j]] = i;
+                const auto& inputs = dependentInputs[i];
+				for (auto it = inputs.begin(); it != inputs.end(); ++it) {
+                    inputsToAsserts[*it] = i;
                 }
             }
         }

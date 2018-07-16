@@ -106,15 +106,37 @@ void GradUtil::default_grad(gsl_vector* out) {
 
 // computes the grad of mval + fval i.e. mgrads + fgrads
 void GradUtil::compute_plus_grad(gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
+#ifdef _NOGSL
+	int sz = out->size;
+	alignas(64) double* __restrict oo = out->data;
+	alignas(64) double* __restrict fg = fgrads->data;
+	alignas(64) double* __restrict mg = mgrads->data;
+	for (int i = 0; i < sz; ++i) {
+		*oo =(*fg) + (*mg);
+		++fg; ++mg; ++oo;
+	}
+#else
 	gsl_blas_dcopy(mgrads, out);
 	gsl_blas_daxpy(1.0, fgrads, out);
+#endif
 }
 
 // computes the grad of mval * fval i.e. mval*fgrads + fval*mgrads
 void GradUtil::compute_mult_grad(double mval, double fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out) {
+#ifdef _NOGSL
+	int sz = out->size;
+	double* __restrict oo = out->data;
+	double* __restrict fg = fgrads->data;
+	double* __restrict mg = mgrads->data;
+	for (int i = 0; i < sz; ++i) {
+		*oo = mval*(*fg) + fval*(*mg);
+		++fg; ++mg; ++oo;
+	}
+#else
 	gsl_blas_dcopy(mgrads, out);
 	gsl_blas_dscal(fval, out);
 	gsl_blas_daxpy(mval, fgrads, out);
+#endif
 }
 
 // computes the grad of mval / fval i.e (fval * mgrads - mval * fgrads) / (fval * fval)

@@ -62,12 +62,27 @@ public:
 		return true;
 	}
 
-	static double bound(double v) {
+	static inline double bound(double v) {
+
+		if (v < MAXVAL) {
+			if (v > MINVAL) {
+				return v;
+			}
+			else {
+				return MINVAL;
+			}
+		}
+		else {
+			return MAXVAL;
+		}
+
+		/*
 		if (!inLimit(v)) {
 			//cout << "Bound reached" << endl;
  			return v > 0 ? MAXVAL : MINVAL;
 		} else {
 			return v;
 		}
+		*/
 	}	
 };

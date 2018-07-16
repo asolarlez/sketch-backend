@@ -6,9 +6,10 @@
 
 
 #ifdef _NOGSL
-class gsl_vector {
+class alignas(64) gsl_vector {
 public:
 	int size;
+	char B[60];
 	double data[];
 	gsl_vector(int _size):size(_size) {
 
@@ -17,10 +18,10 @@ public:
 
 inline double gsl_vector_get(const gsl_vector* v, int idx) { return v->data[idx]; }
 inline void gsl_vector_set(gsl_vector* v, int idx, double val) { v->data[idx] = val;  }
-inline gsl_vector* gsl_vector_alloc(int size) { return new (malloc(sizeof(gsl_vector) + size * sizeof(double))) gsl_vector(size); }
+inline gsl_vector* gsl_vector_alloc(int size) { return new (_mm_malloc(sizeof(gsl_vector) + size * sizeof(double), 64)) gsl_vector(size); }
 inline void gsl_vector_free(gsl_vector* v) {
 	v->~gsl_vector();
-	free(v);
+	_mm_free(v);
 }
 
 
