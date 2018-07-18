@@ -570,8 +570,17 @@ Expression: Term { $$ = $1; }
 	an->multi_mother.reserve(bigN);
 	for(int i=0; i<bigN; ++i, ++it){
 		an->multi_mother.push_back(*it);
-	}		
-	$$ = currentBD->new_node(NULL, NULL, an); 
+	}	
+	if(bigN > 0){
+		if(an->multi_mother[0]->getOtype() == OutType::FLOAT ){
+			$$ = currentBD->new_node(currentBD->create_const(0.0), NULL, an); 
+		}else{
+			$$ = currentBD->new_node(currentBD->create_const(0), NULL, an); 
+		}
+
+	}else{
+		$$ = currentBD->new_node(currentBD->create_const(0), NULL, an); 
+	}	
 	delete childs;
 }
 | '[' T_ident ']' T_leftTC varList T_rightTC{
