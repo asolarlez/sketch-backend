@@ -18,6 +18,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		VarStore::objP* val = &(values.getObj(inode->get_name()));
 		int nbits = inode->get_nbits();
 		ARR_CREATE_node* acn = new ARR_CREATE_node();
+		acn->setDfltval(getCnode(0));
 		while(val != NULL){
 			bool_node* cnst;
 			if(nbits==1){
@@ -113,6 +114,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 			VarStore::objP* val = &(values.getObj(sstr.str()));
 			int nbits = val->size();
 			ARR_CREATE_node* acn = new ARR_CREATE_node();
+			acn->setDfltval(getCnode(0));
 			while(val != NULL){
 				bool_node* cnst;
 				if(nbits==1){

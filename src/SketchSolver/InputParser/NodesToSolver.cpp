@@ -2910,7 +2910,17 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	tmp.clear();
 	vector<bool_node*>::iterator it = node.multi_mother.begin();	
 
-	tmp.push_back(guardedVal(YES, node.dfltval, -1)); // default value lives in location -1;
+	const Tvalue& dflt = tval_lookup(node.getDfltval());
+	
+	if (!dflt.isSparse()) {
+		Assert(dflt.isBvect(), "WTF");
+		int flag = dflt.getId();
+		tmp.push_back(guardedVal(YES, flag==YES? 1 : 0, -1));
+	}
+	else {
+		tmp.push_back(guardedVal(YES, dflt.num_ranges[0].value, -1)); // default value lives in location -1;
+	}
+
 
 	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
