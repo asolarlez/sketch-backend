@@ -1260,7 +1260,7 @@ void DagOptim::visit( ARR_R_node& node ){
 		int idx = getIval(nmother);
 		ARR_CREATE_node* acn = ((ARR_CREATE_node*)node.father);
 		if(idx >= acn->multi_mother.size()){
-			rvalue = getCnode(acn->dfltval);
+			rvalue = acn->getDfltval();
 			return;
 		}
 		rvalue = acn->multi_mother[idx];
@@ -1289,7 +1289,7 @@ void DagOptim::visit( ARR_W_node& node ){
 			int idx = getIval(node.mother);
 			if(idx == 0){
 				tempcreators[nccount].first = node.globalId;
-				tempcreators[nccount].second.dfltval = getIval(defval);
+				tempcreators[nccount].second.setDfltval(defval);
 				tempcreators[nccount].second.multi_mother.push_back(node.multi_mother[1]);
 				++nccount;
 			}			

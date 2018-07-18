@@ -603,10 +603,16 @@ class ARR_W_node:public arith_node{
 class ARR_CREATE_node:public arith_node{
 	
 	public:
-    int dfltval;
-    ARR_CREATE_node():arith_node(ARR_CREATE),dfltval(UNINITIALIZED){ }
-    ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true): arith_node(bn, copyChildren), dfltval(bn.dfltval){ }
-    virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+	bool_node* getDfltval() const {
+		Assert(mother != NULL, "NOT NULL");
+		return mother;
+	}
+	void setDfltval(bool_node* dfltval) {
+		mother = dfltval;
+	}
+	ARR_CREATE_node() :arith_node(ARR_CREATE) { }
+	ARR_CREATE_node(const ARR_CREATE_node& bn, bool copyChildren = true) : arith_node(bn, copyChildren) { }
+	virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new ARR_CREATE_node(*this, copyChildren);  };
     virtual void outDagEntry(ostream& out) const{
         if(multi_mother[0] != NULL){
@@ -625,7 +631,7 @@ class ARR_CREATE_node:public arith_node{
                 str<<(*it)->lid()<<", ";
             }
         }
-        str<<"}("<<dfltval<<")";
+        str<<"}("<< getDfltval()->lid() <<")";
         return str.str();
     }
     OutType* getOtype()const {
@@ -653,13 +659,13 @@ class ARR_CREATE_node:public arith_node{
         for(size_t i=0; i<multi_mother.size(); ++i){
             str<<" "<<multi_mother[i]->id;
         }
-        str<<" "<<dfltval;
+        str<<" "<< getDfltval()->lid();
         return str.str();
     }
 	virtual string smtletprint(){
 		//just create an array that is dfltval(0) by default and then store all these values!
 		if(getOtype() == OutType::BOOL_ARR || getOtype() == OutType::INT_ARR){
-			string base = "((as const (Array Int Int)) " + int2str(dfltval) + ")";
+			string base = "((as const (Array Int Int)) " + getDfltval()->lid() + ")";
 			for(size_t i=0;i<multi_mother.size(); i++){
 				base = "(store " + base + " " + int2str(i) + " " + multi_mother[i]->getSMTnode(OutType::INT) + ")";
 			}

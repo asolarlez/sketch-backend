@@ -28,7 +28,7 @@
 struct pair_hash {
 	
 	std::size_t operator () (const std::pair<int, int> &p) const {
-		return  std::hash<size_t >{}((size_t)p.first << 32 | (unsigned int)p.second);
+		return  std::hash<size_t >{}((size_t)p.first << 31 | (unsigned int)p.second);
 	}
 };
 

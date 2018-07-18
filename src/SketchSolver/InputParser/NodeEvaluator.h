@@ -127,7 +127,7 @@ public:
 			return deflt;
 		}
 		Assert(ii < bnd, "Out of bounds error in solver ;qek;kl");		
-		int rv;
+		int rv=-1;
 		cpvec* tt = this;
 		while(tt != NULL && !tt->lget(ii, rv)){
 			tt = tt->parent;

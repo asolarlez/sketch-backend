@@ -130,7 +130,7 @@ void NodeEvaluator::visit( ARR_CREATE_node &node){
 		cpv->vv[t] = i(*node.multi_mother[t]);
 	}
 	// TODO xzl: temporarily disable -333
-	setbn(node, node.dfltval);
+	setbn(node, i(*node.getDfltval()));
 	//setbn(node, 0);
 }
 

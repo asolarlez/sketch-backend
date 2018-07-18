@@ -423,6 +423,7 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 		VarStore::objP* val = &(values.getObj(inode->get_name()));
 		int nbits = inode->get_nbits();
 		ARR_CREATE_node* acn = new ARR_CREATE_node();
+		acn->setDfltval(cse.getCnode(0));
 		while(val != NULL){
 			bool_node* cnst;
 			if(nbits==1){
