@@ -8,7 +8,7 @@
 
 class SmoothEvaluators {
 	BooleanDAG* mainDag;
-	map<BooleanDAG*, KLocalityAutoDiff*> evals;
+	map<BooleanDAG*, SymbolicEvaluator*> evals;
 	map<string, int>& ctrls;
 	Interface* interf;
 	int MAX_CLAUSE_VALS = 20;
@@ -31,7 +31,14 @@ public:
 
 	void addEvaluator(BooleanDAG* dag) {
 		Assert(evals.find(dag) == evals.end(), "This should not be possible");
-		KLocalityAutoDiff* se = new KLocalityAutoDiff(*dag, ctrls);
+		SymbolicEvaluator* se;
+		if (PARAMS->smoothingMode == 0) {
+			se = new BoolAutoDiff(*dag, ctrls);
+		} else if (PARAMS->smoothingMode == 1) {
+			se = new SmoothAutoDiff(*dag, ctrls);
+		} else {
+			se = new KLocalityAutoDiff(*dag, ctrls);
+		}
 		se->setInputs(interf);
 		evals[dag] = se;
 	}

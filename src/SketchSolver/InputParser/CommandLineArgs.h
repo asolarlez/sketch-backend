@@ -90,6 +90,7 @@ struct CommandLineArgs{
   string erSimEvalFName;
   bool numericalSolver;
 	string numericalSolverMode;
+	int smoothingMode;
 	bool useSnopt;
 	bool useEager;
     bool checkInput;
@@ -182,6 +183,7 @@ struct CommandLineArgs{
 	epsilon = 0.0000001;
     numericalSolver = true;
 		numericalSolverMode = "";
+		smoothingMode = 0;
 		useSnopt = false;
 	erSimEvalFName = "";
         checkInput = false;
@@ -236,6 +238,13 @@ struct CommandLineArgs{
 				cout<<"numerical solver mode = "<<numericalSolverMode<<endl;
 				Assert(numericalSolverMode == "ONLY_SMOOTHING" || numericalSolverMode == "FULLY_SEPARATED" || numericalSolverMode=="INTERACTIVE" || numericalSolverMode == "SMOOTHING_SAT",
 						 "The argument to numericalsolvermode should be one of ONLY_SMOOTHING, FULLY_SEPARATED, INTERACTIVE, SMOOTHING_SAT.");
+				input_idx = ii+2;
+				continue;
+			}
+			if( string(argv[ii]) == "-smoothingmode" ){
+				Assert(ii<(argc-1), "-smoothingmode needs an extra parameter");
+				smoothingMode = atoi(argv[ii+1]);
+				cout<<"smoothing mode = "<<smoothingMode<<endl;
 				input_idx = ii+2;
 				continue;
 			}

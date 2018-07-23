@@ -21,6 +21,7 @@
 #include "SmoothEvaluators.h"
 #include "ActualEvaluators.h"
 #include "SnoptWrapper.h"
+#include "GradientDescentWrapper.h"
 #include "MaxSolverWrapper.h"
 #include "SimpleConflictGenerator.h"
 #include "SimpleSuggestionGenerator.h"

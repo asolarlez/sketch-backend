@@ -29,7 +29,7 @@ class SmoothAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	vector<vector<ValueGrad*>> values; // Keeps track of values along with gradients for each node
 	vector<vector<DistanceGrad*>> distances; // Keeps track of distance metric for boolean nodes
     Interface* inputValues;
-    int MAX_CONDS = 1;
+    int MAX_CONDS = 4;
     int MAX_REGIONS = pow(2, MAX_CONDS) + 1;
     int cur_idx = 0;
     vector<int> condNodes;
@@ -117,12 +117,12 @@ public:
 		return d(*bn, idx);
 	}
 	
-	double dist(int nid) {
+	virtual double dist(int nid) {
 		DistanceGrad* dg = d(bdag[nid], 0);
 		return dg->dist;
 	}
 
-	double dist(int nid, gsl_vector* grad) {
+	virtual double dist(int nid, gsl_vector* grad) {
 		DistanceGrad* dg = d(bdag[nid], 0);
 		gsl_vector_memcpy(grad, dg->grad);
 		return dg->dist;

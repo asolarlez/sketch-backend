@@ -56,7 +56,11 @@ public:
 	static void dg_or(DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
 	static void dg_not(DistanceGrad* m, DistanceGrad* d);
 	static void dg_ite(DistanceGrad* b, DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
+
+	static double dg_copy(DistanceGrad* m, gsl_vector* grad);
 	static void dg_copy(DistanceGrad* m, DistanceGrad* o);
+
+	static double dg_times(DistanceGrad* m, DistanceGrad* f, gsl_vector* grad);
     
     static void dg_ite(DistanceGrad* m, DistanceGrad* f, double dval, gsl_vector* dgrad, DistanceGrad* o);
 

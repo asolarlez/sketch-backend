@@ -310,7 +310,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
         DistanceGrad* dg = d(bdag[nodeid], 1);
         //cout << bdag[nodeid]->lprint() << " " << dg->dist << " " << gsl_vector_get(dg->grad, 0) << endl;
         ctr++;
-        if (dist*GradUtil::BETA < -5) break;
+        if (dist*GradUtil::BETA < -10) break;
         if (condNodes.size() < MAX_CONDS) {
             condNodes.push_back(nodeid);
         }
@@ -364,6 +364,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
                 GradUtil::compute_mult_grad(s, dg1->dist, GradUtil::tmp, dg1->grad, GradUtil::tmp1);
                 gsl_blas_daxpy(1.0, GradUtil::tmp1, dg0->grad);
                 dg0->dist = dg0->dist + v;
+                dg0->set = true;
                 //cout << dg0->dist << endl;
             } 
             if (vg1->set) {
@@ -376,6 +377,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
                 GradUtil::compute_mult_grad(s, vg1->getVal(), GradUtil::tmp, vg1->getGrad(), GradUtil::tmp1);
                 gsl_blas_daxpy(1.0, GradUtil::tmp1, vg0->getGrad());
                 vg0->update(vg0->getVal() + v);
+                vg0->set = true;
                 //cout << vg0->getVal() << endl;
             }
         }

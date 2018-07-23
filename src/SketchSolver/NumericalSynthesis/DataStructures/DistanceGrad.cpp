@@ -88,6 +88,11 @@ void DistanceGrad::dg_ite(DistanceGrad* bdist, DistanceGrad* mdist, DistanceGrad
 	}	
 }
 
+double DistanceGrad::dg_copy(DistanceGrad* m, gsl_vector* grad) {
+	gsl_blas_dcopy(m->grad, grad);
+	return m->dist;
+}
+
 void DistanceGrad::dg_copy(DistanceGrad* m, DistanceGrad* o) {
 	if (!m->set) {
 		o->set = false;
@@ -134,6 +139,13 @@ double DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f) {
 	if (same(m, f)) return m->dist;
 	return m->dist  * f->dist;
 }
+
+double DistanceGrad::dg_times(DistanceGrad* m, DistanceGrad* f, gsl_vector* grad) {
+	double v = m->dist * f->dist;
+    GradUtil::compute_mult_grad(m->dist, f->dist, m->grad, f->grad, grad);
+    return v;
+}
+
 
 // o = mf
 void DistanceGrad::dg_combine(DistanceGrad* m, DistanceGrad* f, DistanceGrad* o) {

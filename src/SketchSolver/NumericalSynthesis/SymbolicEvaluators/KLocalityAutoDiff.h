@@ -33,6 +33,14 @@ public:
 		nodeToVal[nodeid] = val;
 	}
 
+	string toString() {
+		stringstream s;
+		for (auto it = nodeToVal.begin(); it != nodeToVal.end(); it++) {
+			s << "(" << it->first << "," << it->second << ");";
+		}
+		return s.str();
+	}
+
 	int getVal(int nodeid) {
 		if (nodeToVal.find(nodeid) == nodeToVal.end()) {
 			return -1;
@@ -43,6 +51,17 @@ public:
 
 	void empty() {
 		nodeToVal.clear();
+	}
+
+	int length() {
+		return nodeToVal.size();
+	}
+
+	int lowestId() {
+		if (nodeToVal.size() == 0) {
+			return -1;
+		}
+		return nodeToVal.begin()->first;
 	}
 	
 	static bool isCompatible(Path* p1, Path* p2) {
@@ -88,7 +107,102 @@ public:
 		p->add(p2->nodeToVal);
 		// TODO: need to add common conditions in paths to p
 	}
+
+	static Path* pIntersect(Path* p1, Path* p2) {
+		// assumes that the paths are compatible
+		Path* p = new Path();
+		p->add(p1->nodeToVal);
+		p->add(p2->nodeToVal);
+		return p;
+	}
+
+	// only one cond  should differ
+	static int isConjugate(Path* p1, Path* p2) {
+		//cout << "Conjugate check: " << p1->toString() << " | " << p2->toString() << endl;
+		if (p1->length() != p2->length()) {
+			return -1;
+		}
+		int conjIdx = -1;
+		int ctr = 0;
+		for (auto it = p1->nodeToVal.begin(); it != p1->nodeToVal.end(); it++) {
+			if (p2->getVal(it->first) == -1) {
+				return -1;
+			}
+			if (p2->getVal(it->first) != it->second) {
+				if (conjIdx == -1) {
+					conjIdx = ctr;
+				} else {
+					return -1;
+				}
+			}
+			ctr++;
+		}
+		//cout << conjIdx << endl;
+		return conjIdx;
+	}
+
+	static Path* pUnion(Path* p1, Path* p2) {
+		// assumes that the paths are conjugates
+		Path* p = new Path();
+		for (auto it = p1->nodeToVal.begin(); it != p1->nodeToVal.end(); it++) {
+			if (p2->getVal(it->first) == it->second) {
+				p->addCond(it->first, it->second);
+			}
+			
+		}
+		return p;
+
+	}
+
+	static bool isSubset(Path* p1, Path* p2) {
+		if (p1->length() == 0) return true;
+		for (auto it = p1->nodeToVal.begin(); it != p1->nodeToVal.end(); it++) {
+			if (p2->getVal(it->first) != it->second) {
+				return false;
+			}
+		}
+		return true;
+
+	}
+
+	// no common condition
+	static bool isDisjoint(Path* p1, Path* p2) {
+		if (p1->length() == 0 || p2->length() == 0) return false;
+		for (auto it = p1->nodeToVal.begin(); it != p1->nodeToVal.end(); it++) {
+			if (p2->getVal(it->first) != -1) {
+				return false;
+			}
+		}
+		return true;
+	}
 };
+
+class MergeNodesList {
+	vector<tuple<int, int, int, int>> nodesToMerge;
+
+public:
+	void add(int node1, int idx1, int node2, int idx2) {
+		nodesToMerge.push_back(make_tuple(node1, idx1, node2, idx2));
+	}
+
+	string print() {
+		stringstream s;
+		for (int i = 0; i < nodesToMerge.size(); i++) {
+			auto& t = nodesToMerge[i];
+			s << "(" << get<0>(t) << "," << get<1>(t) << "," << get<2>(t) << "," << get<3>(t) << ") ";
+		}
+		return s.str();
+	}
+
+	int size() {
+		return nodesToMerge.size();
+	}
+
+	tuple<int, int, int, int>& getTuple(int idx) {
+		return nodesToMerge[idx];
+	}
+};
+
 
 class KLocalityAutoDiff: public NodeVisitor, public SymbolicEvaluator
 {
@@ -99,10 +213,15 @@ class KLocalityAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	vector<vector<ValueGrad*>> values; // Keeps track of values along with gradients for each node
 	vector<vector<DistanceGrad*>> distances; // Keeps track of distance metric for boolean nodes
 	vector<vector<Path*>> paths;
-	vector<set<int>> conds;
 	vector<int> sizes;
     Interface* inputValues;
-    int MAX_REGIONS = 256 + 1; // 0th idx is for final merging
+
+    set<string> pathStrings;
+
+
+    int MAX_REGIONS = 16 + 1; // 0th idx is for final merging
+
+    vector<vector<MergeNodesList*>> mergeNodes;
 
 public:
     int DEFAULT_INP = -32;
@@ -200,6 +319,10 @@ public:
 		sizes[bn.id] = sz;
 	}
 
+	void setsize(bool_node* n, int sz) {
+		setsize(*n, sz);
+	}
+
 	void setpath(bool_node& bn, int idx, Path* p) {
 		paths[bn.id][idx] = p;
 	}
@@ -218,12 +341,12 @@ public:
 	}
 
 	
-	double dist(int nid) {
+	virtual double dist(int nid) {
 		ValueGrad* val = v(bdag[nid], 0);
 		return val->getVal();
 	}
 
-	double dist(int nid, gsl_vector* grad) {
+	virtual double dist(int nid, gsl_vector* grad) {
 		ValueGrad* val = v(bdag[nid], 0);
 		gsl_vector_memcpy(grad, val->getGrad());
 		return val->getVal();
@@ -308,5 +431,16 @@ public:
 	
 	void copyNodes(bool_node& node, bool_node* m);
 	double merge(bool_node* n, gsl_vector* grad);
+
+	void mergePaths(vector<tuple<double, vector<tuple<int, int, int>>, Path*>>& mergedPaths);
+	void getMergeNodesBinop(bool_node* n);
+	void getMergeNodesUnop(bool_node* n, bool_node* m);
+	void getMergeNodesArracc(bool_node* node);
+	void getMergeNodes();
+
+	void combineDistance(bool_node& node, int nodeid1, int idx1, int nodeid2, int idx2, double& dist, gsl_vector* dg_grad);
+	void doPair(bool_node& node, int nodeid1, int idx1, int nodeid2, int idx2, double& val, gsl_vector* val_grad);
+	void pairNodes(bool_node& node);
+	void normalize(bool_node* n);
 
 };

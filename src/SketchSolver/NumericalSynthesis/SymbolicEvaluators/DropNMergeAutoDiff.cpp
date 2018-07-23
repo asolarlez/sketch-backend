@@ -111,15 +111,20 @@ void DropNMergeAutoDiff::visit( CTRL_node& node ) {
 	}
 }
 
-vector<tuple<double, int, int>> DropNMergeAutoDiff::getPairs(bool_node* m, bool_node* f) {
-    vector<tuple<double, int, int>> pairs;
+void DropNMergeAutoDiff::getPairs(bool_node* m, bool_node* f, vector<tuple<double, int, int>>& pairs) {
     int msize = size(m);
     int fsize = size(f);
     for (int i = 1; i <= msize; i++) {
         for (int j = 1; j <= fsize; j++) {
             Path* pm = path(m, i);
             Path* pf = path(f, j);
+            if (m->id == 30979 && f->id == 30991) {
+                cout << pm->print() << " " << pf->print();
+            }
             if (Path::isCompatible(pm, pf)) {
+                if (m->id == 30979 && f->id == 30991) {
+                    cout << " compatible";
+                }
                 DistanceGrad* mdist = d(m, i);
                 DistanceGrad* fdist = d(f, j);
                 double dist = DistanceGrad::dg_combine(mdist, fdist);
@@ -127,15 +132,16 @@ vector<tuple<double, int, int>> DropNMergeAutoDiff::getPairs(bool_node* m, bool_
                     pairs.push_back(make_tuple(dist, i, j));
                 }
             }
+            if (m->id == 30979 && f->id == 30991) {
+                cout << endl;
+            }
         }
     }
     sort(pairs.begin(), pairs.end());
     reverse(pairs.begin(), pairs.end());
-    return pairs;
 }
 
-vector<tuple<double, int, int, vector<int>>> DropNMergeAutoDiff::getArraccPairs(bool_node* cnode, bool_node* fnode, bool_node* tnode) {
-    vector<tuple<double, int, int, vector<int>>> pairs;
+void DropNMergeAutoDiff::getArraccPairs(bool_node* cnode, bool_node* fnode, bool_node* tnode, vector<tuple<double, int, int, vector<int>>>& pairs) {
     int csize = size(cnode);
     int fsize = size(fnode);
     int tsize = size(tnode);
@@ -212,13 +218,13 @@ vector<tuple<double, int, int, vector<int>>> DropNMergeAutoDiff::getArraccPairs(
     }*/
     sort(pairs.begin(), pairs.end());
     reverse(pairs.begin(), pairs.end());
-    return pairs;
 }
 
 void DropNMergeAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
-    const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
+    vector<tuple<double, int, int>> pairs;
+    getPairs(node.mother, node.father, pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -250,7 +256,8 @@ void DropNMergeAutoDiff::visit( PLUS_node& node ) {
 void DropNMergeAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
-	const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
+    vector<tuple<double, int, int>> pairs;
+	getPairs(node.mother, node.father, pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -293,7 +300,8 @@ void DropNMergeAutoDiff::visit(ARRACC_node& node )  {
         return;
     } 
 
-    const vector<tuple<double, int, int, vector<int>>>& pairs = getArraccPairs(node.mother, node.multi_mother[0], node.multi_mother[1]);
+    vector<tuple<double, int, int, vector<int>>> pairs;
+    getArraccPairs(node.mother, node.multi_mother[0], node.multi_mother[1], pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -336,7 +344,8 @@ void DropNMergeAutoDiff::visit(ARRACC_node& node )  {
 void DropNMergeAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
-	const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
+	vector<tuple<double, int, int>> pairs;
+    getPairs(node.mother, node.father, pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -433,7 +442,8 @@ void DropNMergeAutoDiff::visit( CONST_node& node ) {
 void DropNMergeAutoDiff::visit( LT_node& node ) {
     Assert(isFloat(node.mother) && isFloat(node.father), "NYI: DropNMergeAutoDiff for lt with integer parents");
 
-    const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
+    vector<tuple<double, int, int>> pairs;
+    getPairs(node.mother, node.father, pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -470,7 +480,8 @@ void DropNMergeAutoDiff::visit( EQ_node& node ) {
 }
 
 void DropNMergeAutoDiff::visit( AND_node& node ) {
-	const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
+	vector<tuple<double, int, int>> pairs;
+    getPairs(node.mother, node.father, pairs);
 
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -503,8 +514,12 @@ void DropNMergeAutoDiff::visit( AND_node& node ) {
 }
 
 void DropNMergeAutoDiff::visit( OR_node& node ) {
-	const vector<tuple<double, int, int>>& pairs = getPairs(node.mother, node.father);
-
+	vector<tuple<double, int, int>> pairs;
+    getPairs(node.mother, node.father, pairs);
+    if (node.id == 30992) {
+        cout << size(node.mother) << " " << size(node.father) << endl;
+        cout << pairs.size() << endl;
+    }
     int k = 1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
         int midx = get<1>(*it);
@@ -675,6 +690,11 @@ pair<double, double> DropNMergeAutoDiff::merge(bool_node* n, int mergeIdx, gsl_v
         gsl_blas_daxpy(1.0, GradUtil::tmp, grad);
         gsl_blas_daxpy(1.0, dg->grad, dist_grad);
     }
+    if (dist > 1e-4) {
+        GradUtil::compute_div_grad(res, dist, grad, dist_grad, GradUtil::tmp);
+        gsl_vector_memcpy(grad, GradUtil::tmp);
+        res = res/dist;
+    }
     //cout << "total: " << res << endl;
     return make_pair(res, dist);
 }
@@ -724,25 +744,26 @@ void DropNMergeAutoDiff::run(const gsl_vector* ctrls_p) {
         bool_node* n = bdag[i];
         n->accept(*this);
         normalize(n);
-        cout << n->lprint() << endl;
+        //cout << n->lprint() << endl;
         if (size(n) == 0) {
+            cout << n->lprint() << endl;
             Assert(false, "Size is 0");
         }
-        double dsum = 0;
+        /*double dsum = 0;
         for (int k = 1; k <= size(n); k++) {
             ValueGrad* vg = v(n, k);
             DistanceGrad* dg = d(n, k);
             cout << "(" << vg->getVal() << "," << dg->dist << ") ";
             dsum += dg->dist;
         }
-        cout << endl;
+        cout << endl;*/
         int s = size(n);
         if (s > 1) {
             double mean_ = mean(n);
             double std_dev = stdDev(n, mean_ );
-            cout << mean_ << " " << std_dev << " " << dsum << " " << s;
+            //cout << mean_ << " " << std_dev << " " << dsum << " " << s;
             if (doMergeAll(mean_, std_dev, s)) {
-                cout << " Merge all";
+                //cout << " Merge all";
                 double mergedVal = merge(n, GradUtil::tmp2);
                 ValueGrad* val = v(n, 1);
                 val->update(mergedVal);
@@ -757,8 +778,8 @@ void DropNMergeAutoDiff::run(const gsl_vector* ctrls_p) {
                 GradUtil::default_grad(dg->grad);
                 dg->set = true;
                 setsize(*n, 1);
-            } else if (s >= MAX_REGIONS - 1 && d(n, 1)->dist > 0.3) {
-                cout << " Merge half";
+            } else if (false && s >= MAX_REGIONS - 1 && d(n, 1)->dist > 0.3) {
+                //cout << " Merge half";
                 int mergeIdx = (MAX_REGIONS - 1)/2;
                 pair<double, double> mergedVal = merge(n, mergeIdx, GradUtil::tmp2, GradUtil::tmp3);
                 ValueGrad* val = v(n, mergeIdx);
@@ -775,7 +796,7 @@ void DropNMergeAutoDiff::run(const gsl_vector* ctrls_p) {
                 dg->set = true;
                 setsize(*n, mergeIdx);
             }
-            cout << endl;
+            //cout << endl;
         } 
     }
     

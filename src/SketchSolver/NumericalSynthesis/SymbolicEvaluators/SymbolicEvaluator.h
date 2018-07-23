@@ -22,6 +22,10 @@ public:
     virtual double getErrorOnConstraint(int nodeid, gsl_vector* grad) = 0;
     virtual double getErrorOnConstraint(int nodeid) = 0;
 
+    virtual double dist(int nid) = 0;
+    virtual double dist(int nid, gsl_vector* grad) = 0;
+
+
     
 	virtual void print() = 0;
 	virtual void printFull() = 0;

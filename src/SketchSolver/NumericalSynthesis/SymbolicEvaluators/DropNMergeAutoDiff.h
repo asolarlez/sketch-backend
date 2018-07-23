@@ -27,10 +27,24 @@ public:
 	Path() { }
 	void add(map<int, int>& initMap) {
 		nodeToVal.insert(initMap.begin(), initMap.end());
+		while(nodeToVal.size() > 10) {
+			nodeToVal.erase(nodeToVal.begin());
+		}
 	}
 	void addCond(int nodeid, int val) {
 		Assert(nodeToVal.find(nodeid) == nodeToVal.end(), "Node already has value");
 		nodeToVal[nodeid] = val;
+		while(nodeToVal.size() > 10) {
+			nodeToVal.erase(nodeToVal.begin());
+		}
+	}
+
+	string print() {
+		stringstream s;
+		for (auto it = nodeToVal.begin(); it != nodeToVal.end(); it++) {
+			s << "(" << it->first << "," << it->second << ") ";
+		}
+		return s.str();
 	}
 
 	int getVal(int nodeid) {
@@ -101,7 +115,7 @@ class DropNMergeAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	vector<vector<Path*>> paths;
 	vector<int> sizes;
     Interface* inputValues;
-    int MAX_REGIONS = 8 + 1; // 0th idx is for final merging
+    int MAX_REGIONS = 16 + 1; // 0th idx is for final merging
 
 public:
     int DEFAULT_INP = -32;
@@ -217,12 +231,12 @@ public:
 	}
 
 	
-	double dist(int nid) {
+	virtual double dist(int nid) {
 		ValueGrad* val = v(bdag[nid], 0);
 		return val->getVal();
 	}
 
-	double dist(int nid, gsl_vector* grad) {
+	virtual double dist(int nid, gsl_vector* grad) {
 		ValueGrad* val = v(bdag[nid], 0);
 		gsl_vector_memcpy(grad, val->getGrad());
 		return val->getVal();
@@ -303,8 +317,8 @@ public:
 	}
 
 
-	vector<tuple<double, int, int>> getPairs(bool_node* m, bool_node* f);
-	vector<tuple<double, int, int, vector<int>>> getArraccPairs(bool_node* cnode, bool_node* fnode, bool_node* tnode);
+	inline void getPairs(bool_node* m, bool_node* f, vector<tuple<double, int, int>>& pairs);
+	inline void getArraccPairs(bool_node* cnode, bool_node* fnode, bool_node* tnode, vector<tuple<double, int, int, vector<int>>>& pairs);
 
 	void doUfun(UFUN_node& node, ValueGrad* mval, ValueGrad* val);
 	

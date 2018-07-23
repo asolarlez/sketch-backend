@@ -114,12 +114,12 @@ public:
 		return d(*bn);
 	}
 	
-	double dist(int nid) {
+	virtual double dist(int nid) {
 		DistanceGrad* dg = d(bdag[nid]);
 		return dg->dist;
 	}
 
-	double dist(int nid, gsl_vector* grad) {
+	virtual double dist(int nid, gsl_vector* grad) {
 		DistanceGrad* dg = d(bdag[nid]);
 		gsl_vector_memcpy(grad, dg->grad);
 		return dg->dist;

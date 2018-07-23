@@ -1,8 +1,8 @@
 #include "NumericalSynthesizer.h"
 
-//gsl_vector* GDEvaluator::curGrad;
-//gsl_vector* GDEvaluator::grad;
-//ofstream GDEvaluator::file;
+gsl_vector* GDEvaluator::curGrad;
+gsl_vector* GDEvaluator::grad;
+ofstream GDEvaluator::file;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 ofstream SnoptEvaluator::file;
@@ -96,7 +96,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     if (PARAMS->useSnopt) {
         opt = new SnoptWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
     }  else {
-        Assert(false, "No gradient descent wrapper");
+        opt = new GradientDescentWrapper(smoothEval, ncontrols, xlow, xupp);
     }
     
     MaxSolverWrapper* maxOpt = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
@@ -163,7 +163,8 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
 
     if (PARAMS->numdebug) {
-        debugger->getGraphs(-1, 0);
+        //debugger->getGraphs(-1, 0);
+        debugger->runOptimization();
         exit(0);
         //debugger->checkSmoothing();
         //debugger->getPredicatesGraphs();
@@ -277,7 +278,7 @@ bool NumericalSynthesizer::search_concretize() {
 
 bool NumericalSynthesizer::concretize() {
     //return true;
-    return search_concretize();
+    return simple_concretize();
 }
 
 

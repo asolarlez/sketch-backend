@@ -106,7 +106,7 @@ public:
 
 	void checkSmoothing() {
 		gsl_vector* s = gsl_vector_alloc(ncontrols);
-		double arr1[1] = {-6.0};
+		double arr1[1] = {0.0};
 		for (int i = 0; i < ncontrols; i++) {
 			gsl_vector_set(s, i, arr1[i]);
 		}
@@ -117,6 +117,13 @@ public:
 		exit(0);
 	}
 	
+	void runOptimization() {
+		for (int i = 0; i < 5; i++) {
+			GradUtil::counter = i;
+			opt->optimize(interf, NULL, assertConstraints, minimizeNode, false, 1, NULL, -1);
+		}
+	}
+
 	void getGraphs(int level, int iterationId) { 
 		gsl_vector* s = gsl_vector_alloc(ncontrols);
 		double arr1[2] = {1.2934,12};
@@ -297,8 +304,16 @@ public:
 		cout << "Beta: " << beta << endl;
 		gsl_vector* grad = gsl_vector_alloc(state->size);
 
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_drop_smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
-		ofstream gfile("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_drop_smooth_grad_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		string suffix = "";
+		if (PARAMS->smoothingMode == 1) {
+			suffix = "conc_";
+		}
+		if (PARAMS->smoothingMode == 2) {
+			suffix = "nodeMerge_";
+		}
+
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_" + suffix + "smooth_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
+		ofstream gfile("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/" + Util::benchName() + "_" + to_string(level+1) + "_" + suffix + "smooth_grad_" + to_string(iterationId) + "_" + to_string(idx) + "_" + to_string(int(beta)) + ".txt");
 		file << "OPT:" << gsl_vector_get(state, idx) << endl;
 		{
 			double i = -20.0;
