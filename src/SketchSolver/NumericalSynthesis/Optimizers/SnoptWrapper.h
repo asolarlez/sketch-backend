@@ -289,7 +289,7 @@ class SnoptWrapper: public OptimizationWrapper {
         Flow[0] = -1e20;
         Fupp[0] = 1e20;
         for (int i = 1; i < neF; i++) {
-            Flow[i] = 0.01;
+            Flow[i] = 0.00;
             Fupp[i] = 1e20;
         }
     }
@@ -323,7 +323,7 @@ public:
         Fupp = new doublereal[neF];
         getFranges();
     }
-    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, Predicate* pred, int predVal, int level) { 
+    bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, Predicate* pred, int predVal, int level) { 
         MaxSnoptParameters* p = new MaxSnoptParameters(eval, inputs, assertConstraints, minimizeNode, pred, predVal, level);
         snoptSolver->init((char *) p, neF, MaxSnoptEvaluator::df, 0, 0.0, xlow, xupp, Flow, Fupp);
 
@@ -376,7 +376,7 @@ public:
                     cout << "Beta: " << betas[i] << " Alpha: " << alphas[i] << endl;
                 }
                 if (PARAMS->numdebug) { 
-                    SnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/" + Util::benchName() + "_" + to_string(level + 1) + "_opt_" + to_string(GradUtil::counter) + "_" + to_string(int(alphas[i])) + ".txt");
+                    SnoptEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/optdata/" + Util::benchName() + "_" + to_string(GradUtil::counter) + "_opt_"  + to_string(int(alphas[i])) + "_" + to_string(PARAMS->smoothingMode) + ".txt");
                 }
                 p->beta = betas[i];
                 p->alpha = alphas[i];
@@ -490,9 +490,7 @@ public:
     void randomize(gsl_vector* state) {
         for (int i = 0; i < state->size; i++) {
             double low = xlow[i];
-            if (low < -100.0) low = -100.0;
             double high = xupp[i];
-            if (high > 100.0) high = 100.0;
             double r = low + (rand() % (int)((high - low) * 10.0))/10.0;
             gsl_vector_set(state, i, r);
         }

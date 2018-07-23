@@ -44,6 +44,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     NumericalSynthesis/Optimizers/GradientDescent.h    \
 	NumericalSynthesis/Optimizers/OptimizationWrapper.h	\
 	NumericalSynthesis/Optimizers/SnoptWrapper.h	\
+	NumericalSynthesis/Optimizers/GradientDescentWrapper.h \
 	NumericalSynthesis/Optimizers/MaxSolver.h		\
 	NumericalSynthesis/Optimizers/MaxSolverWrapper.h \
 	NumericalSynthesis/SymbolicEvaluators/SymbolicEvaluator.h		\

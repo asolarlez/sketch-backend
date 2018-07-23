@@ -44,5 +44,5 @@ public:
 	virtual gsl_vector* getMinState() = 0;
 	virtual void randomizeCtrls(gsl_vector* x, Interface* inputs, const set<int>& constraints, int minimizeNode) = 0;
 	virtual double getObjectiveVal() = 0;
-	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, Predicate* pred, int predVal, int level) = 0;
+	//virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, Predicate* pred, int predVal, int level) = 0;
 };

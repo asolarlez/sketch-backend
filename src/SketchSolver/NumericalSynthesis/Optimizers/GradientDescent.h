@@ -23,7 +23,7 @@ class GradientDescent {
 	gsl_multimin_function_fdf myfundf;
 
 public:
-	double INIT_STEP_SIZE = 5.0;
+	double INIT_STEP_SIZE = 2.0;
 	double TOLERANCE = 0.1;
 	double PRECISION = 1e-3;
 	double GRAD_PRECISION = 1e-3;

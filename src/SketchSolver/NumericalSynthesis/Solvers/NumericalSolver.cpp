@@ -77,7 +77,7 @@ bool NumericalSolver::checkFullSAT(gsl_vector* state) {
     }
     for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
         error = actualEval->getErrorOnConstraint(*it);
-        if (error < 0.008) { // TODO: magic number
+        if (error < -0.002) { // TODO: magic number
             return false;
         }
     }
