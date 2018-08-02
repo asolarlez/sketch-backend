@@ -3,7 +3,7 @@
 
 #ifndef _NOSNOPT
 
-void SnoptSolver::init(char* workspace, integer neF_, SNOPT_DF_TYPE df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
+void SnoptSolver::init(char* workspace, integer neF_, DFT df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
 	Assert(neF_ <= neF, "Error: small nef");
 	neF = neF_;
 	for (integer i = 0; i < n; i++) {
@@ -51,7 +51,7 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
 	
 	snoptProb.setIntParameter("Derivative option", 1);
 	snoptProb.setIntParameter("Major Iteration limit", 100);
-    //snoptProb.setRealParameter("Function precision", 0.0001);
+    //snoptProb.setRealParameter("Function precision", 0.001);
     //snoptProb.setRealParameter("Major optimality tolerance", 0.0001);
     //snoptProb.setRealParameter("Major feasibility tolerance", 0.0001);
     //snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);

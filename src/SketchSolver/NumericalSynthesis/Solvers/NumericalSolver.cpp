@@ -44,7 +44,7 @@ bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
     bool suppressPrint = PARAMS->verbosity > 7 ? false : true;
     bool sat = false;
     
-    if (PARAMS->numdebug) { 
+    if (false && PARAMS->numdebug) { 
         debugger->getGraphs(level, GradUtil::counter);
     }
     cout << "after debug" << endl;

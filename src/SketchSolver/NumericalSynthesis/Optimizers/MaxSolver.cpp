@@ -65,7 +65,7 @@ bool MaxSolver::inLimits() {
 }
 
 
-bool MaxSolver::optimize(gsl_vector* initState, gsl_vector* initGrad, bool suppressPrint) {
+bool MaxSolver::optimize(gsl_vector* initState,  bool suppressPrint) {
 	for (int i = 0; i < n; i++) {
 		x[i] = gsl_vector_get(initState, i);
 	}
@@ -73,18 +73,10 @@ bool MaxSolver::optimize(gsl_vector* initState, gsl_vector* initGrad, bool suppr
 	integer nasserts;
 	df(&n, x, &neF, F, &lenG, G, workspace, &nasserts);
 	obj = F[0];
-	cout << obj << " " << G[0] << " " << gsl_vector_get(initGrad, 0) << endl;
-	if (norm(G, 0, n) < 0.01) {
-		for(int i = 0; i < n; i++) {
-			grad[i] = gsl_vector_get(initGrad, i);
-		}
-	} else {
-		copy(G, 0, n, grad, 0);
-	}
+	cout << obj << " " << G[0]  << endl;
+	copy(G, 0, n, grad, 0);
 	double ng = norm(grad, 0, n);
 	update(x, grad, stepSize/ng, n);
-
-
 
 	for (int i = 0; i < maxSteps; i++) {
 		if (!inLimits()) {

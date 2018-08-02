@@ -7,9 +7,13 @@
 #include <fstream>
 #include <iostream>
 #include "BasicError.h"
+//#define _NOSNOPT 1
+#ifndef _NOSNOPT
+#include "Snopt.h"
+#else
+#include "CustomSolver.h"
+#endif
 
-#include "snopt.hh"
-#include "snoptProblem.hh"
 
 using namespace std;
 typedef int (* MAX_SOLVER_DF_TYPE)(integer*, doublereal*, integer*, doublereal*, integer*, doublereal*, char*, integer*);
@@ -70,7 +74,7 @@ public:
 	
 	void init(char* workspace, integer nef_, MAX_SOLVER_DF_TYPE _df, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_);
 
-	bool optimize(gsl_vector* initState, gsl_vector* initGrad, bool suppressPrint = false);
+	bool optimize(gsl_vector* initState, bool suppressPrint = false);
 	
 	gsl_vector* getResults() {
 		return result;

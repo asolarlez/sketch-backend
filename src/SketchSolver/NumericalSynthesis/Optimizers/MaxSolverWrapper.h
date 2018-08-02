@@ -5,7 +5,7 @@
 
 #include "MaxSolver.h"
 
-#include "OptimizationWrapper.h"
+#include "MaxOptimizationWrapper.h"
 #include "SmoothEvaluators.h"
 #include "Util.h"
 #include "Interface.h"
@@ -124,7 +124,7 @@ public:
 
 
 
-class MaxSolverWrapper {
+class MaxSolverWrapper : public MaxOptimizationWrapper {
 	MaxSolver* maxSolver;
     integer n; integer neF; 
     
@@ -176,7 +176,7 @@ public:
         Fupp = new doublereal[neF];
         getFranges();
     }
-   	bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, gsl_vector* initGrad, int level, int id) { 
+   	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
         MaxParameters* p = new MaxParameters(eval, inputs, assertConstraints, minimizeNode, level);
         maxSolver->init((char *) p, neF, MaxEvaluator::df, xlow, xupp, Flow, Fupp);
         gsl_vector_memcpy(t, initState);
@@ -184,10 +184,10 @@ public:
         p->beta = beta;
         p->alpha = -beta;
         if (PARAMS->numdebug) { 
-            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/" + Util::benchName() + "_" + to_string(level + 1) + "_max_" + to_string(GradUtil::counter) + "_" + to_string(id) + "_" + to_string(int(-beta)) + ".txt");
+            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/maxdata/" + Util::benchName() + "_" + to_string(GradUtil::counter) + "_" + to_string(idx) + "_custommax_"  + to_string(int(-beta)) + "_" + to_string(PARAMS->smoothingMode) + ".txt");
         }
 
-        bool solved = maxSolver->optimize(t, initGrad);
+        bool solved = maxSolver->optimize(t);
         double obj = maxSolver->getObjectiveVal();
         gsl_vector_memcpy(minState, maxSolver->getResults());
         cout << "Max objective found: " << obj << endl;
@@ -199,11 +199,11 @@ public:
         
     }
     
-    gsl_vector* getMinState() {
+    virtual gsl_vector* getMinState() {
         return minState;
     }
     
-    double getObjectiveVal() {
+    virtual double getObjectiveVal() {
         return minObjectiveVal;
     }
 };

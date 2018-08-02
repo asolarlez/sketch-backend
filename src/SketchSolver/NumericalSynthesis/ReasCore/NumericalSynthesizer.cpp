@@ -6,6 +6,8 @@ ofstream GDEvaluator::file;
 gsl_vector* SnoptEvaluator::state;
 gsl_vector* SnoptEvaluator::grad;
 ofstream SnoptEvaluator::file;
+double SnoptEvaluator::prevVal;
+int SnoptEvaluator::prevCount;
 gsl_vector* MaxSnoptEvaluator::state;
 gsl_vector* MaxSnoptEvaluator::grad;
 ofstream MaxSnoptEvaluator::file;
@@ -93,8 +95,8 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     actualEval->addEvaluator(dag);
 
     OptimizationWrapper* opt;
-    if (PARAMS->useSnopt) {
-        opt = new SnoptWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
+    if (PARAMS->optMode == 0 || PARAMS->optMode == 2) {
+        opt = new SnoptWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints, PARAMS->optMode == 0);
     }  else {
         opt = new GradientDescentWrapper(smoothEval, ncontrols, xlow, xupp);
     }
@@ -163,9 +165,14 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
 
     if (PARAMS->numdebug) {
+        //debugger->getPredicatesGraphs();
         //debugger->getGraphs(-1, 0);
-        debugger->runOptimization();
-        exit(0);
+        //MaxOptimizationWrapper* gd = new GradientDescentWrapper(smoothEval, ncontrols, xlow, xupp);
+        //MaxOptimizationWrapper* snopt = new SnoptWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints, true);
+        //MaxOptimizationWrapper* custom = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
+        //debugger->runMaxAnalysis(snopt);
+        //debugger->runOptimization2D();
+        //exit(0);
         //debugger->checkSmoothing();
         //debugger->getPredicatesGraphs();
     }
@@ -194,6 +201,7 @@ bool NumericalSynthesizer::searchWithOnlySmoothing() {
 
 
 bool NumericalSynthesizer::searchWithPredicates() {
+    GradUtil::counter = 0;
     while(true) {
         int num_levels = interf->numLevels();
         bool sat = true;

@@ -9,6 +9,7 @@
 #include "SymbolicEvaluator.h"
 #include "Util.h"
 #include "Interface.h"
+#include "MaxOptimizationWrapper.h"
 
 
 
@@ -114,7 +115,7 @@ public:
 
 #ifndef _NOGSL
 
-class GradientDescentWrapper: public OptimizationWrapper {
+class GradientDescentWrapper: public OptimizationWrapper, public MaxOptimizationWrapper {
 	GradientDescent* gd;
     int ncontrols;
     
@@ -123,13 +124,14 @@ class GradientDescentWrapper: public OptimizationWrapper {
     gsl_vector* t;
     gsl_vector* t1;
     
-    int RANDOM_SEARCH = 1;
+    int RANDOM_SEARCH = 10;
     
     doublereal* xlow;
     doublereal* xupp;
     
     double minObjectiveVal;
     double threshold = 1e-2; // accuracy for minimizing the error
+    timerclass timer;
 	
 public:
 	GradientDescentWrapper(SmoothEvaluators* eval_, int ncontrols_, doublereal* xlow_, doublereal* xupp_): eval(eval_), ncontrols(ncontrols_), xlow(xlow_), xupp(xupp_) {
@@ -140,16 +142,17 @@ public:
         t1 = gsl_vector_alloc(ncontrols);
 	}
 
-    bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int condNode, int condVal) { 
-        Assert(false, "under construction");
-        GDParameters* p = new GDParameters(eval, assertConstraints, -1, inputs, -1, true);
+    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
+        GDParameters* p = new GDParameters(eval, assertConstraints, minimizeNode, inputs, level, true);
         gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
 
         gsl_vector_memcpy(t, initState);
 
         p->beta = beta;
         p->alpha = -beta;
-        GDEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/data/opt_" + to_string(int(-beta)) + ".txt");
+        if (PARAMS->numdebug) { 
+            GDEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/maxdata/" + Util::benchName() + "_" + to_string(GradUtil::counter) + "_" + to_string(idx) + "_gdmax_"  + to_string(int(-beta)) + "_" + to_string(PARAMS->smoothingMode) + ".txt");
+        }
         for (int i = 0; i < ncontrols; i++) {
             cout << gsl_vector_get(t, i) << ", ";
         }
@@ -159,8 +162,11 @@ public:
         gsl_vector_memcpy(t, gd->getResults());
             
         gsl_vector_memcpy(minState, gd->getResults());
-        GDEvaluator::file << Util::print(t) << endl;
-        GDEvaluator::file.close();
+        if (PARAMS->numdebug) {  
+            GDEvaluator::file << Util::print(t) << endl;
+            GDEvaluator::file.close();
+        }
+        return true;
     }
     
     virtual bool optimize(Interface* inputs, gsl_vector* initState, const set<int>& constraints, int minimizeNode, bool suppressPrint, int MAX_TRIES, LocalState* localState, int level = -1) {
@@ -204,6 +210,7 @@ public:
                 gsl_vector_memcpy(t, gd->getResults());
                 if (PARAMS->numdebug) {
                     GDEvaluator::file << Util::print(t) << endl;
+                    GDEvaluator::file << timer.stop().get_cur_ms() << endl;
                     GDEvaluator::file.close();
                 }
                     

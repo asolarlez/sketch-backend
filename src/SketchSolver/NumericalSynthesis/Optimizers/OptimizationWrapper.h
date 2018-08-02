@@ -5,6 +5,7 @@
 #ifndef _NOGSL
 #include <gsl/gsl_vector.h>
 #endif
+#include "Util.h"
 using namespace std;
 
 class Interface;

@@ -91,11 +91,9 @@ struct CommandLineArgs{
   bool numericalSolver;
 	string numericalSolverMode;
 	int smoothingMode;
-	bool useSnopt;
-	bool useEager;
+	int optMode;
     bool checkInput;
     string partialInput;
-    bool useSnoptUnconstrained;
     bool relaxBoolHoles;
     int numTries;
     bool disableSatSuggestions;
@@ -184,11 +182,10 @@ struct CommandLineArgs{
     numericalSolver = true;
 		numericalSolverMode = "";
 		smoothingMode = 0;
-		useSnopt = false;
+		optMode = 0;
 	erSimEvalFName = "";
         checkInput = false;
         partialInput = "";
-        useSnoptUnconstrained = false;
         relaxBoolHoles = false;
         numTries = 1;
         disableSatSuggestions = false;
@@ -248,16 +245,14 @@ struct CommandLineArgs{
 				input_idx = ii+2;
 				continue;
 			}
-			if(	string(argv[ii]) == "-usesnopt" ){
-				useSnopt = true;
-				input_idx = ii+1;
+			if( string(argv[ii]) == "-optmode" ){
+				Assert(ii<(argc-1), "-optmode needs an extra parameter");
+				optMode = atoi(argv[ii+1]);
+				cout<<"optimization mode = "<<optMode<<endl;
+				input_idx = ii+2;
 				continue;
 			}
-			if( string(argv[ii]) == "-useeager" ) {
-				useEager = true;
-				input_idx = ii+1;
-				continue;
-			}
+			
             if (string(argv[ii]) == "-checkinput") {
                 checkInput = true;
                 input_idx = ii+1;
