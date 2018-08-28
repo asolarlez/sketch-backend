@@ -205,7 +205,7 @@ public:
 	}
 
 	bool get(const char* key, int len, T& out){
-		unsigned idx = hash(key, len);
+		unsigned idx = this->hash(key, len);
 		int tidx = (idx)& mask;
 		bucket<T>*& t = table[tidx];
 		if(t==NULL){			
@@ -213,14 +213,15 @@ public:
 		}else{
 			bucket<T>* tt = t;
 			while(tt != NULL){
-				if(tt->hash < idx){
+				unsigned ttt = tt->hash;
+				if(ttt < idx){
 					if(tt->left == NULL){										
 						return false;
 					}else{
 						tt = tt->left;
 					}
 				}else{
-					if(tt->hash == idx && compare_eq(key, tt->label)){						
+					if(ttt == idx && compare_eq(key, tt->label)){						
 						out = tt->value;
 						++(tt->count);
 						++hits;
@@ -285,7 +286,7 @@ public:
 	Return true if the value was already there and false if you had to add it.
 	*/
 	bool condAdd(const char* key, int len, T val, T& out){
-		unsigned idx = hash(key, len);
+		unsigned idx = this->hash(key, len);
 		int tidx = (idx)& mask;
 		bucket<T>*& t = table[tidx];
 		if(t==NULL){
@@ -297,7 +298,8 @@ public:
 		}else{
 			bucket<T>* tt = t;
 			while(tt != NULL){
-				if(tt->hash < idx){
+				unsigned ttt = tt->hash;
+				if(ttt < idx){
 					if(tt->left == NULL){
 						char* nkey = store.newObj(len+1);
 						strncpy(nkey, key, len+1);
@@ -308,7 +310,7 @@ public:
 						tt = tt->left;
 					}
 				}else{
-					if(tt->hash == idx && compare_eq(key, tt->label)){						
+					if(ttt == idx && compare_eq(key, tt->label)){						
 						out = tt->value;
 						++(tt->count);
 						++hits;
