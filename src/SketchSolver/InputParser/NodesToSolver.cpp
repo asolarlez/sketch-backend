@@ -1139,15 +1139,13 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	}
 
 	mval.makeSparse (dir);
-	// TODO xzl: temporarily disable sparse warning
-	if( false && mval.getSize() > 200 ){ 
-		cout<<"Sparse representation size = "<<mval.getSize()<<endl;
-		//PrintSource ps(node_ids);
-		//ps.process(*tmpdag, node.mother->id);								
-		//tmpdag->printSlice(mother, cout);
-	}
 	
 	fval.makeSparse (dir);
+
+	if (node.type == bool_node::TIMES &&  mval.getSize() * fval.getSize() > 100000) {
+		cout << "WARNING: It looks like this problem may benefit from using the --slv-nativeints flag." << endl;
+	}
+
 	bool isSum = node.type == bool_node::PLUS || node.type == bool_node::TIMES;
 	bool skipZeros = node.type == bool_node::TIMES || node.type == bool_node::DIV || node.type == bool_node::MOD;
   
@@ -3395,20 +3393,20 @@ void NodesToSolver::process(BooleanDAG& bdag){
   //    cout << " ] "<<endl;
 	 // }
 	 // else {
-		//  if (tv.isSparse()) {
-		//	  for (int i = 0; i < tv.getSize(); i++)
-		//		  cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
-		//	  cout << " ] " << endl;	
-		//  }
-		//  else {
-		//	  if (tv.isInt()) {
-		//		  //cout << "INT=" << tv.getId();
-		//	  }
-		//	  else {
-		//		  //cout << "BIT=" << tv.getId();
-		//	  }
-		//	  
-		//  }
+		  /*if (tv.isSparse()) {
+			  for (int i = 0; i < tv.getSize(); i++)
+				  cout << tv.num_ranges[i].guard<<":"<<(tv.num_ranges[i].value) << ", ";
+			  cout << " ] " << endl;	
+		  }
+		  else {
+			  if (tv.isInt()) {
+				  cout << "INT=" << tv.getId()<<endl;
+			  }
+			  else {
+				  cout << "BIT=" << tv.getId()<<endl;
+			  }
+			  
+		  }*/
 	 // }
 	  
 	  //cout << endl;

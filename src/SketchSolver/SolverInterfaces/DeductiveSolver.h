@@ -209,8 +209,7 @@ public:
 				outParent(out, node->mother);
 				out << ";" << endl;
 				break;
-			default:
-				Assert(false, "NYI")
+				
 			}
 
 		}
