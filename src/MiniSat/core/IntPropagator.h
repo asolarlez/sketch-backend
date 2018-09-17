@@ -44,7 +44,7 @@ public:
 	interpair(int trail_level, Lit lit):tlevel(trail_level),l(lit){}
 };
 
-typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV , CONF } ctype;
+typedef enum { PLUS, MINUS, TIMES, EXACTDIV, LT, EQ, BMUX, MOD, DIV , CONF, ARRC, ARRR, ARRW } ctype;
 
 
 
@@ -57,10 +57,19 @@ protected:
 	iVar data[0];
 public:
 	Intclause(ctype tp, int sz, iVar a1, iVar a2, iVar a3):type(tp), size_etc(sz<<3), act(0){ data[0]=a1; data[1]=a2; data[2]=a3; }	
+	Intclause(ctype tp, int sz, iVar a1, iVar a2, iVar a3, iVar a4) :type(tp), size_etc(sz << 3), act(0) { 
+		data[0] = a1; data[1] = a2; data[2] = a3; data[3] = a4; 
+	}
 	Intclause(ctype tp, int sz,  iVar a1, iVar a2, iVar* ch):type(tp), size_etc(sz<<3), act(0){
 		data[0]=a1; data[1]=a2; 
 		for(int i=2; i<sz; ++i){ data[i] = ch[i-2]; }		
 	}
+
+	Intclause(ctype tp, int sz, iVar a1, iVar* ch) :type(tp), size_etc(sz << 3), act(0) {
+		data[0] = a1; 
+		for (int i = 1; i<sz; ++i) { data[i] = ch[i - 1]; }
+	}
+
 	Intclause(ctype tp, int sz, iVar* ch):type(tp), size_etc(sz<<3), act(0){		
 		for(int i=0; i<sz; ++i){ data[i] = ch[i]; }		
 	}
@@ -136,6 +145,24 @@ inline Intclause* BMuxClause(iVar cond, int len, iVar* choices, iVar x){
 	WrappedIC* tmp = new (mem)WrappedIC(BMUX, len+2, x, cond, choices); 
 	return &(tmp->cc);
 } 
+
+
+inline Intclause* ArrCreate(int n, iVar* vals, iVar x) {
+	void* mem = malloc(sizeof(Intclause) + sizeof(uint32_t)*(n + 1));
+	return new (mem)Intclause(ARRC,n+1, x, vals);
+}
+
+inline Intclause* ArrRead(iVar x, iVar idx, iVar arr) {
+	void* mem = malloc(sizeof(Intclause) + sizeof(uint32_t)*(3));
+	return new (mem)Intclause(ARRR,3, x, idx, arr);
+}
+
+inline Intclause* ArrWrite(iVar x, iVar idx, iVar arr, iVar val) {
+	void* mem = malloc(sizeof(Intclause) + sizeof(uint32_t)*(4));
+	return new (mem)Intclause(ARRR, 4, x, idx, arr, val);
+}
+
+
 
 inline Intclause* ConfClause(int len, iVar* choices){
 	void* mem = malloc(sizeof(Intclause)+sizeof(uint32_t)*(len*2));
@@ -350,6 +377,50 @@ inline void RangeTracker::popRanges(int level) {
 		ranges.shrink(ranges.size() - lastidx);			
 	}
 }
+
+
+class BaseArray {
+public:
+	virtual Val val(int idx) = 0;
+};
+
+class ArrayCr : public BaseArray{
+	vector<Val> vals;
+public:
+	Val val(int idx) {
+		return vals[idx];
+	}
+};
+
+class ArrayUpdate : public BaseArray {
+	BaseArray& parent;
+	Val idx;
+	Val value;
+public:
+	Val val(int _idx) {
+		if (idx.isDef()) {
+			if (idx.v() == _idx) {
+				return value;
+			}
+			else {
+				parent.val(_idx);
+			}
+		}
+		else {
+			return Val();
+		}		
+	}
+};
+
+
+class ArrayPropagator {
+	vector<BaseArray*> avals;
+
+
+
+};
+
+
 
 
 class IntPropagator{
