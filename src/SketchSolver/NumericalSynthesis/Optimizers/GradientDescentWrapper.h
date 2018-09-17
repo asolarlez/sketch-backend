@@ -142,7 +142,7 @@ public:
         t1 = gsl_vector_alloc(ncontrols);
 	}
 
-    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
+    virtual bool maximize(Interface* inputs, const gsl_vector* initState, const gsl_vector* initDir, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
         GDParameters* p = new GDParameters(eval, assertConstraints, minimizeNode, inputs, level, true);
         gd->init(GDEvaluator::f, GDEvaluator::df, GDEvaluator::fdf, p);
 

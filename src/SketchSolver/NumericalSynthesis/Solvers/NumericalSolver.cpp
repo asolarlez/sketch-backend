@@ -36,7 +36,6 @@ NumericalSolver::~NumericalSolver(void) {
 }
 
 bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
-    cout << "Check SAT for level " << level << endl;
     interf->printInputs();
     if (initState != NULL) {
         cout << "Init state: " << Util::print(initState) << endl;
@@ -47,8 +46,7 @@ bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
     if (false && PARAMS->numdebug) { 
         debugger->getGraphs(level, GradUtil::counter);
     }
-    cout << "after debug" << endl;
-    cout << "Running optimization " << GradUtil::counter << endl;
+    cout << "Running optimization " << GradUtil::counter << " Level: " << level << endl;
     sat = opt->optimize(interf, initState, assertConstraints, minimizeNode, suppressPrint, PARAMS->numTries, localState, level);
     if (sat) {
         result = opt->getMinState();
@@ -77,7 +75,7 @@ bool NumericalSolver::checkFullSAT(gsl_vector* state) {
     }
     for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
         error = actualEval->getErrorOnConstraint(*it);
-        if (error < -0.002) { // TODO: magic number
+        if (error < -0.01) { // TODO: magic number
             return false;
         }
     }

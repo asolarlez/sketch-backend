@@ -11,6 +11,7 @@ int SnoptEvaluator::prevCount;
 gsl_vector* MaxSnoptEvaluator::state;
 gsl_vector* MaxSnoptEvaluator::grad;
 ofstream MaxSnoptEvaluator::file;
+double MaxSnoptEvaluator::prevVal;
 
 gsl_vector* MaxEvaluator::state;
 gsl_vector* MaxEvaluator::grad;
@@ -101,7 +102,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         opt = new GradientDescentWrapper(smoothEval, ncontrols, xlow, xupp);
     }
     
-    MaxSolverWrapper* maxOpt = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
+    MaxOptimizationWrapper* maxOpt = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
 
     for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
         bool_node* n = *node_it;
@@ -155,16 +156,21 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         }
     }
     
+    
+    debugger = new NumDebugger(dag, ctrls, interf, smoothEval, actualEval, opt);
 
     //sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
-    sg = new SuggestionGeneratorUsingMax(dag, _fm, interf, ctrls, opt, maxOpt, actualEval, smoothEval, ncontrols);
+    sg = new SuggestionGeneratorUsingMax(dag, _fm, interf, ctrls, opt, maxOpt, actualEval, smoothEval, ncontrols, debugger);
 
 
-    debugger = new NumDebugger(dag, ctrls, interf, smoothEval, actualEval, opt);
     
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
 
+    //debugger->plotGraphs();
+    //exit(0);
     if (PARAMS->numdebug) {
+        //debugger->plotLinePredicate2d();
+        //exit(0);
         //debugger->getPredicatesGraphs();
         //debugger->getGraphs(-1, 0);
         //MaxOptimizationWrapper* gd = new GradientDescentWrapper(smoothEval, ncontrols, xlow, xupp);
@@ -172,6 +178,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         //MaxOptimizationWrapper* custom = new MaxSolverWrapper(smoothEval, ncontrols, xlow, xupp, numConstraints);
         //debugger->runMaxAnalysis(snopt);
         //debugger->runOptimization2D();
+        //debugger->checkWithValidSolutions();
         //exit(0);
         //debugger->checkSmoothing();
         //debugger->getPredicatesGraphs();
@@ -185,8 +192,18 @@ bool NumericalSynthesizer::solve() {
 
 bool NumericalSynthesizer::searchWithOnlySmoothing() {
     bool sat = false;
-    for (int i = 0; i < 1000; i++) {
+    int counter = 0;     
+    while (true) {
+        /*float arr[4] = {5.0, 3.0, 9.0, 2.0};
+        for (int j = 0; j < state->size; j++) {
+            gsl_vector_set(state, j, arr[j]);
+        }*/
         sat = solver->checkSAT(-1);
+        //debugger->distToSols(solver->getLocalState()->localSols[2]);
+        counter++;
+        //if (counter >= 1) {
+        //    break;
+        //}
         if (sat) {
             gsl_vector_memcpy(state, solver->getResult());
             cout << "Found solution" << endl;
@@ -202,7 +219,11 @@ bool NumericalSynthesizer::searchWithOnlySmoothing() {
 
 bool NumericalSynthesizer::searchWithPredicates() {
     GradUtil::counter = 0;
+    int cc = 0;
     while(true) {
+        //if (cc >= 1) {
+        //    exit(0);
+        //}
         int num_levels = interf->numLevels();
         bool sat = true;
         bool first = true;
@@ -217,12 +238,13 @@ bool NumericalSynthesizer::searchWithPredicates() {
 
         if (sat) {
             cout << "Found solution" << endl;
-            if (concretize()) {
+            if (concretize()) { // This may change the local state of the solver
                 return true;
             }
             level = -1;
         } 
         cout << "Unsat in level " << level << endl;
+        debugger->distToSols(solver->getLocalState()->localSols[2]);
         if (level >= 0) {
             num_ignored++;
             cout << "Ignoring" << endl;
@@ -230,9 +252,14 @@ bool NumericalSynthesizer::searchWithPredicates() {
                 cout << "TOO MANY UNSATS IN LEVEL 0" << endl;
             }
         } else {
+            cc++;
             num_ignored = 0;
             IClause* c = sg->getConflictClause(level, solver->getLocalState());
             cout << "Suggested clause: " << c->print() << endl;
+            debugger->checkWithValidSolutions(c);
+            if (PARAMS->numdebug) {
+                debugger->getGraphForClause(c, GradUtil::counter == 0);
+            }
             interf->addClause(c, level + 1);
         }
         interf->removeOldClauses();
@@ -285,8 +312,9 @@ bool NumericalSynthesizer::search_concretize() {
 
 
 bool NumericalSynthesizer::concretize() {
-    //return true;
-    return simple_concretize();
+    solver->checkFullSAT(state);
+    return true;
+    //return simple_concretize();
 }
 
 

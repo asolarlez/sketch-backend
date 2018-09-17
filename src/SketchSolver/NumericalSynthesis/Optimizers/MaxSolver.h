@@ -41,10 +41,11 @@ class MaxSolver {
 
 	doublereal obj;
 	doublereal* grad;
+	doublereal* oldx;
 
 	doublereal stepSize = 0.1;
 
-	int maxSteps = 50;
+	int maxSteps = 5000;
 	
 public:
 	MaxSolver(integer n_, integer neF_): n(n_), neF(neF_){
@@ -63,6 +64,7 @@ public:
 		Flow = new doublereal[neF];
 		Fupp = new doublereal[neF];
 				
+		oldx = new doublereal[n];
 		result = gsl_vector_alloc(n);
 	}
 	
@@ -74,7 +76,7 @@ public:
 	
 	void init(char* workspace, integer nef_, MAX_SOLVER_DF_TYPE _df, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_);
 
-	bool optimize(gsl_vector* initState, bool suppressPrint = false);
+	bool optimize(const gsl_vector* initState, const gsl_vector* initDir, bool suppressPrint = false);
 	
 	gsl_vector* getResults() {
 		return result;

@@ -2,11 +2,12 @@
 #include "BooleanDAG.h"
 #include "Interface.h"
 #include "SimpleEvaluator.h"
+#include "SimpleGradEvaluator.h"
 
 
 class ActualEvaluators {
 	BooleanDAG* mainDag;
-	map<BooleanDAG*, SimpleEvaluator*> evals;
+	map<BooleanDAG*, SimpleGradEvaluator*> evals;
 	map<string, int>& ctrls;
 	Interface* interf;
 public:
@@ -19,7 +20,7 @@ public:
 
 	void addEvaluator(BooleanDAG* dag) {
 		Assert(evals.find(dag) == evals.end(), "This should not be possible");
-		SimpleEvaluator* se = new SimpleEvaluator(*dag, ctrls);
+		SimpleGradEvaluator* se = new SimpleGradEvaluator(*dag, ctrls);
 		se->setInputs(interf);
 		evals[dag] = se;
 	}
@@ -29,7 +30,7 @@ public:
 		evals.erase(dag);
 	}
 
-	SimpleEvaluator* getEvaluator(BooleanDAG* dag) {
+	SimpleGradEvaluator* getEvaluator(BooleanDAG* dag) {
 		return evals[dag];
 	}
 
@@ -47,6 +48,10 @@ public:
 		return evals[mainDag]->dist(nodeid);
 	}
 
+	double grad_norm(int nodeid) {
+		return evals[mainDag]->grad_norm(nodeid);
+	}
+
 	double getErrorOnClause(IClause* clause) {
 		double error = -1e30;
 
@@ -60,10 +65,12 @@ public:
         	} else {
         		e = -dist;
         	}
+        	//cout << p->print() << ":" << e << " ";
         	if (e > error) {
         		error = e;
         	}
     	}
+    	//cout << endl;
     	return error;
 	}
 
@@ -71,8 +78,27 @@ public:
 		return evals[dag]->dist(nodeid);
 	}
 
+	double computeErrorWithGrad(BooleanDAG* dag, int nodeid, gsl_vector* grad) {
+		return evals[dag]->dist(nodeid, grad);
+	}
+
+	double grad_norm(BooleanDAG* dag, int nodeid) {
+		return evals[dag]->grad_norm(nodeid);
+	}
+	const gsl_vector* grad(BooleanDAG* dag, int nodeid) {
+		return evals[dag]->grad(nodeid);
+	}
+
 	double dist(Predicate* p) {
 		return p->evaluate(this);
+	}
+
+	double grad_norm(Predicate* p) {
+		return p->grad_norm(this);
+	}
+
+	const gsl_vector* grad(Predicate* p) {
+		return p->grad(this);
 	}
 
 };

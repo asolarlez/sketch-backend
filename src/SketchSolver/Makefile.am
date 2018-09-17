@@ -53,6 +53,7 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
 	NumericalSynthesis/SymbolicEvaluators/BoolAutoDiff.h	\
 	NumericalSynthesis/SymbolicEvaluators/KLocalityAutoDiff.h \
 	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.h	\
+	NumericalSynthesis/SymbolicEvaluators/SimpleGradEvaluator.h \
 	NumericalSynthesis/SymbolicEvaluators/ActualEvaluators.h \
 	NumericalSynthesis/SymbolicEvaluators/SmoothEvaluators.h \
 	NumericalSynthesis/SymbolicEvaluators/SmoothAutoDiff.h \
@@ -127,6 +128,7 @@ libcegis_a_SOURCES =				\
 	NumericalSynthesis/SymbolicEvaluators/SmoothAutoDiff.cpp \
 	NumericalSynthesis/SymbolicEvaluators/KLocalityAutoDiff.cpp \
    	NumericalSynthesis/SymbolicEvaluators/SimpleEvaluator.cpp	\
+   	NumericalSynthesis/SymbolicEvaluators/SimpleGradEvaluator.cpp \
 	InputParser/BackwardsAnalysis.cpp	\
 	InputParser/BooleanDAG.cpp		\
 	InputParser/BooleanDAGCreator.cpp	\

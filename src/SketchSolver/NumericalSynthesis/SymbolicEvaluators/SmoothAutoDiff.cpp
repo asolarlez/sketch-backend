@@ -345,7 +345,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
             s = s*s1;
         }
         //cout << endl;
-        //cout << "Factor: " << s << endl;
+        //cout << "Factor: " << s <<  " (" << gsl_vector_get(GradUtil::tmp, 0) << ")" << endl;
 
         // multiple add nodes values by the above multiplication coefficient
 
@@ -355,7 +355,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
             DistanceGrad* dg0 = d(bdag[i], 0);
             DistanceGrad* dg1 = d(bdag[i], cur_idx);
             if (bdag[i]->getOtype() == OutType::BOOL && dg1->set) {
-                //cout << bdag[i]->lprint() << " " << dg0->dist << " " << dg1->dist << " ";
+                //cout << bdag[i]->lprint() << " " << dg0->dist  << " (" << gsl_vector_get(dg0->grad, 0) << ")" << " " << dg1->dist << " (" << gsl_vector_get(dg1->grad, 0) << ")" << " ";
                 if (cur_idx == 1) {
                     dg0->dist = 0;
                     GradUtil::default_grad(dg0->grad);
@@ -365,10 +365,10 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
                 gsl_blas_daxpy(1.0, GradUtil::tmp1, dg0->grad);
                 dg0->dist = dg0->dist + v;
                 dg0->set = true;
-                //cout << dg0->dist << endl;
+                //cout << dg0->dist  << " (" << gsl_vector_get(dg0->grad, 0) << ")" << endl;
             } 
             if (vg1->set) {
-                //cout << bdag[i]->lprint() << " " << vg0->getVal() << " " << vg1->getVal() << " ";
+                //cout << bdag[i]->lprint() << " " << vg0->getVal() << " (" <<gsl_vector_get(vg0->getGrad(), 0) << ")" << " " << vg1->getVal() << " (" << gsl_vector_get(vg1->getGrad(), 0) << ")" << " ";
                 if (cur_idx == 1) {
                     vg0->update(0);
                     GradUtil::default_grad(vg0->getGrad());
@@ -378,7 +378,7 @@ void SmoothAutoDiff::run(const gsl_vector* ctrls_p) {
                 gsl_blas_daxpy(1.0, GradUtil::tmp1, vg0->getGrad());
                 vg0->update(vg0->getVal() + v);
                 vg0->set = true;
-                //cout << vg0->getVal() << endl;
+                //cout << vg0->getVal() << " (" << gsl_vector_get(vg0->getGrad(), 0) << ")" << endl;
             }
         }
     }

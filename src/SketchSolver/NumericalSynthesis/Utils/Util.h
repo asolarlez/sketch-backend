@@ -159,7 +159,23 @@ public:
         return s.str();
     }
     
+    static string print(double* arr, int len) {
+        stringstream s;
+        for (int i = 0; i < len; i++) {
+            s << arr[i] << ";";
+        }
+        return s.str();
+    }
+
     static string print(const vector<int>& v) {
+        stringstream s;
+        for (auto it = v.begin(); it != v.end(); it++) {
+            s << *it << ";";
+        }
+        return s.str();
+    }
+
+    static string print(const vector<double>& v) {
         stringstream s;
         for (auto it = v.begin(); it != v.end(); it++) {
             s << *it << ";";
@@ -175,6 +191,16 @@ public:
         return s.str();
     }
 
+    static double getMin(const vector<double>& vals) {
+        double minval = 1e30;
+        for (int i = 0; i < vals.size(); i++) {
+            if (vals[i] < minval) {
+                minval = vals[i];
+            }
+        }
+        return minval;
+    }
+
     static double norm(const gsl_vector* v) {
         return gsl_blas_dnrm2(v);
     }
@@ -183,7 +209,7 @@ public:
         double dp = 0.0;
         gsl_blas_ddot(v1, v2, &dp);
         dp = dp/(norm(v1) * norm(v2));
-        cout << "dot product: " << dp << endl;
+        //cout << "dot product: " << dp << endl;
         if (dp > 0.9) return true;
         return false;
     }
@@ -195,4 +221,16 @@ public:
         return s.substr(x2+5, x1-x2 - 5);
 
     }
+
+    static vector<string> split(string &text, string sep) {
+        vector<string> tokens;
+        size_t start = 0, end = 0;
+        while ((end = text.find(sep, start)) != string::npos) {
+            tokens.push_back(text.substr(start, end - start));
+            start = end + 1;
+        }
+        tokens.push_back(text.substr(start));
+        return tokens;
+    }
+
 };

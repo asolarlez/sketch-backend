@@ -65,7 +65,7 @@ bool MaxSolver::inLimits() {
 }
 
 
-bool MaxSolver::optimize(gsl_vector* initState,  bool suppressPrint) {
+bool MaxSolver::optimize(const gsl_vector* initState, const gsl_vector* initDir,  bool suppressPrint) {
 	for (int i = 0; i < n; i++) {
 		x[i] = gsl_vector_get(initState, i);
 	}
@@ -73,31 +73,54 @@ bool MaxSolver::optimize(gsl_vector* initState,  bool suppressPrint) {
 	integer nasserts;
 	df(&n, x, &neF, F, &lenG, G, workspace, &nasserts);
 	obj = F[0];
-	cout << obj << " " << G[0]  << endl;
-	copy(G, 0, n, grad, 0);
-	double ng = norm(grad, 0, n);
-	update(x, grad, stepSize/ng, n);
+	
+	double ng = norm(G, 0, n);
+	double factor = stepSize;
+	//cout << "O:" << F[0] << " " << ng << endl;
+	if (ng > 0.1) {
+		factor = stepSize/ng;
+		copy(G, 0, n, grad, 0);
+	} else {
+		for (int i = 0; i < n; i++) {
+			grad[i] = gsl_vector_get(initDir, i);
+		}
+		ng = norm(grad, 0, n);
+		factor = stepSize/ng;
+		//cout << "INITIAL GRAD IS TOO SMALL" << endl;
+	}
+	
+	copy(x, 0, n, oldx, 0);
+	update(x, grad, factor, n);
 
 	for (int i = 0; i < maxSteps; i++) {
 		if (!inLimits()) {
 			break;
 		}
 		df(&n, x, &neF, F, &lenG, G, workspace, &nasserts);
-		if (F[0] < obj - 0.01) {
+		if (F[0] < obj - 0.1) {
 			break;
 		} else {
 			obj = F[0];
-			cout << obj << " " << G[0] << endl;
-			copy(G, 0, n, grad, 0);
-			ng = norm(grad, 0, n);
-			update(x, grad, stepSize/ng, n);
+			ng = norm(G, 0, n);
+			//cout << "O:" << F[0] << " " << ng << endl;
+			double factor = stepSize;
+			if (ng > 0.1) {
+				factor = stepSize/ng;
+				copy(G, 0, n, grad, 0);
+			} else {
+				// use old grad
+				ng = norm(grad, 0, n);
+				factor = stepSize/ng;
+			}
+			copy(x, 0, n, oldx, 0);
+			update(x, grad, factor, n);
 		}
 	}
 	
 	for (int i = 0; i < n; i++) {
-		gsl_vector_set(result, i, x[i]);
+		gsl_vector_set(result, i, oldx[i]);
 	}
-	objectiveVal = F[0];
+	objectiveVal = obj;
     
 	
 	return true;

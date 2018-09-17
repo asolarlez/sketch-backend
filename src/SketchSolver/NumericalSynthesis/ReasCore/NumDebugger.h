@@ -12,7 +12,6 @@
 #include "Interface.h"
 #include "BoolAutoDiff.h"
 #include "SnoptWrapper.h"
-#include "SuggestionGeneratorUsingMax.h"
 
 
 class NumDebugger {
@@ -28,6 +27,9 @@ class NumDebugger {
 
 	set<int> assertConstraints;
 	int minimizeNode;
+	gsl_vector* tmp_state;
+
+	vector<vector<double>> sols;
 
 public:
 	NumDebugger(BooleanDAG* _dag, map<string, int>& _ctrls, Interface* _interface, SmoothEvaluators* _smoothEval, ActualEvaluators* _actualEval, OptimizationWrapper* _opt): dag(_dag), ctrls(_ctrls), interf(_interface), smoothEval(_smoothEval), actualEval(_actualEval), opt(_opt){
@@ -38,6 +40,7 @@ public:
 		}
 
 		cout << "NControls: " << ncontrols << endl;
+		tmp_state = gsl_vector_alloc(ncontrols);
 
 		minimizeNode = -1;
 
@@ -51,20 +54,97 @@ public:
 	    		assertConstraints.insert(i);
 	    	}
 	    }
+
+	    if (false) {
+	    	ifstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/experiments/benchmarks/outputs/" + Util::benchName() + ".txt"); 
+	    	string line;
+	    	while (getline(file, line)) {
+	    		cout << line << endl;
+	    		const vector<string>& s = Util::split(line, ";");
+	    		Assert(s.size() == ncontrols + 1, "Wrong sols");
+	    		vector<double> vals;
+	    		for (int i = 0; i < ncontrols; i++) {
+	    			vals.push_back(stod(s[i]));
+	    		}
+	    		sols.push_back(vals);
+	    	}
+
+	    	checkSols();
+	    }
 	}
 
-	void getPredicatesGraphs() {
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
-		if (ncontrols == 2) {
-			plotPredicate2d(s);
+	void plotGraphs() {
+		float arr[4] = {12, -11, -15.5, 4.9};
+        for (int j = 0; j < ncontrols; j++) {
+            gsl_vector_set(tmp_state, j, arr[j]);
+        }
+		for (int i = 0; i < ncontrols; i++) {
+			genActualData(tmp_state, i, 2, -1);
+			gsl_vector_set(tmp_state, i, arr[i]);
+			genSmoothData(tmp_state, i, 1, 2, -1);
+			gsl_vector_set(tmp_state, i, arr[i]);
+			genSmoothData(tmp_state, i, 10, 2, -1);
+			gsl_vector_set(tmp_state, i, arr[i]);
+			genSmoothData(tmp_state, i, 50, 2, -1);
+			gsl_vector_set(tmp_state, i, arr[i]);
 		}
 		
 	}
-	void plotPredicate1d(Predicate* p, gsl_vector* state) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/data/pred_" + p->print() + ".txt");
+	void optDebug() {
+		float arr[10] = {11.2, 9.1, 11.2, 11.2, 2.6, -0.6, -1.4, 3.9, 10.3, 14.1};
+		for (int j = 0; j < ncontrols; j++) {
+			gsl_vector_set(tmp_state, j, arr[j]);
+		}
+
+		opt->optimize(interf, tmp_state, assertConstraints, minimizeNode, false, 1, NULL, -1);
+
+		gsl_vector_memcpy(tmp_state, opt->getMinState());
+		smoothEval->run(tmp_state);
+
+		double error;
+    	if (minimizeNode >= 0) {
+        	error = smoothEval->getErrorOnConstraint(minimizeNode, tmp_state);
+        	if (error > 0.01) {
+            	cout << (*dag)[minimizeNode]->lprint() << endl;
+            	cout << Util::print(tmp_state) << endl;
+        	}
+    	}
+    	for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+        	error = smoothEval->getErrorOnConstraint(*it, tmp_state);
+        	if (error < -0.01) { // TODO: magic number
+            	cout << (*dag)[*it]->lprint() << endl;
+            	cout << Util::print(tmp_state) << endl;
+        	}
+    	}
+	}
+
+	void getPredicatesGraphs() {
+		if (ncontrols == 2) {
+			plotPredicate2d(tmp_state);
+		} else if (ncontrols == 1) {
+			for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+				plotPredicate1d(*it, tmp_state, 2);
+			}
+		}
+		
+	}
+
+	void plotLinePredicate2d() {
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/2Ddata/" + Util::benchName() + "_linepred" + ".txt");
+		
+		gsl_vector_set(tmp_state, 0, 0.0);
+		gsl_vector_set(tmp_state, 1, 0.0);
+		actualEval->run(tmp_state);
+		for (auto it = interf->levelPredicates[0].begin(); it != interf->levelPredicates[0].end(); it++) {
+			file << (*it)->print() << ";" << actualEval->dist(*it) << ";" << Util::print(actualEval->grad(*it)) << endl;
+		}
+    	file.close();
+	}
+	void plotPredicate1d(Predicate* p, gsl_vector* state, int val) {
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/1Dfull/" + Util::benchName() +  "_pred_" + p->print() + "_" + to_string(val) + ".txt");
 		{
-			double i = -10.0;
-			while (i < 10.0) {
+			double i = -20.0;
+			while (i < 20.0) {
 				gsl_vector_set(state, 0, i);
 				actualEval->run(state);
 				double error = actualEval->dist(p);
@@ -108,7 +188,7 @@ public:
 	}
 
 	void checkSmoothing() {
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		gsl_vector* s = tmp_state;
 		double arr1[1] = {6.0};
 		for (int i = 0; i < ncontrols; i++) {
 			gsl_vector_set(s, i, arr1[i]);
@@ -121,7 +201,7 @@ public:
 	}
 	
 	void runOptimization(OptimizationWrapper* gd, OptimizationWrapper* snopt, OptimizationWrapper* custom) {
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		gsl_vector* s = tmp_state;
 		
 		for (int i = 0; i < 5; i++) {
 			double r = -20 + (rand() % 400)/10.0;
@@ -134,7 +214,7 @@ public:
 	}
 
 	void runOptimization2D() {
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		gsl_vector* s = tmp_state;
 		
 		for (int i = 0; i < 4; i++) {
 			double r1 = -20 + (rand() % 400)/10.0;
@@ -146,8 +226,43 @@ public:
 		}
 	}
 
-	void getGraphForClause2d(IClause* c, gsl_vector* state) {
-		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/2Dmaxdata/" + Util::benchName() + "_clause_" + to_string(GradUtil::counter) + ".txt");
+	void getGraphForClause(IClause* c, bool printPreds = false) {
+		if (ncontrols == 1) {
+			getGraphForClause1d(c, printPreds);
+		} else if (ncontrols == 2) {
+			getGraphForClause2d(c);
+		}
+	}
+	void getGraphForClause1d(IClause* c, bool printPreds = false) {
+		gsl_vector* state = tmp_state;
+
+		if (printPreds) {
+			//for (int i = 0; i < c->size(); i++) {
+			//	plotPredicate1d(c->getPredicate(i), state, c->getVal(i));
+			//}
+		}
+
+
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/1Dfull/" + Util::benchName() + "_clause_" + to_string(GradUtil::counter) + ".txt");
+		double i = -20.0;
+		while (i < 20.0) {
+			gsl_vector_set(state, 0, i);
+			actualEval->run(state);
+			double error = 0.0;
+			double e = actualEval->getErrorOnClause(c);
+        	if (e < 0.0) {
+        		error += -e;
+        	}
+        	file << i << "," << error << endl;
+        	i += 0.1;
+       	}
+    	file << endl;
+    	file.close();
+	}
+
+	void getGraphForClause2d(IClause* c) {
+		gsl_vector* state = tmp_state;
+		ofstream file("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/2Dfull/" + Util::benchName() + "_clause_" + to_string(GradUtil::counter) + ".txt");
 		double i = -20.0;
 		double j = -20.0;
 		while (i < 20.0) {
@@ -162,16 +277,16 @@ public:
         			error += -e;
         		}
         		file << i << "," << j << "," << error << endl;
-        		j += 0.1;
+        		j += 0.5;
         	}
-        	i += 0.1;
+        	i += 0.5;
        	}
     	file << endl;
     	file.close();
 	}
 
 	void runMaxAnalysis(MaxOptimizationWrapper* maxOpt) {
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		gsl_vector* s = tmp_state;
 
 		gsl_vector* m1 = gsl_vector_alloc(ncontrols);
 		gsl_vector* m2 = gsl_vector_alloc(ncontrols);
@@ -190,25 +305,25 @@ public:
 			
 			// dir 1 (+1, 0)
 			gsl_vector_set(s, 0, gsl_vector_get(s, 0) + 0.5);
-        	maxOpt->maximize(interf, s, assertConstraints, minimizeNode, -1, -1, 0); 
+        	maxOpt->maximize(interf, s, s, assertConstraints, minimizeNode, -1, -1, 0); 
         	gsl_vector_memcpy(m1, maxOpt->getMinState());
         	gsl_vector_set(s, 0, gsl_vector_get(s, 0) - 0.5);
 
         	// dir 2 (-1, 0)
         	gsl_vector_set(s, 0, gsl_vector_get(s, 0) - 0.5);
-        	maxOpt->maximize(interf, s, assertConstraints, minimizeNode, -1, -1, 1);
+        	maxOpt->maximize(interf, s,s, assertConstraints, minimizeNode, -1, -1, 1);
         	gsl_vector_memcpy(m2, maxOpt->getMinState());
         	gsl_vector_set(s, 0, gsl_vector_get(s, 0) + 0.5);
 
         	// dir 3 (0, +1)
         	gsl_vector_set(s, 1, gsl_vector_get(s, 1) + 0.5);
-        	maxOpt->maximize(interf, s, assertConstraints, minimizeNode, -1, -1, 2);
+        	maxOpt->maximize(interf, s,s, assertConstraints, minimizeNode, -1, -1, 2);
         	gsl_vector_memcpy(m3, maxOpt->getMinState());
         	gsl_vector_set(s, 1, gsl_vector_get(s, 1) - 0.5);
 
         	// dir 4 (0, -1)
         	gsl_vector_set(s, 1, gsl_vector_get(s, 1) - 0.5);
-        	maxOpt->maximize(interf, s, assertConstraints, minimizeNode, -1, -1, 3);
+        	maxOpt->maximize(interf, s,s, assertConstraints, minimizeNode, -1, -1, 3);
         	gsl_vector_memcpy(m4, maxOpt->getMinState());
         	gsl_vector_set(s, 1, gsl_vector_get(s, 1) + 0.5);
 
@@ -275,14 +390,14 @@ public:
             	c->add(get<1>(*it), !get<2>(*it));
         	}
 
-        	getGraphForClause2d(c, s);
+        	getGraphForClause2d(c);
         }
 	}
 
 	
 
 	void getGraphs(int level, int iterationId) { 
-		gsl_vector* s = gsl_vector_alloc(ncontrols);
+		gsl_vector* s = tmp_state;
 		double arr1[2] = {1.2934,12};
 		for (int i = 0; i < ncontrols; i++) {
 			gsl_vector_set(s, i, arr1[i]);
@@ -368,8 +483,10 @@ public:
 		if (level == -1) {
 			if (minimizeNode >= 0) {
 				e = smoothEval->getErrorOnConstraint(minimizeNode, t);
-				error += e;
-				gsl_vector_add(grad, t);
+				if (e > -900) {
+					error += e;
+					gsl_vector_add(grad, t);
+				}
 			}
 			for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
 				e = smoothEval->getErrorOnConstraint(*it, t);
@@ -419,7 +536,9 @@ public:
 		if (level == -1) {
 			if (minimizeNode >= 0) {
 				e = actualEval->getErrorOnConstraint(minimizeNode);
-				error += e;
+				if (e > -900) {
+					error += e;
+				}
 			}
 			for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
 				e = actualEval->getErrorOnConstraint(*it);
@@ -566,5 +685,51 @@ public:
     	}
     	file << endl;
     	file.close();
+	}
+
+	void getSol(int i, gsl_vector* tmp) {
+		for (int j = 0; j < ncontrols; j++) {
+			gsl_vector_set(tmp, j, sols[i][j]);
+		}
+	}
+
+	void checkSols() {
+		for (int i = 0; i < sols.size(); i++) {
+			for (int j = 0; j < ncontrols; j++) {
+				gsl_vector_set(tmp_state, j, sols[i][j]);
+			}
+			cout << Util::print(tmp_state) << endl;
+			actualEval->run(tmp_state);
+			double actualError = getActualError(-1);
+			GradUtil::BETA = -50;
+			GradUtil::ALPHA = 50;
+			smoothEval->run(tmp_state);
+			double smoothError = getError(-1);
+			cout << smoothError << " " << actualError << endl;
+		}
+	}
+
+	void distToSols(const gsl_vector* state) {
+		vector<double> dists;
+		for (int i = 0; i < sols.size(); i++) {
+			double dist = 0.0;
+			for (int j = 0; j < ncontrols; j++) {
+				dist += pow(gsl_vector_get(state, j) - sols[i][j], 2);
+			}
+			dists.push_back(dist);
+		}
+		cout << "Dist to sols: [" << Util::getMin(dists) << "] " << Util::print(dists) << endl;
+	}
+
+	void checkWithValidSolutions(IClause* c) {
+		for (int i = 0; i < sols.size(); i++) {
+			cout << "(" << i << ": ";
+			for (int j = 0; j < ncontrols; j++) {
+				gsl_vector_set(tmp_state, j, sols[i][j]);
+			}
+			actualEval->run(tmp_state);
+			double e = actualEval->getErrorOnClause(c);
+			cout << e << ") " << endl;
+		}
 	}
 };

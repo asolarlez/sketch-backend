@@ -19,8 +19,11 @@ class Predicate {
 public:
     virtual string print() = 0;
     virtual double evaluate(ActualEvaluators* eval) = 0;
+    virtual double evaluate(gsl_vector* grad, ActualEvaluators* eval) = 0;
     virtual double evaluate(SmoothEvaluators* eval) = 0;
     virtual double evaluate(gsl_vector* grad, SmoothEvaluators* eval) = 0;
+    virtual double grad_norm(ActualEvaluators* eval) = 0;
+    virtual const gsl_vector* grad(ActualEvaluators* eval) = 0;
     virtual bool isPure() = 0;
     virtual void makeImpure() = 0;
     virtual bool isBasic() = 0;
@@ -32,8 +35,10 @@ class BasicPredicate: public Predicate { // TODO: override equal
 public:
     int nid;
     BooleanDAG* dag;
+    Predicate* oldPred;
     
-    BasicPredicate(BooleanDAG* _dag, int _nid): dag(_dag), nid(_nid) { pure = true;} 
+    BasicPredicate(BooleanDAG* _dag, int _nid): dag(_dag), nid(_nid), oldPred(NULL) { pure = true;} 
+    BasicPredicate(BooleanDAG* _dag, int _nid, Predicate* _oldPred): dag(_dag), nid(_nid), oldPred(_oldPred) { pure = true;} 
     virtual void makeImpure() {
         pure = false;
     }
@@ -46,11 +51,18 @@ public:
         stringstream s;
         //s << (*dag)[nid]->lprint();
         s << nid;
+        if (oldPred != NULL) {
+            s << "(" << oldPred->print() << ")";
+        }
         return s.str();
     }
     virtual double evaluate(ActualEvaluators* eval);
+    virtual double evaluate(gsl_vector* grad, ActualEvaluators* eval);
     virtual double evaluate(SmoothEvaluators* eval);
     virtual double evaluate(gsl_vector* grad, SmoothEvaluators* eval);
+    virtual double grad_norm(ActualEvaluators* eval);
+    virtual const gsl_vector* grad(ActualEvaluators* eval);
+
 };
     
 
@@ -84,6 +96,10 @@ public:
         return s.str();
     }
     virtual double evaluate(ActualEvaluators* eval);
+    virtual double evaluate(gsl_vector* grad, ActualEvaluators* eval);
     virtual double evaluate(SmoothEvaluators* eval);
     virtual double evaluate(gsl_vector* grad, SmoothEvaluators* eval);
+    virtual double grad_norm(ActualEvaluators* eval);
+    virtual const gsl_vector* grad(ActualEvaluators* eval);
+
 };

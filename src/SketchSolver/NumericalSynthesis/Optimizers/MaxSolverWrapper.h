@@ -155,6 +155,8 @@ class MaxSolverWrapper : public MaxOptimizationWrapper {
     }
 
     set<int> emptyConstraints;
+
+    string dir;
     
 public:
     MaxSolverWrapper(SmoothEvaluators* eval_, int ncontrols_,  doublereal* xlow_, doublereal* xupp_, int numConstraints_): eval(eval_), n(ncontrols_), xlow(xlow_), xupp(xupp_) {
@@ -175,8 +177,13 @@ public:
         Flow = new doublereal[neF];
         Fupp = new doublereal[neF];
         getFranges();
+        if (n == 1) {
+            dir = "1Dfull/";
+        } else {
+            dir = "2Dfull/";
+        }
     }
-   	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
+   	virtual bool maximize(Interface* inputs, const gsl_vector* initState, const gsl_vector* initDir, const set<int>& assertConstraints, int minimizeNode, float beta, int level, int idx) { 
         MaxParameters* p = new MaxParameters(eval, inputs, assertConstraints, minimizeNode, level);
         maxSolver->init((char *) p, neF, MaxEvaluator::df, xlow, xupp, Flow, Fupp);
         gsl_vector_memcpy(t, initState);
@@ -184,10 +191,10 @@ public:
         p->beta = beta;
         p->alpha = -beta;
         if (PARAMS->numdebug) { 
-            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/maxdata/" + Util::benchName() + "_" + to_string(GradUtil::counter) + "_" + to_string(idx) + "_custommax_"  + to_string(int(-beta)) + "_" + to_string(PARAMS->smoothingMode) + ".txt");
+            MaxEvaluator::file.open("/afs/csail.mit.edu/u/j/jinala/symdiff/scripts/smoothing/" + dir + Util::benchName() + "_" + to_string(GradUtil::counter) + "_" + to_string(idx) + "_custommax_"  + to_string(int(-beta)) + "_" + to_string(PARAMS->smoothingMode) + ".txt");
         }
 
-        bool solved = maxSolver->optimize(t);
+        bool solved = maxSolver->optimize(t, initDir);
         double obj = maxSolver->getObjectiveVal();
         gsl_vector_memcpy(minState, maxSolver->getResults());
         cout << "Max objective found: " << obj << endl;

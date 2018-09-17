@@ -113,9 +113,11 @@ public:
         if (Util::isAbsolute(&node)) { // if the node is part of abs(x) do not add to the interface. 
             return;
         }
-        Predicate* p = new BasicPredicate(dag, node.id);
-        nodeToPredicates[node.id] = p;
-        levelPredicates[0].insert(p);
+        if (node.type == bool_node::LT) { 
+            Predicate* p = new BasicPredicate(dag, node.id);
+            nodeToPredicates[node.id] = p;
+            levelPredicates[0].insert(p);
+        }
         if (node.type == bool_node::AND || node.type == bool_node::OR) {
             /*Predicate* p1 = nodeToPredicates[node.mother->id];
             Predicate* p2 = nodeToPredicates[node.father->id];

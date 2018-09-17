@@ -116,7 +116,7 @@ void SimpleEvaluator::visit( LT_node& node ) {
 	double m = d(node.mother);
 	double f = d(node.father);
 	double d = f - m;
-	if (d == 0) d = -MIN_VALUE;
+	//if (d == 0) d = -MIN_VALUE;
 	//cout << node.lprint() << " " << m << " " << f << " " << d << endl;
 	setvalue(node, d);
 }

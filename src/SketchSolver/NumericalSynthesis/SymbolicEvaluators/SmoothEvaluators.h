@@ -11,7 +11,7 @@ class SmoothEvaluators {
 	map<BooleanDAG*, SymbolicEvaluator*> evals;
 	map<string, int>& ctrls;
 	Interface* interf;
-	int MAX_CLAUSE_VALS = 20;
+	int MAX_CLAUSE_VALS = 30;
 	vector<gsl_vector*> clauseGrads;
 public:
 	SmoothEvaluators(BooleanDAG* dag, Interface* _interf, map<string, int>& _ctrls, int ncontrols): mainDag(dag), ctrls(_ctrls), interf(_interf) {
@@ -126,6 +126,12 @@ public:
 
 	double dist(Predicate* p) {
 		return p->evaluate(this);
+	}
+
+	string getAssertMsg(int nodeid) {
+		ASSERT_node* an = (ASSERT_node*)((*mainDag)[nodeid]);
+		string msg = an->getMsg();
+		return Util::split(msg, " ").back();
 	}
 
 	

@@ -17,11 +17,13 @@ class gsl_vector;
 
 class LocalState {
 public:
+	vector<gsl_vector*> startStates;
 	vector<gsl_vector*> localSols; // local sol for different betas
 	vector<double> errors;
 
 	LocalState(int ncontrols, int nbetas) {
 		for (int i = 0; i < nbetas; i++) {
+			startStates.push_back(gsl_vector_alloc(ncontrols));
 			localSols.push_back(gsl_vector_alloc(ncontrols));
 		}
 		errors.resize(nbetas);
@@ -29,6 +31,9 @@ public:
 	~LocalState() {
 		for (int i = 0; i < localSols.size(); i++) {
 			gsl_vector_free(localSols[i]);
+		}
+		for (int i = 0; i < startStates.size(); i++) {
+			gsl_vector_free(startStates[i]);
 		}
 	}
 
