@@ -133,7 +133,7 @@ class SnoptWrapper: public OptimizationWrapper {
 public:
     SnoptWrapper(SymbolicEvaluator* eval_, int ncontrols_,  doublereal* xlow_, doublereal* xupp_, int numConstraints_): eval(eval_), n(ncontrols_), xlow(xlow_), xupp(xupp_) {
         SnoptEvaluator::init(n);
-        neF = numConstraints_ + 1;
+        neF = (numConstraints_ + 1)*4;
         lenA = 10; // we don't use this currently
         
         cout << "nef: " << neF << endl;
