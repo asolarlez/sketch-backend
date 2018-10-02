@@ -17,6 +17,8 @@
 #include "FakeGSL.h"
 #endif
 
+#include "BoolBasedSampler.h"
+
 class SuggestionGeneratorUsingMax: public SuggestionGenerator {
     Interface* interf;
     BooleanDAG* dag;
@@ -38,11 +40,12 @@ class SuggestionGeneratorUsingMax: public SuggestionGenerator {
     int NUM_MAXES = 5;
 
     NumDebugger* debugger;
+    const vector<vector<int>>& dependentInputs;
     
 
 public:
     vector<gsl_vector*> dirGrads;
-    SuggestionGeneratorUsingMax(BooleanDAG* _dag, FloatManager& _fm, Interface* _interface, map<string, int>& _ctrls, OptimizationWrapper* _opt, MaxOptimizationWrapper* _maxOpt, ActualEvaluators* _actualEval, SmoothEvaluators* _smoothEval, int ncontrols, NumDebugger* _debugger): dag(_dag), fm(_fm), interf(_interface), ctrls(_ctrls), opt(_opt), maxOpt(_maxOpt), actualEval(_actualEval), smoothEval(_smoothEval), debugger(_debugger) {
+    SuggestionGeneratorUsingMax(BooleanDAG* _dag, FloatManager& _fm, Interface* _interface, map<string, int>& _ctrls, OptimizationWrapper* _opt, MaxOptimizationWrapper* _maxOpt, ActualEvaluators* _actualEval, SmoothEvaluators* _smoothEval, int ncontrols, const vector<vector<int>>& _dependentInputs, NumDebugger* _debugger): dag(_dag), fm(_fm), interf(_interface), ctrls(_ctrls), opt(_opt), maxOpt(_maxOpt), actualEval(_actualEval), smoothEval(_smoothEval), dependentInputs(_dependentInputs), debugger(_debugger) {
 
         minimizeNode = -1;
 
@@ -115,6 +118,134 @@ public:
          
     }
 
+    pair<int, int> getUnsatSuggestion(const gsl_vector* state) {
+        actualEval->run(state);
+        double dassert;
+        double d;
+        vector<tuple<int, int>> conflict; 
+        for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+            //dassert = actualEval->getErrorOnConstraint(*it);
+            if (true) {
+                // TODO: this is currently hacky
+                const vector<int>& inputs = dependentInputs[*it];
+                int minid = -1;
+                double minerror  = 1e30;
+                for (auto it1 = inputs.begin(); it1 != inputs.end(); it1++) {
+                    if (interf->hasValue(*it1)) continue;
+                    d = actualEval->dist(*it1);
+                    //if (dassert < 0.0) {
+                        cout << *it << " " << *it1 << " " << d << " " << Util::print(actualEval->grad(*it1)) << endl;
+                    //}
+                    if (d < minerror) {
+                        minerror = d;
+                        minid = *it1;
+                    } 
+                }
+                //Assert(minerror > 0.0, "something is wrong");
+                if (minid != -1) {
+                    cout << "Min " << *it << " " << minid << " " << minerror << endl;
+                    conflict.push_back(make_tuple(*it, minid));
+                }
+
+                if ((*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= 0.2) {
+                    break;
+                }
+            }
+            
+        }
+        sort(conflict.begin(), conflict.end());
+        reverse(conflict.begin(), conflict.end());
+        Assert(conflict.size() > 0, "No failed asserts???");
+        return make_pair(get<1>(conflict[0]), 1);
+
+    }
+
+    SClause* getUnsatClause(const gsl_vector* state, const gsl_vector* initState) {  
+        actualEval->run(state);
+        double dassert;
+        double d;
+        vector<int> conflictingAsserts;
+        for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+            dassert = actualEval->getErrorOnConstraint(*it);
+            if ( (*dag)[*it]->mother->type != bool_node::NOT) {
+                continue;
+            }
+            if (true) {
+                if (dassert < 0.01) {
+                    conflictingAsserts.push_back(*it);
+                }
+                if (dassert < -0.2) {
+                    break;
+                }
+            }
+            
+        }
+
+        SClause* clause = new SClause();
+
+        actualEval->run(initState);
+        for (auto it = conflictingAsserts.begin(); it != conflictingAsserts.end(); it++) {
+                // TODO: this is currently hacky
+                const vector<int>& inputs = dependentInputs[*it];
+                int minid = -1;
+                double minerror  = 1e30;
+                for (auto it1 = inputs.begin(); it1 != inputs.end(); it1++) {
+                    d = actualEval->dist(*it1);
+                    cout << *it << " " << *it1 << " " << d << " " << Util::print(actualEval->grad(*it1)) << endl;
+                    if (d < minerror) {
+                        minerror = d;
+                        minid = *it1;
+                    } 
+                }
+                //Assert(minerror > 0.0, "something is wrong");
+                if (minid != -1 ) {
+                    clause->add(*it, minid);
+                }
+        }
+
+        
+        return clause;
+
+    }
+
+    SClause* getUnsatClause(const gsl_vector* state) {  
+        actualEval->run(state);
+        double dassert;
+        double d;
+        SClause* clause = new SClause();
+        for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+            dassert = actualEval->getErrorOnConstraint(*it);
+            if (true) {
+                // TODO: this is currently hacky
+                const vector<int>& inputs = dependentInputs[*it];
+                int minid = -1;
+                double minerror  = 1e30;
+                for (auto it1 = inputs.begin(); it1 != inputs.end(); it1++) {
+                    d = actualEval->dist(*it1);
+                    if (dassert < 0.0) {
+                        cout << *it << " " << *it1 << " " << d << " " << Util::print(actualEval->grad(*it1)) << endl;
+                    }
+                    if (d < minerror) {
+                        minerror = d;
+                        minid = *it1;
+                    } 
+                }
+                //Assert(minerror > 0.0, "something is wrong");
+                if (minid != -1 && (*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= -0.01) {
+                    clause->add(*it, minid);
+                }
+
+                if ((*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= 0.2) {
+                    break;
+                }
+            }
+            
+        }
+        
+        return clause;
+
+    }
+
     
     BooleanDAG* getNewDag(BooleanDAG* origDag, int origNid, const gsl_vector* s) {
         BooleanDAG* newDag = origDag->clone();
@@ -161,7 +292,11 @@ public:
             } else {
                 new_p2 = make_pure(dp->p2, s);
             }
-            return new DiffPredicate(new_p1, new_p2, max((int)ctrls.size(), 1));
+            int ncontrols = ctrls.size();
+            if (ncontrols == 0) {
+                ncontrols = 1;
+            }
+            return new DiffPredicate(new_p1, new_p2, ncontrols);
         }
     }
 

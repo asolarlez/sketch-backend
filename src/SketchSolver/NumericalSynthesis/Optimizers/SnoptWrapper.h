@@ -92,7 +92,15 @@ public:
             }
         }
         if (p->level == -1) {
-            for (auto it = p->assertConstraints.begin(); it != p->  assertConstraints.end(); it++) {
+            double dist = p->eval->getErrorForAsserts(p->assertConstraints, grad);
+            if (dist < 0.0) {
+                total_dist += -dist;
+            }
+            F[fcounter++] = dist;
+            for (int j = 0; j < *n; j++) {
+                G[gcounter++] = gsl_vector_get(grad, j);
+            }
+            /*for (auto it = p->assertConstraints.begin(); it != p->  assertConstraints.end(); it++) {
                 double dist = p->eval->getErrorOnConstraint(*it, grad);
                 if (dist < 0.0) {
                     total_dist += -dist;
@@ -101,13 +109,13 @@ public:
                 /*if (dist < 0.1) {
                     string msg = p->eval->getAssertMsg(*it);
                     cout << "(" << msg << "," << -dist << "),"; 
-                }*/ 
+                } /
                 F[fcounter++] = dist;
                 for (int j = 0; j < *n; j++) {
                     G[gcounter++] = gsl_vector_get(grad, j);
                 }
-            }
-            const set<int>& inputConstraints = p->interf->getInputConstraints();
+            }*/
+            /*const set<int>& inputConstraints = p->interf->getInputConstraints();
             for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
                 double dist = p->eval->getErrorOnConstraint(*it, grad);
                 if (dist < 0.0) {
@@ -117,7 +125,7 @@ public:
                 for (int j = 0; j < *n; j++) {
                     G[gcounter++] = gsl_vector_get(grad, j);
                 }
-            }
+            }*/
         } 
 
         for (int i = p->level; i < p->interf->numLevels(); i++) {
@@ -153,7 +161,7 @@ public:
         if (abs(total_dist - prevVal) < 1e-3) {
             prevCount++;
             if (prevCount >= 3) {
-                *Status = -2;
+                //*Status = -2;
             }
         } else {
             prevVal = total_dist;
@@ -418,6 +426,10 @@ public:
         } else {
             randomizeCtrls(t, inputs, constraints, minimizeNode);
         }
+        GradUtil::BETA = betas[0];
+        GradUtil::ALPHA = alphas[0];
+        eval->run(t);
+        cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << alphas[0]  << endl;
         
         double obj;
         int numtries = 0;
@@ -461,7 +473,8 @@ public:
                 solved = snoptSolver->optimize(t, suppressPrint);
                 obj = snoptSolver->getObjectiveVal();
                 gsl_vector_memcpy(t, snoptSolver->getResults());
-                 cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << p->alpha  << endl;
+                eval->run(t);
+                cout << "I:" << Util::print(t) << "::" << getError(constraints, minimizeNode) << " beta " << p->alpha  << endl;
                 if (PARAMS->numdebug) {
                     SnoptEvaluator::file << Util::print(t) << endl;
                     SnoptEvaluator::file << timer.stop().get_cur_ms() << endl;
@@ -469,6 +482,7 @@ public:
                 }
                 if (localState != NULL) {
                     gsl_vector_memcpy(localState->localSols[i], t); 
+                    //eval->run(t);
                     localState->errors[i] = getError(constraints, minimizeNode);
                     // TODO: this does not work with multiple retries and we want best local state so far. 
                 }
@@ -497,6 +511,7 @@ public:
     virtual double getObjectiveVal() {
         return minObjectiveVal;
     }
+
     double getError(const set<int>& constraints, int minimizeNode) {
         double error = 0.0;
         double e;

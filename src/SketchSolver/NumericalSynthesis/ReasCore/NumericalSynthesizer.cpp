@@ -60,6 +60,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
         ncontrols = 1;
     }
     state = gsl_vector_alloc(ncontrols);
+    prevState = gsl_vector_alloc(ncontrols);
     
     doublereal* xlow = new doublereal[ncontrols];
     doublereal* xupp = new doublereal[ncontrols];
@@ -160,11 +161,14 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
     debugger = new NumDebugger(dag, ctrls, interf, smoothEval, actualEval, opt);
 
     //sg = new SimpleSuggestionGenerator(dag, interf, ctrls);
-    sg = new SuggestionGeneratorUsingMax(dag, _fm, interf, ctrls, opt, maxOpt, actualEval, smoothEval, ncontrols, debugger);
+    sg = new SuggestionGeneratorUsingMax(dag, _fm, interf, ctrls, opt, maxOpt, actualEval, smoothEval, ncontrols, dependentInputs, debugger);
 
 
     
     solver = new NumericalSolver(dag, ctrls, interf, smoothEval, actualEval, opt, dependentInputs, dependentCtrls, debugger);
+
+    basicSampler = new BasicSampler(dag, interf, actualEval, ncontrols, xlow, xupp);
+    boolBasedSampler = new BoolBasedSampler(dag, interf, actualEval, ncontrols, xlow, xupp, dependentInputs);
 
     //debugger->plotGraphs();
     //exit(0);
@@ -198,14 +202,18 @@ bool NumericalSynthesizer::searchWithOnlySmoothing() {
         for (int j = 0; j < state->size; j++) {
             gsl_vector_set(state, j, arr[j]);
         }*/
-        sat = solver->checkSAT(-1);
+        basicSampler->sampleState(state);
+        ((BoolBasedSampler*) boolBasedSampler)->analyze(state);
+        sat = solver->checkSAT(-1, state);
+        gsl_vector_memcpy(state, solver->getResult());
+        ((BoolBasedSampler*) boolBasedSampler)->analyze(state);
+
         //debugger->distToSols(solver->getLocalState()->localSols[2]);
-        counter++;
+        //counter++;
         //if (counter >= 1) {
         //    break;
         //}
         if (sat) {
-            gsl_vector_memcpy(state, solver->getResult());
             cout << "Found solution" << endl;
             if (concretize()) {
                 return true;
@@ -216,6 +224,61 @@ bool NumericalSynthesizer::searchWithOnlySmoothing() {
     return false;
 }
 
+bool NumericalSynthesizer::searchWithBoolBasedSampling() {
+    GradUtil::counter = 0;
+    bool sat = false;
+
+    while (true) {
+        boolBasedSampler->sampleState(state);
+        
+        sat = solver->checkSAT(-1, state);
+        gsl_vector_memcpy(prevState, state);
+        gsl_vector_memcpy(state, solver->getResult());
+        if (sat) {
+            gsl_vector_memcpy(state, solver->getResult());
+
+            cout << "Found solution" << endl;
+            if (concretize()) {
+                return true;
+            }
+        } else {
+            cout << "Unsat" << endl;
+            SClause* s = sg->getUnsatClause(state, prevState);
+            cout << "Suggested clause: " << s->print() << endl;
+            ((BoolBasedSampler*) boolBasedSampler)->analyze(prevState, s);
+            ((BoolBasedSampler*) boolBasedSampler)->analyze(state, s);
+            boolBasedSampler->addClause(s);
+            GradUtil::counter++;
+        }
+    }
+}
+
+
+bool NumericalSynthesizer::searchWithBooleans() {
+    GradUtil::counter = 0;
+    bool sat = true;
+    bool first = true;
+    while (true) {  
+        if (GradUtil::counter >= 100) {
+            return false;
+        } 
+        sat = solver->checkSAT(-1, first ? NULL : state);
+        first = false;
+        gsl_vector_memcpy(state, solver->getResult());
+
+        if (sat) {
+            cout << "Found solution" << endl;
+            if (concretize()) {
+                return true;
+            }
+        }
+        cout << "Unsat" << endl;
+        const pair<int, int>& nodeVal = sg->getUnsatSuggestion(state);
+        cout << "Suggested bool: " << nodeVal.first << " " << nodeVal.second << endl;
+        interf->setInput(nodeVal.first, nodeVal.second);
+        GradUtil::counter++;
+    }
+}
 
 bool NumericalSynthesizer::searchWithPredicates() {
     GradUtil::counter = 0;
@@ -271,7 +334,7 @@ bool NumericalSynthesizer::search() {
     if (PARAMS->numericalSolverMode == "ONLY_SMOOTHING") {
         return searchWithOnlySmoothing();
     } else if (PARAMS->numericalSolverMode == "SMOOTHING_SAT") {
-        return searchWithPredicates();
+        return searchWithBoolBasedSampling();
     }
     Assert(false, "NYI for solver mode " + PARAMS->numericalSolverMode);
     return true;
@@ -288,11 +351,15 @@ bool NumericalSynthesizer::search_concretize() {
     const pair<int, int>& nodeVal = sg->getSuggestion(state);
     cout << "Suggested concretization: " << nodeVal.first << " " << nodeVal.second << endl;
     interf->setInput(nodeVal.first, nodeVal.second);
+    int i = 0;
     while (true) { 
         GradUtil::counter++;
         bool sat = solver->checkSAT(-1, state);
         if (sat) {
             gsl_vector_memcpy(state, solver->getResult());
+            if (i > 30) {
+                return true;
+            }
             if (solver->checkFullSAT(state)) {
                 return true;
             } else {
@@ -305,13 +372,14 @@ bool NumericalSynthesizer::search_concretize() {
             bool r = interf->clearLastLevel();
             if (!r) return false;
         }
-    
+        i++;
     }
 }
 
 
 
 bool NumericalSynthesizer::concretize() {
+    //return search_concretize();
     solver->checkFullSAT(state);
     return true;
     //return simple_concretize();

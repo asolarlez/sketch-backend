@@ -74,7 +74,13 @@ public:
 	}
 
 	void plotGraphs() {
-		float arr[4] = {12, -11, -15.5, 4.9};
+		float arr[4] = {-17.9389, 0.613997, 12.4198, 10.8642};
+		/*interf->setInput(147,1);
+		interf->setInput(148,1);
+		interf->setInput(141,1);
+		interf->setInput(181,1);
+		interf->setInput(222,1);
+		interf->setInput(230,1);*/
         for (int j = 0; j < ncontrols; j++) {
             gsl_vector_set(tmp_state, j, arr[j]);
         }
@@ -446,13 +452,13 @@ public:
         			error += -e;
         		}
         	}	
-        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	/*const set<int>& inputConstraints = interf->getInputConstraints();
         	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
         		e = smoothEval->getErrorOnConstraint(*it);
         		if (e < 0.0) {
         			error += -e;
         		}
-        	}
+        	}*/
         }
         if (level >= 0) {
         	for (auto it = interf->clauseLevels[level].begin(); it != interf->clauseLevels[level].end(); it++) {
@@ -488,15 +494,21 @@ public:
 					gsl_vector_add(grad, t);
 				}
 			}
-			for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
+			e = smoothEval->getErrorForAsserts(assertConstraints, t);
+			if (e < 0.0) { // TODO: magic numbers
+        		error += -e;
+        		gsl_vector_scale(t, -1);
+        		gsl_vector_add(grad, t);
+        	}
+			/*for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
 				e = smoothEval->getErrorOnConstraint(*it, t);
         		if (e < 0.0) { // TODO: magic numbers
         			error += -e;
         			gsl_vector_scale(t, -1);
         			gsl_vector_add(grad, t);
         		}
-        	}	
-        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	}*/
+        	/*const set<int>& inputConstraints = interf->getInputConstraints();
         	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
         		e = smoothEval->getErrorOnConstraint(*it, t);
         		if (e < 0.0) {
@@ -504,7 +516,7 @@ public:
         			gsl_vector_scale(t, -1);
         			gsl_vector_add(grad, t);
         		}
-        	}
+        	}*/
         }
         if (level >= 0) {
         	for (auto it = interf->clauseLevels[level].begin(); it != interf->clauseLevels[level].end(); it++) {
@@ -546,13 +558,13 @@ public:
         			error += -e;
         		}
         	}
-        	const set<int>& inputConstraints = interf->getInputConstraints();
+        	/*const set<int>& inputConstraints = interf->getInputConstraints();
         	for (auto it = inputConstraints.begin(); it != inputConstraints.end(); it++) {
         		e = actualEval->getErrorOnConstraint(*it);
         		if (e < 0.0) {
         			error += -e;
         		}
-        	}	
+        	}*/	
         }
         if (level >= 0) {
         	for (auto it = interf->clauseLevels[level].begin(); it != interf->clauseLevels[level].end(); it++) {

@@ -268,6 +268,10 @@ public:
     double getBoolCtrlError(bool_node* node);
     double getBoolExprError(bool_node* node);
 
+    virtual double getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad) {
+    	Assert(false, "TODO");
+    }
+    
 
 	void setvalue(bool_node& bn, int idx, ValueGrad* v) {
 		values[bn.id][idx] = v;

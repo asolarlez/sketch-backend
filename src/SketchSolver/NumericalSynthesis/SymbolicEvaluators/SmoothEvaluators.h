@@ -62,6 +62,10 @@ public:
 		return evals[mainDag]->getErrorOnConstraint(nodeid);
 	}
 
+	double getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad) {
+		return evals[mainDag]->getErrorForAsserts(assertIds, grad);
+	} 
+
 	double getErrorOnConstraint(int nodeid, gsl_vector* grad) {
 		return evals[mainDag]->getErrorOnConstraint(nodeid, grad);
 	}

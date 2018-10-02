@@ -31,6 +31,9 @@
 #include "NumDebugger.h"
 #include "BoolNodeSimplifier.h"
 
+#include "BasicSampler.h"
+#include "BoolBasedSampler.h"
+
 
 class NumericalSynthesizer  {
 	BooleanDAG* dag;
@@ -48,13 +51,19 @@ class NumericalSynthesizer  {
     SuggestionGenerator* sg;
 
     gsl_vector* state;
+    gsl_vector* prevState;
 
     bool searchWithOnlySmoothing();
     bool searchWithPredicates();
-	
+    bool searchWithBooleans();
+    bool searchWithBoolBasedSampling();
+
 
 	int CONFLICT_THRESHOLD = PARAMS->conflictCutoff;
 	int NUM_SUGGESTIONS_THRESHOLD = 5; // TODO: check this
+
+    BasicSampler* basicSampler;
+    BoolBasedSampler* boolBasedSampler;
 public:
     NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface);	
     ~NumericalSynthesizer() {

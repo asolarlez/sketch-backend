@@ -75,7 +75,9 @@ public:
     double getBoolCtrlError(bool_node* node);
     double getBoolExprError(bool_node* node);
 
-    
+    virtual double getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad);
+
+    double computeSingleError(int nodeid, double errorSoFar, const gsl_vector* errorGradSoFar, gsl_vector* grad);
 
     
 	void setvalue(bool_node& bn, ValueGrad* v) {

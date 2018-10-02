@@ -15,7 +15,6 @@
 #include "BooleanDAG.h"
 #include "Interface.h"
 #include "ConflictGenerator.h"
-#include "SuggestionGenerator.h"
 #include "ActualEvaluators.h"
 #include "CommandLineArgs.h"
 #include "SmoothEvaluators.h"

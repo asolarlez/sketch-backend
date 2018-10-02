@@ -54,6 +54,7 @@ bool NumericalSolver::checkSAT(int level, gsl_vector* initState) {
         cout << Util::print(result) << endl;
         return true;
     } else {
+        result = opt->getMinState();
         cout << "Level " << level << " unsatisfiable" << endl;
         cout << "Local solution" << endl;
         localState->print();

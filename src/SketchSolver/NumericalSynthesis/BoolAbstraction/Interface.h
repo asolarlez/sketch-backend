@@ -119,6 +119,7 @@ public:
             levelPredicates[0].insert(p);
         }
         if (node.type == bool_node::AND || node.type == bool_node::OR) {
+            return;
             /*Predicate* p1 = nodeToPredicates[node.mother->id];
             Predicate* p2 = nodeToPredicates[node.father->id];
             cout << node.lprint() << endl;

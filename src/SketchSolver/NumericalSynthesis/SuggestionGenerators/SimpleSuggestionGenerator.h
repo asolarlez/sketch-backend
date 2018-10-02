@@ -35,7 +35,18 @@ public:
     pair<int, int> getSuggestion(const gsl_vector* state) {
         return make_pair(-1, 0);
     }
+    pair<int, int> getUnsatSuggestion(const gsl_vector* state) {
+        return make_pair(-1, 0);
+    }
     virtual IClause* getConflictClause(int level, LocalState * state) { 
+        return NULL;
+    }
+
+    virtual SClause* getUnsatClause(const gsl_vector* state) { 
+        return NULL;
+    }
+
+    virtual SClause* getUnsatClause(const gsl_vector* state, const gsl_vector* prevState) { 
         return NULL;
     }
 };

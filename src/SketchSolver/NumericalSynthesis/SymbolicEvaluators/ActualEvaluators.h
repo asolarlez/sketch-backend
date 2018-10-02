@@ -89,6 +89,10 @@ public:
 		return evals[dag]->grad(nodeid);
 	}
 
+	const gsl_vector* grad(int nodeid) {
+		return evals[mainDag]->grad(nodeid);
+	}
+
 	double dist(Predicate* p) {
 		return p->evaluate(this);
 	}
