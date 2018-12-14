@@ -114,11 +114,11 @@ public:
 	}
 	
 	string mother_name(bool_node& node, bool isBool){
-		return node_name(*node.mother, isBool);
+		return node_name(*node.mother(), isBool);
 	}
 	
 	string father_name(bool_node& node, bool isBool){
-		return node_name(*node.father, isBool);
+		return node_name(*node.father(), isBool);
 	}
 	
 	virtual void visit( AND_node& node ){
@@ -161,17 +161,17 @@ public:
 		out<<node_name(node, false)<<" := "<<mother_name(node, false)<<" *_16 "<<father_name(node, false)<<"; "<<endl;		
 	}
 	virtual void visit( ARRACC_node& node ){
-		vector<bool_node*>& mmother = node.multi_mother;
 		
-		Assert( mmother.size() == 2, " NYI; Can't produce Euclid file for this benchmark." );
+		
+		Assert( node.nargs() == 2, " NYI; Can't produce Euclid file for this benchmark." );
 		
 		out<<node_name(node, true)<<" := ";
 		out<<" case ";		
 		out<<mother_name(node, true)<<":";
 		
-		out<<node_name(*mmother[1], node.getOtype()==OutType::BOOL);
+		out<<node_name(*node.arguments(1), node.getOtype()==OutType::BOOL);
 		out<<"; default : ";
-		out<<node_name(*mmother[0], node.getOtype()==OutType::BOOL);
+		out<<node_name(*node.arguments(0), node.getOtype()==OutType::BOOL);
 		out<<"; esac; "<<endl;
 	}
 

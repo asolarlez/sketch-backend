@@ -17,8 +17,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	if(arrsz>=0){
 		VarStore::objP* val = &(values.getObj(inode->get_name()));
 		int nbits = inode->get_nbits();
-		ARR_CREATE_node* acn = new ARR_CREATE_node();
-		acn->setDfltval(getCnode(0));
+		vector<bool_node*> multi_mother;
 		while(val != NULL){
 			bool_node* cnst;
 			if(nbits==1){
@@ -26,12 +25,14 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 			}else{
 				cnst= getCnode( val->getInt() );
 			}
-			while(acn->multi_mother.size()< val->index){
-				acn->multi_mother.push_back( getCnode(0) );
+			while(multi_mother.size()< val->index){
+				multi_mother.push_back( getCnode(0) );
 			}
-			acn->multi_mother.push_back( cnst );
+			multi_mother.push_back( cnst );
 			val = val->next;
 		}
+		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
+		acn->setDfltval(getCnode(0));
 		acn->addToParents();		
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
 		return optAdd(acn);
@@ -79,16 +80,16 @@ void NodeHardcoder::visit( CTRL_node& node ){
 				Assert(cn->children.size() == 1, "NYI; hafdst");
 				bool_node* bn = *(cn->children.begin());
 				Assert(bn->type == bool_node::ARRACC || bn->type == bool_node::ARRASS, "NYI;aytut");
-				arith_node* an = dynamic_cast<arith_node*>(bn);
-				if(an->multi_mother[0]==cn){
-					Assert(an->multi_mother[0]==cn, "NYI; cvbnm");
-					rvalue =  an->multi_mother[1];
+				bool_node* an = bn;
+				if(an->get_parent(1) ==cn){
+					Assert(an->get_parent(1) == cn, "NYI; cvbnm");
+					rvalue =  an->get_parent(2);
 					return;
 				}else{
-					Assert(an->multi_mother[1]==cn, "NYI; weafhgdz");
-					rvalue =  an->multi_mother[0];
+					Assert(an->get_parent(2) == cn, "NYI; weafhgdz");
+					rvalue =  an->get_parent(1);
 					return;
-				}			
+				}
 			}else{
 				rvalue = getCnode(0);
 				return;
@@ -104,7 +105,7 @@ void NodeHardcoder::visit( CTRL_node& node ){
 bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(uf->getTupleName()));
 	int size = tuple_type->actSize;
-	TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+	TUPLE_CREATE_node* new_node = TUPLE_CREATE_node::create(size);
 	for (int j = 0; j < size ; j++) {
 		stringstream sstr;
 		sstr<<uf->get_ufname()<<"_"<<uf->get_uniquefid()<<"_"<<j;
@@ -113,8 +114,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 		if(type->isArr){
 			VarStore::objP* val = &(values.getObj(sstr.str()));
 			int nbits = val->size();
-			ARR_CREATE_node* acn = new ARR_CREATE_node();
-			acn->setDfltval(getCnode(0));
+			vector<bool_node*> multi_mother;
 			while(val != NULL){
 				bool_node* cnst;
 				if(nbits==1){
@@ -122,17 +122,19 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 				}else{
 					cnst= getCnode( val->getInt() );
 				}
-				while(acn->multi_mother.size()< val->index){
-					acn->multi_mother.push_back( getCnode(0) );
+				while(multi_mother.size()< val->index){
+					multi_mother.push_back( getCnode(0) );
 				}
-				acn->multi_mother.push_back( cnst );
+				multi_mother.push_back( cnst );
 				val = val->next;
 			}
+			ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
+			acn->setDfltval(getCnode(0));
 			acn->addToParents();					
-			new_node->multi_mother.push_back( optAdd(acn) );
+			new_node->set_parent(j, optAdd(acn) );
 		}else{
 			int val = values[sstr.str()];
-			new_node->multi_mother.push_back( getCnode(val) );
+			new_node->set_parent(j, getCnode(val) );
 		}
 	}
 	new_node->addToParents();
@@ -146,7 +148,7 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 		DagOptim::visit(node);
 	} else {
 		SynthInSolver* sin = it->second;
-		rvalue = sin->getExpression(this, node.multi_mother);
+		rvalue = sin->getExpression(this, node.arg_begin(), node.arg_end());
     if(rvalue->type == bool_node::TUPLE_CREATE) {
       return;
     }
@@ -154,14 +156,14 @@ void NodeHardcoder::nodeFromSyn(UFUN_node& node) {
 
 		Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(node.getTupleName()));
 		int size = tuple_type->actSize;
-		TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+		TUPLE_CREATE_node* new_node = TUPLE_CREATE_node::create(size);
 		for (int j = 0; j < size; j++) {
 			OutType* type = tuple_type->entries[j];
 			Assert(!type->isTuple, "NYS");
 			if (type->isArr) {
 				Assert(false, "NYI");
 			} else {				
-				new_node->multi_mother.push_back(rvalue);
+				new_node->set_parent(j, rvalue);
 			}
 		}
 		new_node->addToParents();
@@ -189,34 +191,32 @@ void NodeHardcoder::visit( UFUN_node& node ){
 		UFUN_node* uf = &node;
 		vector<pair<bool_node*, vector<bool_node*> > >& params = ufunparams[uf->get_ufname()];
 		
-		vector<bool_node*> pars = uf->multi_mother;
+		vector<bool_node*> pars( uf->arg_begin(), uf->arg_end());
 		
 		bool_node* out = nodeForFun(uf);
 		for(int ii=0; ii<params.size(); ii++){
 			vector<bool_node*>& cpar = params[ii].second;						
 			bool_node* cond = NULL;
 			for(int jj=0; jj<pars.size(); ++jj){
-				bool_node* eq = new EQ_node();
+				bool_node* eq = EQ_node::create();
 				
-				eq->mother = cpar[jj];
-				eq->father = pars[jj];
+				eq->mother() = cpar[jj];
+				eq->father() = pars[jj];
 				eq->addToParents();
 				eq = optAdd(eq);
 				if(cond==NULL){
 					cond = eq;
 				}else{
-					bool_node* an = new AND_node();
-					an->mother = cond;
-					an->father = eq;
+					bool_node* an = AND_node::create();
+					an->mother() = cond;
+					an->father() = eq;
 					an->addToParents();
 					an = optAdd(an);
 					cond = an;
 				}
 			}
-			ARRACC_node* chose = new ARRACC_node();
-			chose->mother = cond;
-			chose->multi_mother.push_back(out);
-			chose->multi_mother.push_back(params[ii].first);
+			ARRACC_node* chose = ARRACC_node::create(cond, out, params[ii].first);
+			
 			chose->addToParents();			
 			out = optAdd(chose);
 		}

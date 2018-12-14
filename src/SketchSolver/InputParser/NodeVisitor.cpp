@@ -26,9 +26,6 @@ void NodeVisitor::process(BooleanDAG& bdag){
 }
 
 
-void NodeVisitor::visitArith(arith_node& node ){
-	rvalue = &node;
-}
 
 void NodeVisitor::visitBool(bool_node& node ){
 	rvalue = &node;
@@ -62,10 +59,10 @@ void NodeVisitor::visit( TIMES_node& node ){
 	visitBool(node);	
 }
 void NodeVisitor::visit( UFUN_node& node ){
-	visitArith(node);	
+	visitBool(node);
 }
 void NodeVisitor::visit( ARRACC_node& node ){
-	visitArith(node);	
+	visitBool(node);
 }
 void NodeVisitor::visit( DIV_node& node ){
 	visitBool(node);	
@@ -88,10 +85,10 @@ void NodeVisitor::visit( EQ_node& node ){
 	visitBool(node);	
 }
 void NodeVisitor::visit( ARRASS_node& node ){
-	visitArith(node);	
+	visitBool(node);
 }
 void NodeVisitor::visit( ACTRL_node& node ){
-	visitArith(node);	
+	visitBool(node);
 }
 void NodeVisitor::visit( ASSERT_node &node){
 	visitBool(node);	
@@ -101,14 +98,14 @@ void NodeVisitor::visit( ARR_R_node &node){
 	visitBool(node);
 }
 void NodeVisitor::visit( ARR_W_node &node){
-	visitArith(node);	
+	visitBool(node);
 }
 void NodeVisitor::visit( ARR_CREATE_node &node){
-	visitArith(node);	
+	visitBool(node);
 }
 
 void NodeVisitor::visit( TUPLE_CREATE_node &node){
-	visitArith(node);	
+	visitBool(node);
 }
 
 void NodeVisitor::visit( TUPLE_R_node &node){

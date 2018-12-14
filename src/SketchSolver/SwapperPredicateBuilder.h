@@ -141,15 +141,15 @@ public:
 	NodeType getOp(){
 		return type;
 	}
-	bool_node* getDag(DagOptim* dopt, const vector<bool_node*>& params) {
-		Assert(params.size() == numvars, "invalid number of params");
+	bool_node* getDag(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
+		Assert(params_end - params_begin == numvars, "invalid number of params");
 		bool_node* mnode = NULL;
 		bool_node* fnode = NULL;
 		if (mother != NULL){
-			mnode = mother->getDag(dopt,params);
+			mnode = mother->getDag(dopt, params_begin, params_end);
 		}
 		if (father != NULL){
-			fnode = father->getDag(dopt,params);
+			fnode = father->getDag(dopt, params_begin, params_end);
 		}
 
 		bool_node* rnode;
@@ -160,91 +160,91 @@ public:
 				return dopt->getCnode(true);
 			}
 			case Bit: {
-				Assert(params[i1]->getOtype() == OutType::BOOL, "should be a bit node at this index");
-				return params[i1];
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL, "should be a bit node at this index");
+				return params_begin[i1];
 			}
 			case Negbit: {
-				rnode = new NOT_node(); 
-				Assert(params[i1]->getOtype() == OutType::BOOL, "should be a bit node at this index");
-				rnode->mother = params[i1];
+				rnode = NOT_node::create(); 
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL, "should be a bit node at this index");
+				rnode->mother() = params_begin[i1];
 				rnode->addToParents();
 				rnode = dopt->optAdd(rnode);
 				return rnode;
 			}
 			case And: {
-				rnode = new AND_node(); break;
+				rnode = AND_node::create(); break;
 				
 			}
 			case Or: {
-				rnode = new OR_node(); break;
+				rnode = OR_node::create(); break;
 				
 			}
 			case Ltc:
 			case Lt: {
-				rnode = new LT_node();
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = params[i1];
-				Assert((type == Ltc) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = (type == Lt) ? params[i2] : dopt->getCnode(i2); break;
+				rnode = LT_node::create();
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = params_begin[i1];
+				Assert((type == Ltc) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = (type == Lt) ? params_begin[i2] : dopt->getCnode(i2); break;
 			}
 			case Gtc:
 			case Gt: {
-				rnode = new LT_node();
-				Assert((type == Gtc) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = (type == Gt) ? params[i2] : dopt->getCnode(i2);
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = params[i1]; break;
+				rnode = LT_node::create();
+				Assert((type == Gtc) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = (type == Gt) ? params_begin[i2] : dopt->getCnode(i2);
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = params_begin[i1]; break;
 			}
 			case Eqc:
 			case Eq: {
-				rnode = new EQ_node();
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = params[i1];
-				Assert((type == Eqc) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = (type == Eq) ? params[i2] : dopt->getCnode(i2); break;
+				rnode = EQ_node::create();
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = params_begin[i1];
+				Assert((type == Eqc) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = (type == Eq) ? params_begin[i2] : dopt->getCnode(i2); break;
 			}
 			case Neqc:
 			case Neq: { // a != b  == ! (a == b)
 				notneeded = true;
-				notMom = new EQ_node();
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = params[i1];
-				Assert((type == Neqc) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = (type == Neq) ? params[i2] : dopt->getCnode(i2);
+				notMom = EQ_node::create();
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = params_begin[i1];
+				Assert((type == Neqc) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = (type == Neq) ? params_begin[i2] : dopt->getCnode(i2);
 				break;
 			}
 			case Ltec:
 			case Lte: { // a <= b  == ! (b<a)
 				notneeded = true;
-				notMom = new LT_node();
-				Assert((type == Ltec) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = (type == Lte) ? params[i2] : dopt->getCnode(i2);
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = params[i1];
+				notMom = LT_node::create();
+				Assert((type == Ltec) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = (type == Lte) ? params_begin[i2] : dopt->getCnode(i2);
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = params_begin[i1];
 				break;
 			}
 			case Gtec:
 			case Gte: { // a >= b  == ! (a<b)
 				notneeded = true;
-				notMom = new LT_node();
-				Assert(params[i1]->getOtype() == OutType::BOOL || params[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				mnode = params[i1];
-				Assert((type == Gtec) || params[i2]->getOtype() == OutType::BOOL || params[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
-				fnode = (type == Gte) ? params[i2] : dopt->getCnode(i2);
+				notMom = LT_node::create();
+				Assert(params_begin[i1]->getOtype() == OutType::BOOL || params_begin[i1]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				mnode = params_begin[i1];
+				Assert((type == Gtec) || params_begin[i2]->getOtype() == OutType::BOOL || params_begin[i2]->getOtype() == OutType::INT, "should be an int or bit node at this index");
+				fnode = (type == Gte) ? params_begin[i2] : dopt->getCnode(i2);
 				break;
 			}
 		}
 		if (!notneeded) {
-			rnode->mother = mnode;
-			rnode->father = fnode;
+			rnode->mother() = mnode;
+			rnode->father() = fnode;
 		}
 		else {
-			notMom->mother = mnode;
-			notMom->father = fnode;
+			notMom->mother() = mnode;
+			notMom->father() = fnode;
 			notMom->addToParents();
 			notMom = dopt->optAdd(notMom);
-			rnode = new NOT_node();
-			rnode->mother = notMom;
+			rnode = NOT_node::create();
+			rnode->mother() = notMom;
 		}
 		rnode->addToParents();
 		rnode = dopt->optAdd(rnode);

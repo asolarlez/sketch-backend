@@ -180,11 +180,11 @@ protected:
 	void recInsert(bool_node* n){
 		badConditions.insert(n->globalId);
 		if(n->type == bool_node::OR){
-			if(badConditions.count(n->mother->globalId)==0){
-				recInsert(n->mother);
+			if(badConditions.count(n->mother()->globalId)==0){
+				recInsert(n->mother());
 			}
-			if(badConditions.count(n->father->globalId)==0){
-				recInsert(n->father);
+			if(badConditions.count(n->father()->globalId)==0){
+				recInsert(n->father());
 			}
 		}
 	}
@@ -198,7 +198,7 @@ protected:
 			return false;
 		}else{
 			if(n->type == bool_node::AND){	
-				return recCheck(n->mother) && recCheck(n->father);
+				return recCheck(n->mother()) && recCheck(n->father());
 			}
 		}
 		return true;
@@ -278,7 +278,7 @@ public:
 			addChild(root, node);
 		}
 		if(!node.ignoreAsserts && !localCheck(node)){
-			recInsert(node.mother);
+			recInsert(node.mother());
 		}
 	}
 
@@ -353,8 +353,8 @@ public:
 
 	virtual bool checkInline(UFUN_node& node){	
 		if(node.dependent()){ return true; }
-		if(node.mother->type == bool_node::CONST){
-			CONST_node* cn = dynamic_cast<CONST_node*>(node.mother);
+		if(node.mother()->type == bool_node::CONST){
+			CONST_node* cn = dynamic_cast<CONST_node*>(node.mother());
 			int val = cn->getVal();
 			if(val == 0){
 				return false;
@@ -365,7 +365,7 @@ public:
 				//}
 			}
 		}
-		if(/*!node.ignoreAsserts && */ !recCheck(node.mother)){
+		if(/*!node.ignoreAsserts && */ !recCheck(node.mother())){
 			return false;
 		}
 		return localCheck(node);
@@ -404,8 +404,8 @@ public:
 			return true;
 		}
 
-		if(node.mother->type == bool_node::CONST){
-			int val = dynamic_cast<CONST_node*>(node.mother)->getVal();
+		if(node.mother()->type == bool_node::CONST){
+			int val = dynamic_cast<CONST_node*>(node.mother())->getVal();
 			if(val==1){
 				return true;
 			}else{
@@ -463,11 +463,11 @@ class OneCallPerCSiteInliner: public InlineControl{
 	void recInsert(bool_node* n){
 		badConditions.insert(n->globalId);
 		if(n->type == bool_node::OR){
-			if(badConditions.count(n->mother->globalId)==0){
-				recInsert(n->mother);
+			if(badConditions.count(n->mother()->globalId)==0){
+				recInsert(n->mother());
 			}
-			if(badConditions.count(n->father->globalId)==0){
-				recInsert(n->father);
+			if(badConditions.count(n->father()->globalId)==0){
+				recInsert(n->father());
 			}
 		}
 	}
@@ -482,7 +482,7 @@ class OneCallPerCSiteInliner: public InlineControl{
 			return false;
 		}else{
 			if(n->type == bool_node::AND){	
-				return recCheck(n->mother) && recCheck(n->father);
+				return recCheck(n->mother()) && recCheck(n->father());
 			}
 		}
 		return true;
@@ -510,10 +510,10 @@ public:
 		
 		const bool rv = checkInlineHelper(node);
 		if(!rv){ 
-			recInsert(node.mother);		
+			recInsert(node.mother());		
 			return rv;
 		}else{
-			return recCheck(node.mother);
+			return recCheck(node.mother());
 		}
 
 	}

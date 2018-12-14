@@ -189,16 +189,16 @@ Dllist assertions;
   template<typename forward_iter>
   BooleanDAG* slice(forward_iter begin, forward_iter end, int i, ASSERT_node* out){
 	BooleanDAG* bd = slice(begin, end, i);
-	if(out->mother != NULL){
-		out->mother->mother = nodes[i];
-		// BUGFIX xzl: need to add to parents, otherwise the simulate in CEGISSolver will fail sometimes because out->mother->mother is an SRC_node whose children is empty, causing NodesToSolver to fail.
-		out->mother->addToParents();
-		if(out->mother->father != NULL){
-			bd->addNewNode(out->mother->father);
+	if(out->mother() != NULL){
+		out->mother()->mother() = nodes[i];
+		// BUGFIX xzl: need to add to parents, otherwise the simulate in CEGISSolver will fail sometimes because out->mother()->mother() is an SRC_node whose children is empty, causing NodesToSolver to fail.
+		out->mother()->addToParents();
+		if(out->mother()->father() != NULL){
+			bd->addNewNode(out->mother()->father());
 		}
-		bd->addNewNode(out->mother);
+		bd->addNewNode(out->mother());
 	}else{
-		out->mother = nodes[i];
+		out->mother() = nodes[i];
 	}
 	// BUGFIX xzl: for safety, we link parents here too
 	out->addToParents();

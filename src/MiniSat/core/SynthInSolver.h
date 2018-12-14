@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BooleanNodes.h"
 #include "SolverTypes.h"
 #include "FloatSupport.h"
 #include "Vec.h"
@@ -152,7 +153,7 @@ namespace MSsolverNS {
 		 params are the inputs to the generator, and the function should use the DagOptim to add
 		 the necessary nodes to the dag.
 		 */
-		virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params)=0;
+		virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end)=0;
 		
 		/**
 		 This outputs the expression for the frontend.
@@ -199,8 +200,8 @@ namespace MSsolverNS {
 			delete s;
 		}
 		
-		bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
-			return s->getExpression(dopt, params);
+		bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
+			return s->getExpression(dopt, params_begin, params_end);
 			
 		}
 		

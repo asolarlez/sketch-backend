@@ -14,29 +14,17 @@ public:
 	{
 	}
 
-	
-virtual void visitArith(arith_node& node ){
-	if(node.mother != NULL){
-		tovisit[node.mother->id] = true;
-	}
-	if(node.father != NULL){
-		tovisit[node.father->id] = true;
-	}
-	for(int i=0; i<node.multi_mother.size(); ++i){
-		tovisit[node.multi_mother[i]->id] = true;
-	}
-	rvalue = &node;
-}
 
-virtual void visitBool(bool_node& node ){
-	if(node.mother != NULL){
-		tovisit[node.mother->id] = true;
+	virtual void visitBool(bool_node& node ){
+
+		for (auto it = node.p_begin(); it != node.p_end(); ++it) {
+			if ((*it) != NULL) {
+				tovisit[(*it)->id] = true;
+			}
+		}
+
+		rvalue = &node;
 	}
-	if(node.father != NULL){
-		tovisit[node.father->id] = true;
-	}
-	rvalue = &node;
-}
 
 	virtual void print(BooleanDAG& bdag, int seed){
 		for(int i=0; i<=seed; ++i){

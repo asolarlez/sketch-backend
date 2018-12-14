@@ -25,7 +25,7 @@ class ComplexInliner: public DagOptim
 
 	timerclass unifyTime;
 	timerclass clonetime;
-	int argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2);
+	int argsCompare(vector<bool_node*> arg1, bool_node::parent_iter arg2_beg, bool_node::parent_iter arg2_end);
 	void mergeFuncalls(int first, int second);
 	virtual void immInline(BooleanDAG& dag);
 	int expectedNFuns;

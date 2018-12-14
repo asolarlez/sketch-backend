@@ -57,8 +57,8 @@ class CounterexampleFinder :
 						}						
 					}
 				}				
-				for (int i = 0; i < node.multi_mother.size(); ++i) {
-					nb->insert(influences[node.multi_mother[i]->id]);
+				for (int i = 0; i < node.nargs(); ++i) {
+					nb->insert(influences[node.arguments(i)->id]);
 				}
 
 
@@ -66,35 +66,21 @@ class CounterexampleFinder :
 				
 			}else{
 				BitSet* res = NULL;
-				if(cur->mother != NULL){
-					res = influences[cur->mother->id];					
-				}
 				bool isFresh = false;
-				if(cur->father != NULL){
-					if(res == NULL){
-						res = influences[cur->father->id];
-					}else{
-						BitSet* old = res;
-						res = merge(store, res, influences[cur->father->id]);
-						if(old != res){
-							isFresh = true;
-						}
-					}
-				}
-				arith_node* an = dynamic_cast<arith_node*>(cur);
-				if(an != NULL){
-					for(int i=0; i<an->multi_mother.size(); ++i){
+
+				{
+					for(int i=0; i<cur->nparents(); ++i){
 						if(res == NULL){
-							res = influences[an->multi_mother[i]->id];
+							res = influences[cur->get_parent(i)->id];
 						}else{
 							if(!isFresh){
 								BitSet* old = res;
-								res = merge(store, res, influences[an->multi_mother[i]->id]);
+								res = merge(store, res, influences[cur->get_parent(i)->id]);
 								if(old != res){
 									isFresh = true;
 								}
 							}else{
-								res->insert(influences[an->multi_mother[i]->id]);
+								res->insert(influences[cur->get_parent(i)->id]);
 							}
 							
 						}
@@ -279,30 +265,30 @@ public:
 					message = &(an->getMsg());
 					return UNSAT;
 				}
-				if( (*node_it)->mother->type == bool_node::EQ ){
-					bool_node* eq = (*node_it)->mother;
-					if(eq->mother->type==bool_node::SRC){
-						int fv = this->getValue(eq->father);
+				if( (*node_it)->mother()->type == bool_node::EQ ){
+					bool_node* eq = (*node_it)->mother();
+					if(eq->mother()->type==bool_node::SRC){
+						int fv = this->getValue(eq->father());
 
-						VarStore::objP& op = inputs->getObj(eq->mother->get_name());
+						VarStore::objP& op = inputs->getObj(eq->mother()->get_name());
 
 						bool inrange = op.setValSafe(fv);
 						if(!inrange){
 							message = &(an->getMsg());
 							return UNSAT;
 						}
-						node_it = bdag.begin() + eq->mother->id;
+						node_it = bdag.begin() + eq->mother()->id;
 						(*node_it)->accept(*this);
 						continue;
 					}
-					if(eq->father->type==bool_node::SRC){
-						int fv = this->getValue(eq->mother);
-						bool inrange = inputs->getObj(eq->father->get_name()).setValSafe(fv);
+					if(eq->father()->type==bool_node::SRC){
+						int fv = this->getValue(eq->mother());
+						bool inrange = inputs->getObj(eq->father()->get_name()).setValSafe(fv);
 						if(!inrange){
 							message = &(an->getMsg());
 							return UNSAT;
 						}
-						node_it = bdag.begin() + eq->father->id;
+						node_it = bdag.begin() + eq->father()->id;
 						(*node_it)->accept(*this);
 						continue;
 					}

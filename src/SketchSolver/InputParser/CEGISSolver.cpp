@@ -417,8 +417,8 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 	if(arrsz>=0){
 		VarStore::objP* val = &(values.getObj(inode->get_name()));
 		int nbits = inode->get_nbits();
-		ARR_CREATE_node* acn = new ARR_CREATE_node();
-		acn->setDfltval(cse.getCnode(0));
+		vector<bool_node*> multi_mother;
+		
 		while(val != NULL){
 			bool_node* cnst;
 			if(nbits==1){
@@ -426,12 +426,14 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 			}else{
 				cnst= cse.getCnode( val->getInt() );
 			}
-			while(acn->multi_mother.size()< val->index){
-				acn->multi_mother.push_back( cse.getCnode(0) );
+			while(multi_mother.size()< val->index){
+				multi_mother.push_back( cse.getCnode(0) );
 			}
-			acn->multi_mother.push_back( cnst );
+			multi_mother.push_back( cnst );
 			val = val->next;
 		}
+		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
+		acn->setDfltval(cse.getCnode(0));
 		acn->addToParents();
 		cse.addNode(acn);
 		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
@@ -819,16 +821,16 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			
 			hold = h;
 			bool_node* niq = (*dag)[h];
-			ASSERT_node* an = new ASSERT_node();
+			ASSERT_node* an = ASSERT_node::create();
 			int am = 0;
 			if(niq->getOtype()==OutType::BOOL){
 				if(eval.getValue(niq)==0){
-					an->mother = new NOT_node();
+					an->mother() = NOT_node::create();
 					am = 1;
 				}
 			}else{
-				an->mother = new EQ_node();
-				an->mother->father = new CONST_node( eval.getValue(niq) );
+				an->mother() = EQ_node::create();
+				an->mother()->father() = CONST_node::create( eval.getValue(niq) );
 				am = 2;
 			}
 			BooleanDAG* tbd;
@@ -853,13 +855,13 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			an->dislodge();
 			if(am>0){
 				// Important
-				an->mother->dislodge();
+				an->mother()->dislodge();
 				if(am==2){
 					// This one is not necessary because it must be a CONST (no parent), but for safety we put it here anyways.
-					an->mother->father->dislodge();
-					delete an->mother->father;
+					an->mother()->father()->dislodge();
+					delete an->mother()->father();
 				}
-				delete an->mother; 
+				delete an->mother(); 
 			}
 			delete an;
 			dag->relabel();
@@ -895,18 +897,18 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 					DagOptim cse(*dag, floats);
 					int sz = dag->size();					
 					if(btoR->type == bool_node::EQ && nval == 1){
-						if(btoR->mother->type == bool_node::CONST){
-							int id = btoR->father->id;
-							if (id >= lowerbound)  dag->replace(id, btoR->mother);
-						}else if(btoR->father->type == bool_node::CONST){
-							int id = btoR->mother->id;
-							if (id >= lowerbound) dag->replace(id, btoR->father);
-						}else if( btoR->mother->id >  btoR->father->id){
-							int id = btoR->mother->id;
-							if (id >= lowerbound) dag->replace(id, btoR->father);
+						if(btoR->mother()->type == bool_node::CONST){
+							int id = btoR->father()->id;
+							if (id >= lowerbound)  dag->replace(id, btoR->mother());
+						}else if(btoR->father()->type == bool_node::CONST){
+							int id = btoR->mother()->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father());
+						}else if( btoR->mother()->id >  btoR->father()->id){
+							int id = btoR->mother()->id;
+							if (id >= lowerbound) dag->replace(id, btoR->father());
 						}else{
-							int id = btoR->father->id;
-							if (id >= lowerbound) dag->replace(id, btoR->mother);
+							int id = btoR->father()->id;
+							if (id >= lowerbound) dag->replace(id, btoR->mother());
 						}
 					}
 					// h must >= lowrbound
@@ -1190,7 +1192,7 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 
 int getSolverVal(bool_node * node, vector<Tvalue> & node_ids, SATSolver & solver, int * j) {
 	if (node->type == bool_node::ASSERT) {
-		node = node->mother;
+		node = node->mother();
 	}
 	int i = node->id;
 	int sv = node_ids[i].eval(&solver);

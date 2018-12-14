@@ -124,33 +124,17 @@ void DagFunctionInliner::visit(CTRL_node& node){
 
 bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap, vector<const bool_node*>& nmap){
 	bool chk = false;
-	bool_node* tt = node->mother;
-	chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
-	tt = node->father;
-	chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
-	arith_node* an = NULL;
-	if(node->isArith()){
-		an = dynamic_cast<arith_node*>(node);
-		for(int i=0; i<an->multi_mother.size(); ++i){
-			tt = an->multi_mother[i];
-			chk = chk || (tt!= NULL && secondarynmap[tt->id] != NULL);
-		}
+	bool_node* tt;
+	for (auto it = node->p_begin(); it != node->p_end(); ++it) {
+		tt = *it;
+		chk = chk || (tt != NULL && secondarynmap[tt->id] != NULL);
 	}
+
 	if(chk){
-		tt = node->mother;
-		if(tt!= NULL && secondarynmap[tt->id] == NULL){
-			secondarynmap[tt->id] = nmap[tt->id];
-		}
-		tt = node->father;
-		if(tt!= NULL && secondarynmap[tt->id] == NULL){
-			secondarynmap[tt->id] = nmap[tt->id];
-		}
-		if(an != NULL){
-			for(int i=0; i<an->multi_mother.size(); ++i){
-				tt = an->multi_mother[i];
-				if(tt!= NULL && secondarynmap[tt->id] == NULL){
-					secondarynmap[tt->id] = nmap[tt->id];
-				}
+		for (auto it = node->p_begin(); it != node->p_end(); ++it) {
+			tt = *it;
+			if (tt != NULL && secondarynmap[tt->id] == NULL) {
+				secondarynmap[tt->id] = nmap[tt->id];
 			}
 		}
 	}
@@ -161,9 +145,10 @@ bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string 
   if (depth == 0) return getCnode(-1);
   
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
-  TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+  TUPLE_CREATE_node* new_node = TUPLE_CREATE_node::create(tuple_type->entries.size());
   new_node->setName(tuple_name);
   int size = tuple_type->actSize;
+
   for (int j = 0; j < size ; j++) {
     stringstream str;
     str<<node_name<<"_"<<j;
@@ -171,10 +156,10 @@ bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string 
     OutType* type = tuple_type->entries[j];
     
     if (type->isTuple) {
-      new_node->multi_mother.push_back(createTupleAngelicNode(((Tuple*)type)->name, str.str(), depth - 1));
+      new_node->set_parent(j, createTupleAngelicNode(((Tuple*)type)->name, str.str(), depth - 1));
     } else {
       
-      CTRL_node* src =  new CTRL_node();
+      CTRL_node* src =  CTRL_node::create();
       src->name = str.str();
       src->set_Special_Angelic();
       
@@ -193,37 +178,36 @@ bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string 
       }
       addNode(src);
       
-      new_node->multi_mother.push_back(src);
+      new_node->set_parent(j, src);
     }
   }
   
   for (int i = size; i < tuple_type->entries.size(); i++) {
-    new_node->multi_mother.push_back(getCnode(-1));
+    new_node->set_parent(i, getCnode(-1));
   }
   new_node->addToParents();
   
-  ARRACC_node* ac = new ARRACC_node();
+  
   stringstream str;
   str<<node_name<<"__";
   
-  CTRL_node* src = new CTRL_node();
+  CTRL_node* src = CTRL_node::create();
   src->name = str.str();
   src->set_nbits(1);
   src->set_Special_Angelic();
   addNode(src);
   
-  ac->mother = src;
-  ac->multi_mother.push_back(getCnode(-1));
-  ac->multi_mother.push_back(optAdd(new_node));
+  ARRACC_node* ac = ARRACC_node::create(src, getCnode(-1), optAdd(new_node));
+  
   ac->addToParents();
   return optAdd(ac);
 }
 
 bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, int depth) {
   if (depth == 0) {
-    EQ_node* eq = new EQ_node();
-    eq->mother = left;
-    eq->father = right;
+    EQ_node* eq = EQ_node::create();
+    eq->mother() = left;
+    eq->father() = right;
     eq->addToParents();
     return optAdd(eq);
   }
@@ -231,21 +215,21 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
   OutType* rtype = right->getOtype();
   
   if (!ltype->isTuple && !rtype->isTuple) {
-    EQ_node* eq = new EQ_node();
-    eq->mother = left;
-    eq->father = right;
+    EQ_node* eq = EQ_node::create();
+    eq->mother() = left;
+    eq->father() = right;
     eq->addToParents();
     return optAdd(eq);
   } else if (!ltype->isTuple) {
-    EQ_node* eq = new EQ_node();
-    eq->mother = right;
-    eq->father = getCnode(-1);
+    EQ_node* eq = EQ_node::create();
+    eq->mother() = right;
+    eq->father() = getCnode(-1);
     eq->addToParents();
     return optAdd(eq);
   } else if (!rtype->isTuple) {
-    EQ_node* eq = new EQ_node();
-    eq->mother = left;
-    eq->father = getCnode(-1);
+    EQ_node* eq = EQ_node::create();
+    eq->mother() = left;
+    eq->father() = getCnode(-1);
     eq->addToParents();
     return optAdd(eq);
   } else {
@@ -254,22 +238,22 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
     Assert(lentries == rentries, "Wrong types");
     bool_node* cur=NULL;
     for (int i = 0; i < lentries; i++) {
-      TUPLE_R_node* left_r = new TUPLE_R_node();
+      TUPLE_R_node* left_r = TUPLE_R_node::create();
       left_r->idx = i;
-      left_r->mother = left;
+      left_r->mother() = left;
       left_r->addToParents();
       
-      TUPLE_R_node* right_r = new TUPLE_R_node();
+      TUPLE_R_node* right_r = TUPLE_R_node::create();
       right_r->idx = i;
-      right_r->mother = right;
+      right_r->mother() = right;
       right_r->addToParents();
       
       if (i == 0) {
         cur = createEqNode(optAdd(left_r), optAdd(right_r), depth - 1);
       } else {
-        AND_node* an = new AND_node();
-        an->mother = cur;
-        an->father = createEqNode(optAdd(left_r), optAdd(right_r), depth-1);
+        AND_node* an = AND_node::create();
+        an->mother() = cur;
+        an->father() = createEqNode(optAdd(left_r), optAdd(right_r), depth-1);
         an->addToParents();
         
         cur = optAdd(an);
@@ -293,7 +277,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 	}	
 
 
-	bool_node* condition = node.mother;
+	bool_node* condition = node.mother();
 	if(isConst(condition) && !getBval(condition)){
 		rvalue = getCnode(0);		
 		return;
@@ -305,48 +289,52 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       cout << "Replacing ufun node " << name << endl;
       string oldOutputType = node.getTupleName();
       
-      int oriInpSize = node.multi_mother.size();
+      int oriInpSize = node.nargs();
       
-      TUPLE_CREATE_node* tuple_node = new TUPLE_CREATE_node();
+      
     
       Tuple* oldOutputTuple = (Tuple*)OutType::getTuple(oldOutputType);
       Tuple* tup = (Tuple*) (oldOutputTuple->entries[oldOutputTuple->entries.size() - 1]);
-      tuple_node->setName(tup->name);
-      int size = tup->entries.size();
-      tuple_node->multi_mother.push_back(getCnode(20)); // TODO: get rid of this magic number
+      
+	  int size = tup->entries.size();
+	  TUPLE_CREATE_node* tuple_node = TUPLE_CREATE_node::create(size);
+	  
+	  tuple_node->setName(tup->name);
+      
+      tuple_node->set_parent(0, getCnode(20)); // TODO: get rid of this magic number
       
       int actFields = size - oriInpSize;
 
       for (int i = 1; i <  actFields; i++) {
-        tuple_node->multi_mother.push_back(getCnode(0));
+        tuple_node->set_parent(i, getCnode(0));
       }
       
       for (int i = 0; i < oriInpSize; i++) {
         if (i == 0) {
-          Assert(isConst(node.multi_mother[0]) || node.multi_mother[0]->getOtype()->isTuple, "First node must be a tuple");
-          int d = node.multi_mother[0]->depth;
+          Assert(isConst(node.arguments(0)) || node.arguments(0)->getOtype()->isTuple, "First node must be a tuple");
+          int d = node.arguments(0)->depth;
           if (d == -1 || replaceDepth == -1) replaceDepth = -1;
           else if (d > replaceDepth) {
             replaceDepth = d;
           }
         }
-        tuple_node->multi_mother.push_back(node.multi_mother[i]);
+        tuple_node->set_parent(actFields + i, node.arguments(i));
       }
       
-      Assert(tuple_node->multi_mother.size() == size, "Dfqwq");
+      Assert(tuple_node->nparents() == size, "Dfqwq");
       
      
       tuple_node->addToParents();
       
-      TUPLE_CREATE_node* new_output = new TUPLE_CREATE_node();
+      TUPLE_CREATE_node* new_output = TUPLE_CREATE_node::create(1);
       new_output->setName(oldOutputType);
       
-      new_output->multi_mother.push_back(optAdd(tuple_node));
+      new_output->set_parent(0, optAdd(tuple_node));
       new_output->addToParents();
       rvalue = optAdd(new_output);
       return;
     } else {
-      int d = node.multi_mother[0]->depth - 1;
+      int d = node.arguments(0)->depth - 1;
       if (d == -1 || replaceDepth == -1) replaceDepth = -1;
       else if (d > replaceDepth) {
         replaceDepth = d;
@@ -398,129 +386,136 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			// ADT, int, int ... (state)
-			Assert( inputs.size() == node.multi_mother.size() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.multi_mother.size()<<" actuals.\n"<<node.lprint());
+			Assert( inputs.size() == node.nargs() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.nargs()<<" actuals.\n"<<node.lprint());
 
       vector<bool_node*> inp_arg;
 
       if (shouldReplaceSpecialNode) {
         Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
-        UFUN_node* repFun = new UFUN_node(replaceFunName);
-        repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
+        
         string newNameCaps = replaceFunName;
         for(int i = 0; i < newNameCaps.size(); i++) {
           newNameCaps.at(i) = toupper(newNameCaps.at(i));
         }
         string newOutputType = newNameCaps + "_ANONYMOUS";
-        repFun->set_tupleName(newOutputType);
-        repFun->replaceFun = false;
+        
+		
+		vector<bool_node*> newparams;
         bool_node* actual=NULL;
         for (int i = 0; i < inputs.size(); i++) {
-          actual = node.multi_mother[i];
-          if (actual->getOtype()->isTuple) break;
-          repFun->multi_mother.push_back(actual);
+			actual = node.arguments(i);
+			if (actual->getOtype()->isTuple) break;
+			newparams.push_back(actual);
         }
         if (isConst(actual)) {
-          shouldReplaceSpecialNode = false;
-          delete repFun;
+			shouldReplaceSpecialNode = false;
+			
         } else {
-        //Assert(actual->getOtype()->isTuple, "First input should be a tuple");
-        int size = ((Tuple*) (actual->getOtype()))->entries.size();
-        int actSize = ((Tuple*) (actual->getOtype()))->actSize;
-        TUPLE_R_node* tr = new TUPLE_R_node();
-        tr->idx = 0;
-        tr->mother = actual;
-        tr->addToParents();
+			//Assert(actual->getOtype()->isTuple, "First input should be a tuple");
+			int size = ((Tuple*) (actual->getOtype()))->entries.size();
+			int actSize = ((Tuple*) (actual->getOtype()))->actSize;
+			TUPLE_R_node* tr = TUPLE_R_node::create();
+			tr->idx = 0;
+			tr->mother() = actual;
+			tr->addToParents();
         
-        EQ_node* nullCheck = new EQ_node();
-        nullCheck->mother = actual;
-        nullCheck->father = getCnode(-1);
-        nullCheck->addToParents();
+			EQ_node* nullCheck = EQ_node::create();
+			nullCheck->mother() = actual;
+			nullCheck->father() = getCnode(-1);
+			nullCheck->addToParents();
         
-        NOT_node* notNull = new NOT_node();
-        notNull->mother = optAdd(nullCheck);
-        notNull->addToParents();
+			NOT_node* notNull = NOT_node::create();
+			notNull->mother() = optAdd(nullCheck);
+			notNull->addToParents();
         
-        AND_node* cond = new AND_node();
-        cond->mother = optAdd(notNull);
+			AND_node* cond = AND_node::create();
+			cond->mother() = optAdd(notNull);
         
-        EQ_node* eq = new EQ_node();
-        eq->mother = optAdd(tr);
-        eq->father = getCnode(20); // magic number
-        eq->addToParents();
-        cond->father = optAdd(eq);
-        cond->addToParents();
+			EQ_node* eq = EQ_node::create();
+			eq->mother() = optAdd(tr);
+			eq->father() = getCnode(20); // magic number
+			eq->addToParents();
+			cond->father() = optAdd(eq);
+			cond->addToParents();
         
-        bool_node* optEq = optAdd(cond);
-        spCond = optEq;
+			bool_node* optEq = optAdd(cond);
+			spCond = optEq;
         
-        NOT_node* not_ = new NOT_node();
-        AND_node* and_ = new AND_node();
-        and_->mother = node.mother;
-        and_->father = optEq;
-        and_->addToParents();
+			NOT_node* not_ = NOT_node::create();
+			AND_node* and_ = AND_node::create();
+			and_->mother() = node.mother();
+			and_->father() = optEq;
+			and_->addToParents();
         
-        bool_node* optCond = optAdd(and_);
-        not_->mother = optCond;
-        not_->addToParents();
-        bool_node* optNot = optAdd(not_);
+			bool_node* optCond = optAdd(and_);
+			not_->mother() = optCond;
+			not_->addToParents();
+			bool_node* optNot = optAdd(not_);
         
-        repFun->mother = optCond;
+
+			
         
-        for (int i = actSize; i < size; i++) {
-          TUPLE_R_node* tr1 = new TUPLE_R_node();
-          tr1->idx = i;
-          tr1->mother = actual;
-          tr1->addToParents();
-          bool_node* optnode = optAdd(tr1);
-          if (i == actSize) {
-            optnode->depth = replaceDepth;
-          }
-          repFun->multi_mother.push_back(optnode);
-        }
+			for (int i = actSize; i < size; i++) {
+			  TUPLE_R_node* tr1 = TUPLE_R_node::create();
+			  tr1->idx = i;
+			  tr1->mother() = actual;
+			  tr1->addToParents();
+			  bool_node* optnode = optAdd(tr1);
+			  if (i == actSize) {
+				optnode->depth = replaceDepth;
+			  }
+			  newparams.push_back(optnode);
+			}
         
-        BooleanDAG& newFun = *functionMap[replaceFunName];
-        vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
-        int curSize = repFun->multi_mother.size();
-        for (int i = curSize; i < new_inputs.size(); i++) {
-          int j = i + actSize - size + 1;
-          Assert(j < inputs.size(), "dfae");
-          repFun->multi_mother.push_back(node.multi_mother[j]);
-        }
+			BooleanDAG& newFun = *functionMap[replaceFunName];
+			vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
+			int curSize = newparams.size();
+			for (int i = curSize; i < new_inputs.size(); i++) {
+			  int j = i + actSize - size + 1;
+			  Assert(j < inputs.size(), "dfae");
+			  newparams.push_back(node.arguments(j));
+			}
       
-        if(ictrl != NULL){
-          int numRec = ictrl->numRecursive(node);
-          ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec);
-        }
-        repFun->addToParents();
-        this->addNode(repFun);
-        newOutput = repFun;
+			UFUN_node* repFun = UFUN_node::create(replaceFunName, newparams);
+			repFun->outname = "_p_out_" + replaceFunName + "_ANONYMOUS"; // TODO: fix these magic strings
+			repFun->set_tupleName(newOutputType);
+			repFun->replaceFun = false;
+			repFun->mother() = optCond;
+
+			if(ictrl != NULL){
+			  int numRec = ictrl->numRecursive(node);
+			  ictrl->registerCallWithLimit(node, repFun, ictrl->getLimit() - numRec);
+			}
+			repFun->addToParents();
+			this->addNode(repFun);
+			newOutput = repFun;
         
-        node.mother->children.erase((bool_node*)&node);
+			node.mother()->children.erase((bool_node*)&node);
         
-        bool_node* new_mother = new AND_node();
-        new_mother->mother = node.mother;
-        new_mother->father = optNot;
+			bool_node* new_mother = AND_node::create();
+			new_mother->mother() = node.mother();
+			new_mother->father() = optNot;
         
-        new_mother->addToParents();
+			new_mother->addToParents();
         
-        node.mother = optAdd(new_mother);
-        node.mother->children.insert(&node);
+			node.mother() = optAdd(new_mother);
+			node.mother()->children.insert(&node);
         }
         
       }
 
-			for(int i=0; i<inputs.size(); ++i){
-        bool_node* actual;
-				if (node.multi_mother[i]->getOtype()->isTuple && node.multi_mother[i]->depth == 0) {
-          actual = getCnode(-1);
-        } else {
-          actual = node.multi_mother[i];
-        }
+		for(int i=0; i<inputs.size(); ++i){
+			bool_node* actual;
+			if (node.arguments(i)->getOtype()->isTuple && node.arguments(i)->depth == 0) {
+				actual = getCnode(-1);
+			} else {
+				actual = node.arguments(i);
+			}
         
-        nmap[inputs[i]->id] = actual;
+			nmap[inputs[i]->id] = actual;
 				actual->children.erase((bool_node*)&node);
 //				actual->children.insert(inputs[i]->children.begin(), inputs[i]->children.end());				
-			}
+		}
 		}
 		//cout<<endl;
 		{
@@ -529,7 +524,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			for(int i=0; i<controls.size(); ++i){
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
-					nmap[ctrl->id] = node.mother;
+					nmap[ctrl->id] = node.mother();
 					continue;
 				}
         if(randomize){
@@ -651,7 +646,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							tmpList.append(tt);
 						}
 
-						bool_node * oldMother = ufun->mother;
+						bool_node * oldMother = ufun->mother();
 						
 						const bool_node* nnode;
 						if (!ufun->ignoreAsserts &&  isConst(oldMother) && this->getBval(oldMother) && !oldFun.isModel && pureFunctions.count(node.get_ufname()) > 0) {
@@ -693,7 +688,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 							string nm = ufn->get_ufname();
 							nm += "_";
 							nm += ufn->outname;
-							SRC_node* sn = new SRC_node(nm);
+							SRC_node* sn = SRC_node::create(nm);
                             sn->setTuple(ufn->getTupleName(), true);
 							// BUGFIX: this is not wide enough! ufn->nbits is either 1 or 2, set by InputParser.cpp
 							//sn->set_nbits( ufn->get_nbits() );
@@ -714,14 +709,14 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}
 					}
 				}else{
-					n->mother->remove_child( n );
+					n->mother()->remove_child( n );
 					if(nprime != NULL){
-						nprime->mother->remove_child( nprime );
+						nprime->mother()->remove_child( nprime );
 					}
 					//Assertion.
 
 
-					if((isConst(n->mother) && getIval(n->mother) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){
+					if((isConst(n->mother()) && getIval(n->mother()) == 1)|| (!oldFun.isModel && node.ignoreAsserts ) ){
 						delete n;
 						if(nprime != NULL){
 							delete nprime;
@@ -732,32 +727,32 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 					if(!oldFun.isModel || nprime == NULL){
 						/*
 						bool_node* nnode = new NOT_node();
-						nnode->mother = condition;
+						nnode->mother() = condition;
 						nnode = optAndAddNoMap(nnode);
 					
 					
-						bool_node* cur = n->mother;
+						bool_node* cur = n->mother();
 						bool_node* ornode = new OR_node();
-						ornode->mother = cur;
-						ornode->father = nnode;
+						ornode->mother() = cur;
+						ornode->father() = nnode;
 						ornode = optAndAddNoMap(ornode);
-						n->mother = ornode;
+						n->mother() = ornode;
 						*/
 
             if (node.hardAsserts()) {
               dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
             }
 					}else{
-						bool_node* cur = n->mother;
-						n->mother = nprime->mother;
+						bool_node* cur = n->mother();
+						n->mother() = nprime->mother();
 						delete nprime;
 						dynamic_cast<ASSERT_node*>(n)->makeHardAssert();
 						if(assertCond == NULL){
 							assertCond = cur;
 						}else{
-							bool_node* tt = new AND_node();
-							tt->mother = assertCond;
-							tt->father = cur;
+							bool_node* tt = AND_node::create();
+							tt->mother() = assertCond;
+							tt->father() = cur;
 							tt->addToParents();
 							addNode(tt);
 							assertCond = tt;
@@ -769,7 +764,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						DllistNode* tt = getDllnode(n);
 						tmpList.append(tt);
 					}
-					n->mother->children.insert(n);
+					n->mother()->children.insert(n);
 					
 					this->addNode(n);
 					if(!dynamic_cast<ASSERT_node*>(n)->isNormal()){
@@ -779,13 +774,13 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			}else{
 				if( n!= NULL){
 					DST_node* dn = dynamic_cast<DST_node*>(n);
-					bool_node* ttv = n->mother;
+					bool_node* ttv = n->mother();
 					if(oldFun.isModel){
 						if(assertCond == NULL){
                        
                             TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
-                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
-                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->get_parent(0));
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother());
                             SRC_node* sc = ufToSrc[un];
                             sc->neighbor_replace(ttv);
                             sc->children.clear();
@@ -794,16 +789,16 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						}else{
                             Assert(ttv->type == bool_node::TUPLE_CREATE,"dfwer" );
                             TUPLE_CREATE_node* outTuple = dynamic_cast<TUPLE_CREATE_node*>(ttv);
-                            Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
-                            int numOutputs = outTuple->multi_mother.size();
-                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[0]);
-                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother);
+                            Assert(outTuple->get_parent(0)->type == bool_node::TUPLE_R,"rwtr");
+                            int numOutputs = outTuple->nparents();
+                            TUPLE_R_node* tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->get_parent(0));
+                            UFUN_node* un = dynamic_cast<UFUN_node*>(tupleRead->mother());
                             
-                            TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+                            TUPLE_CREATE_node* newOutTuple = TUPLE_CREATE_node::create(numOutputs);
                             newOutTuple->setName(outTuple->name);
                             
                             for ( int p = 0; p < numOutputs; p++) {
-                                CTRL_node* qn = new CTRL_node();
+                                CTRL_node* qn = CTRL_node::create();
                                 stringstream st;
                                 st<<dn->name;
                                 st<<lnfuns;
@@ -812,22 +807,22 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                 qn->name = st.str();
                                 qn->set_Angelic();
                             
-                                ARRACC_node* mx = new ARRACC_node();
+                                ARRACC_node* mx = ARRACC_node::create(2);
                                 if(!PARAMS->angelic_model)
-                                    mx->mother = assertCond;
+                                    mx->mother() = assertCond;
                                 else{
                                     //create new src node which should be valued to false in Synth phase
-                                    SRC_node *st = new SRC_node("__rs_node");
+                                    SRC_node *st = SRC_node::create("__rs_node");
                                     st->set_nbits(1);//just one bit input
-                                    mx->mother = st;
+                                    mx->mother() = st;
                                     addNode(st);
                                     
                                 }
-                                Assert(outTuple->multi_mother[0]->type == bool_node::TUPLE_R,"rwtr");
-                                tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->multi_mother[p]);
+                                Assert(outTuple->get_parent(0)->type == bool_node::TUPLE_R,"rwtr");
+                                tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->get_parent(p));
                                 
-                                mx->multi_mother.push_back(qn);
-                                mx->multi_mother.push_back(tupleRead);
+                                mx->arguments(0) = qn;
+								mx->arguments(0) = tupleRead;
                                 mx->addToParents();
                                 addNode(qn);
                                 addNode(mx);
@@ -849,7 +844,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                     //cout << "qn " << qn->lprint() << " un " << un->lprint() << endl;
                                     qn->setArr(PARAMS->angelic_arrsz);
                                 }
-                                newOutTuple->multi_mother.push_back(mx);
+                                newOutTuple->set_parent(p, mx);
                                 
                             
                             }
@@ -887,10 +882,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		node.remove();
     
     if (shouldReplaceSpecialNode) {
-      ARRACC_node* an = new ARRACC_node();
-      an->mother = spCond;
-      an->multi_mother.push_back(output);
-      an->multi_mother.push_back(newOutput);
+      ARRACC_node* an = ARRACC_node::create(spCond, output, newOutput);
       
       an->addToParents();
       

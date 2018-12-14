@@ -26,28 +26,28 @@ ComplexInliner::~ComplexInliner(void)
 
 
 
-void collectSet(arith_node* an, set<bool_node*>& s, int lev){
+void collectSet(ARRACC_node* an, set<bool_node*>& s, int lev){
 	s.insert(an);
 	if(lev <= 0){ return; }
-	for(int i=0; i<an->multi_mother.size(); ++i){
-		bool_node* bn = an->multi_mother[i];
+	for(int i=0; i<an->nargs(); ++i){
+		bool_node* bn = an->arguments(i);
 		if(typeid(*bn) == typeid(ARRACC_node)){
-			collectSet(dynamic_cast<arith_node*>(bn), s, lev-1);
+			collectSet(dynamic_cast<ARRACC_node*>(bn), s, lev-1);
 		}else{
 			s.insert(bn);
 		}
 	}
 }
 
-bool compareSet(arith_node* an, set<bool_node*>& s, int lev){
+bool compareSet(ARRACC_node* an, set<bool_node*>& s, int lev){
 	if(s.count(an) > 0){
 		return true;
 	}
 	if(lev <= 0){ return false; }
-	for(int i=0; i<an->multi_mother.size(); ++i){
-		bool_node* bn = an->multi_mother[i];
+	for(int i=0; i<an->nargs(); ++i){
+		bool_node* bn = an->arguments(i);
 		if(typeid(*bn) == typeid(ARRACC_node)){
-			bool tmp = compareSet(dynamic_cast<arith_node*>(bn), s, lev-1);
+			bool tmp = compareSet(dynamic_cast<ARRACC_node*>(bn), s, lev-1);
 			if(!tmp){
 				return false;
 			}
@@ -66,8 +66,8 @@ int compareDifferent(bool_node* bn1, bool_node* bn2){
 		//If they are just different symbolic values, add 2.
 	
 	if(typeid(*bn1) == typeid(ARRACC_node) && typeid(*bn2) == typeid(ARRACC_node)){
-		arith_node* an1 = dynamic_cast<arith_node*>(bn1);
-		arith_node* an2 = dynamic_cast<arith_node*>(bn2);
+		ARRACC_node* an1 = dynamic_cast<ARRACC_node*>(bn1);
+		ARRACC_node* an2 = dynamic_cast<ARRACC_node*>(bn2);
 		set<bool_node*> s;
 		collectSet(an1, s, 3);
 		bool tmp = compareSet(an2, s, 3);
@@ -94,22 +94,23 @@ bool checkFunName(const string& name){
 
 
 
-int ComplexInliner::argsCompare(vector<bool_node*> arg1, vector<bool_node*> arg2){
+int ComplexInliner::argsCompare(vector<bool_node*> arg1, bool_node::parent_iter arg2_beg, bool_node::parent_iter arg2_end ){
 	int rv = 0;
-	Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
-	for(int i=0; i<arg1.size(); ++i){
+	//Assert(arg1.size() == arg2.size(), "This can't be happening. It's an invariant. Something is very strange");
+	bool_node::parent_iter arg2_it = arg2_beg;
+	for(int i=0; i<arg1.size(); ++i, ++arg2_it){
 		if(specialInputs.count(i) > 0){
 			// cout<<i<<"=("<<arg1[i]->get_name()<<", "<<arg2[i]->get_name()<<")   ";
 		}
-		if(arg1[i]->id != arg2[i]->id){
+		if(arg1[i]->id != (*arg2_it)->id){
 			if(specialInputs.count(i) > 0){
 				bool_node* a1 = arg1[i];
-				bool_node* a2 = arg2[i];
+				bool_node* a2 = (*arg2_it);
 				// cout<<"  "<<a1<<"  "<<a2<<endl;
 				int t0 = staticCompare<equal_to<int> >(a1, 0, true);
 				int t1 = staticCompare<equal_to<int> >(a2, 0, true);
 				AbstractNodeValue& anv1 = anv[arg1[i]];
-				AbstractNodeValue& anv2 = anv[arg2[i]];
+				AbstractNodeValue& anv2 = anv[(*arg2_it)];
 				//anv1.print(cout);
 				//anv2.print(cout);
 				int dif = anv1.difference(anv2);
@@ -133,16 +134,17 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 	UFUN_node* fun1 = dynamic_cast<UFUN_node*>(dag[first]);
 	UFUN_node* fun2 = dynamic_cast<UFUN_node*>(dag[second]);
 
-	vector<bool_node*>& args1 = fun1->multi_mother;
-	vector<bool_node*>& args2 = fun2->multi_mother;
+	
 
 	vector<bool_node*> nargs;
-	bool_node* ecall2 = fun2->mother;
+	bool_node* ecall2 = fun2->mother();
 
-	for(int i=0; i<args1.size(); ++i){
+	auto args2_it = fun2->arg_begin();
+	int i = 0;
+	for (auto args1_it = fun1->arg_begin(); args1_it != fun1->arg_end(); ++args1_it, ++args2_it, ++i) {
 		if(specialInputs.count(i) > 0){
-			bool_node* arg1 = args1[i];
-			bool_node* arg2 = args2[i];
+			bool_node* arg1 = (*args1_it);
+			bool_node* arg2 = (*args2_it);
 			//cout<<"  "<<arg1<<"  "<<arg2<<endl;
 			int t1 = staticCompare<equal_to<int> >(arg1, 1, true);
 			int t2 = staticCompare<equal_to<int> >(arg2, 1, true);
@@ -151,31 +153,30 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 			cout<<"------"<<endl;
 			//cout<<i<<"=("<<args1[i]->get_name()<<", "<<args2[i]->get_name()<<")   ";
 		}
-		if(args1[i] == args2[i]){
-			nargs.push_back(args1[i]);
+		if((*args1_it) == (*args2_it)){
+			nargs.push_back(*args1_it);
 		}else{
-			ARRACC_node* an = new ARRACC_node();
-			an->mother = ecall2;
-			an->multi_mother.push_back(args1[i]);
-			an->multi_mother.push_back(args2[i]);
+			ARRACC_node* an = ARRACC_node::create(ecall2, (*args1_it), (*args2_it));
+			
 			an->addToParents();
 			this->addNode(an);
 			nargs.push_back(an);
 		}
 	}
 
-	OR_node* on = new OR_node();
-	on->mother = fun1->mother;
-	on->father = fun2->mother;
+	OR_node* on = OR_node::create();
+	on->mother() = fun1->mother();
+	on->father() = fun2->mother();
 	on->addToParents();
 	addNode(on);
 
-	UFUN_node* funnew = new UFUN_node(*fun1, false);
+	UFUN_node* funnew = UFUN_node::create(*fun1, false);
 	if(fun1->dependent()){
 		funnew->makeDependent();
 	}
-	funnew->mother = on;
-	funnew->multi_mother = nargs;
+	funnew->mother() = on;
+	copy(nargs.begin(), nargs.end(), funnew->arg_begin());
+	
 	funnew->children.clear();
 	funnew->addToParents();
 
@@ -229,7 +230,7 @@ void ComplexInliner::unify(){
 				int lowestDif = 100000;
 				int lowestDifID = -1;
 				for(int j=0; j<v.size(); j++){
-					int dif = argsCompare(v[j], ufun->multi_mother);
+					int dif = argsCompare(v[j], ufun->arg_begin(), ufun->arg_end());
 					maxDif = dif > maxDif ? dif : maxDif;
 					tot += dif;
 					++N;
@@ -242,8 +243,7 @@ void ComplexInliner::unify(){
 				// cout<<"  id = "<<id<<" lowestDif ="<<lowestDif<<"avg dif="<< (id>0 ? tot / id : -1) <<" ldifID = "<<lowestDifID<<endl;
 				closestMatch[id] = lowestDifID;
 				nfd[lowestDif].push_back(id);
-				v.push_back(ufun->multi_mother);	
-
+				v.push_back(vector<bool_node*>(ufun->arg_begin(), ufun->arg_end()));	
 			}			
 		}
 	}

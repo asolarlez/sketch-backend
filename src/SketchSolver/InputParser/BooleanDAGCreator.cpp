@@ -76,8 +76,8 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 	Assert(t != bool_node::SRC && t != bool_node::DST && t != bool_node::CTRL, "You can only use new_node to create internal nodes, you can not use it for either SRC, DST, or CTRL");
 	bool_node* tmp;
 	tmp = newNode(t);
-	tmp->father = fth;
-	tmp->mother = mth;
+	tmp->father() = fth;
+	tmp->mother() = mth;
 	dynamic_cast<TUPLE_R_node*>(tmp)->idx = idx;
 
 
@@ -115,8 +115,8 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 	//  tmp = dag->new_node(mth, fth, t);    ARMANDO: This is a big performance bug.
 
 	tmp = newNode(t);
-	tmp->father = fth;
-	tmp->mother = mth;
+	tmp->father() = fth;
+	tmp->mother() = mth;
 
 
 	//tmp->name = name;
@@ -186,8 +186,8 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 		this->dag->assertions.append(getDllnode(thenode));
 	}
 
-	thenode->father = fth;
-	thenode->mother = mth;
+	thenode->father() = fth;
+	thenode->mother() = mth;
 
 	thenode = optimizeAndAdd(thenode);
 	return thenode;
@@ -200,8 +200,8 @@ void BooleanDAGCreator::alias(const string& ssource, bool_node* starg) {
 	if (named_nodes.condAdd(ssource.c_str(), ssource.size(), starg, dst)) {
 		Assert(dst->type == bool_node::DST, "Only destination nodes can be assigned after being defined " << ssource);
 
-		Assert(dst->mother == NULL, "The mother of the DST node had already been defined. DST=" << ssource);
-		dst->mother = starg;
+		Assert(dst->mother() == NULL, "The mother of the DST node had already been defined. DST=" << ssource);
+		dst->mother() = starg;
 		dst->addToParents();
 	}
 }

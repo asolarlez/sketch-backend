@@ -43,7 +43,7 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 		Assert(node.max <= bound, "max should be less than bound");
 		bound = node.max + 1;
 
-		vector<string> parents = node.parents;
+		vector<string> parents = node.predecessors;
 		for (int i = 0; i < parents.size(); i++) {
 			map<string, int>::iterator it = randholes.find(parents[i]);
 			Assert(it != randholes.end(), "Parent hole should have been seen before this node");
@@ -253,7 +253,7 @@ int HoleHardcoder::computeHoleScore(CTRL_node* node) {
 		if (chld->type == bool_node::ARRACC) {
 			ARRACC_node* an = (ARRACC_node*)chld;
 			bool allconst = true;
-			for (vector<bool_node*>::iterator mit = an->multi_mother.begin(); mit != an->multi_mother.end(); ++mit) {
+			for (auto mit = an->arg_begin(); mit != an->arg_end(); ++mit) {
 				if ((*mit)->type != bool_node::CONST) {
 					allconst = false;
 					break;
@@ -371,17 +371,17 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 				// cout<<node->get_name()<<"  "<<(*it)->lprint()<<endl;
 				bool_node* child = *it;
 				if (child->type == bool_node::LT) {
-					if (child->mother == node && child->father->type == bool_node::CONST) {
-						ul = max(ul, opt.getIval(child->father));
+					if (child->mother() == node && child->father()->type == bool_node::CONST) {
+						ul = max(ul, opt.getIval(child->father()));
 					}
-					else if (child->father == node && child->mother->type == bool_node::CONST) {
+					else if (child->father() == node && child->mother()->type == bool_node::CONST) {
 
-						if (dynamic_cast<CONST_node*>(child->mother)->getVal() == 0) {
+						if (dynamic_cast<CONST_node*>(child->mother())->getVal() == 0) {
 							//nothing to do, but so far so good.
 							// cout<<"so far so good"<<child->lprint()<<endl;
 						}
 						else if (child->children.size() == 1 && (*child->children.begin())->type == bool_node::NOT) {
-							ul = max(ul, opt.getIval(child->mother) + 1);
+							ul = max(ul, opt.getIval(child->mother()) + 1);
 						}
 						else {
 							if (!reallyConcretize) {
@@ -401,12 +401,12 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 					ARRASSEQonly = false;
 				}
 				else {
-					if (child->type == bool_node::ARRACC && child->mother == node) {
-						bound = min(bound, (int)((arith_node*)child)->multi_mother.size());
+					if (child->type == bool_node::ARRACC && child->mother() == node) {
+						bound = min(bound, (int)((ARRACC_node*)child)->nargs());
 						ARRASSEQonly = false;
 					}
 					else {
-						if (child->type == bool_node::ARRASS && child->mother == node) {
+						if (child->type == bool_node::ARRASS && child->mother() == node) {
 							int quant = ((ARRASS_node*)child)->quant;
 							chkrbuf[quant] = true;
 							ul = max(ul, quant);
@@ -423,11 +423,11 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 								}*/
 							}
 							else { //child->type == eq
-								if (child->father->type == bool_node::CONST) {
-									chkrbuf[((CONST_node*)child->father)->getVal()] = true;
+								if (child->father()->type == bool_node::CONST) {
+									chkrbuf[((CONST_node*)child->father())->getVal()] = true;
 								}
-								if (child->mother->type == bool_node::CONST) {
-									chkrbuf[((CONST_node*)child->mother)->getVal()] = true;
+								if (child->mother()->type == bool_node::CONST) {
+									chkrbuf[((CONST_node*)child->mother())->getVal()] = true;
 								}
 							}
 						}

@@ -61,18 +61,9 @@ void BooleanDAG::growInputIntSizes(){
 void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 	if(n->flag == 0){
 		n->flag = 1;
-		if(n->mother != NULL){
-			sliceH(n->mother, bd);
-		}
-		if(n->father != NULL){
-			sliceH(n->father, bd);
-		}
-		if(n->isArith()){
-			arith_node* an = dynamic_cast<arith_node*>(n);
-			for(int i=0; i<an->multi_mother.size(); ++i){
-				sliceH(an->multi_mother[i], bd);
-			}
-		}
+		for (auto it = n->p_begin(); it != n->p_end(); ++it) {
+			sliceH(*it, bd);
+		}		
 		bd->addNewNode(n);
 	}
 }
@@ -296,20 +287,20 @@ void BooleanDAG::shareparent_remove(int i){
 	
   bool_node* onode = nodes[i];	
 	
-  Assert( onode->father == onode->mother, "This must be true, otherwise, the compiler is wrong");  
-  Assert( onode->father != NULL, "Can this happen? To me? Nah  ");
+  Assert( onode->father() == onode->mother(), "This must be true, otherwise, the compiler is wrong");  
+  Assert( onode->father() != NULL, "Can this happen? To me? Nah  ");
 
 	//Removing from the father's children list. Note we are assuming father==mother.
 	
-  onode->father->remove_child(onode);
+  onode->father()->remove_child(onode);
   for(child_iter child = onode->children.begin(); child != onode->children.end(); ++child){  	
-    if(  (*child)->father == onode ){
-      (*child)->father = onode->father;
-      onode->father->children.insert( (*child) );      
+    if(  (*child)->father() == onode ){
+      (*child)->father() = onode->father();
+      onode->father()->children.insert( (*child) );      
     }
-    if(  (*child)->mother == onode ){
-      (*child)->mother = onode->father;
-      onode->father->children.insert( (*child) );
+    if(  (*child)->mother() == onode ){
+      (*child)->mother() = onode->father();
+      onode->father()->children.insert( (*child) );
     }
   }
   
@@ -332,9 +323,9 @@ int checkOkForARRACC(BooleanDAG * dag, bool_node* bnode, int line /*=0*/) {
 		return -1;
 	}
 	ARRACC_node * node = dynamic_cast<ARRACC_node*>(bnode);
-	if ( (node->multi_mother.size()>2 || node->mother->getOtype() != OutType::BOOL)) {
-			for (int j=0; j<node->multi_mother.size(); ++j) {
-				bool_node * m = node->multi_mother[j];
+	if ( (node->nargs()>2 || node->mother()->getOtype() != OutType::BOOL)) {
+			for (int j=0; j<node->nargs(); ++j) {
+				bool_node * m = node->arguments(j);
 				if (m != NULL && m->isArrType()) {
 					cout << "Error! line=" << line << endl;
 				  cout << "ARRACC " << node->get_name() << endl;
@@ -416,35 +407,22 @@ void BooleanDAG::repOK(){
 			UFUN_node* uf = dynamic_cast<UFUN_node*>(n);
 			if(uf != NULL){
 				if(uf->ignoreAsserts){
-					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother);
+					CONST_node* cn = dynamic_cast<CONST_node*>(n->mother());
 					// Assert(cn != NULL && cn->getVal()==1, "If a node ignores asserts, it should have a constant one condition");
 				}
-					if(uf->multi_mother.size() == 1){
-						UFUN_node* mf = dynamic_cast<UFUN_node*>(uf->multi_mother[0]);
-						
-					}
 				
 			}
-			if(n->mother != NULL){
-				bool_node* par = n->mother;
-				Assert( nodeset.count(n->mother)==1, "Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << n->mother->get_name());
-				Assert( par->children.count(n) != 0, "My mother has disowned me "<<n->get_name()<<"  "<<i);
-			}
-			if(n->father != NULL){
-				bool_node* par = n->father;
-				Assert( nodeset.count(n->father)==1, "Father is not in dag "<<n->get_name()<<"  "<<i);
-				Assert( par->children.count(n) != 0, "My father has disowned me "<<n->get_name()<<"  "<<i);
-			}
-			if(n->isArith()){
-				arith_node* an = dynamic_cast<arith_node*>(n);
-				for(int t=0; t<an->multi_mother.size(); ++t){
-					if(an->multi_mother[t] != NULL){
-						bool_node* par = an->multi_mother[t];
-						Assert( nodeset.count(par)==1, "Multi-Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << par->get_name());
-						Assert( par->children.count(n) != 0, "My multimother has disowned me "<<n->get_name()<<"  "<<i);
-					}
+			
+			
+				
+			for (auto it = n->p_begin(); it != n->p_end(); ++it) {
+				if((*it) != NULL){
+					bool_node* par = (*it);
+					Assert( nodeset.count(par)==1, "Multi-Mother is not in dag "<<n->get_name()<<"  "<<i << "  " << par->get_name());
+					Assert( par->children.count(n) != 0, "My multimother has disowned me "<<n->get_name()<<"  "<<i);
 				}
 			}
+			
 			set<bool_node*> seen;
 			for(child_iter child = n->children.begin(); child != n->children.end(); ++child){
 				  Assert( nodeset.count(*child) == 1, "This child is outside the network "<<(*child)->get_name()<<"  "<<i);
@@ -629,8 +607,8 @@ void BooleanDAG::change_father(const string& father, const string& son){
     throw be;
   }
   Assert( named_nodes.find(son) != named_nodes.end(), "The son name does not exist.");  
-  Assert(named_nodes[son]->father == NULL, "You should not call this function if you already have a father.");
-  named_nodes[son]->father = named_nodes[father];
+  Assert(named_nodes[son]->father() == NULL, "You should not call this function if you already have a father.");
+  named_nodes[son]->father() = named_nodes[father];
   named_nodes[father]->children.insert( named_nodes[son] );
 }
 
@@ -645,8 +623,8 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
     throw be;
   }
   Assert( named_nodes.find(son) != named_nodes.end(), "The son name does not exist.");  
-  Assert(named_nodes[son]->mother == NULL, "You should not call this function if you already have a father.");
-  named_nodes[son]->mother = named_nodes[mother];
+  Assert(named_nodes[son]->mother() == NULL, "You should not call this function if you already have a father.");
+  named_nodes[son]->mother() = named_nodes[mother];
   named_nodes[mother]->children.insert( named_nodes[son] );
 }
 
@@ -708,7 +686,7 @@ bool_node* BooleanDAG::get_node(const string& name){
 		fth = named_nodes[name];	
 	}else{
 		// cout<<"WARNING, DANGEROUS!! " << name << endl;
-		fth = new CONST_node(-333);
+		fth = CONST_node::create(-333);
 		nodes.push_back(fth);
 	}
   }
@@ -720,8 +698,8 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
                                 bool_node* father, bool_node::Type t){
                                 	
   bool_node* tmp = newNode(t);
-  tmp->father = father;
-  tmp->mother = mother;  
+  tmp->father() = father;
+  tmp->mother() = mother;  
   tmp->addToParents();
   Assert( tmp->id != -22, "This node should not exist anymore");
   tmp->id = nodes.size() + offset;
@@ -799,7 +777,7 @@ INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMi
 
 INTER_node* BooleanDAG::create_outputs(int n, bool_node* nodeToOutput, const string& gen_name){
   INTER_node* tmp = create_inter(n, gen_name, n_outputs, bool_node::DST);
-  tmp->mother = nodeToOutput;
+  tmp->mother() = nodeToOutput;
   tmp->addToParents();
   return tmp;
 }
@@ -941,7 +919,7 @@ void getAssertStr(vector<bool_node*> &assert_nodes, string & assert_str, string 
 	int assert_ctr = 0;
 	for(int i=0;i<assert_nodes.size();i++){
 		ASSERT_node* an = (ASSERT_node*)(assert_nodes[i]);
-		string cur_bool = " _n"+int2str(assert_nodes[i]->mother->id)+" ";
+		string cur_bool = " _n"+int2str(assert_nodes[i]->mother()->id)+" ";
 		if(an->isAssume() || an->isHard()){
 			assume_ctr++;
 			if(pre=="") pre=cur_bool;
@@ -1207,16 +1185,16 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
 			INTER_node* otherDst = named_nodes[inode->name];
 			Assert(otherDst != NULL, "AAARGH: Node is not registered "<<(inode)->name<<endl);
             
-            if (otherDst->mother->type == bool_node::TUPLE_CREATE) {
-                TUPLE_CREATE_node* inodeTuple = dynamic_cast<TUPLE_CREATE_node*>(inode->mother);
-                TUPLE_CREATE_node* otherDstTuple = dynamic_cast<TUPLE_CREATE_node*>(otherDst->mother);
-                int inodeCount = inodeTuple->multi_mother.size();
-                int otherDstCount = otherDstTuple->multi_mother.size();
+            if (otherDst->mother()->type == bool_node::TUPLE_CREATE) {
+                TUPLE_CREATE_node* inodeTuple = dynamic_cast<TUPLE_CREATE_node*>(inode->mother());
+                TUPLE_CREATE_node* otherDstTuple = dynamic_cast<TUPLE_CREATE_node*>(otherDst->mother());
+                int inodeCount = inodeTuple->nparents();
+                int otherDstCount = otherDstTuple->nparents();
                 Assert(inodeCount == otherDstCount, "Number of outputs should be the same" << (inode)->name<<endl);
                 for (int i = 0; i < inodeCount; i++) {
-                    EQ_node* eq = new EQ_node();
-                    eq->mother = otherDstTuple->multi_mother[i];
-                    eq->father = inodeTuple->multi_mother[i];
+                    EQ_node* eq = EQ_node::create();
+                    eq->mother() = otherDstTuple->get_parent(i);
+                    eq->father() = inodeTuple->get_parent(i);
                     
                     //eq->addToParents();
                     Dout(cout<<"           switching inputs "<<endl);
@@ -1231,23 +1209,23 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
                     
                     nodes.push_back( eq );
 
-                    ASSERT_node* finalAssert = new ASSERT_node();			
+                    ASSERT_node* finalAssert = ASSERT_node::create();			
                     finalAssert->setMsg( mm );
-                    finalAssert->mother = eq;
+                    finalAssert->mother() = eq;
                     finalAssert->addToParents();
                     nodes.push_back(finalAssert);
 
                     nodesByType[finalAssert->type].push_back(finalAssert);
                     assertions.append( getDllnode(finalAssert) );
                 }
-                if(replacements.count((*node_it)->mother)==0){
+                if(replacements.count((*node_it)->mother())==0){
                     (*node_it)->dislodge();
                 }
                 delete (*node_it);
             } else {
-                EQ_node* eq = new EQ_node();
-                eq->father = otherDst->mother;
-                eq->mother = (*node_it)->mother;
+                EQ_node* eq = EQ_node::create();
+                eq->father() = otherDst->mother();
+                eq->mother() = (*node_it)->mother();
                 
                 //eq->addToParents();
                 
@@ -1261,15 +1239,15 @@ void BooleanDAG::makeMiter(BooleanDAG* bdag){
                 mm += otherDst->name;
                 
                 replace( otherDst->id, eq);
-                if(replacements.count((*node_it)->mother)==0){
+                if(replacements.count((*node_it)->mother())==0){
                     (*node_it)->dislodge();
                 }
                 delete (*node_it);
                 nodes.push_back( eq );
                 
-                ASSERT_node* finalAssert = new ASSERT_node();			
+                ASSERT_node* finalAssert = ASSERT_node::create();			
                 finalAssert->setMsg( mm );
-                finalAssert->mother = eq;
+                finalAssert->mother() = eq;
                 finalAssert->addToParents();
                 nodes.push_back(finalAssert);
                 

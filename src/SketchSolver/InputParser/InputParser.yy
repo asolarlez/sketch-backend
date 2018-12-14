@@ -417,10 +417,9 @@ WorkStatement:  ';' {  $$=0;  /* */ }
 	Assert( bigN == oldchilds->size(), "This can't happen");	
 
 	for(int i=0; i<bigN; ++i, ++it, ++oldit){		
-		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newNode(bool_node::ARRASS));
-		an->multi_mother.reserve(2);
-		an->multi_mother.push_back(*oldit);			
-		an->multi_mother.push_back(rhs);
+		ARRASS_node* an = dynamic_cast<ARRASS_node*>(newNode(bool_node::ARRASS, 2));
+		an->set_parent(1, *oldit);			
+		an->set_parent(2, rhs);
 		Assert( rhs != NULL, "AAARRRGH This shouldn't happen !!");
 		Assert($7 != NULL, "1: THIS CAN'T HAPPEN!!");
 		an->quant = i;		
@@ -535,44 +534,44 @@ Expression: Term { $$ = $1; }
 }
 | T_ident '[''[' Expression T_arrow Expression  ']'']'{
 	ARR_W_node* an = dynamic_cast<ARR_W_node*>(newNode(bool_node::ARR_W));
-	an->multi_mother.push_back( currentBD->get_node(*$1) );
-	an->multi_mother.push_back( $6 );
+	an->getOldArr() = ( currentBD->get_node(*$1) );
+	an->getNewVal() = ( $6 );
 	$$ = currentBD->new_node($4, NULL, an);	
 	delete $1;
 }
 | NegConstant '[''[' Expression T_arrow Expression  ']'']'{
 	ARR_W_node* an = dynamic_cast<ARR_W_node*>(newNode(bool_node::ARR_W));
-	an->multi_mother.push_back( currentBD->create_const($1) );
-	an->multi_mother.push_back( $6 );
+	an->getOldArr() = ( currentBD->create_const($1) );
+	an->getNewVal() = ( $6 );
 	$$ = currentBD->new_node($4, NULL, an);		
 }
 | '$' varList '$' '[' Expression ']' {
 	int pushval = 0;
-	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARRACC));
+	
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
-	an->multi_mother.reserve(bigN);
+	ARRACC_node* an = dynamic_cast<ARRACC_node*>(newNode(bool_node::ARRACC, bigN));
 	for(int i=0; i<bigN; ++i, ++it){
-		an->multi_mother.push_back(*it);
+		an->arguments(i) = (*it);
 	}		
 	Assert($5 != NULL, "2: THIS CAN'T HAPPEN!!");	
 	$$ = currentBD->new_node($5, NULL,  an);
 	delete childs;	
 }
 | T_leftAC varList T_rightAC{
-	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARR_CREATE));
-    
+	
 
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
-	an->multi_mother.reserve(bigN);
+	ARR_CREATE_node* an = dynamic_cast<ARR_CREATE_node*>(newNode(bool_node::ARR_CREATE, bigN));
+    
 	for(int i=0; i<bigN; ++i, ++it){
-		an->multi_mother.push_back(*it);
+		an->set_parent(i, *it);
 	}	
 	if(bigN > 0){
-		if(an->multi_mother[0]->getOtype() == OutType::FLOAT ){
+		if(an->get_parent(0)->getOtype() == OutType::FLOAT ){
 			$$ = currentBD->new_node(currentBD->create_const(0.0), NULL, an); 
 		}else{
 			$$ = currentBD->new_node(currentBD->create_const(0), NULL, an); 
@@ -585,27 +584,29 @@ Expression: Term { $$ = $1; }
 }
 | '[' T_ident ']' T_leftTC varList T_rightTC{
 
-	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::TUPLE_CREATE));
+	
 
 	list<bool_node*>* childs = $5;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
+	
 	int bigN = childs->size();
-	an->multi_mother.reserve(bigN);
+	TUPLE_CREATE_node* an = dynamic_cast<TUPLE_CREATE_node*>(newNode(bool_node::TUPLE_CREATE, bigN));	
 	for(int i=0; i<bigN; ++i, ++it){
-		an->multi_mother.push_back(*it);
+		an->set_parent(i, *it);
 	}
-    (dynamic_cast<TUPLE_CREATE_node*>(an))->setName(*$2);
+    an->setName(*$2);
 	$$ = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
 }
 | T_twoS varList T_twoS {
-	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ACTRL));
+	
 	list<bool_node*>* childs = $2;
 	list<bool_node*>::reverse_iterator it = childs->rbegin();
 	int bigN = childs->size();
-	an->multi_mother.reserve(bigN);
+	ACTRL_node* an = dynamic_cast<ACTRL_node*>(newNode(bool_node::ACTRL, bigN));
+	
 	for(int i=0; i<bigN; ++i, ++it){
-		an->multi_mother.push_back(*it);
+		an->set_parent(i, *it);
 	}		
 	$$ = currentBD->new_node(NULL, NULL, an); 
 	delete childs;
@@ -646,11 +647,11 @@ Expression: Term { $$ = $1; }
 	$$ = currentBD->new_node(tmp, NULL, bool_node::NOT);
 }
 | Expression '?' Expression ':' Expression {
-	arith_node* an = dynamic_cast<arith_node*>(newNode(bool_node::ARRACC));
+	ARRACC_node* an = dynamic_cast<ARRACC_node*>(newNode(bool_node::ARRACC, 2));
 	bool_node* yesChild =($3);
 	bool_node* noChild = ($5);
-	an->multi_mother.push_back( noChild );
-	an->multi_mother.push_back( yesChild );	
+	an->arguments(0) = ( noChild );
+	an->arguments(1) = ( yesChild );	
 	$$ = currentBD->new_node($1, NULL, an); 	
 } 
 
@@ -695,13 +696,13 @@ Term: Constant {
 	}else{	
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
-		UFUN_node* ufun = new UFUN_node(fname);
+		UFUN_node* ufun = UFUN_node::create(fname, params->size());
 		ufun->outname = *$13;
 		int fgid = $15;
 		ufun->fgid = fgid;
 		bool_node* pCond;	
-		for( ; parit != params->rend(); ++parit){
-            ufun->multi_mother.push_back((*parit));
+		for(int i=0 ; parit != params->rend(); ++parit, ++i){
+            ufun->arguments(i) = (*parit);
         }
         pCond = $10;
 
@@ -736,14 +737,14 @@ Term: Constant {
 	}else{	
 		string& fname = *$1;
 		list<bool_node*>::reverse_iterator parit = params->rbegin();
-		UFUN_node* ufun = new UFUN_node(fname);
+		UFUN_node* ufun = UFUN_node::create(fname, params->size());
 		ufun->outname = *$12;
 		int fgid = $14;
 		ufun->fgid = fgid;	
 		bool_node* pCond;	
 
-        for( ; parit != params->rend(); ++parit){
-            ufun->multi_mother.push_back((*parit));
+        for(int i=0 ; parit != params->rend(); ++parit, ++i){
+            ufun->arguments(i) = (*parit);
         }
         pCond = $9;
 
@@ -830,7 +831,7 @@ Term: Constant {
 }
 | T_sp Constant '$' ParentsList '$' '<' Ident '>' {
 	$$ = currentBD->create_controls(-1, *$7, false, false, true, $2);
-  ((CTRL_node*) $$)->setParents(*$4);
+  ((CTRL_node*) $$)->setPredecessors(*$4);
 	delete $7;
 }
 | T_sp Constant '$' ParentsList '$' '<' Ident Constant '>' {
@@ -839,12 +840,12 @@ Term: Constant {
 		nctrls = NCTRLS;
 	}
 	$$ = currentBD->create_controls(nctrls, *$7, false, false, true, $2);
-  ((CTRL_node*) $$)->setParents(*$4);
+  ((CTRL_node*) $$)->setPredecessors(*$4);
 	delete $7;
 }
 | T_sp Constant '$' ParentsList '$' '<' Ident Constant '*' '>' {
 	$$ = currentBD->create_controls($8, *$7, false, false, true, $2);
-  ((CTRL_node*) $$)->setParents(*$4);
+  ((CTRL_node*) $$)->setPredecessors(*$4);
 	delete $7;
 }
 

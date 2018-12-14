@@ -415,12 +415,24 @@ public:
 
 const int NCREATORS=4;
 
+class temp_ARR_creator {
+public:
+	int globalId;
+	vector<bool_node*> multi_mother;
+	bool_node* defval;
+	bool_node* toBoolNode() {
+		return ARR_CREATE_node::create(multi_mother);
+	}
+};
+
+
+
 class DagOptim : public NodeVisitor, public virtual NodeStore
 {	
 	bool ALTER_ARRACS;	
 	bool possibleCycles;
 	int nccount;
-	pair<int, ARR_CREATE_node>  tempcreators[NCREATORS];
+	temp_ARR_creator  tempcreators[NCREATORS];
 protected:
 	DagCSE cse;	
 	bool_node* stillPrivate;

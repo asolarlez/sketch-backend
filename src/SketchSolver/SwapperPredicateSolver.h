@@ -294,12 +294,12 @@ public:
 		return b;
 	}
 	
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
 		
 		//params correspond to the variables
 		//generate the arithmetic expression
 
-		return expr->getDag(dopt,params);
+		return expr->getDag(dopt, params_begin, params_end);
 	}
 	virtual void newInstance() {
 

@@ -77,8 +77,8 @@ public:
 		
 	}
 	
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
-		return dopt->addGT(params[0], dopt->getCnode(theta));
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
+		return dopt->addGT(*params_begin, dopt->getCnode(theta));
 	}
 	
 	virtual void print(ostream& out) {

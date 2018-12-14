@@ -296,40 +296,39 @@ public:
 	virtual void newInstance() {
 		
 	}
-	bool_node* getPred(int tupid, int attr, DagOptim* dopt, const vector<bool_node*>& params){
-		bool_node* eq1 = new EQ_node();
-		eq1->mother = params[tupidin];
-		eq1->father = dopt->getCnode(tupid);
+	bool_node* getPred(int tupid, int attr, DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end){
+		bool_node* eq1 = EQ_node::create();
+		eq1->mother() = params_begin[tupidin];
+		eq1->father() = dopt->getCnode(tupid);
 		eq1->addToParents();
 		eq1 = dopt->optAdd(eq1);
 		
-		bool_node* eq2 = new EQ_node();
-		eq2->mother = params[attrin];
-		eq2->father = dopt->getCnode(attr);
+		bool_node* eq2 = EQ_node::create();
+		eq2->mother() = params_begin[attrin];
+		eq2->father() = dopt->getCnode(attr);
 		eq2->addToParents();
 		eq2 = dopt->optAdd(eq2);
 		
-		bool_node* andn = new AND_node();
-		andn->mother = eq1;
-		andn->father = eq2;
+		bool_node* andn = AND_node::create();
+		andn->mother() = eq1;
+		andn->father() = eq2;
 		andn = dopt->optAdd(andn);
 		
 		return andn;
 	}
 	
-	bool_node* getITE(int tupid, int attr, bool_node* dfun,DagOptim* dopt, const vector<bool_node*>& params){
+	bool_node* getITE(int tupid, int attr, bool_node* dfun,DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end){
 		int val = eval[tupid][attr][simfn];
 		//value of out doesn't matter to generate the function f(attr,tupid)
-		ARRACC_node* an = new ARRACC_node();
-		an->mother = getPred(tupid,attr,dopt,params);
-		an->multi_mother.push_back(dfun);
-		an->multi_mother.push_back(dopt->getCnode(val));
+		ARRACC_node* an = 
+		ARRACC_node::create(getPred(tupid, attr, dopt, params_begin, params_end), dfun, dopt->getCnode(val));
+		
 		an->addToParents();
 		an = (ARRACC_node*)(dopt->optAdd(an));
 		//cout<<"TABLE(tupid="<<tupid<<",attr="<<attr<<",simfn="<<simfn<<",val="<<val<<")"<<endl;
 		return an;
 	}
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
 		//Generate ITE like ARRACC nodes and use only the tupleid, attr values from the inputMatrix table
 		//TODO: build this based on table stored in finalize function
 		/*InputMatrix& im = *inout;
@@ -363,7 +362,7 @@ public:
 		for(int i=0;i<Nattr;i++){
 			int attr = finalAttrs[i];
 			int tupid = finalTupids[i];
-			dfun = getITE(tupid,attr,dfun,dopt,params);
+			dfun = getITE(tupid,attr,dfun,dopt,params_begin, params_end);
 		}
 #endif
 		return dopt->addGE(dfun, dopt->getCnode(theta));

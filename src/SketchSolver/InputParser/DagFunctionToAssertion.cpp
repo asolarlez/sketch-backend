@@ -17,16 +17,16 @@ void DagFunctionToAssertion::visit( UFUN_node& node ){
 	if(!node.ignoreAsserts && !isUninterp ){
 		Dout(cout<<" terminating inlining "<<name<<endl);
 		
-		bool_node* cur = node.mother;
+		bool_node* cur = node.mother();
 		
-		NOT_node* nn = new NOT_node();
-		nn->mother = cur;
+		NOT_node* nn = NOT_node::create();
+		nn->mother() = cur;
 		nn->addToParents();
 		addNode(nn);
 
 			
-		ASSERT_node* asn = new ASSERT_node();
-		asn->mother = nn;
+		ASSERT_node* asn = ASSERT_node::create();
+		asn->mother() = nn;
 		string msg = "function was not inlined enough ";
 		msg += node.get_ufname();
 		asn->setMsg(msg);

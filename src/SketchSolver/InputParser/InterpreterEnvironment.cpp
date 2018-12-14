@@ -309,16 +309,17 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, vector<bool_node*>& newnodes, bool ufun) {
 	if (depth == 0) {
-		CONST_node* cnode = new CONST_node(-1);
+		CONST_node* cnode = CONST_node::create(-1);
 		newnodes.push_back(cnode);
 		return cnode;
 	}
 
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
-	TUPLE_CREATE_node* new_node = new TUPLE_CREATE_node();
+	int size = tuple_type->actSize;
+	TUPLE_CREATE_node* new_node = TUPLE_CREATE_node::create(tuple_type->entries.size());
 	new_node->depth = depth;
 	new_node->setName(tuple_name);
-	int size = tuple_type->actSize;
+	
 	for (int j = 0; j < size; j++) {
 		stringstream str;
 		str << node_name << "_" << j;
@@ -326,17 +327,17 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
 		OutType* type = tuple_type->entries[j];
 
 		if (type->isTuple) {
-			new_node->multi_mother.push_back(createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes, ufun));
+			new_node->set_parent(j, createTupleSrcNode(((Tuple*)type)->name, str.str(), depth - 1, newnodes, ufun));
 		}
 		else if (type->isArr && ((Arr*)type)->atype->isTuple) {
-			CONST_node* cnode = new CONST_node(-1);
+			CONST_node* cnode = CONST_node::create(-1);
 			newnodes.push_back(cnode);
-			new_node->multi_mother.push_back(cnode);
+			new_node->set_parent(j, cnode);
 
 		}
 		else {
 
-			SRC_node* src = new SRC_node(str.str());
+			SRC_node* src = SRC_node::create(str.str());
 
 			int nbits = 0;
 			if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
@@ -354,31 +355,30 @@ bool_node* createTupleSrcNode(string tuple_name, string node_name, int depth, ve
 			}
 			newnodes.push_back(src);
 
-			new_node->multi_mother.push_back(src);
+			new_node->set_parent(j, src);
 		}
 	}
 
-	CONST_node* cnode = new CONST_node(-1);
+	CONST_node* cnode = CONST_node::create(-1);
 	newnodes.push_back(cnode);
 	for (int i = size; i < tuple_type->entries.size(); i++) {
-		new_node->multi_mother.push_back(cnode);
+		new_node->set_parent(i, cnode);
 	}
 	new_node->addToParents();
 	newnodes.push_back(new_node);
 
 	if (ufun) return new_node;
 
-	ARRACC_node* ac = new ARRACC_node();
+	
 	stringstream str;
 	str << node_name << "__";
 
-	SRC_node* src = new SRC_node(str.str());
+	SRC_node* src = SRC_node::create(str.str());
 	src->set_nbits(1);
 	newnodes.push_back(src);
 
-	ac->mother = src;
-	ac->multi_mother.push_back(cnode);
-	ac->multi_mother.push_back(new_node);
+	ARRACC_node* ac = ARRACC_node::create(src, cnode, new_node);
+	
 	ac->addToParents();
 	newnodes.push_back(ac);
 	return ac;
@@ -700,7 +700,7 @@ int InterpreterEnvironment::doallpairs() {
 	// A dummy ctrl for inlining bound
 	CTRL_node* inline_ctrl = NULL;
 	if (params.randomInlining) {
-		inline_ctrl = new CTRL_node();
+		inline_ctrl = CTRL_node::create();
 		inline_ctrl->name = "inline";
 		hardcoder.declareControl(inline_ctrl);
 	}
@@ -1010,9 +1010,9 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 }
 
 bool hasFloatInputs(bool_node* node) {
-  vector<bool_node*> parents = node->parents();
-  for (int i = 0; i < parents.size(); i++) {
-    if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
+  //vector<bool_node*> parents = node->parents();
+	for (auto it = node->p_begin(); it != node->p_end(); ++it) {
+    if ((*it) != NULL && (*it)->getOtype() == OutType::FLOAT) return true;
   }
   return false;
 }
@@ -1040,15 +1040,13 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   BooleanDAG& dagclone = (*dag.clone());
   vector<OutType*> rettypes;
   string fname = "_GEN_NUM_SYNTH";
-  UFUN_node* unode = new UFUN_node(fname);
-  unode->outname = "_p_out_" + fname;
-  unode->set_tupleName(fname);
-  unode->set_nbits(0);
-  unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
-  unode->mother = op.getCnode(1);
+
+  vector<bool_node*> funparents;
+  vector<bool_node*> tuplecparents;
+  vector<TUPLE_R_node*> trnodes;
+  
   BooleanDAG* funDag = new BooleanDAG(fname); // store the abstraction in this dag
-  TUPLE_CREATE_node* funOutput = new TUPLE_CREATE_node();
-  funOutput->setName(fname);
+  
   set<bool_node*> funNodes;
   
   for(int i=0; i<dag.size() ; ++i ) {
@@ -1066,31 +1064,31 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
         bool hasFlInputs = hasFloatInputs(dagclone[nid]);
         if (hasFlChild) {
           if (hasFlInputs) {
-          CTRL_node* ctrl =  new CTRL_node(); // TODO: this ctrl should be angelic
-          ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
+			  CTRL_node* ctrl =  CTRL_node::create(); // TODO: this ctrl should be angelic
+			  ctrl->name = "CTRL_" + std::to_string(seenNodes.size());
           
-          int nbits = 0;
-          if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
-            nbits = 1;
-          }
-          if (type == OutType::INT || type == OutType::INT_ARR) {
-            nbits = 5;
-          }
+			  int nbits = 0;
+			  if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
+				nbits = 1;
+			  }
+			  if (type == OutType::INT || type == OutType::INT_ARR) {
+				nbits = 5;
+			  }
           
-          ctrl->set_nbits(nbits);
+			  ctrl->set_nbits(nbits);
           
-          if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
-            ctrl->setArr(PARAMS->angelic_arrsz);
-          }
-          newnodes.push_back(ctrl);
-          unode->multi_mother.push_back(ctrl);
+			  if(type == OutType::INT_ARR || type == OutType::BOOL_ARR) {
+				ctrl->setArr(PARAMS->angelic_arrsz);
+			  }
+			  newnodes.push_back(ctrl);
+			  funparents.push_back(ctrl);
           } else {
-            unode->multi_mother.push_back(node);
+			  funparents.push_back(node);
           }
           
         
       
-          SRC_node* src =  new SRC_node("PARAM_" + std::to_string(seenNodes.size()));
+          SRC_node* src =  SRC_node::create("PARAM_" + std::to_string(seenNodes.size()));
           int nbits = 0;
           if (type == OutType::BOOL || type == OutType::BOOL_ARR) {
             nbits = 1;
@@ -1111,30 +1109,28 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
         }
         if (hasFlInputs) {
           funNodes.insert(dagclone[nid]);
-          funOutput->multi_mother.push_back(dagclone[nid]);
-          TUPLE_R_node* tnode = new TUPLE_R_node();
-          tnode->idx = rettypes.size();
-          tnode->mother = unode;
-          tnode->addToParents();
+		  tuplecparents.push_back(dagclone[nid]);
+          TUPLE_R_node* tnode = TUPLE_R_node::create();
+          tnode->idx = rettypes.size();                    
+		  trnodes.push_back(tnode);
           newnodes.push_back(tnode);
           dag.replace(nid, tnode);
           rettypes.push_back(type);
           if (hasFlChild) {
-            EQ_node* eq = new EQ_node();
-            eq->mother = tnode;
-            int sz = unode->multi_mother.size();
-            eq->father = unode->multi_mother[sz-1];
+            EQ_node* eq = EQ_node::create();
+            eq->mother() = tnode;
+            int sz = funparents.size();
+            eq->father() = funparents[sz-1];
             eq->addToParents();
             newnodes.push_back(eq);
-            ASSERT_node* an = new ASSERT_node();
-            an->mother = eq;
+            ASSERT_node* an = ASSERT_node::create();
+            an->mother() = eq;
             an->addToParents();
             newnodes.push_back(an);
             dag.assertions.append(getDllnode(an));
             
           }
         }
-        
       }
       if (type == OutType::FLOAT) {
         funNodes.insert(dagclone[nid]);
@@ -1143,6 +1139,25 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
       }
     }
   }
+
+
+  TUPLE_CREATE_node* funOutput = TUPLE_CREATE_node::create(tuplecparents);
+  funOutput->setName(fname);
+
+  UFUN_node* unode = UFUN_node::create(fname, funparents);
+  unode->outname = "_p_out_" + fname;
+  unode->set_tupleName(fname);
+  unode->set_nbits(0);
+  unode->ignoreAsserts = true; // This is ok because the code represented by this ufun has no asserts.  
+  unode->mother() = op.getCnode(1);
+
+  for (auto it = trnodes.begin(); it != trnodes.end(); ++it) {
+	  (*it)->mother() = unode;
+	  (*it)->addToParents();
+  }
+
+
+
   vector<bool_node*> v(funNodes.begin(), funNodes.end());
   funDag->addNewNodes(v);
   funOutput->addToParents();

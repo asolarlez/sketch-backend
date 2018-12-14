@@ -24,10 +24,10 @@ vector<pair<bool_node*, int> >& DeriveImplications::getimps(bool_node* n, bool r
 
 
 pair<bool_node*, bool_node*> DeriveImplications::idx(bool_node& n){
-	if(n.mother->id < n.father->id){
-		return make_pair(n.mother, n.father);
+	if(n.mother()->id < n.father()->id){
+		return make_pair(n.mother(), n.father());
 	}else{
-		return make_pair(n.father, n.mother);
+		return make_pair(n.father(), n.mother());
 	}
 }
 bool DeriveImplications::isequiv(bool_node* n1, bool_node* n2){
@@ -41,7 +41,7 @@ int DeriveImplications::getid(bool_node& n){
 	if(n.type != bool_node::NOT){
 		return n.id;
 	}else{
-		return -(n.mother->id);
+		return -(n.mother()->id);
 	}
 }
 

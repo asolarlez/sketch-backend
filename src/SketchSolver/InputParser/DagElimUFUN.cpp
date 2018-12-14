@@ -74,7 +74,7 @@ BooleanDAG& DagElimUFUN::getComparator(int sz){
 SRC_node* DagElimUFUN::srcNode(UFUN_node& node, int i){
 	stringstream str;
     str<< node.get_ufname() <<"_"<<node.outname<<"_"<<i;
-    SRC_node* src =  new SRC_node( str.str() );
+    SRC_node* src = SRC_node::create( str.str() );
     // BUGFIX: this is not wide enough! UFUN_node.nbits is either 1 or 2, set by InputParser
     // TODO xzl: confirm this bug. Confirmed by cout, need to confirm with asolar
     //src->set_nbits( node.get_nbits() );
@@ -111,10 +111,8 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 	string name = node.get_ufname();
 	name += node.outname;
 	Dout( cout<<"Replacing call to function "<< node.get_ufname() <<endl );
-	int nargs = node.multi_mother.size();
-	vector<bool_node*>* nmm = &node.multi_mother;
+	int nargs = node.nargs();
 	
-	vector<bool_node*>& nmmother = *nmm;
 	if( functions.find(name) == functions.end() ){
 		//This means this is the first time we see
 		//this function, so the function just outputs its symvalue.
@@ -141,18 +139,18 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			stringstream str;
 			str<<"PARAM_"<<i;
 			sfi.fun->create_inputs(1, node.getOtype(),  str.str());
-			sfi.actuals.push_back(nmmother[i]);
+			sfi.actuals.push_back(node.arguments(i));
 		}
 		sfi.fun->create_outputs(src->get_nbits(), svar, "OUT");
-		bool_node* C0 = new CONST_node(0);
+		bool_node* C0 = CONST_node::create(0);
 		sfi.fun->addNewNode(C0);
 		sfi.fun->create_outputs(1, C0, "RES");
 	}else{
-		if(nmmother.size()==0){
+		if(node.nargs()==0){
 			return functions[name].symval;
 		}
         
-		BooleanDAG& comp = getComparator(nmmother.size());
+		BooleanDAG& comp = getComparator(node.nargs());
 		//comp is now a comparator that will compare N inputs with N other inputs.
 		// comp(ina_0, ..., ina_N, inb_0, ..., inb_N) := and_(0<=i<=N)(ina_i == inb_i);
 		Dout( cout<<" before clone "<<endl);
@@ -174,7 +172,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
                    (*cclone)[tt->id]->id<<endl);
 			cclone->replace(tt->id, sfi.actuals[i]);
 			//As we do this, we also update the actuals in sfi.
-			sfi.actuals[i] = nmmother[i];
+			sfi.actuals[i] = node.arguments(i);
 		}
 		// Dout( cclone->print(cout) );
 		Dout( cout<<" after replacing inputs "<<endl);
@@ -185,15 +183,13 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		//comparisson is fed into a mux that selects between the current symvalue and the previous symvalue.
 		
 		
-		ARRACC_node* ch = new ARRACC_node();
-		ch->mother = dst->mother;
-		
-        
+
 		SRC_node* src = srcNode(node, sfi.step);
-        sfi.step++;
+		sfi.step++;
+
+
+		ARRACC_node* ch = ARRACC_node::create(dst->mother(), src, sfi.symval);
 		
-		ch->multi_mother.push_back(src);
-		ch->multi_mother.push_back(sfi.symval);
 		ch->addToParents();
         
 		Dout(cout<<" After addToParents "<<endl);
@@ -251,16 +247,16 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 		Dout(cout<<" After replacing SVAR"<<endl);
 		
 		bool_node* res = sfi.fun->get_node("RES" );
-		OR_node* on = new OR_node();
-		on->mother = res->mother;
-		on->father = ch->mother;
+		OR_node* on = OR_node::create();
+		on->mother() = res->mother();
+		on->father() = ch->mother();
 		// NOTE xzl: should we call addToParents?
 		on->addToParents();
 		cclone->addNewNode(on);
 		
         
 		bool_node* outn = sfi.fun->get_node("OUT" );
-		rv = outn->mother;
+		rv = outn->mother();
         
 		sfi.outval = rv;
 		//The previous symvalue is replaced with the current one.
@@ -295,7 +291,7 @@ bool_node* DagElimUFUN::produceNextSFunInfo( UFUN_node& node  ){
 			str<<"ina_"<<i;
 			{
 				bool_node* tt = cclone->get_node(str.str());
-				cclone->replace(tt->id, nmmother[i]);
+				cclone->replace(tt->id, node.arguments(i));
 			}
 			
 			stringstream parnm;
@@ -351,9 +347,8 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		//when evaluating uninterpreted functions in the sketch. (Except for the very first call, which needs a fresh symbolic value
 		//to distinguish it from the others; hence the moreNewFuns flag.).
 		Dout( cout<<"Replacing call to function "<< node.get_ufname() <<" : "<<node.id<<endl );
-		int nargs = node.multi_mother.size();
-		vector<bool_node*>* nmm = &node.multi_mother;
-		vector<bool_node*>& nmmother = *nmm;
+		int nargs = node.nargs();
+		
 		if(nargs == 0){
 			if(oneMoreFun){
 				functions[name].moreNewFuns = false;
@@ -369,12 +364,12 @@ void DagElimUFUN::visit( UFUN_node& node ){
 			str1<<"PARAM_"<<i;
 			bool_node* inarg = sfi.fun->get_node( str1.str() );
 			Assert(inarg != NULL, "This can't be happening!!!");
-			cclone->replace(inarg->id, nmmother[i]);
+			cclone->replace(inarg->id, node.arguments(i));
 		}
 		
 		bool_node* src = NULL;
 		if(true){
-			src =  new CONST_node(0);
+			src = CONST_node::create(0);
 		}else{
 			stringstream str;
 			
@@ -396,10 +391,10 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		Dout( cout<<" FUNCTION CLONE TO BE ADDED "<<endl);
 		
 		bool_node* outn = cclone->get_node("OUT" );
-		rvalue = outn->mother;
+		rvalue = outn->mother();
         
 		bool_node* resn = cclone->get_node("RES" );
-		bool_node* rrn = resn->mother;
+		bool_node* rrn = resn->mother();
         
 		int oldsize = newnodes.size();
 		for(int i=0; i<cclone->size(); ++i){
@@ -416,19 +411,19 @@ void DagElimUFUN::visit( UFUN_node& node ){
 		}
 		
         
-        NOT_node* nn = new NOT_node();
-        nn->mother = node.mother;
+        NOT_node* nn = NOT_node::create();
+        nn->mother() = node.mother();
         nn->addToParents();
         newnodes.push_back(nn);
         
-        OR_node* orode = new OR_node();
-        orode->mother = nn;
-        orode->father = rrn;
+        OR_node* orode = OR_node::create();
+        orode->mother() = nn;
+        orode->father() = rrn;
         orode->addToParents();
         newnodes.push_back(orode);
         
-        ASSERT_node* asn = new ASSERT_node();
-        asn->mother = orode;
+        ASSERT_node* asn = ASSERT_node::create();
+        asn->mother() = orode;
         asn->addToParents();
         string msg = name;
         msg += ": UFUN is being misused";
@@ -453,7 +448,7 @@ void DagElimUFUN::process(BooleanDAG& dag){
 		bool_node* nn = dag[i];
 		if(nn->type == bool_node::UFUN){
 			UFUN_node* uf = (UFUN_node*)nn;
-			for(vector<bool_node*>::iterator it = uf->multi_mother.begin(); it != uf->multi_mother.end(); ++it){
+			for(auto it = uf->arg_begin(); it != uf->arg_end(); ++it){
 				if( (*it)->getOtype()->isArr ){
 					ufunsToDo.insert(uf->get_ufname());
 				}

@@ -31,7 +31,7 @@ CONST_node* DagOptim::getCnode(double c){
 	long long int code = idx << 1 | 1;
 	
 	if( cnmap.find(code) == cnmap.end() ){
-		CONST_node* cnode = new CONST_node(c);
+		CONST_node* cnode = CONST_node::create(c);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[code] = cnode;
@@ -48,7 +48,7 @@ CONST_node* DagOptim::getCnode(int val){
 	long long int code = idx << 1;
 	map<long long int, CONST_node*>::iterator fit = cnmap.find(code);
 	if( fit == cnmap.end() ){
-		CONST_node* cnode = new CONST_node(val);
+		CONST_node* cnode = CONST_node::create(val);
 		cnode->id = newnodes.size() + dagsize;		
 		newnodes.push_back(cnode);
 		cnmap[code] = cnode;
@@ -114,8 +114,8 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 	}
 	
 	if(n1->type == bool_node::NOT){
-		int rv = staticCompare<COMP>(n1->mother, C, reverse);
-		anv[n1] = anv[n1->mother];
+		int rv = staticCompare<COMP>(n1->mother(), C, reverse);
+		anv[n1] = anv[n1->mother()];
 		anv[n1].timestamp = n1->globalId;		
 		return rv;
 	}
@@ -162,12 +162,12 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 
 	if( n1->type == bool_node::TIMES){
 
-		if(isConst(n1->mother) || isConst(n1->father)){
-			bool_node* cparent = n1->mother;
-			bool_node* oparent = n1->father;
+		if(isConst(n1->mother()) || isConst(n1->father())){
+			bool_node* cparent = n1->mother();
+			bool_node* oparent = n1->father();
 			if(!isConst(cparent)){
 				cparent = oparent;
-				oparent = n1->mother;
+				oparent = n1->mother();
 			}
 			int cv = getIval(cparent);
 				
@@ -196,7 +196,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		AbstractNodeValue& nv = anv[n1];
 		nv.timestamp = n1->globalId;
 		{
-			bool_node* parent = n1->mother;
+			bool_node* parent = n1->mother();
 			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
 
 			if(it == anv.end()){
@@ -211,7 +211,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			nv.insert( anv[parent] );
 		}
 		{
-			bool_node* parent = n1->father;
+			bool_node* parent = n1->father();
 			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
 			if(it == anv.end()){
 				staticCompare<COMP>(parent, C, reverse);
@@ -230,7 +230,7 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 		AbstractNodeValue& nv = anv[n1];
 		nv.timestamp = n1->globalId;
 		{
-			bool_node* parent = n1->father;
+			bool_node* parent = n1->father();
 			map<bool_node*, AbstractNodeValue>::iterator it = anv.find(parent);
 
 			if(it == anv.end()){
@@ -251,23 +251,25 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 
 
 	if(  typeid(*n1) == typeid(ARRACC_node) || typeid(*n1) == typeid(ARRASS_node)){
-		arith_node& ar = *dynamic_cast<arith_node*>(n1);
+		bool_node& ar = *n1;
 		int rv = -2;
 		AbstractNodeValue& nv = anv[n1];
 		nv.timestamp = n1->globalId;
-		map<bool_node*, AbstractNodeValue>::iterator mot = anv.find(ar.mother);
+		map<bool_node*, AbstractNodeValue>::iterator mot = anv.find(ar.mother());
 		bool tata = false;
-		if(mot == anv.end() || mot->second.timestamp != ar.mother->globalId){
-			staticCompare<COMP>(ar.mother, C, reverse);
+		if(mot == anv.end() || mot->second.timestamp != ar.mother()->globalId){
+			staticCompare<COMP>(ar.mother(), C, reverse);
 			tata = true;
 		}
-		AbstractNodeValue& mnv = tata? anv[ar.mother] : mot->second;
+		AbstractNodeValue& mnv = tata? anv[ar.mother()] : mot->second;
 		if(mnv.isTop() || ar.type == bool_node::ARRASS /*typeid(*n1) == typeid(ARRASS_node)*/){
-			for(int i=0; i<ar.multi_mother.size(); ++i){
-				bool_node* parent = ar.multi_mother[i];
+			auto f = [&](bool_node* parent) {
 				helper<COMP>(parent, C, reverse, rv, nv);
-			}
-			if((!PARAMS->assumebcheck) && ar.type == bool_node::ARRACC  && (n1->mother->getOtype() == OutType::INT || ar.multi_mother.size() < 2)){			
+			};
+			forall_args(n1, f);
+			
+			if((!PARAMS->assumebcheck) && ar.type == bool_node::ARRACC  && 
+				(n1->mother()->getOtype() == OutType::INT || ar.nparents() < 3)){			
 				nv.insert(0);
 				bool cm = reverse? comp(C, 0) : comp(0, C);
 				int tmp = cm ? 1 : -1;	
@@ -280,11 +282,11 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 			}
 		}else{
 			
-			int sz = ar.multi_mother.size();
+			int sz = ar.nparents()-1;
 			bool didZero = PARAMS->assumebcheck;
 			AbstractNodeValue::ANVIterator ait = mnv.getIter(sz);
 			while( ait.next() ){
-				bool_node* parent = ar.multi_mother[(*ait)];
+				bool_node* parent = ar.get_parent((*ait)+1);
 				helper<COMP>(parent, C, reverse, rv, nv);
 			}
 			if(!PARAMS->assumebcheck && ait.dropped){
@@ -342,13 +344,13 @@ void DagOptim::helper(bool_node* parent, int C, int reverse, int& rv, AbstractNo
 template<typename COMP, typename NTYPE>
 bool DagOptim::compSymplification(NTYPE& node){
 
-	if( typeid(*node.mother) == typeid(PLUS_node) &&  typeid(*node.father) == typeid(PLUS_node) ){
+	if( typeid(*node.mother()) == typeid(PLUS_node) &&  typeid(*node.father()) == typeid(PLUS_node) ){
 		//(a+b) < (a + c) ==> b < c
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
+		bool_node* momo = node.mother()->mother();
+		bool_node* mofa = node.mother()->father();
 		
-		bool_node* famo = node.father->mother;
-		bool_node* fafa = node.father->father;
+		bool_node* famo = node.father()->mother();
+		bool_node* fafa = node.father()->father();
 		if(momo == fafa){
 			bool_node* tmp = fafa;
 			fafa = famo;
@@ -373,38 +375,38 @@ bool DagOptim::compSymplification(NTYPE& node){
 		
 		if(momo == famo){
 			//cout<<" EQUALITY REPLACEMENT"<<endl;
-			NTYPE* pnode = new NTYPE();
-			pnode->mother = mofa;
-			pnode->father = fafa;
+			NTYPE* pnode = NTYPE::create();
+			pnode->mother() = mofa;
+			pnode->father() = fafa;
 			pnode->addToParents();
 			rvalue  = optAdd(pnode);
 			return true;
 		}
 	}
 		
-	if( typeid(*node.mother) == typeid(PLUS_node) ){
+	if( typeid(*node.mother()) == typeid(PLUS_node) ){
 		//(a+b) < x
-		bool_node* momo = node.mother->mother;
-		bool_node* mofa = node.mother->father;
+		bool_node* momo = node.mother()->mother();
+		bool_node* mofa = node.mother()->father();
 		
-		if(mofa == node.father || (isConst(mofa) && (isConst(node.mother))) ){
-			//The second check for (isConst(node.mother) was missing
+		if(mofa == node.father() || (isConst(mofa) && (isConst(node.mother()))) ){
+			//The second check for (isConst(node.mother()) was missing
 			//This is important or else in cases like x + 1 < x 
 			//there won't be any optimization 
-			momo = 	node.mother->father;;
-			mofa = node.mother->mother;
+			momo = 	node.mother()->father();;
+			mofa = node.mother()->mother();
 		}
-		//At this point, if any of the two is equal to node.father, it will be momo
+		//At this point, if any of the two is equal to node.father(), it will be momo
 				
 
-		if(momo == node.father || (isConst(node.father) && isConst(momo))){
+		if(momo == node.father() || (isConst(node.father()) && isConst(momo))){
 			//(x+b) < x  or  (c2+b) < c1
-			NTYPE* pnode = new NTYPE();
-			pnode->mother = mofa;
-			if(momo == node.father ){
-				pnode->father = getZero(pnode->mother);				
+			NTYPE* pnode = NTYPE::create();
+			pnode->mother() = mofa;
+			if(momo == node.father() ){
+				pnode->father() = getZero(pnode->mother());				
 			}else{
-				pnode->father = nodeSub(node.father, momo);							
+				pnode->father() = nodeSub(node.father(), momo);							
 				//cout<<"I JUST SAVED SOME CLAUSES A"<<endl;
 			}			
 			pnode->addToParents();					
@@ -415,24 +417,24 @@ bool DagOptim::compSymplification(NTYPE& node){
 
 	}
 		
-	if( typeid(*node.father) == typeid(PLUS_node) ){
+	if( typeid(*node.father()) == typeid(PLUS_node) ){
 		
-		bool_node* momo = node.father->mother;
-		bool_node* mofa = node.father->father;
+		bool_node* momo = node.father()->mother();
+		bool_node* mofa = node.father()->father();
 		
-		if(mofa == node.mother || ( (isConst(mofa)) && (isConst(node.mother)) )  ){
-			momo = 	node.father->father;;
-			mofa = node.father->mother;
+		if(mofa == node.mother() || ( (isConst(mofa)) && (isConst(node.mother())) )  ){
+			momo = 	node.father()->father();;
+			mofa = node.father()->mother();
 		}
-		//At this point, if any of the two is equal to node.mother, it will be momo
+		//At this point, if any of the two is equal to node.mother(), it will be momo
 		
-		if(momo == node.mother|| ( (isConst(momo)) && (isConst(node.mother)) )){
-			NTYPE* pnode = new NTYPE();
-			pnode->father = mofa;
-			if(momo==node.mother){
-				pnode->mother = getZero(pnode->father);
+		if(momo == node.mother()|| ( (isConst(momo)) && (isConst(node.mother())) )){
+			NTYPE* pnode = NTYPE::create();
+			pnode->father() = mofa;
+			if(momo==node.mother()){
+				pnode->mother() = getZero(pnode->father());
 			}else{
-				pnode->mother = nodeSub(node.mother , momo );
+				pnode->mother() = nodeSub(node.mother() , momo );
 				//cout<<"I JUST SAVED SOME CLAUSES B"<<endl;
 			}
 			pnode->addToParents();	
@@ -442,9 +444,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 	}
 		
 	
-	if(isConst(node.mother) && !isFloat(node.father)){
+	if(isConst(node.mother()) && !isFloat(node.father())){
 		
-		int tmp = staticCompare<COMP>(node.father, getIval(node.mother), true);
+		int tmp = staticCompare<COMP>(node.father(), getIval(node.mother()), true);
 		
 		if(tmp == 1){
 			rvalue  = getCnode(1);
@@ -456,9 +458,9 @@ bool DagOptim::compSymplification(NTYPE& node){
 		}
 	}
 	
-	if(isConst(node.father) && !isFloat(node.father)){
+	if(isConst(node.father()) && !isFloat(node.father())){
 		
-		int tmp = staticCompare<COMP>(node.mother, getIval(node.father), false);
+		int tmp = staticCompare<COMP>(node.mother(), getIval(node.father()), false);
 		
 		if(tmp == 1){
 			rvalue  = getCnode(1);
@@ -478,13 +480,13 @@ bool DagOptim::compSymplification(NTYPE& node){
 
 bool DagOptim::isNegOfEachOther(bool_node* n1, bool_node* n2){
 	if( typeid(*n1) == typeid(NEG_node) ){
-		if(  n1->mother == n2){
+		if(  n1->mother() == n2){
 			return true;	
 		}
 	}
 	
 	if(  typeid(*n2) == typeid(NEG_node) ){
-		if( n2->mother == n1){
+		if( n2->mother() == n1){
 			return true;
 		}
 	}
@@ -495,13 +497,13 @@ bool DagOptim::isNegOfEachOther(bool_node* n1, bool_node* n2){
 
 bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	if( n1->type == bool_node::NOT){
-		if( n1->mother == n2){
+		if( n1->mother() == n2){
 			return true;	
 		}
 	}
 	
 	if( n2->type == bool_node::NOT){
-		if( n2->mother == n1){
+		if( n2->mother() == n1){
 			return true;
 		}
 	}
@@ -533,8 +535,8 @@ void DagOptim::visit( CONST_node& node ){
 }
 
 void DagOptim::visit( AND_node& node ){
-	bool_node* nfather = node.father;
-	bool_node* nmother = node.mother;
+	bool_node* nfather = node.father();
+	bool_node* nmother = node.mother();
 
 	if( nfather == nmother ){ // x & x == x
 		rvalue = nfather;
@@ -568,11 +570,11 @@ void DagOptim::visit( AND_node& node ){
 	}
 
 	if(nmother->type == bool_node::AND){
-		if(isNotOfEachOther(nfather, nmother->mother)){
+		if(isNotOfEachOther(nfather, nmother->mother())){
 			rvalue = getCnode(0);
 			return;	
 		}
-		if(isNotOfEachOther(nfather, nmother->father)){
+		if(isNotOfEachOther(nfather, nmother->father())){
 			rvalue = getCnode(0);
 			return;	
 		}
@@ -580,21 +582,21 @@ void DagOptim::visit( AND_node& node ){
 	}
 
 	if(nfather->type == bool_node::AND){
-		if(isNotOfEachOther(nmother, nfather->mother)){
+		if(isNotOfEachOther(nmother, nfather->mother())){
 			rvalue = getCnode(0);
 			return;	
 		}
-		if(isNotOfEachOther(nmother, nfather->father)){
+		if(isNotOfEachOther(nmother, nfather->father())){
 			rvalue = getCnode(0);
 			return;	
 		}
 	}	
 	
 	if(nfather->type == bool_node::LT && nmother->type == bool_node::LT){		
-		if(nfather->father == nmother->father){
+		if(nfather->father() == nmother->father()){
 			// (a<x)&(b<x) --> a<x when b<a
-			if(isConst(nfather->mother) && isConst(nmother->mother)){
-				if(this->getIval(nfather->mother) < this->getIval(nmother->mother)){
+			if(isConst(nfather->mother()) && isConst(nmother->mother())){
+				if(this->getIval(nfather->mother()) < this->getIval(nmother->mother())){
 					rvalue = nmother;
 				}else{
 					rvalue = nfather;
@@ -603,20 +605,20 @@ void DagOptim::visit( AND_node& node ){
 			}
 
 			// (a+e<x) & (b+e<x) ---> a+e<x when b<a
-			if(nfather->mother->type == bool_node::PLUS && nmother->mother->type == bool_node::PLUS){
-				bool_node* nfm = nfather->mother;
-				bool_node* nmm = nmother->mother;
+			if(nfather->mother()->type == bool_node::PLUS && nmother->mother()->type == bool_node::PLUS){
+				bool_node* nfm = nfather->mother();
+				bool_node* nmm = nmother->mother();
 
-				bool_node* nmmConst = nmm->mother;
-				bool_node* nmmExp = nmm->father;
+				bool_node* nmmConst = nmm->mother();
+				bool_node* nmmExp = nmm->father();
 				if(isConst(nmmExp)){
 					bool_node* tmp = nmmExp;
 					nmmExp = nmmConst;
 					nmmConst = tmp;
 				}
 
-				bool_node* nfmConst = nfm->mother;
-				bool_node* nfmExp = nfm->father;
+				bool_node* nfmConst = nfm->mother();
+				bool_node* nfmExp = nfm->father();
 				if(isConst(nfmExp)){
 					bool_node* tmp = nfmExp;
 					nfmExp = nfmConst;
@@ -633,12 +635,12 @@ void DagOptim::visit( AND_node& node ){
 				}
 			}
 			// (a+e<x) & (e<x) ---> a+e<x when 0<a
-			if(nmother->mother->type == bool_node::PLUS){
-				bool_node* nfm = nfather->mother;
-				bool_node* nmm = nmother->mother;
+			if(nmother->mother()->type == bool_node::PLUS){
+				bool_node* nfm = nfather->mother();
+				bool_node* nmm = nmother->mother();
 
-				bool_node* nmmConst = nmm->mother;
-				bool_node* nmmExp = nmm->father;
+				bool_node* nmmConst = nmm->mother();
+				bool_node* nmmExp = nmm->father();
 				if(isConst(nmmExp)){
 					bool_node* tmp = nmmExp;
 					nmmExp = nmmConst;
@@ -659,21 +661,21 @@ void DagOptim::visit( AND_node& node ){
 
 
 		// (x<a)&(a<x) --> 0 
-		if(nfather->father == nmother->mother && nmother->father == nfather->mother){
+		if(nfather->father() == nmother->mother() && nmother->father() == nfather->mother()){
 			rvalue = this->getCnode(0);
 			return;
 		}
 	}
 
-	if(nfather->type == bool_node::AND && nmother->type == bool_node::LT && nfather->mother->type == bool_node::LT ){
+	if(nfather->type == bool_node::AND && nmother->type == bool_node::LT && nfather->mother()->type == bool_node::LT ){
 		// (a<x)&((b<x)& T)--> a<x & T when b<a
-		bool_node* nfm = nfather->mother;
-		if(nfm->father == nmother->father){
-			if(isConst(nfm->mother) && isConst(nmother->mother)){
-				if(this->getIval(nfm->mother) < this->getIval(nmother->mother)){
-					AND_node* an = new AND_node();
-					an->mother = nmother;
-					an->father = nfather->father;
+		bool_node* nfm = nfather->mother();
+		if(nfm->father() == nmother->father()){
+			if(isConst(nfm->mother()) && isConst(nmother->mother())){
+				if(this->getIval(nfm->mother()) < this->getIval(nmother->mother())){
+					AND_node* an = AND_node::create();
+					an->mother() = nmother;
+					an->father() = nfather->father();
 					an->addToParents();
 					rvalue = optAdd(an);					
 					return;
@@ -691,8 +693,8 @@ void DagOptim::visit( AND_node& node ){
 }
 
 void DagOptim::visit( OR_node& node ){
-	bool_node* nfather = node.father;
-	bool_node* nmother = node.mother;
+	bool_node* nfather = node.father();
+	bool_node* nmother = node.mother();
 	if( nfather == nmother ){ // x | x == x
 		rvalue = nfather;
 		return;	
@@ -703,19 +705,19 @@ void DagOptim::visit( OR_node& node ){
 	}
 	if( isConst(nfather) ){
 		if( isConst(nmother) ){ // const prop
-			rvalue = getCnode ( getBval( nfather ) || getBval( node.mother ) );				
+			rvalue = getCnode ( getBval( nfather ) || getBval( node.mother() ) );				
 			return;
 		}
 		if( getBval(nfather) ){ // x | true == true
 			rvalue = getCnode(1);			
 			return;
 		}else{
-			rvalue = node.mother;
+			rvalue = node.mother();
 			return;				
 		}		
 	}
-	if( isConst(node.mother) ){ // true | x == true
-		if( getBval(node.mother)){
+	if( isConst(node.mother()) ){ // true | x == true
+		if( getBval(node.mother())){
 			rvalue = getCnode(1);			
 			return;
 		}else{
@@ -723,23 +725,23 @@ void DagOptim::visit( OR_node& node ){
 			return;	
 		}
 	}	
-	if(nfather->type == bool_node::NOT && node.mother->type == bool_node::NOT){
-		bool_node* an = new AND_node();
-		an->mother = node.mother->mother;
-		an->father = nfather->mother;
+	if(nfather->type == bool_node::NOT && node.mother()->type == bool_node::NOT){
+		bool_node* an = AND_node::create();
+		an->mother() = node.mother()->mother();
+		an->father() = nfather->mother();
 		an->addToParents();
 		an = optAdd(an);
-		NOT_node* nn = new NOT_node();
-		nn->mother = an;
+		NOT_node* nn = NOT_node::create();
+		nn->mother() = an;
 		nn->addToParents();
 		rvalue = optAdd(nn);		
 		return;
 	}	
-	if(nmother->type == bool_node::LT && nfather->type == bool_node::NOT && nfather->mother->type == bool_node::LT){
-		bool_node* nfe = nfather->mother;
-		if(nmother->father == nfe->father){
-			if(isConst(nmother->mother)&& isConst(nfe->mother)){
-				if(getIval(nmother->mother)<=getIval(nfe->mother)){
+	if(nmother->type == bool_node::LT && nfather->type == bool_node::NOT && nfather->mother()->type == bool_node::LT){
+		bool_node* nfe = nfather->mother();
+		if(nmother->father() == nfe->father()){
+			if(isConst(nmother->mother())&& isConst(nfe->mother())){
+				if(getIval(nmother->mother())<=getIval(nfe->mother())){
 					rvalue = getCnode(1);
 					return;
 				}
@@ -751,17 +753,17 @@ void DagOptim::visit( OR_node& node ){
 
 
 void DagOptim::visit( XOR_node& node ){
-	if( node.father == node.mother ){ // x ^ x == false
+	if( node.father() == node.mother() ){ // x ^ x == false
 		rvalue = getCnode(0);
 		return;	
 	}
-	if( isNotOfEachOther(node.father, node.mother) ){ // x ^ !x == true
+	if( isNotOfEachOther(node.father(), node.mother()) ){ // x ^ !x == true
 		rvalue = getCnode(1);
 		return;	
 	}
-	if( isConst(node.father) ){
-		if( isConst(node.mother)){ // const prop
-			rvalue  = getCnode( getBval( node.father ) != getBval( node.mother ) );
+	if( isConst(node.father()) ){
+		if( isConst(node.mother())){ // const prop
+			rvalue  = getCnode( getBval( node.father() ) != getBval( node.mother() ) );
 			return;
 		}
 	}
@@ -770,12 +772,12 @@ void DagOptim::visit( XOR_node& node ){
 }
 
 void DagOptim::visit( NOT_node& node ){
-	if( isConst(node.mother) ){ // const prop
-		rvalue = getCnode( ! getBval(node.mother) );			
+	if( isConst(node.mother()) ){ // const prop
+		rvalue = getCnode( ! getBval(node.mother()) );			
 		return;
 	}
-	if( node.mother->type == bool_node::NOT){// ! ! x == x;
-		rvalue = node.mother->mother;
+	if( node.mother()->type == bool_node::NOT){// ! ! x == x;
+		rvalue = node.mother()->mother();
 		return;
 	}
 	rvalue = &node;
@@ -783,16 +785,16 @@ void DagOptim::visit( NOT_node& node ){
 
 
 void DagOptim::visit( PLUS_node& node ){	
-	bool_node* mother = node.mother;
-	bool_node* father = node.father;
+	bool_node* mother = node.mother();
+	bool_node* father = node.father();
 	int nc = 0;
 	
-	if(isConst(node.father)){
-		mother = node.father;
-		father = node.mother;
+	if(isConst(node.father())){
+		mother = node.father();
+		father = node.mother();
 		nc++;
 	}
-	if(isConst(node.mother)){
+	if(isConst(node.mother())){
 		nc++;	
 	}
 	//At this point, if nc>0, mother is const, 
@@ -808,26 +810,26 @@ void DagOptim::visit( PLUS_node& node ){
 			}
 			if( typeid(*father) == typeid(node) ){
 				PLUS_node& fathernode = *dynamic_cast<PLUS_node*>(father);
-				if( isConst(fathernode.father) ){
+				if( isConst(fathernode.father()) ){
 					//cout<<" DID REPLACEMENT 1"<<endl;
 					bool_node* nconst;
-					nconst = nodeAdd(fathernode.father, mother);										
-					PLUS_node* pnode = new PLUS_node();
-					pnode->mother = nconst;
-					Assert(!isConst(fathernode.mother), "This can't happen");
-					pnode->father = fathernode.mother;
+					nconst = nodeAdd(fathernode.father(), mother);										
+					PLUS_node* pnode = PLUS_node::create();
+					pnode->mother() = nconst;
+					Assert(!isConst(fathernode.mother()), "This can't happen");
+					pnode->father() = fathernode.mother();
 					pnode->addToParents();	
 					rvalue  = optAdd(pnode);
 					return;
 				}
-				if( isConst(fathernode.mother) ){
+				if( isConst(fathernode.mother()) ){
 					//cout<<" DID REPLACEMENT 2"<<endl;
 					bool_node* nconst;
-					nconst = nodeAdd(fathernode.mother, mother);									
-					PLUS_node* pnode = new PLUS_node();
-					pnode->mother = nconst;
-					Assert(!isConst(fathernode.father), "This can't happen");
-					pnode->father = fathernode.father;
+					nconst = nodeAdd(fathernode.mother(), mother);									
+					PLUS_node* pnode = PLUS_node::create();
+					pnode->mother() = nconst;
+					Assert(!isConst(fathernode.father()), "This can't happen");
+					pnode->father() = fathernode.father();
 					pnode->addToParents();
 					rvalue = optAdd(pnode);						
 					return;
@@ -842,17 +844,17 @@ void DagOptim::visit( PLUS_node& node ){
 	rvalue = &node;
 	
 	
-	if( isNegOfEachOther(node.mother, node.father) ){
-		rvalue = getZero(node.mother);				
+	if( isNegOfEachOther(node.mother(), node.father()) ){
+		rvalue = getZero(node.mother());				
 		return;
 	}
 	
 	
-	if( typeid(*node.father) == typeid(node) ){
-		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father);
-		bool_node* tt1 = parent.father;
-		bool_node* tt2 = parent.mother;
-		bool_node* tt3 = node.mother;
+	if( typeid(*node.father()) == typeid(node) ){
+		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.father());
+		bool_node* tt1 = parent.father();
+		bool_node* tt2 = parent.mother();
+		bool_node* tt3 = node.mother();
 			
 		if(isNegOfEachOther( tt1 , tt2)){
 			rvalue = tt3;
@@ -869,11 +871,11 @@ void DagOptim::visit( PLUS_node& node ){
 	}
 	
 	
-	if( typeid(*node.mother) == typeid(node) ){
-		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.mother);
-		bool_node* tt1 = parent.father;
-		bool_node* tt2 = parent.mother;
-		bool_node* tt3 = node.father;
+	if( typeid(*node.mother()) == typeid(node) ){
+		PLUS_node& parent = *dynamic_cast<PLUS_node*>(node.mother());
+		bool_node* tt1 = parent.father();
+		bool_node* tt2 = parent.mother();
+		bool_node* tt3 = node.father();
 			
 		if(isNegOfEachOther( tt1 , tt2)){
 			rvalue = tt3;
@@ -894,49 +896,49 @@ void DagOptim::visit( PLUS_node& node ){
 }
 
 void DagOptim::visit( TIMES_node& node ){
-	if( isConst(node.mother) ){ // const prop
-		if( isConst(node.father) ){
+	if( isConst(node.mother()) ){ // const prop
+		if( isConst(node.father()) ){
 			if (isFloat(&node)) {
-				rvalue = getCnode(getFval(node.mother) * getFval(node.father));
+				rvalue = getCnode(getFval(node.mother()) * getFval(node.father()));
 			} else {
-				rvalue = getCnode(getIval(node.mother) * getIval(node.father));
+				rvalue = getCnode(getIval(node.mother()) * getIval(node.father()));
 			}
 			return;
 		}
-		if(  isZero( node.mother ) ){
-			rvalue = node.mother;
+		if(  isZero( node.mother() ) ){
+			rvalue = node.mother();
 			return;
 		}
-		if(  isOne( node.mother ) ){
-			rvalue  = node.father;
+		if(  isOne( node.mother() ) ){
+			rvalue  = node.father();
 			return;
 		}	
 	}
-	if( isConst(node.father) ){
-		if(  isZero( node.father ) ){
-			rvalue = node.father;
+	if( isConst(node.father()) ){
+		if(  isZero( node.father() ) ){
+			rvalue = node.father();
 			return;
 		}
-		if(  isOne( node.father ) ){
-			rvalue  = node.mother;
+		if(  isOne( node.father() ) ){
+			rvalue  = node.mother();
 			return;
 		}
 	}
 
-	if (node.mother->type == bool_node::NEG) {
-		if (node.father->type == bool_node::NEG) {
-			bool_node* bn = new TIMES_node(node.mother->mother, node.father->mother);
+	if (node.mother()->type == bool_node::NEG) {
+		if (node.father()->type == bool_node::NEG) {
+			bool_node* bn = TIMES_node::create(node.mother()->mother(), node.father()->mother());
 			bn->addToParents();
 			bn = optAdd(bn);
 			rvalue = bn;
 			return;
 		}
 		else {
-			bool_node* bn = new TIMES_node(node.mother->mother, node.father);
+			bool_node* bn = TIMES_node::create(node.mother()->mother(), node.father());
 			bn->addToParents();
 			bn = optAdd(bn);
-			bool_node* obn = new NEG_node();
-			obn->mother = bn;
+			bool_node* obn = NEG_node::create();
+			obn->mother() = bn;
 			obn = optAdd(obn);
 			rvalue = obn;
 			return;
@@ -944,12 +946,12 @@ void DagOptim::visit( TIMES_node& node ){
 		}
 	}
 	else {
-		if (node.father->type == bool_node::NEG) {
-			bool_node* bn = new TIMES_node(node.mother, node.father->mother);
+		if (node.father()->type == bool_node::NEG) {
+			bool_node* bn = TIMES_node::create(node.mother(), node.father()->mother());
 			bn->addToParents();
 			bn = optAdd(bn);
-			bool_node* obn = new NEG_node();
-			obn->mother = bn;
+			bool_node* obn = NEG_node::create();
+			obn->mother() = bn;
 			obn = optAdd(obn);
 			rvalue = obn;
 			return;
@@ -961,20 +963,20 @@ void DagOptim::visit( TIMES_node& node ){
 }
 
 void DagOptim::visit( DIV_node& node ){
-	if( isConst(node.mother) ){ // const prop
-		if( isConst(node.father) ){
+	if( isConst(node.mother()) ){ // const prop
+		if( isConst(node.father()) ){
 			if (isFloat(&node)) {
-				double c = getFval(node.father);				
+				double c = getFval(node.father());				
 				if (floats.getIdx(c) != 0) {
-					rvalue = getCnode(getFval(node.mother) / c);
+					rvalue = getCnode(getFval(node.mother()) / c);
 				}
 				else {
 					rvalue = getCnode(0.0);
 				}
 			} else {
-				int c = getIval(node.father);
+				int c = getIval(node.father());
 				if (c != 0) {
-					rvalue = getCnode(getIval(node.mother) / c);
+					rvalue = getCnode(getIval(node.mother()) / c);
 				}
 				else {
 					rvalue = getCnode(0);
@@ -983,9 +985,9 @@ void DagOptim::visit( DIV_node& node ){
 			return;
 		}			
 	}
-	if(node.mother->type == bool_node::MOD){
-		bool_node* mpar = node.mother;
-		if(mpar->father == node.father){
+	if(node.mother()->type == bool_node::MOD){
+		bool_node* mpar = node.mother();
+		if(mpar->father() == node.father()){
 			rvalue = getCnode(0);
 			return;
 		}
@@ -993,20 +995,20 @@ void DagOptim::visit( DIV_node& node ){
 	rvalue = &node;
 }
 void DagOptim::visit( MOD_node& node ){
-	if( isConst(node.mother) ){ // const prop
-		if( isConst(node.father) ){
-			int c = getIval( node.father );
+	if( isConst(node.mother()) ){ // const prop
+		if( isConst(node.father()) ){
+			int c = getIval( node.father() );
 			if(c != 0){
-				rvalue  = getCnode( getIval( node.mother ) % c );
+				rvalue  = getCnode( getIval( node.mother() ) % c );
 			}else{
 				rvalue  = getCnode( 0 );
 			}
 			return;
 		}			
 	}
-	if(node.mother->type == bool_node::MOD){
-		bool_node* mpar = node.mother;
-		if(mpar->father == node.father){
+	if(node.mother()->type == bool_node::MOD){
+		bool_node* mpar = node.mother();
+		if(mpar->father() == node.father()){
 			rvalue = mpar;
 			return;
 		}
@@ -1014,16 +1016,16 @@ void DagOptim::visit( MOD_node& node ){
 	rvalue = &node;
 }
 void DagOptim::visit( NEG_node& node ){
-	if( isConst(node.mother) ){	// const prop
+	if( isConst(node.mother()) ){	// const prop
 		if (isFloat(&node)) {
-			rvalue = getCnode(-getFval(node.mother));
+			rvalue = getCnode(-getFval(node.mother()));
 		} else {
-			rvalue = getCnode(-getIval(node.mother));
+			rvalue = getCnode(-getIval(node.mother()));
 		}	
 		return;
 	}
-	if( typeid(*(node.mother)) == typeid(node)  ){// - -x == x;
-		rvalue = node.mother->mother;
+	if( typeid(*(node.mother())) == typeid(node)  ){// - -x == x;
+		rvalue = node.mother()->mother();
 		return;
 	}
 	rvalue = &node;
@@ -1032,9 +1034,9 @@ void DagOptim::visit( NEG_node& node ){
 void DagOptim::visit( TUPLE_CREATE_node& node) {
   if (node.depth == -1) {
     int d = 0; bool first = true;
-    for (int i = 0; i < node.multi_mother.size(); i++) {
-      if (node.multi_mother[i]->getOtype()->isTuple) {
-        int dd = node.multi_mother[i]->depth;
+	for (auto it = node.p_begin(); it != node.p_end(); ++it) {
+      if ((*it)->getOtype()->isTuple) {
+        int dd = (*it)->depth;
         if (first) {
           d = dd;
           first = false;
@@ -1054,12 +1056,12 @@ void DagOptim::visit( TUPLE_CREATE_node& node) {
 
 void DagOptim::visit( TUPLE_R_node& node){
     
-    if(!(node.mother->getOtype()->isTuple)){		
+    if(!(node.mother()->getOtype()->isTuple)){		
 		rvalue = getZero(&node);
         return;
     }
   if (node.depth == -1) {
-    int mdepth = node.mother->depth;
+    int mdepth = node.mother()->depth;
     if (mdepth == 0) { // mother is null
       rvalue = getZero(&node);
       return;
@@ -1068,20 +1070,20 @@ void DagOptim::visit( TUPLE_R_node& node){
     }
   }
   
-    if(node.mother->type == bool_node::TUPLE_CREATE){
+    if(node.mother()->type == bool_node::TUPLE_CREATE){
         int idx = node.idx;
-        TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother);
-        if(idx >= parent->multi_mother.size()|| idx <0){
+        TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother());
+        if(idx >= parent->nparents()|| idx <0){
             //this should never happen
            rvalue = &node;
             return;
         }
-        rvalue = parent->multi_mother[idx];
+        rvalue = parent->get_parent(idx);
         return;
     }
-    if(node.mother->type ==bool_node::ARRACC){
+    if(node.mother()->type ==bool_node::ARRACC){
        int idx =node.idx;
-       ARRACC_node* parent = dynamic_cast<ARRACC_node*>(node.mother);
+       ARRACC_node* parent = dynamic_cast<ARRACC_node*>(node.mother());
         
         /*// multimother size = 2 and one node is null
         if(parent->multi_mother.size() ==2){
@@ -1089,7 +1091,7 @@ void DagOptim::visit( TUPLE_R_node& node){
                 //0 node is null and 1 node should output a tuple
                 //set node's parent to multi_mother[1]
                 node.dislodge();
-                node.mother = parent->multi_mother[1];
+                node.mother() = parent->multi_mother[1];
 				node.resetId();
 				node.addToParents();
 				node.accept(*this);
@@ -1100,7 +1102,7 @@ void DagOptim::visit( TUPLE_R_node& node){
                 //1 node is null and 0 node should output a tuple
                 //set node's parent to multi_mother[0]
                 node.dislodge();
-                node.mother = parent->multi_mother[0];
+                node.mother() = parent->multi_mother[0];
 				node.resetId();
 				node.addToParents();
 				node.accept(*this);
@@ -1111,9 +1113,9 @@ void DagOptim::visit( TUPLE_R_node& node){
                 parent->dislodge();
                 node.dislodge();
                 for(int i=0; i< parent->multi_mother.size(); i++){
-                    TUPLE_R_node* tnode = new TUPLE_R_node();
+                    TUPLE_R_node* tnode = TUPLE_R_node::create();
                     tnode->idx = node.idx;
-                    tnode->mother = parent->multi_mother[i];
+                    tnode->mother() = parent->multi_mother[i];
                     tnode->addToParents();
                     tnode->accept(*this);
                     parent->multi_mother[i] = tnode;
@@ -1129,24 +1131,24 @@ void DagOptim::visit( TUPLE_R_node& node){
         
        //If all nodes in arracc in tuples
        bool allTuple = true;
-        for(int i=0; i< parent->multi_mother.size(); i++){
-            if(parent->multi_mother[i]->type != bool_node::TUPLE_CREATE){
+        for(int i=0; i< parent->nargs(); i++){
+            if(parent->arguments(i)->type != bool_node::TUPLE_CREATE){
                 allTuple = false;
                 break;
             }
         }
         if(allTuple){
-            if (!node.getOtype()->isArr || parent->mother->getOtype() == OutType::BOOL) {
-                ARRACC_node* newParent = new ARRACC_node();
-                newParent->mother = parent->mother;
-                for(int i=0; i< parent->multi_mother.size(); i++){
-                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
-                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+            if (!node.getOtype()->isArr || parent->mother()->getOtype() == OutType::BOOL) {
+                ARRACC_node* newParent = ARRACC_node::create(parent->nargs());
+                newParent->mother() = parent->mother();
+                for(int i=0; i< parent->nargs(); i++){
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->arguments(i));
+                    if(idx >= tuple_i->nparents()|| idx <0){
                         rvalue = &node;
                         return;
                     }
                     
-                    newParent->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                    newParent->arguments(i) = (tuple_i->get_parent(idx));
                 }
                 newParent->addToParents();
                 node.dislodge();
@@ -1154,31 +1156,31 @@ void DagOptim::visit( TUPLE_R_node& node){
                 return;
               
             } else {
-                int size = parent->multi_mother.size();
-                bool_node* mother = parent->mother;
+                int size = parent->nargs();
+                bool_node* mother = parent->mother();
                 bool_node* curr;
                 
                 
                 for (int i = size - 1; i >= 0; i--) {
-                    EQ_node* eq_node = new EQ_node();
-                    eq_node->mother = mother;
-                    eq_node->father = getCnode(i);
+                    EQ_node* eq_node = EQ_node::create();
+                    eq_node->mother() = mother;
+                    eq_node->father() = getCnode(i);
                     eq_node->addToParents();
                     
-                    ARRACC_node* an = new ARRACC_node();
-                    an->mother = optAdd(eq_node);
+                    ARRACC_node* an = ARRACC_node::create(2);
+                    an->mother() = optAdd(eq_node);
                     if (i == size - 1) {						
-                        an->multi_mother.push_back(getZero(&node));
+                        an->arguments(0) = (getZero(&node));
                     } else {
-                        an->multi_mother.push_back(curr);
+						an->arguments(0) = (curr);
                     }
-                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->multi_mother[i]);
-                    if(idx >= tuple_i->multi_mother.size()|| idx <0){
+                    TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->arguments(i));
+                    if(idx >= tuple_i->nparents()|| idx <0){
                         rvalue = &node;
                         return;
                     }
                     
-                    an->multi_mother.push_back(tuple_i->multi_mother[idx]);
+                    an->arguments(1) = (tuple_i->get_parent(idx));
                     an->addToParents();
                     curr = optAdd(an);
                     
@@ -1198,40 +1200,40 @@ void DagOptim::visit( TUPLE_R_node& node){
 void DagOptim::visit( ARR_R_node& node ){
 	//mother = index
 	//father = inputarr
-	bool_node* nfather = node.father;
-	bool_node* nmother = node.mother;
+	bool_node* nfather = node.father();
+	bool_node* nmother = node.mother();
 
 	if(nfather->type == bool_node::ARR_W){
-		if(nfather->mother == nmother){
+		if(nfather->mother() == nmother){
 			/* X = A{i -> t}; y = X[i];  ===> y = t;
 			*/
-			rvalue = dynamic_cast<ARR_W_node*>(nfather)->multi_mother[1];
+			rvalue = dynamic_cast<ARR_W_node*>(nfather)->getNewVal();
 			return;
 		}else{
 
-			if(isConst(nfather->mother) && isConst(nmother) && getIval(nfather->mother)!=getIval(nmother)){
+			if(isConst(nfather->mother()) && isConst(nmother) && getIval(nfather->mother())!=getIval(nmother)){
 				//They must be different constants, otherwise we wouldn't be in this branch.
 				/* X = A{i -> t}; y = X[j];  ===> y = A[j];
 				*/
-				//Experimental optimization. node.father and node.mother can't be equal because they are different type.
+				//Experimental optimization. node.father() and node.mother() can't be equal because they are different type.
 				//So we don't have to dislodge from both, only from father, since that's what we are changing.
 				//Also, we only have to insert to the new father.
 				//Also, there is no need to change the id of the node, because its semantics haven't changed.
 				//node.dislodge();
 
-				bool_node* newFather = ((ARR_W_node*)nfather)->multi_mother[0];
+				bool_node* newFather = ((ARR_W_node*)nfather)->getOldArr();
 
-				node.father->remove_child(&node);				
-				while(newFather->type == bool_node::ARR_W && isConst(newFather->mother) && getIval(newFather->mother)!=getIval(nmother)){
-					newFather = ((ARR_W_node*)newFather)->multi_mother[0];				
+				node.father()->remove_child(&node);				
+				while(newFather->type == bool_node::ARR_W && isConst(newFather->mother()) && getIval(newFather->mother())!=getIval(nmother)){
+					newFather = ((ARR_W_node*)newFather)->getOldArr();
 				}
 				
 
 
-				node.father = newFather;
+				node.father() = newFather;
 				// node.resetId();
 				// node.addToParents();
-				node.father->children.insert(&node);				
+				node.father()->children.insert(&node);				
 				node.accept(*this);
 				return;
 			}
@@ -1240,14 +1242,14 @@ void DagOptim::visit( ARR_R_node& node ){
 
 
 
-			if(node.father->mother->type == bool_node::PLUS &&
-				node.father->mother->mother == node.mother && 
-				isConst(node.father->mother->father) &&
-				getIval(node.father->mother->father) != 0
+			if(node.father()->mother()->type == bool_node::PLUS &&
+				node.father()->mother()->mother() == node.mother() && 
+				isConst(node.father()->mother()->father()) &&
+				getIval(node.father()->mother()->father()) != 0
 				){
 				/*X = A{b+i -> t}; y = X[b]; y = A[b];*/
 				node.dislodge();
-				node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
+				node.father() = dynamic_cast<ARR_W_node*>(node.father())->getOldArr();
 				node.resetId();
 				node.addToParents();
 				node.accept(*this);
@@ -1255,15 +1257,15 @@ void DagOptim::visit( ARR_R_node& node ){
 			}
 
 
-			if(node.mother->type == bool_node::PLUS){
-				if(isConst(node.mother->father)){// not equal zero.
-					int jval = getIval(node.mother->father);
+			if(node.mother()->type == bool_node::PLUS){
+				if(isConst(node.mother()->father())){// not equal zero.
+					int jval = getIval(node.mother()->father());
 					Assert(jval!= 0, "AEfalke");
-					if(node.mother->mother == node.father->mother ||
-						(node.father->mother->type == bool_node::PLUS &&
-						node.father->mother->mother == node.mother->mother && 
-						isConst(node.father->mother->father) &&
-						getIval(node.father->mother->father) != jval)
+					if(node.mother()->mother() == node.father()->mother() ||
+						(node.father()->mother()->type == bool_node::PLUS &&
+						node.father()->mother()->mother() == node.mother()->mother() && 
+						isConst(node.father()->mother()->father()) &&
+						getIval(node.father()->mother()->father()) != jval)
 						){
 				/*
 				X = A{b+i -> t}; y = X[b+j]; y = A[j];
@@ -1271,7 +1273,7 @@ void DagOptim::visit( ARR_R_node& node ){
 				X = A{b -> t}; y = X[b+j]; y = A[j];
 				*/
 							node.dislodge();
-							node.father = dynamic_cast<ARR_W_node*>(node.father)->multi_mother[0];
+							node.father() = dynamic_cast<ARR_W_node*>(node.father())->getOldArr();
 							node.resetId();
 							node.addToParents();
 							node.accept(*this);
@@ -1280,25 +1282,23 @@ void DagOptim::visit( ARR_R_node& node ){
 				}
 			}
 
-			if(isConst(nfather->mother) && nmother->type == bool_node::ARRACC && isConst(((ARRACC_node*)nmother)->multi_mother[0]) && isConst(((ARRACC_node*)nmother)->multi_mother[1]) && ((ARRACC_node*)nmother)->multi_mother.size()==2 ){
+			if(isConst(nfather->mother()) && nmother->type == bool_node::ARRACC && isConst(((ARRACC_node*)nmother)->arguments(0)) && isConst(((ARRACC_node*)nmother)->arguments(1)) && ((ARRACC_node*)nmother)->nargs()==2 ){
 				/* X = A{i -> t}; y = X[a?b:c];  ===> y = a?X[b]:X[c];
 				*/
-				ARRACC_node *amother = ((ARRACC_node*)nmother);
-				ARRACC_node *an = new ARRACC_node();
-				an->mother = nmother->mother;
-				ARR_R_node* ar0 = new ARR_R_node();
-				ar0->mother = amother->multi_mother[0];
-				ar0->father = nfather;
+				ARRACC_node *amother = ((ARRACC_node*)nmother);				
+				
+				ARR_R_node* ar0 = ARR_R_node::create();
+				ar0->mother() = amother->arguments(0);
+				ar0->father() = nfather;
 				ar0->addToParents();
 
 
-				ARR_R_node* ar1 = new ARR_R_node();
-				ar1->mother = amother->multi_mother[1];
-				ar1->father = nfather;
+				ARR_R_node* ar1 = ARR_R_node::create();
+				ar1->mother() = amother->arguments(1);
+				ar1->father() = nfather;
 				ar1->addToParents();
 
-				an->multi_mother.push_back( optAdd(ar0) );
-				an->multi_mother.push_back( optAdd(ar1) );
+				ARRACC_node *an = ARRACC_node::create(nmother->mother(), optAdd(ar0), optAdd(ar1));				
 				an->addToParents();
 				rvalue = optAdd(an);				
 				return;
@@ -1311,17 +1311,17 @@ void DagOptim::visit( ARR_R_node& node ){
 
 	if(isConst(nmother) && nfather->type == bool_node::ARR_CREATE){
 		int idx = getIval(nmother);
-		ARR_CREATE_node* acn = ((ARR_CREATE_node*)node.father);
-		if(idx >= acn->multi_mother.size()){
+		ARR_CREATE_node* acn = ((ARR_CREATE_node*)node.father());
+		if(idx >= acn->nparents()){
 			rvalue = acn->getDfltval();				
 			return;
 		}
-		rvalue = acn->multi_mother[idx];
+		rvalue = acn->get_parent(idx);
 		return;
 	}
 
-	if(isConst(node.father)){		
-		rvalue = node.father;		
+	if(isConst(node.father())){		
+		rvalue = node.father();		
 		return;
 	}
 	rvalue = &node;
@@ -1330,33 +1330,33 @@ void DagOptim::visit( ARR_R_node& node ){
 void DagOptim::visit( ARR_W_node& node ){
 	 /* multi-mother[0] = old-array;
         multi-mother[1] = new-value;*/
-	if(node.multi_mother[0] == node.multi_mother[1]){
-		rvalue = node.multi_mother[0];
+	if(node.getOldArr() == node.getNewVal()){
+		rvalue = node.getOldArr();
 		return;
 	}
 
 
-	if(isConst(node.multi_mother[0]) && isConst(node.mother) && isConst(node.multi_mother[1])){
+	if(isConst(node.getOldArr()) && isConst(node.mother()) && isConst(node.getNewVal())){
 		if(nccount < NCREATORS){
-			bool_node* defval = node.multi_mother[0];		
-			int idx = getIval(node.mother);
+			bool_node* defval = node.getOldArr();
+			int idx = getIval(node.mother());
 			if(idx == 0){
-				tempcreators[nccount].first = node.globalId;
-				tempcreators[nccount].second.setDfltval(defval); 
-				tempcreators[nccount].second.multi_mother.push_back(node.multi_mother[1]);
+				tempcreators[nccount].globalId = node.globalId;
+				tempcreators[nccount].defval = defval; 
+				tempcreators[nccount].multi_mother.push_back(node.getNewVal());
 				++nccount;
 			}			
 		}
 	}
 
-	if(node.multi_mother[0]->type == bool_node::ARR_W && isConst(node.mother) && isConst(node.multi_mother[1])){
+	if(node.getOldArr()->type == bool_node::ARR_W && isConst(node.mother()) && isConst(node.getNewVal())){
 		for(int i=0; i<nccount; ++i){
-			if(tempcreators[i].first == node.multi_mother[0]->globalId){
-				ARR_CREATE_node* old = &(tempcreators[i].second);
-				int idx = getIval(node.mother);
+			if(tempcreators[i].globalId == node.getOldArr()->globalId){
+				temp_ARR_creator* old = &(tempcreators[i]);
+				int idx = getIval(node.mother());
 				if(idx == old->multi_mother.size()){
-					old->multi_mother.push_back(node.multi_mother[1]);
-					tempcreators[i].first = node.globalId;
+					old->multi_mother.push_back(node.getNewVal());
+					tempcreators[i].globalId = node.globalId;
 				}
 				break;
 			}
@@ -1367,11 +1367,11 @@ void DagOptim::visit( ARR_W_node& node ){
 	/*
 	X = A{i->t}; Y = X{i->q} ===> X=A{i->t}; Y = A{i->q}
 	*/
-	if(node.multi_mother[0]->type == bool_node::ARR_W){
-		if(node.mother == node.multi_mother[0]->mother){
-			ARR_W_node* X = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
+	if(node.getOldArr()->type == bool_node::ARR_W){
+		if(node.mother() == node.getOldArr()->mother()){
+			ARR_W_node* X = dynamic_cast<ARR_W_node*>(node.getOldArr());
 			node.dislodge();
-			node.multi_mother[0] = X->multi_mother[0];
+			node.getOldArr() = X->getOldArr();
 			node.resetId();
 			node.addToParents();
 			node.accept(*this);
@@ -1384,17 +1384,17 @@ void DagOptim::visit( ARR_W_node& node ){
 
 	
 void DagOptim::visit( LT_node& node ){
-	if( isConst(node.mother) ){
-		if( isConst(node.father) ){
-			if (isFloat(node.mother)) {
-				rvalue = getCnode(getFval(node.mother) < getFval(node.father));
+	if( isConst(node.mother()) ){
+		if( isConst(node.father()) ){
+			if (isFloat(node.mother())) {
+				rvalue = getCnode(getFval(node.mother()) < getFval(node.father()));
 			} else {
-				rvalue = getCnode(getIval(node.mother) < getIval(node.father));
+				rvalue = getCnode(getIval(node.mother()) < getIval(node.father()));
 			}		
 			return;
 		}			
 	}
-	if( node.mother == node.father ){
+	if( node.mother() == node.father() ){
 		rvalue = getCnode(false);
 		return;
 	} 
@@ -1411,49 +1411,49 @@ void DagOptim::visit( LT_node& node ){
 
 
 void DagOptim::visit( EQ_node& node ){
-    node.mother->getOtype();
-    if( node.mother == node.father ){
+    node.mother()->getOtype();
+    if( node.mother() == node.father() ){
 		rvalue = getCnode(true);
 		return;
 	}
     
 
-	if( isConst(node.mother) ){
+	if( isConst(node.mother()) ){
         
-		if( isConst(node.father) ){
-			if (isFloat(node.mother)) {
-				rvalue = getCnode(floats.getIdx(getFval(node.mother)) == floats.getIdx(getFval(node.father)));
+		if( isConst(node.father()) ){
+			if (isFloat(node.mother())) {
+				rvalue = getCnode(floats.getIdx(getFval(node.mother())) == floats.getIdx(getFval(node.father())));
 			} else {
-				rvalue = getCnode(getIval(node.mother) == getIval(node.father));
+				rvalue = getCnode(getIval(node.mother()) == getIval(node.father()));
 			}		
 			return;
 		}
-		int mvalue = getIval( node.mother );
-		if( node.father->getOtype() == OutType::BOOL ){			
+		int mvalue = getIval( node.mother() );
+		if( node.father()->getOtype() == OutType::BOOL ){			
 			
 			if(mvalue == 1){
-				rvalue = node.father;
+				rvalue = node.father();
 				return;	
 			}
 			
 			if(mvalue == 0){
-				NOT_node* nt = new NOT_node();				
-				nt->mother = node.father;
+				NOT_node* nt = NOT_node::create();				
+				nt->mother() = node.father();
 				nt->addToParents();
 				rvalue = optAdd(nt);				
 				return;	
 			}
 		}
-        if(node.father->type == bool_node::TUPLE_CREATE){
+        if(node.father()->type == bool_node::TUPLE_CREATE){
             rvalue = getCnode(false);
 			return;
         }
 
 		/*
 
-		if(typeid(*node.father) == typeid(ARRACC_node)){
-			ARRACC_node* nf = dynamic_cast<ARRACC_node*>(node.father);
-			if(nf->mother->getOtype() == bool_node::BOOL){
+		if(typeid(*node.father()) == typeid(ARRACC_node)){
+			ARRACC_node* nf = dynamic_cast<ARRACC_node*>(node.father());
+			if(nf->mother()->getOtype() == bool_node::BOOL){
 				if(isConst(nf->multi_mother[0]) && isConst(nf->multi_mother[1])){
 					int mm1 = getIval(nf->multi_mother[0]);
 					int mm2 = getIval(nf->multi_mother[1]);
@@ -1468,21 +1468,21 @@ void DagOptim::visit( EQ_node& node ){
 
 	}
 	
-	if( isConst(node.father) ){
+	if( isConst(node.father()) ){
         
         
-		if( node.mother->getOtype() == OutType::BOOL ){
+		if( node.mother()->getOtype() == OutType::BOOL ){
            
-			int mvalue = getIval( node.father );
+			int mvalue = getIval( node.father() );
 			
 			if(mvalue == 1){
-				rvalue = node.mother;
+				rvalue = node.mother();
 				return;	
 			}
 			
 			if(mvalue == 0){
-				NOT_node* nt = new NOT_node();
-				nt->mother = node.mother;
+				NOT_node* nt = NOT_node::create();
+				nt->mother() = node.mother();
 				nt->addToParents();
 				rvalue = optAdd(nt);				
 				return;	
@@ -1490,7 +1490,7 @@ void DagOptim::visit( EQ_node& node ){
             
             
 		}
-        if(node.mother->type == bool_node::TUPLE_CREATE){
+        if(node.mother()->type == bool_node::TUPLE_CREATE){
             rvalue = getCnode(false);
 			return;
         }
@@ -1498,14 +1498,14 @@ void DagOptim::visit( EQ_node& node ){
 	}
 	
 	
-	if(node.father->getOtype() == OutType::BOOL && node.mother->getOtype() == OutType::BOOL){
-		bool_node* x = new XOR_node();
-		x->mother = node.mother;
-		x->father = node.father;
+	if(node.father()->getOtype() == OutType::BOOL && node.mother()->getOtype() == OutType::BOOL){
+		bool_node* x = XOR_node::create();
+		x->mother() = node.mother();
+		x->father() = node.father();
 		x->addToParents();
 		x = optAdd(x);
-		bool_node* n = new NOT_node();
-		n->mother = x;
+		bool_node* n = NOT_node::create();
+		n->mother() = x;
 		n->addToParents();
 		n = optAdd(n);		
 		rvalue = n;
@@ -1544,13 +1544,9 @@ bool DagOptim::checkPrecedence(bool_node* dest, bool_node* src){
 		if(bn == src){
 			return true;
 		}
-		checkAndPush(bn->mother, sd, bnmap);
-		checkAndPush(bn->father, sd, bnmap);
-		if(bn->isArith()){
-			arith_node* an = dynamic_cast<arith_node*>(bn);
-			for(int i=0; i<an->multi_mother.size(); ++i){
-				checkAndPush(an->multi_mother[i], sd, bnmap);
-			}
+
+		for (auto it = bn->p_begin(); it != bn->p_end(); ++it) {
+			checkAndPush((*it), sd, bnmap);
 		}
 	}
 	return false;
@@ -1565,21 +1561,21 @@ void DagOptim::visit( UFUN_node& node ){
     
     //cout<<"in ufun"<<endl;
     
-	if(isConst(node.mother)){
-		if(getIval( node.mother ) == 0){
+	if(isConst(node.mother())){
+		if(getIval( node.mother() ) == 0){
 			rvalue = getCnode(0);
 			return;
 		}
 	}
 
 	if (floats.hasFun(node.get_ufname())) {
-		if (isConst(node.multi_mother[0])) {
+		if (isConst(node.arguments(0))) {
 			auto ff = floats.getFun(node.get_ufname());
-			bool_node* tbn  = getCnode(ff.apply(getFval(node.multi_mother[0])));
+			bool_node* tbn  = getCnode(ff.apply(getFval(node.arguments(0))));
 			
-			TUPLE_CREATE_node* newOutTuple = new TUPLE_CREATE_node();
+			TUPLE_CREATE_node* newOutTuple = TUPLE_CREATE_node::create(1);
 			newOutTuple->setName( node.getTupleName() );
-			newOutTuple->multi_mother.push_back(tbn);
+			newOutTuple->set_parent(0, tbn);
 			newOutTuple->addToParents();
 
 			rvalue = optAdd(newOutTuple);				 
@@ -1603,8 +1599,8 @@ void DagOptim::visit( UFUN_node& node ){
 	tmp += node.outname;
 	tmp += "(";
 
-	for(int i=0; i<node.multi_mother.size(); ++i){
- 		int mmid = node.multi_mother[i] == NULL? -1: node.multi_mother[i]->id;
+	for(int i=0; i<node.nargs(); ++i){
+ 		int mmid = node.arguments(i) == NULL? -1: node.arguments(i)->id;
 		char tmpbo[256];		
 		// itoa(mmid, tmpbo, 10);
 		sprintf(tmpbo,"%d", mmid);
@@ -1619,7 +1615,7 @@ void DagOptim::visit( UFUN_node& node ){
 	
 	if(bro != callMap.end()){
 		UFUN_node* brother = bro->second;
-		if(brother->mother == node.mother){			
+		if(brother->mother() == node.mother()){			
 			rvalue = brother;
 
 			bool_node* tnode = cse.computeCSE(rvalue);
@@ -1629,13 +1625,13 @@ void DagOptim::visit( UFUN_node& node ){
 			return;
 		}
 		possibleCycles = true;				
-		if(true /*|| !checkPrecedence(node.mother, brother)*/){
+		if(true /*|| !checkPrecedence(node.mother(), brother)*/){
 			
 			brother->dislodge();
-			brother->mother->remove_child(brother);
-			bool_node* on = new OR_node();
-			on->mother = brother->mother;
-			on->father = node.mother;
+			brother->mother()->remove_child(brother);
+			bool_node* on = OR_node::create();
+			on->mother() = brother->mother();
+			on->father() = node.mother();
 			
 			{
 				bool_node* onPr = this->computeOptim(on);
@@ -1650,7 +1646,7 @@ void DagOptim::visit( UFUN_node& node ){
 			
 						
 
-			brother->mother = on;
+			brother->mother() = on;
 //			brother->resetId();
 //			Shouldn't reset id. Global ID stays the same because meaning stays the same.			
 			brother->addToParents();
@@ -1696,35 +1692,35 @@ void DagOptim::visit( UFUN_node& node ){
 
 // m >= f <==> !(m < f);
 bool_node*  DagOptim::addGE(bool_node* mother, bool_node* father){
-	bool_node* lt = new LT_node();
-	lt->mother = mother;
-	lt->father = father;
+	bool_node* lt = LT_node::create();
+	lt->mother() = mother;
+	lt->father() = father;
 	lt->addToParents();
 	lt = optAdd(lt);
-	NOT_node* nn = new NOT_node();
-	nn->mother = lt;
+	NOT_node* nn = NOT_node::create();
+	nn->mother() = lt;
 	nn->addToParents();	
 	return optAdd(nn);
 }
 
 // m > f <==> (f < m);
 bool_node*  DagOptim::addGT(bool_node* mother, bool_node* father){
-	LT_node* lt = new LT_node();
-	lt->mother = father;
-	lt->father = mother;
+	LT_node* lt = LT_node::create();
+	lt->mother() = father;
+	lt->father() = mother;
 	lt->addToParents();	
 	return optAdd(lt);
 }
 
 // m <= f <==> !(f < m);
 bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
-	bool_node* lt = new LT_node();
-	lt->mother = father;
-	lt->father = mother;
+	bool_node* lt = LT_node::create();
+	lt->mother() = father;
+	lt->father() = mother;
 	lt->addToParents();
 	lt = optAdd(lt);
-	NOT_node* nn = new NOT_node();
-	nn->mother = lt;
+	NOT_node* nn = NOT_node::create();
+	nn->mother() = lt;
 	nn->addToParents();	
 	return optAdd(nn);	
 }
@@ -1733,18 +1729,18 @@ bool_node*  DagOptim::addLE(bool_node* mother, bool_node* father){
 bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 	
     
-		if( isIntConst(node.multi_mother[0]) ){
-			int val0 = getIval( node.multi_mother[0] );
-			if( isIntConst(node.multi_mother[1]) ){
-                int val1 = getIval( node.multi_mother[1] );
+		if( isIntConst(node.arguments(0)) ){
+			int val0 = getIval( node.arguments(0) );
+			if( isIntConst(node.arguments(1)) ){
+                int val1 = getIval( node.arguments(1) );
 				if( (val0 == 0 || val0 == 1) &&  (val1 == 0 || val1 == 1) ){
 				//We know val0 and val1 are different.
 					if(val0 == 0){
-						rvalue = node.mother;
+						rvalue = node.mother();
 						return true;
 					}else{
-						NOT_node* nt = new NOT_node();
-						nt->mother = node.mother;
+						NOT_node* nt = NOT_node::create();
+						nt->mother() = node.mother();
 						nt->addToParents();
 						rvalue = optAdd(nt);												
 						return true;
@@ -1752,29 +1748,29 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				}
 			}
 			// if( isConst(node.multi_mother[0]) )
-			if(val0 == 0 && node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
-				AND_node* an = new AND_node();				
-				an->mother = node.mother;
-				an->father = node.multi_mother[1];
+			if(val0 == 0 && node.arguments(1)->getOtype()==OutType::BOOL && ALTER_ARRACS){
+				AND_node* an = AND_node::create();				
+				an->mother() = node.mother();
+				an->father() = node.arguments(1);
 				an->addToParents();
 				rvalue = optAdd(an);			
 				return true;
 			}
 
-			if(val0==1 && node.multi_mother[1] == node.mother){
+			if(val0==1 && node.arguments(1) == node.mother()){
 				rvalue = getCnode(1);
 				return true;
 			}
 
 		}//if( isConst(node.multi_mother[0]) )
     
-		if( isIntConst(node.multi_mother[1]) ){
+		if( isIntConst(node.arguments(1)) ){
             
-			int val1 = getIval( node.multi_mother[1] );	
-			if(val1 == 1 && node.multi_mother[0]->getOtype()==OutType::BOOL && ALTER_ARRACS){
-				OR_node* an = new OR_node();
-				an->mother = node.mother;
-				an->father = node.multi_mother[0];
+			int val1 = getIval( node.arguments(1) );
+			if(val1 == 1 && node.arguments(0)->getOtype()==OutType::BOOL && ALTER_ARRACS){
+				OR_node* an = OR_node::create();
+				an->mother() = node.mother();
+				an->father() = node.arguments(0);
 				an->addToParents();
 				rvalue = optAdd(an);			
 				return true;
@@ -1783,52 +1779,51 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		}//if( isConst(node.multi_mother[1]) )
 
 
-		if( node.mother == node.multi_mother[0] && node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
-				AND_node* an = new AND_node();
-				an->mother = node.mother;
-				an->father = node.multi_mother[1];
+		if( node.mother() == node.arguments(0) && node.arguments(1)->getOtype()==OutType::BOOL && ALTER_ARRACS){
+				AND_node* an = AND_node::create();
+				an->mother() = node.mother();
+				an->father() = node.arguments(1);
 				an->addToParents();
 				rvalue = optAdd(an);		
 				return true;
 		}
 		
 		
-		if( isNotOfEachOther(node.mother, node.multi_mother[0])&& node.multi_mother[1]->getOtype()==OutType::BOOL && ALTER_ARRACS){
-				OR_node* an = new OR_node();
-				an->mother = node.multi_mother[0];
-				an->father = node.multi_mother[1];
+		if( isNotOfEachOther(node.mother(), node.arguments(0))&& node.arguments(1)->getOtype()==OutType::BOOL && ALTER_ARRACS){
+				OR_node* an = OR_node::create();
+				an->mother() = node.arguments(0);
+				an->father() = node.arguments(1);
 				an->addToParents();
 				rvalue = optAdd(an);		
 				return true;
 		}
 
    
-		if(node.mother->type == bool_node::EQ || (node.mother->type == bool_node::NOT && node.mother->mother->type == bool_node::EQ) ){
+		if(node.mother()->type == bool_node::EQ || (node.mother()->type == bool_node::NOT && node.mother()->mother()->type == bool_node::EQ) ){
 				
-				bool_node* eqmom = node.mother->type == bool_node::EQ ? node.mother  :node.mother->mother;
+				bool_node* eqmom = node.mother()->type == bool_node::EQ ? node.mother()  :node.mother()->mother();
            
 				if(node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL){
                    
-					if(isIntConst(eqmom->mother) || isIntConst(eqmom->father)){
+					if(isIntConst(eqmom->mother()) || isIntConst(eqmom->father())){
 						bool_node* mother = NULL;
 						int C;
-						if(isConst(eqmom->mother)){
-							mother = eqmom->father;
-							C = this->getIval(eqmom->mother);
+						if(isConst(eqmom->mother())){
+							mother = eqmom->father();
+							C = this->getIval(eqmom->mother());
 						}else{
-							mother = eqmom->mother;
-							C = this->getIval(eqmom->father);
+							mother = eqmom->mother();
+							C = this->getIval(eqmom->father());
 						}
-						ARRASS_node* an = new ARRASS_node();
-						an->mother = mother;
+						
 						int b = 0;
-						if(node.mother->type == bool_node::NOT){
+						if(node.mother()->type == bool_node::NOT){
 							b = 1;
 						}else{
 							b = 0;
 						}
-						an->multi_mother.push_back(node.multi_mother[b]);
-						an->multi_mother.push_back(node.multi_mother[1-b]);
+						ARRASS_node* an = ARRASS_node::create(mother, node.arguments(b), node.arguments(1 - b));
+						
 						an->addToParents();
 						an->quant = C;
 						rvalue = optAdd(an);
@@ -1840,31 +1835,31 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		
 		
 		
-		if( node.multi_mother[1]->type == bool_node::ARRACC  ){
+		if( node.arguments(1)->type == bool_node::ARRACC  ){
            
-			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[1]);
-			if( node.multi_mother[0] == mm1.multi_mother[0] && node.mother->getOtype() == OutType::BOOL && mm1 .mother->getOtype() == OutType::BOOL ){
-				bool_node* an = new AND_node();
-				an->mother = node.mother;
-				an->father = mm1 .mother;
+			ARRACC_node& mm1 = 	dynamic_cast<ARRACC_node&>(*node.arguments(1));
+			if( node.arguments(0) == mm1.arguments(0) && node.mother()->getOtype() == OutType::BOOL && mm1 .mother()->getOtype() == OutType::BOOL ){
+				bool_node* an = AND_node::create();
+				an->mother() = node.mother();
+				an->father() = mm1 .mother();
 				an->addToParents();
 				an = optAdd(an);
 
 				an =  cse.computeCSE(an) ;
 				
 				node.dislodge();
-				node.mother = an;
-				node.multi_mother[1] = mm1.multi_mother[1];
+				node.mother() = an;
+				node.arguments(1) = mm1.arguments(1);
 				node.resetId();
 				node.addToParents();				
 				node.accept(*this);
 				return true;
 			}	
 
-			if(node.mother == mm1.mother){
+			if(node.mother() == mm1.mother()){
 				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
 				node.dislodge();
-				node.multi_mother[1] = mm1.multi_mother[1];
+				node.arguments(1) = mm1.arguments(1);
 				node.resetId();
 				node.addToParents();				
 				rvalue = &node;
@@ -1873,22 +1868,22 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 			
 			/*
 			if( node.multi_mother[0] == mm1.multi_mother[1] && mm1.children.size() < 2){
-				AND_node* an = new AND_node();
+				AND_node* an = AND_node::create();
 				an->name = node.name;
 				an->name += "AND";
-				an->mother = node.mother;
+				an->mother() = node.mother();
 				
 								
-				NOT_node* nt = new NOT_node();
+				NOT_node* nt = NOT_node::create();
 				nt->name = node.name;
 				nt->name += "NOTc";
-				nt->mother = mm1 .mother;
+				nt->mother() = mm1 .mother();
 				nt->addToParents();
 				addNode(nt);
 
 				
 				
-				an->father = nt;
+				an->father() = nt;
 				an->addToParents();
 				addNode(an);
 
@@ -1899,7 +1894,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				
 				
 				node.dislodge();
-				node.mother = an;
+				node.mother() = an;
 				node.multi_mother[1] = mm1.multi_mother[0];
 				node.addToParents();
 			}
@@ -1910,12 +1905,12 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 		}
    
 		
-		if( node.multi_mother[0]->type == bool_node::ARRACC  ){
-			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.multi_mother[0]);		
-			if( node.multi_mother[1] == mm0.multi_mother[1] && mm0.mother->getOtype() == OutType::BOOL &&  mm0.children.size() < 2){
-				OR_node* on = new OR_node();
-				on->mother = node.mother;
-				on->father = mm0 .mother;
+		if( node.arguments(0)->type == bool_node::ARRACC  ){
+			ARRACC_node& mm0 = 	dynamic_cast<ARRACC_node&>(*node.arguments(0));		
+			if( node.arguments(1) == mm0.arguments(1) && mm0.mother()->getOtype() == OutType::BOOL &&  mm0.children.size() < 2){
+				OR_node* on = OR_node::create();
+				on->mother() = node.mother();
+				on->father() = mm0 .mother();
 				on->addToParents();
 				addNode(on);
 
@@ -1924,8 +1919,8 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				bool_node* ton = this->computeOptim(on);
 
 				node.dislodge();
-				node.mother = ton;
-				node.multi_mother[0] = mm0.multi_mother[0];
+				node.mother() = ton;
+				node.arguments(0) = mm0.arguments(0);
 				node.resetId();
 				node.addToParents();
 				node.accept(*this);
@@ -1933,10 +1928,10 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 			}
 			
 			
-			if(node.mother == mm0.mother){
+			if(node.mother() == mm0.mother()){
 				//cout<<" I just saved a bunch of nodes !! Wehee! "<<endl;
 				node.dislodge();
-				node.multi_mother[0] = mm0.multi_mother[0];
+				node.arguments(0) = mm0.arguments(0);
 				node.resetId();
 				node.addToParents();
 				rvalue = &node;
@@ -1949,19 +1944,19 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 
 			/*
 			if( node.multi_mother[1] == mm1.multi_mother[0] && mm1.children.size() < 2){
-				OR_node* an = new OR_node();
+				OR_node* an = OR_node::create();
 				an->name = node.name;
 				an->name += "OR";
-				an->mother = node.mother;
+				an->mother() = node.mother();
 				
 								
-				NOT_node* nt = new NOT_node();
+				NOT_node* nt = NOT_node::create();
 				nt->name = node.name;
 				nt->name += "NOTd";
-				nt->mother = mm1 .mother;
+				nt->mother() = mm1 .mother();
 				addNode(nt);
 
-				an->father = nt;
+				an->father() = nt;
 				an->addToParents();
 				addNode(an);
 
@@ -1970,7 +1965,7 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 				
 				
 				node.dislodge();
-				node.mother = an;
+				node.mother() = an;
 				node.multi_mother[0] = mm1.multi_mother[1];
 				node.addToParents();
 			}
@@ -1978,14 +1973,14 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 			
 		}
     
-		if(node.mother->type == bool_node::NOT){
-			bool_node* newmom = node.mother->mother;
-			bool_node* np0 = node.multi_mother[1];
-			bool_node* np1 = node.multi_mother[0];
+		if(node.mother()->type == bool_node::NOT){
+			bool_node* newmom = node.mother()->mother();
+			bool_node* np0 = node.arguments(1);
+			bool_node* np1 = node.arguments(0);
 			node.dislodge();
-			node.mother = newmom;
-			node.multi_mother[0] = np0;
-			node.multi_mother[1] = np1;
+			node.mother() = newmom;
+			node.arguments(0) = np0;
+			node.arguments(1) = np1;
 			node.resetId();
 			node.addToParents();
 			node.accept(*this);
@@ -1997,11 +1992,11 @@ bool DagOptim::optimizeMMsize2(ARRACC_node& node){
 
 void DagOptim::visit( ARRACC_node& node ){
     
-	if( isConst(node.mother) ){
+	if( isConst(node.mother()) ){
         
-		int val = getIval( node.mother );		
-		if(val < node.multi_mother.size()){
-			rvalue = node.multi_mother[val];
+		int val = getIval( node.mother() );		
+		if(val < node.nargs()){
+			rvalue = node.arguments(val);
 		}else{
 			rvalue = getZero(&node);
 		}
@@ -2010,11 +2005,11 @@ void DagOptim::visit( ARRACC_node& node ){
 	}
  if (node.depth == -1 ){
     if (node.getOtype()->isTuple) {
-      if (node.multi_mother.size() > 0) {
-        int d = node.multi_mother[0]->depth;
+      if (node.nargs() > 0) {
+        int d = node.arguments(0)->depth;
         if (d != -1) {
-          for (int i = 1; i < node.multi_mother.size(); i++) {
-            int dd = node.multi_mother[i]->depth;
+          for (int i = 1; i < node.nargs(); i++) {
+            int dd = node.arguments(i)->depth;
             if (dd == -1) {
               d = -1;
               break;
@@ -2034,15 +2029,15 @@ void DagOptim::visit( ARRACC_node& node ){
 	
 	
 	
-	if( node.multi_mother.size() >0 ){
-       bool_node* bn =  node.multi_mother[0];
-		for(int i=1; i<node.multi_mother.size(); ++i){
-			if( bn != node.multi_mother[i] ){
+	if( node.nargs() >0 ){
+       bool_node* bn =  node.arguments(0);
+		for(int i=1; i<node.nargs(); ++i){
+			if( bn != node.arguments(i) ){
 				tmp = false;
 			}
 		}
 		if( tmp ){
-			if( (node.multi_mother.size()==2 && node.mother->getOtype()== OutType::BOOL) || PARAMS->assumebcheck ){
+			if( (node.nargs()==2 && node.mother()->getOtype()== OutType::BOOL) || PARAMS->assumebcheck ){
 				/* 
 				 * It may seem that the transformation inside the following if statement also applies to
 				 * ARRACC with non-bool mother. But this is not the case, because if the mother is non-bool, 
@@ -2057,25 +2052,20 @@ void DagOptim::visit( ARRACC_node& node ){
 					return;
 				}else{
 					
-					bool_node* nt = new LT_node();
-					nt->mother = node.mother;
-					nt->father = this->getCnode((int) node.multi_mother.size());
+					bool_node* nt = LT_node::create();
+					nt->mother() = node.mother();
+					nt->father() = this->getCnode((int) node.nargs());
 					nt->addToParents();
 					nt = optAdd(nt);
 					
-					ARRACC_node* ar = new ARRACC_node();
-					ar->mother = nt;
-					ar->multi_mother.push_back(getCnode(0));
-					ar->multi_mother.push_back(bn);						
+					ARRACC_node* ar = ARRACC_node::create(nt, getCnode(0), bn);
+										
 					ar->addToParents();
 					bool_node* arrr = optAdd(ar);
 
-					bool_node* gt = addGE(node.mother, this->getCnode(0));
+					bool_node* gt = addGE(node.mother(), this->getCnode(0));
 					
-					ARRACC_node* gar = new ARRACC_node();
-					gar->mother = gt;
-					gar->multi_mother.push_back(getCnode(0));
-					gar->multi_mother.push_back(arrr);						
+					ARRACC_node* gar = ARRACC_node::create(gt, getCnode(0), arrr);					
 					gar->addToParents();
 					rvalue = optAdd(gar);					
 					return;
@@ -2086,27 +2076,27 @@ void DagOptim::visit( ARRACC_node& node ){
 
 
 	
-	if( node.multi_mother.size()==2 && node.mother->getOtype()== OutType::BOOL ){
+	if( node.nargs()==2 && node.mother()->getOtype()== OutType::BOOL ){
         if(this->optimizeMMsize2(node)){
 			return;
 		}
 	}else{
-		if(node.mother->type == bool_node::ARRACC){
-			ARRACC_node* an = dynamic_cast<ARRACC_node*>(node.mother);
-			if(an->mother->getOtype() == OutType::BOOL && an->multi_mother.size()==2 && an->multi_mother[0]->type == bool_node::CONST && an->multi_mother[1]->type == bool_node::CONST){
-				int c0 = this->getIval(an->multi_mother[0]);
-				int c1 = this->getIval(an->multi_mother[1]);
-				ARRACC_node* ar = new ARRACC_node();
-				ar->mother = an->mother;
-				if(c0 < node.multi_mother.size()){
-					ar->multi_mother.push_back(node.multi_mother[c0]);
+		if(node.mother()->type == bool_node::ARRACC){
+			ARRACC_node* an = dynamic_cast<ARRACC_node*>(node.mother());
+			if(an->mother()->getOtype() == OutType::BOOL && an->nargs()==2 && an->arguments(0)->type == bool_node::CONST && an->arguments(1)->type == bool_node::CONST){
+				int c0 = this->getIval(an->arguments(0));
+				int c1 = this->getIval(an->arguments(1));
+				ARRACC_node* ar = ARRACC_node::create(2);
+				ar->mother() = an->mother();
+				if(c0 < node.nargs()){
+					ar->arguments(0) = (node.arguments(c0));
 				}else{
-					ar->multi_mother.push_back(this->getCnode(0));
+					ar->arguments(0) = (this->getCnode(0));
 				}
-				if(c1 < node.multi_mother.size()){
-					ar->multi_mother.push_back(node.multi_mother[c1]);
+				if(c1 < node.nargs()){
+					ar->arguments(1) = (node.arguments(c1));
 				}else{
-					ar->multi_mother.push_back(this->getCnode(0));
+					ar->arguments(1) = (this->getCnode(0));
 				}
 				ar->addToParents();					
 				rvalue = optAdd(ar);				
@@ -2116,34 +2106,37 @@ void DagOptim::visit( ARRACC_node& node ){
 
 
 
-		staticCompare<less<int> >(node.mother, node.multi_mother.size(), false);
-		AbstractNodeValue& val = anv[node.mother];
+		staticCompare<less<int> >(node.mother(), node.nargs(), false);
+		AbstractNodeValue& val = anv[node.mother()];
 		if(!val.isTop()){
 			int h = val.getHigh();
 			int l = val.getLow();
-			/*Look at the range for node.mother. Then do the following optimizations:
+			/*Look at the range for node.mother(). Then do the following optimizations:
 			--If the range is entirely within node.multi_mother and all the entries in that range are equal to tmpnode, return tmpnode.
 			--If the lower-bound of the range is >0, set all entries below l to zero.
 			--If the upper-bound of the range is < node.multi_mother.size()-1, shave off all those extra entries.
 			*/
-			if(h < node.multi_mother.size()-1 || l > 0){
-				ARRACC_node* ar = new ARRACC_node();
-				ar->mother = node.mother;
-				int size = (h+1) < node.multi_mother.size() ? (h+1) : node.multi_mother.size();
-				ar->multi_mother.reserve(size);
+			if(h < node.nargs()-1 || l > 0){
+				
+				
+				int size = (h+1) < node.nargs() ? (h+1) : node.nargs();
+				
+				ARRACC_node* ar = ARRACC_node::create(size);
+				ar->mother() = node.mother();
+				
 				bool_node* tmpnode = NULL;
-				bool tflag =  (h < node.multi_mother.size() && l >= 0) || PARAMS->assumebcheck;
+				bool tflag =  (h < node.nargs() && l >= 0) || PARAMS->assumebcheck;
 				for(int i=0; i<size; ++i){
 					if(i >= l && !(val.isList() && !val.contains(i))){
-						bool_node* x = node.multi_mother[i];
+						bool_node* x = node.arguments(i);
 						if(tmpnode ==NULL){
 							tmpnode = x;
 						}else{
 							tflag = tflag && (tmpnode == x);
 						}
-						ar->multi_mother.push_back( x );
+						ar->arguments(i) =  x ;
 					}else{
-						ar->multi_mother.push_back(getCnode(0));
+						ar->arguments(i) = getCnode(0);
 					}
 				}
 				if(size == 0){
@@ -2162,7 +2155,7 @@ void DagOptim::visit( ARRACC_node& node ){
 				}else{
 					ar->addToParents();					
 					addNode(ar);
-					if(ar->multi_mother.size() != node.multi_mother.size()){
+					if(ar->nargs() != node.nargs()){
 						stillPrivate = ar;
 						ar->accept(*this);
 					}else{
@@ -2177,14 +2170,14 @@ void DagOptim::visit( ARRACC_node& node ){
 	}
 
 
-	if(node.multi_mother.size()==2 && node.multi_mother[0]->type == bool_node::ARR_W){
-		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
+	if(node.nargs()==2 && node.arguments(0)->type == bool_node::ARR_W){
+		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.arguments(0));
 		/*!
 			arrw 
 			multi-mother[0] = old-array;
 			multi-mother[1] = new-value;        
 		*/
-		if(arrw->multi_mother[0] == node.multi_mother[1]){
+		if(arrw->getOldArr() == node.arguments(1)){
 			/*
 			X = W{i->t}   //arrw
 			Y= [p]$X, W$  //node
@@ -2193,24 +2186,20 @@ void DagOptim::visit( ARRACC_node& node ){
 			tn = [p]$t, to$
 			Y = W{i->tn}
 			*/
-			bool_node* W = node.multi_mother[1];
-			ARR_R_node* to = new ARR_R_node();
-			to->mother = arrw->mother; // index;
-			to->father = W; 			
+			bool_node* W = node.arguments(1);
+			ARR_R_node* to = ARR_R_node::create();
+			to->mother() = arrw->mother(); // index;
+			to->father() = W; 			
 			to->addToParents();			
 			bool_node* too = optAdd(to);
 				
-			ARRACC_node* tn = new ARRACC_node();
-			tn->mother = node.mother;
-			tn->multi_mother.push_back(arrw->multi_mother[1]);
-			tn->multi_mother.push_back(too);			
+			ARRACC_node* tn = ARRACC_node::create(node.mother(), arrw->getNewVal(), too);
+					
 			tn->addToParents();			
 			bool_node* tnn = optAdd(tn);
 
-			ARR_W_node* Y = new ARR_W_node();
-			Y->mother = arrw->mother;
-			Y->multi_mother.push_back(W);
-			Y->multi_mother.push_back(tnn);			
+			ARR_W_node* Y = ARR_W_node::create(arrw->mother(), W, tnn);
+				
 			Y->addToParents();
 			rvalue = optAdd(Y);
 			return;
@@ -2219,15 +2208,15 @@ void DagOptim::visit( ARRACC_node& node ){
 	}
 
 
-	if(node.multi_mother.size()==2 && node.multi_mother[1]->type == bool_node::ARR_W){
+	if(node.nargs()==2 && node.arguments(1)->type == bool_node::ARR_W){
         
-		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.multi_mother[1]);
+		ARR_W_node* arrw = dynamic_cast<ARR_W_node*>(node.arguments(1));
 		/*!
 			arrw 
 			multi-mother[0] = old-array;
 			multi-mother[1] = new-value;        
 		*/
-		if(arrw->multi_mother[0] == node.multi_mother[0]){
+		if(arrw->getOldArr() == node.arguments(0)){
 			/*
 			X = W{i->t}   //arrw
 			Y= [p]$W, X$  //node
@@ -2236,32 +2225,27 @@ void DagOptim::visit( ARRACC_node& node ){
 			tn = [p]$to, t$
 			Y = W{i->tn}
 			*/
-			bool_node* W = node.multi_mother[0];
-			ARR_R_node* to = new ARR_R_node();
-			to->mother = arrw->mother; // index;
-			to->father = W; 			
+			bool_node* W = node.arguments(0);
+			ARR_R_node* to = ARR_R_node::create();
+			to->mother() = arrw->mother(); // index;
+			to->father() = W; 			
 			to->addToParents();			
 			bool_node* too = optAdd(to);
 				
-			ARRACC_node* tn = new ARRACC_node();
-			tn->mother = node.mother;
-			tn->multi_mother.push_back(too);
-			tn->multi_mother.push_back(arrw->multi_mother[1]);			
+			ARRACC_node* tn = ARRACC_node::create(node.mother(), too, arrw->getNewVal());
+			
 			tn->addToParents();			
 			bool_node* tnn = optAdd(tn);
 
-			ARR_W_node* Y = new ARR_W_node();
-			Y->mother = arrw->mother;
-			Y->multi_mother.push_back(W);
-			Y->multi_mother.push_back(tnn);			
+			ARR_W_node* Y = ARR_W_node::create(arrw->mother(), W, tnn);			
 			Y->addToParents();
 			rvalue = optAdd(Y);
 			return;
 		}
 
-		if(node.multi_mother[0]->type == bool_node::ARR_W){
-			ARR_W_node* arrt = dynamic_cast<ARR_W_node*>(node.multi_mother[0]);
-			if(arrw->mother == arrt->mother && arrw->multi_mother[0] == arrt->multi_mother[0]){
+		if(node.arguments(0)->type == bool_node::ARR_W){
+			ARR_W_node* arrt = dynamic_cast<ARR_W_node*>(node.arguments(0));
+			if(arrw->mother() == arrt->mother() && arrw->getOldArr() == arrt->getOldArr()){
 				/*
 				T = W{i->q}	  //arrt
 				X = W{i->t}   //arrw
@@ -2270,18 +2254,14 @@ void DagOptim::visit( ARRACC_node& node ){
 				tn = [p]$t, q$
 				Y = W{i->tn}
 				*/
-				bool_node* W = arrw->multi_mother[0];
-				ARRACC_node* tn = new ARRACC_node();
-				tn->mother = node.mother;
-				tn->multi_mother.push_back(arrt->multi_mother[1]);
-				tn->multi_mother.push_back(arrw->multi_mother[1]);								
+				bool_node* W = arrw->getOldArr();
+				ARRACC_node* tn = ARRACC_node::create(node.mother(), arrt->getNewVal(), arrw->getNewVal());
+											
 				tn->addToParents();				
 				bool_node* tnn = optAdd(tn);
 
-				ARR_W_node* Y = new ARR_W_node();
-				Y->mother = arrw->mother;
-				Y->multi_mother.push_back(W);
-				Y->multi_mother.push_back(tnn);				
+				ARR_W_node* Y = ARR_W_node::create(arrw->mother(), W, tnn);
+						
 				Y->addToParents();
 				rvalue = optAdd(Y);
 				return;
@@ -2298,29 +2278,29 @@ void DagOptim::visit( ARRACC_node& node ){
 }
 
 void checkArrass(vector<bool_node*>&  vv,  bool_node* mot, ARRASS_node& node, int lev){
-	vv.push_back(node.multi_mother[1]);
-	ARRASS_node* dc = dynamic_cast<ARRASS_node*>(node.multi_mother[0]);
-	if(dc != NULL && dc->quant == lev + 1 && dc->mother == mot){
+	vv.push_back(node.getNewVal());
+	ARRASS_node* dc = dynamic_cast<ARRASS_node*>(node.getOldVal());
+	if(dc != NULL && dc->quant == lev + 1 && dc->mother() == mot){
 		checkArrass(vv ,mot, *dc, lev+1);
 	}else{
-		vv.push_back(node.multi_mother[0]);
+		vv.push_back(node.getOldVal());
 	}
 }
 
 void DagOptim::visit( ARRASS_node& node ){
-   if( isConst(node.mother) ){
-		int val = getIval( node.mother );
+   if( isConst(node.mother()) ){
+		int val = getIval( node.mother() );
        
 		if(node.quant == val){
-			rvalue = node.multi_mother[1];
+			rvalue = node.getNewVal();
 		}else{
-			rvalue = node.multi_mother[0];
+			rvalue = node.getOldVal();
 		}
 		return;
 	}
 
-	if(node.multi_mother[1] == node.multi_mother[0]){
-		rvalue = node.multi_mother[0];
+	if(node.getNewVal() == node.getOldVal()){
+		rvalue = node.getOldVal();
 		return;
 	}
 
@@ -2331,24 +2311,22 @@ void DagOptim::visit( ARRASS_node& node ){
     if(node.quant == 0  &&  (ot == OutType::INT || ot == OutType::BOOL) ){ // This only works for non-array things, bt you don't need the test because you'll never have array ARRASS nodes.
         
 		vector<bool_node*>  vv;		
-		checkArrass(vv, node.mother, node, 0);
+		checkArrass(vv, node.mother(), node, 0);
 		if(vv.size()>3){
-			ARRACC_node* an = new ARRACC_node();
-			an->mother = node.mother;
-			an->multi_mother.swap(vv);
+			ARRACC_node* an = ARRACC_node::create(vv.size());
+			an->mother() = node.mother();
+			copy(vv.begin(), vv.end(), an->arg_begin());			
 			an->addToParents();
 			addNode(an);
-			int sz = an->multi_mother.size();
-			bool_node* ltn = new LT_node();
-			ltn->mother = node.mother;
-			ltn->father = this->getCnode(sz);
+			int sz = an->nargs();
+			bool_node* ltn = LT_node::create();
+			ltn->mother() = node.mother();
+			ltn->father() = this->getCnode(sz);
 			ltn->addToParents();
 			ltn = optAdd(ltn);
 
-			ARRACC_node* an2 = new ARRACC_node();
-			an2->mother = ltn;
-			an2->multi_mother.push_back(an->multi_mother[sz-1]);
-			an2->multi_mother.push_back(an);
+			ARRACC_node* an2 = ARRACC_node::create(ltn, an->arguments(sz - 1), an);
+			
 			an2->addToParents();			
 			rvalue = optAdd(an2);
 			return;
@@ -2356,47 +2334,42 @@ void DagOptim::visit( ARRASS_node& node ){
 	}
 
 
-	if(node.mother->type == bool_node::PLUS && (isIntConst(node.mother->mother) || isIntConst(node.mother->father)  )){
-		bool_node* n1 = node.mother;		
+	if(node.mother()->type == bool_node::PLUS && (isIntConst(node.mother()->mother()) || isIntConst(node.mother()->father())  )){
+		bool_node* n1 = node.mother();		
 		bool_node* nm;
 		int C;
-		if(isConst(n1->mother)){
-			nm = n1->father;
-			C = getIval(n1->mother);
+		if(isConst(n1->mother())){
+			nm = n1->father();
+			C = getIval(n1->mother());
 		}else{
-			nm = n1->mother;
-			C = getIval(n1->father);
+			nm = n1->mother();
+			C = getIval(n1->father());
 		}
 		
-		ARRASS_node* as = new ARRASS_node();
-		as->mother = nm;
+		ARRASS_node* as = ARRASS_node::create(nm, node.getOldVal(), node.getNewVal());
 		as->quant = node.quant - C;
-		as->multi_mother = node.multi_mother;
 		as->addToParents();		
 		rvalue = optAdd(as);
 		return;
 	}
 	
-	if(node.multi_mother[0]->type == bool_node::EQ){
-		bool_node* eqmm0 = node.multi_mother[0];
+	if(node.getOldVal()->type == bool_node::EQ){
+		bool_node* eqmm0 = node.getOldVal();
 		bool dochange = false;
-		if(eqmm0->mother == node.mother){
-			if(eqmm0->father->type == bool_node::CONST){
-				if(this->getIval(eqmm0->father)==node.quant){
+		if(eqmm0->mother() == node.mother()){
+			if(eqmm0->father()->type == bool_node::CONST){
+				if(this->getIval(eqmm0->father())==node.quant){
 					dochange = true;
 		}	}	}
-		if(eqmm0->father == node.mother){
-			if(eqmm0->mother->type == bool_node::CONST){
-				if(this->getIval(eqmm0->mother)==node.quant){
+		if(eqmm0->father() == node.mother()){
+			if(eqmm0->mother()->type == bool_node::CONST){
+				if(this->getIval(eqmm0->mother())==node.quant){
 					dochange = true;
 		}	}	}
 
 		if(dochange){
-			ARRASS_node* as = new ARRASS_node();
-			as->mother = node.mother;
+			ARRASS_node* as = ARRASS_node::create(node.mother(), getZero(&node), node.getNewVal() );
 			as->quant = node.quant;
-			as->multi_mother = node.multi_mother;
-			as->multi_mother[0] = this->getZero(&node);
 			as->addToParents();
 			rvalue = optAdd(as);			
 			return;
@@ -2404,43 +2377,43 @@ void DagOptim::visit( ARRASS_node& node ){
 
 	}
 	
-	if(isIntConst( node.multi_mother[0] ) && isIntConst( node.multi_mother[1] )){
+	if(isIntConst( node.getOldVal()) && isIntConst( node.getNewVal())){
        
-		int m0 = getIval(node.multi_mother[0]);
-		int m1 = getIval(node.multi_mother[1]);
+		int m0 = getIval(node.getOldVal());
+		int m1 = getIval(node.getNewVal());
         if(m0 == 0 && m1==1){
-			EQ_node* en = new EQ_node();
-			en->mother = node.mother;
-			en->father = getCnode(node.quant);
+			EQ_node* en = EQ_node::create();
+			en->mother() = node.mother();
+			en->father() = getCnode(node.quant);
 			en->addToParents();
             rvalue = optAdd(en);
 			
 			return;
 		}
 		if(m0 == 1 && m1==0){
-			EQ_node* en = new EQ_node();
-			en->mother = node.mother;
-			en->father = getCnode(node.quant);
+			EQ_node* en = EQ_node::create();
+			en->mother() = node.mother();
+			en->father() = getCnode(node.quant);
 			en->addToParents();
            
 			rvalue = optAdd(en);			
 
-			NOT_node* nn = new NOT_node();
-			nn->mother = rvalue;
+			NOT_node* nn = NOT_node::create();
+			nn->mother() = rvalue;
 			nn->addToParents();
 			rvalue = optAdd(nn);	
 			return;
 		}
 	}
 
-	int sc = staticCompare<equal_to<int> >(node.mother, node.quant, true);
+	int sc = staticCompare<equal_to<int> >(node.mother(), node.quant, true);
 	
 	if(sc == 1){
-		rvalue = node.multi_mother[1];
+		rvalue = node.getNewVal();
 		return;
 	}
 	if(sc == -1){
-		rvalue = node.multi_mother[0];
+		rvalue = node.getOldVal();
 		return;
 	}
 
@@ -2468,8 +2441,8 @@ char* toString(TempTriple& tmp, int& len){
 	
 void DagOptim::visit( ASSERT_node &node){
 
-	if(isConst(node.mother)){
-		int cv = this->getIval(node.mother);
+	if(isConst(node.mother())){
+		int cv = this->getIval(node.mother());
 		if(cv == 1){
 			rvalue = this->getCnode(0);
 			return ;
@@ -2489,40 +2462,40 @@ void DagOptim::visit( ASSERT_node &node){
 		return;
 	}
 
-	if(node.mother->type == bool_node::OR){
+	if(node.mother()->type == bool_node::OR){
 		TempTriple* nt = triples.newObj();
 		TempTriple& tmp = *nt;
 		bool good = false;
-		bool_node* ornode = node.mother;
-		if(ornode->mother->type == bool_node::NOT){			
-			tmp.add(0, ornode->mother->mother, true);
+		bool_node* ornode = node.mother();
+		if(ornode->mother()->type == bool_node::NOT){			
+			tmp.add(0, ornode->mother()->mother(), true);
 		}else{
-			tmp.add(0, ornode->mother, false);
+			tmp.add(0, ornode->mother(), false);
 		}
-		if(ornode->father->type == bool_node::NOT && ornode->father->mother->type == bool_node::AND){
-			bool_node* andnode = ornode->father->mother;
-			if(andnode->mother->type == bool_node::NOT){
-				tmp.add(1, andnode->mother->mother, false);
+		if(ornode->father()->type == bool_node::NOT && ornode->father()->mother()->type == bool_node::AND){
+			bool_node* andnode = ornode->father()->mother();
+			if(andnode->mother()->type == bool_node::NOT){
+				tmp.add(1, andnode->mother()->mother(), false);
 			}else{
-				tmp.add(1, andnode->mother, true);
+				tmp.add(1, andnode->mother(), true);
 			}
-			if(andnode->father->type == bool_node::NOT){
-				tmp.add(2, andnode->father->mother, false);
+			if(andnode->father()->type == bool_node::NOT){
+				tmp.add(2, andnode->father()->mother(), false);
 			}else{
-				tmp.add(2, andnode->father, true);
+				tmp.add(2, andnode->father(), true);
 			}
 			good = true;
-		}else if(ornode->father->type == bool_node::OR){
-			bool_node* oonode = ornode->father;
-			if(oonode->mother->type == bool_node::NOT){
-				tmp.add(1, oonode->mother->mother, true);
+		}else if(ornode->father()->type == bool_node::OR){
+			bool_node* oonode = ornode->father();
+			if(oonode->mother()->type == bool_node::NOT){
+				tmp.add(1, oonode->mother()->mother(), true);
 			}else{
-				tmp.add(1, oonode->mother, false);
+				tmp.add(1, oonode->mother(), false);
 			}
-			if(oonode->father->type == bool_node::NOT){
-				tmp.add(2, oonode->father->mother, true);
+			if(oonode->father()->type == bool_node::NOT){
+				tmp.add(2, oonode->father()->mother(), true);
 			}else{
-				tmp.add(2, oonode->father, false);
+				tmp.add(2, oonode->father(), false);
 			}
 			good = true;
 		}
@@ -2534,21 +2507,21 @@ void DagOptim::visit( ASSERT_node &node){
 				TempTriple& ttri = *ttrip;
 				if(ttri.bn[1] == tmp.bn[1] && ttri.f[1] != tmp.f[1]){
 					if(!ttri.hasModified){
-						bool_node* on = new OR_node();
-						on ->mother = ornode->mother;
+						bool_node* on = OR_node::create();
+						on ->mother() = ornode->mother();
 						if(ttri.f[2]){
-							on->father = new NOT_node();
-							on->father->mother = ttri.bn[2];
-							on->father->addToParents();
-							on->father = optAdd(on->father);
+							on->father() = NOT_node::create();
+							on->father()->mother() = ttri.bn[2];
+							on->father()->addToParents();
+							on->father() = optAdd(on->father());
 						}else{
-							on->father = ttri.bn[2];
+							on->father() = ttri.bn[2];
 						}
 						on->addToParents();
 						on = optAdd(on);
 						ttri.hasModified = true;
 						ttri.main->dislodge();
-						ttri.main->mother = on;
+						ttri.main->mother() = on;
 						ttri.main->addToParents();
 						string msg = ttri.main->getMsg();
 						msg += " or ";
@@ -2562,9 +2535,9 @@ void DagOptim::visit( ASSERT_node &node){
 					}
 				}else{
 					if(ttri.bn[1]->type == bool_node::LT && tmp.bn[1]->type == bool_node::LT){
-						if(ttri.bn[1]->father == tmp.bn[1]->father){
-							if( isConst(ttri.bn[1]->mother) && isConst(tmp.bn[1]->mother) ){
-								if(ttri.f[1] && tmp.f[1] && getIval(ttri.bn[1]->mother) <= getIval(tmp.bn[1]->mother)){
+						if(ttri.bn[1]->father() == tmp.bn[1]->father()){
+							if( isConst(ttri.bn[1]->mother()) && isConst(tmp.bn[1]->mother()) ){
+								if(ttri.f[1] && tmp.f[1] && getIval(ttri.bn[1]->mother()) <= getIval(tmp.bn[1]->mother())){
 								// assert u | !(a<x) | v
 								// assert u | !(b<x) | v
 								// if (a <= b) then the second assertion is unnecessary.
@@ -2626,29 +2599,26 @@ bool_node* DagOptim::process( UFUN_node* node ){
 			possibleCycles = true;
              UFUN_node* brother = combinedFunCallMap[fgid];
              brother->dislodge();
-             brother->mother->remove_child(brother);
-             bool_node* on = new OR_node();
-             on->mother = brother->mother;
-             on->father = node->mother;
+             brother->mother()->remove_child(brother);
+             bool_node* on = OR_node::create();
+             on->mother() = brother->mother();
+             on->father() = node->mother();
              on->addToParents();
              on = optAdd(on);
-             brother->mother = on;
-             int size = brother->multi_mother.size();
-             int size1 = node->multi_mother.size();
+             brother->mother() = on;
+             int size = brother->nargs();
+             int size1 = node->nargs();
              Assert(size == size1, "Size of inputs of both nodes should be equal");
              
              for (int i = 0; i < size; i++) {
-                 if (brother->multi_mother[i] != node->multi_mother[i]) {
-                     ARRACC_node* inputNode = new ARRACC_node();
-                     inputNode->mother = node->mother;
-                     inputNode->multi_mother.push_back(brother->multi_mother[i]);
-                     inputNode->multi_mother.push_back(node->multi_mother[i]);
+                 if (brother->arguments(i) != node->arguments(i)) {
+                     ARRACC_node* inputNode = ARRACC_node::create(node->mother(), brother->arguments(i), node->arguments(i));
                  
                      inputNode->addToParents();
                      bool_node* optInputNode = optAdd(inputNode);
                  
                  
-                     brother->multi_mother[i] = optInputNode;
+                     brother->arguments(i) = optInputNode;
                  }
              }
              brother->resetId();
@@ -2718,7 +2688,7 @@ bool_node* DagOptim::computeOptim(bool_node* node){
 
 bool DagOptim::checkTempcreators(BooleanDAG& dag, bool_node* node, int i){	
 			bool_node* cur = node;
-			int count = tempcreators[i].second.multi_mother.size();
+			int count = tempcreators[i].multi_mother.size();
 			bool replace = true;
 			cur = dynamic_cast<ARR_W_node*>(cur)->getOldArr();
 			for(int t=1; t< count; ++t){
@@ -2730,7 +2700,7 @@ bool DagOptim::checkTempcreators(BooleanDAG& dag, bool_node* node, int i){
 				}
 			}
 			if(replace){
-				bool_node* acn = tempcreators[i].second.clone(false);
+				bool_node* acn = tempcreators[i].toBoolNode();
 				acn->addToParents();
 				int id = node->id;
 				dag.replace(id, acn);
@@ -2753,7 +2723,7 @@ void DagOptim::cleanup(BooleanDAG& dag){
 		for(int i=0; i<size; ++i){
 			if(dag[i]->type == bool_node::ARR_W){
 				for(int j=0; j<nccount; ++j){
-					int id = tempcreators[j].first;
+					int id = tempcreators[j].globalId;
 					if(dag[i] == NULL || dag[i]->globalId != id){ continue; }
 					modified = modified || checkTempcreators(dag, dag[i], j);
 				}
@@ -2950,7 +2920,7 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 		sp.push_front( s.top() );		
 		s.pop();
 		if(luf != NULL){
-			if(s.top().first == luf->mother /*&& (luf->mother->type == bool_node::OR || dupNodes.count(luf->globalId) )*/){
+			if(s.top().first == luf->mother() /*&& (luf->mother()->type == bool_node::OR || dupNodes.count(luf->globalId) )*/){
 				//Found a point to break the cycle. 
 				while(s.top().first != bn){											
 					s.top().first->flag = BOTTOM;
@@ -3005,17 +2975,17 @@ void DagOptim::breakCycle(bool_node* bn, stack<pair<bool_node*, childset::iterat
 	{		
 		bool_node* lastOr = sp.back().first;
 		sp.pop_back();
-		Assert(lastOr == sp.front().first->mother, "m;lqkey");
+		Assert(lastOr == sp.front().first->mother(), "m;lqkey");
 		/*
 		bool_node* outer = NULL;
 		bool_node* inner = NULL;
-		if(lastOr->mother == sp.back().first){
-			inner = lastOr->mother;
-			outer = lastOr->father;
+		if(lastOr->mother() == sp.back().first){
+			inner = lastOr->mother();
+			outer = lastOr->father();
 		}else{
-			Assert(lastOr->father == sp.back().first, "Kokjne;");
-			inner = lastOr->father;
-			outer = lastOr->mother;
+			Assert(lastOr->father() == sp.back().first, "Kokjne;");
+			inner = lastOr->father();
+			outer = lastOr->mother();
 		}
 		*/
 		UFUN_node* oldNode = dynamic_cast<UFUN_node*>(sp.front().first);

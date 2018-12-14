@@ -30,7 +30,7 @@ public:
 		varpow.push_back(Term(id, 1));
 	}
 	void add(Monomial& other, DagOptim& dopt) {
-		coef = new PLUS_node(coef, other.coef);
+		coef = PLUS_node::create(coef, other.coef);
 		coef->addToParents();
 		coef = dopt.optAdd(coef);
 	}
@@ -69,7 +69,7 @@ inline Monomial times(Monomial& m1, Monomial& m2, DagOptim& dopt) {
 	Monomial rv(m1);
 	if (m2.hasCoef()) {
 		if (m1.hasCoef()) {
-			rv.coef = new TIMES_node(m1.coef, m2.coef);
+			rv.coef = TIMES_node::create(m1.coef, m2.coef);
 			rv.coef->addToParents();
 			rv.coef = dopt.optAdd(rv.coef);
 		}
@@ -86,7 +86,7 @@ inline Monomial times(Monomial& m1, Monomial& m2, DagOptim& dopt) {
 
 inline Monomial times(Monomial& m1, bool_node* m2, DagOptim& dopt) {
 	Monomial rv(m1);
-	rv.coef = new TIMES_node(m1.coef, m2);
+	rv.coef = TIMES_node::create(m1.coef, m2);
 	rv.coef->addToParents();
 	rv.coef = dopt.optAdd(rv.coef);
 	return rv;
@@ -277,67 +277,66 @@ public:
 			ufout = dynamic_cast<Tuple*>(OutType::makeTuple("_sqrt_RET", ot, -1));
 		}
 
-
-		UFUN_node* uf = new UFUN_node("sqrt_math");
-		uf->multi_mother.push_back(bn);
-		uf->mother = dopt.getCnode(1);
+		UFUN_node* uf = UFUN_node::create("sqrt_math", 1);
+		uf->set_parent(0, bn);
+		uf->mother() = dopt.getCnode(1);
 		uf->set_tupleName("_sqrt_RET");
 		uf->set_nbits(0);
 		uf->addToParents();
 
-		TUPLE_R_node* rv = new TUPLE_R_node();
-		rv->mother = dopt.optAdd(uf);
+		TUPLE_R_node* rv = TUPLE_R_node::create();
+		rv->mother() = dopt.optAdd(uf);
 		rv->idx = 0;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 
 	bool_node* minus(bool_node* bn, DagOptim& dopt) {
-		bool_node* rv = new NEG_node();
-		rv->mother = bn;
+		bool_node* rv = NEG_node::create();
+		rv->mother() = bn;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 	bool_node* over(bool_node* a, bool_node* b, DagOptim& dopt) {
-		bool_node* rv = new DIV_node();
-		rv->mother = a;
-		rv->father = b;
+		bool_node* rv = DIV_node::create();
+		rv->mother() = a;
+		rv->father() = b;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 
 	bool_node* times(bool_node* a, bool_node* b, DagOptim& dopt) {
-		bool_node* rv = new TIMES_node();
-		rv->mother = a;
-		rv->father = b;
+		bool_node* rv = TIMES_node::create();
+		rv->mother() = a;
+		rv->father() = b;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 	bool_node* plus(bool_node* a, bool_node* b, DagOptim& dopt) {
-		bool_node* rv = new PLUS_node();
-		rv->mother = a;
-		rv->father = b;
+		bool_node* rv = PLUS_node::create();
+		rv->mother() = a;
+		rv->father() = b;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 
 	bool_node* band(bool_node* a, bool_node* b, DagOptim& dopt) {
-		bool_node* rv = new AND_node();
-		rv->mother = a;
-		rv->father = b;
+		bool_node* rv = AND_node::create();
+		rv->mother() = a;
+		rv->father() = b;
 		rv->addToParents();
 		return dopt.optAdd(rv);
 	}
 
 	bool_node* neq(bool_node* a, bool_node* b, DagOptim& dopt) {
-		bool_node* rv = new EQ_node();
-		rv->mother = a;
-		rv->father = b;
+		bool_node* rv = EQ_node::create();
+		rv->mother() = a;
+		rv->father() = b;
 		rv->addToParents();
 		rv = dopt.optAdd(rv);
 
-		bool_node* rv2 = new NOT_node();
-		rv2->mother = rv;
+		bool_node* rv2 = NOT_node::create();
+		rv2->mother() = rv;
 		rv2->addToParents();
 		return dopt.optAdd(rv2);
 	}
@@ -431,16 +430,16 @@ public:
 		}
 		Polynomial* rv = new Polynomial(NULL);
 		if (rest != NULL) {
-			rv->rest = new NEG_node();
-			rv->rest->mother = rest;
+			rv->rest = NEG_node::create();
+			rv->rest->mother() = rest;
 			rv->rest->addToParents();
 			rv->rest = dopt.optAdd(rv->rest);
 		}
 		for (auto it = prods.begin(); it != prods.end(); ++it) {
 			Monomial mm(*it);
 			bool_node* tmp = mm.coef;
-			mm.coef = new NEG_node();
-			mm.coef->mother = tmp;
+			mm.coef = NEG_node::create();
+			mm.coef->mother() = tmp;
 			mm.coef->addToParents();
 			mm.coef = dopt.optAdd(mm.coef);
 			rv->prods.push_back(mm);
@@ -586,7 +585,7 @@ inline Polynomial* nplus(bool_node* node, Polynomial* left, Polynomial* right, D
 
 	if (left->hasConstant()) {
 		if (right->hasConstant()) {
-			bool_node * nn = new PLUS_node(left->rest, right->rest);
+			bool_node * nn = PLUS_node::create(left->rest, right->rest);
 			nn->addToParents();
 			nn = dopt.optAdd(nn);
 			rv = new (store.newObj()) Polynomial(nn);
@@ -628,7 +627,7 @@ inline Polynomial* ntimes(bool_node* node, Polynomial* left, Polynomial* right, 
 
 	if (left->hasConstant()) {
 		if (right->hasConstant()) {
-			bool_node * nn = new TIMES_node(left->rest, right->rest);
+			bool_node * nn = TIMES_node::create(left->rest, right->rest);
 			nn->addToParents();
 			nn = dopt.optAdd(nn);
 			rv = new (store.newObj()) Polynomial(nn);

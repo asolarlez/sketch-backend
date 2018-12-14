@@ -36,11 +36,11 @@ public:
 	bool_node* node;
 	int val;
 
-	Datum(bool_node* p_node):node(p_node->type == bool_node::NOT? p_node->mother: p_node), val(p_node->type == bool_node::NOT? 0 : 1){
+	Datum(bool_node* p_node):node(p_node->type == bool_node::NOT? p_node->mother(): p_node), val(p_node->type == bool_node::NOT? 0 : 1){
 		
 	}
 
-	Datum(bool_node* p_node, int p_val):node(p_node->type == bool_node::NOT? p_node->mother: p_node),  val(p_node->type == bool_node::NOT? (1-p_val) : p_val){
+	Datum(bool_node* p_node, int p_val):node(p_node->type == bool_node::NOT? p_node->mother(): p_node),  val(p_node->type == bool_node::NOT? (1-p_val) : p_val){
 		
 	}
 	Datum(const Datum& d): node(d.node), val(d.val){
@@ -64,23 +64,23 @@ public:
 			return val == 0;
 		}
 		if(node->type == bool_node::PLUS){
-			return node->mother->type == bool_node::CONST || node->father->type == bool_node::CONST;
+			return node->mother()->type == bool_node::CONST || node->father()->type == bool_node::CONST;
 		}
 		return false;
 	}
 
 	void addDerivedDatums(FastMap<bool_node, int>& sd) const{
 		if(node->type == bool_node::AND && val == 1){
-			Datum d1(node->mother, 1);
-			Datum d2(node->father, 1);
+			Datum d1(node->mother(), 1);
+			Datum d2(node->father(), 1);
 			sd.insert(d1.node, d1.val);
 			d1.addDerivedDatums(sd);
 			sd.insert(d2.node, d2.val);
 			d2.addDerivedDatums(sd);
 		}
 		if(node->type == bool_node::OR && val == 0){
-			Datum d1(node->mother, 0);
-			Datum d2(node->father, 0);
+			Datum d1(node->mother(), 0);
+			Datum d2(node->father(), 0);
 			if(sd.count(d1.node)==0){
 				sd.insert(d1.node, d1.val);
 				d1.addDerivedDatums(sd);
@@ -90,14 +90,14 @@ public:
 				d2.addDerivedDatums(sd);
 			}
 		}
-		if(node->type == bool_node::PLUS && (node->mother->type == bool_node::CONST || node->father->type == bool_node::CONST)){			
-			if(node->mother->type == bool_node::CONST){
-				int C = dynamic_cast<CONST_node*>(node->mother)->getVal();
-				Datum d1(node->father, val - C);
+		if(node->type == bool_node::PLUS && (node->mother()->type == bool_node::CONST || node->father()->type == bool_node::CONST)){			
+			if(node->mother()->type == bool_node::CONST){
+				int C = dynamic_cast<CONST_node*>(node->mother())->getVal();
+				Datum d1(node->father(), val - C);
 				sd.insert(d1.node, d1.val);
 			}else{
-				int C = dynamic_cast<CONST_node*>(node->father)->getVal();
-				Datum d1(node->mother, val - C);
+				int C = dynamic_cast<CONST_node*>(node->father())->getVal();
+				Datum d1(node->mother(), val - C);
 				sd.insert(d1.node, d1.val);
 			}
 			return ;
@@ -252,7 +252,6 @@ private:
 	map<int, CONST_node*> cnmap;
 	// DeriveImplications dimp;
 protected:
-	virtual void visitArith(arith_node& node );
 	virtual void visitBool(bool_node& node );
 	// bool check(Info& t, bool_node* n, int& v);
 public:

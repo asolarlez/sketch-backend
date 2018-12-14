@@ -607,16 +607,16 @@ public:
 		
 	}
 	
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
 		
 		//params correspond to the variables
 		//generate the arithmetic expression
-		bool_node* bnode = expr->getDag(dopt, params, isBit);
+		bool_node* bnode = expr->getDag(dopt, params_begin, params_end, isBit);
 		if (outIsBit && !expr->isBoolean){
 			//expr should output bit if output needs to be bit
-			bool_node* eq = new EQ_node();
-			eq->mother = bnode;
-			eq->father = dopt->getCnode(1);
+			bool_node* eq = EQ_node::create();
+			eq->mother() = bnode;
+			eq->father() = dopt->getCnode(1);
 			eq->addToParents();
 			bnode = dopt->optAdd(eq);
 		}

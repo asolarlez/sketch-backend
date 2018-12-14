@@ -57,7 +57,7 @@ public: BooleanDAG* dag;
 	map<string, BooleanDAG*> empty;
 	NumericalSolver(FloatManager& _fm, BooleanDAG* _dag) :Synthesizer(_fm), dag(_dag) {
 		ninputs = dag->getNodesByType(bool_node::SRC).size();
-		noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother))->multi_mother.size();
+		noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother()))->nparents();
 		ncontrols = dag->getNodesByType(bool_node::CTRL).size();
 		vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
 		for (int i = 0; i < ctrls.size(); i++) {
@@ -93,14 +93,14 @@ public: BooleanDAG* dag;
 			 cout << eval.getValue(n) << endl;
 			 }
 			 }*/
-			bool_node* output = dag->get_node("OUTPUT")->mother;
-			vector<bool_node*> outputmothers = ((TUPLE_CREATE_node*)output)->multi_mother;
+			bool_node* output = dag->get_node("OUTPUT")->mother();
+			vector<bool_node*> outputmothers(output->p_begin(), output->p_end());
 			vector<int> outputs = eval.getTuple(eval.getValue(output));
 			for (int j = 0; j < outputs.size(); j++) {
 				//cout << outputs[j] << endl;
 				if (allOutputs[i][j] != EMPTY && outputs[j] != allOutputs[i][j]) {
-					float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother)); // TODO: this assumes all values are floats which is probably true, but still we need to check
-					float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father));
+					float m1 = fm.getFloat(eval.getValue(outputmothers[j]->mother())); // TODO: this assumes all values are floats which is probably true, but still we need to check
+					float m2 = fm.getFloat(eval.getValue(outputmothers[j]->father()));
 					error += pow((m1 - m2), 2);
 				}
 			}
@@ -249,13 +249,13 @@ public: BooleanDAG* dag;
 		
 	}
 	
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
 		// Add the appropriate expression from the dag after replacing inputs with params and ctrls with synthesized parameters
 		BooleanDAG newdag = *(dag->clone());
 		int src_counter = 0;
 		for (int i = 0; i < newdag.size(); i++) {
 			if (newdag[i]->type == bool_node::SRC) {
-				newdag.replace(i, params[src_counter++]); // TODO: is this correct?
+				newdag.replace(i, params_begin[src_counter++]); // TODO: is this correct?
 			} else if (newdag[i]->type == bool_node::CTRL) {
 				newdag.replace(i, dopt->getCnode(ctrlValMap[newdag[i]->get_name()]));
 			} else {
@@ -270,7 +270,7 @@ public: BooleanDAG* dag;
 				}
 			}
 		}
-		return newdag.get_node("OUTPUT")->mother;
+		return newdag.get_node("OUTPUT")->mother();
 	}
 	
 	virtual void print(ostream& out) {

@@ -18,8 +18,8 @@ DagOptimizeCommutAssoc::~DagOptimizeCommutAssoc(void)
 bool_node* CAoptimizer::lnewNode(bool_node* mother, bool_node* father){
 	bool_node* bn = newNode(bnType);
 	
-	bn->mother = mother;
-	bn->father = father;
+	bn->mother() = mother;
+	bn->father() = father;
 
 	bn->addToParents();		
 
@@ -297,17 +297,17 @@ pair<int, int> CAoptimizer::selectPairToMerge(map<pair<int, int>, int>& distance
 bool_node* CAoptimizer::addGeneral(bool_node& bn, bool isInternal){
 	set<int>* cset = NULL;
 	cset = new set<int>();
-	if(bn.father->type == bn.type){
-		set<int>* tmp = getSet(bn.father);
+	if(bn.father()->type == bn.type){
+		set<int>* tmp = getSet(bn.father());
 		cset->insert(tmp->begin(), tmp->end());
 	}else{		
-		cset->insert(bn.father->id);
+		cset->insert(bn.father()->id);
 	}
-	if(bn.mother->type == bn.type){
-		set<int>* tmp =  getSet(bn.mother);
+	if(bn.mother()->type == bn.type){
+		set<int>* tmp =  getSet(bn.mother());
 		cset->insert(tmp->begin(), tmp->end());
 	}else{
-		cset->insert(bn.mother->id);
+		cset->insert(bn.mother()->id);
 	}
 
 	bool_node* tmp = existingNode(cset);
@@ -370,7 +370,7 @@ bool_node* CAoptimizer::checkNode(bool_node& bn){
 	}
 
 	//First, check if any of the parents are of the same type.	
-	if(bn.father->type == bn.type || bn.mother->type == bn.type){
+	if(bn.father()->type == bn.type || bn.mother()->type == bn.type){
 	//If they are, then we need to see if it is an internal or an interface node.
 		return addGeneral(bn, !isInterface);
 	}else{

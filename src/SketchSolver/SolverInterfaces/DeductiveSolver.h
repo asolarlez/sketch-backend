@@ -19,12 +19,12 @@ public:
 		for (auto it = funs.begin(); it != funs.end(); ++it) {
 			if ((*it)->getOtype()->str() == "_GEN_Solver") {
 				UFUN_node* uf = (UFUN_node*)(*it);
-				Assert(uf->multi_mother.size() == 2, "p;ytruutfyghjk");
-				bool_node* multi = uf->multi_mother[1];
+				Assert(uf->nargs() == 2, "p;ytruutfyghjk");
+				bool_node* multi = uf->arguments(1);
 				Assert(multi->type == bool_node::ARR_CREATE, "ugrd4ertvbhj");
-				arith_node* an = (arith_node*)multi;
+				ARR_CREATE_node* an = (ARR_CREATE_node*)multi;
 				int ii = 0;
-				vector<bool_node*> mmcopy = an->multi_mother;
+				vector<bool_node*> mmcopy(an->p_begin(), an->p_end());
 				for (auto newins = mmcopy.begin(); newins != mmcopy.end(); ++newins, ++ii) {
 					stringstream name;
 					name << "INPUT_" << ii;
@@ -64,7 +64,7 @@ public:
 	params are the inputs to the generator, and the function should use the DagOptim to add
 	the necessary nodes to the dag.
 	*/
-	virtual bool_node* getExpression(DagOptim* dopt, const vector<bool_node*>& params) {
+	virtual bool_node* getExpression(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end) {
 		return NULL;
 	}
 
@@ -75,7 +75,7 @@ public:
 	void outParent(ostream& out, bool_node* parent) {
 		if (parent->type == bool_node::NEG) {
 			out << "(-";
-			outParent(out, parent->mother);
+			outParent(out, parent->mother());
 			out << ")";
 		}
 		else {
@@ -103,7 +103,7 @@ public:
 				else {
 					if (parent->type == bool_node::NEG) {
 						out << "(!";
-						outParent(out, parent->mother);
+						outParent(out, parent->mother());
 						out << ")";
 					}
 					else {
@@ -118,21 +118,21 @@ public:
 
 	void printBoolOp(ostream& out, bool_node* node) {
 		out << "bit t" << node->id << " = ";
-		outParent(out, node->mother);
+		outParent(out, node->mother());
 		switch (node->type) {
 		case bool_node::EQ: out << " == "; break;	
 		case bool_node::LT: out << " < "; break;
 		default:
 			Assert(false, "NYI");
 		}
-		outParent(out, node->father);
+		outParent(out, node->father());
 		out << ";" << endl;
 	}
 
 
 	void printBinop(ostream& out, bool_node* node) {
 		out << "double t" << node->id << " = ";
-		outParent(out, node->mother);
+		outParent(out, node->mother());
 		switch (node->type) {
 		case bool_node::PLUS: out << " + "; break;
 		case bool_node::TIMES: out << " * "; break;
@@ -140,7 +140,7 @@ public:
 		default:
 			Assert(false, "NYI");
 		}
-		outParent(out, node->father);
+		outParent(out, node->father());
 		out << ";" << endl;
 	}
 
@@ -162,12 +162,12 @@ public:
 
 	void printTupleR(ostream& out, TUPLE_R_node* node) {
 		Assert(node->idx == 0, "NYI");
-		Assert(node->mother->type == bool_node::UFUN, "UFUN mother required!");
-		UFUN_node* un = (UFUN_node*) node->mother;
+		Assert(node->mother()->type == bool_node::UFUN, "UFUN mother required!");
+		UFUN_node* un = (UFUN_node*) node->mother();
 		out << "double t" << node->id << ";"<<endl;
 		out << nameTrans(un->get_ufname()) << "(";
 		
-		for (auto it = un->multi_mother.begin(); it != un->multi_mother.end(); ++it) {
+		for (auto it = un->arg_begin(); it != un->arg_end(); ++it) {
 			outParent(out, *it);			
 			out << ", ";
 		}
@@ -178,11 +178,11 @@ public:
 	void printArracc(ostream& out, ARRACC_node* node) {
 		
 		out << "double t" << node->id << " = (" ;
-		outParent(out, node->mother);
+		outParent(out, node->mother());
 		out << ") ? ";
-		outParent(out, node->multi_mother[1]);
+		outParent(out, node->arguments(1));
 		out << " : ";
-		outParent(out, node->multi_mother[0]);		
+		outParent(out, node->arguments(0));
 		out << "; " << endl;
 
 	}
@@ -206,7 +206,7 @@ public:
 				printArracc(out, (ARRACC_node*)node); break;
 			case bool_node::DST:
 				out << "return ";
-				outParent(out, node->mother);
+				outParent(out, node->mother());
 				out << ";" << endl;
 				break;
 				
@@ -390,10 +390,10 @@ public:
 		bool_node* out = it->first.get(id);
 		for (++it; it != sols.end(); ++it) {
 			PartialSolIndex& partialSol = it->first;
-			ARRACC_node* an = new ARRACC_node();
-			an->mother = it->second;
-			an->multi_mother.push_back(out);
-			an->multi_mother.push_back(partialSol.get(id));
+			ARRACC_node* an = ARRACC_node::create(2);
+			an->mother() = it->second;
+			an->arguments(0)=out;
+			an->arguments(1)=partialSol.get(id);
 			an->addToParents();
 			out = dopt.optAdd(an);
 		}
@@ -405,11 +405,11 @@ public:
 		vector<map<int, int> > inputs;
 		for (auto it = unknowns.begin(); it != unknowns.end(); ++it) {
 			bool_node* expr = join(sols, (*it)->id);
-			UFUN_node* uf = (UFUN_node*)(*it)->mother;			
+			UFUN_node* uf = (UFUN_node*)(*it)->mother();			
 			string name = uf->get_ufname();
-			DST_node* dst = new DST_node();
+			DST_node* dst = DST_node::create();
 			dst->name = name;
-			dst->mother = expr;
+			dst->mother() = expr;
 			dst->addToParents();
 			dag->assertions.append(dst);
 			dopt.optAdd(dst);
@@ -424,7 +424,7 @@ public:
 			SynthInSolver* syn = slv.addSynthSolver(dst->get_name(), "_GEN_Algebraic", x, y, floats); 
 			DeductiveSolution* ded = (DeductiveSolution*) syn->getSynth();
 			vector<bool_node*> bb;
-			bb.push_back((*ukn)->mother);
+			bb.push_back((*ukn)->mother());
 			BooleanDAG* bd = dag->slice(bb.begin(), bb.end() , dst->id);
 			ded->setSolution(bd->clone());
 			delete bd;
@@ -446,36 +446,36 @@ public:
 			bool_node* bn = dopt.computeCSE(*node);
 			switch (bn->type) {
 			case bool_node::PLUS: {
-				pernode[bn->id] = nplus(bn, pernode[bn->mother->id], pernode[bn->father->id], dopt, store);
+				pernode[bn->id] = nplus(bn, pernode[bn->mother()->id], pernode[bn->father()->id], dopt, store);
 			}
 								  continue;
 			case bool_node::TIMES: {
-				pernode[bn->id] = ntimes(bn, pernode[bn->mother->id], pernode[bn->father->id], dopt, store);
+				pernode[bn->id] = ntimes(bn, pernode[bn->mother()->id], pernode[bn->father()->id], dopt, store);
 			}
 								   continue;
 			case bool_node::NEG: {
-				pernode[bn->id] = pernode[bn->mother->id]->neg(bn, dopt, store);
+				pernode[bn->id] = pernode[bn->mother()->id]->neg(bn, dopt, store);
 			}
 								 continue;
 			case bool_node::EQ: {
-				pernode[bn->id] = nplus(bn, pernode[bn->mother->id], pernode[bn->father->id]->neg(NULL, dopt, store), dopt, store);
+				pernode[bn->id] = nplus(bn, pernode[bn->mother()->id], pernode[bn->father()->id]->neg(NULL, dopt, store), dopt, store);
 			}
 								continue;
 			case bool_node::ASSERT: {
-				equations.push_back(pernode[bn->mother->id]);
+				equations.push_back(pernode[bn->mother()->id]);
 			}
 									continue;
 			case bool_node::TUPLE_R: {
 				//this is a fresh unknown.
-				UFUN_node* ufn = (UFUN_node*)bn->mother;
+				UFUN_node* ufn = (UFUN_node*)bn->mother();
 				if (ufn->isSynNode()) {
 					unknowns.push_back(bn);
 					pernode[bn->id] = new (store.newObj()) Polynomial(bn->id, dopt);
-					Assert(ufn->multi_mother.size() == 2, "Gen function should have two params, and the second one must be an array constructor.");
-					bool_node* second = ufn->multi_mother[1];
+					Assert(ufn->nargs() == 2, "Gen function should have two params, and the second one must be an array constructor.");
+					bool_node* second = ufn->arguments(1);
 					Assert(second->type == bool_node::ARR_CREATE, "Gen function should have two params, and the second one must be an array constructor.");
 					ARR_CREATE_node* acn = (ARR_CREATE_node*)second;
-					args.push_back(acn->multi_mother);
+					args.push_back(vector<bool_node*>(acn->p_begin(), acn->p_end()) );
 				}
 				else {
 					pernode[bn->id] = new (store.newObj()) Polynomial(bn);

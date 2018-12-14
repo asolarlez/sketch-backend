@@ -93,15 +93,7 @@ protected:
     vector<int> tmprange;
     vector<int> unirange;
 
-    Tvalue intBvectComputeSum (Tvalue &, Tvalue &);
-    Tvalue intBvectAdd (Tvalue &, int, Tvalue &, int);
-    void intBvectPlus (arith_node &);
-    void intBvectMult (arith_node &);
-    void intBvectEq (arith_node &);
-    void intBvectLt (arith_node &);
-    void intBvectLe (arith_node &);
-    void intBvectGt (arith_node &);
-    void intBvectGe (arith_node &);
+    
 
 	bool checkKnownFun(UFUN_node& node);
 	bool NATIVEINTS;
@@ -180,7 +172,7 @@ public:
 
 
 	void intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, Tvalue& nvar, ARR_W_node& node);
-	void arrayConstruct(vector<bool_node*>& values, Tvalue& nvar);
+	void arrayConstruct(bool_node::parent_iter v_begin, bool_node::parent_iter v_end, Tvalue& nvar);
 	void arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue& inarr);
 
     virtual void visit (ASSERT_node &node);

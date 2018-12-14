@@ -52,9 +52,9 @@ public:
 	PrintSource(vector<Tvalue> &nids):node_ids(nids){}
 	virtual void visit( ARRACC_node& node ){
 		int sz = node_ids[node.id].getSize();
-		for(int i=0; i<node.multi_mother.size(); ++i){
-			if(node_ids[node.multi_mother[i]->id].getSize() > (sz/2)-1){
-				tovisit[node.multi_mother[i]->id] = true;
+		for (auto it = node.arg_begin(); it != node.arg_end(); ++it) {
+			if (node_ids[(*it)->id].getSize() > (sz / 2) - 1) {
+				tovisit[(*it)->id] = true;
 			}
 		}
 	}
@@ -419,10 +419,10 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 
 template<typename EVAL>
 void NodesToSolver::processLT (LT_node& node, EVAL& eval ){
-	bool_node *mother = node.mother;
+	bool_node *mother = node.mother();
     Tvalue mval = tval_lookup (mother, TVAL_SPARSE);    
 
-    bool_node *father = node.father;
+    bool_node *father = node.father();
     Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 	if(mval.isArray() || fval.isArray()){
 		Assert(false, "Can't do < on arrays");
@@ -696,221 +696,6 @@ inline int NodesToSolver::doArithExpr<modulus<int> >(int quant1, int quant2, int
 }
 
 
-/*
- * Generate bit-wise addition, no overflow semantics.
- *
- * This implementation handles both signed and unsigned variants.
- * Overflow handling is assumed the responsibility of the user.
- */
-Tvalue
-NodesToSolver::intBvectComputeSum (Tvalue &lval, Tvalue &rval)
-{
-    /* Compute result size from arguments' sizes. */
-    int lsize = lval.getSize () + (lval.isBvect () ? 1 : 0);
-    int rsize = rval.getSize () + (rval.isBvect () ? 1 : 0);
-    int osize = (lsize > rsize ? lsize : rsize);
-
-    /* Find sign bit of both arguments. */
-    int lsign = lval.getSignId (dir);
-    int rsign = rval.getSignId (dir);
-
-    dout ("computing addition: osize=" << osize << " lsign=" << lsign
-	  << " rsign=" << rsign);
-
-    /* Initialize a vector of consecutive output bits (SAT variables). */
-    int oid = dir.newAnonymousVar (osize);
-
-    /* Compute addition:
-     * - initialize first carry bit (zero)
-     */
-    int c = -dir.YES;
-
-    /* - generate values for output bits
-     */    
-    lsize--;
-    rsize--;
-    for (int i = 0; i < osize; i++) {
-	/* - get current value bits, or sign bit if exceeded either size */
-		int l = (i < lsize ? lval.getId(i) : lsign);
-		int r = (i < rsize ? rval.getId(i) : rsign);
-
-	/* - compute current output bit, being l ^ r ^ c */
-	dir.addXorClause (dir.addXorClause (l, r), c, oid + i);
-
-	/* - compute next carry bit (if such exists), being (l && r) || (l && c) || (r && c) */
-	if (i < osize - 1)
-	    c = dir.addOrClause (dir.addOrClause (dir.addAndClause (l, r),
-						  dir.addAndClause (l, c)),
-				 dir.addAndClause (r, c));
-    }
-
-    /* Create result value (signed). */
-    Tvalue oval (TVAL_BVECT_SIGNED, oid, osize);
-
-    dout ("done");
-
-    return oval;
-}
-
-Tvalue
-NodesToSolver::intBvectAdd (Tvalue &lval_arg, int lval_quant,
-			    Tvalue &rval_arg, int rval_quant)
-{
-    /* Apply multipliers to values, transform to padded signed bit-vectors.
-     *
-     * FIXME this is an ugly way to handle constant values in the circuit,
-     * and is currently due to a limitation in the way we generate default
-     * values for null parent pointers. This needs to be fixed, and should
-     * generally be taken care of prior to getting here.
-     */
-    Tvalue lval;
-    Tvalue rval;
-
-    dout ("extracting arguments as (padded) signed bitvectors");
-    if (! (lval_quant == 1 || lval_quant == -1)) {
-	/* Value must be "one". */
-	Assert (lval_arg.getId () == dir.YES && lval_arg.getSize () == 1,
-		"value must be a constant true bit");
-
-	dout ("lval corresponds to constant " << lval_quant);
-	lval = lval_arg.toSparse (dir, lval_quant).toBvectSigned (dir, 1);
-    } else {
-	lval = lval_arg.toBvectSigned (dir, 1);
-
-	if (lval_quant == -1) {
-	    dout ("negating lval");
-	    lval = lval.toComplement (dir);
-	}
-    }
-
-    if (! (rval_quant == 1 || rval_quant == -1)) {
-	/* Value must be "one". */
-	Assert (rval_arg.getId () == dir.YES && rval_arg.getSize () == 1,
-		"value must be a constant true bit");
-
-	dout ("rval corresponds to constant " << rval_quant);
-	rval = rval_arg.toSparse (dir, rval_quant).toBvectSigned (dir, 1);
-    } else {
-	rval = rval_arg.toBvectSigned (dir, 1);
-
-	if (rval_quant == -1) {
-	    dout ("negating rval");
-	    rval = rval.toComplement (dir);
-	}
-    }
-
-    /* Compute addition. */
-    dout ("generating addition");
-    return intBvectComputeSum (lval, rval);
-}
-
-/*
- * Handle signed / unsigned bit-vector addition / subtraction.
- */
-void
-NodesToSolver::intBvectPlus (arith_node &node)
-{
-    /* Compute addition of two parent node values. */
-    dout ("generating addition");
-    Tvalue oval = intBvectAdd (tval_lookup (node.mother), 1,
-			       tval_lookup (node.father), 1);
-
-    /* Set node's value. */
-    dout ("storing result");
-    node_ids[node.id] = oval;
-
-    dout ("done");
-}
-
-/*
- * Handle signed / unsigned bit-vector comparisons.
- */
-void
-NodesToSolver::intBvectEq (arith_node &node)
-{
-    /* Compute the difference between operands. */
-    dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
-			       tval_lookup (node.father), -1);
-
-    /* Assert it is (all bits) zero. */
-    dout ("asserting result is zero");
-    
-    int nvars = dval.getSize () + 1;
-    vector<int> dvars(nvars);
-    int anybit = dvars[0] = dir.newAnonymousVar ();
-    for (int i = 1; i < nvars; i++)
-		dvars[i] = dval.getId(i-1);
-    dir.addBigOrClause (&dvars[0], nvars - 1);
-    node_ids[node.id] = -anybit;
-
-    dout ("done");
-}
-
-void
-NodesToSolver::intBvectLt (arith_node &node)
-{
-    /* Compute the difference between operands. */
-    dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
-			       tval_lookup (node.father), -1);
-
-    /* Assert it is negative. */
-    dout ("asserting result is negative");
-    int sign = dval.getSignId (dir);
-    node_ids[node.id] = sign;
-
-    dout ("done");
-}
-
-void
-NodesToSolver::intBvectLe (arith_node &node)
-{
-    /* Compute the reverse difference between operands. */
-    dout ("computing (rhs - lhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -1,
-			       tval_lookup (node.father), 1);
-
-    /* Assert it is non-negative. */
-    dout ("asserting result is non-negative");
-    int sign = dval.getSignId (dir);
-    node_ids[node.id] = -sign;
-
-    dout ("done");
-}
-
-void
-NodesToSolver::intBvectGt (arith_node &node)
-{
-    /* Compute the reverse difference between operands. */
-    dout ("computing (rhs - lhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), -1,
-			       tval_lookup (node.father), 1);
-
-    /* Assert it is negative. */
-    dout ("asserting result is negative");
-    int sign = dval.getSignId (dir);
-    node_ids[node.id] = sign;
-
-    dout ("done");
-}
-
-void
-NodesToSolver::intBvectGe (arith_node &node)
-{
-    /* Compute the difference between operands. */
-    dout ("computing (lhs - rhs)");
-    Tvalue dval = intBvectAdd (tval_lookup (node.mother), 1,
-			       tval_lookup (node.father), -1);
-
-    /* Assert it is non-negative. */
-    dout ("asserting result is non-negative");
-    int sign = dval.getSignId (dir);
-    node_ids[node.id] = -sign;
-
-    dout ("done");
-}
-
 
 #if 0
 void
@@ -944,10 +729,10 @@ bool tvSimilar(Tvalue& t1, Tvalue& t2) {
 template<class COMPARE_KEY, typename THEOP> void
 NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 {
-	bool_node* mother = node.mother;
+	bool_node* mother = node.mother();
 	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
 
-	bool_node* father = node.father;
+	bool_node* father = node.father();
 	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
 	mval.makeSparse(dir);
 	fval.makeSparse(dir);
@@ -1093,10 +878,10 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 template<class COMPARE_KEY, typename THEOP> void
 NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 {    
-	bool_node* mother = node.mother;
+	bool_node* mother = node.mother();
 	Tvalue mval = tval_lookup (mother, TVAL_SPARSE);
 
-	bool_node* father = node.father;
+	bool_node* father = node.father();
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
 	if (NATIVEINTS) {
@@ -1330,8 +1115,8 @@ void NodesToSolver::populateGuardedVals(Tvalue& oval, map<int, int, COMPARE_KEY>
 
 
 void NodesToSolver::visit( AND_node& node ){
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	Tvalue fval = tval_lookup(node.father());
+	Tvalue mval = tval_lookup(node.mother());
 	
 	if(fval.isInt()){
 		fval = dir.intToBit(fval.getId());
@@ -1351,8 +1136,8 @@ void NodesToSolver::visit( AND_node& node ){
 
 void NodesToSolver::visit( OR_node& node ){
 	
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	Tvalue fval = tval_lookup(node.father());
+	Tvalue mval = tval_lookup(node.mother());
 	
 	if(fval.isInt()){
 		fval = dir.intToBit(fval.getId());
@@ -1369,8 +1154,8 @@ void NodesToSolver::visit( OR_node& node ){
 }
 void NodesToSolver::visit( XOR_node& node ){
 	
-	Tvalue fval = tval_lookup(node.father);
-	Tvalue mval = tval_lookup(node.mother);
+	Tvalue fval = tval_lookup(node.father());
+	Tvalue mval = tval_lookup(node.mother());
 	
 	if(fval.isInt()){
 		fval = dir.intToBit(fval.getId());
@@ -1440,7 +1225,7 @@ NodesToSolver::visit (SRC_node &node)
 
 
 void NodesToSolver::visit( DST_node& node ){
-	node_ids[node.id] = tval_lookup(node.mother);
+	node_ids[node.id] = tval_lookup(node.mother());
 	Dout(cout<<"DST = "<<node_ids[node.id]<<endl);
 	/*
 	int oid = node.ion_pos;
@@ -1479,10 +1264,8 @@ void NodesToSolver::visit( DST_node& node ){
 void
 NodesToSolver::visit (NOT_node &node)
 {
-    Assert (node.mother && ! node.father, "NOT node must have exactly one predecessor");	
 
-
-    const Tvalue &mval = tval_lookup (node.mother);
+    const Tvalue &mval = tval_lookup (node.mother());
 
 	if(mval.isInt()){
 		Tvalue nvar = -dir.intToBit(mval.getId());
@@ -1492,7 +1275,7 @@ NodesToSolver::visit (NOT_node &node)
 
     if(!( mval.getType() == TVAL_BVECT && mval.getSize() == 1 )){
     	cerr<<" BAD NODE "<<endl;
-    	node.mother->outDagEntry(cerr);
+    	node.mother()->outDagEntry(cerr);
     	node.outDagEntry(cerr);
 		/*
     	for(int i=0; i<node.children.size(); ++i){
@@ -1511,10 +1294,8 @@ NodesToSolver::visit (NOT_node &node)
 
 void
 NodesToSolver::visit(NEG_node &node)
-{
-	Assert(node.mother && !node.father, "NEG node must have exactly one predecessor");
-	
-	const Tvalue &mval = tval_lookup(node.mother);
+{	
+	const Tvalue &mval = tval_lookup(node.mother());
 
 	if (mval.isInt()) {
 		Tvalue tv;
@@ -1644,7 +1425,7 @@ NodesToSolver::visit(LT_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectLt(node);
 #else
-	if (node.mother->getOtype()== OutType::FLOAT) {
+	if (node.mother()->getOtype()== OutType::FLOAT) {
 		processLT(node, floats);
 	} else {
 		processLT(node, ident);
@@ -1664,10 +1445,10 @@ NodesToSolver::visit(EQ_node &node)
 #ifdef HAVE_BVECTARITH
 	intBvectEq(node);
 #else
-	bool_node *mother = node.mother;
+	bool_node *mother = node.mother();
 	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
 
-	bool_node *father = node.father;
+	bool_node *father = node.father();
 	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
   if (mother->getOtype() == OutType::FLOAT || mother->getOtype() == OutType::FLOAT_ARR || father->getOtype() == OutType::FLOAT || father->getOtype() == OutType::FLOAT_ARR) {
     processEq(mval, fval, node_ids[node.id], floats);
@@ -1682,7 +1463,7 @@ NodesToSolver::visit(EQ_node &node)
 bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 	const string& name = node.get_ufname();	
 	if (floats.hasFun(name) || name == "_cast_int_float_math") {
-		Tvalue mval = tval_lookup(node.multi_mother[0], TVAL_SPARSE);
+		Tvalue mval = tval_lookup(node.arguments(0), TVAL_SPARSE);
 		mval.makeSparse(dir);
 		
 		map<int, vector<int> > qnumbers;
@@ -1800,8 +1581,8 @@ void NodesToSolver::visit( UFUN_node& node ){
 
 
 	vector<Tvalue> params;
-	for (int i = 0; i<node.multi_mother.size(); ++i) {
-		params.push_back(tval_lookup(node.multi_mother[i], TVAL_SPARSE));
+	for (int i = 0; i<node.nargs(); ++i) {
+		params.push_back(tval_lookup(node.arguments(i), TVAL_SPARSE));
 	}
   vector<Tvalue>& nvars = ufunVarsMap[node.id];
   int totbits = 0;
@@ -1945,12 +1726,12 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 
 	if(pnode != NULL){
 		ARRACC_node& node = *pnode;
-		if(node.mother->type == bool_node::LT){
-			if(node.mother->mother == node.multi_mother[0] && 
-				node.mother->father == node.multi_mother[1]){
+		if(node.mother()->type == bool_node::LT){
+			if(node.mother()->mother() == node.arguments(0) && 
+				node.mother()->father() == node.arguments(1)){
 					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-          if (node.mother->mother->getOtype() == OutType::FLOAT || node.mother->father->getOtype() == OutType::FLOAT) {
+          if (node.mother()->mother()->getOtype() == OutType::FLOAT || node.mother()->father()->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true, floats);
           } else {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true, ident);
@@ -1958,11 +1739,11 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 					out.sparsify(dir);
 					return;
 			}
-			if(node.mother->mother == node.multi_mother[1] && 
-				node.mother->father == node.multi_mother[0]){
+			if(node.mother()->mother() == node.arguments(1) && 
+				node.mother()->father() == node.arguments(0)){
 					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
 					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
-          if (node.mother->mother->getOtype() == OutType::FLOAT || node.mother->father->getOtype() == OutType::FLOAT) {
+          if (node.mother()->mother()->getOtype() == OutType::FLOAT || node.mother()->father()->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false, floats);
           } else {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false, ident);
@@ -2050,27 +1831,27 @@ void NodesToSolver::visit( ARRACC_node& node ){
 
 	Dout(cout<<" ARRACC "<<endl);
 	//cout<<"NodesToSolver.visit ARRACC "<< node.lprint() << endl;
-	const Tvalue& omv = tval_lookup(node.mother) ;	
+	const Tvalue& omv = tval_lookup(node.mother()) ;	
 	bool isSparse = omv.isSparse();
 	bool isInt = omv.isInt();
     Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
 		int idx = omv.num_ranges[0].value;
 
-		if( idx >= node.multi_mother.size()){
+		if( idx >= node.nargs()){
 			node_ids[node.id] = -YES;
 			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
 			return;
 		}
 
-		bool_node* choice = node.multi_mother[idx];
+		bool_node* choice = node.arguments(idx);
 				
 		node_ids[node.id] = tval_lookup(choice);				
 		return;
 	}
 	
-	vector<bool_node*>::iterator it = node.multi_mother.begin();	
-	vector<Tvalue> choices(node.multi_mother.size());
+	bool_node::parent_iter it = node.arg_begin();	
+	vector<Tvalue> choices(node.nargs());
 	bool parentSame = true;
 	bool parentSameBis = true;
 	bool isBoolean=true;	
@@ -2078,7 +1859,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
   bool isFloat = false;
 //	aracctimer.restart();
 //	flooptimer.restart();
-	for(int i=0; it != node.multi_mother.end(); ++i, ++it){
+	for(int i=0; it != node.arg_end(); ++i, ++it){
 		Dout(cout<<" parent = "<<((*it != NULL)?(*it)->get_name():"NULL")<<"  ");
 		const Tvalue& cval = tval_lookup(*it);
 		if( cval.isSparse() ){
@@ -2090,9 +1871,9 @@ void NodesToSolver::visit( ARRACC_node& node ){
 		if(cval.isInt()){
 			isInt = true;
 		}
-    if (node.multi_mother[i]->getOtype() == OutType::FLOAT) {
-      isFloat = true;
-    }
+		if (node.arguments(i)->getOtype() == OutType::FLOAT) {
+		  isFloat = true;
+		}
 		choices[i] = cval;
 		Dout(cout<<"choice "<<i<<" = "<<choices[i]<<endl);
 		parentSame = parentSame && ( (*it)== NULL || !(*it)->flag);
@@ -2255,19 +2036,19 @@ void NodesToSolver::visit( ARRASS_node& node ){
 
 	bool isInt = false;
 
-    bool_node* mother = node.mother;
+    bool_node* mother = node.mother();
     const Tvalue& mval = tval_lookup(mother) ;
 	isInt = isInt || mval.isInt();
 
     int quant = node.quant;
     Dout(cout<<" mother = "<<((mother != NULL)?mother->get_name():"NULL")<<"  mid = "<<mval<<"  mquant = "<<quant<<endl);
-    vector<bool_node*>::iterator it = node.multi_mother.begin();    
-    Assert( node.multi_mother.size() == 2 , "THIS SHOULDN't HAPPEN");
+    bool_node::parent_iter it = node.p_begin()+1;    
+    
     vector<Tvalue> choices(2);
     vector<bool_node*> mothers(2);
     bool parentSame = true;
     bool isBoolean=true;
-    for(int i=0; it != node.multi_mother.end(); ++i, ++it){
+    for(int i=0; it != node.p_end(); ++i, ++it){
 		const Tvalue& cval = tval_lookup(*it);
 		if( cval.isSparse() ){
 		    isBoolean = false;
@@ -2376,11 +2157,11 @@ void NodesToSolver::visit( ARRASS_node& node ){
 
 
 void NodesToSolver::visit( ACTRL_node& node ){
-	int size = node.multi_mother.size();
-	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	int size = node.nparents();
+	auto it = node.p_begin();	
 	bool parentSame = true;
-	vector<int> ids(node.multi_mother.size());
-	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
+	vector<int> ids(size);
+	for(int i=0 ; it != node.p_end(); ++it, ++i){
 		{
 			Dout( cout<<" ACTRL "<<*it<<" nodeids = "<<tval_lookup(*it));
 			ids[i]=tval_lookup(*it).getId ();
@@ -2597,8 +2378,8 @@ void NodesToSolver::arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue
 void
 NodesToSolver::visit( ARR_R_node &node){
 	//cout << "NodesToSolver ARR_R " << node.lprint() << endl;
-	Tvalue index = tval_lookup(node.mother);
-	Tvalue inarr = tval_lookup(node.father);
+	Tvalue index = tval_lookup(node.mother());
+	Tvalue inarr = tval_lookup(node.father());
 
 	if (index.isInt() || inarr.isInt()) {
 		arrRead(node, node_ids[node.id], index, inarr);
@@ -2839,7 +2620,7 @@ void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, 
 }
 
 void NodesToSolver::visit( ARR_W_node &node){	
-	Tvalue index = tval_lookup(node.mother);		
+	Tvalue index = tval_lookup(node.mother());		
 	Tvalue inarr = tval_lookup(node.getOldArr());	
 	Tvalue newval = tval_lookup(node.getNewVal());
 	Tvalue& nvar = node_ids[node.id];
@@ -2887,11 +2668,11 @@ void NodesToSolver::visit( ARR_W_node &node){
 
 
 
-void NodesToSolver::arrayConstruct(vector<bool_node*>& values, Tvalue& nvar) {
+void NodesToSolver::arrayConstruct(bool_node::parent_iter v_begin, bool_node::parent_iter v_end, Tvalue& nvar) {
 	gvvec& tmp = nvar.num_ranges;
 	tmp.clear();
 	int i=0;
-	for (auto it = values.begin(); it != values.end(); ++it, ++i) {
+	for (auto it = v_begin; it != v_end; ++it, ++i) {
 		Tvalue mval = tval_lookup(*it);
 		if (!mval.isInt()) {
 			dir.intClause(mval);
@@ -2906,7 +2687,7 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	Tvalue& nvar = node_ids[node.id];
 	gvvec& tmp = nvar.num_ranges;
 	tmp.clear();
-	vector<bool_node*>::iterator it = node.multi_mother.begin();	
+	auto it = node.p_begin();	
 
 	const Tvalue& dflt = tval_lookup(node.getDfltval());
 	
@@ -2920,12 +2701,12 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	}
 
 
-	for(int i=0 ; it != node.multi_mother.end(); ++it, ++i){
+	for(int i=0 ; it != node.p_end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
 
 		if (mval.isInt()) {
 
-			arrayConstruct(node.multi_mother, nvar);			
+			arrayConstruct(node.p_begin(), node.p_end(), nvar);			
 			return;
 		}
 
@@ -2997,7 +2778,7 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
 void NodesToSolver::visit( TUPLE_R_node &node){
     //cout << "NodesToSolver TUPLE_R " << node.lprint() << endl;
     int index = node.idx;
-    const Tvalue tid = tval_lookup(node.mother);
+    const Tvalue tid = tval_lookup(node.mother());
     
     int length = tid.num_ranges.size();
 	Tvalue zero = tvYES;
@@ -3069,9 +2850,9 @@ void NodesToSolver::visit( TUPLE_R_node &node){
 
 void NodesToSolver::visit (TUPLE_CREATE_node &node) {
     Tvalue& nvar = node_ids[node.id];
-    vector<Tvalue>* new_vec = new vector<Tvalue>(node.multi_mother.size());
-	auto it = node.multi_mother.begin();
-	for (int i = 0; it != node.multi_mother.end(); ++it, ++i) {
+    vector<Tvalue>* new_vec = new vector<Tvalue>(node.nparents());
+	auto it = node.p_begin();
+	for (int i = 0; it != node.p_end(); ++it, ++i) {
 		const Tvalue& mval = tval_lookup(*it);
 		(*new_vec)[i] = mval;
 	}    
@@ -3101,9 +2882,8 @@ void NodesToSolver::regTuple(vector<Tvalue>* new_vec, Tvalue& nvar) {
 void
 NodesToSolver::visit (ASSERT_node &node)
 {
-	assert (node.mother && ! node.father);
-
-	Tvalue fval = tval_lookup (node.mother);
+	
+	Tvalue fval = tval_lookup (node.mother());
 	
 	if(fval.isInt()){
 		fval = dir.intToBit(fval.getId());

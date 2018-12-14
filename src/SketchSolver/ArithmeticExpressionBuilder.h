@@ -199,14 +199,14 @@ public:
 	ArithType getOp(){
 		return type;
 	}
-	bool_node* getDag(DagOptim* dopt, const vector<bool_node*>& params,const vector<bool> &isBit) {
+	bool_node* getDag(DagOptim* dopt, bool_node::parent_iter params_begin, bool_node::parent_iter params_end,const vector<bool> &isBit) {
 		bool_node* mnode=NULL;
 		bool_node* fnode=NULL;
 		if (mother != NULL){
-			mnode = mother->getDag(dopt,params,isBit);
+			mnode = mother->getDag(dopt,params_begin, params_end, isBit);
 		}
 		if (father != NULL){
-			fnode = father->getDag(dopt,params,isBit);
+			fnode = father->getDag(dopt, params_begin, params_end,isBit);
 		}
 		
 		bool_node* rnode = NULL;
@@ -215,82 +215,82 @@ public:
 				return dopt->getCnode(val);
 			}
 			case Variable: {
-				return params[val];
+				return params_begin[val];
 			}
 			case Neg: {
-				rnode = new NEG_node();
-				rnode->mother = mnode;
+				rnode = NEG_node::create();
+				rnode->mother() = mnode;
 				rnode->addToParents();
 				rnode = dopt->optAdd(rnode);
 				return rnode;
 			}
 			case Not: {
-				rnode = new NOT_node();
+				rnode = NOT_node::create();
 				Assert(mother->isBoolean, "node should output a bit ");
-				rnode->mother = mnode;
+				rnode->mother() = mnode;
 				rnode->addToParents();
 				rnode = dopt->optAdd(rnode);
 				return rnode;
 			}
 			case Eq: {
-				rnode = new EQ_node(); break;
+				rnode = EQ_node::create(); break;
 			}
 			case Plus: {
-				rnode = new PLUS_node(); break;
+				rnode = PLUS_node::create(); break;
 			}
 			case Times: {
-				rnode = new TIMES_node(); break;
+				rnode = TIMES_node::create(); break;
 			}
 			case Minus: {
-				rnode = new PLUS_node();
-				rnode->mother =mnode;
+				rnode = PLUS_node::create();
+				rnode->mother() =mnode;
 				
-				rnode->father = new NEG_node();
-				rnode->father->mother = fnode;
-				rnode->father->addToParents();
-				rnode->father = dopt->optAdd(rnode->father);
+				rnode->father() = NEG_node::create();
+				rnode->father()->mother() = fnode;
+				rnode->father()->addToParents();
+				rnode->father() = dopt->optAdd(rnode->father());
 				
 				rnode->addToParents();
 				rnode = dopt->optAdd(rnode);
 				return rnode;
 			}
 			case Div: {
-				rnode = new DIV_node(); break;
+				rnode = DIV_node::create(); break;
 			}
 			case Mod: {
-				rnode = new MOD_node(); break;
+				rnode = MOD_node::create(); break;
 			}
 			case Lt: {
-				rnode = new LT_node(); break;
+				rnode = LT_node::create(); break;
 			}
 			case Gt: {// a> b ==> b < a;
 				rnode = mnode;
 				mnode = fnode;
 				fnode = rnode;
-				rnode = new LT_node(); break;
+				rnode = LT_node::create(); break;
 			}
 			case Xor: {
 				Assert(mother->isBoolean, "m node should output a bit ");
 				Assert(father->isBoolean, "f node should output a bit ");
-				rnode = new XOR_node();
+				rnode = XOR_node::create();
 				break;
 			}
 			case And: {
 				Assert(mother->isBoolean, "m node should output a bit ");
 				Assert(father->isBoolean, "f node should output a bit ");
-				rnode = new AND_node();
+				rnode = AND_node::create();
 				break;
 			}
 			case Or: {
 				Assert(mother->isBoolean, "m node should output a bit ");
 				Assert(father->isBoolean, "f node should output a bit ");
-				rnode = new OR_node();
+				rnode = OR_node::create();
 				break;
 			}
 			default: Assert(false, "");
 		}
-		rnode->mother = mnode;
-		rnode->father = fnode;
+		rnode->mother() = mnode;
+		rnode->father() = fnode;
 		rnode->addToParents();
 		rnode = dopt->optAdd(rnode);
 		return rnode;
