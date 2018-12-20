@@ -180,6 +180,7 @@ bool_node::bool_node(Type t, size_t nparents):
 	layer(0), flag(0), id(-1), otype(OutType::BOTTOM), type(t), depth(-1)
   {
 	parents = new bool_node*[nparents];
+	memset(parents, 0, sizeof(bool_node*)*nparents);
 	  layer = 0;
 #ifdef SCHECKMEM
   allocated.insert(this);

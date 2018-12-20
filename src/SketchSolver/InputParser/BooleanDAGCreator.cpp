@@ -186,8 +186,14 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 		this->dag->assertions.append(getDllnode(thenode));
 	}
 
-	thenode->father() = fth;
-	thenode->mother() = mth;
+	if (fth != NULL) {
+		thenode->father() = fth;
+	}
+		
+
+	if (mth != NULL) {
+		thenode->mother() = mth;
+	}
 
 	thenode = optimizeAndAdd(thenode);
 	return thenode;

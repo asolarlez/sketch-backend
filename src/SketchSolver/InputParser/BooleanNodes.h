@@ -119,15 +119,19 @@ class bool_node{
     int depth;
   
 	inline bool_node* mother() const{
+		Assert(numparents >= 1, ";lkhyoyui");
 		return parents[0];
 	}
 	inline bool_node* father() const{
+		Assert(numparents >= 2, ";ihjkmm,");
 		return parents[1];
 	}
 	inline bool_node*& mother() {
+		Assert(numparents >= 1, ";zmxcnui");
 		return parents[0];
 	}
 	inline bool_node*& father() {
+		Assert(numparents >= 2, ";98hujn,m");
 		return parents[1];
 	}
 	inline size_t nparents() const {
@@ -140,9 +144,11 @@ class bool_node{
 		return parents + numparents;
 	}
 	inline void set_parent(int i, bool_node* val) {
+		Assert(numparents > i, ";mnip;jadyhj");
 		parents[i] = val;
 	}
 	inline bool_node* get_parent(int i) {
+		Assert(numparents > i, ";mnip;jadyhj");
 		return parents[i];
 	}
 
@@ -1472,6 +1478,7 @@ public:
 	inline static UFUN_node* create(const string& p_ufname, vector<bool_node*>& _args) {
 		UFUN_node* uf = new UFUN_node(p_ufname, _args.size());
 		copy(_args.begin(), _args.end(), uf->arg_begin());
+		return uf;
 	}
 	inline static UFUN_node* create(const UFUN_node& bn, bool copyChildren = true) {
 		return new UFUN_node(bn, copyChildren);

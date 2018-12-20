@@ -193,7 +193,7 @@ protected:
 		return values[bn.id] == 1;
 	}
 
-	bool argcomp(vector<bool_node*>& parents, vector<int>& v1, vector<int>& v2);
+	bool argcomp(bool_node::parent_iter parents_beg, bool_node::parent_iter parents_end, vector<int>& v1, vector<int>& v2);
 	void setbn(bool_node& bn, int i){
 		if(trackChange){
 			int id = bn.id;
