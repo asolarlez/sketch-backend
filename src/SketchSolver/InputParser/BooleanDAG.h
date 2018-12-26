@@ -193,7 +193,7 @@ Dllist assertions;
 		out->mother()->mother() = nodes[i];
 		// BUGFIX xzl: need to add to parents, otherwise the simulate in CEGISSolver will fail sometimes because out->mother()->mother() is an SRC_node whose children is empty, causing NodesToSolver to fail.
 		out->mother()->addToParents();
-		if(out->mother()->father() != NULL){
+		if(out->mother()->hasFather()){
 			bd->addNewNode(out->mother()->father());
 		}
 		bd->addNewNode(out->mother());

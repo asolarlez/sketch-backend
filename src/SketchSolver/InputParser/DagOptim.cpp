@@ -1995,7 +1995,7 @@ void DagOptim::visit( ARRACC_node& node ){
 	if( isConst(node.mother()) ){
         
 		int val = getIval( node.mother() );		
-		if(val < node.nargs()){
+		if(val >= 0 && val < node.nargs()){
 			rvalue = node.arguments(val);
 		}else{
 			rvalue = getZero(&node);
@@ -2665,6 +2665,7 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 }
 
 bool_node* DagOptim::computeOptim(bool_node* node){
+	cout << node->globalId << endl;
     node->accept(*this);
 	node = rvalue;
 	bool_node* tmp = node;

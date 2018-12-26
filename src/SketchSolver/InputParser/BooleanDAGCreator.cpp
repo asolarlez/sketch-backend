@@ -76,8 +76,13 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 	Assert(t != bool_node::SRC && t != bool_node::DST && t != bool_node::CTRL, "You can only use new_node to create internal nodes, you can not use it for either SRC, DST, or CTRL");
 	bool_node* tmp;
 	tmp = newNode(t);
-	tmp->father() = fth;
-	tmp->mother() = mth;
+	if (fth != NULL) {
+		tmp->father() = fth;
+	}
+	if (mth != NULL) {
+		tmp->mother() = mth;
+	}
+	
 	dynamic_cast<TUPLE_R_node*>(tmp)->idx = idx;
 
 
@@ -115,8 +120,12 @@ bool_node* BooleanDAGCreator::new_node(bool_node* mother,
 	//  tmp = dag->new_node(mth, fth, t);    ARMANDO: This is a big performance bug.
 
 	tmp = newNode(t);
-	tmp->father() = fth;
-	tmp->mother() = mth;
+	if (fth != NULL) {
+		tmp->father() = fth;
+	}
+	if (mth != NULL) {
+		tmp->mother() = mth;
+	}
 
 
 	//tmp->name = name;

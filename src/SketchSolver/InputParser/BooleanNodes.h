@@ -130,6 +130,11 @@ class bool_node{
 		Assert(numparents >= 1, ";zmxcnui");
 		return parents[0];
 	}
+
+	inline bool hasFather() {
+		return numparents >= 2;
+	}
+
 	inline bool_node*& father() {
 		Assert(numparents >= 2, ";98hujn,m");
 		return parents[1];
@@ -1871,7 +1876,7 @@ class ARRASS_node: public bool_node{
 	public:
     int quant;
 private:
-    ARRASS_node():bool_node(ARRASS, 2){ quant = -1; }
+    ARRASS_node():bool_node(ARRASS, 3){ quant = -1; }
     ARRASS_node(const ARRASS_node& bn, bool copyChildren = true): bool_node(bn, copyChildren), quant(bn.quant){ }
 
 public:
