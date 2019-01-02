@@ -24,7 +24,7 @@ public:
 				Assert(multi->type == bool_node::ARR_CREATE, "ugrd4ertvbhj");
 				ARR_CREATE_node* an = (ARR_CREATE_node*)multi;
 				int ii = 0;
-				vector<bool_node*> mmcopy(an->p_begin(), an->p_end());
+				vector<bool_node*> mmcopy(an->arg_begin(), an->arg_end());
 				for (auto newins = mmcopy.begin(); newins != mmcopy.end(); ++newins, ++ii) {
 					stringstream name;
 					name << "INPUT_" << ii;
