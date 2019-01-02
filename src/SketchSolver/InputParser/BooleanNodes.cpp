@@ -358,7 +358,9 @@ int bool_node::back_dfs(int idx){
     return idx;
   flag = 1;    
   auto f = [&idx](bool_node* parent) {
-	  idx = parent->back_dfs(idx);
+	  if (parent != NULL) {
+		  idx = parent->back_dfs(idx);
+	  }
   };
   forallparents(f);
   id = idx;
@@ -420,8 +422,12 @@ void bool_node::outDagEntry(ostream& out) const{
 
 
 void bool_node::dislodge(){
+	bool_node* tmp = NULL;
 	auto f = [&](bool_node* parent) {
-		parent->remove_child(this);
+		if (parent != NULL && parent != tmp) {
+			parent->remove_child(this);
+			tmp = parent;
+		}
 	};
 	forallparents(f);
 }

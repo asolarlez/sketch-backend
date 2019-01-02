@@ -278,7 +278,7 @@ public:
 		}
 
 		UFUN_node* uf = UFUN_node::create("sqrt_math", 1);
-		uf->set_parent(0, bn);
+		uf->arguments(0) =  bn;
 		uf->mother() = dopt.getCnode(1);
 		uf->set_tupleName("_sqrt_RET");
 		uf->set_nbits(0);

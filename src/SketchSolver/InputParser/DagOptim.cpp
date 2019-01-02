@@ -1312,11 +1312,11 @@ void DagOptim::visit( ARR_R_node& node ){
 	if(isConst(nmother) && nfather->type == bool_node::ARR_CREATE){
 		int idx = getIval(nmother);
 		ARR_CREATE_node* acn = ((ARR_CREATE_node*)node.father());
-		if(idx >= acn->nparents()){
+		if(idx >= acn->nargs() || idx < 0){
 			rvalue = acn->getDfltval();				
 			return;
 		}
-		rvalue = acn->get_parent(idx);
+		rvalue = acn->arguments(idx);
 		return;
 	}
 
@@ -2665,7 +2665,7 @@ bool_node* DagOptim::computeCSE(bool_node* node){
 }
 
 bool_node* DagOptim::computeOptim(bool_node* node){
-	cout << node->globalId << endl;
+	
     node->accept(*this);
 	node = rvalue;
 	bool_node* tmp = node;

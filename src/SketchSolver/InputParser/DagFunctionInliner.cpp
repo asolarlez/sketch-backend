@@ -822,7 +822,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                                 tupleRead  = dynamic_cast<TUPLE_R_node*>(outTuple->get_parent(p));
                                 
                                 mx->arguments(0) = qn;
-								mx->arguments(0) = tupleRead;
+								mx->arguments(1) = tupleRead;
                                 mx->addToParents();
                                 addNode(qn);
                                 addNode(mx);

@@ -14,6 +14,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	if(inode->type== bool_node::SRC){	
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
 	}
+	auto otype = inode->getOtype();
 	if(arrsz>=0){
 		VarStore::objP* val = &(values.getObj(inode->get_name()));
 		int nbits = inode->get_nbits();
@@ -23,7 +24,12 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 			if(nbits==1){
 				cnst= getCnode( val->getInt() ==1 );
 			}else{
-				cnst= getCnode( val->getInt() );
+				if (otype == OutType::FLOAT_ARR) {
+					cnst = getCnode( floats.getFloat(val->getInt()) );
+				}
+				else {
+					cnst = getCnode(val->getInt());
+				}
 			}
 			while(multi_mother.size()< val->index){
 				multi_mother.push_back( getCnode(0) );
@@ -31,18 +37,22 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 			multi_mother.push_back( cnst );
 			val = val->next;
 		}
-		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
-		acn->setDfltval(getCnode(0));
+		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, getCnode(0));
 		acn->addToParents();		
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
 		return optAdd(acn);
-	}else{
+	}else{				
 		int nbits = inode->get_nbits();		
 		bool_node* onode;
 		if(nbits==1){
 			onode= getCnode( values[inode->get_name()]==1 );
 		}else{
-			onode= getCnode( values[inode->get_name()] );
+			if (otype == OutType::FLOAT) {
+				onode = getCnode( floats.getFloat(values[inode->get_name()]) );
+			}
+			else {
+				onode = getCnode(values[inode->get_name()]);
+			}			
 		}
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< onode->lprint() <<endl; }
 		return onode;
@@ -128,8 +138,8 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 				multi_mother.push_back( cnst );
 				val = val->next;
 			}
-			ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
-			acn->setDfltval(getCnode(0));
+			ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, getCnode(0));
+			
 			acn->addToParents();					
 			new_node->set_parent(j, optAdd(acn) );
 		}else{

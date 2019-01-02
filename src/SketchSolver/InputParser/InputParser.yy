@@ -568,10 +568,10 @@ Expression: Term { $$ = $1; }
 	ARR_CREATE_node* an = dynamic_cast<ARR_CREATE_node*>(newNode(bool_node::ARR_CREATE, bigN));
     
 	for(int i=0; i<bigN; ++i, ++it){
-		an->set_parent(i, *it);
+		an->arguments(i) = (*it);
 	}	
 	if(bigN > 0){
-		if(an->get_parent(0)->getOtype() == OutType::FLOAT ){
+		if(an->arguments(0)->getOtype() == OutType::FLOAT ){
 			$$ = currentBD->new_node(currentBD->create_const(0.0), NULL, an); 
 		}else{
 			$$ = currentBD->new_node(currentBD->create_const(0), NULL, an); 

@@ -131,7 +131,7 @@ class bool_node{
 		return parents[0];
 	}
 
-	inline bool hasFather() {
+	inline bool hasFather() const{
 		return numparents >= 2;
 	}
 
@@ -372,11 +372,12 @@ class bool_node{
     virtual string lprint()const{
 		stringstream str;
 		str<<id<<"= ";
+
 		if(mother() != NULL){
 			str<<mother()->lid()<<" ";
 		}
 		str<<get_sym()<<" ";
-		if(father() != NULL){
+		if(hasFather()){
 			str<<father()->lid()<<" ";
 		}
 		return str.str();
@@ -651,9 +652,10 @@ class ARR_CREATE_node:public bool_node{
 	inline static ARR_CREATE_node* create(int nvals){
 		return new ARR_CREATE_node(nvals);
 	}
-	inline static ARR_CREATE_node* create(vector<bool_node*>& multi_mother) {
+	inline static ARR_CREATE_node* create(vector<bool_node*>& multi_mother, bool_node* defval) {
 		ARR_CREATE_node* rv= new ARR_CREATE_node(multi_mother.size());
-		copy(multi_mother.begin(), multi_mother.end(), rv->p_begin());
+		rv->mother() = defval;
+		copy(multi_mother.begin(), multi_mother.end(), rv->arg_begin());
 		return rv;
 	}
 		
@@ -675,6 +677,13 @@ class ARR_CREATE_node:public bool_node{
 	}
 	bool_node*const & arguments(int i) const {
 		return parents[i + 1];
+	}
+
+	parent_iter arg_begin() const {
+		return parents + 1;
+	}
+	parent_iter arg_end() const {
+		return p_end();
 	}
 
     

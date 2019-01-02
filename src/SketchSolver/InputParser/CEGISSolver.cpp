@@ -432,8 +432,7 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 			multi_mother.push_back( cnst );
 			val = val->next;
 		}
-		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother);
-		acn->setDfltval(cse.getCnode(0));
+		ARR_CREATE_node* acn = ARR_CREATE_node::create(multi_mother, cse.getCnode(0));		
 		acn->addToParents();
 		cse.addNode(acn);
 		if(PARAMS->showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }

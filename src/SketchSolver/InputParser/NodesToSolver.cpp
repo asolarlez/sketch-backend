@@ -1838,7 +1838,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
 		int idx = omv.num_ranges[0].value;
 
-		if( idx >= node.nargs()){
+		if( idx >= node.nargs() || idx < 0){
 			node_ids[node.id] = -YES;
 			Dout( cout<<node.get_name()<<" SHORTCUT "<<omv<<" out of range"<<endl );
 			return;
@@ -2687,7 +2687,7 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	Tvalue& nvar = node_ids[node.id];
 	gvvec& tmp = nvar.num_ranges;
 	tmp.clear();
-	auto it = node.p_begin();	
+		
 
 	const Tvalue& dflt = tval_lookup(node.getDfltval());
 	
@@ -2700,13 +2700,13 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 		tmp.push_back(guardedVal(YES, dflt.num_ranges[0].value, -1)); // default value lives in location -1;
 	}
 
-
-	for(int i=0 ; it != node.p_end(); ++it, ++i){
+	auto it = node.arg_begin();
+	for(int i=0 ; it != node.arg_end(); ++it, ++i){
 		const Tvalue& mval = tval_lookup(*it);
 
 		if (mval.isInt()) {
 
-			arrayConstruct(node.p_begin(), node.p_end(), nvar);			
+			arrayConstruct(node.arg_begin(), node.arg_end(), nvar);			
 			return;
 		}
 
@@ -3145,7 +3145,7 @@ void NodesToSolver::doNonBoolArrAcc(const Tvalue& mval, vector<Tvalue>& choices,
 
 void NodesToSolver::process(BooleanDAG& bdag){
 	int i=0;
-	tmpdag = &bdag;
+		tmpdag = &bdag;
 	stopAddingClauses = false;
 	bool isNegated = dir.getMng().isNegated();
   // Preprocess synth ufun nodes to create tmp out variables

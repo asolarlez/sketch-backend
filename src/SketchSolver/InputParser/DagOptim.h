@@ -421,7 +421,7 @@ public:
 	vector<bool_node*> multi_mother;
 	bool_node* defval;
 	bool_node* toBoolNode() {
-		return ARR_CREATE_node::create(multi_mother);
+		return ARR_CREATE_node::create(multi_mother, defval);
 	}
 };
 
