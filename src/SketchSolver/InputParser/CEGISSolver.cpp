@@ -313,9 +313,8 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 		int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
 		int H__0_var_idx = dirFind.getVar(minVarNodeName);
 		cout <<minVarNodeName<<"=" << H__0_val << ", " << flush;
-		Tvalue tv = H__0_var_idx;
-		tv.setSize(minVarNodeSize);
-		tv.makeSparse(dirFind);
+		Tvalue tv = H__0_var_idx;		
+		tv.makeSparse(dirFind, minVarNodeSize);
 		try{
 			for(int i=0; i<tv.num_ranges.size(); ++i){
 				if(tv.num_ranges[i].value > H__0_val){	

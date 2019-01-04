@@ -220,9 +220,8 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 		declareInArr(name, nbits);
 		Tvalue& rv = controls[name];
 		rv = getArr(name, 0);
-		if(nbits > 1){
-			rv.setSize(nbits);
-			rv.makeSparse(*this);
+		if(nbits > 1){			
+			rv.makeSparse(*this, nbits);
 		}
 		return rv;
 	}
@@ -377,9 +376,9 @@ int SolverHelper::intClause(Tvalue& tv){
 			return rv;
 		}
 	}
-	Assert(tv.getSize()>0, "WTF?!!");
+	Assert(tv.size()>0, "WTF?!!");
 
-	if(tv.getSize()==1){
+	if(tv.size()==1){
 		int id = mng.addIntVar();
 		const gvvec& gv=tv.num_ranges;
 		int val = gv[0].value;

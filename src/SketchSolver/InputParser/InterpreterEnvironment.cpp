@@ -766,7 +766,7 @@ int InterpreterEnvironment::doallpairs() {
 					auto val = solver->ctrlStore[*holes];
 					hardcoder.settleHole(*holes, val);
 					if (tv.isSparse()) {
-						for (int idx = 0; idx < tv.getSize(); ++idx) {
+						for (int idx = 0; idx < tv.size(); ++idx) {
 							auto gv = tv.num_ranges[idx];
 							if (gv.value == val) {
 								finder->addAssertClause(gv.guard);

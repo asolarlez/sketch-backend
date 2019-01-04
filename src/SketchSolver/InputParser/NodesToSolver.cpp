@@ -51,9 +51,9 @@ class PrintSource: public PrintInteresting{
 public:
 	PrintSource(vector<Tvalue> &nids):node_ids(nids){}
 	virtual void visit( ARRACC_node& node ){
-		int sz = node_ids[node.id].getSize();
+		int sz = node_ids[node.id].size();
 		for (auto it = node.arg_begin(); it != node.arg_end(); ++it) {
-			if (node_ids[(*it)->id].getSize() > (sz / 2) - 1) {
+			if (node_ids[(*it)->id].size() > (sz / 2) - 1) {
 				tovisit[(*it)->id] = true;
 			}
 		}
@@ -61,7 +61,7 @@ public:
 	virtual void print(BooleanDAG& bdag, int seed){
 		for(int i=0; i<=seed; ++i){
 			if(tovisit[i]){
-				int sz = node_ids[i].getSize();
+				int sz = node_ids[i].size();
 				cout<<"sz="<<sz<<"\t"<<bdag[i]->lprint()<<endl;
 			}
 		}
@@ -516,8 +516,8 @@ void NodesToSolver::processLT (LT_node& node, EVAL& eval ){
 	}
 
 
-	vector<char> mc(mval.getSize(), 'n');
-	vector<char> fc(fval.getSize(), 'n');
+	vector<char> mc(mval.size(), 'n');
+	vector<char> fc(fval.size(), 'n');
 	while( (i>=mstart && i < mend) || (j>=fstart && j< fend)){
 		    bool avi = i < mend && i >= mstart;
 		    bool avj = j < fend && j >= fstart;			
@@ -616,18 +616,18 @@ NodesToSolver::processEq (Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval)
 	mval.makeSparse (dir);
     fval.makeSparse (dir);
     int cvar = -YES;
-    Dout(cout<<"SIZES = "<<mval.getSize ()<<", "<<fval.getSize ()<<endl);
+    Dout(cout<<"SIZES = "<<mval.size()<<", "<<fval.size()<<endl);
     int orTerms = 0;
-	vector<char> mc(mval.getSize(), 'n');
-	vector<char> fc(fval.getSize(), 'n');
+	vector<char> mc(mval.size(), 'n');
+	vector<char> fc(fval.size(), 'n');
 	int flow = 0;
-	int fhigh = fval.getSize ();
+	int fhigh = fval.size();
 	int finc = 1;
 	
 
 	
 
-    for(int i=0; i<mval.getSize (); ++i){
+    for(int i=0; i<mval.size(); ++i){
 		for(int j=flow; j!=fhigh; j = j+finc){
 		    Dout(cout<<"COMPARING "<<mval[i]<<", "<<fval[j]<<endl);
 		    if(mval[i] == fval[j]){
@@ -649,7 +649,7 @@ NodesToSolver::processEq (Tvalue& mval, Tvalue& fval, Tvalue& out, EVAL eval)
 		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
 		out = cvar;
     }else{
-		if(orTerms == mval.getSize() * fval.getSize()){
+		if(orTerms == mval.size() * fval.size()){
 			out = YES;
 		}else{
 			int result;			
@@ -716,8 +716,8 @@ NodesToSolver::intBvectMult (arith_node &node)
 
 
 bool tvSimilar(Tvalue& t1, Tvalue& t2) {
-	if (t1.getSize() != t2.getSize()) { return false; }
-	for (int i = 0; i < t1.getSize(); ++i) {
+	if (t1.size() != t2.size()) { return false; }
+	for (int i = 0; i < t1.size(); ++i) {
 		if (t1.getId(i) != t2.getId(i)) {
 			return false;
 		}
@@ -754,7 +754,7 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 	
 	if (tvSimilar(mval, fval)) {
 
-		for (int i = 0; i < mval.getSize(); ++i) {
+		for (int i = 0; i < mval.size(); ++i) {
 			int j = i;
 
 			int quant = doArithExpr(mval[i], fval[j], mval.getId(i), fval.getId(j), comp);
@@ -765,10 +765,10 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 	}
 	else {
 		bool checkFeasible = false;
-		if (mval.getSize() * fval.getSize() > 256) {
+		if (mval.size() * fval.size() > 256) {
 			checkFeasible = true;
 		}
-		for (int i = 0; i < mval.getSize(); ++i) {
+		for (int i = 0; i < mval.size(); ++i) {
 			int lv = -1;
 			if (checkFeasible) {
 				if (!dir.checkIfPossible(mval.getId(i), lv)) {
@@ -776,7 +776,7 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 				}
 			}
 
-			for (int j = 0; j < fval.getSize(); ++j) {				
+			for (int j = 0; j < fval.size(); ++j) {
 
 				if (checkFeasible) {
 					int lv;
@@ -796,24 +796,24 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 		}
 	}
 
-	vector<int> fidxs(fval.getSize(), 0);
-	vector<int> midxs(mval.getSize(), 0);
+	vector<int> fidxs(fval.size(), 0);
+	vector<int> midxs(mval.size(), 0);
 	for (auto it = qnumbers.begin(); it != qnumbers.end(); ++it) {
 		bool multiple = false;
 		vector<pair<int, int> > mallsame;
 		vector<pair<int, int> > fallsame;
-		fidxs.assign(fval.getSize(), 0);
-		midxs.assign(mval.getSize(), 0);
+		fidxs.assign(fval.size(), 0);
+		midxs.assign(mval.size(), 0);
 		for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit+=2) {
 			midxs[*pairit] ++;
 			fidxs[*(pairit + 1)] ++;
 			if (midxs[*pairit] > 1 || fidxs[*(pairit + 1)] > 1) {
 				multiple = true;
 			}
-			if (midxs[*pairit] == fval.getSize()) {
+			if (midxs[*pairit] == fval.size()) {
 				mallsame.push_back(make_pair(it->first,*pairit) );
 			}
-			if(fidxs[*(pairit + 1)] == mval.getSize()) {
+			if(fidxs[*(pairit + 1)] == mval.size()) {
 				fallsame.push_back(make_pair(it->first, *(pairit + 1)));
 			}
 
@@ -841,7 +841,7 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 			for (auto pairit = it->second.begin(); pairit != it->second.end(); pairit += 2) {
 				int mv = *pairit;
 				int fv = *(pairit + 1);
-				if (midxs[mv] != fval.getSize() && fidxs[fv] != mval.getSize()) {
+				if (midxs[mv] != fval.size() && fidxs[fv] != mval.size()) {
 					numbers[it->first] = dir.addOrClause(numbers[it->first], dir.addAndClause(mval.getId(mv), fval.getId(fv)));
 				}				
 			}
@@ -885,7 +885,7 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	Tvalue fval = tval_lookup (father, TVAL_SPARSE);
 
 	if (NATIVEINTS) {
-		if (mval.getSize() > 64 && mval.getSize() > 64) {
+		if (mval.size() > 64 && mval.size() > 64) {
 			if (!mval.isInt()) {
 				dir.intClause(mval);
 			}
@@ -927,7 +927,7 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	
 	fval.makeSparse (dir);
 
-	if (node.type == bool_node::TIMES &&  mval.getSize() * fval.getSize() > 100000) {
+	if (node.type == bool_node::TIMES &&  mval.size() * fval.size() > 100000) {
 		cout << "WARNING: It looks like this problem may benefit from using the --slv-nativeints flag." << endl;
 	}
 
@@ -949,13 +949,13 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	//				timerclass dtimer("TD");
 	if(skipZeros){
 		int zem=0, zef=0;
-		for(int i=0; i<mval.getSize (); ++i){
+		for(int i=0; i<mval.size(); ++i){
 			if(mval[i]==0){ 
 				zem = mval.getId (i);	
 				break;
 			}
 		}
-		for(int j=0; j<fval.getSize (); ++j){
+		for(int j=0; j<fval.size(); ++j){
 			if(fval[j] == 0){
 				zef = fval.getId(j);
 				break;
@@ -974,14 +974,14 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 			++vals;
 		}
 	}
-	if(PARAMS->randBnd > 0 && mval.getSize() * fval.getSize() > 3*PARAMS->randBnd){
+	if(PARAMS->randBnd > 0 && mval.size() * fval.size() > 3*PARAMS->randBnd){
 		shortcut = true;
 	}else{
 		shortcut = false;
 	}
-	for(int i=0; i<mval.getSize (); ++i){
+	for(int i=0; i<mval.size(); ++i){
 		if(skipZeros && mval[i] == 0){ continue; }
-	    for(int j=0; j<fval.getSize (); ++j){
+	    for(int j=0; j<fval.size(); ++j){
 			if(skipZeros && fval[j] == 0){ continue; }
 			// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
 			//						atimer.restart();
@@ -1102,7 +1102,7 @@ void NodesToSolver::populateGuardedVals(Tvalue& oval, map<int, int, COMPARE_KEY>
 		}
 	}
 	oval.sparsify(dir);
-	if (oval.getSize() == 0) {
+	if (oval.size() == 0) {
 		stopAddingClauses = true;
 		//This means that the problem has become unsat.
 	}
@@ -1152,6 +1152,8 @@ void NodesToSolver::visit( OR_node& node ){
 	Dout(cout<<"OR "<<node.get_name()<<"  "<<node_ids[node.id]<<"  "<<&node<<endl);
 	return;
 }
+
+
 void NodesToSolver::visit( XOR_node& node ){
 	
 	Tvalue fval = tval_lookup(node.father());
@@ -1181,13 +1183,7 @@ NodesToSolver::visit (SRC_node &node)
     if (node_values.find (&node) != node_values.end ()) {
 		if (node.get_nbits () > 1) {
 		    Tvalue tmp = tvYES;
-		    tmp.makeSparse (dir, node_values[(&node)]);
-		    /* TODO we currently make a sparse value, then convert it to signed bitvec.
-		     * This sounds like bad engineering, since what we really should do
-		     * is construct a signed from the integer value, directly. */
-#ifdef HAVE_BVECTARITH
-		    tmp.makeBvectSigned (dir);
-#endif /* HAVE_BVECTARITH */
+		    tmp.makeSparse (dir, 1, node_values[(&node)]);
 		    node_ids[node.id] = tmp;
 		} else {
 		    node_ids[node.id] = node_values[(&node)]*YES;
@@ -1200,18 +1196,14 @@ NodesToSolver::visit (SRC_node &node)
 		//This could be removed. It's ok to setSize when get_nbits==1.		
 		if (node.get_nbits () > 1 || arrSz >=0) {
 		    Dout (cout << "setting input nodes " << node.get_name() << endl);
-#ifndef HAVE_BVECTARITH
 		    // In the future, I may want to make some of these holes not-sparse.
-			if(arrSz<0){
-				node_ids[node.id].setSize (node.get_nbits ());
+			if(arrSz<0){				
 				Assert( dir.getArrSize(node.get_name()) == node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
-				node_ids[node.id].makeSparse (dir);
-			}else{
-				node_ids[node.id].setSize (node.get_nbits ()*arrSz);
+				node_ids[node.id].makeSparse (dir, node.get_nbits());
+			}else{				
 				Assert( dir.getArrSize(node.get_name()) == arrSz*node.get_nbits (), "THIS IS basd nbits = "<<node.get_nbits ()<<"  dir.getArrSize(node.get_name())="<<dir.getArrSize(node.get_name()) );
 				node_ids[node.id].makeArray (dir, node.get_nbits(), arrSz, sparseArray);
 			}
-#endif /* HAVE_BVECTARITH */
 		}
 
 	Dout(cout << "REGISTERING " << node.get_name() << "  " << node_ids[node.id]
@@ -1227,32 +1219,6 @@ NodesToSolver::visit (SRC_node &node)
 void NodesToSolver::visit( DST_node& node ){
 	node_ids[node.id] = tval_lookup(node.mother());
 	Dout(cout<<"DST = "<<node_ids[node.id]<<endl);
-	/*
-	int oid = node.ion_pos;
-	int nvar = dir.getArr(outname, oid);	
-
-	Tvalue outv = 
-	Dout(cout<<" output "<<outv<<endl);
-	if(outv.isSparse()){
-		cout<<" output "<<node.get_name()<<" = "<<outv<<endl;
-		Dout(cout<<"Making output sparse"<<endl);
-		outv = outv.toBvectSigned(dir);
-	}
-
-	{
-		int szout = node.get_nbits();
-		int sztv = outv.getSize ();
-		int minsz = szout<sztv?szout : sztv;
-		Dout(cout<<"minsz = "<<minsz<<" sztv="<<sztv<<"  szout="<<szout<<endl);
-		for(int i=0; i<minsz; ++i){
-			mng.addEqualsClause( nvar+i, outv.getId (i));
-		}
-		for(int i=minsz; i<szout; ++i){
-			mng.addEqualsClause( nvar+i, -YES);
-		}
-		Dout(cout<<"DST = "<<outv<<endl);
-	}
-	*/
 	return;
 }
 
@@ -1273,17 +1239,12 @@ NodesToSolver::visit (NOT_node &node)
 		return;
 	}
 
-    if(!( mval.getType() == TVAL_BVECT && mval.getSize() == 1 )){
+    if(!( mval.getType() == TVAL_BIT)){
     	cerr<<" BAD NODE "<<endl;
     	node.mother()->outDagEntry(cerr);
     	node.outDagEntry(cerr);
-		/*
-    	for(int i=0; i<node.children.size(); ++i){
-    		node.children[i]->outDagEntry(cerr);
-    	}
-		*/
     }
-    Assert( mval.getType() == TVAL_BVECT && mval.getSize() == 1, "Bad Type for NOT "<<mval.getSize()<<" "<<mval.getType());
+    Assert( mval.getType() == TVAL_BIT, "Bad Type for NOT "<<mval.size()<<" "<<mval.getType());
     Tvalue nvar = -mval.getId ();
 	node_ids[node.id] = nvar;    
 
@@ -1321,13 +1282,8 @@ NodesToSolver::visit (CTRL_node &node)
     if(  node_values.find(&node) != node_values.end() ){
 		if( node.get_nbits() > 1 ){
 		    Tvalue tmp = tvYES;
-		    tmp.makeSparse (dir, node_values[(&node)]);
-		    /* TODO we currently make a sparse value, then convert it to signed bitvec.
-		     * This sounds like bad engineering, since what we really should do
-		     * is construct a signed from the integer value, directly. */
-#ifdef HAVE_BVECTARITH
-		    tmp.makeBvectSigned (dir);
-#endif /* HAVE_BVECTARITH */
+		    tmp.makeSparse (dir, 1, node_values[(&node)]);
+
 		    node_ids[node.id] = tmp;
 		    Dout( cout<<" control "<<node.get_name()<<" = "<<node_ids[node.id]<<"    "<<node_values[(&node)]<<endl);
 		}else{
@@ -1342,15 +1298,13 @@ NodesToSolver::visit (CTRL_node &node)
 		  const int arrSz = node.getArrSz();
 		  //cout << "Angelic " << node.lprint() << " arrSz=" << arrSz << " nbits=" << nbits << endl;
 		  if(arrSz<0){
-			nvar = dir.newAnonymousVar(nbits);
-			nvar.setSize(nbits);
+			nvar = dir.newAnonymousVar(nbits);			
 			if (nbits > 1) {
-			  nvar.makeSparse(dir);
+			  nvar.makeSparse(dir, nbits);
 			}
 		  }else{
 			const int totbits = nbits*arrSz;
-			nvar = dir.newAnonymousVar(totbits);
-			nvar.setSize(totbits);
+			nvar = dir.newAnonymousVar(totbits);			
 			nvar.makeArray(dir, nbits, arrSz);
 		  }
       
@@ -1370,18 +1324,12 @@ NodesToSolver::visit (CTRL_node &node)
 void NodesToSolver::visit( PLUS_node& node ){
 	Dout( cout<<" PLUS: "<<node.get_name()<<endl );
 
-	/* FIXME hard-wired bit-vector arithmetics. */
-#ifdef HAVE_BVECTARITH
-	intBvectPlus (node);
-#else
+
 	if (node.getOtype() == OutType::FLOAT) {
 		processFloatArith<FloatComp>(node, FloatOp<plus<float> >(floats), FloatComp(floats));
 	}else {
 		processArith(node, plus<int>());
 	}	
-#endif /* HAVE_BVECTARITH */
-
-	return;
 }
 
 void NodesToSolver::visit( TIMES_node& node ){
@@ -1392,7 +1340,6 @@ void NodesToSolver::visit( TIMES_node& node ){
 	else {
 		processArith(node, multiplies<int>());
 	}
-	return;
 }
 
 
@@ -1403,14 +1350,12 @@ void NodesToSolver::visit(DIV_node& node) {
 	} else {
 		processArith(node, divides<int>());
 	}
-	return;
 }
 
 void NodesToSolver::visit(MOD_node& node) {
 	Dout(cout << " MOD " << endl);
 
 	processArith(node, modulus<int>());
-	return;
 }
 
 
@@ -1422,17 +1367,12 @@ void
 NodesToSolver::visit(LT_node &node)
 {
 	Dout(cout << " LT " << endl);
-#ifdef HAVE_BVECTARITH
-	intBvectLt(node);
-#else
+
 	if (node.mother()->getOtype()== OutType::FLOAT) {
 		processLT(node, floats);
 	} else {
 		processLT(node, ident);
 	}
-	
-	//processComparissons<less<int> > (node, node.mother->type == bool_node::CONST);
-#endif /* HAVE_BVECTARITH */
 }
 
 
@@ -1442,21 +1382,18 @@ NodesToSolver::visit(EQ_node &node)
 {
 	Dout(cout << " EQ " << endl);
 
-#ifdef HAVE_BVECTARITH
-	intBvectEq(node);
-#else
+
 	bool_node *mother = node.mother();
 	Tvalue mval = tval_lookup(mother, TVAL_SPARSE);
 
 	bool_node *father = node.father();
 	Tvalue fval = tval_lookup(father, TVAL_SPARSE);
-  if (mother->getOtype() == OutType::FLOAT || mother->getOtype() == OutType::FLOAT_ARR || father->getOtype() == OutType::FLOAT || father->getOtype() == OutType::FLOAT_ARR) {
-    processEq(mval, fval, node_ids[node.id], floats);
-  } else {
-    processEq(mval, fval, node_ids[node.id], ident);
-  }
+	if (mother->getOtype() == OutType::FLOAT || mother->getOtype() == OutType::FLOAT_ARR || father->getOtype() == OutType::FLOAT || father->getOtype() == OutType::FLOAT_ARR) {
+		processEq(mval, fval, node_ids[node.id], floats);
+	} else {
+		processEq(mval, fval, node_ids[node.id], ident);
+	}
 	Dout(cout << node.get_name() << " :=  " << node_ids[node.id] << endl);
-#endif /* HAVE_BVECTARITH */
 }
 
 
@@ -1471,13 +1408,13 @@ bool NodesToSolver::checkKnownFun(UFUN_node& node) {
 		map<int, int, FloatComp> numbers(c);
 				
 		if (name == "_cast_int_float_math") {
-			for (int i = 0; i < mval.getSize(); ++i) {
+			for (int i = 0; i < mval.size(); ++i) {
 				int quant = floats.getIdx((float)mval[i]);
 				qnumbers[quant].push_back(mval.getId(i));
 			}			
 		}else {
 			FloatFun f = floats.getFun(name);
-			for (int i = 0; i < mval.getSize(); ++i) {
+			for (int i = 0; i < mval.size(); ++i) {
 				int quant = f(mval[i]);
 				qnumbers[quant].push_back(mval.getId(i));				
 			}
@@ -1537,14 +1474,11 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
     if (isArr || !isBool) {
       if (isArr) {
         Assert(isVerification, "NONONO");
-        int arrsz = dir.getArrSize(sstr.str());
-        nvars[i].setSize(arrsz);
+        int arrsz = dir.getArrSize(sstr.str());        
         nvars[i].makeArray(dir, cbits, arrsz / cbits, sparseArray);
       }
-      else {
-		
-        nvars[i].setSize(cbits);
-        nvars[i].makeSparse(dir);
+      else {        
+        nvars[i].makeSparse(dir, cbits);
       }
       totbits += nvars[i].num_ranges.size();
     }
@@ -1729,8 +1663,8 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 		if(node.mother()->type == bool_node::LT){
 			if(node.mother()->mother() == node.arguments(0) && 
 				node.mother()->father() == node.arguments(1)){
-					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
-					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
+					if(choices[0].isBvect()){choices[0].makeSparse(dir, 1);}
+					if(choices[1].isBvect()){choices[1].makeSparse(dir, 1);}
           if (node.mother()->mother()->getOtype() == OutType::FLOAT || node.mother()->father()->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, true, floats);
           } else {
@@ -1741,8 +1675,8 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 			}
 			if(node.mother()->mother() == node.arguments(1) && 
 				node.mother()->father() == node.arguments(0)){
-					if(choices[0].isBvect()){choices[0].makeSparse(dir);}
-					if(choices[1].isBvect()){choices[1].makeSparse(dir);}
+					if(choices[0].isBvect()){choices[0].makeSparse(dir, 1);}
+					if(choices[1].isBvect()){choices[1].makeSparse(dir, 1);}
           if (node.mother()->mother()->getOtype() == OutType::FLOAT || node.mother()->father()->getOtype() == OutType::FLOAT) {
             computeMaxOrMin(choices[0].num_ranges, choices[1].num_ranges, out.num_ranges, false, floats);
           } else {
@@ -1902,7 +1836,7 @@ void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int 
 	if (isInt) {
 		Tvalue tv = guard;
 		dir.intClause(tv);
-		iVar cho[2] = { nr0[nr0Start].guard, nr1[nr1Start].guard };
+		iVar cho[2] = { iVar(nr0[nr0Start].guard), iVar(nr1[nr1Start].guard) };
 		out.push_back(guardedVal(dir.mux(tv.getId(), 2, cho  ), -1, idx));
 		return;
 	}
@@ -1990,10 +1924,10 @@ void NodesToSolver::mergeTvalues(int guard, const gvvec& nr0, int nr0Start, int 
 template<typename EVAL>
 void NodesToSolver::mergeTvalues(int guard, Tvalue& mid0, Tvalue& mid1, Tvalue& output, int& flag, EVAL eval){
 		if( !mid0.isSparse() ){
-		    mid0.makeSparse(dir);
+		    mid0.makeSparse(dir, 1);
 		}
 		if( !mid1.isSparse() ){
-		    mid1.makeSparse(dir);
+		    mid1.makeSparse(dir, 1);
 		}
 		if(guard == YES){
 		    flag = output != mid1;
@@ -2333,7 +2267,7 @@ void NodesToSolver::arrRead(bool_node& node, Tvalue& nvar, Tvalue& index, Tvalue
 		}
 		const gvvec& num_ranges = inarr.num_ranges;
 
-		int sz = num_ranges[inarr.getSize() - 1].idx + 1;
+		int sz = num_ranges[inarr.size() - 1].idx + 1;
 		Range r = dir.getRange(index.getId());
 		if (r.getHi() >= sz) {
 			sz = r.getHi() + 1;
@@ -2387,10 +2321,10 @@ NodesToSolver::visit( ARR_R_node &node){
 	}
 
 	if(!index.isSparse()){
-		index.makeSparse(dir);
+		index.makeSparse(dir, 1);
 	}
 	if(inarr.isBvect()){
-		inarr.makeSparse(dir);
+		inarr.makeSparse(dir, 1);
 	}
   if (node.getOtype() == OutType::FLOAT) {
     arrRTvalue<FloatComp>(false, index, inarr, node_ids[node.id], FloatComp(floats));
@@ -2403,7 +2337,7 @@ NodesToSolver::visit( ARR_R_node &node){
 template<typename EVAL>
 void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const Tvalue& newval, Tvalue& nvar, EVAL eval){
 
-	if(index.getSize()==1){ //Constant index.
+	if(index.size()==1){ //Constant index.
 		const guardedVal& idxgv = index.num_ranges[0];
 		int lastIndex = inarr.num_ranges.size()-1;
 		const guardedVal& last = inarr.num_ranges[lastIndex];
@@ -2428,7 +2362,7 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 	const gvvec& idxgv = index.num_ranges;
 	gvvec& out = nvar.num_ranges;
 	out.clear();
-	out.reserve(inarr.getSize() + newval.getSize());	
+	out.reserve(inarr.size() + newval.size());
 	int lasti = 0;
 	int lastidx = -1;
 	int idxincr = 1;
@@ -2451,23 +2385,23 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 			++defend;
 		}
 	}
-	for(int i=0; i<=inarr.getSize(); ++i){
+	for(int i=0; i<=inarr.size(); ++i){
 		bool donow = false;
-		if(i==inarr.getSize() || inarr.num_ranges[i].idx != cindex){
+		if(i==inarr.size() || inarr.num_ranges[i].idx != cindex){
 			donow = true;
 		}
 
 		if(donow){
 			while(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value < cindex){
 				if(defend-defstart > 0){
-					mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
+					mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.size(), out, eval, false, idxgv[idxstart].value);
 				}else{
-					mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
+					mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.size(), out, eval, false, idxgv[idxstart].value);
 				}
 				idxstart += idxincr;
 			}
 			if(idxstart >= 0 && idxstart < idxgv.size() && idxgv[idxstart].value == cindex){
-				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
+				mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, lasti, i, newval.num_ranges, 0, newval.size(), out, eval, false, idxgv[idxstart].value);
 				idxstart += idxincr;
 			}else{
 				gvvec::const_iterator tit = inarr.num_ranges.begin()+lasti;
@@ -2477,14 +2411,14 @@ void NodesToSolver::arrWTvalue(const Tvalue& index, const Tvalue& inarr, const T
 				}				
 			}
 			lasti = i;
-			if(i!= inarr.getSize()){ cindex = inarr.num_ranges[i].idx; }
+			if(i!= inarr.size()){ cindex = inarr.num_ranges[i].idx; }
 		}
 	}
 	while(idxstart >= 0 && idxstart < idxgv.size()){
 		if(defend-defstart > 0){
-			mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
+			mergeTvalues(idxgv[idxstart].guard, inarr.num_ranges, defstart, defend, newval.num_ranges, 0, newval.size(), out, eval, false, idxgv[idxstart].value);
 		}else{
-			mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.getSize(), out, eval, false, idxgv[idxstart].value);
+			mergeTvalues(idxgv[idxstart].guard, tvdef.num_ranges, 0, 1, newval.num_ranges, 0, newval.size(), out, eval, false, idxgv[idxstart].value);
 		}
 		idxstart += idxincr;
 	}
@@ -2579,16 +2513,16 @@ void NodesToSolver::intArrW(Tvalue& index, Tvalue& newval, const Tvalue& inarr, 
 		const gvvec& inarrnranges = inarr.num_ranges;
 
 		while (true) {
-			if (i == inarr.getSize() && j == end) {
+			if (i == inarr.size() && j == end) {
 				break;
 			}
-			if (i < inarr.getSize() && inarrnranges[i].idx < 0) {
+			if (i < inarr.size() && inarrnranges[i].idx < 0) {
 				defaultval = inarrnranges[i].guard;
 				out.push_back(guardedVal(inarrnranges[i].guard, -1, -1));
 				++i;
 				continue;
 			}
-			if (i == inarr.getSize() || (j != end && nr[j].value < inarrnranges[i].idx)) {
+			if (i == inarr.size() || (j != end && nr[j].value < inarrnranges[i].idx)) {
 				if (nr[j].value >= 0) {
 					iVar c = dir.getIntConst(nr[j].value);					
 					iVar old = defaultval;
@@ -2632,13 +2566,13 @@ void NodesToSolver::visit( ARR_W_node &node){
 		}
 		if (!newval.isInt()) {
 			if (!newval.isSparse()) {
-				newval.makeSparse(dir);
+				newval.makeSparse(dir, 1);
 			}
 			dir.intClause(newval);
 		}
 		if (!inarr.isInt()) {
 			if (inarr.isBvect()) {
-				inarr.makeSparse(dir);
+				inarr.makeSparse(dir, 1);
 			}
 			dir.intClause(inarr);
 		}
@@ -2711,7 +2645,7 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 		}
 
 		if(mval.isSparse()){
-			for(int t=0; t<mval.getSize(); ++t){
+			for(int t=0; t<mval.size(); ++t){
 				tmp.push_back(guardedVal(mval.getId(t), mval[t], i));
 			}			
 		}	
@@ -2735,13 +2669,13 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
   int cvar = -YES;
   equal_to<int> comp;
   int orTerms = 0;
-	vector<char> mc(mval.getSize(), 'n');
-	vector<char> fc(fval.getSize(), 'n');
+	vector<char> mc(mval.size(), 'n');
+	vector<char> fc(fval.size(), 'n');
 	int flow = 0;
-	int fhigh = fval.getSize ();
+	int fhigh = fval.size();
 	int finc = 1;
   
-  for(int i=0; i<mval.getSize (); ++i){
+  for(int i=0; i<mval.size(); ++i){
 		for(int j=flow; j!=fhigh; j = j+finc){
       if(comp(mval[i], fval[j])){
 				mc[i] = 'y';
@@ -2761,7 +2695,7 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
 		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
 		out = cvar;
   }else{
-		if(orTerms == mval.getSize() * fval.getSize()){
+		if(orTerms == mval.size() * fval.size()){
 			out = YES;
 		}else{
 			int result;
@@ -2782,7 +2716,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     
     int length = tid.num_ranges.size();
 	Tvalue zero = tvYES;
-	zero.bitAdjust(false);
+	zero.invert();
     vector<Tvalue> choices(tpl_store.size(), zero);
     
     bool isBoolean = true;

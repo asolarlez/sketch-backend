@@ -384,7 +384,10 @@ void MiniSATSolver::hardAssertVarClause(int x){
 
 
 int MiniSATSolver::getVarVal(int id){
-	return s->model[id].toInt();
+	if(id > 0)
+		return s->model[id].toInt();
+	else
+		return -s->model[-id].toInt();
 }
  
 int MiniSATSolver::newVar(){

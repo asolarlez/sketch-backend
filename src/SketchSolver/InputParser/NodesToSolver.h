@@ -69,14 +69,14 @@ protected:
 	StringHTable2<int> tplcache;
 
     /* Return the value indexed by given node, or a default value (of given type). */
-    inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BVECT,
+    inline Tvalue &tval_lookup (bool_node *node, valtype_t default_type = TVAL_BIT,
 				int quant = 1) {
 	if (node){		
 	    return node_ids[node->id];
 	}
 
 	switch (default_type) {
-	case TVAL_BVECT:
+	case TVAL_BIT:
 	    return tvYES;
 
 	case TVAL_SPARSE:
@@ -122,7 +122,7 @@ public:
 	 ) :
 	dir(p_dir), outname(p_outname), node_values(p_node_values), 
 	node_ids(p_node_ids), YES(p_dir.YES), 
-	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES, 1), floats(_floats)
+	scratchpad(100),tmprange(2), unirange(1), tvYES( p_dir.YES), tvOne (TVAL_SPARSE, p_dir.YES), floats(_floats)
     {
 	tmprange[0] = 0;
 	tmprange[1] = 1;

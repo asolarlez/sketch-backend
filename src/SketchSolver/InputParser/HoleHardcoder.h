@@ -365,9 +365,7 @@ public:
 			string& sval = currentControls[*mhit];
 			int val = atoi(sval.c_str());
 			Tvalue& glob = globalSat->getControl(*mhit);
-			if (!glob.isSparse()) {
-				glob.makeSparse(*globalSat);
-			}
+			Assert(glob.isSparse(), "Control must be sparse");
 			const gvvec& options = glob.num_ranges;
 			for (int i = 0; i < options.size(); ++i) {
 				const guardedVal& gv = options[i];

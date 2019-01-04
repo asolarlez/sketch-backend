@@ -72,16 +72,14 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 	}
 	const string& s = node.get_name();
 	Tvalue& glob = globalSat->declareControl(&node);
-	if (!glob.isSparse()) {
-		glob.makeSparse(*globalSat);
-	}
+	Assert(glob.isSparse(), "Must be SPARSE!!!");
 	//tloc is a copy of the tvalue in the local sat solver; loc is a pointer to that copy.
 	Tvalue* loc = NULL;
 	Tvalue tloc;
 	if (sat->checkVar(s)) {
 		tloc = sat->getControl(s);
 		if (!tloc.isSparse()) {
-			tloc.makeSparse(*sat);
+			tloc.makeSparse(*sat, node.get_nbits());
 		}
 		loc = &tloc;
 	}
