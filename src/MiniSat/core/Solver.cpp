@@ -1499,7 +1499,50 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 }
 
 
+/*
+This is different from both tryAssignment and assertIfPossible, 
+this is just saying "run a quick check to see if this assignment 'a' 
+would be possible, if it is, don't do anything, because we actually don't know
+if that's the value we'll want. On the other hand, if it's not possible, 
+then we know we should just fix this variable.
+*/
+bool Solver::checkIfPossible(Lit a) {
+	assert(decisionLevel() == 0); //this only works at decision level 0.
+	lbool lv = value(a);
+	//if it already has a value, we just check that it's compatible.
+	if (lv == l_True) {
+		return true;
+	}
+	if (lv == l_False) {
+		return false;
+	}
+	newDecisionLevel();
+	uncheckedEnqueue(a);
+	Clause* confl = propagate();
+	if (confl == NULL) {
+		//Was able to set this withot directly triggering a conflict, so it looks like it is possible.
+		cancelUntil(0); //backtrack the whole assignment, we don't want to leave any traces.
+		return true;
+	}
+	else {
+		cancelUntil(0);
+		uncheckedEnqueue(~a);
+		ok = (propagate() == NULL);
+		return false;
+	}
+}
+
+
+/*
+This function adds 'a' as a new level. It's equivalent to one step of SAT solving 
+where you push a variable, and if there are no conflicts there are no conflicts, 
+but if there are conflicts then the negation of -a gets pushed as part of the previous
+level. If you reach decision level 0, this will set ok = false.
+*/
 bool Solver::tryAssignment(Lit a){
+
+
+
 	lbool lv = value(a);
 	//if it already has a value, we just check that it's compatible.
 	if(lv==l_True){
@@ -1537,6 +1580,18 @@ bool Solver::tryAssignment(Lit a){
 	}
 }
 
+/*
+This one checks if it is possible to assert 'a' without directly triggering a contradiction. 
+If it is, then 'a' gets asserted at level zero, but if this will lead to a contradiction, then 
+~a is asserted at level zero. If that leads to a contradiction as well, then ok=false. 
+Different from tryAssignment because this one asserts the assignment at level 0, whereas 
+tryAssignment adds it at a new level, so if you try assignment of 3 variables, it's possible 
+that on the third one you realize that actually the assignment to the first one was UNSAT, and
+you'll just backtrack to fix the assignment of the first one. By contrast, if you 
+assertIfPossible 3 variables one after another, if the first two do not fail immediately, 
+they get fixed at level zero, so when the third one fails as both positive and negative, 
+you just get unsat. 
+*/
 bool Solver::assertIfPossible(Lit a){
 	lbool lv = value(a);
 	//if it already has a value, we just check that it's compatible.

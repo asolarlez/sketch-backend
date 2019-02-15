@@ -104,6 +104,11 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
+	 virtual bool checkIfPossible(int a) {
+		 return s->checkIfPossible(lfromInt(a));
+	 }
+
+
 	 virtual void retractableAssertClause(int x);
      virtual int addSpecialAssumption();
      void setMaxSoftLearntRestarts(int max_restarts) {

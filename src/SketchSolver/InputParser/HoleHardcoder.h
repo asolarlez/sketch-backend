@@ -90,14 +90,38 @@ public:
 };
 
 
+/*!
+
+This class is used to manage hard-coding of hole values during random concretization. 
+It keeps track of which concretizations we have tried so we never try the same concretization 
+twice. It also has the ability of declaring a problem UNSAT if we have tried a set of 
+concretizations that covers all solutions. 
+A possible solution is "covered" by a given set of concretizations if there is 
+a concretization in that sets a subset of the variables in the assignment.
+*/
+
 class HoleHardcoder{
 	
 	bool LEAVEALONE(int v){ return v < 0; }
 	static const int REALLYLEAVEALONE = -8888888;
 	map<string, int> randholes;			
 	vector<bool> chkrbuf;
+
+	//For SAT problems with multiple harnesses, when we concretize the assignment in 
+	//a later harness, we have to check that the concretization is consistent with 
+	//the constraints that were imposed by the previous harnesses. This variable
+	//is the SAT solver from the CEGIS solver so far.
+	//Additionally, if you do decide to concretize a variable, you need to tell this SAT solver,
+	//so that the harnesses that saw those variables before concretization will knwo what values to 
+	//assign them.
 	SolverHelper* sat;
+
+	//This SAT solver keeps track of all the concretizations we have tried so far. 
+	//The set of satisfying assignments corresponds to all assignments that are not known
+	//to be bad, so when this problem becomes UNSAT, it means that the concretizations we 
+	//have tried cover the set of all solutions.
 	SolverHelper* globalSat;
+
 	vec<Lit> sofar;
 	double totsize;
 	int randdegree;

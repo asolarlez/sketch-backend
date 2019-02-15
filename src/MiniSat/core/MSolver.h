@@ -121,6 +121,7 @@ public:
 
 	bool assertIfPossible(Lit a);		// Set lit a if possible, but if not possible, then ignore and return false.
 	bool tryAssignment(Lit a);
+	bool checkIfPossible(Lit a);
 
 	void addUfun(int funid, UfunSummary* ufs);
 
