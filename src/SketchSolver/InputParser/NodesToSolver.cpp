@@ -979,10 +979,15 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	}else{
 		shortcut = false;
 	}
+
+
+
 	for(int i=0; i<mval.size(); ++i){
 		if(skipZeros && mval[i] == 0){ continue; }
+		
 	    for(int j=0; j<fval.size(); ++j){
 			if(skipZeros && fval[j] == 0){ continue; }
+
 			// int quant = comp(node.mother_quant*nrange[i], node.father_quant*frange[j]);
 			//						atimer.restart();
 			int quant = doArithExpr(mval[i], fval[j], mval.getId (i), fval.getId (j), comp);

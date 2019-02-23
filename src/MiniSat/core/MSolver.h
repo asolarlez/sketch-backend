@@ -32,6 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SolverTypes.h"
 
 #include "IntPropagator.h"
+#include "StringHTable.h"
 using namespace std;
 //=================================================================================================
 // Solver -- the main class:
@@ -80,6 +81,7 @@ public :
 
 class Solver {
 public:
+	Ostore<char> clauseStore;
 	IntPropagator* intsolve;
 
 
@@ -103,6 +105,7 @@ public:
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
+	bool	simplifyAndCompact();
     lbool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
     lbool    solve        ();                        // Search without assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state

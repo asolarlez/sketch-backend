@@ -32,9 +32,9 @@ namespace MSsolverNS{
 //=================================================================================================
 // Constructor/Destructor:
 
-uint32_t SINGLESET = 3;
-uint32_t INTSPECIAL = 2;
-uint32_t SPECIALFUN = 1;
+uint32_t SINGLESET = 6; // lsb of mask must be zero
+uint32_t INTSPECIAL = 4; // lsb of mask must be zero
+uint32_t SPECIALFUN = 2; // lsb of mask must be zero
 /*
 uint32_t UFUNCLAUSE = 2;
 uint32_t SYNCLAUSE = 1;
@@ -99,6 +99,7 @@ Solver::Solver() :
   , remove_satisfied (true)
   , incompletenessCutoff(-1)
   , intsolve(new IntPropagator())
+  , clauseStore(4000)
 {}
 
 
@@ -106,7 +107,7 @@ Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
 	for (int i = 0; i < binaryLearnts.size(); i++) free(binaryLearnts[i]);
-    for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
+//    for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	delete intsolve; 
 	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
 	for (int i = 0; i < allufuns.size(); ++i) { free(allufuns[i]); }
@@ -191,9 +192,10 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 				}
 			}
 			ToVec tv(i,j);
-			Clause* c = Clause::Clause_new(tv, false);
+			Clause* c = Clause::Clause_new(tv, false, &clauseStore);
 			 wi.push(c);
 			 wj.push(c);
+			 clauses.push(c);
 			 clauses_literals += c->size(); 
 		}
 	}
@@ -217,7 +219,7 @@ void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val
 	int sz = sizeof(UfunSpecialStruct) / sizeof(Lit);
 	vec<Lit> pp(sz+1, Lit(0));
 	
-	Clause* cc = Clause::Clause_new(pp, false);
+	Clause* cc = Clause::Clause_new(pp, false, &clauseStore);
 	cc->mark(SPECIALFUN);
 	clauses.push(cc);
 	UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
@@ -236,7 +238,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
     assert(decisionLevel() == 0);
 
 	if(kind==INTSPECIAL){
-		Clause* c = Clause::Clause_new(ps, false);        
+		Clause* c = Clause::Clause_new(ps, false, &clauseStore);
         c->mark(kind);
 		attachClause(*c);
 		return ok;
@@ -343,7 +345,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == NULL);
     }else{
-        Clause* c = Clause::Clause_new(ps, false);
+        Clause* c = Clause::Clause_new(ps, false, &clauseStore);
         // bugfix: SINGLESET is only useful when ps.size()>2
         if (kind != SINGLESET || ps.size()>2) { c->mark(kind); }		
 		clauses.push(c);		        
@@ -390,7 +392,7 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 		}
 		int sz = sizeof(UfunSpecialStruct) / sizeof(Lit);
 		vec<Lit> pp(sz + 1, Lit(0));
-		Clause* cc = Clause::Clause_new(pp, false);
+		Clause* cc = Clause::Clause_new(pp, false, &clauseStore);
 		cc->mark(SPECIALFUN);
 		clauses.push(cc);
 		UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
@@ -461,7 +463,10 @@ void Solver::detachClause(Clause& c) {
 
 void Solver::removeClause(Clause& c) {
     detachClause(c);
-    free(&c); }
+	if (c.learnt()) {
+		free(&c);
+	}
+}
 
 
 bool Solver::satisfied(const Clause& c) {
@@ -819,7 +824,7 @@ Clause* Solver::newTempClause(vec<Lit>& po , Lit q, Clause**& ii, Clause**& jj, 
 			// if ps.size() is not > 2, that's a problem, requires some complexity. 
 			assert(ps.size() > 1);//this is impossible.
 			//if ps.size()==2, then we need to add that clause to the current ws, but that means we may need to grow it.
-			Clause* c = Clause::Clause_new(ps, true);
+			Clause* c = Clause::Clause_new(ps, true, NULL);
 			vec<Clause*>& ws = watches[toInt(q)];
 			int ipos = ii - ws.begin();
 			int jpos = jj- ws.begin();
@@ -832,7 +837,7 @@ Clause* Solver::newTempClause(vec<Lit>& po , Lit q, Clause**& ii, Clause**& jj, 
 		}		
 	}
 	assert(fst != ~q);
-	Clause* c = Clause::Clause_new(ps, true);
+	Clause* c = Clause::Clause_new(ps, true, NULL);
 	attachClause(*c);
 	learnts.push(c);
 	return c;
@@ -1121,15 +1126,15 @@ Clause* Solver::propagate()
         vec<Clause*>&  ws  = watches[toInt(p)];
         Clause         **i, **j, **end;
         num_props++;
-		
         //NOTE xzl: This type cast is rather too bold, it might cause trouble with moderner cc
         //for (i = j = (Clause**)ws, end = i + ws.size();  i != end;){
         for (i = j = ws.begin(), end = i + ws.size();  i != end;){
             Clause& c = **i++;
+#ifdef _DEBUG
 			++DEBUGCOUNT;
+#endif
 			uint32_t mrk = c.mark();
-			Lit false_lit = ~p;
-
+			Lit false_lit = ~p;			
 			if (mrk == INTSPECIAL) {
 				/*
 				An INTSPECIAL clause corresponds to a sparse TVALUE. intCLen is the number of guarded
@@ -1401,19 +1406,21 @@ Clause* Solver::propagate()
             if (c[0] == false_lit) {
                 c[0] = c[1];
                 c[1] = false_lit;
-                avoidGccWeirdness++; // Without this, a bug in some versions of gcc caused the code to break.
+                //avoidGccWeirdness++; // Without this, a bug in some versions of gcc caused the code to break.
             }
-
+#ifdef _DEBUG
             assert(c[1] == false_lit);
-
+#endif
             // If 0th watch is true, then clause is already satisfied.
 			{
-            Lit first = c[0];
-				if (value(first) == l_True){
+				Lit first = c[0];
+				const lbool valfirst = value(first);
+				if (valfirst == l_True){
 					*j++ = &c;
 				} else {
 					// Look for new watch:
-					for (int k = 2; k < c.size(); k++)
+					const int csize = c.size();
+					for (int k = 2; k < csize; k++)
 						if (value(c[k]) != l_False){
 							c[1] = c[k]; c[k] = false_lit;
 							watches[toInt(~c[1])].push(&c);
@@ -1421,7 +1428,7 @@ Clause* Solver::propagate()
 
 					// Did not find watch -- clause is unit under assignment:
 					*j++ = &c;
-					if (value(first) == l_False){
+					if (valfirst == l_False){
 						confl = &c;
 						qhead = trail.size();
 						// Copy the remaining watches:
@@ -1507,9 +1514,11 @@ bool Solver::simplify()
     // Remove satisfied clauses:
     removeSatisfied(learnts);
 	removeSatisfied(binaryLearnts);
-    if (remove_satisfied)        // Can be turned off.
-        removeSatisfied(clauses);
-
+	if (remove_satisfied) {       // Can be turned off.
+		auto bef = clauses.size();
+		removeSatisfied(clauses);
+		cout << " Removed " << (bef - clauses.size()) << " clauses"<< endl;
+	}
     // Remove fixed variables from the variable heap:
     order_heap.filter(VarFilter(*this));
 
@@ -1518,6 +1527,81 @@ bool Solver::simplify()
 
     return true;
 }
+
+
+bool Solver::simplifyAndCompact() {
+	assert(decisionLevel() == 0);
+
+
+	if (!ok || propagate() != NULL)
+		return ok = false;
+
+	int tmpcl = clauses_literals;
+	int tmpll = learnts_literals;
+
+	if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
+		return true;
+
+	for (size_t it = 0; it != watches.size(); ++it) {
+		watches[it].fastclear();
+	}
+
+	auto regIfUnSatisfied = [&](vec<Clause*>& cs)
+	{
+		int i, j;
+		for (i = j = 0; i < cs.size(); i++) {
+			if (satisfied(*cs[i])) {
+				free(cs[i]);
+			} 
+			else {
+				attachClause(*cs[i]);
+				cs[j++] = cs[i];
+			}
+				
+		}
+		cs.shrink(i - j);
+	};
+	regIfUnSatisfied(learnts);
+	regIfUnSatisfied(binaryLearnts);
+
+	
+
+	{
+		Assert(!clauseStore.isOutofOrder(), "This fails if clause store is out of order")
+		auto alloc = clauseStore.clearToAllocator();
+
+		auto reallocate = [&](Clause* oldaddr) {
+			auto sz = Clause::clauseFootprint(oldaddr->size());
+			void* dest = (void*)clauseStore.newObj(sz, alloc.get());
+			return new(dest) Clause(oldaddr);
+		};
+		
+		size_t i, j;
+		for (i = j = 0; i < clauses.size(); i++) {
+			if (!satisfied(*clauses[i])) {
+				Clause* oldaddr = clauses[i];
+				Clause* newaddr = reallocate(oldaddr);				
+				attachClause(*newaddr);
+				clauses[j++] = newaddr;
+			}
+
+		}
+		cout << " Removed " << (i-j) << " clauses" << endl;
+		clauses.shrink(i - j);
+	}
+	// Remove fixed variables from the variable heap:
+	order_heap.filter(VarFilter(*this));
+
+	clauses_literals = tmpcl;
+	learnts_literals = tmpll;
+
+	simpDB_assigns = nAssigns();
+	simpDB_props = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
+
+	return true;
+}
+
+
 
 
 /*_________________________________________________________________________________________________
@@ -1572,7 +1656,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
             if (learnt_clause.size() == 1){
                 uncheckedEnqueue(learnt_clause[0]);
             }else{
-                Clause* c = Clause::Clause_new(learnt_clause, true);
+                Clause* c = Clause::Clause_new(learnt_clause, true, NULL);
 				if (c->size() > 2) {
 					learnts.push(c);
 				}
@@ -1597,7 +1681,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                 return l_Undef; }
 
             // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify())
+            if (decisionLevel() == 0 && !simplifyAndCompact())
                 return l_False;
             
 
@@ -1733,7 +1817,7 @@ bool Solver::tryAssignment(Lit a){
 			if (learnt_clause.size() == 1){
 				uncheckedEnqueue(learnt_clause[0]);
 			}else{
-				Clause* c = Clause::Clause_new(learnt_clause, true);
+				Clause* c = Clause::Clause_new(learnt_clause, true, NULL);
 				if (c->size() > 2) {
 					learnts.push(c);
 				}

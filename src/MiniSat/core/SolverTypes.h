@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Alg.h"
 #include <algorithm>
 #include <string>
-
+#include "StringHTable.h"
 
 
 //=================================================================================================
@@ -140,6 +140,17 @@ public:
             abstraction |= 1 << (var(data[i]) & 31);
         extra.abst = abstraction;  }
 
+	Clause(Clause* other) {
+#ifdef _DEBUG
+		clauseid = DEBUGCOUNT++;
+#endif
+		size_etc = other->size_etc;
+		extra = other->extra;
+		int sz = size();
+		for (int i = 0; i < sz; i++) data[i] = other->data[i];
+	}
+
+
     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
     template<class V>
     Clause(const V& ps, bool learnt) {
@@ -152,21 +163,37 @@ public:
 
 	}
 
+
+	static size_t clauseFootprint(int nlits) {
+		return sizeof(Clause) + sizeof(uint32_t)*(nlits);
+	}
+
     // -- use this function instead:
     template<class V>
-    static Clause* Clause_new(const V& ps, bool learnt = false) {
+    static Clause* Clause_new(const V& ps, bool learnt = false, Ostore<char>* os=NULL) {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
-        void* mem = malloc(sizeof(Clause) + sizeof(uint32_t)*(ps.size()));
-        return new (mem) Clause(ps, learnt); 
+		size_t sz = clauseFootprint(ps.size());
+
+		void* mem;
+		if (os == NULL) {
+			mem = malloc(sz);
+		}
+		else {
+			mem = (void*) os->newObj(sz);
+		}
+		
+        Clause* c = new (mem) Clause(ps, learnt); 
+//		cout << mem << " -- " << (void*)((char*)mem + (sizeof(Clause) + sizeof(uint32_t)*(ps.size()))) << endl;
+		return c;
     }
 
     int          size        ()      const   { return size_etc >> 3; }
     void         shrink      (int i)         { assert(i <= size()); size_etc = (((size_etc >> 3) - i) << 3) | (size_etc & 7); }
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return size_etc & 1; }
-    uint32_t     mark        ()      const   { return (size_etc >> 1) & 3; }
-    void         mark        (uint32_t m)    { size_etc = (size_etc & ~6) | ((m & 3) << 1); }
+    uint32_t     mark        ()      const   { return size_etc & 6; }
+    void         mark        (uint32_t m)    { size_etc = (size_etc & ~6) | ((m & 6)); }
     const Lit&   last        ()      const   { return data[size()-1]; }
 
     // NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for

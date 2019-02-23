@@ -75,6 +75,9 @@ public:
     void     shrink (int nelems)       { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_(int nelems)       { assert(nelems <= sz); sz -= nelems; }
     void     pop    (void)             { sz--, data[sz].~T(); }
+	void fastclear() {
+		sz = 0;
+	}
     void     growTo (int size);
     void     growTo (int size, const T& pad);
     void     clear  (bool dealloc = false);

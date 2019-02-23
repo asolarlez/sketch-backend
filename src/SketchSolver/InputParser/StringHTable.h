@@ -1,9 +1,11 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 #include <cstring>
 #include <utility>
+#include "BasicError.h"
 
 using namespace std;
 
@@ -21,6 +23,37 @@ inline void writeInt(char* buf, unsigned val, int& p){
 }
 
 
+template<typename T>
+class Allocator {
+	int pagesize;
+	vector<T*> buffStore;
+public:
+
+	Allocator(vector<T*>& buffers, int _pagesize) {
+		pagesize = _pagesize;
+		for (auto it = buffers.rbegin(); it != buffers.rend(); ++it) {
+			buffStore.push_back(*it);
+		}
+	}
+
+	T* newBuffer(int sz) {
+		if (sz == pagesize) {
+			auto rv = buffStore.back();
+			buffStore.pop_back();
+			return rv;
+		}
+		else {
+			return new T[sz];
+		}
+	}
+	~Allocator() {
+		for (auto it = buffStore.begin(); it != buffStore.end(); ++it) {
+			delete[] *it;
+		}
+	}
+};
+
+
 
 template<typename T>
 class Ostore{
@@ -28,15 +61,19 @@ class Ostore{
 	vector<T*> stringStore;
 	int pos;
 	int newobjs;
+	bool outOfOrder;
 public:
+	bool isOutofOrder() { return outOfOrder; }
 	int newObjs(){ return newobjs; }
 	int pages(){ return stringStore.size(); }
 	Ostore(){
+		outOfOrder = false;
 		pagesize = 1000; 
 		pos = pagesize;
 		newobjs = 0;
 	}
 	Ostore(int sz){
+		outOfOrder = false;
 		pagesize = sz;
 		pos = pagesize;
 		newobjs = 0;
@@ -46,12 +83,33 @@ public:
 			delete[] *it;
 		}
 	}
-	T* newObj(int size=1){
+
+	unique_ptr<Allocator<T> > clearToAllocator() {
+		auto rv = new Allocator<T>(stringStore, pagesize);
+		stringStore.clear();
+		pos = pagesize;
+		newobjs = 0;
+		outOfOrder = false;
+		return unique_ptr<Allocator<T> >(rv);
+	}
+
+	T* newObj(int size=1, Allocator<T>* alloc = NULL){
 		++newobjs;
 		Assert(size > 0, "Neg size doesn't make sense; ");
+
+		auto newbuf = [=](int locsize) {
+			if (alloc == NULL) {
+				return new T[locsize];
+			}
+			else {
+				return alloc->newBuffer(locsize);
+			}
+		};
+
 		if(size > pagesize){
-			T* rv = new T[size];
+			T* rv = newbuf(size);
 			if(stringStore.size()>0){
+				outOfOrder = true;
 				T* tt = stringStore.back();
 				stringStore[stringStore.size()-1] = rv;
 				stringStore.push_back(tt);
@@ -61,7 +119,7 @@ public:
 			return rv;
 		}else{
 			if(pos + size > pagesize){
-				stringStore.push_back( new T[pagesize] );
+				stringStore.push_back( newbuf(pagesize) );
 				pos = 0;
 			}	
 		}
