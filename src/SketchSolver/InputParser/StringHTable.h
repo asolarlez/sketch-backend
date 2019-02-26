@@ -27,9 +27,12 @@ template<typename T>
 class Allocator {
 	int pagesize;
 	vector<T*> buffStore;
+	vector<pair<int, T*> > oversizeBuffers;
 public:
 
-	Allocator(vector<T*>& buffers, int _pagesize) {
+	Allocator(vector<T*>& buffers, vector<pair<int, T*> > _oversizeBuffers, int _pagesize)
+		:oversizeBuffers(_oversizeBuffers)
+	{
 		pagesize = _pagesize;
 		for (auto it = buffers.rbegin(); it != buffers.rend(); ++it) {
 			buffStore.push_back(*it);
@@ -50,6 +53,9 @@ public:
 		for (auto it = buffStore.begin(); it != buffStore.end(); ++it) {
 			delete[] *it;
 		}
+		for (auto it = oversizeBuffers.begin(); it != oversizeBuffers.end(); ++it) {
+			delete[] it->second;
+		}
 	}
 };
 
@@ -59,37 +65,39 @@ template<typename T>
 class Ostore{
 	int pagesize;
 	vector<T*> stringStore;
+	vector<pair<int, T*> > oversizeStore;
 	int pos;
-	int newobjs;
-	bool outOfOrder;
+	int newobjs;	
 public:
-	bool isOutofOrder() { return outOfOrder; }
 	int newObjs(){ return newobjs; }
 	int pages(){ return stringStore.size(); }
 	Ostore(){
-		outOfOrder = false;
+		
 		pagesize = 1000; 
 		pos = pagesize;
 		newobjs = 0;
 	}
 	Ostore(int sz){
-		outOfOrder = false;
+		
 		pagesize = sz;
 		pos = pagesize;
 		newobjs = 0;
 	}
 	~Ostore(){
-		for(typename vector<T*>::iterator it = stringStore.begin(); it != stringStore.end(); ++it){
+		for(auto it = stringStore.begin(); it != stringStore.end(); ++it){
 			delete[] *it;
+		}
+		for (auto it = oversizeStore.begin(); it != oversizeStore.end(); ++it) {
+			delete[] it->second;
 		}
 	}
 
 	unique_ptr<Allocator<T> > clearToAllocator() {
-		auto rv = new Allocator<T>(stringStore, pagesize);
+		auto rv = new Allocator<T>(stringStore, oversizeStore, pagesize);
 		stringStore.clear();
+		oversizeStore.clear();
 		pos = pagesize;
 		newobjs = 0;
-		outOfOrder = false;
 		return unique_ptr<Allocator<T> >(rv);
 	}
 
@@ -108,14 +116,7 @@ public:
 
 		if(size > pagesize){
 			T* rv = newbuf(size);
-			if(stringStore.size()>0){
-				outOfOrder = true;
-				T* tt = stringStore.back();
-				stringStore[stringStore.size()-1] = rv;
-				stringStore.push_back(tt);
-			}else{
-				stringStore.push_back(rv);
-			}
+			oversizeStore.push_back(make_pair(size, rv));
 			return rv;
 		}else{
 			if(pos + size > pagesize){
@@ -129,15 +130,20 @@ public:
 		return rv;		
 	}
 	void clear(){
-		for(typename vector<T*>::iterator it = stringStore.begin(); it != stringStore.end(); ++it){
+		for(auto it = stringStore.begin(); it != stringStore.end(); ++it){
 			delete[] *it;
+		}
+		for (auto it = oversizeStore.begin(); it != oversizeStore.end(); ++it) {
+			delete[] it->second;
 		}
 		pos = pagesize;
 		stringStore.clear();
+		oversizeStore.clear();
 	}
 	void swap(Ostore<T>& t1){
 		std::swap(pagesize, t1.pagesize);
 		stringStore.swap(t1.stringStore);
+		oversizeStore.swap(t1.oversizeStore);
 		std::swap(pos, t1.pos);
 		std::swap(newobjs, t1.newobjs);
 	}

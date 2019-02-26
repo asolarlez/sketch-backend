@@ -1567,7 +1567,6 @@ bool Solver::simplifyAndCompact() {
 	
 
 	{
-		Assert(!clauseStore.isOutofOrder(), "This fails if clause store is out of order")
 		auto alloc = clauseStore.clearToAllocator();
 
 		auto reallocate = [&](Clause* oldaddr) {
