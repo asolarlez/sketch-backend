@@ -138,6 +138,7 @@ public:
 	bool tryAssignment(Lit a); // Tries to set a. If it succeeds, sets it and returns true. If it fails, returns false, but may also end up backtracking other assignments it knows to be false.
 	bool checkIfPossible(Lit aa, int& outlv); // Checks if a series of assignments is possible. assignments are rolled back when last is true.
 	void popCheckIfPossible(int lv); // Checks if a series of assignments is possible. assignments are rolled back when last is true.
+	void attachUFUNClause(Clause* cc);
 
 	void addUfun(int funid, UfunSummary* ufs);
 

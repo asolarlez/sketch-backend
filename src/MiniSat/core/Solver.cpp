@@ -50,6 +50,7 @@ public:
 	int instance;
 	int inputid;
 	int value;
+	Lit lit;
 };
 
 /*
@@ -228,6 +229,7 @@ void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val
 	scs->instance = instid;
 	scs->inputid = inputid;
 	scs->value = val;
+	scs->lit = lit;
 
 	watches[toInt(lit)].push(cc);
 
@@ -398,21 +400,45 @@ void Solver::addUfun(int funid, UfunSummary* ufs){
 		UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
 		scs->kind = UFUNKIND;
 		scs->uf = ufs;
-		for(int i=0; i<ufs->id; ++i){			
-			watches[toInt(ufs->equivs[i])].push(cc);			
-		}
-		OutSummary* ofs = ufs->output;
-		for(int i=0; i<ofs->nouts; ++i){
-			watches[toInt(ofs->lits[i])].push(cc);
-			watches[toInt(~ofs->lits[i])].push(cc);
-		}
+
+		attachUFUNClause(cc);
+
 	}
+
+
+void Solver::attachUFUNClause(Clause* cc) {
+	UfunSpecialStruct* scs = (UfunSpecialStruct*) &((*cc)[0]);
+	UfunSummary* ufs = scs->uf;
+
+	for (int i = 0; i<ufs->id; ++i) {
+		watches[toInt(ufs->equivs[i])].push(cc);
+	}
+	OutSummary* ofs = ufs->output;
+	for (int i = 0; i<ofs->nouts; ++i) {
+		watches[toInt(ofs->lits[i])].push(cc);
+		watches[toInt(~ofs->lits[i])].push(cc);
+	}
+ }
 
 
 
 void Solver::attachClause(Clause& c) {
     assert(c.size() > 1);
 	uint32_t mark = c.mark();
+
+
+	if (mark == SPECIALFUN) {
+		UfunSpecialStruct* scs = (UfunSpecialStruct*) &(c[0]);
+		if (scs->kind == UFUNKIND) {
+			attachUFUNClause(&c);
+			return;
+		}
+		if (scs->kind == SYNKIND) {
+			watches[toInt(scs->lit)].push(&c);
+			return;
+		}
+		Assert(false, "NYI");
+	}
 
 	if(mark==INTSPECIAL){
 		int ln = intcLen(c);
