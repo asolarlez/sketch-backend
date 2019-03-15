@@ -243,6 +243,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 		Clause* c = Clause::Clause_new(ps, false, &clauseStore);
         c->mark(kind);
 		attachClause(*c);
+		clauses.push(c);
 		return ok;
 	}
 
@@ -500,6 +501,10 @@ bool Solver::satisfied(const Clause& c) {
 	if(c.mark() == SPECIALFUN){
 		return false;
 	}	
+
+	if (c.mark() == INTSPECIAL) {
+		return false;
+	}
 
 	if(c.mark() == SINGLESET){ 
 		for (int i = 0; i < c.size(); i++){
