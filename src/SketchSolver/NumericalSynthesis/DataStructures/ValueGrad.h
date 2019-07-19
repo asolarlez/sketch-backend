@@ -30,12 +30,16 @@ public:
 	void update(double _val) {
 		val = _val;
 	}
+	static double vg_plus(ValueGrad* m, ValueGrad* f, gsl_vector* ograd);
 	static void vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o); // o = m + f
+	static double vg_times(ValueGrad* m, ValueGrad* f, gsl_vector* ograd);
 	static void vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o); // o = m * f
+	static double vg_div(ValueGrad* m, ValueGrad* f, gsl_vector* o);
 	static void vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o); // o = m / f
 	static void vg_neg(ValueGrad* m, ValueGrad* o); // o = -m
 	static void vg_equal(ValueGrad* m, ValueGrad* f, DistanceGrad* o); // o = m == f
 	static void vg_lt(ValueGrad* m, ValueGrad* f, DistanceGrad* o); // o = m < f
+	static double vg_lt(ValueGrad* m, ValueGrad* f, gsl_vector* o);
 	static void vg_lt(ValueGrad* m, ValueGrad* f, ValueGrad* o);
 	static void vg_square(ValueGrad* m, ValueGrad* o); // o = m * m
 	static void vg_arctan(ValueGrad* m, ValueGrad* o); // o = arctan(m)
@@ -44,6 +48,7 @@ public:
 	static void vg_tan(ValueGrad* m, ValueGrad* o); // o = tan(m)
 	static void vg_sqrt(ValueGrad* m, ValueGrad* o); // o = sqrt(m)
 	static void vg_exp(ValueGrad* m, ValueGrad* o);
+	static double vg_copy(ValueGrad* m, gsl_vector* ograd);
 	static void vg_copy(ValueGrad* i1, ValueGrad* i2); // copy i1 into i2
 	static void vg_cast_int_float(ValueGrad* m, ValueGrad* o);
 	
@@ -51,8 +56,11 @@ public:
 	static void vg_ite(ValueGrad* m, ValueGrad* f, ValueGrad* d, ValueGrad* o); // o = ite(d, m, f)
 	static void vg_ite(DistanceGrad* m, DistanceGrad* f, ValueGrad* d, DistanceGrad* o);
     static void vg_ite(ValueGrad* m, ValueGrad* f, double dval, gsl_vector* dgrad, ValueGrad* o);
+    static double vg_ite(ValueGrad* m, ValueGrad* f, double cval, gsl_vector* cgrad,  gsl_vector* ograd);
 	
+	static double vg_or(ValueGrad* m, ValueGrad* f, gsl_vector* ograd);
 	static void vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o);
+	static double vg_and(ValueGrad* m, ValueGrad* f, gsl_vector* ograd);
 	static void vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o);
 	static void vg_not(ValueGrad* m, ValueGrad* o);
 	

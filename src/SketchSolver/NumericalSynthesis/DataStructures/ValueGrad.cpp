@@ -1,5 +1,15 @@
 #include "ValueGrad.h"
 
+double ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
+	double mval = m->getVal();
+	double fval = f->getVal();
+	double val = mval + fval;
+	
+	gsl_vector* mgrads = m->getGrad();
+	gsl_vector* fgrads = f->getGrad();
+	GradUtil::compute_plus_grad(mgrads, fgrads, ograd);
+	return val;
+}
 
 void ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 	if (!m->set || !f->set) {
@@ -7,15 +17,21 @@ void ValueGrad::vg_plus(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
+	double val = vg_plus(m, f, o->getGrad());
+	o->update(val);
+	o->bound();
+}
+
+
+double ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
 	double mval = m->getVal();
 	double fval = f->getVal();
-	double val = mval + fval;
-	o->update(val);
+	double val = mval*fval;
 	
 	gsl_vector* mgrads = m->getGrad();
 	gsl_vector* fgrads = f->getGrad();
-	GradUtil::compute_plus_grad(mgrads, fgrads, o->getGrad());
-	o->bound();
+	GradUtil::compute_mult_grad(mval, fval, mgrads, fgrads, ograd);
+	return val;
 }
 
 void ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
@@ -24,15 +40,21 @@ void ValueGrad::vg_times(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
+	double val = vg_times(m, f, o->getGrad());
+	o->update(val);
+	o->bound();
+}
+
+
+double ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
 	double mval = m->getVal();
 	double fval = f->getVal();
-	double val = mval*fval;
-	o->update(val);
+	double val = mval/fval; // TODO: deal with division by zero
 	
 	gsl_vector* mgrads = m->getGrad();
 	gsl_vector* fgrads = f->getGrad();
-	GradUtil::compute_mult_grad(mval, fval, mgrads, fgrads, o->getGrad());
-	o->bound();
+	GradUtil::compute_div_grad(mval, fval, mgrads, fgrads, ograd);
+	return val;
 }
 
 void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
@@ -41,14 +63,8 @@ void ValueGrad::vg_div(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 		return;
 	}
 	o->set = true;
-	double mval = m->getVal();
-	double fval = f->getVal();
-	double val = mval/fval; // TODO: deal with division by zero
+	double val = vg_div(m, f, o->getGrad());
 	o->update(val);
-	
-	gsl_vector* mgrads = m->getGrad();
-	gsl_vector* fgrads = f->getGrad();
-	GradUtil::compute_div_grad(mval, fval, mgrads, fgrads, o->getGrad());
 	o->bound();
 }
 
@@ -64,7 +80,25 @@ void ValueGrad::vg_neg(ValueGrad* m, ValueGrad* o) {
 }
 
 // Approximate ite with a sigmoid
-// o = f*sigmoid(d) + m*sigmoid(-d)
+// o = f*sigmoid(c) + m*sigmoid(-c)
+double ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, double cdist, gsl_vector* cgrad,  gsl_vector* ograd) {
+	Assert(cgrad != GradUtil::tmp, "Reusing vectors");
+	Assert(ograd != GradUtil::tmp, "Reusing vectors");
+	Assert(cgrad != GradUtil::tmp1, "Reusing vectors");
+	Assert(ograd != GradUtil::tmp1, "Reusing vectors");
+	double s1 = GradUtil::sigmoid(cdist, cgrad, GradUtil::tmp);
+	double v1 = s1 * f->getVal();
+	GradUtil::compute_mult_grad(s1, f->getVal(), GradUtil::tmp, f->getGrad(), ograd);
+	
+	GradUtil::compute_neg_grad(cgrad, GradUtil::tmp1);
+	double s2 = GradUtil::sigmoid(-cdist, GradUtil::tmp1, GradUtil::tmp);
+	double v2 = s2*m->getVal();
+	GradUtil::compute_mult_grad(s2, m->getVal(), GradUtil::tmp, m->getGrad(), GradUtil::tmp1);
+	gsl_blas_daxpy(1.0, GradUtil::tmp1, ograd);
+	
+	return v1 + v2;
+}
+
 void ValueGrad::vg_ite(ValueGrad* m, ValueGrad* f, DistanceGrad* d, ValueGrad* o) {
 	if (!m->set || !f->set || !d->set) {
 		o->set = false;
@@ -154,6 +188,13 @@ void ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, DistanceGrad* o) {
 	gsl_vector_memcpy(o->grad, f->getGrad());
 	gsl_vector_sub(o->grad, m->getGrad());
 	o->set = true;
+}
+
+
+double ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
+	gsl_vector_memcpy(ograd, f->getGrad());
+	gsl_vector_sub(ograd, m->getGrad());
+	return f->getVal()  - m->getVal();
 }
 
 void ValueGrad::vg_lt(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
@@ -257,6 +298,11 @@ void ValueGrad::vg_cast_int_float(ValueGrad* m, ValueGrad* o) {
 	vg_copy(m, o);
 }
 
+double ValueGrad::vg_copy(ValueGrad* m, gsl_vector* grad) {
+	gsl_blas_dcopy(m->getGrad(), grad);
+	return m->getVal();
+}
+
 // Copy i1 into i2
 void ValueGrad::vg_copy(ValueGrad* i1, ValueGrad* i2) {
 	if (!i1->set) {
@@ -268,40 +314,58 @@ void ValueGrad::vg_copy(ValueGrad* i1, ValueGrad* i2) {
 	gsl_blas_dcopy(i1->getGrad(), i2->getGrad());
 }
 
-// o = m + f - mf
+double ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
+	vector<double> vals;
+	vector<gsl_vector*> grads;
+	vals.push_back(m->getVal());
+	vals.push_back(f->getVal());
+	grads.push_back(m->getGrad());
+	grads.push_back(f->getGrad());
+	double v = GradUtil::findMax(vals, grads, ograd);
+	return v;
+}
+
 void ValueGrad::vg_or(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 	if (!m->set || !f->set) {
 		o->set = false;
 		return;
 	}
-	double mval = m->getVal();
-	double fval = f->getVal();
-	double val = mval + fval - mval*fval;
-	o->update(val);
-	GradUtil::compute_plus_grad(m->getGrad(), f->getGrad(), o->getGrad());
-	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), GradUtil::tmp);
-	gsl_blas_daxpy(-1.0, GradUtil::tmp, o->getGrad());
+	double v = vg_or(m, f, o->getGrad());
+	o->update(v);
+	o->set = true;
+	o->bound();
 }
 
-// o = mf
+
+double ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, gsl_vector* ograd) {
+	vector<double> vals;
+	vector<gsl_vector*> grads;
+	vals.push_back(m->getVal());
+	vals.push_back(f->getVal());
+	grads.push_back(m->getGrad());
+	grads.push_back(f->getGrad());
+	double v = GradUtil::findMin(vals, grads, ograd);
+	return v;
+}
+
 void ValueGrad::vg_and(ValueGrad* m, ValueGrad* f, ValueGrad* o) {
 	if (!m->set || !f->set) {
 		o->set = false;
 		return;
 	}
-	double mval = m->getVal();
-	double fval = f->getVal();
-	double val = mval*fval;
-	o->update(val);
-	GradUtil::compute_mult_grad(mval, fval, m->getGrad(), f->getGrad(), o->getGrad());
+	double v = vg_and(m, f, o->getGrad());
+	o->update(v);
+	o->set = true;
+	o->bound();
 }
 
-// o = 1 - m
 void ValueGrad::vg_not(ValueGrad* m, ValueGrad* o) {
 	if (!m->set) {
 		o->set = false;
 		return;
 	}
-	o->update(1 - m->getVal());
+	o->set = true;
+	o->update(- m->getVal());
 	GradUtil::compute_neg_grad(m->getGrad(), o->getGrad());
+	o->bound();
 }

@@ -23,7 +23,7 @@ class GradientDescent {
 	gsl_multimin_function_fdf myfundf;
 
 public:
-	double INIT_STEP_SIZE = 5.0;
+	double INIT_STEP_SIZE = 2.0;
 	double TOLERANCE = 0.1;
 	double PRECISION = 1e-3;
 	double GRAD_PRECISION = 1e-3;
@@ -45,7 +45,7 @@ public:
 		return minidf->x;
 	}
 	void init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p);
-	double optimize(gsl_vector* initX); // optimizes until value is 0
+	double optimize(gsl_vector* initX, bool stopAtZero = true); // optimizes until value is 0
 };
 
 #endif

@@ -3,24 +3,17 @@
 #include <vector>
 #include "OptimizationWrapper.h"
 #include "SymbolicEvaluator.h"
+#ifdef _NOGSL
 #include "FakeGSL.h"
+#endif
 #include "CommandLineArgs.h"
 #include "GradUtil.h"
+#include "OptSolver.h"
 
 extern CommandLineArgs* PARAMS;
 
 using namespace std;
-typedef int integer;
-typedef double doublereal;
 
-typedef float(*floatfun)(float);
-
-typedef int(DFT)(integer*, integer *, doublereal [],
-	integer    *, integer *, doublereal [],
-	integer    *, integer *, doublereal [],
-	char      *, integer *,
-	integer    [], integer *,
-	doublereal [], integer *);
 
 #include "Util.h"
 
@@ -113,7 +106,7 @@ public:
 typedef enum {STALL=(12), DONE=(2), SATISFIED=(5)}  NoSnoptStatus;
 
 
-class NotSnoptSolver {
+class NotSnoptSolver : public OptSolver {
 
 	integer n; integer neF; integer lenA; integer lenG; integer neG;
 
@@ -151,6 +144,7 @@ class NotSnoptSolver {
 	integer Cold = 0, Basis = 1, Warm = 2;
 public:
 	NotSnoptSolver(integer n_, integer neF_, integer lenA_) : n(n_), neF(neF_), lenA(lenA_) {
+		cout << "Using custom solver" << endl;
 		iAfun = new integer[lenA];
 		jAvar = new integer[lenA];
 		A = new doublereal[lenA];
@@ -195,7 +189,7 @@ public:
 		delete[]xnames; delete[]Fnames;
 	}
 	
-	void init(char* _workspace, integer neF_, DFT _df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
+	virtual void init(char* _workspace, integer neF_, DFT _df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
 		Assert(neF_ <= neF, "Error: small nef");
 		neF = neF_; // number of constraints + 1
 		for (integer i = 0; i < n; i++) {
@@ -762,7 +756,7 @@ public:
 		return 0;
 	}
 
-	bool optimize(gsl_vector* initState, bool suppressPrint = false) {
+	virtual bool optimize(gsl_vector* initState, bool suppressPrint = false) {
 		for (int i = 0; i < n; i++) {
 			x[i] = gsl_vector_get(initState, i);
 			xstate[i] = 0;
@@ -817,12 +811,12 @@ public:
 		}
 		bool constraintsSatisfied = true;
 		for (int i = 1; i < neF; i++) {
-			if (F[i] < Flow[i] - 0.02 || F[i] > Fupp[i] + 0.02) {
+			if (F[i] < Flow[i] - 0.002 || F[i] > Fupp[i] + 0.002) {
 				constraintsSatisfied = false;
 			}
 		}
 		for (int i = 0; i < n; i++) {
-			if (x[i] < xlow[i] - 0.02 || x[i] > xupp[i] + 0.02) {
+			if (x[i] < xlow[i] - 0.002 || x[i] > xupp[i] + 0.002) {
 				constraintsSatisfied = false;
 			}
 		}
@@ -842,11 +836,11 @@ public:
 		return constraintsSatisfied;
 	}
 
-	gsl_vector* getResults() {
+	virtual gsl_vector* getResults() {
 		return result;
 	}
 
-	double getObjectiveVal() {
+	virtual double getObjectiveVal() {
 		return objectiveVal;
 	}
 

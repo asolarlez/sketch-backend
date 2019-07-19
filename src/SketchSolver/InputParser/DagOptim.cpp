@@ -482,7 +482,7 @@ bool DagOptim::isNotOfEachOther(bool_node* n1, bool_node* n2){
 	}
 	
 	if( n2->type == bool_node::NOT){
-		if( n2->mother == n1){
+		if( n2->mother == n1){ 
 			return true;
 		}
 	}

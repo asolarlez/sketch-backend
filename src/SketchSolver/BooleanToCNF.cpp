@@ -16,7 +16,6 @@ using namespace std;
 #include "CommandLineArgs.h"
 #include "VarStore.h"
 #include "NodeEvaluator.h"
-#include "NumericalSynthesizer.h"
 #ifndef SAT_Manager
 #define SAT_Manager void *
 #endif
@@ -507,21 +506,6 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
         return new ERAtomSyn(_fm);
     }
 	return NULL;
-}
-
-
-void SolverHelper::createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interf) {
-    int specialVar = ((MiniSATSolver&)mng).addSpecialAssumption();
-    lastVar = specialVar;
-    ((MiniSATSolver&) mng).setMaxSoftLearntRestarts(PARAMS->maxRestarts);
-    NumericalSynthesizer* ns = new NumericalSynthesizer(_fm, dag, interf, lfromInt(specialVar));
-    numsin = ((MiniSATSolver&)mng).addSynth(ns);
-    sins["NUMSIN"] = numsin;
-}
-
-void SolverHelper::addNumSynSolvClause(int inputid, int tvId) {
-    ((MiniSATSolver&)mng).addSynSolvClause(numsin, 0, inputid, 1, lfromInt(tvId));
-    ((MiniSATSolver&)mng).addSynSolvClause(numsin, 0, inputid, 0, lfromInt(-tvId));
 }
 
 void SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {

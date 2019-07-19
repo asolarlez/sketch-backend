@@ -159,6 +159,8 @@ public:
 
 	void writeDIMACS(std::ofstream& dimacs_file);
 	void     cancelUntil      (int level);                                             // Backtrack until a certain level.
+    int      decisionLevel    ()      const; // Gives the current decisionlevel.
+
 protected:
 
 	bool addTransEqClause(UfunSummary* ufsnj, UfunSummary* ufsni, Lit p, UfunSummary* ufs, vec<Lit>& plits, Clause& c, Clause**& i, Clause**& j, Clause**& end, Clause*& confl);
@@ -256,7 +258,6 @@ protected:
 
     // Misc:
     //
-    int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 

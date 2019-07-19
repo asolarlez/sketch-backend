@@ -5,7 +5,7 @@ bool BoolAbstractor::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<b
     //timer.start();
     bool stoppedEarly;
     int YES = dir.newYES();
-    
+    dag.lprint(cout);
     //getProblem()->lprint(cout);
     
     BoolAbstractor nts(dir, "PROBLEM", node_values, node_ids, floats, interf);

@@ -116,7 +116,7 @@ void SimpleEvaluator::visit( LT_node& node ) {
 	double m = d(node.mother);
 	double f = d(node.father);
 	double d = f - m;
-	if (d == 0) d = -MIN_VALUE;
+	//if (d == 0) d = -MIN_VALUE;
 	//cout << node.lprint() << " " << m << " " << f << " " << d << endl;
 	setvalue(node, d);
 }
@@ -196,6 +196,7 @@ void SimpleEvaluator::run(const gsl_vector* ctrls_p) {
     
     for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
+        //cout << bdag[i]->lprint() << " " << d(bdag[i]) << endl;
     }
 }
 
@@ -205,7 +206,12 @@ double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
         return getSqrtError(node);
     } else if (node->type == bool_node::ASSERT) {
         return getAssertError(node);
+    } else if (node->type == bool_node::CTRL && node->getOtype() == OutType::BOOL) {
+    	return getBoolCtrlError(node);
+    } else if (node->getOtype() == OutType::BOOL) {
+    	return getBoolExprError(node);
     } else {
+    	cout << node->lprint() << endl;
         Assert(false, "Unknonwn node for computing error in Simple Evaluator");
     }
 }
@@ -220,32 +226,25 @@ double SimpleEvaluator::getAssertError(bool_node* node) {
     return d(node->mother);
 }
 
-/*vector<tuple<double, int, int>> SimpleEvaluator::run(const gsl_vector* ctrls_p, map<int, int>& imap_p) {
-	Assert(ctrls->size == ctrls_p->size, "SimpleEvaluator ctrl sizes are not matching");
-	for (int i = 0; i < ctrls->size; i++) {
-		gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
-	}
-    for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){
-        (*node_it)->accept(*this);
-	}
-	vector<tuple<double, int, int>> s;
-    cout << "Bool assignment: ";
-	for (int i = 0; i < imap_p.size(); i++) {
-		if (imap_p[i] < 0) continue;
-		bool_node* n = bdag[imap_p[i]];
-        bool hasArraccChild = Util::hasArraccChild(n);
-		double dist = d(n);
-		double cost = abs(dist);
-		if (hasArraccChild) {
-			cost = cost/1000.0;
-		}
-        if (n->type == bool_node::CTRL && n->getOtype() == OutType::BOOL) {
-            cout << n->lprint() << " = " << dist << "; ";
-            cost = cost - 5.0;
-        }
-		s.push_back(make_tuple(cost, i, dist > 0));
-	}
-    cout << endl;
-	return s;
-}*/
+double SimpleEvaluator::getBoolCtrlError(bool_node* node) {
+	// return an error if the bool ctrl is not fixed by the sat solver
+	int ival = getInputValue(*node);
+    if (ival == DEFAULT_INPUT) {
+    	return -1.0;
+    }
+}
+
+double SimpleEvaluator::getBoolExprError(bool_node* node) {
+    Assert (inputValues->hasValue(node->id), "Boolean expression not yet set");
+    int val = inputValues->getValue(node->id);
+    
+    if (val == 1) {
+        return d(node);
+    } else {
+        return -d(node);
+    }
+}
+
+
+
 

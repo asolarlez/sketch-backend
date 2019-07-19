@@ -11,14 +11,14 @@
 #else
 #include "FakeGSL.h"
 #endif
-
+#include "OptSolver.h"
 #include "snopt.hh"
 #include "snoptProblem.hh"
 
 using namespace std;
-typedef int (* SNOPT_DF_TYPE)(integer*,	integer*, doublereal*, integer*, integer*, doublereal*, integer*, integer*, doublereal*, char*, integer*, integer*, integer*, doublereal*, integer*);
 
-class SnoptSolver {
+
+class SnoptSolver : public OptSolver {
 	snoptProblem snoptProb;
 	
 	integer n; integer neF; integer lenA; integer lenG;
@@ -94,14 +94,14 @@ public:
 		delete []xnames; delete []Fnames;
 	}
 	
-	void init(char* workspace, integer nef_, SNOPT_DF_TYPE df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_);
+	virtual void init(char* workspace, integer nef_, DFT df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_);
 	bool optimize(gsl_vector* initState, bool suppressPrint = false);
 	
-	gsl_vector* getResults() {
+	virtual gsl_vector* getResults() {
 		return result;
 	}
 	
-	double getObjectiveVal() {
+	virtual double getObjectiveVal() {
 		return objectiveVal;
 	}
 	

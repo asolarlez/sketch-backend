@@ -48,7 +48,6 @@ class SolverHelper {
     map<string, int> arrsize;
 	map<string, Tvalue> controls;
 	map<string, SynthInSolver*> sins;
-    SynthInSolver* numsin; // Numerical Synthesizer
     int varCnt;
 	int lastVar;
     SATSolver& mng;
@@ -115,9 +114,6 @@ public:
 		return sins;
 	}
 
-    void createNumericalSynthesizer(FloatManager& _fm, BooleanDAG* dag, Interface* interf);
-    
-    void addNumSynSolvClause(int inputid, int tvId);
 
 	void addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm);
 

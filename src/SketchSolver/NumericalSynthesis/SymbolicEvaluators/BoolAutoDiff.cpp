@@ -236,6 +236,12 @@ void BoolAutoDiff::visit( AND_node& node ) {
         dg->set = true;
         return;
     }
+    if (mval == 1 && fval == 1) {
+        dg->dist  = 1000.0;
+        GradUtil::default_grad(dg->grad);
+        dg->set = true;
+        return;
+    }
     // Compute the value from the parents
     DistanceGrad* mdist = d(node.mother);
     DistanceGrad* fdist = d(node.father);
@@ -261,6 +267,13 @@ void BoolAutoDiff::visit( OR_node& node ) {
     
     if (mval == 1 || fval == 1) {
         dg->dist = 1000.0;
+        GradUtil::default_grad(dg->grad);
+        dg->set = true;
+        return;
+    }
+
+    if (mval == 0 && fval == 0) {
+        dg->dist  = -1000.0;
         GradUtil::default_grad(dg->grad);
         dg->set = true;
         return;
@@ -374,11 +387,24 @@ void BoolAutoDiff::run(const gsl_vector* ctrls_p) {
     for (int i = 0; i < ctrls->size; i++) {
         gsl_vector_set(ctrls, i, gsl_vector_get(ctrls_p, i));
     }
-    
     for (int i = 0; i < bdag.size(); i++) {
         bdag[i]->accept(*this);
     }
+    
+    /*for (int i = 0; i < bdag.size(); i++) {
+        DistanceGrad* dg = d(bdag[i]);
+        ValueGrad* vg = v(bdag[i]);
+        cout << bdag[i]->lprint();
+        if (dg->set && bdag[i]->getOtype() == OutType::BOOL) {
+            cout << " " << dg->dist << endl;
+        } else {
+            cout << " " << vg->getVal() << endl;
+        }
+    }*/ 
 }
+
+
+
 
 double BoolAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // Negative means errors TODO: name is confusing
     bool_node* node = bdag[nodeid];
@@ -443,6 +469,8 @@ double BoolAutoDiff::getBoolExprError(bool_node* node, gsl_vector* grad) {
 }
 
 
+
+
 double BoolAutoDiff::getErrorOnConstraint(int nodeid) {
     bool_node* node = bdag[nodeid];
     if (Util::isSqrt(node)) {
@@ -496,4 +524,45 @@ double BoolAutoDiff::getBoolExprError(bool_node* node) {
         return -dg->dist;
     }
 }
+
+double BoolAutoDiff::computeSingleError(int nodeid, double errorSoFar, const gsl_vector* errorGradSoFar, gsl_vector* grad) {
+    Assert(errorGradSoFar != GradUtil::tmp1, "Reusing tmp1 vector");
+    Assert(grad != GradUtil::tmp1, "Reusing tmp1 vector");
+    Assert(errorGradSoFar != GradUtil::tmp2, "Reusing tmp2 vector");
+    Assert(grad != GradUtil::tmp2, "Reusing tmp2 vector");
+    Assert(errorGradSoFar != GradUtil::tmp3, "Reusing tmp3 vector");
+    Assert(grad != GradUtil::tmp3, "Reusing tmp3 vector");
+
+    // error = d*sigmoid(-d)*sigmoid(10(dist+0.1))
+    double d = getErrorOnConstraint(nodeid, GradUtil::tmp1);
+    GradUtil::compute_neg_grad(GradUtil::tmp1, GradUtil::tmp2);
+    double s1 = GradUtil::sigmoid(-d, GradUtil::tmp2, GradUtil::tmp3); // tmp2 not needed
+
+    GradUtil::compute_mult_grad(d, s1, GradUtil::tmp1, GradUtil::tmp3, GradUtil::tmp2); // tmp 1 and tmp3 not needed
+    double r = d*s1;
+
+    gsl_vector_memcpy(GradUtil::tmp1, errorGradSoFar);
+    gsl_vector_scale(GradUtil::tmp1, 10.0);
+    double s2 = GradUtil::sigmoid(10*(errorSoFar + 0.1), GradUtil::tmp1, GradUtil::tmp3);
+
+    GradUtil::compute_mult_grad(r, s2, GradUtil::tmp2, GradUtil::tmp3, grad);
+    return r*s2;
+}
+
+double BoolAutoDiff::getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad) {
+    GradUtil::default_grad(grad);
+    Assert(grad != GradUtil::tmp, "Reusing tmp vectors");
+    GradUtil::default_grad(GradUtil::tmp);
+    double dist = 0;
+    double d;
+
+    for (auto it = assertIds.begin(); it != assertIds.end(); it++) {
+        d = computeSingleError(*it, dist, grad, GradUtil::tmp);
+        dist += d;
+        gsl_vector_add(grad, GradUtil::tmp);
+        
+    }
+    return dist;
+}
+
 

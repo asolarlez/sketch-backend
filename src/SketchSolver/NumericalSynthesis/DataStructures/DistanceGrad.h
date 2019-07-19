@@ -16,6 +16,7 @@
 
 using namespace std;
 
+class ValueGrad;
 class DistanceGrad {
 public:
 	double dist;
@@ -55,7 +56,21 @@ public:
 	static void dg_or(DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
 	static void dg_not(DistanceGrad* m, DistanceGrad* d);
 	static void dg_ite(DistanceGrad* b, DistanceGrad* m, DistanceGrad* f, DistanceGrad* d);
+
+	static double dg_copy(DistanceGrad* m, gsl_vector* grad);
 	static void dg_copy(DistanceGrad* m, DistanceGrad* o);
+
+	static double dg_times(DistanceGrad* m, DistanceGrad* f, gsl_vector* grad);
     
     static void dg_ite(DistanceGrad* m, DistanceGrad* f, double dval, gsl_vector* dgrad, DistanceGrad* o);
+
+    static bool same(DistanceGrad* m, DistanceGrad* f);
+
+    static double dg_combine(DistanceGrad* m, DistanceGrad* f);
+    static void dg_combine(DistanceGrad* m, DistanceGrad* f, DistanceGrad* o);
+
+    static double dg_combine(DistanceGrad* m, DistanceGrad* f, double cval, gsl_vector* grad, int bv, gsl_vector* o);
+    static double dg_combine(DistanceGrad* m, DistanceGrad* f, double cval, int bv);
+
+    static void dg_combine(vector<DistanceGrad*>& cdists, DistanceGrad* vdist, vector<ValueGrad*>& cvals, int bv, DistanceGrad* o);
 };

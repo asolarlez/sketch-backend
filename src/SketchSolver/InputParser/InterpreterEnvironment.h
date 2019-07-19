@@ -106,6 +106,14 @@ class InterpreterEnvironment
 		return fname.substr(x1, x3-x1);
 	}
 
+	string benchName() {
+		string s = params.inputFname;
+		int x1 = s.rfind(".sk");
+		int x2 = s.rfind("/tmp/");
+		return s.substr(x2+5, x1-x2 - 5);
+
+	}
+
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:
@@ -125,7 +133,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);		
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
-        reasSolver = new REASSolver(*finder, floats);
+        reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 	}
 	
@@ -148,7 +156,7 @@ public:
 		hardcoder.reset();
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
-        reasSolver = new REASSolver(*finder, floats);
+        reasSolver = new REASSolver(floats);
 		cout<<"ALLRESET"<<endl;
 		status=READY;
 	}

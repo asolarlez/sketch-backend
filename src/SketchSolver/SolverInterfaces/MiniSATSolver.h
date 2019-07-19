@@ -104,10 +104,10 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
-	 virtual bool checkIfPossible(int a) {
-		 return s->checkIfPossible(lfromInt(a));
+	 virtual void cancelLastDecisionLevel() {
+	 	int curDecisionLevel = s->decisionLevel();
+	 	s->cancelUntil(curDecisionLevel-1);
 	 }
-
 
 	 virtual void retractableAssertClause(int x);
      virtual int addSpecialAssumption();

@@ -29,6 +29,8 @@ class BoolAutoDiff: public NodeVisitor, public SymbolicEvaluator
 	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
 	vector<DistanceGrad*> distances; // Keeps track of distance metric for boolean nodes
     Interface* inputValues;
+
+    
 		
 public:
     int DEFAULT_INP = -32;
@@ -73,6 +75,9 @@ public:
     double getBoolCtrlError(bool_node* node);
     double getBoolExprError(bool_node* node);
 
+    virtual double getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad);
+
+    double computeSingleError(int nodeid, double errorSoFar, const gsl_vector* errorGradSoFar, gsl_vector* grad);
 
     
 	void setvalue(bool_node& bn, ValueGrad* v) {
@@ -111,6 +116,17 @@ public:
 		return d(*bn);
 	}
 	
+	virtual double dist(int nid) {
+		DistanceGrad* dg = d(bdag[nid]);
+		return dg->dist;
+	}
+
+	virtual double dist(int nid, gsl_vector* grad) {
+		DistanceGrad* dg = d(bdag[nid]);
+		gsl_vector_memcpy(grad, dg->grad);
+		return dg->dist;
+	}
+
 	virtual void print() {
 		/*for (int i = 0; i < bdag.size(); i++) {
 			if (bdag[i]->type == bool_node::ASSERT) {

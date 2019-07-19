@@ -90,11 +90,10 @@ struct CommandLineArgs{
   string erSimEvalFName;
   bool numericalSolver;
 	string numericalSolverMode;
-	bool useSnopt;
-	bool useEager;
+	int smoothingMode;
+	int optMode;
     bool checkInput;
     string partialInput;
-    bool useSnoptUnconstrained;
     bool relaxBoolHoles;
     int numTries;
     bool disableSatSuggestions;
@@ -102,6 +101,7 @@ struct CommandLineArgs{
     int conflictCutoff;
     int maxRestarts;
     int costOption;
+    bool numdebug;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
 	CommandLineArgs(vector<string> args) {
@@ -161,6 +161,7 @@ struct CommandLineArgs{
 		simplifycex = "NOSIM";
 		setMemo = true;
 		debug = false;
+		numdebug = false;
 		superChecks = false;
 		randBnd = -1;
 		lightVerif = false;
@@ -180,11 +181,11 @@ struct CommandLineArgs{
 	epsilon = 0.0000001;
     numericalSolver = true;
 		numericalSolverMode = "";
-		useSnopt = false;
+		smoothingMode = 0;
+		optMode = 0;
 	erSimEvalFName = "";
         checkInput = false;
         partialInput = "";
-        useSnoptUnconstrained = false;
         relaxBoolHoles = false;
         numTries = 1;
         disableSatSuggestions = false;
@@ -200,6 +201,11 @@ struct CommandLineArgs{
         }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
+	      input_idx = ii+1;
+		  continue;
+	    }
+	    if( string(argv[ii]) == "-numdebug" ){	      
+	      numdebug = true;
 	      input_idx = ii+1;
 		  continue;
 	    }
@@ -232,16 +238,21 @@ struct CommandLineArgs{
 				input_idx = ii+2;
 				continue;
 			}
-			if(	string(argv[ii]) == "-usesnopt" ){
-				useSnopt = true;
-				input_idx = ii+1;
+			if( string(argv[ii]) == "-smoothingmode" ){
+				Assert(ii<(argc-1), "-smoothingmode needs an extra parameter");
+				smoothingMode = atoi(argv[ii+1]);
+				cout<<"smoothing mode = "<<smoothingMode<<endl;
+				input_idx = ii+2;
 				continue;
 			}
-			if( string(argv[ii]) == "-useeager" ) {
-				useEager = true;
-				input_idx = ii+1;
+			if( string(argv[ii]) == "-optmode" ){
+				Assert(ii<(argc-1), "-optmode needs an extra parameter");
+				optMode = atoi(argv[ii+1]);
+				cout<<"optimization mode = "<<optMode<<endl;
+				input_idx = ii+2;
 				continue;
 			}
+			
             if (string(argv[ii]) == "-checkinput") {
                 checkInput = true;
                 input_idx = ii+1;

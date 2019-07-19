@@ -10,7 +10,7 @@ void GradientDescent::init(GD_F_TYPE f, GD_DF_TYPE df, GD_FDF_TYPE fdf, void* p)
 	myfundf.params = p;
 }
 
-double GradientDescent::optimize(gsl_vector* initX) {
+double GradientDescent::optimize(gsl_vector* initX, bool stopAtZero) {
 	size_t iter = 0;
 	int status;
 	double size;
@@ -44,7 +44,7 @@ double GradientDescent::optimize(gsl_vector* initX) {
 			diff = 10;
 		}
 	}
-	while (status == GSL_CONTINUE && iter < ITERATIONS && fval >= PRECISION && diff >= PRECISION);
+	while (status == GSL_CONTINUE && iter < ITERATIONS && (!stopAtZero || fval >= PRECISION) && diff >= PRECISION);
 	cout << "Iterations: " << iter << endl;
 	//cout << gsl_strerror(status) << endl;
 	cout << "Ending search..." << endl;

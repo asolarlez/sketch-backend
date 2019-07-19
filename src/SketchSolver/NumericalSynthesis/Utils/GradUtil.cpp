@@ -69,6 +69,16 @@ double GradUtil::findMax(const vector<double>& vals, const vector<gsl_vector*>& 
 	//return maxv;
 }
 
+double GradUtil::findMax(const vector<double>& vals) {
+	double maxv = MINVAL;
+	for (int i = 0; i < vals.size(); i++) {
+		if (vals[i] > maxv) {
+			maxv = vals[i];
+		}
+	}
+	return softMinMax(vals, ALPHA, maxv);
+}
+
 double GradUtil::sigmoid(double x, gsl_vector* grads, gsl_vector* out) {
 	double scale = BETA;
     double v = 1.0/(1.0 + exp(scale * x));
@@ -79,6 +89,12 @@ double GradUtil::sigmoid(double x, gsl_vector* grads, gsl_vector* out) {
 	gsl_blas_dcopy(grads, out);
 	gsl_blas_dscal(d, out);
 	return v;
+}
+
+double GradUtil::sigmoid(double x) {
+	double scale = BETA;
+    double v = 1.0/(1.0 + exp(scale * x));
+    return v;
 }
 
 /* Computes the gradient of log(e^(alpha*(v1 - t)) + e^(alpha*(v2 - t)) ... )
@@ -97,6 +113,14 @@ double GradUtil::softMinMax(const vector<double>& vals, const vector<gsl_vector*
 		gsl_blas_daxpy(exp(alpha*(vals[i] - t)), grads[i], l);
 	}
 	gsl_blas_dscal(1.0/expval, l);
+	return (log(expval) + alpha * t)/alpha;
+}
+
+double GradUtil::softMinMax(const vector<double>& vals, double alpha, double t) {
+	double expval = 0.0;
+	for (int i = 0; i < vals.size(); i++) {
+		expval += exp(alpha * (vals[i] - t));
+	}
 	return (log(expval) + alpha * t)/alpha;
 }
 

@@ -3,7 +3,7 @@
 
 #ifndef _NOSNOPT
 
-void SnoptSolver::init(char* workspace, integer neF_, SNOPT_DF_TYPE df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
+void SnoptSolver::init(char* workspace, integer neF_, DFT df, integer ObjRow, doublereal ObjAdd, doublereal *xlow_, doublereal *xupp_, doublereal *Flow_, doublereal *Fupp_) {
 	Assert(neF_ <= neF, "Error: small nef");
 	neF = neF_;
 	for (integer i = 0; i < n; i++) {
@@ -50,15 +50,15 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
 	}
 	
 	snoptProb.setIntParameter("Derivative option", 1);
-	snoptProb.setIntParameter("Major Iteration limit", 250);
-    snoptProb.setRealParameter("Function precision", 0.0001);
-    snoptProb.setRealParameter("Major optimality tolerance", 0.01);
-    snoptProb.setRealParameter("Major feasibility tolerance", 0.0001);
-    snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);
+	snoptProb.setIntParameter("Major Iteration limit", 100);
+    //snoptProb.setRealParameter("Function precision", 0.001);
+    //snoptProb.setRealParameter("Major optimality tolerance", 0.0001);
+    //snoptProb.setRealParameter("Major feasibility tolerance", 0.0001);
+    //snoptProb.setRealParameter("Minor feasibility tolerance", 0.0001);
     snoptProb.setIntParameter("Scale option", 1);
 	integer status = snoptProb.solve(Cold);
-    cout << "Solving again" << endl;
-    status = snoptProb.solve(Warm);
+    //cout << "Solving again" << endl;
+    //status = snoptProb.solve(Warm);
 	
 	for (int i = 0; i < n; i++) {
 		gsl_vector_set(result, i, x[i]);
@@ -89,19 +89,61 @@ bool SnoptSolver::optimize(gsl_vector* initState, bool suppressPrint) {
     }
     bool constraintsSatisfied = true;
     for (int i = 1; i < neF; i++) {
-        if (F[i] < Flow[i] - 0.02 || F[i] > Fupp[i] + 0.02) {
+        if (F[i] < Flow[i] - 0.01 || F[i] > Fupp[i] + 0.01) {
             constraintsSatisfied = false;
         }
     }
     for (int i = 0; i < n; i++) {
-        if (x[i] < xlow[i] - 0.02 || x[i] > xupp[i] + 0.02) {
+        if (x[i] < xlow[i] - 0.001 || x[i] > xupp[i] + 0.001) {
             constraintsSatisfied = false;
         }
     }
     
-    //if (status >= 1 && status <= 9) {
-    //    Assert(constraintsSatisfied, "Something is wrong with snopt");
-    //}
+    if (status >= 1 && status <= 9 && !constraintsSatisfied) {
+    	cout << "Solving again" << endl;
+    	status = snoptProb.solve(Warm);
+    	for (int i = 0; i < n; i++) {
+			gsl_vector_set(result, i, x[i]);
+		}
+		objectiveVal = F[0];
+    	if (!suppressPrint) {
+        	cout << "Status: " << status << endl;
+        	if (status >= 1 && status <= 9) {
+            	cout << "Solution found" << endl;
+        	} else if (status >= 11 && status <= 19) {
+            	cout << "Infeasible constraints" << endl;
+        	} else if (status == 91) {
+            	cout << "Invalid input" << endl;
+        	} else {
+            	cout << "Unknown error " << status << endl;
+        	}
+        
+        	cout << "x = ";
+        	for (int i = 0; i < n; i++){
+            	cout << x[i] << ", ";
+        	}
+        	cout << endl;
+        	cout << "F = ";
+        	for (int i = 0; i < 1; i++){
+            	cout << F[i] << ", ";
+        	}
+        	cout << endl;
+    	}
+    	bool constraintsSatisfied = true;
+    	for (int i = 1; i < neF; i++) {
+        	if (F[i] < Flow[i] - 0.01 || F[i] > Fupp[i] + 0.01) {
+        		cout << F[i] << " " << Flow[i] << " " << Fupp[i] << endl;
+        	    constraintsSatisfied = false;
+        	}
+    	}
+    	for (int i = 0; i < n; i++) {
+        	if (x[i] < xlow[i] - 0.001 || x[i] > xupp[i] + 0.001) {
+        		cout << x[i] << " " << xlow[i] << " " << xupp[i] << endl;
+            	constraintsSatisfied = false;
+        	}
+    	}
+        Assert(constraintsSatisfied, "Something is wrong with snopt");
+    }
     if (!suppressPrint) {
         if (constraintsSatisfied) {
             cout << "Constraints satisfied" << endl;

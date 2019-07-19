@@ -18,6 +18,7 @@ using namespace std;
 
 class GradUtil {
 public:
+	static int counter;
 	static constexpr double MAXVAL = 1e30;
 	static constexpr double MINVAL = -1e30;
 	static constexpr double PI = 3.1415926535897;
@@ -30,7 +31,7 @@ public:
 	static gsl_vector* tmp2;
 	static gsl_vector* tmp3;
 	static gsl_vector* tmpT; // used for internal computations in mult, div - don't use it anywhere else
-	
+
     static void allocateTempVectors(int size);
     static void clearTempVectors();
     
@@ -38,10 +39,13 @@ public:
 	static double findMin(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* l);
 	static double findMax(double val1, double val2, gsl_vector* grad1, gsl_vector* grad2, gsl_vector* h);
 	static double findMax(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* h);
+	static double findMax(const vector<double>& vals);
 	static double sigmoid(double d, gsl_vector* grads, gsl_vector* out);
+	static double sigmoid(double d);
 	static void default_grad(gsl_vector* out);
 
 	static double softMinMax(const vector<double>& vals, const vector<gsl_vector*>& grads, gsl_vector* l, double alpha, double t);
+	static double softMinMax(const vector<double>& vals, double alpha, double t);
 	
 	static void compute_plus_grad(gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out);
 	static void compute_mult_grad(double mval, double fval, gsl_vector* mgrads, gsl_vector* fgrads, gsl_vector* out);
