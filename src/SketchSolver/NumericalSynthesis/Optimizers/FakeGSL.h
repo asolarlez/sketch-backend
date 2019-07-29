@@ -25,7 +25,21 @@ inline void gsl_vector_free(gsl_vector* v) {
 }
 
 
-inline double gsl_blas_dnrm2(gsl_vector* in) { 
+
+inline int gsl_blas_ddot(const gsl_vector * X,
+	const gsl_vector * Y,
+	double * result
+) {
+	double rv = 0.0;
+	for (int i = 0; i < X->size; ++i) {
+		double t = X->data[i]*Y->data[i];
+		rv += t;
+	}
+	*result = rv;
+}
+
+
+inline double gsl_blas_dnrm2(const gsl_vector* in) { 
 	double rv = 0.0;
 	for (int i = 0; i < in->size; ++i) {
 		double t = in->data[i];
@@ -34,7 +48,7 @@ inline double gsl_blas_dnrm2(gsl_vector* in) {
 	return sqrt(rv); 
 }
 
-inline void gsl_vector_memcpy(gsl_vector* out, gsl_vector* in) {
+inline void gsl_vector_memcpy(gsl_vector* out, const gsl_vector* in) {
 	Assert(in->size == out->size, "WRONG SIZE");
 	memcpy(out->data, in->data, sizeof(double)*in->size);
 }
