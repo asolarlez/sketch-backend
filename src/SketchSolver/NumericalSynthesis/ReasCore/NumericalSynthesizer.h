@@ -33,52 +33,51 @@
 
 #include "BasicSampler.h"
 #include "BoolBasedSampler.h"
-
-
-class NumericalSynthesizer  {
+#include <unordered_map>
+class NumericalSynthesizer {
 	BooleanDAG* dag;
 	Interface* interf;
-    map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
+	map<string, double> ctrlVals; // maps ctrl names to values found by the numerical solver
 	NumericalSolver* solver;
-    vector<pair<int, int>> conflicts; // (nodeid, val) pairs
-    timerclass timer;
-	
-    map<string, int> ctrls; // maps ctrl names to index in the state vector
-    vector<vector<int>> dependentCtrls; // maps nodes to dependent ctrls
-    vector<vector<int>> dependentInputs; // maps nodes to dependent input nodes
+	vector<pair<int, int>> conflicts; // (nodeid, val) pairs
+	timerclass timer;
 
-    NumDebugger* debugger;
-    SuggestionGenerator* sg;
+	map<string, int> ctrls; // maps ctrl names to index in the state vector
+	vector<vector<int>> dependentCtrls; // maps nodes to dependent ctrls
+	vector<vector<int>> dependentInputs; // maps nodes to dependent input nodes
 
-    gsl_vector* state;
-    gsl_vector* prevState;
+	NumDebugger* debugger;
+	SuggestionGenerator* sg;
 
-    bool searchWithOnlySmoothing();
-    bool searchWithPredicates();
-    bool searchWithBooleans();
-    bool searchWithBoolBasedSampling();
+	gsl_vector* state;
+	gsl_vector* prevState;
+
+	bool searchWithOnlySmoothing();
+	bool searchWithPredicates();
+	bool searchWithBooleans();
+	bool searchWithBoolBasedSampling();
 
 
 	int CONFLICT_THRESHOLD = PARAMS->conflictCutoff;
 	int NUM_SUGGESTIONS_THRESHOLD = 5; // TODO: check this
 
-    BasicSampler* basicSampler;
-    BoolBasedSampler* boolBasedSampler;
+	BasicSampler* basicSampler;
+	BoolBasedSampler* boolBasedSampler;
 public:
-    NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface);	
-    ~NumericalSynthesizer() {
-    	gsl_vector_free(state);
-    	delete(debugger);
-    	delete(sg);
-    	delete(solver);
-    }
-    bool solve();
-    bool search();
-    bool concretize();
-    bool search_concretize();
-    bool simple_concretize();
+	NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, Interface* _interface);
+	~NumericalSynthesizer() {
+		gsl_vector_free(state);
+		delete(debugger);
+		delete(sg);
+		delete(solver);
+	}
+	bool solve();
+	bool search();
+	bool concretize();
+	bool search_concretize();
+	bool simple_concretize();
 
-	
+
 	void print(ostream& out) {
 		for (auto it = ctrlVals.begin(); it != ctrlVals.end(); it++) {
 			out << it->first << ":" << it->second << endl;
@@ -94,7 +93,6 @@ public:
 			values[it->first] = str.str(); // TODO: deal with boolean holes
 		}
 	}
-	
+
 
 };
-

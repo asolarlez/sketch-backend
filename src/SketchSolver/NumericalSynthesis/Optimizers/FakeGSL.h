@@ -26,7 +26,7 @@ inline void gsl_vector_free(gsl_vector* v) {
 
 
 
-inline int gsl_blas_ddot(const gsl_vector * X,
+inline void gsl_blas_ddot(const gsl_vector * X,
 	const gsl_vector * Y,
 	double * result
 ) {

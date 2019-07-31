@@ -285,11 +285,14 @@
     <ClCompile Include="SketchSolver\InputParser\Tvalue.cpp" />
     <ClCompile Include="SketchSolver\memory_sampler.cc" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\BoolAbstraction\BoolAbstractor.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\BoolAbstraction\BoolNodeSimplifier.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\BoolAbstraction\Predicate.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\DistanceGrad.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\Interval.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\IntervalGrad.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\DataStructures\ValueGrad.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Optimizers\GradientDescent.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\Optimizers\MaxSolver.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Optimizers\Snopt.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\ReasCore\NumericalSynthesizer.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\ReasCore\REASSolver.cpp" />
@@ -297,8 +300,11 @@
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\AutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\BoolAutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\IteAutoDiff.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\KLocalityAutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\RangeDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SimpleEvaluator.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SimpleGradEvaluator.cpp" />
+    <ClCompile Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SmoothAutoDiff.cpp" />
     <ClCompile Include="SketchSolver\NumericalSynthesis\Utils\GradUtil.cpp" />
     <ClCompile Include="SketchSolver\SolverInterfaces\MiniSATSolver.cpp" />
     <ClCompile Include="SketchSolver\InputParser\NodeEvaluator.cpp" />
@@ -342,7 +348,9 @@
     <ClInclude Include="SketchSolver\InputParser\InputReader.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\AutoDiff.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\BoolAbstraction\BoolAbstractor.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\BoolAbstraction\BoolNodeSimplifier.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\BoolAbstraction\Interface.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\BoolAbstraction\Predicate.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\ConflictGenerators\ConflictGenerator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\DataStructures\DistanceGrad.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\DistanceGrad.h" />
@@ -356,6 +364,7 @@
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\FakeGSL.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\GradientDescent.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\GradientDescentWrapper.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\MaxSolver.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\OptimizationWrapper.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\SimulatedAnnealing.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Optimizers\snopt.h" />
@@ -369,6 +378,12 @@
     <ClInclude Include="SketchSolver\NumericalSynthesis\SimpleEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\SimulatedAnnealing.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Solvers\NumericalSolver.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\KLocalityAutoDiff.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SimpleEvaluator.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SimpleGradEvaluator.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SmoothAutoDiff.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SmoothEvaluators.h" />
+    <ClInclude Include="SketchSolver\NumericalSynthesis\SymbolicEvaluators\SymbolicEvaluator.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Utils\GradUtil.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\Utils\Util.h" />
     <ClInclude Include="SketchSolver\NumericalSynthesis\ValueGrad.h" />

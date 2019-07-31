@@ -18,6 +18,8 @@ public:
     vstate(int _nodeid, int _level): nodeid(_nodeid), level(_level) {}
 };
 
+class Predicate;
+
 class IClause {
     vector<Predicate*> predicates;
     vector<int> vals;
