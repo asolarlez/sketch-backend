@@ -143,10 +143,10 @@ public:
 		state = LIST;
 	}
 
-	void init(int low, int high){
+	void init(int _low, int _high){
 		valSet.clear();
-		this->low = low;
-		this->high = high;
+		this->low = _low;
+		this->high = _high;
 		state = RANGE;
 	}
 

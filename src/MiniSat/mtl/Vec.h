@@ -35,7 +35,7 @@ namespace MSsolverNS{
 template<class T>
 class vec {
     T*  data;
-    int sz;
+    size_t sz;
     int cap;
 
     void     init(int size, const T& pad);
@@ -60,8 +60,8 @@ public:
 
     // Constructors:
     vec(void)                   : data(NULL) , sz(0)   , cap(0)    { }
-    vec(int size)               : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
-    vec(int size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
+    vec(size_t size)               : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
+    vec(size_t size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
     vec(T* array, int size)     : data(array), sz(size), cap(size) { }      // (takes ownership of array -- will be deallocated with 'free()')
    ~vec(void)                                                      { clear(true); }
 
@@ -71,7 +71,7 @@ public:
     operator const T* (void) const     { return data; }
 
     // Size operations:
-    int      size   (void) const       { return sz; }
+    size_t      size   (void) const       { return sz; }
     void     shrink (int nelems)       { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_(int nelems)       { assert(nelems <= sz); sz -= nelems; }
     void     pop    (void)             { sz--, data[sz].~T(); }

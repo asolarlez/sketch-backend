@@ -127,6 +127,27 @@ public:
 					++vsi;
 				}
 				else {
+					if (arrit == NULL) {
+						cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
+						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
+							auto type = it->otype != NULL? it->otype->str() : "scalar";
+							auto isArr = it->arrSize() > 1;
+							if (isArr) {
+								cerr << "{" << type << " }  ";
+							}
+							else {
+								cerr << type << "  ";
+							}
+						}
+						cerr << endl;
+						cerr << "corresponding to inputs "<<endl;
+						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
+							cerr << it->name<<"  ";
+						}
+						cerr << endl;
+						throw BasicError(string("file parsing error"), "name");
+
+					}
 					//we just finished a number, and we are inside an array.
 					outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
 					arrit = arrit->next;
@@ -220,7 +241,14 @@ public:
 		}
 
 		while (!file.eof()) {
-			ok = parseLine(file, floats);	
+			try {
+				ok = parseLine(file, floats);
+			}
+			catch (BasicError& e) {
+				cerr << "Error parsing file " << fname << endl;
+				throw e;
+			}
+			
 			if (!ok) {
 				file.close();
 				return MOREBITS;

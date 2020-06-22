@@ -11,7 +11,7 @@
 
 using namespace std;
 
-typedef float(*floatfun)(float);
+typedef double(*floatfun)(double);
 
 class FloatManager;
 
@@ -42,7 +42,7 @@ public:
 extern CommandLineArgs* PARAMS;
 
 inline
-float tlog(float in) {
+double tlog(double in) {
 	if (in < PARAMS->epsilon) {
 		return log(PARAMS->epsilon / 2.0);
 	}
@@ -54,13 +54,13 @@ float tlog(float in) {
 
 
 class FloatManager {
-	map<float, int> floatIdx;
-	vector<float> floats;
+	map<double, int> floatIdx;
+	vector<double> floats;
 	map<string, floatfun> floatfuns;
 
 public:
-	const float epsilon;
-	FloatManager(float _epsilon) :epsilon(_epsilon) {
+	const double epsilon;
+	FloatManager(double _epsilon) :epsilon(_epsilon) {
 		floatIdx[0.0] = 0;
 		floats.push_back(0.0);
 		floatfuns["arctan_math"] = atan;
@@ -78,11 +78,11 @@ public:
 		return FloatFun(*this, floatfuns[name]);
 	}
 
-	float operator()(int id) {
+	double operator()(int id) {
 		return getFloat(id);
 	}
 
-	float getFloat(int id) {
+	double getFloat(int id) {
 		if (id < 0) {
 			return -floats[-id];
 		}
@@ -92,7 +92,7 @@ public:
 
 	}
 
-	int getIdx(float x) {
+	int getIdx(double x) {
 		//floatIdx only stores positive values. Negative values will yield negative indices. 
 		//This means that negating the index will automatically negate the value that the index corresponds to.
 		//That's why zero must always be stored in index zero.
@@ -104,7 +104,7 @@ public:
 		auto lbd = floatIdx.lower_bound(x - epsilon + (epsilon / 100));
 
 		if (lbd != floatIdx.end()) {
-			float dist = lbd->first - x;
+			double dist = lbd->first - x;
 			if (-epsilon < dist && dist < epsilon) {
 				if (isNeg) {
 					return -lbd->second;

@@ -104,7 +104,7 @@ public:
     }
 
 	void addSingleConflict(int &conflictId, InputMatrix& im ){
-    	for(int j=0;j<=intsOrbits.size();j++){
+    	for(unsigned j=0;j<=intsOrbits.size();j++){
 			conflict.push(getLit(im.valueid(conflictId, j)));
 		}
     }

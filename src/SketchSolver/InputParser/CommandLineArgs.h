@@ -98,7 +98,7 @@ class CommandLineArgs{
   bool symbolic;
 	CommandLineArgs(vector<string> args) {
 		char** argv = (char**)malloc(sizeof(char*) * args.size());
-		for(auto i = 0; i < args.size(); i++) {
+		for(size_t i = 0; i < args.size(); i++) {
 			argv[i] = (char*)malloc(sizeof(char) * args[i].length());
 			argv[i] = (char*)args[i].c_str();
 		}
@@ -171,7 +171,7 @@ class CommandLineArgs{
     spRandBias = 1;
 	sparseArray = -1;
     randomInlining = false;
-	epsilon = 0.000001;
+	epsilon = 0.000001f;
     numericalSolver = false;
 	nativeInts = false;
 	erSimEvalFName = "";
@@ -631,7 +631,7 @@ class CommandLineArgs{
 			printDiag = true;
 	  }
 	  if(seed < 0){
-			seed = time(NULL);
+			seed = (int) time(NULL);
 	  }
 	  srand(seed);
 

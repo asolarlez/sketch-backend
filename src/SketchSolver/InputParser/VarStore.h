@@ -34,6 +34,7 @@ public:
 	class objP{
 	public:
 		objP* next;
+		OutType* otype;
 		int index;
 		string name;
 		vector<int> vals;
@@ -41,10 +42,10 @@ public:
 		virtual ~objP(){
 			if(next != NULL){ delete next; }
 		}
-		objP(const string& nm, int size):name(nm),vals(size), isNeg(false), index(0), next(NULL){	}
-		objP(const objP& old):vals(old.vals), name(old.name), isNeg(old.isNeg), index(old.index){if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
+		objP(const string& nm, int size, OutType* _otype):name(nm),vals(size),otype(_otype), isNeg(false), index(0), next(NULL){	}
+		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index){if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
 		objP& operator=(const objP& old){ 
-			vals=old.vals; name=old.name; isNeg = old.isNeg; index=old.index; 
+			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype;
 			if(old.next!=NULL){ 
 				if(next!=NULL){
 					(*next)=*old.next;  
@@ -61,7 +62,7 @@ public:
 			index = start;
 			if(start+1 < end){
 				if(next == NULL){
-					next = new objP(name, vals.size());
+					next = new objP(name, vals.size(), otype);
 				}				
 				next->makeArr(start+1, end);
 			}else{
@@ -75,7 +76,7 @@ public:
 		int size(){ return vals.size(); }
 		int globalSize(){ if(next == NULL){ return size();} return next->globalSize() + size(); }
 		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
-		objP* setBit(int i, int val){ 
+		objP* setBit(size_t i, int val){ 
 			if(i<vals.size()){ 
 				vals[i] = val; 
 				return this;
@@ -111,7 +112,7 @@ public:
 				isNeg = true;
 			}
 			{
-				int t = vals.size();
+				size_t t = vals.size();
 				vals.clear();				
 				while(v != 0){
 					vals.push_back(v&1);
@@ -127,13 +128,13 @@ public:
 			}
 		}
 
-		void setVal(int v){
+		void setVal(size_t v){
 			if(v<0){
 				v = -v;
 				isNeg = true;
 			}
 			{
-				int t = vals.size();
+				size_t t = vals.size();
 				vals.clear();
 				while(v != 0){
 					vals.push_back(v&1);
@@ -145,7 +146,7 @@ public:
 			}
 		}
 		void printBit(ostream& out) const{			
-			for(int i=0; i<vals.size(); ++i){
+			for(size_t i=0; i<vals.size(); ++i){
 				out<<(vals[i]==1?1:0);
 			}
 			if(next!= NULL){ out<<"|"; next->printBit(out); }
@@ -156,7 +157,7 @@ public:
 		}
 
 		bool increment(){
-			for(int i=0; i<vals.size(); ++i){
+			for(size_t i=0; i<vals.size(); ++i){
 				if(vals[i]==-1){
 					vals[i] = 1;
 					return true;
@@ -179,11 +180,11 @@ public:
 			int q = P*sparseDeg;
 
 			if(n > 0 || (rand() % P) < q ){
-				for(int i=0; i<vals.size(); ++i){
+				for(size_t i=0; i<vals.size(); ++i){
 					vals[i] = (rand() & 0x3) > 0? -1 : 1;
 				}
 			}else{
-				for(int i=0; i<vals.size(); ++i){
+				for(size_t i=0; i<vals.size(); ++i){
 					vals[i] = -1 ;
 				}
 			}
@@ -191,13 +192,13 @@ public:
 		}
 
 		void makeRandom(){/* Bias towards zeros */
-			for(int i=0; i<vals.size(); ++i){
+			for(size_t i=0; i<vals.size(); ++i){
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
 			}
 			if(next!= NULL){ next->makeRandom(); }
 		}
 		void zeroOut(){/* Bias towards zeros */
-			for(int i=0; i<vals.size(); ++i){
+			for(size_t i=0; i<vals.size(); ++i){
 				vals[i] = -1;
 			}
 			if(next!= NULL){ next->zeroOut(); }
@@ -222,17 +223,17 @@ public:
 	iterator begin(){ return objs.begin(); }
 	iterator end(){ return objs.end(); }
 	void makeRandom(float sparseArray){ 
-		for(int i=0; i<objs.size(); ++i){
+		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].makeRandom(sparseArray);
 		}
 	}
 	void makeRandom(){ 
-		for(int i=0; i<objs.size(); ++i){
+		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].makeRandom();
 		}
 	}
 	void zeroOut(){ 
-		for(int i=0; i<objs.size(); ++i){
+		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].zeroOut();
 		}
 	}
@@ -248,29 +249,29 @@ public:
 	}
 
 
-	void newArr(const string& name, int nbits, int arrsz){
+	void newArr(const string& name, int nbits, int arrsz, OutType* otype){
 		Assert(index.count(name)==0, name<<": This array already existed!!");
 		int begidx = objs.size();
 		index[name] = begidx;
-		objs.push_back(objP(name, nbits));		
+		objs.push_back(objP(name, nbits, otype));		
 		objs[begidx].makeArr(0, arrsz);
 		bitsize += nbits*arrsz;
 	}
 
-	void newVar(const string& name, int size){
+	void newVar(const string& name, int size, OutType* otype){
 		Assert(index.count(name)==0, name<<": This variable already existed!!");
 		int begidx = objs.size();
-		objs.push_back(objP(name, size));
+		objs.push_back(objP(name, size, otype));
 		index[name] = begidx;
 		bitsize += size;
 	}
 
-	void setVarVal(const string& name, int val){
+	void setVarVal(const string& name, int val, OutType* otype){
 		int idx;
 		if(index.count(name)!=0){
 			idx = index[name];
 		}else{
-			objs.push_back(objP(name, 5));
+			objs.push_back(objP(name, 5, otype));
 			idx = objs.size()-1;
       index[name] = idx;
 		}
@@ -302,7 +303,7 @@ public:
 		return objs.size();
 	}
 	void printBrief(ostream& out) const{
-		for(int i=0; i<objs.size(); ++i){
+		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].printBit(out);
 		}
 	}
@@ -315,7 +316,7 @@ public:
 		}
 	}
 	void printContent(ostream& out) const{
-		for(int i=0; i<objs.size(); ++i){
+		for(size_t i=0; i<objs.size(); ++i){
 			out << objs[i].name << ":";
 			objs[i].printContent(out);
 			out << endl;
@@ -350,13 +351,13 @@ public:
 		return index.count(name)>0;
 	}
 	void setFromString(const string& in){
-		for(int i=0; i<in.size(); ++i){
+		for(size_t i=0; i<in.size(); ++i){
 			setBit(i, in[i]=='1'? 1 : -1);
 		}
 	}
 	vector<int> serialize() const{
 		vector<int> out;
-		for(int t=0; t<objs.size(); ++t){
+		for(size_t t=0; t<objs.size(); ++t){
 			const objP& tmp = objs[t];
 			out.insert(out.end(), tmp.vals.begin(), tmp.vals.end());			
 		}
@@ -364,7 +365,7 @@ public:
 	}
 	void setBit(int i, int val){
 		bool found = false;
-		for(int t=0; t<objs.size(); ++t){
+		for(size_t t=0; t<objs.size(); ++t){
 			objP& tmp = objs[t];
 			int gsz = tmp.globalSize();
 			if(i < gsz){

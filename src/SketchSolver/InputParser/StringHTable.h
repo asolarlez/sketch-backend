@@ -13,7 +13,7 @@ using namespace std;
 
 extern char tbl[64];
 
-inline void writeInt(char* buf, unsigned val, int& p){
+inline void writeInt(char* buf, unsigned val, size_t& p){
 	while(val != 0){
 		unsigned t = val & 0x3f;
 		buf[p] = tbl[t];

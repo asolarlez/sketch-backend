@@ -51,11 +51,11 @@ class DepTracker{
 public:
 
 	void reset(){
-		for(int i=0; i<holesPerHarness.size(); ++i){
+		for(size_t i=0; i<holesPerHarness.size(); ++i){
 			holesPerHarness[i].clear();
 			decisionsPerHarness[i].clear();
 		}
-		for(int i=0; i<harnessPerHole.size(); ++i){
+		for(size_t i=0; i<harnessPerHole.size(); ++i){
 			harnessPerHole[i].clear();
 		}
 	}
@@ -165,7 +165,7 @@ class HoleHardcoder{
 	double getAvg(vector<double>& vd){
 		double rv = 0.0;
 		if(vd.size()<1){ return 0.0; }
-		for(int i=0; i<vd.size(); ++i){
+		for(size_t i=0; i<vd.size(); ++i){
 			rv += vd[i];
 		}
 		return rv / vd.size();
@@ -237,15 +237,15 @@ public:
 		if (next == cur) {
 			return;
 		}
-		int scorenext = getAvg(degreeControl.scores[next]);
-		int scorecur = getAvg(degreeControl.scores[cur]);
+		double scorenext = getAvg(degreeControl.scores[next]);
+		double scorecur = getAvg(degreeControl.scores[cur]);
 		cout << "cur=" << cur << " next=" << next << " scorecur=" << scorecur << " scorenext=" << scorenext << endl;
 		if (scorenext < scorecur) {
 			cout << "Switch because next is better"<<endl;
 			rd[0] = next;
 			rd[1] = cur;
 		}else {
-			float ratio = scorecur / (float)scorenext;
+			float ratio = scorecur / scorenext;
 			if (rand() % 1000 < ratio * 1000) {
 				cout << " Switch by luck"<<endl;
 				rd[0] = next;
@@ -322,7 +322,7 @@ public:
 		for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
 			BooleanDAG* bd = it->second;
 			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
-			for (int i = 0; i<ctrl.size(); ++i) {
+			for (size_t i = 0; i<ctrl.size(); ++i) {
 				declareControl((CTRL_node*)ctrl[i]);
 			}
 		}
@@ -367,7 +367,7 @@ public:
 			Tvalue& glob = globalSat->getControl(*mhit);
 			Assert(glob.isSparse(), "Control must be sparse");
 			const gvvec& options = glob.num_ranges;
-			for (int i = 0; i < options.size(); ++i) {
+			for (size_t i = 0; i < options.size(); ++i) {
 				const guardedVal& gv = options[i];
 				if (gv.value > val) {
 					cout << *mhit << ":" << -gv.guard << endl;
@@ -386,7 +386,7 @@ public:
 	void resetCore() {
 		globalSat->getMng().reset();
 		cout << "POST-SUMMRY ";
-		for (int i = 0; i<sofar.size(); ++i) {
+		for (size_t i = 0; i<sofar.size(); ++i) {
 			cout << ", " << toInt(sofar[i]);
 		}
 		cout << endl;
@@ -403,7 +403,7 @@ public:
 	
 	void reset(){
 		cout<<"SUMMRY ";
-		for(int i=0; i<sofar.size(); ++i){
+		for(size_t i=0; i<sofar.size(); ++i){
 			cout<<", "<<toInt(sofar[i]);
 		}
 		cout<<endl;		

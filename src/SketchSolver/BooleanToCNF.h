@@ -73,7 +73,7 @@ class SolverHelper {
 	int setStr(int id1, char op, int id2){
 		id1 = id1>0 ? (id1<<1) : ((-id1)<<1 | 0x1);
 		id2 = id2>0 ? (id2<<1) : ((-id2)<<1 | 0x1);
-		int p = 0;
+		size_t p = 0;
 		char* tch = &tmpbuf[0];
 		writeInt(tch, id1, p);
 		tch[p] = op; p++;
@@ -84,8 +84,8 @@ class SolverHelper {
 
 	int setStrTV(Tvalue& tv);
 
-	int setStriMux(iVar cond, iVar* a, int last){
-		int p = 0;
+	int setStriMux(iVar cond, iVar* a, size_t last){
+		size_t p = 0;
 		if(last*10 > tmpbuf.size()){ tmpbuf.resize(last * 11); }
 		char* tch = &tmpbuf[0];
 		{
@@ -94,7 +94,7 @@ class SolverHelper {
 			writeInt(tch, tt, p);
 			tch[p] = ':'; p++;
 		}
-		for(int ol = 0; ol < last; ++ol){
+		for(size_t ol = 0; ol < last; ++ol){
 			int tt = a[ol];
 			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
 			writeInt(tch, tt, p);
@@ -103,13 +103,13 @@ class SolverHelper {
 		tch[p-1] = 0;
 		return p-1;
 	}
-	void addGV(char* tch, int& p, const guardedVal& gv);
+	void addGV(char* tch, size_t& p, const guardedVal& gv);
 
-	int setStrBO(int* a, int last, char separator = '|', int ofst = 1){
-		int p = 0;
+	int setStrBO(int* a, size_t last, char separator = '|', int ofst = 1){
+		size_t p = 0;
 		if(last*10 > tmpbuf.size()){ tmpbuf.resize(last * 11); }
 		char* tch = &tmpbuf[0];
-		for(int ol = 0; ol < last; ++ol){
+		for(size_t ol = 0; ol < last; ++ol){
 			int tt = a[ol+ofst];
 			tt = tt>0 ? (tt<<1) : ((-tt)<<1 | 0x1);
 			writeInt(tch, tt, p);
@@ -123,7 +123,7 @@ class SolverHelper {
 		a = a>0 ? (a<<1) : ((-a)<<1 | 0x1);
 		b = b>0 ? (b<<1) : ((-b)<<1 | 0x1);
 		c = c>0 ? (c<<1) : ((-c)<<1 | 0x1);
-		int p = 0;
+		size_t p = 0;
 		char* tch = &tmpbuf[0];
 		writeInt(tch, a, p);
 		tch[p] = '?'; p++;
@@ -410,10 +410,10 @@ public:
     // int select(int choices[], int control, int nchoices, int bitsPerChoice);
     // int selectMinGood(int choices[], int control, int nchoices, int bitsPerChoice);
     // int arbitraryPerm(int input, int insize, int controls[], int ncontrols, int csize);
-    void getSwitchVars (vector<int>& switchID, int amtsize, gvvec& output);
+    void getSwitchVars (vector<int>& switchID, size_t amtsize, gvvec& output);
 
 
-	void getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output);
+	void getSwitchVarsBig(vector<int>& switchID, size_t amtsize, gvvec& output);
 
 	void addHelperC(int l1, int l2);
 
@@ -791,8 +791,8 @@ SolverHelper::addRetractableAssertClause (int a)
 
 
 inline void
-SolverHelper::getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output) {
-	int sz = amtsize;
+SolverHelper::getSwitchVarsBig(vector<int>& switchID, size_t amtsize, gvvec& output) {
+	size_t sz = amtsize;
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert(amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
 	int val = 0;
@@ -817,7 +817,7 @@ SolverHelper::getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output
 
 	while (((val >> amtsize) & (0x1)) == 0) {
 		int x = newAnonymousVar();
-		for (int i = 0; i < sz; ++i) {
+		for (size_t i = 0; i < sz; ++i) {
 			if (((val >> i) & (0x1)) == 0) {
 				mng.addHelper2Clause(-x, -switchID[i]);
 			} else {
@@ -833,13 +833,13 @@ SolverHelper::getSwitchVarsBig(vector<int>& switchID, int amtsize, gvvec& output
 
 
 inline void
-SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  gvvec& output )
+SolverHelper::getSwitchVars (vector<int>& switchID, size_t amtsize,  gvvec& output )
 {
 	Assert(switchID.size() == amtsize, "This should never happen");
 	Assert( amtsize > 0, "This doesn't make sense with amtsize==0."); //TODO: Actually, it does, but for now, this assertion will help me find a bug. Need to implement support for amtsize=0.
 	int amtrange = 1;
 	Assert(amtsize <= 16, "Casting an bit-vector to an integer is only supported for up to 16 bits.");
-	for(int i=0; i<amtsize && i<16; ++i) amtrange *= 2;
+	for(size_t i=0; i<amtsize && i<16; ++i) amtrange *= 2;
 	//////////////////////////////////////////////////////
 	gvvec tmpVect(amtrange);
 	int lastsize = 1;
@@ -863,7 +863,7 @@ SolverHelper::getSwitchVars (vector<int>& switchID, int amtsize,  gvvec& output 
 	}
 	
 	
-	for(int i=1; i<amtsize; ++i){		
+	for(size_t i=1; i<amtsize; ++i){		
 		int curval = switchID[amtsize-1-i]; 
 		if( (-curval) == YES || curval == YES){
 			int v = (curval > 0)? 1:0;

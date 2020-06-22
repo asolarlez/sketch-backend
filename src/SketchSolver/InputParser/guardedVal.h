@@ -40,8 +40,8 @@ class tvstore{
 private:
 	guardedVal* store;
 	int refc;
-	int sz;
-	int largest;
+	size_t sz;
+	size_t largest;
 public:
 	tvstore(int size){
 		++TOTBUFFERS;
@@ -55,7 +55,7 @@ public:
 		std::memcpy(rv->store, store, sz*sizeof(guardedVal));
 		return rv;
 	}
-	tvstore* clone(int n){
+	tvstore* clone(size_t n){
 		Assert(n >= sz, "");
 		tvstore* rv = new tvstore(n);
 		std::memcpy(rv->store, store, sz*sizeof(guardedVal));
@@ -97,7 +97,7 @@ public:
 };
 
 class gvvec{	
-	int sz;
+	size_t sz;
 	tvstore* store;
 	
 public:
@@ -144,7 +144,7 @@ public:
 		if(store != NULL){ store->refc++; }
 		sz = other.sz;
 	}
-	void reserve(int n){
+	void reserve(size_t n){
 		if(store==NULL){ 
 			store = new tvstore(n); store->refc++; store->largest=0; 
 		}
@@ -159,9 +159,9 @@ public:
 		}
 		sz = 0;
 	}
-	int size() const{ return sz; }
+	size_t size() const{ return sz; }
 
-	void resize(int n) {
+	void resize(size_t n) {
 		if(store==NULL){
 			store = new tvstore(n);
 			store->refc++;
@@ -190,7 +190,7 @@ public:
 		}
 	}
 	
-	guardedVal& operator[](int idx){
+	guardedVal& operator[](size_t idx){
 		Assert(idx < sz, "Out of bounds");
 		Assert(store!=NULL && store->refc==1, "SHARED REF");
 		return store->store[idx];
@@ -204,14 +204,14 @@ public:
 			store->refc++;
 			store->largest = sz;
 		}
-		for(int i=0; i<sz; ++i){
+		for(size_t i=0; i<sz; ++i){
 			store->store[i].value *= adj;
 		}
 
 	}
 
 	
-	const guardedVal& operator[](int idx) const{
+	const guardedVal& operator[](size_t idx) const{
 		Assert(idx < sz, "Out of bounds");
 		return store->store[idx];
 	}
@@ -231,7 +231,7 @@ public:
 				*dst = gv;
 				++dst;
 				gv = tmp;
-				for(int i=0; i<sz; ++i){
+				for(size_t i=0; i<sz; ++i){
 					tmp = *dst;
 					*dst = gv;
 					++dst;					

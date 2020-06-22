@@ -24,7 +24,7 @@ using namespace std;
 class ArithExprSyn : public Synthesizer {
 	ArithExpression* expr;
 	int depth;
-	int numvars;
+	size_t numvars;
 	set<int> consts;
 	vector <ArithType> ops;
 	ArithExprBuilder* ab;
@@ -43,7 +43,7 @@ class ArithExprSyn : public Synthesizer {
 	bool outIsBit;
 public:
 #ifdef SWAPPER
-	int maxDagSize;
+	size_t maxDagSize;
 #endif
 	
 	ArithExprSyn(FloatManager& _fm) :Synthesizer(_fm) {
@@ -173,7 +173,7 @@ public:
 	}
 	
 	void addConflicts(vector< int > &conflictIds, vector<bool>& setOutputs, InputMatrix& im){
-		for(int i = 0; i < conflictIds.size(); i++){
+		for(size_t i = 0; i < conflictIds.size(); i++){
 			//cout<<"("<<im.getVal(conflictId, tupidin)<<","<<im.getVal(conflictId, attrin)<<") ";
 			if (setOutputs[i]) {
 				addSingleConflict(conflictIds[i],im);
@@ -200,13 +200,13 @@ public:
 	}
 	
 	void addSingleConflict(const int &conflictId, InputMatrix& im ){
-		for(int j=0;j<=numvars;j++){
+		for(size_t j=0;j<=numvars;j++){
 			conflict.push(getLit(im.valueid(conflictId, j)));
 		}
 	}
 	
 	void addOnlyInputsConflict(const int &conflictId, InputMatrix& im) {
-		for(int j=0;j<numvars;j++){
+		for(size_t j=0;j<numvars;j++){
 			conflict.push(getLit(im.valueid(conflictId, j)));
 		}
 	}
@@ -252,7 +252,7 @@ public:
 			int out = im.getVal(i, numvars);
 			vector<int> vals;
 			bool foundEmptyVariable = false;
-			for (int j = 0; j < numvars; j++) {
+			for (size_t j = 0; j < numvars; j++) {
 				int v = im.getVal(i, j);
 				if (v == EMPTY) {
 					foundEmptyVariable = true;
@@ -501,7 +501,7 @@ public:
 		Assert(inputIds.size() == setOutputs.size(), "Examples Ids and set outputs are not of the same size");
 		Assert(inputIds.size() == allOutputs.size(), "Examples Ids and outputs are not of the same size");
 		
-		for (int i = 0; i < inputIds.size(); i++) {
+		for (size_t i = 0; i < inputIds.size(); i++) {
 			if (!setOutputs[i]) {
 				Lit v = getLit(inout->valueid(inputIds[i], numvars), allOutputs[i]);
 				sugLits.push_back(v);
@@ -548,7 +548,7 @@ public:
 	
 	vector<bool> generateBigNotUnSetOutputs(const vector<int>& exampleIds, const vector<bool>& setOutputs, const vector<int>& prevExampleIds) {
 		vector<bool> res;
-		int i = 0, j = 0;
+		unsigned i = 0, j = 0;
 		for(; j < prevExampleIds.size() && i < exampleIds.size(); j++) {
 			if (exampleIds[i] == prevExampleIds[j]) {
 				res.push_back(setOutputs[i]);
@@ -566,7 +566,7 @@ public:
 	
 	vector<bool> generateBigSetOutputs(const vector<int>& exampleIds, const vector<bool>& setOutputs, const vector<int>& prevExampleIds) {
 		vector<bool> res;
-		int i = 0, j = 0;
+		unsigned i = 0, j = 0;
 		for(; j < prevExampleIds.size() && i < exampleIds.size(); j++) {
 			if (exampleIds[i] == prevExampleIds[j]) {
 				res.push_back(setOutputs[i]);
@@ -597,7 +597,7 @@ public:
 		conflict.clear();
 		bool b = tryExpressions(depth);
 		suggestions.clear();
-		for (int i = 0; i < sugLits.size(); i++) {
+		for (size_t i = 0; i < sugLits.size(); i++) {
 			suggestions.push(sugLits[i]);
 		}
 #ifdef PRINTDEBUG

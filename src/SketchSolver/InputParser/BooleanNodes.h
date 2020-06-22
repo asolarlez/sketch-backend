@@ -148,11 +148,11 @@ class bool_node{
 	inline parent_iter p_end() const{
 		return parents + numparents;
 	}
-	inline void set_parent(int i, bool_node* val) {
+	inline void set_parent(size_t i, bool_node* val) {
 		Assert(numparents > i, ";mnip;jadyhj");
 		parents[i] = val;
 	}
-	inline bool_node* get_parent(int i) {
+	inline bool_node* get_parent(size_t i) {
 		Assert(numparents > i, ";mnip;jadyhj");
 		return parents[i];
 	}
@@ -672,7 +672,7 @@ class ARR_CREATE_node:public bool_node{
 	bool_node*& arguments(int i) {
 		return parents[i + 1];
 	}
-	int nargs() const{
+	size_t nargs() const{
 		return numparents - 1;
 	}
 	bool_node*const & arguments(int i) const {
@@ -702,7 +702,7 @@ class ARR_CREATE_node:public bool_node{
         
         stringstream str;
         str<<id<<"= "<<"{";
-		for (int i = 0; i < nargs(); ++i) {
+		for (size_t i = 0; i < nargs(); ++i) {
             if(arguments(i) != NULL){
                 str<<arguments(i)->lid()<<", ";
             }
@@ -715,7 +715,7 @@ class ARR_CREATE_node:public bool_node{
             return otype;
         }
         otype = OutType::BOTTOM;
-		for (int i = 0; i < nargs(); ++i) {
+		for (size_t i = 0; i < nargs(); ++i) {
             otype = OutType::joinOtype(arguments(i)->getOtype(), otype);
         }
         if(otype == OutType::INT){
@@ -832,7 +832,7 @@ public:
 class TUPLE_R_node: public bool_node{
 	//mother = inputarr
 	public:
-    int idx;
+    size_t idx;
 
 private:
 	TUPLE_R_node(const TUPLE_R_node& bn, bool copyChildren = true) : bool_node(bn, copyChildren), idx(bn.idx) { }
@@ -1462,7 +1462,7 @@ class UFUN_node: public bool_node, public DllistNode{
   bool_node*& arguments(int i) {
 	  return parents[i + 1];
   }
-  int nargs() const {
+  size_t nargs() const {
 	  return numparents - 1;
   }
 
@@ -1651,7 +1651,7 @@ public:
 	bool_node*& arguments(int i) {
 		return parents[i + 1];
 	}
-	int nargs() const {
+	size_t nargs() const {
 		return numparents - 1;
 	}
 

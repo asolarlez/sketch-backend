@@ -231,7 +231,7 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 
 iVar SolverHelper::getIntConst(int val) {
 	char* tch = &tmpbuf[0];
-	int p = 0;	
+	size_t p = 0;	
 	addGV(tch, p, guardedVal(YES, val));
 	tch[p] = 0;
 	int rv;
@@ -244,7 +244,7 @@ iVar SolverHelper::getIntConst(int val) {
 	return id;
 }
 
-void SolverHelper::addGV(char* tch, int& p, const guardedVal& gv) {
+void SolverHelper::addGV(char* tch, size_t& p, const guardedVal& gv) {
 	{
 		int tt = gv.guard;
 		tt = tt>0 ? (tt << 1) : ((-tt) << 1 | 0x1);
@@ -263,7 +263,7 @@ int SolverHelper::setStrTV(Tvalue& tv){
 	const gvvec& gv=tv.num_ranges;
 	if(gv.size()*20 > tmpbuf.size()){ tmpbuf.resize(gv.size() * 22); }
 	char* tch = &tmpbuf[0];
-	int p=0;
+	size_t p=0;
 	for(int i=0; i<gv.size(); ++i){		
 		addGV(tch, p, gv[i]);		
 	}

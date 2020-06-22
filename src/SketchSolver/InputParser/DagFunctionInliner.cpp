@@ -182,7 +182,7 @@ bool_node* DagFunctionInliner::createTupleAngelicNode(string tuple_name, string 
     }
   }
   
-  for (int i = size; i < tuple_type->entries.size(); i++) {
+  for (size_t i = size; i < tuple_type->entries.size(); i++) {
     new_node->set_parent(i, getCnode(-1));
   }
   new_node->addToParents();
@@ -296,7 +296,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
       Tuple* oldOutputTuple = (Tuple*)OutType::getTuple(oldOutputType);
       Tuple* tup = (Tuple*) (oldOutputTuple->entries[oldOutputTuple->entries.size() - 1]);
       
-	  int size = tup->entries.size();
+	  size_t size = tup->entries.size();
 	  TUPLE_CREATE_node* tuple_node = TUPLE_CREATE_node::create(size);
 	  
 	  tuple_node->setName(tup->name);
@@ -394,7 +394,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         Assert(inputs.size() > 0, "Number of inputs should be atleast 1");
         
         string newNameCaps = replaceFunName;
-        for(int i = 0; i < newNameCaps.size(); i++) {
+        for(size_t i = 0; i < newNameCaps.size(); i++) {
           newNameCaps.at(i) = toupper(newNameCaps.at(i));
         }
         string newOutputType = newNameCaps + "_ANONYMOUS";
@@ -402,7 +402,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		
 		vector<bool_node*> newparams;
         bool_node* actual=NULL;
-        for (int i = 0; i < inputs.size(); i++) {
+        for (size_t i = 0; i < inputs.size(); i++) {
 			actual = node.arguments(i);
 			if (actual->getOtype()->isTuple) break;
 			newparams.push_back(actual);
@@ -470,7 +470,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			BooleanDAG& newFun = *functionMap[replaceFunName];
 			vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
 			int curSize = newparams.size();
-			for (int i = curSize; i < new_inputs.size(); i++) {
+			for (size_t i = curSize; i < new_inputs.size(); i++) {
 			  int j = i + actSize - size + 1;
 			  Assert(j < inputs.size(), "dfae");
 			  newparams.push_back(node.arguments(j));
@@ -504,7 +504,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
         
       }
 
-		for(int i=0; i<inputs.size(); ++i){
+		for(size_t i=0; i<inputs.size(); ++i){
 			bool_node* actual;
 			if (node.arguments(i)->getOtype()->isTuple && node.arguments(i)->depth == 0) {
 				actual = getCnode(-1);
@@ -521,7 +521,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
-			for(int i=0; i<controls.size(); ++i){
+			for(size_t i=0; i<controls.size(); ++i){
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
 					nmap[ctrl->id] = node.mother();

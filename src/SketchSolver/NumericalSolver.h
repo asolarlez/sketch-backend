@@ -60,7 +60,7 @@ public: BooleanDAG* dag;
 		noutputs = (dynamic_cast<TUPLE_CREATE_node*>(dag->get_node("OUTPUT")->mother()))->nparents();
 		ncontrols = dag->getNodesByType(bool_node::CTRL).size();
 		vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
-		for (int i = 0; i < ctrls.size(); i++) {
+		for (size_t i = 0; i < ctrls.size(); i++) {
 			ctrlValMap[ctrls[i]->get_name()] = 0.0;
 		}
 	}
@@ -68,19 +68,19 @@ public: BooleanDAG* dag;
 	double evalState(vector<double> state, vector<vector<int>> allInputs, vector<vector<int>> allOutputs) {
 		double error = 0;
 		NodeEvaluator eval(empty, *dag, fm);
-		for (int i = 0; i < allInputs.size(); i++) {
+		for (size_t i = 0; i < allInputs.size(); i++) {
 			VarStore inputStore;
 			// Store all inputs
 			vector<bool_node*> inputs = dag->getNodesByType(bool_node::SRC);
-			for (int j = 0; j < allInputs[i].size(); j++) {
+			for (size_t j = 0; j < allInputs[i].size(); j++) {
 				if (allInputs[i][j] != EMPTY) {
-					inputStore.setVarVal(inputs[j]->get_name(), allInputs[i][j]);
+					inputStore.setVarVal(inputs[j]->get_name(), allInputs[i][j], inputs[j]->getOtype());
 				}
 			}
 			// Store all controls
 			vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
 			for (int j = 0; j < state.size(); j++) {
-				inputStore.setVarVal(ctrls[j]->get_name(), fm.getIdx(state[j]));
+				inputStore.setVarVal(ctrls[j]->get_name(), fm.getIdx(state[j]), ctrls[j]->getOtype());
 			}
 			
 			eval.run(inputStore);
@@ -180,10 +180,10 @@ public: BooleanDAG* dag;
 			allInputs.push_back(inputs);
 			allOutputs.push_back(outputs);
 			conflictids.push_back(i);
-			for (int k = 0; k < inputs.size(); k++) {
+			for (size_t k = 0; k < inputs.size(); k++) {
 				//cout << "Input" << k << ": " << inputs[k] << endl;
 			}
-			for (int k = 0; k < outputs.size(); k++) {
+			for (size_t k = 0; k < outputs.size(); k++) {
 				//cout << "Output" << k << ": " << outputs[k] << endl;
 			}
 			if (!notset) {

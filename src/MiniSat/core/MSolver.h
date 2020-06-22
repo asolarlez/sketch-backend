@@ -126,7 +126,7 @@ public:
     int     nVars      ()      const;       // The current number of variables.
 
 	void clearLearnts() { cout << "CLEARING LEARNTS" << endl; 
-	for(int i=0; i<learnts.size(); ++i)
+	for(size_t i=0; i<learnts.size(); ++i)
 		removeClause(*learnts[i]);
 	
 	learnts.clear(); }
@@ -324,7 +324,7 @@ inline void Solver::claDecayActivity() { cla_inc *= clause_decay; }
 inline void Solver::claBumpActivity (Clause& c) {
         if ( (c.activity() += cla_inc) > 1e20 ) {
             // Rescale:
-            for (int i = 0; i < learnts.size(); i++)
+            for (size_t i = 0; i < learnts.size(); i++)
                 learnts[i]->activity() *= 1e-20;
             cla_inc *= 1e-20; } }
 
@@ -364,7 +364,7 @@ static inline void logLits(FILE* f, const vec<Lit>& ls)
     fprintf(f, "[ ");
     if (ls.size() > 0){
         logLit(f, ls[0]);
-        for (int i = 1; i < ls.size(); i++){
+        for (size_t i = 1; i < ls.size(); i++){
             fprintf(f, ", ");
             logLit(f, ls[i]);
         }

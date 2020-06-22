@@ -68,7 +68,7 @@ public:
 	}
 };
 
-void advanceToEndIdx(int& iend, int cidx, const gvvec&tv){
+void advanceToEndIdx(size_t& iend, int cidx, const gvvec&tv){
 	while(iend < tv.size() && tv[iend].idx == cidx){
 		++iend;
 	}
@@ -329,8 +329,8 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 	int fidx = fv[0].idx;
 	int mistart = 0;
 	int fistart = 0;
-	int miend = 0;
-	int fiend = 0;
+	size_t miend = 0;
+	size_t fiend = 0;
 	advanceToEndIdx(miend, midx, mv);
 	advanceToEndIdx(fiend, fidx, fv);
 	Tvalue mdef;
@@ -349,7 +349,7 @@ NodesToSolver::compareArrays (const Tvalue& tmval,  const Tvalue& tfval, Tvalue&
 	}
 	Tvalue fdef;
 	if(fidx==-1){
-		for(int i=0; i<fiend; ++i){
+		for(size_t i=0; i<fiend; ++i){
 			fdef.num_ranges.push_back(guardedVal(fv[i].guard, fv[i].value));
 		}
 	}else{
@@ -1559,7 +1559,7 @@ void NodesToSolver::visit( UFUN_node& node ){
 		vector<Ufinfo>& oldparams(ufinfos[funid]);
 		vec<Lit> equivs(oldparams.size());
 		int nparams = params.size();
-		for (int cid = 0; cid < oldparams.size(); ++cid) {
+		for (size_t cid = 0; cid < oldparams.size(); ++cid) {
 			vector<Tvalue>& other = oldparams[cid].params;
 			int vvar = 0;
 			for (int i = 0; i<nparams; ++i) {
@@ -1631,7 +1631,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
     } else {
 		
 		if (isInt) {
-			for (int i = 0; i < choices.size(); ++i) {
+			for (size_t i = 0; i < choices.size(); ++i) {
 				Tvalue& tv = choices[i];
 				if (!tv.isInt()) {
 					dir.intClause(tv);
@@ -1652,7 +1652,7 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 			dir.intClause(mv);
 		}
 		vector<iVar> chs;
-		for(int i=0; i<choices.size(); ++i){
+		for(size_t i=0; i<choices.size(); ++i){
 			Tvalue& tv = choices[i];
 			if(!tv.isInt()){
 				dir.intClause(tv);
@@ -1727,8 +1727,8 @@ void NodesToSolver::muxTValues(ARRACC_node* pnode, const Tvalue& mval, vector<Tv
 //	elooptimer.restart();
 	const gvvec& nrange = mval.num_ranges;
 	int cvar = -YES;
-	int orTerms = 0;
-	for(int i=0; i<nrange.size(); ++i){
+	size_t orTerms = 0;
+	for(size_t i=0; i<nrange.size(); ++i){
 		if( nrange[i].value >= 0 && nrange[i].value < choices.size() ){
 			if( mval.getId (i) == YES){
 				cvar = choices[nrange[i].value].getId ();
@@ -2018,7 +2018,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 				eqid = dir.bitToI(beqid);
 			}
 			vector<iVar> chs;
-			for(int i=0; i<choices.size(); ++i){
+			for(size_t i=0; i<choices.size(); ++i){
 				chs.push_back(dir.intClause(choices[i]));
 			}
 			node_ids[node.id].makeSuperInt(dir.mux(eqid, chs.size(), &chs[0]) );
@@ -2035,7 +2035,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 			}else{
 				guard = -YES;
 				const gvvec& nrange = mval.num_ranges;
-				for(int i=0; i<nrange.size(); ++i){
+				for(size_t i=0; i<nrange.size(); ++i){
 					if( nrange[i].value == quant){
 					guard = mval.getId (i);
 					break;
@@ -2045,7 +2045,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
 			Tvalue tvidx = guard;
 			dir.intClause(tvidx);
 			vector<iVar> chs;
-			for(int i=0; i<choices.size(); ++i){
+			for(size_t i=0; i<choices.size(); ++i){
 				chs.push_back(dir.intClause(choices[i]));
 			}
 			node_ids[node.id].makeSuperInt(dir.mux(tvidx.getId(), chs.size(), &chs[0]) );
@@ -2065,7 +2065,7 @@ void NodesToSolver::visit( ARRASS_node& node ){
     }else{
 		guard = -YES;
 		const gvvec& nrange = mval.num_ranges;
-		for(int i=0; i<nrange.size(); ++i){
+		for(size_t i=0; i<nrange.size(); ++i){
 			if( nrange[i].value == quant){
 			guard = mval.getId (i);
 			break;
@@ -2673,7 +2673,7 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
   fval.makeSparse(dir);
   int cvar = -YES;
   equal_to<int> comp;
-  int orTerms = 0;
+  size_t orTerms = 0;
 	vector<char> mc(mval.size(), 'n');
 	vector<char> fc(fval.size(), 'n');
 	int flow = 0;
@@ -2696,8 +2696,8 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
   }
   if( orTerms < 2 ){
 		cvar = dir.addExPairConstraint(&scratchpad[0], orTerms);
-		for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
-		for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
+		for(size_t i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-cvar, -mval.getId (i)); }  }
+		for(size_t i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-cvar, -fval.getId (i)); }  }
 		out = cvar;
   }else{
 		if(orTerms == mval.size() * fval.size()){
@@ -2706,8 +2706,8 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
 			int result;
 			result = dir.addExPairConstraint(&scratchpad[0], orTerms);
 			
-			for(int i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
-			for(int i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
+			for(size_t i=0; i<mc.size(); ++i){ if(mc[i] =='n'){ dir.addHelperC(-result, -mval.getId (i)); }  }
+			for(size_t i=0; i<fc.size(); ++i){ if(fc[i] =='n'){ dir.addHelperC(-result, -fval.getId (i)); }  }
 			out = result;
 		}
   }
@@ -2716,10 +2716,10 @@ void NodesToSolver::createCond(Tvalue mval , Tvalue fval, Tvalue& out) {
 
 void NodesToSolver::visit( TUPLE_R_node &node){
     //cout << "NodesToSolver TUPLE_R " << node.lprint() << endl;
-    int index = node.idx;
+    size_t index = node.idx;
     const Tvalue tid = tval_lookup(node.mother());
     
-    int length = tid.num_ranges.size();
+    size_t length = tid.num_ranges.size();
 	Tvalue zero = tvYES;
 	zero.invert();
     vector<Tvalue> choices(tpl_store.size(), zero);
@@ -2731,7 +2731,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
   if (node.getOtype()->isArr) {
     Tvalue prev = zero;
     bool first = true;
-    for (int i=0; i < length; ++i) {
+    for (size_t i=0; i < length; ++i) {
       int tsidx = tid.num_ranges[i].value;
       if (tsidx > 0) {
         vector<Tvalue>& tuple = *tpl_store[tsidx];
@@ -2766,7 +2766,7 @@ void NodesToSolver::visit( TUPLE_R_node &node){
     node_ids[node.id] = prev;
     return;
   }
-    for (int i=0; i < length; ++i) {
+    for (size_t i=0; i < length; ++i) {
       
         int tsidx = tid.num_ranges[i].value;
         if (tsidx > 0) {

@@ -241,7 +241,7 @@ public:
 		 int id = s->intsolve->addVar(tv);
 
 		 const gvvec gv = tv.num_ranges;
-		 for(int i=0; i<gv.size(); ++i){
+		 for(size_t i=0; i<gv.size(); ++i){
 			 const guardedVal& cur = gv[i];
 			 int vv = this->isValKnown(cur.guard);
 			 if(vv==1){

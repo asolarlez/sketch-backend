@@ -148,8 +148,8 @@ class Heap {
                 indices[heap[i]] = -1;
 
         heap.shrink(i - j);
-        for (int i = heap.size() / 2 - 1; i >= 0; i--)
-            percolateDown(i);
+        for (int ii = heap.size() / 2 - 1; ii >= 0; ii--)
+            percolateDown(ii);
 
         assert(heapProperty());
     }

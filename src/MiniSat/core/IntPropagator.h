@@ -40,7 +40,7 @@ public:
 class interpair{
 public:
 	Lit l;
-	int tlevel;
+	size_t tlevel;
 	interpair(int trail_level, Lit lit):tlevel(trail_level),l(lit){}
 };
 
@@ -84,7 +84,7 @@ public:
 	double activity(){ return act; }
 	void decay(float f){ act = act * f; }
 	//Increment activity measure for the clause.
-	void moreAct(){ act = act + 1.0; }
+	void moreAct(){ act = act + 1.0f; }
 	void print();
 };
 
@@ -288,7 +288,7 @@ public:
 	const Range& getRange(iVar varid);
 	const Range& getRange(iVar varid, int& maxidx);
 	void dump() {
-		for (int i = 0; i < varmap.size(); ++i) {
+		for (size_t i = 0; i < varmap.size(); ++i) {
 			cout <<i<< getRange(i).print() << endl;
 		}
 	}
@@ -458,7 +458,7 @@ class IntPropagator{
 	vec<Intclause*> reason;
 
 	// points to next position in the trail.
-	int qhead;
+	size_t qhead;
 
 	// Clause database.
 	vec<Intclause*> clauses;
@@ -478,7 +478,7 @@ public:
 		qhead = 0;
 	}
 	~IntPropagator(){
-		for(int i=0; i<clauses.size(); ++i){
+		for(size_t i=0; i<clauses.size(); ++i){
 			if(clauses[i]->tp()!= BMUX){
 				free(clauses[i]);
 			}else{
@@ -575,7 +575,7 @@ public:
 	vec<Lit>& getSummary(iVar vr, Intclause* ic, int badVal, bool useBadVal) {
 		explain.clear();
 		seen.growTo(nvars());
-		for (int i = 0; i< seen.size(); ++i) {
+		for (size_t i = 0; i< seen.size(); ++i) {
 			seen[i] = 0;
 		}
 		auto it = ranges.rbegin();
@@ -655,9 +655,9 @@ public:
 					}
 					else{
 						for (int i = 0; i<ic->size(); ++i) {
-							iVar iv = (*ic)[i];
-							if (seen[iv] == 0) {
-								seen[iv] = 1;
+							iVar iv0 = (*ic)[i];
+							if (seen[iv0] == 0) {
+								seen[iv0] = 1;
 								++scount;
 							}
 						}
@@ -687,7 +687,7 @@ public:
 	vec<Lit>& getSummaryA(iVar vr, Intclause* ic, int lev = -1) {
 		explain.clear();
 		seen.growTo(ranges.maxrindex());
-		for (int i = 0; i< seen.size(); ++i) {
+		for (size_t i = 0; i< seen.size(); ++i) {
 			seen[i] = 0;
 		}		
 		if (ic == NULL) {
@@ -891,10 +891,10 @@ public:
 		}
 	}
 
-	void generateInnerConflict(Intclause* ic, int trailLev, int szbnd){	
+	void generateInnerConflict(Intclause* ic, int trailLev, size_t szbnd){	
 		if (szbnd <= 1) { return;  }
 		vec<pair<iVar, int> > ppp;
-		for(int i=0; i< seen.size(); ++i){
+		for(size_t i=0; i< seen.size(); ++i){
 			seen[i] = 0;
 		}
 		innerhelper(ic, 0, ppp, trailLev);
@@ -902,7 +902,7 @@ public:
 		vec<iVar> vi;
 		vi.growTo(ppp.size()*2);
 		int sz = ppp.size();
-		for(int i=0; i<ppp.size(); ++i){
+		for(size_t i=0; i<ppp.size(); ++i){
 			vi[i] = ppp[i].first;
 			vi[sz+i] = ppp[i].second;
 		}

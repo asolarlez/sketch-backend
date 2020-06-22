@@ -456,7 +456,7 @@ public:
 	}
 	static string getIOStrings(vector< vector<int> > &inputs, vector<bool> &outputs){
 		string s="";
-		for (int io=0;io<inputs.size();io++){
+		for (unsigned io=0;io<inputs.size();io++){
 			s+=" ## " + getIOString(inputs[io],outputs[io]);
 		}
 		return s;
@@ -517,7 +517,7 @@ public:
 								vector<bool> &om = evalMap[ae1];
 								vector<bool> &of = evalMap[ae2];
 								bool ignoreEx = false;
-								for (int i = 0; i < neededOutputs.size(); i++) {
+								for (auto i = 0; i < neededOutputs.size(); i++) {
 									if (op == And && ((om[i] && of[i]) != neededOutputs[i])) {
 										ignoreEx = true;
 										break;

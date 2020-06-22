@@ -52,7 +52,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 				declareControl(ctrlnode);
 			}
       if (ctrlnode->spAngelic) {
-        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz());
+        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
       }
 
 		}
@@ -62,7 +62,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
     }
 	for(map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it){
 		if(!ctrlStore.contains(it->first)){
-			ctrlStore.newVar(it->first, it->second);
+			ctrlStore.newVar(it->first, it->second, NULL);
 		}
 	}
 }
@@ -99,17 +99,17 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
 	dirFind.declareControl(cnode);
 
 	if(!ctrlStore.contains(cname)){
-		ctrlStore.newVar(cname, size);
+		ctrlStore.newVar(cname, size, cnode->getOtype());
 	}	
 }
 
-void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz) {
+void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype) {
 	//Inputs can be redeclared to change their sizes, but not controls.
 	if( !inputStore.contains(inname)){
     if(arrSz >= 0){
-			inputStore.newArr(inname, bitsize, arrSz);	
+			inputStore.newArr(inname, bitsize, arrSz, otype);	
 		}else{
-			inputStore.newVar(inname, bitsize);				
+			inputStore.newVar(inname, bitsize, otype);				
 		}
 		Dout( cout<<" INPUT "<<inname<<" sz = "<<bitsize<<endl );
 	}else{
@@ -121,10 +121,10 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 	}
 }
 
-void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz) {
+void CEGISSolver::declareInput(const string& inname, int bitsize, int arrSz, OutType* otype) {
 	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<bitsize<<endl);
 	cpt.resizeInput(inname, bitsize);
-	::declareInput(inputStore, inname, bitsize, arrSz);
+	::declareInput(inputStore, inname, bitsize, arrSz, otype);
 }
 
 bool CEGISSolver::solve(){	
@@ -218,9 +218,9 @@ bool CEGISSolver::solveCore(){
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 			if(PARAMS->angelic_model){
 				if(!inputStore.contains("__rs_node")){
-					inputStore.newVar("__rs_node",1);
+					inputStore.newVar("__rs_node",1, NULL);
 				}
-				inputStore.setVarVal("__rs_node",0);
+				inputStore.setVarVal("__rs_node",0, NULL);
 			}
 			if (hasInputChanged) {
 				if(PARAMS->verbosity > 5){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
@@ -274,7 +274,7 @@ bool CEGISSolver::solveCore(){
 
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
 	map<string, CTRL_node*> minimizes;
-	for(int i=0; i<problems.size(); ++i){
+	for(size_t i=0; i<problems.size(); ++i){
 		BooleanDAG* dag = problems[i];
 		vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
 		for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
@@ -307,12 +307,12 @@ bool CEGISSolver::minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsize
 	dirFind.getMng().retractAssumptions();
 	bool isSingleMinHole = (mhsizes.size()==1);
 	vector<int> bigor; bigor.push_back(0);
-	for(int i=0; i<mhsizes.size(); ++i){
-		string& minVarNodeName = mhnames[i];
+	for(size_t i=0; i<mhsizes.size(); ++i){
+		string& locminVarNodeName = mhnames[i];
 		int minVarNodeSize = mhsizes[i];
-		int H__0_val = ctrlStore.getObj(minVarNodeName).getInt(); 
-		int H__0_var_idx = dirFind.getVar(minVarNodeName);
-		cout <<minVarNodeName<<"=" << H__0_val << ", " << flush;
+		int H__0_val = ctrlStore.getObj(locminVarNodeName).getInt(); 
+		int H__0_var_idx = dirFind.getVar(locminVarNodeName);
+		cout <<locminVarNodeName<<"=" << H__0_val << ", " << flush;
 		Tvalue tv = H__0_var_idx;		
 		tv.makeSparse(dirFind, minVarNodeSize);
 		try{
@@ -798,8 +798,8 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 			h = eval.scoreNodes(0);
 		    if (hasH) {
 				hasserts.clear();				
-				vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
-				filterHasserts(asserts, h, hasserts);
+				vector<bool_node *> const & locasserts = dag->getNodesByType(bool_node::ASSERT);
+				filterHasserts(locasserts, h, hasserts);
 				lowerbound = 0;
 				if(hasserts.size() > 0){
 					lowerbound = (*hasserts.rbegin())->id + 1;
@@ -868,7 +868,7 @@ bool CEGISSolver::simulate(VarStore& controls, VarStore& input, vector<VarStore>
 				if(rv==l_True){
 					//It found an input that causes things to change.
 					vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::SRC);
-					for(int i=0; i<ctrls.size(); ++i){
+					for(size_t i=0; i<ctrls.size(); ++i){
 						SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
 						if(bn->id > h){						
 							tmpin.getObj(bn->get_name()).makeRandom();
@@ -972,11 +972,11 @@ void CEGISSolver::normalizeInputStore(){
 void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
 	{
 		vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
-		for(int i=0; i<specIn.size(); ++i){			
+		for(size_t i=0; i<specIn.size(); ++i){			
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 			int nbits = srcnode->get_nbits();
 			if(nbits >= 2 || firstTime){	
-				declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz());
+				declareInput(specIn[i]->get_name(), nbits, srcnode->getArrSz(), srcnode->getOtype());
 			}
 		}
 	}
@@ -984,7 +984,7 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
 	
 		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);
 		int nbits = dag->getIntSize();
-		for(int i=0; i<ufunin.size(); ++i){
+		for(size_t i=0; i<ufunin.size(); ++i){
 			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
 			string tuple_name = ufunnode->getTupleName();
 
@@ -997,7 +997,7 @@ void CEGISSolver::redeclareInputs(BooleanDAG* dag, bool firstTime){
 				OutType* ttype = tuple_type->entries[tt];	
 				bool isArr = ttype->isArr ;
 				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-				declareInput( sstr.str() , isBool ? 1 : nbits, (isArr ? ASize : -1) );
+				declareInput( sstr.str() , isBool ? 1 : nbits, (isArr ? ASize : -1), ttype );
 			}
 		}
 	}
@@ -1251,7 +1251,7 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
 		NodeEvaluator eval(empty, *prob, floats);
 		eval.run(input);
 		cout<<"PRINT EVAL"<<endl;
-		for(int i=0; i<check_node_ids.size(); ++i){
+		for(size_t i=0; i<check_node_ids.size(); ++i){
 //			cout<<i<<"=";
 //			check_node_ids[i].print(cout, &mngCheck);
 //			cout<< " vs ";
@@ -1285,13 +1285,13 @@ void CEGISSolver::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	map<bool_node*,  int> node_values;
 	check_node_ids.clear();
 	check_node_ids.resize( getProblem()->size() );	
-	int nbits = getProblem()->getIntSize();
+	size_t nbits = getProblem()->getIntSize();
 	for (BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx) {
 		(*node_it)->flag = true;
 		if ((*node_it)->type == bool_node::CTRL) {
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);
-			int nbits = ctrlnode->get_nbits();
-			node_values[(*node_it)] = valueForINode(ctrlnode, controls, nbits);
+			int locnbits = ctrlnode->get_nbits();
+			node_values[(*node_it)] = valueForINode(ctrlnode, controls, locnbits);
 		}
 		if ((*node_it)->type == bool_node::SRC) {
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(*node_it);
@@ -1355,7 +1355,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 				while(resizelist.size()>0){
 					pair<string, int> p = resizelist.front();
 					resizelist.pop();
-					declareInput(p.first, p.second, -1);
+					declareInput(p.first, p.second, -1, NULL);
 				}
 				addInputsToTestSet(inputStore); }
 			for(int i=0; i<inputSize; ++i){
@@ -1386,7 +1386,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 		while(resizelist.size()>0){
 			pair<string, int> p = resizelist.front();
 					resizelist.pop();
-			declareInput(p.first, p.second, -1);	
+			declareInput(p.first, p.second, -1, NULL);	
 		}
 		succeeded = solveCore();
 	}else if(last == 'c'){
@@ -1394,7 +1394,7 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 			while(resizelist.size()>0){
 				pair<string, int> p = resizelist.front();
 					resizelist.pop();
-				declareInput(p.first, p.second, -1);	
+				declareInput(p.first, p.second, -1, NULL);	
 			}
 			addInputsToTestSet(inputStore); 
 		}

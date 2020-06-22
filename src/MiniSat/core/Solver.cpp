@@ -754,12 +754,12 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
 			return false;
 		}
         for (int i = 1; i < c.size(); i++){
-            Lit p  = c[i];
-            if (!seen[var(p)] && level[var(p)] > 0){
-                if (reason[var(p)] != NULL && (abstractLevel(var(p)) & abstract_levels) != 0){
-                    seen[var(p)] = 1;
-                    analyze_stack.push(p);
-                    analyze_toclear.push(p);
+            Lit pp  = c[i];
+            if (!seen[var(pp)] && level[var(pp)] > 0){
+                if (reason[var(pp)] != NULL && (abstractLevel(var(pp)) & abstract_levels) != 0){
+                    seen[var(pp)] = 1;
+                    analyze_stack.push(pp);
+                    analyze_toclear.push(pp);
                 }else{
                     for (int j = top; j < analyze_toclear.size(); j++)
                         seen[var(analyze_toclear[j])] = 0;
@@ -1567,8 +1567,8 @@ bool Solver::simplifyAndCompact() {
 	if (!ok || propagate() != NULL)
 		return ok = false;
 
-	int tmpcl = clauses_literals;
-	int tmpll = learnts_literals;
+	auto tmpcl = clauses_literals;
+	auto tmpll = learnts_literals;
 
 	if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
 		return true;
@@ -2056,8 +2056,8 @@ void Solver::writeDIMACS(ofstream& dimacs_file)
 			 const char* neg = sign(trail[i]) ? "-" : "";
 			 dimacs_file << neg << var(trail[i]) + 1 << " 0"<<endl;
 		 }
-        for (int i = 0; i < clauses.size(); i++) {
-            Clause* c = clauses[i];
+        for (int ii = 0; ii < clauses.size(); ii++) {
+            Clause* c = clauses[ii];
 			if(c->mark() == SINGLESET){
 				dimacs_file<<"c START SINGLESET CLAUSE"<<endl;
 				for(int i=0; i<c->size(); ++i){

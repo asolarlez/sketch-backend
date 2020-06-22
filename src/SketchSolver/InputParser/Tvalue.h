@@ -161,7 +161,7 @@ public:
     bool operator== (const Tvalue &tv) const {
 		if (tv.id != id || tv.num_ranges.size() != num_ranges.size())
 			return false;	
-		for (int i = 0; i < num_ranges.size(); i++)
+		for (size_t i = 0; i < num_ranges.size(); i++)
 			if (num_ranges[i] != tv.num_ranges[i])
 			return false;
 

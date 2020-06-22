@@ -739,7 +739,7 @@ int InterpreterEnvironment::doallpairs() {
 			hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
-		for (int i = 0; i<spskpairs.size(); ++i) {
+		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness(i);
 			try {
 				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);

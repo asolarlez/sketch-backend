@@ -4,7 +4,7 @@
 
 void getOutputsSubset(const vector<int>& outputs, const vector<bool>& setOutputs, vector<int>& outputsSubset) {
 	Assert(outputs.size() == setOutputs.size(), "Outputs and setOutputs should have the same size" + to_string(outputs.size()) + " " + to_string(setOutputs.size()) + " " + to_string(outputsSubset.size()));
-	for (int i = 0; i < outputs.size(); i++) {
+	for (size_t i = 0; i < outputs.size(); i++) {
 		if (setOutputs[i]) {
 			outputsSubset.push_back(outputs[i]);
 		}
@@ -259,7 +259,7 @@ ArithExpression* ArithExprBuilder::getExpressionFromSmallMap(const vector<int>& 
 	auto it = outputsASmallMap.find(outputs);
 	if (it != outputsASmallMap.end()) {
 		auto& emap = it->second; // vector of full outputs
-		for (int i = 0; i < emap.size(); i++) {
+		for (size_t i = 0; i < emap.size(); i++) {
 			// check if unset outputs are ok
 			if (checkUnsetOutputs(exampleIds, notUnsetOutputs, emap[i])) {
 				syn->addSuggestions(exampleIds, notUnsetOutputs, emap[i]);
@@ -380,7 +380,7 @@ ArithExpression* ArithExprBuilder::addToMapsD1(ArithType op, int cival, const ve
 bool ArithExprBuilder::checkUnsetOutputs(const vector<int>& exampleIds, const vector<bool>& setOutputs, const vector<int>& outputs) {
 	Assert(exampleIds.size() == setOutputs.size(), "Examples Ids and set outputs are not of the same size");
 	Assert(exampleIds.size() == outputs.size(), "Examples Ids and outputs are not of the same size");
-	for (int i = 0; i < exampleIds.size(); i++) {
+	for (size_t i = 0; i < exampleIds.size(); i++) {
 		if (!setOutputs[i]) {
 			if (!syn->isValidOutput(exampleIds[i], outputs[i])) {
 				return false;

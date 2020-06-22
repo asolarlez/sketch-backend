@@ -133,12 +133,12 @@ namespace MSsolverNS {
 
 	void IntPropagator::dump() {
 		cout << "CLAUSES: " << endl;
-		for (int i = 0; i < clauses.size(); ++i) {
+		for (size_t i = 0; i < clauses.size(); ++i) {
 			clauses[i]->print();
 
 		}
 		cout << "TRAIL" << endl;
-		for (int i = 0; i < trail.size(); ++i) {
+		for (size_t i = 0; i < trail.size(); ++i) {
 			if (i == qhead) { cout << " qhead" << endl; }
 
 			Val vp = vals[trail[i].var];
@@ -155,7 +155,7 @@ namespace MSsolverNS {
 
 	void IntPropagator::dumpConfs() {
 		cout << "CONFLICTS: " << endl;
-		for (int i = 0; i < conflicts.size(); ++i) {
+		for (size_t i = 0; i < conflicts.size(); ++i) {
 			conflicts[i]->print();
 		}
 	}

@@ -1071,7 +1071,7 @@ void DagOptim::visit( TUPLE_R_node& node){
   }
   
     if(node.mother()->type == bool_node::TUPLE_CREATE){
-        int idx = node.idx;
+        size_t idx = node.idx;
         TUPLE_CREATE_node* parent = dynamic_cast<TUPLE_CREATE_node*>(node.mother());
         if(idx >= parent->nparents()|| idx <0){
             //this should never happen
@@ -1082,7 +1082,7 @@ void DagOptim::visit( TUPLE_R_node& node){
         return;
     }
     if(node.mother()->type ==bool_node::ARRACC){
-       int idx =node.idx;
+       size_t idx =node.idx;
        ARRACC_node* parent = dynamic_cast<ARRACC_node*>(node.mother());
         
         /*// multimother size = 2 and one node is null
@@ -1131,7 +1131,7 @@ void DagOptim::visit( TUPLE_R_node& node){
         
        //If all nodes in arracc in tuples
        bool allTuple = true;
-        for(int i=0; i< parent->nargs(); i++){
+        for(size_t i=0; i< parent->nargs(); i++){
             if(parent->arguments(i)->type != bool_node::TUPLE_CREATE){
                 allTuple = false;
                 break;
@@ -1141,7 +1141,7 @@ void DagOptim::visit( TUPLE_R_node& node){
             if (!node.getOtype()->isArr || parent->mother()->getOtype() == OutType::BOOL) {
                 ARRACC_node* newParent = ARRACC_node::create(parent->nargs());
                 newParent->mother() = parent->mother();
-                for(int i=0; i< parent->nargs(); i++){
+                for(size_t i=0; i< parent->nargs(); i++){
                     TUPLE_CREATE_node* tuple_i = dynamic_cast<TUPLE_CREATE_node*>(parent->arguments(i));
                     if(idx >= tuple_i->nparents()|| idx <0){
                         rvalue = &node;
@@ -2008,7 +2008,7 @@ void DagOptim::visit( ARRACC_node& node ){
       if (node.nargs() > 0) {
         int d = node.arguments(0)->depth;
         if (d != -1) {
-          for (int i = 1; i < node.nargs(); i++) {
+          for (size_t i = 1; i < node.nargs(); i++) {
             int dd = node.arguments(i)->depth;
             if (dd == -1) {
               d = -1;
@@ -2031,7 +2031,7 @@ void DagOptim::visit( ARRACC_node& node ){
 	
 	if( node.nargs() >0 ){
        bool_node* bn =  node.arguments(0);
-		for(int i=1; i<node.nargs(); ++i){
+		for(size_t i=1; i<node.nargs(); ++i){
 			if( bn != node.arguments(i) ){
 				tmp = false;
 			}
@@ -2088,12 +2088,12 @@ void DagOptim::visit( ARRACC_node& node ){
 				int c1 = this->getIval(an->arguments(1));
 				ARRACC_node* ar = ARRACC_node::create(2);
 				ar->mother() = an->mother();
-				if(c0 < node.nargs()){
+				if(c0 < (int) node.nargs()){
 					ar->arguments(0) = (node.arguments(c0));
 				}else{
 					ar->arguments(0) = (this->getCnode(0));
 				}
-				if(c1 < node.nargs()){
+				if(c1 < (int) node.nargs()){
 					ar->arguments(1) = (node.arguments(c1));
 				}else{
 					ar->arguments(1) = (this->getCnode(0));
@@ -2116,7 +2116,7 @@ void DagOptim::visit( ARRACC_node& node ){
 			--If the lower-bound of the range is >0, set all entries below l to zero.
 			--If the upper-bound of the range is < node.multi_mother.size()-1, shave off all those extra entries.
 			*/
-			if(h < node.nargs()-1 || l > 0){
+			if(h < ((int) node.nargs())-1 || l > 0){
 				
 				
 				int size = (h+1) < node.nargs() ? (h+1) : node.nargs();
@@ -2425,7 +2425,7 @@ void DagOptim::visit( ACTRL_node& node ){
 
 char tbuf[40];
 char* toString(TempTriple& tmp, int& len){
-	int p=0;
+	size_t p=0;
 	for(int i=0; i<3; i=i+2){
 		if(tmp.f[i]){
 			writeInt(tbuf, (tmp.bn[i]->globalId<<1), p);
@@ -2812,13 +2812,13 @@ void DagOptim::findCycles(BooleanDAG& dag){
 	}
 	{
 		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
-		for(int i=0; i<ins.size(); ++i){		
+		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the sources.
 		}
 	}
 	{
 		vector<bool_node*>& ins = dag.getNodesByType(bool_node::CTRL);
-		for(int i=0; i<ins.size(); ++i){		
+		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the controls.
 		}
 	}
@@ -2826,11 +2826,11 @@ void DagOptim::findCycles(BooleanDAG& dag){
 	for(map<long long int, CONST_node*>::iterator it = this->cnmap.begin(); it != this->cnmap.end(); ++it){
 		cbPerNode(it->second, bns, dupNodes); // do DFS starting from constant nodes.
 	}
-	for(int i=0; i<acreates.size(); ++i){
+	for(size_t i=0; i<acreates.size(); ++i){
 		cbPerNode(acreates[i], bns, dupNodes); // do depth first search starting from the array creators.
 	}
 #ifdef _DEBUG
-	for(int i=0; i<dag.size(); ++i){
+	for(size_t i=0; i<dag.size(); ++i){
 		Assert(dag[i]->flag != BOTTOM, "This is a big mistake!");
 	}
 #endif

@@ -134,7 +134,7 @@ public:
 	NATIVEINTS = PARAMS->nativeInts;
     };
     
-	int lastGoodVal(int id){
+	int lastGoodVal(size_t id){
 		if(id > lgv.size()){
 			return 0;
 		}else{

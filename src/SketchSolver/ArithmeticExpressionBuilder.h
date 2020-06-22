@@ -406,7 +406,7 @@ public:
 			}
 		}
 		else {
-			for (int i = 0; i < mvals.size(); i++) {
+			for (size_t i = 0; i < mvals.size(); i++) {
 				int ev = eval(mvals[i], Undef, type);
 				if (ev == Undef) {
 					return false;
@@ -660,7 +660,7 @@ public:
 		}
 		static string getIOStrings(vector< vector<int> > &inputs, vector<int> &outputs){
 			string s="";
-			for (int io=0;io<inputs.size();io++){
+			for (size_t io=0;io<inputs.size();io++){
 				s+=" ## " + getIOString(inputs[io],outputs[io]);
 			}
 			return s;
@@ -816,8 +816,8 @@ public:
 								ArithExpression* ae = addBinaryOps(ae1, ae2, depth, inputs, neededOutputs, exampleIds, setOutputs);
 								if (ae != NULL) return ae;
 								if (i != j) {
-									ArithExpression* ae = addBinaryOps(ae2, ae1, depth, inputs, neededOutputs, exampleIds, setOutputs);
-									if (ae != NULL) return ae;
+									ArithExpression* lae = addBinaryOps(ae2, ae1, depth, inputs, neededOutputs, exampleIds, setOutputs);
+									if (lae != NULL) return lae;
 								}
 							}
 						}

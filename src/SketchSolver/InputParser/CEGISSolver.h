@@ -111,7 +111,7 @@ class CEGISSolver
 	map<string, int> last_input;	
 protected:
 	void declareControl(CTRL_node* cnode);
-	void declareInput(const string& cname, int size, int arrSz);
+	void declareInput(const string& cname, int size, int arrSz, OutType* otype);
 	bool solveCore();
 	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
 	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
