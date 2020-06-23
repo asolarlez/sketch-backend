@@ -7,7 +7,7 @@
 
 using namespace std;
 
-typedef float(*floatfun)(float);
+typedef double(*floatfun)(double);
 
 class FloatManager;
 
@@ -30,13 +30,13 @@ public:
 
 
 class FloatManager {
-	map<float, int> floatIdx;
-	vector<float> floats;
+	map<double, int> floatIdx;
+	vector<double> floats;
 	map<string, floatfun> floatfuns;
 
 public:
-	const float epsilon;
-	FloatManager(float _epsilon) :epsilon(_epsilon) {
+	const double epsilon;
+	FloatManager(double _epsilon) :epsilon(_epsilon) {
 		floatIdx[0.0] = 0;
 		floats.push_back(0.0);
 		floatfuns["arctan_math"] = atan;
@@ -54,11 +54,11 @@ public:
 		return FloatFun(*this, floatfuns[name]);
 	}
 
-	float operator()(int id) {
+	double operator()(int id) {
 		return getFloat(id);
 	}
 
-	float getFloat(int id) {
+	double getFloat(int id) {
 		if (id < 0) {
 			return -floats[-id];
 		}
@@ -68,7 +68,7 @@ public:
 
 	}
 
-	int getIdx(float x) {
+	int getIdx(double x) {
 		//floatIdx only stores positive values. Negative values will yield negative indices. 
 		//This means that negating the index will automatically negate the value that the index corresponds to.
 		//That's why zero must always be stored in index zero.
@@ -80,7 +80,7 @@ public:
 		auto lbd = floatIdx.lower_bound(x - epsilon + (epsilon / 100));
 
 		if (lbd != floatIdx.end()) {
-			float dist = lbd->first - x;
+			double dist = lbd->first - x;
 			if (-epsilon < dist && dist < epsilon) {
 				if (isNeg) {
 					return -lbd->second;
@@ -131,13 +131,13 @@ template<typename Op>
 inline
 int FloatOp<Op>::operator()(int x, int y) {
 	Op op;
-	float xf = fm.getFloat(x);
-	float yf = fm.getFloat(y);
+	double xf = fm.getFloat(x);
+	double yf = fm.getFloat(y);
 	return fm.getIdx(op(xf, yf));
 }
 
 inline int FloatFun::operator()(int x) {
-	float xf = fm.getFloat(x);
+	double xf = fm.getFloat(x);
 	return fm.getIdx(f(xf));
 }
 

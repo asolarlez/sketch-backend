@@ -284,6 +284,9 @@ public:
 		}
 
 		if (minj == -1) {
+			for (int i = 0; i < lenOut; ++i) {
+				out[i] = 0.0;
+			}
 			return 0.01;
 		}
 
@@ -360,7 +363,7 @@ public:
 
 
 	void display(vec<doublereal>& in) {
-		/*
+		
 		cout << "HH [";
 		for (int i = 0; i < n; ++i) {
 			cout << in[i]; 
@@ -369,7 +372,7 @@ public:
 			}
 		}
 		cout << "], \\"<<endl;
-		*/
+		
 	}
 
 

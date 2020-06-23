@@ -566,3 +566,17 @@ double BoolAutoDiff::getErrorForAsserts(const set<int>& assertIds, gsl_vector* g
 }
 
 
+double BoolAutoDiff::getErrorForAssert(int assertId, gsl_vector* grad) {
+	GradUtil::default_grad(grad);
+	GradUtil::default_grad(GradUtil::tmp);
+	double d;
+
+	
+		d = computeSingleError(assertId, d, grad, GradUtil::tmp);
+		
+		gsl_vector_add(grad, GradUtil::tmp);
+
+	
+	return d;
+}
+

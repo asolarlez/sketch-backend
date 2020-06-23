@@ -92,6 +92,7 @@ public:
             }
         }
         if (p->level == -1) {
+			
             double dist = p->eval->getErrorForAsserts(p->assertConstraints, grad);
             if (dist < 0.0) {
                 total_dist += -dist;
@@ -100,6 +101,7 @@ public:
             for (int j = 0; j < *n; j++) {
                 G[gcounter++] = gsl_vector_get(grad, j);
             }
+			
             /*for (auto it = p->assertConstraints.begin(); it != p->  assertConstraints.end(); it++) {
                 double dist = p->eval->getErrorOnConstraint(*it, grad);
                 if (dist < 0.0) {
@@ -434,8 +436,8 @@ public:
         double obj;
         int numtries = 0;
         minObjectiveVal = 1e50;
-        bool solved;
-        while (minObjectiveVal > threshold && numtries < MAX_TRIES) {
+        bool solved=false;
+        while (minObjectiveVal > threshold && numtries < MAX_TRIES && !solved) {
             if (!suppressPrint){
                 cout << "Attempt: " << (numtries + 1) << endl;
             }
@@ -497,11 +499,11 @@ public:
                 minObjectiveVal = obj;
             }
             numtries++;
-            if (minObjectiveVal > threshold && numtries < MAX_TRIES) {
+            if (minObjectiveVal > threshold && numtries < MAX_TRIES && !solved) {
                 randomizeCtrls(t, inputs, constraints, minimizeNode);
             }
         }
-        return minObjectiveVal < threshold;
+        return solved || (minObjectiveVal < threshold);
     }
     
     virtual gsl_vector* getMinState() {

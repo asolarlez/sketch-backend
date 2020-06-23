@@ -9,7 +9,7 @@ typedef double doublereal;
 #include "snoptProblem.hh"
 #endif
 
-typedef float(*floatfun)(float);
+typedef double(*floatfun)(double);
 
 typedef int(DFT)(integer*, integer *, doublereal [],
 	integer    *, integer *, doublereal [],

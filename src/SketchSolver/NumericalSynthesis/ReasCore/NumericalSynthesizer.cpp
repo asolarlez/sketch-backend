@@ -64,7 +64,8 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 
 	doublereal* xlow = new doublereal[ncontrols];
 	doublereal* xupp = new doublereal[ncontrols];
-
+	xlow[0] = -20; 
+	xupp[0] = 20;
 	for (int i = 0; i < ctrlNodes.size(); i++) {
 		CTRL_node* cnode = (CTRL_node*)ctrlNodes[i];
 		if (cnode->getOtype() == OutType::FLOAT) {

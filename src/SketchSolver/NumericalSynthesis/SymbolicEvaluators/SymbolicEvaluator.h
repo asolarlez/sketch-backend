@@ -26,6 +26,7 @@ public:
     virtual double getErrorOnConstraint(int nodeid) = 0;
 
     virtual double getErrorForAsserts(const set<int>& nodeid, gsl_vector* grad) = 0;
+	virtual double getErrorForAssert(int assertId, gsl_vector* grad)=0;
 
     virtual double dist(int nid) = 0;
     virtual double dist(int nid, gsl_vector* grad) = 0;
