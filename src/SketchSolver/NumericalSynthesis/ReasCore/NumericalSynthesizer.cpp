@@ -61,7 +61,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 	}
 	state = gsl_vector_alloc(ncontrols);
 	prevState = gsl_vector_alloc(ncontrols);
-
+		
 	doublereal* xlow = new doublereal[ncontrols];
 	doublereal* xupp = new doublereal[ncontrols];
 	xlow[0] = -20; 

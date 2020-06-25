@@ -363,7 +363,7 @@ public:
 
 
 	void display(vec<doublereal>& in) {
-		
+		/*
 		cout << "HH [";
 		for (int i = 0; i < n; ++i) {
 			cout << in[i]; 
@@ -372,6 +372,7 @@ public:
 			}
 		}
 		cout << "], \\"<<endl;
+		*/
 		
 	}
 
