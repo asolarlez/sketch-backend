@@ -38,15 +38,18 @@ void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 		}
 		int cints = 0;
 		int cbits = 0;
+    int cfloats = 0;
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
 			if(ctrlnode->getOtype() == OutType::BOOL){
 				cbits++;
-			}else{
+      } else if (ctrlnode->getOtype() == OutType::FLOAT) {
+        cfloats++;
+      } else{
 				cints++;
 			}
-			if(!ctrlnode->get_Angelic()){
+      if(!ctrlnode->get_Angelic() && ctrlnode->getOtype() != OutType::FLOAT){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 
 				declareControl(ctrlnode);
@@ -57,7 +60,7 @@ void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 
 		}
 		if(PARAMS->verbosity > 2){
-			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<<endl;
+			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
 		}
     }
 	for(map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it){
@@ -147,13 +150,37 @@ bool CEGISSolver::solve(){
 //	cpt.checkpoint('c', ctrlstore_serialized);
 //	setNewControls(ctrlStore);	
 	
-	bool succeeded = solveCore();
-	
+	//bool succeeded = solveCore();
+	bool succeeded = solveOptimization();
 	popProblem();
 
 	return succeeded;
 }
 
+bool CEGISSolver::solveOptimization() {
+	timerclass ftimer("* FIND TIME");
+	timerclass ttimer("* TOTAL TIME");
+	ttimer.start();
+	
+	if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
+	ftimer.restart();
+	bool fail = false;
+	try{
+		fail = !find(inputStore, ctrlStore, true);
+	}catch(BasicError& e){
+		fail = true;
+	}
+	
+	ttimer.stop();
+	if(!fail){
+		cout<<" *Reporting the minimum found so far"<<endl;
+	}else{
+		cout<<" *FAILED"<<endl;
+	}
+	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
+	dirFind.getMng().retractAssumptions();
+	return !fail;
+}
 
 
 

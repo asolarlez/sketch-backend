@@ -10,6 +10,8 @@
 class DagOptim;
 class bool_node;
 
+class SolverHelper;
+
 namespace MSsolverNS {
 	
 	const int EMPTY=INT32_MIN;
@@ -116,10 +118,14 @@ namespace MSsolverNS {
 		 */
 		vec<Lit> conflict;
 		
+        Lit softConflictLit;
+        bool softConflict = false;
+
 		Synthesizer(FloatManager& _fm) :fm(_fm) {
 			
 		}
-
+        
+        virtual void initSuggestions(vec<Lit>& suggestions) {}
 		virtual ~Synthesizer() {
 
 		}
@@ -170,23 +176,69 @@ namespace MSsolverNS {
 			int val = inout->getVal(inputid);
 			return tv.litForValue(val);
 		}
+    
+        virtual void getControls(map<string, string>& values) = 0;
+				
+		Lit getLit(int inputid, int val) {
+			Tvalue& tv = inout->getTval(inputid);
+			return tv.litForValue(val);
+		}
+        
+        // Methods for handling input output matrix
+        // (override these methods only if you have a better interface than InputMatrix)
+        
+        virtual void set_inout(int ninputs, int noutputs) {
+            inout = new InputMatrix(ninputs, noutputs);
+        }
+        
+        virtual int newInputOutputInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
+            return inout->newInstance(inputs, outputs);
+        }
+        
+        virtual void backtrackInputs(int level) {
+            inout->backtrack(level);
+        }
+        
+        virtual void pushInput(int instance, int inputid, int val, int dlevel, vec<Lit>& conf) {
+            int idInGrid = inout->valueid(instance,inputid);
+            if (inout->getVal(idInGrid) != EMPTY){
+                //writing over non EMPTY values
+                Tvalue& tv = inout->getTval(idInGrid);
+                Lit l1 = tv.litForValue(inout->getVal(idInGrid));
+                conf.push(~l1);
+                Lit l2 = tv.litForValue(val);
+                conf.push(~l2);
+            } else {
+                inout->pushInput(instance, inputid, val, dlevel);
+            }
+        }
+        
+        virtual void getConflictLits(vec<Lit>& conf) {
+            for (int i = 0; i < conflict.size(); ++i) {
+                int id = conflict[i];
+                Tvalue& tv = inout->getTval(id);
+                Lit l = tv.litForValue(inout->getVal(id));
+                conf.push(~l);
+            }
+            if (softConflict) {
+                conf.push(~softConflictLit);
+            }
+        }
+        
+        
 	};
 	
 	extern int ID;
 	
 	class SynthInSolver {
 		vec<int> tmpbuf;
-		InputMatrix inputOutputs;
 		Synthesizer* s;
 		int maxlevel;
 		int id;
-		Solver* solver;
 	public:
-		int solverIdx; // Stores the index of this object in the sins vector in the miniSAT solver.
-		
-		SynthInSolver(Synthesizer* syn, int inputs, int outputs, int idx, Solver* slv) :s(syn), inputOutputs(inputs, outputs), solverIdx(idx), solver(slv) {
-			syn->set_inout(&inputOutputs);
-			syn->set_solver(solver);
+		int solverIdx; // Stores the index of this object in the sins vectors in the miniSAT solver.
+		SynthInSolver(Synthesizer* syn, int inputs, int outputs, int idx) :s(syn), solverIdx(idx) {
+			syn->set_inout(inputs, outputs);
 			maxlevel = 0;
 			id = ++ID;
 		}
@@ -209,11 +261,14 @@ namespace MSsolverNS {
 			s->print(out);
 		}
 		
+        void getControls(map<string, string>& values) {
+            s->getControls(values);
+        }
+
 		int newInstance(vector<Tvalue>& inputs, vector<Tvalue>& outputs) {
 			s->newInstance();
-			return inputOutputs.newInstance(inputs, outputs);
+			return s->newInputOutputInstance(inputs, outputs);
 		}
-		
 		
 		void finalize() {
 			s->finalize();
@@ -221,9 +276,14 @@ namespace MSsolverNS {
 		
 		void backtrack(int level, vec<Lit>& suggestions) {
 			if (maxlevel <= level) { return;  }
-			inputOutputs.backtrack(level);
-			//suggestions.clear(); // TODO: not sure if this is necessary
+			s->backtrackInputs(level);
+			s->backtrack(level);
+			suggestions.clear();
 		}
+        
+        void initSuggestions(vec<Lit>& suggestions) {
+            s->initSuggestions(suggestions);
+        }
 		
 		/* Returns the stack level of the input.
 		 */
@@ -231,34 +291,27 @@ namespace MSsolverNS {
 			//id = valueid(instance,inputid)
 			//write only over EMPTY values
 			//cout << "ID=" << id << endl;
-			int idInGrid = inputOutputs.valueid(instance,inputid);
-			if (inputOutputs.getVal(idInGrid) != EMPTY){
-				//writing over EMPTY values
-				vec<Lit> conf;
-				Tvalue& tv = inputOutputs.getTval(idInGrid);
-				Lit l1 = tv.litForValue(inputOutputs.getVal(idInGrid));
-				conf.push(~l1);
-				Lit l2 = tv.litForValue(val);
-				conf.push(~l2);
-				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
-				tmpbuf.growTo((sz / sizeof(int)) + 1);
-				void* mem = (void*)&tmpbuf[0];
-				return new (mem) Clause(conf, false);
-			}
-			maxlevel = dlevel;
-			inputOutputs.pushInput(instance, inputid, val, dlevel);
-			if (!s->synthesis(suggestions)) {
-				vec<Lit> conf;
-				for (int i = 0; i < s->conflict.size(); ++i) {
-					conf.push(~(s->conflict[i]));
-				}
-				
-				int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
-				tmpbuf.growTo((sz / sizeof(int)) + 1);
-				void* mem = (void*)&tmpbuf[0];
-				return new (mem) Clause(conf, false);
-			}
-			return NULL;
+            
+            vec<Lit> conf;
+            s->pushInput(instance, inputid, val, dlevel, conf);
+            if (conf.size() > 0) { // Conflict detected
+                int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
+                tmpbuf.growTo((sz / sizeof(int)) + 1);
+                void* mem = (void*)&tmpbuf[0];
+                return new (mem) Clause(conf, false);
+            }
+            // No conflict detected
+            maxlevel = dlevel;
+            if (!s->synthesis(suggestions)) {
+                vec<Lit> conf;
+                s->getConflictLits(conf);
+                int sz = sizeof(Clause) + sizeof(uint32_t)*(conf.size());
+                tmpbuf.growTo((sz / sizeof(int)) + 1);
+                void* mem = (void*)&tmpbuf[0];
+                return new (mem) Clause(conf, false);
+            }
+            
+            return NULL;
 		}
 		
 	};

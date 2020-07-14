@@ -761,7 +761,7 @@ INTER_node* BooleanDAG::create_inputs(int n, OutType* type, const string& gen_na
 	return src;
 }
 
-INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max, bool isFloat){
+INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMinimize, bool angelic, bool spConcretize, int max, bool isFloat, bool isSpecial){
   INTER_node* tmp = create_inter(n, gen_name, n_controls, bool_node::CTRL);
   CTRL_node* cnode = dynamic_cast<CTRL_node*>(tmp);
   cnode->set_toMinimize(toMinimize);
@@ -772,6 +772,9 @@ INTER_node* BooleanDAG::create_controls(int n, const string& gen_name, bool toMi
   if (isFloat) {
     cnode->setFloat();
   }
+	if (isSpecial) {
+		cnode->setSpecial();
+	}
   return tmp;
 }
 

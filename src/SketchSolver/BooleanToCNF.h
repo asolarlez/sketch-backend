@@ -29,6 +29,7 @@ using namespace std;
 
 class Tvalue;
 class CTRL_node;
+class Interface;
 
 
 
@@ -60,7 +61,6 @@ class SolverHelper {
 	int lastVar;
     SATSolver& mng;
 	vector<char> tmpbuf;
-  map<string, BooleanDAG*> numericalAbsMap;
 
 	/*
 	This function is in charge of instantiating new synthesizers.

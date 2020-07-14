@@ -11,6 +11,7 @@
 #include "BackwardsAnalysis.h"
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
+#include "REASSolver.h"
 
 
 #include <sstream>
@@ -131,7 +132,6 @@ class InterpreterEnvironment
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
 	FloatManager floats;
-	map<string, BooleanDAG*> numericalAbsMap;
 
 	string findName() {
 		stringstream s;
@@ -163,6 +163,14 @@ class InterpreterEnvironment
 		return fname.substr(x1, x3 - x1);
 	}
 
+	string benchName() {
+		string s = params.inputFname;
+		int x1 = s.rfind(".sk");
+		int x2 = s.rfind("/tmp/");
+		return s.substr(x2+5, x1-x2 - 5);
+
+	}
+
 	BooleanDAG* runOptims(BooleanDAG* result);
 
 public:
@@ -172,6 +180,7 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
+    REASSolver* reasSolver;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if (p.outputSat) {
@@ -182,6 +191,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+        reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
 	}
@@ -212,11 +222,13 @@ public:
 		delete finder;
 		delete _pfind;
 		delete solver;
+        delete reasSolver;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
 		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+        reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;
 	}
@@ -331,6 +343,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
 	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
+    int assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 
@@ -340,6 +353,5 @@ public:
 
   void replaceSrcWithTuple(BooleanDAG& dag);
   int inlineAmnt() { return params.inlineAmnt; }
-  void abstractNumericalPart(BooleanDAG& dag);
 	virtual ~InterpreterEnvironment(void);
 };

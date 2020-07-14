@@ -1494,6 +1494,20 @@ void DagOptim::visit( EQ_node& node ){
             rvalue = getCnode(false);
 			return;
         }
+        if (node.mother->type == bool_node::ARRACC) {
+            bool allTuple = true;
+            ARRACC_node* parent = (ARRACC_node*)(node.mother);
+            for(int i=0; i< parent->multi_mother.size(); i++){
+                if(parent->multi_mother[i]->type != bool_node::TUPLE_CREATE){
+                    allTuple = false;
+                    break;
+                }
+            }
+            if (allTuple) {
+                rvalue = getCnode(false);
+                return;
+            }
+        }
         
 	}
 	

@@ -1449,6 +1449,10 @@ void NodesToSolver::preprocessUfun(UFUN_node& node) {
   string tuple_name = node.getTupleName();
   Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
   
+  const string& name = node.get_ufname();
+  if (floats.hasFun(name) || name == "_cast_int_float_math") {
+    return;
+  }
   if (tuple_type->entries.size() == 0) {
     Tvalue& outvar = node_ids[node.id];
     outvar = -YES;
@@ -1514,9 +1518,9 @@ void NodesToSolver::visit( UFUN_node& node ){
 	string tuple_name = node.getTupleName();
 	Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
 
-	if (tuple_type->entries.size() == 0) {
-		return;
-	}
+	//if (tuple_type->entries.size() == 0) {
+	//	return;
+	//}
 
 
 	vector<Tvalue> params;
@@ -2155,7 +2159,7 @@ void NodesToSolver::arrRTvalue(bool isBool, const Tvalue& index, const Tvalue& i
 		enddef = defdef.num_ranges.end();
 	}
 	
-	int cidx;
+	int cidx=-1;
 	bool moreIdx = idxi < idv.size() && idxi >= 0;
 	bool moreArr=false;
 	if(inarriter != inarrend){
@@ -2627,6 +2631,7 @@ void NodesToSolver::visit( ARR_CREATE_node &node){
 	gvvec& tmp = nvar.num_ranges;
 	tmp.clear();
 		
+	
 
 	const Tvalue& dflt = tval_lookup(node.getDfltval());
 	

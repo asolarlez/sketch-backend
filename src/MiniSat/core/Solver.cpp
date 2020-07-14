@@ -74,9 +74,9 @@ void Clause::print(){
 Solver::Solver() :
 
     // Parameters: (formerly in 'SearchParams')
-    var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.02)
-  , restart_first(100), restart_inc(1.5), learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
-
+    var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.8)
+  , restart_first(200), restart_inc(1.5), learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
+   , nSoftLearntRestarts(0), maxSoftLearntRestarts(10)
     // More parameters:
     //
   , expensive_ccmin  (true)
@@ -108,6 +108,7 @@ Solver::~Solver()
 {
     for (int i = 0; i < learnts.size(); i++) free(learnts[i]);
 	for (int i = 0; i < binaryLearnts.size(); i++) free(binaryLearnts[i]);
+    for (int i = 0; i < softLearnts.size(); i++) free(softLearnts[i]);
 //    for (int i = 0; i < clauses.size(); i++) free(clauses[i]);
 	delete intsolve; 
 	for (int i = 0; i < sins.size(); ++i) {delete(sins[i]); }
@@ -203,7 +204,11 @@ bool Solver::addCNFBinary(Lit j, Lit i){
 	return true;
 }
 
-
+void Solver::initSuggestions() {
+    for (int i = 0; i < sins.size(); ++i) {
+        sins[i]->initSuggestions(suggestions[sins[i]->solverIdx]);
+    }
+}
 
 
 void Solver::addSynSolvClause(SynthInSolver* s, int instid, int inputid, int val, Lit lit) {
@@ -361,6 +366,13 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 // int TOTSINGLESET=0;
 
 
+SynthInSolver* Solver::addSynth(Synthesizer* s) {
+    int idx = sins.size();
+    SynthInSolver* syn = new SynthInSolver(s, 100, 0, idx); // TODO: remove the numbers
+    sins.push(syn);
+    suggestions.push();
+    return syn;
+}
 
 SynthInSolver* Solver::addSynth(int inputs, int outputs, Synthesizer* s) {
   int idx = sins.size();
@@ -1490,7 +1502,7 @@ struct reduceDB_lt { bool operator () (Clause* x, Clause* y) { return x->size() 
 void Solver::reduceDB()
 {
     int     i, j;
-    double  extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
+    double  extra_lim = cla_inc / (learnts.size() + softLearnts.size());    // Remove any clause below this activity
 
     sort(learnts, reduceDB_lt());
     for (i = j = 0; i < learnts.size() / 2; i++){
@@ -1507,10 +1519,33 @@ void Solver::reduceDB()
     }
     learnts.shrink(i - j);
 	intsolve->cleanupConfs();
+    sort(softLearnts, reduceDB_lt());
+    for (i = j = 0; i < softLearnts.size() / 2; i++){
+        if (softLearnts[i]->size() > 2 && !locked(*softLearnts[i]))
+            removeClause(*softLearnts[i]);
+        else
+            softLearnts[j++] = softLearnts[i];
+    }
+    for (; i < softLearnts.size(); i++){
+        if (softLearnts[i]->size() > 2 && !locked(*softLearnts[i]) && softLearnts[i]->activity() < extra_lim)
+            removeClause(*softLearnts[i]);
+        else
+            softLearnts[j++] = softLearnts[i];
+    }
+    softLearnts.shrink(i - j);
 }
-
-
-void Solver::removeSatisfied(vec<Clause*>& cs)
+    
+void Solver::removeSoftLearnts()
+{
+    int i;
+    for (i  = 0; i < softLearnts.size(); i++) {
+        removeClause(*softLearnts[i]);
+    }
+    softLearnts.shrink(i);
+}
+    
+    
+    void Solver::removeSatisfied(vec<Clause*>& cs)
 {
     int i,j;
     for (i = j = 0; i < cs.size(); i++){
@@ -1545,6 +1580,7 @@ bool Solver::simplify()
     // Remove satisfied clauses:
     removeSatisfied(learnts);
 	removeSatisfied(binaryLearnts);
+    removeSatisfied(softLearnts);
 	if (remove_satisfied) {       // Can be turned off.
 		auto bef = clauses.size();
 		removeSatisfied(clauses);
@@ -1682,17 +1718,41 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
 			          
             cancelUntil(backtrack_level);
             assert(value(learnt_clause[0]) == l_Undef);
-
+            bool softLearnt = false;
+            for (int i = 0; i < learnt_clause.size(); i++) {
+                if (toInt(learnt_clause[i]) == toInt(~Lit(softLearntSpecialVar))) {
+                    softLearnt = true;
+                    break;
+                }
+            }
+            cout << "Soft Learnt: " << softLearnt << endl;
             if (learnt_clause.size() == 1){
-                uncheckedEnqueue(learnt_clause[0]);
+                if (softLearnt) {
+                    if (nSoftLearntRestarts < maxSoftLearntRestarts) {
+                        // time to restart
+                        cout << "Restarting due to soft learnts" << endl;
+                        cancelUntil(0);
+                        removeSoftLearnts();
+                        nSoftLearntRestarts++;
+                        return l_Undef;
+                    } else {
+                        return l_False;
+                    }
+                } else {
+                    uncheckedEnqueue(learnt_clause[0]);
+                }
             }else{
                 Clause* c = Clause::Clause_new(learnt_clause, true, NULL);
-				if (c->size() > 2) {
-					learnts.push(c);
-				}
-				else {
-					binaryLearnts.push(c);
-				}                
+		if (c->size() > 2) {
+		    if(softLearnt){
+                        softLearnts.push(c);
+                    }else{
+                        learnts.push(c);
+                    }
+                } else {
+                    
+		     binaryLearnts.push(c);
+		}                
                 attachClause(*c);
                 claBumpActivity(*c);
                 uncheckedEnqueue(learnt_clause[0], c);
@@ -1724,6 +1784,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                     newDecisionLevel();
                 }else if (value(p) == l_False){
                     analyzeFinal(~p, conflict);
+                    cout << "Failed assumption" << endl;
                     return l_False;
                 }else{
                     next = p;
@@ -1777,6 +1838,14 @@ void Solver::popCheckIfPossible(int lv) {
 	cancelUntil(lv);
 }
 
+/*
+This is different from both tryAssignment and assertIfPossible, 
+this is just saying "run a quick check to see if this assignment 'a' 
+would be possible, if it is, don't do anything, because we actually don't know
+if that's the value we'll want. On the other hand, if it's not possible, 
+then we know we should just fix this variable.
+*/
+
 bool Solver::checkIfPossible(Lit aa, int& outlv) {
 	
 
@@ -1815,7 +1884,12 @@ bool Solver::checkIfPossible(Lit aa, int& outlv) {
 	}
 }
 
-
+/*
+This function adds 'a' as a new level. It's equivalent to one step of SAT solving 
+where you push a variable, and if there are no conflicts there are no conflicts, 
+but if there are conflicts then the negation of -a gets pushed as part of the previous
+level. If you reach decision level 0, this will set ok = false.
+*/
 bool Solver::tryAssignment(Lit a){
 	if (!ok) {
 		return false;
@@ -1862,6 +1936,18 @@ bool Solver::tryAssignment(Lit a){
 	}
 }
 
+/*
+This one checks if it is possible to assert 'a' without directly triggering a contradiction. 
+If it is, then 'a' gets asserted at level zero, but if this will lead to a contradiction, then 
+~a is asserted at level zero. If that leads to a contradiction as well, then ok=false. 
+Different from tryAssignment because this one asserts the assignment at level 0, whereas 
+tryAssignment adds it at a new level, so if you try assignment of 3 variables, it's possible 
+that on the third one you realize that actually the assignment to the first one was UNSAT, and
+you'll just backtrack to fix the assignment of the first one. By contrast, if you 
+assertIfPossible 3 variables one after another, if the first two do not fail immediately, 
+they get fixed at level zero, so when the third one fails as both positive and negative, 
+you just get unsat. 
+*/
 bool Solver::assertIfPossible(Lit a){
 	lbool lv = value(a);
 	//if it already has a value, we just check that it's compatible.
@@ -1918,6 +2004,8 @@ lbool Solver::solve(const vec<Lit>& assumps)
     if (!ok) return l_False;
 
     assumps.copyTo(assumptions);
+    nSoftLearntRestarts = 0;
+    initSuggestions();
 
     double  nof_conflicts = restart_first;
     double  nof_learnts   = max(nClauses() * learntsize_factor, 1000.0);

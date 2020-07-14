@@ -50,6 +50,11 @@ public:
 
 	 }
 
+     SynthInSolver* addSynth(Synthesizer* syn) {
+         return s->addSynth(syn);
+     }
+    
+    
 	 SynthInSolver* addSynth(int inputs, int outputs, Synthesizer* syn) {
 		 return s->addSynth(inputs, outputs, syn);
 	 }
@@ -161,6 +166,10 @@ public:
 		 return s->tryAssignment(lfromInt(a));
 	 }
 
+	 virtual void cancelLastDecisionLevel() {
+	 	int curDecisionLevel = s->decisionLevel();
+	 	s->cancelUntil(curDecisionLevel-1);
+	 }
 	 virtual bool checkIfPossible(int a, int& outlv) {
 		 Lit la = lfromInt(a);		 
 		 return s->checkIfPossible(la, outlv);
@@ -171,6 +180,11 @@ public:
 	 }
 
 	 virtual void retractableAssertClause(int x);
+     virtual int addSpecialAssumption();
+     void setMaxSoftLearntRestarts(int max_restarts) {
+         s->maxSoftLearntRestarts = max_restarts;
+     }
+    
 	 void addCountingHelperClause(int c[], int sz);
 
 	 virtual void addExPairConstraint(int* pairs, int npairs, int out);

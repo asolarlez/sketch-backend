@@ -1,0 +1,197 @@
+#pragma once
+
+#ifndef _NOGSL
+#include <gsl/gsl_vector.h>
+#else
+#include "CustomSolver.h"
+#endif
+#include "ValueGrad.h"
+#include "BooleanNodes.h"
+#include "BooleanDAG.h"
+#include "NodeVisitor.h"
+#include "VarStore.h"
+#include <map>
+#include <set>
+#include "SymbolicEvaluator.h"
+#include "Interface.h"
+
+#include <iostream>
+
+
+using namespace std;
+
+class SimpleGradEvaluator: public NodeVisitor, public SymbolicEvaluator
+{
+	BooleanDAG& bdag;
+	map<string, int>& floatCtrls; // Maps float ctrl names to indices within grad vector
+	int nctrls; // number of float ctrls
+	gsl_vector* ctrls; // ctrl values
+	vector<ValueGrad*> values; // Keeps track of values along with gradients for each node
+    Interface* inputValues;
+
+    
+		
+public:
+    int DEFAULT_INP = -32;
+    SimpleGradEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p);
+    
+	~SimpleGradEvaluator(void);
+	
+	virtual void visit( SRC_node& node );
+	virtual void visit( DST_node& node );
+	virtual void visit( CTRL_node& node );
+	virtual void visit( PLUS_node& node );
+	virtual void visit( TIMES_node& node );
+	virtual void visit( ARRACC_node& node );
+	virtual void visit( DIV_node& node );
+	virtual void visit( MOD_node& node );
+	virtual void visit( NEG_node& node );
+	virtual void visit( CONST_node& node );
+	virtual void visit( LT_node& node );
+	virtual void visit( EQ_node& node );
+	virtual void visit( AND_node& node );
+	virtual void visit( OR_node& node );
+	virtual void visit( NOT_node& node );
+	virtual void visit( ARRASS_node& node );
+	virtual void visit( UFUN_node& node );
+	virtual void visit( TUPLE_R_node& node );
+	virtual void visit( ASSERT_node& node );
+	
+    virtual void setInputs(Interface* inputValues_p);
+
+	virtual void run(const gsl_vector* ctrls_p, const set<int>& nodesSubset);
+    virtual void run(const gsl_vector* ctrls_p);
+    
+    virtual double getErrorOnConstraint(int nodeid, gsl_vector* grad);
+    double getSqrtError(bool_node* node, gsl_vector* grad);
+    double getAssertError(bool_node* node, gsl_vector* grad);
+    double getBoolCtrlError(bool_node* node, gsl_vector* grad);
+    double getBoolExprError(bool_node* node, gsl_vector* grad);
+    
+    virtual double getErrorOnConstraint(int nodeid);
+    double getSqrtError(bool_node* node);
+    double getAssertError(bool_node* node);
+    double getBoolCtrlError(bool_node* node);
+    double getBoolExprError(bool_node* node);
+
+    virtual double getErrorForAsserts(const set<int>& assertIds, gsl_vector* grad) {
+    	Assert(false, "TODO");
+    }
+	virtual double getErrorForAssert(int assertId, gsl_vector* grad) {
+		Assert(false, "TODO");
+	}
+    
+
+    
+	void setvalue(bool_node& bn, ValueGrad* v) {
+		values[bn.id] = v;
+	}
+	
+	ValueGrad* v(bool_node& bn) {
+		ValueGrad* val = values[bn.id];
+		if (val == NULL) {
+			gsl_vector* g = gsl_vector_alloc(nctrls);
+			val = new ValueGrad(0, g);
+			setvalue(bn, val);
+		}
+		return val;
+	}
+	
+	ValueGrad* v(bool_node* bn) {
+		return v(*bn);
+	}
+
+	double d(bool_node* bn) {
+		return v(*bn)->getVal();
+	}
+
+	double d(bool_node& bn) {
+		return v(bn)->getVal();
+	}
+	
+	
+	virtual double dist(int nid) {
+		ValueGrad* vg = v(bdag[nid]);
+		return vg->getVal();
+	}
+
+	virtual double grad_norm(int nid) {
+		ValueGrad* vg = v(bdag[nid]);
+		return gsl_blas_dnrm2(vg->getGrad());
+	}
+
+	virtual const gsl_vector* grad(int nid) {
+		ValueGrad* vg = v(bdag[nid]);
+		return vg->getGrad();
+	}
+
+	virtual double dist(int nid, gsl_vector* grad) {
+		ValueGrad* vg = v(bdag[nid]);
+		gsl_vector_memcpy(grad, vg->getGrad());
+		return vg->getVal();
+	}
+
+	virtual void print() {
+		/*for (int i = 0; i < bdag.size(); i++) {
+			if (bdag[i]->type == bool_node::ASSERT) {
+				DistanceGrad* dist = d(bdag[i]->mother);
+				if (dist->set) {
+				double gmag = gsl_blas_dnrm2(dist->grad);
+				if (dist->dist < 0.1) {
+					cout << bdag[i]->mother->lprint() << endl;
+					cout << dist->printFull() << endl;
+				}
+				}
+			}
+		}
+		return;*/
+		for (int i = 0; i < bdag.size(); i++) {
+			cout << bdag[i]->lprint() << " ";
+			if (bdag[i]->getOtype() == OutType::FLOAT) {
+				if (v(bdag[i])->set) {
+					cout << v(bdag[i])->print() << endl;
+				} else {
+					cout << "UNSET" << endl;
+				}
+			} 
+		}
+	}
+	virtual void printFull() {
+		for (int i = 0; i < bdag.size(); i++) {
+			cout << bdag[i]->lprint() << endl;
+			if (bdag[i]->getOtype() == OutType::FLOAT) {
+				if (v(bdag[i])->set) {
+					cout << v(bdag[i])->printFull() << endl;
+				} else {
+					cout << "UNSET" <<endl;
+				}
+			} 
+			if (bdag[i]->type == bool_node::PLUS) {
+				cout << v(bdag[i]->mother)->getVal() << " + " << v(bdag[i]->father)->getVal() << endl;
+			}
+		}
+	}
+	
+	bool isFloat(bool_node& bn) {
+		return (bn.getOtype() == OutType::FLOAT);
+	}
+	
+	bool isFloat(bool_node* bn) {
+		return (bn->getOtype() == OutType::FLOAT);
+	}
+	
+	int getInputValue(bool_node& bn) {
+		if (inputValues->hasValue(bn.id)) {
+			int val = inputValues->getValue(bn.id);
+			return val;
+		} else {
+			return DEFAULT_INP;
+		}
+	}
+	
+	int getInputValue(bool_node* bn) {
+		return getInputValue(*bn);
+	}
+	
+	
+};

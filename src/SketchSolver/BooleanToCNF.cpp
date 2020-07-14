@@ -19,7 +19,6 @@ using namespace std;
 #include "CommandLineArgs.h"
 #include "VarStore.h"
 #include "NodeEvaluator.h"
-#include "NumericalSolver.h"
 #include "GTPredicateSolver.h"
 #include "EntityResolutionSolver.h"
 #include "ArithmeticExpressionSolver.h"
@@ -108,7 +107,6 @@ void addDeductiveSolver(DeductiveSolver& dsolve) {
 }
 
 
-
 SynthInSolver* SolverHelper::addSynthSolver(const string& name, const string& syntype, vector<Tvalue>& inputs, vector<Tvalue>& outputs, FloatManager& _fm) {
 	auto sit = sins.find(name);
 	SynthInSolver* sin;
@@ -119,6 +117,7 @@ SynthInSolver* SolverHelper::addSynthSolver(const string& name, const string& sy
 	else {
 		sin = sit->second;
 	}
+	
 	int instid = sin->newInstance(inputs, outputs);
 
 	int inputid = 0;

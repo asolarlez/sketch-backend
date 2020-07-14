@@ -117,6 +117,8 @@ public:
 	virtual void lightSolve();
 	virtual void writeDIMACS(ofstream& dimacs_file)=0;
 	virtual int nextIntVar()=0;
+	virtual void cancelLastDecisionLevel()=0;
+
 };
 
 

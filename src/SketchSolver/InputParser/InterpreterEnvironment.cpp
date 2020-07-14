@@ -5,10 +5,11 @@
 #include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
 #include "InputReader.h" // INp yylex_init, yyparse, etc.
+#include "Util.h"
+
 #include "ArithmeticExpressionBuilder.h"
 #include "SwapperPredicateBuilder.h"
 #include "DeductiveSolver.h"
-
 
 #ifdef CONST
 #undef CONST
@@ -271,12 +272,6 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 	//spec->repOK();
 	//sketch->repOK();
 	Assert(spec->getNodesByType(bool_node::CTRL).size() == 0, "ERROR: Spec should not have any holes!!!");
-
-  if (params.numericalSolver) {
-    // Abstract the numerical part from the dag
-    // TODO: what is the best place to have this
-    abstractNumericalPart(*sketch);
-  }
   
   if(false){
 		/* Eliminates uninterpreted functions */
@@ -833,9 +828,45 @@ int InterpreterEnvironment::doallpairs() {
 
 
 
+int InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
+    Assert(status==READY, "You can't do this if you are UNSAT");
+    ++assertionStep;
+    
+    ofstream dagfile;
+    dagfile.open("/afs/csail.mit.edu/u/j/jinala/symdiff/dreal/" + benchName() + ".dag");
+    dag->mrprint(dagfile);
+    dagfile.close();
+    reasSolver->addProblem(dag);
+    
+    int solveCode = 0;
+    try{
+        solveCode = reasSolver->solve();
+        reasSolver->get_control_map(currentControls);
+    }catch(SolverException* ex){
+        cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
+        status=UNSAT;
+        return ex->code + 2;
+    }catch(BasicError& be){
+        reasSolver->get_control_map(currentControls);
+        cout<<"ERROR: "<<basename()<<endl;
+        status=UNSAT;
+        return 3;
+    }
+    if( !solveCode ){
+        status=UNSAT;				
+        return 1;	
+    }
+    
+    return 0;
+}
 
+    
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
+
+    if (params.numericalSolver) {
+        return assertDAGNumerical(dag, out);
+    }
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
@@ -1009,7 +1040,6 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	return result;
 }
 
-bool hasFloatInputs(bool_node* node) {
   //vector<bool_node*> parents = node->parents();
 	for (auto it = node->p_begin(); it != node->p_end(); ++it) {
     if ((*it) != NULL && (*it)->getOtype() == OutType::FLOAT) return true;

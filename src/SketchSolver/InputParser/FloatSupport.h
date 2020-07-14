@@ -69,6 +69,7 @@ public:
 		floatfuns["tan_math"] = tan;
 		floatfuns["sqrt_math"] = sqrt;
 		floatfuns["log_math"] = tlog;
+		floatfuns["exp_math"] = exp;
 	}
 
 	bool hasFun(const string& name) {
@@ -273,8 +274,8 @@ template<typename Op>
 inline
 int FloatOp<Op>::operator()(int x, int y) {
 	Op op;
-	float xf = fm.getFloat(x);
-	float yf = fm.getFloat(y);
+	double xf = fm.getFloat(x);
+	double yf = fm.getFloat(y);
 	return fm.getIdx(op(xf, yf));
 }
 
@@ -293,7 +294,7 @@ public:
 
 
 inline int FloatFun::operator()(int x) {
-	float xf = fm.getFloat(x);
+	double xf = fm.getFloat(x);
 	return fm.getIdx(f(xf));
 }
 

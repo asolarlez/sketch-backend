@@ -467,6 +467,22 @@ class bool_node{
     virtual void replace_child_inParents(bool_node* ori, bool_node* replacement);
     void neighbor_replace(bool_node* replacement);
     void replace_child(bool_node* ori, bool_node* replacement);
+	
+	bool hasFloatParent() {
+		const vector<bool_node*>& parents = this->parents();
+		for (int i = 0; i < parents.size(); i++) {
+			if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
+		}
+		return false;
+	}
+	
+	bool hasFloatChild() {
+		FastSet<bool_node> children = this->children;
+		for(child_iter it = children.begin(); it != children.end(); ++it){
+			if ((*it)->getOtype() == OutType::FLOAT) return true;
+		}
+		return false;
+	}
 };
 
 
@@ -687,7 +703,7 @@ class ARR_CREATE_node:public bool_node{
 	}
 
     
-    virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
+	virtual void accept(NodeVisitor& visitor) { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new ARR_CREATE_node(*this, copyChildren);  };
     virtual void outDagEntry(ostream& out) const{
         if(arguments(0) != NULL){
@@ -1320,13 +1336,21 @@ public:
 	bool isTuple;
 	string tupleName;
 	bool spAngelic;
+		bool isSpecial;
 	int max;
 	vector<string> predecessors;
+		bool hasRange;
+		double low;
+		double high;
 
 private:
-	CTRL_node(bool toMinimize = false) :INTER_node(CTRL), kind(0), arrSz(-1), spAngelic(false), spConcretize(false), max(-1), isFloat(false) { if (toMinimize) { this->kind = MINIMIZE; } }
-	CTRL_node(unsigned kind_) :INTER_node(CTRL), arrSz(-1), spAngelic(false), spConcretize(false), max(-1), isFloat(false), isTuple(false) { this->kind = kind_; }
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true) : INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat) {
+
+    CTRL_node(bool toMinimize = false) :INTER_node(CTRL), kind(0), arrSz(-1), spAngelic(false), spConcretize(false), max(-1), isFloat(false), isSpecial(false), hasRange(false) { if (toMinimize) { this->kind = MINIMIZE; } }
+	
+	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false), hasRange(false) {  this->kind = kind_;}
+	
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high) {
+	
 		this->kind = bn.kind; this->arrSz = bn.arrSz;
 
 	}
@@ -1348,8 +1372,13 @@ public:
 		return name;
 	}
   void setPredecessors(const vector<string>& parents_) {
-	  predecessors = parents_;
-  }
+  predecessors = parents_;}
+	void setRange(double low_, double high_) {
+		hasRange = true;
+		low = low_;
+		high = high_;
+	}
+  
   void special_concretize(int max_) {
     spConcretize = true;
     max = max_;
@@ -1361,6 +1390,10 @@ public:
   void setFloat() {
     isFloat = true;
   }
+	
+	void setSpecial() {
+		isSpecial = true;
+	}
     void setTuple (const string& name) {
         tupleName = name;
         isTuple = true;
@@ -1435,6 +1468,14 @@ public:
 		ss<<" "<<get_name()<<" ";//")) ";
 		return ss.str();
 	}
+    virtual string mrprint()const{
+        stringstream str;
+        str<<id<<" = "<<get_tname()<<" "<<getOtype()->str()<<" "<<name<<" "<<nbits;
+        if (hasRange) {
+            str << " " << low << " " << high;
+        }
+        return str.str();
+    }
 };
 
 

@@ -93,6 +93,19 @@ class CommandLineArgs{
   string erSimEvalFName;
   bool numericalSolver;
   bool nativeInts;
+	string numericalSolverMode;
+	int smoothingMode;
+	int optMode;
+    bool checkInput;
+    string partialInput;
+    bool relaxBoolHoles;
+    int numTries;
+    bool disableSatSuggestions;
+    bool disableUnsatSuggestions;
+    int conflictCutoff;
+    int maxRestarts;
+    int costOption;
+    bool numdebug;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
   BoundMode boundmode;
   bool symbolic;
@@ -153,6 +166,7 @@ class CommandLineArgs{
 		simplifycex = "NOSIM";
 		setMemo = true;
 		debug = false;
+		numdebug = false;
 		superChecks = false;
 		randBnd = -1;
 		lightVerif = false;
@@ -174,9 +188,21 @@ class CommandLineArgs{
 	epsilon = 0.000001f;
     numericalSolver = false;
 	nativeInts = false;
+		numericalSolverMode = "";
+		smoothingMode = 0;
+		optMode = 0;
 	erSimEvalFName = "";
 	custIntSize = 5;
 	symbolic = true;
+        checkInput = false;
+        partialInput = "";
+        relaxBoolHoles = false;
+        numTries = 1;
+        disableSatSuggestions = false;
+        disableUnsatSuggestions = false;
+        conflictCutoff = 1;
+        maxRestarts = 10;
+        costOption = 1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -185,6 +211,11 @@ class CommandLineArgs{
         }
 		if( string(argv[ii]) == "-debug" ){	      
 	      debug = true;
+	      input_idx = ii+1;
+		  continue;
+	    }
+	    if( string(argv[ii]) == "-numdebug" ){	      
+	      numdebug = true;
 	      input_idx = ii+1;
 		  continue;
 	    }
@@ -214,7 +245,81 @@ class CommandLineArgs{
         input_idx = ii+1;
         continue;
       }
-      if( string(argv[ii]) == "-outputSat" ){
+			if( string(argv[ii]) == "-numericalsolvermode" ){
+				Assert(ii<(argc-1), "-numericalsolvermode needs an extra parameter");
+				numericalSolverMode = argv[ii+1];
+				cout<<"numerical solver mode = "<<numericalSolverMode<<endl;
+				Assert(numericalSolverMode == "ONLY_SMOOTHING" || numericalSolverMode == "FULLY_SEPARATED" || numericalSolverMode=="INTERACTIVE" || numericalSolverMode == "SMOOTHING_SAT",
+						 "The argument to numericalsolvermode should be one of ONLY_SMOOTHING, FULLY_SEPARATED, INTERACTIVE, SMOOTHING_SAT.");
+				input_idx = ii+2;
+				continue;
+			}
+			if( string(argv[ii]) == "-smoothingmode" ){
+				Assert(ii<(argc-1), "-smoothingmode needs an extra parameter");
+				smoothingMode = atoi(argv[ii+1]);
+				cout<<"smoothing mode = "<<smoothingMode<<endl;
+				input_idx = ii+2;
+				continue;
+			}
+			if( string(argv[ii]) == "-optmode" ){
+				Assert(ii<(argc-1), "-optmode needs an extra parameter");
+				optMode = atoi(argv[ii+1]);
+				cout<<"optimization mode = "<<optMode<<endl;
+				input_idx = ii+2;
+				continue;
+			}
+			
+            if (string(argv[ii]) == "-checkinput") {
+                checkInput = true;
+                input_idx = ii+1;
+                continue;
+            }
+            if (string(argv[ii]) == "-partialinput") {
+                Assert(ii < (argc - 1), "-partialinput needs an extra parameter");
+                partialInput = argv[ii+1];
+                input_idx = ii+2;
+                continue;
+            }
+            if (string(argv[ii]) == "-relaxboolholes") {
+                relaxBoolHoles = true;
+                input_idx = ii+1;
+                continue;
+            }
+            if (string(argv[ii]) == "-numtries") {
+                Assert(ii < argc - 1, "-numtries needs an extra parameter");
+                numTries = atoi(argv[ii+1]);
+                input_idx = ii+1;
+                continue;
+            }
+          if (string(argv[ii]) == "-disablesatsuggestions") {
+              disableSatSuggestions = true;
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-disableunsatsuggestions") {
+              disableUnsatSuggestions = true;
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-conflictcutoff") {
+              Assert(ii < argc - 1, "-conflictcutoff needs an extra parameter");
+              conflictCutoff = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-maxrestarts") {
+              Assert(ii < argc - 1, "-maxrestarts needs an extra parameter");
+              maxRestarts = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
+          if (string(argv[ii]) == "-costoption") {
+              Assert(ii < argc - 1, "-costoption needs an extra parameter");
+              costOption = atoi(argv[ii+1]);
+              input_idx = ii+1;
+              continue;
+          }
+			if( string(argv[ii]) == "-outputSat" ){
 	      outputSat = true;
 	      input_idx = ii+1;
 		  continue;
