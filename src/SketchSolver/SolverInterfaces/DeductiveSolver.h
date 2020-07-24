@@ -13,7 +13,7 @@ public:
 	{
 
 	}
-
+	virtual void backtrack(int level) {}
 	void setSolution(BooleanDAG* sol) {
 		auto funs = sol->getNodesByType(bool_node::UFUN);
 		for (auto it = funs.begin(); it != funs.end(); ++it) {
@@ -215,6 +215,11 @@ public:
 		}
 		out << "}";		
 	}
+	virtual void getControls(map<string, string>& values) {
+		stringstream str;
+		print(str);
+		values["_GEN_deductive"] = str.str();
+	}
 
 };
 
@@ -228,22 +233,26 @@ class DeductiveSolver {
 
 	vector<Polynomial*> equations;
 
-	void print() {
-		dag->lprint(cout);
+	void print(ostream& out) {
+		dag->lprint(out);
 		dopt.printNewNodes();
 		for (auto it = equations.begin(); it != equations.end(); ++it) {
 			(*it)->cleanup(dopt);
 			cout << " EQ 0 == ";
-			(*it)->lprint(cout);
+			(*it)->lprint(out);
 		}
 
 		partialSols.print();
 	}
 
-
+	virtual void getControls(map<string, string>& values) {
+		stringstream str;
+		print(str);
+		values["_GEN_deductive"] = str.str();
+	}
 
 	vector<pair<PartialSolIndex, bool_node*> > solveEquations() {
-		print();		
+		print(cout);		
 
 		//First, solve all the easy stuff. Find all variables that can be
 		// set directly from one equation.
@@ -268,7 +277,7 @@ class DeductiveSolver {
 			(*it)->cleanup(dopt);			
 		}
 
-		print();
+		print(cout);
 		
 
 		return elimNextVars(equations.begin(), equations.end(), partialSols, dopt, store);

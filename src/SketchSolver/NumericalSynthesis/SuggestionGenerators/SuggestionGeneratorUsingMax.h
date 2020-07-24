@@ -147,7 +147,7 @@ public:
                     conflict.push_back(make_tuple(*it, minid));
                 }
 
-                if ((*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= 0.2) {
+                if ((*dag)[*it]->mother()->type == bool_node::NOT &&  minerror >= 0.2) {
                     break;
                 }
             }
@@ -167,7 +167,7 @@ public:
         vector<int> conflictingAsserts;
         for (auto it = assertConstraints.begin(); it != assertConstraints.end(); it++) {
             dassert = actualEval->getErrorOnConstraint(*it);
-            if ( (*dag)[*it]->mother->type != bool_node::NOT) {
+            if ( (*dag)[*it]->mother()->type != bool_node::NOT) {
                 continue;
             }
             if (true) {
@@ -231,11 +231,11 @@ public:
                     } 
                 }
                 //Assert(minerror > 0.0, "something is wrong");
-                if (minid != -1 && (*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= -0.01) {
+                if (minid != -1 && (*dag)[*it]->mother()->type == bool_node::NOT &&  minerror >= -0.01) {
                     clause->add(*it, minid);
                 }
 
-                if ((*dag)[*it]->mother->type == bool_node::NOT &&  minerror >= 0.2) {
+                if ((*dag)[*it]->mother()->type == bool_node::NOT &&  minerror >= 0.2) {
                     break;
                 }
             }
@@ -272,7 +272,7 @@ public:
             for (int i = newDag->size() - 1; i >= 0; i--) {
                 bool_node* n = (*newDag)[i];
                 if (n->type == bool_node::ASSERT) {
-                    cid = n->mother->id;
+                    cid = n->mother()->id;
                     break;
                 }
             }

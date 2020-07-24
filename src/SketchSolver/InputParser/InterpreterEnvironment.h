@@ -132,6 +132,8 @@ class InterpreterEnvironment
 	vector<vector<Tvalue> > statehistory;
 	ClauseExchange* exchanger;
 	FloatManager floats;
+	map<string, BooleanDAG*> numericalAbsMap;
+
 
 	string findName() {
 		stringstream s;
@@ -343,7 +345,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
 	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
-    int assertDAGNumerical(BooleanDAG* dag, ostream& out);
+	SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 

@@ -368,7 +368,7 @@ bool Solver::addClause(vec<Lit>& ps, uint32_t kind)
 
 SynthInSolver* Solver::addSynth(Synthesizer* s) {
     int idx = sins.size();
-    SynthInSolver* syn = new SynthInSolver(s, 100, 0, idx); // TODO: remove the numbers
+    SynthInSolver* syn = new SynthInSolver(s, 100, 0, idx, this); // TODO: remove the numbers
     sins.push(syn);
     suggestions.push();
     return syn;

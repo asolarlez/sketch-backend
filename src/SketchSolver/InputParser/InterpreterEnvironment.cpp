@@ -828,7 +828,7 @@ int InterpreterEnvironment::doallpairs() {
 
 
 
-int InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
+SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
     
@@ -845,19 +845,19 @@ int InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
     }catch(SolverException* ex){
         cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
         status=UNSAT;
-        return ex->code + 2;
+		return SATSolver::UNSATISFIABLE; // ex->code + 2;
     }catch(BasicError& be){
         reasSolver->get_control_map(currentControls);
         cout<<"ERROR: "<<basename()<<endl;
         status=UNSAT;
-        return 3;
+        return SATSolver::UNSATISFIABLE;
     }
     if( !solveCode ){
         status=UNSAT;				
-        return 1;	
+        return SATSolver::UNSATISFIABLE;
     }
     
-    return 0;
+    return SATSolver::SATISFIABLE;
 }
 
     
@@ -1040,6 +1040,7 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	return result;
 }
 
+bool hasFloatInputs(bool_node* node) {
   //vector<bool_node*> parents = node->parents();
 	for (auto it = node->p_begin(); it != node->p_end(); ++it) {
     if ((*it) != NULL && (*it)->getOtype() == OutType::FLOAT) return true;
@@ -1062,7 +1063,7 @@ void print(set<bool_node*> nodes) {
     cout << (*it)->lprint() << endl;
   }
 }
-
+/*
 void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
   vector<bool_node*> newnodes;
   set<bool_node*> seenNodes;
@@ -1211,3 +1212,4 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 }
 
 
+*/

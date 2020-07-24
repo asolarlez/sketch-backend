@@ -24,7 +24,12 @@ class GtpSyn : public Synthesizer {
 public:
 	GtpSyn(FloatManager& _fm) :Synthesizer(_fm) {
 		
+
 	}
+
+	virtual void backtrack(int level) {}
+
+
 	virtual bool synthesis(vec<Lit>& suggestions) {
 		conflict.clear();
 		int gtmin = 1000000;
@@ -84,4 +89,10 @@ public:
 	virtual void print(ostream& out) {
 		out << "( " << theta << "< IN_0" << ")";
 	}
+	virtual void getControls(map<string, string>& values) {
+		stringstream str;
+		print(str);
+		values["_GEN_gtp"] = str.str();
+	}
+
 };

@@ -77,12 +77,12 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 		return new GtpSyn(_fm);
 	} else if (name == "_GEN_eratom") {
     return new ERAtomSyn(_fm);
-  } else if (name.find("_GEN_NUM_SYNTH") == 0) {
+  } /*else if (name.find("_GEN_NUM_SYNTH") == 0) {
     return new NumericalSolver(_fm, numericalAbsMap[name]);
-  }
+  }*/
   else if (name == "_GEN_Algebraic") {
 	  return new DeductiveSolution(name, _fm);
-  }else if (mismatch(arithExpr.begin(), arithExpr.end(), name.begin()).first == arithExpr.end()){
+  }else /* if (mismatch(arithExpr.begin(), arithExpr.end(), name.begin()).first == arithExpr.end()){
 	  ArithExprSyn* ret =  new ArithExprSyn(_fm);
 	  ret->setupParams(name);
 	  return ret;
@@ -92,7 +92,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
 	  ret->setupParams(name);
 	  return ret;
   }
-  else{
+  else*/{
 
 	  Assert(false,"Invalid synthesizer name: " + name);
   }

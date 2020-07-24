@@ -66,6 +66,7 @@ public:
 			delete ab;
 		}
 	}
+	virtual void backtrack(int level) {}
 	void setupParams(string name) {
 		this->name = name;
 		string ncopy = name;

@@ -29,10 +29,10 @@ public:
 		errors.resize(nbetas);
 	}
 	~LocalState() {
-		for (int i = 0; i < localSols.size(); i++) {
+		for (size_t i = 0; i < localSols.size(); i++) {
 			gsl_vector_free(localSols[i]);
 		}
-		for (int i = 0; i < startStates.size(); i++) {
+		for (size_t i = 0; i < startStates.size(); i++) {
 			gsl_vector_free(startStates[i]);
 		}
 	}

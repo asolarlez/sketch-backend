@@ -113,7 +113,7 @@ void SmoothAutoDiff::visit(ARRACC_node& node )  {
                 ValueGrad::vg_copy(mval, val);
             }
         } else {
-            DistanceGrad* cond = d(node.mother, cur_idx);
+            DistanceGrad* cond = d(node.mother(), cur_idx);
             Assert(cond->set, "Cond must be set");
             bool v = cond->dist >= 0.0;
             if (v == 1) {
@@ -129,8 +129,8 @@ void SmoothAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node, cur_idx);
-	ValueGrad* mval = v(node.mother, cur_idx);
-	ValueGrad* fval = v(node.father, cur_idx);
+	ValueGrad* mval = v(node.mother(), cur_idx);
+	ValueGrad* fval = v(node.father(), cur_idx);
 	ValueGrad::vg_div(mval, fval, val);
 }
 
@@ -143,7 +143,7 @@ void SmoothAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node, cur_idx);
-	ValueGrad* mval = v(node.mother, cur_idx);
+	ValueGrad* mval = v(node.mother(), cur_idx);
 	ValueGrad::vg_neg(mval, val);
 }
 
@@ -171,9 +171,9 @@ void SmoothAutoDiff::visit( LT_node& node ) {
 	DistanceGrad* dg = d(node, cur_idx);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SmoothAutoDiff for lt with integer parents");
-	ValueGrad* mval = v(node.mother, cur_idx);
-	ValueGrad* fval = v(node.father, cur_idx);
+	Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: SmoothAutoDiff for lt with integer parents");
+	ValueGrad* mval = v(node.mother(), cur_idx);
+	ValueGrad* fval = v(node.father(), cur_idx);
 	
 	ValueGrad::vg_lt(mval, fval, dg);
 }
@@ -186,8 +186,8 @@ void SmoothAutoDiff::visit( EQ_node& node ) {
 void SmoothAutoDiff::visit( AND_node& node ) {
 	DistanceGrad* dg = d(node, cur_idx);
     // Compute the value from the parents
-    DistanceGrad* mdist = d(node.mother, cur_idx);
-    DistanceGrad* fdist = d(node.father, cur_idx);
+    DistanceGrad* mdist = d(node.mother(), cur_idx);
+    DistanceGrad* fdist = d(node.father(), cur_idx);
 	if (mdist->set && fdist->set) {
 		DistanceGrad::dg_and(mdist, fdist, dg);
 	} else {
@@ -198,8 +198,8 @@ void SmoothAutoDiff::visit( AND_node& node ) {
 void SmoothAutoDiff::visit( OR_node& node ) {
 	DistanceGrad* dg = d(node, cur_idx);
 	// Compute the value from the parents
-	DistanceGrad* mdist = d(node.mother, cur_idx);
-	DistanceGrad* fdist = d(node.father, cur_idx);
+	DistanceGrad* mdist = d(node.mother(), cur_idx);
+	DistanceGrad* fdist = d(node.father(), cur_idx);
 	if (mdist->set && fdist->set) {
 		DistanceGrad::dg_or(mdist, fdist, dg);
 	} else {
@@ -209,7 +209,7 @@ void SmoothAutoDiff::visit( OR_node& node ) {
 
 void SmoothAutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node, cur_idx);
-	DistanceGrad* mdist = d(node.mother, cur_idx);
+	DistanceGrad* mdist = d(node.mother(), cur_idx);
 
 	if (mdist->set) {
 		DistanceGrad::dg_not(mdist, dg);
@@ -227,7 +227,7 @@ void SmoothAutoDiff::visit( UFUN_node& node ) {
     DistanceGrad* dg = d(node, cur_idx);
     GradUtil::default_grad(dg->grad);
 	ValueGrad* val = v(node, cur_idx);
-	ValueGrad* mval = v(node.multi_mother[0], cur_idx);
+	ValueGrad* mval = v(node.arguments(0), cur_idx);
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -251,8 +251,8 @@ void SmoothAutoDiff::visit( UFUN_node& node ) {
 
 void SmoothAutoDiff::visit( TUPLE_R_node& node) {
 	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		ValueGrad* mval = v(node.mother, cur_idx);
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		ValueGrad* mval = v(node.mother(), cur_idx);
 		ValueGrad* val = v(node, cur_idx);
 		ValueGrad::vg_copy(mval, val);
 	} else {
@@ -494,7 +494,7 @@ double SmoothAutoDiff::getSqrtError(bool_node* node) {
 }
 
 double SmoothAutoDiff::getAssertError(bool_node* node) {
-    DistanceGrad* dg = d(node->mother, 0);
+    DistanceGrad* dg = d(node->mother(), 0);
     Assert(dg->set, "Assert node is not set");
     return dg->dist;
 }

@@ -61,17 +61,17 @@ public:
                 responsibleNodes.insert(n);
             }
             if (n->type == bool_node::ASSERT || n->type == bool_node::NOT) {
-                nodes.push_back(n->mother);
+                nodes.push_back(n->mother());
             }
             if (n->type == bool_node::AND || n->type == bool_node::OR) {
                 double dist = seval->d(n);
-                double mdist = seval->d(n->mother);
-                double fdist = seval->d(n->father);
+                double mdist = seval->d(n->mother());
+                double fdist = seval->d(n->father());
                 if (dist * mdist > 0.0) {
-                    nodes.push_back(n->mother);
+                    nodes.push_back(n->mother());
                 }
                 if (dist * fdist > 0.0) {
-                    nodes.push_back(n->father);
+                    nodes.push_back(n->father());
                 }
             }
         }

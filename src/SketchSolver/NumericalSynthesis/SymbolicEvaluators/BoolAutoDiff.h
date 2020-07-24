@@ -176,7 +176,7 @@ public:
 				}
 			}
 			if (bdag[i]->type == bool_node::PLUS) {
-				cout << v(bdag[i]->mother)->getVal() << " + " << v(bdag[i]->father)->getVal() << endl;
+				cout << v(bdag[i]->mother())->getVal() << " + " << v(bdag[i]->father())->getVal() << endl;
 			}
 		}
 	}

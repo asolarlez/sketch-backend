@@ -469,9 +469,9 @@ class bool_node{
     void replace_child(bool_node* ori, bool_node* replacement);
 	
 	bool hasFloatParent() {
-		const vector<bool_node*>& parents = this->parents();
-		for (int i = 0; i < parents.size(); i++) {
-			if (parents[i] != NULL && parents[i]->getOtype() == OutType::FLOAT) return true;
+		
+		for (auto it = p_begin(); it != p_end(); ++it) {
+			if (*it != NULL && (*it)->getOtype() == OutType::FLOAT) return true;
 		}
 		return false;
 	}

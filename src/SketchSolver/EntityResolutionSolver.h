@@ -117,7 +117,7 @@ public:
 		conflict.push(getLit(im.valueid(conflictId, outpt)));
 	}
 	
-	
+	virtual void backtrack(int level) {}
 	//In[0] = tupleid, In[1] = attr , In[2] = output (bit)
 	virtual bool synthesis(vec<Lit>& suggestions) {
 		//ROHIT TODO: check if attr is set on all of them - start checking from end
@@ -375,4 +375,10 @@ public:
 		//Can be any valid Sketch code e.g. an uninterp function
 		
 	}
+	virtual void getControls(map<string, string>& values) {
+		stringstream str;
+		print(str);
+		values["_GEN_eratom"] = str.str();
+	}
+
 };

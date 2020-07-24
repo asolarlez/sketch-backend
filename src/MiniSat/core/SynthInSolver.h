@@ -153,6 +153,9 @@ namespace MSsolverNS {
 		 Finished solving, get ready to generate.
 		 */
 		virtual void finalize() = 0;
+
+		virtual void backtrack(int level) = 0;
+
 		
 		
 		/*
@@ -179,10 +182,7 @@ namespace MSsolverNS {
     
         virtual void getControls(map<string, string>& values) = 0;
 				
-		Lit getLit(int inputid, int val) {
-			Tvalue& tv = inout->getTval(inputid);
-			return tv.litForValue(val);
-		}
+		
         
         // Methods for handling input output matrix
         // (override these methods only if you have a better interface than InputMatrix)
@@ -214,7 +214,9 @@ namespace MSsolverNS {
         }
         
         virtual void getConflictLits(vec<Lit>& conf) {
-            for (int i = 0; i < conflict.size(); ++i) {
+			Assert(false, "Need to check");
+			/*
+			for (int i = 0; i < conflict.size(); ++i) {
                 int id = conflict[i];
                 Tvalue& tv = inout->getTval(id);
                 Lit l = tv.litForValue(inout->getVal(id));
@@ -223,6 +225,7 @@ namespace MSsolverNS {
             if (softConflict) {
                 conf.push(~softConflictLit);
             }
+			*/            
         }
         
         
@@ -235,10 +238,12 @@ namespace MSsolverNS {
 		Synthesizer* s;
 		int maxlevel;
 		int id;
+		Solver* solver;
 	public:
 		int solverIdx; // Stores the index of this object in the sins vectors in the miniSAT solver.
-		SynthInSolver(Synthesizer* syn, int inputs, int outputs, int idx) :s(syn), solverIdx(idx) {
+		SynthInSolver(Synthesizer* syn, int inputs, int outputs, int idx, Solver* slv) :s(syn), solverIdx(idx), solver(slv) {
 			syn->set_inout(inputs, outputs);
+			syn->set_solver(solver);
 			maxlevel = 0;
 			id = ++ID;
 		}
