@@ -37,7 +37,7 @@ void RangeDiff::visit( DST_node& node ) {
 void RangeDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
 	DistanceGrad* dg = d(node);
-	DistanceGrad* mdist = d(node.mother);
+	DistanceGrad* mdist = d(node.mother());
 	int ival = getInputValue(node); // Get the value from SAT solver
 	if (ival != DEFAULT_INP) {
 		Assert(ival == 1, "Did SAT solver set 0 for an assert?");
@@ -98,8 +98,8 @@ void RangeDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	IntervalGrad* interval = r(node);
-	IntervalGrad* minterval = r(node.mother);
-	IntervalGrad* finterval = r(node.father);
+	IntervalGrad* minterval = r(node.mother());
+	IntervalGrad* finterval = r(node.father());
 	IntervalGrad::ig_plus(minterval, finterval, interval);
 }
 
@@ -107,9 +107,9 @@ void RangeDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	IntervalGrad* interval = r(node);
-	IntervalGrad* minterval = r(node.mother);
-	IntervalGrad* finterval = r(node.father);
-	if (node.mother == node.father) { // square
+	IntervalGrad* minterval = r(node.mother());
+	IntervalGrad* finterval = r(node.father());
+	if (node.mother() == node.father()) { // square
 		IntervalGrad::ig_square(minterval, interval);
 	} else {
 		IntervalGrad::ig_times(minterval, finterval, interval);
@@ -118,11 +118,11 @@ void RangeDiff::visit( TIMES_node& node ) {
 
 void RangeDiff::visit( ARRACC_node& node ) {
 	//cout << "Visiting ARRACC node" << endl;
-	DistanceGrad* dist = d(node.mother);
+	DistanceGrad* dist = d(node.mother());
 	if (!isFloat(node)) {
 		Assert(node.getOtype() == OutType::BOOL, "NYI: arrac with ints");
-		DistanceGrad* mdist = d(node.multi_mother[0]);
-		DistanceGrad* fdist = d(node.multi_mother[1]);
+		DistanceGrad* mdist = d(node.arguments(0));
+		DistanceGrad* fdist = d(node.arguments(1));
 		DistanceGrad* dg = d(node);
 		DistanceGrad::dg_ite(dist, mdist, fdist, dg);
 		
@@ -140,10 +140,10 @@ void RangeDiff::visit( ARRACC_node& node ) {
 	}
 #if FINE_GRAIN_RANGES
 	if (dist->set) {
-		Assert(node.multi_mother.size() == 2, "NYI: Fine grained range for ARRACC of size > 2");
+		Assert(node.nargs() == 2, "NYI: Fine grained range for ARRACC of size > 2");
 		IntervalGrad* interval = r(node);
-		IntervalGrad* minterval = r(node.multi_mother[0]);
-		IntervalGrad* finterval = r(node.multi_mother[1]);
+		IntervalGrad* minterval = r(node.arguments(0));
+		IntervalGrad* finterval = r(node.arguments(1));
 		
 		if (!isFloat(node)) {
 			if (dist->dist >= 0) {
@@ -163,8 +163,8 @@ void RangeDiff::visit( ARRACC_node& node ) {
 	// take union of the two intervals
 	IntervalGrad* interval = r(node);
 	vector<IntervalGrad*> mIntervals;
-	for (int i = 0; i < node.multi_mother.size(); i++) {
-		mIntervals.push_back(r(node.multi_mother[i]));
+	for (int i = 0; i < node.nargs(); i++) {
+		mIntervals.push_back(r(node.arguments(i)));
 	}
 	IntervalGrad::ig_union(mIntervals, interval);
 }
@@ -173,8 +173,8 @@ void RangeDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	IntervalGrad* interval = r(node);
-	IntervalGrad* minterval = r(node.mother);
-	IntervalGrad* finterval = r(node.father);
+	IntervalGrad* minterval = r(node.mother());
+	IntervalGrad* finterval = r(node.father());
 	IntervalGrad::ig_div(minterval, finterval, interval);
 }
 
@@ -187,7 +187,7 @@ void RangeDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	IntervalGrad* interval = r(node);
-	IntervalGrad* minterval = r(node.mother);
+	IntervalGrad* minterval = r(node.mother());
 	IntervalGrad::ig_neg(minterval, interval);
 }
 
@@ -221,9 +221,9 @@ void RangeDiff::visit( LT_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: rangediff for lt with integer parents");
-	IntervalGrad* minterval = r(node.mother);
-	IntervalGrad* finterval = r(node.father);
+	Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: rangediff for lt with integer parents");
+	IntervalGrad* minterval = r(node.mother());
+	IntervalGrad* finterval = r(node.father());
 	
 	IntervalGrad::ig_lt(minterval, finterval, dg);
 	
@@ -248,8 +248,8 @@ void RangeDiff::visit( AND_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Compute the value from the parents
-	DistanceGrad* mdist = d(node.mother);
-	DistanceGrad* fdist = d(node.father);
+	DistanceGrad* mdist = d(node.mother());
+	DistanceGrad* fdist = d(node.father());
 	
 	DistanceGrad::dg_and(mdist, fdist, dg);
 	
@@ -269,8 +269,8 @@ void RangeDiff::visit( OR_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Compute the value from the parents
-	DistanceGrad* mdist = d(node.mother);
-	DistanceGrad* fdist = d(node.father);
+	DistanceGrad* mdist = d(node.mother());
+	DistanceGrad* fdist = d(node.father());
 	
 	DistanceGrad::dg_or(mdist, fdist, dg);
 	
@@ -288,7 +288,7 @@ void RangeDiff::visit( OR_node& node ) {
 
 void RangeDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
-	DistanceGrad* mdist = d(node.mother);
+	DistanceGrad* mdist = d(node.mother());
 	
 	DistanceGrad::dg_not(mdist, dg);
 	
@@ -311,7 +311,7 @@ void RangeDiff::visit( ARRASS_node& node ) {
 
 void RangeDiff::visit( UFUN_node& node ) {
 	IntervalGrad* interval = r(node);
-	IntervalGrad* minterval = r(node.multi_mother[0]);
+	IntervalGrad* minterval = r(node.arguments(0));
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -338,9 +338,9 @@ void RangeDiff::visit( UFUN_node& node ) {
 }
 
 void RangeDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		IntervalGrad* minterval = r(node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		IntervalGrad* minterval = r(node.mother());
 		IntervalGrad* interval = r(node);
 		IntervalGrad::ig_copy(minterval, interval);
 	} else {

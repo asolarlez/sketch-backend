@@ -130,11 +130,11 @@ BoolAbstractor::visit(NEG_node &node)
 void
 BoolAbstractor::visit(LT_node &node)
 {
-    if (node.mother->getOtype() == OutType::FLOAT) {
+    if (node.mother()->getOtype() == OutType::FLOAT) {
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
-        nvar.setSize(1);
+        //nvar.setSize(1);
     } else {
         NodesToSolver::visit(node);
     }
@@ -146,11 +146,11 @@ BoolAbstractor::visit(LT_node &node)
 void
 BoolAbstractor::visit(EQ_node &node)
 {
-    if (node.mother->getOtype() == OutType::FLOAT) {
+    if (node.mother()->getOtype() == OutType::FLOAT) {
         // create a new variable as the output
         Tvalue& nvar = node_ids[node.id];
         nvar = dir.newAnonymousVar(1);
-        nvar.setSize(1);
+        //nvar.setSize(1);
     } else {
         NodesToSolver::visit(node);
     }

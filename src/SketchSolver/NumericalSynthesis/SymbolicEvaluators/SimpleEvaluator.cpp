@@ -27,7 +27,7 @@ void SimpleEvaluator::visit( DST_node& node ) {
 
 void SimpleEvaluator::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
-	setvalue(node, d(node.mother));
+	setvalue(node, d(node.mother()));
 }
 
 void SimpleEvaluator::visit( CTRL_node& node ) {
@@ -63,27 +63,27 @@ void SimpleEvaluator::visit( CTRL_node& node ) {
 void SimpleEvaluator::visit( PLUS_node& node ) {
   //cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
-	setvalue(node, d(node.mother) + d(node.father));
+	setvalue(node, d(node.mother()) + d(node.father()));
 }
 
 void SimpleEvaluator::visit( TIMES_node& node ) {
   //cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
-	setvalue(node, d(node.mother)*d(node.father));
+	setvalue(node, d(node.mother())*d(node.father()));
 }
 
 void SimpleEvaluator::visit( ARRACC_node& node ) {
   //cout << "Visiting ARRACC node" << endl;
-	Assert(node.multi_mother.size() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
-	double m = d(node.mother);
+	Assert(node.nargs() == 2, "NYI: SimpleEvaluator for ARRACC of size > 2");
+	double m = d(node.mother());
 	int idx = (m >= 0) ? 1 : 0;
-	setvalue(node, d(node.multi_mother[idx]));
+	setvalue(node, d(node.arguments(idx)));
 }
 
 void SimpleEvaluator::visit( DIV_node& node ) {
   //cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
-	setvalue(node, d(node.mother)/d(node.father));
+	setvalue(node, d(node.mother())/d(node.father()));
 }
 
 void SimpleEvaluator::visit( MOD_node& node ) {
@@ -94,7 +94,7 @@ void SimpleEvaluator::visit( MOD_node& node ) {
 void SimpleEvaluator::visit( NEG_node& node ) {
   //cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
-	setvalue(node, -d(node.mother));
+	setvalue(node, -d(node.mother()));
 }
 
 void SimpleEvaluator::visit( CONST_node& node ) {
@@ -113,8 +113,8 @@ void SimpleEvaluator::visit( CONST_node& node ) {
 
 void SimpleEvaluator::visit( LT_node& node ) {
 	//Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SimpleEvaluator for lt with integer parents");
-	double m = d(node.mother);
-	double f = d(node.father);
+	double m = d(node.mother());
+	double f = d(node.father());
 	double d = f - m;
 	//if (d == 0) d = -MIN_VALUE;
 	//cout << node.lprint() << " " << m << " " << f << " " << d << endl;
@@ -127,21 +127,21 @@ void SimpleEvaluator::visit( EQ_node& node ) {
 }
 
 void SimpleEvaluator::visit( AND_node& node ) {
-	double m = d(node.mother);
-	double f = d(node.father);
+	double m = d(node.mother());
+	double f = d(node.father());
 	double d = (m < f) ? m : f;
 	setvalue(node, d);
 }
 
 void SimpleEvaluator::visit( OR_node& node ) {
-	double m = d(node.mother);
-	double f = d(node.father);
+	double m = d(node.mother());
+	double f = d(node.father());
 	double d = (m > f) ? m : f;
 	setvalue(node, d);
 }
 
 void SimpleEvaluator::visit( NOT_node& node ) {
-	setvalue(node, -d(node.mother));
+	setvalue(node, -d(node.mother()));
 }
 
 void SimpleEvaluator::visit( ARRASS_node& node ) {
@@ -151,7 +151,7 @@ void SimpleEvaluator::visit( ARRASS_node& node ) {
 
 void SimpleEvaluator::visit( UFUN_node& node ) {
 	const string& name = node.get_ufname();
-	double m = d(node.multi_mother[0]);
+	double m = d(node.arguments(0));
 	double d;
 	if (name == "_cast_int_float_math") {
 		d = m;
@@ -175,9 +175,9 @@ void SimpleEvaluator::visit( UFUN_node& node ) {
 }
 
 void SimpleEvaluator::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-    Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		setvalue(node, d(node.mother));
+	if (node.mother()->type == bool_node::UFUN) {
+    Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		setvalue(node, d(node.mother()));
 	} else {
     Assert(false, "NYI");
   }
@@ -218,12 +218,12 @@ double SimpleEvaluator::getErrorOnConstraint(int nodeid) {
 
 double SimpleEvaluator::getSqrtError(bool_node* node) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     return d(x);
 }
 
 double SimpleEvaluator::getAssertError(bool_node* node) {
-    return d(node->mother);
+    return d(node->mother());
 }
 
 double SimpleEvaluator::getBoolCtrlError(bool_node* node) {

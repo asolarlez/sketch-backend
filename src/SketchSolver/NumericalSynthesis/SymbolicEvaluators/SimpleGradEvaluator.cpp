@@ -62,8 +62,8 @@ void SimpleGradEvaluator::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
@@ -71,22 +71,22 @@ void SimpleGradEvaluator::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_times(mval, fval, val);
 }
 
 void SimpleGradEvaluator::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: SimpleGradEvaluator ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: SimpleGradEvaluator ARRACC of size > 2");
 	if (node.getOtype() == OutType::BOOL) {
 	   Assert(false, "bool arracc");	
     }
 	
 	if (node.getOtype() == OutType::FLOAT) {
 		ValueGrad* val  = v(node);
-        ValueGrad* mval = v(node.multi_mother[0]);
-        ValueGrad* fval = v(node.multi_mother[1]);
-        ValueGrad* cval = v(node.mother);
+        ValueGrad* mval = v(node.arguments(0));
+        ValueGrad* fval = v(node.arguments(1));
+        ValueGrad* cval = v(node.mother());
 
         if (cval->getVal() >= 0) {
             ValueGrad::vg_copy(fval, val);
@@ -100,8 +100,8 @@ void SimpleGradEvaluator::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_div(mval, fval, val);
 }
 
@@ -114,7 +114,7 @@ void SimpleGradEvaluator::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
+	ValueGrad* mval = v(node.mother());
 	ValueGrad::vg_neg(mval, val);
 }
 
@@ -141,9 +141,9 @@ void SimpleGradEvaluator::visit( LT_node& node ) {
 	ValueGrad* vg = v(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: SimpleGradEvaluator for lt with integer parents");
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: SimpleGradEvaluator for lt with integer parents");
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	
 	ValueGrad::vg_lt(mval, fval, vg);
 }
@@ -156,8 +156,8 @@ void SimpleGradEvaluator::visit( EQ_node& node ) {
 void SimpleGradEvaluator::visit( AND_node& node ) {
 	ValueGrad* vg = v(node);
     // Compute the value from the parents
-    ValueGrad* mdist = v(node.mother);
-    ValueGrad* fdist = v(node.father);
+    ValueGrad* mdist = v(node.mother());
+    ValueGrad* fdist = v(node.father());
     if (mdist->getVal() < fdist->getVal()) {
         ValueGrad::vg_copy(mdist, vg);
     } else {
@@ -168,8 +168,8 @@ void SimpleGradEvaluator::visit( AND_node& node ) {
 void SimpleGradEvaluator::visit( OR_node& node ) {
 	ValueGrad* vg = v(node);
     // Compute the value from the parents
-    ValueGrad* mdist = v(node.mother);
-    ValueGrad* fdist = v(node.father);
+    ValueGrad* mdist = v(node.mother());
+    ValueGrad* fdist = v(node.father());
     if (mdist->getVal() > fdist->getVal()) {
         ValueGrad::vg_copy(mdist, vg);
     } else {
@@ -179,7 +179,7 @@ void SimpleGradEvaluator::visit( OR_node& node ) {
 
 void SimpleGradEvaluator::visit( NOT_node& node ) {
 	ValueGrad* vg = v(node);
-    ValueGrad* mdist = v(node.mother);
+    ValueGrad* mdist = v(node.mother());
 
 	ValueGrad::vg_not(mdist, vg);
 }
@@ -191,7 +191,7 @@ void SimpleGradEvaluator::visit( ARRASS_node& node ) {
 
 void SimpleGradEvaluator::visit( UFUN_node& node ) {
     ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.multi_mother[0]);
+	ValueGrad* mval = v(node.arguments(0));
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -214,9 +214,9 @@ void SimpleGradEvaluator::visit( UFUN_node& node ) {
 }
 
 void SimpleGradEvaluator::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		ValueGrad* mval = v(node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		ValueGrad* mval = v(node.mother());
 		ValueGrad* val = v(node);
 		ValueGrad::vg_copy(mval, val);
 	} else {
@@ -282,7 +282,7 @@ double SimpleGradEvaluator::getErrorOnConstraint(int nodeid, gsl_vector* grad) {
 
 double SimpleGradEvaluator::getSqrtError(bool_node* node, gsl_vector* grad) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x);
     Assert(val->set, "Sqrt node is not set");
     gsl_vector_memcpy(grad, val->getGrad());
@@ -290,7 +290,7 @@ double SimpleGradEvaluator::getSqrtError(bool_node* node, gsl_vector* grad) {
 }
 
 double SimpleGradEvaluator::getAssertError(bool_node* node, gsl_vector* grad) {
-    ValueGrad* vg = v(node->mother);
+    ValueGrad* vg = v(node->mother());
     Assert(vg->set, "Assert node is not set");
     gsl_vector_memcpy(grad, vg->getGrad());
     return vg->getVal();
@@ -347,14 +347,14 @@ double SimpleGradEvaluator::getErrorOnConstraint(int nodeid) {
 
 double SimpleGradEvaluator::getSqrtError(bool_node* node) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x);
     Assert(val->set, "Sqrt node is not set");
     return val->getVal();
 }
 
 double SimpleGradEvaluator::getAssertError(bool_node* node) {
-    ValueGrad* vg = v(node->mother);
+    ValueGrad* vg = v(node->mother());
     Assert(vg->set, "Assert node is not set");
     return vg->getVal();
 }

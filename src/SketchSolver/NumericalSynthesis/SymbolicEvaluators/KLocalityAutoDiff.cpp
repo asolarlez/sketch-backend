@@ -117,13 +117,13 @@ void KLocalityAutoDiff::mergePaths(vector<tuple<double, vector<tuple<int, int, i
 
 
 void KLocalityAutoDiff::getMergeNodesBinop(bool_node* n) {
-    int msize = size(n->mother);
-    int fsize = size(n->father);
+    int msize = size(n->mother());
+    int fsize = size(n->father());
     vector<tuple<double, vector<tuple<int, int, int>>, Path*>> validPaths;
     for (int i = 1; i <= msize; i++) {
-        Path* mpath = path(n->mother, i);
+        Path* mpath = path(n->mother(), i);
         for (int j = 1; j <= fsize; j++) {
-            Path* fpath = path(n->father, j);
+            Path* fpath = path(n->father(), j);
             if (Path::isCompatible(mpath, fpath)) {
                 Path* newpath = Path::pIntersect(mpath, fpath);
                 //pathStrings.insert(newpath->toString());
@@ -142,7 +142,7 @@ void KLocalityAutoDiff::getMergeNodesBinop(bool_node* n) {
         MergeNodesList* l = new MergeNodesList();
         vector<tuple<int, int, int>>& pairs = get<1>(validPaths[i-1]);
         for (auto it = pairs.begin(); it != pairs.end(); it++) {
-                l->add(n->mother->id, get<0>(*it), n->father->id, get<1>(*it));
+                l->add(n->mother()->id, get<0>(*it), n->father()->id, get<1>(*it));
         }
         mergeNodes[n->id][i] = l;
     } 
@@ -162,9 +162,9 @@ void KLocalityAutoDiff::getMergeNodesUnop(bool_node* n, bool_node* m) {
 
 void KLocalityAutoDiff::getMergeNodesArracc(bool_node* node) {
     ARRACC_node* n = (ARRACC_node*) node;
-    bool_node* cnode = n->mother;
-    bool_node* mnode = n->multi_mother[0];
-    bool_node* fnode = n->multi_mother[1];
+    bool_node* cnode = n->mother();
+    bool_node* mnode = n->arguments(0);
+    bool_node* fnode = n->arguments(1);
     int csize = size(cnode);
     int msize = size(mnode);
     int fsize = size(fnode);
@@ -206,7 +206,7 @@ void KLocalityAutoDiff::getMergeNodesArracc(bool_node* node) {
         MergeNodesList* l = new MergeNodesList();
         vector<tuple<int, int, int>>& pairs = get<1>(validPaths[i-1]);
         for (auto it = pairs.begin(); it != pairs.end(); it++) {
-            l->add(n->mother->id, get<0>(*it), n->multi_mother[get<2>(*it)]->id, get<1>(*it));
+            l->add(n->mother()->id, get<0>(*it), n->arguments(get<2>(*it))->id, get<1>(*it));
         }
         mergeNodes[n->id][i] = l;
     } 
@@ -225,9 +225,9 @@ void KLocalityAutoDiff::getMergeNodes() {
         } else if (n->type ==  bool_node::PLUS || n->type == bool_node::TIMES || n->type == bool_node::DIV || n->type == bool_node::LT || n->type == bool_node::AND || n->type == bool_node::OR) {
             getMergeNodesBinop(n);
         } else if (n->type == bool_node::NEG || n->type == bool_node::NOT || n->type == bool_node::ASSERT ||  n->type == bool_node::TUPLE_R) {
-            getMergeNodesUnop(n, n->mother);
+            getMergeNodesUnop(n, n->mother());
         } else if (n->type == bool_node::UFUN) {
-            getMergeNodesUnop(n, ((UFUN_node*)n)->multi_mother[0]);
+            getMergeNodesUnop(n, ((UFUN_node*)n)->arguments(0));
         } else if (n->type == bool_node::ARRACC) {
             getMergeNodesArracc(n);
         }
@@ -306,16 +306,16 @@ void KLocalityAutoDiff::combineDistance(bool_node& node, int nodeid1, int idx1, 
 
         ValueGrad* cval;
         int bv;
-        if (nodeid1 == an->mother->id) {
+        if (nodeid1 == an->mother()->id) {
             cval = v(bdag[nodeid1], idx1);
-            if (nodeid2 == an->multi_mother[0]->id) {
+            if (nodeid2 == an->arguments(0)->id) {
                 bv = 0;
             } else {
                 bv = 1;
             }
         } else {
             cval = v(bdag[nodeid2], idx2);
-            if (nodeid1 == an->multi_mother[0]->id) {
+            if (nodeid1 == an->arguments(0)->id) {
                 bv = 0;
             } else {
                 bv = 1;
@@ -355,9 +355,9 @@ void KLocalityAutoDiff::doPair(bool_node& node, int nodeid1, int idx1, int nodei
         val = ValueGrad::vg_or(mval, fval, val_grad);
     } else if (node.type == bool_node::ARRACC) {
         ARRACC_node* an = (ARRACC_node*)(&node);
-        if (nodeid1 == an->mother->id) {
+        if (nodeid1 == an->mother()->id) {
             val = ValueGrad::vg_copy(fval, val_grad);
-        } else if (nodeid2 == an->mother->id) {
+        } else if (nodeid2 == an->mother()->id) {
             val = ValueGrad::vg_copy(mval, val_grad);
         } else {
             Assert(false, "arracc: cond should be in the pair");
@@ -412,7 +412,7 @@ void KLocalityAutoDiff::pairNodes(bool_node& node) {
 
 void KLocalityAutoDiff::visit( ASSERT_node& node ) {
 	//cout << "Visiting ASSERT node" << endl;
-    copyNodes(node, node.mother);
+    copyNodes(node, node.mother());
     
 }
 
@@ -457,7 +457,7 @@ void KLocalityAutoDiff::visit( TIMES_node& node ) {
 }
 
 void KLocalityAutoDiff::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: KLocalityAutoDiff ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: KLocalityAutoDiff ARRACC of size > 2");
 	Assert(node.getOtype() == OutType::FLOAT, "NYI: KLocalityAutoDiff ARRACC for bool nodes")
 	/*int cval = getInputValue(node.mother);
     if (cval == 1) {
@@ -484,15 +484,15 @@ void KLocalityAutoDiff::visit( MOD_node& node ) {
 void KLocalityAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
-    int msize = size(node.mother);
+    int msize = size(node.mother());
     int k = 1;
     for (int i = 1; i <= msize; i++) {
         ValueGrad* val = v(node, k);
-        ValueGrad* mval = v(node.mother, i);
+        ValueGrad* mval = v(node.mother(), i);
         ValueGrad::vg_neg(mval, val);
 
         DistanceGrad* dg = d(node, k);
-        DistanceGrad* mdist = d(node.mother, i);
+        DistanceGrad* mdist = d(node.mother(), i);
         DistanceGrad::dg_copy(mdist, dg);
         k++;
     }
@@ -532,7 +532,7 @@ void KLocalityAutoDiff::visit( CONST_node& node ) {
 }
 
 void KLocalityAutoDiff::visit( LT_node& node ) {
-    Assert(isFloat(node.mother) && isFloat(node.father), "NYI: KLocalityAutoDiff for lt with integer parents");
+    Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: KLocalityAutoDiff for lt with integer parents");
     pairNodes(node);
 }
 
@@ -550,15 +550,15 @@ void KLocalityAutoDiff::visit( OR_node& node ) {
 }
 
 void KLocalityAutoDiff::visit( NOT_node& node ) {
-	int msize = size(node.mother);
+	int msize = size(node.mother());
     int k = 1;
     for (int i = 1; i <= msize; i++) {
         ValueGrad* val = v(node, k);
-        ValueGrad* mval = v(node.mother, i);
+        ValueGrad* mval = v(node.mother(), i);
         ValueGrad::vg_not(mval, val);
 
         DistanceGrad* dg = d(node, k);
-        DistanceGrad* mdist = d(node.mother, i);
+        DistanceGrad* mdist = d(node.mother(), i);
         DistanceGrad::dg_copy(mdist, dg);
         k++;
     }
@@ -592,15 +592,15 @@ void KLocalityAutoDiff::doUfun(UFUN_node& node, ValueGrad* mval, ValueGrad* val)
 }
 
 void KLocalityAutoDiff::visit( UFUN_node& node ) {
-    int msize = size(node.multi_mother[0]);
+    int msize = size(node.arguments(0));
     int k = 1;
     for (int i = 1; i <= msize; i++) {
         ValueGrad* val = v(node, k);
-        ValueGrad* mval = v(node.multi_mother[0], i);
+        ValueGrad* mval = v(node.arguments(0), i);
         doUfun(node, mval, val);
 
         DistanceGrad* dg = d(node, k);
-        DistanceGrad* mdist = d(node.multi_mother[0], i);
+        DistanceGrad* mdist = d(node.arguments(0), i);
         DistanceGrad::dg_copy(mdist, dg);
         k++;
     }
@@ -608,9 +608,9 @@ void KLocalityAutoDiff::visit( UFUN_node& node ) {
 }
 
 void KLocalityAutoDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		copyNodes(node, node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		copyNodes(node, node.mother());
 	} else {
 		Assert(false, "NYI");
 	}
@@ -716,7 +716,7 @@ double KLocalityAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { /
 
 double KLocalityAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x, 0);
     Assert(val->set, "Sqrt node is not set");
     gsl_vector_memcpy(grad, val->getGrad());
@@ -724,7 +724,7 @@ double KLocalityAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
 }
 
 double KLocalityAutoDiff::getAssertError(bool_node* node, gsl_vector* grad) {
-    ValueGrad* val = v(node->mother, 0);
+    ValueGrad* val = v(node->mother(), 0);
     Assert(val->set, "Assert node is not set");
     gsl_vector_memcpy(grad, val->getGrad());
     return val->getVal();
@@ -769,14 +769,14 @@ double KLocalityAutoDiff::getErrorOnConstraint(int nodeid) {
 
 double KLocalityAutoDiff::getSqrtError(bool_node* node) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x, 0);
     Assert(val->set, "Sqrt node is not set");
     return val->getVal();
 }
 
 double KLocalityAutoDiff::getAssertError(bool_node* node) {
-    ValueGrad* val = v(node->mother, 0);
+    ValueGrad* val = v(node->mother(), 0);
     Assert(val->set, "Assert node is not set");
     return val->getVal();
 }

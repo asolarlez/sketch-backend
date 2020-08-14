@@ -26,12 +26,12 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 	for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 		bool_node* n = *node_it;
 		set<int> ctrls;
-		const vector<bool_node*>& parents = n->parents();
+		
 		if (n->type == bool_node::CTRL && n->getOtype() == OutType::FLOAT) {
 			ctrls.insert(n->id);
 		}
-		for (int i = 0; i < parents.size(); i++) {
-			bool_node* parent = parents[i];
+		for (auto it = n->p_begin(); it != n->p_end(); ++it) {
+			bool_node* parent = *it;
 			vector<int>& parentCtrls = dependentCtrls[parent->id];
 			ctrls.insert(parentCtrls.begin(), parentCtrls.end());
 		}
@@ -66,7 +66,7 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 	doublereal* xupp = new doublereal[ncontrols];
 	xlow[0] = -20; 
 	xupp[0] = 20;
-	for (int i = 0; i < ctrlNodes.size(); i++) {
+	for (auto i = 0; i < ctrlNodes.size(); i++) {
 		CTRL_node* cnode = (CTRL_node*)ctrlNodes[i];
 		if (cnode->getOtype() == OutType::FLOAT) {
 			int idx = ctrls[cnode->get_name()];
@@ -115,9 +115,9 @@ NumericalSynthesizer::NumericalSynthesizer(FloatManager& _fm, BooleanDAG* _dag, 
 	for (BooleanDAG::iterator node_it = dag->begin(); node_it != dag->end(); ++node_it) {
 		bool_node* n = *node_it;
 		set<int> inputs;
-		const vector<bool_node*>& parents = n->parents();
-		for (int i = 0; i < parents.size(); i++) {
-			bool_node* parent = parents[i];
+		
+		for (auto it = n->p_begin(); it != n->p_end(); ++it) {
+			bool_node* parent = *it;
 			if (interf->isInput(parent->id)) {
 				inputs.insert(parent->id);
 			}

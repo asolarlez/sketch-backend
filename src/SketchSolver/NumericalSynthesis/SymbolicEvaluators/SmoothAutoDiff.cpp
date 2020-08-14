@@ -76,8 +76,8 @@ void SmoothAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node, cur_idx);
-	ValueGrad* mval = v(node.mother, cur_idx);
-	ValueGrad* fval = v(node.father, cur_idx);
+	ValueGrad* mval = v(node.mother(), cur_idx);
+	ValueGrad* fval = v(node.father(), cur_idx);
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
@@ -85,25 +85,25 @@ void SmoothAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node, cur_idx);
-	ValueGrad* mval = v(node.mother, cur_idx);
-	ValueGrad* fval = v(node.father, cur_idx);
+	ValueGrad* mval = v(node.mother(), cur_idx);
+	ValueGrad* fval = v(node.father(), cur_idx);
 	ValueGrad::vg_times(mval, fval, val);
 }
 
 void SmoothAutoDiff::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: SmoothAutoDiff ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: SmoothAutoDiff ARRACC of size > 2");
 	Assert(node.getOtype() == OutType::FLOAT, "NYI: SmoothAutoDiff ARRACC for bool nodes")
 	
 	ValueGrad* val  = v(node, cur_idx);
-    ValueGrad* mval = v(node.multi_mother[0], cur_idx);
-    ValueGrad* fval = v(node.multi_mother[1], cur_idx);
-    int cval = getInputValue(node.mother);
+    ValueGrad* mval = v(node.arguments(0), cur_idx);
+    ValueGrad* fval = v(node.arguments(1), cur_idx);
+    int cval = getInputValue(node.mother());
     if (cval == 1) {
         ValueGrad::vg_copy(fval, val);
     } else if (cval == 0) {
         ValueGrad::vg_copy(mval, val);
     } else {
-        auto it = find(condNodes.begin(), condNodes.end(), node.mother->id);
+        auto it = find(condNodes.begin(), condNodes.end(), node.mother()->id);
         if (it != condNodes.end()) {
             int idx = it - condNodes.begin();
             bool v = getAssignment(cur_idx - 1, idx);
@@ -250,7 +250,7 @@ void SmoothAutoDiff::visit( UFUN_node& node ) {
 }
 
 void SmoothAutoDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
+	if (node.mother()->type == bool_node::UFUN) {
 		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
 		ValueGrad* mval = v(node.mother(), cur_idx);
 		ValueGrad* val = v(node, cur_idx);
@@ -422,7 +422,7 @@ double SmoothAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // N
 
 double SmoothAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x, 0);
     Assert(val->set, "Sqrt node is not set");
     gsl_vector_memcpy(grad, val->getGrad());
@@ -430,7 +430,7 @@ double SmoothAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
 }
 
 double SmoothAutoDiff::getAssertError(bool_node* node, gsl_vector* grad) {
-    DistanceGrad* dg = d(node->mother, 0);
+    DistanceGrad* dg = d(node->mother(), 0);
     Assert(dg->set, "Assert node is not set");
     gsl_vector_memcpy(grad, dg->grad);
     return dg->dist;
@@ -487,7 +487,7 @@ double SmoothAutoDiff::getErrorOnConstraint(int nodeid) {
 
 double SmoothAutoDiff::getSqrtError(bool_node* node) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x, 0);
     Assert(val->set, "Sqrt node is not set");
     return val->getVal();

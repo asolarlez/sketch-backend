@@ -74,8 +74,8 @@ void BoolAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
@@ -83,18 +83,18 @@ void BoolAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_times(mval, fval, val);
 }
 
 void BoolAutoDiff::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: BoolAutoDiff ARRACC of size > 2");
 	if (node.getOtype() == OutType::BOOL) {
 		DistanceGrad* dg = d(node);
-        DistanceGrad* mdist = d(node.multi_mother[0]);
-        DistanceGrad* fdist = d(node.multi_mother[1]);
-        int cval = getInputValue(node.mother);
+        DistanceGrad* mdist = d(node.arguments(0));
+        DistanceGrad* fdist = d(node.arguments(1));
+        int cval = getInputValue(node.mother());
 		if (cval != DEFAULT_INP) {
             if (cval == 1.0) {
 				DistanceGrad::dg_copy(fdist, dg);
@@ -104,8 +104,8 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 				Assert(false, "dafuerq");
 			}
 		} else {
-            if (node.mother->type == bool_node::CTRL) {
-                string name = node.mother->get_name();
+            if (node.mother()->type == bool_node::CTRL) {
+                string name = node.mother()->get_name();
                 int idx = -1;
                 if (floatCtrls.find(name) != floatCtrls.end()) {
                     idx = floatCtrls[name];
@@ -117,9 +117,9 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
                 DistanceGrad::dg_ite(mdist, fdist, gsl_vector_get(ctrls, idx), GradUtil::tmp2, dg);
             } else {
                 cout << node.lprint() << endl;
-                cout << node.mother->lprint() << endl;
-                cout << node.multi_mother[0]->lprint() << endl;
-                cout << node.multi_mother[1]->lprint() << endl;
+                cout << node.mother()->lprint() << endl;
+                cout << node.arguments(0)->lprint() << endl;
+                cout << node.arguments(1)->lprint() << endl;
                 Assert(false, "eruiqge");
                 dg->set = false;
             }
@@ -128,9 +128,9 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
 	
 	if (node.getOtype() == OutType::FLOAT) {
 		ValueGrad* val  = v(node);
-        ValueGrad* mval = v(node.multi_mother[0]);
-        ValueGrad* fval = v(node.multi_mother[1]);
-        int cval = getInputValue(node.mother);
+        ValueGrad* mval = v(node.arguments(0));
+        ValueGrad* fval = v(node.arguments(1));
+        int cval = getInputValue(node.mother());
         if (cval != DEFAULT_INP) {
             if (cval == 1.0) {
                 ValueGrad::vg_copy(fval, val);
@@ -140,8 +140,8 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
                 Assert(false, "Not possible");
             }
         } else {
-            if (node.mother->type == bool_node::CTRL) {
-                string name = node.mother->get_name();
+            if (node.mother()->type == bool_node::CTRL) {
+                string name = node.mother()->get_name();
                 int idx = -1;
                 if (floatCtrls.find(name) != floatCtrls.end()) {
                     idx = floatCtrls[name];
@@ -153,7 +153,7 @@ void BoolAutoDiff::visit(ARRACC_node& node )  {
                 ValueGrad::vg_ite(mval, fval, gsl_vector_get(ctrls, idx), GradUtil::tmp2, val);
                 
             } else {
-                DistanceGrad* cdist = d(node.mother);
+                DistanceGrad* cdist = d(node.mother());
                 ValueGrad::vg_ite(mval, fval, cdist, val);
             }
         }
@@ -164,8 +164,8 @@ void BoolAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_div(mval, fval, val);
 }
 
@@ -178,7 +178,7 @@ void BoolAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
+	ValueGrad* mval = v(node.mother());
 	ValueGrad::vg_neg(mval, val);
 }
 
@@ -213,9 +213,9 @@ void BoolAutoDiff::visit( LT_node& node ) {
 	DistanceGrad* dg = d(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: BoolAutoDiff for lt with integer parents");
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: BoolAutoDiff for lt with integer parents");
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	
 	ValueGrad::vg_lt(mval, fval, dg);
 }
@@ -227,8 +227,8 @@ void BoolAutoDiff::visit( EQ_node& node ) {
 
 void BoolAutoDiff::visit( AND_node& node ) {
 	DistanceGrad* dg = d(node);
-    int mval = getInputValue(node.mother);
-    int fval = getInputValue(node.father);
+    int mval = getInputValue(node.mother());
+    int fval = getInputValue(node.father());
     
     if (mval == 0 || fval == 0) {
         dg->dist = -1000.0;
@@ -243,8 +243,8 @@ void BoolAutoDiff::visit( AND_node& node ) {
         return;
     }
     // Compute the value from the parents
-    DistanceGrad* mdist = d(node.mother);
-    DistanceGrad* fdist = d(node.father);
+    DistanceGrad* mdist = d(node.mother());
+    DistanceGrad* fdist = d(node.father());
     if (mval == 1) {
         DistanceGrad::dg_copy(fdist, dg);
         return;
@@ -262,8 +262,8 @@ void BoolAutoDiff::visit( AND_node& node ) {
 
 void BoolAutoDiff::visit( OR_node& node ) {
 	DistanceGrad* dg = d(node);
-    int mval = getInputValue(node.mother);
-    int fval = getInputValue(node.father);
+    int mval = getInputValue(node.mother());
+    int fval = getInputValue(node.father());
     
     if (mval == 1 || fval == 1) {
         dg->dist = 1000.0;
@@ -279,8 +279,8 @@ void BoolAutoDiff::visit( OR_node& node ) {
         return;
     }
 	// Compute the value from the parents
-	DistanceGrad* mdist = d(node.mother);
-	DistanceGrad* fdist = d(node.father);
+	DistanceGrad* mdist = d(node.mother());
+	DistanceGrad* fdist = d(node.father());
     if (mval == 0) {
         DistanceGrad::dg_copy(fdist, dg);
         return;
@@ -298,7 +298,7 @@ void BoolAutoDiff::visit( OR_node& node ) {
 
 void BoolAutoDiff::visit( NOT_node& node ) {
 	DistanceGrad* dg = d(node);
-    int mval = getInputValue(node.mother);
+    int mval = getInputValue(node.mother());
     if (mval == 0) {
         dg->dist = 1000.0;
         GradUtil::default_grad(dg->grad);
@@ -311,7 +311,8 @@ void BoolAutoDiff::visit( NOT_node& node ) {
         dg->set = true;
         return;
     }
-	DistanceGrad* mdist = d(node.mother);
+	DistanceGrad* mdist = d(node.mother()
+    );
 
 	if (mdist->set) {
 		DistanceGrad::dg_not(mdist, dg);
@@ -329,7 +330,7 @@ void BoolAutoDiff::visit( UFUN_node& node ) {
     DistanceGrad* dg = d(node);
     GradUtil::default_grad(dg->grad);
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.multi_mother[0]);
+	ValueGrad* mval = v(node.arguments(0));
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -352,9 +353,9 @@ void BoolAutoDiff::visit( UFUN_node& node ) {
 }
 
 void BoolAutoDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		ValueGrad* mval = v(node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		ValueGrad* mval = v(node.mother());
 		ValueGrad* val = v(node);
 		ValueGrad::vg_copy(mval, val);
 	} else {
@@ -423,7 +424,7 @@ double BoolAutoDiff::getErrorOnConstraint(int nodeid, gsl_vector* grad) { // Neg
 
 double BoolAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x);
     Assert(val->set, "Sqrt node is not set");
     gsl_vector_memcpy(grad, val->getGrad());
@@ -431,7 +432,7 @@ double BoolAutoDiff::getSqrtError(bool_node* node, gsl_vector* grad) {
 }
 
 double BoolAutoDiff::getAssertError(bool_node* node, gsl_vector* grad) {
-    DistanceGrad* dg = d(node->mother);
+    DistanceGrad* dg = d(node->mother());
     Assert(dg->set, "Assert node is not set");
     gsl_vector_memcpy(grad, dg->grad);
     return dg->dist;
@@ -488,14 +489,14 @@ double BoolAutoDiff::getErrorOnConstraint(int nodeid) {
 
 double BoolAutoDiff::getSqrtError(bool_node* node) {
     UFUN_node* un = (UFUN_node*) node;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* val = v(x);
     Assert(val->set, "Sqrt node is not set");
     return val->getVal();
 }
 
 double BoolAutoDiff::getAssertError(bool_node* node) {
-    DistanceGrad* dg = d(node->mother);
+    DistanceGrad* dg = d(node->mother());
     Assert(dg->set, "Assert node is not set");
     return dg->dist;
 }

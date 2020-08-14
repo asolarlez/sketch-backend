@@ -58,8 +58,8 @@ void AutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
@@ -67,22 +67,22 @@ void AutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_times(mval, fval, val);
 }
 
 void AutoDiff::visit(ARRACC_node& node )  {
     ValueGrad* val = v(node);
     if (node.getOtype() == OutType::FLOAT) {
-	Assert(node.multi_mother.size() == 2, "NYI: AutoDiff ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: AutoDiff ARRACC of size > 2");
 	if (node.getOtype() == OutType::BOOL) {
 		val->set = false;
 		return;
 	}
-	ValueGrad* m1 = v(node.multi_mother[0]);
-	ValueGrad* m2 = v(node.multi_mother[1]);
-	int ival = getInputValue(node.mother);
+	ValueGrad* m1 = v(node.arguments(0));
+	ValueGrad* m2 = v(node.arguments(1));
+	int ival = getInputValue(node.mother());
 	if (ival == 0) {
 		ValueGrad::vg_copy(m1, val);
 	} else if (ival == 1) {
@@ -99,8 +99,8 @@ void AutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_div(mval, fval, val);
 }
 
@@ -113,7 +113,7 @@ void AutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
+	ValueGrad* mval = v(node.mother());
 	ValueGrad::vg_neg(mval, val);
 }
 
@@ -132,9 +132,9 @@ void AutoDiff::visit( LT_node& node ) {
 	ValueGrad* val = v(node);
 	
 	// Comput the value from the parents
-    if (isFloat(node.mother) && isFloat(node.father)) {
-        ValueGrad* mval = v(node.mother);
-        ValueGrad* fval = v(node.father);
+    if (isFloat(node.mother()) && isFloat(node.father())) {
+        ValueGrad* mval = v(node.mother());
+        ValueGrad* fval = v(node.father());
 	
         ValueGrad::vg_lt(mval, fval, val);
     } else {
@@ -163,7 +163,7 @@ void AutoDiff::visit( ARRASS_node& node ) {
 
 void AutoDiff::visit( UFUN_node& node ) {
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.multi_mother[0]);
+	ValueGrad* mval = v(node.arguments(0));
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -190,9 +190,9 @@ void AutoDiff::visit( UFUN_node& node ) {
 }
 
 void AutoDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		ValueGrad* mval = v(node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		ValueGrad* mval = v(node.mother());
 		ValueGrad* val = v(node);
 		ValueGrad::vg_copy(mval, val);
 	} else {
@@ -232,8 +232,8 @@ bool AutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputVal
         bool_node* node = *node_it;
         if (!onlyBool && node->type == bool_node::ASSERT) {
             ASSERT_node* an = (ASSERT_node*) node;
-            if (!hasDist(node->mother)) continue;
-            float dist = getVal(node->mother);
+            if (!hasDist(node->mother())) continue;
+            float dist = getVal(node->mother());
             if (an->isHard()) {
                 if (dist > 0.05) {
                     cout << "Failed " << node->lprint() << " " << dist << endl;
@@ -248,9 +248,9 @@ bool AutoDiff::checkAll(const gsl_vector* ctrls_p, const map<int, int>& inputVal
             }
         }
         if (!onlyBool && Util::isSqrt(node)) {
-            bool_node* xnode = ((UFUN_node*)node)->multi_mother[0];
-            if (!hasVal(node->mother)) continue;
-            float dist = getVal(node->mother);
+            bool_node* xnode = ((UFUN_node*)node)->arguments(0);
+            if (!hasVal(node->mother())) continue;
+            float dist = getVal(node->mother());
             if (dist < -0.05) {
                 cout << "Failed " << node->lprint() << " " << dist << endl;
                 failed =  true;
@@ -327,12 +327,12 @@ double AutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGrad)
 
 bool AutoDiff::hasSqrtDist(bool_node* n) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     return hasVal(x);
 }
 double AutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* xval = v(x);
     if (xval->set) {
         double dist = xval->getVal();
@@ -348,7 +348,7 @@ double AutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
 }
 double AutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     return computeVal(x, errorGrad);
 }
 

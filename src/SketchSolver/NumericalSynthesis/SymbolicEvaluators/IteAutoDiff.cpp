@@ -58,8 +58,8 @@ void IteAutoDiff::visit( PLUS_node& node ) {
 	//cout << "Visiting PLUS node" << endl;
 	Assert(isFloat(node), "NYI: plus with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_plus(mval, fval, val);
 }
 
@@ -67,21 +67,21 @@ void IteAutoDiff::visit( TIMES_node& node ) {
 	//cout << "Visiting TIMES node" << endl;
 	Assert(isFloat(node), "NYI: times with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_times(mval, fval, val);
 }
 
 void IteAutoDiff::visit(ARRACC_node& node )  {
-	Assert(node.multi_mother.size() == 2, "NYI: IteAutoDiff ARRACC of size > 2");
+	Assert(node.nargs() == 2, "NYI: IteAutoDiff ARRACC of size > 2");
 	ValueGrad* val = v(node);
 	if (node.getOtype() == OutType::BOOL) {
 		val->set = false;
 		return;
 	}
-	ValueGrad* m1 = v(node.multi_mother[0]);
-	ValueGrad* m2 = v(node.multi_mother[1]);
-	int ival = getInputValue(node.mother);
+	ValueGrad* m1 = v(node.arguments(0));
+	ValueGrad* m2 = v(node.arguments(1));
+	int ival = getInputValue(node.mother());
 	if (ival == 0) {
 		ValueGrad::vg_copy(m1, val);
 	} else if (ival == 1) {
@@ -98,8 +98,8 @@ void IteAutoDiff::visit( DIV_node& node ) {
 	//cout << "Visiting DIV node" << endl;
 	Assert(isFloat(node), "NYI: div with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	ValueGrad::vg_div(mval, fval, val);
 }
 
@@ -112,7 +112,7 @@ void IteAutoDiff::visit( NEG_node& node ) {
 	//cout << "Visiting NEG node" << endl;
 	Assert(isFloat(node), "NYI: neg with ints");
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.mother);
+	ValueGrad* mval = v(node.mother());
 	ValueGrad::vg_neg(mval, val);
 }
 
@@ -131,9 +131,9 @@ void IteAutoDiff::visit( LT_node& node ) {
 	ValueGrad* val = v(node);
 	
 	// Comput the value from the parents
-	Assert(isFloat(node.mother) && isFloat(node.father), "NYI: IteAutoDiff for lt with integer parents");
-	ValueGrad* mval = v(node.mother);
-	ValueGrad* fval = v(node.father);
+	Assert(isFloat(node.mother()) && isFloat(node.father()), "NYI: IteAutoDiff for lt with integer parents");
+	ValueGrad* mval = v(node.mother());
+	ValueGrad* fval = v(node.father());
 	
 	ValueGrad::vg_lt(mval, fval, val);
 }
@@ -159,7 +159,7 @@ void IteAutoDiff::visit( ARRASS_node& node ) {
 
 void IteAutoDiff::visit( UFUN_node& node ) {
 	ValueGrad* val = v(node);
-	ValueGrad* mval = v(node.multi_mother[0]);
+	ValueGrad* mval = v(node.arguments(0));
 	
 	const string& name = node.get_ufname();
 	if (name == "_cast_int_float_math") {
@@ -186,9 +186,9 @@ void IteAutoDiff::visit( UFUN_node& node ) {
 }
 
 void IteAutoDiff::visit( TUPLE_R_node& node) {
-	if (node.mother->type == bool_node::UFUN) {
-		Assert(((UFUN_node*)(node.mother))->multi_mother.size() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
-		ValueGrad* mval = v(node.mother);
+	if (node.mother()->type == bool_node::UFUN) {
+		Assert(((UFUN_node*)(node.mother()))->nargs() == 1, "NYI"); // TODO: This assumes that the ufun has a single output
+		ValueGrad* mval = v(node.mother());
 		ValueGrad* val = v(node);
 		ValueGrad::vg_copy(mval, val);
 	} else {
@@ -257,12 +257,12 @@ double IteAutoDiff::computeError(bool_node* n, int expected, gsl_vector* errorGr
 
 bool IteAutoDiff::hasSqrtDist(bool_node* n) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     return hasVal(x);
 }
 double IteAutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     ValueGrad* xval = v(x);
     if (xval->set) {
         double dist = xval->getVal();
@@ -278,7 +278,7 @@ double IteAutoDiff::computeSqrtError(bool_node* n, gsl_vector* errorGrad) {
 }
 double IteAutoDiff::computeSqrtDist(bool_node* n, gsl_vector* errorGrad) {
     UFUN_node* un = (UFUN_node*) n;
-    bool_node* x = un->multi_mother[0];
+    bool_node* x = un->arguments(0);
     return computeVal(x, errorGrad);
 }
 

@@ -34,27 +34,27 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastDebug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -145,7 +145,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\abc60513\src\sat\msat;$(SolutionDir)\abc60513\src\sat\fraig;$(SolutionDir)\abc60513\src\sat\ivy;$(SolutionDir)\abc60513\src\sat\asat;$(SolutionDir)\abc60513\src\sat\csat;$(SolutionDir)\abc60513\src\sat\aig;$(SolutionDir)\abc60513\src\misc\st;$(SolutionDir)\abc60513\src\misc\nm;$(SolutionDir)\abc60513\src\misc\mvc;$(SolutionDir)\abc60513\src\misc\util;$(SolutionDir)\abc60513\src\misc\extra;$(SolutionDir)\abc60513\src\bdd\epd;$(SolutionDir)\abc60513\src\bdd\reo;$(SolutionDir)\abc60513\src\bdd\parse;$(SolutionDir)\abc60513\src\bdd\mtr;$(SolutionDir)\abc60513\src\bdd\cudd;$(SolutionDir)\abc60513\src\base\main;$(SolutionDir)\abc60513\src\base\io;$(SolutionDir)\abc60513\src\base\cmd;$(SolutionDir)\abc60513\src\base\abci;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;$(SolutionDir)\abc60513\src\base\abc;$(SolutionDir)\abc60513\src\aig\hop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicEvaluators;$(SolutionDir)\SketchSolver\NumericalSynthesis\BoolAbstraction;$(SolutionDir)\SketchSolver\NumericalSynthesis\ReasCore;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32; _HAS_ITERATOR_DEBUGGING; _DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
