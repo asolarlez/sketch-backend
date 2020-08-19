@@ -147,7 +147,8 @@ int DagOptim::staticCompare(bool_node* n1, int C , bool reverse ){
 				if(isTopLevel){
 					int s = 1;
 					int bnd = 1;
-					for(int i=0; i<PARAMS->NINPUTS; ++i){
+					int nbits = max(inode->get_nbits(), PARAMS->NINPUTS);
+					for(int i=0; i<nbits; ++i){
 						bnd = bnd*2;
 					}
 					nv.init(0, bnd*4);				
