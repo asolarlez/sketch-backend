@@ -49,7 +49,7 @@ void REASSolver::addProblem(BooleanDAG* problem_){
 
 
 REASSolver::REASSolver(FloatManager& _floats):
-floats(_floats)
+floats(_floats), problem(NULL)
 {
     //	cout << "miter:" << endl;
     //	miter->lprint(cout);
@@ -60,7 +60,9 @@ floats(_floats)
 
 REASSolver::~REASSolver(void)
 {
-    delete problem;
+    if (problem != NULL) {
+        delete problem;
+    }    
 }
 
 

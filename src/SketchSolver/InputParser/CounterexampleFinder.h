@@ -99,10 +99,14 @@ public:
 	}
 
 
-	bool parseLine(ifstream& in, FloatManager& floats) {
+	bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes) {
 
 		auto vsi = inputs->begin();
 		VarStore::objP* arrit = NULL;
+		VarStore::objP* prevArrit = NULL;
+		bool inArray = false;
+
+		int inputId = 0;
 
 		char ch;
 		in.get(ch);
@@ -125,13 +129,14 @@ public:
 					//we just finished a number, and we are not inside an array.
 					outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
 					++vsi;
+					++inputId;
 				}
 				else {
-					if (arrit == NULL) {
+					if (!inArray) {
 						cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
 						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
 							auto type = it->otype != NULL? it->otype->str() : "scalar";
-							auto isArr = it->arrSize() > 1;
+							const auto isArr = it->arrSize() > 1;
 							if (isArr) {
 								cerr << "{" << type << " }  ";
 							}
@@ -148,9 +153,18 @@ public:
 						throw BasicError(string("file parsing error"), "name");
 
 					}
+					if (arrit == NULL) {
+						prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
+						arrit = prevArrit->next;	
+						((SRC_node*)inputNodes[inputId])->arrSz++;
+					}
+					
 					//we just finished a number, and we are inside an array.
 					outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
+					prevArrit = arrit;
 					arrit = arrit->next;
+					
+					
 				}
 			}
 			hasCaptured = true;
@@ -168,6 +182,7 @@ public:
 				reset();
 				if (depth == 0) {
 					arrit = &(*vsi);
+					inArray = true;
 				}
 				depth++;
 				break;
@@ -181,7 +196,9 @@ public:
 						arrit->setValSafe(0);
 						arrit = arrit->next;
 					}
+					inArray = false;
 					++vsi;
+					++inputId;
 				}
 				break;
 			}
@@ -231,7 +248,7 @@ public:
 	}
 
 
-	Result fromFile(const string& fname, FloatManager& floats) {
+	Result fromFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes) {
 		ifstream file(fname);
 		bool ok = true;
 
@@ -242,7 +259,7 @@ public:
 
 		while (!file.eof()) {
 			try {
-				ok = parseLine(file, floats);
+				ok = parseLine(file, floats, inputNodes);
 			}
 			catch (BasicError& e) {
 				cerr << "Error parsing file " << fname << endl;

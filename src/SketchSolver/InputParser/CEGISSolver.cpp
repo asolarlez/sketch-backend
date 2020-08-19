@@ -150,8 +150,8 @@ bool CEGISSolver::solve(){
 //	cpt.checkpoint('c', ctrlstore_serialized);
 //	setNewControls(ctrlStore);	
 	
-	//bool succeeded = solveCore();
-	bool succeeded = solveOptimization();
+	bool succeeded = solveCore();
+	//bool succeeded = solveOptimization();
 	popProblem();
 
 	return succeeded;
@@ -1159,7 +1159,9 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
 					VarStore& tmpin = input;
 					eval.init(tmpin);
-					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats);
+
+					vector<bool_node*>& inputs = dag->getNodesByType(bool_node::SRC);
+					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats,  inputs);
 					
 					while (res == CounterexampleFinder::MOREBITS) {
 						BooleanDAG* dag = getProblem();
@@ -1167,9 +1169,17 @@ bool CEGISSolver::check(VarStore& controls, VarStore& input){
 							cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (dag->getIntSize() + 1) << endl;
 						}
 						growInputs(dag, oriProblem, (problemLevel() - (hardcode ? 1 : 0)) == 1);
-						res = eval.fromFile(files[curProblem], floats);
+						res = eval.fromFile(files[curProblem], floats, inputs);
 					}					
-					
+					if (dag != oriProblem) {
+						vector<bool_node*>& oInputs = oriProblem->getNodesByType(bool_node::SRC);
+						auto oin = oInputs.begin();
+						for (auto in = inputs.begin(); in != inputs.end(); ++in, ++oin) {
+							if (((SRC_node*)(*oin))->arrSz != ((SRC_node*)(*in))->arrSz) {
+								((SRC_node*)(*oin))->arrSz = ((SRC_node*)(*in))->arrSz;
+							}
+						}
+					}
 					rv = (res == CounterexampleFinder::FOUND);
 					continue;
 				}

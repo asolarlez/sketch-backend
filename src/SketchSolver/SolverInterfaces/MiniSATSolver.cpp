@@ -325,6 +325,7 @@ bool MiniSATSolver::isOK(){
     int var = s->nVars() - 1;
     assumptions.push(Lit(var));
     s->softLearntSpecialVar = var;
+	cout << "Special assumption " << var << endl;
     return var;
       
   }

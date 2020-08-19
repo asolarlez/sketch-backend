@@ -68,6 +68,15 @@ void Clause::print(){
 	for (int i = 0; i < size(); ++i) {
 		std::cout << "," << toInt((*this)[i]);
 	}
+	if (mark() == SINGLESET) {
+		std::cout << "SINGLESET";
+	}
+	if (mark() == INTSPECIAL) {
+		std::cout << "INTSPECIAL";
+	}
+	if (mark() == SPECIALFUN) {
+		std::cout << "SPECIALFUN";
+	}
 	std::cout << std::endl;
 }
 
@@ -76,7 +85,7 @@ Solver::Solver() :
     // Parameters: (formerly in 'SearchParams')
     var_decay(1 / 0.95), clause_decay(1 / 0.999), random_var_freq(0.8)
   , restart_first(200), restart_inc(1.5), learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
-   , nSoftLearntRestarts(0), maxSoftLearntRestarts(10)
+   , nSoftLearntRestarts(0), maxSoftLearntRestarts(10), softLearntSpecialVar(var_Undef)
     // More parameters:
     //
   , expensive_ccmin  (true)
@@ -490,7 +499,7 @@ void Solver::detachClause(Clause& c) {
 		clauses_literals -= c.size();
 		return;
 	}
-
+	
 	assert(c.mark()==0);
     assert(find(watches[toInt(~c[0])], &c));
     assert(find(watches[toInt(~c[1])], &c));
@@ -1503,7 +1512,7 @@ void Solver::reduceDB()
 {
     int     i, j;
     double  extra_lim = cla_inc / (learnts.size() + softLearnts.size());    // Remove any clause below this activity
-
+	
     sort(learnts, reduceDB_lt());
     for (i = j = 0; i < learnts.size() / 2; i++){
         if (learnts[i]->size() > 2 && !locked(*learnts[i]))
@@ -1520,6 +1529,7 @@ void Solver::reduceDB()
     learnts.shrink(i - j);
 	intsolve->cleanupConfs();
     sort(softLearnts, reduceDB_lt());
+	
     for (i = j = 0; i < softLearnts.size() / 2; i++){
         if (softLearnts[i]->size() > 2 && !locked(*softLearnts[i]))
             removeClause(*softLearnts[i]);
@@ -1725,7 +1735,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                     break;
                 }
             }
-            cout << "Soft Learnt: " << softLearnt << endl;
+            //cout << "Soft Learnt: " << softLearnt << endl;
             if (learnt_clause.size() == 1){
                 if (softLearnt) {
                     if (nSoftLearntRestarts < maxSoftLearntRestarts) {
@@ -1745,6 +1755,8 @@ lbool Solver::search(int nof_conflicts, int nof_learnts)
                 Clause* c = Clause::Clause_new(learnt_clause, true, NULL);
 		if (c->size() > 2) {
 		    if(softLearnt){
+				cout << "Soft learnt ";
+				c->print();
                         softLearnts.push(c);
                     }else{
                         learnts.push(c);

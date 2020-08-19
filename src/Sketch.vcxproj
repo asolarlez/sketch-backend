@@ -145,8 +145,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\NumericalSynthesis\Optimizers;$(SolutionDir)\SketchSolver\NumericalSynthesis\Utils;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicEvaluators;$(SolutionDir)\SketchSolver\NumericalSynthesis\BoolAbstraction;$(SolutionDir)\SketchSolver\NumericalSynthesis\ReasCore;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_HAS_ITERATOR_DEBUGGING;_DEBUG;_NOGSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SketchSolver\NumericalSynthesis\Samplers;$(SolutionDir)\SketchSolver\NumericalSynthesis\SuggestionGenerators;$(SolutionDir)\SketchSolver\NumericalSynthesis\ConflictGenerators;$(SolutionDir)\SketchSolver\NumericalSynthesis\Solvers;$(SolutionDir)\SketchSolver\NumericalSynthesis\DataStructures;$(SolutionDir)\SketchSolver\NumericalSynthesis\Optimizers;$(SolutionDir)\SketchSolver\NumericalSynthesis\Utils;$(SolutionDir)\SketchSolver\NumericalSynthesis\SymbolicEvaluators;$(SolutionDir)\SketchSolver\NumericalSynthesis\BoolAbstraction;$(SolutionDir)\SketchSolver\NumericalSynthesis\ReasCore;$(SolutionDir)\MiniSat\core;$(SolutionDir)\SketchSolver\InputParser;$(SolutionDir)\SketchSolver;$(SolutionDir)\SketchSolver\SolverInterfaces;$(SolutionDir)\MiniSat\mtl;$(SolutionDir)\zchaff;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_HAS_ITERATOR_DEBUGGING;_DEBUG;_NOGSL;_NOSNOPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -158,7 +158,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/fixed:no %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>$(SolutionDir)\abc60513\abclib\abclib_debug.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
