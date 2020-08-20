@@ -47,9 +47,9 @@ printStats ()
 
 
 void DumpSignalHandler(int signal){
-	cerr<<"DUMP OUTPUT!!!."<<endl;
 	cout<<"DUMP OUTPUT!!!."<<endl;
 	flush(cout);
+	INp::envt->recordSolution();
 	INp::envt->printControls("");
 }
 

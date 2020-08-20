@@ -104,6 +104,7 @@ class CommandLineArgs{
     bool disableUnsatSuggestions;
     int conflictCutoff;
     int maxRestarts;
+	int dumpPeriodically;
     int costOption;
     bool numdebug;
   typedef enum {CALLSITE, CALLNAME} BoundMode;
@@ -203,6 +204,7 @@ class CommandLineArgs{
         conflictCutoff = 1;
         maxRestarts = 10;
         costOption = 1;
+		dumpPeriodically = -1;
 	  for(int ii=0; ii<argc; ++ii){
         if (string(argv[ii]) == "--print-version") {
             //cout << "CEGIS version features: " << VERSION_INFO << endl;
@@ -285,10 +287,20 @@ class CommandLineArgs{
                 input_idx = ii+1;
                 continue;
             }
+
+
+			if (string(argv[ii]) == "-dumpPeriod") {
+				Assert(ii < argc - 1, "-dumpPeriod needs an extra parameter");
+				dumpPeriodically = atoi(argv[ii + 1]);
+				input_idx = ii + 2;
+				continue;
+			}
+
+
             if (string(argv[ii]) == "-numtries") {
                 Assert(ii < argc - 1, "-numtries needs an extra parameter");
                 numTries = atoi(argv[ii+1]);
-                input_idx = ii+1;
+                input_idx = ii+2;
                 continue;
             }
           if (string(argv[ii]) == "-disablesatsuggestions") {

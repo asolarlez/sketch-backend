@@ -18,10 +18,20 @@ public:
 
 inline double gsl_vector_get(const gsl_vector* v, int idx) { return v->data[idx]; }
 inline void gsl_vector_set(gsl_vector* v, int idx, double val) { v->data[idx] = val;  }
-inline gsl_vector* gsl_vector_alloc(int size) { return new (_mm_malloc(sizeof(gsl_vector) + size * sizeof(double), 64)) gsl_vector(size); }
+inline gsl_vector* gsl_vector_alloc(int size) { 
+#ifdef _mm_malloc
+	return new (_mm_malloc(sizeof(gsl_vector) + size * sizeof(double), 64)) gsl_vector(size); 
+#else
+	return new (aligned_alloc(64, sizeof(gsl_vector) + size * sizeof(double))) gsl_vector(size);
+#endif
+}
 inline void gsl_vector_free(gsl_vector* v) {
 	v->~gsl_vector();
+#ifdef _mm_malloc
 	_mm_free(v);
+#else
+	free(v);
+#endif
 }
 
 

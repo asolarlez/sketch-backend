@@ -39,3 +39,6 @@ src/SketchSolver/InputParser.output
 src/SketchSolver/Makefile
 src/SketchSolver/Makefile.in
 stamp-h1
+src/SketchSolver/cegis
+src/SketchSolver/*.o
+src/SketchSolver/libcegis.a
