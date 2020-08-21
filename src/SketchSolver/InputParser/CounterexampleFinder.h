@@ -110,6 +110,13 @@ public:
 
 		char ch;
 		in.get(ch);
+		string line;
+		while (ch == '#') {
+			std::getline(in, line);
+			in.get(ch);
+		}
+
+
 		int cur=0;
 		bool neg = false;
 		int depth = 0;
