@@ -10,6 +10,7 @@
 #include "ArithmeticExpressionBuilder.h"
 #include "SwapperPredicateBuilder.h"
 #include "DeductiveSolver.h"
+#include "IntToFloatRewriteDag.h"
 
 #ifdef CONST
 #undef CONST
@@ -832,10 +833,6 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
     
-    ofstream dagfile;
-    dagfile.open("/afs/csail.mit.edu/u/j/jinala/symdiff/dreal/" + benchName() + ".dag");
-    dag->mrprint(dagfile);
-    dagfile.close();
     reasSolver->addProblem(dag);
     
     int solveCode = 0;
@@ -864,8 +861,16 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
 
+	cout << "InterpreterEnvironment::assertDAG" << endl;
     if (params.numericalSolver) {
-        return assertDAGNumerical(dag, out);
+    	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
+    	// BooleanDAG* new_dag = dag;
+    	BooleanDAG* new_dag = rewriter.rewrite();
+        SATSolver::SATSolverResult ret = assertDAGNumerical(new_dag, out);
+       	
+       	rewriter.extract_result(reasSolver->get_result(), reasSolver->get_ctrls());
+       
+        return ret;
     }
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;

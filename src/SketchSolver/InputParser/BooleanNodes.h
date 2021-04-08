@@ -904,6 +904,10 @@ class AND_node: public bool_node{
 private:
     AND_node(const AND_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }
     AND_node():bool_node(AND, 2){}
+    AND_node(bool_node* mother, bool_node* father):bool_node(AND, 2){
+    	this->mother() = mother;
+    	this->father() = father;
+    }
 public:
 	inline static AND_node* create(const AND_node& bn, bool copyChildren = true){
 		return new AND_node(bn, copyChildren);
@@ -911,7 +915,10 @@ public:
 	inline static AND_node* create(){
 		return new AND_node();
 	}
-
+	inline static AND_node* create(bool_node* mother, bool_node* father)
+	{
+		return new AND_node(mother, father);
+	}
 	virtual void accept(NodeVisitor& visitor)  { visitor.visit( *this ); }
     virtual bool_node* clone(bool copyChildren = true){return new AND_node(*this, copyChildren);  };
     OutType* getOtype() const{
@@ -924,9 +931,17 @@ class OR_node: public bool_node{
 private:
     OR_node():bool_node(OR, 2){ }
     OR_node(const OR_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ }
+    OR_node(bool_node* mother, bool_node* father): bool_node(OR, 2)
+    {
+    	this->mother() = mother;
+    	this->father() = father;
+    }
 public:
 	inline static OR_node* create(){
 		return new OR_node();
+	}	
+	inline static OR_node* create(bool_node* mother, bool_node* father){
+		return new OR_node(mother, father);
 	}
 	inline static OR_node* create(const OR_node& bn, bool copyChildren = true) {
 		return new OR_node(bn, copyChildren);
@@ -1082,7 +1097,6 @@ public:
 	inline static MOD_node* create(const MOD_node& bn, bool copyChildren = true) {
 		return new MOD_node(bn, copyChildren);
 	}
-
 	virtual void accept(NodeVisitor& visitor) { visitor.visit(*this); }
 	virtual bool_node* clone(bool copyChildren = true) { return new MOD_node(*this, copyChildren); };
 	OutType* getOtype()const {
@@ -1094,12 +1108,19 @@ class LT_node : public bool_node {
 private:
 	LT_node() :bool_node(LT, 2) {}
 	LT_node(const LT_node& bn, bool copyChildren = true) : bool_node(bn, copyChildren) { }
+	LT_node(bool_node* mother, bool_node* father) :bool_node(LT, 2) {
+		this->father() = father;
+		this->mother() = mother;
+	}
 public:
 	inline static LT_node* create() {
 		return new LT_node();
 	}
 	inline static LT_node* create(const LT_node& bn, bool copyChildren = true) {
 		return new LT_node(bn, copyChildren);
+	}
+	inline static LT_node* create(bool_node* mother, bool_node* father) {
+		return new LT_node(mother, father);
 	}
 	virtual void accept(NodeVisitor& visitor) { visitor.visit(*this); }
 	virtual bool_node* clone(bool copyChildren = true) { return new LT_node(*this, copyChildren); };
@@ -1442,9 +1463,9 @@ public:
 		return arrSz >= 0;
 	}
 	OutType* getOtype() const {
-    if (isFloat) {
-      return OutType::FLOAT; // TODO: float array holes is not yet supported
-    }
+	    if (isFloat) {
+	      return OutType::FLOAT; // TODO: float array holes is not yet supported
+	    }
 		if(otype != OutType::BOTTOM){
 			return otype;
 		}
@@ -2079,12 +2100,20 @@ private:
     
     ASSERT_node ():bool_node(ASSERT, 1), assertType(Normal) { }
     ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ assertType = bn.assertType;  msg = bn.msg; }
+    ASSERT_node(bool_node* parent): bool_node(ASSERT, 1)
+    {
+    	set_parent(0, parent);
+    }
 public:
 	static inline ASSERT_node* create(){
 		return new ASSERT_node();
 	}
 	static inline ASSERT_node* create(const ASSERT_node& bn, bool copyChildren = true){
 		return new ASSERT_node(bn, copyChildren);
+	}
+	static inline ASSERT_node* create(bool_node* parent)
+	{
+		return new ASSERT_node(parent);
 	}
 
 	virtual void accept (NodeVisitor &visitor)  { visitor.visit (*this); }
