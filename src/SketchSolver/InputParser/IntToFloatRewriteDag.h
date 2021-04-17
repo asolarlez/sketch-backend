@@ -49,10 +49,13 @@ public:
         /;; case DST: return "D";
         DONE;; case NOT: return "NOT";
         DONE;; case CTRL: return "CTRL";
-        DONE int<int;; case LT: return "LT";
-        DONE int==int;; case EQ: return "EQ";
+        DONE;; case LT: return "LT";
+        DONE;; case EQ: return "EQ";
         DONE;; case ASSERT: return "ASSERT";
-        DONE len == 2; DONE len > 2 for floats; TODO: len > 2 for INTS;; case ARRACC: return "ARRACC"; 
+        TODO;; case ARRACC: return "ARRACC"; 
+        	DONE len == 2; 
+        	DONE len > 2 for floats; 
+        	TODO: len > 2 for INTS;
         For later;; case UFUN: return "UFUN";
         For later;; case ACTRL: return "ACTRL";
         DONE;; case ARRASS: return "ARRASS";
@@ -68,7 +71,6 @@ public:
 		3. Implement ARR_W as ARRASS
 			convert to ARRASS and call ARRASS
 		
-
 		*/
 		process(dag); // main
 
@@ -587,7 +589,7 @@ public:
 		if (mother_is_one_hot && father_is_one_hot)
 		{
 			if(print)
-			cout << "ENTER 3" << endl;
+			cout << "ENTER" << endl;
 			vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
 			vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
 
@@ -922,6 +924,18 @@ public:
 		DagOptim::visit(node);
 	}
 
+	void make_vectors_equal_length(vector<bool_node*>& vec1, vector<bool_node*>& vec2)
+	{
+		while(vec1.size() > vec2.size())
+		{
+			vec2.push_back(after_create(getCnode(0.0)));
+		}
+		while(vec1.size() < vec2.size())
+		{
+			vec1.push_back(after_create(getCnode(0.0)));
+		}
+		assert(vec1.size() == vec2.size());
+	}
 
 	virtual void visit(ARRACC_node& node)
 	{
@@ -956,18 +970,9 @@ public:
 			vector<bool_node*> if_true_one_hot = node_id_to_replacement_nodes[if_true_node->id];
 			vector<bool_node*> if_false_one_hot = node_id_to_replacement_nodes[if_false_node->id];
 
-			while(if_true_one_hot.size() > if_false_one_hot.size())
-			{
-				if_false_one_hot.push_back(after_create(getCnode(0.0)));
-			}
-			while(if_true_one_hot.size() < if_false_one_hot.size())
-			{
-				if_true_one_hot.push_back(after_create(getCnode(0.0)));
-			}
+			make_vectors_equal_length(if_true_one_hot, if_false_one_hot);
 
 			assert(cond_one_hot.size() == 2);
-
-			assert(if_true_one_hot.size() == if_false_one_hot.size());
 
 			vector<bool_node*> new_nodes;
 
@@ -1001,7 +1006,7 @@ public:
 
 			if(all_floats)
 			{
-				if(print) cout << "ENTER 2";
+				if(print) cout << "ENTER 2" << endl;
 
 				vector<bool_node*> dot_product;
 				for(int i = 1;i<=n;i++)
@@ -1049,16 +1054,8 @@ public:
 				vector<bool_node*> new_value_nodes = node_id_to_replacement_nodes[new_value->id];
 				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->id];
 				
-				while(new_value_nodes.size() > old_value_nodes.size())
-				{
-					old_value_nodes.push_back(after_create(getCnode(0.0)));
-				}
-				while(new_value_nodes.size() < old_value_nodes.size())
-				{
-					new_value_nodes.push_back(after_create(getCnode(0.0)));
-				}
+				make_vectors_equal_length(new_value_nodes, old_value_nodes);
 
-				assert(old_value_nodes.size() == new_value_nodes.size());
 				int n = new_value_nodes.size();
 
 				for(int i = 0;i<n;i++)
@@ -1103,7 +1100,7 @@ public:
 		DagOptim::visit(node);	
 	}
 
-	/*virtual void visit(ARR_W_node& node)
+	virtual void visit(ARR_W_node& node)
 	{
 		if(node.id == -1) {
 			DagOptim::visit(node);
@@ -1113,9 +1110,97 @@ public:
 
 		if(print) cout << "IN visit( ARR_W_node& node ); node.id = " << node.id << endl;
 
+		bool_node* idx_node = node.mother();
+		bool_node* arr_node = node.getOldArr();
+		bool_node* new_val = node.getNewVal();
 
-	}*/
+		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->id) != node_id_to_replacement_nodes.end();
 
+		cout << "idx_node " << idx_node->lprint() << endl;
+		cout << "arr_node " << arr_node->lprint() << " out type: " << arr_node->getOtype()->str() << endl;
+		if(arr_node->getOtype() == OutType::FLOAT_ARR || arr_node->getOtype() == OutType::INT_ARR)
+		{
+			cout <<"arr_node->nparents() " << arr_node->nparents() << endl;
+		}
+		cout << "new_val " << new_val->lprint() << endl;
+
+		if(is_idx_node_one_hot)
+		{
+			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->id];
+			if(arr_node->getOtype() == OutType::FLOAT && new_val->getOtype() == OutType::FLOAT)
+			{
+				if(print) cout << "ENTER 1" << endl;
+				vector<bool_node*> new_nodes;
+				for(int i = 0;i<idx_nodes.size();i++)
+				{
+					new_nodes.push_back(my_mult(idx_nodes[i], new_val));
+				}
+				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.id] = new_nodes;
+			}
+			else if (arr_node->getOtype() == OutType::FLOAT_ARR && new_val->getOtype() == OutType::FLOAT)
+			{
+				bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->id) != node_id_to_replacement_nodes.end();
+				if(is_arr_node_replaced)
+				{
+					if(print) cout << "ENTER 2" << endl;
+					vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->id];
+
+					make_vectors_equal_length(arr_nodes, idx_nodes);
+
+					int n = idx_nodes.size();
+
+					vector<bool_node*> new_nodes;
+					for(int i = 0;i<n;i++)
+					{
+						new_nodes.push_back(
+							my_sum(
+									my_mult(one_minus_node(idx_nodes[i]), arr_nodes[i]),
+									my_mult(idx_nodes[i], new_val)
+								)
+							);
+					}
+
+					assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+					node_id_to_replacement_nodes[node.id] = new_nodes;
+				}
+			}
+		}
+
+		DagOptim::visit(node);	
+	}
+
+	virtual void visit(ARR_R_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+
+		if(print) cout << "IN visit( ARR_R_node& node ); node.id = " << node.id << endl;
+
+		bool_node* idx_node = node.mother();
+		bool_node* arr_node = node.father();
+
+		bool is_idx_node_one_hot = node_id_to_replacement_nodes.find(idx_node->id) != node_id_to_replacement_nodes.end();
+		bool is_arr_node_replaced = node_id_to_replacement_nodes.find(arr_node->id) != node_id_to_replacement_nodes.end();
+
+		if(is_idx_node_one_hot && is_arr_node_replaced)
+		{ 
+			if(print) cout << "ENTER" << endl;
+			vector<bool_node*> idx_nodes = node_id_to_replacement_nodes[idx_node->id];
+			vector<bool_node*> arr_nodes = node_id_to_replacement_nodes[arr_node->id];
+			vector<bool_node*> dot_product;
+			for(int i = 0;i<min(idx_nodes.size(), arr_nodes.size());i++)
+			{
+				dot_product.push_back(my_mult(idx_nodes[i], arr_nodes[i]));
+			}
+			rvalue = sum_nodes(dot_product);
+			return ;
+		}
+		DagOptim::visit(node);	
+	}
 };
 
 #endif  // INTOTOFLOATREWRITEDAG_H_
