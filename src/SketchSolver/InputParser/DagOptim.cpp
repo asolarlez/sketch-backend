@@ -36,6 +36,7 @@ CONST_node* DagOptim::getCnode(double c){
 		newnodes.push_back(cnode);
 		cnmap[code] = cnode;
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
+		cout << "ADD cnode " << cnode->id << " val: " << c << endl;
 		return cnode;
 	}else{
 		return cnmap[code];	
@@ -1381,6 +1382,11 @@ void DagOptim::visit( ARR_W_node& node ){
 	}
 
 	rvalue = &node;
+}
+
+void DagOptim::visit( ARR_CREATE_node& node)
+{
+	NodeVisitor::visit(node);
 }
 
 	

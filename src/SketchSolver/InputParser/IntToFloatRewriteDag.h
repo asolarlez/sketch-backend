@@ -5,10 +5,14 @@
 
 class IntToFloatRewriteDag: public DagOptim
 {
+	bool meta_print = true;
 	float threshold = 0.9;
+	float sum_trehsold = 0.95;
+	float epsilon = 0.001;
 	BooleanDAG& dag;
-	map<int, vector<CTRL_node*> > ctrl_node_id_to_replacement_nodes;
-	map<int, vector<bool_node*> > node_id_to_replacement_nodes; 
+	map<string, vector<CTRL_node*> > ctrl_node_name_to_replacement_nodes;
+	map<int, vector<bool_node*> > node_id_to_replacement_nodes;
+	set<int> inserted_asserts; 
 public:
 	IntToFloatRewriteDag(BooleanDAG& _dag, FloatManager& fm): dag(_dag), DagOptim(_dag, fm)
 	{
@@ -28,18 +32,49 @@ public:
 
 		dag.lprint(cout);
 
+		/*
+		todo: handle NEG(int);
+		
+		int = int | bool
+	    DONE;; case PLUS: return "PLUS";
+        DONE;; case TIMES: return "TIMES";
+        DONE;; case DIV: return "DIV";
+        DONE;; case MOD: return "MOD";
+        TODO;; case NEG: return "NEG";
+        DONE +int; TODO -int;; case CONST: return "CONST";
+        DONE;; case AND: return "AND";
+        DONE;; case OR: return "OR";
+        DONE;; case XOR: return "XOR";
+        /;; case SRC: return "S";
+        /;; case DST: return "D";
+        DONE;; case NOT: return "NOT";
+        DONE;; case CTRL: return "CTRL";
+        DONE int<int;; case LT: return "LT";
+        DONE int==int;; case EQ: return "EQ";
+        DONE;; case ASSERT: return "ASSERT";
+        DONE len == 2; DONE len > 2 for floats; TODO: len > 2 for INTS;; case ARRACC: return "ARRACC"; 
+        For later;; case UFUN: return "UFUN";
+        For later;; case ACTRL: return "ACTRL";
+        DONE;; case ARRASS: return "ARRASS";
+        TODO;; case ARR_R: return "ARR_R";
+        TODO;; case ARR_W: return "ARR_W";
+        TODO;; case ARR_CREATE: return "ARR_CREATE";
+        For later;; case TUPLE_CREATE: return "TUPLE_CREATE";
+        For later;; case TUPLE_R: return "TUPLE_R";
+
+		1. Implement ARR_CREATE for float 
+		2. Implement ARR_R as ARRACC
+			convert to an ARRACC and call ARRACC
+		3. Implement ARR_W as ARRASS
+			convert to ARRASS and call ARRASS
+		
+
+		*/
 		process(dag); // main
 
 		dag.lprint(cout);
 
-		cout << "HERE" << endl;
-		vector<bool_node*> asserts = dag.getNodesByType(bool_node::ASSERT);
-		cout << "Asserts: ";
-		for(int i = 0;i<asserts.size();i++)
-		{
-			cout << asserts[i]->id << " ";
-		}
-		cout << endl;
+
 		BooleanDAG* ret = &dag;
 		cout << "----------------------------------------------------------" << endl;
 		cout << "----------------------------------------------------------" << endl;
@@ -50,19 +85,27 @@ public:
 	void extract_result(gsl_vector* result, map<string, int>& ctrls)
 	{
 		cout << "###################################################" << endl;
-		cout << "#######################RESULT######################" << endl;
+		cout << "###################  RESULT  ######################" << endl;
 		cout << "###################################################" << endl;
 
-		for(auto it : ctrl_node_id_to_replacement_nodes)
+		for(auto it : ctrl_node_name_to_replacement_nodes)
 		{
-			int original_node_id = it.first;
+			string original_node_name = it.first;
 			vector<CTRL_node*> replacement_nodes = it.second;
-			cout << "original_node_id = " << original_node_id <<" :: ";
+			cout  << original_node_name <<" :: ";
+			int best_id = -1;
+			float best = -1;
         	for(int i = 0; i< replacement_nodes.size();i ++)
         	{
-        		cout << gsl_vector_get(result, ctrls[replacement_nodes[i]->name]) << " "; 
+        		float val = gsl_vector_get(result, ctrls[replacement_nodes[i]->name]);
+        		cout << val << " "; 
+        		if (val > best)
+        		{
+        			best = val;
+        			best_id = i;
+        		}
         	}	
-        	cout << endl;
+        	cout << " | argmax = " << best_id << endl;
 		}
 
 		cout << "###################################################" << endl;
@@ -72,11 +115,29 @@ public:
 
 	bool_node* after_create(bool_node* node)
 	{
+		cout << "new node (pre add) : " << node->lprint() << endl;
 		if(node->type != bool_node::CONST)
 		{
 			node->addToParents();
 			node = optAdd(node);
+			if(node->type == bool_node::ASSERT)
+			{
+				if(inserted_asserts.find(node->id) == inserted_asserts.end())
+				{
+					inserted_asserts.insert(node->id);
+					bool_node* parent = node->get_parent(0);
+					if(parent->type == bool_node::CONST)
+					{
+						assert(getBval(parent));
+					}
+					else
+					{
+						dag.assertions.append(getDllnode(node));
+					}
+				}
+			}
 		}
+		cout << "new node (post add): " << node->lprint() << endl;
 		return node;
 	}
 
@@ -104,13 +165,18 @@ public:
 			ret = getCnode(0.0);
 			ret = after_create(ret);
 		}
-		cout << "return sum_node " << ret->id << " new nodes: ";
-		for(int i = 0;i<bool_nodes.size();i++)
-		{
-			cout << bool_nodes[i]->id << " ";
-		}
-		cout << endl;
 		return ret;
+	}
+
+	bool_node* get_node_lt_hb(bool_node* node, float hb)
+	{
+
+		bool_node* node_hb = getCnode(hb);
+		node_hb = after_create(node_hb);
+		bool_node* node_lt_hb = LT_node::create(node, node_hb);
+		node_lt_hb = after_create(node_lt_hb);
+
+		return node_lt_hb;
 	}
 
 
@@ -121,13 +187,10 @@ public:
 	bool_node* assert_lb_lt_node_lt_hb(bool_node* node, float lb, float hb)
 	{
 		// lb < node
-		bool_node* lb_lt_node = node_gt_c(node, lb);
+		bool_node* lb_lt_node = get_node_gt_lb(node, lb);
 		
 		// node < hb
-		bool_node* node_hb = getCnode(hb);
-		node_hb = after_create(node_hb);
-		bool_node* node_lt_hb = LT_node::create(node, node_hb);
-		node_lt_hb = after_create(node_lt_hb);
+		bool_node* node_lt_hb = get_node_lt_hb(node, hb);
 		
 		// lb < node and node < hb
 		bool_node* lt_and_lt = AND_node::create(lb_lt_node, node_lt_hb);
@@ -136,19 +199,12 @@ public:
 		// assert lb < node and node < hb 
 		bool_node* assert_node = ASSERT_node::create(lt_and_lt);
 		assert_node = after_create(assert_node);
-		if(lt_and_lt->type == bool_node::CONST)
-		{
-			assert(getBval(lt_and_lt));
-		}
-		else
-		{
-			dag.assertions.append(getDllnode(assert_node));
-		}
+
 
 		return assert_node;
 	}
 
-	bool_node* node_gt_c(bool_node* node, float c)
+	bool_node* get_node_gt_lb(bool_node* node, float c)
 	{
 		bool_node* node_c = getCnode(c);
 		node_c = after_create(node_c);
@@ -162,21 +218,20 @@ public:
 		float c = threshold;
 		if(nodes.size() >= 2)
 		{
-			bool_node* node_or = OR_node::create(node_gt_c(nodes[0], c), node_gt_c(nodes[1], c));
+			bool_node* node_or = OR_node::create(get_node_gt_lb(nodes[0], c), get_node_gt_lb(nodes[1], c));
 			node_or = after_create(node_or);
 			for (int i = 2; i< nodes.size();i++)
 			{
-				node_or = OR_node::create(node_or, node_gt_c(nodes[i], c));
+				node_or = OR_node::create(node_or, get_node_gt_lb(nodes[i], c));
 				node_or = after_create(node_or);
 			}		
 			bool_node* assert_node = ASSERT_node::create(node_or);
 			assert_node = after_create(assert_node);
-			dag.assertions.append(getDllnode(assert_node));
 			return node_or;
 		}
 		else
 		{
-			 return node_gt_c(nodes[0], c);
+			 return get_node_gt_lb(nodes[0], c);
 		}
 	}
 
@@ -184,19 +239,29 @@ public:
 	{
 		//forall node \in nodes: assert 0.0 <= node <= 1.0
 		for(int i = 0; i < nodes.size(); i++) {
-			assert_lb_lt_node_lt_hb(nodes[i], -0.001, 1.001);
+			assert_lb_lt_node_lt_hb(nodes[i], -epsilon, 1+epsilon);
 		}
 		assert_max_gt_c(nodes);
 		// assert 0.99 <= sum(nodes) <= 1.0 
-		bool_node* ret_assert = assert_lb_lt_node_lt_hb(sum_nodes(nodes), threshold, 1.001);
+		bool_node* ret_assert = assert_lb_lt_node_lt_hb(sum_nodes(nodes), sum_trehsold, 1+epsilon);
 		return ret_assert;
 	}
 
 	virtual void visit( CTRL_node& node )
 	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( CTRL_node& node ); node.id = " << node.id << endl;
+
 		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
-			cout << "visit( CTRL_node& node ) at node.id = " << node.id << endl;
+			if(print)
+			cout << "ENTER" << endl;
+
 			vector<bool_node*> new_nodes;
 			vector<CTRL_node*> new_ctrl_nodes;
 			//create 2^nbits new float holes for every int. 
@@ -215,49 +280,74 @@ public:
 			}
 			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
 			node_id_to_replacement_nodes[node.id] = new_nodes;
-			assert(ctrl_node_id_to_replacement_nodes.find(node.id) == ctrl_node_id_to_replacement_nodes.end());
-			ctrl_node_id_to_replacement_nodes[node.id] = new_ctrl_nodes;
-			cout << "added " << new_nodes.size() << " new nodes: ";
-			for(int i = 0;i<new_nodes.size();i++)
-			{
-				cout << new_nodes[i]->id << " ";
-			}
-			cout << endl;
-			bool_node* assert_node = assert_one_hot_constraint(new_nodes);
-			if (node.getOtype() == OutType::BOOL)
-			{
-				// replace with an equivalent predicate
-				rvalue = node_gt_c(new_nodes[1], threshold);
-			}
-			else
-			{
-				DagOptim::visit(node);	
-			}
+			assert(ctrl_node_name_to_replacement_nodes.find(node.get_name()) == ctrl_node_name_to_replacement_nodes.end());
+			ctrl_node_name_to_replacement_nodes[node.get_name()] = new_ctrl_nodes;
+
+			assert_one_hot_constraint(new_nodes);
 		}
-		else
-		{
-			DagOptim::visit(node);	
+		DagOptim::visit(node);
+	}
+
+	virtual void visit(CONST_node& init_node)
+	{
+		DagOptim::visit(init_node);	
+		if(init_node.id == -1) {
+			return;
 		}
+		CONST_node& node = (CONST_node&)*rvalue;
+
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( CONST_node& node ); node.id = " << node.id << endl;
+
+		if(node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
+		{		
+			if(print)
+			cout << "ENTER" << endl;
+
+			vector<bool_node*> new_nodes;
+			int c = getIval(&node);
+			for(int i = 0;i<c;i++)
+			{
+				new_nodes.push_back(after_create(getCnode(0.0)));
+			}
+			new_nodes.push_back(after_create(getCnode(1.0)));
+
+			if(c == 0)
+			{
+				new_nodes.push_back(after_create(getCnode(0.0)));
+			}
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+		}
+
 	}
 
 	virtual void visit( PLUS_node& node )
 	{
-		if (node.getOtype() == OutType::INT)
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( PLUS_node& node ); node.id = " << node.id << endl;
+		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
 		{
-			cout << "visit( PLUS_node& node ) at node.id = " << node.id << endl;
-			cout << "parent ids: "  << node.mother()->id << " "<< node.father()->id <<endl;
-
 			bool_node* mother = node.mother();
 			bool_node* father = node.father();
 
-			assert(mother->getOtype() == OutType::INT);
-			assert(father->getOtype() == OutType::INT);
+			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
+			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
 
 			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
 			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
 
 			if(mother_is_one_hot && father_is_one_hot)
 			{
+				if(print)
+				cout << "ENTER 1" << endl;
 				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
 				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
 
@@ -281,97 +371,223 @@ public:
 				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
 				node_id_to_replacement_nodes[node.id] = new_nodes;
 
-				bool_node* assert_node = assert_one_hot_constraint(new_nodes);
+				assert_one_hot_constraint(new_nodes);
 			}
-			else if(mother_is_one_hot || father_is_one_hot)
+			else
 			{
-				assert(!mother_is_one_hot || !father_is_one_hot);
-				if(father_is_one_hot)
-				{
-					bool_node* tmp = father;
-					father = mother;
-					mother = tmp;
-				}
-				assert(father->type == bool_node::CONST);
-				//mother is always one_hot, father is always const
-				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-
-				vector<bool_node*> new_nodes;
-				for(int i = 0;i<getIval(father);i++)
-				{
-					bool_node* new_c_node = getCnode(0.0);
-					new_c_node = after_create(new_c_node);
-					new_nodes.push_back(new_c_node);
-				}
-				for(int i = 0;i<replace_mother_nodes.size();i++)
-				{
-					new_nodes.push_back(replace_mother_nodes[i]);
-				}
-
-				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
-				node_id_to_replacement_nodes[node.id] = new_nodes;
-
+				cout << "ALL INTS AND BOOLS SHOULD HAVE node_id_to_replacement_nodes" << endl;
+				assert(false);
 			}
 		}
 		DagOptim::visit(node);
 	}
 
-	bool_node* create__lb_lt_sum_nodes(vector<bool_node*> to_sum)
+	virtual void visit( TIMES_node& node )
 	{
-		bool_node* sum_node = sum_nodes(to_sum);
-		bool_node* const_node = getCnode(threshold);
-		const_node = after_create(const_node);		
-		bool_node* lt_node = LT_node::create(const_node, sum_node);
-		lt_node = after_create(lt_node);
-		cout << "create__lb_lt_sum_nodes " << lt_node->id << endl; 
-		return lt_node;
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( TIMES_node& node ); node.id = " << node.id << endl;
+		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
+		{
+			bool_node* mother = node.mother();
+			bool_node* father = node.father();
+
+			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
+			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
+
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+			if(mother_is_one_hot && father_is_one_hot)
+			{
+				if(print)
+				cout << "ENTER" << endl;
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+
+				int max_val = (replace_mother_nodes.size() - 1) * (replace_father_nodes.size() - 1);
+
+				vector<vector<bool_node*> > matrix = vector<vector<bool_node*> >(max_val+1, vector<bool_node*> ());
+
+				for(int i = 0;i<replace_mother_nodes.size();i++)
+				{
+					for(int j = 0;j<replace_father_nodes.size();j++)
+					{
+						matrix[i*j].push_back(my_mult(replace_mother_nodes[i], replace_father_nodes[j]));
+					}
+				}
+				vector<bool_node*> new_nodes;
+				for(int i = 0;i<matrix.size();i++)
+				{
+					new_nodes.push_back(sum_nodes(matrix[i]));
+				}
+				
+				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.id] = new_nodes;
+
+				assert_one_hot_constraint(new_nodes);
+			}
+			else
+			{
+				cout << "ALL INTS AND BOOLS SHOULD HAVE node_id_to_replacement_nodes" << endl;
+				assert(false);
+			}
+		}
+		DagOptim::visit(node);
+	}
+
+	virtual void visit( DIV_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( DIV_node& node ); node.id = " << node.id << endl;
+		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
+		{
+			bool_node* mother = node.mother();
+			bool_node* father = node.father();
+
+			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
+			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
+
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+			if(mother_is_one_hot && father_is_one_hot)
+			{
+				if(print)
+				cout << "ENTER" << endl;
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+
+				int max_val = replace_mother_nodes.size() - 1;
+
+				vector<vector<bool_node*> > matrix = vector<vector<bool_node*> >(max_val+1, vector<bool_node*> ());
+
+				after_create(ASSERT_node::create(get_node_lt_hb(replace_father_nodes[0], epsilon)));
+
+				for(int i = 0;i<replace_mother_nodes.size();i++)
+				{
+					for(int j = 1;j<replace_father_nodes.size();j++)
+					{
+						matrix[i/j].push_back(my_mult(replace_mother_nodes[i], replace_father_nodes[j]));
+					}
+				}
+				vector<bool_node*> new_nodes;
+				for(int i = 0;i<matrix.size();i++)
+				{
+					new_nodes.push_back(sum_nodes(matrix[i]));
+				}
+				
+				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.id] = new_nodes;
+
+				assert_one_hot_constraint(new_nodes);
+			}
+			else
+			{
+				cout << "ALL INTS AND BOOLS SHOULD HAVE node_id_to_replacement_nodes" << endl;
+				assert(false);
+			}
+		}
+		DagOptim::visit(node);
+	}
+
+	virtual void visit( MOD_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( MOD_node& node ); node.id = " << node.id << endl;
+		if (node.getOtype() == OutType::INT || node.getOtype() == OutType::BOOL)
+		{
+			bool_node* mother = node.mother();
+			bool_node* father = node.father();
+
+			assert(mother->getOtype() == OutType::INT || mother->getOtype() == OutType::BOOL);
+			assert(father->getOtype() == OutType::INT || father->getOtype() == OutType::BOOL);
+
+			bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+			bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+			if(mother_is_one_hot && father_is_one_hot)
+			{
+				if(print)
+				cout << "ENTER" << endl;
+				vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
+				vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
+
+				int max_val = replace_mother_nodes.size() - 1 - 1;
+
+				vector<vector<bool_node*> > matrix = vector<vector<bool_node*> >(max_val+1, vector<bool_node*> ());
+
+				after_create(ASSERT_node::create(get_node_lt_hb(replace_father_nodes[0], epsilon)));
+
+				for(int i = 0;i<replace_mother_nodes.size();i++)
+				{
+					for(int j = 1;j<replace_father_nodes.size();j++)
+					{
+						matrix[i%j].push_back(my_mult(replace_mother_nodes[i], replace_father_nodes[j]));
+					}
+				}
+				vector<bool_node*> new_nodes;
+				for(int i = 0;i<matrix.size();i++)
+				{
+					new_nodes.push_back(sum_nodes(matrix[i]));
+				}
+				
+				assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+				node_id_to_replacement_nodes[node.id] = new_nodes;
+
+				assert_one_hot_constraint(new_nodes);
+			}
+			else
+			{
+				cout << "ALL INTS AND BOOLS SHOULD HAVE node_id_to_replacement_nodes" << endl;
+				assert(false);
+			}
+		}
+		DagOptim::visit(node);
+	}
+
+	bool_node* one_minus_node(bool_node* node)
+	{
+		bool_node* c_one = after_create(getCnode(1.0));
+		bool_node* c_minus_one = after_create(getCnode(-1.0));
+		bool_node* one_minus_node = my_sum(c_one, my_mult(c_minus_one, node));
+		cout << "EXIT one_minus_node" << endl;
+		return one_minus_node;
 	}
 
 	virtual void visit( LT_node& node )
 	{
-
-		cout << "visit( LT_node& node ) at node.id = " << node.id << endl;
-		cout << "parent ids: "  << node.mother()->id << " "<< node.father()->id <<endl;
-
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( LT_node& node ); node.id = " << node.id << endl;
 		bool_node* mother = node.mother();
 		bool_node* father = node.father();
 
 		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
 		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
 
-		bool has_rvalue = false;
-		if(father->type == bool_node::CONST && mother_is_one_hot)
+		if (mother_is_one_hot && father_is_one_hot)
 		{
-			vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
-			if(father->getOtype() == OutType::INT)
-			{
-				cout << "ENTER 1" << endl;
-				vector<bool_node*> to_sum;
-				for(int i = 0; i < min((int)replace_mother_nodes.size(), getIval(father)); i++)
-				{
-					to_sum.push_back(replace_mother_nodes[i]);
-				}
-				rvalue = create__lb_lt_sum_nodes(to_sum);		
-				has_rvalue = true;
-			}
-		}
-		else if(mother->type == bool_node::CONST && father_is_one_hot)
-		{
-			vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
-			if(mother->getOtype() == OutType::INT)
-			{
-				cout << "ENTER 2" << endl;
-				vector<bool_node*> to_sum;
-				for(int i = getIval(mother)+1; i < replace_father_nodes.size(); i++)
-				{
-					to_sum.push_back(replace_father_nodes[i]);
-				}
-				rvalue = create__lb_lt_sum_nodes(to_sum);		
-				has_rvalue = true;
-			}
-		}
-		else if (mother_is_one_hot && father_is_one_hot)
-		{
+			if(print)
+			cout << "ENTER 3" << endl;
 			vector<bool_node*> replace_mother_nodes = node_id_to_replacement_nodes[mother->id];
 			vector<bool_node*> replace_father_nodes = node_id_to_replacement_nodes[father->id];
 
@@ -392,26 +608,514 @@ public:
 				to_sum.push_back(times_node);
 			}
 
-			rvalue = node_gt_c(sum_nodes(to_sum), threshold);
-			has_rvalue = true;
+			bool_node* sum_node = sum_nodes(to_sum);
 
+			vector<bool_node*> bool_as_floats;
+			bool_as_floats.push_back(one_minus_node(sum_node));
+			bool_as_floats.push_back(sum_node);
+
+			assert_max_gt_c(bool_as_floats);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = bool_as_floats;
 		}
 
-		if(!has_rvalue)
+
+		DagOptim::visit(node);
+	}
+
+	virtual void visit(ASSERT_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( ASSERT_node& node ); node.id = " << node.id << endl;
+		int cond_id = node.get_parent(0)->id;
+
+		bool cond_is_one_hot = node_id_to_replacement_nodes.find(cond_id) != node_id_to_replacement_nodes.end();
+
+		if(print)
+		{
+			cout << cond_id << endl;
+			cout << cond_is_one_hot << endl;
+		}
+
+		if(cond_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_id];
+			assert(cond_one_hot.size() == 2);
+
+			bool_node* new_assert_node = ASSERT_node::create(get_node_gt_lb(cond_one_hot[1], threshold));
+			new_assert_node = after_create(new_assert_node);
+
+			rvalue = new_assert_node;
+		}
+		else
 		{
 			DagOptim::visit(node);
 		}
 	}
 
+	bool_node* my_mult(bool_node* left, bool_node* right)
+	{
+		bool_node* ret = TIMES_node::create(left, right);
+		ret = after_create(ret);
+		return ret;
+	}
+
+
+	bool_node* my_sum(bool_node* left, bool_node* right)
+	{
+		bool_node* ret = PLUS_node::create(left, right);
+		ret = after_create(ret);
+		return ret;
+	}
 
 	virtual void visit( AND_node& node )
 	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( AND_node& node ); node.id = " << node.id << endl;
+		bool_node* mother = node.mother();
+		bool_node* father = node.father();
 
-		cout << "visit( AND_node& node ) at node.id = " << node.id << endl;
-		cout << "parent ids: "  << node.mother()->id << " "<< node.father()->id <<endl;
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+		if(mother_is_one_hot && father_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			assert(left.size() == 2);
+			assert(right.size() == 2);
+
+			vector<bool_node*> new_nodes;
+
+			// left[0]*right[0]+left[0]*right[1] + left[1]*right[0];
+			bool_node* nand_case = my_sum(my_sum(my_mult(left[0], right[0]), my_mult(left[0], right[1])), my_mult(left[1], right[0]));
+
+			// left[1]*right[1]
+			bool_node* and_case = my_mult(left[1], right[1]);
+
+			new_nodes.push_back(nand_case);
+			new_nodes.push_back(and_case);
+
+			assert_one_hot_constraint(new_nodes);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+
+		}
 
 		DagOptim::visit(node);
 	}	
+
+	virtual void visit( OR_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( OR_node& node ); node.id = " << node.id << endl;
+		bool_node* mother = node.mother();
+		bool_node* father = node.father();
+
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+		if(mother_is_one_hot && father_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			assert(left.size() == 2);
+			assert(right.size() == 2);
+
+			vector<bool_node*> new_nodes;
+
+			bool_node* or_case = my_sum(my_sum(my_mult(left[1], right[0]), my_mult(left[0], right[1])), my_mult(left[1], right[1]));
+			bool_node* nor_case = my_mult(left[0], right[0]);
+
+			new_nodes.push_back(nor_case);
+			new_nodes.push_back(or_case);
+
+			assert_one_hot_constraint(new_nodes);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+
+		}
+
+		DagOptim::visit(node);
+	}	
+
+	virtual void visit( XOR_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( XOR_node& node ); node.id = " << node.id << endl;
+		bool_node* mother = node.mother();
+		bool_node* father = node.father();
+
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+
+		if(print)
+		{
+			cout << mother->id <<" "<< father->id << endl;
+			cout << mother_is_one_hot << " " << father_is_one_hot << endl;
+		}
+
+		if(mother_is_one_hot && father_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			assert(left.size() == 2);
+			assert(right.size() == 2);
+
+			vector<bool_node*> new_nodes;
+
+			bool_node* xor_case = my_sum(my_mult(left[1], right[0]), my_mult(left[0], right[1]));
+			bool_node* xnot_case = my_sum(my_mult(left[1], right[1]), my_mult(left[0], right[0]));
+
+			new_nodes.push_back(xnot_case);
+			new_nodes.push_back(xor_case);
+
+			assert_one_hot_constraint(new_nodes);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+
+		}
+
+		DagOptim::visit(node);
+	}	
+
+	virtual void visit( EQ_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( EQ_node& node ); node.id = " << node.id << endl;
+		bool_node* mother = node.mother();
+		bool_node* father = node.father();
+
+		bool mother_is_one_hot = node_id_to_replacement_nodes.find(mother->id) != node_id_to_replacement_nodes.end();
+		bool father_is_one_hot = node_id_to_replacement_nodes.find(father->id) != node_id_to_replacement_nodes.end();
+		if(print)
+		{
+			cout << mother->id <<" "<< father->id << endl;
+			cout << mother_is_one_hot << " "  << father_is_one_hot << endl;
+		}
+		if(mother_is_one_hot && father_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> left = node_id_to_replacement_nodes[mother->id];
+			vector<bool_node*> right = node_id_to_replacement_nodes[father->id];
+			vector<bool_node*> new_nodes;
+
+			vector<bool_node*> mults;
+			for(int i = 0;i<min((int)left.size(), (int) right.size()); i++)
+			{
+				mults.push_back(my_mult(left[i], right[i]));
+			}
+
+			bool_node* eq_case = sum_nodes(mults);
+			bool_node* neq_case = one_minus_node(eq_case);
+
+			new_nodes.push_back(neq_case);
+			new_nodes.push_back(eq_case);
+
+			assert_max_gt_c(new_nodes);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+
+		}
+
+		DagOptim::visit(node);
+	}	
+
+
+	virtual void visit( NOT_node& node )
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( NOT_node& node ); node.id = " << node.id << endl;
+
+		bool_node* parent = node.mother();
+
+		bool parent_is_one_hot = node_id_to_replacement_nodes.find(parent->id) != node_id_to_replacement_nodes.end();
+
+		if(parent_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER" << endl;
+			vector<bool_node*> parent_nodes = node_id_to_replacement_nodes[parent->id];
+
+			assert(parent_nodes.size() == 2);
+
+			vector<bool_node*> new_nodes;
+
+			new_nodes.push_back(parent_nodes[1]);
+			new_nodes.push_back(parent_nodes[0]);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+
+		}
+
+		DagOptim::visit(node);
+	}	
+
+	virtual void visit(ARR_CREATE_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+
+		if(node.getOtype() == OutType::FLOAT_ARR)
+		{
+			cout << "THIS STILL HASN'T BEEN TESTED." << endl;
+			assert(false);
+			int n = node.nargs();
+			vector<bool_node*> new_nodes;
+			for(int i = 0;i<n;i++)
+			{
+				new_nodes.push_back(node.get_parent(i));
+			}
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+		}
+		
+		DagOptim::visit(node);
+	}
+
+
+	virtual void visit(ARRACC_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( ARRACC_node& node ); node.id = " << node.id << endl;
+
+		bool_node* cond_node = node.get_parent(0);
+		bool_node* if_false_node = node.get_parent(1);
+		bool_node* if_true_node = node.get_parent(2);
+
+		if(print)
+		cout << cond_node->id << " " << if_false_node->id <<" "<< if_true_node->id << endl;
+
+		bool cond_is_one_hot = node_id_to_replacement_nodes.find(cond_node->id) != node_id_to_replacement_nodes.end();
+		bool if_true_is_one_hot = node_id_to_replacement_nodes.find(if_false_node->id) != node_id_to_replacement_nodes.end();
+		bool if_false_is_one_hot = node_id_to_replacement_nodes.find(if_true_node->id) != node_id_to_replacement_nodes.end();
+
+		if(print)
+		{
+			cout << cond_is_one_hot <<" "<< if_true_is_one_hot << " " << if_false_is_one_hot << endl;
+		}
+		if(cond_is_one_hot && if_true_is_one_hot && if_false_is_one_hot)
+		{
+			if(print)
+			cout << "ENTER 1" << endl;
+			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->id];
+			vector<bool_node*> if_true_one_hot = node_id_to_replacement_nodes[if_true_node->id];
+			vector<bool_node*> if_false_one_hot = node_id_to_replacement_nodes[if_false_node->id];
+
+			while(if_true_one_hot.size() > if_false_one_hot.size())
+			{
+				if_false_one_hot.push_back(after_create(getCnode(0.0)));
+			}
+			while(if_true_one_hot.size() < if_false_one_hot.size())
+			{
+				if_true_one_hot.push_back(after_create(getCnode(0.0)));
+			}
+
+			assert(cond_one_hot.size() == 2);
+
+			assert(if_true_one_hot.size() == if_false_one_hot.size());
+
+			vector<bool_node*> new_nodes;
+
+			int len = if_true_one_hot.size();
+
+			for(int i = 0;i<len;i++)
+			{
+				//cond_one_hot[1]*if_true_one_hot[i] +cond_one_hot[0]*if_false_one_hot[i];
+				bool_node* both = my_sum(my_mult(cond_one_hot[0], if_false_one_hot[i]), my_mult(cond_one_hot[1], if_true_one_hot[i]));
+				new_nodes.push_back(both);	
+			}
+
+			assert_one_hot_constraint(new_nodes);
+
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+		}
+		else if(cond_is_one_hot && !if_true_is_one_hot && !if_false_is_one_hot)
+		{
+			vector<bool_node*> cond_one_hot = node_id_to_replacement_nodes[cond_node->id];
+
+			bool all_floats = true;
+			int n = node.nargs();
+
+			assert(cond_one_hot.size() >= n);
+
+			for(int i = 1;i<=n;i++)
+			{
+				all_floats &= node.get_parent(i)->getOtype() == OutType::FLOAT;
+			}
+
+			if(all_floats)
+			{
+				if(print) cout << "ENTER 2";
+
+				vector<bool_node*> dot_product;
+				for(int i = 1;i<=n;i++)
+				{
+					dot_product.push_back(my_mult(cond_one_hot[i-1], node.get_parent(i)));
+				}
+
+				rvalue = sum_nodes(dot_product);
+				return;
+			}
+		}
+		
+		DagOptim::visit(node);			
+	}
+
+
+	virtual void visit(ARRASS_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+		if(print)
+		cout << "IN visit( ARRASS_node& node ); node.id = " << node.id << endl;
+
+		bool_node* lhs_of_cond = node.mother();
+		int rhs_of_cond = node.quant;
+		bool_node* new_value = node.getNewVal();
+		bool_node* old_value = node.getOldVal();
+
+		bool lhs_of_cond_has_one_hot = node_id_to_replacement_nodes.find(lhs_of_cond->id) != node_id_to_replacement_nodes.end();
+		bool new_value_has_one_hot = node_id_to_replacement_nodes.find(new_value->id) != node_id_to_replacement_nodes.end();
+		bool old_value_has_one_hot = node_id_to_replacement_nodes.find(old_value->id) != node_id_to_replacement_nodes.end();
+
+		if(lhs_of_cond_has_one_hot && new_value_has_one_hot && old_value_has_one_hot)
+		{
+			if(print) cout << "ENTER 1" << endl;
+			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->id];
+			vector<bool_node*> new_nodes;
+			if(rhs_of_cond < lhs_nodes.size())
+			{
+				bool_node* quant_node = lhs_nodes[rhs_of_cond];
+
+				vector<bool_node*> new_value_nodes = node_id_to_replacement_nodes[new_value->id];
+				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->id];
+				
+				while(new_value_nodes.size() > old_value_nodes.size())
+				{
+					old_value_nodes.push_back(after_create(getCnode(0.0)));
+				}
+				while(new_value_nodes.size() < old_value_nodes.size())
+				{
+					new_value_nodes.push_back(after_create(getCnode(0.0)));
+				}
+
+				assert(old_value_nodes.size() == new_value_nodes.size());
+				int n = new_value_nodes.size();
+
+				for(int i = 0;i<n;i++)
+				{
+					bool_node* new_node = my_sum(
+								my_mult(new_value_nodes[i], quant_node), 
+								my_mult(old_value_nodes[i], one_minus_node(quant_node)));
+					new_nodes.push_back(new_node);
+				}
+				assert_one_hot_constraint(new_nodes);
+			}
+			else
+			{
+				vector<bool_node*> old_value_nodes = node_id_to_replacement_nodes[old_value->id];
+				new_nodes = old_value_nodes;
+			}
+			assert(node_id_to_replacement_nodes.find(node.id) == node_id_to_replacement_nodes.end());
+			node_id_to_replacement_nodes[node.id] = new_nodes;
+		}
+		else if(lhs_of_cond_has_one_hot && !new_value_has_one_hot && !old_value_has_one_hot)
+		{
+			if(print) cout << "ENTER 2" << endl;
+			vector<bool_node*> lhs_nodes = node_id_to_replacement_nodes[lhs_of_cond->id];
+
+			if(new_value->getOtype() == OutType::FLOAT && old_value->getOtype() == OutType::FLOAT)
+			{
+				if(rhs_of_cond < lhs_nodes.size())
+				{
+					bool_node* quant_node = lhs_nodes[rhs_of_cond];
+					rvalue = my_sum(
+						my_mult(new_value, quant_node), 
+						my_mult(old_value, one_minus_node(quant_node)));
+				}
+				else
+				{
+					rvalue = old_value;
+				}
+				return;
+			}
+		}
+
+		DagOptim::visit(node);	
+	}
+
+	/*virtual void visit(ARR_W_node& node)
+	{
+		if(node.id == -1) {
+			DagOptim::visit(node);
+			return;
+		}
+		bool print = meta_print || node.id != -1;
+
+		if(print) cout << "IN visit( ARR_W_node& node ); node.id = " << node.id << endl;
+
+
+	}*/
+
 };
 
 #endif  // INTOTOFLOATREWRITEDAG_H_

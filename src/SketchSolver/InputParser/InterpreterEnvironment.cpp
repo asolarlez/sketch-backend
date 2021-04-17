@@ -864,7 +864,6 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 	cout << "InterpreterEnvironment::assertDAG" << endl;
     if (params.numericalSolver) {
     	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
-    	// BooleanDAG* new_dag = dag;
     	BooleanDAG* new_dag = rewriter.rewrite();
         SATSolver::SATSolverResult ret = assertDAGNumerical(new_dag, out);
        	
