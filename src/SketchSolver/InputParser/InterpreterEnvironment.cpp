@@ -832,13 +832,17 @@ int InterpreterEnvironment::doallpairs() {
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
-    
-    reasSolver->addProblem(dag);
-    
+	
+	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
+	BooleanDAG* new_dag = rewriter.rewrite();
+
+    reasSolver->addProblem(new_dag);
+       	
     int solveCode = 0;
     try{
         solveCode = reasSolver->solve();
-        reasSolver->get_control_map(currentControls);
+        currentControls = rewriter.extract_result(reasSolver->get_result(), reasSolver->get_ctrls());
+        //reasSolver->get_control_map(currentControls);
     }catch(SolverException* ex){
         cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
         status=UNSAT;
@@ -861,15 +865,8 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
 
-	cout << "InterpreterEnvironment::assertDAG" << endl;
     if (params.numericalSolver) {
-    	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
-    	BooleanDAG* new_dag = rewriter.rewrite();
-        SATSolver::SATSolverResult ret = assertDAGNumerical(new_dag, out);
-       	
-       	rewriter.extract_result(reasSolver->get_result(), reasSolver->get_ctrls());
-       
-        return ret;
+        return assertDAGNumerical(dag, out);
     }
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;

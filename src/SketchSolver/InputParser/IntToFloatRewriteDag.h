@@ -11,6 +11,7 @@ class IntToFloatRewriteDag: public DagOptim
 	float epsilon = 0.001;
 	BooleanDAG& dag;
 	map<string, vector<CTRL_node*> > ctrl_node_name_to_replacement_nodes;
+	set<string> float_holes;
 	map<int, vector<bool_node*> > node_id_to_replacement_nodes;
 	set<int> inserted_asserts; 
 public:
@@ -84,12 +85,13 @@ public:
 
 		return ret;
 	}
-	void extract_result(gsl_vector* result, map<string, int>& ctrls)
+	map<string, string> extract_result(gsl_vector* result, map<string, int>& ctrls)
 	{
 		cout << "###################################################" << endl;
 		cout << "###################  RESULT  ######################" << endl;
 		cout << "###################################################" << endl;
 
+		map<string, string> ret;	
 		for(auto it : ctrl_node_name_to_replacement_nodes)
 		{
 			string original_node_name = it.first;
@@ -99,7 +101,7 @@ public:
 			float best = -1;
         	for(int i = 0; i< replacement_nodes.size();i ++)
         	{
-        		float val = gsl_vector_get(result, ctrls[replacement_nodes[i]->name]);
+        		float val = gsl_vector_get(result, ctrls[replacement_nodes[i]->get_name()]);
         		cout << val << " "; 
         		if (val > best)
         		{
@@ -108,11 +110,19 @@ public:
         		}
         	}	
         	cout << " | argmax = " << best_id << endl;
+        	ret[original_node_name] = std::to_string(best_id);
+		}
+
+		for(auto it : float_holes)
+		{
+			ret[it] = std::to_string(gsl_vector_get(result, ctrls[it]));
 		}
 
 		cout << "###################################################" << endl;
 		cout << "###################################################" << endl;
 		cout << "###################################################" << endl;
+		
+		return ret;
 	}
 
 	bool_node* after_create(bool_node* node)
@@ -286,6 +296,11 @@ public:
 			ctrl_node_name_to_replacement_nodes[node.get_name()] = new_ctrl_nodes;
 
 			assert_one_hot_constraint(new_nodes);
+		}
+		else if(node.getOtype() == OutType::FLOAT)
+		{
+			assert(float_holes.find(node.get_name()) == float_holes.end());
+			float_holes.insert(node.get_name());
 		}
 		DagOptim::visit(node);
 	}
