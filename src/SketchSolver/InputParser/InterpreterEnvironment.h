@@ -182,6 +182,7 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
+	CEGISFinder* cegisfind;
     REASSolver* reasSolver;
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
@@ -192,7 +193,9 @@ public:
 		finder->setMemo(p.setMemo && p.synthtype == SATSolver::MINI);
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);
-		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+
+		cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+		solver = new CEGISSolver(*cegisfind, hardcoder, params, floats);
         reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
@@ -225,11 +228,14 @@ public:
 		delete _pfind;
 		delete solver;
         delete reasSolver;
+		delete cegisfind;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
-		solver = new CEGISSolver(*finder, hardcoder, params, floats);
+
+		cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+		solver = new CEGISSolver(*cegisfind, hardcoder, params, floats);
         reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;
