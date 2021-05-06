@@ -743,7 +743,7 @@ NodesToSolver::processFloatArith(bool_node &node, THEOP comp, COMPARE_KEY c)
 
 
 	Dout(cout << "ARITHOP " << mval << "  OP  " << fval << endl);
-	Dout(cout << "OPERATING " << node.father->get_name() << "  WITH  " << node.mother->get_name() << endl);
+	Dout(cout << "OPERATING " << node.father()->get_name() << "  WITH  " << node.mother()->get_name() << endl);
 	int vals = 0;
 	//cout<<" BEFORE THE LOOPS"<<endl;
 	//				timerclass atimer("TA");
@@ -940,7 +940,7 @@ NodesToSolver::processArith (bool_node &node, THEOP comp, COMPARE_KEY c)
 	
 	
 	Dout(cout<<"ARITHOP "<<mval<<"  OP  "<<fval<<endl);
-	Dout(cout<<"OPERATING "<<node.father->get_name()<<"  WITH  "<<node.mother->get_name()<<endl);
+	Dout(cout<<"OPERATING "<<node.father()->get_name()<<"  WITH  "<<node.mother()->get_name()<<endl);
 	int vals = 0;
 	//cout<<" BEFORE THE LOOPS"<<endl;
 	//				timerclass atimer("TA");
@@ -1777,7 +1777,7 @@ void NodesToSolver::visit( ARRACC_node& node ){
 	const Tvalue& omv = tval_lookup(node.mother()) ;	
 	bool isSparse = omv.isSparse();
 	bool isInt = omv.isInt();
-    Dout(cout<<" mother = "<<node.mother->get_name()<<"  mid = "<<omv<<" "<<endl);
+    Dout(cout<<" mother = "<<node.mother()->get_name()<<"  mid = "<<omv<<" "<<endl);
 	if( isSparse && omv.getId () == YES && omv.num_ranges.size() == 1){
 		int idx = omv.num_ranges[0].value;
 

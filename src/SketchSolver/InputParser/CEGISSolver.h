@@ -67,6 +67,53 @@ public:
 };
 
 
+class CEGISFinder {
+	vector<Tvalue> find_node_ids;
+	vector<Tvalue> find_history;
+	bool stoppedEarly;
+	CEGISparams params;
+	BooleanDAG* lastFproblem;
+	FloatManager& floats;
+	HoleHardcoder& hcoder;
+	SolverHelper& dirFind;
+	SATSolver& mngFind;
+	
+	void addInputsToTestSet(BooleanDAG* problem, VarStore& input);
+public:
+	CEGISFinder(FloatManager& _floats,
+		HoleHardcoder& _hcoder,
+		SolverHelper& _dirFind,
+		SATSolver& _mngFind, CommandLineArgs& args) :floats(_floats), hcoder(_hcoder), dirFind(_dirFind), mngFind(_mngFind), params(args), lastFproblem(NULL) {
+
+	}
+
+	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes);
+
+	bool find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged);
+
+	void declareControl(CTRL_node* cnode) {
+		dirFind.declareControl(cnode);
+	}
+
+	void updateCtrlVarStore(VarStore& ctrlStore) {
+		for (map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it) {
+			if (!ctrlStore.contains(it->first)) {
+				ctrlStore.newVar(it->first, it->second, NULL);
+			}
+		}
+	}
+
+	void retractAssumptions() {
+		dirFind.getMng().retractAssumptions();
+	}
+};
+
+
+
+BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats);
+void printDiagnostics(SATSolver& mng, char c);
+
+
 class CEGISSolver
 {
 	FloatManager& floats;
@@ -91,8 +138,7 @@ class CEGISSolver
 		return problemStack.size();
 	}
 
-	SolverHelper& dirFind;		
-	SATSolver& mngFind;
+	CEGISFinder& finder;
 	
 
 	
@@ -100,23 +146,21 @@ class CEGISSolver
 	// vector<struct InputGen *> inputGens;
 
 	CEGISparams params;
-
-	bool stoppedEarly;
+	
 	
 	Checkpointer cpt;
-	BooleanDAG* lastFproblem;
+
 	map<int, string> files;
-	vector<Tvalue> find_node_ids;
 	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;	
 protected:
 	void declareControl(CTRL_node* cnode);
 	void declareInput(const string& cname, int size, int arrSz, OutType* otype);
 	bool solveCore();
-	bool solveOptimization();
+	//bool solveOptimization();
 	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
 	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
-	void addInputsToTestSet(VarStore& input);
+	
 
 	bool check(VarStore& input, VarStore& controls);
 	lbool baseCheck(VarStore& controls, VarStore& input);
@@ -127,14 +171,13 @@ protected:
 
 	void normalizeInputStore();
 	void abstractProblem();
-	bool minimizeHoleValue(vector<string>& mhnames, vector<int>& mhsizes);
+	
 	void growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 public:
-	vector<Tvalue> find_history;
-	VarStore ctrlStore;
-	BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type);
+	
+	VarStore ctrlStore;	
 
-	CEGISSolver(SolverHelper& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
+	CEGISSolver(CEGISFinder& finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
 	~CEGISSolver(void);
 	void addProblem(BooleanDAG* miter, const string& file);
 
@@ -146,9 +189,7 @@ public:
 	bool solveFromCheckpoint(istream& in);
 	virtual void setCheckpoint(const string& filename);
 	
-
-
-	void printDiagnostics(SATSolver& mng, char c);
+	
 	
 
 	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);

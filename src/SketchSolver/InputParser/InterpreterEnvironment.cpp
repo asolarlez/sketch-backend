@@ -111,6 +111,7 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 	SwapperPredicateNS::PredicateBuilder::clearStaticMapMemory();
 	delete finder;
 	delete _pfind;
+	delete cegisfind;
 }
 
 /* Runs the input command in interactive mode. 'cmd' can be:
@@ -941,12 +942,13 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 		return SATSolver::UNSATISFIABLE;
 	}
 
+	/*
 	if (false) {
 		statehistory.push_back(solver->find_history);
 
 		for (int i = 0; i<history.size(); ++i) {
 			cout << " ~~~ Order = " << i << endl;
-			BooleanDAG* bd = solver->hardCodeINode(history[i], solver->ctrlStore, bool_node::CTRL);
+			BooleanDAG* bd = hardCodeINode(history[i], solver->ctrlStore, bool_node::CTRL, floats);
 			int sz = bd->getNodesByType(bool_node::ASSERT).size();
 			cout << " ++ Order = " << i << " size = " << sz << endl;
 			if (sz > 0) {
@@ -955,7 +957,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 			}
 		}
 	}
-
+	*/
 	return SATSolver::SATISFIABLE;
 }
 
