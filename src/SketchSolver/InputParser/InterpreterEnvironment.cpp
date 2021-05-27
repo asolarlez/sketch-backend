@@ -829,7 +829,7 @@ int InterpreterEnvironment::doallpairs() {
 
 
 
-
+/*
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
@@ -861,14 +861,15 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
     
     return SATSolver::SATISFIABLE;
 }
-
+*/
     
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
 
-    if (params.numericalSolver) {
+    /*if (params.numericalSolver) {
+    	assert(false);
         return assertDAGNumerical(dag, out);
-    }
+    }*/
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 

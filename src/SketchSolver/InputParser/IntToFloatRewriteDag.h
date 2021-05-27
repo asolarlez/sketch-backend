@@ -87,6 +87,17 @@ public:
 	}
 	map<string, string> extract_result(gsl_vector* result, map<string, int>& ctrls)
 	{
+		map<string, int> currentControlInts;
+		map<string, float> currentControlFloats;
+
+		return extract_result_typed(result, ctrls, currentControlInts, currentControlFloats);
+	}
+
+	map<string, string> extract_result_typed(
+		gsl_vector* result, map<string, int>& ctrls, 
+		map<string, int>& currentControlInts, map<string, float>& currentControlFloats)
+	{
+
 		cout << "###################################################" << endl;
 		cout << "###################  RESULT  ######################" << endl;
 		cout << "###################################################" << endl;
@@ -111,11 +122,15 @@ public:
         	}	
         	cout << " | argmax = " << best_id << endl;
         	ret[original_node_name] = std::to_string(best_id);
+        	currentControlInts[original_node_name] = best_id;
 		}
 
 		for(auto it : float_holes)
 		{
-			ret[it] = std::to_string(gsl_vector_get(result, ctrls[it]));
+			float local_res = gsl_vector_get(result, ctrls[it]);
+			ret[it] = std::to_string(local_res);
+			currentControlFloats[it] = local_res;
+			cout << it << " = " << local_res << endl;
 		}
 
 		cout << "###################################################" << endl;
@@ -996,7 +1011,10 @@ public:
 			for(int i = 0;i<len;i++)
 			{
 				//cond_one_hot[1]*if_true_one_hot[i] +cond_one_hot[0]*if_false_one_hot[i];
-				bool_node* both = my_sum(my_mult(cond_one_hot[0], if_false_one_hot[i]), my_mult(cond_one_hot[1], if_true_one_hot[i]));
+				bool_node* both = 
+					my_sum(	
+							my_mult(cond_one_hot[0], if_false_one_hot[i]), 
+							my_mult(cond_one_hot[1], if_true_one_hot[i]));
 				new_nodes.push_back(both);	
 			}
 

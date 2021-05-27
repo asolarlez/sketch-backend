@@ -83,14 +83,28 @@ public:
 		return getFloat(id);
 	}
 
-	double getFloat(int id) {
-		if (id < 0) {
-			return -floats[-id];
+	double getFloatSafe(int id)
+	{
+		Assert(id >= 0, "getFloatSafe should take input id >= 0.");
+		if(id >= floats.size())
+		{
+			Assert(id >= 0, "id out of bounds.");
+			return 0.0;
 		}
-		else {
-			return	floats[id];
+		else
+		{
+			return floats[id];
 		}
 
+	}
+
+	double getFloat(int id) {
+		if (id < 0) {
+			return -getFloatSafe(-id);
+		}
+		else {
+			return getFloatSafe(id);
+		}
 	}
 
 	int getIdx(double x) {

@@ -36,7 +36,6 @@ CONST_node* DagOptim::getCnode(double c){
 		newnodes.push_back(cnode);
 		cnmap[code] = cnode;
 		Dout(cout<<" add "<<cnode->id<<"  "<<cnode->get_name()<<endl);
-		cout << "ADD cnode " << cnode->id << " val: " << c << endl;
 		return cnode;
 	}else{
 		return cnmap[code];	

@@ -154,7 +154,7 @@ public:
 						cerr << endl;
 						cerr << "corresponding to inputs "<<endl;
 						for (auto it = inputs->begin(); it != inputs->end(); ++it) {
-							cerr << it->name<<"  ";
+							cerr << it->getName()<<"  ";
 						}
 						cerr << endl;
 						throw BasicError(string("file parsing error"), "name");
@@ -256,11 +256,12 @@ public:
 
 
 	Result fromFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes) {
-		ifstream file(fname);
+		ifstream file;
+		file.open(fname);
 		bool ok = true;
 
 		if (!file.is_open() || file.fail()) {
-			Assert(false, "File " << fname << " could not be opened!!");
+			Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
 			return UNSAT;
 		}
 

@@ -1410,6 +1410,8 @@ public:
   }
   void setFloat() {
     isFloat = true;
+    otype = OutType::FLOAT;
+    nbits = 18;
   }
 	
 	void setSpecial() {
