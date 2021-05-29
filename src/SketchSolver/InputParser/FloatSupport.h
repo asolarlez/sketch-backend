@@ -128,8 +128,8 @@ public:
 					return  lbd->second;
 				}
 			}
-			lbd++;
 			if (lbd != floatIdx.end()) {
+				lbd--;
 				dist = lbd->first - x;
 				if (-epsilon < dist && dist < epsilon) {
 					if (isNeg) {

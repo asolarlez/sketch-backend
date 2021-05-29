@@ -91,6 +91,7 @@ public:
 				return next->setBit(i-vals.size(), val);
 			}
 		}
+		
 		int getInt() const{
 			int t = intFromBV(vals, 0, vals.size());
 			return isNeg? -t : t; 

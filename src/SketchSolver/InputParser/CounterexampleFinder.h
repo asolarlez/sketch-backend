@@ -247,11 +247,11 @@ public:
 			in.get(ch);
 			if (in.eof()) {
 				regval();
-				return true;
+				return !outOfRange;
 			}
 		}
 		regval();
-		return true;
+		return !outOfRange;
 	}
 
 
