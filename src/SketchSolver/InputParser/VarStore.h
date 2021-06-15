@@ -33,12 +33,18 @@ private:
 public:
 	class objP{
 	public:
+		string name;
+	public:
 		objP* next;
 		OutType* otype;
 		int index;
-		string name;
 		vector<int> vals;
 		bool isNeg;
+		string getName()
+		{
+			return name;
+		}
+
 		virtual ~objP(){
 			if(next != NULL){ delete next; }
 		}
@@ -85,6 +91,7 @@ public:
 				return next->setBit(i-vals.size(), val);
 			}
 		}
+		
 		int getInt() const{
 			int t = intFromBV(vals, 0, vals.size());
 			return isNeg? -t : t; 
@@ -239,7 +246,7 @@ public:
 	}
 	bool increment(const string& name){
 		// cout<<"Upgraded "<<name<<" ";
-		int idx = index[name];
+		int idx = getId(name);
 		
 		objP& tmp = objs[idx];
 		bool rv = tmp.increment();
@@ -269,17 +276,17 @@ public:
 	void setVarVal(const string& name, int val, OutType* otype){
 		int idx;
 		if(index.count(name)!=0){
-			idx = index[name];
+			idx = getId(name);
 		}else{
 			objs.push_back(objP(name, 5, otype));
 			idx = objs.size()-1;
-      index[name] = idx;
+      		index[name] = idx;
 		}
 		objs[idx].setVal(val);
 	}
 
 	void resizeVar(const string& name, int size){
-		int idx = index[name];
+		int idx = getId(name);
 		{
 			objP& tmp = objs[idx];
 			bitsize -= tmp.globalSize();
@@ -288,7 +295,7 @@ public:
 		}
 	}
 	void resizeArr(const string& name, int arrSize){
-		int idx = index[name];
+		int idx = getId(name);
 		{
 			objP& tmp = objs[idx];
 			bitsize -= tmp.globalSize();
@@ -379,12 +386,13 @@ public:
 		Assert(found, "This is a bug");
 	}
 	int operator[](const string& name) {
-		return objs[index[name]].getInt();
+		return objs[getId(name)].getInt();
 	}
 	objP& getObj(const string& name){ 
-		return objs[index[name]];
+		return objs[getId(name)];
 	}
 	int getId(const string& name){
+		Assert(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return index[name];
 	}
 	objP& getObj(int id){ 

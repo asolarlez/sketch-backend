@@ -59,6 +59,15 @@ public:
 
     gsl_vector* getResult();
     LocalState* getLocalState();
-    
+
+    map<string, int>& get_ctrls()
+    {
+        return ctrls;
+    }
+
+    gsl_vector* get_result()
+    {
+        return result;
+    }
 
 };

@@ -530,6 +530,7 @@ public:
 	virtual void visit( ACTRL_node& node );
 	virtual void visit( ARR_R_node& node );
 	virtual void visit( ARR_W_node& node );
+	virtual void visit( ARR_CREATE_node& node);
    virtual void visit( TUPLE_CREATE_node& node);
     virtual void visit( TUPLE_R_node& node);
 

@@ -11,6 +11,7 @@
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
 #include "NodeHardcoder.h"
+#include "CEGISFinder.cpp"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -38,37 +39,36 @@ void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 		}
 		int cints = 0;
 		int cbits = 0;
-    int cfloats = 0;
+    	int cfloats = 0;
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			int nbits = ctrlnode->get_nbits();
 			if(ctrlnode->getOtype() == OutType::BOOL){
 				cbits++;
-      } else if (ctrlnode->getOtype() == OutType::FLOAT) {
-        cfloats++;
-      } else{
+			} else if (ctrlnode->getOtype() == OutType::FLOAT) {
+				cfloats++;
+			} else{
 				cints++;
-			}
-      if(!ctrlnode->get_Angelic() && ctrlnode->getOtype() != OutType::FLOAT){
+			}		
+			if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
 				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
 
 				declareControl(ctrlnode);
 			}
-      if (ctrlnode->spAngelic) {
-        declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
-      }
-
+			if (ctrlnode->spAngelic) {
+				declareInput(problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
+			}
 		}
 		if(PARAMS->verbosity > 2){
 			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
 		}
     }
 
-	finder.updateCtrlVarStore(ctrlStore);	
+	finder->updateCtrlVarStore(ctrlStore);	
 }
 
 
-CEGISSolver::CEGISSolver(CEGISFinder& _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
+CEGISSolver::CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
 finder(_finder), 
 params(args),
 hcoder(hc),
@@ -92,9 +92,18 @@ CEGISSolver::~CEGISSolver(void)
 
 void CEGISSolver::declareControl(CTRL_node* cnode){
 	const string& cname = cnode->get_name();
-	int size = cnode->get_nbits();
+	int size;
+
+	if(cnode->getOtype() != OutType::FLOAT)
+	{
+		size = cnode->get_nbits();
+	}
+	else
+	{
+		size = 18;
+	}
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
-	finder.declareControl(cnode);
+	finder->declareControl(cnode);
 
 	if(!ctrlStore.contains(cname)){
 		ctrlStore.newVar(cname, size, cnode->getOtype());
@@ -139,7 +148,7 @@ bool CEGISSolver::solve(){
 	
 	
 	ctrlStore.makeRandom();
-//	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
+	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
 //        std::vector<int, std::allocator<int> > ctrlstore_serialized =
 //                    ctrlStore.serialize();
 //	cpt.checkpoint('c', ctrlstore_serialized);
@@ -227,7 +236,7 @@ bool CEGISSolver::solveCore(){
 			// store the current solution
 			storePreviousSolution(inputStore, ctrlStore);
 			// optimization: only add inputs if the verification fails
-			if(finder.minimizeHoleValue(ctrlStore, mhnames, mhsizes))
+			if(finder->minimizeHoleValue(ctrlStore, mhnames, mhsizes))
 				doMore=true;
 			else{
 				doMore = false;
@@ -288,7 +297,7 @@ bool CEGISSolver::solveCore(){
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
 	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" CHECK TIME "<<ctimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
-	finder.retractAssumptions();
+	finder->retractAssumptions();
 	return !fail;
 }
 
@@ -325,103 +334,6 @@ void CEGISSolver::storePreviousSolution(VarStore prevInputStore1, VarStore prevC
 	prevSolutionFound = true;
 }
 
-bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes){
-	cout << "*********INSIDE minimizeHoleValue, " << "mhsize=" << mhsizes.size() << " current value of ";
-	dirFind.getMng().retractAssumptions();
-	bool isSingleMinHole = (mhsizes.size()==1);
-	vector<int> bigor; bigor.push_back(0);
-	for(size_t i=0; i<mhsizes.size(); ++i){
-		string& locminVarNodeName = mhnames[i];
-		int minVarNodeSize = mhsizes[i];
-		int H__0_val = ctrlStore.getObj(locminVarNodeName).getInt(); 
-		int H__0_var_idx = dirFind.getVar(locminVarNodeName);
-		cout <<locminVarNodeName<<"=" << H__0_val << ", " << flush;
-		Tvalue tv = H__0_var_idx;		
-		tv.makeSparse(dirFind, minVarNodeSize);
-		try{
-			for(int i=0; i<tv.num_ranges.size(); ++i){
-				if(tv.num_ranges[i].value > H__0_val){	
-					dirFind.addRetractableAssertClause(-tv.num_ranges[i].guard);
-				}
-				if(isSingleMinHole && tv.num_ranges[i].value == H__0_val){	
-					dirFind.addRetractableAssertClause(-tv.num_ranges[i].guard);
-				}
-				if(tv.num_ranges[i].value < H__0_val){	
-					bigor.push_back(tv.num_ranges[i].guard);
-				}
-			}	
-			if (minVarNodeSize > 5 && isSingleMinHole) {
-				Tvalue cnst;
-				cnst.makeIntVal(dirFind.YES, H__0_val);
-				dirFind.intClause(cnst);
-				dirFind.intClause(tv);
-				dirFind.addRetractableAssertClause(dirFind.intlt(tv.getId(), cnst.getId()));
-			}
-		}		
-		catch(BasicError& be){
-			return false;
-		}
-	}
-	cout<<endl;
-	if(!isSingleMinHole){
-		dirFind.addBigOrClause(&bigor[0], bigor.size()-1);
-		try{
-			dirFind.addRetractableAssertClause(bigor[0]);
-		}
-		catch(BasicError& be){
-			return false;
-		}
-	}
-	if (params.lightVerif) {
-		dirFind.getMng().lightSolve();
-	}
-	
-	return true;
-}
-
-void CEGISFinder::addInputsToTestSet(BooleanDAG* problem, VarStore& input){
-	map<bool_node*,  int> node_values;
-	bool specialize = PARAMS->olevel >= 6;
-	BooleanDAG* tmpproblem = NULL;	
-	if(PARAMS->verbosity > 2){  cout<<" intsize = "<< problem->getIntSize()<<endl; }
-	
-	BooleanDAG* newdag = hardCodeINode(problem, input, bool_node::SRC, floats);
-	BackwardsAnalysis ba;
-	// ba.process(*newdag);
-	DagOptim fa(*newdag, floats);
-	fa.process(*newdag);
-		
-	//cout << "addInputsToTestSet: newdag=";
-	//newdag->lprint(cout);
-	if(PARAMS->verbosity > 6){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }	
-	// find_node_ids store the mapping between node in the DAG (miter) vs
-	// the variables in the CNF.
-	find_node_ids.resize(newdag->size());
-	//getProblem()->lprint(cout);
-	
-	//FindCheckSolver::addInputsToTestSet(input);
-	lastFproblem = newdag;	
-	
-	try{
-		stoppedEarly = NodesToSolver::createConstraints(*newdag, dirFind, node_values, find_node_ids, floats);
-	}catch(BasicError& e){
-		dirFind.nextIteration();
-		if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
-		
-		
-		find_node_ids.clear();
-		
-		throw e;
-	}
-	// Keeps the history around for debugging purposes.	
-	if( params.superChecks ){ find_history = find_node_ids; }
-	dirFind.nextIteration();
-	if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
-	
-		
-	find_node_ids.clear();
-	
-}
 
 
 
@@ -472,49 +384,6 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 	}
 }
 
-
-
-BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats){
-	BooleanDAG* newdag = dag->clone();	
-	
-	int oldsize = newdag->size();
-
-	// if(PARAMS->verbosity > 2) {
-		// char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
-		// cout<<" * Specializing problem for "<< stype <<endl;
-		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
-	// }
-	
-	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
-	nhc.process(*newdag);
-
-
-
-
-	Dout( newdag->print(cout) ); 
-  DagOptim cse(*newdag, floats);
-  cse.process(*newdag);
-  newdag->cleanup();
-	if(false){
-		BackwardsAnalysis ba;
-		ba.process(*newdag);
-	}
-	if(false){
-		DagOptim cse(*newdag, floats);			
-		cse.process(*newdag);
-	}
-	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }	
-	return newdag;
-}
-
-
-
-
-
-
-
-
-
 int CEGISSolver::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 			int retval = 0;
 			nbits = inode->get_nbits();		
@@ -528,94 +397,12 @@ int CEGISSolver::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 }
 
 
-int CEGISsolveCount=0;
-
 bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged) {
-	return finder.find(getProblem(), input, controls, hasInputChanged);
+	return finder->find(getProblem(), input, controls, hasInputChanged);
 }
 
 
-bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged){
-	
-	if(hasInputChanged){
-	timerclass tc("* TIME TO ADD INPUT ");
-	tc.start();				
-	addInputsToTestSet(problem, input);
-	tc.stop();
-	if(PARAMS->verbosity > 2){ tc.print(); }
-	}
-//Solve
-	
-	SATSolver::SATSolverResult result = mngFind.solve();
-	hcoder.dismissedPending();
 
-	if(PARAMS->outputSat){
-		++CEGISsolveCount;
-		stringstream str;
-		str<<"sat_SYN_"<<CEGISsolveCount<<".cnf";
-		cout<<"Creating SAT file "<<str.str()<<endl;
-		ofstream file( str.str().c_str() );
-		this->dirFind.writeDIMACS(file);		
-	}
-
-
-	if(params.printDiag){	  	
-		printDiagnostics(mngFind, 'f');
-	}
-    if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
-    	if( result != SATSolver::UNSATISFIABLE){
-	    	switch( result ){
-			case SATSolver::UNDETERMINED: {
-					if (params.lightVerif) {
-						return false;
-					}
-					else {
-						throw new SolverException(result, "UNDETERMINED"); break;
-					}
-				}									
-	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
-	    	}    			
-    	}
-		if(this->stoppedEarly){
-			cout<<dirFind.lastErrMsg<<endl;
-		}
-    	return false;
-    }
-	Dout( dirFind.print() );
-	//dirFind.printAllVars();
-//Get the values of the Controls.
-	int jj=0;
-	for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
-		const string& cname = it->name;
-		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
-		for(int i=0; i<cnt; ++i){
-			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
-			it->setBit(i, (val==1) ? 1 : 0);			
-		}
-	}
-
-	controls.synths.clear();
-	auto end = dirFind.get_sins().end();
-	for (auto it = dirFind.get_sins().begin(); it != end; ++it) {
-		controls.synths[it->first] = it->second;
-	}
-
-	if(false){ //This is useful code when debugging;		
-		for(int i=0; i<find_history.size(); ++i){
-			cout<<i<<"=";
-			find_history[i].print(cout, &mngFind);
-			cout<<endl;
-		}
-		cout<<"???"<<endl;
-	}
-
-	mngFind.reset();
-	return true;
-//Return true.
-}
 
 // Method for cutting the problem for the synthesizer. It first finds the
 // failing assertion and then based on its relative position on the DAG decides
@@ -990,8 +777,8 @@ void CEGISSolver::normalizeInputStore(){
 	NodeSlicer slicer(empty, tmp, *getProblem(), floats);
 	slicer.process(*getProblem());
 	for(VarStore::iterator it = inputStore.begin(); it != inputStore.end(); ++it){
-		if(!slicer.isInfluential(it->name)){
-			it->setVal(last_input[it->name]);		
+		if(!slicer.isInfluential(it->getName())){
+			it->setVal(last_input[it->getName()]);		
 		}
 	}
 }
@@ -1267,7 +1054,7 @@ lbool CEGISSolver::baseCheck(VarStore& controls, VarStore& input){
     
     
 	for(VarStore::iterator it = input.begin(); it !=input.end(); ++it){
-		const string& cname = it->name;
+		const string& cname = it->getName();
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);
 			Assert( cnt == it->globalSize(), "baseCheck: SIZE MISMATCH: "<<cnt<<" != "<<it->globalSize()<< " " << cname << endl);
@@ -1391,8 +1178,15 @@ void CEGISSolver::print_control_map(ostream& out){
 void CEGISSolver::get_control_map(map<string, string>& values){
 	for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
 		stringstream str;
-		str << it->getInt();
-		values[it->name] = str.str();
+		if(it->otype == OutType::FLOAT)
+		{
+			str << floats.getFloat(it->getInt());
+		}
+		else
+		{
+			str << it->getInt();
+		}
+		values[it->getName()] = str.str();
 	}
 	for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
 		//stringstream str;

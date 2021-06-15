@@ -182,8 +182,9 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
-	CEGISFinder* cegisfind;
-    REASSolver* reasSolver;
+	CEGISFinderSpec* cegisfind;
+    // REASSolver* reasSolver;
+
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if (p.outputSat) {
@@ -194,9 +195,16 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);
 
-		cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
-		solver = new CEGISSolver(*cegisfind, hardcoder, params, floats);
-        reasSolver = new REASSolver(floats);
+		if (params.numericalSolver) 
+		{
+			cegisfind = new CEGISFinderNumerical(floats, cout);
+	    }
+	    else
+	    {
+			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+	    }
+		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+        //reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
 	}
@@ -227,16 +235,23 @@ public:
 		delete finder;
 		delete _pfind;
 		delete solver;
-        delete reasSolver;
+        //delete reasSolver;
 		delete cegisfind;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
 
-		cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
-		solver = new CEGISSolver(*cegisfind, hardcoder, params, floats);
-        reasSolver = new REASSolver(floats);
+		if (params.numericalSolver) 
+		{
+			cegisfind = new CEGISFinderNumerical(floats, cout);
+	    }
+	    else
+	    {
+			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+	    }
+		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+        //reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;
 	}
@@ -351,7 +366,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
 	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
-	SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
+	// SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 

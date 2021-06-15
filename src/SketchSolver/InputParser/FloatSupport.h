@@ -83,18 +83,32 @@ public:
 		return getFloat(id);
 	}
 
-	double getFloat(int id) {
-		if (id < 0) {
-			return -floats[-id];
+	double getFloatSafe(int id)
+	{
+		Assert(id >= 0, "getFloatSafe should take input id >= 0.");
+		if(id >= floats.size())
+		{
+			Assert(id >= 0, "id out of bounds.");
+			return 0.0;
 		}
-		else {
-			return	floats[id];
+		else
+		{
+			return floats[id];
 		}
 
 	}
 
+	double getFloat(int id) {
+		if (id < 0) {
+			return -getFloatSafe(-id);
+		}
+		else {
+			return getFloatSafe(id);
+		}
+	}
+
 	int getIdx(double x) {
-		//floatIdx only stores positive values. Negative values will yield negative indices. 
+		//floatIdx only stores positive values. Negative values will yield negative indices.
 		//This means that negating the index will automatically negate the value that the index corresponds to.
 		//That's why zero must always be stored in index zero.
 		bool isNeg = false;
@@ -113,7 +127,7 @@ public:
 				else {
 					return  lbd->second;
 				}
-			}			
+			}
 			if (lbd != floatIdx.begin()) {
 				lbd--;
 				dist = lbd->first - x;
@@ -146,7 +160,7 @@ public:
 
 /*
 
-class FloatManager {	
+class FloatManager {
 	vector<uint64_t> floats;
 	//vector<double> actualfloats;
 	map<string, floatfun> floatfuns;
@@ -154,14 +168,14 @@ class FloatManager {
 
 public:
 	const float epsilon;
-	FloatManager(float _epsilon) :epsilon(_epsilon) {				
+	FloatManager(float _epsilon) :epsilon(_epsilon) {
 		floats.push_back(0.0);
 		floatfuns["arctan_math"] = atan;
 		floatfuns["sin_math"] = sin;
 		floatfuns["cos_math"] = cos;
 		floatfuns["tan_math"] = tan;
-		floatfuns["sqrt_math"] = sqrt;	
-		floatfuns["log_math"] = tlog;	
+		floatfuns["sqrt_math"] = sqrt;
+		floatfuns["log_math"] = tlog;
 		count = 0;
 	}
 
@@ -172,7 +186,7 @@ public:
 	bool hasFun(const string& name) {
 		return floatfuns.count(name) > 0;
 	}
-	FloatFun getFun(const string& name) {		
+	FloatFun getFun(const string& name) {
 		return FloatFun(*this, floatfuns[name]);
 	}
 
@@ -180,7 +194,7 @@ public:
 		return getFloat(id);
 	}
 
-	double getFloat(int id) {		
+	double getFloat(int id) {
 		if (id < 0) {
 			double v =  ((double)floats[-id])*epsilon;
 			return -v;
@@ -200,7 +214,7 @@ public:
 			                //0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 		const uint64_t FLEMPTY = UINT64_MAX;
 
-		//floatIdx only stores positive values. Negative values will yield negative indices. 
+		//floatIdx only stores positive values. Negative values will yield negative indices.
 		//This means that negating the index will automatically negate the value that the index corresponds to.
 		//That's why zero must always be stored in index zero.
 		bool isNeg = false;
@@ -212,23 +226,23 @@ public:
 		auto maybeneg = [=](int val) {
 			return isNeg ? -val : val;
 		};
-		
-		double iidx = (x-(epsilon/2)) / epsilon;		
-		uint64_t idx = max(0.0, floor(iidx));		
-		
+
+		double iidx = (x-(epsilon/2)) / epsilon;
+		uint64_t idx = max(0.0, floor(iidx));
+
 		Assert(idx != FLEMPTY, "Doesn't work! nuyftgjk,;atg");
 		int lidx;
-		int prev = -1;		
+		int prev = -1;
 		for (int i = 0; i < NSTEPS; ++i) {
 			int cur = STEPS[i];
-			if (cur != prev) {				
+			if (cur != prev) {
 				lidx = idx %FLSIZES[cur];
 			}
 			else {
 				lidx = (idx %FLSIZES[cur-1]) + FLSIZES[cur - 1] + i;
 			}
 			prev = cur;
-			
+
 			if (lidx < floats.size()) {
 				uint64_t tmp = floats[lidx];
 				if (tmp == FLEMPTY) {
@@ -252,10 +266,10 @@ public:
 				++count;
 				return maybeneg(lidx);
 			}
-		}		
+		}
 		Assert(false, "NO MORE ROOM!! size="<<count);
 		return -1;
-		
+
 	}
 };
 */
@@ -297,4 +311,3 @@ inline int FloatFun::operator()(int x) {
 	double xf = fm.getFloat(x);
 	return fm.getIdx(f(xf));
 }
-

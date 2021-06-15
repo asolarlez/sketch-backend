@@ -93,6 +93,12 @@ public:
 			values[it->first] = str.str(); // TODO: deal with boolean holes
 		}
 	}
-
-
+    map<string, int>& get_ctrls()
+    {
+        return solver->get_ctrls();
+    }
+    gsl_vector* get_result()
+    {
+        return solver->get_result();
+    }
 };

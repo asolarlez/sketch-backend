@@ -1383,6 +1383,11 @@ void DagOptim::visit( ARR_W_node& node ){
 	rvalue = &node;
 }
 
+void DagOptim::visit( ARR_CREATE_node& node)
+{
+	NodeVisitor::visit(node);
+}
+
 	
 void DagOptim::visit( LT_node& node ){
 	if( isConst(node.mother()) ){

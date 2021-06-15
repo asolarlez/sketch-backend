@@ -100,6 +100,7 @@ bool REASSolver::find(VarStore& controls){
     
    timerclass tc("* TIME TO ADD INPUT ");
     tc.start();
+
     Interface* interf = new Interface(problem);
     createBooleanAbstraction(interf);
 

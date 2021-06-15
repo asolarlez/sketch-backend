@@ -45,7 +45,8 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	}else{				
 		int nbits = inode->get_nbits();		
 		bool_node* onode;
-		if(nbits==1){
+		if(inode->getOtype() == OutType::BOOL){
+			Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
 			onode= getCnode( values[inode->get_name()]==1 );
 		}else{
 			if (otype == OutType::FLOAT) {

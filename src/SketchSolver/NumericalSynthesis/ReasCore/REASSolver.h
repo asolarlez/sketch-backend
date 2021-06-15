@@ -44,4 +44,12 @@ class REASSolver
     void print_control_map(ostream& out);
     void printDiagnostics(SATSolver& mng, char c);
     void get_control_map(map<string, string>& values);
+    map<string, int>& get_ctrls()
+    {
+        return ns->get_ctrls();
+    }
+    gsl_vector* get_result()
+    {
+        return ns->get_result();
+    }
 };
