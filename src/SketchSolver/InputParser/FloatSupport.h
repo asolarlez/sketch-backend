@@ -113,9 +113,9 @@ public:
 				else {
 					return  lbd->second;
 				}
-			}
-			lbd++;
-			if (lbd != floatIdx.end()) {
+			}			
+			if (lbd != floatIdx.begin()) {
+				lbd--;
 				dist = lbd->first - x;
 				if (-epsilon < dist && dist < epsilon) {
 					if (isNeg) {
