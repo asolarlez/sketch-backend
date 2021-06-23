@@ -1,5 +1,3 @@
-#pragma once
-
 #include "CEGISSolver.h"
 #include "timerclass.h"
 #include <queue>

@@ -51,7 +51,7 @@ public:
 	ABORTED
     };
 
-    SATSolver(const string& name_p, SolverMode smode):name(name_p), solveNegation(smode==CHECKER){		
+    SATSolver(const string& name_p, SolverMode smode):name(name_p), solveNegation(smode==CHECKER){
 	FileOutput( string nm = name; nm += ".circuit"; );
 	FileOutput( output.open(nm.c_str()) );		
     }

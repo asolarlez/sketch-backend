@@ -14,79 +14,90 @@
 #include "FloatSupport.h"
 #include "CEGISFinder.h"
 #include "CEGISParams.h"
+#include "CEGISChecker.h"
 
 using namespace MSsolverNS;
 
 class DagOptim;
 
-
-void printDiagnostics(SATSolver& mng, char c);
-
-
 class CEGISSolver
 {
-	FloatManager& floats;
-	HoleHardcoder& hcoder;
-	int curProblem; 
-	vector<BooleanDAG*> problems;
-	stack<BooleanDAG*> problemStack;
-	map<int, vector<VarStore> > expensives;
-	void pushProblem(BooleanDAG* p){		
-		problemStack.push(p);
-	}
-	BooleanDAG* getProblem(){
-		return problemStack.top();
-	}
-	void popProblem(){
-		BooleanDAG* t = problemStack.top();
-		problemStack.pop();
-		t->clear();
-		delete t;
-	}
-	int problemLevel(){
-		return problemStack.size();
-	}
 
 	CEGISFinderSpec* finder;
-	
+	CEGISChecker* checker;
 
-	
-	VarStore inputStore;
-	// vector<struct InputGen *> inputGens;
-
-	CEGISparams params;
-	
-	
-	Checkpointer cpt;
-
-	map<int, string> files;
-	vector<Tvalue> check_node_ids;
 	map<string, int> last_input;	
+
+	Checkpointer cpt;
 protected:
+
+	FloatManager& floats;
+	CEGISparams params;
+
+	vector<BooleanDAG*> problems;
+
+	//CEGISSolver owns inputStore, but CEGISChecker has declareInputs, redeclareInputs, and growInputs; which modify the inputStore. 
+	VarStore inputStore;
+
 	void declareControl(CTRL_node* cnode);
-	void declareInput(const string& cname, int size, int arrSz, OutType* otype);
 	bool solveCore();
-	//bool solveOptimization();
-	bool simulate(VarStore& controls, VarStore& input, vector<VarStore>& expensive);
+
+	// bool check(VarStore& input, VarStore& controls)
+	// {
+	// 	return checker->check(input, controls);
+	// }
+
 	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
 	
-
-	bool check(VarStore& input, VarStore& controls);
-	lbool baseCheck(VarStore& controls, VarStore& input);
-	void setNewControls(VarStore& controls, SolverHelper& dirCheck);
-	
-	int valueForINode(INTER_node* inode, VarStore& values, int& nbits);
 	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
 
 	void normalizeInputStore();
-	void abstractProblem();
-	
-	void growInputs(BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
+
+//-- internal wrappers arround the checker methods
+	bool check(VarStore& input, VarStore& controls)
+	{
+		return checker->check(input, controls);
+	}
+
+	bool problemStack_is_empty()
+	{
+		return checker->problemStack_is_empty();
+	}
+
+	BooleanDAG* getProblem(){
+		return checker->getProblem();
+	}
+
+	vector<Tvalue>& get_check_node_ids()
+	{
+		return checker->get_check_node_ids();
+	}
+
+	//MODIFIES InputStore
+	void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype)
+	{
+		return checker->declareInput(inputStore, cname, size, arrSz, otype);
+	}
+
+	//MODIFIES InputStore
+	void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false)
+	{
+		return checker->redeclareInputs(inputStore, dag, firstTime);
+	}
+
 public:
 	
 	VarStore ctrlStore;	
-
-	CEGISSolver(CEGISFinderSpec* finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats);
+	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
+	finder(_finder), 
+	floats(_floats), 
+	params(args),
+	checker(new CEGISChecker(args, hc, _floats, &cpt))
+	{
+	//	cout << "miter:" << endl;
+	//	miter->lprint(cout);
+			
+	}
 	~CEGISSolver(void);
 	void addProblem(BooleanDAG* miter, const string& file);
 
@@ -97,12 +108,8 @@ public:
 
 	bool solveFromCheckpoint(istream& in);
 	virtual void setCheckpoint(const string& filename);
-	
-	
-	
 
-	void redeclareInputs(BooleanDAG* dag, bool firstTime=false);
-	
+
 
 	void get_control_map(map<string, string>& values);
 	void outputEuclid(ostream& fout);

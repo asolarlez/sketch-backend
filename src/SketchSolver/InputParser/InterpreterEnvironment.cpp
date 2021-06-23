@@ -11,6 +11,7 @@
 #include "SwapperPredicateBuilder.h"
 #include "DeductiveSolver.h"
 #include "IntToFloatRewriteDag.h"
+#include "SolverLanguage.h"
 
 #ifdef CONST
 #undef CONST
@@ -689,6 +690,7 @@ void InterpreterEnvironment::fixes(const string& holename) {
 
 
 int InterpreterEnvironment::doallpairs() {
+
 	int howmany = params.ntimes;
 	if (howmany < 1 || !params.randomassign) { howmany = 1; }
 	SATSolver::SATSolverResult result = SATSolver::UNDETERMINED;
@@ -866,10 +868,15 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
 
-    /*if (params.numericalSolver) {
-    	assert(false);
-        return assertDAGNumerical(dag, out);
-    }*/
+    /// *** STILL IN PROGRESS
+    ///  vvvvvvvvvvvvvvvvvvvv
+    bool test_solver_language = false; /// keep false until further notice.
+    if (test_solver_language)
+    {
+        return SolverLanguage().eval(dag, out, file)->get_sat_solver_result();
+    }
+    ///  ^^^^^^^^^^^^^^^^^^^
+
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
