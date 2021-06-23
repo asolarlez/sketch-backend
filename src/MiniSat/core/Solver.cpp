@@ -2116,7 +2116,7 @@ void Solver::verifyModel()
 
     assert(!failed);
 
-    printf("Verified %d original clauses.\n", clauses.size());
+    printf("Verified %d original clauses.\n", (int)clauses.size());
 }
 
 
