@@ -113,5 +113,6 @@ public:
 	//MODIFIES InputStore
 	void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
 
+};
 
 void printDiagnostics(SATSolver& mng, char c);
