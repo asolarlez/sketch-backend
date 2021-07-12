@@ -2,6 +2,7 @@
 #include "DagOptim.h"
 #include "VarStore.h"
 #include "FloatSupport.h"
+#include "BackwardsAnalysis.h"
 
 class NodeHardcoder :
 	public DagOptim
@@ -24,3 +25,4 @@ public:
 };
 
 
+BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats);

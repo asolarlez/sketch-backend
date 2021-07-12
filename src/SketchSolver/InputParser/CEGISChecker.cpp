@@ -1,4 +1,3 @@
-#include "CEGISChecker.h"
 #include "timerclass.h"
 #include <queue>
 #include "CommandLineArgs.h"
@@ -10,6 +9,7 @@
 #include "BackwardsAnalysis.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
+#include "CEGISChecker.h"
 #include "NodeHardcoder.h"
 
 
@@ -33,7 +33,6 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 
 void CEGISChecker::declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype) {
 	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<bitsize<<endl);
-	cpt->resizeInput(inname, bitsize);
 	::declareInput(inputStore, inname, bitsize, arrSz, otype);
 }
 
@@ -504,7 +503,7 @@ public:
 
 // check verifies that controls satisfies all asserts
 // and if there is a counter-example, it will be put to input
-bool CEGISChecker::check(VarStore& controls, VarStore& input){
+BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	if(problemStack.empty())
 	{
 		pushProblem((*problems.rbegin())->clone());
@@ -515,6 +514,7 @@ bool CEGISChecker::check(VarStore& controls, VarStore& input){
 	CheckControl cc(params, problems.size());
 	//cout<<"check: Before hard code"<<endl;
 	//getProblem()->lprint(std::cout);
+
 	pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats));		
 //	cout<<"After hard code"<<endl;
 	// getProblem()->lprint(std::cout);
@@ -539,7 +539,8 @@ bool CEGISChecker::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::DONE:{
 				clear_problemStack();
-				return false; //no counterexample
+				return NULL; //no counterexample
+//				return false; //no counterexample
 			}
 			case CheckControl::GROW_IN:{
 
@@ -617,7 +618,19 @@ bool CEGISChecker::check(VarStore& controls, VarStore& input){
 		}
 	}while(!rv);
 	popProblem();
-	return true; //check failed = doMore = true
+
+    { // angelic var magic xD
+        if (PARAMS->angelic_model) {
+            if (!input.contains("__rs_node")) {
+                input.newVar("__rs_node", 1, NULL);
+            }
+            input.setVarVal("__rs_node", 0, NULL);
+        }
+    }
+    //Return counter-example concretized dag
+	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
+	return ret_dag;
+//	return true; //check failed = doMore = true
 }
 
 
@@ -631,9 +644,6 @@ int getSolverVal(bool_node * node, vector<Tvalue> & node_ids, SATSolver & solver
 	return sv;
 }
 
-void printDiagnostics(SATSolver& mng, char c){
-   		mng.printDiagnostics(c);
-}
 
 lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 	Dout( cout<<"check()"<<endl );
@@ -652,8 +662,8 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
     int result = mngCheck.solve();
     
 	//dirCheck.printAllVars();
-    if(params.printDiag){	    
-		printDiagnostics(mngCheck, 'c');
+    if(params.printDiag){
+        mngCheck.printDiagnostics('c');
     }
     if (result != SATSolver::SATISFIABLE){
     	mngCheck.reset();
@@ -738,7 +748,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				Assert(false, "Not possible");
 			}
 			else {
-				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz);
+				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz, srcnode->getOtype());
 			}
 		}
 		if ((*node_it)->type == bool_node::UFUN) {
@@ -754,7 +764,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				OutType* ttype = tuple_type->entries[tt];
 				bool isArr = ttype->isArr;
 				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1));
+				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1), ttype);
 			}
 		}
 	}	

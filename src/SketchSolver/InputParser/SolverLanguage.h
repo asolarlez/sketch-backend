@@ -14,9 +14,14 @@
 #include <vector>
 #include <cassert>
 
-
+#include "SkVal.h"
 #include "BooleanDAG.h"
 #include "SATSolver.h"
+#include "VarStore.h"
+#include "CEGISFinder.h"
+#include "CEGISChecker.h"
+#include "CEGISSolver.h"
+#include "NodeHardcoder.h"
 
 using namespace std;
 
@@ -64,16 +69,7 @@ using namespace std;
 namespace SolverLanguagePrimitives
 {
 
-    template<typename T>
-    class PolyVal
-    {
-        T val;
-    public:
-        explicit PolyVal(T _val): val(_val){}
-        T get() {
-            return val;
-        }
-    };
+
 
     enum ValType {type_state, type_int, type_bool, type_solver_e, type_solver_ae, type_problem_ae, type_problem_e, type_solution_holder, type_input_holder};
 
@@ -104,117 +100,213 @@ namespace SolverLanguagePrimitives
         string to_string() override {return std::to_string(get());}
     };
 
-    class Function
+    class SkHoleSpec
     {
-        BooleanDAG* dag;
+        string name;
+        SkValType type;
     public:
-        explicit Function(BooleanDAG* _dag): dag(_dag){}
-        vector<string>* get_holes()
+        SkHoleSpec(string _name, SkValType _type): name(_name), type(_type) {}
+        string get_name() const
         {
-            cout << "TODO: Function::get_holes()" << endl;
-            assert(false);
+            return name;
         }
-    };
-
-    template<typename ValType>
-    class Assignment
-    {
-        bool null = true;
-        map<string, ValType*> assignment;
-    public:
-        Assignment() = default;
-        bool has(const string& name)
+        SkValType get_type() const
         {
-            return assignment.find(name) != assignment.end();
+            return type;
         }
-        ValType* get(const string& name)
-        {
-            assert(has(name));
-            return assignment[name];
-        }
-        void set(const string& name, ValType* val)
-        {
-            null = false;
-            assignment[name] = val;
-        }
-        bool is_null()
-        {
-            return null;
-        }
-        string to_string()
-        {
-            if(null)
-            {
-                return "null";
-            }
-            else {
-                string ret = "{";
-                for (auto p : assignment) {
-                    ret += p.first + " <- " + p.second->to_string() + "; ";
-                }
-                ret += "}";
-                return ret;
-            }
-        }
-    };
-
-    class SkVal
-    {
-    public:
-        enum SketchValType {sk_type_int, sk_type_float};
-    private:
-        SketchValType sketch_val_type;
-    public:
-        explicit SkVal(SketchValType _sketch_val_type):
-                sketch_val_type(_sketch_val_type) {}
-        SketchValType get_type() {
-            return sketch_val_type;
-        }
-        virtual string to_string()
-        {
-            assert(false);
-        }
-    };
-    class SkValInt: public SkVal, public PolyVal<int>
-    {
-    public:
-        explicit SkValInt(int _val): PolyVal<int>(_val), SkVal(SkVal::sk_type_int){}
-        string to_string() override {return std::to_string(get());}
-    };
-    class SkValFloat: public SkVal, public PolyVal<float>
-    {
-    public:
-        explicit SkValFloat(float _val): PolyVal<float>(_val), SkVal(SkVal::sk_type_float){}
-        string to_string() override {return std::to_string(get());}
     };
 
     class InputHolder;
 
-    class ProblemE;
+    class ProblemAE;
 
-    class ProblemAE
+    class SolutionHolder
     {
-        Function* function;
-        string file_name;
-        vector<InputHolder*> inputs_from_file;
-    public:
-        explicit ProblemAE(Function* _function, string  _file_name = ""):
-                function(_function), file_name(std::move(_file_name)) {}
-        vector<string>* get_holes()
+        Assignment_SkVal* assignment_skval = NULL;
+        SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
+    public :
+        explicit SolutionHolder(SATSolver::SATSolverResult _sat_solver_result):
+            sat_solver_result(_sat_solver_result)
         {
-            return function->get_holes();
+        }
+        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal* _assignment_skval):
+                sat_solver_result(_sat_solver_result), assignment_skval(_assignment_skval)
+        { }
+        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore* ctrl_store, FloatManager& floats):
+                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats))
+        {
+        }
+
+
+        SolutionHolder() {}
+        explicit SolutionHolder(ProblemAE* problem) {
+            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+            assert(false);
+        }
+        VarStore* get_controls(FloatManager& floats)
+        {
+            VarStore* ret = new VarStore();
+            for(auto it : assignment_skval->get_assignment())
+            {
+                switch (it.second->get_type()) {
+
+                    case sk_type_int:
+                        ret->setVarVal(it.first, ((SkValInt*) it.second)->get(), OutType::INT);
+                        break;
+                    case sk_type_float:
+                        ret->setVarVal(it.first, floats.getIdx(((SkValFloat*) it.second)->get()), OutType::FLOAT);
+                        break;
+                    case sk_type_bool:
+                        ret->setVarVal(it.first, ((SkValBool*) it.second)->get(), OutType::BOOL);
+                        break;
+                }
+            }
+            return ret;
+        }
+        SATSolver::SATSolverResult get_sat_solver_result()
+        {
+            return sat_solver_result;
+        }
+        string to_string()
+        {
+            cout << "SolutionHolder::to_string" << endl;
+            assert(false);
+        }
+        VarStore* to_var_store()
+        {
+            return assignment_skval->to_var_store();
+        }
+
+        void get_control_map(map<string, string>& map) {
+            if(assignment_skval != NULL)
+            {
+                for(auto it : assignment_skval->get_assignment())
+                {
+                    map[it.first] = it.second->to_string();
+                }
+            }
+        }
+
+        bool has_assignment_skval() {
+            if (assignment_skval == NULL){
+                return false;
+            }
+            else {
+                return !assignment_skval->is_null();
+            }
+        }
+
+        Assignment_SkVal* get_assignment()
+        {
+            return assignment_skval;
+        }
+
+        void update(SolutionHolder *updated_solution_holder) {
+            sat_solver_result = updated_solution_holder->get_sat_solver_result();
+            if(updated_solution_holder->get_assignment()->is_null()) {
+                assignment_skval = new Assignment_SkVal();
+            }
+            else {
+                assignment_skval->update(updated_solution_holder->get_assignment());
+            }
+        }
+    };
+
+    class Function
+    {
+        BooleanDAG* dag;
+        FloatManager& floats;
+    public:
+        explicit Function(BooleanDAG* _dag, FloatManager& _floats): dag(_dag), floats(_floats){}
+        explicit Function(Function* function): dag(function->dag), floats(function->floats){}
+
+        BooleanDAG* get_dag() const
+        {
+            return dag;
+        }
+
+        SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
+        {
+            assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
+            if(out_type == OutType::INT)
+            {
+                return sk_type_int;
+            }
+            else if(out_type == OutType::BOOL)
+            {
+                return sk_type_bool;
+            }
+            else if(out_type == OutType::FLOAT)
+            {
+                return sk_type_float;
+            }
+            else
+            {
+                assert(false);
+            }
+        }
+        vector<SkHoleSpec>* get_holes()
+        {
+            vector<bool_node*>& ctrl_nodes = dag->getNodesByType(bool_node::CTRL);
+            auto* ret = new vector<SkHoleSpec>();
+            for(int i = 0;i<ctrl_nodes.size(); i++)
+            {
+                ret->push_back(
+                        SkHoleSpec(
+                                ctrl_nodes[i]->get_name(),
+                                bool_node_out_type_to_sk_val_type(ctrl_nodes[i]->getOtype())));
+            }
+            return ret;
+        }
+
+        Function* concretize_holes(SolutionHolder* solution_holder)
+        {
+            return new Function(
+                    hardCodeINode(dag, *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
+        }
+
+        Function* concretize_inputs(InputHolder* input_holder)
+        {
+            cout << "TODO: concretize_inputs" << endl;
+            assert(false);
+        }
+
+        int count_passing_inputs(const string &file_name) {
+            cout << "TODO: count_passing_inputs" << endl;
+            assert(false);
+        }
+    };
+
+    class File;
+
+    class ProblemAE: public Function
+    {
+        File* file;
+        string file_name;
+//        vector<InputHolder*> inputs_from_file;
+    public:
+        explicit ProblemAE(Function* _function, string _file_name = "", File* file = NULL):
+                Function(_function), file_name(std::move(_file_name)), file(file) {}
+        File* get_file()
+        {
+            return file;
         }
         virtual string to_string()
         {
             cout << "TODO: ProblemAE::to_string" << endl;
             assert(false);
         }
-        ProblemE* concretize_holes()
-        {
 
+        const string &get_file_name() {
+            return file_name;
         }
     };
 
+//    class AssignmentOfSkVal: public Assignment<SkVal>
+//    {
+//    public:
+//        AssignmentOfSkVal(): Assignment<SkVal>() {}
+//    };
 
     class InputHolder: public Assignment<SkVal>
     {
@@ -228,8 +320,9 @@ namespace SolverLanguagePrimitives
 
     class ProblemE: public ProblemAE
     {
-        vector<InputHolder*> concrete_inputs;
+//        vector<InputHolder*> concrete_inputs;
     public:
+        explicit ProblemE(Function* f): ProblemAE(f) {}
         string to_string() override
         {
             cout << "TODO: ProblemE::to_string" << endl;
@@ -237,6 +330,19 @@ namespace SolverLanguagePrimitives
             return "ProblemE";
         }
     };
+
+    class ProblemA: public ProblemAE
+    {
+//        SolutionHolder* solution_holder;
+    public:
+        string to_string() override
+        {
+            cout << "TODO: ProblemA::to_string" << endl;
+            assert(false);
+            return "ProblemE";
+        }
+    };
+
 
 
     class ValProblemE: public Val, public PolyVal<ProblemE*>
@@ -253,21 +359,7 @@ namespace SolverLanguagePrimitives
         string to_string() override {return get()->to_string();}
     };
 
-    class SolutionHolder: public Assignment<SkVal>
-    {
-        SATSolver::SATSolverResult sat_solver_result;
-    public :
-        SolutionHolder(): Assignment<SkVal>() {}
-        explicit SolutionHolder(ProblemAE* problem): Assignment<SkVal>() {
-            sat_solver_result = SATSolver::ABORTED;
-            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
-            assert(false);
-        }
-        SATSolver::SATSolverResult get_sat_solver_result()
-        {
-            return sat_solver_result;
-        }
-    };
+
 
     class ValSolutionHolder: public Val, public PolyVal<SolutionHolder*>
     {
@@ -303,17 +395,62 @@ namespace SolverLanguagePrimitives
         { assert(false); }
     };
 
-    class SATSolver: public Solver_E
+    class WrapperCEGISFinderSpec: public Solver_E
     {
+        CEGISFinderSpec* finder;
+
+        void declareControl(CTRL_node* cnode, VarStore& ctrlStore){
+            const string& cname = cnode->get_name();
+            int size;
+
+            if(cnode->getOtype() != OutType::FLOAT)
+            {
+                size = cnode->get_nbits();
+            }
+            else
+            {
+                size = 18;
+            }
+            Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
+            finder->declareControl(cnode);
+
+            if(!ctrlStore.contains(cname)){
+                ctrlStore.newVar(cname, size, cnode->getOtype());
+            }
+        }
+        void add_problem(BooleanDAG* problem, VarStore& ctrlStore)
+        {
+            {
+                vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+                for(int i=0; i<problemIn.size(); ++i){
+                    CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+                    if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
+                        declareControl(ctrlnode, ctrlStore);
+                    }
+                }
+            }
+
+            finder->updateCtrlVarStore(ctrlStore);
+        }
     public:
-        SATSolver(): Solver_E() {}
+        WrapperCEGISFinderSpec(CEGISFinderSpec* _finder): finder(_finder), Solver_E() {}
+
         SolutionHolder* solve(ProblemE* problem) override
         {
-            cout << "TODO: SATSolver::solve" << endl;
-            //init ctrlStore (as in addProblem)
-            //finder->updateCtrlVarStore(ctrlStore);
-            //finder->find(getProblem(), inputStore, ctrlStore, hasInputChanged);
-            assert(false);
+            VarStore ctrlStore;
+            add_problem(problem->get_dag(), ctrlStore);
+            bool found = finder->find(problem->get_dag(), ctrlStore, true);
+            SATSolver::SATSolverResult ret;
+            if(found)
+            {
+                ret = SATSolver::SATISFIABLE;
+                return new SolutionHolder(ret, &ctrlStore, finder->get_floats());
+            }
+            else
+            {
+                ret = SATSolver::UNSATISFIABLE;
+                return new SolutionHolder(ret);
+            }
         }
         string to_string() override
         {
@@ -328,13 +465,58 @@ namespace SolverLanguagePrimitives
         RandomSolver(): Solver_AE() {}
         SolutionHolder* solve(ProblemAE* problem) override
         {
-            vector<string>* blank_solution = problem->get_holes();
-            cout << "TODO: SATSolver::solve" << endl;
+            vector<SkHoleSpec>* hole_names = problem->get_holes();
+            auto* ret = new SolutionHolder();
+            
+            cout << "TODO: RandomSolver::solve" << endl;
             assert(false);
         }
         string to_string() override
         {
             return "RandomSolver";
+        }
+    };
+
+    class ConstantSolver: public Solver_AE
+    {
+    public:
+        ConstantSolver(): Solver_AE() {}
+
+        SkVal* get_const_val(SkValType sk_val_type)
+        {
+            SkVal* ret;
+            switch (sk_val_type)
+            {
+                case sk_type_int:
+                    ret = new SkValInt(0);
+                    break;
+                case sk_type_float:
+                    ret = new SkValFloat(0.0);
+                    break;
+                case sk_type_bool:
+                    ret = new SkValBool(false);
+                    break;
+                assert(false);
+            }
+            return ret;
+        }
+
+        SolutionHolder* solve(ProblemAE* problem) override
+        {
+            vector<SkHoleSpec>* blank_solution = problem->get_holes();
+            auto* ret = new Assignment_SkVal();
+
+            for(int i = 0;i<blank_solution->size();i++)
+            {
+                SkHoleSpec sk_hole_spec = blank_solution->at(i);
+                ret->set(sk_hole_spec.get_name(), get_const_val(sk_hole_spec.get_type()));
+            }
+
+            return new SolutionHolder(SATSolver::SATISFIABLE, ret);
+        }
+        string to_string() override
+        {
+            return "ConstantSolver";
         }
     };
 
@@ -352,35 +534,36 @@ namespace SolverLanguagePrimitives
         string to_string() override {return get()->to_string();}
     };
 
-    class State
-    {
-        map<string, Val*> assignment;
-    public:
-        State() = default;
-        bool has(const string& name)
-        {
-            return assignment.find(name) != assignment.end();
-        }
-        Val* get(const string& name)
-        {
-            assert(has(name));
-            return assignment[name];
-        }
-        void set(const string& name, Val* val)
-        {
-            assignment[name] = val;
-        }
-        string to_string()
-        {
-            string ret = "{";
-            for(auto p : assignment)
-            {
-                ret += p.first + " <- " + p.second->to_string() + "; ";
-            }
-            ret += "}";
-            return ret;
-        }
-    };
+    typedef Assignment<Val> State;
+//    class State
+//    {
+//        map<string, Val*> assignment;
+//    public:
+//        State() = default;
+//        bool has(const string& name)
+//        {
+//            return assignment.find(name) != assignment.end();
+//        }
+//        Val* get(const string& name)
+//        {
+//            assert(has(name));
+//            return assignment[name];
+//        }
+//        void set(const string& name, Val* val)
+//        {
+//            assignment[name] = val;
+//        }
+//        string to_string()
+//        {
+//            string ret = "{";
+//            for(auto p : assignment)
+//            {
+//                ret += p.first + " <- " + p.second->to_string() + "; ";
+//            }
+//            ret += "}";
+//            return ret;
+//        }
+//    };
 
     class ValState: public Val, public PolyVal<State*>
     {
@@ -782,11 +965,11 @@ namespace SolverLanguagePrimitives
     inline void basic_while()
     {
         cout << "basic_while" << endl;
-        auto setup = new StateAssignment(
+        auto* setup = new StateAssignment(
                 "x",
                 new IntConst(0)
         );
-        auto the_while = new StateWhile(
+        auto* the_while = new StateWhile(
                 new BoolComparison(
                         new IntVar("x"),
                         new IntConst(10),
@@ -801,7 +984,7 @@ namespace SolverLanguagePrimitives
                         )
                 )
         );
-        auto root = new StateSequence(
+        auto* root = new StateSequence(
                 setup,
                 the_while
         );
@@ -810,21 +993,21 @@ namespace SolverLanguagePrimitives
         cout << "ok" << endl;
     }
 
-    inline void target_cegis()
+    inline void target_cegis(CEGISFinderSpec* finder)
     {
         cout << "cegis" << endl;
         map<string, Function*> function_map;
 //    #Solver* solver = SATSolver;
-//    auto solver_assgn =
+//    auto* solver_assgn =
 //            new StateAssignment("solver", new SolverConst(new SATSolver()));
 //    Harness harness = new ProblemAE(f);
-        auto harness_assgn =
+        auto* harness_assgn =
                 new StateAssignment(
                         "harness",
                         new ProblemAEConst(new ProblemAE(function_map["f"])));
 
 //  SolutionHolder solution = RandomSolver.solve(harness);
-        auto rand_solution_assgn =
+        auto* rand_solution_assgn =
                 new StateAssignment(
                         "solution_holder",
                         new SolveAENode(
@@ -837,7 +1020,7 @@ namespace SolverLanguagePrimitives
 //    #solution_holder.init_rand();
 
 //    InputHolder* counter_example = check(harness, solution_holder)
-        auto counter_example_assgn =
+        auto* counter_example_assgn =
                 new StateAssignment(
                         "counter_example",
                         new CheckNode(
@@ -845,15 +1028,15 @@ namespace SolverLanguagePrimitives
                                 new SolutionHolderVar("solution_holder")));
 
 //    concretized_problem = new ProblemAE();
-        auto concretized_problem_assgn =
+        auto* concretized_problem_assgn =
                 new StateAssignment("concretized_problem", new ProblemEConst());
 
 //    non_null(conter_example)
-        auto counter_example_is_not_null =
+        auto* counter_example_is_not_null =
                 new NonNullNode(new InputHolderVar("counter_example"));
 
 //  concretized_problem = merge(concretized_problem, harness.concretize_inputs(counter_example));
-        auto problem_merge_assign =
+        auto* problem_merge_assign =
                 new StateAssignment(
                         "concretized_problem",
                         new MergeProblemsENode(
@@ -865,17 +1048,17 @@ namespace SolverLanguagePrimitives
                         )
                 );
 //        solution_holder = solver.solve(concretized_problem);
-        auto solution_update_assgn =
+        auto* solution_update_assgn =
                 new StateAssignment(
                         "solution_holder",
                         new SolveENode(
-                                new SolverEConst(new SATSolver()),
+                                new SolverEConst(new WrapperCEGISFinderSpec(finder)),
                                 new ProblemEVar("concretized_problem")
                         )
                 );
 
 //        counter_example = check(harness, solution_holder);
-        auto final_check_assgn =
+        auto* final_check_assgn =
                 new StateAssignment(
                         "counter_example",
                         new CheckNode(
@@ -891,7 +1074,7 @@ namespace SolverLanguagePrimitives
 //        (DONE) counter_example = check(harness, solution_holder);
 //    }
 
-        auto while_loop =
+        auto* while_loop =
                 new StateWhile(
                         counter_example_is_not_null,
                         new StateSequence(
@@ -902,13 +1085,13 @@ namespace SolverLanguagePrimitives
                 );
 
 //    return = solution_holder
-        auto return_assgn =
+        auto* return_assgn =
                 new StateAssignment(
                         "return",
                         new SolutionHolderVar("solution_holder")
                 );
 
-        auto cegis_ast =
+        auto* cegis_ast =
                 new StateSequence(
                         harness_assgn,
                         rand_solution_assgn,
@@ -925,19 +1108,254 @@ namespace SolverLanguagePrimitives
         cout << "ok" << endl;
     }
 
-    inline ValSolutionHolder* first_cegis(BooleanDAG* dag, const string& file)
+    class WrapperChecker
     {
-        auto* problem_ae = new ProblemAE(new Function(dag), file);
-        auto* problem_e = problem_ae->concretize_holes();
+        CommandLineArgs& args;
+        HoleHardcoder& hc;
+        FloatManager& floats;
+        Checkpointer* cpt;
+    public:
+        WrapperChecker(CommandLineArgs& _args, HoleHardcoder& _hc, FloatManager& _floats):
+        args(_args), hc(_hc), floats(_floats) {}
+        ProblemE* get_counter_example_concretized_problem_e(ProblemAE* problem, SolutionHolder* solution_holder)
+        {
+            auto* checker = new CEGISChecker(args, hc, floats);
+            checker->addProblem(problem->get_dag(), "");
+            VarStore* controls = solution_holder->get_controls(floats);
+            cout << endl << "HERE: controls->printContent(cout);" << endl;
+            controls->printContent(cout);
+            cout << "END HERE" << endl << endl;
+            return new ProblemE(new Function(checker->check(*controls), floats));
+        }
+    };
 
-        return new ValSolutionHolder((new ValSolverE(new SATSolver()))->get()->solve(problem_e));
+    inline SolutionHolder* first_cegis(
+            BooleanDAG* dag, FloatManager& floats, CommandLineArgs& _args,  HoleHardcoder& _hc,
+            CEGISFinderSpec* finder)
+    {
+        ProblemAE* problem_ae = new ProblemAE(new Function(dag, floats));
+        SolutionHolder* solution_holder = (new ConstantSolver())->solve(problem_ae);
+
+        ProblemE* problem_e = (new WrapperChecker(_args, _hc, floats))->
+                get_counter_example_concretized_problem_e(problem_ae, solution_holder);
+
+        while(problem_e->get_dag() != NULL)
+        {
+            solution_holder->update((new WrapperCEGISFinderSpec(finder))->solve(problem_e));
+            if (solution_holder->get_sat_solver_result() != SATSolver::SATISFIABLE)
+            {
+                break;
+            }
+            ProblemE* prev_problem_e = problem_e;
+            problem_e = (new WrapperChecker(_args, _hc, floats))->
+                    get_counter_example_concretized_problem_e(problem_ae, solution_holder);
+            if(problem_e->get_dag() == NULL)
+            {
+                break;
+            }
+            prev_problem_e->get_dag()->andDag(problem_e->get_dag());
+            problem_e = prev_problem_e;
+        }
+        return solution_holder;
     }
+
+    /**
+     *
+package ALL{
+    int g(x){
+         return x * ??;
+    }
+
+    bit P(){
+      ...;
+    }
+
+    int f(x){
+           if(P(x)){
+         return g1(x);
+           }else{
+         return g2(x);
+           }
+    }
+}
+
+STUN(file):
+      A' = ALL[ g1 with fresh g, g2 with fresh g];
+      (sol) = BestEffort(A', file)
+      while(){
+       A' = ALL[ g1 with (sol->f@A'), g2 with fresh g];
+       (sol) = BestEffort(A', file)
+      }
+*/
+
+//solver SolutionHolder best_effort(Function f, File file)
+//{
+//    int num_samples = 10;
+//    int rows_per_sample = 10;
+//    vector<pair<int, SolutionHolder> > solutions;
+//    for(int i = 0;i<num_samples;i++)
+//{
+//    SolutionHolder sol = f.solve(inputs.get_random_subset());
+//    int num_passing_inputs = f.concretize_holes_rec(sol).count_passing_inputs(file);
+//
+//    solutions.push_back(make_pair(num_passing_inputs, sol));
+//}
+//sort(solutions.begin(), solutions.end());
+//return solutions[0];
+//}
+    class WrapperAssertDAG: public Solver_AE
+    {
+        CommandLineArgs& params;
+        FloatManager& floats;
+        HoleHardcoder& hardcoder;
+        SolverHelper* finder;
+        bool hasGoodEnoughSolution;
+
+        ::CEGISSolver* solver;
+
+    public:
+        WrapperAssertDAG(FloatManager& _floats, HoleHardcoder& _hardcoder, CommandLineArgs& _params, bool _hasGoodEnoughSolution):
+        params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution)
+        {
+            ::SATSolver* _pfind;
+            _pfind = ::SATSolver::solverCreate(params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
+            if (params.outputSat) {
+                _pfind->outputSAT();
+            }
+            finder = new SolverHelper(*_pfind);
+            finder->setMemo(params.setMemo && params.synthtype == ::SATSolver::MINI);
+
+
+            CEGISFinderSpec* cegisfind;
+            cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats);
+        }
+
+        void recordSolution(Assignment_SkVal* holes_to_sk_val)
+        {
+            hardcoder.get_control_map_str_to_skval(holes_to_sk_val);
+            solver->get_control_map_as_map_str_skval(holes_to_sk_val);
+            cout << "WrapperAssertDAG::recordSolution VALUES = ";
+            for (auto it : holes_to_sk_val->get_assignment()) {
+                cout << it.first << ": " << it.second->to_string() << ", ";
+            }
+            cout << endl;
+        }
+
+        SolutionHolder* solve(ProblemAE* problem) override
+        {
+            solver->addProblem(problem->get_dag(), problem->get_file_name());
+
+            SATSolver::SATSolverResult ret_result = SATSolver::UNDETERMINED;
+            Assignment_SkVal* holes_to_sk_val = new Assignment_SkVal();
+            //copied from InterpreterEnviroment::assertDAG
+            {
+                bool ret_result_determined = false;
+                int solveCode = 0;
+                try {
+
+                    solveCode = solver->solve();
+                    if (solveCode || !hasGoodEnoughSolution) {
+                        recordSolution(holes_to_sk_val);
+                    }
+                }
+                catch (SolverException *ex) {
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR " << basename() << ": " << ex->code << "  " << ex->msg << endl;
+                    ret_result = ex->code;
+                    ret_result_determined = true;
+                }
+                catch (BasicError &be) {
+                    if (!hasGoodEnoughSolution) {
+                        recordSolution(holes_to_sk_val);
+                    }
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR: " << basename() << endl;
+                    ret_result = SATSolver::ABORTED;
+                    ret_result_determined = true;
+                }
+
+                if (!ret_result_determined)
+                {
+                    if (!solveCode) {
+                        ret_result = SATSolver::UNSATISFIABLE;
+                    }
+                    else {
+                        ret_result = SATSolver::SATISFIABLE;
+                    }
+                }
+            }
+            return new SolutionHolder(ret_result, holes_to_sk_val);
+        }
+    };
+
+    inline SolutionHolder* wrapper_assert_dag(
+            BooleanDAG* dag, const string& file_name,
+            FloatManager& floats, CommandLineArgs& _args,
+            HoleHardcoder& _hc,  Checkpointer* _cpt,
+            bool hasGoodEnoughSolution)
+    {
+        return
+            (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
+            solve(new ProblemAE(new Function(dag, floats), file_name));
+    }
+
+    class File
+    {
+        string file_name;
+    public:
+        File(string _file_name): file_name(_file_name) {}
+        File* sample_sub_file(int num_rows)
+        {
+            cout << "TODO: sample_sub_file" << endl;
+            assert(false);
+        }
+    };
+
+    inline SolutionHolder* target_best_effort(BooleanDAG* dag, const string& file_name, FloatManager& floats,
+                                              CommandLineArgs& _args,
+                                              HoleHardcoder& _hc,  Checkpointer* _cpt,
+                                              bool hasGoodEnoughSolution)
+    {
+        File all_file = File(file_name);
+        int num_samples = 10;
+        int rows_per_sample = 10;
+        vector<pair<int, SolutionHolder*> > solutions;
+        for(int i = 0;i<num_samples;i++)
+        {
+            File* sub_file = all_file.sample_sub_file(rows_per_sample);
+            SolutionHolder* sol = (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
+//                    solve(new ProblemAE(new Function(dag, floats), file_name));
+                    solve(new ProblemAE(new Function(dag, floats), "", sub_file));
+            int num_passing_inputs = (new Function(dag, floats))->concretize_holes(sol)->count_passing_inputs(file_name);
+
+            solutions.emplace_back(num_passing_inputs, sol);
+        }
+        sort(solutions.begin(), solutions.end());
+        return solutions[0].second;
+    }
+
 
 };
 
-
-
-#include "SATSolver.h"
+/**
+ * Siemens project: going to hackaton in 2 weeks, funding for trip?
+ * CEGISFinder:updateCtrlVarStore why otype is NULL? I need it not be null to cast it to a value of appropriate type.
+ * Reading file ahead of time and storing examples.
+ * parseLine: where are the inputs actually stored?
+ *
+ * Can we remove checkpointer CEGIS? TODO: YES
+ * Can we remove stopped early?
+ *
+ * HoleHardcoder::get_control_map are all of them integers?
+ * (FOR LATER) Need to get SkVal from SynthInSolver (instantiated in synths in VarStore); stuck in implementing finalizeSynthOutputs to store SkVals).
+ * (DONE) ask about recordSolution: why call record solution twice?
+ * (DONE) ask about get_control_map_as_map_str_str: why populate values twice
+ * (DONE) Refactor passing an input-concretized dag to finder
+ * Refacctor returning a input-concretized dag from checker
+ *
+ * Compiling BooleanDAG to pytorch? possible only when inputs to if-node (arracc) are all one-hots;
+ */
 
 class SolverLanguage {
 public:
@@ -950,12 +1368,19 @@ public:
     void sandbox()
     {
         SolverLanguagePrimitives::basic_while();
-        SolverLanguagePrimitives::target_cegis();
+//        SolverLanguagePrimitives::target_cegis(finder);
     }
 
-    SolverLanguagePrimitives::SolutionHolder* eval(BooleanDAG* dag, ostream& out, const string& file)
+    SolverLanguagePrimitives::SolutionHolder* eval(
+            BooleanDAG* dag, const string& file_name,
+            FloatManager& floats, CommandLineArgs& _args,
+            HoleHardcoder& _hc, bool hasGoodEnoughSolution,
+            CEGISFinderSpec* finder)
     {
-        return SolverLanguagePrimitives::first_cegis(dag, file)->get();
+//        return SolverLanguagePrimitives::wrapper_assert_dag(
+//                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
+//        TODO:
+        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
     }
 };
 

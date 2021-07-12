@@ -34,6 +34,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 		(*node_it)->accept(*this);
 		DebugOut((**node_it), node_ids[(*node_it)->id]);
 		}catch(BasicError& be){
+		    assert(false);
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     	}
 	}
@@ -3136,6 +3137,7 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	  //cout << endl;
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
+            assert(false);
 			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
     		}
 //		catch (exception e) {

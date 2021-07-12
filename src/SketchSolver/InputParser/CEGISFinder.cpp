@@ -1,4 +1,3 @@
-#include "CEGISSolver.h"
 #include "timerclass.h"
 #include <queue>
 #include "CommandLineArgs.h"
@@ -14,48 +13,23 @@
 #include "CEGISFinder.h"
 
 
-BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats){
-	BooleanDAG* newdag = dag->clone();	
-	
-	int oldsize = newdag->size();
-
-	// if(PARAMS->verbosity > 2) {
-		// char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
-		// cout<<" * Specializing problem for "<< stype <<endl;
-		// cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
-	// }
-	
-	NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
-	nhc.process(*newdag);
-
-	Dout( newdag->print(cout) ); 
-	DagOptim cse(*newdag, floats);
-	cse.process(*newdag);
-	newdag->cleanup();
-	if(false){
-		BackwardsAnalysis ba;
-		ba.process(*newdag);
-	}
-	if(false){
-		DagOptim cse(*newdag, floats);			
-		cse.process(*newdag);
-	}
-	if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }	
-	return newdag;
-}
-
 int CEGISsolveCount=0;
 
 
-bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged){
+bool CEGISFinder::find(BooleanDAG* problem,
+//                       VarStore& input,
+                       VarStore& controls, bool hasInputChanged){
 	
 	// the caller expects find to keep track of all the constraints.
 	// here dirfind is doing that.
 
+
+	//hasInputChange == is it a new problem;
 	if(hasInputChanged){
 		timerclass tc("* TIME TO ADD INPUT ");
-		tc.start();				
-		addInputsToTestSet(problem, input);
+		tc.start();
+        addProblemToTestSet(problem);
+//		addInputsToTestSet(problem, input);
 		tc.stop();
 		if(PARAMS->verbosity > 2){ tc.print(); }
 	}
@@ -74,8 +48,8 @@ bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls,
 	}
 
 
-	if(params.printDiag){	  	
-		printDiagnostics(mngFind, 'f');
+	if(params.printDiag){
+        mngFind.printDiagnostics('f');
 	}
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
     	if( result != SATSolver::UNSATISFIABLE){
@@ -132,14 +106,63 @@ bool CEGISFinder::find(BooleanDAG* problem, VarStore& input, VarStore& controls,
 	//Return true.
 }
 
-void CEGISFinder::addInputsToTestSet(BooleanDAG* problem, VarStore& input){
+void
+CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
+{
+    map<bool_node*,  int> node_values;
+    bool specialize = PARAMS->olevel >= 6;
+    BooleanDAG* tmpproblem = NULL;
+    if(PARAMS->verbosity > 2){  cout<<" intsize = "<< newdag->getIntSize()<<endl; }
+
+//    BackwardsAnalysis ba;
+    // ba.process(*newdag);
+    //newdag already optimized in checker.
+//    DagOptim fa(*newdag, floats);
+//    fa.process(*newdag);
+
+    //cout << "addInputsToTestSet: newdag=";
+    //newdag->lprint(cout);
+    if(PARAMS->verbosity > 6){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }
+    // find_node_ids store the mapping between node in the DAG (miter) vs
+    // the variables in the CNF.
+    find_node_ids.resize(newdag->size());
+    //getProblem()->lprint(cout);
+
+    //FindCheckSolver::addInputsToTestSet(input);
+    //lastFproblem = newdag;
+
+    try{
+        stoppedEarly = NodesToSolver::createConstraints(*newdag, dirFind, node_values, find_node_ids, floats);
+    }catch(BasicError& e){
+        dirFind.nextIteration();
+        if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
+
+
+        find_node_ids.clear();
+
+        delete newdag;
+        throw e;
+    }
+    // Keeps the history around for debugging purposes.
+    if( params.superChecks ){ find_history = find_node_ids; }
+    dirFind.nextIteration();
+    if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
+
+
+    find_node_ids.clear();
+    delete newdag;
+}
+
+void
+CEGISFinder::
+addInputsToTestSet(BooleanDAG* problem, VarStore& input){
 	map<bool_node*,  int> node_values;
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
 	if(PARAMS->verbosity > 2){  cout<<" intsize = "<< problem->getIntSize()<<endl; }
 	
 	BooleanDAG* newdag = hardCodeINode(problem, input, bool_node::SRC, floats);
-	BackwardsAnalysis ba;
+//	BackwardsAnalysis ba;
 	// ba.process(*newdag);
 	DagOptim fa(*newdag, floats);
 	fa.process(*newdag);
@@ -228,5 +251,5 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 		dirFind.getMng().lightSolve();
 	}
 	
-	return true;
+	return true; //doMore
 }

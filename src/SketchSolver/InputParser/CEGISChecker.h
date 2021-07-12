@@ -12,8 +12,8 @@
 #include <stack>
 #include <ctime>
 #include "FloatSupport.h"
-#include "CEGISFinder.h"
 #include "CEGISParams.h"
+#include "CounterexampleFinder.h"
 
 using namespace MSsolverNS;
 
@@ -38,7 +38,7 @@ class CEGISChecker
 		problemStack.push(p);
 	}
 	int problemLevel(){
-		return problemStack.size();
+		return (int) problemStack.size();
 	}
 	void popProblem(){
 		BooleanDAG* t = problemStack.top();
@@ -61,7 +61,7 @@ class CEGISChecker
 
 	stack<BooleanDAG*> problemStack;
 
-	map<int, string> files;
+	map<int, File*> files;
 
 	int curProblem; 
 
@@ -72,47 +72,101 @@ class CEGISChecker
 
 	vector<Tvalue> check_node_ids;
 
-	//ownwer is CEGISSolver.
-	Checkpointer* cpt;
-protected:
+    BooleanDAG* check(VarStore& controls, VarStore& input);
+
+    //MODIFIES InputStore
+    static void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
+
+    //MODIFIES InputStore
+    static void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
+
+    VarStore input_store;
 
 public:
 
-	CEGISChecker(CommandLineArgs& args,  HoleHardcoder& hc, FloatManager& _floats, Checkpointer* _cpt): 
-		params(args), floats(_floats), hcoder(hc), cpt(_cpt) 
+    inline VarStore& get_input_store()
+    {
+        return input_store;
+    }
+
+    BooleanDAG* getProblem(){
+        return problemStack.top();
+    }
+
+	CEGISChecker(CommandLineArgs& args,  HoleHardcoder& hc, FloatManager& _floats):
+		params(args), floats(_floats), hcoder(hc)
 		{}
 
-	bool check(VarStore& input, VarStore& controls);
+    BooleanDAG* check(VarStore& controls)
+    {
+        return check(controls, get_input_store());
+    }
+
 
 	void addProblem(BooleanDAG* problem, const string& file)
 	{
 		curProblem = problems.size();
 		problems.push_back(problem);
-		if (file != "") {
-			files[curProblem] = file;
-		}
-	}
+
+        {
+            Dout( cout<<"BEFORE declaring input names"<<endl );
+            redeclareInputs(get_input_store(), problem, true);
+        }
+
+        Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
+        {
+            vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+            if(PARAMS->verbosity > 2){
+                cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
+            }
+            int cints = 0;
+            int cbits = 0;
+            int cfloats = 0;
+            for(int i=0; i<problemIn.size(); ++i){
+                CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+                int nbits = ctrlnode->get_nbits();
+                if(ctrlnode->getOtype() == OutType::BOOL){
+                    cbits++;
+                } else if (ctrlnode->getOtype() == OutType::FLOAT) {
+                    cfloats++;
+                } else{
+                    cints++;
+                }
+                if (ctrlnode->spAngelic) {
+                    declareInput(get_input_store(), problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
+                }
+            }
+            if(PARAMS->verbosity > 2){
+                cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
+            }
+        }
+
+        if (!file.empty()) {
+            files[curProblem] = new File();
+            vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+            File::Result res = files[curProblem]->parseFile(file, floats, inputs, get_input_store());
+            while (res == File::MOREBITS) {
+                if (PARAMS->verbosity > 5) {
+                    cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (problem->getIntSize() + 1) << endl;
+                }
+                growInputs(get_input_store(), problem, problem, (problemLevel() - 1) == 1);
+                res = files[curProblem]->parseFile(file, floats, inputs, get_input_store());
+            }
+        }
+
+    }
+
 
 	bool problemStack_is_empty()
 	{
 		return problemStack.size() == 0;
 	}
 
-	BooleanDAG* getProblem(){
-		return problemStack.top();
-	}
 
 	vector<Tvalue>& get_check_node_ids()
 	{
 		return check_node_ids;
 	}
 
-	//MODIFIES InputStore
-	void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
-
-	//MODIFIES InputStore
-	void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
 
 };
-
-void printDiagnostics(SATSolver& mng, char c);

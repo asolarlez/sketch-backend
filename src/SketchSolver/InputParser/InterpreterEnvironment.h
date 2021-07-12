@@ -296,8 +296,10 @@ public:
 
 
 	void recordSolution() {
-		solver->get_control_map(currentControls);
+	    // hoels concretized during hardcoding
 		hardcoder.get_control_map(currentControls);
+		//holes concretized during cegis (previously hardcoded holes are invisible)
+        solver->get_control_map_as_map_str_str(currentControls);
 		cout << "VALUES ";
 		for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
 			cout << it->first << ": " << it->second << ", ";

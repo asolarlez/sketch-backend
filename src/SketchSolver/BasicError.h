@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <cassert>
 
 
 #define Dout( out )     /* out */

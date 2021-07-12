@@ -8,6 +8,7 @@
 #include "NodeSlicer.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
+#include "SkVal.h"
 
 //extern CommandLineArgs* PARAMS;
 
@@ -17,44 +18,15 @@
 void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
 	checker->addProblem(problem, file);
 	problems.push_back(problem);
-	
 
-	{
-		Dout( cout<<"BEFORE declaring input names"<<endl );
-		redeclareInputs(inputStore, problem, true);		
-	}
-
-	 Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
     {
-	    vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
-	    if(PARAMS->verbosity > 2){
-			cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
-		}
-		int cints = 0;
-		int cbits = 0;
-    	int cfloats = 0;
-	    for(int i=0; i<problemIn.size(); ++i){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
-			int nbits = ctrlnode->get_nbits();
-			if(ctrlnode->getOtype() == OutType::BOOL){
-				cbits++;
-			} else if (ctrlnode->getOtype() == OutType::FLOAT) {
-				cfloats++;
-			} else{
-				cints++;
-			}		
-			if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
-				/* cout<<" i ="<<i<<"\t"<<problemIn[i]->get_name()<<endl; */
-
-				declareControl(ctrlnode);
-			}
-			if (ctrlnode->spAngelic) {
-				declareInput(inputStore, problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
-			}
-		}
-		if(PARAMS->verbosity > 2){
-			cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
-		}
+        vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+        for(int i=0; i<problemIn.size(); ++i){
+            CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+            if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
+                declareControl(ctrlnode);
+            }
+        }
     }
 
 	finder->updateCtrlVarStore(ctrlStore);	
@@ -101,7 +73,7 @@ bool CEGISSolver::solve(){
 	//pushProblem((*problems.rbegin())->clone());
 
 	if(PARAMS->verbosity > 1){
-		cout<<"inputSize = "<<inputStore.getBitsize()<<"\tctrlSize = "<<ctrlStore.getBitsize()<<endl;
+		cout<<"inputSize = "<<checker->get_input_store().getBitsize()<<"\tctrlSize = "<<ctrlStore.getBitsize()<<endl;
 		cout<<"Random seeds = "<<params.nseeds<<endl;	
 	}
 	
@@ -132,7 +104,7 @@ bool CEGISSolver::solveOptimization() {
 	ftimer.restart();
 	bool fail = false;
 	try{
-		fail = !find(inputStore, ctrlStore, true);
+		fail = !find(checker->get_input_store(), ctrlStore, true);
 	}catch(BasicError& e){
 		fail = true;
 	}
@@ -153,6 +125,7 @@ bool CEGISSolver::solveOptimization() {
 bool CEGISSolver::solveCore(){	
 	int iterations = 0;
 	bool fail = false;
+    BooleanDAG* counterexample_concretized_dag;
  	bool doMore=true;
 	timerclass ftimer("* FIND TIME");
 	timerclass ctimer("* CHECK TIME");
@@ -176,8 +149,9 @@ bool CEGISSolver::solveCore(){
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
 			cpt.checkpoint('c', ctrlstore_serialized);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
-			ctimer.restart(); 
-			doMore = check(ctrlStore, inputStore);
+			ctimer.restart();
+            counterexample_concretized_dag = checker->check(ctrlStore);
+			doMore = counterexample_concretized_dag != NULL;
 		 	ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
 		}
@@ -185,6 +159,7 @@ bool CEGISSolver::solveCore(){
 		++iterations;
 		if( params.iterlimit > 0 && iterations >= params.iterlimit){ cout<<" * bailing out due to iter limit"<<endl; fail = true; break; }
 
+		// swap
 		if(doMore) hasInputChanged = true;
 		else hasInputChanged = false;
 		
@@ -195,13 +170,13 @@ bool CEGISSolver::solveCore(){
 		// Minimization loop-- found a solution, but can i find a better solution?
 		if(PARAMS->minvarHole && !doMore && mhsizes.size() != 0){
 			// store the current solution
-			storePreviousSolution(inputStore, ctrlStore);
+			storePreviousSolution(checker->get_input_store(), ctrlStore);
 			// optimization: only add inputs if the verification fails
 			if(finder->minimizeHoleValue(ctrlStore, mhnames, mhsizes))
 				doMore=true;
 			else{
 				doMore = false;
-				inputStore = prevInputStore;
+				checker->get_input_store() = prevInputStore;
 				ctrlStore = prevCtrlStore;
 			}
 		}
@@ -209,23 +184,19 @@ bool CEGISSolver::solveCore(){
 		// Synthesizer
 		if (doMore) {// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
-			if(PARAMS->angelic_model){
-				if(!inputStore.contains("__rs_node")){
-					inputStore.newVar("__rs_node",1, NULL);
-				}
-				inputStore.setVarVal("__rs_node",0, NULL);
-			}
+
+
 			if (hasInputChanged) {
-				if(PARAMS->verbosity > 5){ cout<<"!% ";inputStore.printBrief(cout); cout<<endl;}
-				if(PARAMS->verbosity > 9){ cout<<"!% ";inputStore.printContent(cout); cout<<endl;}
-				std::vector<int, std::allocator<int> > instore_serialized = inputStore.serialize();
+				if(PARAMS->verbosity > 5){ cout<<"!% ";checker->get_input_store().printBrief(cout); cout<<endl;}
+				if(PARAMS->verbosity > 9){ cout<<"!% ";checker->get_input_store().printContent(cout); cout<<endl;}
+				std::vector<int, std::allocator<int> > instore_serialized = checker->get_input_store().serialize();
 			       	cpt.checkpoint('f', instore_serialized);
 			       	//if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			}
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
-			ftimer.restart(); 		
+			ftimer.restart();
 			try{
-				doMore = find(inputStore, ctrlStore, hasInputChanged);
+                doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
 			}catch(BasicError& e){
 				doMore = false;
 			}
@@ -236,7 +207,7 @@ bool CEGISSolver::solveCore(){
 		if(hasInputChanged && !doMore){
 			if(PARAMS->minvarHole && prevSolutionFound){
 				cout << "Cannot find a solution with lower value, hence taking the previous solution" << endl;
-				inputStore = prevInputStore;
+				checker->get_input_store() = prevInputStore;
 				ctrlStore = prevCtrlStore;
 				fail = false;
 				break;
@@ -345,11 +316,6 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 	}
 }
 
-
-bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged) {
-	return finder->find(getProblem(), input, controls, hasInputChanged);
-}
-
  void BitSet::print(ostream& os){
 		int i=next(-1);
 		os<<"{";
@@ -362,11 +328,11 @@ bool CEGISSolver::find(VarStore& input, VarStore& controls, bool hasInputChanged
 	}
 
 void CEGISSolver::normalizeInputStore(){
-	VarStore tmp = join(inputStore, ctrlStore);
+	VarStore tmp = join(checker->get_input_store(), ctrlStore);
 	map<string, BooleanDAG*> empty;
 	NodeSlicer slicer(empty, tmp, *getProblem(), floats);
 	slicer.process(*getProblem());
-	for(VarStore::iterator it = inputStore.begin(); it != inputStore.end(); ++it){
+	for(VarStore::iterator it = checker->get_input_store().begin(); it != checker->get_input_store().end(); ++it){
 		if(!slicer.isInfluential(it->getName())){
 			it->setVal(last_input[it->getName()]);		
 		}
@@ -381,14 +347,45 @@ bool CEGISSolver::solveFromCheckpoint(istream& in){
 
 void CEGISSolver::print_control_map(ostream& out){
 	map<string, string> values;
-	get_control_map(values);
+    get_control_map_as_map_str_str(values);
 	for(auto it = values.begin(); it != values.end(); ++it){
 		out<<it->first<<"\t"<<it->second<<endl;
 	}
 }
 
+void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
+{
+    for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+        if(it->otype == OutType::FLOAT)
+        {
+            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt())));
+        }
+        else if (it->otype == OutType::INT)
+        {
+            values->set(it->getName(), new SkValInt(it->getInt()));
+        }
+        else if (it->otype == OutType::BOOL)
+        {
+            assert(it->get_size() == 1);
+            values->set(it->getName(), new SkValBool(it->getInt()));
+        }
+        else
+        {
+            Assert(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
+        }
+    }
+    for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
 
-void CEGISSolver::get_control_map(map<string, string>& values){
+        Assert(false, "need to implement synthouts to map to SkVals, rather than strings");
+//
+//        //stringstream str;
+//        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
+//        //it->second->print(str);
+//        values[it->first] = ctrlStore.synthouts[it->first];
+    }
+}
+
+void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
 	for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
 		stringstream str;
 		if(it->otype == OutType::FLOAT)
@@ -402,7 +399,7 @@ void CEGISSolver::get_control_map(map<string, string>& values){
 		values[it->getName()] = str.str();
 	}
 	for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
-		//stringstream str;
+	    //stringstream str;
 		Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
 			//it->second->print(str);
 			values[it->first] = ctrlStore.synthouts[it->first];
@@ -416,12 +413,13 @@ void CEGISSolver::setCheckpoint(const string& filename){
 }
 
 
+// can remove
 void CEGISSolver::outputEuclid(ostream& fout){
-		cout<<"BEFORE OUTPUTING STATE"<<endl;		
+		cout<<"BEFORE OUTPUTING STATE"<<endl;
 		{
 			NodesToEuclid neuc(fout, "PROBLEM_");
 			neuc.process(*getProblem());
-		}		
+		}
 	}
 
 
@@ -451,7 +449,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 		vector<bool_node*>& inter = bd->getNodesByType(bool_node::SRC);
 		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
-			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits());			
+			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits(), srcnode->getOtype());
 			int base = dirCheck.getVar(srcnode->get_name());
 			int n = dirCheck.getArrSize(srcnode->get_name());
 			out<<"c "<<	(*node_it)->get_name()<<endl;

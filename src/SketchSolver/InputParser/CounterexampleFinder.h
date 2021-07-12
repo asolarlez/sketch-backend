@@ -5,6 +5,207 @@
 #include "BitSet.h"
 
 
+class File: public vector<VarStore*>
+{
+public:
+    enum Result {NO_FILE, DONE, MOREBITS};
+    File()
+    {
+    }
+
+    bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
+
+        auto vsi = inputs->begin();
+        VarStore::objP* arrit = NULL;
+        VarStore::objP* prevArrit = NULL;
+        bool inArray = false;
+
+        int inputId = 0;
+
+        char ch;
+        in.get(ch);
+        string line;
+        while (ch == '#') {
+            std::getline(in, line);
+            in.get(ch);
+        }
+
+
+        int cur=0;
+        bool neg = false;
+        int depth = 0;
+        bool hasCaptured = true;
+        bool outOfRange = false;
+        bool isFloat = false;
+        double floatVal = 0.0;
+
+        auto regval = [&]() {
+            if (!hasCaptured) {
+
+                if (isFloat) {
+                    cur = floats.getIdx(floatVal);
+                }
+
+                if (depth == 0) {
+                    //we just finished a number, and we are not inside an array.
+                    outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
+                    ++vsi;
+                    ++inputId;
+                }
+                else {
+                    if (!inArray) {
+                        cerr << "Error parsing the input. Was expecting a line with the following format" << endl;
+                        for (auto it = inputs->begin(); it != inputs->end(); ++it) {
+                            auto type = it->otype != NULL? it->otype->str() : "scalar";
+                            const auto isArr = it->arrSize() > 1;
+                            if (isArr) {
+                                cerr << "{" << type << " }  ";
+                            }
+                            else {
+                                cerr << type << "  ";
+                            }
+                        }
+                        cerr << endl;
+                        cerr << "corresponding to inputs "<<endl;
+                        for (auto it = inputs->begin(); it != inputs->end(); ++it) {
+                            cerr << it->getName()<<"  ";
+                        }
+                        cerr << endl;
+                        throw BasicError(string("file parsing error"), "name");
+
+                    }
+                    if (arrit == NULL) {
+                        prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
+                        arrit = prevArrit->next;
+                        ((SRC_node*)inputNodes[inputId])->arrSz++;
+                    }
+
+                    //we just finished a number, and we are inside an array.
+                    outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
+                    prevArrit = arrit;
+                    arrit = arrit->next;
+
+
+                }
+            }
+            hasCaptured = true;
+        };
+        auto reset = [&]() {
+            cur = 0;
+            neg = false;
+            isFloat = false;
+        };
+
+        while (ch != '\n') {
+            switch (ch) {
+                case '{': {
+                    regval();
+                    reset();
+                    if (depth == 0) {
+                        arrit = &(*vsi);
+                        inArray = true;
+                    }
+                    depth++;
+                    break;
+                }
+                case '}': {
+                    regval();
+                    reset();
+                    depth--;
+                    if (depth == 0) {
+                        while (arrit != NULL) {
+                            arrit->setValSafe(0);
+                            arrit = arrit->next;
+                        }
+                        inArray = false;
+                        ++vsi;
+                        ++inputId;
+                    }
+                    break;
+                }
+                case ' ': {
+                    regval();
+                    reset();
+                    break;
+                }
+                case ',': {
+                    regval();
+                    reset();
+                    break;
+                }
+                case '-': {
+                    neg = true;
+                    break;
+                }
+                default:
+                    if (ch >= '0' && ch <= '9') {
+                        if (isFloat) {
+                            floatVal = floatVal + ((double)(ch - '0') / cur);
+                            cur = cur * 10;
+                        }
+                        else {
+                            hasCaptured = false;
+                            cur = cur * 10 + (ch - '0');
+                        }
+                    }
+                    if (ch =='.') {
+                        isFloat = true;
+                        floatVal = (double)cur;
+                        cur = 10;
+                    }
+
+            }
+            if (outOfRange) {
+                return false;
+            }
+            in.get(ch);
+            if (in.eof()) {
+                regval();
+                return !outOfRange;
+            }
+        }
+        regval();
+        return !outOfRange;
+    }
+
+    Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore inputs) {
+        clear();
+        ifstream file;
+        file.open(fname);
+        bool ok = true;
+
+        if (!file.is_open() || file.fail()) {
+            Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
+            return NO_FILE;
+        }
+
+        while (!file.eof()) {
+            VarStore* new_row = inputs.copy();
+            try {
+                ok = parseLine(file, floats, inputNodes, new_row);
+                push_back(new_row);
+            }
+            catch (BasicError& e) {
+                cerr << "Error parsing file " << fname << endl;
+                throw e;
+            }
+
+            if (!ok) {
+                file.close();
+                cout << "MOREBITS" << endl;
+                return MOREBITS;
+            }
+            if (PARAMS->verbosity > 12) {
+                cout << "HERE row = ";
+                new_row->printContent(cout);
+            }
+        }
+        file.close();
+        return DONE;
+    }
+
+};
+
 class CounterexampleFinder :
 	public NodeEvaluator
 {
@@ -91,14 +292,13 @@ class CounterexampleFinder :
 		}
 	}
 public:
-	typedef enum {FOUND, NOTFOUND, UNSAT, MOREBITS} Result;
+    typedef enum {FOUND, NOTFOUND, UNSAT, MOREBITS} Result;
 	const string* message;
 	void init(VarStore& vs){
 		inputs = &vs;
 		computeInfluences();
 	}
-
-
+/*
 	bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes) {
 
 		auto vsi = inputs->begin();
@@ -162,16 +362,16 @@ public:
 					}
 					if (arrit == NULL) {
 						prevArrit->makeArr(prevArrit->index, prevArrit->index + 2);
-						arrit = prevArrit->next;	
+						arrit = prevArrit->next;
 						((SRC_node*)inputNodes[inputId])->arrSz++;
 					}
-					
+
 					//we just finished a number, and we are inside an array.
 					outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
 					prevArrit = arrit;
 					arrit = arrit->next;
-					
-					
+
+
 				}
 			}
 			hasCaptured = true;
@@ -241,7 +441,7 @@ public:
 				}
 
 			}
-			if (outOfRange) {				
+			if (outOfRange) {
 				return false;
 			}
 			in.get(ch);
@@ -253,29 +453,33 @@ public:
 		regval();
 		return !outOfRange;
 	}
-
-
-	Result fromFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes) {
-		ifstream file;
-		file.open(fname);
+*/
+    bool parseLine(VarStore* var_store)
+    {
+        *inputs = *var_store;
+        return true;
+    }
+	Result fromFile(File* file, FloatManager& floats, vector<bool_node*>& inputNodes) {
+//		ifstream file;
+//		file.open(fname);
 		bool ok = true;
+//
+//		if (!file.is_open() || file.fail()) {
+//			Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
+//			return UNSAT;
+//		}
 
-		if (!file.is_open() || file.fail()) {
-			Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
-			return UNSAT;
-		}
-
-		while (!file.eof()) {
-			try {
-				ok = parseLine(file, floats, inputNodes);
-			}
-			catch (BasicError& e) {
-				cerr << "Error parsing file " << fname << endl;
-				throw e;
-			}
+		for(int i = 0;i<file->size();i++) {
+//			try {
+				ok = parseLine(file->at(i));
+//			}
+//			catch (BasicError& e) {
+//				cerr << "Error parsing file " << fname << endl;
+//				throw e;
+//			}
 			
 			if (!ok) {
-				file.close();
+//				file.close();
 				return MOREBITS;
 			}
 			if (PARAMS->verbosity > 12) {
@@ -286,7 +490,7 @@ public:
 				return FOUND;
 			}
 		}
-		file.close();
+//		file.close();
 		return UNSAT;
 	}
 

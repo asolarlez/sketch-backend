@@ -20,9 +20,11 @@ using namespace MSsolverNS;
 
 class CEGISFinderSpec
 {
-
-public:	
-	virtual bool find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged)
+protected:
+    FloatManager& floats;
+public:
+    explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
+	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)
 	{
 		Assert(false, "CEGISFinderSpec is just an interface.");
 		return false;
@@ -48,6 +50,10 @@ public:
 	{
 		Assert(false, "CEGISFinderSpec is just an interface.")
 	}
+
+    FloatManager &get_floats() {
+        return floats;
+    }
 };
 
 
@@ -56,12 +62,12 @@ class CEGISFinder: public CEGISFinderSpec  {
 	vector<Tvalue> find_history;
 	bool stoppedEarly;
 	CEGISparams params;
-	FloatManager& floats;
 	HoleHardcoder& hcoder;
 	SolverHelper& dirFind;
 	SATSolver& mngFind;
 	
 	void addInputsToTestSet(BooleanDAG* problem, VarStore& input);
+    void addProblemToTestSet(BooleanDAG* problem);
 
 public:
 
@@ -69,43 +75,36 @@ public:
 		HoleHardcoder& _hcoder,
 		SolverHelper& _dirFind,
 		SATSolver& _mngFind, CommandLineArgs& args):
-		floats(_floats), hcoder(_hcoder), dirFind(_dirFind), mngFind(_mngFind), params(args)
+		CEGISFinderSpec(_floats), hcoder(_hcoder), dirFind(_dirFind), mngFind(_mngFind), params(args)
 	{
 
 	}
 
-	bool find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged);
+	bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) override;
 
-	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes);
+	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override;
 
-	void declareControl(CTRL_node* cnode) {
+	void declareControl(CTRL_node* cnode) override {
 		dirFind.declareControl(cnode);
 	}
 
-	void updateCtrlVarStore(VarStore& ctrlStore) {
-		for (map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it) {
+	void updateCtrlVarStore(VarStore& ctrlStore) override {
+		for (map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)  {
 			if (!ctrlStore.contains(it->first)) {
-				ctrlStore.newVar(it->first, it->second, NULL);
+				ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first));
 			}
 		}
 	}
 
-	void retractAssumptions() {
+	void retractAssumptions() override {
 		dirFind.getMng().retractAssumptions();
 	}
 };
-
-BooleanDAG* hardCodeINode(
-	BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats);
-	
-
 
 
 class CEGISFinderNumerical: public CEGISFinderSpec
 {
 	static const int  float_idx_size = 18;
-
-	FloatManager& floats;
 
     REASSolver* reasSolver = NULL;
 
@@ -123,7 +122,7 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 	    try{
 	        solveCode = reasSolver->solve();
 	        currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(),currentControlInts, currentControlFloats);
-	        //reasSolver->get_control_map(currentControls);
+	        //reasSolver->get_control_map_as_map_str_str(currentControls);
 	    }catch(SolverException* ex){
 	        cout<<"ERROR "/*<<basename()*/<<": "<<ex->code<<"  "<<ex->msg<<endl;
 			return SATSolver::UNSATISFIABLE; // ex->code + 2;
@@ -147,21 +146,16 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 
 public:
 
-	CEGISFinderNumerical(FloatManager& _floats, ostream& out): floats(_floats)
+	CEGISFinderNumerical(FloatManager& _floats, ostream& out): CEGISFinderSpec(_floats)
 	{
 		reasSolver = new REASSolver(floats);
 	}
 
 
-	bool find(BooleanDAG* problem, VarStore& input, VarStore& controls, bool hasInputChanged)
+	bool find(BooleanDAG* newdag, VarStore& controls, bool hasInputChanged) override
 	{
 		if(hasInputChanged)
-		{
-			BooleanDAG* newdag = hardCodeINode(problem, input, bool_node::SRC, floats);
-			//here do the transform?
-			DagOptim fa(*newdag, floats);
-			fa.process(*newdag);
-			//here do the transform?
+        {
 			if(allInputsDag == NULL)
 			{
 				allInputsDag = newdag;
@@ -233,17 +227,17 @@ public:
 		return true;
 	}
 
-	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes)
+	bool minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames, vector<int>& mhsizes) override
 	{
 		//do nothing
 	}
 
-	void declareControl(CTRL_node* cnode)
+	void declareControl(CTRL_node* cnode) override
 	{
 		//do nothing
 	}
 
-	void updateCtrlVarStore(VarStore& ctrlStore)
+	void updateCtrlVarStore(VarStore& ctrlStore) override
 	{
 		if(allInputsDag == NULL)
 		{
@@ -261,7 +255,7 @@ public:
 		}
 	}
 
-	void retractAssumptions()
+	void retractAssumptions() override
 	{
 		//do nothing
 	}

@@ -12,9 +12,10 @@
 #include <stack>
 #include <ctime>
 #include "FloatSupport.h"
-#include "CEGISFinder.h"
 #include "CEGISParams.h"
 #include "CEGISChecker.h"
+#include "SkVal.h"
+#include "CEGISFinder.h"
 
 using namespace MSsolverNS;
 
@@ -36,9 +37,6 @@ protected:
 
 	vector<BooleanDAG*> problems;
 
-	//CEGISSolver owns inputStore, but CEGISChecker has declareInputs, redeclareInputs, and growInputs; which modify the inputStore. 
-	VarStore inputStore;
-
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
 
@@ -47,25 +45,19 @@ protected:
 	// 	return checker->check(input, controls);
 	// }
 
-	bool find(VarStore& input, VarStore& controls, bool hasInputChanged);
-	
 	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
 
 	void normalizeInputStore();
 
 //-- internal wrappers arround the checker methods
-	bool check(VarStore& input, VarStore& controls)
-	{
-		return checker->check(input, controls);
-	}
+    BooleanDAG* getProblem()
+    {
+        return checker->getProblem();
+    }
 
 	bool problemStack_is_empty()
 	{
 		return checker->problemStack_is_empty();
-	}
-
-	BooleanDAG* getProblem(){
-		return checker->getProblem();
 	}
 
 	vector<Tvalue>& get_check_node_ids()
@@ -73,26 +65,14 @@ protected:
 		return checker->get_check_node_ids();
 	}
 
-	//MODIFIES InputStore
-	void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype)
-	{
-		return checker->declareInput(inputStore, cname, size, arrSz, otype);
-	}
-
-	//MODIFIES InputStore
-	void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false)
-	{
-		return checker->redeclareInputs(inputStore, dag, firstTime);
-	}
-
 public:
-	
-	VarStore ctrlStore;	
+
+	VarStore ctrlStore;
 	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
 	finder(_finder), 
 	floats(_floats), 
 	params(args),
-	checker(new CEGISChecker(args, hc, _floats, &cpt))
+	checker(new CEGISChecker(args, hc, _floats))
 	{
 	//	cout << "miter:" << endl;
 	//	miter->lprint(cout);
@@ -111,7 +91,8 @@ public:
 
 
 
-	void get_control_map(map<string, string>& values);
+    void get_control_map_as_map_str_skval(Assignment_SkVal *values);
+	void get_control_map_as_map_str_str(map<string, string>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);
 

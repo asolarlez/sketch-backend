@@ -246,3 +246,33 @@ void NodeHardcoder::visit( UFUN_node& node ){
 	}
 }
 
+BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {
+    BooleanDAG* newdag = dag->clone();
+
+    int oldsize = newdag->size();
+
+    // if(PARAMS->verbosity > 2) {
+    // char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
+    // cout<<" * Specializing problem for "<< stype <<endl;
+    // cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
+    // }
+
+    NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
+    nhc.process(*newdag);
+
+    Dout( newdag->print(cout) );
+    DagOptim cse(*newdag, floats);
+    cse.process(*newdag);
+    newdag->cleanup();
+    if(false){
+        BackwardsAnalysis ba;
+        ba.process(*newdag);
+    }
+    if(false){
+        DagOptim cse(*newdag, floats);
+        cse.process(*newdag);
+    }
+    if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }
+    return newdag;
+}
+

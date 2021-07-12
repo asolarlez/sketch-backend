@@ -216,7 +216,7 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 		return mp->second;
 	}else{
 		int nbits = ctrlnode->get_nbits();
-		declareInArr(name, nbits);
+		declareInArr(name, nbits, ctrlnode->getOtype());
 		Tvalue& rv = controls[name];
 		rv = getArr(name, 0);
 		if(nbits > 1){			
@@ -624,6 +624,11 @@ void SolverHelper::addHelperC(int l1, int l2){
 	if(l1 == -l2)
 		return;
 	mng.addHelper2Clause(l1, l2);
+}
+
+OutType *SolverHelper::getOtype(const string varname) {
+    Assert(vartype.find(varname) != vartype.end(), varname + " not found in SolverHelper");
+    return vartype[varname];
 }
 
 /*

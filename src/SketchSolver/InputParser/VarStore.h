@@ -40,6 +40,17 @@ public:
 		int index;
 		vector<int> vals;
 		bool isNeg;
+
+		OutType* getOtype() const
+        {
+		    return otype;
+        }
+
+		int get_size() const
+        {
+		    return (int)vals.size();
+        }
+
 		string getName()
 		{
 			return name;
@@ -48,8 +59,11 @@ public:
 		virtual ~objP(){
 			if(next != NULL){ delete next; }
 		}
-		objP(const string& nm, int size, OutType* _otype):name(nm),vals(size),otype(_otype), isNeg(false), index(0), next(NULL){	}
-		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index){if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
+		objP(const string& nm, int size, OutType* _otype):name(nm),vals(size),otype(_otype), isNeg(false), index(0), next(NULL){
+		    assert(_otype != NULL);
+		}
+		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index){
+		    if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
 		objP& operator=(const objP& old){ 
 			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype;
 			if(old.next!=NULL){ 
@@ -219,12 +233,28 @@ private:
 		
 public:
 
-	map<string, SynthInSolver*> synths;
-	map<string, string> synthouts;
+    map<string, SynthInSolver*> synths;
+    map<string, string> synthouts;
 
 	VarStore(){
 		bitsize=0;
-	}	
+	}
+
+	VarStore* copy()
+    {
+
+	    Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+	    Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+
+	    VarStore* ret = new VarStore();
+	    ret->bitsize = bitsize;
+
+	    for(auto it : index)
+        {
+            ret->insertObj(it.first, it.second, objs[it.second]);
+        }
+	    return ret;
+    }
 	
 	typedef vector<objP>::iterator iterator;
 	iterator begin(){ return objs.begin(); }
@@ -255,6 +285,13 @@ public:
 		return rv;
 	}
 
+	void insertObj(const string& name, int idx, objP obj)
+    {
+	    Assert(index.find(name) == index.end(), name + " should not be present in index.");
+	    Assert(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size().");
+	    objs.push_back(obj);
+	    index[name] = idx;
+    }
 
 	void newArr(const string& name, int nbits, int arrsz, OutType* otype){
 		Assert(index.count(name)==0, name<<": This array already existed!!");
@@ -392,6 +429,7 @@ public:
 		return objs[getId(name)];
 	}
 	int getId(const string& name){
+	    assert(index.find(name) != index.end());
 		Assert(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return index[name];
 	}

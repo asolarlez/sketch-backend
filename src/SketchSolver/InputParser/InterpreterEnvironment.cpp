@@ -851,7 +851,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
         status=UNSAT;
 		return SATSolver::UNSATISFIABLE; // ex->code + 2;
     }catch(BasicError& be){
-        reasSolver->get_control_map(currentControls);
+        reasSolver->get_control_map_as_map_str_str(currentControls);
         cout<<"ERROR: "<<basename()<<endl;
         status=UNSAT;
         return SATSolver::UNSATISFIABLE;
@@ -870,10 +870,31 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = false; /// keep false until further notice.
+    bool test_solver_language = false;
     if (test_solver_language)
     {
-        return SolverLanguage().eval(dag, out, file)->get_sat_solver_result();
+        SolverLanguage solver_language = SolverLanguage();
+        SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
+                dag, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+        if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+        {
+            status = UNSAT;
+        }
+        if(ret->has_assignment_skval()) {
+            hardcoder.get_control_map(currentControls);
+            ret->get_control_map(currentControls);
+            cout << "recorded_solution" << endl;
+            cout << "VALUES ";
+            for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
+                cout << it->first << ": " << it->second << ", ";
+            }
+            cout << endl;
+        }
+        else
+        {
+            cout << "No solution";
+        }
+        return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
 
