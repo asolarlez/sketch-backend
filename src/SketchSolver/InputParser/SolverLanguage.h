@@ -22,6 +22,7 @@
 #include "CEGISChecker.h"
 #include "CEGISSolver.h"
 #include "NodeHardcoder.h"
+#include "CounterexampleFinder.h"
 
 using namespace std;
 
@@ -167,6 +168,10 @@ namespace SolverLanguagePrimitives
         {
             return sat_solver_result;
         }
+        void set_sat_solver_result(SATSolver::SATSolverResult _rez)
+        {
+            sat_solver_result = _rez;
+        }
         string to_string()
         {
             cout << "SolutionHolder::to_string" << endl;
@@ -212,6 +217,17 @@ namespace SolverLanguagePrimitives
         }
     };
 
+    class InputHolder: public Assignment_SkVal
+    {
+    public :
+        InputHolder(): Assignment_SkVal() {}
+        InputHolder(VarStore* input, FloatManager& floats): Assignment_SkVal(input, floats) {}
+        explicit InputHolder(ProblemAE* problem): Assignment_SkVal() {
+            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+            assert(false);
+        }
+    };
+
     class Function
     {
         BooleanDAG* dag;
@@ -223,6 +239,11 @@ namespace SolverLanguagePrimitives
         BooleanDAG* get_dag() const
         {
             return dag;
+        }
+
+        FloatManager& get_floats()
+        {
+            return floats;
         }
 
         SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
@@ -262,22 +283,29 @@ namespace SolverLanguagePrimitives
         Function* concretize_holes(SolutionHolder* solution_holder)
         {
             return new Function(
-                    hardCodeINode(dag, *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
+                    hardCodeINode(get_dag(), *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
         }
 
         Function* concretize_inputs(InputHolder* input_holder)
         {
-            cout << "TODO: concretize_inputs" << endl;
-            assert(false);
+            return new Function(
+                    hardCodeINode(get_dag(), *input_holder->to_var_store(), bool_node::SRC, floats), floats);
         }
 
-        int count_passing_inputs(const string &file_name) {
-            cout << "TODO: count_passing_inputs" << endl;
-            assert(false);
+        int count_passing_inputs(File* file) {
+            int ret = 0;
+            for(int i = 0;i<file->size();i++)
+            {
+                Function* concretized_function = concretize_inputs(new InputHolder(file->at(i), floats));
+                if(concretized_function->get_dag()->get_failed_assert() == NULL)
+                {
+                    // if entered then entire dag got reduced;
+                    ret += 1;
+                }
+            }
+            return ret;
         }
     };
-
-    class File;
 
     class ProblemAE: public Function
     {
@@ -285,12 +313,17 @@ namespace SolverLanguagePrimitives
         string file_name;
 //        vector<InputHolder*> inputs_from_file;
     public:
-        explicit ProblemAE(Function* _function, string _file_name = "", File* file = NULL):
-                Function(_function), file_name(std::move(_file_name)), file(file) {}
+        explicit ProblemAE(Function* _function, File* _file = NULL):
+                Function(_function), file(_file){}
+
+        explicit ProblemAE(Function* _function, const string& _file_name):
+                Function(_function), file(new File(get_dag(), file_name, get_floats())){}
+
         File* get_file()
         {
             return file;
         }
+
         virtual string to_string()
         {
             cout << "TODO: ProblemAE::to_string" << endl;
@@ -307,16 +340,6 @@ namespace SolverLanguagePrimitives
 //    public:
 //        AssignmentOfSkVal(): Assignment<SkVal>() {}
 //    };
-
-    class InputHolder: public Assignment<SkVal>
-    {
-    public :
-        InputHolder(): Assignment<SkVal>() {}
-        explicit InputHolder(ProblemAE* problem): Assignment<SkVal>() {
-            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
-            assert(false);
-        }
-    };
 
     class ProblemE: public ProblemAE
     {
@@ -488,10 +511,10 @@ namespace SolverLanguagePrimitives
             switch (sk_val_type)
             {
                 case sk_type_int:
-                    ret = new SkValInt(0);
+                    ret = new SkValInt(0, 1);
                     break;
                 case sk_type_float:
-                    ret = new SkValFloat(0.0);
+                    ret = new SkValFloat(0.0, 1);
                     break;
                 case sk_type_bool:
                     ret = new SkValBool(false);
@@ -1113,14 +1136,13 @@ namespace SolverLanguagePrimitives
         CommandLineArgs& args;
         HoleHardcoder& hc;
         FloatManager& floats;
-        Checkpointer* cpt;
     public:
         WrapperChecker(CommandLineArgs& _args, HoleHardcoder& _hc, FloatManager& _floats):
         args(_args), hc(_hc), floats(_floats) {}
         ProblemE* get_counter_example_concretized_problem_e(ProblemAE* problem, SolutionHolder* solution_holder)
         {
             auto* checker = new CEGISChecker(args, hc, floats);
-            checker->addProblem(problem->get_dag(), "");
+            checker->addProblem(problem->get_dag(), NULL);
             VarStore* controls = solution_holder->get_controls(floats);
             cout << endl << "HERE: controls->printContent(cout);" << endl;
             controls->printContent(cout);
@@ -1159,50 +1181,9 @@ namespace SolverLanguagePrimitives
         return solution_holder;
     }
 
-    /**
-     *
-package ALL{
-    int g(x){
-         return x * ??;
-    }
 
-    bit P(){
-      ...;
-    }
 
-    int f(x){
-           if(P(x)){
-         return g1(x);
-           }else{
-         return g2(x);
-           }
-    }
-}
 
-STUN(file):
-      A' = ALL[ g1 with fresh g, g2 with fresh g];
-      (sol) = BestEffort(A', file)
-      while(){
-       A' = ALL[ g1 with (sol->f@A'), g2 with fresh g];
-       (sol) = BestEffort(A', file)
-      }
-*/
-
-//solver SolutionHolder best_effort(Function f, File file)
-//{
-//    int num_samples = 10;
-//    int rows_per_sample = 10;
-//    vector<pair<int, SolutionHolder> > solutions;
-//    for(int i = 0;i<num_samples;i++)
-//{
-//    SolutionHolder sol = f.solve(inputs.get_random_subset());
-//    int num_passing_inputs = f.concretize_holes_rec(sol).count_passing_inputs(file);
-//
-//    solutions.push_back(make_pair(num_passing_inputs, sol));
-//}
-//sort(solutions.begin(), solutions.end());
-//return solutions[0];
-//}
     class WrapperAssertDAG: public Solver_AE
     {
         CommandLineArgs& params;
@@ -1227,13 +1208,14 @@ STUN(file):
 
 
             CEGISFinderSpec* cegisfind;
-            cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+            cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
             solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats);
         }
 
         void recordSolution(Assignment_SkVal* holes_to_sk_val)
         {
-            hardcoder.get_control_map_str_to_skval(holes_to_sk_val);
+//            hardcoder vals get recorded in external outer-loop.
+//            hardcoder.get_control_map_str_to_skval(holes_to_sk_val);
             solver->get_control_map_as_map_str_skval(holes_to_sk_val);
             cout << "WrapperAssertDAG::recordSolution VALUES = ";
             for (auto it : holes_to_sk_val->get_assignment()) {
@@ -1244,10 +1226,10 @@ STUN(file):
 
         SolutionHolder* solve(ProblemAE* problem) override
         {
-            solver->addProblem(problem->get_dag(), problem->get_file_name());
+            solver->addProblem(problem->get_dag(), problem->get_file());
 
             SATSolver::SATSolverResult ret_result = SATSolver::UNDETERMINED;
-            Assignment_SkVal* holes_to_sk_val = new Assignment_SkVal();
+            auto* holes_to_sk_val = new Assignment_SkVal();
             //copied from InterpreterEnviroment::assertDAG
             {
                 bool ret_result_determined = false;
@@ -1292,7 +1274,7 @@ STUN(file):
     inline SolutionHolder* wrapper_assert_dag(
             BooleanDAG* dag, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
-            HoleHardcoder& _hc,  Checkpointer* _cpt,
+            HoleHardcoder& _hc,
             bool hasGoodEnoughSolution)
     {
         return
@@ -1300,59 +1282,120 @@ STUN(file):
             solve(new ProblemAE(new Function(dag, floats), file_name));
     }
 
-    class File
-    {
-        string file_name;
-    public:
-        File(string _file_name): file_name(_file_name) {}
-        File* sample_sub_file(int num_rows)
-        {
-            cout << "TODO: sample_sub_file" << endl;
-            assert(false);
-        }
-    };
 
     inline SolutionHolder* target_best_effort(BooleanDAG* dag, const string& file_name, FloatManager& floats,
                                               CommandLineArgs& _args,
-                                              HoleHardcoder& _hc,  Checkpointer* _cpt,
+                                              HoleHardcoder& _hc,
                                               bool hasGoodEnoughSolution)
     {
-        File all_file = File(file_name);
-        int num_samples = 10;
-        int rows_per_sample = 10;
+        File* all_file = new File(dag, file_name, floats);
+        int num_samples = 30;
+        int rows_per_sample = 3;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
-            File* sub_file = all_file.sample_sub_file(rows_per_sample);
+            File* sub_file = all_file->sample_sub_file(rows_per_sample);
             SolutionHolder* sol = (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
-//                    solve(new ProblemAE(new Function(dag, floats), file_name));
-                    solve(new ProblemAE(new Function(dag, floats), "", sub_file));
-            int num_passing_inputs = (new Function(dag, floats))->concretize_holes(sol)->count_passing_inputs(file_name);
-
+                    solve(new ProblemAE(new Function(dag, floats), sub_file));
+            int num_passing_inputs = (new Function(dag, floats))->concretize_holes(sol)->count_passing_inputs(all_file);
+            sol->set_sat_solver_result(SATSolver::SATISFIABLE);
             solutions.emplace_back(num_passing_inputs, sol);
         }
         sort(solutions.begin(), solutions.end());
+        reverse(solutions.begin(), solutions.end());
+
+        cout << "Solution count: " << endl;
+        for(int i = 0;i<solutions.size();i++)
+        {
+            cout << solutions[i].first <<" "<< endl;
+        }
+
         return solutions[0].second;
     }
 
+    /**
+ *
+package ALL{
+int g(x){
+     return x * ??;
+}
+
+bit P(){
+  ...;
+}
+
+int f(x){
+       if(P(x)){
+     return g1(x);
+       }else{
+     return g2(x);
+       }
+}
+}
+
+STUN(file):
+  A' = ALL[ g1 with fresh g, g2 with fresh g];
+  (sol) = BestEffort(A', file)
+  while(){
+   A' = ALL[ g1 with (sol->f@A'), g2 with fresh g];
+   (sol) = BestEffort(A', file)
+  }
+*/
 
 };
 
 /**
- * Siemens project: going to hackaton in 2 weeks, funding for trip?
- * CEGISFinder:updateCtrlVarStore why otype is NULL? I need it not be null to cast it to a value of appropriate type.
- * Reading file ahead of time and storing examples.
- * parseLine: where are the inputs actually stored?
+ * Commit message:
+ * removed hardcoder from CEGISFinder.
+ * removed cpt (checkpointer).
+ * Refactored checkHarnessSwitch by moving it to SolverHelper, along with all relevant fields.
+ * Moved DepTracker to BooleanToCNF.
+ * exposed failedAssert in BooleanDag; it is set after hardcoding in hardCodeINode.
+ * moved redeclareInputs, declareInputs from CEGISChecker to CounterExampleFinder.
+ * completed refactoring of reading files ahead of time;
+ * created redeclareInputsAndAngelics
+ * added get_size to SkVal
+ * ;
  *
- * Can we remove checkpointer CEGIS? TODO: YES
- * Can we remove stopped early?
+ */
+
+/**
+ * TODO: VarStore refactor.
+ * Q for 16th July 2021
  *
+ * Next big step: moving up from assertDag to doallpairs - wrap prepare miter;
+ *
+ * TODO: Check refactoring of if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid))
+ * Why do we need the hardcoder in;
+ *          need bc of rabbit-hole due to concretizing,
+ *          moving on to next harness, hardcoding,
+ *          but then not checking fully;
+ *          so you eventually need to check.
+ *     Solution:
+ *          that logic was moved down to the (internal, but global) SolverHelper.
+ *  CEGISFinder line 39 (DONE: removed, replaced with a call to SolverHelper).
+ *  CEGISChecker line 543 (TODO: how do we remove this completelly).
  * HoleHardcoder::get_control_map are all of them integers?
+ * remove CEGISSolver::normalizeInputStore?
+ *
+ * (TO TRY) How to have good testing procedure on all tests? seq/makefile, make, make long; test/testrunner.
+ * (TO TEST MORE) Check implementation of best effort - checking if a DAG got fully reduced.
+ * (DONE) Check refactoring of file reading ahead of time; how VarStore inputs is created; check grow input refactor.
+ *
+ * (DONE) Siemens project: going to hackaton in 2 weeks, funding for trip?
+ * (DONE) book ticket via Armando's assistant
+ * (DONE) CEGISFinder:updateCtrlVarStore why otype is NULL? I need it not be null to cast it to a value of appropriate type.
+ * (DONE) Reading file ahead of time and storing examples.
+ * (DONE) parseLine: where are the inputs actually stored?
+ *
+ * (DONE) Can we remove checkpointer CEGIS? yes
+ * (DONE) Can we remove stopped early? no
+ *
  * (FOR LATER) Need to get SkVal from SynthInSolver (instantiated in synths in VarStore); stuck in implementing finalizeSynthOutputs to store SkVals).
  * (DONE) ask about recordSolution: why call record solution twice?
  * (DONE) ask about get_control_map_as_map_str_str: why populate values twice
  * (DONE) Refactor passing an input-concretized dag to finder
- * Refacctor returning a input-concretized dag from checker
+ * (DONE) Refactor returning a input-concretized dag from checker
  *
  * Compiling BooleanDAG to pytorch? possible only when inputs to if-node (arracc) are all one-hots;
  */
@@ -1379,8 +1422,8 @@ public:
     {
 //        return SolverLanguagePrimitives::wrapper_assert_dag(
 //                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
-//        TODO:
-        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
+//        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
+        return SolverLanguagePrimitives::target_best_effort(dag, file_name, floats, _args, _hc, hasGoodEnoughSolution);
     }
 };
 

@@ -1,19 +1,43 @@
 #pragma once
+#include <random>
+
 #include "NodeEvaluator.h"
 #include "StringHTable.h"
 
 #include "BitSet.h"
 
 
+//MODIFIES InputStore
+void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
+
+//MODIFIES InputStore
+void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
+
+void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
+
 class File: public vector<VarStore*>
 {
-public:
-    enum Result {NO_FILE, DONE, MOREBITS};
-    File()
-    {
+    static void growInputs(VarStore & inputStore, BooleanDAG* dag){
+        dag->growInputIntSizes();
+        redeclareInputs(inputStore, dag);
     }
 
-    bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
+public:
+    enum Result {NO_FILE, DONE, MOREBITS};
+
+    File(BooleanDAG* problem, const string& file, FloatManager& floats)
+    {
+        VarStore input_store;
+        redeclareInputsAndAngelics(input_store, problem);
+        vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+        File::Result res = parseFile(file, floats, inputs, input_store);
+        while (res == File::MOREBITS) {
+            growInputs(input_store, problem);
+            res = parseFile(file, floats, inputs, input_store);
+        }
+    }
+
+    static bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
 
         auto vsi = inputs->begin();
         VarStore::objP* arrit = NULL;
@@ -192,11 +216,9 @@ public:
 
             if (!ok) {
                 file.close();
-                cout << "MOREBITS" << endl;
                 return MOREBITS;
             }
             if (PARAMS->verbosity > 12) {
-                cout << "HERE row = ";
                 new_row->printContent(cout);
             }
         }
@@ -204,6 +226,23 @@ public:
         return DONE;
     }
 
+    explicit File(File* to_copy)
+    {
+        for(int i = 0;i<to_copy->size();i++)
+        {
+            push_back(to_copy->at(i)->copy());
+        }
+    }
+
+    File *sample_sub_file(int num_rows) {
+        File* new_file = new File(this);
+        shuffle(new_file->begin(), new_file->end(), std::mt19937(std::random_device()()));
+        while(new_file->size() > num_rows)
+        {
+            new_file->pop_back();
+        }
+        return new_file;
+    }
 };
 
 class CounterexampleFinder :

@@ -34,6 +34,39 @@ int SwapperPredicate::numvars;
 #endif
 
 
+void DepTracker::helper(int harnid, vector<char>& visited, set<int>& out) {
+    visited[harnid] = 1;
+    vector<Lit>& lits = decisionsPerHarness[harnid];
+
+    for (vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit) {
+        out.insert(toInt(*llit));
+    }
+
+    set<int>& holes = holesPerHarness[harnid];
+    for (set<int>::iterator it = holes.begin(); it != holes.end(); ++it) {
+        set<int>& vi = harnessPerHole[*it];
+        if (vi.size()>1) {
+            for (set<int>::iterator vvi = vi.begin(); vvi != vi.end(); ++vvi) {
+                if (visited[*vvi] == 0) {
+                    helper(*vvi, visited, out);
+                }
+            }
+        }
+    }
+}
+
+void DepTracker::genConflict(int harnid, vec<Lit>& out) {
+    cout << " charness = " << harnid << endl;
+    out.clear();
+    vector<char> visited(holesPerHarness.size(), 0);
+    set<int> tout;
+    helper(harnid, visited, tout);
+    for (set<int>::iterator it = tout.begin(); it != tout.end(); ++it) {
+        out.push(toLit(*it));
+    }
+}
+
+
 
 void SolverHelper::writeDIMACS(ofstream& dimacs_file){	
 	for(map<string, int>::iterator fit = varmap.begin(); fit != varmap.end(); ++fit){
@@ -629,6 +662,18 @@ void SolverHelper::addHelperC(int l1, int l2){
 OutType *SolverHelper::getOtype(const string varname) {
     Assert(vartype.find(varname) != vartype.end(), varname + " not found in SolverHelper");
     return vartype[varname];
+}
+
+DepTracker &SolverHelper::get_dt() {
+    return dt;
+}
+
+bool SolverHelper::get_pendingConstraints() {
+    return pendingConstraints;
+}
+
+void SolverHelper::dismissedPending() {
+    set_pendingConstraints(false);
 }
 
 /*

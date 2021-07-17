@@ -17,6 +17,8 @@
 
 using namespace MSsolverNS;
 
+
+
 class CEGISChecker
 {
 
@@ -74,12 +76,6 @@ class CEGISChecker
 
     BooleanDAG* check(VarStore& controls, VarStore& input);
 
-    //MODIFIES InputStore
-    static void declareInput(VarStore & inputStore, const string& cname, int size, int arrSz, OutType* otype);
-
-    //MODIFIES InputStore
-    static void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=false);
-
     VarStore input_store;
 
 public:
@@ -103,16 +99,17 @@ public:
     }
 
 
-	void addProblem(BooleanDAG* problem, const string& file)
+	void addProblem(BooleanDAG* problem, File* file)
 	{
-		curProblem = problems.size();
+		curProblem = (int) problems.size();
 		problems.push_back(problem);
-
-        {
-            Dout( cout<<"BEFORE declaring input names"<<endl );
-            redeclareInputs(get_input_store(), problem, true);
+        if (file != NULL) {
+            files[curProblem] = file;
         }
 
+        redeclareInputsAndAngelics(get_input_store(), problem);
+
+        // IS THIS DEBUG CODE? YES
         Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
         {
             vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
@@ -124,7 +121,6 @@ public:
             int cfloats = 0;
             for(int i=0; i<problemIn.size(); ++i){
                 CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
-                int nbits = ctrlnode->get_nbits();
                 if(ctrlnode->getOtype() == OutType::BOOL){
                     cbits++;
                 } else if (ctrlnode->getOtype() == OutType::FLOAT) {
@@ -132,28 +128,11 @@ public:
                 } else{
                     cints++;
                 }
-                if (ctrlnode->spAngelic) {
-                    declareInput(get_input_store(), problemIn[i]->get_name() + "_src", nbits, ctrlnode->getArrSz(), ctrlnode->getOtype());
-                }
             }
             if(PARAMS->verbosity > 2){
                 cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
             }
         }
-
-        if (!file.empty()) {
-            files[curProblem] = new File();
-            vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
-            File::Result res = files[curProblem]->parseFile(file, floats, inputs, get_input_store());
-            while (res == File::MOREBITS) {
-                if (PARAMS->verbosity > 5) {
-                    cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (problem->getIntSize() + 1) << endl;
-                }
-                growInputs(get_input_store(), problem, problem, (problemLevel() - 1) == 1);
-                res = files[curProblem]->parseFile(file, floats, inputs, get_input_store());
-            }
-        }
-
     }
 
 

@@ -273,6 +273,9 @@ BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type typ
         cse.process(*newdag);
     }
     if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }
+
+    newdag->set_failed_assert(cse.get_failedAssert());
+
     return newdag;
 }
 

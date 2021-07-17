@@ -31,15 +31,17 @@ static string sk_val_type_name[3] = {"sk_type_int", "sk_type_float", "sk_type_bo
 class SkVal
 {
     SkValType sketch_val_type;
-//    int size;
+    bool size_defined = false;
+    int size;
 public:
-    explicit SkVal(SkValType _sketch_val_type):
-            sketch_val_type(_sketch_val_type) {}
+//    explicit SkVal(SkValType _sketch_val_type):
+//            sketch_val_type(_sketch_val_type) {}
+    SkVal(SkValType _sketch_val_type, int _size):
+            sketch_val_type(_sketch_val_type), size(_size), size_defined(true) {}
     int get_size()
     {
-        cout << "size is not initialized" << endl;
-        assert(false);
-//        return size;
+        Assert(size_defined, "SkVal size not defined");
+        return size;
     }
     SkValType get_type() {
         return sketch_val_type;
@@ -58,19 +60,21 @@ public:
 class SkValBool: public SkVal, public PolyVal<bool>
 {
 public:
-    explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool) {}
+    explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {}
     string to_string() override {return std::to_string(get());}
 };
 class SkValInt: public SkVal, public PolyVal<int>
 {
 public:
-    explicit SkValInt(int _val): PolyVal<int>(_val), SkVal(sk_type_int){}
+//    explicit SkValInt(int _val): PolyVal<int>(_val), SkVal(sk_type_int){}
+    explicit SkValInt(int _val, int _size): PolyVal<int>(_val), SkVal(sk_type_int, _size){}
     string to_string() override {return std::to_string(get());}
 };
 class SkValFloat: public SkVal, public PolyVal<float>
 {
 public:
-    explicit SkValFloat(float _val): PolyVal<float>(_val), SkVal(sk_type_float){}
+//    explicit SkValFloat(float _val): PolyVal<float>(_val), SkVal(sk_type_float){}
+    explicit SkValFloat(float _val, int _size): PolyVal<float>(_val), SkVal(sk_type_float, _size){}
     string to_string() override {return std::to_string(get());}
 };
 
@@ -127,14 +131,13 @@ public:
     Assignment_SkVal(VarStore* var_store, FloatManager& floats): Assignment<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
-            auto star_it = *it;
             OutType* out_type = (*it).getOtype();
             if(out_type == OutType::INT) {
-                set((*it).getName(), new SkValInt((*it).getInt()));
+                set((*it).getName(), new SkValInt((*it).getInt(), (*it).get_size()));
             }
             else if (out_type == OutType::FLOAT)
             {
-                set((*it).getName(), new SkValFloat(floats.getFloat((*it).getInt())));
+                set((*it).getName(), new SkValFloat(floats.getFloat((*it).getInt()), (*it).get_size()));
             }
             else if (out_type == OutType::BOOL)
             {
@@ -169,6 +172,8 @@ public:
         for(auto item : assignment)
         {
             ret->newVar(item.first, item.second->get_size(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+            Assert(item.second->get_type() == sk_type_int || item.second->get_type() == sk_type_bool, "TODO: cast SkFloat back into an entry in VarStore.");
+            ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
         }
         return ret;
     }

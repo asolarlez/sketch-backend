@@ -201,7 +201,7 @@ public:
 	    }
 	    else
 	    {
-			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
 		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
         //reasSolver = new REASSolver(floats);
@@ -248,7 +248,7 @@ public:
 	    }
 	    else
 	    {
-			cegisfind = new CEGISFinder(floats, hardcoder, *finder, finder->getMng(), params);
+			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
 		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
         //reasSolver = new REASSolver(floats);

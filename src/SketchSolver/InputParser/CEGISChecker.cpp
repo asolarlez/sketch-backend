@@ -8,33 +8,10 @@
 #include "NodeSlicer.h"
 #include "BackwardsAnalysis.h"
 #include "MiniSATSolver.h"
-#include "CounterexampleFinder.h"
 #include "CEGISChecker.h"
 #include "NodeHardcoder.h"
 
 
-void declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype) {
-	//Inputs can be redeclared to change their sizes, but not controls.
-	if( !inputStore.contains(inname)){
-    if(arrSz >= 0){
-			inputStore.newArr(inname, bitsize, arrSz, otype);	
-		}else{
-			inputStore.newVar(inname, bitsize, otype);				
-		}
-		Dout( cout<<" INPUT "<<inname<<" sz = "<<bitsize<<endl );
-	}else{
-		// cout<<" RESIZING "<<inname<<" to "<<bitsize<<endl;
-      inputStore.resizeVar(inname, bitsize);
-      if(arrSz >= 0){
-        inputStore.resizeArr(inname, arrSz);
-      }
-	}
-}
-
-void CEGISChecker::declareInput(VarStore & inputStore, const string& inname, int bitsize, int arrSz, OutType* otype) {
-	Dout(cout<<"DECLARING INPUT "<<inname<<" "<<bitsize<<endl);
-	::declareInput(inputStore, inname, bitsize, arrSz, otype);
-}
 
 int CEGISChecker::valueForINode(INTER_node* inode, VarStore& values, int& nbits){
 			int retval = 0;
@@ -402,38 +379,6 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	return tv;
 }
 
-void CEGISChecker::redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
-	{
-		vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);	
-		for(size_t i=0; i<specIn.size(); ++i){			
-			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
-			int nbits = srcnode->get_nbits();
-			if(nbits >= 2 || firstTime){	
-				declareInput(inputStore, specIn[i]->get_name(), nbits, srcnode->getArrSz(), srcnode->getOtype());
-			}
-		}
-	}
-	{
-		vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);
-		int nbits = dag->getIntSize();
-		for(size_t i=0; i<ufunin.size(); ++i){
-			UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);	
-			string tuple_name = ufunnode->getTupleName();
-
-			Tuple* tuple_type = dynamic_cast<Tuple*>(OutType::getTuple(tuple_name));
-			int size = tuple_type->actSize;
-			int ASize =  1 << PARAMS->NINPUTS;
-			for(int tt = 0; tt<size; ++tt){
-				stringstream sstr;
-				sstr<<ufunnode->get_ufname()<<"_"<<ufunnode->get_uniquefid()<<"_"<<tt;
-				OutType* ttype = tuple_type->entries[tt];	
-				bool isArr = ttype->isArr ;
-				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-				declareInput(inputStore, sstr.str() , isBool ? 1 : nbits, (isArr ? ASize : -1), ttype );
-			}
-		}
-	}
-}
 
 void CEGISChecker::growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop){
 	int gnbits = -1;
@@ -594,14 +539,21 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::NEXT_PROBLEM:{
 				
-				int tmpPid = (curProblem + 1) % problems.size() ;				
-				if(!hcoder.checkHarnessSwitch(tmpPid)){
-					if(PARAMS->verbosity > 5){
-						cout<<"Failed from leftover clauses from concretization"<<endl;
-					}
-					rv = true;
-					continue;
-				}
+				int tmpPid = (curProblem + 1) % problems.size() ;
+                if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid)){
+                    if(PARAMS->verbosity > 5){
+                        cout<<"Failed from leftover clauses from concretization"<<endl;
+                    }
+                    rv = true;
+                    continue;
+                }
+//				if(!hcoder.checkHarnessSwitch(tmpPid)){
+//					if(PARAMS->verbosity > 5){
+//						cout<<"Failed from leftover clauses from concretization"<<endl;
+//					}
+//					rv = true;
+//					continue;
+//				}
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 

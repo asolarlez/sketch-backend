@@ -3092,9 +3092,9 @@ void DagOptim::process(BooleanDAG& dag){
 				
 
 		if(dag[i] != NULL){
-            // cout<<"Orig = "<<dag[i]->lprint();
+//             cout<<"Orig = "<<dag[i]->lprint();
 			bool_node* node = computeOptim(dag[i]);
-			// cout<<"  becomes "<<node->lprint()<<endl;
+//			 cout<<"  becomes "<<node->lprint()<<endl;
 
 
 			if(dag[i] != node){			
@@ -3113,8 +3113,7 @@ void DagOptim::process(BooleanDAG& dag){
 			}
 		}
 	}
-    
-	
+
 	cleanup(dag);
 
 	everything.stop();
@@ -3123,4 +3122,8 @@ void DagOptim::process(BooleanDAG& dag){
 	Dout( everything.print(); )
 	
 	Dout(cout<<" end cse "<<endl);
+}
+
+ASSERT_node *DagOptim::get_failedAssert() {
+    return failedAssert;
 }

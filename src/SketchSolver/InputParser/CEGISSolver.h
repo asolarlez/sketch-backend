@@ -29,7 +29,6 @@ class CEGISSolver
 
 	map<string, int> last_input;	
 
-	Checkpointer cpt;
 protected:
 
 	FloatManager& floats;
@@ -79,7 +78,7 @@ public:
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(BooleanDAG* miter, const string& file);
+	void addProblem(BooleanDAG* miter, File* file);
 
 
 	virtual bool solve();
@@ -87,7 +86,6 @@ public:
 	
 
 	bool solveFromCheckpoint(istream& in);
-	virtual void setCheckpoint(const string& filename);
 
 
 

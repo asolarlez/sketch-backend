@@ -33,13 +33,13 @@ void HoleHardcoder::get_control_map(map<string, string>& values) {
 	}
 }
 
-void HoleHardcoder::get_control_map_str_to_skval(Assignment_SkVal *values) {
-    for (map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it) {
-        if (!LEAVEALONE(it->second)) {
-            values->set(it->first, new SkValInt(it->second));
-        }
-    }
-}
+//void HoleHardcoder::get_control_map_str_to_skval(Assignment_SkVal *values) {
+//    for (map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it) {
+//        if (!LEAVEALONE(it->second)) {
+//            values->set(it->first, new SkValInt(it->second));
+//        }
+//    }
+//}
 
 
 
@@ -197,45 +197,12 @@ int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {
 	throw BadConcretization();
 }
 
-void DepTracker::helper(int harnid, vector<char>& visited, set<int>& out) {
-	visited[harnid] = 1;
-	vector<Lit>& lits = decisionsPerHarness[harnid];
-
-	for (vector<Lit>::iterator llit = lits.begin(); llit < lits.end(); ++llit) {
-		out.insert(toInt(*llit));
-	}
-
-	set<int>& holes = holesPerHarness[harnid];
-	for (set<int>::iterator it = holes.begin(); it != holes.end(); ++it) {
-		set<int>& vi = harnessPerHole[*it];
-		if (vi.size()>1) {
-			for (set<int>::iterator vvi = vi.begin(); vvi != vi.end(); ++vvi) {
-				if (visited[*vvi] == 0) {
-					helper(*vvi, visited, out);
-				}
-			}
-		}
-	}
-}
-
-void DepTracker::genConflict(int harnid, vec<Lit>& out) {
-	cout << " charness = " << harnid << endl;
-	out.clear();
-	vector<char> visited(holesPerHarness.size(), 0);
-	set<int> tout;
-	helper(harnid, visited, tout);
-	for (set<int>::iterator it = tout.begin(); it != tout.end(); ++it) {
-		out.push(toLit(*it));
-	}
-}
-
-
 int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool special) {
 	if (!special) {
 		const guardedVal& gv = options[rv];
 		Lit l = lfromInt(-gv.guard);
 		sofar.push(l);
-		dt.recordDecision(l);
+		get_dt().recordDecision(l);
 		return gv.value;
 	}
 	else {
@@ -243,7 +210,7 @@ int HoleHardcoder::recordDecision(const gvvec& options, int rv, int bnd, bool sp
 			const guardedVal& gv = options[i];
 			Lit l = lfromInt(gv.guard);
 			sofar.push(l);
-			dt.recordDecision(l);
+			get_dt().recordDecision(l);
 
 		}
 		return options[rv].value;
@@ -303,7 +270,7 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 	int chsize = node->children.size();
 	if (chsize == 0 || node->get_Angelic()) return node;
 	string name = node->get_name();
-	dt.regHoleInHarness(name);
+	get_dt().regHoleInHarness(name);
 
 	map<string, int>::iterator it = randholes.find(name);
 	int tchld = computeHoleScore(node);

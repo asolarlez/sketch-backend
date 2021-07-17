@@ -876,6 +876,8 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
                 dag, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+
+        cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
         {
             status = UNSAT;
@@ -894,6 +896,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
         {
             cout << "No solution";
         }
+        cout << "EXITING assertDAG" << endl;
         return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
@@ -901,9 +904,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
-	
-	solver->addProblem(dag, file);
-	
+	solver->addProblem(dag, new File(dag, file, floats));
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);

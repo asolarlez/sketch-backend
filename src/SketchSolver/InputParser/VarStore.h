@@ -251,6 +251,7 @@ public:
 
 	    for(auto it : index)
         {
+	        //Check copying of obj.
             ret->insertObj(it.first, it.second, objs[it.second]);
         }
 	    return ret;
@@ -305,7 +306,7 @@ public:
 	void newVar(const string& name, int size, OutType* otype){
 		Assert(index.count(name)==0, name<<": This variable already existed!!");
 		int begidx = objs.size();
-		objs.push_back(objP(name, size, otype));
+		objs.emplace_back(name, size, otype);
 		index[name] = begidx;
 		bitsize += size;
 	}

@@ -15,7 +15,7 @@
 
 
 
-void CEGISSolver::addProblem(BooleanDAG* problem, const string& file){
+void CEGISSolver::addProblem(BooleanDAG* problem, File* file){
 	checker->addProblem(problem, file);
 	problems.push_back(problem);
 
@@ -147,7 +147,6 @@ bool CEGISSolver::solveCore(){
 			if(PARAMS->verbosity > 5){ cout<<"!+ ";ctrlStore.printBrief(cout); cout<<endl;}
 			if(PARAMS->verbosity > 9){ cout<<"!+ ";ctrlStore.printContent(cout); cout<<endl;}
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
-			cpt.checkpoint('c', ctrlstore_serialized);
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart();
             counterexample_concretized_dag = checker->check(ctrlStore);
@@ -190,8 +189,7 @@ bool CEGISSolver::solveCore(){
 				if(PARAMS->verbosity > 5){ cout<<"!% ";checker->get_input_store().printBrief(cout); cout<<endl;}
 				if(PARAMS->verbosity > 9){ cout<<"!% ";checker->get_input_store().printContent(cout); cout<<endl;}
 				std::vector<int, std::allocator<int> > instore_serialized = checker->get_input_store().serialize();
-			       	cpt.checkpoint('f', instore_serialized);
-			       	//if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
+                //if(params.simplifycex != CEGISparams::NOSIM){ abstractProblem(); }
 			}
 			if(PARAMS->verbosity > 2 || PARAMS->showInputs){ cout<<"BEG FIND"<<endl; }
 			ftimer.restart();
@@ -358,11 +356,11 @@ void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
     for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
         if(it->otype == OutType::FLOAT)
         {
-            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt())));
+            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt()), it->get_size()));
         }
         else if (it->otype == OutType::INT)
         {
-            values->set(it->getName(), new SkValInt(it->getInt()));
+            values->set(it->getName(), new SkValInt(it->getInt(), it->get_size()));
         }
         else if (it->otype == OutType::BOOL)
         {
@@ -406,11 +404,6 @@ void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
 	}	
 }
 
-
-
-void CEGISSolver::setCheckpoint(const string& filename){
-	cpt.setCheckpoint(filename);
-}
 
 
 // can remove

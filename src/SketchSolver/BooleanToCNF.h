@@ -43,6 +43,80 @@ class varRange{
 	varRange& operator=(const varRange& vr){varID=vr.varID; range=vr.range; return *this;};
 };
 
+/*
+This class tracks dependencies between holes and harnesses.
+*/
+class DepTracker{
+    /*Each hole has an index*/
+    map<string, int> ctrlIdx;
+    vector<set<int> > harnessPerHole; // holeId -> [harnesses]
+    vector<set<int> > holesPerHarness; // harnesId -> {holes}
+
+    /*In this variable, we record all the decisions that have been made during each harness.*/
+    vector<vector<Lit> > decisionsPerHarness;
+    int curHarness;
+
+
+    /*
+    out tracks all the literals that were set leading to a concretization failure.
+    If harnid failed, first, we will add all the holes that were concretized for harness harnid.
+    But then it could also be that the problem was not the concretization of holes in harnid, but of holes somewhere else.
+    For example, suppose you have a harness that says
+    assert H_1 == H_2.
+    Then you have another harness that says
+    assert H_2 > 5;
+
+    If I concretize H_1 to 3, that could lead to an assertion failure in the second harness despite the fact that
+    the only hole (H_2) in that harness was not concretized.
+    Therefore, we must include as dependencies not just the holes in that harness, but holes in all other harnesses
+    that transitively share holes with the currentt harness.
+
+    */
+    void helper(int harnid, vector<char>& visited, set<int>& out);
+
+public:
+
+    void reset(){
+        for(size_t i=0; i<holesPerHarness.size(); ++i){
+            holesPerHarness[i].clear();
+            decisionsPerHarness[i].clear();
+        }
+        for(size_t i=0; i<harnessPerHole.size(); ++i){
+            harnessPerHole[i].clear();
+        }
+    }
+
+    void genConflict(vec<Lit>& vl){
+        genConflict(curHarness, vl);
+    }
+    void recordDecision(const Lit l){
+        decisionsPerHarness[curHarness].push_back(l);
+    }
+    void genConflict(int harnid, vec<Lit>& vl);
+
+    void declareControl(string const & ctrl){
+        if(ctrlIdx.count(ctrl)==0){
+            int sz = ctrlIdx.size();
+            ctrlIdx[ctrl] = sz;
+            harnessPerHole.push_back(set<int>());
+        }
+    }
+    void setCurHarness(int hid){
+        curHarness = hid;
+    }
+    void setHarnesses(int nharnesses){
+        holesPerHarness.resize(nharnesses);
+        decisionsPerHarness.resize(nharnesses);
+    }
+
+
+    void regHoleInHarness(string const & hname){
+        int hole = ctrlIdx[hname];
+        harnessPerHole[hole].insert(curHarness);
+        holesPerHarness[curHarness].insert(hole);
+    }
+
+};
 
 
 class SolverHelper {
@@ -430,6 +504,34 @@ public:
   }
 
     OutType *getOtype(const string basicString);
+
+private:
+    bool pendingConstraints;
+    DepTracker dt;
+public:
+
+    bool checkHarnessSwitch(int hid){
+        if(pendingConstraints){
+            int res = getMng().solve();
+            if(res != SATSolver::SATISFIABLE){
+                return false;
+            }
+        }
+        get_dt().setCurHarness(hid);
+        pendingConstraints = false;
+        return true;
+    }
+
+    DepTracker &get_dt();
+
+    bool get_pendingConstraints();
+
+    void set_pendingConstraints(bool val)
+    {
+        pendingConstraints = val;
+    }
+
+    void dismissedPending();
 };
 
 /*

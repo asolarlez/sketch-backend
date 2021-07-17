@@ -62,7 +62,6 @@ class CEGISFinder: public CEGISFinderSpec  {
 	vector<Tvalue> find_history;
 	bool stoppedEarly;
 	CEGISparams params;
-	HoleHardcoder& hcoder;
 	SolverHelper& dirFind;
 	SATSolver& mngFind;
 	
@@ -71,11 +70,8 @@ class CEGISFinder: public CEGISFinderSpec  {
 
 public:
 
-	CEGISFinder(FloatManager& _floats,
-		HoleHardcoder& _hcoder,
-		SolverHelper& _dirFind,
-		SATSolver& _mngFind, CommandLineArgs& args):
-		CEGISFinderSpec(_floats), hcoder(_hcoder), dirFind(_dirFind), mngFind(_mngFind), params(args)
+	CEGISFinder(FloatManager &_floats, SolverHelper &_dirFind, SATSolver &_mngFind, CommandLineArgs &args) :
+		CEGISFinderSpec(_floats), dirFind(_dirFind), mngFind(_mngFind), params(args)
 	{
 
 	}

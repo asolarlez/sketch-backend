@@ -255,6 +255,18 @@ Dllist assertions;
    BooleanDAG(const string& name_="anon", bool isModel_=false);
 
 	virtual ~BooleanDAG();
+
+private:
+    ASSERT_node *failed_assert;
+public:
+    void set_failed_assert(ASSERT_node *_failed_assert)
+    {
+        failed_assert = _failed_assert;
+    }
+    ASSERT_node* get_failed_assert()
+    {
+        return failed_assert;
+    }
 };
 
 

@@ -114,7 +114,8 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/FloatSupport.h 			\
     InputParser/IntToFloatRewriteDag.h \
     InputParser/CEGISChecker.h \
-    InputParser/CEGISFinder.h
+    InputParser/CEGISFinder.h \
+    InputParser/CounterexampleFinder.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -172,7 +173,8 @@ libcegis_a_SOURCES =				\
 	InputParser/NodeHardcoder.cpp  \
 	InputParser/Tvalue.cpp \
     InputParser/CEGISChecker.cpp \
-    InputParser/CEGISFinder.cpp
+    InputParser/CEGISFinder.cpp \
+    InputParser/CounterexampleFinder.cpp
 
 
 

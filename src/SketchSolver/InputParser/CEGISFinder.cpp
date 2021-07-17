@@ -36,7 +36,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	//Solve
 	
 	SATSolver::SATSolverResult result = mngFind.solve();
-	hcoder.dismissedPending();
+    dirFind.dismissedPending();
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;
@@ -47,10 +47,10 @@ bool CEGISFinder::find(BooleanDAG* problem,
 		this->dirFind.writeDIMACS(file);		
 	}
 
-
 	if(params.printDiag){
         mngFind.printDiagnostics('f');
 	}
+
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
     	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
