@@ -1,6 +1,7 @@
 #ifndef VARSTORE_H
 #define VARSTORE_H
 
+#include <utility>
 #include <vector>
 #include <string>
 #include <map>
@@ -32,9 +33,19 @@ private:
 
 public:
 	class objP{
+
+
+        void getArrRec(vector<int>* ret) const
+        {
+            ret->push_back(getInt());
+            if(next != nullptr && next->defined)
+            {
+                next->getArrRec(ret);
+            }
+        }
+        bool defined = false;
 	public:
 		string name;
-	public:
 		objP* next;
 		OutType* otype;
 		int index;
@@ -48,7 +59,7 @@ public:
 
 		int get_size() const
         {
-		    return (int)vals.size();
+		    return globalSize();
         }
 
 		string getName()
@@ -57,15 +68,16 @@ public:
 		}
 
 		virtual ~objP(){
+		    defined = false;
 			if(next != NULL){ delete next; }
 		}
-		objP(const string& nm, int size, OutType* _otype):name(nm),vals(size),otype(_otype), isNeg(false), index(0), next(NULL){
+		objP(string  nm, int size, OutType* _otype):name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(NULL), defined(true){
 		    assert(_otype != NULL);
 		}
-		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index){
-		    if(old.next!= NULL){next=new objP(*old.next);}else{next=NULL;} }
+		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined){
+		    if(old.next != NULL){next=new objP(*old.next);}else{next=NULL;} }
 		objP& operator=(const objP& old){ 
-			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype;
+			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype; defined = old.defined;
 			if(old.next!=NULL){ 
 				if(next!=NULL){
 					(*next)=*old.next;  
@@ -93,8 +105,8 @@ public:
 			}
 		}
 		int arrSize(){ if(next==NULL){ return 1; }else{ return next->arrSize() + 1;  } }
-		int size(){ return vals.size(); }
-		int globalSize(){ if(next == NULL){ return size();} return next->globalSize() + size(); }
+		int size() const { return vals.size(); }
+		int globalSize() const { if(next == NULL){ return size();} return next->globalSize() + size(); }
 		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
 		objP* setBit(size_t i, int val){ 
 			if(i<vals.size()){ 
@@ -119,6 +131,24 @@ public:
 			}
 			Assert(false,"Control shouldn't reach here");
 		}
+		vector<int>* getArr()
+        {
+		    vector<int>* ret = new vector<int>();
+		    getArrRec(ret);
+		    return ret;
+        }
+
+
+        void setArr(vector<int> *arr) {
+            objP* at = this;
+            for(int i = 0;i<arr->size();i++)
+            {
+                assert(at != NULL && at->defined);
+                at->setVal(arr->at(i));
+                at = at->next;
+            }
+        }
+
 		void setVal(int idx, int v){
 			if(this->index==idx){
 				setVal(v);
@@ -224,7 +254,8 @@ public:
 			}
 			if(next!= NULL){ next->zeroOut(); }
 		}
-	};
+
+    };
 
 private:
 	vector<objP> objs;
@@ -249,10 +280,18 @@ public:
 	    VarStore* ret = new VarStore();
 	    ret->bitsize = bitsize;
 
-	    for(auto it : index)
+	    vector<pair<int, string> > index_as_vec;
+
+        for(auto it : index)
         {
-	        //Check copying of obj.
-            ret->insertObj(it.first, it.second, objs[it.second]);
+            index_as_vec.emplace_back(it.second, it.first);
+        }
+
+        sort(index_as_vec.begin(), index_as_vec.end());
+
+	    for(const auto& it : index_as_vec)
+        {
+            ret->insertObj(it.second, it.first, new objP(objs[it.first]));
         }
 	    return ret;
     }
@@ -286,11 +325,11 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, objP obj)
+	void insertObj(const string& name, int idx, objP* obj)
     {
 	    Assert(index.find(name) == index.end(), name + " should not be present in index.");
-	    Assert(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size().");
-	    objs.push_back(obj);
+	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size().");
+	    objs.push_back(*obj);
 	    index[name] = idx;
     }
 
@@ -298,9 +337,14 @@ public:
 		Assert(index.count(name)==0, name<<": This array already existed!!");
 		int begidx = objs.size();
 		index[name] = begidx;
-		objs.push_back(objP(name, nbits, otype));		
+		objs.emplace_back(name, nbits, otype);
 		objs[begidx].makeArr(0, arrsz);
 		bitsize += nbits*arrsz;
+	}
+
+    void setArr(const string& name, vector<int>* arr) {
+	    Assert(index.find(name) != index.end(), name + " not found.");
+        objs[index[name]].setArr(arr);
 	}
 
 	void newVar(const string& name, int size, OutType* otype){
@@ -430,7 +474,6 @@ public:
 		return objs[getId(name)];
 	}
 	int getId(const string& name){
-	    assert(index.find(name) != index.end());
 		Assert(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return index[name];
 	}

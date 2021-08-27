@@ -25,7 +25,7 @@ public:
     }
 };
 
-enum SkValType {sk_type_int, sk_type_float, sk_type_bool};
+enum SkValType {sk_type_int, sk_type_float, sk_type_bool, sk_type_boolarr};
 static string sk_val_type_name[3] = {"sk_type_int", "sk_type_float", "sk_type_bool"};
 
 class SkVal
@@ -62,6 +62,21 @@ class SkValBool: public SkVal, public PolyVal<bool>
 public:
     explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {}
     string to_string() override {return std::to_string(get());}
+};
+
+class SkValBoolArr: public SkVal, public PolyVal<vector<int>*>
+{
+public:
+    explicit SkValBoolArr(vector<int>* _val): PolyVal<vector<int>*>(_val), SkVal(sk_type_boolarr, _val->size()) {}
+    string to_string() override {
+        string ret;
+        vector<int>* val = get();
+        for(int i = 0;i < val->size();i++)
+        {
+            ret += std::to_string(val->at(i));
+        }
+        return ret;
+    }
 };
 class SkValInt: public SkVal, public PolyVal<int>
 {
@@ -143,6 +158,10 @@ public:
             {
                 set((*it).getName(), new SkValBool((*it).getInt()));
             }
+            else if(out_type == OutType::BOOL_ARR)
+            {
+                set((*it).getName(), new SkValBoolArr((*it).getArr()));
+            }
             else
             {
                 assert(false);
@@ -162,7 +181,10 @@ public:
             case sk_type_bool:
                 return OutType::BOOL;
                 break;
-                assert(false);
+            case sk_type_boolarr:
+                return OutType::BOOL_ARR;
+                break;
+             assert(false);
         }
         assert(false);
     }
@@ -171,9 +193,20 @@ public:
         auto* ret = new VarStore();
         for(auto item : assignment)
         {
-            ret->newVar(item.first, item.second->get_size(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
-            Assert(item.second->get_type() == sk_type_int || item.second->get_type() == sk_type_bool, "TODO: cast SkFloat back into an entry in VarStore.");
-            ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+            if(item.second->get_type() == sk_type_int || item.second->get_type() == sk_type_bool)
+            {
+                ret->newVar(item.first, item.second->get_size(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+                ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+            }
+            else if(item.second->get_type() == sk_type_boolarr)
+            {
+                ret->newArr(item.first, 1,  ((SkValBoolArr*)item.second)->get()->size(), OutType::BOOL_ARR);
+                ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
+            }
+            else
+            {
+                Assert(false, "TODO: cast SkFloat back into an entry in VarStore.");
+            }
         }
         return ret;
     }

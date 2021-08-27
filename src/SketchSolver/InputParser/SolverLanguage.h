@@ -1289,8 +1289,8 @@ namespace SolverLanguagePrimitives
                                               bool hasGoodEnoughSolution)
     {
         File* all_file = new File(dag, file_name, floats);
-        int num_samples = 30;
-        int rows_per_sample = 3;
+        int num_samples = 100;
+        int rows_per_sample = 6;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
@@ -1307,7 +1307,7 @@ namespace SolverLanguagePrimitives
         cout << "Solution count: " << endl;
         for(int i = 0;i<solutions.size();i++)
         {
-            cout << solutions[i].first <<" "<< endl;
+            cout << solutions[i].first <<" %: "<< (float)solutions[i].first/all_file->size() << endl;
         }
 
         return solutions[0].second;
@@ -1345,18 +1345,15 @@ STUN(file):
 };
 
 /**
- * Commit message:
  * removed hardcoder from CEGISFinder.
- * removed cpt (checkpointer).
- * Refactored checkHarnessSwitch by moving it to SolverHelper, along with all relevant fields.
- * Moved DepTracker to BooleanToCNF.
+ *      Refactored checkHarnessSwitch by moving it to SolverHelper, along with all relevant fields.
+ *      Moved DepTracker to BooleanToCNF.
  * exposed failedAssert in BooleanDag; it is set after hardcoding in hardCodeINode.
- * moved redeclareInputs, declareInputs from CEGISChecker to CounterExampleFinder.
  * completed refactoring of reading files ahead of time;
- * created redeclareInputsAndAngelics
+ *      moved redeclareInputs, declareInputs from CEGISChecker to CounterExampleFinder.
+ *      created redeclareInputsAndAngelics
  * added get_size to SkVal
- * ;
- *
+ * removed cpt (checkpointer).
  */
 
 /**

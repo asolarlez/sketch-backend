@@ -904,7 +904,16 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;
 
-	solver->addProblem(dag, new File(dag, file, floats));
+	File* new_file;
+	if (file != "")
+	{
+	    new_file = new File(dag, file, floats);
+	}
+	else
+	{
+	    new_file = NULL;
+	}
+	solver->addProblem(dag, new_file);
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);

@@ -151,6 +151,18 @@ bool CEGISSolver::solveCore(){
 			ctimer.restart();
             counterexample_concretized_dag = checker->check(ctrlStore);
 			doMore = counterexample_concretized_dag != NULL;
+
+			/** TODO: IF doMore == False, check this: if this fails then return UNSAT;
+			 *  tmpPid
+			 *  if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid)){
+                    if(PARAMS->verbosity > 5){
+                        cout<<"Failed from leftover clauses from concretization"<<endl;
+                    }
+                    rv = true;
+                    continue;
+                }
+			 */
+
 		 	ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
 		}
