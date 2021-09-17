@@ -1,8 +1,6 @@
 #include "NodeHardcoder.h"
 
 
-
-
 bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	int arrsz = -1;
   if (inode->type == bool_node::SRC) {
@@ -244,6 +242,10 @@ void NodeHardcoder::visit( UFUN_node& node ){
 		}
 		DagOptim::visit(node);
 	}
+}
+
+bool_node *NodeHardcoder::get_rvalue() {
+	return rvalue;
 }
 
 BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {

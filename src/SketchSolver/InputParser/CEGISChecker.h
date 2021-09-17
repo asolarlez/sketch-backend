@@ -103,7 +103,7 @@ public:
 	{
 		curProblem = (int) problems.size();
 		problems.push_back(problem);
-        if (file != NULL) {
+        if (file != nullptr) {
             files[curProblem] = file;
         }
 
@@ -138,7 +138,7 @@ public:
 
 	bool problemStack_is_empty()
 	{
-		return problemStack.size() == 0;
+		return problemStack.empty();
 	}
 
 

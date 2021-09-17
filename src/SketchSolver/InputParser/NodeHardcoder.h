@@ -4,8 +4,7 @@
 #include "FloatSupport.h"
 #include "BackwardsAnalysis.h"
 
-class NodeHardcoder :
-	public DagOptim
+class NodeHardcoder : public DagOptim
 {
 	VarStore& values;
 	bool_node::Type type;
@@ -22,6 +21,8 @@ public:
 	virtual void visit( SRC_node& node );
 	virtual void visit( CTRL_node& node );
 	virtual void visit( UFUN_node& node );
+
+    bool_node *get_rvalue();
 };
 
 

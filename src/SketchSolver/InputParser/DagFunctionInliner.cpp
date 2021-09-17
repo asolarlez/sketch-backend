@@ -122,6 +122,19 @@ void DagFunctionInliner::visit(CTRL_node& node){
 }
 
 
+void DagConcretizer::visit(CTRL_node &node) {
+    DagFunctionInliner::visit(node);
+    rvalue -> accept(nhc);
+    rvalue = nhc.get_rvalue();
+}
+
+void DagConcretizer::visit(SRC_node &node) {
+    rvalue -> accept(nhc);
+    rvalue = nhc.get_rvalue();
+}
+
+
+
 bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap, vector<const bool_node*>& nmap){
 	bool chk = false;
 	bool_node* tt;
@@ -258,7 +271,7 @@ bool_node* DagFunctionInliner::createEqNode(bool_node* left, bool_node* right, i
         
         cur = optAdd(an);
       }
-      
+
     }
     return cur;
   }
@@ -980,5 +993,4 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 		dag.setUseSymbolic();
 	}
 }
-
 

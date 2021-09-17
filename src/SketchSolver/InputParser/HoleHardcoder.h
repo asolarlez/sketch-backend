@@ -223,7 +223,7 @@ public:
 	int getRanddegree(){
 		return randdegree;
 	}
-	HoleHardcoder():
+	HoleHardcoder() :
 		degreeControl(PARAMS->randdegree, PARAMS->nprocs),
 		totsize(0.0),
 		randdegree(PARAMS->randdegree)

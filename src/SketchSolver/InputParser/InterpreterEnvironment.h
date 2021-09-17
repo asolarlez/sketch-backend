@@ -185,7 +185,7 @@ public:
 	CEGISFinderSpec* cegisfind;
     // REASSolver* reasSolver;
 
-	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0),floats(p.epsilon){
+	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0), floats(p.epsilon) {
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		if (p.outputSat) {
 			_pfind->outputSAT();

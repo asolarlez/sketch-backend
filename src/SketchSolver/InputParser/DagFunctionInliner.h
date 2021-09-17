@@ -8,7 +8,9 @@
 #include "CommandLineArgs.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
+#include "NodeHardcoder.h"
 #include "HoleHardcoder.h"
+
 
 
 class Caller{
@@ -672,7 +674,10 @@ class DagFunctionInliner : public DagOptim
 	const set<string>& pureFunctions;
 public:	
 	int nfuns(){ return lnfuns; }
-	DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm,	HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize=false, InlineControl* ict=NULL, bool p_onlySpRandomize=false, int p_spRandBias = 1);
+	DagFunctionInliner(
+	        BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap,
+	        FloatManager& fm,	HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize=false, InlineControl* ict=NULL,
+	        bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 		
@@ -699,5 +704,51 @@ public:
 	
 };
 
+class DagConcretizer : public DagFunctionInliner
+{
+    NodeHardcoder nhc;
+public:
+    DagConcretizer(
+            VarStore& _ctrl_store,
+            bool_node::Type tp,
+            BooleanDAG& p_dag,
+            map<string, BooleanDAG*>& p_functionMap,
+            map<string, map<string, string> > p_replaceMap,
+            FloatManager& fm,
+            HoleHardcoder* p_hcoder,
+            const set<string>& p_pureFunctions,
+            bool p_randomize=false,
+            InlineControl* ict=NULL,
+            bool p_onlySpRandomize=false,
+            int p_spRandBias = 1)
+            : DagFunctionInliner(p_dag, p_functionMap, p_replaceMap, fm, p_hcoder, p_pureFunctions, p_randomize, ict, p_onlySpRandomize, p_spRandBias)
+            ,
+            nhc(PARAMS->showInputs, p_dag, _ctrl_store, tp, fm) {
+    }
+
+    virtual void visit(CTRL_node& node);
+    virtual void visit(SRC_node& node);
+
+};
+
+/**
+ * Thought Flow:
+ * 1. Need to use DagConcretizer to concretize dags with a counterexample from checker on the go
+ * 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
+ * 1.2 Currently the entire inlined dag is being passed around.
+ *
+ * Actionable:
+ * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagConcretizer.
+ *
+ * Problem:
+ * DagConcretizer accepts as input all the meta-data of a sketch (look at the spec for initializing DagConcretizer)
+ * Q: should all these parameters be passed to the checker?
+ * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagConcretizer with the inliner?
+ * Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
+ * Q: should we run these outer loops also when we do the inlining on the go?
+ *  How would that work?
+ *  How should we structure the code in relation to DagConcretier?
+ *  Would DagConcretizer be instead of the DagInliner in these outer loops or should the outer loops be inside the DagConcretizer and we have an one-step-concretizer-inliner as a parameter in the DagConcretizer rather than having it inherit from DagInliner.
+ */
 
 #endif /*DAGFUNCTIONINLINER_H_*/

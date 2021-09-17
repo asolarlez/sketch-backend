@@ -1,4 +1,6 @@
 #include "InterpreterEnvironment.h"
+
+#include <utility>
 //#include "ABCSATSolver.h"
 #include "InputReader.h"
 #include "CallGraphAnalysis.h"
@@ -440,7 +442,8 @@ void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) 
 
 }
 
-void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
+void InterpreterEnvironment::doInline(
+        BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
 	//OneCallPerCSiteInliner fin;
 	// InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
 	TheBestInliner fin(steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -457,8 +460,17 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 
 	findPureFuns(functionMap, pureFuns);
 
-	DagFunctionInliner dfi(dag, functionMap, replaceMap, floats, &hardcoder, pureFuns, params.randomassign, &fin, params.onlySpRandAssign,
-                         params.spRandBias); 
+	DagFunctionInliner dfi(
+	        dag,
+	        functionMap,
+	        std::move(replaceMap),
+	        floats,
+	        &hardcoder,
+	        pureFuns,
+	        params.randomassign,
+	        &fin,
+	        params.onlySpRandAssign,
+	        params.spRandBias);
 
 
 
@@ -467,7 +479,7 @@ void InterpreterEnvironment::doInline(BooleanDAG& dag, map<string, BooleanDAG*>&
 	bool nofuns = false;
 	for (int i = 0; i<steps; ++i) {
 		int t = 0;
-    int ct = 0;
+		int ct = 0;
 		do {
 			if (params.randomassign && params.onlySpRandAssign) {
 				if (ct < 2) {
@@ -690,7 +702,6 @@ void InterpreterEnvironment::fixes(const string& holename) {
 
 
 int InterpreterEnvironment::doallpairs() {
-
 	int howmany = params.ntimes;
 	if (howmany < 1 || !params.randomassign) { howmany = 1; }
 	SATSolver::SATSolverResult result = SATSolver::UNDETERMINED;
@@ -739,7 +750,7 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
-			hardcoder.setCurHarness(i);
+			hardcoder.setCurHarness((int)i);
 			try {
 				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
 				result = assertDAG(bd, cout, spskpairs[i].file);
@@ -905,14 +916,15 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 	++assertionStep;
 
 	File* new_file;
-	if (file != "")
+	if (!file.empty())
 	{
 	    new_file = new File(dag, file, floats);
 	}
 	else
 	{
-	    new_file = NULL;
+	    new_file = nullptr;
 	}
+
 	solver->addProblem(dag, new_file);
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
