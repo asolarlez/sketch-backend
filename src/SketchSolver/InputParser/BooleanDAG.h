@@ -257,7 +257,7 @@ Dllist assertions;
 	virtual ~BooleanDAG();
 
 private:
-    ASSERT_node *failed_assert;
+    ASSERT_node *failed_assert = nullptr;
 public:
     void set_failed_assert(ASSERT_node *_failed_assert)
     {

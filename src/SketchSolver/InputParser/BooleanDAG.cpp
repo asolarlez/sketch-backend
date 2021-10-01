@@ -455,7 +455,7 @@ void BooleanDAG::cleanUnshared(){
 				named_nodes.erase(it);
 			}
 		}
-  		onode->id = -22;	
+  		onode->id = -22;
   		delete onode;
 		nodes[i] = NULL;
 	}
@@ -543,7 +543,7 @@ void BooleanDAG::cleanup(){
 				nvec.erase(it);
 			}
 		}
-  		onode->id = -22;	
+  		onode->id = -22;
   		delete onode;		
   	}else{
 		tmpv[onode->id] = onode;
@@ -633,7 +633,7 @@ void BooleanDAG::change_mother(const string& mother, const string& son){
 
 void BooleanDAG::addNewNode(bool_node* node){
 	Assert( node != NULL, "null node can't be added.");
-	Assert( node->id != -22, "This node should not exist anymore");	
+	Assert( node->id != -22, "This node should not exist anymore");
 	node->id = nodes.size() + offset;
 	nodes.push_back(node);	
 	if(node->isInter()){
@@ -1340,7 +1340,7 @@ BooleanDAG* BooleanDAG::clone(){
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
 		for(int i=0; i<it->second.size(); ++i){
-			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );			
+			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );
 			tmp.push_back( bdag->nodes[ it->second[i]->id ] );	
 		}							
 	}

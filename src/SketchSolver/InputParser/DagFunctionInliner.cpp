@@ -122,17 +122,31 @@ void DagFunctionInliner::visit(CTRL_node& node){
 }
 
 
-void DagConcretizer::visit(CTRL_node &node) {
+void DagOneStepInlineAndConcretize::visit(CTRL_node &node) {
     DagFunctionInliner::visit(node);
-    rvalue -> accept(nhc);
-    rvalue = nhc.get_rvalue();
+    if(rvalue->type == bool_node::CTRL){
+        NodeHardcoder::visit((CTRL_node&)*rvalue);
+        assert(rvalue->type == bool_node::CONST || (rvalue->type == bool_node::CTRL && get_type() == bool_node::SRC));
+    }
+    else if(rvalue->type == bool_node::CONST){
+        assert(node.name == "#PC");
+    }
+    else {
+        assert(false);
+    }
 }
 
-void DagConcretizer::visit(SRC_node &node) {
-    rvalue -> accept(nhc);
-    rvalue = nhc.get_rvalue();
+void DagOneStepInlineAndConcretize::visit(SRC_node &node) {
+    NodeHardcoder::visit(node);
+    assert(rvalue->type == bool_node::CONST || (rvalue->type == bool_node::SRC && get_type() == bool_node::CTRL));
+//    rvalue -> accept((DagFunctionInliner&)*this);
 }
 
+void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
+{
+    DagFunctionInliner::visit(node);
+    rvalue ->accept((NodeHardcoder&)*this);
+}
 
 
 bool checkParentsInMap(bool_node* node, vector<const bool_node*>& secondarynmap, vector<const bool_node*>& nmap){
@@ -979,8 +993,9 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			   }
 		   }
 		   if (failedAssert->isNormal()) {
-			   cout << "Assertion Failure" << failedAssert->getMsg() << endl;
+			   cout << "Assertion Failure \"" << failedAssert->getMsg() << "\"" << endl;
 			   cleanup(dag);
+//			   assert(false);
 			   throw BadConcretization(failedAssert->getMsg());
 		   }
 	   }
@@ -992,5 +1007,119 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	if (this->symbolicSolve) {
 		dag.setUseSymbolic();
 	}
+}
+
+
+bool DagFunctionInliner::process_and_return(BooleanDAG& dag){
+    // cout<<" funmap has size " << functionMap.size() << endl;
+    initLight(dag);
+    funsInlined.clear();
+    somethingChanged = false;
+    lnfuns = 0;
+    uidcount = 0;
+    if(ictrl != NULL){
+        DllistNode* lastDln = NULL;
+        for(int i=0; i<dag.size() ; ++i ){
+
+            if(isDllnode(dag[i])){
+                lastDln = getDllnode(dag[i]);
+            }
+
+            // Get the code for this node.
+            if(dag[i]->type == bool_node::UFUN){
+                UFUN_node& uf = *dynamic_cast<UFUN_node*>(dag[i]);
+
+                /*
+				When the inline controller checks a function and the function is
+				not inlined, the controller makes sure other function with the same path
+				condition are also not inlined. Therefore, it is good to call checkInline
+				on all functions first, before we start inlining.
+				*/
+                ictrl->preCheckInline(uf);
+                map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
+                if(it != functionMap.end()){
+                    if(it->second->isModel && uf.ignoreAsserts){
+                        if(lastDln != NULL){
+                            lastDln->add(&uf);
+                        }else{
+                            dag.assertions.append(&uf);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //dag.lprint(cout);
+    mpcontroller.clear();
+    failedAssert = NULL;
+    for(int i=0; i<dag.size() ; ++i ){
+        // Get the code for this node.
+        //cout<<dag[i]->lprint()<<endl;
+        bool_node* node = computeOptim(dag[i]);
+        if(dag[i] != node){
+            Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
+            dag.replace(i, node);
+        }
+        if (failedAssert != NULL) {
+            for (++i; i < dag.size(); ++i) {
+                if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
+                    dag.replace(i, getCnode(0));
+                }
+            }
+            if (failedAssert->isNormal()) {
+                cout << "Assertion Failure \"" << failedAssert->getMsg() << "\"" << endl;
+                cleanup(dag);
+//                assert(false);
+                return false;
+            }
+        }
+    }
+
+    // cout<<" added nodes = "<<newnodes.size()<<endl;
+    seenControls.clear();
+    cleanup(dag);
+    if (this->symbolicSolve) {
+        dag.setUseSymbolic();
+    }
+
+    return true;
+}
+
+
+void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns) {
+
+    for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
+        vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+        if (ctrlvec.size() == 0) {
+            pureFuns.insert(it->first);
+            continue;
+        }
+        if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
+            pureFuns.insert(it->first);
+        }
+    }
+
+    set<string> other;
+    do{
+        other = pureFuns;
+        for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
+            BooleanDAG* bd = functionMap[*it];
+
+            vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
+            for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
+
+                UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
+                if (ufn == NULL) { continue;  }
+                if (other.count(ufn->get_ufname()) == 0) {
+                    //calling a non-pure function means you are not pure either.
+                    other.erase(*it);
+                    break;
+                }
+            }
+        }
+        swap(other, pureFuns);
+    } while (other.size() != pureFuns.size());
+
 }
 

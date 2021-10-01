@@ -507,29 +507,22 @@ public:
 
 private:
     bool pendingConstraints;
-    DepTracker dt;
 public:
 
-    bool checkHarnessSwitch(int hid){
+    bool solvePendingConstraints(){
         if(pendingConstraints){
             int res = getMng().solve();
             if(res != SATSolver::SATISFIABLE){
                 return false;
             }
         }
-        get_dt().setCurHarness(hid);
         pendingConstraints = false;
         return true;
     }
 
-    DepTracker &get_dt();
-
     bool get_pendingConstraints();
 
-    void set_pendingConstraints(bool val)
-    {
-        pendingConstraints = val;
-    }
+    void set_pendingConstraints(bool val);
 
     void dismissedPending();
 };

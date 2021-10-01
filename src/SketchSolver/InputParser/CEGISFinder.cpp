@@ -36,7 +36,6 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	//Solve
 	
 	SATSolver::SATSolverResult result = mngFind.solve();
-    dirFind.dismissedPending();
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;

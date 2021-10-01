@@ -93,11 +93,6 @@ class HoleHardcoder{
 	//have tried cover the set of all solutions.
 	SolverHelper* globalSat;
 
-//    DepTracker dt;
-    DepTracker& get_dt()
-    {
-        return globalSat->get_dt();
-    }
 
 	vec<Lit> sofar;
 	double totsize;
@@ -154,7 +149,7 @@ class HoleHardcoder{
 
 	int recordDecision(const gvvec& options, int rv, int bnd, bool special);
 	void addedConstraint() {
-        get_globalSat()->set_pendingConstraints(true);
+        set_pendingConstraints(true);
 	}
 public:
 
@@ -231,7 +226,7 @@ public:
 		
 		MiniSATSolver* ms = new MiniSATSolver("global", SATSolver::FINDER);
 		globalSat = new SolverHelper(*ms);
-        get_globalSat()->set_pendingConstraints(false);
+        set_pendingConstraints(false);
 		hardcodeMinholes = false;
 	}
 
@@ -240,27 +235,35 @@ public:
 		delete globalSat;
 	}
 
-	
+// REDO
 
-	void dismissedPending(){
-	    get_globalSat()->dismissedPending();
-	}
+private:
+    bool pendingConstraints;
+	DepTracker dt;
+public:
 
-//	bool checkHarnessSwitch(int hid){
-//		if(pendingConstraints){
-//			int res = sat->getMng().solve();
-//			if(res != SATSolver::SATISFIABLE){
-//				return false;
-//			}
-//		}
-//		get_dt().setCurHarness(hid);
-//		pendingConstraints = false;
-//		return true;
-//	}
+    void setCurrentHarness(int hid){
+//        if(pendingConstraints){
+//            int res = sat->getMng().solve();
+//            if(res != SATSolver::SATISFIABLE){
+//                return false;
+//            }
+//        }
+        get_dt().setCurHarness(hid);
+       // pendingConstraints = false;
+    }
+
+    DepTracker &get_dt();
+
+    bool get_pendingConstraints();
+
+    void set_pendingConstraints(bool val);
+
+    void dismissedPending();
 
 	void setCurHarness(int hid){
 		get_dt().setCurHarness(hid);
-		Assert(!get_globalSat()->get_pendingConstraints(), "There can't be any pending unchecked constraints!");
+		Assert(!get_pendingConstraints(), "There can't be any pending unchecked constraints!");
 	}
 
 	bool isDone(){
@@ -354,7 +357,7 @@ public:
 		randholes.clear();
 		sofar.clear();
 		totsize = 0.0;
-        get_globalSat()->set_pendingConstraints(false);
+        set_pendingConstraints(false);
 	}
 	
 	void reset(){
@@ -385,6 +388,8 @@ public:
     int getValue(const string& s) {
         return randholes[s];
     }
+
+    bool solvePendingConstraints();
 };
 
 

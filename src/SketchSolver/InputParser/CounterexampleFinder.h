@@ -5,6 +5,7 @@
 #include "StringHTable.h"
 
 #include "BitSet.h"
+#include "DagFunctionInliner.h"
 
 using namespace std;
 
@@ -27,8 +28,9 @@ class File: public vector<VarStore*>
 public:
     enum Result {NO_FILE, DONE, MOREBITS};
 
-    File(BooleanDAG* problem, const string& file, FloatManager& floats)
+    File(BooleanDAG* dag, const string& file, FloatManager& floats)
     {
+        BooleanDAG* problem = dag;
         VarStore input_store;
         redeclareInputsAndAngelics(input_store, problem);
         vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
@@ -201,7 +203,7 @@ public:
         bool ok = true;
 
         if (!file.is_open() || file.fail()) {
-            AssertDebug(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
+            AssertDebug(false, "File " + fname + " could not be opened!! file.is_open() = " + std::to_string(file.is_open()) + " file.fail() = " + std::to_string(file.fail()));
             Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
             return NO_FILE;
         }

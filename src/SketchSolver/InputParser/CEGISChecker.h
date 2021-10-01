@@ -36,14 +36,14 @@ class CEGISChecker
 	void growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 
 
-	void pushProblem(BooleanDAG* p){		
+	void pushProblem(Harness* p){
 		problemStack.push(p);
 	}
 	int problemLevel(){
 		return (int) problemStack.size();
 	}
 	void popProblem(){
-		BooleanDAG* t = problemStack.top();
+		Harness* t = problemStack.top();
 		problemStack.pop();
 		t->clear();
 		delete t;
@@ -61,7 +61,7 @@ class CEGISChecker
 
 //--moved from protected;
 
-	stack<BooleanDAG*> problemStack;
+	stack<Harness*> problemStack;
 
 	map<int, File*> files;
 
@@ -70,7 +70,7 @@ class CEGISChecker
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<BooleanDAG*> problems;
+	vector<Harness*> problems;
 
 	vector<Tvalue> check_node_ids;
 
@@ -86,6 +86,11 @@ public:
     }
 
     BooleanDAG* getProblem(){
+        return problemStack.top()->get_dag();
+    }
+
+    Harness* getHarness()
+    {
         return problemStack.top();
     }
 
@@ -99,20 +104,20 @@ public:
     }
 
 
-	void addProblem(BooleanDAG* problem, File* file)
+	void addProblem(Harness *harness, File *file)
 	{
 		curProblem = (int) problems.size();
-		problems.push_back(problem);
+		problems.push_back(harness);
         if (file != nullptr) {
             files[curProblem] = file;
         }
 
-        redeclareInputsAndAngelics(get_input_store(), problem);
+        redeclareInputsAndAngelics(get_input_store(), harness->get_dag());
 
         // IS THIS DEBUG CODE? YES
-        Dout( cout<<"problem->get_n_controls() = "<<problem->get_n_controls()<<"  "<<problem<<endl );
+        Dout( cout << "problem->get_n_controls() = " << root_dag->get_n_controls() << "  " << root_dag << endl );
         {
-            vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+            vector<bool_node*>& problemIn = harness->get_dag()->getNodesByType(bool_node::CTRL);
             if(PARAMS->verbosity > 2){
                 cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
             }

@@ -27,14 +27,16 @@ class CEGISSolver
 	CEGISFinderSpec* finder;
 	CEGISChecker* checker;
 
-	map<string, int> last_input;	
+	map<string, int> last_input;
+
+	HoleHardcoder& hc;
 
 protected:
 
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<BooleanDAG*> problems;
+	vector<Harness*> problems;
 
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
@@ -67,18 +69,19 @@ protected:
 public:
 
 	VarStore ctrlStore;
-	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats):
+	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
 	finder(_finder), 
 	floats(_floats), 
 	params(args),
-	checker(new CEGISChecker(args, hc, _floats))
+	checker(new CEGISChecker(args, hc, _floats)),
+	hc(_hc)
 	{
 	//	cout << "miter:" << endl;
 	//	miter->lprint(cout);
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(BooleanDAG* miter, File* file);
+	void addProblem(Harness *harness, File *file);
 
 
 	virtual bool solve();

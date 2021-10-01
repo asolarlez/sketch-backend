@@ -10,14 +10,14 @@
 
 /* Class for Structural Hashing of DAG*/
 class DagCSE : public NodeVisitor
-{	
-	BooleanDAG& dag;	
+{
+	BooleanDAG& dag;
 	StringHTable2<bool_node*> cse_map;
 	vector<char> tmpbuf;
 	/*
 	inline bool hasCSE(string& str){
 		Dtime(maptimer.restart();)
-		bool tmp = cse_map.find(str) != cse_map.end(); 		
+		bool tmp = cse_map.find(str) != cse_map.end();
 		Dtime(maptimer.stop();)
 		return tmp;
 	}*/
@@ -27,8 +27,8 @@ class DagCSE : public NodeVisitor
 		 bool_node* tmp;
 		cse_map.get(str.c_str(), tmp);
 		Dtime(maptimer.stop();)
-		return tmp;	
-	} 
+		return tmp;
+	}
 	*/
 public:
 
@@ -36,7 +36,7 @@ public:
 	Dtime(timerclass stimer;)
 	Dtime(timerclass maptimer;)
 	DagCSE(BooleanDAG& p_dag);
-	virtual ~DagCSE();	
+	virtual ~DagCSE();
 	int cheapStr(int id1, char op, int id2);
 	void eliminateCSE();
 	/*

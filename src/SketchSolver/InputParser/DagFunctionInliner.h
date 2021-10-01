@@ -5,12 +5,14 @@
 #include "DagOptim.h"
 #include <cstring>
 #include <sstream>
+#include <utility>
+#include <utility>
 #include "CommandLineArgs.h"
 #include "BooleanToCNF.h"
 #include "Tvalue.h"
 #include "NodeHardcoder.h"
 #include "HoleHardcoder.h"
-
+#include "DagFunctionToAssertion.h"
 
 
 class Caller{
@@ -639,7 +641,7 @@ public:
 	void clear(){}
 };
 
-class DagFunctionInliner : public DagOptim
+class DagFunctionInliner : public virtual DagOptim
 {
 	
 	bool symbolicSolve;
@@ -680,6 +682,7 @@ public:
 	        bool p_onlySpRandomize=false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
+	bool process_and_return(BooleanDAG& bdag);
 		
 	virtual void visit( UFUN_node& node );
 	virtual void visit(CTRL_node& node);
@@ -704,11 +707,10 @@ public:
 	
 };
 
-class DagConcretizer : public DagFunctionInliner
+class DagOneStepInlineAndConcretize : public DagFunctionInliner, public NodeHardcoder
 {
-    NodeHardcoder nhc;
 public:
-    DagConcretizer(
+    DagOneStepInlineAndConcretize(
             VarStore& _ctrl_store,
             bool_node::Type tp,
             BooleanDAG& p_dag,
@@ -720,35 +722,264 @@ public:
             bool p_randomize=false,
             InlineControl* ict=NULL,
             bool p_onlySpRandomize=false,
-            int p_spRandBias = 1)
-            : DagFunctionInliner(p_dag, p_functionMap, p_replaceMap, fm, p_hcoder, p_pureFunctions, p_randomize, ict, p_onlySpRandomize, p_spRandBias)
-            ,
-            nhc(PARAMS->showInputs, p_dag, _ctrl_store, tp, fm) {
-    }
+            int p_spRandBias = 1):
+            DagFunctionInliner(
+                    p_dag, p_functionMap, std::move(p_replaceMap),
+                    fm, p_hcoder, p_pureFunctions, p_randomize,
+                    ict, p_onlySpRandomize, p_spRandBias),
+            NodeHardcoder(PARAMS->showInputs, p_dag, _ctrl_store, tp, fm),
+            DagOptim(p_dag, fm)
+            {}
 
-    virtual void visit(CTRL_node& node);
-    virtual void visit(SRC_node& node);
+    void visit(CTRL_node& node) override;
+    void visit(SRC_node& node) override;
+    void visit(UFUN_node &node) override;
 
 };
 
 /**
  * Thought Flow:
- * 1. Need to use DagConcretizer to concretize dags with a counterexample from checker on the go
+ * 1. Need to use DagOneStepInlineAndConcretize to concretize dags with a counterexample from checker on the go
  * 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
- * 1.2 Currently the entire inlined dag is being passed around.
+ * 1.2 Currently the entire inlined dag is being optimized after concretization.
  *
  * Actionable:
- * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagConcretizer.
+ * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagOneStepInlineAndConcretize.
  *
- * Problem:
- * DagConcretizer accepts as input all the meta-data of a sketch (look at the spec for initializing DagConcretizer)
+ * Qs:
+ * DagOneStepInlineAndConcretize accepts as input all the meta-data of a sketch (look at the spec for initializing DagOneStepInlineAndConcretize)
  * Q: should all these parameters be passed to the checker?
- * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagConcretizer with the inliner?
+ * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagOneStepInlineAndConcretize with the inliner?
  * Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
  * Q: should we run these outer loops also when we do the inlining on the go?
  *  How would that work?
  *  How should we structure the code in relation to DagConcretier?
- *  Would DagConcretizer be instead of the DagInliner in these outer loops or should the outer loops be inside the DagConcretizer and we have an one-step-concretizer-inliner as a parameter in the DagConcretizer rather than having it inherit from DagInliner.
+ *  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
  */
+
+
+
+void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns);
+
+class ProgramEnvironment
+{
+    CommandLineArgs& params;
+    FloatManager& floats;
+    HoleHardcoder& hardcoder;
+    map<string, BooleanDAG*>& functionMap;
+    int num_inlining_steps;
+    map<string, map<string, string> > replaceMap;
+
+public:
+    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
+                       map<string, BooleanDAG*>& _functionMap, int _steps, map<string, map<string, string> >& _replaceMap):
+                       params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
+                       functionMap(_functionMap), num_inlining_steps(_steps)
+   {
+
+   }
+   void doInline(
+           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type){
+        //OneCallPerCSiteInliner fin;
+        // InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
+        TheBestInliner fin(num_inlining_steps, params.boundmode == CommandLineArgs::CALLSITE);
+        /*
+        if(PARAMS->boundedCount > 0){
+        fin = new BoundedCountInliner(PARAMS->boundedCount);
+        }else{
+        fin = new OneCallPerCSiteInliner();
+        }
+        */
+
+
+        set<string> pureFuns;
+
+        findPureFuns(functionMap, pureFuns);
+
+        DagOneStepInlineAndConcretize dfi(
+                var_store,
+                var_type,
+                dag,
+                functionMap,
+                std::move(replaceMap),
+                floats,
+                &hardcoder,
+                pureFuns,
+                params.randomassign,
+                &fin,
+                params.onlySpRandAssign,
+                params.spRandBias);
+
+
+
+
+        int oldSize = -1;
+        bool nofuns = false;
+        for (int i = 0; i<num_inlining_steps; ++i) {
+            int t = 0;
+            int ct = 0;
+            do {
+                if (params.randomassign && params.onlySpRandAssign) {
+                    if (ct < 2) {
+                        dfi.turnOffRandomization();
+                        ct++;
+                    } else {
+                        dfi.turnOnRandomization();
+                    }
+                }
+
+                try {
+                    dfi.process(dag);
+                }
+                catch (BadConcretization) {
+                    assert(dfi.get_failedAssert() != nullptr);
+                    dag.set_failed_assert(dfi.get_failedAssert());
+                    return ;
+                }
+                //
+                // dag.repOK();
+                set<string>& dones = dfi.getFunsInlined();
+                if (params.verbosity> 6) { cout << "inlined " << dfi.nfuns() << " new size =" << dag.size() << endl; }
+                //dag.lprint(cout);
+                if (params.bndDAG > 0 && dag.size() > params.bndDAG) {
+                    cout << "WARNING: Preemptively stopping CEGIS because the graph size exceeds the limit: " << params.bndDAG << endl;
+                    exit(1);
+                }
+                if (oldSize > 0) {
+                    if(dag.size() > 400000000 && dag.size() > oldSize * 10){
+                        i = num_inlining_steps;
+                        cout << "WARNING: Preemptively stopping inlining because the graph was growing too big too fast" << endl;
+                        break;
+                    }
+                    if((dag.size() > 400000 && dag.size() > oldSize * 2)|| dag.size() > 1000000){
+                        hardcoder.tryHarder();
+                    }
+                }
+                oldSize = dag.size();
+                ++t;
+            } while (dfi.changed());
+            if (params.verbosity> 6) { cout << "END OF STEP " << i << endl; }
+            // fin.ctt.printCtree(cout, dag);
+
+            fin.clear();
+            if (t == 1 && params.verbosity> 6) { cout << "Bailing out" << endl; assert(false); break; }
+        }
+        hardcoder.afterInline();
+        {
+            DagFunctionToAssertion makeAssert(dag, functionMap, floats);
+            makeAssert.process(dag);
+        }
+
+    }
+
+    FloatManager &get_floats() {
+        return floats;
+    }
+};
+
+class Harness
+{
+    //unrolled dag is the the original unrolled dag using prepare miter at before calling assertDAG
+    BooleanDAG* original_dag;
+    //root dag is
+    // IF NOT CONCRETIZED: the root harness dag
+    // IF CONCRETIZED: a fully unrolled concretized dag using the doInline from env.
+    BooleanDAG* root_dag;
+
+    //if env == nullptr => original_dag and root_dag ARE NOT concretized
+    //if env != nullptr => original_dag and root_dag ARE concretized
+    ProgramEnvironment* env;
+
+    bool new_way = true;
+public:
+    Harness(
+            BooleanDAG* _dag_root,
+            BooleanDAG* _original_dag = nullptr,
+            ProgramEnvironment* _evn = nullptr):
+            root_dag(_dag_root), original_dag(_original_dag), env(_evn){
+        if(new_way)
+        {
+
+        }
+        else
+        {
+            if(_original_dag != nullptr)
+            {
+                root_dag = original_dag;
+                original_dag = nullptr;
+            }
+        }
+    }
+
+    Harness* produce_concretization(VarStore& var_store, bool_node::Type var_type)
+    {
+        if(new_way)
+        {
+            assert(env != nullptr);
+            //concretize root using ProgramEnvironment's doInline function
+
+            BooleanDAG* concretized_unrolled_dag;
+            if(original_dag != nullptr)
+            {
+                concretized_unrolled_dag = hardCodeINode(original_dag, var_store, var_type, env->get_floats());
+            }
+            else
+            {
+                concretized_unrolled_dag = nullptr;
+            }
+
+            BooleanDAG* concretized_root_dag = root_dag->clone();
+            env->doInline(*concretized_root_dag, var_store, var_type);
+
+
+            return new Harness(concretized_root_dag, concretized_unrolled_dag, nullptr);
+        }
+        else
+        {
+            BooleanDAG* concretized_unrolled_dag;
+            concretized_unrolled_dag = hardCodeINode(root_dag, var_store, var_type, env->get_floats());
+//            assert(concretized_unrolled_dag->get_failed_assert() == nullptr);
+            return new Harness(concretized_unrolled_dag, nullptr, env);
+        }
+    }
+//
+    Harness *clone() {
+        if(original_dag != nullptr)
+        {
+            return new Harness(root_dag->clone(), original_dag->clone(), env);
+        }
+        else
+        {
+            return new Harness(root_dag->clone(), nullptr, env);
+        }
+    }
+//WHAT ABOUT IMPLEMENTS?
+    BooleanDAG *get_dag() {
+        return root_dag;
+    }
+
+    void clear()
+    {
+        if(original_dag != nullptr)
+        {
+            original_dag->clear();
+        }
+        root_dag->clear();
+    }
+
+    BooleanDAG* get_original_dag() {
+        //potential problem
+        if(new_way)
+        {
+            assert(original_dag != nullptr);
+            return original_dag;
+        }
+        else
+        {
+            return get_dag();
+        }
+    }
+};
+
 
 #endif /*DAGFUNCTIONINLINER_H_*/

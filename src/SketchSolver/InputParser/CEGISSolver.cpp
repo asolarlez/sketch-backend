@@ -15,12 +15,12 @@
 
 
 
-void CEGISSolver::addProblem(BooleanDAG* problem, File* file){
-	checker->addProblem(problem, file);
-	problems.push_back(problem);
+void CEGISSolver::addProblem(Harness *harness, File *file){
+    checker->addProblem(harness, file);
+	problems.push_back(harness);
 
     {
-        vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+        vector<bool_node*>& problemIn = harness->get_original_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
             if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
@@ -63,7 +63,7 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
 	}	
 }
 
-bool CEGISSolver::solve(){	
+bool CEGISSolver::solve(){
 	if(problems.size()==0){
 		return true;
 	}
@@ -149,19 +149,14 @@ bool CEGISSolver::solveCore(){
                         std::vector<int, std::allocator<int> > ctrlstore_serialized = ctrlStore.serialize();
 			if(PARAMS->verbosity > 1){ cout<<"BEG CHECK"<<endl; }
 			ctimer.restart();
-            counterexample_concretized_dag = checker->check(ctrlStore);
-			doMore = counterexample_concretized_dag != NULL;
 
-			/** TODO: IF doMore == False, check this: if this fails then return UNSAT;
-			 *  tmpPid
-			 *  if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid)){
-                    if(PARAMS->verbosity > 5){
-                        cout<<"Failed from leftover clauses from concretization"<<endl;
-                    }
-                    rv = true;
-                    continue;
-                }
-			 */
+			if(!hc.solvePendingConstraints())
+			{
+			    return false;
+			};
+
+            counterexample_concretized_dag = checker->check(ctrlStore);
+			doMore = counterexample_concretized_dag != nullptr;
 
 		 	ctimer.stop();
 			if(PARAMS->verbosity > 1){ cout<<"END CHECK"<<endl; }			
@@ -249,7 +244,7 @@ bool CEGISSolver::solveCore(){
 void CEGISSolver::getMinVarHoleNode(vector<string>& mhnames, vector<int>& mhsizes){
 	map<string, CTRL_node*> minimizes;
 	for(size_t i=0; i<problems.size(); ++i){
-		BooleanDAG* dag = problems[i];
+		BooleanDAG* dag = problems[i]->get_dag();
 		vector<bool_node*> nodes = dag->getNodesByType(bool_node::CTRL);
 		for(std::vector<bool_node*>::iterator node_it = nodes.begin(); node_it != nodes.end(); ++node_it) {
 			CTRL_node* cnode = dynamic_cast<CTRL_node*>((*node_it));
@@ -432,7 +427,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 	MiniSATSolver mngCheck("checker", SATSolver::CHECKER);		
 	SolverHelper dirCheck(mngCheck);
 	dirCheck.setMemo(params.setMemo);
-	BooleanDAG* bd = problems[problems.size()-1];
+	BooleanDAG* bd = problems[problems.size()-1]->get_dag();
 	out<<"c 2qbf problem of the form. \\forall C \\exists In, temp.  (not Correct(C,in, temp)) "<<endl;
 	out<<"c vars listed as UV are the C vars; vars listed as EV are the In vars; vars not listed are temps."<<endl;
 

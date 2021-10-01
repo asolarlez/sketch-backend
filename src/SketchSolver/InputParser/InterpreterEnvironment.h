@@ -203,7 +203,7 @@ public:
 	    {
 			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+		solver = new CEGISSolver(cegisfind, hardcoder, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		exchanger = NULL;
 		hasGoodEnoughSolution = false;
@@ -250,7 +250,7 @@ public:
 	    {
 			cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
 	    }
-		solver = new CEGISSolver(cegisfind, hardcoder, params, floats);
+		solver = new CEGISSolver(cegisfind, hardcoder, params, floats, hardcoder);
         //reasSolver = new REASSolver(floats);
 		cout << "ALLRESET" << endl;
 		status = READY;
@@ -367,7 +367,8 @@ public:
 	This function takes ownership of dag. After this,
 	dag will be useless, and possibly deallocated.
 	*/
-	SATSolver::SATSolverResult assertDAG(BooleanDAG* dag, ostream& out, const string& file);
+    SATSolver::SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
+    SATSolver::SATSolverResult assertHarness(Harness* harness, ostream &out, const string &file);
 	// SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);

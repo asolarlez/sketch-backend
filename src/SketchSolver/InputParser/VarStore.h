@@ -474,7 +474,7 @@ public:
 		return objs[getId(name)];
 	}
 	int getId(const string& name){
-		Assert(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
+		AssertDebug(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return index[name];
 	}
 	objP& getObj(int id){ 

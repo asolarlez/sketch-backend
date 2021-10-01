@@ -93,7 +93,7 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	
 	if(PARAMS->verbosity > 2){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<endl; }
 	if(failedpos<cutoff){		
-		pushProblem(dag);
+		pushProblem(new Harness(dag));
 		if(PARAMS->verbosity > 2){
 			cout<<"Level "<<problemLevel()<<"Replacing dag of size "<<orisize<<" with size "<<dag->size()<<endl;
 		}
@@ -136,7 +136,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	int iter = 0;
 	VarStore& tmpin = input;
 	map<string, BooleanDAG*> empty;	
-	BooleanDAG* dag =getProblem();
+	BooleanDAG* dag = getProblem();
 	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 	vector<bool_node *> hasserts;
 	if(asserts.size()==0){
@@ -156,7 +156,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	}
 	dag = dag->clone();
 	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
-	pushProblem(dag);
+	pushProblem(new Harness(dag));
 	bool hasInput = true;
 	int hold = -1;
 	do{
@@ -266,7 +266,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 				tbd->lprint(cout);
 			}
 			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
-			pushProblem(tbd);
+			pushProblem(new Harness(tbd));
 			
 			lbool rv = baseCheck(controls, tmpin);
 			
@@ -387,7 +387,7 @@ void CEGISChecker::growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG
 		oridag->growInputIntSizes();
 	}
 	if(isTop){
-		problems[this->curProblem]->growInputIntSizes();
+		problems[this->curProblem]->get_dag()->growInputIntSizes();
 	}
 	redeclareInputs(inputStore, oridag);
 }
@@ -460,8 +460,10 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblem()->lprint(std::cout);
 
-	pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats));		
-//	cout<<"After hard code"<<endl;
+	pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+//	assert(false);
+//	OLD: pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats)));
+//    cout<<"After hard code"<<endl;
 	// getProblem()->lprint(std::cout);
 	do{
 		switch(cc.actionDecide(problemLevel() - 1, getProblem())){
@@ -471,14 +473,15 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 				popProblem();
 				cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;
 				{
-					tbdIntSize = getProblem()->getIntSize();
+				    tbdIntSize = getProblem()->getIntSize();
 					// must save the int size! tbd will be deleted by popProblem()
 					popProblem();
 					oriProblem = getProblem();
 					if(tbdIntSize != oriProblem->getIntSize()){
-						redeclareInputs(input, oriProblem);						
+						redeclareInputs(input, oriProblem);
 					}
-					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats));					
+					pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+//					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats));
 				}
 				continue;
 			}
@@ -515,8 +518,11 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 						}
 						growInputs(input, dag, oriProblem, (problemLevel() - 1) == 1);
 						res = eval.fromFile(files[curProblem], floats, inputs);
-					}					
-					if (dag != oriProblem) {
+					}
+//					TO ASK ARMANDO: Isn't this always the case?
+//					if (dag != oriProblem)
+
+					{
 						vector<bool_node*>& oInputs = oriProblem->getNodesByType(bool_node::SRC);
 						auto oin = oInputs.begin();
 						for (auto in = inputs.begin(); in != inputs.end(); ++in, ++oin) {
@@ -540,20 +546,9 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 			case CheckControl::NEXT_PROBLEM:{
 				
 				int tmpPid = (curProblem + 1) % problems.size() ;
-                if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid)){
-                    if(PARAMS->verbosity > 5){
-                        cout<<"Failed from leftover clauses from concretization"<<endl;
-                    }
-                    rv = true;
-                    continue;
-                }
-//				if(!hcoder.checkHarnessSwitch(tmpPid)){
-//					if(PARAMS->verbosity > 5){
-//						cout<<"Failed from leftover clauses from concretization"<<endl;
-//					}
-//					rv = true;
-//					continue;
-//				}
+
+                hcoder.setCurrentHarness(tmpPid);
+
 				int n = problemLevel();
 				for(int i=0; i<n; ++i){ popProblem(); }
 
@@ -562,9 +557,9 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					cout<<"Switching to problem "<<curProblem<<endl;
 				}
 				pushProblem(problems[curProblem]->clone());				
-							
-				oriProblem = getProblem();
-				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
+
+				pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+//				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
 				continue;
 			}
 		}
@@ -580,8 +575,10 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
         }
     }
     //Return counter-example concretized dag
-	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
-	return ret_dag;
+
+    Harness* ret_dag = getHarness()->produce_concretization(input, bool_node::SRC);
+//	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
+	return ret_dag->get_dag();
 //	return true; //check failed = doMore = true
 }
 
@@ -683,7 +680,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	int idx = 0;	
 	map<bool_node*,  int> node_values;
 	check_node_ids.clear();
-	check_node_ids.resize( getProblem()->size() );	
+	check_node_ids.resize(getProblem()->size() );
 	size_t nbits = getProblem()->getIntSize();
 	for (BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx) {
 		(*node_it)->flag = true;

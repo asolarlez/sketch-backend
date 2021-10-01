@@ -33,7 +33,7 @@ inline void Warning(const string& msg){
 }
 
 #define Assert( in, msg) if(!(in)){ stringstream mstr; mstr<<msg; throw BasicError(mstr.str(), "Error"); }
-#define AssertDebug( in, msg) if(!(in)){ stringstream mstr; mstr<<msg; assert(false); }
+#define AssertDebug( in, msg) if(!(in)){ cout<<(msg)<<endl; assert(false); }
 
 
 

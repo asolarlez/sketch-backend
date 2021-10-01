@@ -69,7 +69,14 @@ NodeHardcoder::~NodeHardcoder(void)
 
 void NodeHardcoder::visit( SRC_node& node ){
 	if(type == bool_node::SRC){
-		rvalue = nodeForINode(&node);
+	    if(values.contains(node.get_name()))
+	    {
+	        rvalue = nodeForINode(&node);
+	    }
+	    else
+	    {
+	        DagOptim::visit(node);
+	    }
 	}else{
 		DagOptim::visit(node);
 	}

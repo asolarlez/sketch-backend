@@ -425,3 +425,24 @@ bool_node* HoleHardcoder::checkRandHole(CTRL_node* node, DagOptim& opt) {
 		}
 	}
 }
+
+DepTracker &HoleHardcoder::get_dt() {
+    return dt;
+}
+
+bool HoleHardcoder::get_pendingConstraints() {
+    return pendingConstraints;
+}
+
+void HoleHardcoder::dismissedPending() {
+    set_pendingConstraints(false);
+}
+
+void HoleHardcoder::set_pendingConstraints(bool val)
+{
+    pendingConstraints = val;
+}
+
+bool HoleHardcoder::solvePendingConstraints() {
+    return sat->solvePendingConstraints();
+}

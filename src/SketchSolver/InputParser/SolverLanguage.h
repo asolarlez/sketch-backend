@@ -23,6 +23,7 @@
 #include "CEGISSolver.h"
 #include "NodeHardcoder.h"
 #include "CounterexampleFinder.h"
+#include "DagFunctionInliner.h"
 
 using namespace std;
 
@@ -332,6 +333,11 @@ namespace SolverLanguagePrimitives
 
         const string &get_file_name() {
             return file_name;
+        }
+
+        Harness *get_harness() {
+            AssertDebug(false, "TO PASS HARNESS.")
+            return nullptr;
         }
     };
 
@@ -1142,7 +1148,7 @@ namespace SolverLanguagePrimitives
         ProblemE* get_counter_example_concretized_problem_e(ProblemAE* problem, SolutionHolder* solution_holder)
         {
             auto* checker = new CEGISChecker(args, hc, floats);
-            checker->addProblem(problem->get_dag(), NULL);
+            checker->addProblem(problem->get_harness(), nullptr);
             VarStore* controls = solution_holder->get_controls(floats);
             cout << endl << "HERE: controls->printContent(cout);" << endl;
             controls->printContent(cout);
@@ -1209,7 +1215,7 @@ namespace SolverLanguagePrimitives
 
             CEGISFinderSpec* cegisfind;
             cegisfind = new CEGISFinder(floats, *finder, finder->getMng(), params);
-            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats);
+            solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
         }
 
         void recordSolution(Assignment_SkVal* holes_to_sk_val)
@@ -1226,7 +1232,7 @@ namespace SolverLanguagePrimitives
 
         SolutionHolder* solve(ProblemAE* problem) override
         {
-            solver->addProblem(problem->get_dag(), problem->get_file());
+            solver->addProblem(problem->get_harness(), problem->get_file());
 
             SATSolver::SATSolverResult ret_result = SATSolver::UNDETERMINED;
             auto* holes_to_sk_val = new Assignment_SkVal();
@@ -1346,9 +1352,9 @@ STUN(file):
 
 /**
  * removed hardcoder from CEGISFinder.
- *      Refactored checkHarnessSwitch by moving it to SolverHelper, along with all relevant fields.
+ *      Refactored setCurrentHarness by moving it to SolverHelper, along with all relevant fields.
  *      Moved DepTracker to BooleanToCNF.
- * exposed failedAssert in BooleanDag; it is set after hardcoding in hardCodeINode.
+ * exposed failedAssert in BooleanDAG; it is set after hardcoding in hardCodeINode.
  * completed refactoring of reading files ahead of time;
  *      moved redeclareInputs, declareInputs from CEGISChecker to CounterExampleFinder.
  *      created redeclareInputsAndAngelics
@@ -1362,7 +1368,7 @@ STUN(file):
  *
  * Next big step: moving up from assertDag to doallpairs - wrap prepare miter;
  *
- * TODO: Check refactoring of if(!hcoder.get_globalSat()->checkHarnessSwitch(tmpPid))
+ * TODO: Check refactoring of if(!hcoder.get_globalSat()->setCurrentHarness(tmpPid))
  * Why do we need the hardcoder in;
  *          need bc of rabbit-hole due to concretizing,
  *          moving on to next harness, hardcoding,
@@ -1412,7 +1418,7 @@ public:
     }
 
     SolverLanguagePrimitives::SolutionHolder* eval(
-            BooleanDAG* dag, const string& file_name,
+            BooleanDAG* root_dag, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
             HoleHardcoder& _hc, bool hasGoodEnoughSolution,
             CEGISFinderSpec* finder)
@@ -1420,7 +1426,8 @@ public:
 //        return SolverLanguagePrimitives::wrapper_assert_dag(
 //                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
 //        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
-        return SolverLanguagePrimitives::target_best_effort(dag, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        AssertDebug(false, "incorporate prog_env");
+        return SolverLanguagePrimitives::target_best_effort(root_dag, file_name, floats, _args, _hc, hasGoodEnoughSolution);
     }
 };
 

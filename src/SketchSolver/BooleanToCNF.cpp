@@ -664,9 +664,6 @@ OutType *SolverHelper::getOtype(const string varname) {
     return vartype[varname];
 }
 
-DepTracker &SolverHelper::get_dt() {
-    return dt;
-}
 
 bool SolverHelper::get_pendingConstraints() {
     return pendingConstraints;
@@ -674,6 +671,11 @@ bool SolverHelper::get_pendingConstraints() {
 
 void SolverHelper::dismissedPending() {
     set_pendingConstraints(false);
+}
+
+void SolverHelper::set_pendingConstraints(bool val)
+{
+	pendingConstraints = val;
 }
 
 /*

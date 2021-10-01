@@ -406,41 +406,41 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) {
-
-	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
-		vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
-		if (ctrlvec.size() == 0) {
-			pureFuns.insert(it->first);
-			continue;
-		}
-		if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
-			pureFuns.insert(it->first);
-		}
-	}
-
-	set<string> other;
-	do{
-		other = pureFuns;
-		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
-			BooleanDAG* bd = functionMap[*it];
-
-			vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
-			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
-				
-				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
-				if (ufn == NULL) { continue;  }
-				if (other.count(ufn->get_ufname()) == 0) {
-					//calling a non-pure function means you are not pure either.
-					other.erase(*it);
-					break;
-				}
-			}
-		}
-		swap(other, pureFuns);
-	} while (other.size() != pureFuns.size());
-
-}
+//void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) {
+//
+//	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
+//		vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+//		if (ctrlvec.size() == 0) {
+//			pureFuns.insert(it->first);
+//			continue;
+//		}
+//		if (ctrlvec.size() == 1 && ctrlvec[0]->get_name() == "#PC") {
+//			pureFuns.insert(it->first);
+//		}
+//	}
+//
+//	set<string> other;
+//	do{
+//		other = pureFuns;
+//		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
+//			BooleanDAG* bd = functionMap[*it];
+//
+//			vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
+//			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
+//
+//				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
+//				if (ufn == NULL) { continue;  }
+//				if (other.count(ufn->get_ufname()) == 0) {
+//					//calling a non-pure function means you are not pure either.
+//					other.erase(*it);
+//					break;
+//				}
+//			}
+//		}
+//		swap(other, pureFuns);
+//	} while (other.size() != pureFuns.size());
+//
+//}
 
 void InterpreterEnvironment::doInline(
         BooleanDAG& dag, map<string, BooleanDAG*>& functionMap, int steps, map<string, map<string, string> > replaceMap){
@@ -702,6 +702,13 @@ void InterpreterEnvironment::fixes(const string& holename) {
 
 
 int InterpreterEnvironment::doallpairs() {
+
+    if(params.numericalSolver)
+    {
+        Assert(spskpairs.size() == 1, string("If using numerical solver then CEGISSolver can only handle 1 harness,") +
+        string("due to keeping track of pending constraints introduced by the hardcoder, but the NumericalSolver doesn't incorporate those constraints in the solving process"));
+    }
+
 	int howmany = params.ntimes;
 	if (howmany < 1 || !params.randomassign) { howmany = 1; }
 	SATSolver::SATSolverResult result = SATSolver::UNDETERMINED;
@@ -752,8 +759,14 @@ int InterpreterEnvironment::doallpairs() {
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
+			    ProgramEnvironment *program_env =
+			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-				result = assertDAG(bd, cout, spskpairs[i].file);
+//				bd = nullptr;
+				result = assertHarness(new Harness(getCopy(spskpairs[i].sketch), bd, program_env), cout, spskpairs[i].file);
+
+//				result = assertDAG(
+//				        bd, cout, spskpairs[i].file);
 				cout << "RESULT = " << result << "  " << endl;;
 				printControls("");
 			}
@@ -843,11 +856,11 @@ int InterpreterEnvironment::doallpairs() {
 
 
 /*
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* dag, ostream& out) {
+SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->get_dag(), ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
 	
-	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag, floats);
+	IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*harness->get_dag(), floats);
 	BooleanDAG* new_dag = rewriter.rewrite();
 
     reasSolver->addProblem(new_dag);
@@ -875,9 +888,146 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
     return SATSolver::SATISFIABLE;
 }
 */
-    
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, ostream& out, const string& file) {
+
+SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harness, ostream &out, const string &file)  {
+
+    /// *** STILL IN PROGRESS
+    ///  vvvvvvvvvvvvvvvvvvvv
+    bool test_solver_language = false;
+    if (test_solver_language)
+    {
+        SolverLanguage solver_language = SolverLanguage();
+        SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
+                harness->get_dag(), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+
+        cout << "EXITED SolverLanguage" << endl;
+        if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+        {
+            status = UNSAT;
+        }
+        if(ret->has_assignment_skval()) {
+            hardcoder.get_control_map(currentControls);
+            ret->get_control_map(currentControls);
+            cout << "recorded_solution" << endl;
+            cout << "VALUES ";
+            for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
+                cout << it->first << ": " << it->second << ", ";
+            }
+            cout << endl;
+        }
+        else
+        {
+            cout << "No solution";
+        }
+        cout << "EXITING assertDAG" << endl;
+        return ret->get_sat_solver_result();
+    }
+    ///  ^^^^^^^^^^^^^^^^^^^
+
+    Assert(status == READY, "You can't do this if you are UNSAT");
+    ++assertionStep;
+
+    File* new_file;
+    if (!file.empty())
+    {
+//        AssertDebug(false, "Incorporate prog_evn, activate line below.");
+        new_file = new File(harness->get_dag(), file, floats);
+    }
+    else
+    {
+        new_file = nullptr;
+    }
+
+    solver->addProblem(harness, new_file);
+
+    //	cout << "InterpreterEnvironment: new problem" << endl;
+    //	problem->lprint(cout);
+
+    if (params.superChecks) {
+        history.push_back(harness->get_dag()->clone());
+    }
+
+    // problem->repOK();
+
+
+
+    if (params.outputEuclid) {
+        ofstream fout("bench.ucl");
+        solver->outputEuclid(fout);
+    }
+
+    if (params.output2QBF) {
+        string fname = basename();
+        fname += "_2qbf.cnf";
+        ofstream out(fname.c_str());
+        cout << " OUTPUTING 2QBF problem to file " << fname << endl;
+        solver->setup2QBF(out);
+    }
+
+    if (harness->get_dag()->useSymbolic()) {
+        DeductiveSolver deductive(harness->get_dag(), this->floats);
+        deductive.symbolicSolve(*this->finder);
+
+
+        solver->ctrlStore.synths.clear();
+        auto end = this->finder->get_sins().end();
+        for (auto it = this->finder->get_sins().begin(); it != end; ++it) {
+            solver->ctrlStore.synths[it->first] = it->second;
+        }
+        solver->ctrlStore.finalizeSynthOutputs();
+        recordSolution();
+        return SATSolver::SATISFIABLE;
+    }
+
+
+    int solveCode = 0;
+    try {
+
+        solveCode = solver->solve();
+        if (solveCode || !hasGoodEnoughSolution) {
+            recordSolution();
+        }
+    }
+    catch (SolverException* ex) {
+        cout << "ERROR " << basename() << ": " << ex->code << "  " << ex->msg << endl;
+        status = UNSAT;
+        return ex->code;
+    }
+    catch (BasicError& be) {
+        if (!hasGoodEnoughSolution) {
+            recordSolution();
+        }
+        cout << "ERROR: " << basename() << endl;
+        status = UNSAT;
+        return SATSolver::ABORTED;
+    }
+    if (!solveCode) {
+        status = UNSAT;
+        return SATSolver::UNSATISFIABLE;
+    }
+
+    /*
+	if (false) {
+		statehistory.push_back(solver->find_history);
+
+		for (int i = 0; i<history.size(); ++i) {
+			cout << " ~~~ Order = " << i << endl;
+			BooleanDAG* bd = hardCodeINode(history[i], solver->ctrlStore, bool_node::CTRL, floats);
+			int sz = bd->getNodesByType(bool_node::ASSERT).size();
+			cout << " ++ Order = " << i << " size = " << sz << endl;
+			if (sz > 0) {
+				Strudel st(statehistory[i], &finder->getMng(), floats);
+				st.checker(history[i], solver->ctrlStore, bool_node::CTRL);
+			}
+		}
+	}
+	*/
+    return SATSolver::SATISFIABLE;
+}
+
+
+SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
@@ -918,14 +1068,15 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG* dag, os
 	File* new_file;
 	if (!file.empty())
 	{
-	    new_file = new File(dag, file, floats);
+	    AssertDebug(false, "Incorporate prog_evn, activate line below.");
+//	    new_file = new File(dag, file, floats);
 	}
 	else
 	{
 	    new_file = nullptr;
 	}
 
-	solver->addProblem(dag, new_file);
+    solver->addProblem(new Harness(dag), new_file);
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);
@@ -1093,6 +1244,8 @@ BooleanDAG* InterpreterEnvironment::runOptims(BooleanDAG* result){
 	}
 	return result;
 }
+
+
 
 bool hasFloatInputs(bool_node* node) {
   //vector<bool_node*> parents = node->parents();
