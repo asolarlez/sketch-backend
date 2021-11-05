@@ -159,7 +159,8 @@ addInputsToTestSet(BooleanDAG* problem, VarStore& input){
 	bool specialize = PARAMS->olevel >= 6;
 	BooleanDAG* tmpproblem = NULL;	
 	if(PARAMS->verbosity > 2){  cout<<" intsize = "<< problem->getIntSize()<<endl; }
-	
+
+    AssertDebug(false, "NEED TO USE THE NEW HARDCODER (The 2-in-1 inliner and hardcoder).")
 	BooleanDAG* newdag = hardCodeINode(problem, input, bool_node::SRC, floats);
 //	BackwardsAnalysis ba;
 	// ba.process(*newdag);

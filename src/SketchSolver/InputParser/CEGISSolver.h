@@ -21,6 +21,22 @@ using namespace MSsolverNS;
 
 class DagOptim;
 
+class ElapsedTime
+{
+    double find_time;
+    double check_time;
+    double total_time;
+
+public:
+    ElapsedTime(double _find_time, double _check_time, double _total_time):
+    find_time(_find_time), check_time(_check_time),total_time(_total_time) {}
+
+    string to_string()
+    {
+        return "FIND TIME " + std::to_string(find_time) + " CHECK TIME " + std::to_string(check_time) + "; TOTAL TIME " + std::to_string(total_time);
+    }
+};
+
 class CEGISSolver
 {
 
@@ -31,6 +47,8 @@ class CEGISSolver
 
 	HoleHardcoder& hc;
 
+    ElapsedTime* last_elapsed_time = NULL;
+
 protected:
 
 	FloatManager& floats;
@@ -40,6 +58,7 @@ protected:
 
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
+
 
 	// bool check(VarStore& input, VarStore& controls)
 	// {
@@ -83,6 +102,12 @@ public:
 	~CEGISSolver(void);
 	void addProblem(Harness *harness, File *file);
 
+
+    ElapsedTime* get_last_elapsed_time()
+    {
+        assert(last_elapsed_time != NULL);
+        return last_elapsed_time;
+    }
 
 	virtual bool solve();
 	void print_control_map(ostream& out);

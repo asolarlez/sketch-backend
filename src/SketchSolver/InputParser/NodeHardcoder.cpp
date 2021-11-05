@@ -43,16 +43,24 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	}else{				
 		int nbits = inode->get_nbits();		
 		bool_node* onode;
-		if(inode->getOtype() == OutType::BOOL){
-			Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
-			onode= getCnode( values[inode->get_name()]==1 );
-		}else{
-			if (otype == OutType::FLOAT) {
-				onode = getCnode( floats.getFloat(values[inode->get_name()]) );
-			}
-			else {
-				onode = getCnode(values[inode->get_name()]);
-			}			
+		if(!values.contains(inode->get_name()))
+		{
+		    //IS THIS OK?
+		    onode = inode;
+		}
+		else
+		{
+		    if(inode->getOtype() == OutType::BOOL){
+		        Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
+		        onode= getCnode( values[inode->get_name()]==1 );
+		    }else{
+		        if (otype == OutType::FLOAT) {
+		            onode = getCnode( floats.getFloat(values[inode->get_name()]) );
+		        }
+		        else {
+		            onode = getCnode(values[inode->get_name()]);
+		        }
+		    }
 		}
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< onode->lprint() <<endl; }
 		return onode;
@@ -281,9 +289,13 @@ BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type typ
         DagOptim cse(*newdag, floats);
         cse.process(*newdag);
     }
-    if(PARAMS->verbosity > 2){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }
+    if(PARAMS->verbosity > 3){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }
 
     newdag->set_failed_assert(cse.get_failedAssert());
+
+//    cout << "FROM ORIGINAL INLINING: newdag" << endl;
+//    newdag->lprint(cout);
+//    cout << "//////////////" << endl;
 
     return newdag;
 }

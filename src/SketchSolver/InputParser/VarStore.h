@@ -35,9 +35,9 @@ public:
 	class objP{
 
 
-        void getArrRec(vector<int>* ret) const
+        void getArrRec(vector<pair<int, int> >* ret) const
         {
-            ret->push_back(getInt());
+            ret->push_back(getIntAndSize());
             if(next != nullptr && next->defined)
             {
                 next->getArrRec(ret);
@@ -122,6 +122,12 @@ public:
 			int t = intFromBV(vals, 0, vals.size());
 			return isNeg? -t : t; 
 		}
+
+        pair<int, int> getIntAndSize() const
+        {
+            return make_pair(getInt(), (int)vals.size());
+        }
+
 		int getInt(int idx) const{
 			if(this->index==idx){
 				return getInt();
@@ -131,9 +137,9 @@ public:
 			}
 			Assert(false,"Control shouldn't reach here");
 		}
-		vector<int>* getArr()
+		vector<pair<int, int> >* getArr()
         {
-		    vector<int>* ret = new vector<int>();
+		    vector<pair<int, int> >* ret = new vector<pair<int, int> >();
 		    getArrRec(ret);
 		    return ret;
         }
@@ -267,6 +273,11 @@ public:
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
 
+    int size()
+    {
+        return objs.size();
+    }
+
 	VarStore(){
 		bitsize=0;
 	}
@@ -347,12 +358,12 @@ public:
         objs[index[name]].setArr(arr);
 	}
 
-	void newVar(const string& name, int size, OutType* otype){
+	void newVar(const string& name, int nbits, OutType* otype){
 		Assert(index.count(name)==0, name<<": This variable already existed!!");
 		int begidx = objs.size();
-		objs.emplace_back(name, size, otype);
+		objs.emplace_back(name, nbits, otype);
 		index[name] = begidx;
-		bitsize += size;
+		bitsize += nbits;
 	}
 
 	void setVarVal(const string& name, int val, OutType* otype){

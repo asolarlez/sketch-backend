@@ -127,7 +127,7 @@ Synthesizer* SolverHelper::newSynthesizer(const string& name, FloatManager& _fm)
   }
   else*/{
 
-	  Assert(false,"Invalid synthesizer name: " + name);
+	  AssertDebug(false,"Invalid synthesizer name: " + name);
   }
 	
 	

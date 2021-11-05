@@ -34,6 +34,14 @@ public:
         VarStore input_store;
         redeclareInputsAndAngelics(input_store, problem);
         vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+
+//        for(int i = 0;i<inputs.size();i++)
+//        {
+//            cout << inputs[i]->get_name() <<" ";
+//        }
+//        cout << endl;
+//        assert(false);
+
         File::Result res = parseFile(file, floats, inputs, input_store);
         while (res == File::MOREBITS) {
             growInputs(input_store, problem);

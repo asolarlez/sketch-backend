@@ -176,6 +176,7 @@ void NodeEvaluator::visit( SRC_node& node ){
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
+//        assert(node.get_name() != "num_bools_4_0_0");
 		setbn(node, (*inputs)[node.get_name()]);	
 	}
 }

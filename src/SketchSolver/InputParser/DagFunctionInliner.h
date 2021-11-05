@@ -647,7 +647,9 @@ class DagFunctionInliner : public virtual DagOptim
 	bool symbolicSolve;
 	
 	BooleanDAG& dag;
+protected:
 	map<string, BooleanDAG*>& functionMap;
+private:
   map<string, map<string, string> > replaceMap;
   int replaceDepth; // TODO: in general we may need a map for this
 
@@ -763,6 +765,7 @@ void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns);
 
 class ProgramEnvironment
 {
+public:
     CommandLineArgs& params;
     FloatManager& floats;
     HoleHardcoder& hardcoder;
@@ -770,7 +773,6 @@ class ProgramEnvironment
     int num_inlining_steps;
     map<string, map<string, string> > replaceMap;
 
-public:
     ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
                        map<string, BooleanDAG*>& _functionMap, int _steps, map<string, map<string, string> >& _replaceMap):
                        params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
@@ -791,7 +793,6 @@ public:
         }
         */
 
-
         set<string> pureFuns;
 
         findPureFuns(functionMap, pureFuns);
@@ -809,8 +810,6 @@ public:
                 &fin,
                 params.onlySpRandAssign,
                 params.spRandBias);
-
-
 
 
         int oldSize = -1;
@@ -862,7 +861,7 @@ public:
             // fin.ctt.printCtree(cout, dag);
 
             fin.clear();
-            if (t == 1 && params.verbosity> 6) { cout << "Bailing out" << endl; assert(false); break; }
+            if (t == 1 && params.verbosity> 6) { cout << "Bailing out" << endl; break; }
         }
         hardcoder.afterInline();
         {
@@ -874,6 +873,11 @@ public:
 
     FloatManager &get_floats() {
         return floats;
+    }
+
+    HoleHardcoder &get_hardcoder()
+    {
+        return hardcoder;
     }
 };
 
@@ -890,7 +894,8 @@ class Harness
     //if env != nullptr => original_dag and root_dag ARE concretized
     ProgramEnvironment* env;
 
-    bool new_way = true;
+    bool new_way = false;
+    bool keep_track_of_original = false;
 public:
     Harness(
             BooleanDAG* _dag_root,
@@ -899,7 +904,10 @@ public:
             root_dag(_dag_root), original_dag(_original_dag), env(_evn){
         if(new_way)
         {
-
+            if(!keep_track_of_original)
+            {
+                original_dag = nullptr;
+            }
         }
         else
         {
@@ -911,28 +919,34 @@ public:
         }
     }
 
+    Harness* produce_inlined_dag()
+    {
+        VarStore var_store;
+        bool_node::Type var_type = bool_node::CTRL;
+        return produce_concretization(var_store, var_type);
+    }
+
     Harness* produce_concretization(VarStore& var_store, bool_node::Type var_type)
     {
         if(new_way)
         {
-            assert(env != nullptr);
             //concretize root using ProgramEnvironment's doInline function
 
-            BooleanDAG* concretized_unrolled_dag;
+            BooleanDAG* concretized_original_dag;
             if(original_dag != nullptr)
             {
-                concretized_unrolled_dag = hardCodeINode(original_dag, var_store, var_type, env->get_floats());
+                concretized_original_dag = hardCodeINode(original_dag, var_store, var_type, env->get_floats());
             }
             else
             {
-                concretized_unrolled_dag = nullptr;
+                concretized_original_dag = nullptr;
             }
 
             BooleanDAG* concretized_root_dag = root_dag->clone();
+
             env->doInline(*concretized_root_dag, var_store, var_type);
 
-
-            return new Harness(concretized_root_dag, concretized_unrolled_dag, nullptr);
+            return new Harness(concretized_root_dag, concretized_original_dag, env);
         }
         else
         {
@@ -967,17 +981,42 @@ public:
         root_dag->clear();
     }
 
-    BooleanDAG* get_original_dag() {
-        //potential problem
-        if(new_way)
-        {
-            assert(original_dag != nullptr);
-            return original_dag;
-        }
-        else
-        {
-            return get_dag();
-        }
+//    BooleanDAG* get_original_dag() {
+//        assert(false);
+//        //potential problem
+//        if(new_way)
+//        {
+//            assert(original_dag != nullptr);
+//            return original_dag;
+//        }
+//        else
+//        {
+//            return get_dag();
+//        }
+//    }
+
+private:
+    VarStore* ctrl_var_store__solution;
+public:
+    VarStore* get_ctrl_var_store()
+    {
+        return ctrl_var_store__solution;
+    }
+    void set_solution(VarStore* _ctrl_var_store)
+    {
+        ctrl_var_store__solution = _ctrl_var_store;
+    }
+
+private:
+    string name;
+public:
+
+    void set_name(const string _name) {
+        name = _name;
+    }
+    string get_name()
+    {
+        return name;
     }
 };
 

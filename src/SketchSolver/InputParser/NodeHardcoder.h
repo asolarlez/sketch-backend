@@ -12,6 +12,10 @@ class NodeHardcoder : public virtual DagOptim
 	bool showInputs;
 	BooleanDAG* bdag;	
 public:
+    VarStore& get_values()
+    {
+        return values;
+    }
 	void nodeFromSyn(UFUN_node& node);
 	bool_node* nodeForINode(INTER_node* inode);
 	bool_node* nodeForFun(UFUN_node* uf);

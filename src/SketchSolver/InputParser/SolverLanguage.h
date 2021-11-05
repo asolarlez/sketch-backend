@@ -24,6 +24,7 @@
 #include "NodeHardcoder.h"
 #include "CounterexampleFinder.h"
 #include "DagFunctionInliner.h"
+#include "InterpreterEnvironment.h"
 
 using namespace std;
 
@@ -231,16 +232,20 @@ namespace SolverLanguagePrimitives
 
     class Function
     {
-        BooleanDAG* dag;
+        Harness* harness;
         FloatManager& floats;
     public:
-        explicit Function(BooleanDAG* _dag, FloatManager& _floats): dag(_dag), floats(_floats){}
-        explicit Function(Function* function): dag(function->dag), floats(function->floats){}
+        explicit Function(Harness* _harness, FloatManager& _floats): harness(_harness), floats(_floats){}
+        explicit Function(Function* function): harness(function->harness), floats(function->floats){}
 
-        BooleanDAG* get_dag() const
-        {
-            return dag;
+        Harness *get_harness() {
+            return harness;
         }
+
+//        BooleanDAG* get_dag() const
+//        {
+//            return dag;
+//        }
 
         FloatManager& get_floats()
         {
@@ -269,7 +274,7 @@ namespace SolverLanguagePrimitives
         }
         vector<SkHoleSpec>* get_holes()
         {
-            vector<bool_node*>& ctrl_nodes = dag->getNodesByType(bool_node::CTRL);
+            vector<bool_node*>& ctrl_nodes = harness->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL);
             auto* ret = new vector<SkHoleSpec>();
             for(int i = 0;i<ctrl_nodes.size(); i++)
             {
@@ -284,14 +289,27 @@ namespace SolverLanguagePrimitives
         Function* concretize_holes(SolutionHolder* solution_holder)
         {
             return new Function(
-                    hardCodeINode(get_dag(), *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
+                    harness->produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL), floats);
+//            return new Function(
+//                    hardCodeINode(get_dag(), *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
         }
 
         Function* concretize_inputs(InputHolder* input_holder)
         {
             return new Function(
-                    hardCodeINode(get_dag(), *input_holder->to_var_store(), bool_node::SRC, floats), floats);
+                    harness->produce_concretization(*input_holder->to_var_store(), bool_node::SRC), floats);
+//            return new Function(
+//                    hardCodeINode(get_dag(), *input_holder->to_var_store(), bool_node::SRC, floats), floats);
         }
+
+        BooleanDAG* get_dag() {
+            return harness->get_dag();
+        }
+
+//        BooleanDAG* get_original_dag()
+//        {
+//            return harness->get_original_dag();
+//        }
 
         int count_passing_inputs(File* file) {
             int ret = 0;
@@ -300,7 +318,6 @@ namespace SolverLanguagePrimitives
                 Function* concretized_function = concretize_inputs(new InputHolder(file->at(i), floats));
                 if(concretized_function->get_dag()->get_failed_assert() == NULL)
                 {
-                    // if entered then entire dag got reduced;
                     ret += 1;
                 }
             }
@@ -333,11 +350,6 @@ namespace SolverLanguagePrimitives
 
         const string &get_file_name() {
             return file_name;
-        }
-
-        Harness *get_harness() {
-            AssertDebug(false, "TO PASS HARNESS.")
-            return nullptr;
         }
     };
 
@@ -1153,15 +1165,15 @@ namespace SolverLanguagePrimitives
             cout << endl << "HERE: controls->printContent(cout);" << endl;
             controls->printContent(cout);
             cout << "END HERE" << endl << endl;
-            return new ProblemE(new Function(checker->check(*controls), floats));
+            return new ProblemE(new Function(new Harness(checker->check(*controls)), floats));
         }
     };
 
     inline SolutionHolder* first_cegis(
-            BooleanDAG* dag, FloatManager& floats, CommandLineArgs& _args,  HoleHardcoder& _hc,
+            Harness* harness, FloatManager& floats, CommandLineArgs& _args,  HoleHardcoder& _hc,
             CEGISFinderSpec* finder)
     {
-        ProblemAE* problem_ae = new ProblemAE(new Function(dag, floats));
+        ProblemAE* problem_ae = new ProblemAE(new Function(harness, floats));
         SolutionHolder* solution_holder = (new ConstantSolver())->solve(problem_ae);
 
         ProblemE* problem_e = (new WrapperChecker(_args, _hc, floats))->
@@ -1201,6 +1213,12 @@ namespace SolverLanguagePrimitives
         ::CEGISSolver* solver;
 
     public:
+
+        ::CEGISSolver* get_solver()
+        {
+            return solver;
+        }
+
         WrapperAssertDAG(FloatManager& _floats, HoleHardcoder& _hardcoder, CommandLineArgs& _params, bool _hasGoodEnoughSolution):
         params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution)
         {
@@ -1273,39 +1291,97 @@ namespace SolverLanguagePrimitives
                     }
                 }
             }
+            cout << "exit WrapperAssertDAG->solve(..)" << endl;
             return new SolutionHolder(ret_result, holes_to_sk_val);
         }
     };
 
     inline SolutionHolder* wrapper_assert_dag(
-            BooleanDAG* dag, const string& file_name,
+            Harness* harness, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
             HoleHardcoder& _hc,
             bool hasGoodEnoughSolution)
     {
         return
             (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
-            solve(new ProblemAE(new Function(dag, floats), file_name));
+            solve(new ProblemAE(new Function(harness, floats), file_name));
     }
 
 
-    inline SolutionHolder* target_best_effort(BooleanDAG* dag, const string& file_name, FloatManager& floats,
+//    class ConcretizationUnit
+//    {
+//        int harness_id;
+//        string function_to_concretize;
+//    };
+//
+//    inline SolutionHolder* STUN(ProgramEnvironment* env, bool hasGoodEnoughSolution)
+//    {
+//        /**
+//         * generator g_pred(x);
+//         * function f_pred0(x) {g_pred(x);}
+//         * function f_pred1(x) {if(g_pred(x)){f_pred0(x)}{g_ped(x)})
+//         * function f_pred2(x) {if(g_pred(x)){f_pred1(x)}{g_pred(x)})
+//         * harness h0(x, y) {assert(f_pred0(x) == y));}
+//         * harness h1(x, y) {assert(f_pred1(x) == y));}
+//         * harness h2(x, y) {assert(f_pred2(x) == y));}
+//         */
+//
+//        //solve h0:
+//        //set up h0 as a harness
+//        BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+//
+//        Harness* local_harness = new Harness(getCopy(env->spskpairs[i].sketch), bd, program_env);
+//
+//        local_harness = local_harness->produce_concretization(partial_concretization, bool_node::CTRL);
+//
+//        local_harness->set_name(spskpairs[i].sketch);
+//
+//        //concretize f_pred0;
+//        //replace f_pred0 with the concretized version
+//        //solve h1;
+//        //
+//
+//        SolutionHolder* sol = (new WrapperAssertDAG(env->get_floats(), env->get_hardcoder(), env->params, hasGoodEnoughSolution))->
+//                solve(new ProblemAE(new Function(harness, floats), sub_file));
+//
+//    }
+
+
+    inline SolutionHolder* target_best_effort(Harness* harness, const string& file_name, FloatManager& floats,
                                               CommandLineArgs& _args,
                                               HoleHardcoder& _hc,
                                               bool hasGoodEnoughSolution)
     {
-        File* all_file = new File(dag, file_name, floats);
-        int num_samples = 100;
-        int rows_per_sample = 6;
+//        expose lightverif
+        ofstream fout = ofstream("sample_ordering__"+harness->get_name()+"__old_way_fixes__after_debug");
+        File* all_file = new File(harness->get_dag(), file_name, floats);
+        int num_samples = 10;
+        int rows_per_sample = 8;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
             File* sub_file = all_file->sample_sub_file(rows_per_sample);
-            SolutionHolder* sol = (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
-                    solve(new ProblemAE(new Function(dag, floats), sub_file));
-            int num_passing_inputs = (new Function(dag, floats))->concretize_holes(sol)->count_passing_inputs(all_file);
+            WrapperAssertDAG* solver = new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution);
+            SolutionHolder* sol = (solver)->
+                    solve(new ProblemAE(new Function(harness, floats), sub_file));
+            int num_passing_inputs = (new Function(harness, floats))->concretize_holes(sol)->count_passing_inputs(all_file);
             sol->set_sat_solver_result(SATSolver::SATISFIABLE);
             solutions.emplace_back(num_passing_inputs, sol);
+
+            cout << endl;
+            cout << "######################################################" << endl;
+            cout << "DONE WITH SAMPLE " << i << endl;
+            cout << "SCORE " << num_passing_inputs <<" %: "<< 100.0*(float)num_passing_inputs/all_file->size() << endl;
+            cout << solver->get_solver()->get_last_elapsed_time()->to_string() << endl;
+            cout << "######################################################" << endl<< endl;
+
+
+            fout << endl;
+            fout << "######################################################" << endl;
+            fout << "DONE WITH SAMPLE " << i << endl;
+            fout << "SCORE " << num_passing_inputs <<" %: "<< 100.0*(float)num_passing_inputs/all_file->size() << endl;
+            fout << solver->get_solver()->get_last_elapsed_time()->to_string() << endl;
+            fout << "######################################################" << endl<< endl;
         }
         sort(solutions.begin(), solutions.end());
         reverse(solutions.begin(), solutions.end());
@@ -1313,7 +1389,24 @@ namespace SolverLanguagePrimitives
         cout << "Solution count: " << endl;
         for(int i = 0;i<solutions.size();i++)
         {
-            cout << solutions[i].first <<" %: "<< (float)solutions[i].first/all_file->size() << endl;
+            cout << solutions[i].first <<" %: "<< 100.0*(float)solutions[i].first/all_file->size() << endl;
+        }
+
+        fout << "Solution count: " << endl;
+        for(int i = 0;i<solutions.size();i++)
+        {
+            fout << solutions[i].first <<" %: "<< 100.0*(float)solutions[i].first/all_file->size() << endl;
+        }
+
+        harness->set_solution(solutions[0].second->to_var_store());
+
+        if(solutions[0].second->get_sat_solver_result() == SATSolver::SATISFIABLE)
+        {
+            cout << "return SATSolver::SATISFIABLE" << endl;
+        }
+        else
+        {
+            cout << "return NOT SATSolver::SATISFIABLE" << endl;
         }
 
         return solutions[0].second;
@@ -1418,7 +1511,7 @@ public:
     }
 
     SolverLanguagePrimitives::SolutionHolder* eval(
-            BooleanDAG* root_dag, const string& file_name,
+            Harness* harness, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
             HoleHardcoder& _hc, bool hasGoodEnoughSolution,
             CEGISFinderSpec* finder)
@@ -1426,8 +1519,8 @@ public:
 //        return SolverLanguagePrimitives::wrapper_assert_dag(
 //                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
 //        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
-        AssertDebug(false, "incorporate prog_env");
-        return SolverLanguagePrimitives::target_best_effort(root_dag, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+//        AssertDebug(false, "incorporate prog_env");
+        return SolverLanguagePrimitives::target_best_effort(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution);
     }
 };
 

@@ -1246,11 +1246,11 @@ public:
     bool ufun;
 
 private:
-	SRC_node() :INTER_node(SRC) { isTuple = false; }
-	SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) { }
-	SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
+    SRC_node() :INTER_node(SRC) { isTuple = false; }
+    SRC_node(const SRC_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), arrSz(bn.arrSz), isTuple(bn.isTuple), tupleName(bn.tupleName), ufun(bn.ufun) {}
+    SRC_node(const string& nm):INTER_node(SRC), arrSz(-1), ufun(false){
 		name = nm;
-		isTuple = false;
+    	isTuple = false;
 	}
 
 public:

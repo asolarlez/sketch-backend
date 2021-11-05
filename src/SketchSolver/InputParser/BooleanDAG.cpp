@@ -1292,6 +1292,8 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 		if( (*node_it) != NULL ){		
 			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
 			bool_node* bn = (*node_it)->clone(false);
+            assert(bn->type == (*node_it)->type);
+            assert(bn->id == (*node_it)->id);
 			
 			if( dl != NULL && isDllnode(bn) ){
 				dl->append(getDllnode(bn));
@@ -1299,7 +1301,8 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 			Dout( cout<<" node "<<(*node_it)->get_name()<<" clones into "<<bn->get_name()<<endl );
 			nstore[nnodes] = bn;
-			nnodes++;
+			assert(bn->id == nnodes);
+            nnodes++;
 		}else{
 			Assert( false, "The graph you are cloning should not have any null nodes.");
 		}
@@ -1316,9 +1319,24 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 BooleanDAG* BooleanDAG::clone(){
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 	Dout( cout<<" begin clone "<<endl );
 	BooleanDAG* bdag = new BooleanDAG(name, isModel);
 	relabel();
+
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 
 	clone_nodes(bdag->nodes, &bdag->assertions);
 
@@ -1334,6 +1352,14 @@ BooleanDAG* BooleanDAG::clone(){
 		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );
 		bdag->named_nodes[it->first] = dynamic_cast<INTER_node*>(bdag->nodes[it->second->id]);	
 	}
+
+
+    for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
+        it != nodesByType.end(); ++it){
+        for(int i=0; i<it->second.size(); ++i){
+            assert(nodes[it->second[i]->id] == it->second[i]);
+        }
+    }
 	
 	for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin(); 
 					it != nodesByType.end(); ++it){
@@ -1341,9 +1367,18 @@ BooleanDAG* BooleanDAG::clone(){
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
 		for(int i=0; i<it->second.size(); ++i){
 			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );
-			tmp.push_back( bdag->nodes[ it->second[i]->id ] );	
+            assert(bdag->nodes[ it->second[i]->id ]->type == it->first);
+            tmp.push_back( bdag->nodes[ it->second[i]->id ] );
 		}							
 	}
+
+    vector<bool_node *> &ctrls = bdag->getNodesByType(bool_node::CTRL);
+
+    for (int i = 0; i < ctrls.size(); i++) {
+        assert(ctrls[i]->type == bool_node::CTRL);
+    }
+
+
 	return bdag;
 }
 

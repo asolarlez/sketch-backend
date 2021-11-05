@@ -25,23 +25,23 @@ public:
     }
 };
 
-enum SkValType {sk_type_int, sk_type_float, sk_type_bool, sk_type_boolarr};
-static string sk_val_type_name[3] = {"sk_type_int", "sk_type_float", "sk_type_bool"};
+enum SkValType {sk_type_int, sk_type_float, sk_type_bool, sk_type_boolarr, sk_type_intarr};
+static string sk_val_type_name[5] = {"sk_type_int", "sk_type_float", "sk_type_bool", "sk_type_boolarr", "sk_type_intarr"};
 
 class SkVal
 {
     SkValType sketch_val_type;
     bool size_defined = false;
-    int size;
+    int nbits;
 public:
 //    explicit SkVal(SkValType _sketch_val_type):
 //            sketch_val_type(_sketch_val_type) {}
-    SkVal(SkValType _sketch_val_type, int _size):
-            sketch_val_type(_sketch_val_type), size(_size), size_defined(true) {}
-    int get_size()
+    SkVal(SkValType _sketch_val_type, int _nbits):
+            sketch_val_type(_sketch_val_type), nbits(_nbits), size_defined(true) {}
+    int get_nbits()
     {
         Assert(size_defined, "SkVal size not defined");
-        return size;
+        return nbits;
     }
     SkValType get_type() {
         return sketch_val_type;
@@ -60,14 +60,21 @@ public:
 class SkValBool: public SkVal, public PolyVal<bool>
 {
 public:
-    explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {}
+    explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {assert(_val == 0 ||  _val == 1);}
     string to_string() override {return std::to_string(get());}
 };
+
+vector<int>* local_get_first(vector<pair<int, int> >* vec);
 
 class SkValBoolArr: public SkVal, public PolyVal<vector<int>*>
 {
 public:
-    explicit SkValBoolArr(vector<int>* _val): PolyVal<vector<int>*>(_val), SkVal(sk_type_boolarr, _val->size()) {}
+    explicit SkValBoolArr(vector<pair<int, int>>* _val): PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_boolarr, 1) {
+        for(int i = 0;i<_val->size();i++)
+        {
+            assert(_val->at(i).second == 1);
+        }
+    }
     string to_string() override {
         string ret;
         vector<int>* val = get();
@@ -78,11 +85,31 @@ public:
         return ret;
     }
 };
+
+int local_get_nbits(vector<pair<int, int> >* vec);
+class SkValIntArr: public SkVal, public PolyVal<vector<int>*>
+{
+
+public:
+    explicit SkValIntArr(vector<pair<int, int> >* _val): PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
+    string to_string() override {
+        string ret;
+        vector<int>* val = get();
+        for(int i = 0;i < val->size();i++)
+        {
+            ret += std::to_string(val->at(i));
+        }
+        return ret;
+    }
+};
+
 class SkValInt: public SkVal, public PolyVal<int>
 {
 public:
 //    explicit SkValInt(int _val): PolyVal<int>(_val), SkVal(sk_type_int){}
-    explicit SkValInt(int _val, int _size): PolyVal<int>(_val), SkVal(sk_type_int, _size){}
+    explicit SkValInt(int _val, int _size): PolyVal<int>(_val), SkVal(sk_type_int, _size){
+        assert(_val <= (1<<_size)-1);
+    }
     string to_string() override {return std::to_string(get());}
 };
 class SkValFloat: public SkVal, public PolyVal<float>
@@ -162,6 +189,10 @@ public:
             {
                 set((*it).getName(), new SkValBoolArr((*it).getArr()));
             }
+            else if(out_type == OutType::INT_ARR)
+            {
+                set((*it).getName(), new SkValIntArr((*it).getArr()));
+            }
             else
             {
                 assert(false);
@@ -193,14 +224,28 @@ public:
         auto* ret = new VarStore();
         for(auto item : assignment)
         {
-            if(item.second->get_type() == sk_type_int || item.second->get_type() == sk_type_bool)
+            if(item.second->get_type() == sk_type_int)
             {
-                ret->newVar(item.first, item.second->get_size(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
                 ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+//                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValInt*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
+            }
+            else if(item.second->get_type() == sk_type_bool)
+            {
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+                ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+//                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValBool*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
+
             }
             else if(item.second->get_type() == sk_type_boolarr)
             {
+                assert(item.second->get_nbits() == 1);
                 ret->newArr(item.first, 1,  ((SkValBoolArr*)item.second)->get()->size(), OutType::BOOL_ARR);
+                ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
+            }
+            else if(item.second->get_type() == sk_type_intarr)
+            {
+                ret->newArr(item.first, item.second->get_nbits(),  ((SkValBoolArr*)item.second)->get()->size(), OutType::INT_ARR);
                 ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
             }
             else

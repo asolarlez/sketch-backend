@@ -126,7 +126,9 @@ void DagOneStepInlineAndConcretize::visit(CTRL_node &node) {
     DagFunctionInliner::visit(node);
     if(rvalue->type == bool_node::CTRL){
         NodeHardcoder::visit((CTRL_node&)*rvalue);
-        assert(rvalue->type == bool_node::CONST || (rvalue->type == bool_node::CTRL && get_type() == bool_node::SRC));
+        assert(rvalue->type == bool_node::CONST ||
+        (rvalue->type == bool_node::CTRL &&
+        (get_type() == bool_node::SRC || !get_values().contains(rvalue->get_name()))));
     }
     else if(rvalue->type == bool_node::CONST){
         assert(node.name == "#PC");
@@ -136,16 +138,47 @@ void DagOneStepInlineAndConcretize::visit(CTRL_node &node) {
     }
 }
 
+static int counter = 0;
+
 void DagOneStepInlineAndConcretize::visit(SRC_node &node) {
+    counter++;
     NodeHardcoder::visit(node);
-    assert(rvalue->type == bool_node::CONST || (rvalue->type == bool_node::SRC && get_type() == bool_node::CTRL));
+
+    assert(rvalue->type == bool_node::CONST
+    ||
+    rvalue->type == bool_node::ARR_CREATE ||
+    (rvalue->type == bool_node::SRC && get_type() == bool_node::CTRL));
 //    rvalue -> accept((DagFunctionInliner&)*this);
 }
 
 void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
 {
-    DagFunctionInliner::visit(node);
-    rvalue ->accept((NodeHardcoder&)*this);
+    //check if the unfun is an acual ufun, or a function.
+    //if it is a function, then it is inside functionMap
+    //otherwise it's not inside functioMap
+    if(functionMap.find(node.get_ufname()) != functionMap.end())
+    {
+        //ufun is an actual function
+        //it is handled by functionInliner.
+        DagFunctionInliner::visit(node);
+    }
+    else
+    {
+        //!!! UFUNS STILL FAILING.
+        //ufun is a ufun, which is handled by NodeHardcoder.
+//        DagFunctionInliner::visit(node);
+//        rvalue->accept((NodeHardcoder&)*this);
+        NodeHardcoder::visit(node);
+    }
+//    //TODO
+//    //node.name is the function name;
+//
+//
+//    // if it is a reaal function => call DagFunctionInliner
+//    DagFunctionInliner::visit(node);
+//    // if it is a ufun, call the NodeHardcoder.
+//
+//    rvalue->accept((NodeHardcoder&)*this);
 }
 
 
@@ -549,6 +582,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
 			for(size_t i=0; i<controls.size(); ++i){
+                assert(controls[i]->type == bool_node::CTRL);
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
 					nmap[ctrl->id] = node.mother();
@@ -936,6 +970,13 @@ extern map<string, pair<int, int> > sizes;
 */
 
 void DagFunctionInliner::process(BooleanDAG& dag){
+
+
+//    for(int i = 0; i<dag.size();i++)
+//    {
+//        assert(dag[i]->get_name() != "num_bools_4_0_0");
+//    }
+
 	// cout<<" funmap has size " << functionMap.size() << endl;
 	initLight(dag);
 	funsInlined.clear();
@@ -986,6 +1027,8 @@ void DagFunctionInliner::process(BooleanDAG& dag){
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
+
+//        assert(node->get_name() != "num_bools_4_0_0");
 	   if (failedAssert != NULL) {		   
 		   for (++i; i < dag.size(); ++i) {
 			   if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
@@ -993,7 +1036,8 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			   }
 		   }
 		   if (failedAssert->isNormal()) {
-			   cout << "Assertion Failure \"" << failedAssert->getMsg() << "\"" << endl;
+
+//			   cout << "Assertion Failure \"" << failedAssert->getMsg() << "\"" << endl;
 			   cleanup(dag);
 //			   assert(false);
 			   throw BadConcretization(failedAssert->getMsg());

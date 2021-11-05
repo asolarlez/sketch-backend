@@ -166,7 +166,15 @@ int InterpreterEnvironment::runCommand(const string& cmd, list<string*>& parlist
 * expressions 'assert sketch SKETCHES spec' in the input file to back-end.
 */
 BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* sketch, int inlineAmnt){
-	if (params.verbosity > 2) {
+
+
+//    for(int i = 0; i<sketch->size();i++)
+//    {
+//        assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//    }
+
+
+    if (params.verbosity > 2) {
 
 		cout << "* before  EVERYTHING: " << spec->get_name() << "::SPEC nodes = " << spec->size() << "\t " << sketch->get_name() << "::SKETCH nodes = " << sketch->size() << endl;
 	}
@@ -184,6 +192,12 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		int inints = 0;
 		int inbits = 0;
 
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
+
 		Assert(specIn.size() <= sketchIn.size(), "The number of inputs in the spec and sketch must match");
 		for (int i = 0; i<specIn.size(); ++i) {
 			SRC_node* sknode = dynamic_cast<SRC_node*>(sketchIn[i]);
@@ -196,13 +210,20 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			else {
 				inints++;
 			}
-      if (sknode->isTuple) {
-        if (sknode->depth == -1)
-          sknode->depth = params.srcTupleDepth;
-      }
+            if (sknode->isTuple) {
+                if (sknode->depth == -1)
+                  sknode->depth = params.srcTupleDepth;
+            }
 		}
 
-		if (params.verbosity > 2) {
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
+
+
+        if (params.verbosity > 2) {
 			cout << " input_ints = " << inints << " \t input_bits = " << inbits << endl;
 		}
 
@@ -213,11 +234,23 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		vector<bool_node*>& specDST = spec->getNodesByType(bool_node::DST);
 		vector<bool_node*>& sketchDST = sketch->getNodesByType(bool_node::DST);
 		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec and sketch must match");
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
+
 		for (int i = 0; i<sketchDST.size(); ++i) {
 			DST_node* spnode = dynamic_cast<DST_node*>(specDST[i]);
 			DST_node* sknode = dynamic_cast<DST_node*>(sketchDST[i]);
 			sketch->rename(sknode->name, spnode->name);
 		}
+
+
+//        for(int i = 0; i<sketch->size();i++)
+//        {
+//            assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//        }
 	}
 
 
@@ -239,6 +272,11 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		{
 			if (params.verbosity > 3) { cout << " Inlining functions in the sketch." << endl; }
 			try {
+
+//                for(int i = 0; i<sketch->size();i++)
+//                {
+//                    assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
+//                }
 				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
 			}catch (BadConcretization& bc) {
 				sketch->clear();
@@ -456,6 +494,12 @@ void InterpreterEnvironment::doInline(
 	*/
 
 
+//    for(int i = 0; i<dag.size();i++)
+//    {
+//        assert(dag[i]->get_name() != "num_bools_4_0_0");
+//    }
+
+
 	set<string> pureFuns;
 
 	findPureFuns(functionMap, pureFuns);
@@ -523,6 +567,11 @@ void InterpreterEnvironment::doInline(
 		DagFunctionToAssertion makeAssert(dag, functionMap, floats);
 		makeAssert.process(dag);
 	}
+
+//    for(int i = 0; i<dag.size();i++)
+//    {
+//        assert(dag[i]->get_name() != "num_bools_4_0_0");
+//    }
 	
 }
 
@@ -698,8 +747,140 @@ void InterpreterEnvironment::fixes(const string& holename) {
 	holesToHardcode[pos-1].push_back(holename);
 }
 
+void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *program_env,
+                                    VarStore &partial_concretization)
+{
+
+    map<string, BooleanDAG*>& functionMap = program_env->functionMap;
+    {
+        /// NO UNROLLING
+        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
+        cout << "NO UNROLLING" << endl;
+        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
+        for (int i = 0; i < ctrls.size(); i++) {
+            assert(ctrls[i]->type == bool_node::CTRL);
+        }
+    }
+
+    /// ONLY UNROLLING
+    /**
+     * partial_concretization.size() 23
+        RESULT = 2
+        NO UNROLLING
+        CTRL NODES IN predicate_lvl0 162
+        UNROLLING AND CONCERTIZING
+        CTRL NODES IN predicate_lvl0 69
+     */
+
+    if(true) {
+        map<string, BooleanDAG *> new_map;
+
+        if(false) {
+            for (auto it: functionMap) {
+                new_map[it.first] = it.second->clone();
+            }
+        }
+        else
+        {
+            new_map = program_env->functionMap;
+        }
+
+        map<string, BooleanDAG *> &old_map = program_env->functionMap;
+        assert(&old_map == &functionMap);
+        program_env->functionMap = new_map;
+        functionMap[f_to_concretize]->clone();
+        Harness *harness_to_only_unroll = new Harness(new_map[f_to_concretize]->clone(), nullptr,
+                                                      program_env);
+        functionMap[f_to_concretize]->clone();
+        Harness* new_harness_to_only_unroll = harness_to_only_unroll->produce_inlined_dag();
+        functionMap[f_to_concretize]->clone();
+
+        functionMap[f_to_concretize]->clone();
+        vector<bool_node*>& ctrls = new_harness_to_only_unroll->get_dag()->getNodesByType(bool_node::CTRL);
+        functionMap[f_to_concretize]->clone();
+        cout << "ONLY UNROLLED" << endl;
+        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
+        for (int i = 0; i < ctrls.size(); i++) {
+            assert(ctrls[i]->type == bool_node::CTRL);
+            cout << ctrls[i]->get_name() << endl;
+        }
+        program_env->functionMap = old_map;
+        functionMap[f_to_concretize]->clone();
+    }
+
+//    for(auto it: functionMap)
+//    {
+//        cout<< "---" << endl;
+//        cout << "NEW MAP " + it.first << endl;
+//        new_map[it.first]->lprint(cout);
+//        cout << "OLD MAP " + it.first << endl;
+//        old_map[it.first]->lprint(cout);
+//        cout<< "---" << endl;
+//    }
 
 
+    if(true){
+        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
+
+        for (int i = 0; i < ctrls.size(); i++) {
+            assert(ctrls[i]->type == bool_node::CTRL);
+        }
+    }
+
+
+//    if(false)
+//    {
+//        vector<bool_node *> &ctrls_new_map_clone = new_map[f_to_concretize]->clone()->getNodesByType(bool_node::CTRL);
+//
+//        for (int i = 0; i < ctrls_new_map_clone.size(); i++) {
+//            assert(ctrls_new_map_clone[i]->type == bool_node::CTRL);
+//        }
+//    }
+
+
+    if(true){
+        for(auto it : functionMap)
+        {
+            if(it.first != f_to_concretize)
+            it.second->clone();
+        }
+        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->clone()->getNodesByType(bool_node::CTRL);
+
+        for (int i = 0; i < ctrls.size(); i++) {
+            assert(ctrls[i]->type == bool_node::CTRL);
+        }
+    }
+
+
+    /// UNROLLING AND CONCERTIZING
+    Harness *harness_for_function = new Harness(functionMap[f_to_concretize]->clone(), nullptr,
+                                                program_env);
+    harness_for_function = harness_for_function->produce_concretization(
+            partial_concretization, bool_node::CTRL);
+
+    functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
+    {
+        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
+        cout << "UNROLLING AND CONCERTIZING" << endl;
+        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
+
+        cout << "remaining nodes" << endl;
+        for(int i = 0;i<ctrls.size();i++)
+        {
+            cout << ctrls[i]->get_name() << endl;
+        }
+
+        cout << "partial_concretization" << endl;
+        partial_concretization.printContent(cout);
+
+        for (int i = 0; i < ctrls.size(); i++) {
+            assert(ctrls[i]->type == bool_node::CTRL);
+        }
+    }
+
+
+
+}
 
 int InterpreterEnvironment::doallpairs() {
 
@@ -730,6 +911,9 @@ int InterpreterEnvironment::doallpairs() {
 			exchanger = new ClauseExchange(hardcoder.getMiniSat(), inf, inf);
 		}
 	}
+
+	VarStore partial_concretization;
+
 	string errMsg;
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
@@ -759,18 +943,65 @@ int InterpreterEnvironment::doallpairs() {
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
-			    ProgramEnvironment *program_env =
-			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
-				BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-//				bd = nullptr;
-				result = assertHarness(new Harness(getCopy(spskpairs[i].sketch), bd, program_env), cout, spskpairs[i].file);
 
-//				result = assertDAG(
-//				        bd, cout, spskpairs[i].file);
+                ProgramEnvironment *program_env =
+			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
+
+                bool fixes = true;
+
+                if(!fixes) {
+                    if (i == 0) {
+                        assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
+                        string f_to_concretize = "predicate_lvl0";
+
+                        unroll_and_concertize_function(f_to_concretize, program_env,
+                                                       partial_concretization);
+
+                    }
+                    else if (i == 1) {
+                        assert(spskpairs[i].sketch == "main_lvl1__Wrapper");
+                        string f_to_concretize = "predicate_lvl0";
+
+                        unroll_and_concertize_function(f_to_concretize, program_env,
+                                                       partial_concretization);
+
+                    } else if (i == 2) {
+                        assert(spskpairs[i].sketch == "main_lvl2__Wrapper");
+                        string f_to_concretize = "predicate_lvl1";
+                        unroll_and_concertize_function(f_to_concretize, program_env,
+                                                       partial_concretization);
+                    } else {
+                        assert(false);
+                    }
+                }
+                cout << "HERE1" << endl;
+                BooleanDAG* bd = nullptr;
+                bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+                cout << "HERE2" << endl;
+                Harness* local_harness = new Harness(getCopy(spskpairs[i].sketch), bd, program_env);
+
+                cout << "HERE3" << endl;
+                if(fixes) {
+                    local_harness = local_harness->produce_concretization(partial_concretization, bool_node::CTRL);
+                }
+
+                cout << "HERE4" << endl;
+				local_harness->set_name(spskpairs[i].sketch);
+
+				cout << "CURRENT HARNESS: " << spskpairs[i].sketch << endl;
+                result = assertHarness(local_harness, cout, spskpairs[i].file);
+                cout << "BACK IN doallpairs" << endl;
+
+
+
+                partial_concretization = join(partial_concretization, *local_harness->get_ctrl_var_store());
+                cout << "partial_concretization.size() " << partial_concretization.size() << endl;
+
 				cout << "RESULT = " << result << "  " << endl;;
 				printControls("");
 			}
 			catch (BadConcretization& bc) {
+                cout << "IN catch (BadConcretization& bc)" << endl;
 				errMsg = bc.msg;
 				hardcoder.dismissedPending();
 				result = SATSolver::UNSATISFIABLE;
@@ -843,6 +1074,8 @@ int InterpreterEnvironment::doallpairs() {
 				else {
 					cerr << errMsg << endl;
 					cout << "return 1" << endl;
+                    cout << "HERE" << endl;
+                    assert(false);
 					return 1;
 				}
 			}
@@ -894,12 +1127,12 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = false;
+    bool test_solver_language = true;
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                harness->get_dag(), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+                harness, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -920,7 +1153,18 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
         {
             cout << "No solution";
         }
-        cout << "EXITING assertDAG" << endl;
+        cout << "EXITING assertHarness." << endl;
+
+        if(ret->get_sat_solver_result() == SATSolver::SATISFIABLE)
+        {
+            cout << "return SATSolver::SATISFIABLE" << endl;
+        }
+        else
+        {
+            cout << "return NOT SATSolver::SATISFIABLE" << endl;
+        }
+
+        assert(ret->get_sat_solver_result() == SATSolver::SATISFIABLE);
         return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
@@ -1029,6 +1273,9 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
 
 SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
 
+    assert(false);
+
+
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
     bool test_solver_language = false;
@@ -1036,7 +1283,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                dag, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+                new Harness(dag), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)

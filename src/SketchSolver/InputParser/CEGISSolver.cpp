@@ -20,7 +20,7 @@ void CEGISSolver::addProblem(Harness *harness, File *file){
 	problems.push_back(harness);
 
     {
-        vector<bool_node*>& problemIn = harness->get_original_dag()->getNodesByType(bool_node::CTRL);
+        vector<bool_node*>& problemIn = harness->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
             if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
@@ -233,8 +233,11 @@ bool CEGISSolver::solveCore(){
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
-	cout<<" *"<<"FIND TIME "<<ftimer.get_tot_ms()<<" CHECK TIME "<<ctimer.get_tot_ms()<<" TOTAL TIME "<<ttimer.get_tot_ms()<<endl;
+    last_elapsed_time = new ElapsedTime(ftimer.get_tot_ms(), ctimer.get_tot_ms(), ttimer.get_tot_ms());
+    cout << "*" << last_elapsed_time->to_string() << endl;
 	finder->retractAssumptions();
+
+
 	return !fail;
 }
 
@@ -368,26 +371,40 @@ void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
         else if (it->otype == OutType::INT)
         {
             values->set(it->getName(), new SkValInt(it->getInt(), it->get_size()));
+            assert((( SkValInt*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
         }
         else if (it->otype == OutType::BOOL)
         {
             assert(it->get_size() == 1);
             values->set(it->getName(), new SkValBool(it->getInt()));
+            assert((( SkValBool*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
         }
         else
         {
-            Assert(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
+            AssertDebug(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
         }
     }
     for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
 
-        Assert(false, "need to implement synthouts to map to SkVals, rather than strings");
+        AssertDebug(false, "need to implement synthouts to map to SkVals, rather than strings");
 //
 //        //stringstream str;
 //        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
 //        //it->second->print(str);
 //        values[it->first] = ctrlStore.synthouts[it->first];
     }
+
+    VarStore* test_varstore = values->to_var_store();
+
+    assert(test_varstore->size() == ctrlStore.size());
+
+    for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
+        assert(ctrlStore[it->getName()] == (*test_varstore)[it->getName()]);
+    }
+    for(VarStore::iterator it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
+        assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
+    }
+
 }
 
 void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
