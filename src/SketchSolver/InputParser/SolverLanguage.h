@@ -162,6 +162,9 @@ namespace SolverLanguagePrimitives
                     case sk_type_bool:
                         ret->setVarVal(it.first, ((SkValBool*) it.second)->get(), OutType::BOOL);
                         break;
+                    default:
+                        AssertDebug(false, "missing skval cases.")
+
                 }
             }
             return ret;
@@ -238,6 +241,13 @@ namespace SolverLanguagePrimitives
         explicit Function(Harness* _harness, FloatManager& _floats): harness(_harness), floats(_floats){}
         explicit Function(Function* function): harness(function->harness), floats(function->floats){}
 
+        void clear()
+        {
+            harness->clear();
+            delete harness;
+            harness = NULL;
+        }
+
         Harness *get_harness() {
             return harness;
         }
@@ -274,7 +284,8 @@ namespace SolverLanguagePrimitives
         }
         vector<SkHoleSpec>* get_holes()
         {
-            vector<bool_node*>& ctrl_nodes = harness->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL);
+            Harness* inlined_harness = harness->produce_inlined_dag();
+            vector<bool_node*>& ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
             auto* ret = new vector<SkHoleSpec>();
             for(int i = 0;i<ctrl_nodes.size(); i++)
             {
@@ -283,10 +294,11 @@ namespace SolverLanguagePrimitives
                                 ctrl_nodes[i]->get_name(),
                                 bool_node_out_type_to_sk_val_type(ctrl_nodes[i]->getOtype())));
             }
+            inlined_harness->clear();
             return ret;
         }
 
-        Function* concretize_holes(SolutionHolder* solution_holder)
+        Function* produce_function_with_concretized_holes(SolutionHolder* solution_holder)
         {
             return new Function(
                     harness->produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL), floats);
@@ -294,7 +306,7 @@ namespace SolverLanguagePrimitives
 //                    hardCodeINode(get_dag(), *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
         }
 
-        Function* concretize_inputs(InputHolder* input_holder)
+        Function* produce_function_with_concretized_inputs(InputHolder* input_holder)
         {
             return new Function(
                     harness->produce_concretization(*input_holder->to_var_store(), bool_node::SRC), floats);
@@ -315,11 +327,13 @@ namespace SolverLanguagePrimitives
             int ret = 0;
             for(int i = 0;i<file->size();i++)
             {
-                Function* concretized_function = concretize_inputs(new InputHolder(file->at(i), floats));
+                Function* concretized_function = produce_function_with_concretized_inputs(
+                        new InputHolder(file->at(i), floats));
                 if(concretized_function->get_dag()->get_failed_assert() == NULL)
                 {
                     ret += 1;
                 }
+                concretized_function->clear();
             }
             return ret;
         }
@@ -333,9 +347,6 @@ namespace SolverLanguagePrimitives
     public:
         explicit ProblemAE(Function* _function, File* _file = NULL):
                 Function(_function), file(_file){}
-
-        explicit ProblemAE(Function* _function, const string& _file_name):
-                Function(_function), file(new File(get_dag(), file_name, get_floats())){}
 
         File* get_file()
         {
@@ -537,7 +548,8 @@ namespace SolverLanguagePrimitives
                 case sk_type_bool:
                     ret = new SkValBool(false);
                     break;
-                assert(false);
+                default:
+                    assert(false);
             }
             return ret;
         }
@@ -770,6 +782,8 @@ namespace SolverLanguagePrimitives
                 case minus:
                     ret = left_int-right_int;
                     break;
+                default:
+                    assert(false);
             }
             return new ValInt(ret);
         }
@@ -812,6 +826,8 @@ namespace SolverLanguagePrimitives
                 case gte:
                     ret = left_int >= right_int;
                     break;
+                default:
+                    assert(false);
             }
             return new ValBool(ret);
         }
@@ -997,7 +1013,7 @@ namespace SolverLanguagePrimitives
         }
         static ProblemE* concretize_inputs(ProblemAE* problem, InputHolder* input_holder)
         {
-            cout << "TODO: concretize_inputs" << endl;
+            cout << "TODO: produce_function_with_concretized_inputs" << endl;
             assert(false);
         }
     };
@@ -1076,7 +1092,7 @@ namespace SolverLanguagePrimitives
         auto* counter_example_is_not_null =
                 new NonNullNode(new InputHolderVar("counter_example"));
 
-//  concretized_problem = merge(concretized_problem, harness.concretize_inputs(counter_example));
+//  concretized_problem = merge(concretized_problem, harness.produce_function_with_concretized_inputs(counter_example));
         auto* problem_merge_assign =
                 new StateAssignment(
                         "concretized_problem",
@@ -1110,7 +1126,7 @@ namespace SolverLanguagePrimitives
 
 //    while(non_null(conter_example))
 //    {
-//        (DONE) concretized_problem = merge(concretized_problem, harness.concretize_inputs(counter_example));
+//        (DONE) concretized_problem = merge(concretized_problem, harness.produce_function_with_concretized_inputs(counter_example));
 //        (DONE) solution_holder = solver.solve(concretized_problem);
 //        (DONE) counter_example = check(harness, solution_holder);
 //    }
@@ -1304,7 +1320,7 @@ namespace SolverLanguagePrimitives
     {
         return
             (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
-            solve(new ProblemAE(new Function(harness, floats), file_name));
+            solve(new ProblemAE(new Function(harness, floats), new File(harness->get_dag(), file_name, floats, _args.seed)));
     }
 
 
@@ -1353,10 +1369,10 @@ namespace SolverLanguagePrimitives
                                               bool hasGoodEnoughSolution)
     {
 //        expose lightverif
-        ofstream fout = ofstream("sample_ordering__"+harness->get_name()+"__old_way_fixes__after_debug");
-        File* all_file = new File(harness->get_dag(), file_name, floats);
-        int num_samples = 10;
-        int rows_per_sample = 8;
+        ofstream fout = ofstream("sample_ordering__"+harness->get_name()+"__concretizes__concr__new_way_trying_to_debug");
+        File* all_file = new File(harness->get_dag(), file_name, floats, _args.seed);
+        int num_samples = 20;
+        int rows_per_sample = 12;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
@@ -1364,7 +1380,10 @@ namespace SolverLanguagePrimitives
             WrapperAssertDAG* solver = new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution);
             SolutionHolder* sol = (solver)->
                     solve(new ProblemAE(new Function(harness, floats), sub_file));
-            int num_passing_inputs = (new Function(harness, floats))->concretize_holes(sol)->count_passing_inputs(all_file);
+            Function* concretized_function = (new Function(harness, floats))->produce_function_with_concretized_holes(
+                    sol);
+            int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
+            concretized_function->clear();
             sol->set_sat_solver_result(SATSolver::SATISFIABLE);
             solutions.emplace_back(num_passing_inputs, sol);
 

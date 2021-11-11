@@ -562,6 +562,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 //				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
 				continue;
 			}
+            default:
+                Assert(false, "missing check case.");
 		}
 	}while(!rv);
 	popProblem();

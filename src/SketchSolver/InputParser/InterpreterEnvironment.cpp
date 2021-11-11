@@ -532,8 +532,15 @@ void InterpreterEnvironment::doInline(
 				} else {
 				dfi.turnOnRandomization();
 				}
-			}			
-			dfi.process(dag);
+			}
+            try {
+                dfi.debug = false;
+                dfi.process(dag);
+            }
+            catch(BadConcretization bc)
+            {
+                throw bc;
+            }
 			//
 			// dag.repOK();
 			set<string>& dones = dfi.getFunsInlined();
@@ -752,26 +759,17 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 {
 
     map<string, BooleanDAG*>& functionMap = program_env->functionMap;
-    {
+    if(true){
         /// NO UNROLLING
-        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
+        vector<bool_node *> &_ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
         cout << "NO UNROLLING" << endl;
-        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
-        for (int i = 0; i < ctrls.size(); i++) {
-            assert(ctrls[i]->type == bool_node::CTRL);
+        cout << "CTRL NODES IN " + f_to_concretize << " " << _ctrls.size() << endl;
+        for (int i = 0; i < _ctrls.size(); i++) {
+            assert(_ctrls[i]->type == bool_node::CTRL);
         }
     }
 
     /// ONLY UNROLLING
-    /**
-     * partial_concretization.size() 23
-        RESULT = 2
-        NO UNROLLING
-        CTRL NODES IN predicate_lvl0 162
-        UNROLLING AND CONCERTIZING
-        CTRL NODES IN predicate_lvl0 69
-     */
-
     if(true) {
         map<string, BooleanDAG *> new_map;
 
@@ -788,16 +786,10 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
         map<string, BooleanDAG *> &old_map = program_env->functionMap;
         assert(&old_map == &functionMap);
         program_env->functionMap = new_map;
-        functionMap[f_to_concretize]->clone();
         Harness *harness_to_only_unroll = new Harness(new_map[f_to_concretize]->clone(), nullptr,
                                                       program_env);
-        functionMap[f_to_concretize]->clone();
-        Harness* new_harness_to_only_unroll = harness_to_only_unroll->produce_inlined_dag();
-        functionMap[f_to_concretize]->clone();
-
-        functionMap[f_to_concretize]->clone();
+        Harness* new_harness_to_only_unroll = harness_to_only_unroll->do_inline(true);
         vector<bool_node*>& ctrls = new_harness_to_only_unroll->get_dag()->getNodesByType(bool_node::CTRL);
-        functionMap[f_to_concretize]->clone();
         cout << "ONLY UNROLLED" << endl;
         cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
         for (int i = 0; i < ctrls.size(); i++) {
@@ -805,7 +797,6 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
             cout << ctrls[i]->get_name() << endl;
         }
         program_env->functionMap = old_map;
-        functionMap[f_to_concretize]->clone();
     }
 
 //    for(auto it: functionMap)
@@ -819,7 +810,7 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 //    }
 
 
-    if(true){
+    if(false){
         vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
 
         for (int i = 0; i < ctrls.size(); i++) {
@@ -838,7 +829,7 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 //    }
 
 
-    if(true){
+    if(false){
         for(auto it : functionMap)
         {
             if(it.first != f_to_concretize)
@@ -852,14 +843,14 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
     }
 
 
-    /// UNROLLING AND CONCERTIZING
-    Harness *harness_for_function = new Harness(functionMap[f_to_concretize]->clone(), nullptr,
-                                                program_env);
-    harness_for_function = harness_for_function->produce_concretization(
-            partial_concretization, bool_node::CTRL);
+    if(true){
+        /// UNROLLING AND CONCERTIZING
+        Harness *harness_for_function = new Harness(functionMap[f_to_concretize]->clone(), nullptr,
+                                                    program_env);
+        harness_for_function = harness_for_function->concretize(
+                partial_concretization, bool_node::CTRL, true);
 
-    functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
-    {
+        functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
         vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
         cout << "UNROLLING AND CONCERTIZING" << endl;
         cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
@@ -880,6 +871,22 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 
 
 
+}
+
+void print_ctrls(ProgramEnvironment* env)
+{
+    for(auto it: env->functionMap)
+    {
+
+        Harness* local_harness = new Harness(it.second->clone(), nullptr, env);
+
+        local_harness = local_harness->do_inline();
+
+        cout << it.first <<" #ctrls " << (local_harness->get_dag()->getNodesByType(bool_node::CTRL)).size() << endl;
+
+    }
+
+//    assert(false);
 }
 
 int InterpreterEnvironment::doallpairs() {
@@ -947,9 +954,14 @@ int InterpreterEnvironment::doallpairs() {
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-                bool fixes = true;
+//                print_ctrls(program_env);
 
-                if(!fixes) {
+                bool fixes = false;
+                bool concretizes = false;
+                bool calc_partial_concretization = concretizes || fixes;
+                assert(fixes != concretizes || !(fixes || concretizes));
+
+                if(concretizes) {
                     if (i == 0) {
                         assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
                         string f_to_concretize = "predicate_lvl0";
@@ -974,28 +986,25 @@ int InterpreterEnvironment::doallpairs() {
                         assert(false);
                     }
                 }
-                cout << "HERE1" << endl;
                 BooleanDAG* bd = nullptr;
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-                cout << "HERE2" << endl;
                 Harness* local_harness = new Harness(getCopy(spskpairs[i].sketch), bd, program_env);
 
-                cout << "HERE3" << endl;
                 if(fixes) {
-                    local_harness = local_harness->produce_concretization(partial_concretization, bool_node::CTRL);
+                    local_harness = local_harness->concretize(partial_concretization, bool_node::CTRL);
                 }
 
-                cout << "HERE4" << endl;
-				local_harness->set_name(spskpairs[i].sketch);
+                local_harness->set_name(spskpairs[i].sketch);
 
 				cout << "CURRENT HARNESS: " << spskpairs[i].sketch << endl;
                 result = assertHarness(local_harness, cout, spskpairs[i].file);
                 cout << "BACK IN doallpairs" << endl;
 
 
-
-                partial_concretization = join(partial_concretization, *local_harness->get_ctrl_var_store());
-                cout << "partial_concretization.size() " << partial_concretization.size() << endl;
+                if(calc_partial_concretization) {
+                    partial_concretization = join(partial_concretization, *local_harness->get_ctrl_var_store());
+                    cout << "partial_concretization.size() " << partial_concretization.size() << endl;
+                }
 
 				cout << "RESULT = " << result << "  " << endl;;
 				printControls("");
@@ -1127,7 +1136,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = true;
+    bool test_solver_language = false;
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
@@ -1176,7 +1185,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
     if (!file.empty())
     {
 //        AssertDebug(false, "Incorporate prog_evn, activate line below.");
-        new_file = new File(harness->get_dag(), file, floats);
+        new_file = new File(harness->get_dag(), file, floats, params.seed);
     }
     else
     {
@@ -1667,3 +1676,68 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 
 
 */
+
+
+/*
+ *
+
+1. Finalized refactoring of inlining and concretization.
+2. Handling #PC node as intended when concretizing functions.
+3. Added seed to random generator in File for the sampler.
+4. Hardcoded progressive partial concretization for boolean_synthesis sketch in unroll_and_concertize_function.
+5. Fixed bugs in SkVal and translations. Also added invariant checking.
+6. Added is_array in Obj in VarStore, and also added method to check equality between two objs.
+7. added default: Assert(false, "missing case"); for all switch blocks that that didn't have a default case.
+
+Ran tests in seq: 14 fail. List of failed tests is at the end of InterpreterEnvironment.cpp.
+
+
+Failed tests:
+echo "LISTED BELOW ARE THE FAILED TESTS (IF ANY)"
+LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+353a354
+> miniTestb358.output
+371a373
+> miniTestb377.output
+378a381
+> miniTestb385.output
+427a431,432
+> miniTestb435.output
+> miniTestb436.output
+556a562
+> miniTestb567_angelic.output
+666a673
+> miniTestb678.output
+830a838
+> miniTestb841.output
+848a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+854a866
+> miniTestb869.output
+864a877
+> miniTestb880.output
+892a906
+> miniTestBigInts2.output
+    32    123    729 miniTestb358.sk
+   212    745   4630 miniTestb377.sk
+    20     65    409 miniTestb385.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   588   6967  35372 miniTestb841.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    75    314   1743 miniTestb869.sk
+    35    104    687 miniTestb880.sk
+    30     85    460 miniTestBigInts2.sk
+   896    896  18024 cur
+  5102  19714 214556 total
+echo "END OF LIST"
+END OF LIST
+
+ */

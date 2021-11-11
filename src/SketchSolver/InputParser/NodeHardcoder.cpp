@@ -1,6 +1,5 @@
 #include "NodeHardcoder.h"
 
-
 bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	int arrsz = -1;
   if (inode->type == bool_node::SRC) {

@@ -28,8 +28,11 @@ class File: public vector<VarStore*>
 public:
     enum Result {NO_FILE, DONE, MOREBITS};
 
-    File(BooleanDAG* dag, const string& file, FloatManager& floats)
+    std::mt19937 generator;
+
+    File(BooleanDAG* dag, const string& file, FloatManager& floats, int seed)
     {
+        generator = std::mt19937(seed);
         BooleanDAG* problem = dag;
         VarStore input_store;
         redeclareInputsAndAngelics(input_store, problem);
@@ -252,7 +255,7 @@ public:
     File *sample_sub_file(int num_rows) {
         File* new_file = new File();
         sample(begin(), end(), back_inserter(*new_file),
-                    num_rows, std::mt19937{std::random_device{}()});
+                    num_rows, generator);
         return new_file;
     }
 };

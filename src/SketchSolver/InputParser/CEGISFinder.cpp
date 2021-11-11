@@ -53,7 +53,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
     if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
     	if( result != SATSolver::UNSATISFIABLE){
 	    	switch( result ){
-			case SATSolver::UNDETERMINED: {
+			    case SATSolver::UNDETERMINED: {
 					if (params.lightVerif) {
 						return false;
 					}
@@ -64,6 +64,9 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
 	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
 	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
+
+                default:
+                    Assert(false, "missing result case.");
 	    	}    			
     	}
 		if(this->stoppedEarly){

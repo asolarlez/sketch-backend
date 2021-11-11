@@ -174,7 +174,8 @@ libcegis_a_SOURCES =				\
 	InputParser/Tvalue.cpp \
     InputParser/CEGISChecker.cpp \
     InputParser/CEGISFinder.cpp \
-    InputParser/CounterexampleFinder.cpp
+    InputParser/CounterexampleFinder.cpp \
+    InputParser/SkVal.cpp
 
 
 

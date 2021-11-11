@@ -11,6 +11,7 @@
 /*
 Excelption class used to signal that a concretization failed.
 */
+
 class BadConcretization {
 public:
 	string msg;

@@ -2470,6 +2470,10 @@ void DagOptim::visit( ASSERT_node &node){
 		if (cv == 0) {
 			rvalue = &node;
 			failedAssert = &node;
+            if(debug)
+            {
+                cout << "here" << endl;
+            }
 			return;
 		}
 	}

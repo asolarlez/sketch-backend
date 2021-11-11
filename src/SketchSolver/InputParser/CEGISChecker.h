@@ -112,12 +112,13 @@ public:
             files[curProblem] = file;
         }
 
-        redeclareInputsAndAngelics(get_input_store(), harness->get_dag());
+        Harness* inlined_harness = harness->produce_inlined_dag();
+        redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 
         // IS THIS DEBUG CODE? YES
         Dout( cout << "problem->get_n_controls() = " << root_dag->get_n_controls() << "  " << root_dag << endl );
         {
-            vector<bool_node*>& problemIn = harness->get_dag()->getNodesByType(bool_node::CTRL);
+            vector<bool_node*>& problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
             if(PARAMS->verbosity > 2){
                 cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
             }
@@ -138,6 +139,8 @@ public:
                 cout<<" control_ints = "<<cints<<" \t control_bits = "<<cbits<< " \t control_floats = " << cfloats <<endl;
             }
         }
+
+//        inlined_harness->clear();
     }
 
 

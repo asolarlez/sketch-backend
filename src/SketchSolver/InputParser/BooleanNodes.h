@@ -1499,6 +1499,23 @@ public:
         }
         return str.str();
     }
+
+private:
+    bool is_pcond_active = true;
+public:
+
+    bool get_is_Pcond_active() {
+        return is_pcond_active;
+    }
+
+    void deactivate_pcond() {
+        assert(is_pcond_active);
+        is_pcond_active = false;
+    }
+    void activate_pcond() {
+        assert(!is_pcond_active);
+        is_pcond_active = true;
+    }
 };
 
 
@@ -2099,13 +2116,10 @@ private:
 	typedef enum{Normal, Hard, Assume} AssertType;
 	AssertType assertType;
 	string msg;
-    
-    ASSERT_node ():bool_node(ASSERT, 1), assertType(Normal) { }
+
+    ASSERT_node ():bool_node(ASSERT, 1), assertType(Normal) {}
     ASSERT_node(const ASSERT_node& bn, bool copyChildren = true): bool_node(bn, copyChildren){ assertType = bn.assertType;  msg = bn.msg; }
-    ASSERT_node(bool_node* parent): bool_node(ASSERT, 1)
-    {
-    	set_parent(0, parent);
-    }
+    ASSERT_node(bool_node* parent): bool_node(ASSERT, 1) {set_parent(0, parent);}
 public:
 	static inline ASSERT_node* create(){
 		return new ASSERT_node();
@@ -2135,6 +2149,8 @@ public:
 			case Normal: str<<id<<"= ASSERT "; break;
 			case Hard: str<<id<<"= HASSERT "; break;
 			case Assume: str<<id<<"= Assume "; break;
+            default:
+                Assert(false, "Missing assertType.");
 		}		
 		str<<mother()->lid()<<" : "<<msg;		
 		return str.str();

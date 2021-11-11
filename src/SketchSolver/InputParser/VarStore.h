@@ -37,6 +37,7 @@ public:
 
         void getArrRec(vector<pair<int, int> >* ret) const
         {
+            assert(get_is_array());
             ret->push_back(getIntAndSize());
             if(next != nullptr && next->defined)
             {
@@ -44,6 +45,7 @@ public:
             }
         }
         bool defined = false;
+        bool is_array;
 	public:
 		string name;
 		objP* next;
@@ -71,13 +73,31 @@ public:
 		    defined = false;
 			if(next != NULL){ delete next; }
 		}
-		objP(string  nm, int size, OutType* _otype):name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(NULL), defined(true){
+		objP(string  nm, int size, OutType* _otype):
+        name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(NULL), defined(true){
 		    assert(_otype != NULL);
+            if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
+                is_array = true;
+                assert(_otype->isArr);
+            }
+            else
+            {
+                is_array = false;
+                assert(!_otype->isArr);
+            }
 		}
-		objP(const objP& old):vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined){
-		    if(old.next != NULL){next=new objP(*old.next);}else{next=NULL;} }
+
+        objP(const objP& old):
+        vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
+		    if(old.next != NULL){
+                next=new objP(*old.next);
+            }
+            else{next=NULL;}
+        }
+
 		objP& operator=(const objP& old){ 
 			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype; defined = old.defined;
+            is_array = old.is_array;
 			if(old.next!=NULL){ 
 				if(next!=NULL){
 					(*next)=*old.next;  
@@ -89,7 +109,105 @@ public:
 			}
 			return *this;
 		}
-		void makeArr(int start, int end){			
+
+        bool operator == (const objP& other) const
+        {
+            const bool debug = false;
+            if(other.vals.size() != vals.size())
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            for(int i = 0;i<vals.size();i++) {
+                if (vals[i] != other.vals[i]) {
+                    if(debug) {
+                        cout << "return false" << endl;
+                        AssertDebug(false, "not eq");
+                    }
+                    return false;
+                }
+            }
+            if(name != other.name)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(otype != other.otype)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(isNeg!= other.isNeg)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(index != other.index)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(defined != other.defined)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(is_array != other.is_array)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if((next == NULL) != (other.next == NULL))
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(next != NULL)
+            {
+                bool ret = (*next == *other.next);
+                if(debug) {
+                    if (!ret) {
+                        cout << "return false" << endl;
+                        AssertDebug(false, "not eq");
+                    }
+                    else{
+                        cout << "return true" << endl;
+                    }
+                }
+                return ret;
+            }
+            if(debug) {
+                cout << "return true" << endl;
+            }
+            return true;
+        }
+
+		void makeArr(int start, int end){
+            assert(is_array);
 			Assert(start < end, "Empty arr");
 			index = start;
 			if(start+1 < end){
@@ -104,7 +222,7 @@ public:
 				}
 			}
 		}
-		int arrSize(){ if(next==NULL){ return 1; }else{ return next->arrSize() + 1;  } }
+		int arrSize(){ assert(is_array); if(next==NULL){ return 1; }else{ return next->arrSize() + 1;  } }
 		int size() const { return vals.size(); }
 		int globalSize() const { if(next == NULL){ return size();} return next->globalSize() + size(); }
 		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
@@ -129,6 +247,7 @@ public:
         }
 
 		int getInt(int idx) const{
+            assert(!is_array);
 			if(this->index==idx){
 				return getInt();
 			}else{
@@ -139,13 +258,14 @@ public:
 		}
 		vector<pair<int, int> >* getArr()
         {
+            assert(is_array);
 		    vector<pair<int, int> >* ret = new vector<pair<int, int> >();
 		    getArrRec(ret);
 		    return ret;
         }
 
-
         void setArr(vector<int> *arr) {
+            assert(is_array);
             objP* at = this;
             for(int i = 0;i<arr->size();i++)
             {
@@ -155,13 +275,15 @@ public:
             }
         }
 
-		void setVal(int idx, int v){
-			if(this->index==idx){
-				setVal(v);
-			}else{
-				if(next != NULL){ next->setVal(idx, v); }
-			}
-		}
+//		void setVal(int idx, int v){
+//			assert(!is_array);
+//            if(this->index==idx){
+//				setVal(v);
+//			}else{
+//				if(next != NULL){ next->setVal(idx, v); }
+//			}
+//		}
+
 		///Return false if objP did not have enough bits to be made equal to v.
 		bool setValSafe(int v){
 			if(v<0){
@@ -261,6 +383,9 @@ public:
 			if(next!= NULL){ next->zeroOut(); }
 		}
 
+        bool get_is_array() const {
+            return is_array;
+        }
     };
 
 private:
@@ -351,19 +476,22 @@ public:
 		objs.emplace_back(name, nbits, otype);
 		objs[begidx].makeArr(0, arrsz);
 		bitsize += nbits*arrsz;
+        assert(objs[begidx].get_is_array());
 	}
 
     void setArr(const string& name, vector<int>* arr) {
 	    Assert(index.find(name) != index.end(), name + " not found.");
         objs[index[name]].setArr(arr);
+        assert(objs[index[name]].get_is_array());
 	}
 
 	void newVar(const string& name, int nbits, OutType* otype){
 		Assert(index.count(name)==0, name<<": This variable already existed!!");
 		int begidx = objs.size();
-		objs.emplace_back(name, nbits, otype);
+		objs.emplace_back(objP(name, nbits, otype));
 		index[name] = begidx;
 		bitsize += nbits;
+        assert(!objs[index[name]].get_is_array());
 	}
 
 	void setVarVal(const string& name, int val, OutType* otype){
@@ -371,11 +499,12 @@ public:
 		if(index.count(name)!=0){
 			idx = getId(name);
 		}else{
-			objs.push_back(objP(name, 5, otype));
+			objs.emplace_back(objP(name, 5, otype));
 			idx = objs.size()-1;
       		index[name] = idx;
 		}
 		objs[idx].setVal(val);
+        assert(!objs[idx].get_is_array());
 	}
 
 	void resizeVar(const string& name, int size){
@@ -391,6 +520,7 @@ public:
 		int idx = getId(name);
 		{
 			objP& tmp = objs[idx];
+            assert(tmp.get_is_array());
 			bitsize -= tmp.globalSize();
 			tmp.makeArr(0, arrSize);
 			bitsize += arrSize*tmp.size();
@@ -479,6 +609,8 @@ public:
 		Assert(found, "This is a bug");
 	}
 	int operator[](const string& name) {
+        int id = getId(name);
+        AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
 		return objs[getId(name)].getInt();
 	}
 	objP& getObj(const string& name){ 

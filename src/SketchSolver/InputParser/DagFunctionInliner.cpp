@@ -98,8 +98,13 @@ void DagFunctionInliner::visit(CTRL_node& node){
 	
 	
 	if(node.get_Pcond()){
-		rvalue = this->getCnode(true);
-	}else{
+        if(node.get_is_Pcond_active()) {
+            rvalue = this->getCnode(true);
+        }
+	    else {
+            rvalue = &node;
+        }
+    }else{
 		if(randomize){
 		  if (node.is_sp_concretize()) {
 			rvalue = hcoder->checkRandHole(&node, *this);
@@ -585,7 +590,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                 assert(controls[i]->type == bool_node::CTRL);
 				CTRL_node* ctrl = dynamic_cast<CTRL_node*>(controls[i]);
 				if(ctrl->get_Pcond()){
-					nmap[ctrl->id] = node.mother();
+                    nmap[ctrl->id] = node.mother();
 					continue;
 				}
         if(randomize){
@@ -1024,12 +1029,17 @@ void DagFunctionInliner::process(BooleanDAG& dag){
         //cout<<dag[i]->lprint()<<endl;
 		bool_node* node = computeOptim(dag[i]);
        if(dag[i] != node){
+           if(debug)
+           cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl;
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
-		}
-
+		}\
 //        assert(node->get_name() != "num_bools_4_0_0");
-	   if (failedAssert != NULL) {		   
+	   if (failedAssert != NULL) {
+           if(debug)
+           {
+               cout << "here" << endl;
+           }
 		   for (++i; i < dag.size(); ++i) {
 			   if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
 				   dag.replace(i, getCnode(0));

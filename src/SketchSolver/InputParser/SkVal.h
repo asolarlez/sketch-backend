@@ -199,6 +199,19 @@ public:
                 Assert(false, "need to add more OutType to SkVal conversions.");
             }
         }
+
+        VarStore* test_var_store = to_var_store();
+
+
+        assert(test_var_store->size() == var_store->size());
+
+        for(VarStore::iterator it = var_store->begin(); it !=var_store->end(); ++it) {
+            assert(test_var_store->getObj(it->getName()) == var_store->getObj(it->getName()));
+        }
+        for(VarStore::iterator it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
+            assert(test_var_store->getObj(it->getName()) == var_store->getObj(it->getName()));
+        }
+
     }
     static OutType* sk_val_type_to_bool_node_out_type(SkValType sk_val_type)
     {
@@ -215,7 +228,8 @@ public:
             case sk_type_boolarr:
                 return OutType::BOOL_ARR;
                 break;
-             assert(false);
+            default:
+                assert(false);
         }
         assert(false);
     }
@@ -245,14 +259,15 @@ public:
             }
             else if(item.second->get_type() == sk_type_intarr)
             {
-                ret->newArr(item.first, item.second->get_nbits(),  ((SkValBoolArr*)item.second)->get()->size(), OutType::INT_ARR);
-                ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
+                ret->newArr(item.first, item.second->get_nbits(),  ((SkValIntArr*)item.second)->get()->size(), OutType::INT_ARR);
+                ret->setArr(item.first, ((SkValIntArr*)item.second)->get());
             }
             else
             {
                 Assert(false, "TODO: cast SkFloat back into an entry in VarStore.");
             }
         }
+
         return ret;
     }
 

@@ -676,7 +676,7 @@ private:
   int spRandBias;
 	HoleHardcoder* hcoder;
 	const set<string>& pureFunctions;
-public:	
+public:
 	int nfuns(){ return lnfuns; }
 	DagFunctionInliner(
 	        BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap,
@@ -780,8 +780,38 @@ public:
    {
 
    }
+
+   void toggle_pcond(BooleanDAG* dag, bool val)
+   {
+       vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
+       for(auto bn : ctrls)
+       {
+           if(((CTRL_node*)bn)->get_Pcond())
+           {
+               if (val) {
+                   ((CTRL_node *) bn)->activate_pcond();
+               } else {
+                   ((CTRL_node *) bn)->deactivate_pcond(); }
+           }
+       }
+   }
+
+   void activate_pcond(BooleanDAG* dag)
+   {
+       toggle_pcond(dag, true);
+   }
+   void deactivate_pcond(BooleanDAG* dag)
+   {
+       toggle_pcond(dag, false);
+   }
+
    void doInline(
-           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type){
+           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false){
+
+        if(do_deactivate_pcond){
+            deactivate_pcond(&dag);
+        }
+
         //OneCallPerCSiteInliner fin;
         // InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
         TheBestInliner fin(num_inlining_steps, params.boundmode == CommandLineArgs::CALLSITE);
@@ -833,6 +863,10 @@ public:
                 catch (BadConcretization) {
                     assert(dfi.get_failedAssert() != nullptr);
                     dag.set_failed_assert(dfi.get_failedAssert());
+
+                    if(do_deactivate_pcond){
+                        activate_pcond(&dag);
+                    }
                     return ;
                 }
                 //
@@ -869,6 +903,11 @@ public:
             makeAssert.process(dag);
         }
 
+
+       if(do_deactivate_pcond){
+           activate_pcond(&dag);
+       }
+
     }
 
     FloatManager &get_floats() {
@@ -894,7 +933,7 @@ class Harness
     //if env != nullptr => original_dag and root_dag ARE concretized
     ProgramEnvironment* env;
 
-    bool new_way = false;
+    bool new_way = true;
     bool keep_track_of_original = false;
 public:
     Harness(
@@ -919,41 +958,58 @@ public:
         }
     }
 
-    Harness* produce_inlined_dag()
+    Harness* produce_inlined_dag(bool deactivate_pcond = false)
     {
         VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(var_store, var_type);
+        return produce_concretization(var_store, var_type, deactivate_pcond, true);
     }
 
-    Harness* produce_concretization(VarStore& var_store, bool_node::Type var_type)
+    Harness* do_inline(bool deactivate_pcond = false)
+    {
+        VarStore var_store;
+        bool_node::Type var_type = bool_node::CTRL;
+        return produce_concretization(var_store, var_type, deactivate_pcond, false);
+    }
+
+
+    Harness* concretize(VarStore& var_store, bool_node::Type var_type, bool deactivate_pcond = false)
+    {
+        return produce_concretization(var_store, var_type, deactivate_pcond, false);
+    }
+
+    Harness* produce_concretization(VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false, bool do_clone = true)
     {
         if(new_way)
         {
-            //concretize root using ProgramEnvironment's doInline function
-
-            BooleanDAG* concretized_original_dag;
-            if(original_dag != nullptr)
+            if(do_clone)
             {
-                concretized_original_dag = hardCodeINode(original_dag, var_store, var_type, env->get_floats());
+                BooleanDAG* concretized_root_dag = root_dag->clone();
+                env->doInline(*concretized_root_dag, var_store, var_type, do_deactivate_pcond);
+                return new Harness(concretized_root_dag, nullptr, env);
             }
             else
             {
-                concretized_original_dag = nullptr;
+                env->doInline(*root_dag, var_store, var_type, do_deactivate_pcond);
+                return this;
             }
-
-            BooleanDAG* concretized_root_dag = root_dag->clone();
-
-            env->doInline(*concretized_root_dag, var_store, var_type);
-
-            return new Harness(concretized_root_dag, concretized_original_dag, env);
         }
         else
         {
+            assert(!do_deactivate_pcond);
             BooleanDAG* concretized_unrolled_dag;
             concretized_unrolled_dag = hardCodeINode(root_dag, var_store, var_type, env->get_floats());
-//            assert(concretized_unrolled_dag->get_failed_assert() == nullptr);
-            return new Harness(concretized_unrolled_dag, nullptr, env);
+
+            if(do_clone)
+            {
+                return new Harness(concretized_unrolled_dag, nullptr, env);
+            }
+            else
+            {
+                root_dag->clear();
+                root_dag = concretized_unrolled_dag;
+                return this;
+            }
         }
     }
 //
@@ -977,23 +1033,13 @@ public:
         if(original_dag != nullptr)
         {
             original_dag->clear();
+            delete original_dag;
+            original_dag = NULL;
         }
         root_dag->clear();
+        delete root_dag;
+        root_dag = NULL;
     }
-
-//    BooleanDAG* get_original_dag() {
-//        assert(false);
-//        //potential problem
-//        if(new_way)
-//        {
-//            assert(original_dag != nullptr);
-//            return original_dag;
-//        }
-//        else
-//        {
-//            return get_dag();
-//        }
-//    }
 
 private:
     VarStore* ctrl_var_store__solution;

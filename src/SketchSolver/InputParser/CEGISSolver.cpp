@@ -20,13 +20,16 @@ void CEGISSolver::addProblem(Harness *harness, File *file){
 	problems.push_back(harness);
 
     {
-        vector<bool_node*>& problemIn = harness->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL);
+
+        Harness* inlined_harness = harness->produce_inlined_dag();
+        vector<bool_node*>& problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
             if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
                 declareControl(ctrlnode);
             }
         }
+//        inlined_harness->clear();
     }
 
 	finder->updateCtrlVarStore(ctrlStore);	

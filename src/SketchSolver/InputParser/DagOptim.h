@@ -458,6 +458,7 @@ protected:
 	ASSERT_node* failedAssert; //is null unless you failed an assertion.
 
 public:
+    bool debug = false;
 	bool isTopLevel;
 	map<bool_node*, FastSet<bool_node> > funDependencies;
 	map<bool_node*, AbstractNodeValue> anv;
@@ -536,7 +537,7 @@ public:
 
 	virtual void visit( ASSERT_node &node);	
 	virtual void visit( DST_node& node );
-	virtual void process(BooleanDAG& bdag);	
+	virtual void process(BooleanDAG& bdag);
 	virtual  CONST_node* getCnode(int c);
 	virtual  CONST_node* getCnode(bool val); 
 	virtual  CONST_node* getCnode(double c);
