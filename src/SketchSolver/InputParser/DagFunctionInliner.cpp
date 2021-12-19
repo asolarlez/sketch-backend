@@ -1033,7 +1033,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
            cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl;
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
-		}\
+		}
 //        assert(node->get_name() != "num_bools_4_0_0");
 	   if (failedAssert != NULL) {
            if(debug)

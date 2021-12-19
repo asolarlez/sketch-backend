@@ -87,6 +87,11 @@ protected:
 
 public:
 
+    void clear()
+    {
+
+    }
+
 	VarStore ctrlStore;
 	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
 	finder(_finder), 

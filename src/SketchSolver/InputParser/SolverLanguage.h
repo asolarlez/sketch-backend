@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <cassert>
+#include <fstream>
 
 #include "SkVal.h"
 #include "BooleanDAG.h"
@@ -25,6 +26,11 @@
 #include "CounterexampleFinder.h"
 #include "DagFunctionInliner.h"
 #include "InterpreterEnvironment.h"
+
+
+#include "SolverProgramYaccHeader.h"
+
+extern SolverProgramState* sp_state;
 
 using namespace std;
 
@@ -325,16 +331,21 @@ namespace SolverLanguagePrimitives
 
         int count_passing_inputs(File* file) {
             int ret = 0;
+            int num_0s = 0;
+            int num_1s = 0;
             for(int i = 0;i<file->size();i++)
             {
                 Function* concretized_function = produce_function_with_concretized_inputs(
                         new InputHolder(file->at(i), floats));
+                assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
+                VarStore* new_row = file->at(i);
                 if(concretized_function->get_dag()->get_failed_assert() == NULL)
                 {
                     ret += 1;
                 }
                 concretized_function->clear();
             }
+            cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
             return ret;
         }
     };
@@ -1363,24 +1374,35 @@ namespace SolverLanguagePrimitives
 //    }
 
 
-    inline SolutionHolder* target_best_effort(Harness* harness, const string& file_name, FloatManager& floats,
-                                              CommandLineArgs& _args,
-                                              HoleHardcoder& _hc,
-                                              bool hasGoodEnoughSolution)
+
+    inline SolutionHolder* target_best_effort(SolverProgramState* _state)
     {
+        sp_state = _state;
+
+        run_solver_langauge_program();
+
+        for(auto it:assignments)
+        {
+            cout << it.first <<" "<< it.second << endl;
+        }
+        assert(false);
+
+        SolverProgramState* state = _state;
+
 //        expose lightverif
-        ofstream fout = ofstream("sample_ordering__"+harness->get_name()+"__concretizes__concr__new_way_trying_to_debug");
-        File* all_file = new File(harness->get_dag(), file_name, floats, _args.seed);
+        ofstream fout = ofstream("fixes_old__"+state->harness->get_name());
+        File* all_file = new File(state->harness->get_dag(), state->file_name, state->floats, state->args.seed);
         int num_samples = 20;
-        int rows_per_sample = 12;
+        int rows_per_sample = 4;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
             File* sub_file = all_file->sample_sub_file(rows_per_sample);
-            WrapperAssertDAG* solver = new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution);
+            WrapperAssertDAG* solver =
+                    new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             SolutionHolder* sol = (solver)->
-                    solve(new ProblemAE(new Function(harness, floats), sub_file));
-            Function* concretized_function = (new Function(harness, floats))->produce_function_with_concretized_holes(
+                    solve(new ProblemAE(new Function(state->harness, state->floats), sub_file));
+            Function* concretized_function = (new Function(state->harness, state->floats))->produce_function_with_concretized_holes(
                     sol);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();
@@ -1417,7 +1439,7 @@ namespace SolverLanguagePrimitives
             fout << solutions[i].first <<" %: "<< 100.0*(float)solutions[i].first/all_file->size() << endl;
         }
 
-        harness->set_solution(solutions[0].second->to_var_store());
+        state->harness->set_solution(solutions[0].second->to_var_store());
 
         if(solutions[0].second->get_sat_solver_result() == SATSolver::SATISFIABLE)
         {
@@ -1539,10 +1561,31 @@ public:
 //                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
 //        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
 //        AssertDebug(false, "incorporate prog_env");
-        return SolverLanguagePrimitives::target_best_effort(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        SolverLanguagePrimitives::SolverProgramState* state =
+                new SolverLanguagePrimitives::SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        return SolverLanguagePrimitives::target_best_effort(state);
     }
 };
 
+class SolverProgram: public BooleanDAG
+{
+
+};
+
+class SolverLanguageParser
+{
+    SolverProgram program;
+public:
+    SolverLanguageParser(const string& file_name)
+    {
+        ifstream file(file_name);
+        string line;
+        while ( getline (file, line) )
+        {
+            cout << line << '\n';
+        }
+    }
+};
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGE_H

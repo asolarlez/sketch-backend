@@ -889,7 +889,12 @@ void print_ctrls(ProgramEnvironment* env)
 //    assert(false);
 }
 
+
 int InterpreterEnvironment::doallpairs() {
+//
+
+//    SolverLanguageParser parser("solver_program.txt");
+//    return 0;
 
     if(params.numericalSolver)
     {
@@ -954,17 +959,18 @@ int InterpreterEnvironment::doallpairs() {
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-//                print_ctrls(program_env);
+                print_ctrls(program_env);
 
                 bool fixes = false;
-                bool concretizes = false;
+                bool concretizes = true;
                 bool calc_partial_concretization = concretizes || fixes;
                 assert(fixes != concretizes || !(fixes || concretizes));
 
                 if(concretizes) {
                     if (i == 0) {
                         assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
-                        string f_to_concretize = "predicate_lvl0";
+                        string f_to_concretize = "line_lvl0";
+                        assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
                                                        partial_concretization);
@@ -972,14 +978,17 @@ int InterpreterEnvironment::doallpairs() {
                     }
                     else if (i == 1) {
                         assert(spskpairs[i].sketch == "main_lvl1__Wrapper");
-                        string f_to_concretize = "predicate_lvl0";
+                        string f_to_concretize = "line_lvl0";
+                        assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
                                                        partial_concretization);
 
                     } else if (i == 2) {
                         assert(spskpairs[i].sketch == "main_lvl2__Wrapper");
-                        string f_to_concretize = "predicate_lvl1";
+                        string f_to_concretize = "line_lvl1";
+                        assert(functionMap.find(f_to_concretize) != functionMap.end());
+
                         unroll_and_concertize_function(f_to_concretize, program_env,
                                                        partial_concretization);
                     } else {
@@ -1136,7 +1145,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = false;
+    bool test_solver_language = true;
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();

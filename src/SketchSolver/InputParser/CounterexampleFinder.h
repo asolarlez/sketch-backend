@@ -52,7 +52,9 @@ public:
         }
     }
 
-    static bool parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
+    enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
+
+    parseLineOut parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {
 
         auto vsi = inputs->begin();
         VarStore::objP* arrit = NULL;
@@ -62,10 +64,18 @@ public:
         int inputId = 0;
 
         char ch;
+        assert(!in.eof());
         in.get(ch);
+        if(in.eof())
+        {
+            assert((int)ch == 0);
+            return end_of_file__empty_row;
+        }
         string line;
         while (ch == '#') {
+            assert(!in.eof());
             std::getline(in, line);
+            assert(!in.eof());
             in.get(ch);
         }
 
@@ -187,52 +197,91 @@ public:
                             cur = cur * 10 + (ch - '0');
                         }
                     }
-                    if (ch =='.') {
+                    else if (ch =='.') {
                         isFloat = true;
                         floatVal = (double)cur;
                         cur = 10;
                     }
+                    else
+                    {
+                        Assert(false, "Unknown character <" << ch << "> in file on line " + std::to_string((int)size()) + ".");
+                    }
 
             }
             if (outOfRange) {
-                return false;
+                return more_bits;
             }
+            assert(!in.eof());
             in.get(ch);
             if (in.eof()) {
                 regval();
-                return !outOfRange;
+                assert(!outOfRange);
+                if(vsi == inputs->end()){
+                    return complete_row;
+                }
+                else {
+                    Assert(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
+                    return incomplete_row;
+                }
             }
         }
         regval();
-        return !outOfRange;
+        if(outOfRange){
+            return more_bits;
+        }
+        else
+        {
+            if(vsi == inputs->end()){
+                return complete_row;
+            }
+            else{
+                Assert(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
+                return incomplete_row;
+            }
+        }
     }
 
     Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore inputs) {
         clear();
         ifstream file;
         file.open(fname);
-        bool ok = true;
 
         if (!file.is_open() || file.fail()) {
-            AssertDebug(false, "File " + fname + " could not be opened!! file.is_open() = " + std::to_string(file.is_open()) + " file.fail() = " + std::to_string(file.fail()));
-            Assert(false, "File " << fname << " could not be opened!! file.is_open() = " << file.is_open() <<" file.fail() = " << file.fail());
+            AssertDebug(false, "File " + fname + " could not be opened!!");
+            Assert(false, "File " << fname << " could not be opened!!");
             return NO_FILE;
         }
 
+        int num_0s = 0;
+        int num_1s = 0;
         while (!file.eof()) {
             VarStore* new_row = inputs.copy();
+            parseLineOut ok;
             try {
                 ok = parseLine(file, floats, inputNodes, new_row);
-                push_back(new_row);
             }
             catch (BasicError& e) {
                 cerr << "Error parsing file " << fname << endl;
                 throw e;
             }
 
-            if (!ok) {
+            
+
+            if (ok == more_bits) {
                 file.close();
                 return MOREBITS;
+            }
+            else if(ok == complete_row)
+            {
+                push_back(new_row);
+            }
+            else if(ok == end_of_file__empty_row)
+            {
+                assert(file.eof());
+            }
+            else
+            {
+                Assert(false, "missing case for parseLineOut.")
             }
             if (PARAMS->verbosity > 12) {
                 new_row->printContent(cout);
