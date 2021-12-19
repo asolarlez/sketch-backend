@@ -1,7 +1,7 @@
 %{
 
 //#include "SolverLanguageLexAndYaccHeader.h"
-#include "SolverProgramYaccHeader.h"
+#include "SolverLanguageYaccHeader.h"
 
 int yylex_init (yyscan_t* scanner);
 
@@ -36,7 +36,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 	Operand* operand;
 	MyOperator my_operator;}
 
-%start methods
+%start root
 %type <methods> methods
 %type <code_block> lines
 %type <unit_line> unit
@@ -61,42 +61,42 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %%
 
 
-lines : unit ';' {new CodeBlock($1);} | unit ';' lines {new CodeBlock($1, $3);}
+lines : unit ';' {$$ = new CodeBlock($1);} | unit ';' lines {$$ = new CodeBlock($1, $3);}
 
-operand: identifier {new Operand($1);}
+operand: identifier {$$ = new Operand($1);}
 
-operator: '<' {MyOperator::gt;} | '>' {MyOperator::gt;} | op_eq {MyOperator::eq;}
+operator: '<' {$$ = MyOperator::gt;} | '>' {$$ = MyOperator::gt;} | op_eq {$$ = MyOperator::eq;}
 
-predicate: operand operator operand {new Predicate(new CompositePredicate($2, $1, $3));}
+predicate: operand operator operand {$$ = new Predicate(new CompositePredicate($2, $1, $3));}
 
-unit: declaration {new UnitLine($1);} | assignment {new UnitLine($1);} |
-	while_token '(' predicate ')' '{' lines '}' {new UnitLine(new While($3, $6));} |
-	if_token '(' predicate ')' '{' lines '}' {new UnitLine(new If($3, $6));} |
-	return_token identifier {new UnitLine(new Return($2));}
-function_call : identifier '.' identifier '(' params ')' {new FuncCall($1, $3, $5);}
-	     | identifier '(' params ')' {new FuncCall(new Name("global"), $1, $3);}
-declaration : identifier identifier {new Assignment(new Var($1, $2));}
-		| identifier identifier '=' function_call {new Assignment(new Var($1, $2), $4);}
-		| identifier identifier '=' my_constant {new Assignment(new Var($1, $2), $4);}
-assignment : identifier '=' function_call {
+unit: declaration {$$ = new UnitLine($1);} | assignment {$$ = new UnitLine($1);} |
+	while_token '(' predicate ')' '{' lines '}' {$$ = new UnitLine(new While($3, $6));} |
+	if_token '(' predicate ')' '{' lines '}' {$$ = new UnitLine(new If($3, $6));} |
+	return_token identifier {$$ = new UnitLine(new Return($2));}
+function_call : identifier '.' identifier '(' params ')' {$$ = new FuncCall($1, $3, $5);}
+	     | identifier '(' params ')' {$$ = new FuncCall(new Name("global"), $1, $3);}
+declaration : identifier identifier {$$ = new Assignment(new Var($1, $2));}
+		| identifier identifier '=' function_call {$$ = new Assignment(new Var($1, $2), $4);}
+		| identifier identifier '=' my_constant {$$ = new Assignment(new Var($1, $2), $4);}
+assignment : identifier '=' function_call {$$ =
 //set_var_val($1, $3);
 new Assignment($1, $3);}
-//		| declaration '=' function_call {set_var_val($1, $3);}
+//		| declaration '=' function_call {$$ = set_var_val($1, $3);}
 	|
-		identifier '=' identifier {new Assignment($1, $3);}
-param : identifier {new Param($1);} | my_constant {new Param($1);}
-params :  {new Params();} | param {new Params($1);}
-	| param ',' params {new Params($1, $3);}
+		identifier '=' identifier {$$ = new Assignment($1, $3);}
+param : identifier {$$ = new Param($1);} | my_constant {$$ = new Param($1);}
+params :  {$$ = new Params();} | param {$$ = new Params($1);}
+	| param ',' params {$$ = new Params($1, $3);}
 
-typed_params: {new Params();} | declaration {new Param($1);} |
-	      declaration ',' typed_params {new Params(new Param($1), $3);}
+typed_params: {$$ = new Params();} | declaration {$$ = new Params(new Param($1));} |
+	      declaration ',' typed_params {$$ = new Params(new Param($1), $3);}
 
 method : solver_token identifier identifier '(' typed_params ')'
-	  '{' lines '}' {new Method(new Var($2, $3), $5, $8);}
+	  '{' lines '}' {$$ = new Method(new Var($2, $3), $5, $8);}
 
-methods : method {new Methods($1);} | method methods {new Methods($1, $2);}
+methods : method {$$ = new Methods($1);} | method methods {$$ = new Methods($1, $2);}
 
-
+root: methods {state->add_root($1);}
 
 %%
 
@@ -116,6 +116,3 @@ void run_solver_langauge_program(SolverProgramState* state)
 int main(){
 	run_solver_langauge_program(nullptr);
 }
-
-//TODO: ask Armando about the difference in implementing declaration/assignment; why is it giving segfault one way but not the other
-

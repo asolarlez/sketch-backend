@@ -27,9 +27,8 @@
 #include "DagFunctionInliner.h"
 #include "InterpreterEnvironment.h"
 
-#include "SolverProgramYaccHeader.h"
+#include "SolverLanguageYaccHeader.h"
 
-extern SolverProgramState* sp_state;
 
 using namespace std;
 
@@ -598,35 +597,6 @@ namespace SolverLanguagePrimitives
     };
 
     typedef Mapping<Val> State;
-//    class State
-//    {
-//        map<string, Val*> assignment;
-//    public:
-//        State() = default;
-//        bool has(const string& name)
-//        {
-//            return assignment.find(name) != assignment.end();
-//        }
-//        Val* get(const string& name)
-//        {
-//            assert(has(name));
-//            return assignment[name];
-//        }
-//        void set(const string& name, Val* val)
-//        {
-//            assignment[name] = val;
-//        }
-//        string to_string()
-//        {
-//            string ret = "{";
-//            for(auto p : assignment)
-//            {
-//                ret += p.first + " <- " + p.second->to_string() + "; ";
-//            }
-//            ret += "}";
-//            return ret;
-//        }
-//    };
 
     class ValState: public Val, public PolyVal<State*>
     {
@@ -1374,13 +1344,13 @@ namespace SolverLanguagePrimitives
 
 
 
-    inline SolutionHolder* target_best_effort(SolverProgramState* _state)
+    inline SolutionHolder* target_best_effort(SolverProgramState* state)
     {
-        run_solver_langauge_program(_state);
+        run_solver_langauge_program(state);
+
+        state->run();
 
         assert(false);
-
-        SolverProgramState* state = _state;
 
 //        expose lightverif
         ofstream fout = ofstream("fixes_old__"+state->harness->get_name());

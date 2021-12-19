@@ -2,11 +2,11 @@
 // Created by kliment on 12/18/21.
 //
 
-#ifndef SKETCH_SOURCE_SOLVERPROGRAMYACCHEADER_H
-#define SKETCH_SOURCE_SOLVERPROGRAMYACCHEADER_H
+#ifndef SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H
+#define SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H
 
-#include "SolverLanguageLexAndYaccHeader.h"
 #include "string"
+#include "SolverLanguageLexAndYaccHeader.h"
 
 class Harness;
 class FloatManager;
@@ -29,10 +29,30 @@ public:
 
     }
 
+    Methods* init_root = nullptr;
+    void add_root(Methods* _init_root)
+    {
+        init_root = _init_root;
+        cout << "HERE!!!" << endl;
+    }
+
+    map<string, Method*> methods;
+
+    void run()
+    {
+        assert(init_root != nullptr);
+
+        init_root->populate_state(methods);
+
+        for(auto it : methods)
+        {
+            cout << it.first << " "<< it.second << endl;
+        }
+    }
 };
 
 
 void run_solver_langauge_program(SolverProgramState* _state);
 
 
-#endif //SKETCH_SOURCE_SOLVERPROGRAMYACCHEADER_H
+#endif //SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H

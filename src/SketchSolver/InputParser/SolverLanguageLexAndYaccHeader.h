@@ -9,6 +9,7 @@
 #include <cassert>
 #include <string>
 #include <utility>
+#include <map>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ namespace SL_LY {
     public:
         explicit Name(string _name) : name(std::move(_name)) {};
 
-        string get_name() {
+        string to_string() {
             return name;
         }
     };
@@ -30,13 +31,9 @@ namespace SL_LY {
         Name *name = nullptr;
     public:
         Var(Name *_type, Name *_name) : type(_type), name(_name) {
-
-            cout << name->get_name() << " " << type->get_name() << endl;
-
         };
 
         Name *get_name() {
-            cout << "ret name: " << name->get_name() << endl;
             return name;
         }
     };
@@ -73,7 +70,7 @@ namespace SL_LY {
         FuncCall(
                 Name *_class_name, Name *_method_name, Params *_params) :
                 class_name(_class_name), method_name(_method_name), params(_params) {
-            if (method_name->get_name() == "concretize") {
+            if (method_name->to_string() == "concretize") {
                 cout << "NOW CONCRETIZING" << endl;
             }
         };
@@ -245,6 +242,11 @@ namespace SL_LY {
         {
 
         }
+
+        void add_to_map(map<string, Method *> &state) {
+            assert(var != nullptr);
+            state[var->get_name()->to_string()] = this;
+        }
     };
 
     class Methods
@@ -254,8 +256,18 @@ namespace SL_LY {
     public:
         explicit Methods(Method* _head): head(_head) {}
         Methods(Method* _head, Methods* _rest): head(_head), rest(_rest) {}
+
+        void populate_state(map<string, Method *>& state) {
+            Methods* at = this;
+            while(at != nullptr)
+            {
+                at->head->add_to_map(state);
+                at = at->rest;
+            }
+        }
     };
 };
+
 class SolverProgramState;
 
 typedef void* yyscan_t;
