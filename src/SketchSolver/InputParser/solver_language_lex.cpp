@@ -812,14 +812,14 @@ case 7:
 YY_RULE_SETUP
 #line 39 "solver_language_lexer.l"
 {print_rule("String", string(yytext));
-                                yylval->my_const = new Const(string(yytext));
-                                return my_constant;}
+                                yylval->var_val = new VarVal(string(yytext));
+                                return var_val_rule;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 42 "solver_language_lexer.l"
 {print_rule("Integer", string(yytext));
-                                yylval->my_const = new Const(atoi(yytext)); return my_constant;}
+                                yylval->var_val = new VarVal(atoi(yytext)); return var_val_rule;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP

@@ -22,7 +22,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 %union{
 	Var* var;
-	Const* my_const;
+	VarVal* var_val;
 	FuncCall* func_call;
 	Name* name;
 	Params* params;
@@ -47,7 +47,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %token <name> if_token
 %token <name> return_token
 %token <name> op_eq
-%token <my_const> my_constant
+%token <var_val> var_val_rule
 %type <param> param
 %type <assignment> declaration
 %type <func_call> function_call
@@ -65,7 +65,7 @@ lines : unit ';' {$$ = new CodeBlock($1);} | unit ';' lines {$$ = new CodeBlock(
 
 operand: identifier {$$ = new Operand($1);}
 
-operator: '<' {$$ = MyOperator::gt;} | '>' {$$ = MyOperator::gt;} | op_eq {$$ = MyOperator::eq;}
+operator: '<' {$$ = MyOperator::lt;} | '>' {$$ = MyOperator::gt;} | op_eq {$$ = MyOperator::eq;}
 
 predicate: operand operator operand {$$ = new Predicate(new CompositePredicate($2, $1, $3));}
 
@@ -77,14 +77,14 @@ function_call : identifier '.' identifier '(' params ')' {$$ = new FuncCall($1, 
 	     | identifier '(' params ')' {$$ = new FuncCall(new Name("global"), $1, $3);}
 declaration : identifier identifier {$$ = new Assignment(new Var($1, $2));}
 		| identifier identifier '=' function_call {$$ = new Assignment(new Var($1, $2), $4);}
-		| identifier identifier '=' my_constant {$$ = new Assignment(new Var($1, $2), $4);}
+		| identifier identifier '=' var_val_rule {$$ = new Assignment(new Var($1, $2), $4);}
 assignment : identifier '=' function_call {$$ =
 //set_var_val($1, $3);
 new Assignment($1, $3);}
 //		| declaration '=' function_call {$$ = set_var_val($1, $3);}
 	|
 		identifier '=' identifier {$$ = new Assignment($1, $3);}
-param : identifier {$$ = new Param($1);} | my_constant {$$ = new Param($1);}
+param : identifier {$$ = new Param($1);} | var_val_rule {$$ = new Param($1);}
 params :  {$$ = new Params();} | param {$$ = new Params($1);}
 	| param ',' params {$$ = new Params($1, $3);}
 

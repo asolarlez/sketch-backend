@@ -37,10 +37,10 @@ return                       {print_rule("return", string(yytext)); return retur
 {Identifier}                {print_rule("Identifier", string(yytext));
                                 yylval->name = new Name(string(yytext)); return identifier;}
 {String}                    {print_rule("String", string(yytext));
-                                yylval->my_const = new Const(string(yytext));
-                                return my_constant;}
+                                yylval->var_val = new VarVal(string(yytext));
+                                return var_val_rule;}
 {Integer}                   {print_rule("Integer", string(yytext));
-                                yylval->my_const = new Const(atoi(yytext)); return my_constant;}
+                                yylval->var_val = new VarVal(atoi(yytext)); return var_val_rule;}
 {Comment}                   {print_rule("Comment", string(yytext));}
 {WhiteSpace}                {print_rule("WhiteSpace", string(yytext));}
 {Operator}                  {print_rule("Operator", string(yytext));

@@ -120,7 +120,7 @@ extern int yydebug;
     if_token = 261,
     return_token = 262,
     op_eq = 263,
-    my_constant = 264
+    var_val_rule = 264
   };
 #endif
 /* Tokens.  */
@@ -130,7 +130,7 @@ extern int yydebug;
 #define if_token 261
 #define return_token 262
 #define op_eq 263
-#define my_constant 264
+#define var_val_rule 264
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -140,7 +140,7 @@ union YYSTYPE
 #line 23 "solver_language_parser.y" /* yacc.c:355  */
 
 	Var* var;
-	Const* my_const;
+	VarVal* var_val;
 	FuncCall* func_call;
 	Name* name;
 	Params* params;
@@ -481,11 +481,11 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "identifier", "solver_token",
-  "while_token", "if_token", "return_token", "op_eq", "my_constant", "';'",
-  "'<'", "'>'", "'('", "')'", "'{'", "'}'", "'.'", "'='", "','", "$accept",
-  "lines", "operand", "operator", "predicate", "unit", "function_call",
-  "declaration", "assignment", "param", "params", "typed_params", "method",
-  "methods", "root", YY_NULLPTR
+  "while_token", "if_token", "return_token", "op_eq", "var_val_rule",
+  "';'", "'<'", "'>'", "'('", "')'", "'{'", "'}'", "'.'", "'='", "','",
+  "$accept", "lines", "operand", "operator", "predicate", "unit",
+  "function_call", "declaration", "assignment", "param", "params",
+  "typed_params", "method", "methods", "root", YY_NULLPTR
 };
 #endif
 
@@ -1305,7 +1305,7 @@ yyreduce:
 
   case 5:
 #line 68 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.my_operator) = MyOperator::gt;}
+    {(yyval.my_operator) = MyOperator::lt;}
 #line 1310 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1383,7 +1383,7 @@ yyreduce:
 
   case 18:
 #line 80 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new Assignment(new Var((yyvsp[-3].name), (yyvsp[-2].name)), (yyvsp[0].my_const));}
+    {(yyval.assignment) = new Assignment(new Var((yyvsp[-3].name), (yyvsp[-2].name)), (yyvsp[0].var_val));}
 #line 1388 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1409,7 +1409,7 @@ new Assignment((yyvsp[-2].name), (yyvsp[0].func_call));}
 
   case 22:
 #line 87 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.param) = new Param((yyvsp[0].my_const));}
+    {(yyval.param) = new Param((yyvsp[0].var_val));}
 #line 1414 "y.tab.c" /* yacc.c:1646  */
     break;
 

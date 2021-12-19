@@ -51,7 +51,7 @@ extern int yydebug;
     if_token = 261,
     return_token = 262,
     op_eq = 263,
-    my_constant = 264
+    var_val_rule = 264
   };
 #endif
 /* Tokens.  */
@@ -61,7 +61,7 @@ extern int yydebug;
 #define if_token 261
 #define return_token 262
 #define op_eq 263
-#define my_constant 264
+#define var_val_rule 264
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -71,7 +71,7 @@ union YYSTYPE
 #line 23 "solver_language_parser.y" /* yacc.c:1909  */
 
 	Var* var;
-	Const* my_const;
+	VarVal* var_val;
 	FuncCall* func_call;
 	Name* name;
 	Params* params;
