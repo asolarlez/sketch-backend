@@ -68,7 +68,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 25 "solver_language_parser.y" /* yacc.c:1909  */
+#line 23 "solver_language_parser.y" /* yacc.c:1909  */
 
 	Var* var;
 	Const* my_const;
@@ -95,6 +95,6 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (yyscan_t yyscanner);
+int yyparse (yyscan_t yyscanner, SolverProgramState* state);
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */

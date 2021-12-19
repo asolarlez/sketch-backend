@@ -65,10 +65,9 @@
 #line 1 "solver_language_parser.y" /* yacc.c:339  */
 
 
-#include "SolverLanguageLexAndYaccHeader.h"
-//#include "SolverProgramYaccHeader.h"
+//#include "SolverLanguageLexAndYaccHeader.h"
+#include "SolverProgramYaccHeader.h"
 
-typedef void* yyscan_t;
 int yylex_init (yyscan_t* scanner);
 
 #include "solver_language_yacc.h"
@@ -77,11 +76,10 @@ int yylex_init (yyscan_t* scanner);
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
 extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
-extern void yyerror(yyscan_t scanner, string s);
 extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 
-#line 85 "y.tab.c" /* yacc.c:339  */
+#line 83 "y.tab.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -139,7 +137,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 25 "solver_language_parser.y" /* yacc.c:355  */
+#line 23 "solver_language_parser.y" /* yacc.c:355  */
 
 	Var* var;
 	Const* my_const;
@@ -156,7 +154,7 @@ union YYSTYPE
 	Operand* operand;
 	MyOperator my_operator;
 
-#line 160 "y.tab.c" /* yacc.c:355  */
+#line 158 "y.tab.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -166,13 +164,13 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (yyscan_t yyscanner);
+int yyparse (yyscan_t yyscanner, SolverProgramState* state);
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 176 "y.tab.c" /* yacc.c:358  */
+#line 174 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -470,10 +468,10 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    66,    66,    66,    68,    70,    70,    70,    72,    74,
-      74,    75,    76,    77,    78,    79,    80,    81,    82,    83,
-      88,    89,    89,    90,    90,    91,    93,    93,    94,    96,
-      99,    99
+       0,    64,    64,    64,    66,    68,    68,    68,    70,    72,
+      72,    73,    74,    75,    76,    77,    78,    79,    80,    81,
+      86,    87,    87,    88,    88,    89,    91,    91,    92,    94,
+      97,    97
 };
 #endif
 
@@ -631,7 +629,7 @@ do                                                              \
     }                                                           \
   else                                                          \
     {                                                           \
-      yyerror (yyscanner, YY_("syntax error: cannot back up")); \
+      yyerror (yyscanner, state, YY_("syntax error: cannot back up")); \
       YYERROR;                                                  \
     }                                                           \
 while (0)
@@ -668,7 +666,7 @@ do {                                                                      \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Type, Value, yyscanner); \
+                  Type, Value, yyscanner, state); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -679,11 +677,12 @@ do {                                                                      \
 `----------------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
 {
   FILE *yyo = yyoutput;
   YYUSE (yyo);
   YYUSE (yyscanner);
+  YYUSE (state);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
@@ -699,12 +698,12 @@ yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvalue
 `--------------------------------*/
 
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
 {
   YYFPRINTF (yyoutput, "%s %s (",
              yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
 
-  yy_symbol_value_print (yyoutput, yytype, yyvaluep, yyscanner);
+  yy_symbol_value_print (yyoutput, yytype, yyvaluep, yyscanner, state);
   YYFPRINTF (yyoutput, ")");
 }
 
@@ -737,7 +736,7 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yyscanner)
+yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yyscanner, SolverProgramState* state)
 {
   unsigned long int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -751,7 +750,7 @@ yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yysca
       yy_symbol_print (stderr,
                        yystos[yyssp[yyi + 1 - yynrhs]],
                        &(yyvsp[(yyi + 1) - (yynrhs)])
-                                              , yyscanner);
+                                              , yyscanner, state);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -759,7 +758,7 @@ yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, yyscan_t yysca
 # define YY_REDUCE_PRINT(Rule)          \
 do {                                    \
   if (yydebug)                          \
-    yy_reduce_print (yyssp, yyvsp, Rule, yyscanner); \
+    yy_reduce_print (yyssp, yyvsp, Rule, yyscanner, state); \
 } while (0)
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
@@ -1017,10 +1016,11 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner, SolverProgramState* state)
 {
   YYUSE (yyvaluep);
   YYUSE (yyscanner);
+  YYUSE (state);
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
@@ -1038,7 +1038,7 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t yyscanner
 `----------*/
 
 int
-yyparse (yyscan_t yyscanner)
+yyparse (yyscan_t yyscanner, SolverProgramState* state)
 {
 /* The lookahead symbol.  */
 int yychar;
@@ -1286,109 +1286,109 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 66 "solver_language_parser.y" /* yacc.c:1646  */
+#line 64 "solver_language_parser.y" /* yacc.c:1646  */
     {new CodeBlock((yyvsp[-1].unit_line));}
 #line 1292 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 66 "solver_language_parser.y" /* yacc.c:1646  */
+#line 64 "solver_language_parser.y" /* yacc.c:1646  */
     {new CodeBlock((yyvsp[-2].unit_line), (yyvsp[0].code_block));}
 #line 1298 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 68 "solver_language_parser.y" /* yacc.c:1646  */
+#line 66 "solver_language_parser.y" /* yacc.c:1646  */
     {new Operand((yyvsp[0].name));}
 #line 1304 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 70 "solver_language_parser.y" /* yacc.c:1646  */
+#line 68 "solver_language_parser.y" /* yacc.c:1646  */
     {MyOperator::gt;}
 #line 1310 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 70 "solver_language_parser.y" /* yacc.c:1646  */
+#line 68 "solver_language_parser.y" /* yacc.c:1646  */
     {MyOperator::gt;}
 #line 1316 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 70 "solver_language_parser.y" /* yacc.c:1646  */
+#line 68 "solver_language_parser.y" /* yacc.c:1646  */
     {MyOperator::eq;}
 #line 1322 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 72 "solver_language_parser.y" /* yacc.c:1646  */
+#line 70 "solver_language_parser.y" /* yacc.c:1646  */
     {new Predicate(new CompositePredicate((yyvsp[-1].my_operator), (yyvsp[-2].operand), (yyvsp[0].operand)));}
 #line 1328 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 74 "solver_language_parser.y" /* yacc.c:1646  */
+#line 72 "solver_language_parser.y" /* yacc.c:1646  */
     {new UnitLine((yyvsp[0].assignment));}
 #line 1334 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 74 "solver_language_parser.y" /* yacc.c:1646  */
+#line 72 "solver_language_parser.y" /* yacc.c:1646  */
     {new UnitLine((yyvsp[0].assignment));}
 #line 1340 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 75 "solver_language_parser.y" /* yacc.c:1646  */
+#line 73 "solver_language_parser.y" /* yacc.c:1646  */
     {new UnitLine(new While((yyvsp[-4].predicate), (yyvsp[-1].code_block)));}
 #line 1346 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 76 "solver_language_parser.y" /* yacc.c:1646  */
+#line 74 "solver_language_parser.y" /* yacc.c:1646  */
     {new UnitLine(new If((yyvsp[-4].predicate), (yyvsp[-1].code_block)));}
 #line 1352 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 77 "solver_language_parser.y" /* yacc.c:1646  */
+#line 75 "solver_language_parser.y" /* yacc.c:1646  */
     {new UnitLine(new Return((yyvsp[0].name)));}
 #line 1358 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 78 "solver_language_parser.y" /* yacc.c:1646  */
+#line 76 "solver_language_parser.y" /* yacc.c:1646  */
     {new FuncCall((yyvsp[-5].name), (yyvsp[-3].name), (yyvsp[-1].params));}
 #line 1364 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 79 "solver_language_parser.y" /* yacc.c:1646  */
+#line 77 "solver_language_parser.y" /* yacc.c:1646  */
     {new FuncCall(new Name("global"), (yyvsp[-3].name), (yyvsp[-1].params));}
 #line 1370 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 80 "solver_language_parser.y" /* yacc.c:1646  */
+#line 78 "solver_language_parser.y" /* yacc.c:1646  */
     {new Assignment(new Var((yyvsp[-1].name), (yyvsp[0].name)));}
 #line 1376 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 81 "solver_language_parser.y" /* yacc.c:1646  */
+#line 79 "solver_language_parser.y" /* yacc.c:1646  */
     {new Assignment(new Var((yyvsp[-3].name), (yyvsp[-2].name)), (yyvsp[0].func_call));}
 #line 1382 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 82 "solver_language_parser.y" /* yacc.c:1646  */
+#line 80 "solver_language_parser.y" /* yacc.c:1646  */
     {new Assignment(new Var((yyvsp[-3].name), (yyvsp[-2].name)), (yyvsp[0].my_const));}
 #line 1388 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 83 "solver_language_parser.y" /* yacc.c:1646  */
+#line 81 "solver_language_parser.y" /* yacc.c:1646  */
     {
 //set_var_val($1, $3);
 new Assignment((yyvsp[-2].name), (yyvsp[0].func_call));}
@@ -1396,73 +1396,73 @@ new Assignment((yyvsp[-2].name), (yyvsp[0].func_call));}
     break;
 
   case 20:
-#line 88 "solver_language_parser.y" /* yacc.c:1646  */
+#line 86 "solver_language_parser.y" /* yacc.c:1646  */
     {new Assignment((yyvsp[-2].name), (yyvsp[0].name));}
 #line 1402 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 89 "solver_language_parser.y" /* yacc.c:1646  */
+#line 87 "solver_language_parser.y" /* yacc.c:1646  */
     {new Param((yyvsp[0].name));}
 #line 1408 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 89 "solver_language_parser.y" /* yacc.c:1646  */
+#line 87 "solver_language_parser.y" /* yacc.c:1646  */
     {new Param((yyvsp[0].my_const));}
 #line 1414 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 90 "solver_language_parser.y" /* yacc.c:1646  */
+#line 88 "solver_language_parser.y" /* yacc.c:1646  */
     {new Params();}
 #line 1420 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 90 "solver_language_parser.y" /* yacc.c:1646  */
+#line 88 "solver_language_parser.y" /* yacc.c:1646  */
     {new Params((yyvsp[0].param));}
 #line 1426 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 91 "solver_language_parser.y" /* yacc.c:1646  */
+#line 89 "solver_language_parser.y" /* yacc.c:1646  */
     {new Params((yyvsp[-2].param), (yyvsp[0].params));}
 #line 1432 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 93 "solver_language_parser.y" /* yacc.c:1646  */
+#line 91 "solver_language_parser.y" /* yacc.c:1646  */
     {new Params();}
 #line 1438 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 93 "solver_language_parser.y" /* yacc.c:1646  */
+#line 91 "solver_language_parser.y" /* yacc.c:1646  */
     {new Param((yyvsp[0].assignment));}
 #line 1444 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 94 "solver_language_parser.y" /* yacc.c:1646  */
+#line 92 "solver_language_parser.y" /* yacc.c:1646  */
     {new Params(new Param((yyvsp[-2].assignment)), (yyvsp[0].params));}
 #line 1450 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 97 "solver_language_parser.y" /* yacc.c:1646  */
+#line 95 "solver_language_parser.y" /* yacc.c:1646  */
     {new Method(new Var((yyvsp[-7].name), (yyvsp[-6].name)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
 #line 1456 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 99 "solver_language_parser.y" /* yacc.c:1646  */
+#line 97 "solver_language_parser.y" /* yacc.c:1646  */
     {new Methods((yyvsp[0].method));}
 #line 1462 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 99 "solver_language_parser.y" /* yacc.c:1646  */
+#line 97 "solver_language_parser.y" /* yacc.c:1646  */
     {new Methods((yyvsp[-1].method), (yyvsp[0].methods));}
 #line 1468 "y.tab.c" /* yacc.c:1646  */
     break;
@@ -1518,7 +1518,7 @@ yyerrlab:
     {
       ++yynerrs;
 #if ! YYERROR_VERBOSE
-      yyerror (yyscanner, YY_("syntax error"));
+      yyerror (yyscanner, state, YY_("syntax error"));
 #else
 # define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
                                         yyssp, yytoken)
@@ -1545,7 +1545,7 @@ yyerrlab:
                 yymsgp = yymsg;
               }
           }
-        yyerror (yyscanner, yymsgp);
+        yyerror (yyscanner, state, yymsgp);
         if (yysyntax_error_status == 2)
           goto yyexhaustedlab;
       }
@@ -1569,7 +1569,7 @@ yyerrlab:
       else
         {
           yydestruct ("Error: discarding",
-                      yytoken, &yylval, yyscanner);
+                      yytoken, &yylval, yyscanner, state);
           yychar = YYEMPTY;
         }
     }
@@ -1625,7 +1625,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-                  yystos[yystate], yyvsp, yyscanner);
+                  yystos[yystate], yyvsp, yyscanner, state);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -1662,7 +1662,7 @@ yyabortlab:
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
 yyexhaustedlab:
-  yyerror (yyscanner, YY_("memory exhausted"));
+  yyerror (yyscanner, state, YY_("memory exhausted"));
   yyresult = 2;
   /* Fall through.  */
 #endif
@@ -1674,7 +1674,7 @@ yyreturn:
          user semantic actions for why this is necessary.  */
       yytoken = YYTRANSLATE (yychar);
       yydestruct ("Cleanup: discarding lookahead",
-                  yytoken, &yylval, yyscanner);
+                  yytoken, &yylval, yyscanner, state);
     }
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYABORT or YYACCEPT.  */
@@ -1683,7 +1683,7 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  yystos[*yyssp], yyvsp, yyscanner);
+                  yystos[*yyssp], yyvsp, yyscanner, state);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -1696,26 +1696,25 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 103 "solver_language_parser.y" /* yacc.c:1906  */
+#line 101 "solver_language_parser.y" /* yacc.c:1906  */
 
 
 //void SL_LY::set_var_val(Name* name, FuncCall* expr){assignments[name->get_name()] = expr;}
 //void SL_LY::set_var_val(Var* var, FuncCall* expr){assignments[var->get_name()->get_name()] = expr;}
 
-void SL_LY::run_solver_langauge_program()
+void run_solver_langauge_program(SolverProgramState* state)
 {
-
 	void* scanner;
 	yylex_init(&scanner);
 
 	FILE* file_pointer = fopen("solver_language_program.txt", "r");
 	yyset_in(file_pointer, scanner);
-	int rv = yyparse(scanner);
+	int rv = yyparse(scanner, state);
 }
 
-int main(){
-	run_solver_langauge_program();
-}
+//int main(){
+//	run_solver_langauge_program(nullptr);
+//}
 
 //TODO: ask Armando about the difference in implementing declaration/assignment; why is it giving segfault one way but not the other
 

@@ -6,7 +6,6 @@
 #include "solver_language_yacc.h"
 
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
-void yyerror(yyscan_t scanner, string s);
 
 void print_rule(string description, string str);
 
@@ -54,7 +53,7 @@ void print_rule(string description, string str)
     cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
-void yyerror(yyscan_t scanner, string s)
+void yyerror(yyscan_t scanner, SolverProgramState* state, string s)
 {
     cout << "ERROR " << s << endl;
 }

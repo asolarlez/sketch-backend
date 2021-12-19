@@ -121,13 +121,13 @@ public:
 };
 
 template<typename ValType>
-class Assignment
+class Mapping
 {
 protected:
     bool null = true;
     map<string, ValType*> assignment;
 public:
-    Assignment() = default;
+    Mapping() = default;
     map<string, ValType*>& get_assignment()
     {
         return assignment;
@@ -167,10 +167,10 @@ public:
     }
 };
 
-class Assignment_SkVal: public Assignment<SkVal> {
+class Assignment_SkVal: public Mapping<SkVal> {
 public:
-    Assignment_SkVal(): Assignment<SkVal>() {}
-    Assignment_SkVal(VarStore* var_store, FloatManager& floats): Assignment<SkVal>() {
+    Assignment_SkVal(): Mapping<SkVal>() {}
+    Assignment_SkVal(VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
             OutType* out_type = (*it).getOtype();

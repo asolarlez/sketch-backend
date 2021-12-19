@@ -27,7 +27,6 @@
 #include "DagFunctionInliner.h"
 #include "InterpreterEnvironment.h"
 
-
 #include "SolverProgramYaccHeader.h"
 
 extern SolverProgramState* sp_state;
@@ -598,7 +597,7 @@ namespace SolverLanguagePrimitives
         string to_string() override {return get()->to_string();}
     };
 
-    typedef Assignment<Val> State;
+    typedef Mapping<Val> State;
 //    class State
 //    {
 //        map<string, Val*> assignment;
@@ -1377,14 +1376,8 @@ namespace SolverLanguagePrimitives
 
     inline SolutionHolder* target_best_effort(SolverProgramState* _state)
     {
-        sp_state = _state;
+        run_solver_langauge_program(_state);
 
-        run_solver_langauge_program();
-
-        for(auto it:assignments)
-        {
-            cout << it.first <<" "<< it.second << endl;
-        }
         assert(false);
 
         SolverProgramState* state = _state;
@@ -1561,8 +1554,8 @@ public:
 //                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
 //        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
 //        AssertDebug(false, "incorporate prog_env");
-        SolverLanguagePrimitives::SolverProgramState* state =
-                new SolverLanguagePrimitives::SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        SolverProgramState* state =
+                new SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution);
         return SolverLanguagePrimitives::target_best_effort(state);
     }
 };

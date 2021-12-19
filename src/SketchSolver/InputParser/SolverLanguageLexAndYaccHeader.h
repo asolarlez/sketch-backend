@@ -10,9 +10,10 @@
 #include <string>
 #include <utility>
 
+using namespace std;
+
 namespace SL_LY {
 
-    using namespace std;
 
     class Name {
         string name;
@@ -254,14 +255,12 @@ namespace SL_LY {
         explicit Methods(Method* _head): head(_head) {}
         Methods(Method* _head, Methods* _rest): head(_head), rest(_rest) {}
     };
-
-
-
-
-
-    void run_solver_langauge_program();
-
 };
+class SolverProgramState;
+
+typedef void* yyscan_t;
+void yyerror(yyscan_t scanner, SolverProgramState* state, string s);
+
 
 using namespace SL_LY;
 

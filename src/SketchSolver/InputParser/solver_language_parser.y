@@ -1,9 +1,8 @@
 %{
 
-#include "SolverLanguageLexAndYaccHeader.h"
-//#include "SolverProgramYaccHeader.h"
+//#include "SolverLanguageLexAndYaccHeader.h"
+#include "SolverProgramYaccHeader.h"
 
-typedef void* yyscan_t;
 int yylex_init (yyscan_t* scanner);
 
 #include "solver_language_yacc.h"
@@ -12,13 +11,12 @@ int yylex_init (yyscan_t* scanner);
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
 extern int yylex (YYSTYPE* yylval, yyscan_t yyscanner);
 
-extern void yyerror(yyscan_t scanner, string s);
 extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 %}
 
 %pure-parser
-%parse-param {yyscan_t yyscanner}
+%parse-param {yyscan_t yyscanner} {SolverProgramState* state}
 %lex-param {yyscan_t yyscanner}
 
 
@@ -105,19 +103,18 @@ methods : method {new Methods($1);} | method methods {new Methods($1, $2);}
 //void SL_LY::set_var_val(Name* name, FuncCall* expr){assignments[name->get_name()] = expr;}
 //void SL_LY::set_var_val(Var* var, FuncCall* expr){assignments[var->get_name()->get_name()] = expr;}
 
-void SL_LY::run_solver_langauge_program()
+void run_solver_langauge_program(SolverProgramState* state)
 {
-
 	void* scanner;
 	yylex_init(&scanner);
 
 	FILE* file_pointer = fopen("solver_language_program.txt", "r");
 	yyset_in(file_pointer, scanner);
-	int rv = yyparse(scanner);
+	int rv = yyparse(scanner, state);
 }
 
 int main(){
-	run_solver_langauge_program();
+	run_solver_langauge_program(nullptr);
 }
 
 //TODO: ask Armando about the difference in implementing declaration/assignment; why is it giving segfault one way but not the other

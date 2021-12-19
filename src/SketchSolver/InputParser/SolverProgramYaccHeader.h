@@ -7,11 +7,11 @@
 
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "string"
-#include "DagFunctionInliner.h"
-#include <map>
 
-using namespace std;
-using namespace SL_LY;
+class Harness;
+class FloatManager;
+class CommandLineArgs;
+class HoleHardcoder;
 
 class SolverProgramState
 {
@@ -31,6 +31,8 @@ public:
 
 };
 
-map<string, FuncCall*> assignments;
+
+void run_solver_langauge_program(SolverProgramState* _state);
+
 
 #endif //SKETCH_SOURCE_SOLVERPROGRAMYACCHEADER_H

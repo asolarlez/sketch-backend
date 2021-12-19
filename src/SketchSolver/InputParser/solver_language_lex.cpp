@@ -451,12 +451,11 @@ static const flex_int16_t yy_chk[81] =
 #include "solver_language_yacc.h"
 
 #define YY_DECL int yylex (YYSTYPE* yylval, yyscan_t yyscanner)
-void yyerror(yyscan_t scanner, string s);
 
 void print_rule(string description, string str);
 
+#line 458 "lex.yy.c"
 #line 459 "lex.yy.c"
-#line 460 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -716,9 +715,9 @@ YY_DECL
 		}
 
 	{
-#line 28 "solver_language_lexer.l"
+#line 27 "solver_language_lexer.l"
 
-#line 722 "lex.yy.c"
+#line 721 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -777,79 +776,79 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 29 "solver_language_lexer.l"
+#line 28 "solver_language_lexer.l"
 {print_rule("Solver", string(yytext));
                                 yylval->name = new Name(string(yytext)); return solver_token;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 31 "solver_language_lexer.l"
+#line 30 "solver_language_lexer.l"
 {print_rule("while", string(yytext));
                                 yylval->name = new Name(string(yytext)); return while_token;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 33 "solver_language_lexer.l"
+#line 32 "solver_language_lexer.l"
 {print_rule("if", string(yytext));
                                 yylval->name = new Name(string(yytext)); return if_token;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 35 "solver_language_lexer.l"
+#line 34 "solver_language_lexer.l"
 {print_rule("return", string(yytext)); return return_token;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 36 "solver_language_lexer.l"
+#line 35 "solver_language_lexer.l"
 {print_rule("return", string(yytext)); return op_eq;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 38 "solver_language_lexer.l"
+#line 37 "solver_language_lexer.l"
 {print_rule("Identifier", string(yytext));
                                 yylval->name = new Name(string(yytext)); return identifier;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 40 "solver_language_lexer.l"
+#line 39 "solver_language_lexer.l"
 {print_rule("String", string(yytext));
                                 yylval->my_const = new Const(string(yytext));
                                 return my_constant;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 43 "solver_language_lexer.l"
+#line 42 "solver_language_lexer.l"
 {print_rule("Integer", string(yytext));
                                 yylval->my_const = new Const(atoi(yytext)); return my_constant;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 45 "solver_language_lexer.l"
+#line 44 "solver_language_lexer.l"
 {print_rule("Comment", string(yytext));}
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 46 "solver_language_lexer.l"
+#line 45 "solver_language_lexer.l"
 {print_rule("WhiteSpace", string(yytext));}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 47 "solver_language_lexer.l"
+#line 46 "solver_language_lexer.l"
 {print_rule("Operator", string(yytext));
                                 assert(string(yytext).size() == 1); return yytext[0];}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 49 "solver_language_lexer.l"
+#line 48 "solver_language_lexer.l"
 {print_rule("NotRecognized", string(yytext)); assert(false);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 50 "solver_language_lexer.l"
+#line 49 "solver_language_lexer.l"
 ECHO;
 	YY_BREAK
-#line 853 "lex.yy.c"
+#line 852 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2018,7 +2017,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 50 "solver_language_lexer.l"
+#line 49 "solver_language_lexer.l"
 
 
 void print_rule(string description, string str)
@@ -2026,7 +2025,7 @@ void print_rule(string description, string str)
     cout << "RULE " << description <<" TOKEN " << str << endl;
 }
 
-void yyerror(yyscan_t scanner, string s)
+void yyerror(yyscan_t scanner, SolverProgramState* state, string s)
 {
     cout << "ERROR " << s << endl;
 }
