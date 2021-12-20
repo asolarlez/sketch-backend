@@ -28,6 +28,7 @@
 #include "InterpreterEnvironment.h"
 
 #include "SolverLanguageYaccHeader.h"
+#include "Harness.h"
 
 
 using namespace std;
@@ -141,9 +142,11 @@ namespace SolverLanguagePrimitives
         { }
         SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore* ctrl_store, FloatManager& floats):
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats))
-        {
-        }
+        {}
 
+        SolutionHolder(SolutionHolder* to_copy): sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+                new Assignment_SkVal(to_copy->assignment_skval))
+        {}
 
         SolutionHolder() {}
         explicit SolutionHolder(ProblemAE* problem) {
@@ -336,7 +339,6 @@ namespace SolverLanguagePrimitives
                 Function* concretized_function = produce_function_with_concretized_inputs(
                         new InputHolder(file->at(i), floats));
                 assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
-                VarStore* new_row = file->at(i);
                 if(concretized_function->get_dag()->get_failed_assert() == NULL)
                 {
                     ret += 1;
@@ -1346,15 +1348,39 @@ namespace SolverLanguagePrimitives
 
     inline SolutionHolder* target_best_effort(SolverProgramState* state)
     {
-        run_solver_langauge_program(state);
 
-        state->run();
+        bool do_solver_program = true;
+        if(do_solver_program) {
+            File *file = new File(state->harness_->get_dag(), state->file_name, state->floats, state->args.seed);
 
-        assert(false);
+            run_solver_langauge_program(state);
+
+            SolutionHolder *solution_holder = state->eval();
+
+            Function *concretized_function =
+                    (new Function(state->harness_, state->floats))->
+                            produce_function_with_concretized_holes(solution_holder);
+            int num_passing_inputs =
+                    concretized_function->count_passing_inputs(file);
+
+            cout << "HERE " << state->harness_->get_name() << endl;
+            cout << "count\t" << num_passing_inputs << " / " << file->size() <<" ("<< 100.0*(float)num_passing_inputs/file->size() << " %)" << endl;
+
+
+            concretized_function->clear();
+
+            solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
+
+            state->harness_->set_solution(solution_holder->to_var_store());
+
+            return solution_holder;
+
+            assert(false);
+        }
 
 //        expose lightverif
-        ofstream fout = ofstream("fixes_old__"+state->harness->get_name());
-        File* all_file = new File(state->harness->get_dag(), state->file_name, state->floats, state->args.seed);
+        ofstream fout = ofstream("fixes_old__"+state->harness_->get_name());
+        File* all_file = new File(state->harness_->get_dag(), state->file_name, state->floats, state->args.seed);
         int num_samples = 20;
         int rows_per_sample = 4;
         vector<pair<int, SolutionHolder*> > solutions;
@@ -1364,8 +1390,8 @@ namespace SolverLanguagePrimitives
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             SolutionHolder* sol = (solver)->
-                    solve(new ProblemAE(new Function(state->harness, state->floats), sub_file));
-            Function* concretized_function = (new Function(state->harness, state->floats))->produce_function_with_concretized_holes(
+                    solve(new ProblemAE(new Function(state->harness_, state->floats), sub_file));
+            Function* concretized_function = (new Function(state->harness_, state->floats))->produce_function_with_concretized_holes(
                     sol);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();
@@ -1393,16 +1419,16 @@ namespace SolverLanguagePrimitives
         cout << "Solution count: " << endl;
         for(int i = 0;i<solutions.size();i++)
         {
-            cout << solutions[i].first <<" %: "<< 100.0*(float)solutions[i].first/all_file->size() << endl;
+            cout << "count\t" << solutions[i].first << " / " << all_file->size() <<" ("<< 100.0*(float)solutions[i].first/all_file->size() << " %)" << endl;
         }
 
         fout << "Solution count: " << endl;
         for(int i = 0;i<solutions.size();i++)
         {
-            fout << solutions[i].first <<" %: "<< 100.0*(float)solutions[i].first/all_file->size() << endl;
+            fout << "count\t" << solutions[i].first << " / " << all_file->size() <<" ("<< 100.0*(float)solutions[i].first/all_file->size() << " %)" << endl;
         }
 
-        state->harness->set_solution(solutions[0].second->to_var_store());
+        state->harness_->set_solution(solutions[0].second->to_var_store());
 
         if(solutions[0].second->get_sat_solver_result() == SATSolver::SATISFIABLE)
         {

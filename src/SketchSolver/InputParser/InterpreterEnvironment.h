@@ -12,6 +12,7 @@
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
 #include "REASSolver.h"
+#include "Harness.h"
 
 
 #include <sstream>

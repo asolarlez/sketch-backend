@@ -14,6 +14,8 @@
 #include "DeductiveSolver.h"
 #include "IntToFloatRewriteDag.h"
 #include "SolverLanguage.h"
+#include "Harness.h"
+#include "ProgramEnvironment.h"
 
 #ifdef CONST
 #undef CONST

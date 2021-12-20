@@ -1,16 +1,17 @@
-Solver void solver_main()
+Solver Solution main(Harness harness, string file_name)
 {
-	File file = File(file_name); // The dataset is stored in a File; File is a native construct.
-	int num_trials = 100; //hyperparameter
-	int num_rows = 10; //hyperparameter
-	// invoke the best_effort_synthesis routine on main - the harness on which we want to do best effort synthesis
+	File file = File(file_name, harness); // The dataset is stored in a File; File is a native construct.
+	int num_trials = 20; //hyperparameter
+	int num_rows = 4; //hyperparameter
+	// invoke the best_effort_synthesis routine on harness - the harness on which we want to do best effort synthesis
 	Solution solution = best_effort_synthesis(harness, file, num_trials, num_rows);
-	//finally concretize the main harness
-	main = main.concretize(solution);
+	//finally concretize the harness harness
+	//harness = harness.concretize(solution);
+	return solution;
 }
 
 Solver Solution best_effort_synthesis(Harness harness, File file, int num_trials, int num_rows) {
-	Solution best_program;
+	Solution best_solution;
 	int best_score = 0;
 
     int trial_id = 0;
@@ -20,14 +21,16 @@ Solver Solution best_effort_synthesis(Harness harness, File file, int num_trials
 		File subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
 		Solution solution = SATSolver(harness, subset_file); // invoke the Sketch Solver on the harness
 		Program program = harness.concretize(solution); // create a program that uses the solution to fill in the holes of the harness.
-		int score = count_passing_inputs(solution, file); // count how many input-output examples are solved with this solution
+		int score = count_passing_inputs(program, file); // count how many input-output examples are solved with this solution
+		program.clear();
 		if(score > best_score) // update the best_solution
 		{
 			best_solution = solution;
+			best_score = score;
 		};
 		trial_id = plus(trial_id, 1);
 	};
-	return solution;
+	return best_solution;
 }
 
 //subroutine to count the number of passing input-output examples.
@@ -39,7 +42,7 @@ Solver int count_passing_inputs(Program program, File file)
 	while(row_id < n){
 	//for(int row_id = 0; row_id < file.size();i++){
 	    Input input = file.get(row_id);
-		bool success = passes(program, input);
+		bool success = program.passes(input);
 		// try{ // try to run the input-output example file[row_id] on the solution
 		//	program(file[row_id]);
 		//}

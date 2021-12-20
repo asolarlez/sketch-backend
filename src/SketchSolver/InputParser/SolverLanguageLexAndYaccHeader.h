@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include "Harness.h"
 
 using namespace std;
 
@@ -23,7 +24,17 @@ class FloatManager;
 class CommandLineArgs;
 class HoleHardcoder;
 
-namespace SL_LY {
+class File;
+
+namespace SolverLanguagePrimitives{
+    class SolutionHolder;
+    class Function;
+    class InputHolder;
+};
+
+//using namespace SolverLanguagePrimitives;
+
+namespace SL {
 
     class VarVal;
 
@@ -36,11 +47,16 @@ namespace SL_LY {
             return name;
         }
 
-        SL_LY::VarVal *eval(SolverProgramState *state);
+        SL::VarVal *eval(SolverProgramState *state);
 
         bool operator < (const Name& other) const
         {
             return name < other.name;
+        }
+
+        bool operator == (const Name& other) const
+        {
+            return name == other.name;
         }
 
     };
@@ -65,6 +81,11 @@ namespace SL_LY {
         bool defined() const
         {
             return type != nullptr && name != nullptr;
+        }
+
+        bool operator == (const Var& other) const
+        {
+            return *type == *other.type && *name == *other.name;
         }
 
         bool operator < (const Var& other) const
@@ -97,34 +118,63 @@ namespace SL_LY {
         }
 
         VarVal *eval(SolverProgramState *pState);
+
+        Name *get_type();
     };
 
     class Method;
+
+    enum VarValType {
+        string_val_type, int_val_type, file_val_type,
+        method_val_type, harness_val_type, solution_val_type,
+        function_val_type, input_val_type, bool_val_type, void_val_type, no_type};
 
     class VarVal {
         union {
             string s;
             int i;
-            ofstream* file;
+            bool b;
+            File* file;
             Method* method;
             Harness* harness;
+            SolverLanguagePrimitives::SolutionHolder* solution;
+            SolverLanguagePrimitives::Function* function;
+            SolverLanguagePrimitives::InputHolder* input_holder;
         };
-        enum VarValType {string_val_type, int_val_type, file_val_type, method_val_type, harness_val_type};
-        VarValType var_val_type;
+        VarValType var_val_type = no_type;
     public:
-        explicit VarVal(string _s) : s(std::move(_s)), var_val_type(string_val_type) {}
+        explicit VarVal(const string& _s) : s(std::move(_s)), var_val_type(string_val_type) {}
         explicit VarVal(int _i) : i(_i) , var_val_type(int_val_type){}
-        explicit VarVal(ofstream* _file) : file(_file) , var_val_type(file_val_type){}
+        explicit VarVal(bool _b) : b(_b) , var_val_type(bool_val_type){}
+        explicit VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
         explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
         explicit VarVal(Harness* _harness) : harness(_harness) , var_val_type(harness_val_type){}
+        explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
+        explicit VarVal(SolverLanguagePrimitives::Function* _function) : function(_function), var_val_type(function_val_type){}
+        explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
+        VarVal(): var_val_type(void_val_type) {}
+
+        VarValType get_type()
+        {
+            return var_val_type;
+        }
 
         VarVal *eval(SolverProgramState *state) {
             return this;
         }
 
         int get_int() {
-            assert(var_val_type == int_val_type);
-            return i;
+            if(var_val_type == int_val_type) {
+                return i;
+            }
+            else if(var_val_type == bool_val_type)
+            {
+                return (int) b;
+            }
+            else
+            {
+                assert(false);
+            }
         }
 
         Method *get_method() {
@@ -140,6 +190,35 @@ namespace SL_LY {
             assert(var_val_type == string_val_type);
             return s;
         }
+
+        Harness *get_harness() {
+            assert(var_val_type == harness_val_type);
+            return harness;
+        }
+
+        File *get_file() {
+            assert(var_val_type == file_val_type);
+            return file;
+        }
+        SolverLanguagePrimitives::SolutionHolder *get_solution() {
+            assert(var_val_type == solution_val_type);
+            return solution;
+        }
+
+        SolverLanguagePrimitives::Function *get_function() {
+            assert(var_val_type == function_val_type);
+            return function;
+        }
+
+        SolverLanguagePrimitives::InputHolder *get_input_holder() {
+            assert(var_val_type == input_val_type);
+            return input_holder;
+        }
+
+        bool is_void(){
+            return var_val_type == void_val_type;
+        }
+
     };
 
     class Param;
@@ -176,6 +255,7 @@ namespace SL_LY {
 
         VarVal* eval(SolverProgramState* state);
 
+        void run(SolverProgramState *pState);
     };
 
 
@@ -388,13 +468,14 @@ namespace SL_LY {
 
     class UnitLine
     {
-        enum LineType {var_line, assign_line, while_line, if_line, return_line};
+        enum LineType {var_line, assign_line, while_line, if_line, return_line, func_call_line};
         union {
             Var* var;
             Assignment* assignment;
             While* while_loop;
             If* if_block;
             Return* return_stmt;
+            FuncCall* func_call;
         };
         LineType line_type;
     public:
@@ -403,6 +484,7 @@ namespace SL_LY {
         explicit UnitLine(While* _while_loop): while_loop(_while_loop), line_type(while_line){}
         explicit UnitLine(If* _if_block): if_block(_if_block), line_type(if_line){}
         explicit UnitLine(Return* _return_stmt): return_stmt(_return_stmt), line_type(return_line){}
+        explicit UnitLine(FuncCall* _func_call): func_call(_func_call), line_type(func_call_line){}
 
         void run(SolverProgramState *state) {
             switch (line_type) {
@@ -420,6 +502,9 @@ namespace SL_LY {
                     break;
                 case return_line:
                     return_stmt->run(state);
+                    break;
+                case func_call_line:
+                    func_call->run(state);
                     break;
                 default:
                     assert(false);
@@ -489,6 +574,6 @@ typedef void* yyscan_t;
 void yyerror(yyscan_t scanner, SolverProgramState* state, string s);
 
 
-using namespace SL_LY;
+//using namespace SL;
 
 #endif //SOLVERLANGUAGEPARSER_LEXANDYACCHEADER_H

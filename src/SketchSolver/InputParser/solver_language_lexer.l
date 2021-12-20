@@ -26,21 +26,21 @@ Comment      ("//"[^\n]*)
 
 %%
 Solver                      {print_rule("Solver", string(yytext));
-                                yylval->name = new Name(string(yytext)); return solver_token;}
+                                yylval->name = new SL::Name(string(yytext)); return solver_token;}
 while                       {print_rule("while", string(yytext));
-                                yylval->name = new Name(string(yytext)); return while_token;}
+                                yylval->name = new SL::Name(string(yytext)); return while_token;}
 if                       {print_rule("if", string(yytext));
-                                yylval->name = new Name(string(yytext)); return if_token;}
+                                yylval->name = new SL::Name(string(yytext)); return if_token;}
 return                       {print_rule("return", string(yytext)); return return_token;}
 ==                          {print_rule("return", string(yytext)); return op_eq;}
 
 {Identifier}                {print_rule("Identifier", string(yytext));
-                                yylval->name = new Name(string(yytext)); return identifier;}
+                                yylval->name = new SL::Name(string(yytext)); return identifier;}
 {String}                    {print_rule("String", string(yytext));
-                                yylval->var_val = new VarVal(string(yytext));
+                                yylval->var_val = new SL::VarVal(string(yytext));
                                 return var_val_rule;}
 {Integer}                   {print_rule("Integer", string(yytext));
-                                yylval->var_val = new VarVal(atoi(yytext)); return var_val_rule;}
+                                yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}
 {Comment}                   {print_rule("Comment", string(yytext));}
 {WhiteSpace}                {print_rule("WhiteSpace", string(yytext));}
 {Operator}                  {print_rule("Operator", string(yytext));

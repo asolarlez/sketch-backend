@@ -170,6 +170,28 @@ public:
 class Assignment_SkVal: public Mapping<SkVal> {
 public:
     Assignment_SkVal(): Mapping<SkVal>() {}
+    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
+        for(auto it: to_copy->assignment)
+        {
+            SkValType sk_val_type = it.second->get_type();
+            switch (sk_val_type) {
+                case sk_type_int:
+                    set(it.first, new SkValInt(*(SkValInt*)it.second));
+                    break;
+                case sk_type_intarr:
+                    set(it.first, new SkValIntArr(*(SkValIntArr*)it.second));
+                    break;
+                case sk_type_bool:
+                    set(it.first, new SkValBool(*(SkValBool*)it.second));
+                    break;
+                case sk_type_boolarr:
+                    set(it.first, new SkValBoolArr(*(SkValBoolArr*)it.second));
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+    }
     Assignment_SkVal(VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {

@@ -70,20 +70,20 @@ union YYSTYPE
 {
 #line 23 "solver_language_parser.y" /* yacc.c:1909  */
 
-	Var* var;
-	VarVal* var_val;
-	FuncCall* func_call;
-	Name* name;
-	Params* params;
-	Param* param;
-	CodeBlock* code_block;
-	UnitLine* unit_line;
-	Assignment* assignment;
-	Method* method;
-	Methods* methods;
-	Predicate* predicate;
-	Operand* operand;
-	MyOperator my_operator;
+	SL::Var* var;
+	SL::VarVal* var_val;
+	SL::FuncCall* func_call;
+	SL::Name* name;
+	SL::Params* params;
+	SL::Param* param;
+	SL::CodeBlock* code_block;
+	SL::UnitLine* unit_line;
+	SL::Assignment* assignment;
+	SL::Method* method;
+	SL::Methods* methods;
+	SL::Predicate* predicate;
+	SL::Operand* operand;
+	SL::MyOperator my_operator;
 
 #line 89 "y.tab.h" /* yacc.c:1909  */
 };

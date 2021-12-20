@@ -21,20 +21,20 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 
 %union{
-	Var* var;
-	VarVal* var_val;
-	FuncCall* func_call;
-	Name* name;
-	Params* params;
-	Param* param;
-	CodeBlock* code_block;
-	UnitLine* unit_line;
-	Assignment* assignment;
-	Method* method;
-	Methods* methods;
-	Predicate* predicate;
-	Operand* operand;
-	MyOperator my_operator;}
+	SL::Var* var;
+	SL::VarVal* var_val;
+	SL::FuncCall* func_call;
+	SL::Name* name;
+	SL::Params* params;
+	SL::Param* param;
+	SL::CodeBlock* code_block;
+	SL::UnitLine* unit_line;
+	SL::Assignment* assignment;
+	SL::Method* method;
+	SL::Methods* methods;
+	SL::Predicate* predicate;
+	SL::Operand* operand;
+	SL::MyOperator my_operator;}
 
 %start root
 %type <methods> methods
@@ -61,47 +61,44 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %%
 
 
-lines : unit ';' {$$ = new CodeBlock($1);} | unit ';' lines {$$ = new CodeBlock($1, $3);}
+lines : unit ';' {$$ = new SL::CodeBlock($1);} | unit ';' lines {$$ = new SL::CodeBlock($1, $3);}
 
-operand: identifier {$$ = new Operand($1);}
+operand: identifier {$$ = new SL::Operand($1);}
 
-operator: '<' {$$ = MyOperator::lt;} | '>' {$$ = MyOperator::gt;} | op_eq {$$ = MyOperator::eq;}
+operator: '<' {$$ = SL::MyOperator::lt;} | '>' {$$ = SL::MyOperator::gt;} | op_eq {$$ = SL::MyOperator::eq;}
 
-predicate: operand operator operand {$$ = new Predicate(new CompositePredicate($2, $1, $3));}
+predicate: operand operator operand {$$ = new SL::Predicate(new SL::CompositePredicate($2, $1, $3));}
 
-unit: declaration {$$ = new UnitLine($1);} | assignment {$$ = new UnitLine($1);} |
-	while_token '(' predicate ')' '{' lines '}' {$$ = new UnitLine(new While($3, $6));} |
-	if_token '(' predicate ')' '{' lines '}' {$$ = new UnitLine(new If($3, $6));} |
-	return_token identifier {$$ = new UnitLine(new Return($2));}
-function_call : identifier '.' identifier '(' params ')' {$$ = new FuncCall($1, $3, $5);}
-	     | identifier '(' params ')' {$$ = new FuncCall(new Name("global"), $1, $3);}
-declaration : identifier identifier {$$ = new Assignment(new Var($1, $2));}
-		| identifier identifier '=' function_call {$$ = new Assignment(new Var($1, $2), $4);}
-		| identifier identifier '=' var_val_rule {$$ = new Assignment(new Var($1, $2), $4);}
+unit: declaration {$$ = new SL::UnitLine($1);} | assignment {$$ = new SL::UnitLine($1);} |
+	while_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::While($3, $6));} |
+	if_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::If($3, $6));} |
+	return_token identifier {$$ = new SL::UnitLine(new SL::Return($2));} | function_call {$$ = new SL::UnitLine($1);}
+function_call : identifier '.' identifier '(' params ')' {$$ = new SL::FuncCall($1, $3, $5);}
+	     | identifier '(' params ')' {$$ = new SL::FuncCall(new SL::Name("global"), $1, $3);}
+declaration : identifier identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
+		| identifier identifier '=' function_call {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+		| identifier identifier '=' var_val_rule {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
 assignment : identifier '=' function_call {$$ =
 //set_var_val($1, $3);
-new Assignment($1, $3);}
+new SL::Assignment($1, $3);}
 //		| declaration '=' function_call {$$ = set_var_val($1, $3);}
 	|
-		identifier '=' identifier {$$ = new Assignment($1, $3);}
-param : identifier {$$ = new Param($1);} | var_val_rule {$$ = new Param($1);}
-params :  {$$ = new Params();} | param {$$ = new Params($1);}
-	| param ',' params {$$ = new Params($1, $3);}
+		identifier '=' identifier {$$ = new SL::Assignment($1, $3);}
+param : identifier {$$ = new SL::Param($1);} | var_val_rule {$$ = new SL::Param($1);}
+params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
+	| param ',' params {$$ = new SL::Params($1, $3);}
 
-typed_params: {$$ = new Params();} | declaration {$$ = new Params(new Param($1));} |
-	      declaration ',' typed_params {$$ = new Params(new Param($1), $3);}
+typed_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(new SL::Param($1));} |
+	      declaration ',' typed_params {$$ = new SL::Params(new SL::Param($1), $3);}
 
 method : solver_token identifier identifier '(' typed_params ')'
-	  '{' lines '}' {$$ = new Method(new Var($2, $3), $5, $8);}
+	  '{' lines '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
 
-methods : method {$$ = new Methods($1);} | method methods {$$ = new Methods($1, $2);}
+methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
 
 root: methods {state->add_root($1);}
 
 %%
-
-//void SL_LY::set_var_val(Name* name, FuncCall* expr){assignments[name->get_name()] = expr;}
-//void SL_LY::set_var_val(Var* var, FuncCall* expr){assignments[var->get_name()->get_name()] = expr;}
 
 void run_solver_langauge_program(SolverProgramState* state)
 {

@@ -14,6 +14,7 @@
 #include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CounterexampleFinder.h"
+#include "Harness.h"
 
 using namespace MSsolverNS;
 

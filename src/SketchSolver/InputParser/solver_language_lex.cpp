@@ -778,19 +778,19 @@ case 1:
 YY_RULE_SETUP
 #line 28 "solver_language_lexer.l"
 {print_rule("Solver", string(yytext));
-                                yylval->name = new Name(string(yytext)); return solver_token;}
+                                yylval->name = new SL::Name(string(yytext)); return solver_token;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 30 "solver_language_lexer.l"
 {print_rule("while", string(yytext));
-                                yylval->name = new Name(string(yytext)); return while_token;}
+                                yylval->name = new SL::Name(string(yytext)); return while_token;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 32 "solver_language_lexer.l"
 {print_rule("if", string(yytext));
-                                yylval->name = new Name(string(yytext)); return if_token;}
+                                yylval->name = new SL::Name(string(yytext)); return if_token;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
@@ -806,20 +806,20 @@ case 6:
 YY_RULE_SETUP
 #line 37 "solver_language_lexer.l"
 {print_rule("Identifier", string(yytext));
-                                yylval->name = new Name(string(yytext)); return identifier;}
+                                yylval->name = new SL::Name(string(yytext)); return identifier;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 39 "solver_language_lexer.l"
 {print_rule("String", string(yytext));
-                                yylval->var_val = new VarVal(string(yytext));
+                                yylval->var_val = new SL::VarVal(string(yytext));
                                 return var_val_rule;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 42 "solver_language_lexer.l"
 {print_rule("Integer", string(yytext));
-                                yylval->var_val = new VarVal(atoi(yytext)); return var_val_rule;}
+                                yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP

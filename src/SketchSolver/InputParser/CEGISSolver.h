@@ -16,6 +16,7 @@
 #include "CEGISChecker.h"
 #include "SkVal.h"
 #include "CEGISFinder.h"
+#include "Harness.h"
 
 using namespace MSsolverNS;
 
