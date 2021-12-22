@@ -1217,11 +1217,14 @@ namespace SolverLanguagePrimitives
             }
             string solver_program_file_name;
 
+            SketchFunction* local_harness = state->function_map["main_lvl2__Wrapper"]->clone();
+
             File *file = nullptr;
             if(state->harness_ == nullptr)
             {
                 assert(!state->function_map.empty());
-                file = new File(state->function_map["main_lvl0__Wrapper"]->get_dag(), file_name, state->floats, state->args.seed);
+
+                file = new File(local_harness->get_dag(), file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
             }
             else
@@ -1236,18 +1239,22 @@ namespace SolverLanguagePrimitives
 
             SolutionHolder *solution_holder = state->eval();
 
-            SketchFunction *concretized_function = state->harness_->produce_with_concretized_holes(solution_holder);
+
+//            SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
+            SketchFunction *concretized_function = local_harness->produce_inlined_dag();
             int num_passing_inputs =
                     concretized_function->count_passing_inputs(file);
 
-            cout << "HERE " << state->harness_->get_name() << endl;
+            cout << "HERE " << local_harness->get_name() << endl;
             cout << "count\t" << num_passing_inputs << " / " << file->size() <<" ("<< 100.0*(float)num_passing_inputs/file->size() << " %)" << endl;
 
             concretized_function->clear();
 
             solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
 
-            state->harness_->set_solution(solution_holder->to_var_store());
+            local_harness->set_solution(solution_holder->to_var_store());
+
+            assert(false);
 
             return solution_holder;
 

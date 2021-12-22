@@ -32,6 +32,12 @@ class SketchFunction
     bool new_way = true;
     bool keep_track_of_original = false;
 public:
+
+    ProgramEnvironment* get_env()
+    {
+        return env;
+    }
+
     SketchFunction(SketchFunction* shallow_copy): original_dag(shallow_copy->original_dag), root_dag(shallow_copy->root_dag), env(shallow_copy->env) {}
     SketchFunction(
             BooleanDAG* _dag_root,
@@ -154,9 +160,9 @@ public:
         return ret;
     }
 
-    SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::SolutionHolder* solution_holder)
+    SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
     {
-        return produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL);
+        return produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL, do_deactivate_pcond);
     }
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
@@ -165,6 +171,7 @@ public:
     }
 
     int count_passing_inputs(File* file) {
+        assert(root_dag->getNodesByType(bool_node::CTRL).size() == 0);
         int ret = 0;
         int num_0s = 0;
         int num_1s = 0;

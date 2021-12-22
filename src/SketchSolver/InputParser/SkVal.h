@@ -128,6 +128,7 @@ protected:
     map<string, ValType*> assignment;
 public:
     Mapping() = default;
+    explicit Mapping(bool is_null): null(is_null) {};
     map<string, ValType*>& get_assignment()
     {
         return assignment;
@@ -170,6 +171,7 @@ public:
 class Assignment_SkVal: public Mapping<SkVal> {
 public:
     Assignment_SkVal(): Mapping<SkVal>() {}
+    explicit Assignment_SkVal(bool is_null): Mapping<SkVal>(is_null) {}
     explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
         for(auto it: to_copy->assignment)
         {
@@ -294,8 +296,19 @@ public:
     }
 
     void update(Assignment_SkVal *updated_assignment) {
+        assert(!null);
+        assert(!updated_assignment->null);
         for(const auto& it : updated_assignment->get_assignment())
         {
+            set(it.first, it.second);
+        }
+    }
+    void join_with(Assignment_SkVal *assignment_to_join_with) {
+        assert(!null);
+        assert(!assignment_to_join_with->null);
+        for(const auto& it : assignment_to_join_with->get_assignment())
+        {
+//            assert(!has(it.first));
             set(it.first, it.second);
         }
     }
@@ -338,7 +351,8 @@ namespace SolverLanguagePrimitives {
         SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
-        SolutionHolder() {}
+        SolutionHolder() {};
+        explicit SolutionHolder(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
 
     explicit SolutionHolder(ProblemAE* problem) {
         cout << "TODO: SolutionHolder::SolutionHolder" << endl;
@@ -409,6 +423,25 @@ namespace SolverLanguagePrimitives {
                 assignment_skval = new Assignment_SkVal();
             } else {
                 assignment_skval->update(updated_solution_holder->get_assignment());
+            }
+        }
+
+        void join_with(SolutionHolder* other)
+        {
+            if(other->sat_solver_result == SATSolver::UNSATISFIABLE) {
+                sat_solver_result = SATSolver::UNSATISFIABLE;
+            }
+            else{
+                assert(other->sat_solver_result == SATSolver::SATISFIABLE);
+                if(sat_solver_result == SATSolver::UNDETERMINED)
+                {
+                    sat_solver_result = other->sat_solver_result;
+                }
+            }
+            if (other->get_assignment()->is_null()) {
+                //do nothing;
+            } else {
+                assignment_skval->join_with(other->get_assignment());
             }
         }
     };

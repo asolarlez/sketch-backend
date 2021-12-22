@@ -63,6 +63,7 @@ void SL::Assignment::run(SolverProgramState *state)
             break;
         case var_dest_type:
             to_var = dest_var;
+            state->add_var(to_var);
             break;
         default:
             assert(false);
@@ -90,7 +91,8 @@ void SL::Assignment::run(SolverProgramState *state)
     }
     else
     {
-        state->add_var_name(to_var);
+        assert(dest_type == var_dest_type);;
+//        state->add_var_name(to_var);
     }
 }
 
@@ -106,7 +108,7 @@ SL::VarVal *SL::Name::eval(SolverProgramState *state)  {
 SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
 {
 
-    enum PredefMethod {no_predef, predef_file, produce_subset_file, sat_solver, concretize, size, get, passes, plus, clear};
+    enum PredefMethod {no_predef, predef_file, produce_subset_file, sat_solver, concretize, size, get, passes, plus, clear, Solution, join};
 
     PredefMethod predef_method = no_predef;
 
@@ -148,6 +150,14 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
     {
         predef_method = clear;
     }
+    else if(method_str == "Solution")
+    {
+        predef_method = Solution;
+    }
+    else if(method_str == "join")
+    {
+        predef_method = join;
+    }
 
     switch (predef_method) {
         case predef_file:
@@ -178,13 +188,15 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             string var_type_str = var->get_type()->to_string();
             assert(var_type_str == "namespace");
             assert(params.size() == 2);
-            SketchFunction* harness = params[0]->eval(state)->get_harness();
+            SketchFunction* harness = params[0]->eval(state)->get_harness()->produce_inlined_dag();
+            cout << "NUM CTRLS HEERE: "<< harness->get_dag()->getNodesByType(bool_node::CTRL).size() << endl;
             File* file = params[1]->eval(state)->get_file();
             using namespace SolverLanguagePrimitives;
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             SolutionHolder* sol = (solver)->
                     solve(new ProblemAE(harness, file));
+            harness->clear();
             return new SL::VarVal(sol);
             break;
         }
@@ -208,7 +220,9 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             SolutionHolder* sol = params[0]->eval(state)->get_solution();
             SketchFunction* harness = state->get_var_val(var)->get_harness();
             SketchFunction* concretized_function =
-                    harness->produce_with_concretized_holes(sol);
+                    harness->produce_with_concretized_holes(sol, true);
+//            SketchFunction* concretized_function = harness->concretize(
+//                    sol, bool_node::CTRL, true);
             return new SL::VarVal(concretized_function);
             break;
         }
@@ -260,6 +274,27 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             return new VarVal();
             break;
         }
+        case Solution:
+        {
+            Var* var = state->name_to_var(var_name);
+            string var_type_str = var->get_type()->to_string();
+            assert(var_type_str == "namespace");
+            assert(params.size() == 0);
+            using namespace SolverLanguagePrimitives;
+            return new VarVal(new SolutionHolder(false));
+        }
+        case join:
+        {
+            Var* var = state->name_to_var(var_name);
+            string var_type_str = var->get_type()->to_string();
+            assert(var_type_str == "Solution");
+            assert(params.size() == 1);
+            using namespace SolverLanguagePrimitives;
+            SolutionHolder* other_solution = params[0]->eval(state)->get_solution();
+            SolutionHolder* base_solution = state->get_var_val(var)->get_solution();
+            base_solution->join_with(other_solution);
+            return new VarVal();
+        }
         case no_predef:
             return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
             break;
@@ -291,11 +326,6 @@ void SL::Method::run(SolverProgramState *state, vector<Param *> &input_params)  
 
 }
 
-void SL::Method::add_to_map(Frame &frame)  {
-    assert(var != nullptr);
-    frame.set_var_val(var, new SL::VarVal(this));
-}
-
 SL::VarVal *SL::Param::eval(SolverProgramState *state)  {
     switch (meta_type) {
         case is_name:
@@ -312,3 +342,11 @@ SL::VarVal *SL::Param::eval(SolverProgramState *state)  {
     }
 }
 
+void SL::Methods::populate_state(Frame &frame)  {
+    Methods* at = this;
+    while(at != nullptr)
+    {
+        frame.add_var_and_set_var_val(at->head->get_var(), new SL::VarVal(at->head));
+        at = at->rest;
+    }
+}

@@ -14,8 +14,10 @@ class Frame {
     map<SL::Var, SL::VarVal *> vars_map;
     map<SL::Name, SL::Var *> name_to_var_map;
 
+    map<string, SketchFunction *> function_map;
+
 public:
-    Frame() = default;
+    Frame(map<string, SketchFunction *> _function_map): function_map(_function_map) {};
 
     void clear()
     {
@@ -23,7 +25,7 @@ public:
         name_to_var_map.clear();
     }
 
-    void add_var_name(SL::Var *var)
+    void add_var_name(SL::Var *var, bool assert_new = true)
     {
         if(name_to_var_map.find(*var->get_name()) == name_to_var_map.end()) {
             //new variable
@@ -31,6 +33,7 @@ public:
         }
         else
         {
+            assert(!assert_new);
             //existing variable.
             assert(name_to_var_map[*var->get_name()] == var);
         }
@@ -77,17 +80,34 @@ public:
         }
     }
 
-    void set_var_val(SL::Var *var, SL::VarVal *var_val) {
+    void set_var_val_throws(SL::Var *var, SL::VarVal *var_val) {
         if(vars_map.find(*var) == vars_map.end())
         {
-            //new assignment.
+            //not yet declared.
+            throw VarNotFound;
         }
         else
         {
             //overwrite.
         }
         vars_map[*var] = var_val;
-        add_var_name(var);
+        add_var_name(var, false);
+    }
+
+    void set_var_val(SL::Var *var, SL::VarVal *var_val) {
+        try{
+            set_var_val_throws(var, var_val);
+        }
+        catch (exception& e)
+        {
+            //not yet declared
+            assert(false);
+        }
+    }
+
+    void add_var_and_set_var_val(SL::Var *var, SL::VarVal *var_val) {
+        add_var(var);
+        set_var_val(var, var_val);
     }
 };
 
@@ -107,11 +127,13 @@ public:
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution, map<string, SketchFunction*>& _function_map):
             harness_(_harness),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
-             function_map(_function_map) {}
+            function_map(_function_map), global(map<string, SketchFunction *>()) {}
     SolverProgramState(map<string, SketchFunction*>& _function_map, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             function_map(_function_map),
-            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr) {}
+            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr),
+            global(
+                    _function_map) {}
 
     SL::Methods* init_root = nullptr;
     void add_root(SL::Methods* _init_root)
@@ -186,10 +208,30 @@ public:
         return true;
     }
 
-    SL::VarVal* set_var_val(SL::Var *var, SL::VarVal* var_val) {
+    void set_var_val(SL::Var *var, SL::VarVal* var_val) {
         assert(!frames.empty());
         assert(var_val_invariant(var, var_val));
-        frames.rbegin()->set_var_val(var, var_val);
+        try {
+            frames.rbegin()->set_var_val_throws(var, var_val);
+        }
+        catch (exception& e)
+        {
+            assert(var->get_type()->to_string() == "SketchFunction");
+
+            global.set_var_val(var, var_val);
+
+            //!!! HERE FIX THIS
+
+            function_map[var->get_name()->to_string()] = var_val->get_function();
+            function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
+                    function_map[var->get_name()->to_string()]->get_dag();
+        }
+    }
+
+    void add_and_set_var_val(SL::Var *var, SL::VarVal* var_val)
+    {
+        add_var(var);
+        set_var_val(var, var_val);
     }
 
     SL::Var* name_to_var(SL::Name* name)
@@ -236,16 +278,16 @@ public:
             var_vals.emplace_back(vals[i]->eval(this));
         }
 
-        frames.emplace_back(Frame());
+        frames.emplace_back(Frame(map<string, SketchFunction *>()));
 
         for(int i = 0;i < vars.size();i++)
         {
-            set_var_val(vars[i]->get_var(), var_vals[i]);
+            add_and_set_var_val(vars[i]->get_var(), var_vals[i]);
         }
     }
 
     void new_stack_frame() {
-        frames.emplace_back(Frame());
+        frames.emplace_back(Frame(map<string, SketchFunction *>()));
     }
 
     void pop_stack_frame() {

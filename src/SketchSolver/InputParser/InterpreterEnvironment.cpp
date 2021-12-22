@@ -955,7 +955,7 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = false;
+        bool do_solver_program = true;
 
         if(do_solver_program)
         {
@@ -1163,7 +1163,7 @@ void InterpreterEnvironment::run_solver_program(int inlineAmnt)
     for(auto it: functionMap)
     {
         sketch_function_map[it.first] = new SketchFunction(
-                functionMap[it.first]->clone(), nullptr, program_env);
+                functionMap[it.first], nullptr, program_env);
     }
 
     SolverLanguage solver_language = SolverLanguage();

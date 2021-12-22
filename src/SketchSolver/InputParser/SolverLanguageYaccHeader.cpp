@@ -10,9 +10,8 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     init_root->populate_state(global);
 
-
-    global.set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("true")), new SL::VarVal(true));
-    global.set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), new SL::VarVal(true));
+    global.add_var_and_set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("true")), new SL::VarVal(true));
+    global.add_var_and_set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), new SL::VarVal(true));
 
     SL::Var* init_f = new SL::Var(new SL::Name("Solution"), new SL::Name("main"));
     assert(*global.name_to_var(init_f->get_name()) == *init_f);
@@ -34,7 +33,7 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
         assert(!function_map.empty());
         for(auto it: function_map)
         {
-            global.set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name(it.first)),
+            global.add_var_and_set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name(it.first)),
                                new SL::VarVal(function_map[it.first]));
         }
     }

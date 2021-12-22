@@ -543,6 +543,11 @@ namespace SL {
         void run(SolverProgramState* state, vector<Param*>& input_params);
 
         VarVal *eval(SolverProgramState* state, vector<Param*>& params);
+
+        Var* get_var()
+        {
+            return var;
+        }
     };
 
     class Methods
@@ -553,16 +558,7 @@ namespace SL {
         explicit Methods(Method* _head): head(_head) {}
         Methods(Method* _head, Methods* _rest): head(_head), rest(_rest) {}
 
-        void populate_state(Frame& frame) {
-            Methods* at = this;
-            while(at != nullptr)
-            {
-                at->head->add_to_map( frame);
-                at = at->rest;
-            }
-        }
-
-
+        void populate_state(Frame& frame);
     };
 };
 
