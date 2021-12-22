@@ -4,7 +4,7 @@
 
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SolverLanguageYaccHeader.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 #include "File.h"
 #include "SolverLanguage.h"
 
@@ -157,7 +157,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             assert(var_type_str == "namespace");
             assert(params.size() == 2);
             string file_name = params[0]->eval(state)->get_string();
-            Harness* harness = params[1]->eval(state)->get_harness();
+            SketchFunction* harness = params[1]->eval(state)->get_harness();
             return new SL::VarVal(new File(harness->get_dag(), file_name, state->floats, state->args.seed));
             break;
         }
@@ -178,13 +178,13 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             string var_type_str = var->get_type()->to_string();
             assert(var_type_str == "namespace");
             assert(params.size() == 2);
-            Harness* harness = params[0]->eval(state)->get_harness();
+            SketchFunction* harness = params[0]->eval(state)->get_harness();
             File* file = params[1]->eval(state)->get_file();
             using namespace SolverLanguagePrimitives;
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             SolutionHolder* sol = (solver)->
-                    solve(new ProblemAE(new Function(harness, state->floats), file));
+                    solve(new ProblemAE(harness, file));
             return new SL::VarVal(sol);
             break;
         }
@@ -202,14 +202,13 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         {
             Var* var = state->name_to_var(var_name);
             string var_type_str = var->get_type()->to_string();
-            assert(var_type_str == "Harness");
+            assert(var_type_str == "SketchFunction");
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
             SolutionHolder* sol = params[0]->eval(state)->get_solution();
-            Harness* harness = state->get_var_val(var)->get_harness();
-            SolverLanguagePrimitives::Function* concretized_function =
-                    (new Function(harness, state->floats))->produce_function_with_concretized_holes(
-                    sol);
+            SketchFunction* harness = state->get_var_val(var)->get_harness();
+            SketchFunction* concretized_function =
+                    harness->produce_with_concretized_holes(sol);
             return new SL::VarVal(concretized_function);
             break;
         }
@@ -228,11 +227,11 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         {
             Var* var = state->name_to_var(var_name);
             string var_type_str = var->get_type()->to_string();
-            assert(var_type_str == "Program");
+            assert(var_type_str == "SketchFunction");
             assert(params.size() == 1);
-            SolverLanguagePrimitives::Function* program = state->get_var_val(var)->get_function();
+            SketchFunction* program = state->get_var_val(var)->get_function();
             SolverLanguagePrimitives::InputHolder* input_holder = params[0]->eval(state)->get_input_holder();
-            SolverLanguagePrimitives::Function* concretized_function = program->produce_function_with_concretized_inputs(input_holder);
+            SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
             assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
             bool ret = concretized_function->get_dag()->get_failed_assert() == NULL;
             concretized_function->clear();
@@ -254,9 +253,9 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         {
             Var* var = state->name_to_var(var_name);
             string var_type_str = var->get_type()->to_string();
-            assert(var_type_str == "Program");
+            assert(var_type_str == "SketchFunction");
             assert(params.empty());
-            SolverLanguagePrimitives::Function* program = state->get_var_val(var)->get_function();
+            SketchFunction* program = state->get_var_val(var)->get_function();
             program->clear();
             return new VarVal();
             break;

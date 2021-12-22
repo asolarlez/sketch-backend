@@ -10,8 +10,7 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     init_root->populate_state(global);
 
-    global.set_var_val(new SL::Var(new SL::Name("Harness"), new SL::Name("harness")), new SL::VarVal(harness_));
-    global.set_var_val(new SL::Var(new SL::Name("string"), new SL::Name("file_name")), new SL::VarVal(file_name));
+
     global.set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("true")), new SL::VarVal(true));
     global.set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), new SL::VarVal(true));
 
@@ -19,11 +18,30 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
     assert(*global.name_to_var(init_f->get_name()) == *init_f);
     auto input_params = vector<SL::Param*>();
 
-    input_params.emplace_back(new SL::Param(new SL::Var(new SL::Name("Harness"), new SL::Name("harness"))));
-    input_params.emplace_back(new SL::Param(new SL::Var(new SL::Name("string"), new SL::Name("file_name"))));
+
+
+    if(harness_ != nullptr)
+    {
+        assert(function_map.empty());
+        global.set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name("harness")),
+                           new SL::VarVal(harness_));
+
+        input_params.emplace_back(new SL::Param(new SL::VarVal(harness_)));
+
+    }
+    else
+    {
+        assert(!function_map.empty());
+        for(auto it: function_map)
+        {
+            global.set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name(it.first)),
+                               new SL::VarVal(function_map[it.first]));
+        }
+    }
 
     new_stack_frame();
     assert(frames.size() == 1);
+
     global.get_var_val(init_f)->get_method()->run(this, input_params);
 
     SolverLanguagePrimitives::SolutionHolder* ret = get_return_var_val()->get_solution();

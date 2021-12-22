@@ -14,7 +14,7 @@
 #include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CounterexampleFinder.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 
 using namespace MSsolverNS;
 
@@ -37,14 +37,14 @@ class CEGISChecker
 	void growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 
 
-	void pushProblem(Harness* p){
+	void pushProblem(SketchFunction* p){
 		problemStack.push(p);
 	}
 	int problemLevel(){
 		return (int) problemStack.size();
 	}
 	void popProblem(){
-		Harness* t = problemStack.top();
+		SketchFunction* t = problemStack.top();
 		problemStack.pop();
 		t->clear();
 		delete t;
@@ -62,7 +62,7 @@ class CEGISChecker
 
 //--moved from protected;
 
-	stack<Harness*> problemStack;
+	stack<SketchFunction*> problemStack;
 
 	map<int, File*> files;
 
@@ -71,7 +71,7 @@ class CEGISChecker
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<Harness*> problems;
+	vector<SketchFunction*> problems;
 
 	vector<Tvalue> check_node_ids;
 
@@ -90,7 +90,7 @@ public:
         return problemStack.top()->get_dag();
     }
 
-    Harness* getHarness()
+    SketchFunction* getHarness()
     {
         return problemStack.top();
     }
@@ -105,7 +105,7 @@ public:
     }
 
 
-	void addProblem(Harness *harness, File *file)
+	void addProblem(SketchFunction *harness, File *file)
 	{
 		curProblem = (int) problems.size();
 		problems.push_back(harness);
@@ -113,7 +113,7 @@ public:
             files[curProblem] = file;
         }
 
-        Harness* inlined_harness = harness->produce_inlined_dag();
+        SketchFunction* inlined_harness = harness->produce_inlined_dag();
         redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 
         // IS THIS DEBUG CODE? YES

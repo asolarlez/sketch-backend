@@ -14,7 +14,7 @@
 #include "DeductiveSolver.h"
 #include "IntToFloatRewriteDag.h"
 #include "SolverLanguage.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 #include "ProgramEnvironment.h"
 
 #ifdef CONST
@@ -788,9 +788,9 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
         map<string, BooleanDAG *> &old_map = program_env->functionMap;
         assert(&old_map == &functionMap);
         program_env->functionMap = new_map;
-        Harness *harness_to_only_unroll = new Harness(new_map[f_to_concretize]->clone(), nullptr,
-                                                      program_env);
-        Harness* new_harness_to_only_unroll = harness_to_only_unroll->do_inline(true);
+        SketchFunction *harness_to_only_unroll = new SketchFunction(new_map[f_to_concretize]->clone(), nullptr,
+                                                                    program_env);
+        SketchFunction* new_harness_to_only_unroll = harness_to_only_unroll->do_inline(true);
         vector<bool_node*>& ctrls = new_harness_to_only_unroll->get_dag()->getNodesByType(bool_node::CTRL);
         cout << "ONLY UNROLLED" << endl;
         cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
@@ -847,8 +847,8 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 
     if(true){
         /// UNROLLING AND CONCERTIZING
-        Harness *harness_for_function = new Harness(functionMap[f_to_concretize]->clone(), nullptr,
-                                                    program_env);
+        SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
+                                                                  program_env);
         harness_for_function = harness_for_function->concretize(
                 partial_concretization, bool_node::CTRL, true);
 
@@ -880,7 +880,7 @@ void print_ctrls(ProgramEnvironment* env)
     for(auto it: env->functionMap)
     {
 
-        Harness* local_harness = new Harness(it.second->clone(), nullptr, env);
+        SketchFunction* local_harness = new SketchFunction(it.second->clone(), nullptr, env);
 
         local_harness = local_harness->do_inline();
 
@@ -954,6 +954,15 @@ int InterpreterEnvironment::doallpairs() {
 			hardcoder.fixValue(*inline_ctrl, params.inlineAmnt - minInlining, 5);
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
+
+        bool do_solver_program = false;
+
+        if(do_solver_program)
+        {
+            //TODO: Incorporate: hardcoder.setCurHarness((int)i);
+            run_solver_program(inlineAmnt);
+        }
+        else
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
@@ -999,7 +1008,7 @@ int InterpreterEnvironment::doallpairs() {
                 }
                 BooleanDAG* bd = nullptr;
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-                Harness* local_harness = new Harness(getCopy(spskpairs[i].sketch), bd, program_env);
+                SketchFunction* local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), bd, program_env);
 
                 if(fixes) {
                     local_harness = local_harness->concretize(partial_concretization, bool_node::CTRL);
@@ -1063,6 +1072,8 @@ int InterpreterEnvironment::doallpairs() {
 			}
 
 		}
+
+
 		roundtimer.stop();
 		cout << "**ROUND " << trailID << " : " << hardcoder.getTotsize() << " ";
 		roundtimer.print("time");
@@ -1142,8 +1153,59 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
 }
 */
 
+void InterpreterEnvironment::run_solver_program(int inlineAmnt)
+{
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harness, ostream &out, const string &file)  {
+    ProgramEnvironment *program_env =
+            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
+
+    map<string, SketchFunction*> sketch_function_map;
+    for(auto it: functionMap)
+    {
+        sketch_function_map[it.first] = new SketchFunction(
+                functionMap[it.first]->clone(), nullptr, program_env);
+    }
+
+    SolverLanguage solver_language = SolverLanguage();
+    SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
+            sketch_function_map, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+
+    cout << "EXITED SolverLanguage" << endl;
+    if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+    {
+        status = UNSAT;
+    }
+    if(ret->has_assignment_skval()) {
+        hardcoder.get_control_map(currentControls);
+        ret->get_control_map(currentControls);
+        cout << "recorded_solution" << endl;
+        cout << "VALUES ";
+        for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
+            cout << it->first << ": " << it->second << ", ";
+        }
+        cout << endl;
+    }
+    else
+    {
+        cout << "No solution";
+    }
+    cout << "EXITING assertHarness." << endl;
+
+    if(ret->get_sat_solver_result() == SATSolver::SATISFIABLE)
+    {
+        cout << "return SATSolver::SATISFIABLE" << endl;
+    }
+    else
+    {
+        cout << "return NOT SATSolver::SATISFIABLE" << endl;
+    }
+
+    assert(ret->get_sat_solver_result() == SATSolver::SATISFIABLE);
+//    return ret->get_sat_solver_result();
+}
+
+
+SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file)  {
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
@@ -1152,7 +1214,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(Harness *harnes
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                harness, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+                harness, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind, *(new map<string, SketchFunction*>()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1303,7 +1365,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                new Harness(dag), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+                new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind, *(new map<string, SketchFunction*>()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1343,7 +1405,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
 	    new_file = nullptr;
 	}
 
-    solver->addProblem(new Harness(dag), new_file);
+    solver->addProblem(new SketchFunction(dag), new_file);
 
 	//	cout << "InterpreterEnvironment: new problem" << endl;
 	//	problem->lprint(cout);

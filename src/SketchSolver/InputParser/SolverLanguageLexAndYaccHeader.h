@@ -12,23 +12,23 @@
 #include <map>
 #include <vector>
 #include <fstream>
-#include "Harness.h"
+#include "SketchFunction.h"
 
 using namespace std;
 
 class SolverProgramState;
 class Frame;
 
-class Harness;
+class SketchFunction;
 class FloatManager;
 class CommandLineArgs;
 class HoleHardcoder;
 
 class File;
+class SketchFunction;
 
 namespace SolverLanguagePrimitives{
     class SolutionHolder;
-    class Function;
     class InputHolder;
 };
 
@@ -126,8 +126,7 @@ namespace SL {
 
     enum VarValType {
         string_val_type, int_val_type, file_val_type,
-        method_val_type, harness_val_type, solution_val_type,
-        function_val_type, input_val_type, bool_val_type, void_val_type, no_type};
+        method_val_type, skfunc_val_type, solution_val_type, input_val_type, bool_val_type, void_val_type, no_type};
 
     class VarVal {
         union {
@@ -136,9 +135,8 @@ namespace SL {
             bool b;
             File* file;
             Method* method;
-            Harness* harness;
+            SketchFunction* skfunc;
             SolverLanguagePrimitives::SolutionHolder* solution;
-            SolverLanguagePrimitives::Function* function;
             SolverLanguagePrimitives::InputHolder* input_holder;
         };
         VarValType var_val_type = no_type;
@@ -148,9 +146,8 @@ namespace SL {
         explicit VarVal(bool _b) : b(_b) , var_val_type(bool_val_type){}
         explicit VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
         explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
-        explicit VarVal(Harness* _harness) : harness(_harness) , var_val_type(harness_val_type){}
+        explicit VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){}
         explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
-        explicit VarVal(SolverLanguagePrimitives::Function* _function) : function(_function), var_val_type(function_val_type){}
         explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
         VarVal(): var_val_type(void_val_type) {}
 
@@ -191,9 +188,9 @@ namespace SL {
             return s;
         }
 
-        Harness *get_harness() {
-            assert(var_val_type == harness_val_type);
-            return harness;
+        SketchFunction *get_harness() {
+            assert(var_val_type == skfunc_val_type);
+            return skfunc;
         }
 
         File *get_file() {
@@ -205,9 +202,9 @@ namespace SL {
             return solution;
         }
 
-        SolverLanguagePrimitives::Function *get_function() {
-            assert(var_val_type == function_val_type);
-            return function;
+        SketchFunction *get_function() {
+            assert(var_val_type == skfunc_val_type);
+            return skfunc;
         }
 
         SolverLanguagePrimitives::InputHolder *get_input_holder() {

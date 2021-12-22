@@ -37,7 +37,9 @@ return                       {print_rule("return", string(yytext)); return retur
 {Identifier}                {print_rule("Identifier", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return identifier;}
 {String}                    {print_rule("String", string(yytext));
-                                yylval->var_val = new SL::VarVal(string(yytext));
+                                string ret = string(yytext);
+                                ret = ret.substr(1, ret.size()-2);
+                                yylval->var_val = new SL::VarVal(ret);
                                 return var_val_rule;}
 {Integer}                   {print_rule("Integer", string(yytext));
                                 yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}

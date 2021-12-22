@@ -1713,16 +1713,22 @@ yyreturn:
 #line 101 "solver_language_parser.y" /* yacc.c:1906  */
 
 
-void run_solver_langauge_program(SolverProgramState* state)
+void run_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
 	void* scanner;
 	yylex_init(&scanner);
 
-	FILE* file_pointer = fopen("solver_language_program.txt", "r");
+	char solver_program_file_char[solver_program_file.size()];
+	for(int i = 0;i<solver_program_file.size();i++)
+	{
+		solver_program_file_char[i] = solver_program_file[i];
+	}
+
+	FILE* file_pointer = fopen(solver_program_file_char, "r");
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);
 }
 
 //int main(){
-//	run_solver_langauge_program(nullptr);
+//	run_solver_langauge_program(nullptr, "");
 //}

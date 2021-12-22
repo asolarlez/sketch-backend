@@ -93,7 +93,7 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	
 	if(PARAMS->verbosity > 2){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<endl; }
 	if(failedpos<cutoff){		
-		pushProblem(new Harness(dag));
+		pushProblem(new SketchFunction(dag));
 		if(PARAMS->verbosity > 2){
 			cout<<"Level "<<problemLevel()<<"Replacing dag of size "<<orisize<<" with size "<<dag->size()<<endl;
 		}
@@ -156,7 +156,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	}
 	dag = dag->clone();
 	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
-	pushProblem(new Harness(dag));
+	pushProblem(new SketchFunction(dag));
 	bool hasInput = true;
 	int hold = -1;
 	do{
@@ -266,7 +266,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 				tbd->lprint(cout);
 			}
 			if(PARAMS->verbosity > 8){ cout<<"SLICE SIZE = "<< tbd->size() <<endl; }
-			pushProblem(new Harness(tbd));
+			pushProblem(new SketchFunction(tbd));
 			
 			lbool rv = baseCheck(controls, tmpin);
 			
@@ -578,7 +578,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
     }
     //Return counter-example concretized dag
 
-    Harness* ret_dag = getHarness()->produce_concretization(input, bool_node::SRC);
+    SketchFunction* ret_dag = getHarness()->produce_concretization(input, bool_node::SRC);
 //	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
 	return ret_dag->get_dag();
 //	return true; //check failed = doMore = true

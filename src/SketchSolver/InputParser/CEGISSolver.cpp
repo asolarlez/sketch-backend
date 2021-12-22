@@ -15,13 +15,13 @@
 
 
 
-void CEGISSolver::addProblem(Harness *harness, File *file){
+void CEGISSolver::addProblem(SketchFunction *harness, File *file){
     checker->addProblem(harness, file);
 	problems.push_back(harness);
 
     {
 
-        Harness* inlined_harness = harness->produce_inlined_dag();
+        SketchFunction* inlined_harness = harness->produce_inlined_dag();
         vector<bool_node*>& problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);

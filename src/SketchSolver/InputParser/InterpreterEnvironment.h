@@ -12,7 +12,7 @@
 #include "DagOptimizeCommutAssoc.h"
 #include "CEGISSolver.h"
 #include "REASSolver.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 
 
 #include <sstream>
@@ -212,6 +212,8 @@ public:
 
 	vector<spskpair > spskpairs;
 
+    void run_solver_program(int inlineAmnt);
+
 	void addspskpair(const string& spec, const string& sketch) {
 		spskpairs.push_back(spskpair(spec, sketch));
 	}
@@ -369,7 +371,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
     SATSolver::SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
-    SATSolver::SATSolverResult assertHarness(Harness* harness, ostream &out, const string &file);
+    SATSolver::SATSolverResult assertHarness(SketchFunction* harness, ostream &out, const string &file);
 	// SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);

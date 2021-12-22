@@ -7,7 +7,7 @@
 
 #include "string"
 #include "SolverLanguageLexAndYaccHeader.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 
 
 class Frame {
@@ -94,18 +94,24 @@ public:
 class SolverProgramState
 {
 public:
-    Harness* harness_ = nullptr;
-    const string& file_name;
     FloatManager& floats;
     CommandLineArgs& args;
     HoleHardcoder& hc;
     bool hasGoodEnoughSolution;
-    SolverProgramState(Harness* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
-                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
-            harness_(_harness), file_name(_file_name), floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution)
-    {
 
-    }
+    map<string, SketchFunction*>& function_map;
+
+    SketchFunction* harness_ = nullptr;
+
+    SolverProgramState(SketchFunction* _harness, FloatManager& _floats, CommandLineArgs& _args,
+                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, map<string, SketchFunction*>& _function_map):
+            harness_(_harness),
+            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
+             function_map(_function_map) {}
+    SolverProgramState(map<string, SketchFunction*>& _function_map, FloatManager& _floats, CommandLineArgs& _args,
+                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
+            function_map(_function_map),
+            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr) {}
 
     SL::Methods* init_root = nullptr;
     void add_root(SL::Methods* _init_root)
@@ -155,8 +161,8 @@ public:
         else if(var_type_str == "method"){
             assert(false);
         }
-        else if(var_type_str == "Harness"){
-            assert(var_val_type == SL::harness_val_type);
+        else if(var_type_str == "SketchFunction"){
+            assert(var_val_type == SL::skfunc_val_type);
         }
         else if(var_type_str == "Solution")
         {
@@ -164,7 +170,7 @@ public:
         }
         else if(var_type_str == "Program")
         {
-            assert(var_val_type == SL::function_val_type);
+            assert(var_val_type == SL::skfunc_val_type);
         }
         else if(var_type_str == "Input")
         {
@@ -260,7 +266,7 @@ public:
 };
 
 
-void run_solver_langauge_program(SolverProgramState* _state);
+void run_solver_langauge_program(SolverProgramState* _state, string solver_program_file);
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H

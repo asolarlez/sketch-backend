@@ -196,7 +196,7 @@ public:
                     return complete_row;
                 }
                 else {
-                    Assert(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
+                    AssertDebug(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
                     return incomplete_row;
                 }
             }
@@ -211,7 +211,7 @@ public:
                 return complete_row;
             }
             else{
-                Assert(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
+                AssertDebug(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
                 return incomplete_row;
             }
         }
@@ -238,6 +238,7 @@ public:
             }
             catch (BasicError& e) {
                 cerr << "Error parsing file " << fname << endl;
+                file.close();
                 throw e;
             }
 

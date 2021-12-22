@@ -16,7 +16,7 @@
 #include "CEGISChecker.h"
 #include "SkVal.h"
 #include "CEGISFinder.h"
-#include "Harness.h"
+#include "SketchFunction.h"
 
 using namespace MSsolverNS;
 
@@ -55,7 +55,7 @@ protected:
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<Harness*> problems;
+	vector<SketchFunction*> problems;
 
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
@@ -106,7 +106,7 @@ public:
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(Harness *harness, File *file);
+	void addProblem(SketchFunction *harness, File *file);
 
 
     ElapsedTime* get_last_elapsed_time()

@@ -301,5 +301,130 @@ public:
     }
 };
 
+class SkHoleSpec
+{
+    string name;
+    SkValType type;
+public:
+    SkHoleSpec(string _name, SkValType _type): name(std::move(_name)), type(_type) {}
+    string get_name() const
+    {
+        return name;
+    }
+    SkValType get_type() const
+    {
+        return type;
+    }
+};
+
+namespace SolverLanguagePrimitives {
+
+    class ProblemAE;
+
+    class SolutionHolder {
+        Assignment_SkVal *assignment_skval = NULL;
+        SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
+    public :
+        explicit SolutionHolder(SATSolver::SATSolverResult _sat_solver_result) :
+                sat_solver_result(_sat_solver_result) {
+        }
+
+        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
+                sat_solver_result(_sat_solver_result), assignment_skval(_assignment_skval) {}
+
+        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
+                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
+
+        SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+                new Assignment_SkVal(to_copy->assignment_skval)) {}
+
+        SolutionHolder() {}
+
+    explicit SolutionHolder(ProblemAE* problem) {
+        cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+        assert(false);
+    }
+        VarStore *get_controls(FloatManager &floats) {
+            VarStore *ret = new VarStore();
+            for (auto it: assignment_skval->get_assignment()) {
+                switch (it.second->get_type()) {
+
+                    case sk_type_int:
+                        ret->setVarVal(it.first, ((SkValInt *) it.second)->get(), OutType::INT);
+                        break;
+                    case sk_type_float:
+                        ret->setVarVal(it.first, floats.getIdx(((SkValFloat *) it.second)->get()), OutType::FLOAT);
+                        break;
+                    case sk_type_bool:
+                        ret->setVarVal(it.first, ((SkValBool *) it.second)->get(), OutType::BOOL);
+                        break;
+                    default:
+                        AssertDebug(false, "missing skval cases.")
+
+                }
+            }
+            return ret;
+        }
+
+        SATSolver::SATSolverResult get_sat_solver_result() {
+            return sat_solver_result;
+        }
+
+        void set_sat_solver_result(SATSolver::SATSolverResult _rez) {
+            sat_solver_result = _rez;
+        }
+
+        string to_string() {
+            cout << "SolutionHolder::to_string" << endl;
+            assert(false);
+        }
+
+        VarStore *to_var_store() {
+            return assignment_skval->to_var_store();
+        }
+
+        void get_control_map(map<string, string> &map) {
+            if (assignment_skval != NULL) {
+                for (auto it: assignment_skval->get_assignment()) {
+                    map[it.first] = it.second->to_string();
+                }
+            }
+        }
+
+        bool has_assignment_skval() {
+            if (assignment_skval == NULL) {
+                return false;
+            } else {
+                return !assignment_skval->is_null();
+            }
+        }
+
+        Assignment_SkVal *get_assignment() {
+            return assignment_skval;
+        }
+
+        void update(SolutionHolder *updated_solution_holder) {
+            sat_solver_result = updated_solution_holder->get_sat_solver_result();
+            if (updated_solution_holder->get_assignment()->is_null()) {
+                assignment_skval = new Assignment_SkVal();
+            } else {
+                assignment_skval->update(updated_solution_holder->get_assignment());
+            }
+        }
+    };
+
+    class InputHolder : public Assignment_SkVal {
+    public :
+        InputHolder() : Assignment_SkVal() {}
+
+        InputHolder(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
+
+        explicit InputHolder(ProblemAE *problem) : Assignment_SkVal() {
+            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+            assert(false);
+        }
+    };
+
+}
 
 #endif //SKETCH_SOURCE_SKVAL_H
