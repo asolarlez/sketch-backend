@@ -959,8 +959,12 @@ int InterpreterEnvironment::doallpairs() {
 
         if(do_solver_program)
         {
+            assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
-            run_solver_program(inlineAmnt);
+            result = run_solver_program(inlineAmnt);
+            assert(result == SATSolver::SATISFIABLE);
+            return 0;
+            break;
         }
         else
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
@@ -1153,7 +1157,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
 }
 */
 
-void InterpreterEnvironment::run_solver_program(int inlineAmnt)
+SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt)
 {
 
     ProgramEnvironment *program_env =
@@ -1201,7 +1205,7 @@ void InterpreterEnvironment::run_solver_program(int inlineAmnt)
     }
 
     assert(ret->get_sat_solver_result() == SATSolver::SATISFIABLE);
-//    return ret->get_sat_solver_result();
+    return ret->get_sat_solver_result();
 }
 
 

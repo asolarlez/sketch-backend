@@ -1217,14 +1217,14 @@ namespace SolverLanguagePrimitives
             }
             string solver_program_file_name;
 
-            SketchFunction* local_harness = state->function_map["main_lvl2__Wrapper"]->clone();
+            SketchFunction* local_harness = state->function_map["main_lvl2"];
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
             {
                 assert(!state->function_map.empty());
 
-                file = new File(local_harness->get_dag(), file_name, state->floats, state->args.seed);
+                file = new File(local_harness->clone()->do_inline()->get_dag(), file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
             }
             else
@@ -1253,8 +1253,6 @@ namespace SolverLanguagePrimitives
             solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
 
             local_harness->set_solution(solution_holder->to_var_store());
-
-            assert(false);
 
             return solution_holder;
 

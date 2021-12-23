@@ -48,20 +48,22 @@ extern int yydebug;
     identifier = 258,
     solver_token = 259,
     while_token = 260,
-    if_token = 261,
-    return_token = 262,
-    op_eq = 263,
-    var_val_rule = 264
+    for_token = 261,
+    if_token = 262,
+    return_token = 263,
+    op_eq = 264,
+    var_val_rule = 265
   };
 #endif
 /* Tokens.  */
 #define identifier 258
 #define solver_token 259
 #define while_token 260
-#define if_token 261
-#define return_token 262
-#define op_eq 263
-#define var_val_rule 264
+#define for_token 261
+#define if_token 262
+#define return_token 263
+#define op_eq 264
+#define var_val_rule 265
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -85,7 +87,7 @@ union YYSTYPE
 	SL::Operand* operand;
 	SL::MyOperator my_operator;
 
-#line 89 "y.tab.h" /* yacc.c:1909  */
+#line 91 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

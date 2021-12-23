@@ -29,6 +29,8 @@ Solver                      {print_rule("Solver", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return solver_token;}
 while                       {print_rule("while", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return while_token;}
+for                       {print_rule("for", string(yytext));
+                                yylval->name = new SL::Name(string(yytext)); return for_token;}
 if                       {print_rule("if", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return if_token;}
 return                       {print_rule("return", string(yytext)); return return_token;}

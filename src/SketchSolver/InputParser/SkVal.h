@@ -348,16 +348,16 @@ namespace SolverLanguagePrimitives {
         SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
 
-        SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+        explicit SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
-        SolutionHolder() {};
+        SolutionHolder() = default;;
         explicit SolutionHolder(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
 
-    explicit SolutionHolder(ProblemAE* problem) {
-        cout << "TODO: SolutionHolder::SolutionHolder" << endl;
-        assert(false);
-    }
+        explicit SolutionHolder(ProblemAE* problem) {
+            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+            assert(false);
+        }
         VarStore *get_controls(FloatManager &floats) {
             VarStore *ret = new VarStore();
             for (auto it: assignment_skval->get_assignment()) {

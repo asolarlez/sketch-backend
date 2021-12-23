@@ -202,6 +202,14 @@ public:
         {
             assert(var_val_type == SL::bool_val_type);
         }
+        else if(var_type_str == "vector_pair_int_solution")
+        {
+            assert(var_val_type == SL::vec_val_type);
+        }
+        else if(var_type_str == "pair_int_solution")
+        {
+            assert(var_val_type == SL::pair_int_solution_val_type);
+        }
         else{
             assert(false);
         }

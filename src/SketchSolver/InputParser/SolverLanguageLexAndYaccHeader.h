@@ -126,29 +126,55 @@ namespace SL {
 
     enum VarValType {
         string_val_type, int_val_type, file_val_type,
-        method_val_type, skfunc_val_type, solution_val_type, input_val_type, bool_val_type, void_val_type, no_type};
+        method_val_type, skfunc_val_type, solution_val_type,
+        input_val_type, bool_val_type, void_val_type,
+        vec_val_type, pair_int_solution_val_type,
+        float_val_type,
+        no_type};
 
     class VarVal {
         union {
             string s;
             int i;
             bool b;
+            float float_val;
             File* file;
             Method* method;
             SketchFunction* skfunc;
             SolverLanguagePrimitives::SolutionHolder* solution;
             SolverLanguagePrimitives::InputHolder* input_holder;
+            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vec;
+            pair<int, SolverLanguagePrimitives::SolutionHolder *> pair_int_solution;
         };
         VarValType var_val_type = no_type;
     public:
         explicit VarVal(const string& _s) : s(std::move(_s)), var_val_type(string_val_type) {}
-        explicit VarVal(int _i) : i(_i) , var_val_type(int_val_type){}
-        explicit VarVal(bool _b) : b(_b) , var_val_type(bool_val_type){}
+        template <typename T>
+        explicit VarVal(T val){
+            if(std::is_same<bool,T>::value)
+            {
+                b = val;
+                var_val_type = bool_val_type;
+            }
+            else if(std::is_same<int,T>::value)
+            {
+                i = val;
+                var_val_type = int_val_type;
+            }
+            else {
+                assert(false);
+            }
+        }
+        explicit VarVal(float _float_val) : float_val(_float_val) , var_val_type(float_val_type){}
         explicit VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
         explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
         explicit VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){}
         explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
         explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
+        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vec) :
+            vec(_vec), var_val_type(vec_val_type){}
+        explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
+                pair_int_solution(_pair_int_solution), var_val_type(pair_int_solution_val_type){}
         VarVal(): var_val_type(void_val_type) {}
 
         VarValType get_type()
@@ -158,6 +184,12 @@ namespace SL {
 
         VarVal *eval(SolverProgramState *state) {
             return this;
+        }
+
+        bool get_bool()
+        {
+            assert(var_val_type == bool_val_type);
+            return b;
         }
 
         int get_int() {
@@ -216,6 +248,62 @@ namespace SL {
             return var_val_type == void_val_type;
         }
 
+        string to_string()
+        {
+            switch (var_val_type) {
+
+                case string_val_type:
+                    return get_string();
+                    break;
+                case int_val_type:
+                    return std::to_string(get_int());
+                    break;
+                case file_val_type:
+                    assert(false);
+                    break;
+                case method_val_type:
+                    assert(false);
+                    break;
+                case skfunc_val_type:
+                    assert(false);
+                    break;
+                case solution_val_type:
+                    assert(false);
+                    break;
+                case input_val_type:
+                    assert(false);
+                    break;
+                case bool_val_type:
+                    return std::to_string(get_bool());
+                    break;
+                case void_val_type:
+                    assert(false);
+                    break;
+                case no_type:
+                    assert(false);
+                    break;
+                case float_val_type:
+                    return std::to_string(float_val);
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+
+        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector() {
+            assert(var_val_type == vec_val_type);
+            return vec;
+        }
+
+        pair<int, SolverLanguagePrimitives::SolutionHolder *> get_pair() {
+            assert(var_val_type == pair_int_solution_val_type);
+            return pair_int_solution;
+        }
+
+        float get_float() {
+            assert(var_val_type == float_val_type);
+            return float_val;
+        }
     };
 
     class Param;
@@ -249,6 +337,8 @@ namespace SL {
                 var_name(_class_name), method_name(_method_name) {
             _params->populate_vector(params);
         };
+
+        Var* get_var_assert_type(SolverProgramState* state, string type_name);
 
         VarVal* eval(SolverProgramState* state);
 
@@ -309,8 +399,9 @@ namespace SL {
             Name *name;
             VarVal *var_val;
             Var* var;
+            FuncCall* func_call;
         };
-        enum ParamMetaType {is_name, is_var_val, is_var};
+        enum ParamMetaType {is_name, is_var_val, is_var, is_func_call};
         ParamMetaType meta_type;
     public:
         explicit Param(Name *_name) : name(_name), meta_type(is_name) {};
@@ -319,6 +410,7 @@ namespace SL {
             assert(!assignment->has_assignment());
         };
         explicit Param(VarVal *_var_val) : var_val(_var_val), meta_type(is_var_val) {};
+        explicit Param(FuncCall *_func_call) : func_call(_func_call), meta_type(is_func_call) {};
 
         VarVal *eval(SolverProgramState *state);
 
@@ -334,10 +426,14 @@ namespace SL {
                 case is_var_val:
                     assert(false);
                     break;
+                case is_func_call:
+                    assert(false);
+                    break;
                 default:
                     assert(false);
             }
         }
+
     };
 
 
@@ -443,6 +539,23 @@ namespace SL {
 
     };
 
+    class UnitLine;
+
+    class For
+    {
+        UnitLine* def;
+        Predicate* predicate = nullptr;
+        UnitLine* plus_plus;
+        CodeBlock* body = nullptr;
+    public:
+        For(UnitLine* _def, Predicate* _predicate, UnitLine* _plus_plus, CodeBlock* _body):
+            def(_def), predicate(_predicate), plus_plus(_plus_plus), body(_body) {}
+
+        void run(SolverProgramState* state);
+
+    };
+
+
     class If
     {
         Predicate* predicate = nullptr;
@@ -465,11 +578,12 @@ namespace SL {
 
     class UnitLine
     {
-        enum LineType {var_line, assign_line, while_line, if_line, return_line, func_call_line};
+        enum LineType {var_line, assign_line, while_line, if_line, return_line, func_call_line, for_line};
         union {
             Var* var;
             Assignment* assignment;
             While* while_loop;
+            For* for_loop;
             If* if_block;
             Return* return_stmt;
             FuncCall* func_call;
@@ -482,6 +596,7 @@ namespace SL {
         explicit UnitLine(If* _if_block): if_block(_if_block), line_type(if_line){}
         explicit UnitLine(Return* _return_stmt): return_stmt(_return_stmt), line_type(return_line){}
         explicit UnitLine(FuncCall* _func_call): func_call(_func_call), line_type(func_call_line){}
+        explicit UnitLine(For* _for): for_loop(_for), line_type(for_line){}
 
         void run(SolverProgramState *state) {
             switch (line_type) {
@@ -502,6 +617,9 @@ namespace SL {
                     break;
                 case func_call_line:
                     func_call->run(state);
+                    break;
+                case for_line:
+                    for_loop->run(state);
                     break;
                 default:
                     assert(false);

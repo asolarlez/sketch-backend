@@ -212,7 +212,7 @@ public:
 
 	vector<spskpair > spskpairs;
 
-    void run_solver_program(int inlineAmnt);
+    SATSolver::SATSolverResult run_solver_program(int inlineAmnt);
 
 	void addspskpair(const string& spec, const string& sketch) {
 		spskpairs.push_back(spskpair(spec, sketch));

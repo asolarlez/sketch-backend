@@ -44,6 +44,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %token <name> identifier
 %token <name> solver_token
 %token <name> while_token
+%token <name> for_token
 %token <name> if_token
 %token <name> return_token
 %token <name> op_eq
@@ -72,7 +73,9 @@ predicate: operand operator operand {$$ = new SL::Predicate(new SL::CompositePre
 unit: declaration {$$ = new SL::UnitLine($1);} | assignment {$$ = new SL::UnitLine($1);} |
 	while_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::While($3, $6));} |
 	if_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::If($3, $6));} |
-	return_token identifier {$$ = new SL::UnitLine(new SL::Return($2));} | function_call {$$ = new SL::UnitLine($1);}
+	for_token '(' unit ';' predicate ';' unit ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::For($3, $5, $7, $10));} |
+	return_token identifier {$$ = new SL::UnitLine(new SL::Return($2));} |
+	function_call {$$ = new SL::UnitLine($1);}
 function_call : identifier '.' identifier '(' params ')' {$$ = new SL::FuncCall($1, $3, $5);}
 	     | identifier '(' params ')' {$$ = new SL::FuncCall(new SL::Name("global"), $1, $3);}
 declaration : identifier identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
@@ -84,7 +87,7 @@ new SL::Assignment($1, $3);}
 //		| declaration '=' function_call {$$ = set_var_val($1, $3);}
 	|
 		identifier '=' identifier {$$ = new SL::Assignment($1, $3);}
-param : identifier {$$ = new SL::Param($1);} | var_val_rule {$$ = new SL::Param($1);}
+param : identifier {$$ = new SL::Param($1);} | var_val_rule {$$ = new SL::Param($1);} | function_call {$$ = new SL::Param($1);}
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
 
