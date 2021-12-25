@@ -121,13 +121,17 @@ SL::VarVal *SL::FuncCall::eval_type_constructor(SolverProgramState* state)
 {
     string root_type_name = type_constructor->get_head()->to_string();
 
-    enum RootType {vec, do_predef};
+    enum RootType {vec, pair, do_predef};
 
     RootType root_type = do_predef;
 
     if(root_type_name == "vector")
     {
         root_type = vec;
+    }
+    if(root_type_name == "pair")
+    {
+        root_type = pair;
     }
 
     switch (root_type) {
@@ -137,6 +141,15 @@ SL::VarVal *SL::FuncCall::eval_type_constructor(SolverProgramState* state)
             assert(type_params->size() == 1);
             assert(params.empty());
             return new SL::VarVal(new PolyVec(type_params));
+            break;
+        }
+        case pair: {
+            const vector<SL::SLType *>* type_params = type_constructor->get_type_params();
+            assert(type_params->size() == 2);
+            assert(params.size() == 2);
+            VarVal* left = params[0]->eval(state);
+            VarVal* right = params[1]->eval(state);
+            return new SL::VarVal(new PolyPair(type_params, left, right));
             break;
         }
         case do_predef:
@@ -153,7 +166,10 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         get, passes, plus,
         clear, Solution, join,
         print, num_holes, vector_pair_int_solution,
-        emplace_back, make_pair_int_solution, first, second, div, mult, to_float, sort_vec, my_clone, my_assert};
+        emplace_back, make_pair_int_solution, first,
+        second, div, mult,
+        to_float, sort_vec, my_clone,
+        my_assert};
 
     PredefMethod predef_method = no_predef;
 
@@ -315,16 +331,22 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         case size:
         {
             Var* var = state->name_to_var(var_name);
-            string var_type_str = var->get_type()->to_string();
-            assert(var_type_str == "File" || var_type_str == "vector_pair_int_solution");
+            string var_head_type_str = var->get_type()->get_head()->to_string();
+            assert(var_head_type_str == "File" || var_head_type_str == "vector");
             assert(params.empty());
-            if(var_type_str == "File") {
+            if(var_head_type_str == "File") {
                 File *file = state->get_var_val(var)->get_file();
                 return new SL::VarVal((int) file->size());
-            } else if(var_type_str == "vector_pair_int_solution") {
-                vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
-                return new SL::VarVal((int) vec->size());
-            } else
+            } else if(var_head_type_str == "vector_pair_int_solution") {
+                assert(false);
+//                vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
+//                return new SL::VarVal((int) vec->size());
+            } else if (var_head_type_str == "vector")
+            {
+                PolyVec* poly_vec = state->get_var_val(var)->get_poly_vec();
+                return new SL::VarVal((int)poly_vec->size());
+            }
+            else
             {
                 assert(false);
             }
@@ -349,9 +371,11 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         case get:
         {
             Var* var = state->name_to_var(var_name);
+            string var_type_str = var->get_type()->get_head()->to_string();
             if(var->get_type()->is_simple_type()) {
-                string var_type_str = var->get_type()->to_string();
-                assert(var_type_str == "File" || var_type_str == "vector_pair_int_solution");
+                assert(var_type_str == "File"
+//                || var_type_str == "vector_pair_int_solution"
+                );
                 assert(params.size() == 1);
                 if (var_type_str == "File") {
                     assert(params.size() == 1);
@@ -359,20 +383,22 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
                     int row_id = params[0]->eval(state)->get_int();
                     return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
                 } else if (var_type_str == "vector_pair_int_solution") {
-                    vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> > *vec = state->get_var_val(
-                            var)->get_vector_pair_int_solution();
-                    int row_id = params[0]->eval(state)->get_int();
-                    return new SL::VarVal(vec->at(row_id));
+                    assert(false);
+//                    vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> > *vec = state->get_var_val(
+//                            var)->get_vector_pair_int_solution();
+//                    int row_id = params[0]->eval(state)->get_int();
+//                    return new SL::VarVal(vec->at(row_id));
                 } else {
                     assert(false);
                 }
             }
             else
             {
-                assert(var->get_type()->get_head()->to_string() == "vector");
+                assert(var_type_str == "vector");
                 assert(var->get_type()->get_type_params()->size() == 1);
                 PolyVec* vec = state->get_var_val(var)->get_poly_vec();
-                return new SL::VarVal(vec);
+                int idx = params[0]->eval(state)->get_int();
+                return vec->at(idx);
             }
             break;
         }
@@ -486,14 +512,15 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             Var* var = state->name_to_var(var_name);
             if(var->get_type()->is_simple_type())
             {
-                string var_type_str = var->get_type()->to_string();
-                assert(var_type_str == "vector_pair_int_solution");
-                assert(params.size() == 1);
-                using namespace SolverLanguagePrimitives;
-                vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
-                pair<int, SolutionHolder*> pair_param = params[0]->eval(state)->get_pair();
-                vec->emplace_back(pair_param);
-                return new VarVal();
+                assert(false);
+//                string var_type_str = var->get_type()->to_string();
+//                assert(var_type_str == "vector_pair_int_solution");
+//                assert(params.size() == 1);
+//                using namespace SolverLanguagePrimitives;
+//                vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
+//                pair<int, SolutionHolder*> pair_param = params[0]->eval(state)->get_pair();
+//                vec->emplace_back(pair_param);
+//                return new VarVal();
             }
             else
             {
@@ -509,39 +536,40 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         }
         case vector_pair_int_solution:
         {
-            Var *var = get_var_assert_type(state, "namespace");
-            assert(params.empty());
-            using namespace SolverLanguagePrimitives;
-            vector<pair<int, SolutionHolder*> >* vec = new vector<pair<int, SolutionHolder*> >();
-            return new VarVal(vec);
+            assert(false);
+//            Var *var = get_var_assert_type(state, "namespace");
+//            assert(params.empty());
+//            using namespace SolverLanguagePrimitives;
+//            vector<pair<int, SolutionHolder*> >* vec = new vector<pair<int, SolutionHolder*> >();
+//            return new VarVal(vec);
             break;
         }
         case make_pair_int_solution:
         {
-            Var *var = get_var_assert_type(state, "namespace");
-            assert(params.size() == 2);
-            using namespace SolverLanguagePrimitives;
-            int the_int = params[0]->eval(state)->get_int();
-            SolverLanguagePrimitives::SolutionHolder* the_solution = params[1]->eval(state)->get_solution();
-            return new VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder*>(the_int, the_solution));
+            assert(false);
+//            Var *var = get_var_assert_type(state, "namespace");
+//            assert(params.size() == 2);
+//            using namespace SolverLanguagePrimitives;
+//            int the_int = params[0]->eval(state)->get_int();
+//            SolverLanguagePrimitives::SolutionHolder* the_solution = params[1]->eval(state)->get_solution();
+//            return new VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder*>(the_int, the_solution));
             break;
         }
         case first:
         {
-            Var *var = get_var_assert_type(state, "pair_int_solution");
+            Var *var = get_var_assert_type(state, "pair");
             assert(params.empty());
-            using namespace SolverLanguagePrimitives;
-            pair<int, SolverLanguagePrimitives::SolutionHolder*> the_pair = state->get_var_val(var)->get_pair();
-            return new VarVal(the_pair.first);
+            PolyPair* the_pair = state->get_var_val(var)->get_poly_pair();
+            return the_pair->first();
             break;
         }
         case second:
         {
-            Var *var = get_var_assert_type(state, "pair_int_solution");
+            Var *var = get_var_assert_type(state, "pair");
             assert(params.empty());
             using namespace SolverLanguagePrimitives;
-            pair<int, SolverLanguagePrimitives::SolutionHolder*> the_pair = state->get_var_val(var)->get_pair();
-            return new VarVal(the_pair.second);
+            PolyPair* the_pair = state->get_var_val(var)->get_poly_pair();
+            return the_pair->second();
             break;
         }
         case to_float:
@@ -554,11 +582,10 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         }
         case sort_vec:
         {
-            Var *var = get_var_assert_type(state, "vector_pair_int_solution");
+            Var *var = get_var_assert_type(state, "vector");
             assert(params.empty());
-            using namespace SolverLanguagePrimitives;
-            vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
-            sort(vec->begin(), vec->end());
+            PolyVec* vec = state->get_var_val(var)->get_poly_vec();
+            vec->sort();
             return new VarVal();
             break;
         }
@@ -602,7 +629,7 @@ void SL::FuncCall::run(SolverProgramState *state) {
 SL::Var *SL::FuncCall::get_var_assert_type(SolverProgramState* state, string type_name) {
 
     Var* var = state->name_to_var(var_name);
-    string var_type_str = var->get_type()->to_string();
+    string var_type_str = var->get_type()->get_head()->to_string();
     assert(var_type_str == type_name);
 
     return var;
@@ -656,10 +683,8 @@ void SL::Methods::populate_state(Frame &frame)  {
 bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal *var_val)
 {
     SL::VarValType var_val_type = var_val->get_type();
-//        if(var->get_type()->is_simple_type())
-    if(true){
-//            string var_type_str = var->get_type()->to_string();
-        string var_type_str = var_type->get_head()->to_string();
+    string var_type_str = var_type->get_head()->to_string();
+    if(var_type->is_simple_type()) {
         if (var_type_str == "File") {
             assert(var_val_type == SL::file_val_type);
         } else if (var_type_str == "int") {
@@ -678,68 +703,85 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal *var_val)
             assert(var_val_type == SL::input_val_type);
         } else if (var_type_str == "bool") {
             assert(var_val_type == SL::bool_val_type);
-        } else if (var_type_str == "vector_pair_int_solution") {
-            assert(var_val_type == SL::vector_pair_int_solution_val_type);
-        } else if (var_type_str == "pair_int_solution") {
-            assert(var_val_type == SL::pair_int_solution_val_type);
-        } else {
+        }
+//        else if (var_type_str == "vector_pair_int_solution") {
+//            assert(var_val_type == SL::vector_pair_int_solution_val_type);
+//        } else if (var_type_str == "pair_int_solution") {
+//            assert(var_val_type == SL::pair_int_solution_val_type);
+//        }
+        else {
             assert(false);
         }
     }
     else
     {
-        assert(false);
-//            assert(var_val_type == SL::poly_vec_type);
-//            assert(var->get_type()->get_head()->to_string() == "vector");
-//            assert(var->get_type()->get_type_params().size() == 1);
+        if(var_type_str == "vector")
+        {
+            assert(var_val_type == SL::poly_vec_type);
+            const vector<SLType*>* type_params = var_type->get_type_params();
+            assert(type_params->size() == 1);
+            assert(*type_params->at(0)==*var_val->get_poly_vec()->get_type_params()->at(0));
+        }
+        else if(var_type_str == "pair")
+        {
+            assert(var_val_type == SL::poly_pair_type);
+            const vector<SLType*>* type_params = var_type->get_type_params();
+            assert(type_params->size() == 2);
+            assert(*type_params->at(0)==(*var_val->get_poly_pair()->get_type_params()->at(0)));
+            assert(*type_params->at(1)==(*var_val->get_poly_pair()->get_type_params()->at(1)));
+        }
+        else
+        {
+            assert(false);
+        }
     }
     return true;
 }
 
 bool SL::var_val_invariant(SL::Var *var, SL::VarVal *var_val)
 {
-    SL::VarValType var_val_type = var_val->get_type();
-    if(var->get_type()->is_simple_type()) {
-        return var_val_invariant(var->get_type(), var_val);
-//            string var_type_str = var->get_type()->to_string();
-//            if (var_type_str == "File") {
-//                assert(var_val_type == SL::file_val_type);
-//            } else if (var_type_str == "int") {
-//                assert(var_val_type == SL::int_val_type);
-//            } else if (var_type_str == "string") {
-//                assert(var_val_type == SL::string_val_type);
-//            } else if (var_type_str == "method") {
-//                assert(false);
-//            } else if (var_type_str == "SketchFunction") {
-//                assert(var_val_type == SL::skfunc_val_type);
-//            } else if (var_type_str == "Solution") {
-//                assert(var_val_type == SL::solution_val_type);
-//            } else if (var_type_str == "Program") {
-//                assert(var_val_type == SL::skfunc_val_type);
-//            } else if (var_type_str == "Input") {
-//                assert(var_val_type == SL::input_val_type);
-//            } else if (var_type_str == "bool") {
-//                assert(var_val_type == SL::bool_val_type);
-//            } else if (var_type_str == "vector_pair_int_solution") {
-//                assert(var_val_type == SL::vector_pair_int_solution_val_type);
-//            } else if (var_type_str == "pair_int_solution") {
-//                assert(var_val_type == SL::pair_int_solution_val_type);
-//            } else {
-//                assert(false);
-//            }
-    }
-    else
-    {
-        assert(var_val_type == SL::poly_vec_type);
-        assert(var->get_type()->get_head()->to_string() == "vector");
-        assert(var->get_type()->get_type_params()->size() == 1);
-    }
-    return true;
+    return var_val_invariant(var->get_type(), var_val);
 }
 
 
 void SL::PolyVec::emplace_back(SL::VarVal *new_element)
 {
-    assert(SL::var_val_invariant(type_params->at(0), new_element));
+    assert(SL::var_val_invariant(get_type_params()->at(0), new_element));
     vector<VarVal*>::emplace_back(new_element);
+}
+
+bool comparePtrToNode(SL::VarVal* a, SL::VarVal* b) { return (*a < *b); }
+
+void SL::PolyVec::sort() {
+    ::sort(begin(), end(), comparePtrToNode);
+}
+
+SL::PolyPair::PolyPair(const vector<SLType *> *_type_params, SL::VarVal *left, SL::VarVal *right) :
+        PolyType(_type_params), pair<VarVal*, VarVal*>(left, right){
+    assert(get_type_params()->size() == 2);
+    assert(var_val_invariant(get_type_params()->at(0), left));
+    assert(var_val_invariant(get_type_params()->at(1), right));
+}
+
+bool SL::PolyPair::operator<(const SL::PolyPair &other) const
+{
+    if(*first() < *other.first())
+    {
+        return true;
+    }
+    else if(*other.first() < *first())
+    {
+        return false;
+    }
+
+    if(*second() < *other.second())
+    {
+        return true;
+    }
+    else if(*other.second() < *second())
+    {
+        return false;
+    }
+
+    return false;
 }

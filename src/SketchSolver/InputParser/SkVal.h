@@ -129,6 +129,20 @@ protected:
 public:
     Mapping() = default;
     explicit Mapping(bool is_null): null(is_null) {};
+    
+    bool operator < (const Mapping& other) const
+    {
+        if(null > other.null)
+        {
+            return true;
+        }
+        else if(null < other.null)
+        {
+            return false;
+        }
+        return assignment < other.assignment;
+    }
+    
     map<string, ValType*>& get_assignment()
     {
         return assignment;
@@ -330,16 +344,46 @@ public:
     }
 };
 
+template<typename T>
+bool lt_compare_pointers(T* left, T* right)
+{
+    if(left == nullptr && right == nullptr)
+    {
+        return false;
+    }
+    else if(left == nullptr && right != nullptr)
+    {
+        return true;
+    }
+    else if(left != nullptr && right == nullptr)
+    {
+        return false;
+    }
+    assert(left != nullptr && right != nullptr);
+    return *left < *right;
+}
+
 namespace SolverLanguagePrimitives {
 
     class ProblemAE;
 
     class SolutionHolder {
-        Assignment_SkVal *assignment_skval = NULL;
+        Assignment_SkVal *assignment_skval = nullptr;
         SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
     public :
         explicit SolutionHolder(SATSolver::SATSolverResult _sat_solver_result) :
                 sat_solver_result(_sat_solver_result) {
+        }
+
+        bool operator < (const SolutionHolder& other) const
+        {
+            if(sat_solver_result < other.sat_solver_result){
+                return true;
+            }
+            else if(sat_solver_result > other.sat_solver_result){
+                return false;
+            }
+            return lt_compare_pointers(assignment_skval, other.assignment_skval);
         }
 
         SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :

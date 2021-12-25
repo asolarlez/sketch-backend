@@ -186,7 +186,39 @@ namespace SL {
             {
                 return false;
             }
-            return type_params < other.type_params;
+            if(type_params == nullptr && other.type_params == nullptr)
+            {
+                return false;
+            }
+            else if(type_params == nullptr && other.type_params != nullptr)
+            {
+                return false;
+            }
+            else if(type_params != nullptr && other.type_params == nullptr)
+            {
+                return true;
+            }
+            if(type_params->size() < other.type_params->size())
+            {
+                return true;
+            }
+            else if(type_params->size() > other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(*type_params->at(i) < *other.type_params->at(i))
+                {
+                    return true;
+                }
+                else if( *other.type_params->at(i) < *type_params->at(i))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         bool operator == (const SLType& other) const
@@ -196,7 +228,23 @@ namespace SL {
             {
                 return false;
             }
-            return type_params == other.type_params;
+            if((type_params == nullptr) && (other.type_params == nullptr))
+            {
+                return true;
+            }
+            if(type_params->size() != other.type_params->size())
+            {
+                return false;
+            }
+            assert(type_params->size() == other.type_params->size());
+            for(int i = 0;i<type_params->size();i++)
+            {
+                if(!(*type_params->at(i) == *other.type_params->at(i)))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         Name *get_head() {
@@ -286,15 +334,54 @@ namespace SL {
 
     class VarVal;
 
-    class PolyVec: private vector<VarVal*>
+    class PolyType
     {
         const vector<SLType*>* type_params;
     public:
-        explicit PolyVec(const vector<SLType*>* _type_params): type_params(_type_params){
-            assert(type_params->size() == 1);
+        explicit PolyType(const vector<SLType*>* _type_params): type_params(_type_params) {}
+
+        const vector<SLType*>* get_type_params()
+        {
+            return type_params;
+        }
+    };
+
+    class PolyVec: public PolyType, private vector<VarVal*>
+    {
+    public:
+        explicit PolyVec(const vector<SLType*>* _type_params): PolyType(_type_params){
+            assert(get_type_params()->size() == 1);
+        }
+        void emplace_back(VarVal* new_element);
+
+        void sort();
+
+        size_t size(){
+            return vector<VarVal*>::size();
         }
 
-        void emplace_back(VarVal* new_element);
+        VarVal* at(int idx)
+        {
+            assert(idx >= 0 && idx < size());
+            return vector<VarVal*>::at(idx);
+        }
+    };
+
+    class PolyPair: public PolyType, private pair<VarVal*, VarVal*>
+    {
+    public:
+        explicit PolyPair(const vector<SLType*>* _type_params, VarVal* left, VarVal* right);
+
+        VarVal* first() const
+        {
+            return pair<VarVal*, VarVal*>::first;
+        }
+        VarVal* second() const
+        {
+            return pair<VarVal*, VarVal*>::second;
+        }
+
+        bool operator < (const PolyPair& other) const;
     };
 
     class Method;
@@ -303,8 +390,11 @@ namespace SL {
         string_val_type, int_val_type, file_val_type,
         method_val_type, skfunc_val_type, solution_val_type,
         input_val_type, bool_val_type, void_val_type,
-        pair_int_solution_val_type, float_val_type, poly_vec_type,
-        vector_pair_int_solution_val_type, poly_var_type,
+//        pair_int_solution_val_type,
+        float_val_type, poly_vec_type,
+//        vector_pair_int_solution_val_type,
+        poly_val_type,
+        poly_pair_type,
         no_type};
 
 
@@ -335,10 +425,11 @@ namespace SL {
             SketchFunction* skfunc;
             SolverLanguagePrimitives::SolutionHolder* solution;
             SolverLanguagePrimitives::InputHolder* input_holder;
-            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vector_pair_int_solution;
-            pair<int, SolverLanguagePrimitives::SolutionHolder *> pair_int_solution;
+//            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vector_pair_int_solution;
+//            pair<int, SolverLanguagePrimitives::SolutionHolder *> pair_int_solution;
             PolyVec* poly_vec;
-            VarVal* poly_var;
+            VarVal* poly_val;
+            PolyPair* poly_pair;
         };
         const VarValType var_val_type;
     public:
@@ -363,14 +454,71 @@ namespace SL {
         explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
         explicit VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){}
         explicit VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
-        explicit VarVal(VarVal* _poly_var) : poly_var(_poly_var) , var_val_type(poly_var_type){}
+        explicit VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
+        explicit VarVal(VarVal* _poly_val) : poly_val(_poly_val) , var_val_type(poly_val_type){}
         explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
         explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
-        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vector_pair_int_solution) :
-            vector_pair_int_solution(_vector_pair_int_solution), var_val_type(vector_pair_int_solution_val_type){}
-        explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
-                pair_int_solution(std::move(_pair_int_solution)), var_val_type(pair_int_solution_val_type){}
+//        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vector_pair_int_solution) :
+//            vector_pair_int_solution(_vector_pair_int_solution), var_val_type(vector_pair_int_solution_val_type){}
+//        explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
+//                pair_int_solution(std::move(_pair_int_solution)), var_val_type(pair_int_solution_val_type){}
         VarVal(): var_val_type(void_val_type) {}
+
+        bool operator < (const VarVal& other) const
+        {
+            switch (var_val_type) {
+
+                case string_val_type:
+                    return s < other.s;
+                    break;
+                case int_val_type:
+                    return i < other.i;
+                    break;
+                case file_val_type:
+                    return *file < *other.file;
+                    break;
+                case method_val_type:
+                    assert(false);
+//                    return *method < *other.method;
+                    break;
+                case skfunc_val_type:
+                    assert(false);
+//                    return *skfunc < *other.skfunc;
+                    break;
+                case solution_val_type:
+                    return *solution < *other.solution;
+                    break;
+                case input_val_type:
+                    assert(false);
+//                    return *input_holder < *other.input_holder;
+                    break;
+                case bool_val_type:
+                    return b < other.b;
+                    break;
+                case void_val_type:
+                    return false;
+                    break;
+                case float_val_type:
+                    return float_val < other.float_val;
+                    break;
+                case poly_vec_type:
+                    assert(false);
+//                    return *poly_vec < *other.poly_vec;
+                    break;
+                case poly_val_type:
+                    return *poly_val < *other.poly_val;
+                    break;
+                case poly_pair_type:
+                    return *poly_pair < *other.poly_pair;
+                    break;
+                case no_type:
+                    assert(false);
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
 
         VarValType get_type()
         {
@@ -480,20 +628,23 @@ namespace SL {
                 case float_val_type:
                     return std::to_string(float_val);
                     break;
+                case poly_val_type:
+                    return poly_val->to_string();
+                    break;
                 default:
                     assert(false);
             }
         }
 
-        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector_pair_int_solution() {
-            assert(var_val_type == vector_pair_int_solution_val_type);
-            return vector_pair_int_solution;
-        }
-
-        pair<int, SolverLanguagePrimitives::SolutionHolder *> get_pair() {
-            assert(var_val_type == pair_int_solution_val_type);
-            return pair_int_solution;
-        }
+//        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector_pair_int_solution() {
+//            assert(var_val_type == vector_pair_int_solution_val_type);
+//            return vector_pair_int_solution;
+//        }
+//
+//        pair<int, SolverLanguagePrimitives::SolutionHolder *> get_pair() {
+//            assert(var_val_type == pair_int_solution_val_type);
+//            return pair_int_solution;
+//        }
 
         float get_float() {
             assert(var_val_type == float_val_type);
@@ -506,9 +657,20 @@ namespace SL {
         }
 
         VarVal *get_var_val() {
-            assert(var_val_type == poly_var_type);
-            return poly_var;
+            assert(var_val_type == poly_val_type);
+            return poly_val;
         }
+
+        PolyPair *get_poly_pair() {
+            assert(var_val_type == poly_pair_type);
+            return poly_pair;
+        }
+
+//        VarVal* get_poly_val()
+//        {
+//            assert(var_val_type == poly_val_type);
+//            return poly_val;
+//        }
     };
 
     class Param;

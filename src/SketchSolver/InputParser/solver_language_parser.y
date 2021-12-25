@@ -107,7 +107,7 @@ params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 signature_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(new SL::Param($1));} |
 	      declaration ',' signature_params {$$ = new SL::Params(new SL::Param($1), $3);}
 
-method : solver_token identifier identifier '(' signature_params ')'
+method : solver_token type_rule identifier '(' signature_params ')'
 	  '{' lines '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
 
 methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
