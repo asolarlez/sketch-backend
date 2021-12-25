@@ -11,7 +11,9 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
     init_root->populate_state(global);
 
     global.add_var_and_set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("true")), new SL::VarVal(true));
-    global.add_var_and_set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), new SL::VarVal(true));
+    global.add_var_and_set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("false")), new SL::VarVal(false));
+    global.add_var_and_set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), nullptr);
+    global.add_var_and_set_var_val(new SL::Var(new SL::Name("int"), new SL::Name("seed")), new SL::VarVal(args.seed));
 
     SL::Var* init_f = new SL::Var(new SL::Name("Solution"), new SL::Name("main"));
     assert(*global.name_to_var(init_f->get_name()) == *init_f);

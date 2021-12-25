@@ -86,8 +86,10 @@ union YYSTYPE
 	SL::Predicate* predicate;
 	SL::Operand* operand;
 	SL::MyOperator my_operator;
+	SL::SLType* my_type;
+	SL::TypeParams* type_params;
 
-#line 91 "y.tab.h" /* yacc.c:1909  */
+#line 93 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

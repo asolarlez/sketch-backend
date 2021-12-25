@@ -34,7 +34,9 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 	SL::Methods* methods;
 	SL::Predicate* predicate;
 	SL::Operand* operand;
-	SL::MyOperator my_operator;}
+	SL::MyOperator my_operator;
+	SL::SLType* my_type;
+	SL::TypeParams* type_params;}
 
 %start root
 %type <methods> methods
@@ -53,11 +55,13 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %type <assignment> declaration
 %type <func_call> function_call
 %type <params> params
-%type <params> typed_params
+%type <params> signature_params
 %type <method> method
 %type <predicate> predicate
 %type <operand> operand
 %type <my_operator> operator
+%type <my_type> type_rule
+%type <type_params> type_params
 
 %%
 
@@ -78,23 +82,32 @@ unit: declaration {$$ = new SL::UnitLine($1);} | assignment {$$ = new SL::UnitLi
 	function_call {$$ = new SL::UnitLine($1);}
 function_call : identifier '.' identifier '(' params ')' {$$ = new SL::FuncCall($1, $3, $5);}
 	     | identifier '(' params ')' {$$ = new SL::FuncCall(new SL::Name("global"), $1, $3);}
-declaration : identifier identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
+	     | type_rule '(' params ')' {$$ = new SL::FuncCall(new SL::Name("global"), $1, $3);}
+
+type_params : type_rule {$$ = new SL::TypeParams($1);} | type_rule ',' type_params {$$ = new SL::TypeParams($1, $3);}
+
+type_rule : identifier {$$ = new SL::SLType($1);} |
+		identifier '<' type_params '>' {$$ = new SL::SLType($1, $3);}
+
+declaration :     type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
+		| type_rule identifier '=' function_call {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+		| type_rule identifier '=' var_val_rule {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+		| type_rule identifier '=' identifier {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+    		| identifier identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
 		| identifier identifier '=' function_call {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
 		| identifier identifier '=' var_val_rule {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
-assignment : identifier '=' function_call {$$ =
-//set_var_val($1, $3);
-new SL::Assignment($1, $3);}
-//		| declaration '=' function_call {$$ = set_var_val($1, $3);}
-	|
+		| identifier identifier '=' identifier {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+assignment : identifier '=' function_call {$$ = new SL::Assignment($1, $3);}|
 		identifier '=' identifier {$$ = new SL::Assignment($1, $3);}
+
 param : identifier {$$ = new SL::Param($1);} | var_val_rule {$$ = new SL::Param($1);} | function_call {$$ = new SL::Param($1);}
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
 
-typed_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(new SL::Param($1));} |
-	      declaration ',' typed_params {$$ = new SL::Params(new SL::Param($1), $3);}
+signature_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(new SL::Param($1));} |
+	      declaration ',' signature_params {$$ = new SL::Params(new SL::Param($1), $3);}
 
-method : solver_token identifier identifier '(' typed_params ')'
+method : solver_token identifier identifier '(' signature_params ')'
 	  '{' lines '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
 
 methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
@@ -119,6 +132,6 @@ void run_solver_langauge_program(SolverProgramState* state, string solver_progra
 	int rv = yyparse(scanner, state);
 }
 
-int main(){
-	run_solver_langauge_program(nullptr, "");
-}
+//int main(){
+//	run_solver_langauge_program(nullptr, "");
+//}

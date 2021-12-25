@@ -5,6 +5,8 @@
 #ifndef SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H
 #define SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H
 
+#include <utility>
+
 #include "string"
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SketchFunction.h"
@@ -14,10 +16,8 @@ class Frame {
     map<SL::Var, SL::VarVal *> vars_map;
     map<SL::Name, SL::Var *> name_to_var_map;
 
-    map<string, SketchFunction *> function_map;
-
 public:
-    Frame(map<string, SketchFunction *> _function_map): function_map(_function_map) {};
+    Frame() {};
 
     void clear()
     {
@@ -127,13 +127,12 @@ public:
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution, map<string, SketchFunction*>& _function_map):
             harness_(_harness),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
-            function_map(_function_map), global(map<string, SketchFunction *>()) {}
+            function_map(_function_map), global() {}
     SolverProgramState(map<string, SketchFunction*>& _function_map, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             function_map(_function_map),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr),
-            global(
-                    _function_map) {}
+            global() {}
 
     SL::Methods* init_root = nullptr;
     void add_root(SL::Methods* _init_root)
@@ -167,55 +166,6 @@ public:
         }
     }
 
-    static bool var_val_invariant(SL::Var *var, SL::VarVal* var_val)
-    {
-        SL::VarValType var_val_type = var_val->get_type();
-        string var_type_str = var->get_type()->to_string();
-        if(var_type_str == "File"){
-            assert(var_val_type == SL::file_val_type);
-        }
-        else if(var_type_str == "int"){
-            assert(var_val_type == SL::int_val_type);
-        }
-        else if(var_type_str == "string"){
-            assert(var_val_type == SL::string_val_type);
-        }
-        else if(var_type_str == "method"){
-            assert(false);
-        }
-        else if(var_type_str == "SketchFunction"){
-            assert(var_val_type == SL::skfunc_val_type);
-        }
-        else if(var_type_str == "Solution")
-        {
-            assert(var_val_type == SL::solution_val_type);
-        }
-        else if(var_type_str == "Program")
-        {
-            assert(var_val_type == SL::skfunc_val_type);
-        }
-        else if(var_type_str == "Input")
-        {
-            assert(var_val_type == SL::input_val_type);
-        }
-        else if(var_type_str == "bool")
-        {
-            assert(var_val_type == SL::bool_val_type);
-        }
-        else if(var_type_str == "vector_pair_int_solution")
-        {
-            assert(var_val_type == SL::vec_val_type);
-        }
-        else if(var_type_str == "pair_int_solution")
-        {
-            assert(var_val_type == SL::pair_int_solution_val_type);
-        }
-        else{
-            assert(false);
-        }
-        return true;
-    }
-
     void set_var_val(SL::Var *var, SL::VarVal* var_val) {
         assert(!frames.empty());
         assert(var_val_invariant(var, var_val));
@@ -224,15 +174,26 @@ public:
         }
         catch (exception& e)
         {
-            assert(var->get_type()->to_string() == "SketchFunction");
+            string var_type_str = var->get_type()->to_string();
+            if(var_type_str == "SketchFunction") {
+                global.set_var_val(var, var_val);
+                //!!! HERE FIX THIS
+                function_map[var->get_name()->to_string()] = var_val->get_function();
+                function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
+                        function_map[var->get_name()->to_string()]->get_dag();
+            }
+            else if(var_type_str == "int")
+            {
+                assert(var->get_name()->to_string() == "seed");
+                global.set_var_val(var, var_val);
 
-            global.set_var_val(var, var_val);
+                args.seed = var_val->get_int();
+            }
+            else
+            {
+                assert(false);
+            }
 
-            //!!! HERE FIX THIS
-
-            function_map[var->get_name()->to_string()] = var_val->get_function();
-            function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
-                    function_map[var->get_name()->to_string()]->get_dag();
         }
     }
 
@@ -281,12 +242,13 @@ public:
         assert(vars.size() == vals.size());
 
         vector<SL::VarVal*> var_vals;
+        var_vals.reserve(vals.size());
         for(int i = 0;i<vals.size();i++)
         {
             var_vals.emplace_back(vals[i]->eval(this));
         }
 
-        frames.emplace_back(Frame(map<string, SketchFunction *>()));
+        frames.emplace_back(Frame());
 
         for(int i = 0;i < vars.size();i++)
         {
@@ -295,7 +257,7 @@ public:
     }
 
     void new_stack_frame() {
-        frames.emplace_back(Frame(map<string, SketchFunction *>()));
+        frames.emplace_back(Frame());
     }
 
     void pop_stack_frame() {
@@ -309,10 +271,6 @@ public:
         return ret;
     }
 
-    void add_var_name(SL::Var *var) {
-        assert(!frames.empty());
-        frames.rbegin()->add_var_name(var);
-    }
 };
 
 

@@ -49,24 +49,184 @@ namespace SL {
 
         SL::VarVal *eval(SolverProgramState *state);
 
-        bool operator < (const Name& other) const
-        {
+        bool operator<(const Name &other) const {
             return name < other.name;
         }
 
-        bool operator == (const Name& other) const
-        {
+        bool operator==(const Name &other) const {
             return name == other.name;
         }
 
     };
 
+    class SLType;
+
+    template<typename Head>
+    class LinkedList
+    {
+        Head* head = nullptr;
+        LinkedList* rest = nullptr;
+    public:
+        LinkedList(Head* _head): head(_head) {}
+        LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
+
+        void populate_vector(vector<Head*>& ret)
+        {
+            LinkedList<Head>* at = this;
+            while(at != nullptr)
+            {
+                ret.push_back(at->head);
+                at = at->rest;
+            }
+        }
+
+        bool operator < (const LinkedList& other) const
+        {
+            assert(head != nullptr && other.head != nullptr);
+            if(*head < *other.head)
+            {
+                return true;
+            }
+            else if(*other.head < *head)
+            {
+                return false;
+            }
+            if(rest == nullptr && other.rest == nullptr)
+            {
+                return false;
+            }
+            else if(rest != nullptr && other.rest == nullptr){
+                return true;
+            }
+            else if(rest == nullptr && other.rest != nullptr)
+            {
+                return false;
+            }
+            else
+            {
+                return *rest < *other.rest;
+            }
+        }
+
+        bool operator == (const LinkedList& other) const
+        {
+            assert(head != nullptr && other.head != nullptr);
+            if(!(*head == *other.head))
+            {
+                return false;
+            }
+            if(rest == nullptr && other.rest == nullptr)
+            {
+                return true;
+            }
+            else if(rest != nullptr && other.rest == nullptr){
+                return false;
+            }
+            else if(rest == nullptr && other.rest != nullptr)
+            {
+                return false;
+            }
+            else {
+                return *rest == *other.rest;
+            }
+        }
+        string to_string()
+        {
+            return head->to_string() + (rest == nullptr ? "" : ", " + rest->to_string());
+        }
+    };
+
+    class TypeParams: public LinkedList<SLType>
+    {
+    public:
+        TypeParams(SLType* _head): LinkedList<SLType>(_head) {}
+        TypeParams(SLType* _head, TypeParams* _rest): LinkedList<SLType>(_head, _rest) {}
+
+    };
+
+    class SLType
+    {
+        Name* name = nullptr;
+        vector<SLType*>* type_params = nullptr;
+    public:
+        explicit SLType(Name* _name): name(_name){}
+        SLType(Name* _name, TypeParams* _type_params): name(_name){
+            type_params = new vector<SLType*>();
+            _type_params->populate_vector(*type_params);
+        }
+
+        string to_string()
+        {
+            if(type_params == nullptr) {
+                return name->to_string();
+            }
+            else
+            {
+                string str;
+                for(int i = 0;i<type_params->size();i++)
+                {
+                    if(i >= 1)
+                    {
+                        str+= ", ";
+                    }
+                    str += type_params->at(i)->to_string();
+                }
+                return name->to_string() + "<" + str + " >";
+            }
+        }
+
+        bool operator < (const SLType& other) const
+        {
+            assert(name != nullptr && other.name != nullptr);
+            if(*name < *other.name)
+            {
+                return true;
+            }
+            else if(*other.name < *name)
+            {
+                return false;
+            }
+            return type_params < other.type_params;
+        }
+
+        bool operator == (const SLType& other) const
+        {
+            assert(name != nullptr && other.name != nullptr);
+            if(!(*name == *other.name))
+            {
+                return false;
+            }
+            return type_params == other.type_params;
+        }
+
+        Name *get_head() {
+            return name;
+        }
+
+        const vector<SLType*>* get_type_params() {
+            return type_params;
+        }
+
+        bool is_simple_type() {
+            if(type_params == nullptr)
+            {
+                return true;
+            }
+            else
+            {
+                assert(!type_params->empty());
+                return false;
+            }
+        }
+    };
+
     class Var {
-        Name *type = nullptr;
+        SLType *type = nullptr;
         Name *name = nullptr;
     public:
-        Var(Name *_type, Name *_name) : type(_type), name(_name) {
-        };
+
+        Var(SLType *_type, Name *_name) : type(_type), name(_name) {};
+        Var(Name *_type, Name *_name) : type(new SLType(_type)), name(_name) {};
 
         Name *get_name() {
             return name;
@@ -119,7 +279,22 @@ namespace SL {
 
         VarVal *eval(SolverProgramState *pState);
 
-        Name *get_type();
+        SLType * get_type();
+
+    };
+
+
+    class VarVal;
+
+    class PolyVec: private vector<VarVal*>
+    {
+        const vector<SLType*>* type_params;
+    public:
+        explicit PolyVec(const vector<SLType*>* _type_params): type_params(_type_params){
+            assert(type_params->size() == 1);
+        }
+
+        void emplace_back(VarVal* new_element);
     };
 
     class Method;
@@ -128,9 +303,26 @@ namespace SL {
         string_val_type, int_val_type, file_val_type,
         method_val_type, skfunc_val_type, solution_val_type,
         input_val_type, bool_val_type, void_val_type,
-        vec_val_type, pair_int_solution_val_type,
-        float_val_type,
+        pair_int_solution_val_type, float_val_type, poly_vec_type,
+        vector_pair_int_solution_val_type, poly_var_type,
         no_type};
+
+
+    template <typename T>
+    VarValType get_var_val_type(T val)
+    {
+        if(std::is_same<bool,T>::value)
+        {
+            return bool_val_type;
+        }
+        else if(std::is_same<int,T>::value)
+        {
+            return int_val_type;
+        }
+        else {
+            assert(false);
+        }
+    }
 
     class VarVal {
         union {
@@ -143,23 +335,24 @@ namespace SL {
             SketchFunction* skfunc;
             SolverLanguagePrimitives::SolutionHolder* solution;
             SolverLanguagePrimitives::InputHolder* input_holder;
-            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vec;
+            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vector_pair_int_solution;
             pair<int, SolverLanguagePrimitives::SolutionHolder *> pair_int_solution;
+            PolyVec* poly_vec;
+            VarVal* poly_var;
         };
-        VarValType var_val_type = no_type;
+        const VarValType var_val_type;
     public:
         explicit VarVal(const string& _s) : s(std::move(_s)), var_val_type(string_val_type) {}
         template <typename T>
-        explicit VarVal(T val){
+        explicit VarVal(T val): var_val_type(get_var_val_type(val)){
+
             if(std::is_same<bool,T>::value)
             {
                 b = val;
-                var_val_type = bool_val_type;
             }
             else if(std::is_same<int,T>::value)
             {
                 i = val;
-                var_val_type = int_val_type;
             }
             else {
                 assert(false);
@@ -169,12 +362,14 @@ namespace SL {
         explicit VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
         explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
         explicit VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){}
+        explicit VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
+        explicit VarVal(VarVal* _poly_var) : poly_var(_poly_var) , var_val_type(poly_var_type){}
         explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
         explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
-        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vec) :
-            vec(_vec), var_val_type(vec_val_type){}
+        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vector_pair_int_solution) :
+            vector_pair_int_solution(_vector_pair_int_solution), var_val_type(vector_pair_int_solution_val_type){}
         explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
-                pair_int_solution(_pair_int_solution), var_val_type(pair_int_solution_val_type){}
+                pair_int_solution(std::move(_pair_int_solution)), var_val_type(pair_int_solution_val_type){}
         VarVal(): var_val_type(void_val_type) {}
 
         VarValType get_type()
@@ -290,9 +485,9 @@ namespace SL {
             }
         }
 
-        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector() {
-            assert(var_val_type == vec_val_type);
-            return vec;
+        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector_pair_int_solution() {
+            assert(var_val_type == vector_pair_int_solution_val_type);
+            return vector_pair_int_solution;
         }
 
         pair<int, SolverLanguagePrimitives::SolutionHolder *> get_pair() {
@@ -303,6 +498,16 @@ namespace SL {
         float get_float() {
             assert(var_val_type == float_val_type);
             return float_val;
+        }
+
+        PolyVec* get_poly_vec() {
+            assert(var_val_type == poly_vec_type);
+            return poly_vec;
+        }
+
+        VarVal *get_var_val() {
+            assert(var_val_type == poly_var_type);
+            return poly_var;
         }
     };
 
@@ -329,12 +534,25 @@ namespace SL {
 
     class FuncCall {
         Name *var_name = nullptr;
-        Name *method_name = nullptr;
+        union {
+            Name *method_name;
+            SLType *type_constructor;
+        };
         vector<Param*> params;
+
+        enum MethodMetaType {name_meta_type, type_constructor_meta_type};
+
+        MethodMetaType method_meta_type;
+
     public:
         FuncCall(
                 Name *_class_name, Name *_method_name, Params *_params) :
-                var_name(_class_name), method_name(_method_name) {
+                var_name(_class_name), method_name(_method_name), method_meta_type(name_meta_type) {
+            _params->populate_vector(params);
+        };
+        FuncCall(
+                Name *_class_name, SLType *_type_constructor, Params *_params) :
+                var_name(_class_name), type_constructor(_type_constructor), method_meta_type(type_constructor_meta_type) {
             _params->populate_vector(params);
         };
 
@@ -343,6 +561,8 @@ namespace SL {
         VarVal* eval(SolverProgramState* state);
 
         void run(SolverProgramState *pState);
+
+        SL::VarVal *eval_type_constructor(SolverProgramState* state);
     };
 
 
@@ -357,34 +577,25 @@ namespace SL {
             FuncCall *func_call;
             VarVal* my_const;
             Name* from_name;
+            SLType* from_type;
         };
 
-        enum DestMetaType {var_dest_type, name_dest_type};
-        enum SrcMetaType {func_call_src_type, const_src_type, name_src_type, no_src_type};
+        enum DestMetaType {var_dest_type, name_dest_type, no_dest_type};
+        enum SrcMetaType {func_call_src_type, const_src_type, name_src_type, type_constructor_src_type, no_src_type};
 
-        DestMetaType dest_type;
-        SrcMetaType src_type;
+        DestMetaType dest_type = no_dest_type;
+        SrcMetaType src_type = no_src_type;
 
     public:
 
-        explicit Assignment(Var* _var): dest_var(_var), dest_type(var_dest_type), src_type(no_src_type){
-//            set_var_val(var, func_call);
-        }
-        Assignment(Var* _var, FuncCall* _func_call): dest_var(_var), func_call(_func_call), dest_type(var_dest_type), src_type(func_call_src_type) {
-//            set_var_val(var, func_call);
-        }
-        Assignment(Name* _name, FuncCall* _func_call): dest_name(_name), func_call(_func_call), dest_type(name_dest_type), src_type(func_call_src_type) {
-              //TODO: get var from name;
-//            set_var_val(var, func_call);
-        }
-        Assignment(Var* _var, VarVal* _my_const): dest_var(_var), my_const(_my_const), dest_type(var_dest_type), src_type(const_src_type) {
-            //TODO: get var from name;
-//            set_var_val(var, func_call);
-        }
-        Assignment(Name* _name, Name* _from_name): dest_name(_name), from_name(_from_name), dest_type(name_dest_type), src_type(name_src_type) {
-            //TODO: get var from name;
-//            set_var_val(var, func_call);
-        }
+        explicit Assignment(Var* _var): dest_var(_var), dest_type(var_dest_type), src_type(no_src_type){}
+        Assignment(Var* _var, FuncCall* _func_call): dest_var(_var), func_call(_func_call), dest_type(var_dest_type), src_type(func_call_src_type) {}
+        Assignment(Name* _name, FuncCall* _func_call): dest_name(_name), func_call(_func_call), dest_type(name_dest_type), src_type(func_call_src_type) {}
+        Assignment(Var* _var, VarVal* _my_const): dest_var(_var), my_const(_my_const), dest_type(var_dest_type), src_type(const_src_type) {}
+        Assignment(Name* _name, Name* _from_name): dest_name(_name), from_name(_from_name), dest_type(name_dest_type), src_type(name_src_type) {}
+        Assignment(Var* _var, Name* _from_name): dest_var(_var), from_name(_from_name), dest_type(var_dest_type), src_type(name_src_type) {}
+//        Assignment(Var* _var, SLType* _from_type): dest_var(_var), from_type(_from_type), dest_type(var_dest_type), src_type(type_constructor_src_type) {}
+
         Var* get_var() const
         {
             assert(dest_type == var_dest_type);
@@ -667,6 +878,9 @@ namespace SL {
             return var;
         }
     };
+
+    bool var_val_invariant(SL::SLType *var_type, SL::VarVal *var_val);
+    bool var_val_invariant(SL::Var *var, SL::VarVal *var_val);
 
     class Methods
     {

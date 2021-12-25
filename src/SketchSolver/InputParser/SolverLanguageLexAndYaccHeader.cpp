@@ -16,9 +16,10 @@ SL::VarVal *SL::Var::eval(SolverProgramState *state) {
     return state->get_var_val(this);
 }
 
-SL::Name *SL::Var::get_type() {
+SL::SLType * SL::Var::get_type() {
     return type;
 }
+
 
 void SL::While::run(SolverProgramState* state)
 {
@@ -93,6 +94,8 @@ void SL::Assignment::run(SolverProgramState *state)
         case no_src_type:
             var_val = nullptr;
             break;
+        default:
+            assert(false);
     }
 
     if(var_val != nullptr) {
@@ -114,7 +117,33 @@ SL::VarVal *SL::Name::eval(SolverProgramState *state)  {
     return state->get_var_val(state->name_to_var(this));
 }
 
+SL::VarVal *SL::FuncCall::eval_type_constructor(SolverProgramState* state)
+{
+    string root_type_name = type_constructor->get_head()->to_string();
 
+    enum RootType {vec, do_predef};
+
+    RootType root_type = do_predef;
+
+    if(root_type_name == "vector")
+    {
+        root_type = vec;
+    }
+
+    switch (root_type) {
+
+        case vec: {
+            const vector<SL::SLType *>* type_params = type_constructor->get_type_params();
+            assert(type_params->size() == 1);
+            assert(params.empty());
+            return new SL::VarVal(new PolyVec(type_params));
+            break;
+        }
+        case do_predef:
+            assert(false);
+            break;
+    }
+}
 
 SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
 {
@@ -124,11 +153,26 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         get, passes, plus,
         clear, Solution, join,
         print, num_holes, vector_pair_int_solution,
-        emplace_back, make_pair, first, div, mult, to_float, sort_vec};
+        emplace_back, make_pair_int_solution, first, second, div, mult, to_float, sort_vec, my_clone, my_assert};
 
     PredefMethod predef_method = no_predef;
 
-    string method_str = method_name->to_string();
+
+    string method_str;
+
+    switch (method_meta_type) {
+
+        case name_meta_type:
+            method_str = method_name->to_string();
+            break;
+        case type_constructor_meta_type:
+            method_str = type_constructor->to_string();
+            break;
+        default:
+            assert(false);
+    }
+
+    assert(method_str != "");
 
     if(method_str == "File")
     {
@@ -192,11 +236,15 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
     }
     else if(method_str == "make_pair")
     {
-        predef_method = make_pair;
+        predef_method = make_pair_int_solution;
     }
     else if(method_str == "first")
     {
         predef_method = first;
+    }
+    else if(method_str == "second")
+    {
+        predef_method = second;
     }
     else if(method_str == "div")
     {
@@ -213,6 +261,14 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
     else if(method_str == "sort")
     {
         predef_method = sort_vec;
+    }
+    else if(method_str == "clone")
+    {
+        predef_method = my_clone;
+    }
+    else if(method_str == "assert")
+    {
+        predef_method = my_assert;
     }
 
     switch (predef_method) {
@@ -266,7 +322,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
                 File *file = state->get_var_val(var)->get_file();
                 return new SL::VarVal((int) file->size());
             } else if(var_type_str == "vector_pair_int_solution") {
-                vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> >* vec = state->get_var_val(var)->get_vector();
+                vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
                 return new SL::VarVal((int) vec->size());
             } else
             {
@@ -293,21 +349,30 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         case get:
         {
             Var* var = state->name_to_var(var_name);
-            string var_type_str = var->get_type()->to_string();
-            assert(var_type_str == "File" || var_type_str == "vector_pair_int_solution");
-            assert(params.size() == 1);
-            if(var_type_str == "File") {
+            if(var->get_type()->is_simple_type()) {
+                string var_type_str = var->get_type()->to_string();
+                assert(var_type_str == "File" || var_type_str == "vector_pair_int_solution");
                 assert(params.size() == 1);
-                File* file = state->get_var_val(var)->get_file();
-                int row_id = params[0]->eval(state)->get_int();
-                return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
-            } else if(var_type_str == "vector_pair_int_solution") {
-                vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> >* vec = state->get_var_val(var)->get_vector();
-                int row_id = params[0]->eval(state)->get_int();
-                return new SL::VarVal(vec->at(row_id));
-            } else
+                if (var_type_str == "File") {
+                    assert(params.size() == 1);
+                    File *file = state->get_var_val(var)->get_file();
+                    int row_id = params[0]->eval(state)->get_int();
+                    return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
+                } else if (var_type_str == "vector_pair_int_solution") {
+                    vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> > *vec = state->get_var_val(
+                            var)->get_vector_pair_int_solution();
+                    int row_id = params[0]->eval(state)->get_int();
+                    return new SL::VarVal(vec->at(row_id));
+                } else {
+                    assert(false);
+                }
+            }
+            else
             {
-                assert(false);
+                assert(var->get_type()->get_head()->to_string() == "vector");
+                assert(var->get_type()->get_type_params()->size() == 1);
+                PolyVec* vec = state->get_var_val(var)->get_poly_vec();
+                return new SL::VarVal(vec);
             }
             break;
         }
@@ -417,13 +482,29 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         }
         case emplace_back:
         {
-            Var *var = get_var_assert_type(state, "vector_pair_int_solution");
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector();
-            pair<int, SolutionHolder*> pair_param = params[0]->eval(state)->get_pair();
-            vec->emplace_back(pair_param);
-            return new VarVal();
+
+            Var* var = state->name_to_var(var_name);
+            if(var->get_type()->is_simple_type())
+            {
+                string var_type_str = var->get_type()->to_string();
+                assert(var_type_str == "vector_pair_int_solution");
+                assert(params.size() == 1);
+                using namespace SolverLanguagePrimitives;
+                vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
+                pair<int, SolutionHolder*> pair_param = params[0]->eval(state)->get_pair();
+                vec->emplace_back(pair_param);
+                return new VarVal();
+            }
+            else
+            {
+                string poly_var_type_str = var->get_type()->get_head()->to_string();
+                assert(poly_var_type_str == "vector");
+                assert(params.size() == 1);
+                PolyVec* poly_vec = state->get_var_val(var)->get_poly_vec();
+                VarVal* ret_param = params[0]->eval(state);
+                poly_vec->emplace_back(ret_param);
+                return new VarVal();
+            }
             break;
         }
         case vector_pair_int_solution:
@@ -435,7 +516,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             return new VarVal(vec);
             break;
         }
-        case make_pair:
+        case make_pair_int_solution:
         {
             Var *var = get_var_assert_type(state, "namespace");
             assert(params.size() == 2);
@@ -448,10 +529,19 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         case first:
         {
             Var *var = get_var_assert_type(state, "pair_int_solution");
-            assert(params.size() == 0);
+            assert(params.empty());
             using namespace SolverLanguagePrimitives;
             pair<int, SolverLanguagePrimitives::SolutionHolder*> the_pair = state->get_var_val(var)->get_pair();
             return new VarVal(the_pair.first);
+            break;
+        }
+        case second:
+        {
+            Var *var = get_var_assert_type(state, "pair_int_solution");
+            assert(params.empty());
+            using namespace SolverLanguagePrimitives;
+            pair<int, SolverLanguagePrimitives::SolutionHolder*> the_pair = state->get_var_val(var)->get_pair();
+            return new VarVal(the_pair.second);
             break;
         }
         case to_float:
@@ -467,14 +557,37 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             Var *var = get_var_assert_type(state, "vector_pair_int_solution");
             assert(params.empty());
             using namespace SolverLanguagePrimitives;
-            vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector();
+            vector<pair<int, SolutionHolder*> >* vec = state->get_var_val(var)->get_vector_pair_int_solution();
             sort(vec->begin(), vec->end());
             return new VarVal();
             break;
         }
-        case no_predef:
-            return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
+        case my_clone:
+        {
+            Var *var = get_var_assert_type(state, "SketchFunction");
+            assert(params.empty());
+            return new VarVal(state->get_var_val(var)->get_harness()->clone());
             break;
+        }
+        case my_assert:
+        {
+            Var *var = get_var_assert_type(state, "namespace");
+            assert(params.size() == 1);
+            AssertDebug(params[0]->eval(state)->get_bool(), "assert(false); // triggered in Solver Program;");
+            return new VarVal();
+            break;
+        }
+        case no_predef: {
+            switch (method_meta_type) {
+                case name_meta_type:
+                    return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
+                    break;
+                case type_constructor_meta_type:
+                    return eval_type_constructor(state);
+                    break;
+            }
+            break;
+        }
         default:
             assert(false);
     }
@@ -538,4 +651,95 @@ void SL::Methods::populate_state(Frame &frame)  {
         frame.add_var_and_set_var_val(at->head->get_var(), new SL::VarVal(at->head));
         at = at->rest;
     }
+}
+
+bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal *var_val)
+{
+    SL::VarValType var_val_type = var_val->get_type();
+//        if(var->get_type()->is_simple_type())
+    if(true){
+//            string var_type_str = var->get_type()->to_string();
+        string var_type_str = var_type->get_head()->to_string();
+        if (var_type_str == "File") {
+            assert(var_val_type == SL::file_val_type);
+        } else if (var_type_str == "int") {
+            assert(var_val_type == SL::int_val_type);
+        } else if (var_type_str == "string") {
+            assert(var_val_type == SL::string_val_type);
+        } else if (var_type_str == "method") {
+            assert(false);
+        } else if (var_type_str == "SketchFunction") {
+            assert(var_val_type == SL::skfunc_val_type);
+        } else if (var_type_str == "Solution") {
+            assert(var_val_type == SL::solution_val_type);
+        } else if (var_type_str == "Program") {
+            assert(var_val_type == SL::skfunc_val_type);
+        } else if (var_type_str == "Input") {
+            assert(var_val_type == SL::input_val_type);
+        } else if (var_type_str == "bool") {
+            assert(var_val_type == SL::bool_val_type);
+        } else if (var_type_str == "vector_pair_int_solution") {
+            assert(var_val_type == SL::vector_pair_int_solution_val_type);
+        } else if (var_type_str == "pair_int_solution") {
+            assert(var_val_type == SL::pair_int_solution_val_type);
+        } else {
+            assert(false);
+        }
+    }
+    else
+    {
+        assert(false);
+//            assert(var_val_type == SL::poly_vec_type);
+//            assert(var->get_type()->get_head()->to_string() == "vector");
+//            assert(var->get_type()->get_type_params().size() == 1);
+    }
+    return true;
+}
+
+bool SL::var_val_invariant(SL::Var *var, SL::VarVal *var_val)
+{
+    SL::VarValType var_val_type = var_val->get_type();
+    if(var->get_type()->is_simple_type()) {
+        return var_val_invariant(var->get_type(), var_val);
+//            string var_type_str = var->get_type()->to_string();
+//            if (var_type_str == "File") {
+//                assert(var_val_type == SL::file_val_type);
+//            } else if (var_type_str == "int") {
+//                assert(var_val_type == SL::int_val_type);
+//            } else if (var_type_str == "string") {
+//                assert(var_val_type == SL::string_val_type);
+//            } else if (var_type_str == "method") {
+//                assert(false);
+//            } else if (var_type_str == "SketchFunction") {
+//                assert(var_val_type == SL::skfunc_val_type);
+//            } else if (var_type_str == "Solution") {
+//                assert(var_val_type == SL::solution_val_type);
+//            } else if (var_type_str == "Program") {
+//                assert(var_val_type == SL::skfunc_val_type);
+//            } else if (var_type_str == "Input") {
+//                assert(var_val_type == SL::input_val_type);
+//            } else if (var_type_str == "bool") {
+//                assert(var_val_type == SL::bool_val_type);
+//            } else if (var_type_str == "vector_pair_int_solution") {
+//                assert(var_val_type == SL::vector_pair_int_solution_val_type);
+//            } else if (var_type_str == "pair_int_solution") {
+//                assert(var_val_type == SL::pair_int_solution_val_type);
+//            } else {
+//                assert(false);
+//            }
+    }
+    else
+    {
+        assert(var_val_type == SL::poly_vec_type);
+        assert(var->get_type()->get_head()->to_string() == "vector");
+        assert(var->get_type()->get_type_params()->size() == 1);
+    }
+    return true;
+}
+
+
+void SL::PolyVec::emplace_back(SL::VarVal *new_element)
+{
+    assert(SL::var_val_invariant(type_params->at(0), new_element));
+    vector<VarVal*>::emplace_back(new_element);
 }
