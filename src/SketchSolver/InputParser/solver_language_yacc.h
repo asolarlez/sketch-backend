@@ -52,7 +52,8 @@ extern int yydebug;
     if_token = 262,
     return_token = 263,
     op_eq = 264,
-    var_val_rule = 265
+    op_plus_plus = 265,
+    var_val_rule = 266
   };
 #endif
 /* Tokens.  */
@@ -63,7 +64,8 @@ extern int yydebug;
 #define if_token 262
 #define return_token 263
 #define op_eq 264
-#define var_val_rule 265
+#define op_plus_plus 265
+#define var_val_rule 266
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -84,12 +86,12 @@ union YYSTYPE
 	SL::Method* method;
 	SL::Methods* methods;
 	SL::Predicate* predicate;
-	SL::Operand* operand;
 	SL::MyOperator my_operator;
 	SL::SLType* my_type;
 	SL::TypeParams* type_params;
+	SL::Expression* expression;
 
-#line 93 "y.tab.h" /* yacc.c:1909  */
+#line 95 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -1217,7 +1217,7 @@ namespace SolverLanguagePrimitives
             }
             string solver_program_file_name;
 
-            SketchFunction* local_harness = state->function_map["main_lvl2"];
+            SketchFunction* local_harness = state->function_map["main_lvl2"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
@@ -1239,9 +1239,7 @@ namespace SolverLanguagePrimitives
 
             SolutionHolder *solution_holder = state->eval();
 
-
-//            SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
-            SketchFunction *concretized_function = local_harness->produce_inlined_dag();
+            SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
             int num_passing_inputs =
                     concretized_function->count_passing_inputs(file);
 

@@ -27,7 +27,7 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
         global.set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name("harness")),
                            new SL::VarVal(harness_));
 
-        input_params.emplace_back(new SL::Param(new SL::VarVal(harness_)));
+        input_params.emplace_back(new SL::Param(new SL::Expression(new SL::VarVal(harness_))));
 
     }
     else

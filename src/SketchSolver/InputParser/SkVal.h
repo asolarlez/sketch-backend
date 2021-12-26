@@ -488,6 +488,10 @@ namespace SolverLanguagePrimitives {
                 assignment_skval->join_with(other->get_assignment());
             }
         }
+
+        SolutionHolder *clone() {
+            return new SolutionHolder(this);
+        }
     };
 
     class InputHolder : public Assignment_SkVal {

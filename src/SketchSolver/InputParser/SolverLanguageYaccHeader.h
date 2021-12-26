@@ -177,8 +177,9 @@ public:
             string var_type_str = var->get_type()->to_string();
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
-                //!!! HERE FIX THIS
+
                 function_map[var->get_name()->to_string()] = var_val->get_function();
+                //!!! HERE FIX THIS
                 function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
                         function_map[var->get_name()->to_string()]->get_dag();
             }

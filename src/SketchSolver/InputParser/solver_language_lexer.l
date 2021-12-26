@@ -19,7 +19,7 @@ Integer      ({Digit}+)
 HexInteger   ("0x"{Integer})
 Double       ({Integer}"."{Digit}*("E"[\+\-]{Digit}+)?)
 String       ("\""[^\n\"]*"\"")
-Identifier   ([a-zA-Z_\#][a-zA-Z_0-9]*)
+Identifier   ([a-zA-Z_][a-zA-Z_0-9]*)
 Operator     ([\%\/\<\>\;\!\?\*\-\+\,\.\:\[\]\(\)\{\}\=\|\&\^\$])
 WhiteSpace   ([ \t\n]*)
 Comment      ("//"[^\n]*)
@@ -35,6 +35,7 @@ if                       {print_rule("if", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return if_token;}
 return                       {print_rule("return", string(yytext)); return return_token;}
 ==                          {print_rule("return", string(yytext)); return op_eq;}
+\+\+                          {print_rule("++", string(yytext)); return op_plus_plus;}
 
 {Identifier}                {print_rule("Identifier", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return identifier;}

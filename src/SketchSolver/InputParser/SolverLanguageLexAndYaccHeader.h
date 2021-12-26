@@ -215,7 +215,7 @@ namespace SL {
                 }
                 else if( *other.type_params->at(i) < *type_params->at(i))
                 {
-                    return true;
+                    return false;
                 }
             }
             return false;
@@ -274,7 +274,7 @@ namespace SL {
     public:
 
         Var(SLType *_type, Name *_name) : type(_type), name(_name) {};
-        Var(Name *_type, Name *_name) : type(new SLType(_type)), name(_name) {};
+        Var(Name *_type, Name *_name) : type(new SL::SLType(_type)), name(_name) {};
 
         Name *get_name() {
             return name;
@@ -331,7 +331,6 @@ namespace SL {
 
     };
 
-
     class VarVal;
 
     class PolyType
@@ -365,6 +364,8 @@ namespace SL {
             assert(idx >= 0 && idx < size());
             return vector<VarVal*>::at(idx);
         }
+
+        void reverse();
     };
 
     class PolyPair: public PolyType, private pair<VarVal*, VarVal*>
@@ -396,7 +397,6 @@ namespace SL {
         poly_val_type,
         poly_pair_type,
         no_type};
-
 
     template <typename T>
     VarValType get_var_val_type(T val)
@@ -681,6 +681,7 @@ namespace SL {
     public:
         Params() = default;
         Params(Param *_head, Params *_rest = nullptr) : head(_head), rest(_rest) {};
+        Params(Param *_head, Param *_next) : head(_head), rest(new Params(_next)) {};
         void populate_vector(vector<Param*>& params)
         {
             Params* at = this;
@@ -694,8 +695,10 @@ namespace SL {
         }
     };
 
+    class Expression;
+
     class FuncCall {
-        Name *var_name = nullptr;
+        Expression *expression = nullptr;
         union {
             Name *method_name;
             SLType *type_constructor;
@@ -708,13 +711,27 @@ namespace SL {
 
     public:
         FuncCall(
-                Name *_class_name, Name *_method_name, Params *_params) :
-                var_name(_class_name), method_name(_method_name), method_meta_type(name_meta_type) {
+                Expression *_expression, Name *_method_name, Params *_params) :
+                expression(_expression), method_name(_method_name), method_meta_type(name_meta_type) {
             _params->populate_vector(params);
         };
         FuncCall(
-                Name *_class_name, SLType *_type_constructor, Params *_params) :
-                var_name(_class_name), type_constructor(_type_constructor), method_meta_type(type_constructor_meta_type) {
+                Name *_method_name, Params *_params) :
+                method_name(_method_name), method_meta_type(name_meta_type) {
+            _params->populate_vector(params);
+        };
+        FuncCall(
+                SLType *_type_constructor, Params *_params){
+            if(_type_constructor->is_simple_type())
+            {
+                method_name = _type_constructor->get_head();
+                method_meta_type = name_meta_type;
+            }
+            else
+            {
+                type_constructor = _type_constructor;
+                method_meta_type = type_constructor_meta_type;
+            }
             _params->populate_vector(params);
         };
 
@@ -727,36 +744,24 @@ namespace SL {
         SL::VarVal *eval_type_constructor(SolverProgramState* state);
     };
 
-
-
     class Assignment
     {
         union {
             Var* dest_var;
             Name* dest_name;
         };
-        union {
-            FuncCall *func_call;
-            VarVal* my_const;
-            Name* from_name;
-            SLType* from_type;
-        };
+
+        Expression* expression = nullptr;
 
         enum DestMetaType {var_dest_type, name_dest_type, no_dest_type};
-        enum SrcMetaType {func_call_src_type, const_src_type, name_src_type, type_constructor_src_type, no_src_type};
 
         DestMetaType dest_type = no_dest_type;
-        SrcMetaType src_type = no_src_type;
 
     public:
 
-        explicit Assignment(Var* _var): dest_var(_var), dest_type(var_dest_type), src_type(no_src_type){}
-        Assignment(Var* _var, FuncCall* _func_call): dest_var(_var), func_call(_func_call), dest_type(var_dest_type), src_type(func_call_src_type) {}
-        Assignment(Name* _name, FuncCall* _func_call): dest_name(_name), func_call(_func_call), dest_type(name_dest_type), src_type(func_call_src_type) {}
-        Assignment(Var* _var, VarVal* _my_const): dest_var(_var), my_const(_my_const), dest_type(var_dest_type), src_type(const_src_type) {}
-        Assignment(Name* _name, Name* _from_name): dest_name(_name), from_name(_from_name), dest_type(name_dest_type), src_type(name_src_type) {}
-        Assignment(Var* _var, Name* _from_name): dest_var(_var), from_name(_from_name), dest_type(var_dest_type), src_type(name_src_type) {}
-//        Assignment(Var* _var, SLType* _from_type): dest_var(_var), from_type(_from_type), dest_type(var_dest_type), src_type(type_constructor_src_type) {}
+        explicit Assignment(Var* _var): dest_var(_var), dest_type(var_dest_type){}
+        Assignment(Var* _var, Expression* _expression): dest_var(_var), expression(_expression), dest_type(var_dest_type) {}
+        Assignment(Name* _name, Expression* _expression): dest_name(_name), expression(_expression), dest_type(name_dest_type) {}
 
         Var* get_var() const
         {
@@ -767,40 +772,31 @@ namespace SL {
 
         bool has_assignment();
     };
-    class Param {
+
+    class Param{
         union {
-            Name *name;
-            VarVal *var_val;
+            Expression *expression;
             Var* var;
-            FuncCall* func_call;
         };
-        enum ParamMetaType {is_name, is_var_val, is_var, is_func_call};
+        enum ParamMetaType {is_var, is_expression};
         ParamMetaType meta_type;
     public:
-        explicit Param(Name *_name) : name(_name), meta_type(is_name) {};
+        explicit Param(Expression *_expression) : expression(_expression), meta_type(is_expression) {};
         explicit Param(Var *_var) : var(_var), meta_type(is_var) {};
         explicit Param(Assignment *assignment) : var(assignment->get_var()), meta_type(is_var) {
             assert(!assignment->has_assignment());
         };
-        explicit Param(VarVal *_var_val) : var_val(_var_val), meta_type(is_var_val) {};
-        explicit Param(FuncCall *_func_call) : func_call(_func_call), meta_type(is_func_call) {};
 
         VarVal *eval(SolverProgramState *state);
 
         Var *get_var() {
             switch (meta_type) {
-                case is_name:
+                case is_expression:
                     assert(false);
 //                    return state->get_var_val(state->name_to_var(name));
                     break;
                 case is_var:
                     return var;
-                    break;
-                case is_var_val:
-                    assert(false);
-                    break;
-                case is_func_call:
-                    assert(false);
                     break;
                 default:
                     assert(false);
@@ -809,53 +805,65 @@ namespace SL {
 
     };
 
-
-//    void set_var_val(Name *name, FuncCall *expr);
-//
-//    void set_var_val(Var *var, FuncCall *expr);
-
-//    Var* name_to_var(string name);
     class Predicate;
 
-    class Operand
+    class Expression
     {
-        union {
-            Name* name;
+        union
+        {
             Predicate* predicate;
+            FuncCall* func_call;
+            Name* identifier;
+            VarVal* var_val;
         };
-        enum OperandMetaType {var_operand, predicate_operand};
-        OperandMetaType meta_type;
+        enum ExpressionMetaType {predicate_meta_type, func_call_meta_type, identifier_meta_type, var_val_meta_type};
+        ExpressionMetaType expression_meta_type;
     public:
-        explicit Operand(Name* _name): name(_name), meta_type(var_operand) {
-            // TODO: get var from name;
-        }
-        explicit Operand(Predicate* _predicate): predicate(_predicate), meta_type(var_operand) {}
+        explicit Expression(Predicate* _predicate): predicate(_predicate), expression_meta_type(predicate_meta_type){}
+        explicit Expression(FuncCall* _func_call): func_call(_func_call), expression_meta_type(func_call_meta_type){}
+        explicit Expression(Name* _identifier): identifier(_identifier), expression_meta_type(identifier_meta_type){}
+        explicit Expression(VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){}
 
-        int eval(SolverProgramState* state);
+        VarVal* eval(SolverProgramState* state);
+
+        void run(SolverProgramState* state)
+        {
+            VarVal* ret = eval(state);
+            assert(ret->is_void());
+        }
+
+        Name* get_var_name()
+        {
+            switch (expression_meta_type) {
+                case identifier_meta_type:
+                    return identifier;
+                    break;
+                case func_call_meta_type:
+                    return nullptr;
+                    break;
+                default:
+                    assert(false);
+            }
+        }
     };
 
     enum MyOperator {lt, gt, eq};
-//    class MyOperator
-//    {
-//        enum Op {lt, gt};
-//        Op op;
-//    public:
-//        MyOperator(Op _op): op(_op){}
-//    };
 
-    class CompositePredicate
+    class Predicate
     {
-        Operand* left_operand = nullptr;
-        Operand* right_operand = nullptr;
+        Expression* left_operand = nullptr;
+        Expression* right_operand = nullptr;
     private:
         MyOperator op;
     public:
-        CompositePredicate(MyOperator _op, Operand* _left, Operand* _right): op(_op), left_operand(_left), right_operand(_right) {};
+        Predicate(MyOperator _op,
+                           Expression* _left,
+                           Expression* _right): op(_op), left_operand(_left), right_operand(_right) {};
 
         bool eval(SolverProgramState* state)
         {
-            int left_val = left_operand->eval(state);
-            int right_val = right_operand->eval(state);
+            int left_val = left_operand->eval(state)->get_int();
+            int right_val = right_operand->eval(state)->get_int();
             switch (op) {
                 case lt:
                     return left_val < right_val;
@@ -871,42 +879,15 @@ namespace SL {
             }
         }
     };
-
-    class Predicate
-    {
-        union {
-            CompositePredicate* composite_predicate;
-            Operand* operand;
-        };
-        enum PredicateMetaType {composite_type, operand_type};
-        PredicateMetaType meta_type;
-    public:
-        explicit Predicate(Operand* _operand): operand(_operand), meta_type(operand_type) {};
-        explicit Predicate(CompositePredicate* _composite_predicate): composite_predicate(_composite_predicate), meta_type(composite_type) {};
-
-        bool eval(SolverProgramState* state)
-        {
-            switch (meta_type) {
-                case composite_type:
-                    return composite_predicate->eval(state);
-                    break;
-                case operand_type:
-                    return operand->eval(state);
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-    };
-
+    
     class CodeBlock;
 
     class While
     {
-        Predicate* predicate = nullptr;
+        Expression* expression = nullptr;
         CodeBlock* body = nullptr;
     public:
-        While(Predicate* _predicate, CodeBlock* _body): predicate(_predicate), body(_body) {}
+        While(Expression* _expression, CodeBlock* _body): expression(_expression), body(_body) {}
 
         void run(SolverProgramState* state);
 
@@ -917,12 +898,12 @@ namespace SL {
     class For
     {
         UnitLine* def;
-        Predicate* predicate = nullptr;
+        Expression* expression = nullptr;
         UnitLine* plus_plus;
         CodeBlock* body = nullptr;
     public:
-        For(UnitLine* _def, Predicate* _predicate, UnitLine* _plus_plus, CodeBlock* _body):
-            def(_def), predicate(_predicate), plus_plus(_plus_plus), body(_body) {}
+        For(UnitLine* _def, Expression* _expression, UnitLine* _plus_plus, CodeBlock* _body):
+            def(_def), expression(_expression), plus_plus(_plus_plus), body(_body) {}
 
         void run(SolverProgramState* state);
 
@@ -931,27 +912,26 @@ namespace SL {
 
     class If
     {
-        Predicate* predicate = nullptr;
+        Expression* expression = nullptr;
         CodeBlock* body = nullptr;
     public:
-        If(Predicate* _predicate, CodeBlock* _body): predicate(_predicate), body(_body) {}
+        If(Expression* _expression, CodeBlock* _body): expression(_expression), body(_body) {}
 
         void run(SolverProgramState* state);
     };
 
     class Return
     {
-        Name* name = nullptr;
+        Expression* expression = nullptr;
     public:
-        explicit Return(Name* _name) : name(_name) {//TODO: get var from name;
-            }
+        explicit Return(Expression* _expression) : expression(_expression) {}
 
         void run(SolverProgramState* state);
     };
 
     class UnitLine
     {
-        enum LineType {var_line, assign_line, while_line, if_line, return_line, func_call_line, for_line};
+        enum LineType {var_line, assign_line, while_line, if_line, return_line, expression_line, for_line};
         union {
             Var* var;
             Assignment* assignment;
@@ -959,7 +939,7 @@ namespace SL {
             For* for_loop;
             If* if_block;
             Return* return_stmt;
-            FuncCall* func_call;
+            Expression* expression;
         };
         LineType line_type;
     public:
@@ -968,7 +948,7 @@ namespace SL {
         explicit UnitLine(While* _while_loop): while_loop(_while_loop), line_type(while_line){}
         explicit UnitLine(If* _if_block): if_block(_if_block), line_type(if_line){}
         explicit UnitLine(Return* _return_stmt): return_stmt(_return_stmt), line_type(return_line){}
-        explicit UnitLine(FuncCall* _func_call): func_call(_func_call), line_type(func_call_line){}
+        explicit UnitLine(Expression* _expression): expression(_expression), line_type(expression_line){}
         explicit UnitLine(For* _for): for_loop(_for), line_type(for_line){}
 
         void run(SolverProgramState *state) {
@@ -988,8 +968,8 @@ namespace SL {
                 case return_line:
                     return_stmt->run(state);
                     break;
-                case func_call_line:
-                    func_call->run(state);
+                case expression_line:
+                    expression->run(state);
                     break;
                 case for_line:
                     for_loop->run(state);
