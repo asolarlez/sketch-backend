@@ -829,7 +829,10 @@ namespace SL {
         void run(SolverProgramState* state)
         {
             VarVal* ret = eval(state);
-            assert(ret->is_void());
+            if(!ret->is_void())
+            {
+                cout << "WARNING: " << "Expression returns but result not stored." << endl;
+            }
         }
 
         Name* get_var_name()

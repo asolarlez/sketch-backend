@@ -132,9 +132,9 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
     enum PredefMethod {
         no_predef,
         predef_file, produce_subset_file,
-        sat_solver, concretize, size,
-        get, passes, plus,
-        clear, Solution, join,
+        sat_solver, produce_concretization,
+        concretize, size, get,
+        passes, plus, clear, Solution, join,
         print, num_holes, emplace_back,
         first, second, div,
         mult, to_float, sort_vec,
@@ -169,6 +169,10 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
     else if(method_str == "SATSolver")
     {
         predef_method = sat_solver;
+    }
+    else if(method_str == "produce_concretization")
+    {
+        predef_method = produce_concretization;
     }
     else if(method_str == "concretize")
     {
@@ -283,6 +287,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             using namespace SolverLanguagePrimitives;
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+            assert(file->get_counterexample_ids_over_time().empty());
             SolutionHolder* sol = (solver)->
                     solve(new ProblemAE(harness, file));
             harness->clear();
@@ -311,7 +316,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             }
             break;
         }
-        case concretize:
+        case produce_concretization:
         {
             Var *var = get_var_assert_type(state, "SketchFunction");
             assert(params.size() == 1);
@@ -321,6 +326,17 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             SketchFunction* concretized_function =
                     harness->produce_with_concretized_holes(sol, true);
             return new SL::VarVal(concretized_function);
+            break;
+        }
+        case concretize:
+        {
+            Var *var = get_var_assert_type(state, "SketchFunction");
+            assert(params.size() == 1);
+            using namespace SolverLanguagePrimitives;
+            SolutionHolder* sol = params[0]->eval(state)->get_solution();
+            SketchFunction* harness = expression->eval(state)->get_harness();
+            harness = harness->concretize(sol, true);
+            return new SL::VarVal(harness);
             break;
         }
         case get:

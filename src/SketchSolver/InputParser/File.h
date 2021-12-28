@@ -19,6 +19,9 @@ void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
 class File: public vector<VarStore*>
 {
+
+    vector<int> counterexample_ids_over_time;
+    vector<int> used;
     static void growInputs(VarStore & inputStore, BooleanDAG* dag);
 
 public:
@@ -44,7 +47,7 @@ public:
         in.get(ch);
         if(in.eof())
         {
-            assert((int)ch == 0);
+            AssertDebug((int)ch == 0, "ch: " + std::to_string(ch));
             return end_of_file__empty_row;
         }
         string line;
@@ -54,7 +57,6 @@ public:
             assert(!in.eof());
             in.get(ch);
         }
-
 
         int cur=0;
         bool neg = false;
@@ -211,7 +213,7 @@ public:
                 return complete_row;
             }
             else{
-                AssertDebug(false, "Incomplete row in input file " + std::to_string((int)size()) + ".");
+                AssertDebug(false, "Incomplete row in input file row" + std::to_string((int)size()) + ".");
                 return incomplete_row;
             }
         }
@@ -228,8 +230,6 @@ public:
             return NO_FILE;
         }
 
-        int num_0s = 0;
-        int num_1s = 0;
         while (!file.eof()) {
             VarStore* new_row = inputs.copy();
             parseLineOut ok;
@@ -237,7 +237,6 @@ public:
                 ok = parseLine(file, floats, inputNodes, new_row);
             }
             catch (BasicError& e) {
-                cerr << "Error parsing file " << fname << endl;
                 file.close();
                 throw e;
             }
@@ -282,7 +281,17 @@ public:
         File* new_file = new File();
         sample(begin(), end(), back_inserter(*new_file),
                num_rows, generator);
+        new_file->used = vector<int>(new_file->size(), 0);
         return new_file;
+    }
+
+    int get_used(int i);
+
+    void set_used(int i);
+
+    const vector<int>& get_counterexample_ids_over_time()
+    {
+        return counterexample_ids_over_time;
     }
 };
 

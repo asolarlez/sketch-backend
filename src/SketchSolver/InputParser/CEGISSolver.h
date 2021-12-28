@@ -56,6 +56,7 @@ protected:
 	CEGISparams params;
 
 	vector<SketchFunction*> problems;
+    vector<File*> files;
 
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();

@@ -110,6 +110,7 @@ public:
         return true;
     }
 	Result fromFile(File* file, FloatManager& floats, vector<bool_node*>& inputNodes) {
+        AssertDebug(file != nullptr, "file shouldn't be nullptr.");
 //		ifstream file;
 //		file.open(fname);
 		bool ok = true;
@@ -119,9 +120,12 @@ public:
 //			return UNSAT;
 //		}
 
+        check_file_invariant(file);
+
 		for(int i = 0;i<file->size();i++) {
 //			try {
 				ok = parseLine(file->at(i));
+                assert(ok);
 //			}
 //			catch (BasicError& e) {
 //				cerr << "Error parsing file " << fname << endl;
@@ -137,6 +141,8 @@ public:
 			}
 			bool rv = this->run(*inputs);
 			if (rv) {
+                assert(file->get_used(i) == 0);
+                file->set_used(i);
 				return FOUND;
 			}
 		}
@@ -247,6 +253,19 @@ public:
 	{
 		
 	}
+
+    void check_file_invariant(File* file) {
+
+        for(int i = 0;i<file->get_counterexample_ids_over_time().size();i++)
+        {
+            bool ok = parseLine(file->at(file->get_counterexample_ids_over_time()[i]));
+            assert(ok);
+            bool rv = this->run(*inputs);
+            assert(rv == (bdag.get_failed_assert() != nullptr));
+            assert(!rv);
+        }
+
+    }
 };
 
 

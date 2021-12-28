@@ -1209,15 +1209,18 @@ namespace SolverLanguagePrimitives
     inline SolutionHolder* target_best_effort(SolverProgramState* state, string file_name = "")
     {
 
-        bool do_solver_program = true;
+        bool do_solver_program = false;
         if(do_solver_program) {
 
-            if(file_name == "") {
-                file_name = "zig_zag.data";
+            if(file_name.empty()) {
+                file_name = "uav_kg_big__as_bools__smaller.data";
+//                file_name = "uav_kg_big__as_bools.data";
+//                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
-            SketchFunction* local_harness = state->function_map["main_lvl2"]->clone();
+            //main_lvl2 IS WEIRD for boolean_synthesis_2_2; TODO: ask Armando about this.
+            SketchFunction* local_harness = state->function_map["main_lvl2__Wrapper"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
@@ -1259,7 +1262,7 @@ namespace SolverLanguagePrimitives
 
 //        expose lightverif
         ofstream fout = ofstream("fixes_old__"+state->harness_->get_name());
-        File* all_file = new File(state->harness_->get_dag(), file_name, state->floats, state->args.seed);
+        File* all_file = new File(state->harness_->clone()->do_inline()->get_dag(), file_name, state->floats, state->args.seed);
         int num_samples = 20;
         int rows_per_sample = 4;
         vector<pair<int, SolutionHolder*> > solutions;

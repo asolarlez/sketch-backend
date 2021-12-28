@@ -15,6 +15,7 @@
 #include "CEGISParams.h"
 #include "REASSolver.h"
 #include "IntToFloatRewriteDag.h"
+#include "SketchFunction.h"
 
 using namespace MSsolverNS;
 
@@ -22,6 +23,7 @@ class CEGISFinderSpec
 {
 protected:
     FloatManager& floats;
+    BooleanDAG* allInputsDag = nullptr;
 public:
     explicit CEGISFinderSpec(FloatManager& _floats): floats(_floats) {}
 	virtual bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged)
@@ -54,6 +56,12 @@ public:
     FloatManager &get_floats() {
         return floats;
     }
+
+    BooleanDAG * get_all_inputs_dag()
+    {
+        return allInputsDag;
+    }
+
 };
 
 
@@ -64,6 +72,7 @@ class CEGISFinder: public CEGISFinderSpec  {
 	CEGISparams params;
 	SolverHelper& dirFind;
 	SATSolver& mngFind;
+
 	
 	void addInputsToTestSet(BooleanDAG* problem, VarStore& input);
     void addProblemToTestSet(BooleanDAG* problem);
@@ -95,6 +104,8 @@ public:
 	void retractAssumptions() override {
 		dirFind.getMng().retractAssumptions();
 	}
+
+
 };
 
 

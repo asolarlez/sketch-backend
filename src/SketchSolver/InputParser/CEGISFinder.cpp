@@ -23,6 +23,25 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	// the caller expects find to keep track of all the constraints.
 	// here dirfind is doing that.
 
+    if(hasInputChanged)
+    {
+        BooleanDAG* newdag = problem->clone();
+        if(allInputsDag == nullptr)
+        {
+            assert(newdag != nullptr);
+            allInputsDag = newdag;
+        }
+        else
+        {
+            allInputsDag->andDag(newdag);
+        }
+    }
+    else
+    {
+        assert(false);
+        //claim: solution is already optimal.
+        return false;
+    }
 
 	//hasInputChange == is it a new problem;
 	if(hasInputChanged){
@@ -33,6 +52,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 		tc.stop();
 		if(PARAMS->verbosity > 2){ tc.print(); }
 	}
+
 	//Solve
 	
 	SATSolver::SATSolverResult result = mngFind.solve();

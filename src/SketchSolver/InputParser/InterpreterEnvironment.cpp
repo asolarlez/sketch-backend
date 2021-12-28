@@ -33,8 +33,6 @@ public:
 	}
 
 
-
-
 	int valueForINode(INTER_node* inode, VarStore& values, int& nbits) {
 		Tvalue& tv = vals[inode->id];
 		int retval = tv.eval(solver);
@@ -955,7 +953,7 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = true;
+        bool do_solver_program = false;
 
         if(do_solver_program)
         {
@@ -977,14 +975,14 @@ int InterpreterEnvironment::doallpairs() {
                 print_ctrls(program_env);
 
                 bool fixes = false;
-                bool concretizes = true;
+                bool concretizes = false;
                 bool calc_partial_concretization = concretizes || fixes;
                 assert(fixes != concretizes || !(fixes || concretizes));
 
                 if(concretizes) {
                     if (i == 0) {
                         assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
-                        string f_to_concretize = "line_lvl0";
+                        string f_to_concretize = "predicate_lvl0";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -993,7 +991,7 @@ int InterpreterEnvironment::doallpairs() {
                     }
                     else if (i == 1) {
                         assert(spskpairs[i].sketch == "main_lvl1__Wrapper");
-                        string f_to_concretize = "line_lvl0";
+                        string f_to_concretize = "predicate_lvl0";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -1001,7 +999,7 @@ int InterpreterEnvironment::doallpairs() {
 
                     } else if (i == 2) {
                         assert(spskpairs[i].sketch == "main_lvl2__Wrapper");
-                        string f_to_concretize = "line_lvl1";
+                        string f_to_concretize = "predicate_lvl1";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -1110,7 +1108,6 @@ int InterpreterEnvironment::doallpairs() {
 					cerr << errMsg << endl;
 					cout << "return 1" << endl;
                     cout << "HERE" << endl;
-                    assert(false);
 					return 1;
 				}
 			}
@@ -1119,8 +1116,6 @@ int InterpreterEnvironment::doallpairs() {
 	cout << "return 2" << endl;
 	return 2; // undefined.
 }
-
-
 
 
 /*
@@ -1213,7 +1208,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = true;
+    bool test_solver_language = false;
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();

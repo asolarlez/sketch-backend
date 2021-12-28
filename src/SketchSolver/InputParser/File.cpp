@@ -22,4 +22,15 @@ File::File(BooleanDAG *dag, const string &file, FloatManager &floats, int seed) 
         growInputs(input_store, problem);
         res = parseFile(file, floats, inputs, input_store);
     }
+    assert(res == File::DONE);
+    used = vector<int>(size(), 0);
+}
+
+int File::get_used(int i) {
+    return used[i];
+}
+
+void File::set_used(int i) {
+    used[i]++;
+    counterexample_ids_over_time.emplace_back(i);
 }

@@ -460,7 +460,21 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblem()->lprint(std::cout);
 
-	pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+    SketchFunction* concretized_function = getHarness()->produce_concretization(controls, bool_node::CTRL);
+	pushProblem(concretized_function);
+
+    if(files.find(curProblem) != files.end())
+    {
+        BooleanDAG *all_inputs_dag = concretized_function->get_dag();
+        map<string, BooleanDAG*> empty;
+        CounterexampleFinder eval(empty, *all_inputs_dag, params.sparseArray, floats);
+        VarStore &tmpin = get_input_store();
+        eval.init(tmpin);
+        vector<bool_node *> &inputs = all_inputs_dag->getNodesByType(bool_node::SRC);
+        File *file = files[curProblem];
+        eval.check_file_invariant(file);
+    }
+
 //	assert(false);
 //	OLD: pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats)));
 //    cout<<"After hard code"<<endl;
@@ -507,11 +521,11 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
 					VarStore& tmpin = input;
 					eval.init(tmpin);
-
 					vector<bool_node*>& inputs = dag->getNodesByType(bool_node::SRC);
 					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats,  inputs);
 					
 					while (res == CounterexampleFinder::MOREBITS) {
+                        assert(false); //After introducing File, this is no longer an issue.
 						BooleanDAG* dag = getProblem();
 						if (PARAMS->verbosity > 5) {
 							cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (dag->getIntSize() + 1) << endl;
@@ -521,6 +535,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					}
 //					TO ASK ARMANDO: Isn't this always the case?
 //					if (dag != oriProblem)
+
+                    assert(dag != oriProblem);
 
 					{
 						vector<bool_node*>& oInputs = oriProblem->getNodesByType(bool_node::SRC);

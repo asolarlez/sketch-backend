@@ -118,7 +118,10 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/CounterexampleFinder.h \
     InputParser/solver_language_yacc.h \
     InputParser/SolverLanguageLexAndYaccHeader.h \
-    InputParser/SolverLanguageYaccHeader.h
+    InputParser/SolverLanguageYaccHeader.h \
+    InputParser/SketchFunction.h \
+    InputParser/ProgramEnvironment.h \
+    InputParser/File.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -180,7 +183,10 @@ libcegis_a_SOURCES =				\
     InputParser/CounterexampleFinder.cpp \
     InputParser/SkVal.cpp \
     InputParser/solver_language_yacc.cpp \
-    InputParser/solver_language_lex.cpp
+    InputParser/solver_language_lex.cpp \
+    InputParser/SketchFunction.cpp \
+    InputParser/ProgramEnvironment.cpp \
+    InputParser/File.cpp
 
 
 

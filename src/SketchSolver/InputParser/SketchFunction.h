@@ -29,7 +29,7 @@ class SketchFunction
     //if env != nullptr => original_dag and root_dag ARE concretized
     ProgramEnvironment* env;
 
-    bool new_way = true;
+    bool new_way = false;
     bool keep_track_of_original = false;
 public:
 
@@ -164,6 +164,13 @@ public:
     {
         return produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL, do_deactivate_pcond);
     }
+
+    SketchFunction* concretize(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
+    {
+        return concretize(*solution_holder->to_var_store(), bool_node::CTRL, do_deactivate_pcond);
+    }
+
+
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
     {

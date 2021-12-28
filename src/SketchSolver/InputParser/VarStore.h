@@ -34,7 +34,6 @@ private:
 public:
 	class objP{
 
-
         void getArrRec(vector<pair<int, int> >* ret) const
         {
             assert(get_is_array());

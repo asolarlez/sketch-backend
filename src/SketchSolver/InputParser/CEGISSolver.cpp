@@ -18,6 +18,7 @@
 void CEGISSolver::addProblem(SketchFunction *harness, File *file){
     checker->addProblem(harness, file);
 	problems.push_back(harness);
+    files.push_back(file);
 
     {
 
@@ -143,6 +144,11 @@ bool CEGISSolver::solveCore(){
 		getMinVarHoleNode(mhnames, mhsizes);		
 	}
 
+    File *file = files[(int)files.size() - 1];
+    if(file != nullptr) {
+        assert(file->get_counterexample_ids_over_time().size() == 0);
+    }
+
 	while(doMore){
 		// Verifier
 		if(PARAMS->showControls){ print_control_map(cout); }
@@ -205,7 +211,37 @@ bool CEGISSolver::solveCore(){
 			ftimer.restart();
 			try{
                 doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
-			}catch(BasicError& e){
+
+                File *file = files[(int)files.size() - 1];
+
+                if(file != nullptr && doMore) {
+
+                    SketchFunction *harness = checker->getHarness();
+
+                    SketchFunction* concretized_function =
+                            (new SketchFunction(
+                                    finder->get_all_inputs_dag(),
+                                    nullptr,
+                                    harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
+
+                    assert(concretized_function->get_dag()->get_failed_assert() == nullptr);
+
+                    //check that all inputs used from the file pass on the the checker's harness
+                    {
+                        SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
+                        BooleanDAG *concretized_dag = concretized_function->get_dag();
+                        map<string, BooleanDAG*> empty;
+                        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
+                        VarStore &tmpin = checker->get_input_store();
+                        eval.init(tmpin);
+                        File *file = files[(int)files.size() - 1];
+                        eval.check_file_invariant(file);
+                    }
+
+
+                }
+
+            }catch(BasicError& e){
 				doMore = false;
 			}
 			ftimer.stop();
