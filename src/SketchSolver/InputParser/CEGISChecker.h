@@ -110,7 +110,6 @@ public:
 		curProblem = (int) problems.size();
 		problems.push_back(harness);
         if (file != nullptr) {
-            assert(false);
             files[curProblem] = file;
         }
 

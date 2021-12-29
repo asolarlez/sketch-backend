@@ -12,13 +12,18 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
 	}
 	auto otype = inode->getOtype();
-	if(arrsz>=0){
-		VarStore::objP* val = &(values.getObj(inode->get_name()));
-		int nbits = inode->get_nbits();
+	if(arrsz>=0) {
+        VarStore::objP *val = &(values.getObj(inode->get_name()));
+        int nbits = inode->get_nbits();
 		vector<bool_node*> multi_mother;
+
+        if(val != nullptr) {
+            assert(inode->isArrType());
+        }
 		
-		while(val != NULL){
+		while(val != nullptr){
 			bool_node* cnst;
+            assert(val->size() == nbits);
 			if(nbits==1){
 				cnst= getCnode( val->getInt() ==1 );
 			}else{
@@ -40,7 +45,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		if(showInputs && inode->type == bool_node::SRC){ cout<<" input "<<inode->get_name()<<" has value "<< acn->lprint() <<endl; }
 		return optAdd(acn);
 	}else{				
-		int nbits = inode->get_nbits();		
+		int nbits = inode->get_nbits();
 		bool_node* onode;
 		if(!values.contains(inode->get_name()))
 		{
@@ -49,6 +54,9 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		}
 		else
 		{
+            assert(!inode->isArrType());
+            assert(values.getObj(inode->get_name()).get_size() == inode->get_nbits());
+
 		    if(inode->getOtype() == OutType::BOOL){
 		        Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
 		        onode= getCnode( values[inode->get_name()]==1 );
@@ -72,13 +80,16 @@ NodeHardcoder::~NodeHardcoder(void)
 }
 
 
-
-
 void NodeHardcoder::visit( SRC_node& node ){
 	if(type == bool_node::SRC){
 	    if(values.contains(node.get_name()))
 	    {
-	        rvalue = nodeForINode(&node);
+            if (!node.isArrType()) {
+                assert(values.getObj(node.get_name()).get_size() == node.get_nbits());
+            } else {
+                assert(values.getObj(node.get_name()).get_size() == node.get_nbits() * node.getArrSz());
+            }
+            rvalue = nodeForINode(&node);
 	    }
 	    else
 	    {

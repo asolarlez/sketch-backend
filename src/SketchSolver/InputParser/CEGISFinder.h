@@ -115,8 +115,6 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 
     REASSolver* reasSolver = NULL;
 
-    BooleanDAG* allInputsDag = NULL;
-
 	SATSolver::SATSolverResult assertDAGNumerical(
 		BooleanDAG* dag, map<string, string>& currentControls, map<string, int>& currentControlInts, map<string, float>& currentControlFloats) {
 
@@ -163,7 +161,7 @@ public:
 	{
 		if(hasInputChanged)
         {
-			if(allInputsDag == NULL)
+			if(allInputsDag == nullptr)
 			{
 				allInputsDag = newdag;
 			}

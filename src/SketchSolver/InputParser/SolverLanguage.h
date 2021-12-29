@@ -1164,7 +1164,7 @@ namespace SolverLanguagePrimitives
     {
         return
             (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
-            solve(new ProblemAE(harness, new File(harness->get_dag(), file_name, floats, _args.seed)));
+            solve(new ProblemAE(harness, new File(harness, file_name, floats, _args.seed)));
     }
 
 
@@ -1209,12 +1209,12 @@ namespace SolverLanguagePrimitives
     inline SolutionHolder* target_best_effort(SolverProgramState* state, string file_name = "")
     {
 
-        bool do_solver_program = false;
+        bool do_solver_program = file_name == "";
         if(do_solver_program) {
 
             if(file_name.empty()) {
-                file_name = "uav_kg_big__as_bools__smaller.data";
-//                file_name = "uav_kg_big__as_bools.data";
+//                file_name = "uav_kg_big__as_bools__smaller.data";
+                file_name = "uav_kg_big__as_bools.data";
 //                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
@@ -1227,14 +1227,14 @@ namespace SolverLanguagePrimitives
             {
                 assert(!state->function_map.empty());
 
-                file = new File(local_harness->clone()->do_inline()->get_dag(), file_name, state->floats, state->args.seed);
+                file = new File(local_harness, file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
             }
             else
             {
                 assert(state->function_map.empty());
                 assert(state->harness_ != nullptr);
-                file = new File(state->harness_->get_dag(), file_name, state->floats, state->args.seed);
+                file = new File(state->harness_, file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__single_harness_best_effort.txt";
             }
 
@@ -1262,9 +1262,9 @@ namespace SolverLanguagePrimitives
 
 //        expose lightverif
         ofstream fout = ofstream("fixes_old__"+state->harness_->get_name());
-        File* all_file = new File(state->harness_->clone()->do_inline()->get_dag(), file_name, state->floats, state->args.seed);
-        int num_samples = 20;
-        int rows_per_sample = 4;
+        File* all_file = new File(state->harness_, file_name, state->floats, state->args.seed);
+        int num_samples = 30;
+        int rows_per_sample = 6;
         vector<pair<int, SolutionHolder*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {

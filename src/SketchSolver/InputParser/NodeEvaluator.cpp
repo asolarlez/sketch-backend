@@ -505,6 +505,7 @@ void NodeEvaluator::printNodeValue(int i){
 	}
 }
 
+static long long COUNTER = 0;
 
 bool NodeEvaluator::run(VarStore& inputs_p){
 	funargs.clear();
@@ -515,6 +516,11 @@ bool NodeEvaluator::run(VarStore& inputs_p){
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){				
 		(*node_it)->accept(*this);
 		if(failedAssert){
+            COUNTER++;
+            if(COUNTER == 53)
+            {
+                cout << "NodeEvaluator.cpp: HERE 53" << endl;
+            }
 			return true;
 		}
 		if(failedHAssert){

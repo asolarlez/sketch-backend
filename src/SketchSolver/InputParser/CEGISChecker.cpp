@@ -472,7 +472,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
         eval.init(tmpin);
         vector<bool_node *> &inputs = all_inputs_dag->getNodesByType(bool_node::SRC);
         File *file = files[curProblem];
-        eval.check_file_invariant(file);
+        assert(eval.check_file_invariant(file));
+        cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
     }
 
 //	assert(false);
@@ -593,6 +594,10 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
         }
     }
     //Return counter-example concretized dag
+
+//    cout << "counterexample: ";
+//    input.printBrief(cout);
+//    cout << endl;
 
     SketchFunction* ret_dag = getHarness()->produce_concretization(input, bool_node::SRC);
 //	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);

@@ -120,7 +120,8 @@ public:
 //			return UNSAT;
 //		}
 
-        check_file_invariant(file);
+        assert(check_file_invariant(file));
+        cout << "FILE PASSES OK (in FromFile)!!" << endl;
 
 		for(int i = 0;i<file->size();i++) {
 //			try {
@@ -254,16 +255,27 @@ public:
 		
 	}
 
-    void check_file_invariant(File* file) {
+    bool check_file_invariant(File* file) {
 
+        vector<int> fails;
         for(int i = 0;i<file->get_counterexample_ids_over_time().size();i++)
         {
-            bool ok = parseLine(file->at(file->get_counterexample_ids_over_time()[i]));
+            int row_id = file->get_counterexample_ids_over_time()[i];
+            bool ok = parseLine(file->at(row_id));
             assert(ok);
+//            cout << "counterexample2: ";
+//            inputs->printBrief(cout);
+//            cout << endl;
             bool rv = this->run(*inputs);
             assert(rv == (bdag.get_failed_assert() != nullptr));
-            assert(!rv);
+            if(rv){
+                fails.push_back(row_id);
+            }
         }
+
+        assert(fails.size() == 0);
+
+        return true;
 
     }
 };

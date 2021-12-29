@@ -265,7 +265,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             assert(params.size() == 2);
             string file_name = params[0]->eval(state)->get_string();
             SketchFunction* harness = params[1]->eval(state)->get_harness();
-            return new SL::VarVal(new File(harness->clone()->do_inline()->get_dag(), file_name, state->floats, state->args.seed));
+            return new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
             break;
         }
         case produce_subset_file:

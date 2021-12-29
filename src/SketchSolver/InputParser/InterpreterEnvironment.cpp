@@ -272,13 +272,9 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 		{
 			if (params.verbosity > 3) { cout << " Inlining functions in the sketch." << endl; }
 			try {
-
-//                for(int i = 0; i<sketch->size();i++)
-//                {
-//                    assert((*sketch)[i]->get_name() != "num_bools_4_0_0");
-//                }
 				doInline(*sketch, functionMap, inlineAmnt, replaceMap);
 			}catch (BadConcretization& bc) {
+                assert(false);
 				sketch->clear();
 				spec->clear();
 				delete sketch;
@@ -297,6 +293,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			try {
 				doInline(*spec, functionMap, inlineAmnt, replaceMap);
 			} catch (BadConcretization& bc) {
+                assert(false);
 				sketch->clear();
 				spec->clear();
 				delete sketch;
@@ -845,11 +842,14 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
 
     if(true){
         /// UNROLLING AND CONCERTIZING
+        cout << "STARTING UNROLLING AND CONCRETIZING" << endl;
         SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
                                                                   program_env);
+        cout << "AFTER INIT" << endl;
         harness_for_function = harness_for_function->concretize(
                 partial_concretization, bool_node::CTRL, true);
 
+        cout << "AFTER CONCRETIZE" << endl;
         functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
         vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
         cout << "UNROLLING AND CONCERTIZING" << endl;
@@ -929,6 +929,9 @@ int InterpreterEnvironment::doallpairs() {
 	string errMsg;
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
+
+    int intSize = -1;
+
 	for (int trailID = 0; trailID<howmany; ++trailID) {
 		if (howmany>1) { cout << "ATTEMPT " << trailID << endl; }
 		if (trailID % 5 == 4) {
@@ -953,7 +956,7 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = false;
+        bool do_solver_program = true;
 
         if(do_solver_program)
         {
@@ -975,14 +978,26 @@ int InterpreterEnvironment::doallpairs() {
                 print_ctrls(program_env);
 
                 bool fixes = false;
-                bool concretizes = false;
+                bool concretizes = true;
                 bool calc_partial_concretization = concretizes || fixes;
                 assert(fixes != concretizes || !(fixes || concretizes));
 
+                if(false && intSize != -1)
+                {
+                    for(auto it: functionMap)
+                    {
+                        while(it.second->getIntSize() < intSize)
+                        {
+                            it.second->growInputIntSizes();
+                        }
+                    }
+                }
+
                 if(concretizes) {
+                    string f_to_concretize_prefix = "predicate";
                     if (i == 0) {
                         assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
-                        string f_to_concretize = "predicate_lvl0";
+                        string f_to_concretize = f_to_concretize_prefix+"_lvl0";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -991,7 +1006,7 @@ int InterpreterEnvironment::doallpairs() {
                     }
                     else if (i == 1) {
                         assert(spskpairs[i].sketch == "main_lvl1__Wrapper");
-                        string f_to_concretize = "predicate_lvl0";
+                        string f_to_concretize = f_to_concretize_prefix+"_lvl0";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -999,7 +1014,7 @@ int InterpreterEnvironment::doallpairs() {
 
                     } else if (i == 2) {
                         assert(spskpairs[i].sketch == "main_lvl2__Wrapper");
-                        string f_to_concretize = "predicate_lvl1";
+                        string f_to_concretize = f_to_concretize_prefix+"_lvl1";
                         assert(functionMap.find(f_to_concretize) != functionMap.end());
 
                         unroll_and_concertize_function(f_to_concretize, program_env,
@@ -1009,7 +1024,12 @@ int InterpreterEnvironment::doallpairs() {
                     }
                 }
                 BooleanDAG* bd = nullptr;
+                cout << "BEFORE PREPARE MITER" << endl;
+
+
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
+
+                cout << "AFTER PREPARE MITER" << endl;
                 SketchFunction* local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), bd, program_env);
 
                 if(fixes) {
@@ -1025,6 +1045,7 @@ int InterpreterEnvironment::doallpairs() {
 
                 if(calc_partial_concretization) {
                     partial_concretization = join(partial_concretization, *local_harness->get_ctrl_var_store());
+                    intSize = local_harness->get_dag()->getIntSize();
                     cout << "partial_concretization.size() " << partial_concretization.size() << endl;
                 }
 
@@ -1208,7 +1229,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = false;
+    bool test_solver_language = true;
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
@@ -1257,7 +1278,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
     if (!file.empty())
     {
 //        AssertDebug(false, "Incorporate prog_evn, activate line below.");
-        new_file = new File(harness->get_dag(), file, floats, params.seed);
+        new_file = new File(harness, file, floats, params.seed);
     }
     else
     {

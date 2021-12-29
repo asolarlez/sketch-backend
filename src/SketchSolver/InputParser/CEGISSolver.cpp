@@ -214,7 +214,37 @@ bool CEGISSolver::solveCore(){
 
                 File *file = files[(int)files.size() - 1];
 
-                if(file != nullptr && doMore) {
+                if(doMore) {
+
+                    SketchFunction *harness = checker->getHarness();
+
+                    SketchFunction* all_inputs_concretized_function =
+                            (new SketchFunction(
+                                    finder->get_all_inputs_dag(),
+                                    nullptr,
+                                    harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
+
+                    assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
+
+                    //check that all inputs used from the file pass on the the checker's harness
+                    if(file != nullptr)
+                    {
+                        SketchFunction* concretized_function =
+                                checker->getHarness()->produce_concretization(
+                                        ctrlStore, bool_node::CTRL);
+                        BooleanDAG *concretized_dag = concretized_function->get_dag();
+                        assert(concretized_dag->get_failed_assert() == nullptr);
+                        map<string, BooleanDAG*> empty;
+                        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
+                        VarStore &tmpin = checker->get_input_store();
+                        eval.init(tmpin);
+                        File *file = files[(int)files.size() - 1];
+                        assert(eval.check_file_invariant(file));
+                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+                    }
+                }
+                else
+                {
 
                     SketchFunction *harness = checker->getHarness();
 
@@ -224,21 +254,21 @@ bool CEGISSolver::solveCore(){
                                     nullptr,
                                     harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
 
-                    assert(concretized_function->get_dag()->get_failed_assert() == nullptr);
+                    assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
 
-                    //check that all inputs used from the file pass on the the checker's harness
+                    if(file != nullptr)
                     {
                         SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
+                        assert(concretized_function->get_dag()->get_failed_assert() == nullptr);
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
                         map<string, BooleanDAG*> empty;
                         CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
                         VarStore &tmpin = checker->get_input_store();
                         eval.init(tmpin);
                         File *file = files[(int)files.size() - 1];
-                        eval.check_file_invariant(file);
+                        assert(!eval.check_file_invariant(file));
+                        cout << "FILE FAILS OK!!" << endl;
                     }
-
-
                 }
 
             }catch(BasicError& e){

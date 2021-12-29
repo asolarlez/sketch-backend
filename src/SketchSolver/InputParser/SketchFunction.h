@@ -29,7 +29,7 @@ class SketchFunction
     //if env != nullptr => original_dag and root_dag ARE concretized
     ProgramEnvironment* env;
 
-    bool new_way = false;
+    bool new_way = true;
     bool keep_track_of_original = false;
 public:
 

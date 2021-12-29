@@ -17,6 +17,8 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=fals
 
 void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
+class SketchFunction;
+
 class File: public vector<VarStore*>
 {
 
@@ -29,7 +31,7 @@ public:
 
     std::mt19937 generator;
 
-    File(BooleanDAG* dag, const string& file, FloatManager& floats, int seed);
+    File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
 
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
 

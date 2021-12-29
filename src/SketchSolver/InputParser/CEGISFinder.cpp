@@ -34,6 +34,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
         else
         {
             allInputsDag->andDag(newdag);
+            DagOptim dag_optim(*allInputsDag, floats);
         }
     }
     else
