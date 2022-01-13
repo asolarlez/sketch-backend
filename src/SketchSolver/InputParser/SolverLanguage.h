@@ -1072,7 +1072,17 @@ namespace SolverLanguagePrimitives
 
         ::CEGISSolver* solver;
 
+        ::SATSolver* _pfind;
     public:
+
+        void clear()
+        {
+            solver->clear();
+            delete solver;
+            delete _pfind;
+            delete finder;
+            delete this;
+        }
 
         ::CEGISSolver* get_solver()
         {
@@ -1082,7 +1092,6 @@ namespace SolverLanguagePrimitives
         WrapperAssertDAG(FloatManager& _floats, HoleHardcoder& _hardcoder, CommandLineArgs& _params, bool _hasGoodEnoughSolution):
         params(_params), floats(_floats), hardcoder(_hardcoder), hasGoodEnoughSolution(_hasGoodEnoughSolution)
         {
-            ::SATSolver* _pfind;
             _pfind = ::SATSolver::solverCreate(params.synthtype, ::SATSolver::FINDER, "WrapperAssertDAG");
             if (params.outputSat) {
                 _pfind->outputSAT();

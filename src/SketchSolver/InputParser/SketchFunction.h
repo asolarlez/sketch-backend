@@ -162,19 +162,28 @@ public:
 
     SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
     {
-        return produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL, do_deactivate_pcond);
+        VarStore* solution = solution_holder->to_var_store();
+        SketchFunction* ret = produce_concretization(*solution, bool_node::CTRL, do_deactivate_pcond);
+        delete solution;
+        return ret;
     }
 
     SketchFunction* concretize(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
     {
-        return concretize(*solution_holder->to_var_store(), bool_node::CTRL, do_deactivate_pcond);
+        VarStore* solution = solution_holder->to_var_store();
+        SketchFunction* ret = concretize(*solution, bool_node::CTRL, do_deactivate_pcond);
+        delete solution;
+        return ret;
     }
 
 
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
     {
-        return produce_concretization(*input_holder->to_var_store(), bool_node::SRC);
+        VarStore* inputs = input_holder->to_var_store();
+        SketchFunction* ret = produce_concretization(*inputs, bool_node::SRC);
+        delete inputs;
+        return ret;
     }
 
     int count_passing_inputs(File* file) {

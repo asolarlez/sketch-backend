@@ -500,7 +500,7 @@ namespace SL {
                     return "int";
                     break;
                 case file_val_type:
-                    return "file";
+                    return "File";
                     break;
                 case method_val_type:
                     assert(false);

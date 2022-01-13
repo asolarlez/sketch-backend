@@ -37,7 +37,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
 #ifdef SCHECKMEM
   allocated.insert(this);
   dag_id = global_boolean_dag_id++;
-//  assert(dag_id != 29937);
+//  assert(dag_id != 8727);
 #endif
 }
 

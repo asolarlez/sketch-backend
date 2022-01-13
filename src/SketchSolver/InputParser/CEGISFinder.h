@@ -62,6 +62,11 @@ public:
         return allInputsDag;
     }
 
+    virtual void clear()
+    {
+        assert(false);
+    }
+
 };
 
 
@@ -73,7 +78,7 @@ class CEGISFinder: public CEGISFinderSpec  {
 	SolverHelper& dirFind;
 	SATSolver& mngFind;
 
-	
+
 	void addInputsToTestSet(BooleanDAG* problem, VarStore& input);
     void addProblemToTestSet(BooleanDAG* problem);
 
@@ -84,6 +89,13 @@ public:
 	{
 
 	}
+
+    void clear()
+    {
+        find_node_ids.clear();
+        find_history.clear();
+        delete this;
+    }
 
 	bool find(BooleanDAG* problem, VarStore& controls, bool hasInputChanged) override;
 

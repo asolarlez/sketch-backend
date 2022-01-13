@@ -250,6 +250,8 @@ public:
             assert(test_var_store->getObj(it->getName()) == var_store->getObj(it->getName()));
         }
 
+        delete test_var_store;
+
     }
     static OutType* sk_val_type_to_bool_node_out_type(SkValType sk_val_type)
     {

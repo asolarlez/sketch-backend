@@ -72,6 +72,21 @@ class CEGISChecker
     VarStore input_store;
 
 public:
+
+    void clear()
+    {
+        clear_problemStack();
+        assert(problemStack.empty());
+
+        files.clear();
+
+        problems.clear();
+
+        check_node_ids.clear();
+
+    }
+
+
     void clear_problemStack()
     {
         while(!problemStack.empty())

@@ -33,6 +33,12 @@ public:
 
     File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
 
+    void clear() {
+        counterexample_ids_over_time.clear();
+        used.clear();
+        vector<VarStore*>::clear();
+    }
+
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
 
     parseLineOut parseLine(ifstream& in, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore* inputs) {

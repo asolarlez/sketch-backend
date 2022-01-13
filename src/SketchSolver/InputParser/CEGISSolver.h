@@ -91,7 +91,11 @@ public:
 
     void clear()
     {
+        finder->clear();
+        checker->clear();
+        delete checker;
 
+        last_input.clear();
     }
 
 	VarStore ctrlStore;

@@ -11,6 +11,7 @@ Necessary
     1.1. Fix new frame for {} nesting
     1.2. complete boolean predicates
     1.3. implement integer expressions
+    1.4. Implement garbage collection.
 2. Incorporate numerical solver
 3. Fix memory leaks (remove all boolean dag copies that are not used).
     //there is code in boolean_node for memory leaks

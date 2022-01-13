@@ -104,11 +104,9 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 {
 	for (map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it) {
 		it->second->clear();
-		delete it->second;
 	}
 	if (bgproblem != NULL) {
 		bgproblem->clear();
-		delete bgproblem;
 	}
 	ArithExprBuilder::clearStaticMapMemory();
 	SwapperPredicateNS::PredicateBuilder::clearStaticMapMemory();

@@ -293,6 +293,7 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
             SolutionHolder* sol = (solver)->
                     solve(new ProblemAE(harness, file));
             harness->clear();
+            solver->clear();
             return new SL::VarVal(sol);
             break;
         }
@@ -372,12 +373,13 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
                 var_val = expression->eval(state);
                 var_type_str = var_val->get_type_string();
             }
+            assert(var_type_str == "File" || var_type_str == "vector");
+            if(var_val == nullptr)
+            {
+                var_val = expression->eval(state);
+            }
             if (var_type_str == "File") {
                 assert(params.size() == 1);
-                if(var_val == nullptr)
-                {
-                    var_val = expression->eval(state);
-                }
                 File *file = var_val->get_file();
                 int row_id = params[0]->eval(state)->get_int();
                 return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
@@ -386,10 +388,6 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
                     assert(var->get_type()->get_type_params()->size() == 1);
                 }
                  assert(params.size() == 1);
-                if(var_val == nullptr)
-                {
-                    var_val = expression->eval(state);
-                }
                 PolyVec *vec = var_val->get_poly_vec();
                 int idx = params[0]->eval(state)->get_int();
                 return vec->at(idx);
@@ -448,11 +446,41 @@ SL::VarVal *SL::FuncCall::eval(SolverProgramState *state)
         }
         case clear:
         {
-            pair<SL::Var*, SL::VarVal*> var_and_var_val = get_var_assert_type(state, "SketchFunction");
-            assert(params.empty());
-            SketchFunction* program = var_and_var_val.second->get_function();
-            program->clear();
-            return new VarVal();
+            Name* var_name = expression->get_var_name();
+            assert(var_name != nullptr);
+            Var* var = state->name_to_var(var_name);
+            VarVal* var_val = nullptr;
+            string var_type_str;
+            if(var->has_type()) {
+                var_type_str = var->get_type()->get_head()->to_string();
+            }
+            else {
+                assert(!SL::is_strongly_typed);
+                var_val = expression->eval(state);
+                var_type_str = var_val->get_type_string();
+            }
+            assert(var_type_str == "File" || var_type_str == "SketchFunction");
+            if(var_val == nullptr)
+            {
+                var_val = expression->eval(state);
+            }
+            if (var_type_str == "File") {
+                assert(params.empty());
+                File* file = var_val->get_file();
+                file->clear();
+                delete file;
+                return new VarVal();
+            } else if (var_type_str == "SketchFunction") {
+                assert(params.empty());
+                SketchFunction* program = var_val->get_function();
+                program->clear();
+                return new VarVal();
+            }
+            else
+            {
+                assert(false);
+            }
+
             break;
         }
         case Solution:

@@ -40,6 +40,9 @@ void CEGISSolver::addProblem(SketchFunction *harness, File *file){
 
 CEGISSolver::~CEGISSolver(void)
 {
+    //assumption: all problems are already deleted
+    problems.clear();
+    //this is dead code:
 	for(int i=0; i<problems.size(); ++i){
 		problems[i]->clear();
 		delete problems[i];
@@ -219,11 +222,13 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction* all_inputs_concretized_function =
-                            (new SketchFunction(
-                                    finder->get_all_inputs_dag(),
-                                    nullptr,
-                                    harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
+                    SketchFunction* all_inputs_concretized_function = new SketchFunction(
+                        finder->get_all_inputs_dag(),
+                        nullptr,
+                        harness->get_env());
+
+                    all_inputs_concretized_function =
+                            all_inputs_concretized_function->produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
                     all_inputs_concretized_function->clear();
@@ -252,11 +257,13 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction* concretized_function =
-                            (new SketchFunction(
-                                    finder->get_all_inputs_dag(),
-                                    nullptr,
-                                    harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
+                    SketchFunction* concretized_function = new SketchFunction(
+                            finder->get_all_inputs_dag(),
+                            nullptr,
+                            harness->get_env());
+
+                    concretized_function =
+                            concretized_function->produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
                     concretized_function->clear();
@@ -264,15 +271,20 @@ bool CEGISSolver::solveCore(){
                     if(file != nullptr)
                     {
                         SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
-                        assert(concretized_function->get_dag()->get_failed_assert() == nullptr);
-                        BooleanDAG *concretized_dag = concretized_function->get_dag();
-                        map<string, BooleanDAG*> empty;
-                        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
-                        VarStore &tmpin = checker->get_input_store();
-                        eval.init(tmpin);
-                        File *file = files[(int)files.size() - 1];
-                        assert(!eval.check_file_invariant(file));
-                        cout << "FILE FAILS OK!!" << endl;
+                        if(concretized_function->get_dag()->get_failed_assert() != nullptr)
+                        {
+                            cout << "FILE FAILS OK!!" << endl;
+                        }
+                        else {
+                            BooleanDAG *concretized_dag = concretized_function->get_dag();
+                            map<string, BooleanDAG *> empty;
+                            CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
+                            VarStore &tmpin = checker->get_input_store();
+                            eval.init(tmpin);
+                            File *file = files[(int) files.size() - 1];
+                            assert(!eval.check_file_invariant(file));
+                            cout << "FILE FAILS OK!!" << endl;
+                        }
                         concretized_function->clear();
                     }
                 }
@@ -490,6 +502,9 @@ void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
     for(VarStore::iterator it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
         assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
     }
+
+    delete test_varstore;
+
 
 }
 
