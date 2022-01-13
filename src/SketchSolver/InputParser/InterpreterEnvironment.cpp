@@ -754,123 +754,31 @@ void InterpreterEnvironment::fixes(const string& holename) {
 void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *program_env,
                                     VarStore &partial_concretization)
 {
-
     map<string, BooleanDAG*>& functionMap = program_env->functionMap;
-    if(true){
-        /// NO UNROLLING
-        vector<bool_node *> &_ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
-        cout << "NO UNROLLING" << endl;
-        cout << "CTRL NODES IN " + f_to_concretize << " " << _ctrls.size() << endl;
-        for (int i = 0; i < _ctrls.size(); i++) {
-            assert(_ctrls[i]->type == bool_node::CTRL);
-        }
+
+    /// UNROLLING AND CONCERTIZING
+    SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
+                                                              program_env);
+    harness_for_function = harness_for_function->concretize(
+            partial_concretization, bool_node::CTRL, true);
+
+    functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
+    vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
+    cout << "UNROLLING AND CONCERTIZING" << endl;
+    cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
+
+    cout << "remaining nodes" << endl;
+    for(int i = 0;i<ctrls.size();i++)
+    {
+        cout << ctrls[i]->get_name() << endl;
     }
 
-    /// ONLY UNROLLING
-    if(true) {
-        map<string, BooleanDAG *> new_map;
+    cout << "partial_concretization" << endl;
+    partial_concretization.printContent(cout);
 
-        if(false) {
-            for (auto it: functionMap) {
-                new_map[it.first] = it.second->clone();
-            }
-        }
-        else
-        {
-            new_map = program_env->functionMap;
-        }
-
-        map<string, BooleanDAG *> &old_map = program_env->functionMap;
-        assert(&old_map == &functionMap);
-        program_env->functionMap = new_map;
-        SketchFunction *harness_to_only_unroll = new SketchFunction(new_map[f_to_concretize]->clone(), nullptr,
-                                                                    program_env);
-        SketchFunction* new_harness_to_only_unroll = harness_to_only_unroll->do_inline(true);
-        vector<bool_node*>& ctrls = new_harness_to_only_unroll->get_dag()->getNodesByType(bool_node::CTRL);
-        cout << "ONLY UNROLLED" << endl;
-        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
-        for (int i = 0; i < ctrls.size(); i++) {
-            assert(ctrls[i]->type == bool_node::CTRL);
-            cout << ctrls[i]->get_name() << endl;
-        }
-        program_env->functionMap = old_map;
+    for (int i = 0; i < ctrls.size(); i++) {
+        assert(ctrls[i]->type == bool_node::CTRL);
     }
-
-//    for(auto it: functionMap)
-//    {
-//        cout<< "---" << endl;
-//        cout << "NEW MAP " + it.first << endl;
-//        new_map[it.first]->lprint(cout);
-//        cout << "OLD MAP " + it.first << endl;
-//        old_map[it.first]->lprint(cout);
-//        cout<< "---" << endl;
-//    }
-
-
-    if(false){
-        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
-
-        for (int i = 0; i < ctrls.size(); i++) {
-            assert(ctrls[i]->type == bool_node::CTRL);
-        }
-    }
-
-
-//    if(false)
-//    {
-//        vector<bool_node *> &ctrls_new_map_clone = new_map[f_to_concretize]->clone()->getNodesByType(bool_node::CTRL);
-//
-//        for (int i = 0; i < ctrls_new_map_clone.size(); i++) {
-//            assert(ctrls_new_map_clone[i]->type == bool_node::CTRL);
-//        }
-//    }
-
-
-    if(false){
-        for(auto it : functionMap)
-        {
-            if(it.first != f_to_concretize)
-            it.second->clone();
-        }
-        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->clone()->getNodesByType(bool_node::CTRL);
-
-        for (int i = 0; i < ctrls.size(); i++) {
-            assert(ctrls[i]->type == bool_node::CTRL);
-        }
-    }
-
-
-    if(true){
-        /// UNROLLING AND CONCERTIZING
-        cout << "STARTING UNROLLING AND CONCRETIZING" << endl;
-        SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
-                                                                  program_env);
-        cout << "AFTER INIT" << endl;
-        harness_for_function = harness_for_function->concretize(
-                partial_concretization, bool_node::CTRL, true);
-
-        cout << "AFTER CONCRETIZE" << endl;
-        functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
-        vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
-        cout << "UNROLLING AND CONCERTIZING" << endl;
-        cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
-
-        cout << "remaining nodes" << endl;
-        for(int i = 0;i<ctrls.size();i++)
-        {
-            cout << ctrls[i]->get_name() << endl;
-        }
-
-        cout << "partial_concretization" << endl;
-        partial_concretization.printContent(cout);
-
-        for (int i = 0; i < ctrls.size(); i++) {
-            assert(ctrls[i]->type == bool_node::CTRL);
-        }
-    }
-
-
-
 }
 
 void print_ctrls(ProgramEnvironment* env)
@@ -883,6 +791,8 @@ void print_ctrls(ProgramEnvironment* env)
         local_harness = local_harness->do_inline();
 
         cout << it.first <<" #ctrls " << (local_harness->get_dag()->getNodesByType(bool_node::CTRL)).size() << endl;
+
+        local_harness->clear();
 
     }
 

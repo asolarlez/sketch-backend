@@ -59,7 +59,7 @@ public:
         try{
             return name_to_var_throws(name);
         } catch(exception& e){
-            assert(false);
+            AssertDebug(false, "ERROR:: IDENTIFIER NOT FOUND: " + name->to_string());
         }
     }
 
@@ -211,10 +211,20 @@ public:
         }
         catch (exception& e1) {
             try {
-                return global.name_to_var(name);
+                return global.name_to_var_throws(name);
             }
             catch (exception& e2){
-                assert(false);
+                if(!SL::is_strongly_typed) {
+                    add_var(new SL::Var(new SL::SLType(nullptr), name));
+                    try {
+                        return name_to_var(name);
+                    } catch (exception &e) {
+                        AssertDebug(false, "should not happen");
+                    }
+                }
+                else {
+                    assert(false);
+                }
             }
         }
     }
@@ -233,7 +243,6 @@ public:
     }
 
     SL::VarVal *get_return_var_val() {
-        assert(return_var_val != nullptr);
         SL::VarVal* ret = return_var_val;
         return_var_val = nullptr;
         return ret;

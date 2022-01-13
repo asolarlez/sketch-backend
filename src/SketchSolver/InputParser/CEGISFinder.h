@@ -57,7 +57,7 @@ public:
         return floats;
     }
 
-    BooleanDAG * get_all_inputs_dag()
+    BooleanDAG*& get_all_inputs_dag()
     {
         return allInputsDag;
     }

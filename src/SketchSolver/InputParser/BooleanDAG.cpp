@@ -20,6 +20,7 @@ using namespace std;
 
 #ifdef SCHECKMEM
 set<BooleanDAG*> BooleanDAG::allocated;
+long long BooleanDAG::global_boolean_dag_id = 0;
 #endif 
 
 BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(isModel_)
@@ -34,8 +35,9 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(
   intSize = 2;
   useSymbolicSolver = false;
 #ifdef SCHECKMEM
-  cout<<"Checking allocation"<<endl;
   allocated.insert(this);
+  dag_id = global_boolean_dag_id++;
+//  assert(dag_id != 29937);
 #endif
 }
 
@@ -73,14 +75,15 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 void BooleanDAG::clear(){	
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
-		  if (nodes[i] != NULL) {			  
+		  if (nodes[i] != nullptr) {
 			  delete nodes[i];
-			  nodes[i] = NULL;
+			  nodes[i] = nullptr;
 		  }
 	  }
 	}
   nodes.clear();
   named_nodes.clear();
+  delete this;
 }
 
 

@@ -267,16 +267,14 @@ public:
 //            inputs->printBrief(cout);
 //            cout << endl;
             bool rv = this->run(*inputs);
-            assert(rv == (bdag.get_failed_assert() != nullptr));
+            assert(bdag.get_failed_assert() == nullptr);
+//            assert(rv == (bdag.get_failed_assert() != nullptr));
             if(rv){
                 fails.push_back(row_id);
             }
         }
 
-        assert(fails.size() == 0);
-
-        return true;
-
+        return fails.empty();
     }
 };
 

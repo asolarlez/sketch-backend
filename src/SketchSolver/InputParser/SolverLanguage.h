@@ -1220,7 +1220,7 @@ namespace SolverLanguagePrimitives
             string solver_program_file_name;
 
             //main_lvl2 IS WEIRD for boolean_synthesis_2_2; TODO: ask Armando about this.
-            SketchFunction* local_harness = state->function_map["main_lvl2__Wrapper"]->clone();
+            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
@@ -1229,6 +1229,7 @@ namespace SolverLanguagePrimitives
 
                 file = new File(local_harness, file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
+//                solver_program_file_name = "solver_language_program__very_simple.txt";
             }
             else
             {
@@ -1237,6 +1238,13 @@ namespace SolverLanguagePrimitives
                 file = new File(state->harness_, file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__single_harness_best_effort.txt";
             }
+
+            cout << "BOOLEAN DAGS:" << endl;
+
+            int init_num_global_dags = BooleanDAG::get_allocated().size();
+
+            int init_num_global_nodes = bool_node::get_allocated().size();
+
 
             run_solver_langauge_program(state, solver_program_file_name);
 
@@ -1254,6 +1262,10 @@ namespace SolverLanguagePrimitives
             solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
 
             local_harness->set_solution(solution_holder->to_var_store());
+
+
+            assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
+            assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
             return solution_holder;
 

@@ -30,11 +30,13 @@ bool CEGISFinder::find(BooleanDAG* problem,
         {
             assert(newdag != nullptr);
             allInputsDag = newdag;
+            cout << "allInputsDag: " << allInputsDag->get_dag_id() << endl;
         }
         else
         {
             allInputsDag->andDag(newdag);
             DagOptim dag_optim(*allInputsDag, floats);
+            dag_optim.process(*allInputsDag);
         }
     }
     else
@@ -163,6 +165,7 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 
         find_node_ids.clear();
 
+        newdag->clear();
         delete newdag;
         throw e;
     }
@@ -173,7 +176,7 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 
 
     find_node_ids.clear();
-    delete newdag;
+    newdag->clear();
 }
 
 void

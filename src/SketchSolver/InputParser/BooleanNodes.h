@@ -41,7 +41,7 @@ typedef FastSet<bool_node> childset;
 
 extern const int UNINITIALIZED;
 
-//#define SCHECKMEM
+#define SCHECKMEM
 
 class OutType{
     public:
@@ -105,6 +105,14 @@ class bool_node{
     static int NEXT_GLOBAL_ID;
 #ifdef SCHECKMEM
 	static set<bool_node*> allocated;
+
+public:
+    static set<bool_node*> get_allocated()
+    {
+        return allocated;
+    }
+private:
+
 #endif
 	protected:
 	bool_node** parents;

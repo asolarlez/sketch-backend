@@ -30,7 +30,7 @@ void CEGISSolver::addProblem(SketchFunction *harness, File *file){
                 declareControl(ctrlnode);
             }
         }
-//        inlined_harness->clear();
+        inlined_harness->clear();
     }
 
 	finder->updateCtrlVarStore(ctrlStore);	
@@ -129,7 +129,7 @@ bool CEGISSolver::solveOptimization() {
 bool CEGISSolver::solveCore(){	
 	int iterations = 0;
 	bool fail = false;
-    BooleanDAG* counterexample_concretized_dag;
+    BooleanDAG* counterexample_concretized_dag = nullptr;
  	bool doMore=true;
 	timerclass ftimer("* FIND TIME");
 	timerclass ctimer("* CHECK TIME");
@@ -161,6 +161,7 @@ bool CEGISSolver::solveCore(){
 
 			if(!hc.solvePendingConstraints())
 			{
+                assert(false);
 			    return false;
 			};
 
@@ -225,6 +226,7 @@ bool CEGISSolver::solveCore(){
                                     harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
+                    all_inputs_concretized_function->clear();
 
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
@@ -241,7 +243,9 @@ bool CEGISSolver::solveCore(){
                         File *file = files[(int)files.size() - 1];
                         assert(eval.check_file_invariant(file));
                         cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+                        concretized_function->clear();
                     }
+
                 }
                 else
                 {
@@ -255,6 +259,7 @@ bool CEGISSolver::solveCore(){
                                     harness->get_env()))->produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
+                    concretized_function->clear();
 
                     if(file != nullptr)
                     {
@@ -268,6 +273,7 @@ bool CEGISSolver::solveCore(){
                         File *file = files[(int)files.size() - 1];
                         assert(!eval.check_file_invariant(file));
                         cout << "FILE FAILS OK!!" << endl;
+                        concretized_function->clear();
                     }
                 }
 
@@ -306,7 +312,18 @@ bool CEGISSolver::solveCore(){
     cout << "*" << last_elapsed_time->to_string() << endl;
 	finder->retractAssumptions();
 
+    checker->clear_problemStack();
 
+    assert(checker->problemStack_is_empty());
+
+    if(finder->get_all_inputs_dag() != nullptr) {
+        finder->get_all_inputs_dag()->clear();
+        finder->get_all_inputs_dag() = nullptr;
+    }
+    else
+    {
+        assert(iterations == 1);
+    }
 	return !fail;
 }
 

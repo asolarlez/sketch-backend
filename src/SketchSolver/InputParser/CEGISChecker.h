@@ -47,14 +47,6 @@ class CEGISChecker
 		SketchFunction* t = problemStack.top();
 		problemStack.pop();
 		t->clear();
-		delete t;
-	}
-	void clear_problemStack()
-	{
-		while(!problemStack.empty())
-		{
-			popProblem();
-		}
 	}
 
 
@@ -80,6 +72,13 @@ class CEGISChecker
     VarStore input_store;
 
 public:
+    void clear_problemStack()
+    {
+        while(!problemStack.empty())
+        {
+            popProblem();
+        }
+    }
 
     inline VarStore& get_input_store()
     {
@@ -141,7 +140,7 @@ public:
             }
         }
 
-//        inlined_harness->clear();
+        inlined_harness->clear();
     }
 
 

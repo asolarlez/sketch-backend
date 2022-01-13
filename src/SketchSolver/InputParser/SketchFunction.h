@@ -174,11 +174,10 @@ public:
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
     {
-        produce_concretization(*input_holder->to_var_store(), bool_node::SRC);
+        return produce_concretization(*input_holder->to_var_store(), bool_node::SRC);
     }
 
     int count_passing_inputs(File* file) {
-        assert(root_dag->getNodesByType(bool_node::CTRL).size() == 0);
         int ret = 0;
         int num_0s = 0;
         int num_1s = 0;
@@ -186,6 +185,7 @@ public:
         {
             SketchFunction* concretized_function = produce_with_concretized_inputs(
                     new SolverLanguagePrimitives::InputHolder(file->at(i), env->get_floats()));
+            assert(concretized_function->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
             assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
             if(concretized_function->get_dag()->get_failed_assert() == NULL)
             {

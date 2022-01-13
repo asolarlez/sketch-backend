@@ -24,6 +24,8 @@ Operator     ([\%\/\<\>\;\!\?\*\-\+\,\.\:\[\]\(\)\{\}\=\|\&\^\$])
 WhiteSpace   ([ \t\n]*)
 Comment      ("//"[^\n]*)
 
+%x C_COMMENT
+
 %%
 Solver                      {print_rule("Solver", string(yytext));
                                 yylval->name = new SL::Name(string(yytext)); return solver_token;}
@@ -46,7 +48,10 @@ return                       {print_rule("return", string(yytext)); return retur
                                 return var_val_rule;}
 {Integer}                   {print_rule("Integer", string(yytext));
                                 yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}
-{Comment}                   {print_rule("Comment", string(yytext));}
+{Comment}                   {print_rule("Single Line Comment", string(yytext));}
+"/*"            {print_rule("Begin C_COMMENT", string(yytext)); BEGIN(C_COMMENT); }
+<C_COMMENT>"*/" {print_rule("END C_COMMENT", string(yytext));  BEGIN(INITIAL); }
+<C_COMMENT>.    {print_rule("READ C_COMMENT", string(yytext)); }
 {WhiteSpace}                {print_rule("WhiteSpace", string(yytext));}
 {Operator}                  {print_rule("Operator", string(yytext));
                                 assert(string(yytext).size() == 1); return yytext[0];}

@@ -28,7 +28,7 @@
 #endif
 
 using namespace std;
-// #define SCHECKMEM
+#define SCHECKMEM
 
 inline bool comp_id(bool_node* n1, bool_node* n2){
   unsigned int n1id = (unsigned int) n1->id;
@@ -55,8 +55,23 @@ class BooleanDAG
 {
 private:
 #ifdef SCHECKMEM
+    static long long global_boolean_dag_id;
 	static set<BooleanDAG*> allocated;
+
+public:
+    static set<BooleanDAG*>& get_allocated()
+    {
+        return allocated;
+    }
+    long long dag_id;
+    long long get_dag_id()
+    {
+        return dag_id;
+    }
+private:
+
 #endif
+
 
   int n_inputs;
   int n_outputs;

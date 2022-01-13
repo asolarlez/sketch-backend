@@ -39,21 +39,31 @@ namespace SL {
     class VarVal;
 
     class Name {
+        bool defined = false;
         string name;
     public:
-        explicit Name(string _name) : name(std::move(_name)) {};
+        explicit Name(string _name) : name(std::move(_name)), defined(true) {};
+        explicit Name(void* _nullptr) : defined(false) {assert (_nullptr == nullptr);};
 
-        string to_string() {
+        bool is_defined()
+        {
+            return defined;
+        }
+
+        string to_string() const {
+            assert(defined);
             return name;
         }
 
         SL::VarVal *eval(SolverProgramState *state);
 
         bool operator<(const Name &other) const {
+            assert(defined);
             return name < other.name;
         }
 
         bool operator==(const Name &other) const {
+            assert(defined);
             return name == other.name;
         }
 
@@ -158,7 +168,13 @@ namespace SL {
         string to_string()
         {
             if(type_params == nullptr) {
-                return name->to_string();
+                if(name != nullptr) {
+                    return name->to_string();
+                }
+                else
+                {
+                    return "any";
+                }
             }
             else
             {
@@ -248,14 +264,17 @@ namespace SL {
         }
 
         Name *get_head() {
+            assert(name != nullptr);
             return name;
         }
 
         const vector<SLType*>* get_type_params() {
+            assert(name != nullptr);
             return type_params;
         }
 
         bool is_simple_type() {
+            assert(name != nullptr);
             if(type_params == nullptr)
             {
                 return true;
@@ -266,7 +285,14 @@ namespace SL {
                 return false;
             }
         }
+
+        bool is_defined() {
+            return name != nullptr;
+        }
     };
+
+
+    const bool is_strongly_typed = false;
 
     class Var {
         SLType *type = nullptr;
@@ -293,41 +319,40 @@ namespace SL {
 
         bool operator == (const Var& other) const
         {
-            return *type == *other.type && *name == *other.name;
+            if(is_strongly_typed) {
+                return *type == *other.type && *name == *other.name;
+            }
+            else
+            {
+                return *name == *other.name;
+            }
         }
 
         bool operator < (const Var& other) const
         {
             assert(defined());
             assert(other.defined());
-            if(*type < *other.type)
-            {
-                return true;
-            }
-            else if(*other.type < *type)
-            {
-                return false;
-            }
-            else
-            {
-                if(*name < *other.name)
-                {
+
+
+            if(is_strongly_typed) {
+                if (*type < *other.type) {
                     return true;
-                }
-                else if(*other.name < *name)
-                {
-                    return false;
-                }
-                else
-                {
+                } else if (*other.type < *type) {
                     return false;
                 }
             }
+
+            return *name < *other.name;
         }
 
         VarVal *eval(SolverProgramState *pState);
 
         SLType * get_type();
+
+        bool has_type()
+        {
+            return type->is_defined();
+        }
 
     };
 
@@ -463,6 +488,58 @@ namespace SL {
 //        explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
 //                pair_int_solution(std::move(_pair_int_solution)), var_val_type(pair_int_solution_val_type){}
         VarVal(): var_val_type(void_val_type) {}
+
+        string get_type_string()
+        {
+            switch (var_val_type) {
+
+                case string_val_type:
+                    return "string";
+                    break;
+                case int_val_type:
+                    return "int";
+                    break;
+                case file_val_type:
+                    return "file";
+                    break;
+                case method_val_type:
+                    assert(false);
+                    break;
+                case skfunc_val_type:
+                    return "SketchFunction";
+                    break;
+                case solution_val_type:
+                    return "Solution";
+                    break;
+                case input_val_type:
+                    return "InputHolder";
+                    break;
+                case bool_val_type:
+                    return "bool";
+                    break;
+                case void_val_type:
+                    return "void";
+                    break;
+                case float_val_type:
+                    return "float";
+                    break;
+                case poly_vec_type:
+                    return "vector";
+                    break;
+                case poly_val_type:
+                    return "any";
+                    break;
+                case poly_pair_type:
+                    return "pair";
+                    break;
+                case no_type:
+                    assert(false);
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
 
         bool operator < (const VarVal& other) const
         {
@@ -735,7 +812,7 @@ namespace SL {
             _params->populate_vector(params);
         };
 
-        Var* get_var_assert_type(SolverProgramState* state, string type_name);
+        pair<Var*, VarVal*> get_var_assert_type(SolverProgramState* state, string type_name);
 
         VarVal* eval(SolverProgramState* state);
 
@@ -826,8 +903,7 @@ namespace SL {
 
         VarVal* eval(SolverProgramState* state);
 
-        void run(SolverProgramState* state)
-        {
+        void run(SolverProgramState* state) {
             VarVal* ret = eval(state);
             if(!ret->is_void())
             {

@@ -60,7 +60,9 @@ void SketchFunction::clear()
         delete original_dag;
         original_dag = NULL;
     }
+    int prev_num = BooleanDAG::get_allocated().size();
     root_dag->clear();
-    delete root_dag;
-    root_dag = NULL;
+    assert(prev_num-1 == BooleanDAG::get_allocated().size());
+    root_dag = nullptr;
+    delete this;
 }
