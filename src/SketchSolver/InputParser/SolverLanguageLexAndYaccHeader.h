@@ -55,6 +55,11 @@ namespace SL {
             return name;
         }
 
+        void clear()
+        {
+            name.clear();
+        }
+
         SL::VarVal* eval(SolverProgramState *state);
 
         bool operator<(const Name &other) const {
@@ -466,16 +471,8 @@ namespace SL {
         explicit VarVal(PolyPair* _poly_pair);
         explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution);
         explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder);
+        explicit VarVal(VarVal* _to_copy);
 
-//        explicit VarVal(VarVal* _to_copy);
-
-//        explicit VarVal(shared_ptr<File> _file) : file(std::move(_file)) , var_val_type(file_val_type){}
-//        explicit VarVal(shared_ptr<Method> _method) : method(std::move(_method)) , var_val_type(method_val_type){}
-//        explicit VarVal(shared_ptr<SketchFunction> _harness) : skfunc(std::move(_harness)) , var_val_type(skfunc_val_type){}
-//        explicit VarVal(shared_ptr<PolyVec> _poly_vec) : poly_vec(std::move(_poly_vec)) , var_val_type(poly_vec_type){}
-//        explicit VarVal(shared_ptr<PolyPair> _poly_pair) : poly_pair(std::move(_poly_pair)) , var_val_type(poly_pair_type){}
-//        explicit VarVal(shared_ptr<SolverLanguagePrimitives::SolutionHolder> _solution) : solution(std::move(_solution)) , var_val_type(solution_val_type){}
-//        explicit VarVal(shared_ptr<SolverLanguagePrimitives::InputHolder> _input_holder) : input_holder(std::move(_input_holder)), var_val_type(input_val_type){}
         VarVal(): var_val_type(void_val_type) {}
 
         int get_num_shared_ptr()
@@ -590,19 +587,33 @@ namespace SL {
             return var_val_type;
         }
 
-        bool get_bool()
+        template<typename T>
+        T get(T ret, bool do_count, bool do_assert)
+        {
+            if(do_count) {
+                if(do_assert) {
+                    assert(get_num_shared_ptr() >= 1);
+                }
+                increment_shared_ptr();
+                dealloc();
+            }
+            return ret;
+        }
+
+        bool get_bool(bool do_count = true, bool do_assert = true)
         {
             assert(var_val_type == bool_val_type);
+            return get<bool>(b, do_count, do_assert);
             return b;
         }
 
-        int get_int() {
+        int get_int(bool do_count = true, bool do_assert = true) {
             if(var_val_type == int_val_type) {
-                return i;
+                return get<int>(i, do_count, do_assert);
             }
             else if(var_val_type == bool_val_type)
             {
-                return (int) b;
+                return get<bool>(i, do_count, do_assert);
             }
             else
             {
@@ -610,8 +621,10 @@ namespace SL {
             }
         }
 
-        Method *get_method() {
+        Method *get_method(bool do_count = true, bool do_assert = true) {
             assert(is_method());
+            assert(do_assert);
+            return get<Method *>(method, do_count, do_assert);
             return method;
         }
 
@@ -619,32 +632,43 @@ namespace SL {
             return var_val_type == method_val_type;
         }
 
-        string get_string() {
+        string get_string(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == string_val_type);
+            return get<string>(s->to_string(), do_count, do_assert);
             return s->to_string();
         }
 
-        SketchFunction *get_harness() {
+        SketchFunction *get_harness(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == skfunc_val_type);
+            assert(do_assert);
+            return get<SketchFunction *>(skfunc, do_count, do_assert);
             return skfunc;
         }
 
-        File *get_file() {
+        File *get_file(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == file_val_type);
+            assert(do_assert);
+            return get<File *>(file, do_count, do_assert);
             return file;
         }
-        SolverLanguagePrimitives::SolutionHolder *get_solution() {
+        SolverLanguagePrimitives::SolutionHolder *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
+            assert(do_assert);
+            return get<SolverLanguagePrimitives::SolutionHolder *>(solution, do_count, do_assert);
             return solution;
         }
 
-        SketchFunction *get_function() {
+        SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == skfunc_val_type);
+            assert(do_assert);
+            return get<SketchFunction *>(skfunc, do_count, do_assert);
             return skfunc;
         }
 
-        SolverLanguagePrimitives::InputHolder *get_input_holder() {
+        SolverLanguagePrimitives::InputHolder *get_input_holder(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == input_val_type);
+            assert(do_assert);
+            return get<SolverLanguagePrimitives::InputHolder *>(input_holder, do_count, do_assert);
             return input_holder;
         }
 
@@ -652,15 +676,15 @@ namespace SL {
             return var_val_type == void_val_type;
         }
 
-        string to_string()
+        string to_string(bool do_count, bool do_assert)
         {
             switch (var_val_type) {
 
                 case string_val_type:
-                    return get_string();
+                    return get_string(do_count, do_assert);
                     break;
                 case int_val_type:
-                    return std::to_string(get_int());
+                    return std::to_string(get_int(do_count, do_assert));
                     break;
                 case file_val_type:
                     assert(false);
@@ -687,7 +711,7 @@ namespace SL {
                     assert(false);
                     break;
                 case float_val_type:
-                    return std::to_string(float_val);
+                    return std::to_string(get_float(do_count, do_assert));
                     break;
                 case poly_pair_type:
                     assert(false);
@@ -701,18 +725,23 @@ namespace SL {
         }
 
 
-        float get_float() {
+        float get_float(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == float_val_type);
+            return get<float>(float_val, do_count, do_assert);
             return float_val;
         }
 
-        PolyVec* get_poly_vec() {
+        PolyVec *get_poly_vec(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == poly_vec_type);
+            assert(do_assert);
+            return get<PolyVec *>(poly_vec, do_count, do_assert);
             return poly_vec;
         }
 
-        PolyPair *get_poly_pair() {
+        PolyPair *get_poly_pair(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == poly_pair_type);
+            assert(do_assert);
+            return get<PolyPair *>(poly_pair, do_count, do_assert);
             return poly_pair;
         }
 
@@ -722,8 +751,9 @@ namespace SL {
             num_shared_ptr --;
 
             if (num_shared_ptr == 0) {
-                cout << "deallocating" << endl;
+                cout << "VarVal->clear()" << endl;
                 clear();
+                delete this;
             } else {
                 cout << "remaining pointers: " << num_shared_ptr << endl;
             }
@@ -744,7 +774,7 @@ namespace SL {
 
             switch (var_val_type) {
                 case string_val_type:
-                    //do nothing
+                    clear<Name>(s);
                     break;
                 case int_val_type:
                     //do nothing

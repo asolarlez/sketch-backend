@@ -27,8 +27,8 @@ public:
             if(it.second != nullptr) {
                 it.second->dealloc();
                 if(it.second->get_num_shared_ptr() == 0) {
-                    cout << "delete" << endl;
-                    delete it.second;
+                    cout << "delete in Frame.clear()" << endl;
+//                    delete it.second;
                     it.second = nullptr;
                 }
             }
@@ -105,15 +105,15 @@ public:
         {
             //overwrite.
         }
-        SL::VarVal*& prev = vars_map[*var];
-        if(prev != nullptr){
+        if(vars_map[*var] != nullptr){
             cout << "dealloc in set_var_val_trhows: " << var->to_string() << endl;
-            prev->dealloc();
+            vars_map[*var]->dealloc();
             cout << "new count: " << vars_map[*var]->get_num_shared_ptr() << endl;
-            if(prev->get_num_shared_ptr() == 0)
+            if(vars_map[*var]->get_num_shared_ptr() == 0)
             {
-//                delete prev;
-                prev = nullptr;
+                cout << "delete from vars_map " << var->to_string() << " | hash " << vars_map[*var] << endl;
+//                delete vars_map[*var];
+                vars_map.erase(*var);
             }
             cout << endl;
         }
@@ -186,8 +186,7 @@ public:
         try {
             return frames.rbegin()->get_var_val_throws(var);
         }
-        catch (exception& e)
-        {
+        catch (exception& e) {
             try {
                 return global.get_var_val(var);
             }

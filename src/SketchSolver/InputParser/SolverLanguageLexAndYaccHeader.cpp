@@ -23,23 +23,28 @@ SL::SLType * SL::Var::get_type() {
 
 void SL::While::run(SolverProgramState* state)
 {
-    while(expression->eval(state)->get_bool())
+    SL::VarVal* cond = expression->eval(state);
+    while(cond->get_bool(true, false))
     {
         body->run(state);
+        cond = expression->eval(state);
     }
 }
 void SL::For::run(SolverProgramState* state)
 {
     def->run(state);
-    while(expression->eval(state)->get_bool())
+    SL::VarVal* cond = expression->eval(state);
+    while(cond->get_bool(true, false))
     {
         body->run(state);
         plus_plus->run(state);
+        cond = expression->eval(state);
     }
 }
 
 void SL::If::run(SolverProgramState *state) {
-    if(expression->eval(state)->get_bool())
+    SL::VarVal* cond = expression->eval(state);
+    if(cond->get_bool(true, false))
     {
         body->run(state);
     }
@@ -299,8 +304,10 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             assert(file->get_counterexample_ids_over_time().empty());
+            ProblemAE* problem = new ProblemAE(harness, file);
             SolutionHolder* sol = (solver)->
-                    solve(new ProblemAE(harness, file));
+                    solve(problem);
+            delete problem;
             harness->clear();
             solver->clear();
             return new SL::VarVal(sol);
@@ -398,7 +405,7 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
                 }
                  assert(params.size() == 1);
                 PolyVec *vec = var_val->get_poly_vec();
-                int idx = params[0]->eval(state)->get_int();
+                int idx = params[0]->eval(state)->get_int(true, false);
                 return vec->at(idx);
             }
             else
@@ -426,8 +433,8 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             SL::Var* var = var_and_var_val.first;
             assert(var == nullptr);
             assert(params.size() == 2);
-            int left_op = params[0]->eval(state)->get_int();
-            int right_op = params[1]->eval(state)->get_int();
+            int left_op = params[0]->eval(state)->get_int(true, false);
+            int right_op = params[1]->eval(state)->get_int(true, false);
             return new VarVal(left_op+right_op);
             break;
         }
@@ -437,8 +444,8 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             SL::Var* var = var_and_var_val.first;
             assert(var == nullptr);
             assert(params.size() == 2);
-            float left_op = params[0]->eval(state)->get_float();
-            float right_op = params[1]->eval(state)->get_float();
+            float left_op = params[0]->eval(state)->get_float(true, false);
+            float right_op = params[1]->eval(state)->get_float(true, false);
             return new VarVal(left_op/right_op);
             break;
         }
@@ -448,8 +455,8 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             SL::Var* var = var_and_var_val.first;
             assert(var == nullptr);
             assert(params.size() == 2);
-            float left_op = params[0]->eval(state)->get_float();
-            float right_op = params[1]->eval(state)->get_float();
+            float left_op = params[0]->eval(state)->get_float(true, false);
+            float right_op = params[1]->eval(state)->get_float(true, false);
             return new VarVal(left_op*right_op);
             break;
         }
@@ -528,7 +535,7 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             cout << "SOLVER_PROGRAM_PRINT INIT" << endl;
             for(int i = 0;i<params.size();i++)
             {
-                cout << params[i]->eval(state)->to_string();
+                cout << params[i]->eval(state)->to_string(true, false);
             }
             cout << endl << "SOLVER_PROGRAM_PRINT END" << endl;
             return new VarVal();
@@ -576,7 +583,7 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
             SL::Var* var = var_and_var_val.first;
             assert(var == nullptr);
             assert(params.size() == 1);
-            float the_float = (float)params[0]->eval(state)->get_int();
+            float the_float = (float)params[0]->eval(state)->get_int(true, false);
             return new VarVal(the_float);
             break;
         }
@@ -774,7 +781,7 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
                 assert(var_val_type == SL::poly_vec_type);
                 const vector<SLType *> *type_params = var_type->get_type_params();
                 assert(type_params->size() == 1);
-                assert(*type_params->at(0) == *var_val->get_poly_vec()->get_type_params()->at(0));
+                assert(*type_params->at(0) == *var_val->get_poly_vec(false)->get_type_params()->at(0));
             } else if (var_type_str == "pair") {
                 assert(var_val_type == SL::poly_pair_type);
                 const vector<SLType *> *type_params = var_type->get_type_params();
@@ -875,7 +882,7 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
             ret = state->get_var_val(state->name_to_var(identifier));
             break;
         case var_val_meta_type:
-            ret = var_val;
+            ret = new VarVal(var_val);
             break;
         default:
             assert(false);
@@ -914,49 +921,49 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
     }
 }
 
-//SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type), self_ptr(_to_copy->self_ptr)
-//{;
-//    switch (_to_copy->var_val_type) {
-//        case string_val_type:
-//            s = _to_copy->get_string();
-//            break;
-//        case int_val_type:
-//            i = _to_copy->get_int();
-//            break;
-//        case file_val_type:
-//            file = _to_copy->get_file();
-//            break;
-//        case method_val_type:
-//            method = _to_copy->get_method();
-//            break;
-//        case skfunc_val_type:
-//            skfunc = _to_copy->get_function();
-//            break;
-//        case solution_val_type:
-//            solution = _to_copy->get_solution();
-//            break;
-//        case input_val_type:
-//            input_holder = _to_copy->get_input_holder();
-//            break;
-//        case bool_val_type:
-//            b = _to_copy->get_bool();
-//            break;
-//        case void_val_type:
-//            assert(false);
-//            break;
-//        case float_val_type:
-//            float_val = _to_copy->get_float();
-//            break;
-//        case poly_vec_type:
-//            poly_vec = _to_copy->get_poly_vec();
-//            break;
-//        case poly_pair_type:
-//            poly_pair = _to_copy->get_poly_pair();
-//            break;
-//        case no_type:
-//            break;
-//    }
-//}
+SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
+{
+    switch (_to_copy->var_val_type) {
+        case string_val_type:
+            s = new Name(_to_copy->get_string(false));
+            break;
+        case int_val_type:
+            i = _to_copy->get_int(false);
+            break;
+        case file_val_type:
+            file = _to_copy->get_file(false);
+            break;
+        case method_val_type:
+            method = _to_copy->get_method(false);
+            break;
+        case skfunc_val_type:
+            skfunc = _to_copy->get_function(false);
+            break;
+        case solution_val_type:
+            solution = _to_copy->get_solution(false);
+            break;
+        case input_val_type:
+            input_holder = _to_copy->get_input_holder(false);
+            break;
+        case bool_val_type:
+            b = _to_copy->get_bool(false);
+            break;
+        case void_val_type:
+            assert(false);
+            break;
+        case float_val_type:
+            float_val = _to_copy->get_float(false);
+            break;
+        case poly_vec_type:
+            poly_vec = _to_copy->get_poly_vec(false);
+            break;
+        case poly_pair_type:
+            poly_pair = _to_copy->get_poly_pair(false);
+            break;
+        case no_type:
+            break;
+    }
+}
 
 void SL::VarVal::increment_shared_ptr() {
     num_shared_ptr+=1;
