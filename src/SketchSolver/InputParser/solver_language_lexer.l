@@ -47,7 +47,7 @@ return                       {print_rule("return", string(yytext)); return retur
                                 yylval->var_val = new SL::VarVal(ret);
                                 return var_val_rule;}
 {Integer}                   {print_rule("Integer", string(yytext));
-                                yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}
+                                yylval->var_val = new SL::VarVal((int)atoi(yytext)); return var_val_rule;}
 {Comment}                   {print_rule("Single Line Comment", string(yytext));}
 "/*"            {print_rule("Begin C_COMMENT", string(yytext)); BEGIN(C_COMMENT); }
 <C_COMMENT>"*/" {print_rule("END C_COMMENT", string(yytext));  BEGIN(INITIAL); }

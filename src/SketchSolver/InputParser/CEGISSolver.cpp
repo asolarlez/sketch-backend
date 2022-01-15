@@ -164,10 +164,14 @@ bool CEGISSolver::solveCore(){
 
 			if(!hc.solvePendingConstraints())
 			{
-                assert(false);
-			    return false;
+                fail = true;
+                break;
 			};
 
+            if(counterexample_concretized_dag != nullptr) {
+                counterexample_concretized_dag->clear();
+                counterexample_concretized_dag = nullptr;
+            }
             counterexample_concretized_dag = checker->check(ctrlStore);
 			doMore = counterexample_concretized_dag != nullptr;
 
@@ -222,13 +226,13 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction* all_inputs_concretized_function = new SketchFunction(
+                    SketchFunction to_concretize__all_inputs_dag = new SketchFunction(
                         finder->get_all_inputs_dag(),
                         nullptr,
                         harness->get_env());
 
-                    all_inputs_concretized_function =
-                            all_inputs_concretized_function->produce_concretization(ctrlStore, bool_node::CTRL);
+                    SketchFunction* all_inputs_concretized_function =
+                            to_concretize__all_inputs_dag.produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
                     all_inputs_concretized_function->clear();
@@ -257,13 +261,13 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction* concretized_function = new SketchFunction(
+                    SketchFunction to_concretize_function = SketchFunction(
                             finder->get_all_inputs_dag(),
                             nullptr,
                             harness->get_env());
 
-                    concretized_function =
-                            concretized_function->produce_concretization(ctrlStore, bool_node::CTRL);
+                    SketchFunction* concretized_function =
+                            to_concretize_function.produce_concretization(ctrlStore, bool_node::CTRL);
 
                     assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
                     concretized_function->clear();
@@ -327,6 +331,10 @@ bool CEGISSolver::solveCore(){
     checker->clear_problemStack();
 
     assert(checker->problemStack_is_empty());
+
+    if(counterexample_concretized_dag != nullptr) {
+        counterexample_concretized_dag->clear();
+    }
 
     if(finder->get_all_inputs_dag() != nullptr) {
         finder->get_all_inputs_dag()->clear();

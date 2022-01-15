@@ -19,15 +19,15 @@ class BooleanDAG;
 class SketchFunction
 {
     //unrolled dag is the the original unrolled dag using prepare miter at before calling assertDAG
-    BooleanDAG* original_dag;
+    BooleanDAG* original_dag = nullptr;
     //root dag is
     // IF NOT CONCRETIZED: the root harness dag
     // IF CONCRETIZED: a fully unrolled concretized dag using the doInline from env.
-    BooleanDAG* root_dag;
+    BooleanDAG* root_dag = nullptr;
 
     //if env == nullptr => original_dag and root_dag ARE NOT concretized
     //if env != nullptr => original_dag and root_dag ARE concretized
-    ProgramEnvironment* env;
+    ProgramEnvironment* env = nullptr;
 
     bool new_way = true;
     bool keep_track_of_original = false;
@@ -192,11 +192,12 @@ public:
         int num_1s = 0;
         for(int i = 0;i<file->size();i++)
         {
-            SketchFunction* concretized_function = produce_with_concretized_inputs(
-                    new SolverLanguagePrimitives::InputHolder(file->at(i), env->get_floats()));
+            SolverLanguagePrimitives::InputHolder input =
+                    SolverLanguagePrimitives::InputHolder(file->at(i), env->get_floats());
+            SketchFunction* concretized_function = produce_with_concretized_inputs(&input);
             assert(concretized_function->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
-            assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
-            if(concretized_function->get_dag()->get_failed_assert() == NULL)
+            assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
+            if(concretized_function->get_dag()->get_failed_assert() == nullptr)
             {
                 ret += 1;
             }

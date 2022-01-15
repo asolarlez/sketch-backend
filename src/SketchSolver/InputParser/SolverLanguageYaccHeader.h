@@ -13,7 +13,7 @@
 
 
 class Frame {
-    map<SL::Var, SL::VarVal *> vars_map;
+    map<SL::Var, SL::VarVal* > vars_map;
     map<SL::Name, SL::Var *> name_to_var_map;
 
 public:
@@ -21,6 +21,21 @@ public:
 
     void clear()
     {
+        cout << "DEALLOC:" << endl;
+        for(auto it: vars_map) {
+            cout << "dealloc: " << it.first.to_string() << " " << it.second << endl;
+            if(it.second != nullptr) {
+                it.second->dealloc();
+                if(it.second->get_num_shared_ptr() == 0) {
+                    cout << "delete" << endl;
+                    delete it.second;
+                    it.second = nullptr;
+                }
+            }
+            else {
+                cout << "is null" << endl;
+            }
+        }
         vars_map.clear();
         name_to_var_map.clear();
     }
@@ -65,14 +80,14 @@ public:
 
     exception VarNotFound;
 
-    SL::VarVal *get_var_val_throws(SL::Var *var) {
+    SL::VarVal* get_var_val_throws(SL::Var *var) {
         if(vars_map.find(*var) == vars_map.end()){
             throw VarNotFound;
         }
         return vars_map[*var];
     }
 
-    SL::VarVal *get_var_val(SL::Var *var) {
+    SL::VarVal* get_var_val(SL::Var *var) {
         try {
             return get_var_val_throws(var);
         } catch (exception& e){
@@ -80,7 +95,7 @@ public:
         }
     }
 
-    void set_var_val_throws(SL::Var *var, SL::VarVal *var_val) {
+    void set_var_val_throws(SL::Var *var, SL::VarVal* var_val) {
         if(vars_map.find(*var) == vars_map.end())
         {
             //not yet declared.
@@ -90,13 +105,29 @@ public:
         {
             //overwrite.
         }
+        SL::VarVal*& prev = vars_map[*var];
+        if(prev != nullptr){
+            cout << "dealloc in set_var_val_trhows: " << var->to_string() << endl;
+            prev->dealloc();
+            cout << "new count: " << vars_map[*var]->get_num_shared_ptr() << endl;
+            if(prev->get_num_shared_ptr() == 0)
+            {
+//                delete prev;
+                prev = nullptr;
+            }
+            cout << endl;
+        }
+        if(var_val != nullptr) {
+            var_val->increment_shared_ptr();
+            cout << "increment new: " << var->to_string() << " count: " << var_val->get_num_shared_ptr() << endl;
+        }
         vars_map[*var] = var_val;
         add_var_name(var, false);
     }
 
-    void set_var_val(SL::Var *var, SL::VarVal *var_val) {
+    void set_var_val(SL::Var *var, SL::VarVal* var_val) {
         try{
-            set_var_val_throws(var, var_val);
+            set_var_val_throws(var, std::move(var_val));
         }
         catch (exception& e)
         {
@@ -105,9 +136,9 @@ public:
         }
     }
 
-    void add_var_and_set_var_val(SL::Var *var, SL::VarVal *var_val) {
+    void add_var_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
         add_var(var);
-        set_var_val(var, var_val);
+        set_var_val(var, std::move(var_val));
     }
 };
 
@@ -177,7 +208,6 @@ public:
             string var_type_str = var->get_type()->to_string();
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
-
                 function_map[var->get_name()->to_string()] = var_val->get_function();
                 //!!! HERE FIX THIS
                 function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
@@ -231,10 +261,11 @@ public:
 
     SolverLanguagePrimitives::SolutionHolder* eval();
 
-    SL::VarVal *return_var_val = nullptr;
+    SL::VarVal* return_var_val = nullptr;
 
-    void set_return_var_val(SL::VarVal *var_val) {
+    void set_return_var_val(SL::VarVal* var_val) {
         assert(return_var_val == nullptr);
+        var_val->set_return();
         return_var_val = var_val;
     }
 
@@ -242,35 +273,20 @@ public:
         return global.get_var_val(var)->get_method();
     }
 
-    SL::VarVal *get_return_var_val() {
+    SL::VarVal* get_return_var_val() {
         SL::VarVal* ret = return_var_val;
         return_var_val = nullptr;
         return ret;
     }
 
-    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals) {
-        assert(vars.size() == vals.size());
-
-        vector<SL::VarVal*> var_vals;
-        var_vals.reserve(vals.size());
-        for(int i = 0;i<vals.size();i++)
-        {
-            var_vals.emplace_back(vals[i]->eval(this));
-        }
-
-        frames.emplace_back(Frame());
-
-        for(int i = 0;i < vars.size();i++)
-        {
-            add_and_set_var_val(vars[i]->get_var(), var_vals[i]);
-        }
-    }
+    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals);
 
     void new_stack_frame() {
         frames.emplace_back(Frame());
     }
 
     void pop_stack_frame() {
+        cout << "frame id: " << frames.size() << endl;
         frames.rbegin()->clear();
         frames.pop_back();
     }

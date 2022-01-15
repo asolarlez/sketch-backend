@@ -183,7 +183,6 @@ public:
 	map<string, string> currentControls;
 	BooleanDAG * bgproblem;
 	CEGISSolver* solver;
-	CEGISFinderSpec* cegisfind;
     // REASSolver* reasSolver;
 
 	InterpreterEnvironment(CommandLineArgs& p): bgproblem(NULL), params(p), status(READY), assertionStep(0), floats(p.epsilon) {
@@ -196,6 +195,7 @@ public:
 		hardcoder.setSolver(finder);
 		sessionName = procFname(params.inputFname);
 
+        CEGISFinderSpec* cegisfind;
 		if (params.numericalSolver) 
 		{
 			cegisfind = new CEGISFinderNumerical(floats, cout);
@@ -239,12 +239,12 @@ public:
 		delete _pfind;
 		delete solver;
         //delete reasSolver;
-		delete cegisfind;
 		_pfind = SATSolver::solverCreate(params.synthtype, SATSolver::FINDER, findName());
 		finder = new SolverHelper(*_pfind);
 		finder->setNumericalAbsMap(numericalAbsMap);
 		hardcoder.setSolver(finder);
 
+        CEGISFinderSpec* cegisfind;
 		if (params.numericalSolver) 
 		{
 			cegisfind = new CEGISFinderNumerical(floats, cout);

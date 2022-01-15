@@ -110,9 +110,10 @@ InterpreterEnvironment::~InterpreterEnvironment(void)
 	}
 	ArithExprBuilder::clearStaticMapMemory();
 	SwapperPredicateNS::PredicateBuilder::clearStaticMapMemory();
+    solver->clear();
+    delete solver;
 	delete finder;
 	delete _pfind;
-	delete cegisfind;
 }
 
 /* Runs the input command in interactive mode. 'cmd' can be:
@@ -1096,7 +1097,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inline
 
     SolverLanguage solver_language = SolverLanguage();
     SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-            sketch_function_map, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind);
+            sketch_function_map, floats, params, hardcoder, hasGoodEnoughSolution);
 
     cout << "EXITED SolverLanguage" << endl;
     if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1142,7 +1143,8 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                harness, file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind, *(new map<string, SketchFunction*>()));
+                harness, file, floats, params, hardcoder, hasGoodEnoughSolution,
+                *(new map<string, SketchFunction *>()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1293,7 +1295,8 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
     {
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-                new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution, cegisfind, *(new map<string, SketchFunction*>()));
+                new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
+                *(new map<string, SketchFunction *>()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)

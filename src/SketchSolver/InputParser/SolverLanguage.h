@@ -1223,8 +1223,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
@@ -1443,31 +1443,20 @@ public:
 //        SolverLanguagePrimitives::target_cegis(finder);
     }
 
-    SolverLanguagePrimitives::SolutionHolder* eval(
-            SketchFunction* harness, const string& file_name,
-            FloatManager& floats, CommandLineArgs& _args,
-            HoleHardcoder& _hc, bool hasGoodEnoughSolution,
-            CEGISFinderSpec* finder,  map<string, SketchFunction*>& function_map)
+    SolverLanguagePrimitives::SolutionHolder *
+    eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
+         HoleHardcoder &_hc,
+         bool hasGoodEnoughSolution, map<string, SketchFunction *> &function_map)
     {
-//        return SolverLanguagePrimitives::wrapper_assert_dag(
-//                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
-//        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
-//        AssertDebug(false, "incorporate prog_env");
         SolverProgramState* state =
                 new SolverProgramState(harness, floats, _args, _hc, hasGoodEnoughSolution, function_map);
         return SolverLanguagePrimitives::target_best_effort(state, file_name);
     }
 
-    SolverLanguagePrimitives::SolutionHolder* eval(
-            map<string, SketchFunction*>& function_map,
-            FloatManager& floats, CommandLineArgs& _args,
-            HoleHardcoder& _hc, bool hasGoodEnoughSolution,
-            CEGISFinderSpec* finder)
+    SolverLanguagePrimitives::SolutionHolder *
+    eval(map<string, SketchFunction *> &function_map, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+         bool hasGoodEnoughSolution)
     {
-//        return SolverLanguagePrimitives::wrapper_assert_dag(
-//                dag, file_name, floats, _args, _hc, _cpt, hasGoodEnoughSolution);
-//        return SolverLanguagePrimitives::first_cegis(dag, floats, _args, _hc, finder);
-//        AssertDebug(false, "incorporate prog_env");
         SolverProgramState* state =
                 new SolverProgramState(function_map, floats, _args, _hc, hasGoodEnoughSolution);
         return SolverLanguagePrimitives::target_best_effort(state);

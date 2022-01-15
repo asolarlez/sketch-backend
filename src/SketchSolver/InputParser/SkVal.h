@@ -127,6 +127,10 @@ protected:
     bool null = true;
     map<string, ValType*> assignment;
 public:
+    void clear()
+    {
+        assignment.clear();
+    }
     Mapping() = default;
     explicit Mapping(bool is_null): null(is_null) {};
     
@@ -373,6 +377,12 @@ namespace SolverLanguagePrimitives {
         Assignment_SkVal *assignment_skval = nullptr;
         SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
     public :
+
+        void clear()
+        {
+            assignment_skval->clear();
+        }
+
         explicit SolutionHolder(SATSolver::SATSolverResult _sat_solver_result) :
                 sat_solver_result(_sat_solver_result) {
         }

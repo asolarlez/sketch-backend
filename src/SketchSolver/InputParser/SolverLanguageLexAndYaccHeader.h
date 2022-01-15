@@ -55,7 +55,7 @@ namespace SL {
             return name;
         }
 
-        SL::VarVal *eval(SolverProgramState *state);
+        SL::VarVal* eval(SolverProgramState *state);
 
         bool operator<(const Name &other) const {
             assert(defined);
@@ -345,7 +345,7 @@ namespace SL {
             return *name < *other.name;
         }
 
-        VarVal *eval(SolverProgramState *pState);
+        SL::VarVal*eval(SolverProgramState *pState);
 
         SLType * get_type();
 
@@ -355,8 +355,6 @@ namespace SL {
         }
 
     };
-
-    class VarVal;
 
     class PolyType
     {
@@ -370,42 +368,46 @@ namespace SL {
         }
     };
 
-    class PolyVec: public PolyType, private vector<VarVal*>
+    class PolyVec: public PolyType, private vector<SL::VarVal*>
     {
     public:
         explicit PolyVec(const vector<SLType*>* _type_params): PolyType(_type_params){
             assert(get_type_params()->size() == 1);
         }
-        void emplace_back(VarVal* new_element);
+        void emplace_back(SL::VarVal* new_element);
 
         void sort();
 
+        void clear();
+
         size_t size(){
-            return vector<VarVal*>::size();
+            return vector<SL::VarVal*>::size();
         }
 
-        VarVal* at(int idx)
+        SL::VarVal* at(int idx)
         {
             assert(idx >= 0 && idx < size());
-            return vector<VarVal*>::at(idx);
+            return vector<SL::VarVal*>::at(idx);
         }
 
         void reverse();
     };
 
-    class PolyPair: public PolyType, private pair<VarVal*, VarVal*>
+    class PolyPair: public PolyType, private pair<SL::VarVal*, SL::VarVal*>
     {
     public:
-        explicit PolyPair(const vector<SLType*>* _type_params, VarVal* left, VarVal* right);
+        explicit PolyPair(const vector<SLType*>* _type_params, SL::VarVal* left, SL::VarVal* right);
 
-        VarVal* first() const
+        SL::VarVal* first() const
         {
-            return pair<VarVal*, VarVal*>::first;
+            return pair<SL::VarVal*, SL::VarVal*>::first;
         }
-        VarVal* second() const
+        SL::VarVal* second() const
         {
-            return pair<VarVal*, VarVal*>::second;
+            return pair<SL::VarVal*, SL::VarVal*>::second;
         }
+
+        void clear();
 
         bool operator < (const PolyPair& other) const;
     };
@@ -416,10 +418,7 @@ namespace SL {
         string_val_type, int_val_type, file_val_type,
         method_val_type, skfunc_val_type, solution_val_type,
         input_val_type, bool_val_type, void_val_type,
-//        pair_int_solution_val_type,
         float_val_type, poly_vec_type,
-//        vector_pair_int_solution_val_type,
-        poly_val_type,
         poly_pair_type,
         no_type};
 
@@ -439,9 +438,9 @@ namespace SL {
         }
     }
 
-    class VarVal {
+    class VarVal{
         union {
-            string s;
+            Name* s;
             int i;
             bool b;
             float float_val;
@@ -450,44 +449,39 @@ namespace SL {
             SketchFunction* skfunc;
             SolverLanguagePrimitives::SolutionHolder* solution;
             SolverLanguagePrimitives::InputHolder* input_holder;
-//            vector<pair<int, SolverLanguagePrimitives::SolutionHolder *>>* vector_pair_int_solution;
-//            pair<int, SolverLanguagePrimitives::SolutionHolder *> pair_int_solution;
             PolyVec* poly_vec;
-            VarVal* poly_val;
             PolyPair* poly_pair;
         };
         const VarValType var_val_type;
+        int num_shared_ptr = 0;
     public:
-        explicit VarVal(const string& _s) : s(std::move(_s)), var_val_type(string_val_type) {}
+        explicit VarVal(string  _s);
         template <typename T>
-        explicit VarVal(T val): var_val_type(get_var_val_type(val)){
+        explicit VarVal(T val);
+        explicit VarVal(float _float_val);
+        explicit VarVal(File* _file);
+        explicit VarVal(Method* _method);
+        explicit VarVal(SketchFunction* _harness);
+        explicit VarVal(PolyVec* _poly_vec);
+        explicit VarVal(PolyPair* _poly_pair);
+        explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution);
+        explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder);
 
-            if(std::is_same<bool,T>::value)
-            {
-                b = val;
-            }
-            else if(std::is_same<int,T>::value)
-            {
-                i = val;
-            }
-            else {
-                assert(false);
-            }
-        }
-        explicit VarVal(float _float_val) : float_val(_float_val) , var_val_type(float_val_type){}
-        explicit VarVal(File* _file) : file(_file) , var_val_type(file_val_type){}
-        explicit VarVal(Method* _method) : method(_method) , var_val_type(method_val_type){}
-        explicit VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(skfunc_val_type){}
-        explicit VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
-        explicit VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
-        explicit VarVal(VarVal* _poly_val) : poly_val(_poly_val) , var_val_type(poly_val_type){}
-        explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution) : solution(_solution) , var_val_type(solution_val_type){}
-        explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
-//        explicit VarVal(vector<pair<int, SolverLanguagePrimitives::SolutionHolder *> >* _vector_pair_int_solution) :
-//            vector_pair_int_solution(_vector_pair_int_solution), var_val_type(vector_pair_int_solution_val_type){}
-//        explicit VarVal(pair<int, SolverLanguagePrimitives::SolutionHolder *> _pair_int_solution) :
-//                pair_int_solution(std::move(_pair_int_solution)), var_val_type(pair_int_solution_val_type){}
+//        explicit VarVal(VarVal* _to_copy);
+
+//        explicit VarVal(shared_ptr<File> _file) : file(std::move(_file)) , var_val_type(file_val_type){}
+//        explicit VarVal(shared_ptr<Method> _method) : method(std::move(_method)) , var_val_type(method_val_type){}
+//        explicit VarVal(shared_ptr<SketchFunction> _harness) : skfunc(std::move(_harness)) , var_val_type(skfunc_val_type){}
+//        explicit VarVal(shared_ptr<PolyVec> _poly_vec) : poly_vec(std::move(_poly_vec)) , var_val_type(poly_vec_type){}
+//        explicit VarVal(shared_ptr<PolyPair> _poly_pair) : poly_pair(std::move(_poly_pair)) , var_val_type(poly_pair_type){}
+//        explicit VarVal(shared_ptr<SolverLanguagePrimitives::SolutionHolder> _solution) : solution(std::move(_solution)) , var_val_type(solution_val_type){}
+//        explicit VarVal(shared_ptr<SolverLanguagePrimitives::InputHolder> _input_holder) : input_holder(std::move(_input_holder)), var_val_type(input_val_type){}
         VarVal(): var_val_type(void_val_type) {}
+
+        int get_num_shared_ptr()
+        {
+            return num_shared_ptr;
+        }
 
         string get_type_string()
         {
@@ -525,9 +519,6 @@ namespace SL {
                     break;
                 case poly_vec_type:
                     return "vector";
-                    break;
-                case poly_val_type:
-                    return "any";
                     break;
                 case poly_pair_type:
                     return "pair";
@@ -582,9 +573,6 @@ namespace SL {
                     assert(false);
 //                    return *poly_vec < *other.poly_vec;
                     break;
-                case poly_val_type:
-                    return *poly_val < *other.poly_val;
-                    break;
                 case poly_pair_type:
                     return *poly_pair < *other.poly_pair;
                     break;
@@ -600,10 +588,6 @@ namespace SL {
         VarValType get_type()
         {
             return var_val_type;
-        }
-
-        VarVal *eval(SolverProgramState *state) {
-            return this;
         }
 
         bool get_bool()
@@ -637,7 +621,7 @@ namespace SL {
 
         string get_string() {
             assert(var_val_type == string_val_type);
-            return s;
+            return s->to_string();
         }
 
         SketchFunction *get_harness() {
@@ -694,7 +678,7 @@ namespace SL {
                     assert(false);
                     break;
                 case bool_val_type:
-                    return std::to_string(get_bool());
+                    assert(false);
                     break;
                 case void_val_type:
                     assert(false);
@@ -705,23 +689,17 @@ namespace SL {
                 case float_val_type:
                     return std::to_string(float_val);
                     break;
-                case poly_val_type:
-                    return poly_val->to_string();
+                case poly_pair_type:
+                    assert(false);
+                    break;
+                case poly_vec_type:
+                    assert(false);
                     break;
                 default:
                     assert(false);
             }
         }
 
-//        vector<pair<int, SolverLanguagePrimitives::SolutionHolder*> > *get_vector_pair_int_solution() {
-//            assert(var_val_type == vector_pair_int_solution_val_type);
-//            return vector_pair_int_solution;
-//        }
-//
-//        pair<int, SolverLanguagePrimitives::SolutionHolder *> get_pair() {
-//            assert(var_val_type == pair_int_solution_val_type);
-//            return pair_int_solution;
-//        }
 
         float get_float() {
             assert(var_val_type == float_val_type);
@@ -733,21 +711,102 @@ namespace SL {
             return poly_vec;
         }
 
-        VarVal *get_var_val() {
-            assert(var_val_type == poly_val_type);
-            return poly_val;
-        }
-
         PolyPair *get_poly_pair() {
             assert(var_val_type == poly_pair_type);
             return poly_pair;
         }
 
-//        VarVal* get_poly_val()
-//        {
-//            assert(var_val_type == poly_val_type);
-//            return poly_val;
-//        }
+        void dealloc()
+        {
+            assert(num_shared_ptr >= 1);
+            num_shared_ptr --;
+
+            if (num_shared_ptr == 0) {
+                cout << "deallocating" << endl;
+                clear();
+            } else {
+                cout << "remaining pointers: " << num_shared_ptr << endl;
+            }
+
+        }
+
+        template<typename T>
+        static void clear(T*& val)
+        {
+            if(val != nullptr) {
+                val->clear();
+                delete val;
+                val = nullptr;
+            }
+        }
+
+        void clear() {
+
+            switch (var_val_type) {
+                case string_val_type:
+                    //do nothing
+                    break;
+                case int_val_type:
+                    //do nothing
+                    break;
+                case file_val_type:
+                    clear<File>(file);
+                    break;
+                case method_val_type:
+                    assert(false);
+                    break;
+                case skfunc_val_type:
+                    if(skfunc != nullptr) {
+                        skfunc->clear();
+                        skfunc = nullptr;
+                    }
+                    break;
+                case solution_val_type:
+                    clear<SolverLanguagePrimitives::SolutionHolder>(solution);
+                    break;
+                case input_val_type:
+                    clear<SolverLanguagePrimitives::InputHolder>(input_holder);
+                    break;
+                case bool_val_type:
+                    //do nothing
+                    break;
+                case void_val_type:
+                    assert(false);
+                    break;
+                case no_type:
+                    assert(false);
+                    break;
+                case float_val_type:
+                    //do nothing
+                    break;
+                case poly_pair_type:
+                    clear<SL::PolyPair>(poly_pair);
+                    break;
+                case poly_vec_type:
+                    clear<SL::PolyVec>(poly_vec);
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+
+        void increment_shared_ptr();
+
+        void complete_return()
+        {
+            assert(is_return);
+            num_shared_ptr--;
+            assert(num_shared_ptr >= 0);
+            is_return = false;
+        }
+
+
+    private:
+            bool is_return = false;
+        public:
+        void set_return();
+
+        bool get_is_return();
     };
 
     class Param;
@@ -812,13 +871,13 @@ namespace SL {
             _params->populate_vector(params);
         };
 
-        pair<Var*, VarVal*> get_var_assert_type(SolverProgramState* state, string type_name);
+        pair<Var*, SL::VarVal*> get_var_assert_type(SolverProgramState* state, string type_name);
 
-        VarVal* eval(SolverProgramState* state);
+        SL::VarVal* eval(SolverProgramState* state);
 
         void run(SolverProgramState *pState);
 
-        SL::VarVal *eval_type_constructor(SolverProgramState* state);
+        SL::VarVal*eval_type_constructor(SolverProgramState* state);
     };
 
     class Assignment
@@ -864,7 +923,7 @@ namespace SL {
             assert(!assignment->has_assignment());
         };
 
-        VarVal *eval(SolverProgramState *state);
+        SL::VarVal*eval(SolverProgramState *state);
 
         Var *get_var() {
             switch (meta_type) {
@@ -891,20 +950,20 @@ namespace SL {
             Predicate* predicate;
             FuncCall* func_call;
             Name* identifier;
-            VarVal* var_val;
+            SL::VarVal* var_val;
         };
-        enum ExpressionMetaType {predicate_meta_type, func_call_meta_type, identifier_meta_type, var_val_meta_type};
-        ExpressionMetaType expression_meta_type;
+        enum ExpressionMetaType {predicate_meta_type, func_call_meta_type, identifier_meta_type, var_val_meta_type, no_meta_type};
+        ExpressionMetaType expression_meta_type = no_meta_type;
     public:
         explicit Expression(Predicate* _predicate): predicate(_predicate), expression_meta_type(predicate_meta_type){}
         explicit Expression(FuncCall* _func_call): func_call(_func_call), expression_meta_type(func_call_meta_type){}
         explicit Expression(Name* _identifier): identifier(_identifier), expression_meta_type(identifier_meta_type){}
-        explicit Expression(VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){}
+        explicit Expression(SL::VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){};
 
-        VarVal* eval(SolverProgramState* state);
+        SL::VarVal* eval(SolverProgramState* state);
 
         void run(SolverProgramState* state) {
-            VarVal* ret = eval(state);
+            SL::VarVal* ret = eval(state);
             if(!ret->is_void())
             {
                 cout << "WARNING: " << "Expression returns but result not stored." << endl;
@@ -1092,7 +1151,7 @@ namespace SL {
 
         void run(SolverProgramState* state, vector<Param*>& input_params);
 
-        VarVal *eval(SolverProgramState* state, vector<Param*>& params);
+        SL::VarVal*eval(SolverProgramState* state, vector<Param*>& params);
 
         Var* get_var()
         {
@@ -1100,8 +1159,8 @@ namespace SL {
         }
     };
 
-    bool var_val_invariant(SL::SLType *var_type, SL::VarVal *var_val);
-    bool var_val_invariant(SL::Var *var, SL::VarVal *var_val);
+    bool var_val_invariant(SL::SLType *var_type, SL::VarVal*var_val);
+    bool var_val_invariant(SL::Var *var, SL::VarVal*var_val);
 
     class Methods
     {

@@ -54,3 +54,21 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     return ret;
 }
+
+void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals) {
+    assert(vars.size() == vals.size());
+
+    vector<SL::VarVal* > var_vals;
+    var_vals.reserve(vals.size());
+    for(int i = 0;i<vals.size();i++)
+    {
+        var_vals.emplace_back(vals[i]->eval(this));
+    }
+
+    frames.emplace_back(Frame());
+
+    for(int i = 0;i < vars.size();i++)
+    {
+        add_and_set_var_val(vars[i]->get_var(), var_vals[i]);
+    }
+}

@@ -135,26 +135,12 @@ void
 CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 {
     map<bool_node*,  int> node_values;
-    bool specialize = PARAMS->olevel >= 6;
-    BooleanDAG* tmpproblem = NULL;
     if(PARAMS->verbosity > 2){  cout<<" intsize = "<< newdag->getIntSize()<<endl; }
 
-//    BackwardsAnalysis ba;
-    // ba.process(*newdag);
-    //newdag already optimized in checker.
-//    DagOptim fa(*newdag, floats);
-//    fa.process(*newdag);
-
-    //cout << "addInputsToTestSet: newdag=";
-    //newdag->lprint(cout);
     if(PARAMS->verbosity > 6){ cout<<" * After all optims it became = "<<newdag->size()<<endl; }
     // find_node_ids store the mapping between node in the DAG (miter) vs
     // the variables in the CNF.
     find_node_ids.resize(newdag->size());
-    //getProblem()->lprint(cout);
-
-    //FindCheckSolver::addInputsToTestSet(input);
-    //lastFproblem = newdag;
 
     try{
         stoppedEarly = NodesToSolver::createConstraints(*newdag, dirFind, node_values, find_node_ids, floats);
@@ -176,7 +162,6 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 
 
     find_node_ids.clear();
-    newdag->clear();
 }
 
 void
