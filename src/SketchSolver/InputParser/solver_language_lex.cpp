@@ -844,7 +844,7 @@ case 10:
 YY_RULE_SETUP
 #line 49 "solver_language_lexer.l"
 {print_rule("Integer", string(yytext));
-                                yylval->var_val = new SL::VarVal(atoi(yytext)); return var_val_rule;}
+                                yylval->var_val = new SL::VarVal((int)atoi(yytext)); return var_val_rule;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP

@@ -770,8 +770,9 @@ bool SL::var_val_invariant(SL::SLType *var_type, SL::VarVal* var_val)
                 assert(var_val_type == SL::input_val_type);
             } else if (var_type_str == "bool") {
                 assert(var_val_type == SL::bool_val_type);
-            } else {
-                assert(false);
+            }
+            else {
+                assert(var_type_str == "any");
             }
         } else {
             if (var_type_str == "vector") {

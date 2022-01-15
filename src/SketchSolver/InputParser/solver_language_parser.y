@@ -71,7 +71,7 @@ lines : unit ';' {$$ = new SL::CodeBlock($1);} | unit ';' lines {$$ = new SL::Co
 
 comparison_op: '<' {$$ = SL::MyOperator::lt;} | '>' {$$ = SL::MyOperator::gt;} | op_eq {$$ = SL::MyOperator::eq;}
 
-constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(nullptr))));}
+constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any")))));}
 
 expression:
 	identifier {$$ = new SL::Expression($1);} |
@@ -104,7 +104,7 @@ type_rule : identifier {$$ = new SL::SLType($1);} |
 declaration :     type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
 		| type_rule identifier '=' expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
 		| identifier '=' expression {$$ = new SL::Assignment($1, $3);}
-		| identifier {$$ = new SL::Assignment(new SL::Var(new SL::SLType(nullptr), $1), nullptr);}
+		| identifier {$$ = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Name("any")), $1), nullptr);}
 assignment : identifier '=' expression {$$ = new SL::Assignment($1, $3);} |
 		identifier op_plus_plus
 		{$$ = new SL::Assignment(
@@ -127,7 +127,7 @@ signature_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(ne
 method : solver_token type_rule identifier '(' signature_params ')'
 	  '{' lines '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
 	  | solver_token identifier '(' signature_params ')'
-            	  '{' lines '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(nullptr), $2), $4, $7);}
+            	  '{' lines '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(new SL::Name("any")), $2), $4, $7);}
 
 methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
 

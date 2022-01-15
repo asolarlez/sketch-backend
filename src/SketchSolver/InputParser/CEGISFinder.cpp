@@ -30,7 +30,6 @@ bool CEGISFinder::find(BooleanDAG* problem,
         {
             assert(newdag != nullptr);
             allInputsDag = newdag;
-            cout << "allInputsDag: " << allInputsDag->get_dag_id() << endl;
         }
         else
         {

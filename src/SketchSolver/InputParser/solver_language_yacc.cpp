@@ -1352,7 +1352,7 @@ yyreduce:
 
   case 7:
 #line 74 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.var_val) = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(nullptr))));}
+    {(yyval.var_val) = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any")))));}
 #line 1357 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1490,7 +1490,7 @@ yyreduce:
 
   case 30:
 #line 107 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment(new SL::Var(new SL::SLType(nullptr), (yyvsp[0].name)), nullptr);}
+    {(yyval.assignment) = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Name("any")), (yyvsp[0].name)), nullptr);}
 #line 1495 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1563,7 +1563,7 @@ yyreduce:
 
   case 41:
 #line 130 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.method) = new SL::Method(new SL::Var(new SL::SLType(nullptr), (yyvsp[-6].name)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
+    {(yyval.method) = new SL::Method(new SL::Var(new SL::SLType(new SL::Name("any")), (yyvsp[-6].name)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
 #line 1568 "y.tab.c" /* yacc.c:1646  */
     break;
 
