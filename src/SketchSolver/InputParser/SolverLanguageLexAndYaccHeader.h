@@ -590,6 +590,43 @@ namespace SL {
         template<typename T>
         T get(T ret, bool do_count, bool do_assert)
         {
+            if(std::is_same<bool,T>::value){
+                assert(var_val_type == bool_val_type);
+            }
+            else if(std::is_same<int,T>::value){
+                assert(var_val_type == int_val_type);
+            }
+            else if(std::is_same<Method*,T>::value){
+                assert(var_val_type == method_val_type);
+            }
+            else if(std::is_same<string,T>::value){
+                assert(var_val_type == string_val_type);
+            }
+            else if(std::is_same<SketchFunction*,T>::value){
+                assert(var_val_type == skfunc_val_type);
+            }
+            else if(std::is_same<File*,T>::value){
+                assert(var_val_type == file_val_type);
+            }
+            else if(std::is_same<SolverLanguagePrimitives::SolutionHolder *,T>::value){
+                assert(var_val_type == solution_val_type);
+            }
+            else if(std::is_same<SolverLanguagePrimitives::InputHolder *,T>::value){
+                assert(var_val_type == input_val_type);
+            }
+            else if(std::is_same<float,T>::value){
+                assert(var_val_type == float_val_type);
+            }
+            else if(std::is_same<PolyPair*,T>::value){
+                assert(var_val_type == poly_pair_type);
+            }
+            else if(std::is_same<PolyVec*,T>::value){
+                assert(var_val_type == poly_vec_type);
+            }
+            else {
+                assert(false);
+            }
+
             if(do_count) {
                 if(do_assert) {
                     assert(get_num_shared_ptr() >= 1);
@@ -604,7 +641,6 @@ namespace SL {
         {
             assert(var_val_type == bool_val_type);
             return get<bool>(b, do_count, do_assert);
-            return b;
         }
 
         int get_int(bool do_count = true, bool do_assert = true) {
@@ -613,7 +649,7 @@ namespace SL {
             }
             else if(var_val_type == bool_val_type)
             {
-                return get<bool>(i, do_count, do_assert);
+                return get<bool>(b, do_count, do_assert);
             }
             else
             {
@@ -625,7 +661,6 @@ namespace SL {
             assert(is_method());
             assert(do_assert);
             return get<Method *>(method, do_count, do_assert);
-            return method;
         }
 
         bool is_method() {
@@ -635,45 +670,56 @@ namespace SL {
         string get_string(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == string_val_type);
             return get<string>(s->to_string(), do_count, do_assert);
-            return s->to_string();
         }
 
         SketchFunction *get_harness(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == skfunc_val_type);
-            assert(do_assert);
-            return get<SketchFunction *>(skfunc, do_count, do_assert);
-            return skfunc;
+            return get_function(do_count, do_assert);
         }
 
         File *get_file(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == file_val_type);
             assert(do_assert);
             return get<File *>(file, do_count, do_assert);
-            return file;
         }
+
         SolverLanguagePrimitives::SolutionHolder *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             assert(do_assert);
             return get<SolverLanguagePrimitives::SolutionHolder *>(solution, do_count, do_assert);
-            return solution;
         }
 
         SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == skfunc_val_type);
             assert(do_assert);
             return get<SketchFunction *>(skfunc, do_count, do_assert);
-            return skfunc;
         }
 
         SolverLanguagePrimitives::InputHolder *get_input_holder(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == input_val_type);
             assert(do_assert);
             return get<SolverLanguagePrimitives::InputHolder *>(input_holder, do_count, do_assert);
-            return input_holder;
         }
 
         bool is_void(){
             return var_val_type == void_val_type;
+        }
+
+        float get_float(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == float_val_type);
+            return get<float>(float_val, do_count, do_assert);
+        }
+
+
+        PolyVec *get_poly_vec(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == poly_vec_type);
+            assert(do_assert);
+            return get<PolyVec *>(poly_vec, do_count, do_assert);
+        }
+
+        PolyPair *get_poly_pair(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == poly_pair_type);
+            assert(do_assert);
+            return get<PolyPair *>(poly_pair, do_count, do_assert);
         }
 
         string to_string(bool do_count, bool do_assert)
@@ -724,40 +770,15 @@ namespace SL {
             }
         }
 
-
-        float get_float(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == float_val_type);
-            return get<float>(float_val, do_count, do_assert);
-            return float_val;
-        }
-
-        PolyVec *get_poly_vec(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == poly_vec_type);
-            assert(do_assert);
-            return get<PolyVec *>(poly_vec, do_count, do_assert);
-            return poly_vec;
-        }
-
-        PolyPair *get_poly_pair(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == poly_pair_type);
-            assert(do_assert);
-            return get<PolyPair *>(poly_pair, do_count, do_assert);
-            return poly_pair;
-        }
-
         void dealloc()
         {
             assert(num_shared_ptr >= 1);
             num_shared_ptr --;
 
             if (num_shared_ptr == 0) {
-                cout << "VarVal->clear()" << endl;
                 clear();
                 delete this;
-            } else {
-                cout << "remaining pointers: " << num_shared_ptr << endl;
             }
-
         }
 
         template<typename T>
@@ -836,7 +857,7 @@ namespace SL {
         public:
         void set_return();
 
-        bool get_is_return();
+        bool get_is_return() const;
     };
 
     class Param;

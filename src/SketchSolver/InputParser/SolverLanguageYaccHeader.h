@@ -21,19 +21,12 @@ public:
 
     void clear()
     {
-        cout << "DEALLOC:" << endl;
         for(auto it: vars_map) {
-            cout << "dealloc: " << it.first.to_string() << " " << it.second << endl;
             if(it.second != nullptr) {
                 it.second->dealloc();
                 if(it.second->get_num_shared_ptr() == 0) {
-                    cout << "delete in Frame.clear()" << endl;
-//                    delete it.second;
                     it.second = nullptr;
                 }
-            }
-            else {
-                cout << "is null" << endl;
             }
         }
         vars_map.clear();
@@ -106,20 +99,15 @@ public:
             //overwrite.
         }
         if(vars_map[*var] != nullptr){
-            cout << "dealloc in set_var_val_trhows: " << var->to_string() << endl;
             vars_map[*var]->dealloc();
-            cout << "new count: " << vars_map[*var]->get_num_shared_ptr() << endl;
             if(vars_map[*var]->get_num_shared_ptr() == 0)
             {
-                cout << "delete from vars_map " << var->to_string() << " | hash " << vars_map[*var] << endl;
-//                delete vars_map[*var];
+                vars_map[*var] = nullptr;
                 vars_map.erase(*var);
             }
-            cout << endl;
         }
         if(var_val != nullptr) {
             var_val->increment_shared_ptr();
-            cout << "increment new: " << var->to_string() << " count: " << var_val->get_num_shared_ptr() << endl;
         }
         vars_map[*var] = var_val;
         add_var_name(var, false);
@@ -127,7 +115,7 @@ public:
 
     void set_var_val(SL::Var *var, SL::VarVal* var_val) {
         try{
-            set_var_val_throws(var, std::move(var_val));
+            set_var_val_throws(var, var_val);
         }
         catch (exception& e)
         {
@@ -285,7 +273,6 @@ public:
     }
 
     void pop_stack_frame() {
-        cout << "frame id: " << frames.size() << endl;
         frames.rbegin()->clear();
         frames.pop_back();
     }

@@ -52,7 +52,6 @@ void SL::If::run(SolverProgramState *state) {
 
 void SL::Return::run(SolverProgramState *state)
 {
-    cout << "return : " << expression->get_var_name() << endl;
     state->set_return_var_val(expression->eval(state));
 }
 
@@ -481,8 +480,6 @@ SL::VarVal* SL::FuncCall::eval(SolverProgramState *state)
                 var_val = expression->eval(state);
             }
 
-            cout << "CLEARING " << var_name->to_string() << endl;
-
             var_val->clear();
 
             return new VarVal();
@@ -826,7 +823,6 @@ void SL::PolyVec::clear() {
     for(int i = 0;i<size();i++)
     {
         if(at(i) != nullptr) {
-            cout << "dealloc in PolyVec" << endl;
             at(i)->dealloc();
         }
     }
@@ -967,7 +963,6 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 
 void SL::VarVal::increment_shared_ptr() {
     num_shared_ptr+=1;
-    cout << this <<" "<< num_shared_ptr << endl;
 }
 
 void SL::VarVal::set_return() {
@@ -976,6 +971,6 @@ void SL::VarVal::set_return() {
     increment_shared_ptr();
 }
 
-bool SL::VarVal::get_is_return() {
+bool SL::VarVal::get_is_return() const {
     return is_return;
 }
