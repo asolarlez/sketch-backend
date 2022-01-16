@@ -1174,10 +1174,12 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             skfunc = _to_copy->get_function(false)->clone();
             break;
         case solution_val_type:
-            solution = new SolverLanguagePrimitives::SolutionHolder(_to_copy->get_solution(false));
+            assert(false);
+//            solution = new SolverLanguagePrimitives::SolutionHolder(_to_copy->get_solution(false));
             break;
         case input_val_type:
-            input_holder = new SolverLanguagePrimitives::InputHolder(_to_copy->get_input_holder(false));
+            assert(false);
+//            input_holder = new SolverLanguagePrimitives::InputHolder(_to_copy->get_input_holder(false));
             break;
         case bool_val_type:
             b = _to_copy->get_bool(false);

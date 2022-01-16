@@ -207,34 +207,40 @@ public:
 class Assignment_SkVal: public Mapping<SkVal> {
 public:
     Assignment_SkVal(): Mapping<SkVal>() {}
-    explicit Assignment_SkVal(bool is_null): Mapping<SkVal>(is_null) {}
-    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
-        for(auto it: to_copy->assignment)
-        {
-            SkValType sk_val_type = it.second->get_type();
-            switch (sk_val_type) {
-                case sk_type_int: {
-                    SkValInt *new_val = new SkValInt((SkValInt *) it.second);
-                    set(it.first, new_val);
-                    break;
-                }
-                case sk_type_intarr:
-                    assert(false);
-                    set(it.first, new SkValIntArr(*(SkValIntArr*)it.second));
-                    break;
-                case sk_type_bool:
-                    assert(false);
-                    set(it.first, new SkValBool(*(SkValBool*)it.second));
-                    break;
-                case sk_type_boolarr:
-                    assert(false);
-                    set(it.first, new SkValBoolArr(*(SkValBoolArr*)it.second));
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-    }
+
+    template<typename T>
+    explicit Assignment_SkVal(T is_null): Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
+
+//    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
+//        for(auto it: to_copy->assignment)
+//        {
+//            SkValType sk_val_type = it.second->get_type();
+//            assert(sk_val_type == sk_type_int);
+//            switch (sk_val_type) {
+//                case sk_type_int: {
+//                    SkValInt *new_val = new SkValInt((SkValInt *) it.second);
+//                    set(it.first, new_val);
+//                    break;
+//                }
+//                case sk_type_intarr:
+//                    assert(false);
+//                    set(it.first, new SkValIntArr(*(SkValIntArr*)it.second));
+//                    break;
+//                case sk_type_bool:
+//                    assert(false);
+//                    set(it.first, new SkValBool(*(SkValBool*)it.second));
+//                    break;
+//                case sk_type_boolarr:
+//                    assert(false);
+//                    set(it.first, new SkValBoolArr(*(SkValBoolArr*)it.second));
+//                    break;
+//                default:
+//                    assert(false);
+//            }
+//        }
+//        assert(false);
+//    }
+//
     Assignment_SkVal(VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
@@ -427,8 +433,8 @@ namespace SolverLanguagePrimitives {
         SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
 
-        explicit SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
-                new Assignment_SkVal(to_copy->assignment_skval)) {}
+//        explicit SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+//                new Assignment_SkVal(to_copy->assignment_skval)) {}
 
         SolutionHolder() = default;;
         explicit SolutionHolder(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
@@ -535,7 +541,7 @@ namespace SolverLanguagePrimitives {
 
         InputHolder(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
 
-        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal(to_copy)) {}
+//        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal(to_copy)) {}
 
         explicit InputHolder(ProblemAE *problem) : Assignment_SkVal() {
             cout << "TODO: SolutionHolder::SolutionHolder" << endl;
