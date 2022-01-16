@@ -988,7 +988,6 @@ void SL::PolyVec::reverse() {
 }
 
 void SL::PolyVec::clear()  {
-    cout << "CLEARING POLYVEC " << this << endl;
     PolyType::clear();
     for(int i = 0;i<size();i++)
     {
@@ -1047,7 +1046,6 @@ bool SL::PolyPair::operator<(const SL::PolyPair &other) const
 }
 
 void SL::PolyPair::clear() {
-    cout << "CLEARING POLYPAIR " << this << endl;
     first()->decrement_shared_ptr();
     second()->decrement_shared_ptr();
     PolyType::clear();

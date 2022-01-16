@@ -39,7 +39,7 @@ public:
                 }
                 it.second->decrement_shared_ptr();
                 if (it.second->get_num_shared_ptr() == 0) {
-                    cout << "CLEARED " << it.first.to_string() << endl;
+//                    cout << "CLEARED " << it.first.to_string() << endl;
                 }
             }
         }

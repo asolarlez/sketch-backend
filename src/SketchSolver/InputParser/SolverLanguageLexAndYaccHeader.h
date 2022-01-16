@@ -52,7 +52,6 @@ namespace SL {
 
         void clear()
         {
-//            cout << "CLEARING NAME: " << this << endl;
             assert(defined == 1);
             name.clear();
             assert(defined == 1);
@@ -341,7 +340,6 @@ namespace SL {
 
         virtual void clear()
         {
-            cout << "CLEARING POLYTYPE " << this << " " << type_params << endl;
             for(auto & it: *type_params)
             {
                 it->clear();
