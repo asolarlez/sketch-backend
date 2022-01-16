@@ -10,10 +10,14 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     init_root->populate_state(global);
 
-    global.add_var_and_set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("true")), new SL::VarVal(true));
-    global.add_var_and_set_var_val(new SL::Var(new SL::Name("bool"), new SL::Name("false")), new SL::VarVal(false));
-    global.add_var_and_set_var_val(new SL::Var(new SL::Name("namespace"), new SL::Name("global")), nullptr);
-    global.add_var_and_set_var_val(new SL::Var(new SL::Name("int"), new SL::Name("seed")), new SL::VarVal(args.seed));
+    global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Name("bool"), new SL::Name("true")),
+                                                 new SL::VarVal(true));
+    global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Name("bool"), new SL::Name("false")),
+                                                 new SL::VarVal(false));
+    global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Name("namespace"), new SL::Name("global")),
+                                                 nullptr);
+    global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Name("int"), new SL::Name("seed")),
+                                                 new SL::VarVal(args.seed));
 
     SL::Var* init_f = new SL::Var(new SL::Name("Solution"), new SL::Name("main"));
     assert(*global.name_to_var(init_f->get_name()) == *init_f);
@@ -33,24 +37,36 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
     else
     {
         assert(!function_map.empty());
-        for(auto it: function_map)
-        {
-            global.add_var_and_set_var_val(new SL::Var(new SL::Name("SketchFunction"), new SL::Name(it.first)),
-                               new SL::VarVal(function_map[it.first]));
+        for(const auto& it: function_map){
+            global.add_var_and_set_var_val_and_clear_var(
+                    new SL::Var(new SL::Name("SketchFunction"),
+                                new SL::Name(it.first)),
+                    new SL::VarVal(function_map[it.first]));
         }
     }
 
     new_stack_frame();
     assert(frames.size() == 1);
 
-    global.get_var_val(init_f)->get_method()->run(this, input_params);
+    SL::Method* to_run = global.get_var_val(init_f)->get_method();
 
-    SolverLanguagePrimitives::SolutionHolder* ret = get_return_var_val()->get_solution();
+    to_run->run(this, input_params);
 
-    ret = new SolverLanguagePrimitives::SolutionHolder(ret);
+    init_f->clear();
+
+    SL::VarVal* var_val_ret = get_return_var_val();
+    assert(var_val_ret != nullptr);
+    SolverLanguagePrimitives::SolutionHolder* ret = var_val_ret->get_solution();
+
+    assert(var_val_ret->get_num_shared_ptr() == 1);
+    delete var_val_ret;
 
     assert(frames.size() == 1);
     pop_stack_frame();
+
+    assert(frames.empty());
+
+    global.clear(true);
 
     return ret;
 }

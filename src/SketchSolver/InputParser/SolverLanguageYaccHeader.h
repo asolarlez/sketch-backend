@@ -15,39 +15,80 @@
 class Frame {
     map<SL::Var, SL::VarVal* > vars_map;
     map<SL::Name, SL::Var *> name_to_var_map;
+#define DOCOPY
+
+#ifndef DOCOPY
+    //pass
+#else
+    vector<SL::Var*> all_new_vars;
+#endif
 
 public:
     Frame() {};
 
-    void clear()
+    void clear(bool is_global = false)
     {
-        for(auto it: vars_map) {
-            if(it.second != nullptr) {
-                it.second->dealloc();
-                if(it.second->get_num_shared_ptr() == 0) {
-                    it.second = nullptr;
+        for (auto it: vars_map) {
+            if (it.second != nullptr) {
+                if (is_global){
+                    if (it.second->is_sketch_function()) {
+                        assert(it.second->get_num_shared_ptr() == 1);
+                        delete it.second;
+                        continue;
+                    }
+                }
+                it.second->decrement_shared_ptr();
+                if (it.second->get_num_shared_ptr() == 0) {
+                    cout << "CLEARED " << it.first.to_string() << endl;
                 }
             }
         }
+
         vars_map.clear();
         name_to_var_map.clear();
+
+#ifndef DOCOPY
+        //pass
+#else
+        for(auto it:all_new_vars)
+        {
+            it->clear();
+        }
+        all_new_vars.clear();
+#endif
     }
 
-    void add_var_name(SL::Var *var, bool assert_new = true)
+
+    void add_var_name(SL::Var *_var, bool assert_new = true)
     {
-        if(name_to_var_map.find(*var->get_name()) == name_to_var_map.end()) {
+        SL::Name name = *_var->get_name();
+        if(name_to_var_map.find(name) == name_to_var_map.end()) {
+        #ifndef DOCOPY
+            SL::Var* var = _var;
+        #else
+            SL::Var* var = new SL::Var(_var);
+            all_new_vars.push_back(var);
+        #endif
             //new variable
-            name_to_var_map[*var->get_name()] = var;
+            name_to_var_map[name] = var;
         }
         else
         {
+            SL::Var* var = _var;
             assert(!assert_new);
             //existing variable.
-            assert(name_to_var_map[*var->get_name()] == var);
+            assert(*name_to_var_map[name] == *var);
         }
     }
 
-    void add_var(SL::Var *var) {
+    void add_var(SL::Var *_var) {
+
+#ifndef DOCOPY
+        SL::Var* var = _var;
+#else
+        SL::Var* var = new SL::Var(_var);
+        all_new_vars.push_back(var);
+#endif
         assert(vars_map.find(*var) == vars_map.end());
         vars_map[*var] = nullptr;
         add_var_name(var);
@@ -88,9 +129,11 @@ public:
         }
     }
 
-    void set_var_val_throws(SL::Var *var, SL::VarVal* var_val) {
-        if(vars_map.find(*var) == vars_map.end())
+    void set_var_val_throws(SL::Var *_var, SL::VarVal* var_val) {
+
+        if(vars_map.find(*_var) == vars_map.end())
         {
+//            delete var;
             //not yet declared.
             throw VarNotFound;
         }
@@ -98,8 +141,15 @@ public:
         {
             //overwrite.
         }
+
+#ifndef DOCOPY
+        SL::Var* var = _var;
+#else
+        SL::Var* var = new SL::Var(_var);
+        all_new_vars.push_back(var);
+#endif
         if(vars_map[*var] != nullptr){
-            vars_map[*var]->dealloc();
+            vars_map[*var]->decrement_shared_ptr();
             if(vars_map[*var]->get_num_shared_ptr() == 0)
             {
                 vars_map[*var] = nullptr;
@@ -124,9 +174,10 @@ public:
         }
     }
 
-    void add_var_and_set_var_val(SL::Var *var, SL::VarVal* var_val) {
+    void add_var_and_set_var_val_and_clear_var(SL::Var *var, SL::VarVal* var_val) {
         add_var(var);
-        set_var_val(var, std::move(var_val));
+        set_var_val(var, var_val);
+        var->clear();
     }
 };
 
@@ -232,12 +283,14 @@ public:
             }
             catch (exception& e2){
                 if(!SL::is_strongly_typed) {
-                    add_var(new SL::Var(new SL::SLType(nullptr), name));
-                    try {
-                        return name_to_var(name);
-                    } catch (exception &e) {
-                        AssertDebug(false, "should not happen");
-                    }
+                    SL::Name* any_name = new SL::Name("any");
+                    SL::SLType* any_type = new SL::SLType(any_name);
+                    SL::Name* copy_name = new SL::Name(name->to_string());
+                    SL::Var* var = new SL::Var(any_type, copy_name);
+                    add_var(var);
+                    var->clear();
+
+                    return name_to_var(name);
                 }
                 else {
                     assert(false);
@@ -286,7 +339,7 @@ public:
 };
 
 
-void run_solver_langauge_program(SolverProgramState* _state, string solver_program_file);
+void parse_solver_langauge_program(SolverProgramState* _state, string solver_program_file);
 
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGEYACCHEADER_H

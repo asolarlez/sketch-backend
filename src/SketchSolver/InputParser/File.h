@@ -279,7 +279,7 @@ public:
     {
         for(int i = 0;i<to_copy->size();i++)
         {
-            push_back(to_copy->at(i));
+            push_back(to_copy->at(i)->copy());
         }
     }
 

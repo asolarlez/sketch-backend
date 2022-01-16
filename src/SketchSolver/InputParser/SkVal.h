@@ -19,6 +19,23 @@ class PolyVal
 {
     T val;
 public:
+    explicit PolyVal(PolyVal<T>* to_copy){
+        if(std::is_pointer<T>::value)
+        {
+            assert(false);
+            val = T(to_copy->val);
+        }
+        else if(std::is_class<T>::value)
+        {
+            assert(false);
+            val = T(to_copy->val);
+        }
+        else
+        {
+            assert((std::is_same<int,T>::value));
+            val = to_copy->val;
+        }
+    };
     explicit PolyVal(T _val): val(_val){}
     T get() {
         return val;
@@ -34,8 +51,8 @@ class SkVal
     bool size_defined = false;
     int nbits;
 public:
-//    explicit SkVal(SkValType _sketch_val_type):
-//            sketch_val_type(_sketch_val_type) {}
+    explicit SkVal(SkVal* to_copy):
+        sketch_val_type(to_copy->sketch_val_type), size_defined(to_copy->size_defined), nbits(to_copy->nbits) {}
     SkVal(SkValType _sketch_val_type, int _nbits):
             sketch_val_type(_sketch_val_type), nbits(_nbits), size_defined(true) {}
     int get_nbits()
@@ -91,7 +108,8 @@ class SkValIntArr: public SkVal, public PolyVal<vector<int>*>
 {
 
 public:
-    explicit SkValIntArr(vector<pair<int, int> >* _val): PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
+    explicit SkValIntArr(vector<pair<int, int> >* _val):
+    PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
     string to_string() override {
         string ret;
         vector<int>* val = get();
@@ -106,10 +124,10 @@ public:
 class SkValInt: public SkVal, public PolyVal<int>
 {
 public:
-//    explicit SkValInt(int _val): PolyVal<int>(_val), SkVal(sk_type_int){}
     explicit SkValInt(int _val, int _size): PolyVal<int>(_val), SkVal(sk_type_int, _size){
         assert(_val <= (1<<_size)-1);
     }
+    explicit SkValInt(SkValInt* to_copy): SkVal(to_copy), PolyVal<int>(to_copy){}
     string to_string() override {return std::to_string(get());}
 };
 class SkValFloat: public SkVal, public PolyVal<float>
@@ -195,16 +213,21 @@ public:
         {
             SkValType sk_val_type = it.second->get_type();
             switch (sk_val_type) {
-                case sk_type_int:
-                    set(it.first, new SkValInt(*(SkValInt*)it.second));
+                case sk_type_int: {
+                    SkValInt *new_val = new SkValInt((SkValInt *) it.second);
+                    set(it.first, new_val);
                     break;
+                }
                 case sk_type_intarr:
+                    assert(false);
                     set(it.first, new SkValIntArr(*(SkValIntArr*)it.second));
                     break;
                 case sk_type_bool:
+                    assert(false);
                     set(it.first, new SkValBool(*(SkValBool*)it.second));
                     break;
                 case sk_type_boolarr:
+                    assert(false);
                     set(it.first, new SkValBoolArr(*(SkValBoolArr*)it.second));
                     break;
                 default:
@@ -511,6 +534,8 @@ namespace SolverLanguagePrimitives {
         InputHolder() : Assignment_SkVal() {}
 
         InputHolder(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
+
+        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal(to_copy)) {}
 
         explicit InputHolder(ProblemAE *problem) : Assignment_SkVal() {
             cout << "TODO: SolutionHolder::SolutionHolder" << endl;

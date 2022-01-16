@@ -226,7 +226,7 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction to_concretize__all_inputs_dag = new SketchFunction(
+                    SketchFunction to_concretize__all_inputs_dag = SketchFunction(
                         finder->get_all_inputs_dag(),
                         nullptr,
                         harness->get_env());

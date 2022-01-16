@@ -1089,7 +1089,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inline
             new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     map<string, SketchFunction*> sketch_function_map;
-    for(auto it: functionMap)
+    for(const auto& it: functionMap)
     {
         sketch_function_map[it.first] = new SketchFunction(
                 functionMap[it.first], nullptr, program_env);

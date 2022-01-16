@@ -71,7 +71,7 @@ lines : unit ';' {$$ = new SL::CodeBlock($1);} | unit ';' lines {$$ = new SL::Co
 
 comparison_op: '<' {$$ = SL::MyOperator::lt;} | '>' {$$ = SL::MyOperator::gt;} | op_eq {$$ = SL::MyOperator::eq;}
 
-constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any")))));}
+constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new SL::PolyType(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any"))))));}
 
 expression:
 	identifier {$$ = new SL::Expression($1);} |
@@ -135,7 +135,7 @@ root: methods {state->add_root($1);}
 
 %%
 
-void run_solver_langauge_program(SolverProgramState* state, string solver_program_file)
+void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
 	void* scanner;
 	yylex_init(&scanner);
@@ -151,6 +151,3 @@ void run_solver_langauge_program(SolverProgramState* state, string solver_progra
 	int rv = yyparse(scanner, state);
 }
 
-//int main(){
-//	run_solver_langauge_program(nullptr, "");
-//}

@@ -228,7 +228,6 @@ namespace SolverLanguagePrimitives
     {
         File* file;
         string file_name;
-//        vector<InputHolder*> inputs_from_file;
     public:
         explicit ProblemAE(SketchFunction* _function, File* _file = NULL):
                 SketchFunction(_function), file(_file){}
@@ -1223,8 +1222,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
@@ -1255,7 +1254,7 @@ namespace SolverLanguagePrimitives
             int init_num_global_nodes = bool_node::get_allocated().size();
 
 
-            run_solver_langauge_program(state, solver_program_file_name);
+            parse_solver_langauge_program(state, solver_program_file_name);
 
             SolutionHolder *solution_holder = state->eval();
 

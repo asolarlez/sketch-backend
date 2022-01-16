@@ -39,6 +39,7 @@ public:
     }
 
     SketchFunction(SketchFunction* shallow_copy): original_dag(shallow_copy->original_dag), root_dag(shallow_copy->root_dag), env(shallow_copy->env) {}
+
     SketchFunction(
             BooleanDAG* _dag_root,
             BooleanDAG* _original_dag = nullptr,

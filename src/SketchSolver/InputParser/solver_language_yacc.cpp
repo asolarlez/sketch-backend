@@ -1352,7 +1352,7 @@ yyreduce:
 
   case 7:
 #line 74 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.var_val) = new SL::VarVal(new SL::PolyVec(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any")))));}
+    {(yyval.var_val) = new SL::VarVal(new SL::PolyVec(new SL::PolyType(new vector<SL::SLType*>(1, new SL::SLType(new SL::Name("any"))))));}
 #line 1357 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1817,7 +1817,7 @@ yyreturn:
 #line 136 "solver_language_parser.y" /* yacc.c:1906  */
 
 
-void run_solver_langauge_program(SolverProgramState* state, string solver_program_file)
+void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
 	void* scanner;
 	yylex_init(&scanner);
@@ -1833,6 +1833,3 @@ void run_solver_langauge_program(SolverProgramState* state, string solver_progra
 	int rv = yyparse(scanner, state);
 }
 
-//int main(){
-//	run_solver_langauge_program(nullptr, "");
-//}
