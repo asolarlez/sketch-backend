@@ -1203,7 +1203,7 @@ namespace SL {
 
     class UnitLine
     {
-        enum LineType {var_line, assign_line, while_line, if_line, return_line, expression_line, for_line};
+        enum LineType {var_line, assign_line, while_line, if_line, return_line, expression_line, for_line, code_block_line};
         union {
             Var* var;
             Assignment* assignment;
@@ -1212,6 +1212,7 @@ namespace SL {
             If* if_block;
             Return* return_stmt;
             Expression* expression;
+            CodeBlock* code_block;
         };
         LineType line_type;
     public:
@@ -1222,65 +1223,12 @@ namespace SL {
         explicit UnitLine(Return* _return_stmt): return_stmt(_return_stmt), line_type(return_line){}
         explicit UnitLine(Expression* _expression): expression(_expression), line_type(expression_line){}
         explicit UnitLine(For* _for): for_loop(_for), line_type(for_line){}
+        explicit UnitLine(CodeBlock* _code_block): code_block(_code_block), line_type(code_block_line){}
         explicit UnitLine(UnitLine* to_copy);
 
-        void run(SolverProgramState *state) {
-            switch (line_type) {
-                case var_line:
-                    var->run(state);
-                    break;
-                case assign_line:
-                    assignment->run(state);
-                    break;
-                case while_line:
-                    while_loop->run(state);
-                    break;
-                case if_line:
-                    if_block->run(state);
-                    break;
-                case return_line:
-                    return_stmt->run(state);
-                    break;
-                case expression_line:
-                    expression->run(state);
-                    break;
-                case for_line:
-                    for_loop->run(state);
-                    break;
-                default:
-                    assert(false);
-            }
-        }
+        void run(SolverProgramState *state);
 
-
-        void clear() {
-            switch (line_type) {
-                case var_line:
-                    var->clear();
-                    break;
-                case assign_line:
-                    assignment->clear();
-                    break;
-                case while_line:
-                    while_loop->clear();
-                    break;
-                case if_line:
-                    if_block->clear();
-                    break;
-                case return_line:
-                    return_stmt->clear();
-                    break;
-                case expression_line:
-                    expression->clear();
-                    break;
-                case for_line:
-                    for_loop->clear();
-                    break;
-                default:
-                    assert(false);
-            }
-            delete this;
-        }
+        void clear();
     };
 
     class CodeBlock
@@ -1297,13 +1245,7 @@ namespace SL {
             }
         }
 
-        void run(SolverProgramState *state) {
-            assert(head != nullptr);
-            head->run(state);
-            if(rest != nullptr){
-                rest->run(state);
-            }
-        }
+        void run(SolverProgramState *state);
 
         void clear()
         {

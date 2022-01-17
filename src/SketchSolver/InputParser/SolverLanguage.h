@@ -1222,8 +1222,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 

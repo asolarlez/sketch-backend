@@ -23,11 +23,9 @@ SL::SLType * SL::Var::get_type() {
 
 void SL::While::run(SolverProgramState* state)
 {
-    SL::VarVal* cond = expression->eval(state);
-    while(cond->get_bool(true, false))
+    while(expression->eval(state)->get_bool(true, false))
     {
         body->run(state);
-        cond = expression->eval(state);
     }
 }
 
@@ -45,14 +43,14 @@ SL::While::While(While* to_copy){
 
 void SL::For::run(SolverProgramState* state)
 {
+    state->open_subframe();
     def->run(state);
-    SL::VarVal* cond = expression->eval(state);
-    while(cond->get_bool(true, false))
+    while(expression->eval(state)->get_bool(true, false))
     {
         body->run(state);
         plus_plus->run(state);
-        cond = expression->eval(state);
     }
+    state->close_subframe();
 }
 
 void SL::For::clear() {
@@ -72,8 +70,7 @@ SL::For::For(SL::For *to_copy)
 }
 
 void SL::If::run(SolverProgramState *state) {
-    SL::VarVal* cond = expression->eval(state);
-    if(cond->get_bool(true, false))
+    if(expression->eval(state)->get_bool(true, false))
     {
         body->run(state);
     }
@@ -104,7 +101,17 @@ void SL::Assignment::run(SolverProgramState *state)
     Var* to_var = nullptr;
     switch (dest_type) {
         case name_dest_type:
-            to_var = state->name_to_var(dest_name);
+            try {
+                to_var = state->name_to_var_throws(dest_name);
+            }
+            catch (exception e) {
+                SL::SLType* any_type = new SL::SLType(new SL::Name("any"));
+                SL::Name* copy_name = new SL::Name(dest_name);
+                SL::Var* var = new SL::Var(any_type, copy_name);
+                state->add_var(var);
+                var->clear();
+                to_var = state->name_to_var(dest_name);
+            }
             break;
         case var_dest_type:
             to_var = dest_var;
@@ -1238,9 +1245,75 @@ SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)
         case for_line:
             for_loop = new SL::For(to_copy->for_loop);
             break;
+        case code_block_line:
+            code_block = new SL::CodeBlock(to_copy->code_block);
+            break;
         default:
             assert(false);
     }
+}
+
+void SL::UnitLine::run(SolverProgramState *state) {
+    switch (line_type) {
+        case var_line:
+            var->run(state);
+            break;
+        case assign_line:
+            assignment->run(state);
+            break;
+        case while_line:
+            while_loop->run(state);
+            break;
+        case if_line:
+            if_block->run(state);
+            break;
+        case return_line:
+            return_stmt->run(state);
+            break;
+        case expression_line:
+            expression->run(state);
+            break;
+        case for_line:
+            for_loop->run(state);
+            break;
+        case code_block_line:
+            code_block->run(state);
+            break;
+        default:
+            assert(false);
+    }
+}
+
+void SL::UnitLine::clear() {
+    switch (line_type) {
+        case var_line:
+            var->clear();
+            break;
+        case assign_line:
+            assignment->clear();
+            break;
+        case while_line:
+            while_loop->clear();
+            break;
+        case if_line:
+            if_block->clear();
+            break;
+        case return_line:
+            return_stmt->clear();
+            break;
+        case expression_line:
+            expression->clear();
+            break;
+        case for_line:
+            for_loop->clear();
+            break;
+        case code_block_line:
+            code_block->clear();
+            break;
+        default:
+            assert(false);
+    }
+    delete this;
 }
 
 SL::Predicate::Predicate(SL::Predicate *to_copy): op(to_copy->op)
@@ -1341,4 +1414,16 @@ bool SL::SLType::is_simple_type() {
         assert(type_params->size() >= 1);
         return false;
     }
+}
+
+void SL::CodeBlock::run(SolverProgramState *state)  {
+    assert(head != nullptr);
+    CodeBlock* at = this;
+    state->open_subframe();
+    while(at != nullptr)
+    {
+        at->head->run(state);
+        at = at->rest;
+    }
+    state->close_subframe();
 }

@@ -11,20 +11,15 @@
 #include "SolverLanguageLexAndYaccHeader.h"
 #include "SketchFunction.h"
 
+static exception NameNotFound;
 
 class Frame {
     map<SL::Var, SL::VarVal* > vars_map;
     map<SL::Name, SL::Var *> name_to_var_map;
-#define DOCOPY
-
-#ifndef DOCOPY
-    //pass
-#else
     vector<SL::Var*> all_new_vars;
-#endif
 
 public:
-    Frame() {};
+    Frame() = default;
 
     void clear(bool is_global = false)
     {
@@ -46,29 +41,18 @@ public:
 
         vars_map.clear();
         name_to_var_map.clear();
-
-#ifndef DOCOPY
-        //pass
-#else
-        for(auto it:all_new_vars)
-        {
+        for(auto it:all_new_vars){
             it->clear();
         }
         all_new_vars.clear();
-#endif
     }
-
 
     void add_var_name(SL::Var *_var, bool assert_new = true)
     {
         SL::Name name = *_var->get_name();
         if(name_to_var_map.find(name) == name_to_var_map.end()) {
-        #ifndef DOCOPY
-            SL::Var* var = _var;
-        #else
             SL::Var* var = new SL::Var(_var);
             all_new_vars.push_back(var);
-        #endif
             //new variable
             name_to_var_map[name] = var;
         }
@@ -81,22 +65,15 @@ public:
         }
     }
 
-    void add_var(SL::Var *_var) {
-
-#ifndef DOCOPY
-        SL::Var* var = _var;
-#else
+    virtual void add_var(SL::Var *_var) {
         SL::Var* var = new SL::Var(_var);
         all_new_vars.push_back(var);
-#endif
         assert(vars_map.find(*var) == vars_map.end());
         vars_map[*var] = nullptr;
         add_var_name(var);
     }
 
-    exception NameNotFound;
-
-    SL::Var *name_to_var_throws(SL::Name *name) {
+    virtual SL::Var *name_to_var_throws(SL::Name *name) {
         if(name_to_var_map.find(*name) == name_to_var_map.end())
         {
             throw NameNotFound;
@@ -114,7 +91,7 @@ public:
 
     exception VarNotFound;
 
-    SL::VarVal* get_var_val_throws(SL::Var *var) {
+    virtual SL::VarVal* get_var_val_throws(SL::Var *var) {
         if(vars_map.find(*var) == vars_map.end()){
             throw VarNotFound;
         }
@@ -129,11 +106,10 @@ public:
         }
     }
 
-    void set_var_val_throws(SL::Var *_var, SL::VarVal* var_val) {
+    virtual void set_var_val_throws(SL::Var *_var, SL::VarVal* var_val) {
 
         if(vars_map.find(*_var) == vars_map.end())
         {
-//            delete var;
             //not yet declared.
             throw VarNotFound;
         }
@@ -142,12 +118,8 @@ public:
             //overwrite.
         }
 
-#ifndef DOCOPY
-        SL::Var* var = _var;
-#else
         SL::Var* var = new SL::Var(_var);
         all_new_vars.push_back(var);
-#endif
         if(vars_map[*var] != nullptr){
             vars_map[*var]->decrement_shared_ptr();
             if(vars_map[*var]->get_num_shared_ptr() == 0)
@@ -181,6 +153,89 @@ public:
     }
 };
 
+class NestedFrame: private Frame
+{
+    vector<Frame> frames;
+
+public:
+
+    bool is_empty()
+    {
+        return frames.empty();
+    }
+
+    explicit NestedFrame() {
+        assert(frames.empty());
+    }
+
+    void open_subframe()
+    {
+        frames.push_back(Frame());
+    }
+
+    void close_subframe()
+    {
+        assert(!frames.empty());
+        frames.rbegin()->clear();
+        frames.pop_back();
+    }
+
+    void add_var(SL::Var *var) override {
+        assert(!frames.empty());
+        frames.rbegin()->add_var(var);
+    }
+
+    SL::VarVal* get_var_val_throws(SL::Var *var) override {
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                return frames[at_id].get_var_val_throws(var);
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw VarNotFound;
+    }
+
+    void set_var_val_throws(SL::Var *var, SL::VarVal* var_val) override{
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                frames[at_id].set_var_val_throws(var, var_val);
+                return ;
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw VarNotFound;
+    }
+
+    SL::Var* name_to_var_throws(SL::Name* name) override{
+        assert(!frames.empty());
+        int at_id = frames.size()-1;
+        while(at_id >= 0){
+            try {
+                return frames[at_id].name_to_var_throws(name);
+            }
+            catch (exception e){
+                at_id--;
+            }
+        }
+        throw NameNotFound;
+    }
+
+    void clear()
+    {
+        assert(frames.size() == 1);
+        frames[0].clear();
+    }
+
+};
+
 class SolverProgramState
 {
 public:
@@ -210,10 +265,8 @@ public:
         init_root = _init_root;
     }
 
-//    map<SL::Var, SL::Method*> methods;
-
     Frame global;
-    vector<Frame> frames;
+    vector<NestedFrame> frames;
 
     void add_var(SL::Var *var) {
         assert(!frames.empty());
@@ -262,7 +315,6 @@ public:
             {
                 assert(false);
             }
-
         }
     }
 
@@ -272,8 +324,9 @@ public:
         set_var_val(var, var_val);
     }
 
-    SL::Var* name_to_var(SL::Name* name)
+    SL::Var* name_to_var_throws(SL::Name* name)
     {
+        assert(!frames.empty());
         try {
             return frames.rbegin()->name_to_var_throws(name);
         }
@@ -283,19 +336,23 @@ public:
             }
             catch (exception& e2){
                 if(!SL::is_strongly_typed) {
-                    SL::Name* any_name = new SL::Name("any");
-                    SL::SLType* any_type = new SL::SLType(any_name);
-                    SL::Name* copy_name = new SL::Name(name->to_string());
-                    SL::Var* var = new SL::Var(any_type, copy_name);
-                    add_var(var);
-                    var->clear();
-
-                    return name_to_var(name);
+                    throw NameNotFound;
                 }
                 else {
                     assert(false);
                 }
             }
+        }
+    }
+
+    SL::Var* name_to_var(SL::Name* name)
+    {
+        assert(!frames.empty());
+        try {
+            return name_to_var_throws(name);
+        }
+        catch (exception& e1) {
+            assert(false);
         }
     }
 
@@ -322,11 +379,14 @@ public:
     void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals);
 
     void new_stack_frame() {
-        frames.emplace_back(Frame());
+        frames.emplace_back(NestedFrame());
+        open_subframe();
     }
 
     void pop_stack_frame() {
-        frames.rbegin()->clear();
+        assert(!frames.empty());
+        close_subframe();
+        assert(frames.rbegin()->is_empty());
         frames.pop_back();
     }
 
@@ -336,6 +396,9 @@ public:
         return ret;
     }
 
+    void open_subframe();
+
+    void close_subframe();
 };
 
 

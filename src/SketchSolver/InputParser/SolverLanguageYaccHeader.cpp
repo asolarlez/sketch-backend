@@ -81,10 +81,20 @@ void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::P
         var_vals.emplace_back(vals[i]->eval(this));
     }
 
-    frames.emplace_back(Frame());
+    new_stack_frame();
 
     for(int i = 0;i < vars.size();i++)
     {
         add_and_set_var_val(vars[i]->get_var(), var_vals[i]);
     }
+}
+
+void SolverProgramState::open_subframe() {
+    assert(!frames.empty());
+    frames.rbegin()->open_subframe();
+}
+
+void SolverProgramState::close_subframe() {
+    assert(!frames.empty());
+    frames.rbegin()->close_subframe();
 }

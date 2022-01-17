@@ -40,9 +40,11 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 %start root
 %type <methods> methods
-%type <code_block> lines
-%type <unit_line> unit
+%type <code_block> code_block
+%type <unit_line> unit_line
+%type <unit_line> macro_unit
 %type <assignment> assignment
+%type <assignment> parameter_declaration
 %token <name> identifier
 %token <name> solver_token
 %token <name> while_token
@@ -54,7 +56,6 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %token <var_val> var_val_rule
 %type <var_val> constant
 %type <param> param
-%type <assignment> declaration
 %type <func_call> function_call
 %type <params> params
 %type <params> signature_params
@@ -67,7 +68,11 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 
 %%
 
-lines : unit ';' {$$ = new SL::CodeBlock($1);} | unit ';' lines {$$ = new SL::CodeBlock($1, $3);}
+code_block :
+	unit_line ';' {$$ = new SL::CodeBlock($1);} |
+   	macro_unit {$$ = new SL::CodeBlock($1);} |
+	unit_line ';' code_block {$$ = new SL::CodeBlock($1, $3);} |
+	macro_unit code_block {$$ = new SL::CodeBlock($1, $2);}
 
 comparison_op: '<' {$$ = SL::MyOperator::lt;} | '>' {$$ = SL::MyOperator::gt;} | op_eq {$$ = SL::MyOperator::eq;}
 
@@ -85,13 +90,16 @@ predicate:
 ////	|
 //	expression comparison_op expression {$$ = new SL::Predicate($2, $1, $3);}
 
-unit: declaration {$$ = new SL::UnitLine($1);} |
-	assignment {$$ = new SL::UnitLine($1);} |
-	while_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
-	if_token '(' predicate ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6));} |
-	for_token '(' unit ';' predicate ';' unit ')' '{' lines '}' {$$ = new SL::UnitLine(new SL::For($3, new SL::Expression($5), $7, $10));} |
+unit_line: assignment {$$ = new SL::UnitLine($1);} |
 	return_token expression {$$ = new SL::UnitLine(new SL::Return($2));} |
 	expression {$$ = new SL::UnitLine($1);}
+
+macro_unit:
+	while_token '(' predicate ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
+	if_token '(' predicate ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6));} |
+	for_token '(' unit_line ';' predicate ';' unit_line ')' '{' code_block '}'
+		{$$ = new SL::UnitLine(new SL::For($3, new SL::Expression($5), $7, $10));} |
+	'{' code_block '}' {$$ = new SL::UnitLine($2);}
 
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FuncCall($1, $3, $5);}
 	     | type_rule '(' params ')' {$$ = new SL::FuncCall($1, $3);}
@@ -101,33 +109,36 @@ type_params : type_rule {$$ = new SL::TypeParams($1);} | type_rule ',' type_para
 type_rule : identifier {$$ = new SL::SLType($1);} |
 		identifier '<' type_params '>' {$$ = new SL::SLType($1, $3);}
 
-declaration :     type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
-		| type_rule identifier '=' expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
-		| identifier '=' expression {$$ = new SL::Assignment($1, $3);}
-		| identifier {$$ = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Name("any")), $1), nullptr);}
-assignment : identifier '=' expression {$$ = new SL::Assignment($1, $3);} |
-		identifier op_plus_plus
-		{$$ = new SL::Assignment(
-			$1,
-			new SL::Expression(
-				new SL::FuncCall(
-					new SL::Name("plus"),
-					new SL::Params(new SL::Param(
-						new SL::Expression($1)),
-						new SL::Param(new SL::Expression(new SL::VarVal((int)1)))))));}
+assignment:
+	type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
+	| type_rule identifier '=' expression {$$ = new SL::Assignment(new SL::Var($1, $2), $4);}
+	| identifier '=' expression {$$ = new SL::Assignment($1, $3);}
+	| identifier op_plus_plus
+	{$$ = new SL::Assignment(
+		$1,
+		new SL::Expression(
+			new SL::FuncCall(
+				new SL::Name("plus"),
+				new SL::Params(new SL::Param(
+					new SL::Expression($1)),
+					new SL::Param(new SL::Expression(new SL::VarVal((int)1)))))));}
 
 param : expression {$$ = new SL::Param($1);}
 
 params :  {$$ = new SL::Params();} | param {$$ = new SL::Params($1);}
 	| param ',' params {$$ = new SL::Params($1, $3);}
 
-signature_params: {$$ = new SL::Params();} | declaration {$$ = new SL::Params(new SL::Param($1));} |
-	      declaration ',' signature_params {$$ = new SL::Params(new SL::Param($1), $3);}
+parameter_declaration:
+	type_rule identifier {$$ = new SL::Assignment(new SL::Var($1, $2));}
+	| identifier {$$ = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Name("any")), $1), nullptr);}
+
+signature_params: {$$ = new SL::Params();} | parameter_declaration {$$ = new SL::Params(new SL::Param($1));} |
+	      parameter_declaration ',' signature_params {$$ = new SL::Params(new SL::Param($1), $3);}
 
 method : solver_token type_rule identifier '(' signature_params ')'
-	  '{' lines '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
+	  '{' code_block '}' {$$ = new SL::Method(new SL::Var($2, $3), $5, $8);}
 	  | solver_token identifier '(' signature_params ')'
-            	  '{' lines '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(new SL::Name("any")), $2), $4, $7);}
+            	  '{' code_block '}' {$$ = new SL::Method(new SL::Var(new SL::SLType(new SL::Name("any")), $2), $4, $7);}
 
 methods : method {$$ = new SL::Methods($1);} | method methods {$$ = new SL::Methods($1, $2);}
 
