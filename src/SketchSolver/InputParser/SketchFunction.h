@@ -15,6 +15,13 @@
 #include "ProgramEnvironment.h"
 
 class BooleanDAG;
+class SolverProgramState;
+
+namespace SL
+{
+    class VarVal;
+    class FunctionCall;
+}
 
 class SketchFunction
 {
@@ -176,8 +183,6 @@ public:
         delete solution;
         return ret;
     }
-
-
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
     {

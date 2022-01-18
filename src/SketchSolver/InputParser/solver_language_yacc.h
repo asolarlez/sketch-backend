@@ -51,9 +51,11 @@ extern int yydebug;
     for_token = 261,
     if_token = 262,
     return_token = 263,
-    op_eq = 264,
-    op_plus_plus = 265,
-    var_val_rule = 266
+    lambda_token = 264,
+    op_eq = 265,
+    op_geq = 266,
+    op_plus_plus = 267,
+    var_val_rule = 268
   };
 #endif
 /* Tokens.  */
@@ -63,9 +65,11 @@ extern int yydebug;
 #define for_token 261
 #define if_token 262
 #define return_token 263
-#define op_eq 264
-#define op_plus_plus 265
-#define var_val_rule 266
+#define lambda_token 264
+#define op_eq 265
+#define op_geq 266
+#define op_plus_plus 267
+#define var_val_rule 268
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -76,8 +80,8 @@ union YYSTYPE
 
 	SL::Var* var;
 	SL::VarVal* var_val;
-	SL::FuncCall* func_call;
-	SL::Name* name;
+	SL::FunctionCall* func_call;
+	SL::Identifier* identifier_;
 	SL::Params* params;
 	SL::Param* param;
 	SL::CodeBlock* code_block;
@@ -85,13 +89,15 @@ union YYSTYPE
 	SL::Assignment* assignment;
 	SL::Method* method;
 	SL::Methods* methods;
-	SL::Predicate* predicate;
-	SL::MyOperator my_operator;
+	SL::BoolExpression* bool_expr;
+	SL::IntExpression* int_expr;
+	SL::BinaryOp my_operator;
 	SL::SLType* my_type;
 	SL::TypeParams* type_params;
 	SL::Expression* expression;
+	SL::LambdaExpression* lambda_expr;
 
-#line 95 "y.tab.h" /* yacc.c:1909  */
+#line 101 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

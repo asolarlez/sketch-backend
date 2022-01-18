@@ -38,27 +38,27 @@ namespace SL {
 
     class VarVal;
 
-    class Name {
+    class Identifier {
         bool defined = false;
-        string name;
+        string identifier;
     public:
-        explicit Name(string _name) : name(_name), defined(true) {};
-        explicit Name(Name* to_copy) : name(to_copy->to_string()), defined(to_copy->defined) { assert(defined); };
+        explicit Identifier(string _name) : identifier(_name), defined(true) {};
+        explicit Identifier(Identifier* to_copy) : identifier(to_copy->to_string()), defined(to_copy->defined) { assert(defined); };
 
         string to_string() const {
             assert(defined);
-            return name;
+            return identifier;
         }
 
         void clear()
         {
             assert(defined == 1);
-            name.clear();
+            identifier.clear();
             assert(defined == 1);
             delete this;
         }
 
-        ~Name()
+        ~Identifier()
         {
             assert(defined == 1);
             defined = false;
@@ -66,14 +66,14 @@ namespace SL {
 
         SL::VarVal* eval(SolverProgramState *state);
 
-        bool operator<(const Name &other) const {
+        bool operator<(const Identifier &other) const {
             assert(defined);
-            return name < other.name;
+            return identifier < other.identifier;
         }
 
-        bool operator==(const Name &other) const {
+        bool operator==(const Identifier &other) const {
             assert(defined);
-            return name == other.name;
+            return identifier == other.identifier;
         }
 
         bool is_defined();
@@ -169,11 +169,11 @@ namespace SL {
 
     class SLType
     {
-        Name* name = nullptr;
+        Identifier* name = nullptr;
         PolyType* type_params = nullptr;
     public:
-        explicit SLType(Name* _name): name(_name) {assert(name != nullptr);}
-        SLType(Name* _name, TypeParams* _type_params);
+        explicit SLType(Identifier* _name): name(_name) {assert(name != nullptr);}
+        SLType(Identifier* _name, TypeParams* _type_params);
         explicit SLType(SLType* to_copy);
 //        {
 //            if(to_copy->type_params != nullptr) {
@@ -192,7 +192,7 @@ namespace SL {
 
         bool operator == (const SLType& other) const;
 
-        Name *get_head() {
+        Identifier *get_head() {
             assert(name != nullptr);
             return name;
         }
@@ -216,14 +216,14 @@ namespace SL {
 
     class Var {
         SLType *type = nullptr;
-        Name *name = nullptr;
+        Identifier *name = nullptr;
     public:
 
-        Var(SLType *_type, Name *_name) : type(_type), name(_name) {}
-        Var(Name *_type, Name *_name) : type(new SL::SLType(_type)), name(_name) {}
-        explicit Var(Var* to_copy): type(new SL::SLType(to_copy->type)), name(new SL::Name(to_copy->name)) {}
+        Var(SLType *_type, Identifier *_name) : type(_type), name(_name) {}
+        Var(Identifier *_type, Identifier *_name) : type(new SL::SLType(_type)), name(_name) {}
+        explicit Var(Var* to_copy): type(new SL::SLType(to_copy->type)), name(new SL::Identifier(to_copy->name)) {}
 
-        Name *get_name() {
+        Identifier *get_name() {
             return name;
         }
 
@@ -466,9 +466,11 @@ namespace SL {
         }
     }
 
+    class FunctionCall;
+
     class VarVal{
         union {
-            Name* s;
+            Identifier* s;
             int i;
             bool b;
             float float_val;
@@ -625,7 +627,7 @@ namespace SL {
             else if(std::is_same<string,T>::value){
                 assert(var_val_type == string_val_type);
             }
-            else if(std::is_same<Name*,T>::value){
+            else if(std::is_same<Identifier*,T>::value){
                 assert(var_val_type == string_val_type);
             }
             else if(std::is_same<SketchFunction*,T>::value){
@@ -817,12 +819,10 @@ namespace SL {
             }
         }
 
-
-
-        void force_clear()
-        {
+        void force_clear() {
             clear();
         }
+
     private:
         template<typename T>
         void clear(T& val, bool do_delete = true)
@@ -836,6 +836,9 @@ namespace SL {
                 val = nullptr;
             }
         }
+        template<typename T>
+        VarVal* eval(T& val, SolverProgramState* state, FunctionCall* function_call);
+
         void dealloc()
         {
             assert(num_shared_ptr == 0);
@@ -846,7 +849,7 @@ namespace SL {
 
             switch (var_val_type) {
                 case string_val_type:
-                    clear<Name*>(s, false);
+                    clear<Identifier*>(s, false);
                     break;
                 case int_val_type:
                     //do nothing
@@ -889,6 +892,7 @@ namespace SL {
                     assert(false);
             }
         }
+
     public:
         void increment_shared_ptr();
 
@@ -907,6 +911,8 @@ namespace SL {
         void set_return();
 
         bool get_is_return() const;
+
+        VarVal *eval(SolverProgramState *pState, SL::FunctionCall *pCall);
     };
 
     class Param;
@@ -933,10 +939,10 @@ namespace SL {
 
     class Expression;
 
-    class FuncCall {
+    class FunctionCall {
         Expression *expression = nullptr;
         union {
-            Name *method_name;
+            Identifier *method_name;
             SLType *type_constructor;
         };
         vector<Param*> params;
@@ -946,17 +952,17 @@ namespace SL {
         MethodMetaType method_meta_type;
 
     public:
-        FuncCall(
-                Expression *_expression, Name *_method_name, Params *_params) :
+        FunctionCall(
+                Expression *_expression, Identifier *_method_name, Params *_params) :
                 expression(_expression), method_name(_method_name), method_meta_type(name_meta_type) {
             _params->populate_vector(params);
         };
-        FuncCall(
-                Name *_method_name, Params *_params) :
+        FunctionCall(
+                Identifier *_method_name, Params *_params) :
                 method_name(_method_name), method_meta_type(name_meta_type) {
             _params->populate_vector(params);
         };
-        FuncCall(
+        FunctionCall(
                 SLType *_type_constructor, Params *_params){
             if(_type_constructor->is_simple_type())
             {
@@ -970,11 +976,14 @@ namespace SL {
             }
             _params->populate_vector(params);
         };
-        explicit FuncCall(FuncCall* to_copy);
+        explicit FunctionCall(FunctionCall* to_copy);
 
-        pair<Var*, SL::VarVal*> get_var_assert_type(SolverProgramState* state, const string& type_name);
+        pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(SolverProgramState* state, const string& type_name);
 
         SL::VarVal* eval(SolverProgramState* state);
+
+        template<typename VarType>
+        SL::VarVal* eval(VarType var, SolverProgramState* state);
 
         void run(SolverProgramState *pState);
 
@@ -987,7 +996,7 @@ namespace SL {
     {
         union {
             Var* dest_var;
-            Name* dest_name;
+            Identifier* dest_name;
         };
 
         Expression* expression = nullptr;
@@ -1000,7 +1009,7 @@ namespace SL {
 
         explicit Assignment(Var* _var): dest_var(_var), dest_type(var_dest_type){}
         Assignment(Var* _var, Expression* _expression): dest_var(_var), expression(_expression), dest_type(var_dest_type) {}
-        Assignment(Name* _name, Expression* _expression): dest_name(_name), expression(_expression), dest_type(name_dest_type) {}
+        Assignment(Identifier* _name, Expression* _expression): dest_name(_name), expression(_expression), dest_type(name_dest_type) {}
         explicit Assignment(Assignment* to_copy);
 
         Var* get_var() const
@@ -1050,23 +1059,34 @@ namespace SL {
 
     };
 
-    class Predicate;
+    template<typename RetType>
+    class BinaryExpression;
+
+    class BoolExpression;
+    class IntExpression;
+    class LambdaExpression;
 
     class Expression
     {
         union
         {
-            Predicate* predicate;
-            FuncCall* func_call;
-            Name* identifier;
+            BoolExpression* bool_expression;
+            IntExpression* int_expression;
+            LambdaExpression* lambda_expression;
+            FunctionCall* function_call;
+            Identifier* identifier;
             SL::VarVal* var_val;
         };
-        enum ExpressionMetaType {predicate_meta_type, func_call_meta_type, identifier_meta_type, var_val_meta_type, no_meta_type};
+        enum ExpressionMetaType {
+            bool_expr_meta_type, func_call_meta_type, identifier_meta_type,
+            var_val_meta_type, int_expr_meta_type, lambda_expr_meta_type, no_meta_type};
         ExpressionMetaType expression_meta_type = no_meta_type;
     public:
-        explicit Expression(Predicate* _predicate): predicate(_predicate), expression_meta_type(predicate_meta_type){}
-        explicit Expression(FuncCall* _func_call): func_call(_func_call), expression_meta_type(func_call_meta_type){}
-        explicit Expression(Name* _identifier): identifier(_identifier), expression_meta_type(identifier_meta_type){}
+        explicit Expression(BoolExpression* _bool_expression): bool_expression(_bool_expression), expression_meta_type(bool_expr_meta_type){}
+        explicit Expression(IntExpression* _int_expression): int_expression(_int_expression), expression_meta_type(int_expr_meta_type){}
+        explicit Expression(LambdaExpression* _lambda_expression): lambda_expression(_lambda_expression), expression_meta_type(lambda_expr_meta_type){}
+        explicit Expression(FunctionCall* _func_call): function_call(_func_call), expression_meta_type(func_call_meta_type){}
+        explicit Expression(Identifier* _identifier): identifier(_identifier), expression_meta_type(identifier_meta_type){}
         explicit Expression(SL::VarVal* _var_val): var_val(_var_val), expression_meta_type(var_val_meta_type){};
         explicit Expression(Expression* to_copy);
 
@@ -1083,7 +1103,7 @@ namespace SL {
             ret->decrement_shared_ptr();
         }
 
-        Name* get_var_name()
+        Identifier* get_var_name()
         {
             switch (expression_meta_type) {
                 case identifier_meta_type:
@@ -1101,22 +1121,45 @@ namespace SL {
 
     };
 
-    enum MyOperator {lt, gt, eq};
+    enum BinaryOp {lt, gt, eq, geq, plus, minus};
 
-    class Predicate
+    template<typename RetType>
+    class BinaryExpression
     {
+    protected:
         Expression* left_operand = nullptr;
         Expression* right_operand = nullptr;
-    private:
-        MyOperator op;
+        BinaryOp op;
     public:
-        Predicate(MyOperator _op,
-                           Expression* _left,
-                           Expression* _right): op(_op), left_operand(_left), right_operand(_right) {};
-        explicit Predicate(SL::Predicate* to_copy);
+        BinaryExpression(BinaryOp _op,
+                         Expression* _left,
+                         Expression* _right): op(_op), left_operand(_left), right_operand(_right) {};
 
-        bool eval(SolverProgramState* state)
+        explicit BinaryExpression(BinaryExpression<RetType>* to_copy);
+
+        virtual RetType eval(SolverProgramState* state)
         {
+            assert(false);
+        }
+
+        void clear()
+        {
+            left_operand->clear();
+            right_operand->clear();
+            delete this;
+        }
+    };
+
+    class BoolExpression: public BinaryExpression<bool>
+    {
+    public:
+        BoolExpression(BinaryOp _op,
+                       Expression* _left,
+                       Expression* _right): BinaryExpression<bool>(_op, _left, _right) {}
+
+       BoolExpression(BoolExpression* to_copy): BinaryExpression<bool>(to_copy) {}
+
+        bool eval(SolverProgramState* state) override{
             int left_val = left_operand->eval(state)->get_int();
             int right_val = right_operand->eval(state)->get_int();
             switch (op) {
@@ -1129,19 +1172,52 @@ namespace SL {
                 case eq:
                     return left_val == right_val;
                     break;
+                case geq:
+                    return left_val >= right_val;
+                    break;
                 default:
                     assert(false);
             }
         }
+    };
 
-        void clear()
-        {
-            left_operand->clear();
-            right_operand->clear();
-            delete this;
+    class IntExpression: public BinaryExpression<int> {
+    public:
+        IntExpression(BinaryOp _op,
+                       Expression* _left,
+                       Expression* _right): BinaryExpression<int>(_op, _left, _right) {}
+
+        IntExpression(IntExpression* to_copy): BinaryExpression<int>(to_copy) {}
+
+        int eval(SolverProgramState* state) override{
+            int left_val = left_operand->eval(state)->get_int();
+            int right_val = right_operand->eval(state)->get_int();
+            switch (op) {
+                case plus:
+                    return left_val + right_val;
+                    break;
+                case minus:
+                    return left_val - right_val;
+                    break;
+                default:
+                    assert(false);
+            }
         }
     };
-    
+
+    class LambdaExpression
+    {
+        vector<Param*> params;
+        SL::Expression* expression;
+    public:
+        LambdaExpression(SL::Params* _params, SL::Expression* _expression): expression(_expression) {
+            _params->populate_vector(params);
+        }
+        LambdaExpression(LambdaExpression* to_copy);
+
+
+    };
+
     class CodeBlock;
 
     class While

@@ -15,7 +15,7 @@ static exception NameNotFound;
 
 class Frame {
     map<SL::Var, SL::VarVal* > vars_map;
-    map<SL::Name, SL::Var *> name_to_var_map;
+    map<SL::Identifier, SL::Var *> name_to_var_map;
     vector<SL::Var*> all_new_vars;
 
 public:
@@ -49,7 +49,7 @@ public:
 
     void add_var_name(SL::Var *_var, bool assert_new = true)
     {
-        SL::Name name = *_var->get_name();
+        SL::Identifier name = *_var->get_name();
         if(name_to_var_map.find(name) == name_to_var_map.end()) {
             SL::Var* var = new SL::Var(_var);
             all_new_vars.push_back(var);
@@ -73,7 +73,7 @@ public:
         add_var_name(var);
     }
 
-    virtual SL::Var *name_to_var_throws(SL::Name *name) {
+    virtual SL::Var *name_to_var_throws(SL::Identifier *name) {
         if(name_to_var_map.find(*name) == name_to_var_map.end())
         {
             throw NameNotFound;
@@ -81,7 +81,7 @@ public:
         return name_to_var_map[*name];
     }
 
-    SL::Var *name_to_var(SL::Name *name) {
+    SL::Var *name_to_var(SL::Identifier *name) {
         try{
             return name_to_var_throws(name);
         } catch(exception& e){
@@ -214,7 +214,7 @@ public:
         throw VarNotFound;
     }
 
-    SL::Var* name_to_var_throws(SL::Name* name) override{
+    SL::Var* name_to_var_throws(SL::Identifier* name) override{
         assert(!frames.empty());
         int at_id = frames.size()-1;
         while(at_id >= 0){
@@ -324,7 +324,7 @@ public:
         set_var_val(var, var_val);
     }
 
-    SL::Var* name_to_var_throws(SL::Name* name)
+    SL::Var* name_to_var_throws(SL::Identifier* name)
     {
         assert(!frames.empty());
         try {
@@ -345,13 +345,14 @@ public:
         }
     }
 
-    SL::Var* name_to_var(SL::Name* name)
+    SL::Var* name_to_var(SL::Identifier* name)
     {
         assert(!frames.empty());
         try {
             return name_to_var_throws(name);
         }
         catch (exception& e1) {
+            cout << "ERROR: NAME NOT FOUND: " << name->to_string() << endl;
             assert(false);
         }
     }
@@ -390,7 +391,7 @@ public:
         frames.pop_back();
     }
 
-    SL::Var *method_name_to_var(SL::Name *name) {
+    SL::Var *method_name_to_var(SL::Identifier *name) {
         SL::Var* ret = global.name_to_var(name);
         assert(global.get_var_val(ret)->is_method());
         return ret;

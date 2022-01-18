@@ -3,8 +3,6 @@
 //
 
 #include "SketchFunction.h"
-#include "VarStore.h"
-#include "ProgramEnvironment.h"
 
 SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_deactivate_pcond,
                                                        bool do_clone)     {
@@ -66,3 +64,4 @@ void SketchFunction::clear()
     root_dag = nullptr;
     delete this;
 }
+
