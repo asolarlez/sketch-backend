@@ -32,8 +32,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 	SL::Assignment* assignment;
 	SL::Method* method;
 	SL::Methods* methods;
-	SL::BoolExpression* bool_expr;
-	SL::IntExpression* int_expr;
+	SL::BinaryExpression* bool_expr;
 	SL::BinaryOp my_operator;
 	SL::SLType* my_type;
 	SL::TypeParams* type_params;
@@ -65,11 +64,9 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %type <params> params
 %type <params> signature_params
 %type <method> method
-%type <bool_expr> bool_expression
-%type <int_expr> int_expression
+%type <bool_expr> binary_expression
 %type <lambda_expr> lambda_expression
-%type <my_operator> comparison_op
-%type <my_operator> int_op
+%type <my_operator> binary_op
 %type <my_type> type_rule
 %type <type_params> type_params
 %type <expression> expression
@@ -83,26 +80,26 @@ code_block :
 	unit_line ';' code_block {$$ = new SL::CodeBlock($1, $3);} |
 	macro_unit code_block {$$ = new SL::CodeBlock($1, $2);}
 
-comparison_op:
-	'<' {$$ = SL::BinaryOp::lt;} |
-	'>' {$$ = SL::BinaryOp::gt;} |
-	op_eq {$$ = SL::BinaryOp::eq;} |
-	op_geq {$$ = SL::BinaryOp::geq;}
-
-int_op:
-	'+' {$$ = SL::BinaryOp::plus;} |
-	'-' {$$ = SL::BinaryOp::minus;}
+binary_op:
+	'<' {$$ = SL::BinaryOp::_lt;} |
+	'>' {$$ = SL::BinaryOp::_gt;} |
+	op_eq {$$ = SL::BinaryOp::_eq;} |
+	op_geq {$$ = SL::BinaryOp::_geq;} |
+	'+' {$$ = SL::BinaryOp::_plus;} |
+	'-' {$$ = SL::BinaryOp::_minus;} |
+	'*' {$$ = SL::BinaryOp::_mult;} |
+	'/' {$$ = SL::BinaryOp::_div;}
 
 constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new SL::PolyType(new vector<SL::SLType*>(1, new SL::SLType(new SL::Identifier("any"))))));}
 
 expression:
 	identifier {$$ = new SL::Expression($1);} |
 	function_call {$$ = new SL::Expression($1);} |
-	bool_expression {$$ = new SL::Expression($1);} |
-	int_expression {$$ = new SL::Expression($1);} |
+	binary_expression {$$ = new SL::Expression($1);} |
 	var_val_rule {$$ = new SL::Expression($1);} |
 	constant {$$ = new SL::Expression($1);} |
-	lambda_expression {$$ = new SL::Expression($1);}
+	lambda_expression {$$ = new SL::Expression($1);} |
+	'(' expression ')' {$$ = $2;}
 
 constuctor_call_expression:
 	constructor_call {$$ = new SL::Expression($1);}
@@ -110,20 +107,17 @@ constuctor_call_expression:
 lambda_expression:
 	lambda_token signature_params ':' expression {$$ = new SL::LambdaExpression($2, $4);}
 
-int_expression:
-	expression int_op expression {$$ = new SL::IntExpression($2, $1, $3);}
-
-bool_expression:
-	expression comparison_op expression {$$ = new SL::BoolExpression($2, $1, $3);}
+binary_expression:
+	expression binary_op expression {$$ = new SL::BinaryExpression($2, $1, $3);}
 
 unit_line: assignment {$$ = new SL::UnitLine($1);} |
 	return_token expression {$$ = new SL::UnitLine(new SL::Return($2));} |
 	expression {$$ = new SL::UnitLine($1);}
 
 macro_unit:
-	while_token '(' bool_expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
-	if_token '(' bool_expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6));} |
-	for_token '(' unit_line ';' bool_expression ';' unit_line ')' '{' code_block '}'
+	while_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
+	if_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6));} |
+	for_token '(' unit_line ';' expression ';' unit_line ')' '{' code_block '}'
 		{$$ = new SL::UnitLine(new SL::For($3, new SL::Expression($5), $7, $10));} |
 	'{' code_block '}' {$$ = new SL::UnitLine($2);}
 
@@ -147,11 +141,10 @@ assignment:
 	{$$ = new SL::Assignment(
 		$1,
 		new SL::Expression(
-			new SL::FunctionCall(
-				new SL::Identifier("plus"),
-				new SL::Params(new SL::Param(
-					new SL::Expression($1)),
-					new SL::Param(new SL::Expression(new SL::VarVal((int)1)))))));}
+			new SL::BinaryExpression(
+				SL::BinaryOp::_plus,
+				new SL::Expression($1),
+				new SL::Expression(new SL::VarVal((int)1)))));}
 
 param : expression {$$ = new SL::Param($1);} | constuctor_call_expression {$$ = new SL::Param($1);}
 

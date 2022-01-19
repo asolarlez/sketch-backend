@@ -1,0 +1,50 @@
+
+generator int line(int x)
+{
+    return (??-16)*x + (??-16);
+}
+
+generator int compound_line(int prev_out, int x)
+{
+    if({|0|7|8|15|16|23|} <= x && x <= {|0|7|8|15|16|23|})
+    {
+        return prev_out;
+    }
+    else
+    {
+        return line(x);
+    }
+}
+
+int line_lvl0(int x)
+{
+    return line(x);
+}
+
+int line_lvl1(int x)
+{
+    return compound_line(line_lvl0(x), x);
+}
+
+int line_lvl2(int x)
+{
+    return compound_line(line_lvl1(x), x);
+}
+
+@FromFile("zig_zag.data")
+harness void main_lvl2(int x, int y)
+{
+    assert(line_lvl2(x) == y);
+}
+
+@FromFile("zig_zag.data")
+harness void main_lvl1(int x, int y)
+{
+    assert(line_lvl1(x) == y);
+}
+
+@FromFile("zig_zag.data")
+harness void main_lvl0(int x, int y)
+{
+    assert(line_lvl0(x) == y);
+}

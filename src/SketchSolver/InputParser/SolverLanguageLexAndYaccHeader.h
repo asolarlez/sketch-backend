@@ -486,6 +486,7 @@ namespace SL {
         int num_shared_ptr = 0;
     public:
         explicit VarVal(string  _s);
+        explicit VarVal(int val);
         template <typename T>
         explicit VarVal(T val);
         explicit VarVal(float _float_val);
@@ -500,7 +501,136 @@ namespace SL {
 
         VarVal(): var_val_type(void_val_type) {}
 
-        int get_num_shared_ptr()
+        VarVal* eq_op (VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((bool)(get_int(true, false) == other->get_int(true, false)));
+                    break;
+                case bool_val_type:
+                    return new VarVal((bool)(get_bool(true, false) == other->get_bool(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+
+        VarVal* lt_op (VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((bool)(get_int() < other->get_int()));
+                    break;
+                case float_val_type:
+                    return new VarVal((bool)(get_float() < other->get_float()));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* gt_op (VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((bool)(get_int(true, false) > other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((bool)(get_float(true, false) > other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* geq_op (VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((bool)(get_int(true, false) >= other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((bool)(get_float(true, false) >= other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* plus_op(VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((int)(get_int(true, false) + other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((float)(get_float(true, false) + other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* minus_op(VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((int)(get_int(true, false) - other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((float)(get_float(true, false) - other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* mult_op(VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((int)(get_int(true, false) * other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((float)(get_float(true, false) * other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        VarVal* div_op(VarVal* other)
+        {
+            assert(var_val_type == other->var_val_type);
+            switch (var_val_type) {
+                case int_val_type:
+                    return new VarVal((int)(get_int(true, false) / other->get_int(true, false)));
+                    break;
+                case float_val_type:
+                    return new VarVal((float)(get_float(true, false) / other->get_float(true, false)));
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(false);
+        }
+
+        int get_num_shared_ptr() const
         {
             return num_shared_ptr;
         }
@@ -556,6 +686,7 @@ namespace SL {
 
         bool operator < (const VarVal& other) const
         {
+            assert(var_val_type == other.var_val_type);
             switch (var_val_type) {
 
                 case string_val_type:
@@ -668,6 +799,7 @@ namespace SL {
                 increment_shared_ptr();
                 decrement_shared_ptr();
             }
+
             return ret;
         }
 
@@ -723,7 +855,9 @@ namespace SL {
 
         SolverLanguagePrimitives::SolutionHolder *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
-            assert(do_assert);
+            if(do_count) {
+                assert(do_assert);
+            }
             return get<SolverLanguagePrimitives::SolutionHolder *>(solution, do_count, do_assert);
         }
 
@@ -913,6 +1047,7 @@ namespace SL {
         bool get_is_return() const;
 
         VarVal *eval(SolverProgramState *pState, SL::FunctionCall *pCall);
+
     };
 
     class Param;
@@ -939,6 +1074,26 @@ namespace SL {
 
     class Expression;
 
+    enum MethodId {
+        _no_method,
+        _file, _produce_subset_file,
+        _sat_solver, _produce_concretization,
+        _concretize, _size, _get,
+        _passes, _clear, _Solution, _join,
+        _print, _num_holes, _emplace_back,
+        _first, _second,
+        _to_float, _sort_vec,
+        _clone, _assert, _reverse,
+        _produce_replace};
+
+    static bool method_str_to_method_id_map_is_defined = false;
+    static map<string, MethodId> method_str_to_method_id_map;
+    static map<MethodId, vector<string> > method_id_to_type_str;
+
+    static void add_to_method_str_to_method_id_map(const string& method_str, MethodId method_enum, string type_str_1, string type_str_2 = "");
+
+    static void init_method_str_to_method_id_map();
+
     class FunctionCall {
         Expression *expression = nullptr;
         union {
@@ -951,19 +1106,31 @@ namespace SL {
 
         MethodMetaType method_meta_type;
 
+        MethodId method_id = _no_method;
+
+        MethodId get_method_id();
+
+        SL::VarVal* eval_global(SolverProgramState *state);
+
+        pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(SolverProgramState* state, vector<string> type_names);
+
+        SL::VarVal* eval_type_constructor(SolverProgramState* state);
+
     public:
         FunctionCall(
                 Expression *_expression, Identifier *_method_name, Params *_params) :
                 expression(_expression), method_name(_method_name), method_meta_type(name_meta_type) {
             _params->populate_vector(params);
+            method_id = get_method_id();
+
         };
         FunctionCall(
                 Identifier *_method_name, Params *_params) :
                 method_name(_method_name), method_meta_type(name_meta_type) {
             _params->populate_vector(params);
+            method_id = get_method_id();
         };
-        FunctionCall(
-                SLType *_type_constructor, Params *_params){
+        FunctionCall(SLType *_type_constructor, Params *_params){
             if(_type_constructor->is_simple_type())
             {
                 method_name = _type_constructor->get_head();
@@ -975,19 +1142,16 @@ namespace SL {
                 method_meta_type = type_constructor_meta_type;
             }
             _params->populate_vector(params);
+            method_id = get_method_id();
         };
         explicit FunctionCall(FunctionCall* to_copy);
-
-        pair<Var*, SL::VarVal*> get_var_and_var_val_and_assert_type(SolverProgramState* state, const string& type_name);
 
         SL::VarVal* eval(SolverProgramState* state);
 
         template<typename VarType>
-        SL::VarVal* eval(VarType var, SolverProgramState* state);
+        SL::VarVal* eval(VarType& var, SolverProgramState* state);
 
         void run(SolverProgramState *pState);
-
-        SL::VarVal*eval_type_constructor(SolverProgramState* state);
 
         void clear();
     };
@@ -1059,31 +1223,26 @@ namespace SL {
 
     };
 
-    template<typename RetType>
     class BinaryExpression;
 
-    class BoolExpression;
-    class IntExpression;
     class LambdaExpression;
 
     class Expression
     {
         union
         {
-            BoolExpression* bool_expression;
-            IntExpression* int_expression;
+            BinaryExpression* binary_expression;
             LambdaExpression* lambda_expression;
             FunctionCall* function_call;
             Identifier* identifier;
             SL::VarVal* var_val;
         };
         enum ExpressionMetaType {
-            bool_expr_meta_type, func_call_meta_type, identifier_meta_type,
-            var_val_meta_type, int_expr_meta_type, lambda_expr_meta_type, no_meta_type};
+            binary_expr_meta_type, func_call_meta_type, identifier_meta_type,
+            var_val_meta_type,  lambda_expr_meta_type,  no_meta_type};
         ExpressionMetaType expression_meta_type = no_meta_type;
     public:
-        explicit Expression(BoolExpression* _bool_expression): bool_expression(_bool_expression), expression_meta_type(bool_expr_meta_type){}
-        explicit Expression(IntExpression* _int_expression): int_expression(_int_expression), expression_meta_type(int_expr_meta_type){}
+        explicit Expression(BinaryExpression* _binary_expression): binary_expression(_binary_expression), expression_meta_type(binary_expr_meta_type){}
         explicit Expression(LambdaExpression* _lambda_expression): lambda_expression(_lambda_expression), expression_meta_type(lambda_expr_meta_type){}
         explicit Expression(FunctionCall* _func_call): function_call(_func_call), expression_meta_type(func_call_meta_type){}
         explicit Expression(Identifier* _identifier): identifier(_identifier), expression_meta_type(identifier_meta_type){}
@@ -1121,9 +1280,8 @@ namespace SL {
 
     };
 
-    enum BinaryOp {lt, gt, eq, geq, plus, minus};
+    enum BinaryOp {_lt, _gt, _eq, _geq, _plus, _minus, _mult, _div};
 
-    template<typename RetType>
     class BinaryExpression
     {
     protected:
@@ -1135,10 +1293,41 @@ namespace SL {
                          Expression* _left,
                          Expression* _right): op(_op), left_operand(_left), right_operand(_right) {};
 
-        explicit BinaryExpression(BinaryExpression<RetType>* to_copy);
+        explicit BinaryExpression(BinaryExpression* to_copy);
 
-        virtual RetType eval(SolverProgramState* state)
+        VarVal* eval(SolverProgramState* state)
         {
+            VarVal* left_var_val = left_operand->eval(state);
+            VarVal* right_var_val = right_operand->eval(state);
+
+            switch (op) {
+                case _lt:
+                    return left_var_val->lt_op(right_var_val);
+                    break;
+                case _gt:
+                    return left_var_val->gt_op(right_var_val);
+                    break;
+                case _eq:
+                    return left_var_val->eq_op(right_var_val);
+                    break;
+                case _geq:
+                    return left_var_val->geq_op(right_var_val);
+                    break;
+                case _plus:
+                    return left_var_val->plus_op(right_var_val);
+                    break;
+                case _minus:
+                    return left_var_val->minus_op(right_var_val);
+                    break;
+                case _mult:
+                    return left_var_val->mult_op(right_var_val);
+                    break;
+                case _div:
+                    return left_var_val->div_op(right_var_val);
+                    break;
+                default:
+                    assert(false);
+            }
             assert(false);
         }
 
@@ -1147,61 +1336,6 @@ namespace SL {
             left_operand->clear();
             right_operand->clear();
             delete this;
-        }
-    };
-
-    class BoolExpression: public BinaryExpression<bool>
-    {
-    public:
-        BoolExpression(BinaryOp _op,
-                       Expression* _left,
-                       Expression* _right): BinaryExpression<bool>(_op, _left, _right) {}
-
-       BoolExpression(BoolExpression* to_copy): BinaryExpression<bool>(to_copy) {}
-
-        bool eval(SolverProgramState* state) override{
-            int left_val = left_operand->eval(state)->get_int();
-            int right_val = right_operand->eval(state)->get_int();
-            switch (op) {
-                case lt:
-                    return left_val < right_val;
-                    break;
-                case gt:
-                    return left_val > right_val;
-                    break;
-                case eq:
-                    return left_val == right_val;
-                    break;
-                case geq:
-                    return left_val >= right_val;
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-    };
-
-    class IntExpression: public BinaryExpression<int> {
-    public:
-        IntExpression(BinaryOp _op,
-                       Expression* _left,
-                       Expression* _right): BinaryExpression<int>(_op, _left, _right) {}
-
-        IntExpression(IntExpression* to_copy): BinaryExpression<int>(to_copy) {}
-
-        int eval(SolverProgramState* state) override{
-            int left_val = left_operand->eval(state)->get_int();
-            int right_val = right_operand->eval(state)->get_int();
-            switch (op) {
-                case plus:
-                    return left_val + right_val;
-                    break;
-                case minus:
-                    return left_val - right_val;
-                    break;
-                default:
-                    assert(false);
-            }
         }
     };
 
@@ -1215,6 +1349,14 @@ namespace SL {
         }
         LambdaExpression(LambdaExpression* to_copy);
 
+        void clear()
+        {
+            for(auto it:params) {
+                it->clear();
+            }
+            expression->clear();
+            delete this;
+        }
 
     };
 
@@ -1358,7 +1500,7 @@ namespace SL {
 
         void run(SolverProgramState* state, vector<Param*>& input_params);
 
-        SL::VarVal*eval(SolverProgramState* state, vector<Param*>& params);
+        SL::VarVal* eval(SolverProgramState* state, vector<Param*>& params);
 
         Var* get_var()
         {

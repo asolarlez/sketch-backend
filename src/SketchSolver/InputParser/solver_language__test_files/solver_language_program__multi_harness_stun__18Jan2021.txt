@@ -39,7 +39,7 @@ harness template_main(Data data, bit out)
 
 Solver best_effort_programs(harness, file, num_trials, num_rows_per_sample)
 {
-    solutions = best_efforts_solutions(harness, file, num_trials, num_rows_per_sample);
+    solutions = best_effort_solutions(harness, file, num_trials, num_rows_per_sample);
     programs = [];
     for(int i = 0;i<solutions.size();i++)
     {
@@ -50,14 +50,19 @@ Solver best_effort_programs(harness, file, num_trials, num_rows_per_sample)
 
 Solver main()
 {
+    return top_down_and_bottom_up_synthesis_main();
+}
+
+Solver top_down_and_bottom_up_synthesis_main()
+{
     //generate
 
-    string file_name = "zig_zag.data";
-    //string file_name = "uav_kg_big__as_bools.data";
+    //string file_name = "zig_zag.data";
+    string file_name = "uav_kg_big__as_bools.data";
 
-    num_trials = 1;
-    num_rows_per_sample = 4;
-    select_best = 1;
+    num_trials = 10;
+    num_rows_per_sample = 6;
+    select_best = 5;
 
     predicate_lvl0 = template_predicate_lvl0.clone();
 
@@ -132,34 +137,39 @@ Solver main()
     return improved_main_lvl1.get(0).second().get_solution();
 }
 
-Solver left_right_and_predicate_synthesis_main()
+Solver left_and_right_and_cond_synthesis_main()
 {
     //first sample base level
     //choose best
     //sample left and right
     //choose best
 
-    any num_trials = 1;
+    num_trials = 3;
     num_rows_per_sample = 4;
-    select_best = 1;
+    select_best = 2;
 
     string file_name = "zig_zag.data";
     //string file_name = "uav_kg_big__as_bools.data";
-    
+
     file = File(file_name, main_lvl0_left__Wrapper);
     lvl0_left_solutions = best_effort_solutions(main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 
     file = File(file_name, main_lvl0_right__Wrapper);
     lvl0_right_solutions = best_effort_solutions(main_lvl0_right__Wrapper, file, num_trials, num_rows_per_sample);
 
+    print("first lvl0_left_solutions.size() ", lvl0_left_solutions.size());
+    print("first lvl0_right_solutions.size() ", lvl0_right_solutions.size());
 
     predicate_lvl0_left_original = predicate_lvl0_left.clone();
     predicate_lvl0_right_original = predicate_lvl0_right.clone();
 
     any ret;
+
     {
         all_compound_solutions = [];
 
+        print("lvl0_left_solutions.size() ", lvl0_left_solutions.size());
+        print("lvl0_right_solutions.size() ", lvl0_right_solutions.size());
         for(i = 0;i<select_best;i++)
         {
             predicate_lvl0_left.concretize(lvl0_left_solutions.get(i).second());
@@ -244,7 +254,7 @@ Solver Solution beam_search_main()
 
     int best_effort_solutions_size = best_effort_solutions.size();
     pair<int, Solution> element;
-    for(int i = 0; i<best_effort_solutions_size; i = plus(i, 1))
+    for(int i = 0; i<best_effort_solutions_size; i++)
     {
         element = best_effort_solutions.get(i);
         indexed_solutions.emplace_back(
@@ -341,7 +351,7 @@ Solver Solution repeat_greedy_main()
     print("at_score ", score, "/", n);
     while(score < n)
     {
-        seed = plus(seed, 1);
+        seed++;
         sol = stun_main(file_name);
         score = get_score(main_lvl2__Wrapper, sol, file);
         print("at_score ", score, "/", n);
@@ -408,7 +418,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     SketchFunction program;
     int score;
     vector<pair<int, Solution> > solutions = vector<pair<int, Solution> >();
-    for(int trial_id = 0; trial_id<num_trials; trial_id = plus(trial_id, 1))
+    for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
 		solution = SATSolver(harness, subset_file); // invoke the Sketch Solver on the harness
@@ -430,14 +440,18 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
 	int solutions_size = solutions.size();
 
     pair<int, Solution> element;
-	for(int i = 0; i<solutions_size; i = plus(i, 1))
+	for(int i = 0; i<solutions_size; i++)
 	{
 	    element = solutions.get(i);
-	    print("count ", element.first(), " (", div(mult(float(100), float(element.first())), float(file.size())), "%)");
+	    print("count ", element.first(), " (", ((float(100) * float(element.first())) / float(file.size())), "%)");
 	}
 	print("Done sorted solution scores");
 
 	print("best_score = ", best_score);
+
+    assert(solutions.size() == num_trials);
+
+    print("ASSERTED TRUE:", "solutions.size()", solutions.size(), "num_trials", num_trials);
 
     return solutions;
 }
@@ -466,9 +480,9 @@ Solver int count_passing_inputs(SketchFunction program, File file)
 	    input = file.get(row_id);
 		success = program.passes(input);
 		if(success == true){
-			score = plus(score, 1);
+		    score = score + 1;
 		}
-		row_id = plus(row_id, 1);
+		row_id++;
 	}
 	return score;
 }

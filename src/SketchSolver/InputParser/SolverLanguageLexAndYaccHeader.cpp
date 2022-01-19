@@ -128,6 +128,7 @@ void SL::Assignment::run(SolverProgramState *state)
         var_val = expression->eval(state);
         if(var_val->get_is_return())
         {
+            assert(false);
             var_val->complete_return();
         }
         state->set_var_val(to_var, var_val);
@@ -228,166 +229,107 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(SolverProgramState* state)
         case do_predef:
             assert(false);
             break;
-    }
-}
-
-SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
-{
-    enum PredefMethod {
-        no_predef,
-        predef_file, produce_subset_file,
-        sat_solver, produce_concretization,
-        concretize, size, get,
-        passes, plus, clear, Solution, join,
-        print, num_holes, emplace_back,
-        first, second, div,
-        mult, to_float, sort_vec,
-        my_clone, my_assert, reverse};
-
-    PredefMethod predef_method = no_predef;
-
-    string method_str;
-
-    switch (method_meta_type) {
-
-        case name_meta_type:
-            method_str = method_name->to_string();
-            break;
-        case type_constructor_meta_type:
-            method_str = type_constructor->to_string();
-            break;
         default:
             assert(false);
     }
+    assert(false);
+}
 
-    assert(method_str != "");
-
-    if(method_str == "File")
-    {
-        predef_method = predef_file;
-    }
-    else if(method_str == "produce_subset_file")
-    {
-        predef_method = produce_subset_file;
-    }
-    else if(method_str == "SATSolver")
-    {
-        predef_method = sat_solver;
-    }
-    else if(method_str == "produce_concretization")
-    {
-        predef_method = produce_concretization;
-    }
-    else if(method_str == "concretize")
-    {
-        predef_method = concretize;
-    }
-    else if(method_str == "size")
-    {
-        predef_method = size;
-    }
-    else if(method_str == "get")
-    {
-        predef_method = get;
-    }
-    else if(method_str == "passes")
-    {
-        predef_method = passes;
-    }
-    else if(method_str == "plus")
-    {
-        predef_method = plus;
-    }
-    else if(method_str == "clear")
-    {
-        predef_method = clear;
-    }
-    else if(method_str == "Solution")
-    {
-        predef_method = Solution;
-    }
-    else if(method_str == "join")
-    {
-        predef_method = join;
-    }
-    else if(method_str == "print")
-    {
-        predef_method = print;
-    }
-    else if(method_str == "num_holes")
-    {
-        predef_method = num_holes;
-    }
-    else if(method_str == "emplace_back")
-    {
-        predef_method = emplace_back;
-    }
-    else if(method_str == "first")
-    {
-        predef_method = first;
-    }
-    else if(method_str == "second")
-    {
-        predef_method = second;
-    }
-    else if(method_str == "div")
-    {
-        predef_method = div;
-    }
-    else if(method_str == "mult")
-    {
-        predef_method = mult;
-    }
-    else if(method_str == "float")
-    {
-        predef_method = to_float;
-    }
-    else if(method_str == "sort")
-    {
-        predef_method = sort_vec;
-    }
-    else if(method_str == "clone")
-    {
-        predef_method = my_clone;
-    }
-    else if(method_str == "assert")
-    {
-        predef_method = my_assert;
-    }
-    else if(method_str == "reverse")
-    {
-        predef_method = reverse;
-    }
-
-
-
-    switch (predef_method) {
-        case predef_file:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
-            assert(params.size() == 2);
-            string file_name = params[0]->eval(state)->get_string();
-            SketchFunction* harness = params[1]->eval(state)->get_harness();
-            SL::VarVal* ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
-            return ret;
+template<>
+SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverProgramState* state)
+{
+    switch (method_id) {
+        case _size: {
+            assert(params.empty());
+            PolyVec *poly_vec = expression->eval(state)->get_poly_vec();
+            return new SL::VarVal((int) poly_vec->size());
             break;
         }
-        case produce_subset_file:
+        case _get:
         {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "File");
+            assert(params.size() == 1);
+            int idx = params[0]->eval(state)->get_int(true, false);
+            return poly_vec->at(idx);
+            break;
+        }
+        case _emplace_back:
+        {
+            assert(params.size() == 1);
+            SL::VarVal* ret_param = params[0]->eval(state);
+            ret_param->increment_shared_ptr();
+            poly_vec->emplace_back(ret_param);
+            return new VarVal();
+            break;
+        }
+        case _sort_vec:
+        {
+            assert(params.empty());
+            poly_vec->sort();
+            return new VarVal();
+            break;
+        }
+        case _reverse:
+        {
+            assert(params.empty());
+            poly_vec->reverse();
+            return new VarVal();
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+template<>
+SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state) {
+
+    switch (method_id) {
+        case _produce_subset_file:
+        {
             assert(params.size() == 1);
             int num_rows = params[0]->eval(state)->get_int();
-            File* file = var_and_var_val.second->get_file();
             return new SL::VarVal(file->sample_sub_file(num_rows));
             break;
         }
-        case sat_solver:
+        case _size:
         {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
+            assert(params.empty());
+            return new SL::VarVal((int) file->size());
+            break;
+        }
+        case _get:
+        {
+            assert(params.size() == 1);
+            int row_id = params[0]->eval(state)->get_int();
+            return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
+            break;
+        }
+        case _clear:
+        {
+            file->clear();
+            file = nullptr;
+            return new VarVal();
+            break;
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
+{
+    switch (method_id) {
+        case _file: {
+            assert(params.size() == 2);
+            string file_name = params[0]->eval(state)->get_string();
+            SketchFunction *harness = params[1]->eval(state)->get_harness();
+            SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
+            return ret;
+            break;
+        }
+        case _sat_solver:
+        {
             assert(params.size() == 2);
             SketchFunction* harness = params[0]->eval(state)->get_harness()->produce_inlined_dag();
             File* file = params[1]->eval(state)->get_file();
@@ -404,368 +346,130 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
             return new SL::VarVal(sol);
             break;
         }
-        case size:
+        case _Solution:
         {
-            Identifier* var_name = expression->get_var_name();
-            assert(var_name != nullptr);
-            Var* var = state->name_to_var(var_name);
-            string var_head_type_str;
-            SL::VarVal* var_val = nullptr;
-            if(var->has_type() && !var->has_any_type()) {
-                var_head_type_str = var->get_type()->get_head()->to_string();
-            }
-            else
-            {
-                assert(!SL::is_strongly_typed);
-                var_val = expression->eval(state);
-                var_head_type_str = var_val->get_type_string();
-            }
-            assert(var_head_type_str == "File" || var_head_type_str == "vector");
-
-            if(var_val == nullptr)
-            {
-                var_val = expression->eval(state);
-            }
-
-            assert(params.empty());
-            if(var_head_type_str == "File") {
-                File *file = expression->eval(state)->get_file();
-                return new SL::VarVal((int) file->size());
-            } else if (var_head_type_str == "vector")
-            {
-                PolyVec* poly_vec = expression->eval(state)->get_poly_vec();
-                return new SL::VarVal((int)poly_vec->size());
-            }
-            else
-            {
-                assert(false);
-            }
-            break;
-        }
-        case produce_concretization:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            SolutionHolder* sol = params[0]->eval(state)->get_solution();
-            SketchFunction* harness = var_and_var_val.second->get_harness();
-            SketchFunction* concretized_function =
-                    harness->produce_with_concretized_holes(sol, true);
-            return new SL::VarVal(concretized_function);
-            break;
-        }
-        case concretize:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            SolutionHolder* sol = params[0]->eval(state)->get_solution();
-            SketchFunction* harness = var_and_var_val.second->get_harness();
-            harness = harness->concretize(sol, true);
-            return new SL::VarVal();
-            break;
-        }
-        case get:
-        {
-            Identifier* var_name = expression->get_var_name();
-            assert(var_name != nullptr);
-            Var* var = state->name_to_var(var_name);
-            SL::VarVal* var_val = nullptr;
-            string var_type_str;
-            if(var->has_type() && !var->has_any_type()) {
-                var_type_str = var->get_type()->get_head()->to_string();
-            }
-            else {
-                assert(!SL::is_strongly_typed);
-                var_val = expression->eval(state);
-                var_type_str = var_val->get_type_string();
-            }
-            assert(var_type_str == "File" || var_type_str == "vector");
-            if(var_val == nullptr)
-            {
-                var_val = expression->eval(state);
-            }
-            if (var_type_str == "File") {
-                assert(params.size() == 1);
-                File *file = var_val->get_file();
-                int row_id = params[0]->eval(state)->get_int();
-                return new SL::VarVal(new SolverLanguagePrimitives::InputHolder(file->at(row_id), state->floats));
-            } else if (var_type_str == "vector") {
-                if(var->has_type() && !var->has_any_type()) {
-                    assert(var->get_type()->get_type_params()->size() == 1);
-                }
-                 assert(params.size() == 1);
-                PolyVec *vec = var_val->get_poly_vec();
-                int idx = params[0]->eval(state)->get_int(true, false);
-                return vec->at(idx);
-            }
-            else
-            {
-                assert(false);
-            }
-            break;
-        }
-        case passes:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
-            assert(params.size() == 1);
-            SketchFunction* program = var_and_var_val.second->get_function();
-            SolverLanguagePrimitives::InputHolder* input_holder = params[0]->eval(state)->get_input_holder();
-            SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
-            assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
-            bool ret = concretized_function->get_dag()->get_failed_assert() == nullptr;
-            concretized_function->clear();
-            return new VarVal(ret);
-            break;
-        }
-        case plus:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
-            assert(params.size() == 2);
-            int left_op = params[0]->eval(state)->get_int(true, false);
-            int right_op = params[1]->eval(state)->get_int(true, false);
-            return new VarVal(left_op+right_op);
-            break;
-        }
-        case div:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
-            assert(params.size() == 2);
-            float left_op = params[0]->eval(state)->get_float(true, false);
-            float right_op = params[1]->eval(state)->get_float(true, false);
-            return new VarVal(left_op/right_op);
-            break;
-        }
-        case mult:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
-            assert(params.size() == 2);
-            float left_op = params[0]->eval(state)->get_float(true, false);
-            float right_op = params[1]->eval(state)->get_float(true, false);
-            return new VarVal(left_op*right_op);
-            break;
-        }
-        case clear:
-        {
-            Identifier* var_name = expression->get_var_name();
-            assert(var_name != nullptr);
-            Var* var = state->name_to_var(var_name);
-            SL::VarVal* var_val = nullptr;
-            string var_type_str;
-            if(var->has_type() && !var->has_any_type()) {
-                var_type_str = var->get_type()->get_head()->to_string();
-            }
-            else {
-                assert(!SL::is_strongly_typed);
-                var_val = expression->eval(state);
-                var_type_str = var_val->get_type_string();
-            }
-            assert(var_type_str == "File" || var_type_str == "SketchFunction");
-            if(var_val == nullptr)
-            {
-                var_val = expression->eval(state);
-            }
-
-            var_val->force_clear();
-
-            return new VarVal();
-
-            if (var_type_str == "File") {
-                assert(params.empty());
-                File* file = var_val->get_file();
-                file->clear();
-                delete file;
-                return new VarVal();
-            } else if (var_type_str == "SketchFunction") {
-                assert(params.empty());
-                SketchFunction* program = var_val->get_function();
-                program->clear();
-                return new VarVal();
-            }
-            else
-            {
-                assert(false);
-            }
-
-            break;
-        }
-        case Solution:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
             assert(params.empty());
             using namespace SolverLanguagePrimitives;
             return new VarVal(new SolutionHolder(false));
         }
-        case join:
+        case _print:
         {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "Solution");
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            SolutionHolder* other_solution = params[0]->eval(state)->get_solution();
-            SolutionHolder* base_solution = var_and_var_val.second->get_solution();
-            base_solution->join_with(other_solution);
-            return new VarVal();
-        }
-        case print:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
             assert(!params.empty());
             string print_str = "";
             cout << "SOLVER_PROGRAM_PRINT INIT" << endl;
             for(int i = 0;i<params.size();i++)
             {
-                cout << params[i]->eval(state)->to_string(true, false);
+                cout << params[i]->eval(state)->to_string(true, false) <<" ";
             }
             cout << endl << "SOLVER_PROGRAM_PRINT END" << endl;
             return new VarVal();
         }
-        case num_holes: {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
-            assert(params.empty());
-            SketchFunction* func_clone = var_and_var_val.second->get_harness()->clone()->do_inline();
-            int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
-            func_clone->clear();
-            return new VarVal(num_ctrls);
-            break;
-        }
-        case emplace_back:
+        case _to_float:
         {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "vector");
-            assert(params.size() == 1);
-            PolyVec* poly_vec = var_and_var_val.second->get_poly_vec();
-            SL::VarVal* ret_param = params[0]->eval(state);
-            ret_param->increment_shared_ptr();
-            poly_vec->emplace_back(ret_param);
-            return new VarVal();
-            break;
-        }
-        case first:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "pair");
-            assert(params.empty());
-            PolyPair* the_pair = var_and_var_val.second->get_poly_pair();
-            return the_pair->first();
-            break;
-        }
-        case second:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "pair");
-            assert(params.empty());
-            using namespace SolverLanguagePrimitives;
-            PolyPair* the_pair = var_and_var_val.second->get_poly_pair();
-            return the_pair->second();
-            break;
-        }
-        case to_float:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
             assert(params.size() == 1);
             float the_float = (float)params[0]->eval(state)->get_int(true, false);
             return new VarVal(the_float);
             break;
         }
-        case sort_vec:
+        case _assert:
         {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "vector");
-            assert(params.empty());
-            PolyVec* vec = var_and_var_val.second->get_poly_vec();
-            vec->sort();
-            return new VarVal();
-            break;
-        }
-        case my_clone:
-        {
-            Identifier* var_name = expression->get_var_name();
-            assert(var_name != nullptr);
-            Var* var = state->name_to_var(var_name);
-            assert(params.empty());
-            string var_type_str;
-            SL::VarVal* var_val = nullptr;
-            if(var->has_type() && !var->has_any_type()) {
-                var_type_str = var->get_type()->get_head()->to_string();
-            }
-            else
-            {
-                assert(!SL::is_strongly_typed);
-                var_val = expression->eval(state);
-                var_type_str = var_val->get_type_string();
-            }
-            assert(var_type_str == "SketchFunction" || var_type_str == "Solution");
-
-            if(var_val == nullptr)
-            {
-                var_val = expression->eval(state);
-            }
-
-            return new VarVal(var_val->get_harness()->clone());
-
-            break;
-        }
-        case my_assert:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "namespace");
-            SL::Var* var = var_and_var_val.first;
-            assert(var == nullptr);
-            assert(!params.empty());
-            bool assert_true = params[0]->eval(state)->get_bool();
+            assert(!params.empty() && params.size() <= 2);
+            bool assert_true = params[0]->eval(state)->get_bool(true, false);
             string message_suffix = "\nassert(false); // triggered in Solver Program";
-            if(params.size() == 1)
-            {
+            if(params.size() == 1) {
                 AssertDebug(assert_true, message_suffix);
             }
-            else if(params.size() == 2)
-            {
+            else if(params.size() == 2) {
                 AssertDebug(assert_true, "MESSAGE: " + params[1]->eval(state)->get_string() + message_suffix);
             }
-            else
-            {
+            else {
                 assert(false);
             }
             return new VarVal();
-            break;
-        }
-        case reverse:
-        {
-            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "vector");
-            assert(params.empty());
-            var_and_var_val.second->get_poly_vec()->reverse();
-            return new VarVal();
-        }
-        case no_predef: {
-            switch (method_meta_type) {
-                case name_meta_type:
-
-                    if(expression != nullptr) {
-                        VarVal *var_val = expression->eval(state);
-                        assert(var_val != nullptr);
-                        return var_val->eval(state, this);
-                    }
-
-                    return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
-                    break;
-                case type_constructor_meta_type:
-                    return eval_type_constructor(state);
-                    break;
-            }
             break;
         }
         default:
             assert(false);
     }
     assert(false);
-    return nullptr;
+}
+
+template<>
+SL::VarVal *SL::FunctionCall::eval<SolverLanguagePrimitives::SolutionHolder*>(
+        SolverLanguagePrimitives::SolutionHolder*& the_solution, SolverProgramState *state) {
+
+    switch (method_id) {
+        case _join: {
+            assert(params.size() == 1);
+            using namespace SolverLanguagePrimitives;
+            SolutionHolder *other_solution = params[0]->eval(state)->get_solution();
+            the_solution->join_with(other_solution);
+            return new VarVal();
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+template<>
+SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state)
+{
+    switch (method_id) {
+        case _first: {
+            assert(params.empty());
+            return poly_pair->first();
+            break;
+        }
+        case _second: {
+            assert(params.empty());
+            using namespace SolverLanguagePrimitives;
+            return poly_pair->second();
+            break;
+        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+
+SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
+{
+
+    if(method_id != _no_method)
+    {
+
+        assert(method_id_to_type_str.find(method_id) != method_id_to_type_str.end());
+
+        pair<SL::Var*, SL::VarVal* > var_and_var_val =
+                get_var_and_var_val_and_assert_type(state, method_id_to_type_str[method_id]);
+
+        VarVal* var_val = var_and_var_val.second;
+
+        if(var_val != nullptr) {
+            return var_val->eval(state, this);
+        }
+        else{
+            return eval_global(state);
+        }
+
+        assert(false);
+    }
+    else
+    {
+        switch (method_meta_type) {
+            case name_meta_type:
+                return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
+                break;
+            case type_constructor_meta_type:
+                return eval_type_constructor(state);
+                break;
+            default:
+                assert(false);
+        }
+        assert(false);
+    }
+    assert(false);
 }
 
 void SL::FunctionCall::run(SolverProgramState *state) {
@@ -773,12 +477,26 @@ void SL::FunctionCall::run(SolverProgramState *state) {
     assert(ret->is_void());
 }
 
-pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_type(SolverProgramState* state, const string& type_name) {
+pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_type(
+        SolverProgramState* state, vector<string> type_names) {
 
-    if(type_name == "namespace") {
-        assert(expression == nullptr);
-        return make_pair(nullptr, nullptr);
+    assert(type_names.size() >= 1);
+
+    string type_name = type_names[0];
+
+    if(type_names.size() == 1) {
+        if (type_name == "namespace") {
+            assert(expression == nullptr);
+            return make_pair(nullptr, nullptr);
+        }
     }
+    else
+    {
+        assert(type_names.size() == 2);
+        assert(type_names[0] != "namespace");
+        assert(type_names[1] != "namespace");
+    }
+
     Identifier* var_name = expression->get_var_name();
     //if there is no var_name, then there is nothing to assert the type of rn
     if(var_name == nullptr) {
@@ -798,7 +516,15 @@ pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_t
         var_val = expression->eval(state);
         var_type_str = var_val->get_type_string();
     }
-    assert(var_type_str == type_name);
+    bool enter = false;
+    for(int i = 0;i<type_names.size();i++) {
+        if(type_names[i] == var_type_str) {
+            enter = true;
+            break;
+        }
+    }
+    assert(enter);
+
     if(var_val == nullptr)
     {
         var_val = expression->eval(state);
@@ -827,14 +553,12 @@ void SL::FunctionCall::clear() {
     delete this;
 }
 
-SL::FunctionCall::FunctionCall(SL::FunctionCall *to_copy): method_meta_type(to_copy->method_meta_type)
+SL::FunctionCall::FunctionCall(SL::FunctionCall *to_copy): method_meta_type(to_copy->method_meta_type), method_id(to_copy->method_id)
 {
-    if(to_copy->expression != nullptr)
-    {
+    if(to_copy->expression != nullptr) {
         expression = new Expression(to_copy->expression);
     }
-    switch(method_meta_type)
-    {
+    switch(method_meta_type) {
         case name_meta_type:
             method_name = new Identifier(to_copy->method_name);
             break;
@@ -844,26 +568,56 @@ SL::FunctionCall::FunctionCall(SL::FunctionCall *to_copy): method_meta_type(to_c
         default:
             assert(false);
     }
-    for(auto it: to_copy->params)
-    {
+    for(auto it: to_copy->params) {
         params.push_back(new Param(it));
     }
 }
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, SolverProgramState *state) {
+void SL::add_to_method_str_to_method_id_map(const string& method_str, SL::MethodId method_id, string type_str_1, string type_str_2)
+{
+    assert(method_str_to_method_id_map.find(method_str) == method_str_to_method_id_map.end());
+    method_str_to_method_id_map[method_str] = method_id;
+    assert(method_id_to_type_str.find(method_id) == method_id_to_type_str.end());
+    assert(type_str_1 != "");
+    method_id_to_type_str[method_id] = vector<string>();
+    method_id_to_type_str[method_id].push_back(type_str_1);
+    if(type_str_2 != "") {
+        method_id_to_type_str[method_id].push_back(type_str_2);
+    }
+}
 
-    enum PredefMethod {
-        _no_predef,
-        _produce_concretization,
-        _concretize,
-        _passes,
-        _clear,
-        _num_holes,
-        _clone,
-        _produce_replace};
+void SL::init_method_str_to_method_id_map()
+{
+    assert(method_str_to_method_id_map_is_defined == false);
+    add_to_method_str_to_method_id_map("File", _file, "namespace");
+    add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
+    add_to_method_str_to_method_id_map("SATSolver", _sat_solver, "namespace");
+    add_to_method_str_to_method_id_map("produce_concretization", _produce_concretization, "SketchFunction");
+    add_to_method_str_to_method_id_map("concretize", _concretize, "SketchFunction");
+    add_to_method_str_to_method_id_map("size", _size, "File", "vector");
+    add_to_method_str_to_method_id_map("get", _get, "File", "vector");
+    add_to_method_str_to_method_id_map("passes", _passes, "SketchFunction");
+    add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
+    add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
+    add_to_method_str_to_method_id_map("join", _join, "Solution");
+    add_to_method_str_to_method_id_map("print", _print, "namespace");
+    add_to_method_str_to_method_id_map("num_holes", _num_holes, "SketchFunction");
+    add_to_method_str_to_method_id_map("emplace_back", _emplace_back, "vector");
+    add_to_method_str_to_method_id_map("first", _first, "pair");
+    add_to_method_str_to_method_id_map("second", _second, "pair");
+    add_to_method_str_to_method_id_map("float", _to_float, "namespace");
+    add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
+    add_to_method_str_to_method_id_map("clone", _clone, "SketchFunction", "Solution");
+    add_to_method_str_to_method_id_map("assert", _assert, "namespace");
+    add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
+    add_to_method_str_to_method_id_map("produce_replace", _produce_replace, "SketchFunction");
+    method_str_to_method_id_map_is_defined = true;
+}
 
-    PredefMethod predef_method = _no_predef;
+SL::MethodId SL::FunctionCall::get_method_id() {
+    if(!method_str_to_method_id_map_is_defined){
+        init_method_str_to_method_id_map();
+    }
 
     string method_str;
 
@@ -872,37 +626,29 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, Sol
             method_str = method_name->to_string();
             break;
         case type_constructor_meta_type:
-            assert(false);
+            method_str = type_constructor->get_head()->to_string();
             break;
         default:
             assert(false);
     }
 
-    assert(!method_str.empty());
-
-    if(method_str == "produce_concretization") {
-        predef_method = _produce_concretization;
-    } else if(method_str == "concretize") {
-        predef_method = _concretize;
-    } else if(method_str == "passes") {
-        predef_method = _passes;
-    } else if(method_str == "clear") {
-        predef_method = _clear;
-    } else if(method_str == "num_holes") {
-        predef_method = _num_holes;
-    } else if(method_str == "clone") {
-        predef_method = _clone;
+    if(method_str_to_method_id_map.find(method_str) != method_str_to_method_id_map.end()) {
+        return method_str_to_method_id_map[method_str];
     }
+    else{
+        return _no_method;
+    }
+}
 
+template<>
+SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state) {
 
-    switch (predef_method) {
+    switch (method_id) {
         case _produce_concretization:
         {
-//            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
             SolutionHolder* sol = params[0]->eval(state)->get_solution();
-//            SketchFunction* harness = var_and_var_val.second->get_harness();
             SketchFunction* harness = sk_func;
             SketchFunction* concretized_function =
                     harness->produce_with_concretized_holes(sol, true);
@@ -910,12 +656,9 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, Sol
             break;
         }
         case _concretize:
-        {
-//            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
-            assert(params.size() == 1);
+        {assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
             SolutionHolder* sol = params[0]->eval(state)->get_solution();
-//            SketchFunction* harness = var_and_var_val.second->get_harness();
             SketchFunction* harness = sk_func;
             harness = harness->concretize(sol, true);
             return new SL::VarVal();
@@ -923,9 +666,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, Sol
         }
         case _passes:
         {
-//            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
             assert(params.size() == 1);
-//            SketchFunction* program = var_and_var_val.second->get_function();
             SketchFunction* program = sk_func;
             SolverLanguagePrimitives::InputHolder* input_holder = params[0]->eval(state)->get_input_holder();
             SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
@@ -937,36 +678,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, Sol
         }
         case _clear:
         {
-//            Identifier* var_name = expression->get_var_name();
-//            assert(var_name != nullptr);
-//            Var* var = state->name_to_var(var_name);
-//            SL::VarVal* var_val = nullptr;
-//            string var_type_str;
-//            if(var->has_type() && !var->has_any_type()) {
-//                var_type_str = var->get_type()->get_head()->to_string();
-//            }
-//            else {
-//                assert(!SL::is_strongly_typed);
-//                var_val = expression->eval(state);
-//                var_type_str = var_val->get_type_string();
-//            }
-//            assert(var_type_str == "File" || var_type_str == "SketchFunction");
-//            if(var_val == nullptr)
-//            {
-//                var_val = expression->eval(state);
-//            }
-//
-//            var_val->force_clear();
-
             sk_func->clear();
-
+            sk_func = nullptr;
             return new VarVal();
             break;
         }
         case _num_holes: {
-//            pair<SL::Var*, SL::VarVal* > var_and_var_val = get_var_and_var_val_and_assert_type(state, "SketchFunction");
             assert(params.empty());
-//            SketchFunction* to_clone = var_and_var_val.second->get_harness();
             SketchFunction* to_clone = sk_func;
             SketchFunction* func_clone = to_clone->clone()->do_inline();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
@@ -977,44 +695,15 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction* sk_func, Sol
 
         case _clone:
         {
-//            Identifier* var_name = expression->get_var_name();
-//            assert(var_name != nullptr);
-//            Var* var = state->name_to_var(var_name);
-//            assert(params.empty());
-//            string var_type_str;
-//            SL::VarVal* var_val = nullptr;
-//            if(var->has_type() && !var->has_any_type()) {
-//                var_type_str = var->get_type()->get_head()->to_string();
-//            }
-//            else
-//            {
-//                assert(!SL::is_strongly_typed);
-//                var_val = expression->eval(state);
-//                var_type_str = var_val->get_type_string();
-//            }
-//            assert(var_type_str == "SketchFunction" || var_type_str == "Solution");
-//
-//            if(var_val == nullptr)
-//            {
-//                var_val = expression->eval(state);
-//            }
-
-//            SketchFunction* to_clone = var_val->get_harness();
             SketchFunction* to_clone = sk_func;
-
             return new VarVal(sk_func->clone());
             break;
         }
-        case _no_predef: {
+
+        case _produce_replace:
+        {
+            //TODO
             assert(false);
-            switch (method_meta_type) {
-                case name_meta_type:
-                    assert(false);
-                    break;
-                case type_constructor_meta_type:
-                    assert(false);
-                    break;
-            }
             break;
         }
         default:
@@ -1248,8 +937,8 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
 {
     SL::VarVal* ret = nullptr;
     switch (expression_meta_type) {
-        case bool_expr_meta_type:
-            ret = new VarVal((bool)bool_expression->eval(state));
+        case binary_expr_meta_type:
+            ret = binary_expression->eval(state);
             break;
         case func_call_meta_type:
             ret = function_call->eval(state);
@@ -1273,8 +962,8 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
 void SL::Expression::clear()
 {
     switch (expression_meta_type) {
-        case bool_expr_meta_type:
-            bool_expression->clear();
+        case binary_expr_meta_type:
+            binary_expression->clear();
             break;
         case func_call_meta_type:
             function_call->clear();
@@ -1286,6 +975,9 @@ void SL::Expression::clear()
             var_val->increment_shared_ptr();
             var_val->decrement_shared_ptr();
             break;
+        case lambda_expr_meta_type:
+            lambda_expression->clear();
+            break;
         default:
             assert(false);
     }
@@ -1295,8 +987,8 @@ void SL::Expression::clear()
 SL::Expression::Expression(Expression* to_copy) : expression_meta_type(to_copy->expression_meta_type)
 {
     switch (expression_meta_type) {
-        case bool_expr_meta_type:
-            bool_expression = new BoolExpression(to_copy->bool_expression);
+        case binary_expr_meta_type:
+            binary_expression = new BinaryExpression(to_copy->binary_expression);
             break;
         case func_call_meta_type:
             function_call = new FunctionCall(to_copy->function_call);
@@ -1315,8 +1007,6 @@ SL::Expression::Expression(Expression* to_copy) : expression_meta_type(to_copy->
             break;
         default:
             assert(false);
-        case int_expr_meta_type:
-            break;
     }
 }
 
@@ -1346,6 +1036,10 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
     else {
         assert(false);
     }
+}
+
+SL::VarVal::VarVal(int val): var_val_type(int_val_type){
+    i = val;
 }
 
 SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
@@ -1419,19 +1113,17 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
             //do nothing
             break;
         case file_val_type:
-            //TODO
-//            eval<File*>(file, state, func_call);
+            return eval<File*>(file, state, func_call);
             break;
         case method_val_type:
             //nothing to do yet
 //            eval<Method*>(method, state, func_call);
             break;
         case skfunc_val_type:
-            eval<SketchFunction*>(skfunc, state, func_call);
+            return eval<SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
-            //do nothing
-//            eval<SolverLanguagePrimitives::SolutionHolder*>(solution, state, func_call);
+            return eval<SolverLanguagePrimitives::SolutionHolder*>(solution, state, func_call);
             break;
         case input_val_type:
             //nothing to do yet
@@ -1450,17 +1142,15 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
             //do nothing
             break;
         case poly_pair_type:
-            //TODO
-//            eval<SL::PolyPair*>(poly_pair, state, func_call);
+            return eval<SL::PolyPair*>(poly_pair, state, func_call);
             break;
         case poly_vec_type:
-            //TODO
-//            eval<SL::PolyVec*>(poly_vec, state, func_call);
+            return eval<SL::PolyVec*>(poly_vec, state, func_call);
             break;
         default:
             assert(false);
     }
-
+    assert(false);
 }
 
 template<typename T>
@@ -1566,8 +1256,7 @@ void SL::UnitLine::clear() {
     delete this;
 }
 
-template<typename RetType>
-SL::BinaryExpression<RetType>::BinaryExpression(SL::BinaryExpression<RetType> *to_copy): op(to_copy->op)
+SL::BinaryExpression::BinaryExpression(SL::BinaryExpression *to_copy): op(to_copy->op)
 {
     left_operand = new SL::Expression(to_copy->left_operand);
     right_operand = new SL::Expression(to_copy->right_operand);

@@ -89,15 +89,14 @@ union YYSTYPE
 	SL::Assignment* assignment;
 	SL::Method* method;
 	SL::Methods* methods;
-	SL::BoolExpression* bool_expr;
-	SL::IntExpression* int_expr;
+	SL::BinaryExpression* bool_expr;
 	SL::BinaryOp my_operator;
 	SL::SLType* my_type;
 	SL::TypeParams* type_params;
 	SL::Expression* expression;
 	SL::LambdaExpression* lambda_expr;
 
-#line 101 "y.tab.h" /* yacc.c:1909  */
+#line 100 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

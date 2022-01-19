@@ -1228,8 +1228,8 @@ namespace SolverLanguagePrimitives
             string solver_program_file_name;
 
             //main_lvl2 IS WEIRD for boolean_synthesis_2_2; TODO: ask Armando about this.
-//            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
-            SketchFunction* local_harness = state->function_map["template_main__Wrapper"]->clone();
+            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
+//            SketchFunction* local_harness = state->function_map["template_main__Wrapper"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)

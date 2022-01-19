@@ -56,9 +56,8 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     SL::VarVal* var_val_ret = get_return_var_val();
     assert(var_val_ret != nullptr);
-    SolverLanguagePrimitives::SolutionHolder* ret = var_val_ret->get_solution();
+    SolverLanguagePrimitives::SolutionHolder* ret = var_val_ret->get_solution(false);
 
-    assert(var_val_ret->get_num_shared_ptr() == 1);
     delete var_val_ret;
 
     assert(frames.size() == 1);

@@ -372,6 +372,10 @@ public:
     }
 
     SL::VarVal* get_return_var_val() {
+        if(return_var_val != nullptr) {
+            assert(return_var_val->get_is_return());
+            return_var_val->complete_return();
+        }
         SL::VarVal* ret = return_var_val;
         return_var_val = nullptr;
         return ret;
