@@ -299,17 +299,23 @@ public:
             string var_type_str = var->get_type()->to_string();
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
-                function_map[var->get_name()->to_string()] = var_val->get_function();
+                string dag_name = var->get_name()->to_string();
+                assert(function_map.find(dag_name) != function_map.end());
+                assert(dag_name == var_val->get_function(false)->get_dag()->get_name());
+                function_map[dag_name] = var_val->get_function(false);
+                function_map[dag_name]->in_function_map(&function_map);
                 //!!! HERE FIX THIS
-                function_map[var->get_name()->to_string()]->get_env()->functionMap[var->get_name()->to_string()] =
-                        function_map[var->get_name()->to_string()]->get_dag();
+                map<string, BooleanDAG*>& functionMap = function_map[dag_name]->get_env()->functionMap;
+                functionMap[dag_name] = function_map[dag_name]->get_dag();
+
+                assert(function_map[dag_name]->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
             }
             else if(var_type_str == "int")
             {
                 assert(var->get_name()->to_string() == "seed");
                 global.set_var_val(var, var_val);
 
-                args.seed = var_val->get_int();
+                args.seed = var_val->get_int(false);
             }
             else
             {
@@ -404,6 +410,8 @@ public:
     void open_subframe();
 
     void close_subframe();
+
+    void add_to_function_map(const string &sk_func_name, SketchFunction *sk_func);
 };
 
 

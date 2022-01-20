@@ -1593,7 +1593,7 @@ public:
 		return tupleName.substr(0, 5) == "_GEN_";
 	}
 
-    void modify_ufname(string& name) {
+    void modify_ufname(const string& name) {
       ufname = name;
     }
     void makeDependent(){

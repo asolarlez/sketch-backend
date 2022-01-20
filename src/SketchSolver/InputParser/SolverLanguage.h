@@ -1227,9 +1227,8 @@ namespace SolverLanguagePrimitives
             }
             string solver_program_file_name;
 
-            //main_lvl2 IS WEIRD for boolean_synthesis_2_2; TODO: ask Armando about this.
-            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
-//            SketchFunction* local_harness = state->function_map["template_main__Wrapper"]->clone();
+//            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
+            SketchFunction* local_harness = state->function_map["template_main__Wrapper"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
@@ -1263,7 +1262,7 @@ namespace SolverLanguagePrimitives
             int num_passing_inputs =
                     concretized_function->count_passing_inputs(file);
 
-            cout << "HERE " << local_harness->get_name() << endl;
+            cout << "HERE " << local_harness->get_dag()->get_name() << endl;
             cout << "count\t" << num_passing_inputs << " / " << file->size() <<" ("<< 100.0*(float)num_passing_inputs/file->size() << " %)" << endl;
 
             concretized_function->clear();
@@ -1282,7 +1281,7 @@ namespace SolverLanguagePrimitives
         }
 
 //        expose lightverif
-        ofstream fout = ofstream("fixes_old__"+state->harness_->get_name());
+        ofstream fout = ofstream("fixes_old__"+state->harness_->get_dag()->get_name());
         File* all_file = new File(state->harness_, file_name, state->floats, state->args.seed);
         int num_samples = 30;
         int rows_per_sample = 6;

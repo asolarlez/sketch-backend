@@ -469,6 +469,7 @@ namespace SL {
     class FunctionCall;
 
     class VarVal{
+
         union {
             Identifier* s;
             int i;
@@ -484,6 +485,7 @@ namespace SL {
         };
         const VarValType var_val_type;
         int num_shared_ptr = 0;
+        vector<VarVal*> is_responsible_for;
     public:
         explicit VarVal(string  _s);
         explicit VarVal(int val);
@@ -523,10 +525,10 @@ namespace SL {
             assert(var_val_type == other->var_val_type);
             switch (var_val_type) {
                 case int_val_type:
-                    return new VarVal((bool)(get_int() < other->get_int()));
+                    return new VarVal((bool)(get_int(true, false) < other->get_int(true, false)));
                     break;
                 case float_val_type:
-                    return new VarVal((bool)(get_float() < other->get_float()));
+                    return new VarVal((bool)(get_float(true, false) < other->get_float(true, false)));
                     break;
                 default:
                     assert(false);
@@ -703,8 +705,9 @@ namespace SL {
 //                    return *method < *other.method;
                     break;
                 case skfunc_val_type:
-                    assert(false);
-//                    return *skfunc < *other.skfunc;
+                    //WARNING: all skfuncs are essentially equal.
+                    //TODO: should implement a meaningful definition of < for skfunc/boolean dag
+                    return false;
                     break;
                 case solution_val_type:
                     return *solution < *other.solution;
@@ -949,17 +952,13 @@ namespace SL {
             num_shared_ptr --;
 
             if (num_shared_ptr == 0) {
-                dealloc();
+                _clear();
             }
-        }
-
-        void force_clear() {
-            clear();
         }
 
     private:
         template<typename T>
-        void clear(T& val, bool do_delete = true)
+        void clear(T & val, bool do_delete = true)
         {
             assert_type_invariant<T>();
             if(val != nullptr) {
@@ -967,20 +966,18 @@ namespace SL {
                 if(do_delete) {
                     delete val;
                 }
-                val = nullptr;
             }
         }
         template<typename T>
         VarVal* eval(T& val, SolverProgramState* state, FunctionCall* function_call);
 
-        void dealloc()
-        {
+        void _clear() {
             assert(num_shared_ptr == 0);
-            clear();
-            delete this;
-        }
-        void clear() {
-
+            for(auto child : is_responsible_for)
+            {
+                child->decrement_shared_ptr();
+            }
+            is_responsible_for.clear();
             switch (var_val_type) {
                 case string_val_type:
                     clear<Identifier*>(s, false);
@@ -1025,6 +1022,7 @@ namespace SL {
                 default:
                     assert(false);
             }
+            delete this;
         }
 
     public:
@@ -1048,6 +1046,9 @@ namespace SL {
 
         VarVal *eval(SolverProgramState *pState, SL::FunctionCall *pCall);
 
+        VarVal *clone();
+
+        void add_responsibility(VarVal *pVal);
     };
 
     class Param;
@@ -1080,11 +1081,12 @@ namespace SL {
         _sat_solver, _produce_concretization,
         _concretize, _size, _get,
         _passes, _clear, _Solution, _join,
-        _print, _num_holes, _emplace_back,
+        _print, _num_holes, _append,
         _first, _second,
         _to_float, _sort_vec,
         _clone, _assert, _reverse,
-        _produce_replace};
+        _produce_replace,
+        _replace, _get_solution};
 
     static bool method_str_to_method_id_map_is_defined = false;
     static map<string, MethodId> method_str_to_method_id_map;
@@ -1149,7 +1151,7 @@ namespace SL {
         SL::VarVal* eval(SolverProgramState* state);
 
         template<typename VarType>
-        SL::VarVal* eval(VarType& var, SolverProgramState* state);
+        SL::VarVal* eval(VarType& var, SolverProgramState* state, VarVal* the_var_val);
 
         void run(SolverProgramState *pState);
 

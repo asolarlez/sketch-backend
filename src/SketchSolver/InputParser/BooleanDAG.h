@@ -58,6 +58,8 @@ private:
     static long long global_boolean_dag_id;
 	static set<BooleanDAG*> allocated;
 
+    static string get_suffix(bool modify_name);
+
 public:
     static set<BooleanDAG*>& get_allocated()
     {
@@ -267,7 +269,7 @@ Dllist assertions;
 	  return useSymbolicSolver;
   }
 
-   BooleanDAG(const string& name_="anon", bool isModel_=false);
+   BooleanDAG(const string& name_="anon", bool isModel_=false, bool modify_name = false);
 
 	virtual ~BooleanDAG();
 
@@ -282,6 +284,8 @@ public:
     {
         return failed_assert;
     }
+
+    void replace_label_with_another(const string &replace_this,  const string & with_this);
 };
 
 

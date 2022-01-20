@@ -38,6 +38,7 @@ class SketchFunction
 
     bool new_way = true;
     bool keep_track_of_original = false;
+
 public:
 
     ProgramEnvironment* get_env()
@@ -76,17 +77,17 @@ public:
         return produce_concretization(var_store, var_type, deactivate_pcond, true);
     }
 
-    SketchFunction* do_inline(bool deactivate_pcond = false)
+    void do_inline(bool deactivate_pcond = false)
     {
         VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(var_store, var_type, deactivate_pcond, false);
+        produce_concretization(var_store, var_type, deactivate_pcond, false);
     }
 
 
-    SketchFunction* concretize(VarStore& var_store, bool_node::Type var_type, bool deactivate_pcond = false)
+    void concretize(VarStore& var_store, bool_node::Type var_type, bool deactivate_pcond = false)
     {
-        return produce_concretization(var_store, var_type, deactivate_pcond, false);
+        produce_concretization(var_store, var_type, deactivate_pcond, false);
     }
 
     SketchFunction* produce_concretization(VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false, bool do_clone = true);
@@ -109,18 +110,6 @@ public:
     void set_solution(VarStore* _ctrl_var_store)
     {
         ctrl_var_store__solution = _ctrl_var_store;
-    }
-
-private:
-    string name;
-public:
-
-    void set_name(const string _name) {
-        name = _name;
-    }
-    string get_name()
-    {
-        return name;
     }
 
     SketchFunction *get_harness() {
@@ -173,15 +162,30 @@ public:
         VarStore* solution = solution_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*solution, bool_node::CTRL, do_deactivate_pcond);
         delete solution;
+        ret->add_solution(solution_holder);
         return ret;
     }
 
-    SketchFunction* concretize(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
+private:
+    SolverLanguagePrimitives::SolutionHolder* solution = nullptr;
+    void add_solution(SolverLanguagePrimitives::SolutionHolder* _solution_holder)
+    {
+        assert(solution == nullptr);
+        solution = new SolverLanguagePrimitives::SolutionHolder(_solution_holder);
+    }
+public:
+
+    SolverLanguagePrimitives::SolutionHolder* get_solution()
+    {
+        return new SolverLanguagePrimitives::SolutionHolder(solution);
+    }
+
+    void concretize(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
     {
         VarStore* solution = solution_holder->to_var_store();
-        SketchFunction* ret = concretize(*solution, bool_node::CTRL, do_deactivate_pcond);
+        concretize(*solution, bool_node::CTRL, do_deactivate_pcond);
         delete solution;
-        return ret;
+        add_solution(solution_holder);
     }
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
@@ -212,6 +216,15 @@ public:
         cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
         return ret;
     }
+
+    SketchFunction *produce_replace(const string &replace_this, const string &with_this);
+
+    void replace(const string& replace_this, const string &with_this);
+
+private:
+    map<string, SketchFunction*>* it_is_in_this_function_map = nullptr;
+public:
+    void in_function_map(map<string, SketchFunction *>* map);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

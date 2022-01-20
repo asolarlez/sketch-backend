@@ -97,3 +97,22 @@ void SolverProgramState::close_subframe() {
     assert(!frames.empty());
     frames.rbegin()->close_subframe();
 }
+
+void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchFunction *sk_func) {
+    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
+    if(function_map.find(sk_func_name) == function_map.end()) {
+        function_map[sk_func_name] = sk_func;
+        sk_func->in_function_map(&function_map);
+
+        map<string, BooleanDAG*>& functionMap = sk_func->get_env()->functionMap;
+        assert(functionMap.find(sk_func_name) == functionMap.end());
+        functionMap[sk_func_name] = sk_func->get_dag();
+    }
+    else {
+        assert(function_map[sk_func_name] == sk_func);
+
+        map<string, BooleanDAG*>& functionMap = sk_func->get_env()->functionMap;
+        assert(functionMap.find(sk_func_name) != functionMap.end());
+        assert(functionMap[sk_func_name] == sk_func->get_dag());
+    }
+}

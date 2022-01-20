@@ -21,9 +21,21 @@ using namespace std;
 #ifdef SCHECKMEM
 set<BooleanDAG*> BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
-#endif 
+#endif
 
-BooleanDAG::BooleanDAG(const string& name_, bool isModel_):name(name_), isModel(isModel_)
+string BooleanDAG::get_suffix(bool modify_name)
+{
+    if(modify_name)
+    {
+        return "__id"+std::to_string(global_boolean_dag_id+1);
+    }
+    else
+    {
+        return "";
+    }
+}
+
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool modify_name): name(name_+get_suffix(modify_name)), isModel(isModel_)
 {  
   is_layered=false;
   is_sorted=false;
@@ -715,7 +727,7 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
 
 
 vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
-	return 	nodesByType[t];
+	return nodesByType[t];
 }
 
 
@@ -1330,7 +1342,7 @@ BooleanDAG* BooleanDAG::clone(){
         }
     }
 	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG(name, isModel);
+	BooleanDAG* bdag = new BooleanDAG(name, isModel, true);
 	relabel();
 
 
@@ -1393,14 +1405,21 @@ void BooleanDAG::registerOutputs(){
 	 }
 }
 
+void BooleanDAG::replace_label_with_another(const string &replace_this,  const string & with_this) {
+    cout << "replace_this, with_this" << endl;
+    cout << replace_this <<", "<< with_this << endl;
+    vector<bool_node*>& ufun_nodes = getNodesByType(bool_node::UFUN);
+    for(auto ufun_node : ufun_nodes)
+    {
 
-
-
-
-
-
-
-
-
-
-
+        assert(ufun_node->type == bool_node::UFUN);
+        {
+            if(((UFUN_node*)ufun_node)->get_ufname() == replace_this)
+            {
+                cout << "REPLACING " << ufun_node->lprint() << endl;
+                ((UFUN_node*)ufun_node)->modify_ufname(with_this);
+                cout << "WITH " << ufun_node->lprint() << endl;
+            }
+        }
+    }
+}

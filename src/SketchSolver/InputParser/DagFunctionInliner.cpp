@@ -162,14 +162,17 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
     //check if the unfun is an acual ufun, or a function.
     //if it is a function, then it is inside functionMap
     //otherwise it's not inside functioMap
+
     if(functionMap.find(node.get_ufname()) != functionMap.end())
     {
+        cout << "node.get_ufname() " << node.get_ufname() << endl;
         //ufun is an actual function
         //it is handled by functionInliner.
         DagFunctionInliner::visit(node);
     }
     else
     {
+        assert(false);
         //!!! UFUNS STILL FAILING.
         //ufun is a ufun, which is handled by NodeHardcoder.
 //        DagFunctionInliner::visit(node);
@@ -452,7 +455,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			// ADT, int, int ... (state)
-			Assert( inputs.size() == node.nargs() , node.get_ufname()<<" argument missmatch: "<<inputs.size()<<" formal parameters, but only got "<<node.nargs()<<" actuals.\n"<<node.lprint());
+			AssertDebug( inputs.size() == node.nargs() , node.get_ufname() + " argument missmatch: " + std::to_string(inputs.size()) + " formal parameters, but only got " + std::to_string(node.nargs()) + " actuals.\n" + node.lprint());
 
       vector<bool_node*> inp_arg;
 
@@ -1008,16 +1011,16 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
 				ictrl->preCheckInline(uf);
-				map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
-				if(it != functionMap.end()){
-					if(it->second->isModel && uf.ignoreAsserts){
-						if(lastDln != NULL){
-							lastDln->add(&uf);
-						}else{
-							dag.assertions.append(&uf);
-						}
-					}
-				}
+                map<string, BooleanDAG *>::iterator it = functionMap.find(uf.get_ufname());
+                if (it != functionMap.end()) {
+                    if (it->second->isModel && uf.ignoreAsserts) {
+                        if (lastDln != NULL) {
+                            lastDln->add(&uf);
+                        } else {
+                            dag.assertions.append(&uf);
+                        }
+                    }
+                }
 			}
 		}
 	}

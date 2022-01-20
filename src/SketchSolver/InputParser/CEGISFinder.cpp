@@ -151,7 +151,7 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
         find_node_ids.clear();
 
         newdag->clear();
-        delete newdag;
+        AssertDebug(false, "error");
         throw e;
     }
     // Keeps the history around for debugging purposes.

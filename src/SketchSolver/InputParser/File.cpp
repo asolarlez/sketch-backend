@@ -13,8 +13,8 @@ void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
 
 File::File(SketchFunction *harness, const string &file, FloatManager &floats, int seed) {
     generator = std::mt19937(seed);
-    SketchFunction* cloned_harness = harness->clone();
-    BooleanDAG* problem = cloned_harness->do_inline()->get_dag();
+    SketchFunction* cloned_inlined_harness = harness->produce_inlined_dag();
+    BooleanDAG* problem = cloned_inlined_harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
     vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
@@ -37,7 +37,7 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
     }
     assert(res == File::DONE);
     used = vector<int>(size(), 0);
-    cloned_harness->clear();
+    cloned_inlined_harness->clear();
 }
 
 int File::get_used(int i) {

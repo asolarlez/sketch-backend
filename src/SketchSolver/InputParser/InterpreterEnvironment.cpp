@@ -758,7 +758,7 @@ void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *
     /// UNROLLING AND CONCERTIZING
     SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
                                                               program_env);
-    harness_for_function = harness_for_function->concretize(
+    harness_for_function->concretize(
             partial_concretization, bool_node::CTRL, true);
 
     functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
@@ -787,7 +787,7 @@ void print_ctrls(ProgramEnvironment* env)
 
         SketchFunction* local_harness = new SketchFunction(it.second->clone(), nullptr, env);
 
-        local_harness = local_harness->do_inline();
+        local_harness->do_inline();
 
         cout << it.first <<" #ctrls " << (local_harness->get_dag()->getNodesByType(bool_node::CTRL)).size() << endl;
 
@@ -942,10 +942,8 @@ int InterpreterEnvironment::doallpairs() {
                 SketchFunction* local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), bd, program_env);
 
                 if(fixes) {
-                    local_harness = local_harness->concretize(partial_concretization, bool_node::CTRL);
+                    local_harness->concretize(partial_concretization, bool_node::CTRL);
                 }
-
-                local_harness->set_name(spskpairs[i].sketch);
 
 				cout << "CURRENT HARNESS: " << spskpairs[i].sketch << endl;
                 result = assertHarness(local_harness, cout, spskpairs[i].file);

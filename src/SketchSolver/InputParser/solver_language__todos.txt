@@ -1,5 +1,6 @@
 For meeting:
     1. Sketch frontend is optimizing out any functions not used by a harness.
+    2. What is the replace map?
 
 Crucial
 1. Write thesis
@@ -14,26 +15,33 @@ Necessary
     1.02. complete if - else if ... - else block
     DONE 1.1. implement subscoping for {} nesting (for, while, if, {}}
     1.2. complete boolean predicates
-    1.3. implement integer expressions
-    1.4. Implement garbage collection (DONE)
+        DONE: >, <, >=, ==
+        TODO: <=, &&, ||, !
+    1.3. implement integer and float expressions
+        DONE: +, -, /, *
+        TODO: %
+    DONE 1.4. Implement garbage collection
     1.5. Remove harness from argument in File.
     1.6. Remove need for ..__Wrapper
     1.7. There should be a version of solvers that returns a concretized function rather than a solution.
     1.8. add [] for accessing arrays;
     1.9. add (,) as a pair constructor.
     1.^1 implement lambdas.
+    DONE 1.^2 Refactor FunctionCall
 2. Incorporate numerical solver
 3. Incorporate doallpairs
 3. Fix memory leaks (remove all boolean dag copies that are not used).
-    //DONE
-    //DONE use SCHECKMEM in boolean_node and boolean_dag
-    //DONE CUSTOM use shared_pointer
+    DONE in SolverLanguage
+        DONE use SCHECKMEM in boolean_node and boolean_dag
+        DONE CUSTOM use shared_pointer
+    TODO In rest of codebase
 4. Dynamic typing
     DONE.
     DONE add 'any' type.
 6. Implement methods for modification of sketches
     6.1. CloneAndRename
     6.2. Replace this with this in this
+        6.2.1 recursive replace (when replaced, and then replacing again, replace in the previously replaced dag as well).
 5. Make frontend spit harnesses for each function when using solver language.
     5.1. be careful of structs as inputs.
 6. remove debug code

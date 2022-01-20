@@ -126,16 +126,11 @@ void SL::Assignment::run(SolverProgramState *state)
     if(expression != nullptr)
     {
         var_val = expression->eval(state);
-        if(var_val->get_is_return())
-        {
-            assert(false);
-            var_val->complete_return();
-        }
         state->set_var_val(to_var, var_val);
     }
     else
     {
-        assert(dest_type == var_dest_type);;
+        assert(dest_type == var_dest_type);
     }
 }
 
@@ -236,12 +231,12 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(SolverProgramState* state)
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverProgramState* state)
+SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverProgramState* state, SL::VarVal* the_var_val)
 {
+    assert(poly_vec == the_var_val->get_poly_vec(false));
     switch (method_id) {
         case _size: {
             assert(params.empty());
-            PolyVec *poly_vec = expression->eval(state)->get_poly_vec();
             return new SL::VarVal((int) poly_vec->size());
             break;
         }
@@ -252,7 +247,7 @@ SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverP
             return poly_vec->at(idx);
             break;
         }
-        case _emplace_back:
+        case _append:
         {
             assert(params.size() == 1);
             SL::VarVal* ret_param = params[0]->eval(state);
@@ -281,8 +276,8 @@ SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverP
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state) {
-
+SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state, SL::VarVal* the_var_val) {
+    assert(file == the_var_val->get_file(false));
     switch (method_id) {
         case _produce_subset_file:
         {
@@ -306,6 +301,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         }
         case _clear:
         {
+            assert(params.empty());
             file->clear();
             file = nullptr;
             return new VarVal();
@@ -396,8 +392,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
 template<>
 SL::VarVal *SL::FunctionCall::eval<SolverLanguagePrimitives::SolutionHolder*>(
-        SolverLanguagePrimitives::SolutionHolder*& the_solution, SolverProgramState *state) {
-
+        SolverLanguagePrimitives::SolutionHolder*& the_solution, SolverProgramState *state, SL::VarVal* the_var_val) {
+    assert(the_solution == the_var_val->get_solution(false));
     switch (method_id) {
         case _join: {
             assert(params.size() == 1);
@@ -413,8 +409,9 @@ SL::VarVal *SL::FunctionCall::eval<SolverLanguagePrimitives::SolutionHolder*>(
 }
 
 template<>
-SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state)
+SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state, SL::VarVal* the_var_val)
 {
+    assert(poly_pair == the_var_val->get_poly_pair(false));
     switch (method_id) {
         case _first: {
             assert(params.empty());
@@ -423,7 +420,6 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
         }
         case _second: {
             assert(params.empty());
-            using namespace SolverLanguagePrimitives;
             return poly_pair->second();
             break;
         }
@@ -602,7 +598,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("join", _join, "Solution");
     add_to_method_str_to_method_id_map("print", _print, "namespace");
     add_to_method_str_to_method_id_map("num_holes", _num_holes, "SketchFunction");
-    add_to_method_str_to_method_id_map("emplace_back", _emplace_back, "vector");
+    add_to_method_str_to_method_id_map("append", _append, "vector");
     add_to_method_str_to_method_id_map("first", _first, "pair");
     add_to_method_str_to_method_id_map("second", _second, "pair");
     add_to_method_str_to_method_id_map("float", _to_float, "namespace");
@@ -611,6 +607,8 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("assert", _assert, "namespace");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
     add_to_method_str_to_method_id_map("produce_replace", _produce_replace, "SketchFunction");
+    add_to_method_str_to_method_id_map("replace", _replace, "SketchFunction");
+    add_to_method_str_to_method_id_map("get_solution", _get_solution, "SketchFunction");
     method_str_to_method_id_map_is_defined = true;
 }
 
@@ -640,27 +638,79 @@ SL::MethodId SL::FunctionCall::get_method_id() {
     }
 }
 
-template<>
-SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state) {
+void eval__sketch_function_replace(
+        SL::VarVal* ret_var_val, SolverProgramState* state, const vector<SL::Param*>& params)
+{
 
+
+    assert(params.size() == 2);
+
+    SketchFunction* ret_sk_func = ret_var_val->get_function(false);
+
+
+    for(auto it : ret_sk_func->get_env()->functionMap)
+    {
+        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+    }
+
+    string str_to_replace = params[0]->eval(state)->get_string(true, false);
+    SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
+
+    for(auto it : to_replace_with_var_val->get_function(false)->get_env()->functionMap)
+    {
+        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+    }
+
+    ret_var_val->add_responsibility(to_replace_with_var_val);
+
+    SketchFunction* to_replace_with_sk_func = to_replace_with_var_val->get_function();
+    const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
+
+    for(auto it : to_replace_with_sk_func->get_env()->functionMap)
+    {
+        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+    }
+
+    state->add_to_function_map(to_replace_with_name, to_replace_with_sk_func);
+
+    for(auto it : to_replace_with_sk_func->get_env()->functionMap)
+    {
+        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+    }
+
+    ret_sk_func->replace(str_to_replace, to_replace_with_name);
+}
+
+template<>
+SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state, VarVal* the_var_val) {
+
+    assert(sk_func == the_var_val->get_function(false));
     switch (method_id) {
         case _produce_concretization:
         {
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
-            SolutionHolder* sol = params[0]->eval(state)->get_solution();
+            VarVal* var_val_sol = params[0]->eval(state);
+            var_val_sol->increment_shared_ptr();
+            SolutionHolder* sol = var_val_sol->get_solution();
             SketchFunction* harness = sk_func;
+            for(auto it : harness->get_env()->functionMap)
+            {
+                assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+            }
             SketchFunction* concretized_function =
                     harness->produce_with_concretized_holes(sol, true);
+            var_val_sol->decrement_shared_ptr();
             return new SL::VarVal(concretized_function);
             break;
         }
         case _concretize:
-        {assert(params.size() == 1);
+        {
+            assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
             SolutionHolder* sol = params[0]->eval(state)->get_solution();
             SketchFunction* harness = sk_func;
-            harness = harness->concretize(sol, true);
+            harness->concretize(sol, true);
             return new SL::VarVal();
             break;
         }
@@ -678,6 +728,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _clear:
         {
+            assert(params.empty());
             sk_func->clear();
             sk_func = nullptr;
             return new VarVal();
@@ -686,7 +737,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _num_holes: {
             assert(params.empty());
             SketchFunction* to_clone = sk_func;
-            SketchFunction* func_clone = to_clone->clone()->do_inline();
+            SketchFunction* func_clone = to_clone->produce_inlined_dag();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
             func_clone->clear();
             return new VarVal(num_ctrls);
@@ -695,16 +746,51 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
 
         case _clone:
         {
-            SketchFunction* to_clone = sk_func;
-            return new VarVal(sk_func->clone());
+            assert(params.empty());
+            for(auto it : sk_func->get_env()->functionMap)
+            {
+                assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+            }
+            SketchFunction* ret = sk_func->clone();
+            for(auto it : ret->get_env()->functionMap)
+            {
+                assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+            }
+            return new VarVal(ret);
             break;
         }
 
         case _produce_replace:
         {
-            //TODO
-            assert(false);
+            assert(params.size() == 2);
+            SketchFunction* ret_sk_func = sk_func->clone();
+            VarVal* ret_var_val = new VarVal(ret_sk_func);
+
+            cout << "BEFORE RENAME AND INLINE" << endl;
+            cout << ret_sk_func->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL).size() << endl;
+
+            eval__sketch_function_replace(ret_var_val, state, params);
+
+            cout << "AFTER RENAME AND INLINE" << endl;
+            cout << ret_sk_func->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL).size() << endl;
+
+
+            return ret_var_val;
             break;
+        }
+        case _replace:
+        {
+            assert(params.size() == 2);
+
+            eval__sketch_function_replace(the_var_val, state, params);
+
+            return new VarVal();
+            break;
+        }
+        case _get_solution:
+        {
+            assert(params.empty());
+            return new VarVal(sk_func->get_solution());
         }
         default:
             assert(false);
@@ -895,7 +981,6 @@ SL::PolyVec::PolyVec(PolyVec* to_copy): PolyType(to_copy)
 }
 SL::PolyPair::PolyPair(PolyType* _type_params, SL::VarVal* left, SL::VarVal* right) :
         PolyType(_type_params), pair<SL::VarVal* , SL::VarVal* >(left, right){
-    cout << "CREATE POLYPAIR " << this << endl;
     assert(get_type_params()->size() == 2);
     assert(var_val_invariant(get_type_params()->at(0), left));
     assert(var_val_invariant(get_type_params()->at(1), right));
@@ -942,6 +1027,13 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
             break;
         case func_call_meta_type:
             ret = function_call->eval(state);
+            if(ret != nullptr && ret->is_sketch_function())
+            {
+                for(auto it : ret->get_function(false)->get_env()->functionMap)
+                {
+                    assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
+                }
+            }
             break;
         case identifier_meta_type:
             ret = state->get_var_val(state->name_to_var(identifier));
@@ -1038,12 +1130,17 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
     }
 }
 
-SL::VarVal::VarVal(int val): var_val_type(int_val_type){
-    i = val;
-}
+SL::VarVal::VarVal(int val): i(val), var_val_type(int_val_type){}
+
+
 
 SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 {
+    for(int i = 0;i< _to_copy->is_responsible_for.size();i++)
+    {
+        add_responsibility(new VarVal(_to_copy->is_responsible_for[i]));
+    }
+
     switch (_to_copy->var_val_type) {
         case string_val_type:
             s = new Identifier(_to_copy->get_string(false));
@@ -1154,11 +1251,21 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
 }
 
 template<typename T>
-SL::VarVal *SL::VarVal::eval(T &val, SolverProgramState *state, SL::FunctionCall *function_call)
+SL::VarVal *SL::VarVal::eval(T& val, SolverProgramState *state, SL::FunctionCall *function_call)
 {
     assert_type_invariant<T>();
     assert(val != nullptr);
-    return function_call->eval<T>(val, state);
+    return function_call->eval<T>(val, state, this);
+}
+
+SL::VarVal *SL::VarVal::clone() {
+    assert(is_sketch_function());
+    return new VarVal(skfunc->clone());
+}
+
+void SL::VarVal::add_responsibility(SL::VarVal *new_child) {
+    new_child->increment_shared_ptr();
+    is_responsible_for.push_back(new_child);
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

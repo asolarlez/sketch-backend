@@ -5,7 +5,7 @@
 
 
 SimpleEvaluator::SimpleEvaluator(BooleanDAG& bdag_p, map<string, int>& floatCtrls_p): bdag(bdag_p), floatCtrls(floatCtrls_p) {
-	distances.resize(bdag.size(), NULL);
+	distances.resize(bdag.size(), 0.0);
     int nctrls = floatCtrls.size();
 	if (nctrls == 0) nctrls = 1;
 	ctrls = gsl_vector_alloc(nctrls);
