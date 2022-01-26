@@ -224,7 +224,7 @@ public:
 private:
     map<string, SketchFunction*>* it_is_in_this_function_map = nullptr;
 public:
-    void in_function_map(map<string, SketchFunction *>* map);
+    void set_assert__it_is_in_this_function_map(map<string, SketchFunction *>* map);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

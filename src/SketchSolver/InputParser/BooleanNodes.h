@@ -1566,11 +1566,16 @@ class UFUN_node: public bool_node, public DllistNode{
 	  return parents[i + 1];
   }
 private:
-	UFUN_node(const string& p_ufname, int n_args) :bool_node(UFUN, n_args + 1), ufname(p_ufname), callsite(CALLSITES++), ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
+	UFUN_node(const string& p_ufname, int n_args):
+        bool_node(UFUN, n_args + 1),
+        ufname(p_ufname),
+        callsite(CALLSITES++),
+        ignoreAsserts(false), hardAssert(false), isDependent(false), replaceFun(true) {
 		nbits = 1;
 		uniquefid = FGID++;
 	}
-	UFUN_node(const UFUN_node& bn, bool copyChildren = true) : bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
+	UFUN_node(const UFUN_node& bn, bool copyChildren = true) :
+    bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
 
 public:
 
@@ -1623,7 +1628,8 @@ public:
 		out<<" "<<mother()->get_name()<<" -> "<<get_name()<<"[style=dotted] ; "<<endl;
 	}
     
-	virtual bool_node* clone(bool copyChildren = true){UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
+	virtual bool_node* clone(bool copyChildren = true)
+    {UFUN_node* newNode = new UFUN_node(*this, copyChildren); newNode->set_tupleName(tupleName); return newNode; };
 	int get_callsite()const{ return callsite; }
 	int get_uniquefid()const{ return uniquefid; }
 	void set_uniquefid(){  uniquefid = ++FGID; }
@@ -1677,7 +1683,7 @@ public:
     }
 	virtual string lprint()const{
 		stringstream str;
-		str<<id<<"= "<<ufname.substr(0, min<int>(25,ufname.length() ))<<"#"<<fgid<<"["<<mother()->lid()<<"](";
+		str<<id<<"= "<<ufname <<"#"<<fgid<<"["<<mother()->lid()<<"](";
 		for(auto it = arg_begin(); it != arg_end(); ++it){
 		  	if(*it != NULL){
 		  		str<<(*it)->lid()<<", ";

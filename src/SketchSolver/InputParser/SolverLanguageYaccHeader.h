@@ -303,12 +303,10 @@ public:
                 assert(function_map.find(dag_name) != function_map.end());
                 assert(dag_name == var_val->get_function(false)->get_dag()->get_name());
                 function_map[dag_name] = var_val->get_function(false);
-                function_map[dag_name]->in_function_map(&function_map);
+                function_map[dag_name]->set_assert__it_is_in_this_function_map(&function_map);
                 //!!! HERE FIX THIS
                 map<string, BooleanDAG*>& functionMap = function_map[dag_name]->get_env()->functionMap;
                 functionMap[dag_name] = function_map[dag_name]->get_dag();
-
-                assert(function_map[dag_name]->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
             }
             else if(var_type_str == "int")
             {

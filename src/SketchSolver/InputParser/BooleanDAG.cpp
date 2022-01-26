@@ -1406,20 +1406,11 @@ void BooleanDAG::registerOutputs(){
 }
 
 void BooleanDAG::replace_label_with_another(const string &replace_this,  const string & with_this) {
-    cout << "replace_this, with_this" << endl;
-    cout << replace_this <<", "<< with_this << endl;
     vector<bool_node*>& ufun_nodes = getNodesByType(bool_node::UFUN);
-    for(auto ufun_node : ufun_nodes)
-    {
-
+    for(auto ufun_node : ufun_nodes){
         assert(ufun_node->type == bool_node::UFUN);
-        {
-            if(((UFUN_node*)ufun_node)->get_ufname() == replace_this)
-            {
-                cout << "REPLACING " << ufun_node->lprint() << endl;
-                ((UFUN_node*)ufun_node)->modify_ufname(with_this);
-                cout << "WITH " << ufun_node->lprint() << endl;
-            }
+        if(((UFUN_node*)ufun_node)->get_ufname() == replace_this) {
+            ((UFUN_node*)ufun_node)->modify_ufname(with_this);
         }
     }
 }

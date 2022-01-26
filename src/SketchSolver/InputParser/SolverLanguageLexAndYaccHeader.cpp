@@ -641,42 +641,19 @@ SL::MethodId SL::FunctionCall::get_method_id() {
 void eval__sketch_function_replace(
         SL::VarVal* ret_var_val, SolverProgramState* state, const vector<SL::Param*>& params)
 {
-
-
     assert(params.size() == 2);
 
     SketchFunction* ret_sk_func = ret_var_val->get_function(false);
 
-
-    for(auto it : ret_sk_func->get_env()->functionMap)
-    {
-        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
-    }
-
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
     SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
-
-    for(auto it : to_replace_with_var_val->get_function(false)->get_env()->functionMap)
-    {
-        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
-    }
 
     ret_var_val->add_responsibility(to_replace_with_var_val);
 
     SketchFunction* to_replace_with_sk_func = to_replace_with_var_val->get_function();
     const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
 
-    for(auto it : to_replace_with_sk_func->get_env()->functionMap)
-    {
-        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
-    }
-
     state->add_to_function_map(to_replace_with_name, to_replace_with_sk_func);
-
-    for(auto it : to_replace_with_sk_func->get_env()->functionMap)
-    {
-        assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
-    }
 
     ret_sk_func->replace(str_to_replace, to_replace_with_name);
 }
@@ -765,25 +742,14 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             assert(params.size() == 2);
             SketchFunction* ret_sk_func = sk_func->clone();
             VarVal* ret_var_val = new VarVal(ret_sk_func);
-
-            cout << "BEFORE RENAME AND INLINE" << endl;
-            cout << ret_sk_func->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL).size() << endl;
-
             eval__sketch_function_replace(ret_var_val, state, params);
-
-            cout << "AFTER RENAME AND INLINE" << endl;
-            cout << ret_sk_func->produce_inlined_dag()->get_dag()->getNodesByType(bool_node::CTRL).size() << endl;
-
-
             return ret_var_val;
             break;
         }
         case _replace:
         {
             assert(params.size() == 2);
-
             eval__sketch_function_replace(the_var_val, state, params);
-
             return new VarVal();
             break;
         }

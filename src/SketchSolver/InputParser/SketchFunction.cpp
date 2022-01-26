@@ -82,26 +82,18 @@ void SketchFunction::clear()
     delete this;
 }
 
-//SketchFunction *SketchFunction::produce_replace(const string& replace_this, const string &with_this) {
-//    assert(new_way);
-//    SketchFunction* ret = clone();
-//    ret->replace(replace_this, with_this);
-//    return ret;
-//}
-
 void SketchFunction::replace(const string& replace_this, const string &with_this) {
     assert(new_way);
     assert(root_dag != nullptr);
     root_dag->replace_label_with_another(replace_this, with_this);
 }
 
-void SketchFunction::in_function_map(map<string, SketchFunction *> *map) {
+void SketchFunction::set_assert__it_is_in_this_function_map(map<string, SketchFunction *> *map) {
     if(it_is_in_this_function_map == nullptr) {
         it_is_in_this_function_map = map;
     }
-    else {
-        assert(it_is_in_this_function_map == map);
-    }
+    assert(it_is_in_this_function_map == map);
+    assert(map->find(this->get_dag()->get_name())->second == this);
 }
 
 

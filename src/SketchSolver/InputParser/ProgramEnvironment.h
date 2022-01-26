@@ -1,17 +1,17 @@
-//
-// Created by kliment on 12/20/21.
-//
+    //
+    // Created by kliment on 12/20/21.
+    //
 
-#ifndef SKETCH_SOURCE_PROGRAMENVIRONMENT_H
-#define SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+    #ifndef SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+    #define SKETCH_SOURCE_PROGRAMENVIRONMENT_H
 
-#include "DagFunctionInliner.h"
+    #include "DagFunctionInliner.h"
 
-void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
+    void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
 
-class ProgramEnvironment
-{
-public:
+    class ProgramEnvironment
+    {
+    public:
     CommandLineArgs& params;
     FloatManager& floats;
     HoleHardcoder& hardcoder;
@@ -23,12 +23,12 @@ public:
                        map<string, BooleanDAG*>& _functionMap, int _steps, map<string, map<string, string> >& _replaceMap):
                        params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
                        functionMap(_functionMap), num_inlining_steps(_steps)
-   {
+    {
 
-   }
+    }
 
-   void toggle_pcond(BooleanDAG* dag, bool val)
-   {
+    void toggle_pcond(BooleanDAG* dag, bool val)
+    {
        vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
        for(auto bn : ctrls)
        {
@@ -40,18 +40,18 @@ public:
                    ((CTRL_node *) bn)->deactivate_pcond(); }
            }
        }
-   }
+    }
 
-   void activate_pcond(BooleanDAG* dag)
-   {
+    void activate_pcond(BooleanDAG* dag)
+    {
        toggle_pcond(dag, true);
-   }
-   void deactivate_pcond(BooleanDAG* dag)
-   {
+    }
+    void deactivate_pcond(BooleanDAG* dag)
+    {
        toggle_pcond(dag, false);
-   }
+    }
 
-   void doInline(
+    void doInline(
            BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false){
 
         if(do_deactivate_pcond){
@@ -87,7 +87,6 @@ public:
                 params.onlySpRandAssign,
                 params.spRandBias);
 
-
         int oldSize = -1;
         bool nofuns = false;
         for (int i = 0; i<num_inlining_steps; ++i) {
@@ -104,7 +103,9 @@ public:
                 }
 
                 try {
+
                     dfi.process(dag);
+
                 }
                 catch (BadConcretization) {
                     assert(dfi.get_failedAssert() != nullptr);
@@ -164,32 +165,32 @@ public:
     {
         return hardcoder;
     }
-};
+    };
 
-/**
- * Thought Flow:
- * 1. Need to use DagOneStepInlineAndConcretize to concretize dags with a counterexample from checker on the go
- * 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
- * 1.2 Currently the entire inlined dag is being optimized after concretization.
- *
- * Actionable:
- * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagOneStepInlineAndConcretize.
- *
- * Qs:
- * DagOneStepInlineAndConcretize accepts as input all the meta-data of a sketch (look at the spec for initializing DagOneStepInlineAndConcretize)
- * Q: should all these parameters be passed to the checker?
- * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagOneStepInlineAndConcretize with the inliner?
- * Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
- * Q: should we run these outer loops also when we do the inlining on the go?
- *  How would that work?
- *  How should we structure the code in relation to DagConcretier?
- *  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
- */
+    /**
+    * Thought Flow:
+    * 1. Need to use DagOneStepInlineAndConcretize to concretize dags with a counterexample from checker on the go
+    * 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
+    * 1.2 Currently the entire inlined dag is being optimized after concretization.
+    *
+    * Actionable:
+    * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagOneStepInlineAndConcretize.
+    *
+    * Qs:
+    * DagOneStepInlineAndConcretize accepts as input all the meta-data of a sketch (look at the spec for initializing DagOneStepInlineAndConcretize)
+    * Q: should all these parameters be passed to the checker?
+    * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagOneStepInlineAndConcretize with the inliner?
+    * Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
+    * Q: should we run these outer loops also when we do the inlining on the go?
+    *  How would that work?
+    *  How should we structure the code in relation to DagConcretier?
+    *  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
+    */
 
 
 
-void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns);
+    void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns);
 
-#include "DagFunctionInliner.h"
+    #include "DagFunctionInliner.h"
 
-#endif //SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+    #endif //SKETCH_SOURCE_PROGRAMENVIRONMENT_H

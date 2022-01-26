@@ -165,13 +165,14 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
 
     if(functionMap.find(node.get_ufname()) != functionMap.end())
     {
-        cout << "node.get_ufname() " << node.get_ufname() << endl;
+//        cout << "node.get_ufname() " << node.get_ufname() << endl;
         //ufun is an actual function
         //it is handled by functionInliner.
         DagFunctionInliner::visit(node);
     }
     else
     {
+        cout << "ASSEERT FALSE IN void DagOneStepInlineAndConcretize::visit(UFUN_node& node): node.get_ufname() = " << node.get_ufname() << endl;
         assert(false);
         //!!! UFUNS STILL FAILING.
         //ufun is a ufun, which is handled by NodeHardcoder.
@@ -430,7 +431,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 
 	if( functionMap.find(name) != functionMap.end() ){
-    //cout << "Inlining " << name << endl;
+//    cout << "Inlining " << name << endl;
 				
 		BooleanDAG& oldFun = *functionMap[name];
 
@@ -455,7 +456,27 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		{
 			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
 			// ADT, int, int ... (state)
-			AssertDebug( inputs.size() == node.nargs() , node.get_ufname() + " argument missmatch: " + std::to_string(inputs.size()) + " formal parameters, but only got " + std::to_string(node.nargs()) + " actuals.\n" + node.lprint());
+            if(inputs.size() != node.nargs())
+            {
+                cout << "here -- " << endl;
+                cout << "inputs" << endl;
+                for(int i = 0;i<inputs.size();i++)
+                {
+                    cout << inputs[i]->lprint() << endl;
+                }
+                cout << endl;
+                cout << "node.args()" << endl;
+                cout << node.get_ufname() << endl;
+                for(int i = 0;i<node.nargs();i++)
+                {
+                    cout << node.arguments(i)->lprint() << endl;
+                }
+                cout << "-- done_here" << endl;
+            }
+			AssertDebug(
+                    inputs.size() == node.nargs() ,
+                    node.get_ufname() + " argument missmatch: " +
+                    std::to_string(inputs.size()) + " formal parameters, but only got " + std::to_string(node.nargs()) + " actuals.\n" + node.lprint());
 
       vector<bool_node*> inp_arg;
 
@@ -597,20 +618,20 @@ void DagFunctionInliner::visit( UFUN_node& node ){
                     nmap[ctrl->id] = node.mother();
 					continue;
 				}
-        if(randomize){
-          if (ctrl->is_sp_concretize()) {
-            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
-            if(subst != ctrl){
-              nmap[ctrl->id] = subst;
-              continue;
-            }
-          } else if (!onlySpRandomize) {
-            bool_node* subst = hcoder->checkRandHole(ctrl, *this);
-            if(subst != ctrl){
-              nmap[ctrl->id] = subst;
-              continue;
-            }
-          }
+                if(randomize){
+                  if (ctrl->is_sp_concretize()) {
+                    bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+                    if(subst != ctrl){
+                      nmap[ctrl->id] = subst;
+                      continue;
+                    }
+                  } else if (!onlySpRandomize) {
+                    bool_node* subst = hcoder->checkRandHole(ctrl, *this);
+                    if(subst != ctrl){
+                      nmap[ctrl->id] = subst;
+                      continue;
+                    }
+                  }
 				}
 
 				bool_node* actual = dag.unchecked_get_node( ctrl->name );
@@ -931,7 +952,8 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 						nprime->dislodge();
 						delete nprime;
 					}					
-					if(dn->name == node.outname){
+//					if(dn->name == node.outname)
+                    {
 						output = ttv;
 					}
 					n->dislodge();

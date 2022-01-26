@@ -102,7 +102,7 @@ void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchF
     assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
     if(function_map.find(sk_func_name) == function_map.end()) {
         function_map[sk_func_name] = sk_func;
-        sk_func->in_function_map(&function_map);
+        sk_func->set_assert__it_is_in_this_function_map(&function_map);
 
         map<string, BooleanDAG*>& functionMap = sk_func->get_env()->functionMap;
         assert(functionMap.find(sk_func_name) == functionMap.end());
