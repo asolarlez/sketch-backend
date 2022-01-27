@@ -390,7 +390,7 @@ public:
 private:
 	vector<objP> objs;
 	map<string, int> index;
-	int bitsize;
+	int bitsize = 0;
 		
 public:
 
@@ -404,12 +404,7 @@ public:
         return objs.size();
     }
 
-	VarStore(){
-		bitsize=0;
-	}
-
-	VarStore* copy()
-    {
+	VarStore * copy() const {
 
 	    Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
 	    Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
@@ -480,9 +475,9 @@ public:
         assert(objs[begidx].get_is_array());
 	}
 
-    void setArr(const string& name, vector<int>* arr) {
+    void setArr(const string& name, vector<int>& arr) {
 	    Assert(index.find(name) != index.end(), name + " not found.");
-        objs[index[name]].setArr(arr);
+        objs[index[name]].setArr(&arr);
         assert(objs[index[name]].get_is_array());
 	}
 
@@ -625,6 +620,26 @@ public:
 		return objs[id];
 	}
 	friend VarStore join(const VarStore& v1 , const VarStore& v2);
+
+    void relabel(vector<bool_node*>& inputs){
+
+        Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+        Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+
+        assert(inputs.size() == objs.size());
+        index.clear();
+        for(int i = 0;i<objs.size();i++)
+        {
+            objP* at = &objs[i];
+            string prev_name = at->name;
+            do {
+                assert(at->name == prev_name);
+                at->name = inputs[i]->get_name();
+                at = at->next;
+            }while(at != nullptr);
+            index[objs[i].name] = i;
+        }
+    }
 };
 
 inline VarStore join(const VarStore& v1 , const VarStore& v2){

@@ -1044,7 +1044,7 @@ void BooleanDAG::smt_exists_print(ostream &out){
 
 
 void BooleanDAG::lprint(ostream& out){    
-	out<<"dag"<< this->get_name() <<"{"<<endl;
+	out<<"dag "<< this->get_name() <<"{"<<endl;
   for(int i=0; i<nodes.size(); ++i){
   	if(nodes[i] != NULL){
   		out<<nodes[i]->lprint()<<endl;
@@ -1407,10 +1407,13 @@ void BooleanDAG::registerOutputs(){
 
 void BooleanDAG::replace_label_with_another(const string &replace_this,  const string & with_this) {
     vector<bool_node*>& ufun_nodes = getNodesByType(bool_node::UFUN);
+    bool enter = false;
     for(auto ufun_node : ufun_nodes){
         assert(ufun_node->type == bool_node::UFUN);
         if(((UFUN_node*)ufun_node)->get_ufname() == replace_this) {
             ((UFUN_node*)ufun_node)->modify_ufname(with_this);
+            enter = true;
         }
     }
+    assert(enter);
 }

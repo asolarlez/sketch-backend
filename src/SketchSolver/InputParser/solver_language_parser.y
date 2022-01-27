@@ -105,7 +105,7 @@ constuctor_call_expression:
 	constructor_call {$$ = new SL::Expression($1);}
 
 lambda_expression:
-	lambda_token signature_params ':' expression {$$ = new SL::LambdaExpression($2, $4);}
+	lambda_token '[' signature_params ']' '(' signature_params ')' '{' code_block '}' {$$ = new SL::LambdaExpression($3, $6, $9);}
 
 binary_expression:
 	expression binary_op expression {$$ = new SL::BinaryExpression($2, $1, $3);}

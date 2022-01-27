@@ -42,7 +42,7 @@ namespace SL {
         bool defined = false;
         string identifier;
     public:
-        explicit Identifier(string _name) : identifier(_name), defined(true) {};
+        explicit Identifier(string _name) : identifier(std::move(_name)), defined(true) {};
         explicit Identifier(Identifier* to_copy) : identifier(to_copy->to_string()), defined(to_copy->defined) { assert(defined); };
 
         string to_string() const {
@@ -92,6 +92,7 @@ namespace SL {
 
         void populate_vector(vector<Head*>& ret)
         {
+            assert(ret.size() == 0);
             LinkedList<Head>* at = this;
             while(at != nullptr)
             {
@@ -175,14 +176,6 @@ namespace SL {
         explicit SLType(Identifier* _name): name(_name) {assert(name != nullptr);}
         SLType(Identifier* _name, TypeParams* _type_params);
         explicit SLType(SLType* to_copy);
-//        {
-//            if(to_copy->type_params != nullptr) {
-//                type_params = new vector<SLType *>();
-//                for (auto & type_param : *to_copy->type_params) {
-//                    type_params->push_back(new SL::SLType(type_param));
-//                }
-//            }
-//        }
 
         void clear();
 
@@ -280,6 +273,15 @@ namespace SL {
         bool has_type()
         {
             return type->is_defined();
+        }
+
+        bool accepts_type(string type_name)
+        {
+            if(!has_type() || has_any_type()) {
+                return true;
+            }
+            assert(get_type()->is_simple_type());
+            return get_type()->get_head()->to_string() == type_name;
         }
 
         bool has_any_type()
@@ -488,7 +490,7 @@ namespace SL {
         vector<VarVal*> is_responsible_for;
     public:
         explicit VarVal(string  _s);
-        explicit VarVal(int val);
+//        explicit VarVal(int val);
         template <typename T>
         explicit VarVal(T val);
         explicit VarVal(float _float_val);
@@ -1049,6 +1051,10 @@ namespace SL {
         VarVal *clone();
 
         void add_responsibility(VarVal *pVal);
+
+        bool is_input_holder();
+
+        bool is_solution_holder();
     };
 
     class Param;
@@ -1060,13 +1066,15 @@ namespace SL {
         Params() = default;
         Params(Param *_head, Params *_rest = nullptr) : head(_head), rest(_rest) {};
         Params(Param *_head, Param *_next) : head(_head), rest(new Params(_next)) {};
-        void populate_vector(vector<Param*>& params)
+        void populate_vector(vector<Param*>* params)
         {
+            assert(params != nullptr);
+            assert(params->empty());
             Params* at = this;
             while(at != nullptr)
             {
                 if(at->head != nullptr) {
-                    params.emplace_back(at->head);
+                    params->emplace_back(at->head);
                 }
                 at = at->rest;
             }
@@ -1086,7 +1094,9 @@ namespace SL {
         _to_float, _sort_vec,
         _clone, _assert, _reverse,
         _produce_replace,
-        _replace, _get_solution};
+        _replace, _get_solution,
+        _produce_filter,
+        _not, _relabel};
 
     static bool method_str_to_method_id_map_is_defined = false;
     static map<string, MethodId> method_str_to_method_id_map;
@@ -1122,14 +1132,14 @@ namespace SL {
         FunctionCall(
                 Expression *_expression, Identifier *_method_name, Params *_params) :
                 expression(_expression), method_name(_method_name), method_meta_type(name_meta_type) {
-            _params->populate_vector(params);
+            _params->populate_vector(&params);
             method_id = get_method_id();
 
         };
         FunctionCall(
                 Identifier *_method_name, Params *_params) :
                 method_name(_method_name), method_meta_type(name_meta_type) {
-            _params->populate_vector(params);
+            _params->populate_vector(&params);
             method_id = get_method_id();
         };
         FunctionCall(SLType *_type_constructor, Params *_params){
@@ -1143,7 +1153,7 @@ namespace SL {
                 type_constructor = _type_constructor;
                 method_meta_type = type_constructor_meta_type;
             }
-            _params->populate_vector(params);
+            _params->populate_vector(&params);
             method_id = get_method_id();
         };
         explicit FunctionCall(FunctionCall* to_copy);
@@ -1205,14 +1215,10 @@ namespace SL {
         };
         explicit Param(Param* to_copy);
 
-        SL::VarVal*eval(SolverProgramState *state);
+        SL::VarVal* eval(SolverProgramState *state);
 
         Var *get_var() {
             switch (meta_type) {
-                case is_expression:
-                    assert(false);
-//                    return state->get_var_val(state->name_to_var(name));
-                    break;
                 case is_var:
                     return var;
                     break;
@@ -1302,6 +1308,8 @@ namespace SL {
             VarVal* left_var_val = left_operand->eval(state);
             VarVal* right_var_val = right_operand->eval(state);
 
+            assert(left_var_val->get_type() == right_var_val->get_type());
+
             switch (op) {
                 case _lt:
                     return left_var_val->lt_op(right_var_val);
@@ -1341,28 +1349,26 @@ namespace SL {
         }
     };
 
+    class CodeBlock;
+
     class LambdaExpression
     {
-        vector<Param*> params;
-        SL::Expression* expression;
+        vector<Param*>* meta_params;
+        vector<Param*>* params;
+        SL::CodeBlock* code_block;
     public:
-        LambdaExpression(SL::Params* _params, SL::Expression* _expression): expression(_expression) {
+        LambdaExpression(SL::Params* _meta_params, SL::Params* _params, SL::CodeBlock* _code_block): code_block(_code_block) {
+            params = new vector<Param*>();
             _params->populate_vector(params);
+            meta_params = new vector<Param*>();
+            _meta_params->populate_vector(meta_params);
         }
         LambdaExpression(LambdaExpression* to_copy);
 
-        void clear()
-        {
-            for(auto it:params) {
-                it->clear();
-            }
-            expression->clear();
-            delete this;
-        }
+        void clear();
 
+        VarVal *eval(SolverProgramState *state);
     };
-
-    class CodeBlock;
 
     class While
     {
@@ -1483,31 +1489,36 @@ namespace SL {
     {
         CodeBlock* body = nullptr;
         Var* var = nullptr;
-        vector<Param*> params;
+        vector<Param*>* params = nullptr;
+        vector<Param*>* meta_params = nullptr;
 
     public:
         Method(Var* _var, Params* _params, CodeBlock* _body): var(_var), body(_body)
         {
+            params = new vector<Param*>();
             _params->populate_vector(params);
         }
-        explicit Method(Method* to_copy): var(new Var(to_copy->var)), body(new CodeBlock(to_copy->body))
-        {
-            for(auto it: to_copy->params)
-            {
-                params.push_back(new Param(it));
-            }
-        }
+
+        Method(Var* _var, vector<Param*>* _params, CodeBlock* _body, vector<Param*>* _meta_params = nullptr):
+            var(_var), body(_body), params(_params), meta_params(_meta_params){}
+
+        explicit Method(Method* to_copy);
 
         void clear();
 
         void run(SolverProgramState* state, vector<Param*>& input_params);
 
-        SL::VarVal* eval(SolverProgramState* state, vector<Param*>& params);
+        template<typename T>
+        SL::VarVal* eval(SolverProgramState* state, vector<T>& params);
+
+        void run(SolverProgramState* state, vector<VarVal*>& input_params);
 
         Var* get_var()
         {
             return var;
         }
+
+        const vector<SL::Param*>* get_params();
     };
 
     bool var_val_invariant(SL::SLType *var_type, SL::VarVal*var_val);

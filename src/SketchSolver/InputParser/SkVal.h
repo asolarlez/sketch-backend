@@ -10,6 +10,7 @@
 #include <system_error>
 #include <map>
 #include <iostream>
+#include <utility>
 #include "VarStore.h"
 
 using namespace std;
@@ -19,16 +20,18 @@ class PolyVal
 {
     T val;
 public:
+
     explicit PolyVal(PolyVal<T>* to_copy){
         if(std::is_pointer<T>::value)
         {
+            //POINTERS NOT ALLOWED BECAUSE THEY ARE DIFFICULT TO HANDLE BC THIS IS DEEPCOPY.
             assert(false);
-            val = T(to_copy->val);
         }
         else if(std::is_class<T>::value)
         {
-            assert(false);
-            val = T(to_copy->val);
+            cout << "TRYING TO COPY" << endl;
+            val = to_copy->val;
+            cout << "SUCCESS" << endl;
         }
         else
         {
@@ -36,8 +39,14 @@ public:
             val = to_copy->val;
         }
     };
-    explicit PolyVal(T _val): val(_val){}
-    T get() {
+    explicit PolyVal(T _val): val(std::move(_val)){
+        if(std::is_pointer<T>::value)
+        {
+            //POINTERS NOT ALLOWED BECAUSE THEY ARE DIFFICULT TO HANDLE
+            assert(false);
+        }
+    }
+    T& get() {
         return val;
     }
 };
@@ -82,41 +91,44 @@ public:
     explicit SkValBool(SkValBool* to_copy): SkVal(to_copy), PolyVal<bool>(to_copy){}
 };
 
-vector<int>* local_get_first(vector<pair<int, int> >* vec);
+vector<int> local_get_first(vector<pair<int, int> >* vec);
 
-class SkValBoolArr: public SkVal, public PolyVal<vector<int>*>
+class SkValBoolArr: public SkVal, public PolyVal<vector<int>>
 {
 public:
-    explicit SkValBoolArr(vector<pair<int, int>>* _val): PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_boolarr, 1) {
+    explicit SkValBoolArr(vector<pair<int, int>>* _val): PolyVal<vector<int>>(local_get_first(_val)), SkVal(sk_type_boolarr, 1) {
         for(int i = 0;i<_val->size();i++)
         {
             assert(_val->at(i).second == 1);
         }
     }
+
+    explicit SkValBoolArr(SkValBoolArr* to_copy): SkVal(to_copy), PolyVal<vector<int>>((PolyVal<vector<int>>*)to_copy){}
+
     string to_string() override {
         string ret;
-        vector<int>* val = get();
-        for(int i = 0;i < val->size();i++)
+        vector<int>& val = get();
+        for(int i = 0;i < val.size();i++)
         {
-            ret += std::to_string(val->at(i));
+            ret += std::to_string(val.at(i));
         }
         return ret;
     }
 };
 
 int local_get_nbits(vector<pair<int, int> >* vec);
-class SkValIntArr: public SkVal, public PolyVal<vector<int>*>
+class SkValIntArr: public SkVal, public PolyVal<vector<int>>
 {
 
 public:
     explicit SkValIntArr(vector<pair<int, int> >* _val):
-    PolyVal<vector<int>*>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
+    PolyVal<vector<int>>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
     string to_string() override {
         string ret;
-        vector<int>* val = get();
-        for(int i = 0;i < val->size();i++)
+        vector<int>& val = get();
+        for(int i = 0;i < val.size();i++)
         {
-            ret += std::to_string(val->at(i));
+            ret += std::to_string(val.at(i));
         }
         return ret;
     }
@@ -213,10 +225,14 @@ public:
     explicit Assignment_SkVal(T is_null): Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
 
     explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
+
         for(auto it: to_copy->assignment)
         {
             SkValType sk_val_type = it.second->get_type();
-            assert(sk_val_type == sk_type_int || sk_val_type == sk_type_bool);
+            assert(
+                    sk_val_type == sk_type_int ||
+                    sk_val_type == sk_type_bool ||
+                    sk_val_type == sk_type_boolarr);
             switch (sk_val_type) {
                 case sk_type_int: {
                     SkValInt *new_val = new SkValInt((SkValInt *) it.second);
@@ -229,13 +245,14 @@ public:
                     break;
                 case sk_type_bool: {
                     SkValBool *new_val = new SkValBool((SkValBool *) it.second);
-                    set(it.first, new SkValBool(*(SkValBool *) it.second));
+                    set(it.first, new_val);
                     break;
                 }
-                case sk_type_boolarr:
-                    assert(false);
-                    set(it.first, new SkValBoolArr(*(SkValBoolArr*)it.second));
+                case sk_type_boolarr: {
+                    SkValBoolArr *new_val = new SkValBoolArr((SkValBoolArr *) it.second);
+                    set(it.first, new_val);
                     break;
+                }
                 default:
                     assert(false);
             }
@@ -328,12 +345,12 @@ public:
             else if(item.second->get_type() == sk_type_boolarr)
             {
                 assert(item.second->get_nbits() == 1);
-                ret->newArr(item.first, 1,  ((SkValBoolArr*)item.second)->get()->size(), OutType::BOOL_ARR);
+                ret->newArr(item.first, 1,  ((SkValBoolArr*)item.second)->get().size(), OutType::BOOL_ARR);
                 ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
             }
             else if(item.second->get_type() == sk_type_intarr)
             {
-                ret->newArr(item.first, item.second->get_nbits(),  ((SkValIntArr*)item.second)->get()->size(), OutType::INT_ARR);
+                ret->newArr(item.first, item.second->get_nbits(),  ((SkValIntArr*)item.second)->get().size(), OutType::INT_ARR);
                 ret->setArr(item.first, ((SkValIntArr*)item.second)->get());
             }
             else
@@ -542,12 +559,8 @@ namespace SolverLanguagePrimitives {
 
         InputHolder(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
 
-//        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal(to_copy)) {}
+        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal((Assignment_SkVal*)to_copy)) {}
 
-        explicit InputHolder(ProblemAE *problem) : Assignment_SkVal() {
-            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
-            assert(false);
-        }
     };
 
 }

@@ -100,8 +100,8 @@ public:
 
 	VarStore ctrlStore;
 	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
-	finder(_finder), 
-	floats(_floats), 
+	finder(_finder),
+	floats(_floats),
 	params(args),
 	checker(new CEGISChecker(args, hc, _floats)),
 	hc(_hc)

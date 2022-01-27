@@ -25,11 +25,11 @@ class File: public vector<VarStore*>
     vector<int> counterexample_ids_over_time;
     vector<int> used;
     static void growInputs(VarStore & inputStore, BooleanDAG* dag);
+    std::mt19937 generator;
 
-public:
     enum Result {NO_FILE, DONE, MOREBITS};
 
-    std::mt19937 generator;
+public:
 
     File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
 
@@ -283,10 +283,10 @@ public:
         }
     }
 
-    File(){}
+    File(std::mt19937 _generator): generator(_generator){}
 
     File *sample_sub_file(int num_rows) {
-        File* new_file = new File();
+        File* new_file = new File(generator);
         sample(begin(), end(), back_inserter(*new_file),
                num_rows, generator);
         new_file->used = vector<int>(new_file->size(), 0);
@@ -301,6 +301,10 @@ public:
     {
         return counterexample_ids_over_time;
     }
+
+    File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
+
+    void relabel(SketchFunction *harness);
 };
 
 

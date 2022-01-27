@@ -60,9 +60,9 @@ Solver top_down_and_bottom_up_synthesis_main()
 
     string file_name = "uav_kg_big__as_bools.data";
 
-    num_trials = 2;
+    num_trials = 30;
     num_rows_per_sample = 6;
-    select_best = 2;
+    select_best = 8;
     assert(select_best >= 2);
     assert(num_trials >= select_best);
 
@@ -107,42 +107,62 @@ Solver top_down_and_bottom_up_synthesis_main()
         local_program = all_main_lvl1_programs.get(i).second();
         //take condition
         condition_lvl1_sub_sub = template_predicate_lvl0.produce_concretization(local_program.get_solution());
-        condition_lvl1_sub = template_main.produce_replace("program", condition_lvl1_sub_sub);
-        condition_lvl1 = template_main__Wrapper.produce_replace("template_main", condition_lvl1_sub);
+        condition_lvl1_sub = template_eval_main.produce_replace("program", condition_lvl1_sub_sub);
+        condition_lvl1 = template_eval_main__Wrapper.produce_replace("template_eval_main", condition_lvl1_sub);
         File file = File(file_name, condition_lvl1);
         //split file based on condition
 
-        if_true_file = file.produce_filter(lambda x : condition_lvl1(x));
-        if_false_file = file.produce_filter(lambda x : not(condition_lvl1(x)));
+        if_true_file = file.produce_filter(lambda[condition_lvl1](x){return condition_lvl1.passes(x);});
+        if_false_file = file.produce_filter(lambda[condition_lvl1](x){return not(condition_lvl1.passes(x));});
 
-        //resynthesize lvl0 left and right predicates.
+        print("if_true_file.size()", if_true_file.size());
+        print("if_false_file.size()", if_false_file.size());
 
-        left_main_lvl0 = template_main.clone();
-        left_main_lvl1_programs = best_effort_programs(left_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
-        right_main_lvl0 = template_main.clone();
-        right_main_lvl1_programs = best_effort_programs(right_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
+        if(if_true_file.size() >= num_rows_per_sample) {
+            if(if_false_file.size() >= num_rows_per_sample) {
+                assert(if_true_file.size() >= num_rows_per_sample, "FAILED: if_true_file.size() >= num_rows_per_sample");
+                assert(if_false_file.size() >= num_rows_per_sample, "FAILED: if_false_file.size() >= num_rows_per_sample");
+                assert((if_true_file.size()+if_false_file.size()) == file.size(), "FAILED: if_true_file.size()+if_false_file.size() == file.size()");
 
-        //combine with condition
+                //resynthesize lvl0 left and right predicates.
 
-        new_best_predicate_lvl1 = composite_predicate
-            .produce_replace("left_predicate", left_main_lvl1_programs.get(0).second())
-            .replace("right_predicate", right_main_lvl1_programs.get(0).second())
-            .replace("condition", condition_lvl1_sub_sub);
+                left_tmp = template_main.produce_replace("program", template_predicate_lvl0.clone());
+                left_main_lvl0 = template_main__Wrapper.produce_replace("template_main", left_tmp);
+                if_true_file.relabel(left_main_lvl0);
+                left_main_lvl1_programs = best_effort_programs(left_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
 
-        new_best_main_lvl1_sub = template_main.produce_replace("program", new_best_predicate_lvl1);
-        new_best_main_lvl1 = template_main__Wrapper.produce_replace("template_main", main_lvl1_sub);
+                right_tmp = template_main.produce_replace("program", template_predicate_lvl0.clone());
+                right_main_lvl0 = template_main__Wrapper.produce_replace("template_main", right_tmp);
+                if_false_file.relabel(right_main_lvl0);
+                right_main_lvl1_programs = best_effort_programs(right_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
 
-        File file = File(file_name, new_best_main_lvl1);
-        int score = count_passing_inputs(new_best_main_lvl1, file);
+                //combine with condition
 
-        improved_main_lvl1.append(make_pair(score, new_best_main_lvl1));
+                new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
+                new_best_predicate_lvl1.replace("left_predicate",
+                    template_predicate_lvl0.produce_concretization(left_main_lvl1_programs.get(0).second().get_solution()));
+                new_best_predicate_lvl1.replace("right_predicate",
+                    template_predicate_lvl0.produce_concretization(right_main_lvl1_programs.get(0).second().get_solution()));
+
+                new_best_main_lvl1_sub = template_main.produce_replace("program", new_best_predicate_lvl1);
+                new_best_main_lvl1 = template_main__Wrapper.produce_replace("template_main", new_best_main_lvl1_sub);
+
+
+                file = File(file_name, new_best_main_lvl1);
+                int score = count_passing_inputs(new_best_main_lvl1, file);
+
+                print("new_score:", score);
+
+                improved_main_lvl1.append(pair<int, SketchFunction>(score, new_best_main_lvl1));
+            }
+        }
 
     }
 
     improved_main_lvl1.sort();
     improved_main_lvl1.reverse();
 
-    return improved_main_lvl1.get(0).second().get_solution();
+    return improved_main_lvl1.get(0).second();
 }
 
 Solver left_and_right_and_cond_synthesis_main()
@@ -158,7 +178,7 @@ Solver left_and_right_and_cond_synthesis_main()
 
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
-    
+
     file = File(file_name, main_lvl0_left__Wrapper);
     lvl0_left_solutions = best_effort_solutions(main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 
@@ -451,7 +471,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
 	for(int i = 0; i<solutions_size; i++)
 	{
 	    element = solutions.get(i);
-	    print("count ", element.first(), " (", ((float(100) * float(element.first())) / float(file.size())), "%)");
+	    print("count ", element.first(), "/", file.size(), "= (", ((float(100) * float(element.first())) / float(file.size())), "%)");
 	}
 	print("Done sorted solution scores");
 

@@ -1,16 +1,16 @@
-    //
-    // Created by kliment on 12/20/21.
-    //
+//
+// Created by kliment on 12/20/21.
+//
 
-    #ifndef SKETCH_SOURCE_PROGRAMENVIRONMENT_H
-    #define SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+#ifndef SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+#define SKETCH_SOURCE_PROGRAMENVIRONMENT_H
 
-    #include "DagFunctionInliner.h"
+#include "DagFunctionInliner.h"
 
-    void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
+void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
 
-    class ProgramEnvironment
-    {
+class ProgramEnvironment
+{
     public:
     CommandLineArgs& params;
     FloatManager& floats;
@@ -165,7 +165,7 @@
     {
         return hardcoder;
     }
-    };
+};
 
     /**
     * Thought Flow:
@@ -187,10 +187,4 @@
     *  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
     */
 
-
-
-    void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns);
-
-    #include "DagFunctionInliner.h"
-
-    #endif //SKETCH_SOURCE_PROGRAMENVIRONMENT_H
+#endif //SKETCH_SOURCE_PROGRAMENVIRONMENT_H

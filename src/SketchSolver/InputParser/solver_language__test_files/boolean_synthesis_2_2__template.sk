@@ -220,6 +220,14 @@ harness void template_main(int num_bools, bit[num_bools] bools, bit out)
 }
 
 @FromFile("uav_kg_big__as_bools.data")
+harness void template_eval_main(int num_bools, bit[num_bools] bools, bit out)
+{
+    bit one = 1;
+    assert(program(num_bools, bools) == one);
+}
+
+
+@FromFile("uav_kg_big__as_bools.data")
 harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
 {
     assert(program(num_bools, bools) == 0);

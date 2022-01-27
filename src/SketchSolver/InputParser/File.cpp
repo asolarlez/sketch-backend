@@ -3,12 +3,26 @@
 //
 
 #include "File.h"
-#include "BooleanDAG.h"
 #include "SketchFunction.h"
 
 void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
     dag->growInputIntSizes();
     redeclareInputs(inputStore, dag);
+}
+
+void File::relabel(SketchFunction *harness) {
+    SketchFunction* cloned_inlined_harness = harness->produce_inlined_dag();
+    BooleanDAG* problem = cloned_inlined_harness->get_dag();
+    VarStore input_store;
+    redeclareInputsAndAngelics(input_store, problem);
+    vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+
+    for(int i = 0;i<size();i++)
+    {
+        at(i)->relabel(inputs);
+    }
+
+    cloned_inlined_harness->clear();
 }
 
 File::File(SketchFunction *harness, const string &file, FloatManager &floats, int seed) {
@@ -48,3 +62,17 @@ void File::set_used(int i) {
     used[i]++;
     counterexample_ids_over_time.emplace_back(i);
 }
+
+File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
+    File* ret = new File(generator);
+    for(int i = 0;i<size();i++)
+    {
+        if(lambda_condition(at(i)))
+        {
+            ret->push_back(at(i)->copy());
+        }
+    }
+    ret->used = vector<int>(ret->size(), 0);
+    return ret;
+}
+

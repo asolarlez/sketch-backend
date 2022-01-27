@@ -17,12 +17,12 @@ int local_get_nbits(vector<pair<int, int> >* vec)
 }
 
 
-vector<int>* local_get_first(vector<pair<int, int> >* vec)
+vector<int> local_get_first(vector<pair<int, int> >* vec)
 {
-    vector<int>* ret = new vector<int>();
+    vector<int> ret = vector<int>();
     for(int i= 0;i<vec->size();i++)
     {
-        ret->push_back(vec->at(i).first);
+        ret.push_back(vec->at(i).first);
     }
     return ret;
 }

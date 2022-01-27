@@ -1237,7 +1237,6 @@ namespace SolverLanguagePrimitives
 
                 file = new File(local_harness, file_name, state->floats, state->args.seed);
                 solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
-//                solver_program_file_name = "solver_language_program__very_simple.txt";
             }
             else
             {
@@ -1256,26 +1255,65 @@ namespace SolverLanguagePrimitives
 
             parse_solver_langauge_program(state, solver_program_file_name);
 
-            SolutionHolder *solution_holder = state->eval();
+            SL::VarVal *var_val_ret = state->eval();
 
-            SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
-            int num_passing_inputs =
-                    concretized_function->count_passing_inputs(file);
+            if(var_val_ret->is_solution_holder())
+            {
 
-            cout << "HERE " << local_harness->get_dag()->get_name() << endl;
-            cout << "count\t" << num_passing_inputs << " / " << file->size() <<" ("<< 100.0*(float)num_passing_inputs/file->size() << " %)" << endl;
+                SolverLanguagePrimitives::SolutionHolder* solution_holder = var_val_ret->get_solution(false);
 
-            concretized_function->clear();
+                delete var_val_ret;
 
-            solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
+                SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
+                int num_passing_inputs =
+                        concretized_function->count_passing_inputs(file);
 
-            local_harness->set_solution(solution_holder->to_var_store());
+                cout << "HERE " << local_harness->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                concretized_function->clear();
+
+                solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
+
+                local_harness->set_solution(solution_holder->to_var_store());
 
 
-            assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
-            assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+                assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
+                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
-            return solution_holder;
+                return solution_holder;
+            }
+            else
+            {
+                assert(var_val_ret->is_sketch_function());
+
+                SketchFunction* sk_func = var_val_ret->get_function(false);
+
+                delete var_val_ret;
+
+                SketchFunction *concretized_function = sk_func;
+
+                file = new File(concretized_function, file_name, state->floats, state->args.seed);
+
+                int num_passing_inputs =
+                        concretized_function->count_passing_inputs(file);
+
+                cout << "HERE " << local_harness->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                concretized_function->clear();
+
+                //BEST SO FAR: count	1249 / 1743 (71.6581 %)
+
+                assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
+                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+
+                //TODO: return function / relevant solution
+                assert(false);
+
+            }
 
             assert(false);
         }

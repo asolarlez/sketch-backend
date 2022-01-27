@@ -5,7 +5,7 @@
 #include "SolverLanguageYaccHeader.h"
 #include "SolverLanguage.h"
 
-SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
+SL::VarVal * SolverProgramState::eval(){
     assert(init_root != nullptr);
 
     init_root->populate_state(global);
@@ -56,9 +56,6 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     SL::VarVal* var_val_ret = get_return_var_val();
     assert(var_val_ret != nullptr);
-    SolverLanguagePrimitives::SolutionHolder* ret = var_val_ret->get_solution(false);
-
-    delete var_val_ret;
 
     assert(frames.size() == 1);
     pop_stack_frame();
@@ -67,24 +64,48 @@ SolverLanguagePrimitives::SolutionHolder* SolverProgramState::eval(){
 
     global.clear(true);
 
-    return ret;
+    return var_val_ret;
 }
 
-void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals) {
+void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param*>* meta_vars) {
     assert(vars.size() == vals.size());
 
     vector<SL::VarVal* > var_vals;
     var_vals.reserve(vals.size());
-    for(int i = 0;i<vals.size();i++)
-    {
+    for(int i = 0;i<vals.size();i++){
         var_vals.emplace_back(vals[i]->eval(this));
+    }
+
+    new_stack_frame(vars, var_vals, meta_vars);
+}
+
+void SolverProgramState::new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &var_vals, vector<SL::Param*>* meta_vars) {
+    assert(vars.size() == var_vals.size());
+
+    vector<SL::VarVal* > meta_var_vals;
+    if(meta_vars != nullptr)
+    {
+        for(int i = 0;i<meta_vars->size();i++)
+        {
+            SL::Var* the_var = meta_vars->at(i)->get_var();
+            meta_var_vals.push_back(this->get_var_val(the_var));
+        }
     }
 
     new_stack_frame();
 
+    assert(vars.size() == var_vals.size());
     for(int i = 0;i < vars.size();i++)
     {
         add_and_set_var_val(vars[i]->get_var(), var_vals[i]);
+    }
+
+    if(meta_vars != nullptr) {
+        assert(meta_var_vals.size() == meta_vars->size());
+        for (int i = 0; i < meta_vars->size();i++)
+        {
+            add_and_set_var_val(meta_vars->at(i)->get_var(), meta_var_vals[i]);
+        }
     }
 }
 
@@ -116,3 +137,4 @@ void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchF
         assert(functionMap[sk_func_name] == sk_func->get_dag());
     }
 }
+

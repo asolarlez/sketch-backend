@@ -151,6 +151,10 @@ public:
         set_var_val(var, var_val);
         var->clear();
     }
+
+    bool is_method(SL::Identifier *name) {
+        return false;
+    }
 };
 
 class NestedFrame: private Frame
@@ -280,7 +284,7 @@ public:
         }
         catch (exception& e) {
             try {
-                return global.get_var_val(var);
+                return global.get_var_val_throws(var);
             }
             catch (exception& e2){
                 assert(false);
@@ -361,18 +365,19 @@ public:
         }
     }
 
-    SolverLanguagePrimitives::SolutionHolder* eval();
+    SL::VarVal * eval();
 
     SL::VarVal* return_var_val = nullptr;
+
+    bool has_return()
+    {
+        return return_var_val != nullptr;
+    }
 
     void set_return_var_val(SL::VarVal* var_val) {
         assert(return_var_val == nullptr);
         var_val->set_return();
         return_var_val = var_val;
-    }
-
-    SL::Method *get_method(SL::Var *var) {
-        return global.get_var_val(var)->get_method();
     }
 
     SL::VarVal* get_return_var_val() {
@@ -382,10 +387,15 @@ public:
         }
         SL::VarVal* ret = return_var_val;
         return_var_val = nullptr;
+        if(ret == nullptr)
+        {
+            ret = new SL::VarVal();
+        }
         return ret;
     }
 
-    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals);
+    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::Param *> &vals, vector<SL::Param *>* meta_vals = nullptr);
+    void new_stack_frame(vector<SL::Param *> &vars, vector<SL::VarVal *> &vals, vector<SL::Param *>* meta_vals = nullptr);
 
     void new_stack_frame() {
         frames.emplace_back(NestedFrame());
@@ -410,6 +420,7 @@ public:
     void close_subframe();
 
     void add_to_function_map(const string &sk_func_name, SketchFunction *sk_func);
+
 };
 
 

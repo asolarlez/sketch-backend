@@ -307,6 +307,36 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
             return new VarVal();
             break;
         }
+        case _produce_filter:
+        {
+            assert(params.size() == 1);
+            VarVal* method_var_val = params[0]->eval(state);
+            method_var_val->increment_shared_ptr();
+            Method* condition_method = method_var_val->get_method();
+            assert(condition_method->get_params()->size() == 1);
+            assert(condition_method->get_params()->at(0)->get_var()->accepts_type("bool"));
+
+            std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
+                vector<SL::VarVal*> local_inputs;
+                local_inputs.push_back(new VarVal(new SolverLanguagePrimitives::InputHolder(x, state->floats)));
+                auto var_val = condition_method->eval(state, local_inputs);
+                auto ret = var_val->get_bool(true, false);
+                return ret;
+            };
+
+            File* ret = file->produce_filter(lambda_condition);
+
+            method_var_val->decrement_shared_ptr();
+            return new VarVal(ret);
+        }
+        case _relabel:
+        {
+            assert(params.size() == 1);
+            VarVal* sk_func_var_val = params[0]->eval(state);
+            sk_func_var_val->increment_shared_ptr();
+            file->relabel(sk_func_var_val->get_function());
+            return new VarVal();
+        }
         default:
             assert(false);
     }
@@ -376,13 +406,19 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
                 AssertDebug(assert_true, message_suffix);
             }
             else if(params.size() == 2) {
-                AssertDebug(assert_true, "MESSAGE: " + params[1]->eval(state)->get_string() + message_suffix);
+                AssertDebug(assert_true, "MESSAGE: " + params[1]->eval(state)->get_string(true, false) + message_suffix);
             }
             else {
                 assert(false);
             }
             return new VarVal();
             break;
+        }
+        case _not:
+        {
+            assert(params.size() == 1);
+            bool val = params[0]->eval(state)->get_bool(true, false);
+            return new VarVal((bool)!val);
         }
         default:
             assert(false);
@@ -455,8 +491,46 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
     {
         switch (method_meta_type) {
             case name_meta_type:
-                return state->get_method(state->method_name_to_var(method_name))->eval(state, params);
-                break;
+            {
+                Var *method_var = state->name_to_var(method_name);
+                VarVal *method_var_val = state->get_var_val(method_var);
+                method_var_val->increment_shared_ptr();
+                VarVal *ret = nullptr;
+                if (method_var_val->is_method()) {
+                    ret = method_var_val->get_method()->eval(state, params);
+                    assert(ret != nullptr);
+                } else {
+                    assert(false);
+                    assert(method_var_val->is_sketch_function());
+                    assert(params.size() == 1);
+                    VarVal* input_val = params[0]->eval(state);
+                    input_val->increment_shared_ptr();
+                    assert(input_val->is_input_holder());
+
+                    SketchFunction* sk_func = method_var_val->get_function()->produce_inlined_dag();
+                    BooleanDAG* the_dag = sk_func->get_dag();
+
+                    NodeEvaluator node_evaluator(sk_func->get_env()->functionMap, *the_dag, sk_func->get_env()->floats);
+
+                    cout << "BEFORE RUN" << endl;
+                    the_dag->lprint(cout);
+
+                    assert(!node_evaluator.run(*input_val->get_input_holder()->to_var_store()));
+                    cout << "AFTER RUN" << endl;
+                    the_dag->lprint(cout);
+                    assert(false);
+
+                    assert(false);
+
+                    ret = new VarVal();
+
+                    input_val->decrement_shared_ptr();
+                    assert(false);
+                }
+                method_var_val->decrement_shared_ptr();
+                assert(ret != nullptr);
+                return ret;
+            }
             case type_constructor_meta_type:
                 return eval_type_constructor(state);
                 break;
@@ -609,6 +683,9 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("produce_replace", _produce_replace, "SketchFunction");
     add_to_method_str_to_method_id_map("replace", _replace, "SketchFunction");
     add_to_method_str_to_method_id_map("get_solution", _get_solution, "SketchFunction");
+    add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
+    add_to_method_str_to_method_id_map("not", _not, "namespace");
+    add_to_method_str_to_method_id_map("relabel", _relabel, "File");
     method_str_to_method_id_map_is_defined = true;
 }
 
@@ -765,8 +842,9 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
     return nullptr;
 }
 
-SL::VarVal* SL::Method::eval(SolverProgramState *state, vector<Param*>& input_params)  {
-    run(state, input_params);
+template<typename T>
+SL::VarVal* SL::Method::eval(SolverProgramState *state, vector<T>& inputs)  {
+    run(state, inputs);
     return state->get_return_var_val();
 }
 
@@ -774,7 +852,18 @@ void SL::Method::run(SolverProgramState *state, vector<Param *> &input_params)  
     assert(var != nullptr);
     assert(body != nullptr);
 
-    state->new_stack_frame(params, input_params);
+    state->new_stack_frame(*params, input_params, meta_params);
+
+    body->run(state);
+
+    state->pop_stack_frame();
+}
+
+void SL::Method::run(SolverProgramState *state, vector<SL::VarVal *> &input_params)  {
+    assert(var != nullptr);
+    assert(body != nullptr);
+
+    state->new_stack_frame(*params, input_params, meta_params);
 
     body->run(state);
 
@@ -785,13 +874,30 @@ void SL::Method::clear()
 {
     body->clear();
     var->clear();
-    for(auto & it: params)
+    for(int i = 0;i<params->size();i++)
     {
-        it->clear();
+        params->at(i)->clear();
     }
-    params.clear();
+    params->clear();
+    delete params;
 }
 
+vector<SL::Param*>* copy_params(vector<SL::Param*>* to_copy)
+{
+    vector<SL::Param*>* ret = new vector<SL::Param*>();
+    for(int i = 0;i<to_copy->size();i++)
+    {
+        ret->push_back(new SL::Param(to_copy->at(i)));
+    }
+    return ret;
+}
+
+SL::Method::Method(SL::Method *to_copy) :
+var(new Var(to_copy->var)), body(new CodeBlock(to_copy->body)), params(copy_params(to_copy->params)){}
+
+const vector<SL::Param*>* SL::Method::get_params() {
+    return params;
+}
 
 SL::VarVal* SL::Param::eval(SolverProgramState *state)  {
     switch (meta_type) {
@@ -993,13 +1099,6 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
             break;
         case func_call_meta_type:
             ret = function_call->eval(state);
-            if(ret != nullptr && ret->is_sketch_function())
-            {
-                for(auto it : ret->get_function(false)->get_env()->functionMap)
-                {
-                    assert(it.second->getNodesByType(bool_node::CTRL).size() >= 0);
-                }
-            }
             break;
         case identifier_meta_type:
             ret = state->get_var_val(state->name_to_var(identifier));
@@ -1007,13 +1106,13 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
         case var_val_meta_type:
             ret = new VarVal(var_val);
             break;
+        case lambda_expr_meta_type:
+            ret = lambda_expression->eval(state);
+            break;
         default:
             assert(false);
     }
-    if(ret == nullptr)
-    {
-        ret = new VarVal();
-    }
+    assert(ret != nullptr);
     return ret;
 }
 
@@ -1096,7 +1195,7 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
     }
 }
 
-SL::VarVal::VarVal(int val): i(val), var_val_type(int_val_type){}
+//SL::VarVal::VarVal(int val): i(val), var_val_type(int_val_type){}
 
 
 
@@ -1128,8 +1227,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 //            solution = new SolverLanguagePrimitives::SolutionHolder(_to_copy->get_solution(false));
             break;
         case input_val_type:
-            assert(false);
-//            input_holder = new SolverLanguagePrimitives::InputHolder(_to_copy->get_input_holder(false));
+            input_holder = new SolverLanguagePrimitives::InputHolder(_to_copy->get_input_holder(false));
             break;
         case bool_val_type:
             b = _to_copy->get_bool(false);
@@ -1232,6 +1330,14 @@ SL::VarVal *SL::VarVal::clone() {
 void SL::VarVal::add_responsibility(SL::VarVal *new_child) {
     new_child->increment_shared_ptr();
     is_responsible_for.push_back(new_child);
+}
+
+bool SL::VarVal::is_input_holder() {
+    return var_val_type == input_val_type;
+}
+
+bool SL::VarVal::is_solution_holder() {
+    return var_val_type == solution_val_type;
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)
@@ -1436,16 +1542,39 @@ void SL::CodeBlock::run(SolverProgramState *state)  {
     while(at != nullptr)
     {
         at->head->run(state);
+        if(state->has_return())
+        {
+            break;
+        }
         at = at->rest;
     }
     state->close_subframe();
 }
 
 SL::LambdaExpression::LambdaExpression(SL::LambdaExpression *to_copy) :
-    expression(new SL::Expression(to_copy->expression)) {
-    for(auto it: to_copy->params)
-    {
-        params.push_back(new Param(it));
+code_block(new SL::CodeBlock(to_copy->code_block)), params(copy_params(to_copy->params)), meta_params(copy_params(to_copy->meta_params)) {}
+
+SL::VarVal *SL::LambdaExpression::eval(SolverProgramState *state) {
+    return new VarVal(
+            new Method(
+                    new Var(new SL::SLType(new Identifier("any")), new Identifier("lambda")),
+                    copy_params(params),
+                    new CodeBlock(code_block),
+                    copy_params(meta_params)));
+}
+
+void SL::LambdaExpression::clear() {
+    for(int i = 0;i<params->size();i++) {
+        params->at(i)->clear();
     }
+    params->clear();
+    delete params;
+    for(int i = 0;i<meta_params->size();i++) {
+        meta_params->at(i)->clear();
+    }
+    meta_params->clear();
+    delete meta_params;
+    code_block->clear();
+    delete this;
 }
 
