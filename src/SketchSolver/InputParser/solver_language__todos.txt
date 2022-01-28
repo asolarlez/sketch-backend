@@ -8,40 +8,61 @@ For meeting:
             assert(program(num_bools, bools) == 1);
 
 
-Crucial
-1. Write thesis
-    1.1. outline
-    1.2. rest
+TODO: Priority for merging with Master
+    1. Add separate file as console output for Solver Language.
+    2. remove debug code
+        *6.1. turn off SCHECKMEM
+        *6.2. add flag for checking file invariant in cegis solver and checker.
+        *6.3. add flag for checking translation invariant between VarStore and InputHolder/SolutionHolder in Assignment_SkVal
+    3. Set up pipeline
+        *7.1. Thread params for which file to use
+        *7.2. Two pipelines: old and new
+        *7.3. merge with master.
+
+TODO: Priority for integration with Siemens
+    1. Integrate with Python frontend.
+
+Use-cases
+Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
+    DONE: one shot level1. (bot-top-bot)
+    DONE: bot-top-bot-top
+    TODO: implement 'synthesize_composite_programs_from_parts' as a constructed sketch. (instead of the two for loops, make them holes in a sketch)
+    TODO: iterative lvl1.
+    TODO: one shot lvl2
+    TODO: iterative lvl2
+    TODO: crete more complicated zig-zag example.
 
 Necessary
 1. Complete language
     DONE 1.-1. Remove ; at the end of {} blocks
     DONE 1.0. Add {} block
-    TODO: 1.01. complete if - else block.
-    TODO: 1.02. complete if - else if ... - else block
+    *TODO: 1.01. complete if - else block.
+    *TODO: 1.02. complete if - else if ... - else block
     DONE 1.1. implement subscoping for {} nesting (for, while, if, {}}
     1.2. complete boolean predicates
         DONE: >, <, >=, ==
-        TODO: <=, &&, ||, !
-        TODO: FIX ORDER OF OPERATIONS
+        *TODO: <=, &&, ||, !
+        *TODO: FIX ORDER OF OPERATIONS
     1.3. implement integer and float expressions
         DONE: +, -, /, *
         TODO: %
-        TODO: FIX ORDER OF OPERATIONS
+        *TODO: FIX ORDER OF OPERATIONS
     DONE 1.4. Implement garbage collection
     TODO: 1.5. Remove harness from argument in File.
     TODO: 1.6. Remove need for ..__Wrapper
     ~ 1.7. There should be a version of solvers that returns a concretized function rather than a solution.
     TODO: 1.8. add [] for accessing arrays;
-    TODO: 1.9. add (,) as a pair constructor.
+    *TODO: 1.9. add (,) as a pair constructor.
     DONE 1.^1 implement lambdas.
     DONE 1.^2 Refactor FunctionCall
     TODO: 1.^3 get rid of outname in UFUN_node
     DONE 1.^4 implement <file>.produce_filter
-    TODO: 1.^5 refactor as needed and assert(false)s from explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>()
+    *TODO: 1.^5 refactor as needed and assert(false)s from explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>()
     TODO: 1.^6 loop control flow operators
             continue
             break
+    *TODO: 1.^7 Add custom output files to Solver Language.
+
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs
 3. Fix memory leaks (remove all boolean dag copies that are not used).
@@ -53,19 +74,15 @@ DONE 4. Dynamic typing
     DONE add 'any' type.
 6. Implement methods for modification of sketches
     6.1. DONE replace_produce, and replace
-    TODO: 6.2. Fix renaming.
+    *TODO: 6.2. Fix renaming.
     TODO: 6.3. Add functionality to frontend.
     TODO: 6.4  Allow concretized sketches to be executed on inputs, and their result read.
-TODO: 5. Make frontend spit harnesses for each function when using solver language.
-    5.1. be careful of structs as inputs.
-TODO: 6. remove debug code
-    6.1. turn off SCHECKMEM
-    6.2. add flag for checking file invariant in cegis solver and checker.
-    6.3. add flag for checking translation invariant between VarStore and InputHolder/SolutionHolder in Assignment_SkVal
-TODO: 7. Set up pipeline
-    7.1. Thread params for which file to use
-    7.2. Two pipelines: old and new
-    7.3. merge with master.
+TODO: 5. Make frontend spit harnesses for each function when using solver language. Be careful of structs as inputs.
+
+For Master's thesis
+1. Write thesis
+    1.1. outline
+    1.2. rest
 
 Good to do
 Refactor interpreter to use classes and subclasses instead of switches for different values/methods (like in SolverLanguage.h).
@@ -74,11 +91,6 @@ Medium term
 0. Implement useful error/warning messages with line numbers.
 1. refactor backend code to look like solver language (meaning the signatures of the functions concretize and file).
     1.1 Compile directly to Cpp rather than interpreting program
-2. Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
-    DONE: one shot level1.
-    TODO: iterative lvl1.
-    TODO: one shot lvl2
-    TODO: iterative lvl2
 3. Implement classes
 4. Allow for construction of sketches during runtime.
 
