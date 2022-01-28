@@ -1222,8 +1222,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-//                file_name = "uav_kg_big__as_bools.data";
-                file_name = "zig_zag.data";
+                file_name = "uav_kg_big__as_bools.data";
+//                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
@@ -1304,6 +1304,13 @@ namespace SolverLanguagePrimitives
                 var_val_ret->clear_assert_0_shared_ptrs();
 
                 //BEST SO FAR: count	1249 / 1743 (71.6581 %)
+//                count	1258 / 1743 (72.1744 %)
+
+// with params:
+//                num_trials = 6;
+//                num_rows_per_sample = 4;
+//                select_best = 3;
+//count	1224 / 1743 (70.2238 %)
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 assert(dags_diff == 0);
