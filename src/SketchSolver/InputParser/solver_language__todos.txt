@@ -55,6 +55,7 @@ DONE 4. Dynamic typing
     6.1. DONE replace_produce, and replace
     TODO: 6.2. Fix renaming.
     TODO: 6.3. Add functionality to frontend.
+    TODO: 6.4  Allow concretized sketches to be executed on inputs, and their result read.
 TODO: 5. Make frontend spit harnesses for each function when using solver language.
     5.1. be careful of structs as inputs.
 TODO: 6. remove debug code

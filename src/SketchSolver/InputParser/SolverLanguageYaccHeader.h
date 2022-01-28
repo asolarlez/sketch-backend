@@ -28,13 +28,18 @@ public:
                 if (is_global){
                     if (it.second->is_sketch_function()) {
                         assert(it.second->get_num_shared_ptr() == 1);
+//                        cout << "NOT_CLEARED, (IS_GLOBAL), DELETE_VAR_VAL " << it.first.to_string() << endl;
                         delete it.second;
                         continue;
                     }
                 }
                 it.second->decrement_shared_ptr();
                 if (it.second->get_num_shared_ptr() == 0) {
-//                    cout << "CLEARED " << it.first.to_string() << endl;
+//                    cout << "YES_CLEARED " << it.first.to_string() << endl;
+                }
+                else
+                {
+//                    cout << "NOT_CLEARED " << it.first.to_string() << endl;
                 }
             }
         }

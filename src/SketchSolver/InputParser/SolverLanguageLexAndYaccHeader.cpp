@@ -335,6 +335,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
             VarVal* sk_func_var_val = params[0]->eval(state);
             sk_func_var_val->increment_shared_ptr();
             file->relabel(sk_func_var_val->get_function());
+            sk_func_var_val->decrement_shared_ptr();
             return new VarVal();
         }
         default:
@@ -880,6 +881,15 @@ void SL::Method::clear()
     }
     params->clear();
     delete params;
+    if(meta_params != nullptr)
+    {
+        for(int i = 0;i<meta_params->size();i++)
+        {
+            meta_params->at(i)->clear();
+        }
+        meta_params->clear();
+        delete meta_params;
+    }
 }
 
 vector<SL::Param*>* copy_params(vector<SL::Param*>* to_copy)
@@ -1338,6 +1348,11 @@ bool SL::VarVal::is_input_holder() {
 
 bool SL::VarVal::is_solution_holder() {
     return var_val_type == solution_val_type;
+}
+
+void SL::VarVal::clear_assert_0_shared_ptrs() {
+    assert(get_num_shared_ptr() == 0);
+    _clear();
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

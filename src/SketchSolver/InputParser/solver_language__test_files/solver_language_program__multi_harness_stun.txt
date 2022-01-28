@@ -8,32 +8,62 @@ Solver concatenate(arr1, arr2)
 }
 
 /*
-generator bit predicate_generator(Data data)
+
+
+generator int line_generator(int x) {
+    //USER DEFINED
+};
+
+generator bit predicate_generator(int x)
 {
-    ..
+    //USER DEFINED
 }
 
-bit template_predicate_lvl0(Data data)
+bit predicate(int x)
 {
-    return predicate_generator(data);
+    return predicate_generator(x);
 }
 
-bit composite_predicate(Data data)
-{
-    if(condition(data))
-    {
-        return left_predicate(data);
+bit condition(int x) {return 0;}
+
+int if_true_branch(int x) {return 0;}
+
+int if_false_branch(int x) {return 0;}
+
+int composite_predicate(int x) {
+    if(condition(x)) {
+        return if_true_branch(x);
     }
-    else
-    {
-        return right_predicate(data);
+    else {
+        return if_false_branch(x);
     }
 }
 
-@FromFile("uav_kg_big__as_bools.data")
-harness template_main(Data data, bit out)
+bit program_lvl0(int x) {
+    return line(x);
+}
+
+int dummy_program(int x) {return 1;}
+
+@FromFile("zig_zag.data")
+harness void sketch_main(int x, bit out)
 {
-    assert(program(data) == out);
+    assert(dummy_program(x) == out);
+}
+
+@FromFile("zig_zag.data")
+harness void eval_predicate_main(int x, bit out)
+{
+    bit one = 1;
+    assert(dummy_program(x) == one);
+}
+
+@FromFile("zig_zag.data")
+harness void dummy_sketch_main(int x, bit out)
+{
+    assert(program(x) == 0);
+    assert(program_lvl0(x) == out);
+    assert(composite_predicate(x) == out);
 }
 */
 
@@ -50,65 +80,65 @@ Solver best_effort_programs(harness, file, num_trials, num_rows_per_sample)
 
 Solver main()
 {
-    return top_down_and_bottom_up_synthesis_main();
-    //return left_and_right_and_cond_synthesis_main();
+    return top_down_and_bottom_up_synthesis_sketch_main();
+    //return left_and_right_and_cond_synthesis_sketch_main();
 }
 
-Solver top_down_and_bottom_up_synthesis_main()
+Solver top_down_and_bottom_up_synthesis_sketch_main()
 {
     //generate
 
-    string file_name = "uav_kg_big__as_bools.data";
+    //string file_name = "uav_kg_big__as_bools.data";
+    string file_name = "zig_zag.data";
 
-    num_trials = 30;
+    num_trials = 4;
     num_rows_per_sample = 6;
-    select_best = 8;
+    select_best = 2;
     assert(select_best >= 2);
     assert(num_trials >= select_best);
 
-    main_lvl0_sub = template_main.produce_replace("program", template_predicate_lvl0.clone());
-    //main_lvl0 = main_lvl0_sub;
-    main_lvl0 = template_main__Wrapper.produce_replace("template_main", main_lvl0_sub);
+    sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+    sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl0_sub);
 
 
-    File file = File(file_name, main_lvl0);
-    main_lvl0_programs = best_effort_programs(main_lvl0, file, num_trials, num_rows_per_sample);
+    File file = File(file_name, sketch_main_lvl0);
+    sketch_main_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, num_trials, num_rows_per_sample);
 
-    assert(main_lvl0_programs.size() >= select_best);
+    assert(sketch_main_lvl0_programs.size() >= select_best);
 
-    all_main_lvl1_programs = [];
+    all_sketch_main_lvl1_programs = [];
 
     for(int i = 0;i<select_best;i++) {
         for(int j = i+1;i<select_best;i++) {
             predicate_lvl1 =
-                composite_predicate.produce_replace("condition", template_predicate_lvl0.clone());
-            predicate_lvl1.replace("left_predicate",
-                template_predicate_lvl0.produce_concretization(main_lvl0_programs.get(i).second().get_solution()));
-            predicate_lvl1.replace("right_predicate",
-                template_predicate_lvl0.produce_concretization(main_lvl0_programs.get(j).second().get_solution()));
+                composite_predicate.produce_replace("condition", predicate.clone());
+            predicate_lvl1.replace("if_true_branch",
+                program_lvl0.produce_concretization(sketch_main_lvl0_programs.get(i).second().get_solution()));
+            predicate_lvl1.replace("if_false_branch",
+                program_lvl0.produce_concretization(sketch_main_lvl0_programs.get(j).second().get_solution()));
 
-            main_lvl1_sub = template_main.produce_replace("program", predicate_lvl1);
-            main_lvl1 = template_main__Wrapper.produce_replace("template_main", main_lvl1_sub);
+            sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", predicate_lvl1);
+            sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl1_sub);
 
-            File file = File(file_name, main_lvl1);
-            local_main_lvl1_programs = best_effort_programs(main_lvl1, file, num_trials, num_rows_per_sample);
+            File file = File(file_name, sketch_main_lvl1);
+            local_sketch_main_lvl1_programs = best_effort_programs(sketch_main_lvl1, file, num_trials, num_rows_per_sample);
 
-            concatenate(all_main_lvl1_programs, local_main_lvl1_programs);
+            concatenate(all_sketch_main_lvl1_programs, local_sketch_main_lvl1_programs);
         }
     }
 
-    all_main_lvl1_programs.sort();
-    all_main_lvl1_programs.reverse();
+    all_sketch_main_lvl1_programs.sort();
+    all_sketch_main_lvl1_programs.reverse();
 
-    improved_main_lvl1 = [];
+    improved_sketch_main_lvl1 = [];
 
     for(int i = 0;i<select_best;i++)
     {
-        local_program = all_main_lvl1_programs.get(i).second();
+        local_program = all_sketch_main_lvl1_programs.get(i).second();
         //take condition
-        condition_lvl1_sub_sub = template_predicate_lvl0.produce_concretization(local_program.get_solution());
-        condition_lvl1_sub = template_eval_main.produce_replace("program", condition_lvl1_sub_sub);
-        condition_lvl1 = template_eval_main__Wrapper.produce_replace("template_eval_main", condition_lvl1_sub);
+        condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
+        condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_program", condition_lvl1_sub_sub);
+        condition_lvl1 = eval_predicate_main__Wrapper.produce_replace("eval_predicate_main", condition_lvl1_sub);
         File file = File(file_name, condition_lvl1);
         //split file based on condition
 
@@ -126,46 +156,46 @@ Solver top_down_and_bottom_up_synthesis_main()
 
                 //resynthesize lvl0 left and right predicates.
 
-                left_tmp = template_main.produce_replace("program", template_predicate_lvl0.clone());
-                left_main_lvl0 = template_main__Wrapper.produce_replace("template_main", left_tmp);
-                if_true_file.relabel(left_main_lvl0);
-                left_main_lvl1_programs = best_effort_programs(left_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
+                left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
+                if_true_file.relabel(left_sketch_main_lvl0);
+                left_sketch_main_lvl1_programs = best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
 
-                right_tmp = template_main.produce_replace("program", template_predicate_lvl0.clone());
-                right_main_lvl0 = template_main__Wrapper.produce_replace("template_main", right_tmp);
-                if_false_file.relabel(right_main_lvl0);
-                right_main_lvl1_programs = best_effort_programs(right_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
+                right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
+                if_false_file.relabel(right_sketch_main_lvl0);
+                right_sketch_main_lvl1_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
 
                 //combine with condition
 
                 new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
-                new_best_predicate_lvl1.replace("left_predicate",
-                    template_predicate_lvl0.produce_concretization(left_main_lvl1_programs.get(0).second().get_solution()));
-                new_best_predicate_lvl1.replace("right_predicate",
-                    template_predicate_lvl0.produce_concretization(right_main_lvl1_programs.get(0).second().get_solution()));
+                new_best_predicate_lvl1.replace("if_true_branch",
+                    program_lvl0.produce_concretization(left_sketch_main_lvl1_programs.get(0).second().get_solution()));
+                new_best_predicate_lvl1.replace("if_false_branch",
+                    program_lvl0.produce_concretization(right_sketch_main_lvl1_programs.get(0).second().get_solution()));
 
-                new_best_main_lvl1_sub = template_main.produce_replace("program", new_best_predicate_lvl1);
-                new_best_main_lvl1 = template_main__Wrapper.produce_replace("template_main", new_best_main_lvl1_sub);
+                new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
+                new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
 
 
-                file = File(file_name, new_best_main_lvl1);
-                int score = count_passing_inputs(new_best_main_lvl1, file);
+                file = File(file_name, new_best_sketch_main_lvl1);
+                int score = count_passing_inputs(new_best_sketch_main_lvl1, file);
 
                 print("new_score:", score);
 
-                improved_main_lvl1.append(pair<int, SketchFunction>(score, new_best_main_lvl1));
+                improved_sketch_main_lvl1.append(pair<int, SketchFunction>(score, new_best_sketch_main_lvl1));
             }
         }
 
     }
 
-    improved_main_lvl1.sort();
-    improved_main_lvl1.reverse();
+    improved_sketch_main_lvl1.sort();
+    improved_sketch_main_lvl1.reverse();
 
-    return improved_main_lvl1.get(0).second();
+    return improved_sketch_main_lvl1.get(0).second();
 }
 
-Solver left_and_right_and_cond_synthesis_main()
+Solver left_and_right_and_cond_synthesis_sketch_main()
 {
     //first sample base level
     //choose best
@@ -179,11 +209,11 @@ Solver left_and_right_and_cond_synthesis_main()
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
 
-    file = File(file_name, main_lvl0_left__Wrapper);
-    lvl0_left_solutions = best_effort_solutions(main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
+    file = File(file_name, sketch_main_lvl0_left__Wrapper);
+    lvl0_left_solutions = best_effort_solutions(sketch_main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 
-    file = File(file_name, main_lvl0_right__Wrapper);
-    lvl0_right_solutions = best_effort_solutions(main_lvl0_right__Wrapper, file, num_trials, num_rows_per_sample);
+    file = File(file_name, sketch_main_lvl0_right__Wrapper);
+    lvl0_right_solutions = best_effort_solutions(sketch_main_lvl0_right__Wrapper, file, num_trials, num_rows_per_sample);
 
     print("first lvl0_left_solutions.size() ", lvl0_left_solutions.size());
     print("first lvl0_right_solutions.size() ", lvl0_right_solutions.size());
@@ -207,8 +237,8 @@ Solver left_and_right_and_cond_synthesis_main()
 
                 any compound_solutions;
                 {
-                    file = File(file_name, main_lvl1__Wrapper);
-                    compound_solutions = best_effort_solutions(main_lvl1__Wrapper, file, num_trials, num_rows_per_sample);
+                    file = File(file_name, sketch_main_lvl1__Wrapper);
+                    compound_solutions = best_effort_solutions(sketch_main_lvl1__Wrapper, file, num_trials, num_rows_per_sample);
                     //file.clear();
                 }
 
@@ -254,20 +284,20 @@ Solver int get_score(SketchFunction harness, Solution solution, File file)
 
 /*
 
-Solver Solution original_main()
+Solver Solution original_sketch_main()
 {
-    return beam_search_main();
-    //return repeat_greedy_main();
-    //return stun_main("zig_zag.data");
+    return beam_search_sketch_main();
+    //return repeat_greedy_sketch_main();
+    //return stun_sketch_main("zig_zag.data");
 }
 
-Solver Solution beam_search_main()
+Solver Solution beam_search_sketch_main()
 {
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
     //string file_name = "uav_kg_big__as_bools__smaller.data";
 
-    File file = File(file_name, main_lvl0__Wrapper); //unnatural, remove harness
+    File file = File(file_name, sketch_main_lvl0__Wrapper); //unnatural, remove harness
     int total_num_rows = file.size();
 
     int num_trials = 10;
@@ -275,7 +305,7 @@ Solver Solution beam_search_main()
     int beam_breath = 3;
 
     vector<pair<int, Solution> > best_effort_solutions =
-        best_effort_solutions(main_lvl0__Wrapper, file, num_trials, num_rows_per_sample);
+        best_effort_solutions(sketch_main_lvl0__Wrapper, file, num_trials, num_rows_per_sample);
 
     vector<pair<int, pair<int, Solution> > > indexed_solutions = vector<pair<int, pair<int, Solution> > >();
     //use python syntax for arrays
@@ -303,7 +333,7 @@ Solver Solution beam_search_main()
     SketchFunction throw_away;
     for(i = 0;i<beam_breath;i++)
     {
-        harness = main_lvl1__Wrapper.clone();
+        harness = sketch_main_lvl1__Wrapper.clone();
         assert(indexed_solutions.get(i).second().first() == 0);
         partial_solution = indexed_solutions.get(i).second().second();
         harness.concretize(partial_solution);
@@ -334,7 +364,7 @@ Solver Solution beam_search_main()
     int counter = 0;
     for(i = 0;i<beam_breath;i++)
     {
-        harness = main_lvl2__Wrapper.clone();
+        harness = sketch_main_lvl2__Wrapper.clone();
         assert(next_frontier.get(i).second().first() == 1);
         partial_solution = next_frontier.get(i).second().second();
         harness.concretize(partial_solution);
@@ -367,28 +397,28 @@ Solver Solution beam_search_main()
     return ret_solution;
 }
 
-Solver Solution repeat_greedy_main()
+Solver Solution repeat_greedy_sketch_main()
 {
     string file_name = "zig_zag.data";
-    File file = File(file_name, main_lvl2__Wrapper);
+    File file = File(file_name, sketch_main_lvl2__Wrapper);
     int n = file.size();
 
 
-    Solution sol = stun_main(file_name);
-    int score = get_score(main_lvl2__Wrapper, sol, file);
+    Solution sol = stun_sketch_main(file_name);
+    int score = get_score(sketch_main_lvl2__Wrapper, sol, file);
     print("at_score ", score, "/", n);
     while(score < n)
     {
         seed++;
-        sol = stun_main(file_name);
-        score = get_score(main_lvl2__Wrapper, sol, file);
+        sol = stun_sketch_main(file_name);
+        score = get_score(sketch_main_lvl2__Wrapper, sol, file);
         print("at_score ", score, "/", n);
     }
 
     return sol;
 }
 
-Solver Solution stun_main(string file_name)
+Solver Solution stun_sketch_main(string file_name)
 {
 	int num_trials = 3; //hyperparameter
 	int num_rows = 4; //hyperparameter
@@ -400,27 +430,27 @@ Solver Solution stun_main(string file_name)
     SketchFunction org_line_lvl2 = line_lvl2.clone();
 
 	//solve the harness lvl0
-	File file = File(file_name, main_lvl0__Wrapper); // The dataset is stored in a File; File is a native construct.
-	print("main_lvl0__Wrapper.num_holes() = ", main_lvl0__Wrapper.num_holes());
-	Solution solution_lvl0 = best_effort_synthesis(main_lvl0__Wrapper, file, num_trials, num_rows);
+	File file = File(file_name, sketch_main_lvl0__Wrapper); // The dataset is stored in a File; File is a native construct.
+	print("sketch_main_lvl0__Wrapper.num_holes() = ", sketch_main_lvl0__Wrapper.num_holes());
+	Solution solution_lvl0 = best_effort_synthesis(sketch_main_lvl0__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl0);
 
 	//concretize the predicate lvl0
 	line_lvl0.concretize(solution_lvl0);
 
 	//solve the harness lvl1
-	file = File(file_name, main_lvl1__Wrapper);
-	print("main_lvl1__Wrapper.num_holes() = ", main_lvl1__Wrapper.num_holes());
-	Solution solution_lvl1 = best_effort_synthesis(main_lvl1__Wrapper, file, num_trials, num_rows);
+	file = File(file_name, sketch_main_lvl1__Wrapper);
+	print("sketch_main_lvl1__Wrapper.num_holes() = ", sketch_main_lvl1__Wrapper.num_holes());
+	Solution solution_lvl1 = best_effort_synthesis(sketch_main_lvl1__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl1);
 
 	//concretize the predicate lvl1
 	line_lvl1.concretize(solution_lvl1);
 
 	//solve the harness lvl2
-	file = File(file_name, main_lvl2__Wrapper);
-	print("main_lvl2__Wrapper.num_holes() = ", main_lvl2__Wrapper.num_holes());
-	Solution solution_lvl2 = best_effort_synthesis(main_lvl2__Wrapper, file, num_trials, num_rows);
+	file = File(file_name, sketch_main_lvl2__Wrapper);
+	print("sketch_main_lvl2__Wrapper.num_holes() = ", sketch_main_lvl2__Wrapper.num_holes());
+	Solution solution_lvl2 = best_effort_synthesis(sketch_main_lvl2__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl2);
 
 	//concretize the predicate lvl2

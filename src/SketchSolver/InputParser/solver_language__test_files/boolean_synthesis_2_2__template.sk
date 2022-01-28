@@ -181,57 +181,61 @@ generator bit choice_of_subtree_d_2(int num_bools, bit[num_bools] bools, int len
 void print_init_if() {}
 void print_end_if() {}
 
-generator bit predicate(int num_bools, bit[num_bools] bools)
+generator bit predicate_generator(int num_bools, bit[num_bools] bools)
 {
     int l1 = 2;
     int l0 = 2;
     return choice_of_subtree_d_2(num_bools, bools, l1, l0);
 }
 
+generator bit program_generator(int num_bools, bit[num_bools] bools) {
+    return predicate_generator(num_bools, bools);
+}
+
+bit predicate(int num_bools, bit[num_bools] bools)
+{
+    return predicate_generator(num_bools, bools);
+}
+
 bit condition(int num_bools, bit[num_bools] bools) {return 0;}
 
-bit left_predicate(int num_bools, bit[num_bools] bools) {return 0;}
+bit if_true_branch(int num_bools, bit[num_bools] bools) {return 0;}
 
-bit right_predicate(int num_bools, bit[num_bools] bools) {return 0;}
+bit if_false_branch(int num_bools, bit[num_bools] bools) {return 0;}
 
 bit composite_predicate(int num_bools, bit[num_bools] bools) {
     if(condition(num_bools, bools)) {
-        return left_predicate(num_bools, bools);
+        return if_true_branch(num_bools, bools);
     }
     else {
-        return right_predicate(num_bools, bools);
+        return if_false_branch(num_bools, bools);
     }
 }
 
-bit template_predicate_lvl0(int num_bools, bit[num_bools] bools) {
-    return predicate(num_bools, bools);
+bit program_lvl0(int num_bools, bit[num_bools] bools) {
+    return program_generator(num_bools, bools);
 }
 
-bit template_predicate_lvl0_2(int num_bools, bit[num_bools] bools) {
-    return predicate(num_bools, bools);
-}
-
-bit program(int num_bools, bit[num_bools] bools) {return 1;}
+bit dummy_program(int num_bools, bit[num_bools] bools) {return 1;}
 
 @FromFile("uav_kg_big__as_bools.data")
-harness void template_main(int num_bools, bit[num_bools] bools, bit out)
+harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
 {
-    assert(program(num_bools, bools) == out);
+    assert(dummy_program(num_bools, bools) == out);
 }
 
 @FromFile("uav_kg_big__as_bools.data")
-harness void template_eval_main(int num_bools, bit[num_bools] bools, bit out)
+harness void eval_predicate_main(int num_bools, bit[num_bools] bools, bit out)
 {
     bit one = 1;
-    assert(program(num_bools, bools) == one);
+    assert(dummy_program(num_bools, bools) == one);
 }
-
 
 @FromFile("uav_kg_big__as_bools.data")
 harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
 {
-    assert(program(num_bools, bools) == 0);
-    assert(template_predicate_lvl0_2(num_bools, bools) == out);
-    assert(template_predicate_lvl0(num_bools, bools) == out);
+    assert(dummy_program(num_bools, bools) == 0);
+    assert(predicate(num_bools, bools) == 0);
+    assert(program_lvl0(num_bools, bools) == out);
     assert(composite_predicate(num_bools, bools) == out);
 }

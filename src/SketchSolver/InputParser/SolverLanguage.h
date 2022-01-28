@@ -1222,13 +1222,13 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
 //            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
-            SketchFunction* local_harness = state->function_map["template_main__Wrapper"]->clone();
+            SketchFunction* local_harness = state->function_map["sketch_main__Wrapper"]->clone();
 
             File *file = nullptr;
             if(state->harness_ == nullptr)
@@ -1290,8 +1290,6 @@ namespace SolverLanguagePrimitives
 
                 SketchFunction* sk_func = var_val_ret->get_function(false);
 
-                delete var_val_ret;
-
                 SketchFunction *concretized_function = sk_func;
 
                 file = new File(concretized_function, file_name, state->floats, state->args.seed);
@@ -1303,11 +1301,12 @@ namespace SolverLanguagePrimitives
                 cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
                      << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
 
-                concretized_function->clear();
+                var_val_ret->clear_assert_0_shared_ptrs();
 
                 //BEST SO FAR: count	1249 / 1743 (71.6581 %)
 
-                assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
+                int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+                assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
                 //TODO: return function / relevant solution

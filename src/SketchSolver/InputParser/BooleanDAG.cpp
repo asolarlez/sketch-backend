@@ -27,7 +27,8 @@ string BooleanDAG::get_suffix(bool modify_name)
 {
     if(modify_name)
     {
-        return "__id"+std::to_string(global_boolean_dag_id+1);
+//        assert(global_boolean_dag_id != 534);
+        return "__id"+std::to_string(global_boolean_dag_id);
     }
     else
     {
@@ -1415,5 +1416,5 @@ void BooleanDAG::replace_label_with_another(const string &replace_this,  const s
             enter = true;
         }
     }
-    assert(enter);
+    AssertDebug(enter, replace_this + " doesn't exist in " + name);
 }

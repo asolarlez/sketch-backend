@@ -1055,6 +1055,8 @@ namespace SL {
         bool is_input_holder();
 
         bool is_solution_holder();
+
+        void clear_assert_0_shared_ptrs();
     };
 
     class Param;
