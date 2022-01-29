@@ -141,7 +141,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     //string file_name = "zig_zag.data";
 
     num_trials = 6;
-    num_rows_per_sample = 3;
+    num_rows_per_sample = 4;
     select_best = 3;
     assert(select_best >= 2);
     assert(num_trials >= select_best);
