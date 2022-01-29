@@ -34,17 +34,33 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
     vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
 
     File::Result res = parseFile(file, floats, inputs, input_store);
+    const int max_num_bits = 64;
     while (res == File::MOREBITS) {
         int at_int_size = problem->getIntSize();
+        cout << at_int_size << endl;
+        AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, PROBABLY WRONG CODE/INPUT/OUTPUT");
         growInputs(input_store, problem);
-
-        {
+        if(true){
+            assert(harness->get_dag()->getIntSize() == at_int_size);
+            bool harness_in_function_map = false;
             for(auto it: harness->get_env()->functionMap) {
                 assert(it.second->getIntSize() == at_int_size);
                 it.second->growInputIntSizes();
+                if(it.second->get_name() == harness->get_dag()->get_name()) {
+                    assert(!harness_in_function_map);
+                    assert(it.second == harness->get_dag());
+                    harness_in_function_map = true;
+                }
             }
-            assert(harness->get_dag()->getIntSize() == at_int_size);
-            harness->get_dag()->growInputIntSizes();
+            if(!harness_in_function_map)
+            {
+                assert(harness->get_dag()->getIntSize() == at_int_size);
+                harness->get_dag()->growInputIntSizes();
+            }
+            else
+            {
+                assert(harness->get_dag()->getIntSize() == at_int_size+1);
+            }
         }
 
         res = parseFile(file, floats, inputs, input_store);

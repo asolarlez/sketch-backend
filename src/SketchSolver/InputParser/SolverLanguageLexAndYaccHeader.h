@@ -926,7 +926,7 @@ namespace SL {
                     assert(false);
                     break;
                 case bool_val_type:
-                    assert(false);
+                    return std::to_string(get_bool(do_count, do_assert));
                     break;
                 case void_val_type:
                     assert(false);
@@ -1086,7 +1086,7 @@ namespace SL {
     class Expression;
 
     enum MethodId {
-        _no_method,
+        _unknown_method,
         _file, _produce_subset_file,
         _sat_solver, _produce_concretization,
         _concretize, _size, _get,
@@ -1120,7 +1120,7 @@ namespace SL {
 
         MethodMetaType method_meta_type;
 
-        MethodId method_id = _no_method;
+        MethodId method_id = _unknown_method;
 
         MethodId get_method_id();
 

@@ -181,8 +181,16 @@ protected:
 	bool failedHAssert;
 	bool trackChange;
 	int i(bool_node& bn){
+        assert(isset[bn.id]);
 		return values[bn.id];
 	}
+
+public:
+    bool get_isset(bool_node& bn)
+    {
+        return isset[bn.id];
+    }
+protected:
 
 	
 

@@ -7,6 +7,28 @@ For meeting:
         vs
             assert(program(num_bools, bools) == 1);
 
+     4. ASK ABOUT
+           void NodeEvaluator::visit( TUPLE_CREATE_node &node){
+
+           	int sz = node.nparents();
+           	cptuple* cpv = new cptuple(sz);
+           	if(tuplevalues[node.id] != NULL){
+           		delete tuplevalues[node.id];
+           	}
+           	tuplevalues[node.id] = cpv;
+               Tuple* otp = (Tuple*)node.getOtype();
+           	for(int t=0; t<sz; ++t){
+                   OutType* e = otp->entries[t];
+                   if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
+                     cpv->vv[t] = i(*node.get_parent(t));
+                   } else {
+                     cpv->vv[t] = (node.get_parent(t)->id);
+                   }
+           	}
+           	setbn(node, node.id );// <<<<<<<<<<<<<< HERE WHY node.id rather than values[node.id]?
+
+           }
+
 
 TODO: Priority for merging with Master
     1. Add separate file as console output for Solver Language.
@@ -49,6 +71,8 @@ Necessary
         *TODO: FIX ORDER OF OPERATIONS
     DONE 1.4. Implement garbage collection
     TODO: 1.5. Remove harness from argument in File.
+        1.5.1. Have current File be implemented as a vector rather than having a specific File class.
+            Interpret an input as a InputStore right before using in a sketch.
     TODO: 1.6. Remove need for ..__Wrapper
     ~ 1.7. There should be a version of solvers that returns a concretized function rather than a solution.
     TODO: 1.8. add [] for accessing arrays;
@@ -62,6 +86,7 @@ Necessary
             continue
             break
     *TODO: 1.^7 Add custom output files to Solver Language.
+    TODO: Shed dead code.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs
@@ -76,7 +101,8 @@ DONE 4. Dynamic typing
     6.1. DONE replace_produce, and replace
     *TODO: 6.2. Fix renaming.
     TODO: 6.3. Add functionality to frontend.
-    TODO: 6.4  Allow concretized sketches to be executed on inputs, and their result read.
+    DONE: 6.4  Allow concretized sketches to be executed on inputs, and their result read.
+        TODO: 6.4.1: fix the weirdness where the output of a function is a tuple, so you need to go to it's first parent to get the true value in node_evaluator.
 TODO: 5. Make frontend spit harnesses for each function when using solver language. Be careful of structs as inputs.
 
 For Master's thesis

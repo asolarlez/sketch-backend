@@ -400,14 +400,18 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         }
         case _assert:
         {
-            assert(!params.empty() && params.size() <= 2);
+            assert(!params.empty());
             bool assert_true = params[0]->eval(state)->get_bool(true, false);
             string message_suffix = "\nassert(false); // triggered in Solver Program";
             if(params.size() == 1) {
                 AssertDebug(assert_true, message_suffix);
             }
-            else if(params.size() == 2) {
-                AssertDebug(assert_true, "MESSAGE: " + params[1]->eval(state)->get_string(true, false) + message_suffix);
+            else if(params.size() >= 2) {
+                string message_prefix = "";
+                for(int i = 1;i<params.size();i++) {
+                    message_prefix += params[i]->eval(state)->to_string(true, false);
+                }
+                AssertDebug(assert_true, "MESSAGE: " + message_prefix + message_suffix);
             }
             else {
                 assert(false);
@@ -469,7 +473,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-    if(method_id != _no_method)
+    if(method_id != _unknown_method)
     {
 
         assert(method_id_to_type_str.find(method_id) != method_id_to_type_str.end());
@@ -500,8 +504,8 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                 if (method_var_val->is_method()) {
                     ret = method_var_val->get_method()->eval(state, params);
                     assert(ret != nullptr);
-                } else {
-                    assert(false);
+                }
+                else {
                     assert(method_var_val->is_sketch_function());
                     assert(params.size() == 1);
                     VarVal* input_val = params[0]->eval(state);
@@ -513,20 +517,77 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 
                     NodeEvaluator node_evaluator(sk_func->get_env()->functionMap, *the_dag, sk_func->get_env()->floats);
 
-                    cout << "BEFORE RUN" << endl;
-                    the_dag->lprint(cout);
+                    if(false) {
+                        cout << "BEFORE RUN" << endl;
+                        cout << "print_vals:" << endl;
+                        auto before_run_dests = the_dag->getNodesByType(bool_node::DST);
+                        for (int i = 0; i < before_run_dests.size(); i++) {
+                            cout << before_run_dests[i]->lprint() << " ;VAL=";
+                            if (node_evaluator.get_isset(*before_run_dests[i])) {
+                                cout << node_evaluator.getValue(before_run_dests[i]) << endl;
+                            } else {
+                                cout << "IS NOT SET" << endl;
+                            }
+                        }
+                        cout << "node_evaluator.printNodeValues()" << endl;
+                        for (int i = 0; i < the_dag->size(); i++) {
+                            cout << (*the_dag)[i]->lprint() << "; VAL = " << endl;
+                            node_evaluator.printNodeValue(i);
+                        }
 
-                    assert(!node_evaluator.run(*input_val->get_input_holder()->to_var_store()));
-                    cout << "AFTER RUN" << endl;
-                    the_dag->lprint(cout);
-                    assert(false);
+                        cout << "print_dag:" << endl;
+                        the_dag->lprint(cout);
+                        cout << "DONE BEFORE RUN" << endl;
+                    }
 
-                    assert(false);
+                    bool fails = node_evaluator.run(*input_val->get_input_holder()->to_var_store());
+                    assert(!fails);
 
-                    ret = new VarVal();
+                    if(false) {
+                        cout << "AFTER RUN" << endl;
+                        cout << "print_vals:" << endl;
+                        auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
+                        for (int i = 0; i < after_run_dests.size(); i++) {
+                            cout << after_run_dests[i]->lprint() << " ;VAL="
+                                 << node_evaluator.getValue(after_run_dests[i]) << endl;
+                            assert((*the_dag)[node_evaluator.getValue(after_run_dests[i])]->type ==
+                                   bool_node::TUPLE_CREATE);
+                            cout << "tuple: " << (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->lprint()
+                                 << endl;
+                            cout << "parent 0 of tuple: "
+                                 << (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->get_parent(0)->lprint()
+                                 << endl;
+                            cout << "RET VALUE: " << node_evaluator.getValue(
+                                    (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->get_parent(0)) << endl;
+                            cout << "===" << endl;
+                        }
 
+                        cout << "node_evaluator.printNodeValues()" << endl;
+                        for (int i = 0; i < the_dag->size(); i++) {
+                            cout << (*the_dag)[i]->lprint() << "; VAL = " << endl;
+                            node_evaluator.printNodeValue(i);
+                            cout << "---" << endl;
+                        }
+
+                        cout << "print_dag:" << endl;
+                        the_dag->lprint(cout);
+                        cout << "DONE AFTER RUN" << endl;
+                    }
+
+                    auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
+
+                    assert(after_run_dests.size() == 1);
+
+                    //SHOULD BE THIS BUT ISN'T
+//                    ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
+
+                    OutType* out_type = (*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)->getOtype();
+                    assert(out_type == OutType::BOOL);
+                    //THIS IS A HACK BUT WORKS FOR NOW
+                    ret = new VarVal((bool)node_evaluator.getValue((*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)));
+
+                    sk_func->clear();
                     input_val->decrement_shared_ptr();
-                    assert(false);
                 }
                 method_var_val->decrement_shared_ptr();
                 assert(ret != nullptr);
@@ -712,7 +773,7 @@ SL::MethodId SL::FunctionCall::get_method_id() {
         return method_str_to_method_id_map[method_str];
     }
     else{
-        return _no_method;
+        return _unknown_method;
     }
 }
 
@@ -773,8 +834,11 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         {
             assert(params.size() == 1);
             SketchFunction* program = sk_func;
-            SolverLanguagePrimitives::InputHolder* input_holder = params[0]->eval(state)->get_input_holder();
+            VarVal* input_holder_var_val = params[0]->eval(state);
+            input_holder_var_val->increment_shared_ptr();
+            SolverLanguagePrimitives::InputHolder* input_holder = input_holder_var_val->get_input_holder();
             SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
+            input_holder_var_val->decrement_shared_ptr();
             assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
             bool ret = concretized_function->get_dag()->get_failed_assert() == nullptr;
             concretized_function->clear();

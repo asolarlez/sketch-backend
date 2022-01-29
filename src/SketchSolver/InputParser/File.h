@@ -53,6 +53,7 @@ public:
         char ch;
         assert(!in.eof());
         in.get(ch);
+//        cout << ch << "("<<(int)ch<<")'";
         if(in.eof())
         {
             AssertDebug((int)ch == 0, "ch: " + std::to_string(ch));
@@ -64,6 +65,7 @@ public:
             std::getline(in, line);
             assert(!in.eof());
             in.get(ch);
+//            cout << ch << "("<<(int)ch<<")''";
         }
 
         int cur=0;
@@ -84,6 +86,7 @@ public:
                 if (depth == 0) {
                     //we just finished a number, and we are not inside an array.
                     outOfRange = !vsi->setValSafe(neg ? (-cur) : cur);
+//                    cout << "[" << (int)outOfRange <<"]";
                     ++vsi;
                     ++inputId;
                 }
@@ -117,10 +120,9 @@ public:
 
                     //we just finished a number, and we are inside an array.
                     outOfRange = !arrit->setValSafe(neg ? (-cur) : cur);
+//                    cout << "[" << (int)outOfRange <<"]'" << endl;
                     prevArrit = arrit;
                     arrit = arrit->next;
-
-
                 }
             }
             hasCaptured = true;
@@ -172,33 +174,33 @@ public:
                     neg = true;
                     break;
                 }
-                default:
+                default: {
                     if (ch >= '0' && ch <= '9') {
                         if (isFloat) {
-                            floatVal = floatVal + ((double)(ch - '0') / cur);
+                            floatVal = floatVal + ((double) (ch - '0') / cur);
                             cur = cur * 10;
-                        }
-                        else {
+                        } else {
                             hasCaptured = false;
                             cur = cur * 10 + (ch - '0');
                         }
-                    }
-                    else if (ch =='.') {
+                    } else if (ch == '.') {
                         isFloat = true;
-                        floatVal = (double)cur;
+                        floatVal = (double) cur;
                         cur = 10;
+                    } else {
+                        Assert(false, "Unknown character <" << ch
+                                                            << "> in file on line " + std::to_string((int) size()) +
+                                                               ".");
                     }
-                    else
-                    {
-                        Assert(false, "Unknown character <" << ch << "> in file on line " + std::to_string((int)size()) + ".");
-                    }
-
+                    break;
+                }
             }
             if (outOfRange) {
                 return more_bits;
             }
             assert(!in.eof());
             in.get(ch);
+//            cout << ch << "("<<(int)ch<<")'''";
             if (in.eof()) {
                 regval();
                 assert(!outOfRange);
@@ -246,6 +248,7 @@ public:
             }
             catch (BasicError& e) {
                 file.close();
+                assert(false);
                 throw e;
             }
 
@@ -253,6 +256,7 @@ public:
 
             if (ok == more_bits) {
                 file.close();
+                cout << "|MOREBITS" << endl;
                 return MOREBITS;
             }
             else if(ok == complete_row)

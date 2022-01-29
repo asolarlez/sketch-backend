@@ -39,6 +39,8 @@ int program_lvl0(int x) {
 
 int dummy_program(int x) {return 1;}
 
+bit dummy_predicate(int x) {return 1;}
+
 @FromFile("zig_zag.data")
 harness void sketch_main(int x, int out)
 {
@@ -46,15 +48,21 @@ harness void sketch_main(int x, int out)
 }
 
 @FromFile("zig_zag.data")
-harness void eval_predicate_main(int x, int out)
+bit eval_predicate_main(int x, int out)
 {
-    bit one = 1;
-    assert(dummy_program(x) == one);
+    return dummy_predicate(x);
 }
 
 @FromFile("zig_zag.data")
-harness void dummy_main(int x, int out)
+harness void eval_predicate_main_harness(int x, int out)
 {
+    assert(eval_predicate_main(x, out) == 1);
+}
+
+@FromFile("zig_zag.data")
+harness void dummy_main(int x, bit out)
+{
+    assert(eval_predicate_main(x, out));
     assert(dummy_program(x) == 0);
     assert(predicate(x) == 0);
     assert(program_lvl0(x) == out);

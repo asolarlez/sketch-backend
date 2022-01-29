@@ -144,14 +144,14 @@ void NodeEvaluator::visit( TUPLE_CREATE_node &node){
 		delete tuplevalues[node.id];
 	}
 	tuplevalues[node.id] = cpv;
-  Tuple* otp = (Tuple*)node.getOtype();
+    Tuple* otp = (Tuple*)node.getOtype();
 	for(int t=0; t<sz; ++t){
-    OutType* e = otp->entries[t];
-    if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
-      cpv->vv[t] = i(*node.get_parent(t));
-    } else {
-      cpv->vv[t] = (node.get_parent(t)->id);
-    }
+        OutType* e = otp->entries[t];
+        if(e==OutType::INT || e==OutType::BOOL || e->isTuple) {
+          cpv->vv[t] = i(*node.get_parent(t));
+        } else {
+          cpv->vv[t] = (node.get_parent(t)->id);
+        }
 	}
 	setbn(node, node.id );
     
@@ -181,7 +181,19 @@ void NodeEvaluator::visit( SRC_node& node ){
 	}
 }
 void NodeEvaluator::visit( DST_node& node ){
-	setbn(node, i(*node.mother()));
+    if(false) {
+        cout << "SETTING DST_NODE " << node.lprint() << endl;
+        cout << "SETTING TO VALUE OF NODE " << node.mother()->lprint() << " " << node.mother()->get_tname() << endl;
+        cout << "NEW VAL = " << endl;
+        int to_set_to = i(*node.mother());
+        cout << "\t" << to_set_to << endl;
+    }
+    setbn(node, i(*node.mother()));
+    if(false) {
+        cout << "REALIZED" << endl;
+        cout << "\t" << getValue(node) << endl;
+        cout << "--" << endl;
+    }
 }
 void NodeEvaluator::visit( NOT_node& node ){
 	setbn(node, !b(*node.mother()));
@@ -496,10 +508,6 @@ void NodeEvaluator::printNodeValue(int i){
 			cout<<vv->get(j, values[j])<<", ";
 		}
 		cout<<endl;
-		if (false && (i == 197 || i==194)) {
-			vv->print(cout);
-			cout << endl;
-		}
 	}else{
 		cout<<values[i]<<endl;
 	}

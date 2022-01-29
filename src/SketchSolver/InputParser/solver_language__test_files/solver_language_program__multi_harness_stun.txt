@@ -8,8 +8,6 @@ Solver concatenate(arr1, arr2)
 }
 
 /*
-
-
 generator int line_generator(int x) {
     //USER DEFINED
 };
@@ -108,8 +106,11 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
             for(int k = 0; k < local_sketch_main_lvl1_programs.size();k++)
             {
                 tmp.append(
-                    pair<pair<int, SketchFunction>, pair<pair<int, SketchFunction>, pair<int, SketchFunction> > >(local_sketch_main_lvl1_programs.get(i),
-                    pair<pair<int, SketchFunction>, pair<int, SketchFunction> >(left_programs.get(i), right_programs.get(j))));
+                    pair<pair<int, SketchFunction>, pair<pair<int, SketchFunction>, pair<int, SketchFunction> > >(
+                        local_sketch_main_lvl1_programs.get(i),
+                        pair<pair<int, SketchFunction>, pair<int, SketchFunction> >(
+                            left_programs.get(i),
+                            right_programs.get(j))));
             }
 
             local_sketch_main_lvl1_programs = tmp;
@@ -124,16 +125,24 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     return all_sketch_main_lvl1_programs;
 }
 
+Solver check_predicate_and_assertion_consistency(the_predicate, file_name, the_harness)
+{
+    File file_for_predicate = File(file_name, the_predicate);
+    File file_for_harness = File(file_name, the_harness);
+    for(int i = 0;i<file_for_predicate.size();i++) {
+        //print("out", i, "(predicate)", the_predicate(file_for_predicate.get(i)), "(harness)", the_harness.passes(file_for_harness.get(i)));
+        assert(the_predicate(file_for_predicate.get(i)) == the_harness.passes(file_for_harness.get(i)), "MISSMATCH AT: ", i);
+    }
+}
+
 Solver top_down_and_bottom_up_synthesis_sketch_main()
 {
-    //generate
-
     string file_name = "uav_kg_big__as_bools.data";
     //string file_name = "zig_zag.data";
 
-    num_trials = 20;
-    num_rows_per_sample = 4;
-    select_best = 8;
+    num_trials = 6;
+    num_rows_per_sample = 3;
+    select_best = 3;
     assert(select_best >= 2);
     assert(num_trials >= select_best);
 
@@ -157,13 +166,20 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
         local_program = all_sketch_main_lvl1_programs.get(i).first().second();
         //take condition
         condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
-        condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_program", condition_lvl1_sub_sub);
-        condition_lvl1 = eval_predicate_main__Wrapper.produce_replace("eval_predicate_main", condition_lvl1_sub);
-        File file = File(file_name, condition_lvl1);
-        //split file based on condition
+        condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
+        condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
+        condition_lvl1 = eval_predicate_main_harness__Wrapper.produce_replace("eval_predicate_main_harness", condition_lvl1_sub_harness);
 
-        if_true_file = file.produce_filter(lambda[condition_lvl1](x){return condition_lvl1.passes(x);});
-        if_false_file = file.produce_filter(lambda[condition_lvl1](x){return not(condition_lvl1.passes(x));});
+        //run this to check consistency condition_lvl1 and condition_lvl1_sub
+        //this makes sure that the function_call operation of sketches works as expected.
+        check_predicate_and_assertion_consistency(condition_lvl1_sub, file_name, condition_lvl1);
+
+        File file = File(file_name, condition_lvl1_sub);
+        //split file based on condition
+        if_true_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+            return condition_lvl1_sub(x);});
+        if_false_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+            return not(condition_lvl1_sub(x));});
 
         print("if_true_file.size()", if_true_file.size());
         print("if_false_file.size()", if_false_file.size());
@@ -226,7 +242,6 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                 concatenate(improved_sketch_main_lvl1, new_synthesized_lvl1);
             }
         }
-
     }
 
     improved_sketch_main_lvl1.sort();

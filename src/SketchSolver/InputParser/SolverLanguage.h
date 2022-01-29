@@ -1306,7 +1306,7 @@ namespace SolverLanguagePrimitives
 //                BEST SO FAR: count	1249 / 1743 (71.6581 %)
 //                count	1258 / 1743 (72.1744 %)
 
-// with params:
+// with params:X
 //                num_trials = 6;
 //                num_rows_per_sample = 4;
 //                select_best = 3;
@@ -1317,6 +1317,16 @@ namespace SolverLanguagePrimitives
 //                num_rows_per_sample = 4;
 //                select_best = 8;
 //count	1288 / 1743 (73.8956 %)
+
+
+
+// num_trials = 20;
+// num_rows_per_sample = 4;
+// select_best = 8;
+// with x2
+// count	1288 / 1743 (73.8956 %)
+
+
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 assert(dags_diff == 0);
