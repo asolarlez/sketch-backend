@@ -133,7 +133,7 @@ public:
         // IS THIS DEBUG CODE? YES
         Dout( cout << "problem->get_n_controls() = " << root_dag->get_n_controls() << "  " << root_dag << endl );
         {
-            vector<bool_node*>& problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
+            auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
             if(PARAMS->verbosity > 2){
                 cout<<"  # OF CONTROLS:    "<< problemIn.size() <<endl;
             }

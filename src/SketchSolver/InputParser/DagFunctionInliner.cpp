@@ -15,8 +15,8 @@ static const int MAX_NODES = 1000000;
 static const int MAX_NODES = 510000;
 #endif
 
-DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap,  map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions,
-	bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
+DagFunctionInliner::DagFunctionInliner(BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap, FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions,
+                                       bool p_randomize, InlineControl* ict, bool p_onlySpRandomize, int p_spRandBias):
 dag(p_dag), 
 DagOptim(p_dag, fm), 
 ufunAll(" ufun all"),
@@ -160,11 +160,10 @@ void DagOneStepInlineAndConcretize::visit(SRC_node &node) {
 void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
 {
     //check if the unfun is an acual ufun, or a function.
-    //if it is a function, then it is inside functionMap
+    //if it is a function, then it is inside function_map
     //otherwise it's not inside functioMap
 
-    if(functionMap.find(node.get_ufname()) != functionMap.end())
-    {
+    if(functionMap.find(node.get_ufname()) != functionMap.end()) {
 //        cout << "node.get_ufname() " << node.get_ufname() << endl;
         //ufun is an actual function
         //it is handled by functionInliner.
@@ -432,8 +431,9 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
 	if( functionMap.find(name) != functionMap.end() ){
 //    cout << "Inlining " << name << endl;
-				
-		BooleanDAG& oldFun = *functionMap[name];
+
+        assert(functionMap.find(name) != functionMap.end());
+		BooleanDAG& oldFun = *functionMap.at(name);
 
 		if(oldFun.isModel && node.children.size() == 0){
 			rvalue = getCnode(false);
@@ -454,7 +454,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
     bool_node* spCond;
 		nmap.resize( oldFun.size() );
 		{
-			vector<bool_node*>& inputs  = oldFun.getNodesByType(bool_node::SRC);
+			auto inputs  = oldFun.getNodesByType(bool_node::SRC);
 			// ADT, int, int ... (state)
             if(inputs.size() != node.nargs())
             {
@@ -556,9 +556,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 			  }
 			  newparams.push_back(optnode);
 			}
-        
-			BooleanDAG& newFun = *functionMap[replaceFunName];
-			vector<bool_node*>& new_inputs  = newFun.getNodesByType(bool_node::SRC);
+
+
+            assert(functionMap.find(replaceFunName) != functionMap.end());
+			auto newFun = *functionMap.at(replaceFunName);
+			auto new_inputs  = newFun.getNodesByType(bool_node::SRC);
 			int curSize = newparams.size();
 			for (size_t i = curSize; i < new_inputs.size(); i++) {
 			  int j = i + actSize - size + 1;
@@ -609,7 +611,7 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 		}
 		//cout<<endl;
 		{
-			vector<bool_node*>& controls  = oldFun.getNodesByType(bool_node::CTRL);
+			auto controls  = oldFun.getNodesByType(bool_node::CTRL);
 			
 			for(size_t i=0; i<controls.size(); ++i){
                 assert(controls[i]->type == bool_node::CTRL);
@@ -1008,7 +1010,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 //        assert(dag[i]->get_name() != "num_bools_4_0_0");
 //    }
 
-	// cout<<" funmap has size " << functionMap.size() << endl;
+	// cout<<" funmap has size " << function_map.size() << endl;
 	initLight(dag);
 	funsInlined.clear();
 	somethingChanged = false;
@@ -1033,7 +1035,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
 				ictrl->preCheckInline(uf);
-                map<string, BooleanDAG *>::iterator it = functionMap.find(uf.get_ufname());
+                auto it = functionMap.find(uf.get_ufname());
                 if (it != functionMap.end()) {
                     if (it->second->isModel && uf.ignoreAsserts) {
                         if (lastDln != NULL) {
@@ -1091,7 +1093,7 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 
 
 bool DagFunctionInliner::process_and_return(BooleanDAG& dag){
-    // cout<<" funmap has size " << functionMap.size() << endl;
+    // cout<<" funmap has size " << function_map.size() << endl;
     initLight(dag);
     funsInlined.clear();
     somethingChanged = false;
@@ -1116,7 +1118,7 @@ bool DagFunctionInliner::process_and_return(BooleanDAG& dag){
 				on all functions first, before we start inlining.
 				*/
                 ictrl->preCheckInline(uf);
-                map<string, BooleanDAG*>::iterator it = functionMap.find(uf.get_ufname());
+                auto it = functionMap.find(uf.get_ufname());
                 if(it != functionMap.end()){
                     if(it->second->isModel && uf.ignoreAsserts){
                         if(lastDln != NULL){

@@ -420,21 +420,20 @@ namespace SolverLanguagePrimitives {
 
     class ProblemAE;
 
-    class SolutionHolder {
+    class HoleAssignment {
         Assignment_SkVal *assignment_skval = nullptr;
         SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
     public :
 
-        void clear()
-        {
+        void clear() {
             assignment_skval->clear();
         }
 
-        explicit SolutionHolder(SATSolver::SATSolverResult _sat_solver_result) :
+        explicit HoleAssignment(SATSolver::SATSolverResult _sat_solver_result) :
                 sat_solver_result(_sat_solver_result) {
         }
 
-        bool operator < (const SolutionHolder& other) const
+        bool operator < (const HoleAssignment& other) const
         {
             if(sat_solver_result < other.sat_solver_result){
                 return true;
@@ -445,20 +444,20 @@ namespace SolverLanguagePrimitives {
             return lt_compare_pointers(assignment_skval, other.assignment_skval);
         }
 
-        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
+        HoleAssignment(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
                 sat_solver_result(_sat_solver_result), assignment_skval(_assignment_skval) {}
 
-        SolutionHolder(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
+        HoleAssignment(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
 
-        explicit SolutionHolder(SolutionHolder *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+        explicit HoleAssignment(HoleAssignment *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
-        SolutionHolder() = default;;
-        explicit SolutionHolder(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
+        HoleAssignment() = default;;
+        explicit HoleAssignment(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
 
-        explicit SolutionHolder(ProblemAE* problem) {
-            cout << "TODO: SolutionHolder::SolutionHolder" << endl;
+        explicit HoleAssignment(ProblemAE* problem) {
+            cout << "TODO: HoleAssignment::HoleAssignment" << endl;
             assert(false);
         }
         VarStore *get_controls(FloatManager &floats) {
@@ -492,7 +491,7 @@ namespace SolverLanguagePrimitives {
         }
 
         string to_string() {
-            cout << "SolutionHolder::to_string" << endl;
+            cout << "HoleAssignment::to_string" << endl;
             assert(false);
         }
 
@@ -520,7 +519,7 @@ namespace SolverLanguagePrimitives {
             return assignment_skval;
         }
 
-        void update(SolutionHolder *updated_solution_holder) {
+        void update(HoleAssignment *updated_solution_holder) {
             sat_solver_result = updated_solution_holder->get_sat_solver_result();
             if (updated_solution_holder->get_assignment()->is_null()) {
                 assignment_skval = new Assignment_SkVal();
@@ -529,7 +528,7 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        void join_with(SolutionHolder* other)
+        void join_with(HoleAssignment* other)
         {
             if(other->sat_solver_result == SATSolver::UNSATISFIABLE) {
                 sat_solver_result = SATSolver::UNSATISFIABLE;
@@ -548,18 +547,18 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        SolutionHolder *clone() {
-            return new SolutionHolder(this);
+        HoleAssignment *clone() {
+            return new HoleAssignment(this);
         }
     };
 
-    class InputHolder : public Assignment_SkVal {
+    class InputAssignment : public Assignment_SkVal {
     public :
-        InputHolder() : Assignment_SkVal() {}
+        InputAssignment() : Assignment_SkVal() {}
 
-        InputHolder(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
+        InputAssignment(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
 
-        explicit InputHolder(InputHolder *to_copy) : Assignment_SkVal(new Assignment_SkVal((Assignment_SkVal*)to_copy)) {}
+        explicit InputAssignment(InputAssignment *to_copy) : Assignment_SkVal(new Assignment_SkVal((Assignment_SkVal*)to_copy)) {}
 
     };
 

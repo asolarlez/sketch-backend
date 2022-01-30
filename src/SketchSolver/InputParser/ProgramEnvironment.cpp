@@ -3,11 +3,12 @@
 //
 
 #include "ProgramEnvironment.h"
+#include "SketchFunction.h"
 
-void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns) {
+void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pureFuns) {
 
     for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
-        vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+        auto ctrlvec = it->second->getNodesByType(bool_node::CTRL);
         if (ctrlvec.size() == 0) {
             pureFuns.insert(it->first);
             continue;
@@ -21,9 +22,10 @@ void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns)
     do{
         other = pureFuns;
         for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
-            BooleanDAG* bd = functionMap[*it];
+            assert(functionMap.find(*it) != functionMap.end());
+            BooleanDAG* bd = functionMap.at(*it);
 
-            vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
+            auto ufvec = bd->getNodesByType(bool_node::UFUN);
             for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
 
                 UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
@@ -39,3 +41,15 @@ void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns)
     } while (other.size() != pureFuns.size());
 
 }
+
+FunctionMap &boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_dag_map, ProgramEnvironment *the_env)
+{
+    auto* ret = new FunctionMap();
+
+    for(const auto& it: boolean_dag_map)
+    {
+        ret->insert(it.first, new SketchFunction(it.second, nullptr, the_env));
+    }
+
+    return *ret;
+};

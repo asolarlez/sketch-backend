@@ -19,23 +19,23 @@ int Driver::resolveSketches(){
 		  string outname =  params.outputFname;
 		  ofstream out(outname.c_str());
 		
-		  for(map<string, BooleanDAG*>::iterator it = INp::functionMap.begin(); it != INp::functionMap.end(); ++it){
+		  for(map<string, BooleanDAG*>::iterator it = INp::function_map.begin(); it != INp::function_map.end(); ++it){
 			env.addFunction(it->first, it->second);
 		  }
 
 		  for(map<BooleanDAG*, string>::iterator it = INp::sketches.begin(); it != INp::sketches.end(); ++it){	      	
 	      	
   			cout<<"PROCESSING SKETCH "<<it->second<<endl;
-  			if( INp::functionMap.find(it->second)== INp::functionMap.end() ){
+  			if( INp::function_map.find(it->second)== INp::function_map.end() ){
   				cout<<"There is no function named "<<it->second<<" make sure it is not a sketch. Sketches can't be specs. "<<endl;
   				ABCSolverEnd();
   				return 1;	 
   			}
-  			Dout(INp::functionMap[it->second]->print(cout)); //spec
+  			Dout(INp::function_map[it->second]->print(cout)); //spec
   			Dout(it->first->print(cout)); //sketch
 	      	
 
-			int rv = env.assertDAG(env.prepareMiter(INp::functionMap[it->second]->clone(), it->first->clone()), out);
+			int rv = env.assertDAG(env.prepareMiter(INp::function_map[it->second]->clone(), it->first->clone()), out);
 			if(rv != 0){ return rv; }
 			//outname += "C";
 			//ofstream pout(outname.c_str());

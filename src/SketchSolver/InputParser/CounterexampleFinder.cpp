@@ -25,7 +25,7 @@ void declareInput(VarStore & inputStore, const string& inname, int bitsize, int 
 void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
     //
     {
-        vector<bool_node*>& specIn = dag->getNodesByType(bool_node::SRC);
+        auto specIn = dag->getNodesByType(bool_node::SRC);
         for(size_t i=0; i<specIn.size(); ++i){
             SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);
             int nbits = srcnode->get_nbits();
@@ -35,7 +35,7 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime){
         }
     }
     {
-        vector<bool_node*>& ufunin = dag->getNodesByType(bool_node::UFUN);
+        auto ufunin = dag->getNodesByType(bool_node::UFUN);
         int nbits = dag->getIntSize();
         for(size_t i=0; i<ufunin.size(); ++i){
             UFUN_node* ufunnode = dynamic_cast<UFUN_node*>(ufunin[i]);
@@ -61,7 +61,7 @@ void redeclareInputsAndAngelics(VarStore & input_store, BooleanDAG* problem)
     // code copied from addProblem in CEGISChecker (previously was in CEGISSolver::addProblem).
     // declare inputs and angelics
     redeclareInputs(input_store, problem, true);
-    vector<bool_node *> &problemIn = problem->getNodesByType(bool_node::CTRL);
+    auto problemIn = problem->getNodesByType(bool_node::CTRL);
     for (int i = 0; i < problemIn.size(); ++i) {
         CTRL_node *ctrlnode = dynamic_cast<CTRL_node *>(problemIn[i]);
         int nbits = ctrlnode->get_nbits();

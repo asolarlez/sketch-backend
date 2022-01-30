@@ -15,7 +15,7 @@ void File::relabel(SketchFunction *harness) {
     BooleanDAG* problem = cloned_inlined_harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
-    vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+    auto inputs = problem->getNodesByType(bool_node::SRC);
 
     for(int i = 0;i<size();i++)
     {
@@ -31,7 +31,7 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
     BooleanDAG* problem = cloned_inlined_harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);
-    vector<bool_node*>& inputs = problem->getNodesByType(bool_node::SRC);
+    auto inputs = problem->getNodesByType(bool_node::SRC);
 
     File::Result res = parseFile(file, floats, inputs, input_store);
     const int max_num_bits = 64;
@@ -43,7 +43,7 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
         if(true){
             assert(harness->get_dag()->getIntSize() == at_int_size);
             bool harness_in_function_map = false;
-            for(auto it: harness->get_env()->functionMap) {
+            for(auto it: harness->get_env()->function_map.to_boolean_dag_map()) {
                 assert(it.second->getIntSize() == at_int_size);
                 it.second->growInputIntSizes();
                 if(it.second->get_name() == harness->get_dag()->get_name()) {

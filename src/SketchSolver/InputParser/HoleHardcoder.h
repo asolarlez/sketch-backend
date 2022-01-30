@@ -281,7 +281,7 @@ public:
 	void registerAllControls(map<string, BooleanDAG*>& functionMap) {
 		for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
 			BooleanDAG* bd = it->second;
-			vector<bool_node*>& ctrl = bd->getNodesByType(bool_node::CTRL);
+			auto ctrl = bd->getNodesByType(bool_node::CTRL);
 			for (size_t i = 0; i<ctrl.size(); ++i) {
 				declareControl((CTRL_node*)ctrl[i]);
 			}

@@ -91,6 +91,7 @@ private:
   
 
   const string name;
+  const bool is_clone;
   bool is_sorted; //The sorted property implies that everyone comes after their parents
   bool is_layered;  //The layered property implies that nodes are sorted by layer. is_layered implies is_sorted.
   
@@ -182,7 +183,8 @@ Dllist assertions;
   }
 
 
-  vector<bool_node*>& getNodesByType(bool_node::Type t);
+  const vector<bool_node*>& getNodesByType(bool_node::Type t) const;
+  vector<bool_node*>& getNodesByType_NonConst(bool_node::Type t);
 
 
   
@@ -269,7 +271,7 @@ Dllist assertions;
 	  return useSymbolicSolver;
   }
 
-   BooleanDAG(const string& name_="anon", bool isModel_=false, bool modify_name = false);
+   BooleanDAG(const string& name_="anon", bool isModel_=false, bool is_clone = false);
 
 	virtual ~BooleanDAG();
 
@@ -286,6 +288,8 @@ public:
     }
 
     void replace_label_with_another(const string &replace_this,  const string & with_this);
+
+    bool get_is_clone();
 };
 
 

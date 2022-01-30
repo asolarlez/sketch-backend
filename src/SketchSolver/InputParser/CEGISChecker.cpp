@@ -92,7 +92,7 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	dag->cleanup();
 	
 	if(PARAMS->verbosity > 2){ cout<<" failedpos = "<<failedpos<<"   cutoff = "<<cutoff <<"  as = "<<asserts.size() <<endl; }
-	if(failedpos<cutoff){		
+	if(failedpos<cutoff){
 		pushProblem(new SketchFunction(dag));
 		if(PARAMS->verbosity > 2){
 			cout<<"Level "<<problemLevel()<<"Replacing dag of size "<<orisize<<" with size "<<dag->size()<<endl;
@@ -291,7 +291,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 				//We didn't prove it unsatisfiable; so either it's sat or it timed out.
 				if(rv==l_True){
 					//It found an input that causes things to change.
-					vector<bool_node*>& ctrls = dag->getNodesByType(bool_node::SRC);
+					auto ctrls = dag->getNodesByType(bool_node::SRC);
 					for(size_t i=0; i<ctrls.size(); ++i){
 						SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
 						if(bn->id > h){						
@@ -470,7 +470,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
         CounterexampleFinder eval(empty, *all_inputs_dag, params.sparseArray, floats);
         VarStore &tmpin = get_input_store();
         eval.init(tmpin);
-        vector<bool_node *> &inputs = all_inputs_dag->getNodesByType(bool_node::SRC);
+        auto inputs = all_inputs_dag->getNodesByType(bool_node::SRC);
         File *file = files[curProblem];
         assert(eval.check_file_invariant(file));
         cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
@@ -522,7 +522,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
 					VarStore& tmpin = input;
 					eval.init(tmpin);
-					vector<bool_node*>& inputs = dag->getNodesByType(bool_node::SRC);
+					auto inputs = dag->getNodesByType(bool_node::SRC);
 					CounterexampleFinder::Result res = eval.fromFile(files[curProblem], floats,  inputs);
 					
 					while (res == CounterexampleFinder::MOREBITS) {
@@ -540,7 +540,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
                     assert(dag != oriProblem);
 
 					{
-						vector<bool_node*>& oInputs = oriProblem->getNodesByType(bool_node::SRC);
+						auto oInputs = oriProblem->getNodesByType(bool_node::SRC);
 						auto oin = oInputs.begin();
 						for (auto in = inputs.begin(); in != inputs.end(); ++in, ++oin) {
 							if (((SRC_node*)(*oin))->arrSz != ((SRC_node*)(*in))->arrSz) {

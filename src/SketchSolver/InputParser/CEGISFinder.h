@@ -260,7 +260,7 @@ public:
 		{
 			return;
 		}
-		vector<bool_node*>& problemIn = allInputsDag->getNodesByType(bool_node::CTRL);
+		auto problemIn = allInputsDag->getNodesByType(bool_node::CTRL);
 	    for(int i=0; i<problemIn.size(); ++i){
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
 			if (ctrlnode->getOtype() == OutType::FLOAT) {

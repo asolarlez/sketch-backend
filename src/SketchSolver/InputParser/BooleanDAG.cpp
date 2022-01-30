@@ -36,7 +36,7 @@ string BooleanDAG::get_suffix(bool modify_name)
     }
 }
 
-BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool modify_name): name(name_+get_suffix(modify_name)), isModel(isModel_)
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone): name(name_ + get_suffix(_is_clone)), isModel(isModel_), is_clone(_is_clone)
 {  
   is_layered=false;
   is_sorted=false;
@@ -57,7 +57,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool modify_name): na
 
 void BooleanDAG::growInputIntSizes(){
 	{
-		vector<bool_node*>& specIn = getNodesByType(bool_node::SRC);
+		auto specIn = getNodesByType(bool_node::SRC);
 		++intSize;
 		for(int i=0; i<specIn.size(); ++i){	
 			SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
@@ -726,9 +726,20 @@ bool_node* BooleanDAG::new_node(bool_node* mother,
   return tmp;
 }
 
+const vector<bool_node*> dummy_vec;
 
-vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t){
-	return nodesByType[t];
+const vector<bool_node*>& BooleanDAG::getNodesByType(bool_node::Type t) const{
+    if(nodesByType.find(t) != nodesByType.end()) {
+        return nodesByType.at(t);
+    }
+    else
+    {
+        return dummy_vec;
+    }
+}
+
+vector<bool_node*>& BooleanDAG::getNodesByType_NonConst(bool_node::Type t){
+    return nodesByType[t];
 }
 
 
@@ -1103,7 +1114,7 @@ void BooleanDAG::andDag(BooleanDAG* bdag){
 	if(this->intSize != bdag->intSize){
 		// give priority to intsize of new dag.
 		intSize = bdag->intSize;
-		vector<bool_node*>& sn = getNodesByType(bool_node::SRC);
+		auto sn = getNodesByType(bool_node::SRC);
 		for(int i=0; i<sn.size(); ++i){
 			INTER_node* inter = dynamic_cast<INTER_node*>((sn[i]));
 			if(inter->get_nbits()>1 && inter->get_nbits() < bdag->intSize){
@@ -1388,7 +1399,7 @@ BooleanDAG* BooleanDAG::clone(){
 		}							
 	}
 
-    vector<bool_node *> &ctrls = bdag->getNodesByType(bool_node::CTRL);
+    auto ctrls = bdag->getNodesByType(bool_node::CTRL);
 
     for (int i = 0; i < ctrls.size(); i++) {
         assert(ctrls[i]->type == bool_node::CTRL);
@@ -1400,14 +1411,14 @@ BooleanDAG* BooleanDAG::clone(){
 
 
 void BooleanDAG::registerOutputs(){
-	 vector<bool_node*>& vn = getNodesByType(bool_node::DST);
+	 auto vn = getNodesByType(bool_node::DST);
 	 for(int i=0; i<vn.size(); ++i){
 		assertions.append( getDllnode(vn[i]) );
 	 }
 }
 
 void BooleanDAG::replace_label_with_another(const string &replace_this,  const string & with_this) {
-    vector<bool_node*>& ufun_nodes = getNodesByType(bool_node::UFUN);
+    auto ufun_nodes = getNodesByType(bool_node::UFUN);
     bool enter = false;
     for(auto ufun_node : ufun_nodes){
         assert(ufun_node->type == bool_node::UFUN);
@@ -1417,4 +1428,8 @@ void BooleanDAG::replace_label_with_another(const string &replace_this,  const s
         }
     }
     AssertDebug(enter, replace_this + " doesn't exist in " + name);
+}
+
+bool BooleanDAG::get_is_clone() {
+    return is_clone;
 }

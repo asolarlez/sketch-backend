@@ -6,23 +6,30 @@
 #define SKETCH_SOURCE_PROGRAMENVIRONMENT_H
 
 #include "DagFunctionInliner.h"
+#include "FunctionMap.h"
 
-void findPureFuns(map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
+class SketchFunction;
+
+void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pureFuns);
+
+class ProgramEnvironment;
+
+FunctionMap& boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
 
 class ProgramEnvironment
 {
-    public:
+public:
     CommandLineArgs& params;
     FloatManager& floats;
     HoleHardcoder& hardcoder;
-    map<string, BooleanDAG*>& functionMap;
+    FunctionMap& function_map;
     int num_inlining_steps;
     map<string, map<string, string> > replaceMap;
 
     ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
-                       map<string, BooleanDAG*>& _functionMap, int _steps, map<string, map<string, string> >& _replaceMap):
-                       params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
-                       functionMap(_functionMap), num_inlining_steps(_steps)
+                       map<string, BooleanDAG*>& boolean_dag_map, int _steps, map<string, map<string, string> >& _replaceMap):
+            params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
+            function_map(boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_steps)
     {
 
     }
@@ -52,7 +59,7 @@ class ProgramEnvironment
     }
 
     void doInline(
-           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false){
+           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond, vector<string>& inlined_functions){
 
         if(do_deactivate_pcond){
             deactivate_pcond(&dag);
@@ -71,13 +78,13 @@ class ProgramEnvironment
 
         set<string> pureFuns;
 
-        findPureFuns(functionMap, pureFuns);
+        findPureFuns(function_map.to_boolean_dag_map(), pureFuns);
 
         DagOneStepInlineAndConcretize dfi(
                 var_store,
                 var_type,
                 dag,
-                functionMap,
+                function_map.to_boolean_dag_map(),
                 std::move(replaceMap),
                 floats,
                 &hardcoder,
@@ -114,6 +121,9 @@ class ProgramEnvironment
                     if(do_deactivate_pcond){
                         activate_pcond(&dag);
                     }
+
+                    inlined_functions = dfi.get_inlined_functions();
+
                     return ;
                 }
                 //
@@ -146,7 +156,7 @@ class ProgramEnvironment
         }
         hardcoder.afterInline();
         {
-            DagFunctionToAssertion makeAssert(dag, functionMap, floats);
+            DagFunctionToAssertion makeAssert(dag, function_map.to_boolean_dag_map(), floats);
             makeAssert.process(dag);
         }
 
@@ -155,6 +165,7 @@ class ProgramEnvironment
            activate_pcond(&dag);
        }
 
+       inlined_functions = dfi.get_inlined_functions();
     }
 
     FloatManager &get_floats() {
@@ -167,24 +178,26 @@ class ProgramEnvironment
     }
 };
 
-    /**
-    * Thought Flow:
-    * 1. Need to use DagOneStepInlineAndConcretize to concretize dags with a counterexample from checker on the go
-    * 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
-    * 1.2 Currently the entire inlined dag is being optimized after concretization.
-    *
-    * Actionable:
-    * Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagOneStepInlineAndConcretize.
-    *
-    * Qs:
-    * DagOneStepInlineAndConcretize accepts as input all the meta-data of a sketch (look at the spec for initializing DagOneStepInlineAndConcretize)
-    * Q: should all these parameters be passed to the checker?
-    * Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagOneStepInlineAndConcretize with the inliner?
-    * Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
-    * Q: should we run these outer loops also when we do the inlining on the go?
-    *  How would that work?
-    *  How should we structure the code in relation to DagConcretier?
-    *  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
-    */
+
+
+/**
+* Thought Flow:
+* 1. Need to use DagOneStepInlineAndConcretize to concretize dags with a counterexample from checker on the go
+* 1.1 Benefits: if you have a conterexample, concretizing while inling should reduce memory consumption due to constant propagation and optimization.
+* 1.2 Currently the entire inlined dag is being optimized after concretization.
+*
+* Actionable:
+* Instead of inlining before doing CEGIS. Inline whenever you get a new counterexample using the DagOneStepInlineAndConcretize.
+*
+* Qs:
+* DagOneStepInlineAndConcretize accepts as input all the meta-data of a sketch (look at the spec for initializing DagOneStepInlineAndConcretize)
+* Q: should all these parameters be passed to the checker?
+* Q: should we rather package them as an inliner, and send the inliner as a parameter, and then initialize the DagOneStepInlineAndConcretize with the inliner?
+* Inline seems to be have two nested outer loops around inliner (the for and the do-while loops).
+* Q: should we run these outer loops also when we do the inlining on the go?
+*  How would that work?
+*  How should we structure the code in relation to DagConcretier?
+*  Would DagOneStepInlineAndConcretize be instead of the DagInliner in these outer loops or should the outer loops be inside the DagOneStepInlineAndConcretize and we have an one-step-concretizer-inliner as a parameter in the DagOneStepInlineAndConcretize rather than having it inherit from DagInliner.
+*/
 
 #endif //SKETCH_SOURCE_PROGRAMENVIRONMENT_H

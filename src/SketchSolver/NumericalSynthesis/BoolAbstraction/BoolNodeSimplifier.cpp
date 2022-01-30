@@ -117,7 +117,7 @@ void BoolNodeSimplifier::process(BooleanDAG& bdag, int nodeid, SimpleGradEvaluat
 				an->addToParents();
 				//cout << an->lprint() << endl;
 				addNode(an);
-				bdag.getNodesByType(an->type).push_back(an);
+                bdag.getNodesByType_NonConst(an->type).push_back(an);
 				bdag.assertions.append(getDllnode(an));
 			}
 		}

@@ -76,9 +76,6 @@ using namespace std;
 
 namespace SolverLanguagePrimitives
 {
-
-
-
     enum ValType {type_state, type_int, type_bool, type_solver_e, type_solver_ae, type_problem_ae, type_problem_e, type_solution_holder, type_input_holder};
 
     class Val
@@ -108,121 +105,9 @@ namespace SolverLanguagePrimitives
         string to_string() override {return std::to_string(get());}
     };
 
-    class InputHolder;
+    class InputAssignment;
 
     class ProblemAE;
-
-    /*
-    class Function
-    {
-        SketchFunction* harness;
-        FloatManager& floats;
-    public:
-        explicit Function(SketchFunction* _harness, FloatManager& _floats): harness(_harness), floats(_floats){}
-        explicit Function(Function* function): harness(function->harness), floats(function->floats){}
-
-        void clear()
-        {
-            harness->clear();
-            delete harness;
-            harness = NULL;
-        }
-
-        SketchFunction *get_harness() {
-            return harness;
-        }
-
-//        BooleanDAG* get_dag() const
-//        {
-//            return dag;
-//        }
-
-        FloatManager& get_floats()
-        {
-            return floats;
-        }
-
-        SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
-        {
-            assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
-            if(out_type == OutType::INT)
-            {
-                return sk_type_int;
-            }
-            else if(out_type == OutType::BOOL)
-            {
-                return sk_type_bool;
-            }
-            else if(out_type == OutType::FLOAT)
-            {
-                return sk_type_float;
-            }
-            else
-            {
-                assert(false);
-            }
-        }
-        vector<SkHoleSpec>* get_holes()
-        {
-            SketchFunction* inlined_harness = harness->produce_inlined_dag();
-            vector<bool_node*>& ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
-            auto* ret = new vector<SkHoleSpec>();
-            for(int i = 0;i<ctrl_nodes.size(); i++)
-            {
-                ret->push_back(
-                        SkHoleSpec(
-                                ctrl_nodes[i]->get_name(),
-                                bool_node_out_type_to_sk_val_type(ctrl_nodes[i]->getOtype())));
-            }
-            inlined_harness->clear();
-            return ret;
-        }
-
-        Function* produce_function_with_concretized_holes(SolutionHolder* solution_holder)
-        {
-            return new Function(
-                    harness->produce_concretization(*solution_holder->to_var_store(), bool_node::CTRL), floats);
-//            return new Function(
-//                    hardCodeINode(get_dag(), *solution_holder->to_var_store(), bool_node::CTRL, floats), floats);
-        }
-
-        Function* produce_function_with_concretized_inputs(InputHolder* input_holder)
-        {
-            return new Function(
-                    harness->produce_concretization(*input_holder->to_var_store(), bool_node::SRC), floats);
-//            return new Function(
-//                    hardCodeINode(get_dag(), *input_holder->to_var_store(), bool_node::SRC, floats), floats);
-        }
-
-        BooleanDAG* get_dag() {
-            return harness->get_dag();
-        }
-
-//        BooleanDAG* get_original_dag()
-//        {
-//            return harness->get_original_dag();
-//        }
-
-        int count_passing_inputs(File* file) {
-            int ret = 0;
-            int num_0s = 0;
-            int num_1s = 0;
-            for(int i = 0;i<file->size();i++)
-            {
-                Function* concretized_function = produce_function_with_concretized_inputs(
-                        new InputHolder(file->at(i), floats));
-                assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == NULL));
-                if(concretized_function->get_dag()->get_failed_assert() == NULL)
-                {
-                    ret += 1;
-                }
-                concretized_function->clear();
-            }
-            cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
-            return ret;
-        }
-    };
-     */
 
     class ProblemAE: public SketchFunction
     {
@@ -250,7 +135,7 @@ namespace SolverLanguagePrimitives
 
     class ProblemE: public ProblemAE
     {
-//        vector<InputHolder*> concrete_inputs;
+//        vector<InputAssignment*> concrete_inputs;
     public:
         explicit ProblemE(SketchFunction* f): ProblemAE(f) {}
         string to_string() override
@@ -263,7 +148,7 @@ namespace SolverLanguagePrimitives
 
     class ProblemA: public ProblemAE
     {
-//        SolutionHolder* solution_holder;
+//        HoleAssignment* solution_holder;
     public:
         string to_string() override
         {
@@ -287,17 +172,17 @@ namespace SolverLanguagePrimitives
         string to_string() override {return get()->to_string();}
     };
 
-    class ValSolutionHolder: public Val, public PolyVal<SolutionHolder*>
+    class ValSolutionHolder: public Val, public PolyVal<HoleAssignment*>
     {
     public:
-        explicit ValSolutionHolder(SolutionHolder* _val): PolyVal<SolutionHolder*>(_val), Val(type_solution_holder){}
+        explicit ValSolutionHolder(HoleAssignment* _val): PolyVal<HoleAssignment*>(_val), Val(type_solution_holder){}
         string to_string() override {return get()->to_string();}
     };
 
-    class ValInputHolder: public Val, public PolyVal<InputHolder*>
+    class ValInputHolder: public Val, public PolyVal<InputAssignment*>
     {
     public:
-        explicit ValInputHolder(InputHolder* _val): PolyVal<InputHolder*>(_val), Val(type_input_holder){}
+        explicit ValInputHolder(InputAssignment* _val): PolyVal<InputAssignment*>(_val), Val(type_input_holder){}
         string to_string() override {return get()->to_string();}
     };
 
@@ -305,7 +190,7 @@ namespace SolverLanguagePrimitives
     {
     public:
         Solver_E()= default;
-        virtual SolutionHolder* solve(ProblemE* problem)
+        virtual HoleAssignment* solve(ProblemE* problem)
         { assert(false); }
         virtual string to_string()
         { assert(false); }
@@ -315,7 +200,7 @@ namespace SolverLanguagePrimitives
     {
     public:
         Solver_AE()= default;
-        virtual SolutionHolder* solve(ProblemAE* problem)
+        virtual HoleAssignment* solve(ProblemAE* problem)
         { assert(false); }
         virtual string to_string()
         { assert(false); }
@@ -347,7 +232,7 @@ namespace SolverLanguagePrimitives
         void add_problem(BooleanDAG* problem, VarStore& ctrlStore)
         {
             {
-                vector<bool_node*>& problemIn = problem->getNodesByType(bool_node::CTRL);
+                auto problemIn = problem->getNodesByType(bool_node::CTRL);
                 for(int i=0; i<problemIn.size(); ++i){
                     CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
                     if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
@@ -361,7 +246,7 @@ namespace SolverLanguagePrimitives
     public:
         explicit WrapperCEGISFinderSpec(CEGISFinderSpec* _finder): finder(_finder), Solver_E() {}
 
-        SolutionHolder* solve(ProblemE* problem) override
+        HoleAssignment* solve(ProblemE* problem) override
         {
             VarStore ctrlStore;
             add_problem(problem->get_dag(), ctrlStore);
@@ -370,12 +255,12 @@ namespace SolverLanguagePrimitives
             if(found)
             {
                 ret = SATSolver::SATISFIABLE;
-                return new SolutionHolder(ret, &ctrlStore, finder->get_floats());
+                return new HoleAssignment(ret, &ctrlStore, finder->get_floats());
             }
             else
             {
                 ret = SATSolver::UNSATISFIABLE;
-                return new SolutionHolder(ret);
+                return new HoleAssignment(ret);
             }
         }
         string to_string() override
@@ -388,10 +273,10 @@ namespace SolverLanguagePrimitives
     {
     public:
         RandomSolver(): Solver_AE() {}
-        SolutionHolder* solve(ProblemAE* problem) override
+        HoleAssignment* solve(ProblemAE* problem) override
         {
             vector<SkHoleSpec>* hole_names = problem->get_holes();
-            auto* ret = new SolutionHolder();
+            auto* ret = new HoleAssignment();
             
             cout << "TODO: RandomSolver::solve" << endl;
             assert(false);
@@ -427,7 +312,7 @@ namespace SolverLanguagePrimitives
             return ret;
         }
 
-        SolutionHolder* solve(ProblemAE* problem) override
+        HoleAssignment* solve(ProblemAE* problem) override
         {
             vector<SkHoleSpec>* blank_solution = problem->get_holes();
             auto* ret = new Assignment_SkVal();
@@ -438,7 +323,7 @@ namespace SolverLanguagePrimitives
                 ret->set(sk_hole_spec.get_name(), get_const_val(sk_hole_spec.get_type()));
             }
 
-            return new SolutionHolder(SATSolver::SATISFIABLE, ret);
+            return new HoleAssignment(SATSolver::SATISFIABLE, ret);
         }
         string to_string() override
         {
@@ -597,7 +482,7 @@ namespace SolverLanguagePrimitives
         explicit SolutionHolderConstructor(ProblemAENode* _problem_node):
                 problem_node(_problem_node), SolutionHolderNode() { }
         ValSolutionHolder* eval(ValState* state) override {
-            return new ValSolutionHolder(new SolutionHolder(problem_node->eval(state)->get()));
+            return new ValSolutionHolder(new HoleAssignment(problem_node->eval(state)->get()));
         }
     };
 
@@ -808,7 +693,7 @@ namespace SolverLanguagePrimitives
         {
             return new ValInputHolder(check(problem_node->eval(state)->get(), solution_holder_node->eval(state)->get()));
         }
-        static InputHolder* check(ProblemAE* problem, SolutionHolder* solution_holder)
+        static InputAssignment* check(ProblemAE* problem, HoleAssignment* solution_holder)
         {
             cout << "TODO: check" << endl;
             assert(false);
@@ -854,7 +739,7 @@ namespace SolverLanguagePrimitives
         {
             return new ValProblemE(concretize_inputs(problem_node->eval(state)->get(), input_holder_node->eval(state)->get()));
         }
-        static ProblemE* concretize_inputs(ProblemAE* problem, InputHolder* input_holder)
+        static ProblemE* concretize_inputs(ProblemAE* problem, InputAssignment* input_holder)
         {
             cout << "TODO: produce_function_with_concretized_inputs" << endl;
             assert(false);
@@ -906,7 +791,7 @@ namespace SolverLanguagePrimitives
                         "harness",
                         new ProblemAEConst(new ProblemAE(function_map["f"])));
 
-//  SolutionHolder solution = RandomSolver.solve(harness);
+//  HoleAssignment solution = RandomSolver.solve(harness);
         auto* rand_solution_assgn =
                 new StateAssignment(
                         "solution_holder",
@@ -914,12 +799,12 @@ namespace SolverLanguagePrimitives
                                 new SolverAEConst(new RandomSolver()),
                                 new ProblemAEVar("harness")));
 
-//    #SolutionHolder solution_holder = new SolutionHolder(harness);
+//    #HoleAssignment solution_holder = new HoleAssignment(harness);
 //    StateNode* solution_assgn =
 //            new StateAssignment("solution", new SolutionHolderConstructor(new ProblemVar("harness")));
 //    #solution_holder.init_rand();
 
-//    InputHolder* counter_example = check(harness, solution_holder)
+//    InputAssignment* counter_example = check(harness, solution_holder)
         auto* counter_example_assgn =
                 new StateAssignment(
                         "counter_example",
@@ -1016,7 +901,7 @@ namespace SolverLanguagePrimitives
     public:
         WrapperChecker(CommandLineArgs& _args, HoleHardcoder& _hc, FloatManager& _floats):
         args(_args), hc(_hc), floats(_floats) {}
-        ProblemE* get_counter_example_concretized_problem_e(ProblemAE* problem, SolutionHolder* solution_holder)
+        ProblemE* get_counter_example_concretized_problem_e(ProblemAE* problem, HoleAssignment* solution_holder)
         {
             auto* checker = new CEGISChecker(args, hc, floats);
             checker->addProblem(problem->get_harness(), nullptr);
@@ -1028,12 +913,12 @@ namespace SolverLanguagePrimitives
         }
     };
 
-    inline SolutionHolder* first_cegis(
+    inline HoleAssignment* first_cegis(
             SketchFunction* harness, FloatManager& floats, CommandLineArgs& _args, HoleHardcoder& _hc,
             CEGISFinderSpec* finder)
     {
         ProblemAE* problem_ae = new ProblemAE(harness);
-        SolutionHolder* solution_holder = (new ConstantSolver())->solve(problem_ae);
+        HoleAssignment* solution_holder = (new ConstantSolver())->solve(problem_ae);
 
         ProblemE* problem_e = (new WrapperChecker(_args, _hc, floats))->
                 get_counter_example_concretized_problem_e(problem_ae, solution_holder);
@@ -1116,7 +1001,7 @@ namespace SolverLanguagePrimitives
             cout << endl;
         }
 
-        SolutionHolder* solve(ProblemAE* problem) override
+        HoleAssignment* solve(ProblemAE* problem) override
         {
             solver->addProblem(problem->get_harness(), problem->get_file());
 
@@ -1160,11 +1045,11 @@ namespace SolverLanguagePrimitives
                 }
             }
             cout << "exit WrapperAssertDAG->solve(..)" << endl;
-            return new SolutionHolder(ret_result, holes_to_sk_val);
+            return new HoleAssignment(ret_result, holes_to_sk_val);
         }
     };
 
-    inline SolutionHolder* wrapper_assert_dag(
+    inline HoleAssignment* wrapper_assert_dag(
             SketchFunction* harness, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
             HoleHardcoder& _hc,
@@ -1182,7 +1067,7 @@ namespace SolverLanguagePrimitives
 //        string function_to_concretize;
 //    };
 //
-//    inline SolutionHolder* STUN(ProgramEnvironment* env, bool hasGoodEnoughSolution)
+//    inline HoleAssignment* STUN(ProgramEnvironment* env, bool hasGoodEnoughSolution)
 //    {
 //        /**
 //         * generator g_pred(x);
@@ -1209,14 +1094,13 @@ namespace SolverLanguagePrimitives
 //        //solve h1;
 //        //
 //
-//        SolutionHolder* sol = (new WrapperAssertDAG(env->get_floats(), env->get_hardcoder(), env->params, hasGoodEnoughSolution))->
+//        HoleAssignment* sol = (new WrapperAssertDAG(env->get_floats(), env->get_hardcoder(), env->params, hasGoodEnoughSolution))->
 //                solve(new ProblemAE(new Function(harness, floats), sub_file));
 //
 //    }
 
-    inline SolutionHolder* target_best_effort(SolverProgramState* state, string file_name = "")
+    inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name = "")
     {
-
         bool do_solver_program = file_name == "";
         if(do_solver_program) {
 
@@ -1260,7 +1144,7 @@ namespace SolverLanguagePrimitives
             if(var_val_ret->is_solution_holder())
             {
 
-                SolverLanguagePrimitives::SolutionHolder* solution_holder = var_val_ret->get_solution(false);
+                SolverLanguagePrimitives::HoleAssignment* solution_holder = var_val_ret->get_solution(false);
 
                 delete var_val_ret;
 
@@ -1276,7 +1160,7 @@ namespace SolverLanguagePrimitives
 
                 solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
 
-                local_harness->set_solution(solution_holder->to_var_store());
+                local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
 
 
                 assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
@@ -1318,6 +1202,12 @@ namespace SolverLanguagePrimitives
 //                select_best = 8;
 //count	1288 / 1743 (73.8956 %)
 
+// with params:
+//                num_trials = 20;
+//                num_rows_per_sample = 6;
+//                select_best = 8;
+//                count	1186 / 1743 (68.0436 %)
+
 
 
 // num_trials = 20;
@@ -1326,6 +1216,10 @@ namespace SolverLanguagePrimitives
 // with x2
 // count	1288 / 1743 (73.8956 %)
 
+//                num_trials = 6;
+//                num_rows_per_sample = 6;
+//                select_best = 3;
+//count	1058 / 1743 (60.6999 %)
 
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
@@ -1345,13 +1239,13 @@ namespace SolverLanguagePrimitives
         File* all_file = new File(state->harness_, file_name, state->floats, state->args.seed);
         int num_samples = 30;
         int rows_per_sample = 6;
-        vector<pair<int, SolutionHolder*> > solutions;
+        vector<pair<int, HoleAssignment*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
             File* sub_file = all_file->sample_sub_file(rows_per_sample);
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
-            SolutionHolder* sol = (solver)->
+            HoleAssignment* sol = (solver)->
                     solve(new ProblemAE(state->harness_, sub_file));
             SketchFunction* concretized_function = state->harness_->produce_with_concretized_holes(
                     sol);
@@ -1390,7 +1284,7 @@ namespace SolverLanguagePrimitives
             fout << "count\t" << solutions[i].first << " / " << all_file->size() <<" ("<< 100.0*(float)solutions[i].first/all_file->size() << " %)" << endl;
         }
 
-        state->harness_->set_solution(solutions[0].second->to_var_store());
+        state->harness_->set_solution_ctrl_var_store(solutions[0].second->to_var_store());
 
         if(solutions[0].second->get_sat_solver_result() == SATSolver::SATISFIABLE)
         {
@@ -1502,18 +1396,18 @@ public:
 //        SolverLanguagePrimitives::target_cegis(finder);
     }
 
-    SolverLanguagePrimitives::SolutionHolder *
+    SolverLanguagePrimitives::HoleAssignment *
     eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
          HoleHardcoder &_hc,
-         bool hasGoodEnoughSolution, map<string, SketchFunction *> &function_map)
+         bool hasGoodEnoughSolution, FunctionMap &function_map)
     {
         SolverProgramState* state =
                 new SolverProgramState(harness, floats, _args, _hc, hasGoodEnoughSolution, function_map);
         return SolverLanguagePrimitives::target_best_effort(state, file_name);
     }
 
-    SolverLanguagePrimitives::SolutionHolder *
-    eval(map<string, SketchFunction *> &function_map, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+    SolverLanguagePrimitives::HoleAssignment *
+    eval(FunctionMap &function_map, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
         SolverProgramState* state =

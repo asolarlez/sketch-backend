@@ -185,8 +185,8 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		Dout(cout << "BEFORE Matching input names" << endl);
-		vector<bool_node*>& specIn = spec->getNodesByType(bool_node::SRC);
-		vector<bool_node*>& sketchIn = sketch->getNodesByType(bool_node::SRC);
+		auto specIn = spec->getNodesByType(bool_node::SRC);
+		auto sketchIn = sketch->getNodesByType(bool_node::SRC);
 
 		int inints = 0;
 		int inbits = 0;
@@ -230,8 +230,8 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 
 	{
 		Dout(cout << "BEFORE Matching output names" << endl);
-		vector<bool_node*>& specDST = spec->getNodesByType(bool_node::DST);
-		vector<bool_node*>& sketchDST = sketch->getNodesByType(bool_node::DST);
+		auto specDST = spec->getNodesByType(bool_node::DST);
+		auto sketchDST = sketch->getNodesByType(bool_node::DST);
 		Assert(specDST.size() == sketchDST.size(), "The number of inputs in the spec and sketch must match");
 
 //        for(int i = 0; i<sketch->size();i++)
@@ -283,7 +283,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			
 
 			/*
-			ComplexInliner cse(*sketch, functionMap, params.inlineAmnt, params.mergeFunctions );
+			ComplexInliner cse(*sketch, function_map, params.inlineAmnt, params.mergeFunctions );
 			cse.process(*sketch);
 			*/
 		}
@@ -302,7 +302,7 @@ BooleanDAG* InterpreterEnvironment::prepareMiter(BooleanDAG* spec, BooleanDAG* s
 			
 
 			/*
-			ComplexInliner cse(*spec, functionMap,  params.inlineAmnt, params.mergeFunctions  );
+			ComplexInliner cse(*spec, function_map,  params.inlineAmnt, params.mergeFunctions  );
 			cse.process(*spec);
 			*/
 		}
@@ -440,10 +440,10 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 
 
 
-//void findPureFuns(map<string, BooleanDAG*>& functionMap, set<string>& pureFuns) {
+//void findPureFuns(map<string, BooleanDAG*>& function_map, set<string>& pureFuns) {
 //
-//	for (auto it = functionMap.begin(); it != functionMap.end(); ++it) {
-//		vector<bool_node*>& ctrlvec = it->second->getNodesByType(bool_node::CTRL);
+//	for (auto it = function_map.begin(); it != function_map.end(); ++it) {
+//		auto ctrlvec = it->second->getNodesByType(bool_node::CTRL);
 //		if (ctrlvec.size() == 0) {
 //			pureFuns.insert(it->first);
 //			continue;
@@ -457,9 +457,9 @@ void InterpreterEnvironment::replaceSrcWithTuple(BooleanDAG& dag) {
 //	do{
 //		other = pureFuns;
 //		for (auto it = pureFuns.begin(); it != pureFuns.end(); ++it) {
-//			BooleanDAG* bd = functionMap[*it];
+//			BooleanDAG* bd = function_map[*it];
 //
-//			vector<bool_node*>& ufvec = bd->getNodesByType(bool_node::UFUN);
+//			auto ufvec = bd->getNodesByType(bool_node::UFUN);
 //			for (auto ufit = ufvec.begin(); ufit != ufvec.end(); ++ufit ) {
 //
 //				UFUN_node* ufn = dynamic_cast<UFUN_node*>(*ufit);
@@ -750,55 +750,6 @@ void InterpreterEnvironment::fixes(const string& holename) {
 	holesToHardcode[pos-1].push_back(holename);
 }
 
-void unroll_and_concertize_function(string f_to_concretize, ProgramEnvironment *program_env,
-                                    VarStore &partial_concretization)
-{
-    map<string, BooleanDAG*>& functionMap = program_env->functionMap;
-
-    /// UNROLLING AND CONCERTIZING
-    SketchFunction *harness_for_function = new SketchFunction(functionMap[f_to_concretize]->clone(), nullptr,
-                                                              program_env);
-    harness_for_function->concretize(
-            partial_concretization, bool_node::CTRL, true);
-
-    functionMap[f_to_concretize] = harness_for_function->get_dag()->clone();
-    vector<bool_node *> &ctrls = functionMap[f_to_concretize]->getNodesByType(bool_node::CTRL);
-    cout << "UNROLLING AND CONCERTIZING" << endl;
-    cout << "CTRL NODES IN " + f_to_concretize << " " << ctrls.size() << endl;
-
-    cout << "remaining nodes" << endl;
-    for(int i = 0;i<ctrls.size();i++)
-    {
-        cout << ctrls[i]->get_name() << endl;
-    }
-
-    cout << "partial_concretization" << endl;
-    partial_concretization.printContent(cout);
-
-    for (int i = 0; i < ctrls.size(); i++) {
-        assert(ctrls[i]->type == bool_node::CTRL);
-    }
-}
-
-void print_ctrls(ProgramEnvironment* env)
-{
-    for(auto it: env->functionMap)
-    {
-
-        SketchFunction* local_harness = new SketchFunction(it.second->clone(), nullptr, env);
-
-        local_harness->do_inline();
-
-        cout << it.first <<" #ctrls " << (local_harness->get_dag()->getNodesByType(bool_node::CTRL)).size() << endl;
-
-        local_harness->clear();
-
-    }
-
-//    assert(false);
-}
-
-
 int InterpreterEnvironment::doallpairs() {
 //
 
@@ -884,8 +835,6 @@ int InterpreterEnvironment::doallpairs() {
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-                print_ctrls(program_env);
-
                 bool fixes = false;
                 bool concretizes = true;
                 bool calc_partial_concretization = concretizes || fixes;
@@ -902,39 +851,10 @@ int InterpreterEnvironment::doallpairs() {
                     }
                 }
 
-                if(concretizes) {
-                    string f_to_concretize_prefix = "predicate";
-                    if (i == 0) {
-                        assert(spskpairs[i].sketch == "main_lvl0__Wrapper");
-                        string f_to_concretize = f_to_concretize_prefix+"_lvl0";
-                        assert(functionMap.find(f_to_concretize) != functionMap.end());
+                assert(!concretizes);
 
-                        unroll_and_concertize_function(f_to_concretize, program_env,
-                                                       partial_concretization);
-
-                    }
-                    else if (i == 1) {
-                        assert(spskpairs[i].sketch == "main_lvl1__Wrapper");
-                        string f_to_concretize = f_to_concretize_prefix+"_lvl0";
-                        assert(functionMap.find(f_to_concretize) != functionMap.end());
-
-                        unroll_and_concertize_function(f_to_concretize, program_env,
-                                                       partial_concretization);
-
-                    } else if (i == 2) {
-                        assert(spskpairs[i].sketch == "main_lvl2__Wrapper");
-                        string f_to_concretize = f_to_concretize_prefix+"_lvl1";
-                        assert(functionMap.find(f_to_concretize) != functionMap.end());
-
-                        unroll_and_concertize_function(f_to_concretize, program_env,
-                                                       partial_concretization);
-                    } else {
-                        assert(false);
-                    }
-                }
                 BooleanDAG* bd = nullptr;
                 cout << "BEFORE PREPARE MITER" << endl;
-
 
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
 
@@ -951,7 +871,7 @@ int InterpreterEnvironment::doallpairs() {
 
 
                 if(calc_partial_concretization) {
-                    partial_concretization = join(partial_concretization, *local_harness->get_ctrl_var_store());
+                    partial_concretization = join(partial_concretization, *local_harness->get_solution_ctrl_var_store());
                     intSize = local_harness->get_dag()->getIntSize();
                     cout << "partial_concretization.size() " << partial_concretization.size() << endl;
                 }
@@ -1086,16 +1006,9 @@ SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inline
     ProgramEnvironment *program_env =
             new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-    map<string, SketchFunction*> sketch_function_map;
-    for(const auto& it: functionMap)
-    {
-        sketch_function_map[it.first] = new SketchFunction(
-                functionMap[it.first], nullptr, program_env);
-    }
-
     SolverLanguage solver_language = SolverLanguage();
-    SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
-            sketch_function_map, floats, params, hardcoder, hasGoodEnoughSolution);
+    SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+            program_env->function_map, floats, params, hardcoder, hasGoodEnoughSolution);
 
     cout << "EXITED SolverLanguage" << endl;
     if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1140,9 +1053,9 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
-        SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
+        SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 harness, file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new map<string, SketchFunction *>()));
+                *(new FunctionMap()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
@@ -1292,9 +1205,9 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
-        SolverLanguagePrimitives::SolutionHolder* ret = solver_language.eval(
+        SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new map<string, SketchFunction *>()));
+                *(new FunctionMap()));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)

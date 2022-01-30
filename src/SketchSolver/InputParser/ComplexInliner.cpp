@@ -191,7 +191,7 @@ void ComplexInliner::mergeFuncalls(int first, int second){
 void ComplexInliner::computeSpecialInputs(){
 	for(map<string, BooleanDAG*>::iterator it = functionMap.begin(); it != functionMap.end(); ++it){
 		BooleanDAG* fun = it->second;
-		vector<bool_node*>& inputs  = fun->getNodesByType(bool_node::SRC);
+		auto inputs  = fun->getNodesByType(bool_node::SRC);
 		for(int i=0; i<inputs.size(); ++i){	
 			string fn = inputs[i]->get_name();
 			if(fn.find("PC") != -1 ){
@@ -324,7 +324,7 @@ void ComplexInliner::immInline(BooleanDAG& dag){
 
 
 void ComplexInliner::process(BooleanDAG& dag){
-	// cout<<" funmap has size " << functionMap.size() << endl;
+	// cout<<" funmap has size " << function_map.size() << endl;
 	somethingChanged = true;
 	{
 		DagOptim optim(dag, floats);

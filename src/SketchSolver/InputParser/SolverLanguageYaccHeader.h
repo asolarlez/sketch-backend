@@ -253,16 +253,17 @@ public:
     HoleHardcoder& hc;
     bool hasGoodEnoughSolution;
 
-    map<string, SketchFunction*>& function_map;
+    FunctionMap& function_map;
 
     SketchFunction* harness_ = nullptr;
 
     SolverProgramState(SketchFunction* _harness, FloatManager& _floats, CommandLineArgs& _args,
-                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, map<string, SketchFunction*>& _function_map):
+                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
             harness_(_harness),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
-            function_map(_function_map), global() {}
-    SolverProgramState(map<string, SketchFunction*>& _function_map, FloatManager& _floats, CommandLineArgs& _args,
+            function_map(_function_map),
+            global() {}
+    SolverProgramState(FunctionMap& _function_map, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             function_map(_function_map),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr),
@@ -309,13 +310,18 @@ public:
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
                 string dag_name = var->get_name()->to_string();
-                assert(function_map.find(dag_name) != function_map.end());
-                assert(dag_name == var_val->get_function(false)->get_dag()->get_name());
-                function_map[dag_name] = var_val->get_function(false);
-                function_map[dag_name]->set_assert__it_is_in_this_function_map(&function_map);
-                //!!! HERE FIX THIS
-                map<string, BooleanDAG*>& functionMap = function_map[dag_name]->get_env()->functionMap;
-                functionMap[dag_name] = function_map[dag_name]->get_dag();
+                SketchFunction* sk_func = var_val->get_function(false);
+                FunctionMap& _function_map = sk_func->get_env()->function_map;
+                assert(&_function_map == &function_map);
+                function_map.insert(dag_name, sk_func);
+
+//                assert(function_map.find(dag_name) != function_map.end());
+//                assert(dag_name == var_val->get_function(false)->get_dag()->get_name());
+//                function_map[dag_name] = var_val->get_function(false);
+//                function_map[dag_name]->set_assert__it_is_in_this_function_map(&function_map);
+//                //!!! HERE FIX THIS
+//                FunctionMap& function_map = function_map[dag_name]->get_env()->function_map;
+//                function_map[dag_name] = function_map[dag_name];
             }
             else if(var_type_str == "int")
             {

@@ -2835,13 +2835,13 @@ void DagOptim::findCycles(BooleanDAG& dag){
 		}
 	}
 	{
-		vector<bool_node*>& ins = dag.getNodesByType(bool_node::SRC);
+		auto ins = dag.getNodesByType(bool_node::SRC);
 		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the sources.
 		}
 	}
 	{
-		vector<bool_node*>& ins = dag.getNodesByType(bool_node::CTRL);
+		auto ins = dag.getNodesByType(bool_node::CTRL);
 		for(size_t i=0; i<ins.size(); ++i){		
 			cbPerNode(ins[i], bns, dupNodes); // do depth first search starting from the controls.
 		}

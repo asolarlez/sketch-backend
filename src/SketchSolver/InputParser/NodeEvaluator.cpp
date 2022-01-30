@@ -3,7 +3,7 @@
 #include <iomanip>
 
 // Class for interpreter of BooleanDAG.
-NodeEvaluator::NodeEvaluator(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
+NodeEvaluator::NodeEvaluator(const map<string, BooleanDAG *> &functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
 functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
 {
 	values.resize(bdag.size());
@@ -341,7 +341,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 	vector<bool_node*>& mm = node.multi_mother;
 	visitArith(node);
 	VarStore tmp = inputs;
-	BooleanDAG* callee = functionMap[node.get_name()];
+	BooleanDAG* callee = function_map[node.get_name()];
 	vector<bool_node*>& inodes = callee->getNodesByType(bool_node::SRC);
 	Assert(inodes.size()== mm.size(), "The sizes don't match!!");
 	for(int t=0; t<node.multi_mother.size(); ++t){
@@ -353,7 +353,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 
 	bool_node* outnode = outnodes[0];
 
-	recursives.insert(make_pair(&node, NodeEvaluator(functionMap, inputs)));
+	recursives.insert(make_pair(&node, NodeEvaluator(function_map, inputs)));
 	recursives[&node].process(*callee);
 	
 	map<UFUN_node*, NodeEvaluator>::iterator it = recursives.find(&node);

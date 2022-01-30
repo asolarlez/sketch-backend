@@ -84,10 +84,10 @@ Solver main()
 
 Solver synthesize_composite_programs_from_parts(left_programs, right_programs, select_best, file_name, num_trials, num_rows_per_sample)
 {
-    all_sketch_main_lvl1_programs = [];
+    seed_main_lvl1 = [];
 
     for(int i = 0;i<select_best;i++) {
-        for(int j = i+1;i<select_best;i++) {
+        for(int j = 0;i<select_best;i++) {
             predicate_lvl1 =
                 composite_predicate.produce_replace("condition", predicate.clone());
             predicate_lvl1.replace("if_true_branch",
@@ -115,14 +115,14 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
 
             local_sketch_main_lvl1_programs = tmp;
 
-            concatenate(all_sketch_main_lvl1_programs, local_sketch_main_lvl1_programs);
+            concatenate(seed_main_lvl1, local_sketch_main_lvl1_programs);
         }
     }
 
-    all_sketch_main_lvl1_programs.sort();
-    all_sketch_main_lvl1_programs.reverse();
+    seed_main_lvl1.sort();
+    seed_main_lvl1.reverse();
 
-    return all_sketch_main_lvl1_programs;
+    return seed_main_lvl1;
 }
 
 Solver check_predicate_and_assertion_consistency(the_predicate, file_name, the_harness)
@@ -140,10 +140,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     string file_name = "uav_kg_big__as_bools.data";
     //string file_name = "zig_zag.data";
 
-    num_trials = 6;
-    num_rows_per_sample = 4;
-    select_best = 3;
-    assert(select_best >= 2);
+    num_trials = 1;
+    num_rows_per_sample = 1;
+    select_best = 1;
     assert(num_trials >= select_best);
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
@@ -156,98 +155,134 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     assert(left_lvl0_programs.size() >= select_best);
     assert(right_lvl0_programs.size() >= select_best);
 
-    all_sketch_main_lvl1_programs = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, num_trials, num_rows_per_sample);
+    seed_main_lvl1 = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, num_trials, num_rows_per_sample);
 
-    improved_sketch_main_lvl1 = [];
+    improved_main_lvl1 = [];
 
-    for(int i = 0;i<select_best;i++)
+    int prev_best = 0;
+    int new_best = seed_main_lvl1.get(0).first().first();
+
+    num_trials = 1;
+    num_rows_per_sample = 6;
+
+    while(new_best > prev_best)
     {
-        print("prev_score: ", all_sketch_main_lvl1_programs.get(i).first().first());
-        local_program = all_sketch_main_lvl1_programs.get(i).first().second();
-        //take condition
-        condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
-        condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
-        condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
-        condition_lvl1 = eval_predicate_main_harness__Wrapper.produce_replace("eval_predicate_main_harness", condition_lvl1_sub_harness);
+        print("NEW_ITERATION");
+        print("prev_best", prev_best, "new_best", new_best);
 
-        //run this to check consistency condition_lvl1 and condition_lvl1_sub
-        //this makes sure that the function_call operation of sketches works as expected.
-        check_predicate_and_assertion_consistency(condition_lvl1_sub, file_name, condition_lvl1);
+        prev_best = new_best;
+        new_best = 0;
 
-        File file = File(file_name, condition_lvl1_sub);
-        //split file based on condition
-        if_true_file = file.produce_filter(lambda[condition_lvl1_sub](x){
-            return condition_lvl1_sub(x);});
-        if_false_file = file.produce_filter(lambda[condition_lvl1_sub](x){
-            return not(condition_lvl1_sub(x));});
+        for(int i = 0; i<seed_main_lvl1.size();i++)
+        {
+            improved_main_lvl1.append(seed_main_lvl1.get(i));
+        }
 
-        print("if_true_file.size()", if_true_file.size());
-        print("if_false_file.size()", if_false_file.size());
+        for(int i = 0;i<select_best;i++)
+        {
+            print("prev_score: ", seed_main_lvl1.get(i).first().first());
+            local_program = seed_main_lvl1.get(i).first().second();
+            //take condition
+            condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
+            condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
+            condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
+            condition_lvl1 = eval_predicate_main_harness__Wrapper.produce_replace("eval_predicate_main_harness", condition_lvl1_sub_harness);
+    
+            //run this to check consistency condition_lvl1 and condition_lvl1_sub
+            //this makes sure that the function_call operation of sketches works as expected.
+            check_predicate_and_assertion_consistency(condition_lvl1_sub, file_name, condition_lvl1);
+    
+            File file = File(file_name, condition_lvl1_sub);
+            //split file based on condition
+            if_true_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+                return condition_lvl1_sub(x);});
+            if_false_file = file.produce_filter(lambda[condition_lvl1_sub](x){
+                return not(condition_lvl1_sub(x));});
+    
+            print("if_true_file.size()", if_true_file.size());
+            print("if_false_file.size()", if_false_file.size());
+    
+            if(if_true_file.size() >= num_rows_per_sample) {
+                if(if_false_file.size() >= num_rows_per_sample) {
+                    print("ENTER i", i);
+                    assert(if_true_file.size() >= num_rows_per_sample, "FAILED: if_true_file.size() >= num_rows_per_sample");
+                    assert(if_false_file.size() >= num_rows_per_sample, "FAILED: if_false_file.size() >= num_rows_per_sample");
+                    assert((if_true_file.size()+if_false_file.size()) == file.size(), "FAILED: if_true_file.size()+if_false_file.size() == file.size()");
+    
+                    //resynthesize lvl0 left and right predicates.
+    
+                    left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                    left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
+                    if_true_file.relabel(left_sketch_main_lvl0);
+                    left_sketch_main_lvl0_programs = best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
+                    left_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().first());
+                    left_sketch_main_lvl0_programs.sort();
+                    left_sketch_main_lvl0_programs.reverse();
+    
+                    right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                    right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
+                    if_false_file.relabel(right_sketch_main_lvl0);
+                    right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
+                    right_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().second());
+                    right_sketch_main_lvl0_programs.sort();
+                    right_sketch_main_lvl0_programs.reverse();
+    
+                    //combine with condition
+    
+                    new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
+                    new_best_predicate_lvl1.replace("if_true_branch",
+                        program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second().get_solution()));
+                    new_best_predicate_lvl1.replace("if_false_branch",
+                        program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second().get_solution()));
+    
+                    new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
+                    new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
+    
+                    file = File(file_name, new_best_sketch_main_lvl1);
+                    int score = count_passing_inputs(new_best_sketch_main_lvl1, file);
+    
+                    print("new_score:", score);
+    
+                    improved_main_lvl1.append(
+                        pair<pair<int, SketchFunction>, pair<pair<int, SketchFunction>, pair<int, SketchFunction> > >(
+                            pair<int, SketchFunction>(score, new_best_sketch_main_lvl1),
+                            pair<pair<int, SketchFunction>, pair<int, SketchFunction> >(
+                                left_sketch_main_lvl0_programs.get(0),
+                                right_sketch_main_lvl0_programs.get(0))));
 
-        if(if_true_file.size() >= num_rows_per_sample) {
-            if(if_false_file.size() >= num_rows_per_sample) {
-                assert(if_true_file.size() >= num_rows_per_sample, "FAILED: if_true_file.size() >= num_rows_per_sample");
-                assert(if_false_file.size() >= num_rows_per_sample, "FAILED: if_false_file.size() >= num_rows_per_sample");
-                assert((if_true_file.size()+if_false_file.size()) == file.size(), "FAILED: if_true_file.size()+if_false_file.size() == file.size()");
-
-                //resynthesize lvl0 left and right predicates.
-
-                left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
-                left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
-                if_true_file.relabel(left_sketch_main_lvl0);
-                left_sketch_main_lvl0_programs = best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
-                left_sketch_main_lvl0_programs.append(all_sketch_main_lvl1_programs.get(i).second().first());
-                left_sketch_main_lvl0_programs.sort();
-                left_sketch_main_lvl0_programs.reverse();
-
-                right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
-                right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
-                if_false_file.relabel(right_sketch_main_lvl0);
-                right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
-                right_sketch_main_lvl0_programs.append(all_sketch_main_lvl1_programs.get(i).second().second());
-                right_sketch_main_lvl0_programs.sort();
-                right_sketch_main_lvl0_programs.reverse();
-
-                //combine with condition
-
-                new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
-                new_best_predicate_lvl1.replace("if_true_branch",
-                    program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second().get_solution()));
-                new_best_predicate_lvl1.replace("if_false_branch",
-                    program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second().get_solution()));
-
-                new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
-                new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
-
-
-                file = File(file_name, new_best_sketch_main_lvl1);
-                int score = count_passing_inputs(new_best_sketch_main_lvl1, file);
-
-                print("new_score:", score);
-
-                improved_sketch_main_lvl1.append(
-                    pair<pair<int, SketchFunction>, pair<pair<int, SketchFunction>, pair<int, SketchFunction> > >(
-                        pair<int, SketchFunction>(score, new_best_sketch_main_lvl1),
-                        pair<pair<int, SketchFunction>, pair<int, SketchFunction> >(
-                            left_sketch_main_lvl0_programs.get(0),
-                            right_sketch_main_lvl0_programs.get(0))));
-
-                new_synthesized_lvl1 =
-                    synthesize_composite_programs_from_parts(
-                        left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
-                        select_best, file_name, num_trials, num_rows_per_sample);
-
-                print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
-
-                concatenate(improved_sketch_main_lvl1, new_synthesized_lvl1);
+                    //commented out in ordeer to test the existence of solutions in the very previous statement.
+                    /*
+                    new_synthesized_lvl1 =
+                        synthesize_composite_programs_from_parts(
+                            left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
+                            select_best, file_name, num_trials, num_rows_per_sample);
+    
+                    print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
+    
+                    concatenate(improved_main_lvl1, new_synthesized_lvl1);
+                    */
+                }
             }
         }
+        
+        improved_main_lvl1.sort();
+        improved_main_lvl1.reverse();
+
+        new_best = improved_main_lvl1.get(0).first().first();
+        seed_main_lvl1 = improved_main_lvl1;
+        improved_main_lvl1 = [];
+
+
+        num_trials=num_trials*2;
+        num_rows_per_sample++;
+        select_best++;
     }
 
-    improved_sketch_main_lvl1.sort();
-    improved_sketch_main_lvl1.reverse();
+    assert(new_best == prev_best);
 
-    return improved_sketch_main_lvl1.get(0).first().second();
+    assert(seed_main_lvl1.size() >= 1);
+
+    return seed_main_lvl1.get(0).first().second();
 }
 
 Solver left_and_right_and_cond_synthesis_sketch_main()
@@ -263,7 +298,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
 
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
-
+    
     file = File(file_name, sketch_main_lvl0_left__Wrapper);
     lvl0_left_solutions = best_effort_solutions(sketch_main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 

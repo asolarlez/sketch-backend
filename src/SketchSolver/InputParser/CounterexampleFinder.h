@@ -158,7 +158,7 @@ public:
 		failedHAssert = false;
 		failedAssert = false;
 		int bdsz = bdag.size();
-		vector<bool_node*>& ctrls = bdag.getNodesByType(bool_node::CTRL);
+		auto ctrls = bdag.getNodesByType(bool_node::CTRL);
 		for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it){		
 			(*node_it)->accept(*this);
 

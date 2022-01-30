@@ -28,8 +28,8 @@ class File;
 class SketchFunction;
 
 namespace SolverLanguagePrimitives{
-    class SolutionHolder;
-    class InputHolder;
+    class HoleAssignment;
+    class InputAssignment;
 };
 
 //using namespace SolverLanguagePrimitives;
@@ -480,8 +480,8 @@ namespace SL {
             File* file;
             Method* method;
             SketchFunction* skfunc;
-            SolverLanguagePrimitives::SolutionHolder* solution;
-            SolverLanguagePrimitives::InputHolder* input_holder;
+            SolverLanguagePrimitives::HoleAssignment* solution;
+            SolverLanguagePrimitives::InputAssignment* input_holder;
             PolyVec* poly_vec;
             PolyPair* poly_pair;
         };
@@ -499,8 +499,8 @@ namespace SL {
         explicit VarVal(SketchFunction* _harness);
         explicit VarVal(PolyVec* _poly_vec);
         explicit VarVal(PolyPair* _poly_pair);
-        explicit VarVal(SolverLanguagePrimitives::SolutionHolder* _solution);
-        explicit VarVal(SolverLanguagePrimitives::InputHolder* _input_holder);
+        explicit VarVal(SolverLanguagePrimitives::HoleAssignment* _solution);
+        explicit VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder);
         explicit VarVal(VarVal* _to_copy);
 
         VarVal(): var_val_type(void_val_type) {}
@@ -662,7 +662,7 @@ namespace SL {
                     return "Solution";
                     break;
                 case input_val_type:
-                    return "InputHolder";
+                    return "InputAssignment";
                     break;
                 case bool_val_type:
                     return "bool";
@@ -772,10 +772,10 @@ namespace SL {
             else if(std::is_same<File*,T>::value){
                 assert(var_val_type == file_val_type);
             }
-            else if(std::is_same<SolverLanguagePrimitives::SolutionHolder *,T>::value){
+            else if(std::is_same<SolverLanguagePrimitives::HoleAssignment *,T>::value){
                 assert(var_val_type == solution_val_type);
             }
-            else if(std::is_same<SolverLanguagePrimitives::InputHolder *,T>::value){
+            else if(std::is_same<SolverLanguagePrimitives::InputAssignment *,T>::value){
                 assert(var_val_type == input_val_type);
             }
             else if(std::is_same<float,T>::value){
@@ -858,12 +858,12 @@ namespace SL {
             return get<File *>(file, do_count, do_assert);
         }
 
-        SolverLanguagePrimitives::SolutionHolder *get_solution(bool do_count = true, bool do_assert = true) {
+        SolverLanguagePrimitives::HoleAssignment *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
                 assert(do_assert);
             }
-            return get<SolverLanguagePrimitives::SolutionHolder *>(solution, do_count, do_assert);
+            return get<SolverLanguagePrimitives::HoleAssignment *>(solution, do_count, do_assert);
         }
 
         SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
@@ -872,10 +872,10 @@ namespace SL {
             return get<SketchFunction *>(skfunc, do_count, do_assert);
         }
 
-        SolverLanguagePrimitives::InputHolder *get_input_holder(bool do_count = true, bool do_assert = true) {
+        SolverLanguagePrimitives::InputAssignment *get_input_holder(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == input_val_type);
             assert(do_assert);
-            return get<SolverLanguagePrimitives::InputHolder *>(input_holder, do_count, do_assert);
+            return get<SolverLanguagePrimitives::InputAssignment *>(input_holder, do_count, do_assert);
         }
 
         bool is_void(){
@@ -975,11 +975,6 @@ namespace SL {
 
         void _clear() {
             assert(num_shared_ptr == 0);
-            for(auto child : is_responsible_for)
-            {
-                child->decrement_shared_ptr();
-            }
-            is_responsible_for.clear();
             switch (var_val_type) {
                 case string_val_type:
                     clear<Identifier*>(s, false);
@@ -997,10 +992,10 @@ namespace SL {
                     clear<SketchFunction*>(skfunc, false);
                     break;
                 case solution_val_type:
-                    clear<SolverLanguagePrimitives::SolutionHolder*>(solution);
+                    clear<SolverLanguagePrimitives::HoleAssignment*>(solution);
                     break;
                 case input_val_type:
-                    clear<SolverLanguagePrimitives::InputHolder*>(input_holder);
+                    clear<SolverLanguagePrimitives::InputAssignment*>(input_holder);
                     break;
                 case bool_val_type:
                     //do nothing
@@ -1024,6 +1019,10 @@ namespace SL {
                 default:
                     assert(false);
             }
+            for(auto child : is_responsible_for) {
+                child->decrement_shared_ptr();
+            }
+            is_responsible_for.clear();
             delete this;
         }
 

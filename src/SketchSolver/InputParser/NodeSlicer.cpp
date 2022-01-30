@@ -156,7 +156,7 @@ void NodeSlicer::process(BooleanDAG& bdag){
 	ne.process(bdag);
 	marked.clear();
 	marked.resize(bdag.size(), 0);
-	vector<bool_node*>& asserts = bdag.getNodesByType(bool_node::ASSERT);
+	auto asserts = bdag.getNodesByType(bool_node::ASSERT);
 	int insize = bdag.getNodesByType(bool_node::SRC).size();
 	bool found = false;
 	for(BooleanDAG::iterator node_it = asserts.begin(); node_it != asserts.end(); ++node_it){

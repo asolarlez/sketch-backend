@@ -23,7 +23,7 @@ void CEGISSolver::addProblem(SketchFunction *harness, File *file){
     {
 
         SketchFunction* inlined_harness = harness->produce_inlined_dag();
-        vector<bool_node*>& problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
+        auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
             if(!ctrlnode->get_Angelic() /*&& ctrlnode->getOtype() != OutType::FLOAT*/){
@@ -227,15 +227,16 @@ bool CEGISSolver::solveCore(){
                     SketchFunction *harness = checker->getHarness();
 
                     SketchFunction to_concretize__all_inputs_dag = SketchFunction(
-                        finder->get_all_inputs_dag(),
-                        nullptr,
-                        harness->get_env());
+                            finder->get_all_inputs_dag(),
+                            nullptr,
+                            harness->get_env(),
+                            nullptr);
 
                     SketchFunction* all_inputs_concretized_function =
-                            to_concretize__all_inputs_dag.produce_concretization(ctrlStore, bool_node::CTRL);
+                            to_concretize__all_inputs_dag.produce_concretization(ctrlStore, bool_node::CTRL, false, true, false);
 
                     assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
-                    all_inputs_concretized_function->clear();
+                    all_inputs_concretized_function->clear(false);
 
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
@@ -558,7 +559,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 	out<<"c vars listed as UV are the C vars; vars listed as EV are the In vars; vars not listed are temps."<<endl;
 
 	{
-		vector<bool_node*>& inter = bd->getNodesByType(bool_node::CTRL);
+		auto inter = bd->getNodesByType(bool_node::CTRL);
 		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
 			dirCheck.declareControl((CTRL_node*)*node_it);							
@@ -572,7 +573,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 		}
 	}
 	{
-		vector<bool_node*>& inter = bd->getNodesByType(bool_node::SRC);
+		auto inter = bd->getNodesByType(bool_node::SRC);
 		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
 			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits(), srcnode->getOtype());

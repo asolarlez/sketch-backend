@@ -35,7 +35,7 @@ public:
 		out<<"CONST"<<endl;
 		{
 			Dout( cout<<"BEFORE declaring input names"<<endl );
-			vector<bool_node*>& specIn = bdag.getNodesByType(bool_node::SRC);	
+			auto specIn = bdag.getNodesByType(bool_node::SRC);
 			for(size_t i=0; i<specIn.size(); ++i){
 				SRC_node* srcnode = dynamic_cast<SRC_node*>(specIn[i]);	
 				int nbits = srcnode->get_nbits();

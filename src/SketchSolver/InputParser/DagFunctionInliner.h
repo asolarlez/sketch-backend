@@ -648,7 +648,7 @@ class DagFunctionInliner : public virtual DagOptim
 	
 	BooleanDAG& dag;
 protected:
-	map<string, BooleanDAG*>& functionMap;
+	const map<string, BooleanDAG*>& functionMap;
 private:
   map<string, map<string, string> > replaceMap;
   int replaceDepth; // TODO: in general we may need a map for this
@@ -677,11 +677,20 @@ private:
 	HoleHardcoder* hcoder;
 	const set<string>& pureFunctions;
 public:
+    vector<string>& get_inlined_functions()
+    {
+        vector<string>* ret = new vector<string>();
+        for(auto it:funsInlined)
+        {
+            ret->push_back(it);
+        }
+        return *ret;
+    }
 	int nfuns(){ return lnfuns; }
 	DagFunctionInliner(
-	        BooleanDAG& p_dag, map<string, BooleanDAG*>& p_functionMap, map<string, map<string, string> > p_replaceMap,
-	        FloatManager& fm,	HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize=false, InlineControl* ict=NULL,
-	        bool p_onlySpRandomize=false, int p_spRandBias = 1);
+            BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap,
+            FloatManager& fm, HoleHardcoder* p_hcoder, const set<string>& p_pureFunctions, bool p_randomize= false, InlineControl* ict= NULL,
+            bool p_onlySpRandomize= false, int p_spRandBias = 1);
 	virtual ~DagFunctionInliner();
 	virtual void process(BooleanDAG& bdag);
 	bool process_and_return(BooleanDAG& bdag);
@@ -716,7 +725,7 @@ public:
             VarStore& _ctrl_store,
             bool_node::Type tp,
             BooleanDAG& p_dag,
-            map<string, BooleanDAG*>& p_functionMap,
+            const map<string, BooleanDAG*>& p_functionMap,
             map<string, map<string, string> > p_replaceMap,
             FloatManager& fm,
             HoleHardcoder* p_hcoder,

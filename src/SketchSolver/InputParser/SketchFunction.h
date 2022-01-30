@@ -13,6 +13,7 @@
 #include "SkVal.h"
 #include "File.h"
 #include "ProgramEnvironment.h"
+#include "FunctionMapTransformerLanguage.h"
 
 class BooleanDAG;
 class SolverProgramState;
@@ -36,8 +37,16 @@ class SketchFunction
     //if env != nullptr => original_dag and root_dag ARE concretized
     ProgramEnvironment* env = nullptr;
 
+    SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
+
     bool new_way = true;
     bool keep_track_of_original = false;
+
+    void add_solution(SolverLanguagePrimitives::HoleAssignment* _solution_holder)
+    {
+        assert(solution == nullptr);
+        solution = new SolverLanguagePrimitives::HoleAssignment(_solution_holder);
+    }
 
 public:
 
@@ -46,13 +55,14 @@ public:
         return env;
     }
 
-    SketchFunction(SketchFunction* shallow_copy): original_dag(shallow_copy->original_dag), root_dag(shallow_copy->root_dag), env(shallow_copy->env) {}
+    explicit SketchFunction(SketchFunction* shallow_copy):
+        original_dag(shallow_copy->original_dag), root_dag(shallow_copy->root_dag), env(shallow_copy->env) {}
 
-    SketchFunction(
-            BooleanDAG* _dag_root,
-            BooleanDAG* _original_dag = nullptr,
-            ProgramEnvironment* _evn = nullptr):
-            root_dag(_dag_root), original_dag(_original_dag), env(_evn){
+    explicit SketchFunction(BooleanDAG *_dag_root, BooleanDAG *_original_dag = nullptr,
+                            ProgramEnvironment *_evn = nullptr,
+                            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr) :
+            root_dag(_dag_root), original_dag(_original_dag), env(_evn), solution(_solution){
+
         if(new_way)
         {
             if(!keep_track_of_original)
@@ -68,6 +78,10 @@ public:
                 original_dag = nullptr;
             }
         }
+
+        assert(root_dag != nullptr);
+        assert(original_dag == nullptr);
+
     }
 
     SketchFunction* produce_inlined_dag(bool deactivate_pcond = false)
@@ -77,51 +91,46 @@ public:
         return produce_concretization(var_store, var_type, deactivate_pcond, true);
     }
 
-    void do_inline(bool deactivate_pcond = false)
-    {
-        VarStore var_store;
-        bool_node::Type var_type = bool_node::CTRL;
-        produce_concretization(var_store, var_type, deactivate_pcond, false);
-    }
-
+//    void do_inline(bool deactivate_pcond = false)
+//    {
+//        VarStore var_store;
+//        bool_node::Type var_type = bool_node::CTRL;
+//        produce_concretization(var_store, var_type, deactivate_pcond, false);
+//    }
 
     void concretize(VarStore& var_store, bool_node::Type var_type, bool deactivate_pcond = false)
     {
         produce_concretization(var_store, var_type, deactivate_pcond, false);
     }
 
-    SketchFunction* produce_concretization(VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false, bool do_clone = true);
+    SketchFunction* produce_concretization(
+            VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false, bool do_clone = true, bool update_transformer = true);
 
-    SketchFunction *clone() ;
+    SketchFunction *clone(bool update_transformer = true) ;
 
     BooleanDAG *get_dag() {
         return root_dag;
     }
 
-    void clear();
+    void clear(bool update_transformer = true);
 
 private:
-    VarStore* ctrl_var_store__solution;
+    VarStore* solution_ctrl_var_store = nullptr;
 public:
-    VarStore* get_ctrl_var_store()
+    VarStore* get_solution_ctrl_var_store()
     {
-        return ctrl_var_store__solution;
+        return solution_ctrl_var_store;
     }
-    void set_solution(VarStore* _ctrl_var_store)
+    void set_solution_ctrl_var_store(VarStore* _ctrl_var_store)
     {
-        ctrl_var_store__solution = _ctrl_var_store;
+        solution_ctrl_var_store = _ctrl_var_store;
     }
 
     SketchFunction *get_harness() {
         return this;
     }
-
-    FloatManager& get_floats()
-    {
-        return env->get_floats();
-    }
-
-    SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
+private:
+    static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
     {
         assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
         if(out_type == OutType::INT)
@@ -141,46 +150,46 @@ public:
             assert(false);
         }
     }
+public:
     vector<SkHoleSpec>* get_holes()
     {
         SketchFunction* inlined_harness = produce_inlined_dag();
-        vector<bool_node*>& ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
+        auto ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         auto* ret = new vector<SkHoleSpec>();
-        for(int i = 0;i<ctrl_nodes.size(); i++)
+        for(auto & ctrl_node : ctrl_nodes)
         {
             ret->push_back(
                     SkHoleSpec(
-                            ctrl_nodes[i]->get_name(),
-                            bool_node_out_type_to_sk_val_type(ctrl_nodes[i]->getOtype())));
+                            ctrl_node->get_name(),
+                            bool_node_out_type_to_sk_val_type(ctrl_node->getOtype())));
         }
         inlined_harness->clear();
         return ret;
     }
 
-    SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
+    SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
     {
-        VarStore* solution = solution_holder->to_var_store();
-        SketchFunction* ret = produce_concretization(*solution, bool_node::CTRL, do_deactivate_pcond);
-        delete solution;
+        VarStore* var_store = solution_holder->to_var_store();
+        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL, do_deactivate_pcond);
+        delete var_store;
         ret->add_solution(solution_holder);
         return ret;
     }
 
-private:
-    SolverLanguagePrimitives::SolutionHolder* solution = nullptr;
-    void add_solution(SolverLanguagePrimitives::SolutionHolder* _solution_holder)
+    SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
-        assert(solution == nullptr);
-        solution = new SolverLanguagePrimitives::SolutionHolder(_solution_holder);
+        if(solution == nullptr) {
+            cout << "get_env()->function_map.transformer_size() " << get_env()->function_map.transformer_size() << endl;
+            pair<int, int> min_and_max_depth = get_env()->function_map.transformer_min_and_max_depth();
+            cout << "min_and_max_depth " << min_and_max_depth.first << " "<< min_and_max_depth.second << endl;
+            assert(!get_env()->function_map.has_cycle());
+            cout << "no cycles!" << endl;
+        }
+        assert(solution != nullptr);
+        return new SolverLanguagePrimitives::HoleAssignment(solution);
     }
-public:
 
-    SolverLanguagePrimitives::SolutionHolder* get_solution()
-    {
-        return new SolverLanguagePrimitives::SolutionHolder(solution);
-    }
-
-    void concretize(SolverLanguagePrimitives::SolutionHolder* solution_holder, bool do_deactivate_pcond = false)
+    void concretize(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
     {
         VarStore* solution = solution_holder->to_var_store();
         concretize(*solution, bool_node::CTRL, do_deactivate_pcond);
@@ -188,7 +197,7 @@ public:
         add_solution(solution_holder);
     }
 
-    SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputHolder* input_holder)
+    SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputAssignment* input_holder)
     {
         VarStore* inputs = input_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*inputs, bool_node::SRC);
@@ -202,8 +211,8 @@ public:
         int num_1s = 0;
         for(int i = 0;i<file->size();i++)
         {
-            SolverLanguagePrimitives::InputHolder input =
-                    SolverLanguagePrimitives::InputHolder(file->at(i), env->get_floats());
+            SolverLanguagePrimitives::InputAssignment input =
+                    SolverLanguagePrimitives::InputAssignment(file->at(i), env->get_floats());
             SketchFunction* concretized_function = produce_with_concretized_inputs(&input);
             assert(concretized_function->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
             assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
@@ -217,14 +226,8 @@ public:
         return ret;
     }
 
-    SketchFunction *produce_replace(const string &replace_this, const string &with_this);
-
     void replace(const string& replace_this, const string &with_this);
 
-private:
-    map<string, SketchFunction*>* it_is_in_this_function_map = nullptr;
-public:
-    void set_assert__it_is_in_this_function_map(map<string, SketchFunction *>* map);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H
