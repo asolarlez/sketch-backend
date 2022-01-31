@@ -299,12 +299,10 @@ namespace FMTL {
     class ConcretizePrimitive: public TransformPrimitive{
         VarStore* var_store;
         const bool_node::Type concretization_type;
-        const bool do_deactivate_pcond;
 
     public:
-        ConcretizePrimitive(const string& _function_name, VarStore &_store, bool_node::Type _concretization_type, bool _do_deactivate_pcond):
-                var_store(_store.copy()), concretization_type(_concretization_type),
-                do_deactivate_pcond(_do_deactivate_pcond), TransformPrimitive(_function_name, _concretize) {}
+        ConcretizePrimitive(const string &_function_name, VarStore &_store, bool_node::Type _concretization_type) :
+                var_store(_store.copy()), concretization_type(_concretization_type), TransformPrimitive(_function_name, _concretize) {}
 
         VarStore *get_var_store() const override
         {
@@ -367,7 +365,8 @@ namespace FMTL {
     public:
         explicit FunctionMapTransformer() = default;
 
-        void concretize(const string& function_name, VarStore &store, bool_node::Type type, bool do_deactivate_pcond, const vector<string> *sub_functions);
+        void concretize(const string &function_name, VarStore &store, bool_node::Type type,
+                        const vector<string> *sub_functions);
 
         void replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
 

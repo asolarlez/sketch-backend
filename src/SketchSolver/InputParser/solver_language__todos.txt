@@ -106,6 +106,7 @@ Necessary
             break
     *TODO: Add custom output files to Solver Language.
     TODO: Shed dead code.
+    TODO: optimize
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

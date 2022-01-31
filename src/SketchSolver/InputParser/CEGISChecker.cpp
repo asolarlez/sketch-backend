@@ -600,18 +600,8 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
 
     BooleanDAG* ret_dag = getHarness()->get_dag()->clone();
-    getHarness()->get_env()->doInline(
-            *ret_dag, input, bool_node::SRC, false);
+    getHarness()->get_env()->doInline(*ret_dag, input, bool_node::SRC);
 
-//    SketchFunction* local_harness = getHarness()->clone();
-//    SketchFunction* tmp_sk_func =
-//            getHarness()->produce_concretization(input, bool_node::SRC);
-//    BooleanDAG* ret_dag = tmp_sk_func->get_dag();
-
-//    tmp_sk_func->clear_but_save_dag();
-//    tmp_sk_func->clear(false);
-//    local_harness->clear(false);
-//	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
 	return ret_dag;
 }
 

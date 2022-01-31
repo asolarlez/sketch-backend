@@ -6,12 +6,12 @@
 
 using namespace FMTL;
 
-void FunctionMapTransformer::concretize(
-        const string& function_name, VarStore &store, bool_node::Type type, bool do_deactivate_pcond, const vector<string> *sub_functions) {
+void FunctionMapTransformer::concretize(const string &function_name, VarStore &store, bool_node::Type type,
+                                        const vector<string> *sub_functions) {
     assert(where_my_kids_at.find(function_name) != where_my_kids_at.end());
     assert(where_my_kids_at[function_name]->get_function_name() == function_name);
     TransformPrimitive* new_primitive =
-            new ConcretizePrimitive(function_name, store, type, do_deactivate_pcond);
+            new ConcretizePrimitive(function_name, store, type);
     add_parent(new_primitive, function_name);
     if(sub_functions != nullptr) {
         for (const auto &it: *sub_functions) {
@@ -169,6 +169,9 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
 
         }
     }
+
+    parents.clear();
+
     if(_result_var_store_tree != nullptr)
     {
         delete _result_var_store_tree;
@@ -198,10 +201,6 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
     }
 
     program.erase(this);
-
-    for(auto it: parents) {
-        assert(!it->is_erasing);
-    }
 
     is_erasing = false;
     delete this;

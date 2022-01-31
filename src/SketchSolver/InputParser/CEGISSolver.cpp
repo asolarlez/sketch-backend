@@ -230,19 +230,26 @@ bool CEGISSolver::solveCore(){
 
                 if(doMore) {
 
-                    SketchFunction *harness = checker->getHarness();
+//                    SketchFunction *harness = checker->getHarness();
+                    ProgramEnvironment* env = checker->getHarness()->get_env();
 
-                    SketchFunction to_concretize__all_inputs_dag = SketchFunction(
-                            finder->get_all_inputs_dag(),
-                            nullptr,
-                            harness->get_env());
+                    BooleanDAG* to_concretize = finder->get_all_inputs_dag()->clone();
+                    env->doInline(*to_concretize, ctrlStore, bool_node::CTRL);
 
-                    SketchFunction* all_inputs_concretized_function =
-                            to_concretize__all_inputs_dag.produce_concretization(
-                                    ctrlStore, bool_node::CTRL, false, true, false);
+                    assert(to_concretize->get_failed_assert() == nullptr);
+                    to_concretize->clear();
 
-                    assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
-                    all_inputs_concretized_function->clear(false);
+//                    SketchFunction to_concretize__all_inputs_dag = SketchFunction(
+//                            finder->get_all_inputs_dag(),
+//                            nullptr,
+//                            harness->get_env());
+//
+//                    SketchFunction* all_inputs_concretized_function =
+//                            to_concretize__all_inputs_dag.produce_concretization(
+//                                    ctrlStore, bool_node::CTRL);
+//
+//                    assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
+//                    all_inputs_concretized_function->clear();
 
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
@@ -269,8 +276,8 @@ bool CEGISSolver::solveCore(){
                     SketchFunction *harness = checker->getHarness();
 
                         BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
-                        harness->get_env()->doInline(
-                                *the_dag, ctrlStore, bool_node::CTRL, false);
+                    harness->get_env()->doInline(
+                            *the_dag, ctrlStore, bool_node::CTRL);
 
 //                    SketchFunction to_concretize_function = SketchFunction(
 //                            finder->get_all_inputs_dag(),
@@ -287,7 +294,8 @@ bool CEGISSolver::solveCore(){
 
                     if(file != nullptr)
                     {
-                        SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
+                        SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore,
+                                                                                                             bool_node::CTRL);
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr)
                         {
                             cout << "FILE FAILS OK!!" << endl;

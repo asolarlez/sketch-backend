@@ -519,65 +519,11 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
                     NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
 
-                    if(false) {
-                        cout << "BEFORE RUN" << endl;
-                        cout << "print_vals:" << endl;
-                        auto before_run_dests = the_dag->getNodesByType(bool_node::DST);
-                        for (int i = 0; i < before_run_dests.size(); i++) {
-                            cout << before_run_dests[i]->lprint() << " ;VAL=";
-                            if (node_evaluator.get_isset(*before_run_dests[i])) {
-                                cout << node_evaluator.getValue(before_run_dests[i]) << endl;
-                            } else {
-                                cout << "IS NOT SET" << endl;
-                            }
-                        }
-                        cout << "node_evaluator.printNodeValues()" << endl;
-                        for (int i = 0; i < the_dag->size(); i++) {
-                            cout << (*the_dag)[i]->lprint() << "; VAL = " << endl;
-                            node_evaluator.printNodeValue(i);
-                        }
-
-                        cout << "print_dag:" << endl;
-                        the_dag->lprint(cout);
-                        cout << "DONE BEFORE RUN" << endl;
-                    }
-
                     VarStore* the_var_store = input_val->get_input_holder()->to_var_store();
                     bool fails = node_evaluator.run(*the_var_store);
                     delete the_var_store;
                     the_var_store = nullptr;
                     assert(!fails);
-
-                    if(false) {
-                        cout << "AFTER RUN" << endl;
-                        cout << "print_vals:" << endl;
-                        auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
-                        for (int i = 0; i < after_run_dests.size(); i++) {
-                            cout << after_run_dests[i]->lprint() << " ;VAL="
-                                 << node_evaluator.getValue(after_run_dests[i]) << endl;
-                            assert((*the_dag)[node_evaluator.getValue(after_run_dests[i])]->type ==
-                                   bool_node::TUPLE_CREATE);
-                            cout << "tuple: " << (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->lprint()
-                                 << endl;
-                            cout << "parent 0 of tuple: "
-                                 << (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->get_parent(0)->lprint()
-                                 << endl;
-                            cout << "RET VALUE: " << node_evaluator.getValue(
-                                    (*the_dag)[node_evaluator.getValue(after_run_dests[i])]->get_parent(0)) << endl;
-                            cout << "===" << endl;
-                        }
-
-                        cout << "node_evaluator.printNodeValues()" << endl;
-                        for (int i = 0; i < the_dag->size(); i++) {
-                            cout << (*the_dag)[i]->lprint() << "; VAL = " << endl;
-                            node_evaluator.printNodeValue(i);
-                            cout << "---" << endl;
-                        }
-
-                        cout << "print_dag:" << endl;
-                        the_dag->lprint(cout);
-                        cout << "DONE AFTER RUN" << endl;
-                    }
 
                     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
 
@@ -585,7 +531,6 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 
                     //SHOULD BE THIS BUT ISN'T
 //                    ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
-
                     OutType* out_type = (*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)->getOtype();
                     assert(out_type == OutType::BOOL);
                     //THIS IS A HACK BUT WORKS FOR NOW
@@ -845,16 +790,40 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
             SolverLanguagePrimitives::InputAssignment* input_holder = input_holder_var_val->get_input_holder();
-            int transformer_size = program->get_env()->function_map.get_program().size();
-            SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
-            input_holder_var_val->decrement_shared_ptr();
-            assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
-            bool ret = concretized_function->get_dag()->get_failed_assert() == nullptr;
-            int interim_transformer_size = program->get_env()->function_map.get_program().size();
-            assert(transformer_size+2 == interim_transformer_size);
-            concretized_function->clear();
-            assert(transformer_size == program->get_env()->function_map.get_program().size());
-            return new VarVal(ret);
+
+            if(false) {
+                int transformer_size = program->get_env()->function_map.get_program().size();
+                SketchFunction *concretized_function = program->produce_with_concretized_inputs(input_holder);
+                input_holder_var_val->decrement_shared_ptr();
+                assert((concretized_function->get_dag()->size() == 0) ==
+                       (concretized_function->get_dag()->get_failed_assert() == nullptr));
+                bool ret = concretized_function->get_dag()->get_failed_assert() == nullptr;
+                int interim_transformer_size = program->get_env()->function_map.get_program().size();
+                assert(transformer_size + 2 == interim_transformer_size);
+                concretized_function->clear();
+                assert(transformer_size == program->get_env()->function_map.get_program().size());
+                return new VarVal(ret);
+            }
+            else
+            {
+                VarStore* inputs = input_holder->to_var_store();
+                input_holder_var_val->decrement_shared_ptr();
+
+                ProgramEnvironment* env = program->get_env();
+
+                BooleanDAG* to_concretize = program->get_dag()->clone();
+                env->doInline(*to_concretize, *inputs, bool_node::SRC);
+
+                inputs->clear();
+                inputs = nullptr;
+
+                assert((to_concretize->size() == 0) == (to_concretize->get_failed_assert() == nullptr));
+
+                bool ret = to_concretize->get_failed_assert() == nullptr;
+
+                to_concretize->clear();
+                return new VarVal(ret);
+            }
             break;
         }
         case _clear:

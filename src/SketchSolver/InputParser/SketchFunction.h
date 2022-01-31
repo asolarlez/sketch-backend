@@ -94,7 +94,7 @@ public:
     {
         VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(var_store, var_type, deactivate_pcond, true);
+        return produce_concretization(var_store, var_type);
     }
 
 //    void do_inline(bool deactivate_pcond = false)
@@ -104,24 +104,20 @@ public:
 //        produce_concretization(var_store, var_type, deactivate_pcond, false);
 //    }
 
-    void concretize(VarStore& var_store, bool_node::Type var_type, bool deactivate_pcond = false)
+    void concretize(VarStore &var_store, bool_node::Type var_type)
     {
-        produce_concretization(var_store, var_type, deactivate_pcond, false);
+        produce_concretization(var_store, var_type, false);
     }
 
-    SketchFunction* produce_concretization(
-            VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond = false, bool do_clone = true, bool update_transformer = true);
+    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_print = true);
 
-    SketchFunction *clone(bool update_transformer = true) ;
+    SketchFunction *clone();
 
     BooleanDAG *get_dag() {
         return root_dag;
     }
 
     void clear(bool update_transformer = true, bool save_dag = false);
-
-    void clear_but_save_dag(bool update_transformer = true);
-
 
 private:
     VarStore* solution_ctrl_var_store = nullptr;
@@ -179,7 +175,7 @@ public:
     SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
     {
         VarStore* var_store = solution_holder->to_var_store();
-        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL, do_deactivate_pcond);
+        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL);
         var_store->clear();
         ret->add_solution(solution_holder);
         return ret;
@@ -272,7 +268,7 @@ public:
     void concretize(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
     {
         VarStore* local_solution = solution_holder->to_var_store();
-        concretize(*local_solution, bool_node::CTRL, do_deactivate_pcond);
+        concretize(*local_solution, bool_node::CTRL);
         local_solution->clear();
         local_solution = nullptr;
         add_solution(solution_holder);

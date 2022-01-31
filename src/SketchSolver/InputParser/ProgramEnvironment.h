@@ -34,47 +34,17 @@ public:
 
     }
 
-    void toggle_pcond(BooleanDAG* dag, bool val)
-    {
-       vector<bool_node*> ctrls = dag->getNodesByType(bool_node::CTRL);
-       for(auto bn : ctrls)
-       {
-           if(((CTRL_node*)bn)->get_Pcond())
-           {
-               if (val) {
-                   ((CTRL_node *) bn)->activate_pcond();
-               } else {
-                   ((CTRL_node *) bn)->deactivate_pcond(); }
-           }
-       }
-    }
 
-    void activate_pcond(BooleanDAG* dag)
-    {
-       toggle_pcond(dag, true);
-    }
-    void deactivate_pcond(BooleanDAG* dag)
-    {
-       toggle_pcond(dag, false);
-    }
-
-
-    void doInline(
-            BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond)
+    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type)
     {
         vector<string>* tmp = nullptr;
-        doInline(dag, var_store, var_type, do_deactivate_pcond, tmp);
+        doInline(dag, var_store, var_type, tmp);
         delete tmp;
     }
 
-    void doInline(
-           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond, vector<string>*& inlined_functions){
+    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions) {
 
         assert(inlined_functions == nullptr);
-
-        if(do_deactivate_pcond){
-            deactivate_pcond(&dag);
-        }
 
         //OneCallPerCSiteInliner fin;
         // InlineControl* fin = new OneCallPerCSiteInliner(); //new BoundedCountInliner(PARAMS->boundedCount);
@@ -131,10 +101,6 @@ public:
                     assert(dfi.get_failedAssert() != nullptr);
                     dag.set_failed_assert(dfi.get_failedAssert());
 
-                    if(do_deactivate_pcond){
-                        activate_pcond(&dag);
-                    }
-
                     inlined_functions = dfi.get_inlined_functions();
                     delete &boolean_dag_function_map;
 
@@ -173,11 +139,6 @@ public:
             DagFunctionToAssertion makeAssert(dag, boolean_dag_function_map, floats);
             makeAssert.process(dag);
         }
-
-
-       if(do_deactivate_pcond){
-           activate_pcond(&dag);
-       }
 
        inlined_functions = dfi.get_inlined_functions();
         delete &boolean_dag_function_map;
