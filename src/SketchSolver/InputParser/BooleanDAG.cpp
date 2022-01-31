@@ -50,7 +50,6 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
   dag_id = global_boolean_dag_id++;
 //  assert(dag_id != 8727);
 #endif
-//assert(name != "sketch_main__Wrapper__id22__id24__id27__id29");
 }
 
 

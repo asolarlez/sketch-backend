@@ -101,6 +101,7 @@ public:
     }
 
     BooleanDAG* getProblem(){
+        assert(!problemStack.empty());
         return problemStack.top()->get_dag();
     }
 

@@ -86,7 +86,6 @@ public:
             defined = false;
             if(next != nullptr) {next->clear();}
             name += "_DELETED";
-//            delete this;
         }
 
 		objP(string  nm, int size, OutType* _otype):
@@ -457,7 +456,7 @@ public:
         {
             pair<int, string> it = index_as_vec[i];
             assert(it.first == i);
-            ret->insertObj(it.second, it.first, new objP(objs[it.first]));
+            ret->insertObj(it.second, it.first, objP(objs[it.first]));
         }
 
 //	    for(const auto& it : index_as_vec)
@@ -499,11 +498,11 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, const objP *obj)
+	void insertObj(const string& name, int idx, const objP obj)
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
-	    objs.push_back(*obj);
+	    objs.push_back(obj);
 	    index[name] = idx;
     }
 
@@ -697,7 +696,7 @@ inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 {
 	VarStore* ret = _v1.copy();
 	for(int i = 0; i < v2.objs.size(); i++) {
-		ret->insertObj(v2.objs[i].name, ret->objs.size(), new VarStore::objP(v2.objs[i]));
+		ret->insertObj(v2.objs[i].name, ret->objs.size(), VarStore::objP(v2.objs[i]));
 	}
 	ret->bitsize += v2.bitsize;
 	return ret;

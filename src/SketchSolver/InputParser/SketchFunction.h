@@ -213,53 +213,59 @@ public:
 
     SolverLanguagePrimitives::HoleAssignment* get_solution(const string& sub_solution_label)
     {
+
+        print_extras();
+
+        const VarStoreTreeNode* compiled_var_store =
+                get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
+
+        cout << "DONE COMPILING" << endl;
+
+        assert(compiled_var_store != nullptr);
+
+        string underlying_function_name = compiled_var_store->find_underlying_function_name(sub_solution_label);
+
+        cout << "DONE find_underlying_function_name" << endl;
+
+        bool found = false;
+        const VarStore* var_store_used_to_concretize_underlying_function_name =
+                compiled_var_store->find_last_var_store_on_the_way_to(underlying_function_name, found);
+
+        cout << "DONE find_last_var_store_on_the_way_to" << endl;
+
+        assert(found);
+        assert(var_store_used_to_concretize_underlying_function_name != nullptr);
+
+        SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
+
+        if(solution != nullptr)
         {
-            print_extras();
+            dummy_sat_solver_result = solution->get_sat_solver_result();
+        }
 
-            const VarStoreTreeNode* compiled_var_store =
-                    get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
-            assert(compiled_var_store != nullptr);
+        auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
+                dummy_sat_solver_result, var_store_used_to_concretize_underlying_function_name,
+                get_env()->floats));
+        if(solution != nullptr)
+        {
+            cout << solution->to_string() << endl;
+            cout << new_solution->to_string() << endl;
+            assert(*solution == *new_solution);
+            new_solution->clear();
+            delete new_solution;
+            new_solution = nullptr;
+        }
+        else {
+            TransformPrimitive* transform_program_root = get_env()->function_map.get_where_my_kids_at()[get_dag()->get_name()];
+            AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
+                        "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
+                        "TODO: think how it works if it is clone.");
 
-            string underlying_function_name = compiled_var_store->find_underlying_function_name(sub_solution_label);
-
-
-            bool found = false;
-            const VarStore* var_store_used_to_concretize_underlying_function_name =
-                    compiled_var_store->find_last_var_store_on_the_way_to(underlying_function_name, found);
-
-            assert(found);
-            assert(var_store_used_to_concretize_underlying_function_name != nullptr);
-
-            SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
-
-            if(solution != nullptr)
-            {
-                dummy_sat_solver_result = solution->get_sat_solver_result();
-            }
-
-            auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
-                    dummy_sat_solver_result, var_store_used_to_concretize_underlying_function_name,
-                    get_env()->floats));
-            if(solution != nullptr)
-            {
-                cout << solution->to_string() << endl;
-                cout << new_solution->to_string() << endl;
-                assert(*solution == *new_solution);
-                new_solution->clear();
-                delete new_solution;
-                new_solution = nullptr;
-            }
-            else {
-                TransformPrimitive* transform_program_root = get_env()->function_map.get_where_my_kids_at()[get_dag()->get_name()];
-                AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
-                            "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
-                            "TODO: think how it works if it is clone.");
-
-                assert(solution == nullptr);
-                solution = new_solution;
-            }
+            assert(solution == nullptr);
+            solution = new_solution;
         }
         assert(solution != nullptr);
+        cout << "RETURN SOLUTION" << endl;
         return new SolverLanguagePrimitives::HoleAssignment(solution);
     }
 

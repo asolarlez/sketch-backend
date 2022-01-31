@@ -158,6 +158,7 @@ namespace FMTL {
     {
     private:
         bool is_erased = false;
+        bool is_erasing = false;
 
         bool visited = false;
         int num_children_visited = 0;
@@ -291,6 +292,8 @@ namespace FMTL {
         vector<string> get_inlined_fs();
 
         void clean();
+
+        void check_consistency(FunctionMapTransformer* transformer);
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
@@ -329,7 +332,7 @@ namespace FMTL {
         const map<string, string>* assign_map;
     public:
         ReplacePrimitive(const string& _function_name, const string& _replace_this, const string& _with_this):
-            replace_this(std::move(_replace_this)), with_this(std::move(_with_this)), TransformPrimitive(_function_name, _replace)
+            replace_this(_replace_this), with_this(_with_this), TransformPrimitive(_function_name, _replace)
             {
                 auto* tmp_assign_map = new map<string, string>();
                 (*tmp_assign_map)[replace_this] = with_this;
@@ -373,6 +376,8 @@ namespace FMTL {
         void insert(const string& new_function_name);
 
         void erase(const string& to_erase_name);
+
+        void check_consistency();
 
         const VarStoreTreeNode* compile_var_store_tree(const string& function_name);
 

@@ -65,6 +65,13 @@ Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
     TODO: iterative lvl2
     TODO: crete more complicated zig-zag example.
 
+Finish FunctionMapTransformer:
+    DONE 1. Fix weird bug with FunctionMapTransformer
+    2. Fix exponential time query function in FunctionMapTransformer
+    DONE 3. Fix VarStore delete/clear in order to remove leaks
+    4. Further stress-test this functionality
+    5. Print the FunctionMapTransformer program for the frontend.
+
 Necessary
 1. Complete language
     DONE Remove ; at the end of {} blocks

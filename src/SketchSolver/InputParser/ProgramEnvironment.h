@@ -64,6 +64,7 @@ public:
     {
         vector<string>* tmp = nullptr;
         doInline(dag, var_store, var_type, do_deactivate_pcond, tmp);
+        delete tmp;
     }
 
     void doInline(

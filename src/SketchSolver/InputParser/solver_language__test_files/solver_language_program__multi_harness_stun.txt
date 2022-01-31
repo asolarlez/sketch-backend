@@ -139,8 +139,8 @@ Solver check_predicate_and_assertion_consistency(the_predicate, file_name, the_h
 
 Solver top_down_and_bottom_up_synthesis_sketch_main()
 {
-    //string file_name = "uav_kg_big__as_bools.data";
-    string file_name = "zig_zag.data";
+    string file_name = "uav_kg_big__as_bools.data";
+    //string file_name = "zig_zag.data";
 
     num_trials = 1;
     num_rows_per_sample = 1;

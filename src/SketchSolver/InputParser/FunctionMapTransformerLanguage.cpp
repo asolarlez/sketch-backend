@@ -10,7 +10,8 @@ void FunctionMapTransformer::concretize(
         const string& function_name, VarStore &store, bool_node::Type type, bool do_deactivate_pcond, const vector<string> *sub_functions) {
     assert(where_my_kids_at.find(function_name) != where_my_kids_at.end());
     assert(where_my_kids_at[function_name]->get_function_name() == function_name);
-    TransformPrimitive* new_primitive = new ConcretizePrimitive(function_name, store, type, do_deactivate_pcond);
+    TransformPrimitive* new_primitive =
+            new ConcretizePrimitive(function_name, store, type, do_deactivate_pcond);
     add_parent(new_primitive, function_name);
     if(sub_functions != nullptr) {
         for (const auto &it: *sub_functions) {
@@ -60,7 +61,9 @@ void FunctionMapTransformer::erase(const string &to_erase_name) {
     assert(where_my_kids_at.find(to_erase_name) != where_my_kids_at.end());
     assert(where_my_kids_at[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = where_my_kids_at[to_erase_name];
+    check_consistency();
     to_erase->erase(this);
+    check_consistency();
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
@@ -84,6 +87,16 @@ void FunctionMapTransformer::clean_transformer() {
     }
 }
 
+void FunctionMapTransformer::check_consistency() {
+    for(auto it: program) {
+        assert(where_my_kids_at.find(it->get_function_name()) != where_my_kids_at.end());
+        it->check_consistency(this);
+    }
+    for(auto it: where_my_kids_at) {
+        assert(it.first == it.second->get_function_name());
+    }
+}
+
 void TransformPrimitive::set_is_erased(bool is_original)
 {
     if(!is_erased) {
@@ -98,7 +111,7 @@ void TransformPrimitive::set_is_erased(bool is_original)
                 if(is_original) {
                     assert(false);
                 }
-                it->set_is_erased(false);
+                assert(it->is_erased);
             }
         }
     }
@@ -106,7 +119,7 @@ void TransformPrimitive::set_is_erased(bool is_original)
 
 TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transformer)
 {
-
+    assert(!is_erasing);
     set_is_erased(true);
 
     assert(is_erased);
@@ -115,41 +128,47 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
         return this;
     }
 
+    is_erasing = true;
+
     assert(children.empty());
     for(auto parent : parents)
     {
         auto this_child = parent->children.find(this);
         assert(this_child != parent->children.end());
         int prev_num_children = parent->children.size();
+        assert(!parent->is_erasing);
         parent->children.erase(this_child);
         assert(prev_num_children-1 == parent->children.size());
     }
 
     map<string, TransformPrimitive*>& where_my_kids_at = transformer->get_where_my_kids_at();
 
+    set<TransformPrimitive*>& program = transformer->get_program();
+
     TransformPrimitive* ret = nullptr;
     for(auto parent : parents)
     {
         if(parent->is_erased) {
             string parent_name = parent->function_name;
-            assert(where_my_kids_at.find(parent_name) != where_my_kids_at.end());
+            if(program.find(parent) == program.end()) {
+                assert(where_my_kids_at.find(parent_name) == where_my_kids_at.end());
+                assert(parent_name != function_name);
+                continue;
+            }
+            else
+            {
+                assert(where_my_kids_at.find(parent_name) != where_my_kids_at.end());
+            }
             TransformPrimitive* remaining_rep = parent->erase(transformer);
-            if(where_my_kids_at.find(parent_name) != where_my_kids_at.end()) {
-                if (remaining_rep != nullptr) {
-                    where_my_kids_at[parent_name] = remaining_rep;
-                    if (parent_name == function_name) {
-                        ret = remaining_rep;
-                    }
-                } else {
-                    where_my_kids_at.erase(parent_name);
-                }
+
+            if(parent_name == function_name)
+            {
+                assert(ret == nullptr);
+                ret = remaining_rep;
             }
-            else {
-                assert(remaining_rep == nullptr);
-            }
+
         }
     }
-    set<TransformPrimitive*>& program = transformer->get_program();
     if(_result_var_store_tree != nullptr)
     {
         delete _result_var_store_tree;
@@ -164,8 +183,27 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
         get_var_store()->clear();
     }
 
+    if(where_my_kids_at.find(function_name) != where_my_kids_at.end()) {
+        if(where_my_kids_at.at(function_name) == this) {
+            if(ret == nullptr){
+                where_my_kids_at.erase(function_name);
+            }
+            else {
+                where_my_kids_at[function_name] = ret;
+            }
+        }
+    }
+    else {
+        assert(false);
+    }
+
     program.erase(this);
 
+    for(auto it: parents) {
+        assert(!it->is_erasing);
+    }
+
+    is_erasing = false;
     delete this;
     return ret;
 }
@@ -255,5 +293,20 @@ void TransformPrimitive::clean() {
             }
         }
         assert(!all_children_erased);
+    }
+}
+
+void TransformPrimitive::check_consistency(FunctionMapTransformer* transformer) {
+    set<TransformPrimitive*>& program = transformer->get_program();
+    auto where_my_kids_at = transformer->get_where_my_kids_at();
+    for(auto it:parents)
+    {
+        assert(program.find(it) != program.end());
+        assert(where_my_kids_at.find(it->function_name) != where_my_kids_at.end());
+    }
+    for(auto it:children)
+    {
+        assert(program.find(it) != program.end());
+        assert(where_my_kids_at.find(it->function_name) != where_my_kids_at.end());
     }
 }
