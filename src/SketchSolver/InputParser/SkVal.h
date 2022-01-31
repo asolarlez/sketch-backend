@@ -29,9 +29,7 @@ public:
         }
         else if(std::is_class<T>::value)
         {
-            cout << "TRYING TO COPY" << endl;
             val = to_copy->val;
-            cout << "SUCCESS" << endl;
         }
         else
         {
@@ -48,6 +46,10 @@ public:
     }
     T& get() {
         return val;
+    }
+    bool operator == (const PolyVal<T>& other) const
+    {
+        return val == other.val;
     }
 };
 
@@ -81,6 +83,13 @@ public:
     {
         return sk_val_type_name[get_type()];
     }
+
+    bool operator == (const SkVal & other) const
+    {
+        return (sketch_val_type == other.sketch_val_type &&
+            size_defined == other.size_defined &&
+            nbits == other.nbits);
+    }
 };
 
 class SkValBool: public SkVal, public PolyVal<bool>
@@ -89,6 +98,10 @@ public:
     explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {assert(_val == 0 ||  _val == 1);}
     string to_string() override {return std::to_string(get());}
     explicit SkValBool(SkValBool* to_copy): SkVal(to_copy), PolyVal<bool>(to_copy){}
+    bool operator == (const SkValBool& other)
+    {
+        return SkVal::operator==(other) && PolyVal<bool>::operator==(other);
+    }
 };
 
 vector<int> local_get_first(vector<pair<int, int> >* vec);
@@ -114,6 +127,10 @@ public:
         }
         return ret;
     }
+    bool operator == (const SkValBoolArr& other)
+    {
+        return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
+    }
 };
 
 int local_get_nbits(vector<pair<int, int> >* vec);
@@ -132,6 +149,10 @@ public:
         }
         return ret;
     }
+    bool operator == (const SkValIntArr& other)
+    {
+        return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
+    }
 };
 
 class SkValInt: public SkVal, public PolyVal<int>
@@ -142,6 +163,11 @@ public:
     }
     explicit SkValInt(SkValInt* to_copy): SkVal(to_copy), PolyVal<int>(to_copy){}
     string to_string() override {return std::to_string(get());}
+
+    bool operator == (const SkValInt& other)
+    {
+        return SkVal::operator==(other) && PolyVal<int>::operator==(other);
+    }
 };
 class SkValFloat: public SkVal, public PolyVal<float>
 {
@@ -149,6 +175,10 @@ public:
 //    explicit SkValFloat(float _val): PolyVal<float>(_val), SkVal(sk_type_float){}
     explicit SkValFloat(float _val, int _size): PolyVal<float>(_val), SkVal(sk_type_float, _size){}
     string to_string() override {return std::to_string(get());}
+    bool operator == (const SkValFloat& other)
+    {
+        return SkVal::operator==(other) && PolyVal<float>::operator==(other);
+    }
 };
 
 template<typename ValType>
@@ -160,6 +190,11 @@ protected:
 public:
     void clear()
     {
+        for(auto& it:assignment)
+        {
+            delete it.second;
+            it.second = nullptr;
+        }
         assignment.clear();
     }
     Mapping() = default;
@@ -176,6 +211,52 @@ public:
             return false;
         }
         return assignment < other.assignment;
+    }
+
+    bool operator == (const Mapping& other) const
+    {
+        if(null != other.null)
+        {
+            return false;
+        }
+
+        if(assignment.size() != other.assignment.size())
+        {
+            return false;
+        }
+
+        for(const auto & it: assignment) {
+            const auto & other_it = other.assignment.find(it.first);
+            if(other_it == other.assignment.end())
+            {
+                return false;
+            }
+            else
+            {
+                if(!(*it.second == *other_it->second))
+                {
+                    return false;
+                }
+            }
+        }
+
+
+        for(const auto & other_it : other.assignment) {
+            const auto & it = assignment.find(other_it.first);
+            if(it == assignment.end())
+            {
+                return false;
+            }
+            else
+            {
+                if(!(*it->second == *other_it.second))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
     
     map<string, ValType*>& get_assignment()
@@ -259,7 +340,7 @@ public:
         }
     }
 
-    Assignment_SkVal(VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
+    Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
             OutType* out_type = (*it).getOtype();
@@ -294,11 +375,11 @@ public:
 
         assert(test_var_store->size() == var_store->size());
 
-        for(VarStore::iterator it = var_store->begin(); it !=var_store->end(); ++it) {
-            assert(test_var_store->getObj(it->getName()) == var_store->getObj(it->getName()));
+        for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
+            assert(test_var_store->getObj(it->getName()) == var_store->getObjConst(it->getName()));
         }
-        for(VarStore::iterator it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
-            assert(test_var_store->getObj(it->getName()) == var_store->getObj(it->getName()));
+        for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
+            assert(test_var_store->getObj(it->getName()) == var_store->getObjConst(it->getName()));
         }
 
         delete test_var_store;
@@ -416,20 +497,37 @@ bool lt_compare_pointers(T* left, T* right)
     return *left < *right;
 }
 
+template<typename T>
+bool eq_compare_pointers(T* left, T* right)
+{
+    if(left == nullptr && right != nullptr)
+    {
+        return false;
+    }
+    else if(left != nullptr && right == nullptr)
+    {
+        return false;
+    }
+    assert((left == nullptr) == (right == nullptr));
+    return *left == *right;
+}
+
 namespace SolverLanguagePrimitives {
 
     class ProblemAE;
 
     class HoleAssignment {
         Assignment_SkVal *assignment_skval = nullptr;
-        SATSolver::SATSolverResult sat_solver_result = SATSolver::UNDETERMINED;
+        SATSolverResult sat_solver_result = SAT_UNDETERMINED;
     public :
 
         void clear() {
             assignment_skval->clear();
+            delete assignment_skval;
+            assignment_skval = nullptr;
         }
 
-        explicit HoleAssignment(SATSolver::SATSolverResult _sat_solver_result) :
+        explicit HoleAssignment(SATSolverResult _sat_solver_result) :
                 sat_solver_result(_sat_solver_result) {
         }
 
@@ -444,16 +542,26 @@ namespace SolverLanguagePrimitives {
             return lt_compare_pointers(assignment_skval, other.assignment_skval);
         }
 
-        HoleAssignment(SATSolver::SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
+        bool operator == (const HoleAssignment& other) const
+        {
+            if(sat_solver_result != other.sat_solver_result){
+                return false;
+            }
+            return eq_compare_pointers(assignment_skval, other.assignment_skval);
+        }
+
+
+
+        HoleAssignment(SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
                 sat_solver_result(_sat_solver_result), assignment_skval(_assignment_skval) {}
 
-        HoleAssignment(SATSolver::SATSolverResult _sat_solver_result, VarStore *ctrl_store, FloatManager &floats) :
+        HoleAssignment(SATSolverResult _sat_solver_result, const VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
 
         explicit HoleAssignment(HoleAssignment *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
-        HoleAssignment() = default;;
+        HoleAssignment() = default;
         explicit HoleAssignment(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
 
         explicit HoleAssignment(ProblemAE* problem) {
@@ -482,17 +590,17 @@ namespace SolverLanguagePrimitives {
             return ret;
         }
 
-        SATSolver::SATSolverResult get_sat_solver_result() {
+        SATSolverResult get_sat_solver_result() {
             return sat_solver_result;
         }
 
-        void set_sat_solver_result(SATSolver::SATSolverResult _rez) {
+        void set_sat_solver_result(SATSolverResult _rez) {
             sat_solver_result = _rez;
         }
 
         string to_string() {
-            cout << "HoleAssignment::to_string" << endl;
-            assert(false);
+            string ret = SATSolverResultNames[sat_solver_result] + assignment_skval->to_string();
+            return ret;
         }
 
         VarStore *to_var_store() {
@@ -530,12 +638,12 @@ namespace SolverLanguagePrimitives {
 
         void join_with(HoleAssignment* other)
         {
-            if(other->sat_solver_result == SATSolver::UNSATISFIABLE) {
-                sat_solver_result = SATSolver::UNSATISFIABLE;
+            if(other->sat_solver_result == SAT_UNSATISFIABLE) {
+                sat_solver_result = SAT_UNSATISFIABLE;
             }
             else{
-                assert(other->sat_solver_result == SATSolver::SATISFIABLE);
-                if(sat_solver_result == SATSolver::UNDETERMINED)
+                assert(other->sat_solver_result == SAT_SATISFIABLE);
+                if(sat_solver_result == SAT_UNDETERMINED)
                 {
                     sat_solver_result = other->sat_solver_result;
                 }

@@ -303,6 +303,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         {
             assert(params.empty());
             file->clear();
+            delete file;
             file = nullptr;
             return new VarVal();
             break;
@@ -515,7 +516,8 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     SketchFunction* sk_func = method_var_val->get_function()->produce_inlined_dag();
                     BooleanDAG* the_dag = sk_func->get_dag();
 
-                    NodeEvaluator node_evaluator(sk_func->get_env()->function_map.to_boolean_dag_map(), *the_dag, sk_func->get_env()->floats);
+                    const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
+                    NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
 
                     if(false) {
                         cout << "BEFORE RUN" << endl;
@@ -540,7 +542,10 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                         cout << "DONE BEFORE RUN" << endl;
                     }
 
-                    bool fails = node_evaluator.run(*input_val->get_input_holder()->to_var_store());
+                    VarStore* the_var_store = input_val->get_input_holder()->to_var_store();
+                    bool fails = node_evaluator.run(*the_var_store);
+                    delete the_var_store;
+                    the_var_store = nullptr;
                     assert(!fails);
 
                     if(false) {
@@ -585,6 +590,9 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(out_type == OutType::BOOL);
                     //THIS IS A HACK BUT WORKS FOR NOW
                     ret = new VarVal((bool)node_evaluator.getValue((*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)));
+
+                    delete bool_dag_map;
+                    bool_dag_map = nullptr;
 
                     sk_func->clear();
                     input_val->decrement_shared_ptr();
@@ -837,11 +845,15 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
             SolverLanguagePrimitives::InputAssignment* input_holder = input_holder_var_val->get_input_holder();
+            int transformer_size = program->get_env()->function_map.get_program().size();
             SketchFunction* concretized_function = program->produce_with_concretized_inputs(input_holder);
             input_holder_var_val->decrement_shared_ptr();
             assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
             bool ret = concretized_function->get_dag()->get_failed_assert() == nullptr;
+            int interim_transformer_size = program->get_env()->function_map.get_program().size();
+            assert(transformer_size+2 == interim_transformer_size);
             concretized_function->clear();
+            assert(transformer_size == program->get_env()->function_map.get_program().size());
             return new VarVal(ret);
             break;
         }
@@ -899,8 +911,17 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _get_solution:
         {
-            assert(params.empty());
-            return new VarVal(sk_func->get_solution());
+            if(params.empty()) {
+                return new VarVal(sk_func->get_solution());
+            }
+            else if(params.size() == 1){
+                string name = params[0]->eval(state)->get_string(true, false);
+                return new VarVal(sk_func->get_solution(name));
+            }
+            else
+            {
+                assert(false);
+            }
         }
         default:
             assert(false);

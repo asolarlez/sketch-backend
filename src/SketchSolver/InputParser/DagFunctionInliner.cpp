@@ -164,7 +164,7 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
     //otherwise it's not inside functioMap
 
     if(functionMap.find(node.get_ufname()) != functionMap.end()) {
-//        cout << "node.get_ufname() " << node.get_ufname() << endl;
+        inlined_functions.insert(node.get_ufname());
         //ufun is an actual function
         //it is handled by functionInliner.
         DagFunctionInliner::visit(node);
@@ -188,6 +188,15 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
 //    // if it is a ufun, call the NodeHardcoder.
 //
 //    rvalue->accept((NodeHardcoder&)*this);
+}
+
+vector<string> * DagOneStepInlineAndConcretize::get_inlined_functions() {
+    vector<string>* ret = new vector<string>();
+    for(const auto& it:inlined_functions)
+    {
+        ret->push_back(it);
+    }
+    return ret;
 }
 
 
@@ -1004,13 +1013,6 @@ extern map<string, pair<int, int> > sizes;
 
 void DagFunctionInliner::process(BooleanDAG& dag){
 
-
-//    for(int i = 0; i<dag.size();i++)
-//    {
-//        assert(dag[i]->get_name() != "num_bools_4_0_0");
-//    }
-
-	// cout<<" funmap has size " << function_map.size() << endl;
 	initLight(dag);
 	funsInlined.clear();
 	somethingChanged = false;

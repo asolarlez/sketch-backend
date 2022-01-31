@@ -58,7 +58,7 @@ private:
     static long long global_boolean_dag_id;
 	static set<BooleanDAG*> allocated;
 
-    static string get_suffix(bool modify_name);
+    static string get_suffix(bool modify_name, long long int dag_id);
 
 public:
     static set<BooleanDAG*>& get_allocated()

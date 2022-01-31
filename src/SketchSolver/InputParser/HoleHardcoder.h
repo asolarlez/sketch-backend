@@ -246,7 +246,7 @@ public:
     void setCurrentHarness(int hid){
 //        if(pendingConstraints){
 //            int res = sat->getMng().solve();
-//            if(res != SATSolver::SATISFIABLE){
+//            if(res != SAT_SATISFIABLE){
 //                return false;
 //            }
 //        }

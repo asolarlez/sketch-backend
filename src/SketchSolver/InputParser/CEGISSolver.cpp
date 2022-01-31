@@ -172,6 +172,7 @@ bool CEGISSolver::solveCore(){
                 counterexample_concretized_dag->clear();
                 counterexample_concretized_dag = nullptr;
             }
+
             counterexample_concretized_dag = checker->check(ctrlStore);
 			doMore = counterexample_concretized_dag != nullptr;
 
@@ -220,6 +221,11 @@ bool CEGISSolver::solveCore(){
 			try{
                 doMore = finder->find(counterexample_concretized_dag, ctrlStore, hasInputChanged);
 
+                if(counterexample_concretized_dag != nullptr) {
+                    counterexample_concretized_dag->clear();
+                    counterexample_concretized_dag = nullptr;
+                }
+
                 File *file = files[(int)files.size() - 1];
 
                 if(doMore) {
@@ -229,11 +235,11 @@ bool CEGISSolver::solveCore(){
                     SketchFunction to_concretize__all_inputs_dag = SketchFunction(
                             finder->get_all_inputs_dag(),
                             nullptr,
-                            harness->get_env(),
-                            nullptr);
+                            harness->get_env());
 
                     SketchFunction* all_inputs_concretized_function =
-                            to_concretize__all_inputs_dag.produce_concretization(ctrlStore, bool_node::CTRL, false, true, false);
+                            to_concretize__all_inputs_dag.produce_concretization(
+                                    ctrlStore, bool_node::CTRL, false, true, false);
 
                     assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
                     all_inputs_concretized_function->clear(false);
@@ -262,16 +268,22 @@ bool CEGISSolver::solveCore(){
 
                     SketchFunction *harness = checker->getHarness();
 
-                    SketchFunction to_concretize_function = SketchFunction(
-                            finder->get_all_inputs_dag(),
-                            nullptr,
-                            harness->get_env());
+                        BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
+                        harness->get_env()->doInline(
+                                *the_dag, ctrlStore, bool_node::CTRL, false);
 
-                    SketchFunction* concretized_function =
-                            to_concretize_function.produce_concretization(ctrlStore, bool_node::CTRL);
-
-                    assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
-                    concretized_function->clear();
+//                    SketchFunction to_concretize_function = SketchFunction(
+//                            finder->get_all_inputs_dag(),
+//                            nullptr,
+//                            harness->get_env());
+//
+//                    SketchFunction* concretized_function =
+//                            to_concretize_function.produce_concretization(ctrlStore, bool_node::CTRL);
+//
+//                    assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
+//                    concretized_function->clear();
+                    assert(the_dag->get_failed_assert() != nullptr);
+                    the_dag->clear();
 
                     if(file != nullptr)
                     {
@@ -335,6 +347,7 @@ bool CEGISSolver::solveCore(){
 
     if(counterexample_concretized_dag != nullptr) {
         counterexample_concretized_dag->clear();
+        counterexample_concretized_dag = nullptr;
     }
 
     if(finder->get_all_inputs_dag() != nullptr) {
@@ -443,11 +456,11 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 	}
 
 void CEGISSolver::normalizeInputStore(){
-	VarStore tmp = join(checker->get_input_store(), ctrlStore);
+	VarStore tmp = old_join(checker->get_input_store(), ctrlStore);
 	map<string, BooleanDAG*> empty;
 	NodeSlicer slicer(empty, tmp, *getProblem(), floats);
 	slicer.process(*getProblem());
-	for(VarStore::iterator it = checker->get_input_store().begin(); it != checker->get_input_store().end(); ++it){
+	for(auto it = checker->get_input_store().begin(); it != checker->get_input_store().end(); ++it){
 		if(!slicer.isInfluential(it->getName())){
 			it->setVal(last_input[it->getName()]);		
 		}
@@ -470,7 +483,7 @@ void CEGISSolver::print_control_map(ostream& out){
 
 void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
 {
-    for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
         if(it->otype == OutType::FLOAT)
         {
             values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt()), it->get_size()));
@@ -505,10 +518,10 @@ void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
 
     assert(test_varstore->size() == ctrlStore.size());
 
-    for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
+    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
         assert(ctrlStore[it->getName()] == (*test_varstore)[it->getName()]);
     }
-    for(VarStore::iterator it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
+    for(auto it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
         assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
     }
 
@@ -518,7 +531,7 @@ void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
 }
 
 void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
-	for(VarStore::iterator it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+	for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
 		stringstream str;
 		if(it->otype == OutType::FLOAT)
 		{

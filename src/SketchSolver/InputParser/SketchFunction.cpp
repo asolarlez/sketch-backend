@@ -31,7 +31,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
 //        }
     }
     else {
-        vector<string> inlined_functions;
+        vector<string>* inlined_functions = nullptr;
         if (new_way) {
             assert(root_dag != nullptr);
             env->doInline(*root_dag, var_store, var_type, do_deactivate_pcond, inlined_functions);
@@ -46,7 +46,10 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
         if(update_transformer) {
             get_env()->function_map.concretize(
                     get_dag()->get_name(), var_store, var_type, do_deactivate_pcond,
-                    get_env()->function_map.get_function_names());
+                    inlined_functions);
+        }
+        if(inlined_functions != nullptr) {
+            delete inlined_functions;
         }
         return this;
     }
@@ -80,10 +83,11 @@ SketchFunction *SketchFunction::clone(bool update_transformer) {
     }
 }
 
-void SketchFunction::clear(bool update_transformer)
+void SketchFunction::clear(bool update_transformer, bool save_dag)
 {
     if(original_dag != nullptr)
     {
+        assert(false);
         original_dag->clear();
         delete original_dag;
         original_dag = NULL;
@@ -91,17 +95,33 @@ void SketchFunction::clear(bool update_transformer)
 
     get_env()->function_map.erase(root_dag->get_name(), update_transformer);
 
-    int prev_num = BooleanDAG::get_allocated().size();
-    assert(root_dag != nullptr);
-    root_dag->clear();
-    assert(prev_num-1 == BooleanDAG::get_allocated().size());
-    root_dag = nullptr;
+    if(!save_dag) {
+        int prev_num = BooleanDAG::get_allocated().size();
+        assert(root_dag != nullptr);
+        root_dag->clear();
+        assert(prev_num - 1 == BooleanDAG::get_allocated().size());
+        root_dag = nullptr;
+    }
+    if(solution != nullptr)
+    {
+        solution->clear();
+        delete solution;
+    }
     delete this;
+}
+
+void SketchFunction::clear_but_save_dag(bool update_transformer){
+    clear(update_transformer, true);
 }
 
 void SketchFunction::replace(const string& replace_this, const string &with_this) {
     assert(new_way);
     assert(root_dag != nullptr);
+    AssertDebug(replaced_labels.find(replace_this) == replaced_labels.end(), "If this happens, it means that you are replacing a label that has previously been replaced (used as 'replace_this'). Not yet handled.");
+    AssertDebug(replaced_labels.find(with_this) == replaced_labels.end(), "If this happens, it means that you are re-instating a label that has previously been replaced. Not sure why you are doing this. Not yet handled.");
+
+    replaced_labels[replace_this] = with_this;
+
     get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
     root_dag->replace_label_with_another(replace_this, with_this);
 }

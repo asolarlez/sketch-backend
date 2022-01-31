@@ -127,7 +127,7 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 
     REASSolver* reasSolver = NULL;
 
-	SATSolver::SATSolverResult assertDAGNumerical(
+	SATSolverResult assertDAGNumerical(
 		BooleanDAG* dag, map<string, string>& currentControls, map<string, int>& currentControlInts, map<string, float>& currentControlFloats) {
 
 		IntToFloatRewriteDag rewriter = IntToFloatRewriteDag(*dag->clone(), floats);
@@ -142,17 +142,17 @@ class CEGISFinderNumerical: public CEGISFinderSpec
 	        //reasSolver->get_control_map_as_map_str_str(currentControls);
 	    }catch(SolverException* ex){
 	        cout<<"ERROR "/*<<basename()*/<<": "<<ex->code<<"  "<<ex->msg<<endl;
-			return SATSolver::UNSATISFIABLE; // ex->code + 2;
+			return SAT_UNSATISFIABLE; // ex->code + 2;
 	    }catch(BasicError& be){
 	        currentControls = rewriter.extract_result_typed(reasSolver->get_result(), reasSolver->get_ctrls(),currentControlInts, currentControlFloats);
 	        cout<<"ERROR: "/*<<basename()*/<<endl;
-	        return SATSolver::UNSATISFIABLE;
+	        return SAT_UNSATISFIABLE;
 	    }
 	    if( !solveCode ){			
-	        return SATSolver::UNSATISFIABLE;
+	        return SAT_UNSATISFIABLE;
 	    }
 	    
-	    return SATSolver::SATISFIABLE;
+	    return SAT_SATISFIABLE;
 	}
 
 	static int get_bit(int bitstring, int idx)
@@ -192,10 +192,10 @@ public:
 		map<string, int> outputControlInts;
 		map<string, float> outputControlFloats;
 
-		SATSolver::SATSolverResult result = 
+		SATSolverResult result =
 			assertDAGNumerical(allInputsDag, outputControls, outputControlInts, outputControlFloats);
 		
-		if(result != SATSolver::SATISFIABLE)
+		if(result != SAT_SATISFIABLE)
 		{
 			return false;
 		}
@@ -204,7 +204,7 @@ public:
 
 		long long sum = 0;
 		//Save outputControls in (VarStore) controls
-		for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
+		for(auto it = controls.begin(); it !=controls.end(); ++it){
 			const string& cname = it->getName();
 			cout << "cname = " << cname << endl;
 			OutType* out_type = allInputsDag->get_node(cname)->getOtype();

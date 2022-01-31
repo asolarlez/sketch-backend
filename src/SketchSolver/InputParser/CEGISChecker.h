@@ -106,6 +106,7 @@ public:
 
     SketchFunction* getHarness()
     {
+        assert(!problemStack.empty());
         return problemStack.top();
     }
 

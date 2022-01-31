@@ -36,6 +36,11 @@ public:
     void clear() {
         counterexample_ids_over_time.clear();
         used.clear();
+        for(auto& it : *this)
+        {
+            it->clear();
+            it = nullptr;
+        }
         vector<VarStore*>::clear();
     }
 
@@ -229,7 +234,7 @@ public:
         }
     }
 
-    Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, VarStore inputs) {
+    Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, const VarStore& inputs) {
         clear();
         ifstream file;
         file.open(fname);
@@ -240,7 +245,9 @@ public:
             return NO_FILE;
         }
 
+        bool allow_new_iter = true;
         while (!file.eof()) {
+            assert(allow_new_iter);
             VarStore* new_row = inputs.copy();
             parseLineOut ok;
             try {
@@ -256,7 +263,7 @@ public:
 
             if (ok == more_bits) {
                 file.close();
-                cout << "|MOREBITS" << endl;
+                new_row->clear();
                 return MOREBITS;
             }
             else if(ok == complete_row)
@@ -265,7 +272,9 @@ public:
             }
             else if(ok == end_of_file__empty_row)
             {
+                new_row->clear();
                 assert(file.eof());
+                allow_new_iter = false;
             }
             else
             {
@@ -290,9 +299,14 @@ public:
     File(std::mt19937 _generator): generator(_generator){}
 
     File *sample_sub_file(int num_rows) {
-        File* new_file = new File(generator);
-        sample(begin(), end(), back_inserter(*new_file),
+        vector<VarStore*> samples;
+        sample(begin(), end(), back_inserter(samples),
                num_rows, generator);
+        File* new_file = new File(generator);
+        for(int i = 0;i<samples.size();i++)
+        {
+            new_file->push_back(samples[i]->copy());
+        }
         new_file->used = vector<int>(new_file->size(), 0);
         return new_file;
     }

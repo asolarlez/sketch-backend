@@ -58,8 +58,18 @@ public:
        toggle_pcond(dag, false);
     }
 
+
     void doInline(
-           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond, vector<string>& inlined_functions){
+            BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond)
+    {
+        vector<string>* tmp = nullptr;
+        doInline(dag, var_store, var_type, do_deactivate_pcond, tmp);
+    }
+
+    void doInline(
+           BooleanDAG& dag, VarStore& var_store, bool_node::Type var_type, bool do_deactivate_pcond, vector<string>*& inlined_functions){
+
+        assert(inlined_functions == nullptr);
 
         if(do_deactivate_pcond){
             deactivate_pcond(&dag);
@@ -78,13 +88,15 @@ public:
 
         set<string> pureFuns;
 
-        findPureFuns(function_map.to_boolean_dag_map(), pureFuns);
+        const map<string, BooleanDAG *>& boolean_dag_function_map = *function_map.to_boolean_dag_map();
+
+        findPureFuns(boolean_dag_function_map, pureFuns);
 
         DagOneStepInlineAndConcretize dfi(
                 var_store,
                 var_type,
                 dag,
-                function_map.to_boolean_dag_map(),
+                boolean_dag_function_map,
                 std::move(replaceMap),
                 floats,
                 &hardcoder,
@@ -123,6 +135,7 @@ public:
                     }
 
                     inlined_functions = dfi.get_inlined_functions();
+                    delete &boolean_dag_function_map;
 
                     return ;
                 }
@@ -156,7 +169,7 @@ public:
         }
         hardcoder.afterInline();
         {
-            DagFunctionToAssertion makeAssert(dag, function_map.to_boolean_dag_map(), floats);
+            DagFunctionToAssertion makeAssert(dag, boolean_dag_function_map, floats);
             makeAssert.process(dag);
         }
 
@@ -166,6 +179,7 @@ public:
        }
 
        inlined_functions = dfi.get_inlined_functions();
+        delete &boolean_dag_function_map;
     }
 
     FloatManager &get_floats() {

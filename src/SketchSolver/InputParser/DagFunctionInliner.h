@@ -677,15 +677,6 @@ private:
 	HoleHardcoder* hcoder;
 	const set<string>& pureFunctions;
 public:
-    vector<string>& get_inlined_functions()
-    {
-        vector<string>* ret = new vector<string>();
-        for(auto it:funsInlined)
-        {
-            ret->push_back(it);
-        }
-        return *ret;
-    }
 	int nfuns(){ return lnfuns; }
 	DagFunctionInliner(
             BooleanDAG& p_dag, const map<string, BooleanDAG *> &p_functionMap, map<string, map<string, string> > p_replaceMap,
@@ -720,6 +711,7 @@ public:
 
 class DagOneStepInlineAndConcretize : public DagFunctionInliner, public NodeHardcoder
 {
+    set<string> inlined_functions;
 public:
     DagOneStepInlineAndConcretize(
             VarStore& _ctrl_store,
@@ -746,6 +738,7 @@ public:
     void visit(SRC_node& node) override;
     void visit(UFUN_node &node) override;
 
+    vector<string> * get_inlined_functions();
 };
 
 

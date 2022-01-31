@@ -213,7 +213,7 @@ public:
 
 	vector<spskpair > spskpairs;
 
-    SATSolver::SATSolverResult run_solver_program(int inlineAmnt);
+    SATSolverResult run_solver_program(int inlineAmnt);
 
 	void addspskpair(const string& spec, const string& sketch) {
 		spskpairs.push_back(spskpair(spec, sketch));
@@ -371,9 +371,9 @@ public:
 	This function takes ownership of dag. After this,
 	dag will be useless, and possibly deallocated.
 	*/
-    SATSolver::SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
-    SATSolver::SATSolverResult assertHarness(SketchFunction* harness, ostream &out, const string &file);
-	// SATSolver::SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
+    SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
+    SATSolverResult assertHarness(SketchFunction* harness, ostream &out, const string &file);
+	// SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);
 

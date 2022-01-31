@@ -23,20 +23,18 @@ set<BooleanDAG*> BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
 #endif
 
-string BooleanDAG::get_suffix(bool modify_name)
+string BooleanDAG::get_suffix(bool modify_name, long long int dag_id)
 {
-    if(modify_name)
-    {
-//        assert(global_boolean_dag_id != 534);
-        return "__id"+std::to_string(global_boolean_dag_id);
+    if(modify_name) {
+        return "__id"+std::to_string(dag_id);
     }
-    else
-    {
+    else {
         return "";
     }
 }
 
-BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone): name(name_ + get_suffix(_is_clone)), isModel(isModel_), is_clone(_is_clone)
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
+    name(name_ + get_suffix(_is_clone,global_boolean_dag_id)), isModel(isModel_), is_clone(_is_clone)
 {  
   is_layered=false;
   is_sorted=false;
@@ -52,6 +50,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone): name
   dag_id = global_boolean_dag_id++;
 //  assert(dag_id != 8727);
 #endif
+//assert(name != "sketch_main__Wrapper__id22__id24__id27__id29");
 }
 
 
@@ -1403,8 +1402,20 @@ BooleanDAG* BooleanDAG::clone(){
 
     for (int i = 0; i < ctrls.size(); i++) {
         assert(ctrls[i]->type == bool_node::CTRL);
+        const bool do_rename = false;
+        if(do_rename) {
+            string ctrl_name = ctrls[i]->get_name();
+            if (((CTRL_node *) ctrls[i])->get_Pcond()) {
+                assert(ctrl_name == "#PC");
+            } else {
+                assert(ctrl_name != "#PC");
+                if (ctrl_name.size() >= 3) {
+                    assert(ctrl_name.substr(0, 3) != "#PC");
+                }
+                ((CTRL_node *) ctrls[i])->add_suffix_to_name(get_suffix(true, bdag->dag_id));
+            }
+        }
     }
-
 
 	return bdag;
 }

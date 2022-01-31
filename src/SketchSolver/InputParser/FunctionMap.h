@@ -21,7 +21,7 @@ class FunctionMap: public map<string, SketchFunction*>, public FunctionMapTransf
 public:
     FunctionMap() = default;
 
-    const map<string, BooleanDAG*>& to_boolean_dag_map() const;
+    const map<string, BooleanDAG *> * to_boolean_dag_map() const;
 
     const vector<string>& get_function_names() const
     {

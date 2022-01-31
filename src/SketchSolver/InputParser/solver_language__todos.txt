@@ -29,6 +29,17 @@ For meeting:
 
            }
 
+    5. Discussion:
+        What should be the semantics of replace and produce_replace?
+            f.replace("dummy_program", new_program);
+            should new_program be inlined in f, or should "dummy_program" be replaced with the string new_program.get_name()?
+            * the names of the underlying dags, are different then the names of the variables that hold the objects in the solver language.
+            How should this relate to the FunctionMapTransformerProgram and the construction of a var store.
+            easiest would be to inline the dag before returning the var store.
+
+            --it's like assign. and you actually can use it as such.
+
+    6. ask Armando about returning an object vs a pointer to an object.
 
 TODO: Priority for merging with Master
     1. Add separate file as console output for Solver Language.

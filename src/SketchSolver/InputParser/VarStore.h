@@ -46,6 +46,9 @@ public:
         bool defined = false;
         bool is_array;
 	public:
+
+
+
 		string name;
 		objP* next;
 		OutType* otype;
@@ -63,15 +66,29 @@ public:
 		    return globalSize();
         }
 
-		string getName()
+		string getName() const
 		{
 			return name;
 		}
 
-		virtual ~objP(){
-		    defined = false;
-			if(next != NULL){ delete next; }
-		}
+//		~objP(){
+//		    defined = false;
+//			if(next != nullptr) {delete next;}
+//            name += "_DELETED";
+//		}
+
+		bool cleared = false;
+
+        void clear()
+        {
+			assert(!cleared);
+			cleared = true;
+            defined = false;
+            if(next != nullptr) {next->clear();}
+            name += "_DELETED";
+//            delete this;
+        }
+
 		objP(string  nm, int size, OutType* _otype):
         name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(NULL), defined(true){
 		    assert(_otype != NULL);
@@ -255,7 +272,7 @@ public:
 			}
 			Assert(false,"Control shouldn't reach here");
 		}
-		vector<pair<int, int> >* getArr()
+		vector<pair<int, int> >* getArr() const
         {
             assert(is_array);
 		    vector<pair<int, int> >* ret = new vector<pair<int, int> >();
@@ -284,7 +301,7 @@ public:
 //		}
 
 		///Return false if objP did not have enough bits to be made equal to v.
-		bool setValSafe(int v){
+		bool setValSafe(int v) {
 			if(v<0){
 				v = -v;
 				isNeg = true;
@@ -397,9 +414,23 @@ public:
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
 
+	void clear()
+	{
+		for(auto it:objs)
+		{
+            it.clear();
+		}
 
+        objs.clear();
+        index.clear();
 
-    int size()
+        Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+        Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+
+        delete this;
+	}
+
+    int size() const
     {
         return objs.size();
     }
@@ -414,23 +445,34 @@ public:
 
 	    vector<pair<int, string> > index_as_vec;
 
-        for(auto it : index)
+        for(const auto& it : index)
         {
             index_as_vec.emplace_back(it.second, it.first);
         }
 
         sort(index_as_vec.begin(), index_as_vec.end());
 
-	    for(const auto& it : index_as_vec)
+
+        for(int i = 0;i<index_as_vec.size(); i++)
         {
+            pair<int, string> it = index_as_vec[i];
+            assert(it.first == i);
             ret->insertObj(it.second, it.first, new objP(objs[it.first]));
         }
+
+//	    for(const auto& it : index_as_vec)
+//        {
+//            ret->insertObj(it.second, it.first, new objP(objs[it.first]));
+//        }
+
 	    return ret;
     }
-	
-	typedef vector<objP>::iterator iterator;
-	iterator begin(){ return objs.begin(); }
-	iterator end(){ return objs.end(); }
+
+    auto begin()const { return objs.begin();}
+	auto end()const{ return objs.end(); }
+    auto begin() { return objs.begin();}
+    auto end(){ return objs.end(); }
+
 	void makeRandom(float sparseArray){ 
 		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].makeRandom(sparseArray);
@@ -457,10 +499,10 @@ public:
 		return rv;
 	}
 
-	void insertObj(const string& name, int idx, objP* obj)
+	void insertObj(const string& name, int idx, const objP *obj)
     {
-	    Assert(index.find(name) == index.end(), name + " should not be present in index.");
-	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size().");
+	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
+	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
 	    objs.push_back(*obj);
 	    index[name] = idx;
     }
@@ -566,7 +608,7 @@ public:
 			if(index.count(name)==0){
 				continue;
 			}
-			objP& oo = this->getObj(name);
+			auto oo = this->getObj(name);
 			oo.setVal(atoi(val.c_str()));
 		}
 
@@ -609,17 +651,26 @@ public:
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
 		return objs[getId(name)].getInt();
 	}
-	objP& getObj(const string& name){ 
-		return objs[getId(name)];
+
+    const objP& getObjConst(const string& name) const {
+        int id = getId(name);
+        assert(id < objs.size());
+        return objs.at(id);
+    }
+	objP& getObj(const string& name) {
+        int id = getId(name);
+        assert(id < objs.size());
+		return objs.at(id);
 	}
-	int getId(const string& name){
+	int getId(const string& name) const{
 		AssertDebug(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
-		return index[name];
+		return index.at(name);
 	}
 	objP& getObj(int id){ 
 		return objs[id];
 	}
-	friend VarStore join(const VarStore& v1 , const VarStore& v2);
+	friend VarStore old_join(const VarStore& v1 , const VarStore& v2);
+	friend VarStore* produce_join(const VarStore& v1 , const VarStore& v2);
 
     void relabel(vector<bool_node*>& inputs){
 
@@ -642,7 +693,17 @@ public:
     }
 };
 
-inline VarStore join(const VarStore& v1 , const VarStore& v2){
+inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
+{
+	VarStore* ret = _v1.copy();
+	for(int i = 0; i < v2.objs.size(); i++) {
+		ret->insertObj(v2.objs[i].name, ret->objs.size(), new VarStore::objP(v2.objs[i]));
+	}
+	ret->bitsize += v2.bitsize;
+	return ret;
+}
+
+inline VarStore old_join(const VarStore& v1 , const VarStore& v2){
 	VarStore rv = v1;
 	int sz = v1.objs.size();
 	rv.objs.insert(rv.objs.end(), v2.objs.begin(), v2.objs.end());

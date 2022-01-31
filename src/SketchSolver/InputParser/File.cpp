@@ -35,15 +35,16 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
 
     File::Result res = parseFile(file, floats, inputs, input_store);
     const int max_num_bits = 64;
+
+    const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
     while (res == File::MOREBITS) {
         int at_int_size = problem->getIntSize();
-        cout << at_int_size << endl;
         AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, PROBABLY WRONG CODE/INPUT/OUTPUT");
         growInputs(input_store, problem);
         if(true){
             assert(harness->get_dag()->getIntSize() == at_int_size);
             bool harness_in_function_map = false;
-            for(auto it: harness->get_env()->function_map.to_boolean_dag_map()) {
+            for(auto it: *bool_dag_map) {
                 assert(it.second->getIntSize() == at_int_size);
                 it.second->growInputIntSizes();
                 if(it.second->get_name() == harness->get_dag()->get_name()) {
@@ -67,6 +68,8 @@ File::File(SketchFunction *harness, const string &file, FloatManager &floats, in
     }
     assert(res == File::DONE);
     used = vector<int>(size(), 0);
+    delete bool_dag_map;
+    bool_dag_map = nullptr;
     cloned_inlined_harness->clear();
 }
 

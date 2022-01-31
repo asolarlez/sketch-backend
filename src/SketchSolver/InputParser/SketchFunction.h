@@ -39,6 +39,8 @@ class SketchFunction
 
     SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
 
+    map<string, string> replaced_labels;
+
     bool new_way = true;
     bool keep_track_of_original = false;
 
@@ -82,6 +84,10 @@ public:
         assert(root_dag != nullptr);
         assert(original_dag == nullptr);
 
+        for(auto it: root_dag->getNodesByType(bool_node::UFUN)) {
+            replaced_labels[it->get_name()] = it->get_name();
+        }
+
     }
 
     SketchFunction* produce_inlined_dag(bool deactivate_pcond = false)
@@ -112,7 +118,10 @@ public:
         return root_dag;
     }
 
-    void clear(bool update_transformer = true);
+    void clear(bool update_transformer = true, bool save_dag = false);
+
+    void clear_but_save_dag(bool update_transformer = true);
+
 
 private:
     VarStore* solution_ctrl_var_store = nullptr;
@@ -171,19 +180,84 @@ public:
     {
         VarStore* var_store = solution_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL, do_deactivate_pcond);
-        delete var_store;
+        var_store->clear();
         ret->add_solution(solution_holder);
         return ret;
+    }
+
+    void print_extras()
+    {
+        cout << "get_env()->function_map.transformer_size() " << get_env()->function_map.transformer_size() << endl;
+        pair<int, int> min_and_max_depth = get_env()->function_map.transformer_min_and_max_depth();
+        cout << "min_and_max_depth " << min_and_max_depth.first << " "<< min_and_max_depth.second << endl;
+        assert(!get_env()->function_map.has_cycle());
+        cout << "no cycles!" << endl;
     }
 
     SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
         if(solution == nullptr) {
-            cout << "get_env()->function_map.transformer_size() " << get_env()->function_map.transformer_size() << endl;
-            pair<int, int> min_and_max_depth = get_env()->function_map.transformer_min_and_max_depth();
-            cout << "min_and_max_depth " << min_and_max_depth.first << " "<< min_and_max_depth.second << endl;
-            assert(!get_env()->function_map.has_cycle());
-            cout << "no cycles!" << endl;
+            assert(false);
+            print_extras();
+            const VarStoreTreeNode* compiled_var_store =
+                    get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
+            assert(compiled_var_store != nullptr);
+            solution =
+                    new SolverLanguagePrimitives::HoleAssignment(
+                            SAT_SATISFIABLE, compiled_var_store->get_var_store(),
+                            get_env()->floats);
+        }
+        assert(solution != nullptr);
+        return new SolverLanguagePrimitives::HoleAssignment(solution);
+    }
+
+    SolverLanguagePrimitives::HoleAssignment* get_solution(const string& sub_solution_label)
+    {
+        {
+            print_extras();
+
+            const VarStoreTreeNode* compiled_var_store =
+                    get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
+            assert(compiled_var_store != nullptr);
+
+            string underlying_function_name = compiled_var_store->find_underlying_function_name(sub_solution_label);
+
+
+            bool found = false;
+            const VarStore* var_store_used_to_concretize_underlying_function_name =
+                    compiled_var_store->find_last_var_store_on_the_way_to(underlying_function_name, found);
+
+            assert(found);
+            assert(var_store_used_to_concretize_underlying_function_name != nullptr);
+
+            SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
+
+            if(solution != nullptr)
+            {
+                dummy_sat_solver_result = solution->get_sat_solver_result();
+            }
+
+            auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
+                    dummy_sat_solver_result, var_store_used_to_concretize_underlying_function_name,
+                    get_env()->floats));
+            if(solution != nullptr)
+            {
+                cout << solution->to_string() << endl;
+                cout << new_solution->to_string() << endl;
+                assert(*solution == *new_solution);
+                new_solution->clear();
+                delete new_solution;
+                new_solution = nullptr;
+            }
+            else {
+                TransformPrimitive* transform_program_root = get_env()->function_map.get_where_my_kids_at()[get_dag()->get_name()];
+                AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
+                            "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
+                            "TODO: think how it works if it is clone.");
+
+                assert(solution == nullptr);
+                solution = new_solution;
+            }
         }
         assert(solution != nullptr);
         return new SolverLanguagePrimitives::HoleAssignment(solution);
@@ -191,9 +265,10 @@ public:
 
     void concretize(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
     {
-        VarStore* solution = solution_holder->to_var_store();
-        concretize(*solution, bool_node::CTRL, do_deactivate_pcond);
-        delete solution;
+        VarStore* local_solution = solution_holder->to_var_store();
+        concretize(*local_solution, bool_node::CTRL, do_deactivate_pcond);
+        local_solution->clear();
+        local_solution = nullptr;
         add_solution(solution_holder);
     }
 
@@ -201,7 +276,8 @@ public:
     {
         VarStore* inputs = input_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*inputs, bool_node::SRC);
-        delete inputs;
+        inputs->clear();
+        inputs = nullptr;
         return ret;
     }
 
@@ -221,6 +297,7 @@ public:
                 ret += 1;
             }
             concretized_function->clear();
+            input.clear();
         }
         cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
         return ret;

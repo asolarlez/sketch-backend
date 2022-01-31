@@ -35,7 +35,7 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	
 	if(orisize < 200){ return; }
 	
-	VarStore tmp = join(inputStore, ctrlStore);
+	VarStore tmp = old_join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;	
 	
 	NodeEvaluator eval(empty, *dag, floats);
@@ -465,12 +465,12 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
     if(files.find(curProblem) != files.end())
     {
-        BooleanDAG *all_inputs_dag = concretized_function->get_dag();
+        BooleanDAG *concretized_dag = concretized_function->get_dag();
         map<string, BooleanDAG*> empty;
-        CounterexampleFinder eval(empty, *all_inputs_dag, params.sparseArray, floats);
+        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
         VarStore &tmpin = get_input_store();
         eval.init(tmpin);
-        auto inputs = all_inputs_dag->getNodesByType(bool_node::SRC);
+        auto inputs = concretized_dag->getNodesByType(bool_node::SRC);
         File *file = files[curProblem];
         assert(eval.check_file_invariant(file));
         cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
@@ -595,14 +595,21 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
     }
     //Return counter-example concretized dag
 
-//    cout << "counterexample: ";
-//    input.printBrief(cout);
-//    cout << endl;
 
-    SketchFunction* ret_dag = getHarness()->produce_concretization(input, bool_node::SRC);
+//    BooleanDAG* ret_dag = getHarness()->get_dag()->clone();
+//    getHarness()->get_env()->doInline(
+//            *ret_dag, input, bool_node::SRC, false);
+
+//    SketchFunction* local_harness = getHarness()->clone();
+    SketchFunction* tmp_sk_func =
+            getHarness()->produce_concretization(input, bool_node::SRC);
+    BooleanDAG* ret_dag = tmp_sk_func->get_dag()->clone();
+
+//    tmp_sk_func->clear_but_save_dag();
+//    tmp_sk_func->clear(false);
+//    local_harness->clear(false);
 //	BooleanDAG* ret_dag = hardCodeINode(getProblem(), input, bool_node::SRC, floats);
-	return ret_dag->get_dag();
-//	return true; //check failed = doMore = true
+	return ret_dag;
 }
 
 
@@ -637,9 +644,9 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
     if(params.printDiag){
         mngCheck.printDiagnostics('c');
     }
-    if (result != SATSolver::SATISFIABLE){
+    if (result != SAT_SATISFIABLE){
     	mngCheck.reset();
-    	if( result != SATSolver::UNSATISFIABLE){
+    	if( result != SAT_UNSATISFIABLE){
 	    	return l_Undef;
     	}
     	return l_False;
@@ -647,7 +654,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
     
     
     
-	for(VarStore::iterator it = input.begin(); it !=input.end(); ++it){
+	for(auto it = input.begin(); it !=input.end(); ++it){
 		const string& cname = it->getName();
 		if(dirCheck.checkVar(cname)){
 			int cnt = dirCheck.getArrSize(cname);

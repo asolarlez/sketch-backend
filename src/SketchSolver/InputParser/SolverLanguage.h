@@ -251,15 +251,15 @@ namespace SolverLanguagePrimitives
             VarStore ctrlStore;
             add_problem(problem->get_dag(), ctrlStore);
             bool found = finder->find(problem->get_dag(), ctrlStore, true);
-            SATSolver::SATSolverResult ret;
+            SATSolverResult ret;
             if(found)
             {
-                ret = SATSolver::SATISFIABLE;
+                ret = SAT_SATISFIABLE;
                 return new HoleAssignment(ret, &ctrlStore, finder->get_floats());
             }
             else
             {
-                ret = SATSolver::UNSATISFIABLE;
+                ret = SAT_UNSATISFIABLE;
                 return new HoleAssignment(ret);
             }
         }
@@ -323,7 +323,7 @@ namespace SolverLanguagePrimitives
                 ret->set(sk_hole_spec.get_name(), get_const_val(sk_hole_spec.get_type()));
             }
 
-            return new HoleAssignment(SATSolver::SATISFIABLE, ret);
+            return new HoleAssignment(SAT_SATISFIABLE, ret);
         }
         string to_string() override
         {
@@ -926,7 +926,7 @@ namespace SolverLanguagePrimitives
         while(problem_e->get_dag() != NULL)
         {
             solution_holder->update((new WrapperCEGISFinderSpec(finder))->solve(problem_e));
-            if (solution_holder->get_sat_solver_result() != SATSolver::SATISFIABLE)
+            if (solution_holder->get_sat_solver_result() != SAT_SATISFIABLE)
             {
                 break;
             }
@@ -1005,7 +1005,7 @@ namespace SolverLanguagePrimitives
         {
             solver->addProblem(problem->get_harness(), problem->get_file());
 
-            SATSolver::SATSolverResult ret_result = SATSolver::UNDETERMINED;
+            SATSolverResult ret_result = SAT_UNDETERMINED;
             auto* holes_to_sk_val = new Assignment_SkVal();
             //copied from InterpreterEnviroment::assertDAG
             {
@@ -1030,17 +1030,17 @@ namespace SolverLanguagePrimitives
                     }
 //                    needs InterpreterEnviroment::basename
 //                    cout << "ERROR: " << basename() << endl;
-                    ret_result = SATSolver::ABORTED;
+                    ret_result = SAT_ABORTED;
                     ret_result_determined = true;
                 }
 
                 if (!ret_result_determined)
                 {
                     if (!solveCode) {
-                        ret_result = SATSolver::UNSATISFIABLE;
+                        ret_result = SAT_UNSATISFIABLE;
                     }
                     else {
-                        ret_result = SATSolver::SATISFIABLE;
+                        ret_result = SAT_SATISFIABLE;
                     }
                 }
             }
@@ -1106,8 +1106,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
@@ -1136,6 +1136,8 @@ namespace SolverLanguagePrimitives
 
             int init_num_global_nodes = bool_node::get_allocated().size();
 
+            int init_function_map_transformer_size = local_harness->get_env()->function_map.transformer_size();
+
 
             parse_solver_langauge_program(state, solver_program_file_name);
 
@@ -1158,13 +1160,14 @@ namespace SolverLanguagePrimitives
 
                 concretized_function->clear();
 
-                solution_holder->set_sat_solver_result(SATSolver::SATISFIABLE);
+                solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
 
                 local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
 
 
                 assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+                assert(init_function_map_transformer_size == local_harness->get_env()->function_map.transformer_size());
 
                 return solution_holder;
             }
@@ -1225,6 +1228,12 @@ namespace SolverLanguagePrimitives
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+                int transformer_size_diff = local_harness->get_env()->function_map.transformer_size() - init_function_map_transformer_size;
+                int new_transformer_size_diff = local_harness->get_env()->function_map.transformer_size() - init_function_map_transformer_size;
+
+//                local_harness->get_env()->function_map.clean_transformer();
+
+                assert(new_transformer_size_diff == 0);
 
                 //TODO: return function / relevant solution
                 assert(false);
@@ -1251,7 +1260,7 @@ namespace SolverLanguagePrimitives
                     sol);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();
-            sol->set_sat_solver_result(SATSolver::SATISFIABLE);
+            sol->set_sat_solver_result(SAT_SATISFIABLE);
             solutions.emplace_back(num_passing_inputs, sol);
 
             cout << endl;
@@ -1286,13 +1295,13 @@ namespace SolverLanguagePrimitives
 
         state->harness_->set_solution_ctrl_var_store(solutions[0].second->to_var_store());
 
-        if(solutions[0].second->get_sat_solver_result() == SATSolver::SATISFIABLE)
+        if(solutions[0].second->get_sat_solver_result() == SAT_SATISFIABLE)
         {
-            cout << "return SATSolver::SATISFIABLE" << endl;
+            cout << "return SAT_SATISFIABLE" << endl;
         }
         else
         {
-            cout << "return NOT SATSolver::SATISFIABLE" << endl;
+            cout << "return NOT SAT_SATISFIABLE" << endl;
         }
 
         return solutions[0].second;

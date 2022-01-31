@@ -2844,8 +2844,8 @@ NodesToSolver::visit (ASSERT_node &node)
 			//whether there are assumptions before this point, or if this
 			//assertion itself is an assumption.
 			if(!dir.getMng().isNegated()){				
-				cout<<"  UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl; 				
-				errorMsg = "  UNSATISFIABLE ASSERTION ";
+				cout<<"  SAT_UNSATISFIABLE ASSERTION "<<node.getMsg()<<endl;
+				errorMsg = "  SAT_UNSATISFIABLE ASSERTION ";
 				errorMsg += node.getMsg();
 				if(PARAMS->verbosity > 7){
 					stringstream cstr;
@@ -2876,8 +2876,8 @@ NodesToSolver::visit (ASSERT_node &node)
 
 	if (!dir.getMng().isOK()) {
 		if (!dir.getMng().isNegated()) {
-			cout << "  UNSATISFIABLE ASSERTION " << node.getMsg() << endl;
-			errorMsg = "  UNSATISFIABLE ASSERTION ";
+			cout << "  SAT_UNSATISFIABLE ASSERTION " << node.getMsg() << endl;
+			errorMsg = "  SAT_UNSATISFIABLE ASSERTION ";
 			errorMsg += node.getMsg();
 		}
 		stopAddingClauses = true;
@@ -2889,7 +2889,7 @@ NodesToSolver::visit (ASSERT_node &node)
 	if(PARAMS->debug){
 		cout<<"ASSERTING "<<node.getMsg()<<endl;
 		int res = dir.getMng().solve();
-		Assert(res == SATSolver::SATISFIABLE, "Failed assertion!");
+		Assert(res == SAT_SATISFIABLE, "Failed assertion!");
 		lgv.clear();
 		for(int i=1; i < dir.getVarCnt(); ++i){
 			lgv.push_back( dir.getMng().getVarVal(i) );

@@ -57,7 +57,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 
 	//Solve
 	
-	SATSolver::SATSolverResult result = mngFind.solve();
+	SATSolverResult result = mngFind.solve();
 
 	if(PARAMS->outputSat){
 		++CEGISsolveCount;
@@ -72,20 +72,20 @@ bool CEGISFinder::find(BooleanDAG* problem,
         mngFind.printDiagnostics('f');
 	}
 
-    if (result != SATSolver::SATISFIABLE){ 	//If solve is bad, return false.    	
-    	if( result != SATSolver::UNSATISFIABLE){
+    if (result != SAT_SATISFIABLE){ 	//If solve is bad, return false.
+    	if( result != SAT_UNSATISFIABLE){
 	    	switch( result ){
-			    case SATSolver::UNDETERMINED: {
+			    case SAT_UNDETERMINED: {
 					if (params.lightVerif) {
 						return false;
 					}
 					else {
-						throw new SolverException(result, "UNDETERMINED"); break;
+						throw new SolverException(result, "SAT_UNDETERMINED"); break;
 					}
 				}									
-	    		case SATSolver::TIME_OUT: throw new SolverException(result, "UNDETERMINED"); break;
-	    		case SATSolver::MEM_OUT:  throw new SolverException(result, "MEM_OUT"); break;
-	    		case SATSolver::ABORTED:  throw new SolverException(result, "ABORTED"); break;
+	    		case SAT_TIME_OUT: throw new SolverException(result, "SAT_UNDETERMINED"); break;
+	    		case SAT_MEM_OUT:  throw new SolverException(result, "SAT_MEM_OUT"); break;
+	    		case SAT_ABORTED:  throw new SolverException(result, "SAT_ABORTED"); break;
 
                 default:
                     Assert(false, "missing result case.");
@@ -100,7 +100,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	//dirFind.printAllVars();
 	//Get the values of the Controls.
 
-	for(VarStore::iterator it = controls.begin(); it !=controls.end(); ++it){
+	for(auto it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->getName();
 		int cnt = dirFind.getArrSize(cname);
 		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
@@ -150,7 +150,6 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
 
         find_node_ids.clear();
 
-        newdag->clear();
         AssertDebug(false, "error");
         throw e;
     }
@@ -158,7 +157,6 @@ CEGISFinder::addProblemToTestSet(BooleanDAG* newdag)
     if( params.superChecks ){ find_history = find_node_ids; }
     dirFind.nextIteration();
     if(PARAMS->verbosity>7){ cout<<" finder "; dirFind.getStats(); }
-
 
     find_node_ids.clear();
 }

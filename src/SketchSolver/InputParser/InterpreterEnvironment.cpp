@@ -764,7 +764,7 @@ int InterpreterEnvironment::doallpairs() {
 
 	int howmany = params.ntimes;
 	if (howmany < 1 || !params.randomassign) { howmany = 1; }
-	SATSolver::SATSolverResult result = SATSolver::UNDETERMINED;
+	SATSolverResult result = SAT_UNDETERMINED;
 
 
 	// A dummy ctrl for inlining bound
@@ -784,13 +784,9 @@ int InterpreterEnvironment::doallpairs() {
 		}
 	}
 
-	VarStore partial_concretization;
-
 	string errMsg;
 	maxRndSize = 0;
 	hardcoder.setHarnesses(spskpairs.size());
-
-    int intSize = -1;
 
 	for (int trailID = 0; trailID<howmany; ++trailID) {
 		if (howmany>1) { cout << "ATTEMPT " << trailID << endl; }
@@ -823,7 +819,7 @@ int InterpreterEnvironment::doallpairs() {
             assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
             result = run_solver_program(inlineAmnt);
-            assert(result == SATSolver::SATISFIABLE);
+            assert(result == SAT_SATISFIABLE);
             return 0;
             break;
         }
@@ -835,58 +831,21 @@ int InterpreterEnvironment::doallpairs() {
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
-                bool fixes = false;
-                bool concretizes = true;
-                bool calc_partial_concretization = concretizes || fixes;
-                assert(fixes != concretizes || !(fixes || concretizes));
-
-                if(false && intSize != -1)
-                {
-                    for(auto it: functionMap)
-                    {
-                        while(it.second->getIntSize() < intSize)
-                        {
-                            it.second->growInputIntSizes();
-                        }
-                    }
-                }
-
-                assert(!concretizes);
-
                 BooleanDAG* bd = nullptr;
-                cout << "BEFORE PREPARE MITER" << endl;
-
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-
-                cout << "AFTER PREPARE MITER" << endl;
                 SketchFunction* local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), bd, program_env);
 
-                if(fixes) {
-                    local_harness->concretize(partial_concretization, bool_node::CTRL);
-                }
-
-				cout << "CURRENT HARNESS: " << spskpairs[i].sketch << endl;
+                AssertDebug(false, "MAKE SURE THIS PATH WORKS WELL!!! AND CLEAN UP/TEST!!!");
                 result = assertHarness(local_harness, cout, spskpairs[i].file);
-                cout << "BACK IN doallpairs" << endl;
-
-
-                if(calc_partial_concretization) {
-                    partial_concretization = join(partial_concretization, *local_harness->get_solution_ctrl_var_store());
-                    intSize = local_harness->get_dag()->getIntSize();
-                    cout << "partial_concretization.size() " << partial_concretization.size() << endl;
-                }
-
-				cout << "RESULT = " << result << "  " << endl;;
-				printControls("");
 			}
 			catch (BadConcretization& bc) {
                 cout << "IN catch (BadConcretization& bc)" << endl;
 				errMsg = bc.msg;
 				hardcoder.dismissedPending();
-				result = SATSolver::UNSATISFIABLE;
+				result = SAT_UNSATISFIABLE;
 				break;
 			}
-			if (result != SATSolver::SATISFIABLE) {
+			if (result != SAT_SATISFIABLE) {
 				break;
 			}
 			if (hardcoder.isDone()) {
@@ -930,7 +889,7 @@ int InterpreterEnvironment::doallpairs() {
 		cout << "RNDDEG = " << hardcoder.getRanddegree() << endl;
 		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
 		hardcoder.addScore(comp);
-		if (result == SATSolver::SATISFIABLE) {
+		if (result == SAT_SATISFIABLE) {
 			cout << "return 0" << endl;
 			if (params.minvarHole) {
 				resetMinimize();
@@ -967,7 +926,7 @@ int InterpreterEnvironment::doallpairs() {
 
 
 /*
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->get_dag(), ostream& out) {
+SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->get_dag(), ostream& out) {
     Assert(status==READY, "You can't do this if you are UNSAT");
     ++assertionStep;
 	
@@ -984,23 +943,23 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG
     }catch(SolverException* ex){
         cout<<"ERROR "<<basename()<<": "<<ex->code<<"  "<<ex->msg<<endl;
         status=UNSAT;
-		return SATSolver::UNSATISFIABLE; // ex->code + 2;
+		return SAT_UNSATISFIABLE; // ex->code + 2;
     }catch(BasicError& be){
         reasSolver->get_control_map_as_map_str_str(currentControls);
         cout<<"ERROR: "<<basename()<<endl;
         status=UNSAT;
-        return SATSolver::UNSATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
     if( !solveCode ){
         status=UNSAT;				
-        return SATSolver::UNSATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
     
-    return SATSolver::SATISFIABLE;
+    return SAT_SATISFIABLE;
 }
 */
 
-SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt)
+SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt)
 {
 
     ProgramEnvironment *program_env =
@@ -1011,7 +970,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inline
             program_env->function_map, floats, params, hardcoder, hasGoodEnoughSolution);
 
     cout << "EXITED SolverLanguage" << endl;
-    if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+    if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
     {
         status = UNSAT;
     }
@@ -1031,21 +990,21 @@ SATSolver::SATSolverResult InterpreterEnvironment::run_solver_program(int inline
     }
     cout << "EXITING assertHarness." << endl;
 
-    if(ret->get_sat_solver_result() == SATSolver::SATISFIABLE)
+    if(ret->get_sat_solver_result() == SAT_SATISFIABLE)
     {
-        cout << "return SATSolver::SATISFIABLE" << endl;
+        cout << "return SAT_SATISFIABLE" << endl;
     }
     else
     {
-        cout << "return NOT SATSolver::SATISFIABLE" << endl;
+        cout << "return NOT SAT_SATISFIABLE" << endl;
     }
 
-    assert(ret->get_sat_solver_result() == SATSolver::SATISFIABLE);
+    assert(ret->get_sat_solver_result() == SAT_SATISFIABLE);
     return ret->get_sat_solver_result();
 }
 
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file)  {
+SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file)  {
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
@@ -1058,7 +1017,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
                 *(new FunctionMap()));
 
         cout << "EXITED SolverLanguage" << endl;
-        if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+        if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
         {
             status = UNSAT;
         }
@@ -1078,16 +1037,16 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
         }
         cout << "EXITING assertHarness." << endl;
 
-        if(ret->get_sat_solver_result() == SATSolver::SATISFIABLE)
+        if(ret->get_sat_solver_result() == SAT_SATISFIABLE)
         {
-            cout << "return SATSolver::SATISFIABLE" << endl;
+            cout << "return SAT_SATISFIABLE" << endl;
         }
         else
         {
-            cout << "return NOT SATSolver::SATISFIABLE" << endl;
+            cout << "return NOT SAT_SATISFIABLE" << endl;
         }
 
-        assert(ret->get_sat_solver_result() == SATSolver::SATISFIABLE);
+        assert(ret->get_sat_solver_result() == SAT_SATISFIABLE);
         return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
@@ -1144,7 +1103,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
         }
         solver->ctrlStore.finalizeSynthOutputs();
         recordSolution();
-        return SATSolver::SATISFIABLE;
+        return SAT_SATISFIABLE;
     }
 
 
@@ -1167,11 +1126,11 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
         }
         cout << "ERROR: " << basename() << endl;
         status = UNSAT;
-        return SATSolver::ABORTED;
+        return SAT_ABORTED;
     }
     if (!solveCode) {
         status = UNSAT;
-        return SATSolver::UNSATISFIABLE;
+        return SAT_UNSATISFIABLE;
     }
 
     /*
@@ -1190,11 +1149,11 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction 
 		}
 	}
 	*/
-    return SATSolver::SATISFIABLE;
+    return SAT_SATISFIABLE;
 }
 
 
-SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
+SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
 
     assert(false);
 
@@ -1210,7 +1169,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
                 *(new FunctionMap()));
 
         cout << "EXITED SolverLanguage" << endl;
-        if (ret->get_sat_solver_result() != SATSolver::SATISFIABLE)
+        if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
         {
             status = UNSAT;
         }
@@ -1285,7 +1244,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
 		}
 		solver->ctrlStore.finalizeSynthOutputs();
 		recordSolution();
-		return SATSolver::SATISFIABLE;
+		return SAT_SATISFIABLE;
 	}
 
 
@@ -1308,11 +1267,11 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
 		}
 		cout << "ERROR: " << basename() << endl;
 		status = UNSAT;
-		return SATSolver::ABORTED;
+		return SAT_ABORTED;
 	}
 	if (!solveCode) {
 		status = UNSAT;
-		return SATSolver::UNSATISFIABLE;
+		return SAT_UNSATISFIABLE;
 	}
 
 	/*
@@ -1331,7 +1290,7 @@ SATSolver::SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, os
 		}
 	}
 	*/
-	return SATSolver::SATISFIABLE;
+	return SAT_SATISFIABLE;
 }
 
 int InterpreterEnvironment::assertDAG_wrapper(BooleanDAG* dag) {
