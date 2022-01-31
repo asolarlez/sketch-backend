@@ -506,7 +506,7 @@ public:
     OutType *getOtype(const string basicString);
 
 private:
-    bool pendingConstraints;
+    bool pendingConstraints = false;
 public:
 
     bool solvePendingConstraints(){

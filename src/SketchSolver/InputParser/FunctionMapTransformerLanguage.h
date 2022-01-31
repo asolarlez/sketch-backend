@@ -156,9 +156,9 @@ namespace FMTL {
 
     class TransformPrimitive
     {
-    private:
+    protected:
         bool is_erased = false;
-        bool is_erasing = false;
+    private:
 
         bool visited = false;
         int num_children_visited = 0;
@@ -178,10 +178,10 @@ namespace FMTL {
         const VarStoreTreeNode* _result_var_store_tree = nullptr;
 
         virtual VarStore *get_var_store() const {
-            assert(false);
+            return nullptr;
         }
         virtual const map<string, string> *get_assign_map() const {
-            assert(false);
+            return nullptr;
         }
 
         void set_is_erased(bool is_original);
@@ -193,7 +193,7 @@ namespace FMTL {
             return function_name;
         }
 
-        TransformPrimitive* erase(FunctionMapTransformer* transformer);
+        virtual TransformPrimitive* erase(FunctionMapTransformer* transformer);
 
         explicit TransformPrimitive(string  _function_name, TransformPrimitiveMetaType _meta_type):
         function_name(std::move(_function_name)), meta_type(_meta_type) {};
@@ -299,7 +299,6 @@ namespace FMTL {
     class ConcretizePrimitive: public TransformPrimitive{
         VarStore* var_store;
         const bool_node::Type concretization_type;
-
     public:
         ConcretizePrimitive(const string &_function_name, VarStore &_store, bool_node::Type _concretization_type) :
                 var_store(_store.copy()), concretization_type(_concretization_type), TransformPrimitive(_function_name, _concretize) {}
@@ -308,54 +307,33 @@ namespace FMTL {
         {
             return var_store;
         }
-        const map<string, string> *get_assign_map() const override {
-            return nullptr;
-        }
     };
 
     class InitPrimitive: public TransformPrimitive{
     public:
         InitPrimitive(const string& _function_name): TransformPrimitive(_function_name, _init){}
-        VarStore *get_var_store() const override {
-            return nullptr;
-        }
-        const map<string, string> *get_assign_map() const override {
-            return nullptr;
-        }
+        
     };
 
     class ReplacePrimitive: public TransformPrimitive{
-        const string replace_this;
-        const string with_this;
         const map<string, string>* assign_map;
     public:
         ReplacePrimitive(const string& _function_name, const string& _replace_this, const string& _with_this):
-            replace_this(_replace_this), with_this(_with_this), TransformPrimitive(_function_name, _replace)
+            TransformPrimitive(_function_name, _replace)
             {
                 auto* tmp_assign_map = new map<string, string>();
-                (*tmp_assign_map)[replace_this] = with_this;
+                (*tmp_assign_map)[_replace_this] = _with_this;
                 assign_map = tmp_assign_map;
             }
-        VarStore *get_var_store() const override {
-            return nullptr;
-        }
         const map<string, string> *get_assign_map() const override {
             return assign_map;
         }
     };
 
     class ClonePrimitive: public TransformPrimitive {
-        const string original_function;
     public:
         ClonePrimitive(const string&  _original_function, const string& _new_function):
-            original_function(_original_function),
             TransformPrimitive(_new_function, _clone) {}
-        VarStore *get_var_store() const override {
-            return nullptr;
-        }
-        const map<string, string> *get_assign_map() const override {
-            return nullptr;
-        }
     };
 
     class FunctionMapTransformer {
@@ -433,8 +411,6 @@ namespace FMTL {
         set<TransformPrimitive *> &get_program();
 
         map<string, TransformPrimitive *> & get_where_my_kids_at();
-
-        void clean_transformer();
     };
 }
 

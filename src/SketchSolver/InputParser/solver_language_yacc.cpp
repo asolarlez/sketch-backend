@@ -1940,7 +1940,7 @@ yyreturn:
 
 void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
-	void* scanner;
+	void* scanner = nullptr;
 	yylex_init(&scanner);
 
 	char solver_program_file_char[solver_program_file.size()];

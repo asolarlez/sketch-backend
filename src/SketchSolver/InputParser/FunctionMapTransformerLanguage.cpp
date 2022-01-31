@@ -80,13 +80,6 @@ const VarStoreTreeNode *FunctionMapTransformer::compile_var_store_tree(const str
     return ret;
 }
 
-void FunctionMapTransformer::clean_transformer() {
-    for(auto it:program)
-    {
-        it->clean();
-    }
-}
-
 void FunctionMapTransformer::check_consistency() {
     for(auto it: program) {
         assert(where_my_kids_at.find(it->get_function_name()) != where_my_kids_at.end());
@@ -119,16 +112,12 @@ void TransformPrimitive::set_is_erased(bool is_original)
 
 TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transformer)
 {
-    assert(!is_erasing);
     set_is_erased(true);
-
     assert(is_erased);
 
     if(!children.empty()) {
         return this;
     }
-
-    is_erasing = true;
 
     assert(children.empty());
     for(auto parent : parents)
@@ -136,7 +125,6 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
         auto this_child = parent->children.find(this);
         assert(this_child != parent->children.end());
         int prev_num_children = parent->children.size();
-        assert(!parent->is_erasing);
         parent->children.erase(this_child);
         assert(prev_num_children-1 == parent->children.size());
     }
@@ -178,14 +166,6 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
         _result_var_store_tree = nullptr;
     }
 
-    if(meta_type == _replace) {
-        delete get_assign_map();
-    }
-
-    if(meta_type == _concretize){
-        get_var_store()->clear();
-    }
-
     if(where_my_kids_at.find(function_name) != where_my_kids_at.end()) {
         if(where_my_kids_at.at(function_name) == this) {
             if(ret == nullptr){
@@ -202,7 +182,22 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
 
     program.erase(this);
 
-    is_erasing = false;
+    if(get_var_store() != nullptr) {
+        assert(meta_type == _concretize);
+        get_var_store()->clear();
+    }
+    else {
+        assert(meta_type != _concretize);
+    }
+
+    if(get_assign_map() != nullptr) {
+        assert(meta_type == _replace);
+        delete get_assign_map();
+    }
+    else {
+        assert(meta_type != _replace);
+    }
+
     delete this;
     return ret;
 }
@@ -229,9 +224,6 @@ const VarStoreTreeNode * TransformPrimitive::compile_var_store_tree()
     {
         if(tmp_ret->empty())
         {
-//            delete tmp_ret;
-//            tmp_ret = nullptr;
-//            _result_var_store_tree = nullptr;
             _result_var_store_tree = tmp_ret;
         }
         else
@@ -277,22 +269,6 @@ vector<string> TransformPrimitive::get_inlined_fs() {
         ret.push_back(parent->function_name);
     }
     return ret;
-}
-
-void TransformPrimitive::clean() {
-    assert(!is_erased || !children.empty());
-    if(is_erased)
-    {
-        bool all_children_erased = true;
-        for(auto it:children)
-        {
-            if(!it->is_erased)
-            {
-                all_children_erased = false;
-            }
-        }
-        assert(!all_children_erased);
-    }
 }
 
 void TransformPrimitive::check_consistency(FunctionMapTransformer* transformer) {

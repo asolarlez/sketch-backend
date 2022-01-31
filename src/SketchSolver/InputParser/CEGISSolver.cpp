@@ -345,8 +345,8 @@ bool CEGISSolver::solveCore(){
 	}else{
 		cout<<" *FAILED IN "<<iterations<<" iterations."<<endl;
 	}
-    last_elapsed_time = new ElapsedTime(ftimer.get_tot_ms(), ctimer.get_tot_ms(), ttimer.get_tot_ms());
-    cout << "*" << last_elapsed_time->to_string() << endl;
+    last_elapsed_time = ElapsedTime(ftimer.get_tot_ms(), ctimer.get_tot_ms(), ttimer.get_tot_ms());
+    cout << "*" << last_elapsed_time.to_string() << endl;
 	finder->retractAssumptions();
 
     checker->clear_problemStack();

@@ -1106,8 +1106,8 @@ namespace SolverLanguagePrimitives
 
             if(file_name.empty()) {
 //                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
+//                file_name = "uav_kg_big__as_bools.data";
+                file_name = "zig_zag.data";
             }
             string solver_program_file_name;
 
@@ -1158,6 +1158,8 @@ namespace SolverLanguagePrimitives
                 cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
                      << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
 
+                file->clear();
+
                 concretized_function->clear();
 
                 solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
@@ -1179,6 +1181,8 @@ namespace SolverLanguagePrimitives
 
                 SketchFunction *concretized_function = sk_func;
 
+                file->clear();
+
                 file = new File(concretized_function, file_name, state->floats, state->args.seed);
 
                 int num_passing_inputs =
@@ -1187,6 +1191,8 @@ namespace SolverLanguagePrimitives
                 cout << "HERE " << local_harness->get_dag()->get_name() << endl;
                 cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
                      << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                file->clear();
 
                 var_val_ret->clear_assert_0_shared_ptrs();
 
@@ -1266,7 +1272,7 @@ namespace SolverLanguagePrimitives
             cout << "######################################################" << endl;
             cout << "DONE WITH SAMPLE " << i << endl;
             cout << "SCORE " << num_passing_inputs <<" %: "<< 100.0*(float)num_passing_inputs/all_file->size() << endl;
-            cout << solver->get_solver()->get_last_elapsed_time()->to_string() << endl;
+            cout << solver->get_solver()->get_last_elapsed_time().to_string() << endl;
             cout << "######################################################" << endl<< endl;
 
 
@@ -1274,7 +1280,7 @@ namespace SolverLanguagePrimitives
             fout << "######################################################" << endl;
             fout << "DONE WITH SAMPLE " << i << endl;
             fout << "SCORE " << num_passing_inputs <<" %: "<< 100.0*(float)num_passing_inputs/all_file->size() << endl;
-            fout << solver->get_solver()->get_last_elapsed_time()->to_string() << endl;
+            fout << solver->get_solver()->get_last_elapsed_time().to_string() << endl;
             fout << "######################################################" << endl<< endl;
         }
         sort(solutions.begin(), solutions.end());

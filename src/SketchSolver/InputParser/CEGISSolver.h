@@ -24,16 +24,16 @@ class DagOptim;
 
 class ElapsedTime
 {
-    double find_time;
-    double check_time;
-    double total_time;
+    double find_time = -1;
+    double check_time = -1;
+    double total_time = -1;
 
 public:
+    ElapsedTime() = default;
     ElapsedTime(double _find_time, double _check_time, double _total_time):
     find_time(_find_time), check_time(_check_time),total_time(_total_time) {}
 
-    string to_string()
-    {
+    string to_string() const {
         return "FIND TIME " + std::to_string(find_time) + " CHECK TIME " + std::to_string(check_time) + "; TOTAL TIME " + std::to_string(total_time);
     }
 };
@@ -48,7 +48,7 @@ class CEGISSolver
 
 	HoleHardcoder& hc;
 
-    ElapsedTime* last_elapsed_time = NULL;
+    ElapsedTime last_elapsed_time;
 
 protected:
 
@@ -60,12 +60,6 @@ protected:
 
 	void declareControl(CTRL_node* cnode);
 	bool solveCore();
-
-
-	// bool check(VarStore& input, VarStore& controls)
-	// {
-	// 	return checker->check(input, controls);
-	// }
 
 	bool_node* nodeForINode(INTER_node* inode, VarStore& values, DagOptim& cse);
 
@@ -114,9 +108,8 @@ public:
 	void addProblem(SketchFunction *harness, File *file);
 
 
-    ElapsedTime* get_last_elapsed_time()
+    const ElapsedTime& get_last_elapsed_time()
     {
-        assert(last_elapsed_time != NULL);
         return last_elapsed_time;
     }
 

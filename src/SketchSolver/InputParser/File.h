@@ -55,7 +55,7 @@ public:
 
         int inputId = 0;
 
-        char ch;
+        char ch = 0;
         assert(!in.eof());
         in.get(ch);
 //        cout << ch << "("<<(int)ch<<")'";
