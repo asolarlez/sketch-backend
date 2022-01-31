@@ -130,7 +130,7 @@ Solver::~Solver()
 
 
 // Creates a new SAT variable in the solver. If 'decision_var' is cleared, variable will not be
-// used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
+// used as a decision variable (NOTE! This has effects on the meaning of a SAT_SATISFIABLE result).
 //
 Var Solver::newVar(bool sign, bool dvar)
 {

@@ -18,6 +18,25 @@ using namespace MSsolverNS;
 
 class Tvalue;
 
+enum SATSolverResult{
+	SAT_UNDETERMINED,
+	SAT_UNSATISFIABLE,
+	SAT_SATISFIABLE,
+	SAT_TIME_OUT,
+	SAT_MEM_OUT,
+	SAT_ABORTED
+};
+
+static const string SATSolverResultNames[6] =
+{
+	"SAT_UNDETERMINED",
+	"SAT_UNSATISFIABLE",
+	"SAT_SATISFIABLE",
+	"SAT_TIME_OUT",
+	"SAT_MEM_OUT",
+	"SAT_ABORTED"
+};
+
 class SATSolver {	
 
 protected:
@@ -31,6 +50,7 @@ protected:
      */
     const bool solveNegation;
 public:
+
 	bool isNegated(){
 		return solveNegation;
 	}
@@ -41,15 +61,6 @@ public:
 
 	virtual bool isOK()=0;
 	virtual bool assertIfPossible(int a)=0;
-
-    enum SATSolverResult{
-	UNDETERMINED,
-	UNSATISFIABLE,
-	SATISFIABLE,
-	TIME_OUT,
-	MEM_OUT,
-	ABORTED
-    };
 
     SATSolver(const string& name_p, SolverMode smode):name(name_p), solveNegation(smode==CHECKER){
 	FileOutput( string nm = name; nm += ".circuit"; );

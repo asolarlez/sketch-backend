@@ -202,7 +202,7 @@ public:
 	 
 	 virtual bool ignoreOld();
 	 
-	 virtual SATSolver::SATSolverResult solve();
+	 virtual SATSolverResult solve();
 	
 	 virtual void reset();
 	 virtual void retractAssumptions();

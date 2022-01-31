@@ -512,7 +512,7 @@ public:
     bool solvePendingConstraints(){
         if(pendingConstraints){
             int res = getMng().solve();
-            if(res != SATSolver::SATISFIABLE){
+            if(res != SAT_SATISFIABLE){
                 return false;
             }
         }
