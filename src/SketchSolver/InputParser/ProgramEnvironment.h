@@ -34,6 +34,11 @@ public:
 
     }
 
+    void doInline(BooleanDAG &dag)
+    {
+        VarStore var_store = VarStore();
+        doInline(dag, var_store, bool_node::CTRL);
+    }
 
     void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type)
     {

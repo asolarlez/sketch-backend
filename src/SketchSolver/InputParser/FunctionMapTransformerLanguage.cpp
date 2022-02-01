@@ -46,7 +46,9 @@ void FunctionMapTransformer::clone(const string &original_function_name, const s
     cout << "new clone! " << original_function_name << " -> " << clone_function_name << endl;
     cout << "program.size() " << program.size() << endl;
     cout << "where_my_kids_at.size() " << where_my_kids_at.size() << endl;
+    int dag_size = calc_dag_size();
     cout << "dag_size() " << calc_dag_size() << endl;
+    assert(dag_size == program.size());
     cout << endl;
 }
 

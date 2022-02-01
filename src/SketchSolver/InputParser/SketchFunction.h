@@ -289,17 +289,19 @@ public:
         int num_1s = 0;
         for(int i = 0;i<file->size();i++)
         {
-            SolverLanguagePrimitives::InputAssignment input =
-                    SolverLanguagePrimitives::InputAssignment(file->at(i), env->get_floats());
-            SketchFunction* concretized_function = produce_with_concretized_inputs(&input);
-            assert(concretized_function->get_dag()->getNodesByType(bool_node::CTRL).size() == 0);
-            assert((concretized_function->get_dag()->size() == 0) == (concretized_function->get_dag()->get_failed_assert() == nullptr));
-            if(concretized_function->get_dag()->get_failed_assert() == nullptr)
-            {
+//            SolverLanguagePrimitives::InputAssignment input =
+//                    SolverLanguagePrimitives::InputAssignment(file->at(i), env->get_floats());
+//            SketchFunction* concretized_function = produce_with_concretized_inputs(&input);
+//            BooleanDAG* dag = concretized_function->get_dag();
+            BooleanDAG* dag = get_dag()->clone();
+            get_env()->doInline(*dag, *file->at(i), bool_node::SRC);
+            assert(dag->getNodesByType(bool_node::CTRL).size() == 0);
+            assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
+            if(dag->get_failed_assert() == nullptr) {
                 ret += 1;
             }
-            concretized_function->clear();
-            input.clear();
+            dag->clear();
+//            input.clear();
         }
         cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
         return ret;

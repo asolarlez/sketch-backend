@@ -11,34 +11,6 @@
 
 namespace FMTL {
 
-//    enum VarStoreTreeNodeType {
-//        _leaf_node,
-//        _internal_node
-//    };
-//
-//    class VarStoreTreeNode
-//    {
-//        const string function_name;
-//        VarStoreTreeNodeType node_type;
-//    public:
-//        VarStoreTreeNode(const string& _function_name, VarStoreTreeNodeType _node_type): node_type(_node_type){}
-//    };
-//
-//    class VarStoreLeafNode: public VarStoreTreeNode
-//    {
-//        const VarStore* var_store;
-//    public:
-//        VarStoreLeafNode(const string& _function_name, const VarStore* _var_store):
-//        var_store(_var_store), VarStoreTreeNode(_function_name, _leaf_node){}
-//    };
-//
-//    class VarStoreInternalNode: public VarStoreTreeNode, public map<string, const VarStoreInternalNode*>
-//    {
-//    public:
-//        VarStoreInternalNode(const string& _function_name): VarStoreTreeNode(_function_name, _internal_node) {}
-//    };
-
-
     class VarStoreTreeNode: public map<string, const VarStoreTreeNode*>
     {
         const string function_name;

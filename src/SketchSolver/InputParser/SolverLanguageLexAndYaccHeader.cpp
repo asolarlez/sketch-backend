@@ -513,8 +513,9 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     input_val->increment_shared_ptr();
                     assert(input_val->is_input_holder());
 
-                    SketchFunction* sk_func = method_var_val->get_function()->produce_inlined_dag();
-                    BooleanDAG* the_dag = sk_func->get_dag();
+                    SketchFunction* sk_func = method_var_val->get_function();
+                    BooleanDAG* the_dag = sk_func->get_dag()->clone();
+                    sk_func->get_env()->doInline(*the_dag);
 
                     const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
                     NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
@@ -539,7 +540,7 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     delete bool_dag_map;
                     bool_dag_map = nullptr;
 
-                    sk_func->clear();
+                    the_dag->clear();
                     input_val->decrement_shared_ptr();
                 }
                 method_var_val->decrement_shared_ptr();
