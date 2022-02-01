@@ -294,6 +294,8 @@ namespace FMTL {
         void clean();
 
         void check_consistency(FunctionMapTransformer* transformer);
+
+        int num_reachable_nodes();
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
@@ -355,6 +357,22 @@ namespace FMTL {
         void erase(const string& to_erase_name);
 
         void check_consistency();
+
+        int calc_dag_size()
+        {
+            for(auto it:program)
+            {
+                it->set_not_visited();
+            }
+            int ret = 0;
+            for(auto it:program)
+            {
+                if(!it->get_visited()) {
+                    ret += it->num_reachable_nodes();
+                }
+            }
+            return ret;
+        }
 
         const VarStoreTreeNode* compile_var_store_tree(const string& function_name);
 

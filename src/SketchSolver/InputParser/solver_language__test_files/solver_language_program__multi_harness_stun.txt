@@ -86,8 +86,11 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
 {
     seed_main_lvl1 = [];
 
+    assert(left_programs.size() >= select_best, "FAILED: left_programs.size() <= select_best");
+    assert(right_programs.size() >= select_best, "FAILED: right_programs.size() <= select_best");
+
     for(int i = 0;i<select_best;i++) {
-        for(int j = 0;i<select_best;i++) {
+        for(int j = 0;j<select_best;j++) {
             predicate_lvl1 =
                 composite_predicate.produce_replace("condition", predicate.clone());
             predicate_lvl1.replace("if_true_branch",
@@ -165,7 +168,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     int new_best = seed_main_lvl1.get(0).first().first();
 
 
-    num_trials = 3;
+    num_trials = 6;
     num_rows_per_sample = 3;
     select_best = 2;
     assert(num_trials >= select_best);
@@ -263,7 +266,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                                 right_sketch_main_lvl0_programs.get(0))));
 
                     //commented out in ordeer to test the existence of solutions in the very previous statement.
-                    /*
+
                     new_synthesized_lvl1 =
                         synthesize_composite_programs_from_parts(
                             left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
@@ -272,7 +275,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
 
                     concatenate(improved_main_lvl1, new_synthesized_lvl1);
-                    */
+
                 }
             }
         }
@@ -285,9 +288,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
         improved_main_lvl1 = [];
 
 
-        //num_trials=num_trials+2;
-        //num_rows_per_sample++;
-        //select_best++;
+        num_trials = num_trials+8;
+        num_rows_per_sample++;
+        select_best = select_best+2;
         assert(num_trials >= select_best);
     }
 

@@ -42,6 +42,12 @@ void FunctionMapTransformer::clone(const string &original_function_name, const s
     program.insert(new_primitive);
     where_my_kids_at[clone_function_name] = new_primitive;
     assert(where_my_kids_at[clone_function_name]->get_function_name() == clone_function_name);
+
+    cout << "new clone! " << original_function_name << " -> " << clone_function_name << endl;
+    cout << "program.size() " << program.size() << endl;
+    cout << "where_my_kids_at.size() " << where_my_kids_at.size() << endl;
+    cout << "dag_size() " << calc_dag_size() << endl;
+    cout << endl;
 }
 
 void FunctionMapTransformer::insert(const string &new_function_name) {
@@ -284,4 +290,17 @@ void TransformPrimitive::check_consistency(FunctionMapTransformer* transformer) 
         assert(program.find(it) != program.end());
         assert(where_my_kids_at.find(it->function_name) != where_my_kids_at.end());
     }
+}
+
+int TransformPrimitive::num_reachable_nodes() {
+    assert(!visited);
+    visited = true;
+    int ret = 1;
+    for(auto it: parents)
+    {
+        if(!it->visited) {
+            ret += it->num_reachable_nodes();
+        }
+    }
+    return ret;
 }

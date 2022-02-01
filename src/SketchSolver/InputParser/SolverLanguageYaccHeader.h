@@ -28,19 +28,11 @@ public:
                 if (is_global){
                     if (it.second->is_sketch_function()) {
                         assert(it.second->get_num_shared_ptr() == 1);
-//                        cout << "NOT_CLEARED, (IS_GLOBAL), DELETE_VAR_VAL " << it.first.to_string() << endl;
                         delete it.second;
                         continue;
                     }
                 }
                 it.second->decrement_shared_ptr();
-                if (it.second->get_num_shared_ptr() == 0) {
-//                    cout << "YES_CLEARED " << it.first.to_string() << endl;
-                }
-                else
-                {
-//                    cout << "NOT_CLEARED " << it.first.to_string() << endl;
-                }
             }
         }
 
@@ -141,13 +133,11 @@ public:
     }
 
     void set_var_val(SL::Var *var, SL::VarVal* var_val) {
-        try{
+        try {
             set_var_val_throws(var, var_val);
         }
-        catch (exception& e)
-        {
-            //not yet declared
-            assert(false);
+        catch (exception& e) {
+            AssertDebug(false, "NOT YET DECLARED: " + var->to_string());
         }
     }
 
@@ -155,10 +145,6 @@ public:
         add_var(var);
         set_var_val(var, var_val);
         var->clear();
-    }
-
-    bool is_method(SL::Identifier *name) {
-        return false;
     }
 };
 
@@ -314,17 +300,8 @@ public:
                 FunctionMap& _function_map = sk_func->get_env()->function_map;
                 assert(&_function_map == &function_map);
                 function_map.insert(dag_name, sk_func);
-
-//                assert(function_map.find(dag_name) != function_map.end());
-//                assert(dag_name == var_val->get_function(false)->get_dag()->get_name());
-//                function_map[dag_name] = var_val->get_function(false);
-//                function_map[dag_name]->set_assert__it_is_in_this_function_map(&function_map);
-//                //!!! HERE FIX THIS
-//                FunctionMap& function_map = function_map[dag_name]->get_env()->function_map;
-//                function_map[dag_name] = function_map[dag_name];
             }
-            else if(var_type_str == "int")
-            {
+            else if(var_type_str == "int") {
                 assert(var->get_name()->to_string() == "seed");
                 global.set_var_val(var, var_val);
 

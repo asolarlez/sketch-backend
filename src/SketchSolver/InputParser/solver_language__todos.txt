@@ -43,10 +43,6 @@ For meeting:
 
 TODO: Priority for merging with Master
     1. Add separate file as console output for Solver Language.
-    2. remove debug code
-        *6.1. turn off SCHECKMEM
-        *6.2. add flag for checking file invariant in cegis solver and checker.
-        *6.3. add flag for checking translation invariant between VarStore and InputAssignment/HoleAssignment in Assignment_SkVal
     3. Set up pipeline
         *7.1. Thread params for which file to use
         *7.2. Two pipelines: old and new
@@ -54,6 +50,7 @@ TODO: Priority for merging with Master
 
 TODO: Priority for integration with Siemens
     1. Integrate with Python frontend.
+
 
 Use-cases
 Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
@@ -71,6 +68,16 @@ Finish FunctionMapTransformer:
     DONE 3. Fix VarStore delete/clear in order to remove leaks
     4. Further stress-test this functionality
     5. Print the FunctionMapTransformer program for the frontend.
+
+
+Light tasks:
+    remove dead code.
+    add printing to a file.
+    remove debug code
+        turn off SCHECKMEM
+        add flag for checking file invariant in cegis solver and checker.
+        add flag for checking translation invariant between VarStore and InputAssignment/HoleAssignment in Assignment_SkVal
+
 
 Necessary
 1. Complete language
@@ -106,7 +113,6 @@ Necessary
             break
     *TODO: Add custom output files to Solver Language.
     TODO: Shed dead code.
-    TODO: optimize
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs
@@ -114,7 +120,8 @@ TODO: 3. Incorporate doallpairs
     DONE in SolverLanguage
         DONE use SCHECKMEM in boolean_node and boolean_dag
         DONE CUSTOM use shared_pointer
-    TODO: In rest of codebase
+    DONE In rest of codebase
+    TODO: check why the computer is running out of memory when running the current sketch (31st Jan 2022).
 DONE 4. Dynamic typing
     DONE add 'any' type.
 6. Implement methods for modification of sketches
@@ -122,7 +129,7 @@ DONE 4. Dynamic typing
     *TODO: Fix renaming.
     Return file that modifies the sketch to the frontend
         DONE: FunctionMapTransformerLanguage that keeps track of the modification of the sketch.
-        TODO: Read solution from a fmaptransformer program
+        DONE: Read solution from a FunctionMapTransformer program
         TODO: Create file that modifies the sketch.
         TODO: Add functionality to frontend.
     DONE: 6.4  Allow concretized sketches to be executed on inputs, and their result read.

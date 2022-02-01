@@ -19,6 +19,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 #ifdef SCHECKMEM
+int prev_num_dags = 0;
 set<BooleanDAG*> BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
 #endif
@@ -48,7 +49,16 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
 #ifdef SCHECKMEM
   allocated.insert(this);
   dag_id = global_boolean_dag_id++;
-//  assert(dag_id != 8727);
+  if(prev_num_dags != allocated.size()) {
+      cout << "---------------------" << endl;
+      cout << "NEW_DAG" << endl;
+      cout << "DAG_ID " << dag_id << endl;
+      cout << "DAG_NAME " << name << endl;
+      cout << "NUM_DAGS " << allocated.size() << endl;
+      cout << "NUM_NODES " << bool_node::get_allocated().size() << endl;
+      cout << "---------------------" << endl;
+      prev_num_dags = allocated.size();
+  }
 #endif
 }
 
