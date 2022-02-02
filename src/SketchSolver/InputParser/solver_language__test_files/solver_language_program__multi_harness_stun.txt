@@ -76,10 +76,17 @@ Solver best_effort_programs(harness, file, num_trials, num_rows_per_sample)
     return programs;
 }
 
+Solver best_effort_synthesized_program(harness, file, num_trials, num_rows_per_sample)
+{
+    return harness.produce_concretization(
+        best_effort_synthesis(harness, file, num_trials, num_rows_per_sample));
+}
+
 Solver main()
 {
+    return recursive_function_stun();
     //return stun_main();
-    return top_down_and_bottom_up_synthesis_sketch_main();
+    //return top_down_and_bottom_up_synthesis_sketch_main();
     //return left_and_right_and_cond_synthesis_sketch_main();
 }
 
@@ -373,6 +380,94 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 	print("best_from_all_programs = ", best_score);
 
     return all_programs.get(0).first().second();
+}
+
+/*
+
+bit composite_predicate(x)
+{
+    if(condition(x))
+    {
+        return composite_predicate(x);
+    }
+    else
+    {
+        return program_lvl0();
+    }
+}
+
+*/
+
+Solver recursive_function_stun()
+{
+    File file = File(file_name, sketch_main__Wrapper);
+
+    num_trials = 3;
+    num_rows_per_sample = 3;
+
+    int stun_depth = 5;
+
+    harness_levels = [];
+
+    for(int i = 0;i<stun_depth;i++)
+    {
+        if(i == 0)
+        {
+            mhw_lvl0 = best_effort_synthesized_program(sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
+
+            harness_levels.append(mhw_lvl0);
+        }
+        else
+        {
+            cp_lvl_i = composite_predicate.clone();
+
+            cp_lvl_i.replace("composite_predicate", harness_levels[i-1].get("sketch_main").get("composite_predicate"));
+
+            sketch_main.replace("composite_predicate", cp_lvl_i);
+
+            mhw_lvl_i = best_effort_synthesized_program(sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
+
+            harness_levels.append(mhw_lvl_i);
+        }
+
+        score = count_passing_inputs(harness_levels[i], file);
+
+        print("score[", i, "] =", score);
+    }
+
+    check_harness_levels = [];
+
+    for(int i = 0;i<stun_depth;i++)
+    {
+        cp_lvl_i = composite_predicate.clone();
+
+        for(int j = 0; j<i;j++)
+        {
+            cp_lvl_i = cp_lvl_i.produce_replace("composite_predicate", cp_lvl_i);
+        }
+
+        at_level = harness_level[stun_depth-1].get("harness_main").get("composite_predicate");
+
+        for(int j = 0; j<stun_depth-i-1;j++)
+        {
+            at_level = at_level.get("composite_predicate");
+        }
+
+        cp_lvl_i.concretize(at_level.get_solution());
+
+        harness_main.replace("composite_predicate", at_level);
+        score_ground_truth = count_passing_inputs(sketch_main__Wrapper, file);
+        harness_main.replace("composite_predicate", cp_lvl_i);
+        score_predicted = count_passing_inputs(sketch_main__Wrapper, file);
+
+        print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
+        assert(score_ground_truth == score_predicted);
+
+        check_harness_levels.append(sketch_main__Wrapper.produce_concretize());
+    }
+
+    return check_harness_levels[stun_depth-1];
+    return check_harness_levels[stun_depth-1].get_solution();
 }
 
 Solver left_and_right_and_cond_synthesis_sketch_main()
@@ -705,7 +800,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     return solutions;
 }
 
-Solver Solution best_effort_synthesis(SketchFunction harness, File file, int num_trials, int num_rows) {
+Solver best_effort_synthesis(SketchFunction harness, File file, int num_trials, int num_rows) {
     vector<pair<int, Solution> > solutions = best_effort_solutions(harness, file, num_trials, num_rows);
     int solutions_size = solutions.size();
     Solution ret = solutions.get(0).second();

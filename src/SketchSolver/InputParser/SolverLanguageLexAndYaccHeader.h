@@ -1412,8 +1412,10 @@ namespace SL {
     {
         Expression* expression = nullptr;
         CodeBlock* body = nullptr;
+        CodeBlock* else_body = nullptr;
     public:
         If(Expression* _expression, CodeBlock* _body): expression(_expression), body(_body) {}
+        If(Expression* _expression, CodeBlock* _body, CodeBlock* _else_body): expression(_expression), body(_body), else_body(_else_body) {}
         explicit If(If* to_copy);
 
         void run(SolverProgramState* state);

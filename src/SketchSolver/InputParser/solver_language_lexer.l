@@ -35,6 +35,8 @@ for                       {print_rule("for", string(yytext));
                                 yylval->identifier_ = new SL::Identifier(string(yytext)); return for_token;}
 if                       {print_rule("if", string(yytext));
                                 yylval->identifier_ = new SL::Identifier(string(yytext)); return if_token;}
+else                       {print_rule("else", string(yytext));
+                                yylval->identifier_ = new SL::Identifier(string(yytext)); return else_token;}
 lambda                       {print_rule("lambda", string(yytext));
                                 yylval->identifier_ = new SL::Identifier(string(yytext)); return lambda_token;}
 return                       {print_rule("return", string(yytext)); return return_token;}

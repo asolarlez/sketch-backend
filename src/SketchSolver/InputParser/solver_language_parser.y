@@ -42,6 +42,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %start root
 %type <methods> methods
 %type <code_block> code_block
+%type <code_block> maybe_else
 %type <unit_line> unit_line
 %type <unit_line> macro_unit
 %type <assignment> assignment
@@ -51,6 +52,7 @@ extern void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
 %token <identifier_> while_token
 %token <identifier_> for_token
 %token <identifier_> if_token
+%token <identifier_> else_token
 %token <identifier_> return_token
 %token <identifier_> lambda_token
 %token <identifier_> op_eq
@@ -114,15 +116,20 @@ unit_line: assignment {$$ = new SL::UnitLine($1);} |
 	return_token expression {$$ = new SL::UnitLine(new SL::Return($2));} |
 	expression {$$ = new SL::UnitLine($1);}
 
+maybe_else:
+	{$$ = nullptr;} |
+	else_token '{' code_block '}' {$$ = $3;}
+
 macro_unit:
 	while_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
-	if_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6));} |
+	if_token '(' expression ')' '{' code_block '}' maybe_else {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6, $8));} |
 	for_token '(' unit_line ';' expression ';' unit_line ')' '{' code_block '}'
 		{$$ = new SL::UnitLine(new SL::For($3, new SL::Expression($5), $7, $10));} |
 	'{' code_block '}' {$$ = new SL::UnitLine($2);}
 
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
 	     | identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3);}
+	     | expression '[' params ']' {$$ = new SL::FunctionCall($1, new SL::Identifier("get"), $3);}
 
 constructor_call:
 	type_rule '(' params ')' {$$ = new SL::FunctionCall($1, $3);}

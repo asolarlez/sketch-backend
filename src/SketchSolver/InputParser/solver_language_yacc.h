@@ -50,12 +50,13 @@ extern int yydebug;
     while_token = 260,
     for_token = 261,
     if_token = 262,
-    return_token = 263,
-    lambda_token = 264,
-    op_eq = 265,
-    op_geq = 266,
-    op_plus_plus = 267,
-    var_val_rule = 268
+    else_token = 263,
+    return_token = 264,
+    lambda_token = 265,
+    op_eq = 266,
+    op_geq = 267,
+    op_plus_plus = 268,
+    var_val_rule = 269
   };
 #endif
 /* Tokens.  */
@@ -64,12 +65,13 @@ extern int yydebug;
 #define while_token 260
 #define for_token 261
 #define if_token 262
-#define return_token 263
-#define lambda_token 264
-#define op_eq 265
-#define op_geq 266
-#define op_plus_plus 267
-#define var_val_rule 268
+#define else_token 263
+#define return_token 264
+#define lambda_token 265
+#define op_eq 266
+#define op_geq 267
+#define op_plus_plus 268
+#define var_val_rule 269
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -96,7 +98,7 @@ union YYSTYPE
 	SL::Expression* expression;
 	SL::LambdaExpression* lambda_expr;
 
-#line 100 "y.tab.h" /* yacc.c:1909  */
+#line 102 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

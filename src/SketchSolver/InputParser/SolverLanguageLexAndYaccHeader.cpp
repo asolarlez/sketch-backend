@@ -73,18 +73,31 @@ void SL::If::run(SolverProgramState *state) {
     if(expression->eval(state)->get_bool(true, false))
     {
         body->run(state);
+    } else{
+        if(else_body != nullptr)
+        {
+            else_body->run(state);
+        }
     }
 }
 
 void SL::If::clear() {
     expression->clear();
     body->clear();
+    if(else_body != nullptr)
+    {
+        else_body->clear();
+    }
     delete this;
 }
 
 SL::If::If(SL::If *to_copy) {
     expression = new Expression(to_copy->expression);
     body = new CodeBlock(to_copy->body);
+    if(to_copy->else_body != nullptr)
+    {
+        else_body = new CodeBlock(to_copy->else_body);
+    }
 }
 
 void SL::Return::run(SolverProgramState *state){
@@ -895,6 +908,10 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             {
                 assert(false);
             }
+        }
+        case _get:
+        {
+            AssertDebug(false, "TODO");
         }
         default:
             assert(false);
