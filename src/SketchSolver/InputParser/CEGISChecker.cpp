@@ -476,7 +476,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
         auto inputs = concretized_dag->getNodesByType(bool_node::SRC);
         File *file = files[curProblem];
         assert(eval.check_file_invariant(file));
-        cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
+//        cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
     }
 
 //	assert(false);

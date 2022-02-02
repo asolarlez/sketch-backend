@@ -121,7 +121,7 @@ public:
 //		}
 
         assert(check_file_invariant(file));
-        cout << "FILE PASSES OK (in FromFile)!!" << endl;
+//        cout << "FILE PASSES OK (in FromFile)!!" << endl;
 
 		for(int i = 0;i<file->size();i++) {
 //			try {

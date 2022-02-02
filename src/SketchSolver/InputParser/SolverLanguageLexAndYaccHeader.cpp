@@ -383,12 +383,15 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         {
             assert(!params.empty());
             string print_str = "";
-            cout << "SOLVER_PROGRAM_PRINT INIT" << endl;
+            cout << "print(";
             for(int i = 0;i<params.size();i++)
             {
-                cout << params[i]->eval(state)->to_string(true, false) <<" ";
+                string out_str = params[i]->eval(state)->to_string(true, false);
+                cout << out_str << " ";
+                state->console_output << out_str << " ";
             }
-            cout << endl << "SOLVER_PROGRAM_PRINT END" << endl;
+            state->console_output << endl;
+            cout << "); //console_output.out" << endl;
             return new VarVal();
         }
         case _to_float:

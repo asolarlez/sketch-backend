@@ -53,7 +53,8 @@ For meeting:
             }
         This asserts false: assert((to_concretize->size() == 0) == (to_concretize->get_failed_assert() == nullptr));
         because to_concretize->get_failed_assert() == nullptr.
-    8. TODO: Investigate Pcond
+        TODO: handle this edge case with proper asserts. [dag].(if(|ctrls| != 0) => assert unsat).
+    8. TODO: Investigate Pcond1
         Discuss about the pcond (concretize #PC to true vs leave #PC):
         proposed strategy:
             when concretizing holes, leave #PC.
@@ -61,9 +62,10 @@ For meeting:
             when solving, set #PC to 1.1
 
 
-TODO: Priority for merging with Master
-    1. Add separate file as console output for Solver Language.
-    3. Set up pipeline
+Priority for merging with Master
+    DONE: Add separate file as console output for Solver Language.
+        TODO: add an error/warning file
+    TODO: 3. Set up pipeline
         *7.1. Thread params for which file to use
         *7.2. Two pipelines: old and new
         *7.3. merge with master.
@@ -111,7 +113,8 @@ Necessary
         *TODO: FIX ORDER OF OPERATIONS
     Implement integer and float expressions
         DONE: +, -, /, *
-        TODO: %
+        TODO: %, --, +=, -=, *=, /=, %=
+        TODO: &=, |=, ^= (bitwise)
         *TODO: FIX ORDER OF OPERATIONS
 
     DONE Implement garbage collection
@@ -134,6 +137,7 @@ Necessary
     TODO: Shed dead code.
     TODO: deal with the case when not all holes are concretized after concretization
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
+    TODO: add parallelization capabilities though cilk.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

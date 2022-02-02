@@ -49,7 +49,8 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
 #ifdef SCHECKMEM
   allocated.insert(this);
   dag_id = global_boolean_dag_id++;
-  if(prev_num_dags != allocated.size()) {
+  if(false) {
+    if(prev_num_dags != allocated.size()) {
       cout << "---------------------" << endl;
       cout << "NEW_DAG" << endl;
       cout << "DAG_ID " << dag_id << endl;
@@ -58,6 +59,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
       cout << "NUM_NODES " << bool_node::get_allocated().size() << endl;
       cout << "---------------------" << endl;
       prev_num_dags = allocated.size();
+    }
   }
 #endif
 }

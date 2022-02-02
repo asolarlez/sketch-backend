@@ -245,6 +245,8 @@ public:
 
     const string& file_name;
 
+    ofstream console_output = ofstream("console_output.out");
+
     SolverProgramState(SketchFunction* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
             harness_(_harness), file_name(_file_name),

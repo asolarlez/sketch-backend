@@ -265,7 +265,7 @@ bool CEGISSolver::solveCore(){
                         eval.init(tmpin);
                         File *file = files[(int)files.size() - 1];
                         assert(eval.check_file_invariant(file));
-                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+//                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
                         concretized_function->clear();
                     }
 
@@ -279,16 +279,7 @@ bool CEGISSolver::solveCore(){
                     harness->get_env()->doInline(
                             *the_dag, ctrlStore, bool_node::CTRL);
 
-//                    SketchFunction to_concretize_function = SketchFunction(
-//                            finder->get_all_inputs_dag(),
-//                            nullptr,
-//                            harness->get_env());
-//
-//                    SketchFunction* concretized_function =
-//                            to_concretize_function.produce_concretization(ctrlStore, bool_node::CTRL);
-//
-//                    assert(concretized_function->get_dag()->get_failed_assert() != nullptr);
-//                    concretized_function->clear();
+
                     assert(the_dag->get_failed_assert() != nullptr);
                     the_dag->clear();
 
@@ -298,7 +289,7 @@ bool CEGISSolver::solveCore(){
                                                                                                              bool_node::CTRL);
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr)
                         {
-                            cout << "FILE FAILS OK!!" << endl;
+//                            cout << "FILE FAILS OK!!" << endl;
                         }
                         else {
                             BooleanDAG *concretized_dag = concretized_function->get_dag();
@@ -308,7 +299,7 @@ bool CEGISSolver::solveCore(){
                             eval.init(tmpin);
                             File *file = files[(int) files.size() - 1];
                             assert(!eval.check_file_invariant(file));
-                            cout << "FILE FAILS OK!!" << endl;
+//                            cout << "FILE FAILS OK!!" << endl;
                         }
                         concretized_function->clear();
                     }
