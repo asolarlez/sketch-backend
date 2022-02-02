@@ -53,6 +53,7 @@ For meeting:
             }
         This asserts false: assert((to_concretize->size() == 0) == (to_concretize->get_failed_assert() == nullptr));
         because to_concretize->get_failed_assert() == nullptr.
+        TODO: fix issue where there are failing dags without failing asserts. Proposal: solve the dag again?
         TODO: handle this edge case with proper asserts. [dag].(if(|ctrls| != 0) => assert unsat).
     8. TODO: Investigate Pcond1
         Discuss about the pcond (concretize #PC to true vs leave #PC):
@@ -84,6 +85,7 @@ Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
     TODO: crete more complicated zig-zag example.
     TODO: implement 'synthesize_composite_programs_from_parts' as a constructed sketch. (instead of the two for loops, make them holes in a sketch)
     TODO: use pareto frontier when selecting best candidates for left/right split (pareto frontier on both parts). Can use both best_effort on both parts for both parts
+    TODO: Stun with recursive function.
 
 Finish FunctionMapTransformer:
     DONE 1. Fix weird bug with FunctionMapTransformer
@@ -138,6 +140,7 @@ Necessary
     TODO: deal with the case when not all holes are concretized after concretization
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
     TODO: add parallelization capabilities though cilk.
+    TODO: recursive subdag access.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

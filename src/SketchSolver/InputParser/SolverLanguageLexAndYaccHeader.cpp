@@ -519,19 +519,24 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     BooleanDAG* the_dag = sk_func->get_dag()->clone();
                     sk_func->get_env()->doInline(*the_dag);
 
+                    SolverLanguagePrimitives::InputAssignment* input_assignment = input_val->get_input_holder();
+
                     const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
                     NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
 
-                    VarStore* the_var_store = input_val->get_input_holder()->to_var_store();
+                    VarStore* the_var_store = input_assignment->to_var_store();
+                    BooleanDAG* inlined_dag = ((BooleanDagUtility*)sk_func)->produce_inlined_dag(*the_var_store, bool_node::SRC);
+                    int remaining_holes = inlined_dag->getNodesByType(bool_node::CTRL).size();
+                    AssertDebug(remaining_holes == 0,
+                                "This dag should not havey any holes remaining, but it has " + std::to_string(remaining_holes) + " remaining_holes.");
+
                     bool fails = node_evaluator.run(*the_var_store);
                     delete the_var_store;
                     the_var_store = nullptr;
                     assert(!fails);
 
                     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
-
                     assert(after_run_dests.size() == 1);
-
                     //SHOULD BE THIS BUT ISN'T
 //                    ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
                     OutType* out_type = (*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)->getOtype();
