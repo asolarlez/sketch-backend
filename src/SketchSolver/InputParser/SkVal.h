@@ -90,6 +90,12 @@ public:
             size_defined == other.size_defined &&
             nbits == other.nbits);
     }
+
+    virtual SkVal* clone()
+    {
+        assert(false);
+        return nullptr;
+    }
 };
 
 class SkValBool: public SkVal, public PolyVal<bool>
@@ -101,6 +107,9 @@ public:
     bool operator == (const SkValBool& other)
     {
         return SkVal::operator==(other) && PolyVal<bool>::operator==(other);
+    }
+    SkValBool* clone() override {
+        return new SkValBool(this);
     }
 };
 
@@ -131,6 +140,9 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
     }
+    SkValBoolArr* clone() override {
+        return new SkValBoolArr(this);
+    }
 };
 
 int local_get_nbits(vector<pair<int, int> >* vec);
@@ -153,6 +165,10 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
     }
+    SkValIntArr* clone() override {
+        assert(false);
+//        return new SkValIntArr(this);
+    }
 };
 
 class SkValInt: public SkVal, public PolyVal<int>
@@ -168,6 +184,9 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<int>::operator==(other);
     }
+    SkValInt* clone() override {
+        return new SkValInt(this);
+    }
 };
 class SkValFloat: public SkVal, public PolyVal<float>
 {
@@ -178,6 +197,10 @@ public:
     bool operator == (const SkValFloat& other)
     {
         return SkVal::operator==(other) && PolyVal<float>::operator==(other);
+    }
+    SkValFloat* clone() override {
+        assert(false);
+//        return new SkValFloat(this);
     }
 };
 
@@ -446,9 +469,8 @@ public:
     void update(Assignment_SkVal *updated_assignment) {
         assert(!null);
         assert(!updated_assignment->null);
-        for(const auto& it : updated_assignment->get_assignment())
-        {
-            set(it.first, it.second);
+        for(const auto& it : updated_assignment->get_assignment()) {
+            set(it.first, it.second->clone());
         }
     }
     void join_with(Assignment_SkVal *assignment_to_join_with) {
@@ -456,8 +478,8 @@ public:
         assert(!assignment_to_join_with->null);
         for(const auto& it : assignment_to_join_with->get_assignment())
         {
-//            assert(!has(it.first));
-            set(it.first, it.second);
+            assert(!has(it.first));
+            set(it.first, it.second->clone());
         }
     }
 };

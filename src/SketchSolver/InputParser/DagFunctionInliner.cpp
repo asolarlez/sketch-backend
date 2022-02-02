@@ -1059,17 +1059,11 @@ void DagFunctionInliner::process(BooleanDAG& dag){
         //cout<<dag[i]->lprint()<<endl;
 		bool_node* node = computeOptim(dag[i]);
        if(dag[i] != node){
-           if(debug)
-           cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl;
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
 //        assert(node->get_name() != "num_bools_4_0_0");
 	   if (failedAssert != NULL) {
-           if(debug)
-           {
-               cout << "here" << endl;
-           }
 		   for (++i; i < dag.size(); ++i) {
 			   if (dag[i]->type == bool_node::ASSERT || dag[i]->type == bool_node::UFUN) {
 				   dag.replace(i, getCnode(0));

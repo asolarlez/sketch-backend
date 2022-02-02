@@ -33,47 +33,6 @@
 
 using namespace std;
 
-/**
- *  Grammar:
- *  StateNode :=
- *      StateNode ; StateNode |
- *      While(BoolNode){StateNode} |
- *      If(BoolNode){StateNode}{StateNode} |
- *      StringNode = ValNode |  # assignment
- *  BoolNode :=
- *      BoolVal |
- *      BinaryBoolNode |
- *      not(BoolNode) |
- *      BoolComparison |
- *  BinaryBoolNode :=
- *      BoolNode {|and|or|xor|} BoolNode |
- *  BoolComparison :=
- *      IntNode {|<|<=|==|!=|>=|>|} IntNode
- *  IntNode :=
- *      IntConst |
- *      IntVar |  # lookup
- *      IntNode {|+|-|*|/|%|} IntNode|
- *  ValNode :=
- *      BoolVal |
- *      IntVal |
- *      SolverVal |
- *      AssignmentVal
- *      ProblemVal
- *  BoolValNode :=
- *      true |
- *      false |
- *      BoolVar  # lookup
- *  IntConst :=
- *      0 | 1 | -1 | 2 | -2 ...
- *  AssignmentVal :=
- *      SolverVal(ProblemVal)
- *  SolverVal :=
- *      SAT_Solver |
- *      Numerical
- *  ProblemVal :=
- *      primitive
- */
-
 namespace SolverLanguagePrimitives
 {
     enum ValType {type_state, type_int, type_bool, type_solver_e, type_solver_ae, type_problem_ae, type_problem_e, type_solution_holder, type_input_holder};
@@ -84,6 +43,7 @@ namespace SolverLanguagePrimitives
         ValType val_type;
     public:
         explicit Val(ValType _val_type): val_type(_val_type){}
+        explicit Val(Val* _to_copy): val_type(_to_copy->val_type) {};
         ValType get_type() {
             return val_type;
         }
@@ -1044,8 +1004,10 @@ namespace SolverLanguagePrimitives
                     }
                 }
             }
-            cout << "exit WrapperAssertDAG->solve(..)" << endl;
-            return new HoleAssignment(ret_result, holes_to_sk_val);
+            HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
+            cout << "exiting WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+            cout << "returns " << ret->to_string() << endl;
+            return ret;
         }
     };
 
@@ -1151,7 +1113,9 @@ namespace SolverLanguagePrimitives
 
                 delete var_val_ret;
 
-                SketchFunction *concretized_function = local_harness->produce_with_concretized_holes(solution_holder);
+                BooleanDagUtility* concretized_function =
+                        new BooleanDagUtility(local_harness->get_dag()->clone(), local_harness->get_env());
+                concretized_function->inline_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
                 int num_passing_inputs =
                         concretized_function->count_passing_inputs(file);
 
@@ -1224,7 +1188,7 @@ namespace SolverLanguagePrimitives
 // num_trials = 20;
 // num_rows_per_sample = 4;
 // select_best = 8;
-// with x2
+// with x2 (40, 4, 11 maybe);
 // count	1288 / 1743 (73.8956 %)
 
 //                num_trials = 6;

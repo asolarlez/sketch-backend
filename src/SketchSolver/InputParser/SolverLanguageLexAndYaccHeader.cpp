@@ -763,12 +763,8 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             var_val_sol->increment_shared_ptr();
             HoleAssignment* sol = var_val_sol->get_solution();
             SketchFunction* harness = sk_func;
-            for(auto it : harness->get_env()->function_map)
-            {
-                assert(it.second->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
-            }
             SketchFunction* concretized_function =
-                    harness->produce_with_concretized_holes(sol, true);
+                    harness->produce_with_concretized_holes(sol);
             var_val_sol->decrement_shared_ptr();
             return new SL::VarVal(concretized_function);
             break;
@@ -779,7 +775,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             using namespace SolverLanguagePrimitives;
             HoleAssignment* sol = params[0]->eval(state)->get_solution();
             SketchFunction* harness = sk_func;
-            harness->concretize(sol, true);
+            harness->concretize(sol);
             return new SL::VarVal();
             break;
         }

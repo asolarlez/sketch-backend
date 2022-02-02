@@ -12,3 +12,17 @@ const map<string, BooleanDAG *> * FunctionMap::to_boolean_dag_map() const{
     }
     return ret;
 }
+
+void FunctionMap::insert(const string &name, SketchFunction *sketch_function_map)
+{
+    auto it = find(name);
+    if(it == end()) {
+        FunctionMapTransformer::insert(sketch_function_map->get_dag()->get_name());
+        map<string, SketchFunction *>::operator[](name) = sketch_function_map;
+    }
+    else
+    {
+        map<string, SketchFunction *>::erase(it);
+        insert(name, sketch_function_map);
+    }
+}

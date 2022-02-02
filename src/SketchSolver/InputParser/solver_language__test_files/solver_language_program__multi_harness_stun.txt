@@ -8,7 +8,7 @@ Solver concatenate(arr1, arr2)
 }
 
 /*
-generator int line_generator(int x) {
+generator int program_generator(int x) {
     //USER DEFINED
 };
 
@@ -78,7 +78,8 @@ Solver best_effort_programs(harness, file, num_trials, num_rows_per_sample)
 
 Solver main()
 {
-    return top_down_and_bottom_up_synthesis_sketch_main();
+    return stun_main();
+    //return top_down_and_bottom_up_synthesis_sketch_main();
     //return left_and_right_and_cond_synthesis_sketch_main();
 }
 
@@ -147,9 +148,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     //string file_name = "uav_kg_big__as_bools.data";
     //string file_name = "zig_zag.data";
 
-    num_trials = 1;
-    num_rows_per_sample = 1;
-    select_best = 1;
+    num_trials = 10;
+    num_rows_per_sample = 4;
+    select_best = 2;
     assert(num_trials >= select_best);
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
@@ -175,9 +176,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     int new_best = seed_main_lvl1.get(0).first().first();
 
 
-    num_trials = 12;
-    num_rows_per_sample = 3;
-    select_best = 3;
+    //num_trials = 12;
+    //num_rows_per_sample = 3;
+    //select_best = 3;
     assert(num_trials >= select_best);
 
     while(new_best > prev_best)
@@ -306,9 +307,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
         print("UPDATED seed_main_lvl1");
 
-        num_trials = num_trials+4;
-        num_rows_per_sample++;
-        select_best = select_best+1;
+        //num_trials = num_trials+4;
+        //num_rows_per_sample++;
+        //select_best = select_best+1;
         assert(num_trials >= select_best);
     }
 
@@ -419,7 +420,7 @@ Solver Solution original_sketch_main()
 {
     return beam_search_sketch_main();
     //return repeat_greedy_sketch_main();
-    //return stun_sketch_main("zig_zag.data");
+    //return stun_main();
 }
 
 Solver Solution beam_search_sketch_main()
@@ -535,13 +536,13 @@ Solver Solution repeat_greedy_sketch_main()
     int n = file.size();
 
 
-    Solution sol = stun_sketch_main(file_name);
+    Solution sol = stun_main();
     int score = get_score(sketch_main_lvl2__Wrapper, sol, file);
     print("at_score ", score, "/", n);
     while(score < n)
     {
         seed++;
-        sol = stun_sketch_main(file_name);
+        sol = stun_main();
         score = get_score(sketch_main_lvl2__Wrapper, sol, file);
         print("at_score ", score, "/", n);
     }
@@ -549,54 +550,63 @@ Solver Solution repeat_greedy_sketch_main()
     return sol;
 }
 
-Solver Solution stun_sketch_main(string file_name)
+*/
+
+Solver stun_main()
 {
-	int num_trials = 3; //hyperparameter
-	int num_rows = 4; //hyperparameter
+	int num_trials = 20; //hyperparameter
+	int num_rows = 6; //hyperparameter
 
     Solution total_solution = Solution();
 
-    SketchFunction org_line_lvl0 = line_lvl0.clone();
-    SketchFunction org_line_lvl1 = line_lvl1.clone();
-    SketchFunction org_line_lvl2 = line_lvl2.clone();
+    SketchFunction org_program_lvl0 = program_lvl0.clone();
+    SketchFunction org_program_lvl1 = program_lvl1.clone();
+    SketchFunction org_program_lvl2 = program_lvl2.clone();
+
+    SketchFunction tmp_program_lvl0 = program_lvl0;
+    SketchFunction tmp_program_lvl1 = program_lvl1;
+    SketchFunction tmp_program_lvl2 = program_lvl2;
+
+    program_lvl0 = org_program_lvl0;
+    program_lvl1 = org_program_lvl1;
+    program_lvl2 = org_program_lvl2;
 
 	//solve the harness lvl0
-	File file = File(file_name, sketch_main_lvl0__Wrapper); // The dataset is stored in a File; File is a native construct.
-	print("sketch_main_lvl0__Wrapper.num_holes() = ", sketch_main_lvl0__Wrapper.num_holes());
-	Solution solution_lvl0 = best_effort_synthesis(sketch_main_lvl0__Wrapper, file, num_trials, num_rows);
+	File file = File(file_name, main_lvl0__Wrapper); // The dataset is stored in a File; File is a native construct.
+	print("main_lvl0__Wrapper.num_holes() = ", main_lvl0__Wrapper.num_holes());
+	Solution solution_lvl0 = best_effort_synthesis(main_lvl0__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl0);
 
 	//concretize the predicate lvl0
-	line_lvl0.concretize(solution_lvl0);
+	program_lvl0.concretize(solution_lvl0);
 
 	//solve the harness lvl1
-	file = File(file_name, sketch_main_lvl1__Wrapper);
-	print("sketch_main_lvl1__Wrapper.num_holes() = ", sketch_main_lvl1__Wrapper.num_holes());
-	Solution solution_lvl1 = best_effort_synthesis(sketch_main_lvl1__Wrapper, file, num_trials, num_rows);
+	file = File(file_name, main_lvl1__Wrapper);
+	print("main_lvl1__Wrapper.num_holes() = ", main_lvl1__Wrapper.num_holes());
+	Solution solution_lvl1 = best_effort_synthesis(main_lvl1__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl1);
 
 	//concretize the predicate lvl1
-	line_lvl1.concretize(solution_lvl1);
+	program_lvl1.concretize(solution_lvl1);
 
 	//solve the harness lvl2
-	file = File(file_name, sketch_main_lvl2__Wrapper);
-	print("sketch_main_lvl2__Wrapper.num_holes() = ", sketch_main_lvl2__Wrapper.num_holes());
-	Solution solution_lvl2 = best_effort_synthesis(sketch_main_lvl2__Wrapper, file, num_trials, num_rows);
+	file = File(file_name, main_lvl2__Wrapper);
+	print("main_lvl2__Wrapper.num_holes() = ", main_lvl2__Wrapper.num_holes());
+	Solution solution_lvl2 = best_effort_synthesis(main_lvl2__Wrapper, file, num_trials, num_rows);
     total_solution.join(solution_lvl2);
 
 	//concretize the predicate lvl2
-	line_lvl2.concretize(solution_lvl2);
+	program_lvl2.concretize(solution_lvl2);
 
 	//done, no more predicates to concretize.
 
-    line_lvl0 = org_line_lvl0.clone();
-    line_lvl1 = org_line_lvl1.clone();
-    line_lvl2 = org_line_lvl2.clone();
+
+    program_lvl0 = tmp_program_lvl0;
+    program_lvl1 = tmp_program_lvl1;
+    program_lvl2 = tmp_program_lvl2;
 
 	return total_solution;
 }
-
-*/
 
 Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, int num_rows) {
 	Solution best_solution;
@@ -647,16 +657,12 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     return solutions;
 }
 
-/*
-
 Solver Solution best_effort_synthesis(SketchFunction harness, File file, int num_trials, int num_rows) {
     vector<pair<int, Solution> > solutions = best_effort_solutions(harness, file, num_trials, num_rows);
     int solutions_size = solutions.size();
     Solution ret = solutions.get(0).second();
 	return ret;
 }
-
-*/
 
 //subroutine to count the number of passing input-output examples.
 Solver int count_passing_inputs(SketchFunction program, File file)

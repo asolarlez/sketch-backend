@@ -530,7 +530,6 @@ void InterpreterEnvironment::doInline(
 				}
 			}
             try {
-                dfi.debug = false;
                 dfi.process(dag);
             }
             catch(BadConcretization bc)
@@ -833,19 +832,31 @@ int InterpreterEnvironment::doallpairs() {
 		for (size_t i = 0; i<spskpairs.size(); ++i) {
 			hardcoder.setCurHarness((int)i);
 			try {
-
                 ProgramEnvironment *program_env =
 			            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
                 BooleanDAG* bd = nullptr;
                 bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-                SketchFunction* local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), bd, program_env);
+
+                SketchFunction* local_harness = nullptr;
+                if(new_way) {
+                    bool inline_ahead_of_time = false;
+                    if(inline_ahead_of_time) {
+                        local_harness = new SketchFunction(bd, program_env);
+                    }
+                    else
+                    {
+                        local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
+                    }
+                }
+                else {
+                    local_harness = new SketchFunction(bd, program_env);
+                }
 
                 AssertDebug(false, "MAKE SURE THIS PATH WORKS WELL!!! AND CLEAN UP/TEST!!!");
                 result = assertHarness(local_harness, cout, spskpairs[i].file);
 			}
 			catch (BadConcretization& bc) {
-                cout << "IN catch (BadConcretization& bc)" << endl;
 				errMsg = bc.msg;
 				hardcoder.dismissedPending();
 				result = SAT_UNSATISFIABLE;
@@ -896,14 +907,15 @@ int InterpreterEnvironment::doallpairs() {
 		double comp = log(roundtimer.get_cur_ms()) + hardcoder.getTotsize();
 		hardcoder.addScore(comp);
 		if (result == SAT_SATISFIABLE) {
-			cout << "return 0" << endl;
 			if (params.minvarHole) {
 				resetMinimize();
 				if (hardcoder.isDone()) {
+                    cout << "return 0" << endl;
 					return 0;
 				}
 			}
 			else {
+                cout << "return 0" << endl;
 				return 0;
 			}
 		}
@@ -920,7 +932,6 @@ int InterpreterEnvironment::doallpairs() {
 				else {
 					cerr << errMsg << endl;
 					cout << "return 1" << endl;
-                    cout << "HERE" << endl;
 					return 1;
 				}
 			}

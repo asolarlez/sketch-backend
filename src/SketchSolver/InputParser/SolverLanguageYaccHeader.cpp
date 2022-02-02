@@ -57,14 +57,20 @@ SL::VarVal * SolverProgramState::eval(){
     init_f->clear();
 
     SL::VarVal* var_val_ret = get_return_var_val();
+    VarStore* tmp = var_val_ret->get_solution(false)->to_var_store();
+
+//    assert(var_val_ret->get_num_shared_ptr() >= 1);
     assert(var_val_ret != nullptr);
 
     assert(frames.size() == 1);
     pop_stack_frame();
-
     assert(frames.empty());
 
     global.clear(true);
+
+    delete tmp;
+
+    tmp = var_val_ret->get_solution(false)->to_var_store();
 
     return var_val_ret;
 }

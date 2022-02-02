@@ -273,10 +273,8 @@ bool_node *NodeHardcoder::get_rvalue() {
 	return rvalue;
 }
 
-BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {
-    BooleanDAG* newdag = dag->clone();
-
-    int oldsize = newdag->size();
+BooleanDAG *hardCodeINodeNoClone(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {
+    int oldsize = dag->size();
 
     // if(PARAMS->verbosity > 2) {
     // char const * stype = (type == bool_node::CTRL? "Controls" : "Inputs");
@@ -284,29 +282,34 @@ BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type typ
     // cout<<" * Before specialization: nodes = "<<newdag->size()<<" " << stype << "= " <<  inodeList.size() <<endl;
     // }
 
-    NodeHardcoder nhc(PARAMS->showInputs, *newdag, values, type, floats);
-    nhc.process(*newdag);
+    NodeHardcoder nhc(PARAMS->showInputs, *dag, values, type, floats);
+    nhc.process(*dag);
 
-    Dout( newdag->print(cout) );
-    DagOptim cse(*newdag, floats);
-    cse.process(*newdag);
-    newdag->cleanup();
+    Dout(dag->print(cout) );
+    DagOptim cse(*dag, floats);
+    cse.process(*dag);
+    dag->cleanup();
     if(false){
         BackwardsAnalysis ba;
-        ba.process(*newdag);
+        ba.process(*dag);
     }
     if(false){
-        DagOptim cse(*newdag, floats);
-        cse.process(*newdag);
+        DagOptim cse(*dag, floats);
+        cse.process(*dag);
     }
-    if(PARAMS->verbosity > 3){ cout<<" * After optims it became = "<<newdag->size()<<" was "<<oldsize<<endl; }
+    if(PARAMS->verbosity > 3){ cout << " * After optims it became = " << dag->size() << " was " << oldsize << endl; }
 
-    newdag->set_failed_assert(cse.get_failedAssert());
+    dag->set_failed_assert(cse.get_failedAssert());
 
 //    cout << "FROM ORIGINAL INLINING: newdag" << endl;
 //    newdag->lprint(cout);
 //    cout << "//////////////" << endl;
 
-    return newdag;
+    return dag;
+}
+
+BooleanDAG *hardCodeINode(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {
+    BooleanDAG* newdag = dag->clone();
+    return hardCodeINodeNoClone(newdag, values, type, floats);
 }
 

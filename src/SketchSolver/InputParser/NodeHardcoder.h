@@ -35,4 +35,5 @@ public:
 };
 
 
+BooleanDAG* hardCodeINodeNoClone(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats);
 BooleanDAG* hardCodeINode(BooleanDAG* dag, VarStore& values, bool_node::Type type, FloatManager& floats);

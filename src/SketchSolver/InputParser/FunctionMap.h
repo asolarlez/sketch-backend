@@ -32,12 +32,7 @@ public:
         return *ret;
     }
 
-    void insert(const string& name, SketchFunction* sketch_function_map)
-    {
-        FunctionMapTransformer::insert(name);
-        assert(find(name) == end());
-        map<string, SketchFunction*>::operator[](name) = sketch_function_map;
-    }
+    void insert(const string& name, SketchFunction* sketch_function_map);
 
     SketchFunction* operator[](const string& name)
     {

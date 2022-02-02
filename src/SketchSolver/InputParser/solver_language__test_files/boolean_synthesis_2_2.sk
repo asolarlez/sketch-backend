@@ -284,23 +284,23 @@ generator bit compound_predicate(bit prev_out, Data data, int l0, int l1)
     }
 }
 
-bit predicate_lvl0(Data data, int l0, int l1)
+bit program_lvl0(Data data, int l0, int l1)
 {
     return predicate(data, l0, l1);
 }
 
-bit predicate_lvl1(Data data, int l0, int l1)
+bit program_lvl1(Data data, int l0, int l1)
 {
     return compound_predicate(
-        predicate_lvl0(data, l0, l1),
+        program_lvl0(data, l0, l1),
         data, l0, l1
     );
 }
 
-bit predicate_lvl2(Data data, int l0, int l1)
+bit program_lvl2(Data data, int l0, int l1)
 {
     return compound_predicate(
-        predicate_lvl1(data, l0, l1),
+        program_lvl1(data, l0, l1),
         data, l0, l1
     );
 }
@@ -310,12 +310,18 @@ int meta_l0 = 2;
 int meta_l1 = 2;
 
 @FromFile("uav_kg_big__as_bools.data")
+harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
+{
+    main_lvl2(num_bools, bools, out);
+}
+
+@FromFile("uav_kg_big__as_bools.data")
 harness void main_lvl2(int num_bools, bit[num_bools] bools, bit out)
 {
     Data data = new Data(num_bools = num_bools, bools = bools);
     int l0 = meta_l0;
     int l1 = meta_l0;
-    assert(predicate_lvl2(data, l0, l1) == out);
+    assert(program_lvl2(data, l0, l1) == out);
     //minimize(num_units);
 }
 
@@ -325,8 +331,7 @@ harness void main_lvl1(int num_bools, bit[num_bools] bools, bit out)
     Data data = new Data(num_bools = num_bools, bools = bools);
     int l0 = meta_l0;
     int l1 = meta_l0;
-    assert(predicate_lvl1(data, l0, l1) == out);
-    //minimize(num_units);
+    assert(program_lvl1(data, l0, l1) == out);
 }
 
 @FromFile("uav_kg_big__as_bools.data")
@@ -335,5 +340,5 @@ harness void main_lvl0(int num_bools, bit[num_bools] bools, bit out)
     Data data = new Data(num_bools = num_bools, bools = bools);
     int l0 = meta_l0;
     int l1 = meta_l0;
-    assert(predicate_lvl0(data, l0, l1) == out);
+    assert(program_lvl0(data, l0, l1) == out);
 }

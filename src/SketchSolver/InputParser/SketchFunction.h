@@ -24,25 +24,91 @@ namespace SL
     class FunctionCall;
 }
 
-class SketchFunction
-{
-    //unrolled dag is the the original unrolled dag using prepare miter at before calling assertDAG
-    BooleanDAG* original_dag = nullptr;
-    //root dag is
-    // IF NOT CONCRETIZED: the root harness dag
-    // IF CONCRETIZED: a fully unrolled concretized dag using the doInline from env.
+static bool new_way = true;
+
+class BooleanDagUtility {
     BooleanDAG* root_dag = nullptr;
+    ProgramEnvironment* env;
+public:
+    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env):
+        root_dag(_root_dag), env(_env) {
+        assert(root_dag != nullptr);
+    }
+    BooleanDagUtility(BooleanDagUtility* shallow_copy): root_dag(shallow_copy->root_dag), env(shallow_copy->env) {
+        assert(root_dag != nullptr);
+    }
 
-    //if env == nullptr => original_dag and root_dag ARE NOT concretized
-    //if env != nullptr => original_dag and root_dag ARE concretized
-    ProgramEnvironment* env = nullptr;
+    BooleanDAG* get_dag() {
+        return root_dag;
+    }
 
+    ProgramEnvironment* get_env() {
+        return env;
+    }
+
+    BooleanDAG* produce_inlined_dag(VarStore& var_store, bool_node::Type var_type)
+    {
+        if (new_way) {
+            BooleanDAG* ret = root_dag->clone();
+            env->doInline(*ret, var_store, var_type);
+            return ret;
+        } else {
+            return hardCodeINode(root_dag, var_store, var_type, env->get_floats());
+        }
+    }
+
+
+    void inline_this_dag(VarStore& var_store, bool_node::Type var_type)
+    {
+        vector<string>* tmp = nullptr;
+        inline_this_dag(var_store, var_type, tmp);
+        delete tmp;
+    }
+
+    void inline_this_dag(VarStore& var_store, bool_node::Type var_type, vector<string> *&inlined_functions)
+    {
+        if (new_way) {
+            env->doInline(*root_dag, var_store, var_type, inlined_functions);
+        } else {
+            hardCodeINodeNoClone(root_dag, var_store, var_type, env->get_floats());
+            inlined_functions = nullptr;
+        }
+    }
+
+    int count_passing_inputs(File* file) {
+        int ret = 0;
+        int num_0s = 0;
+        int num_1s = 0;
+        for(int i = 0;i<file->size();i++)
+        {
+            BooleanDAG* dag = produce_inlined_dag(*file->at(i), bool_node::SRC);
+            assert(dag->getNodesByType(bool_node::CTRL).size() == 0);
+            assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
+            if(dag->get_failed_assert() == nullptr) {
+                ret += 1;
+            }
+            dag->clear();
+        }
+        return ret;
+    }
+
+    void clear()
+    {
+        int prev_num = BooleanDAG::get_allocated().size();
+        assert(root_dag != nullptr);
+        root_dag->clear();
+        assert(prev_num - 1 == BooleanDAG::get_allocated().size());
+        root_dag = nullptr;
+    }
+};
+
+class SketchFunction: public BooleanDagUtility
+{
     SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
 
-    map<string, string> replaced_labels;
-
     bool new_way = true;
-    bool keep_track_of_original = false;
+
+    map<string, string> replaced_labels;
 
     void add_solution(SolverLanguagePrimitives::HoleAssignment* _solution_holder)
     {
@@ -52,57 +118,28 @@ class SketchFunction
 
 public:
 
-    ProgramEnvironment* get_env()
-    {
-        return env;
+    explicit SketchFunction(SketchFunction* shallow_copy): solution(shallow_copy->solution), BooleanDagUtility(shallow_copy),
+                                                           replaced_labels(shallow_copy->replaced_labels){
+
     }
 
-    explicit SketchFunction(SketchFunction* shallow_copy):
-        original_dag(shallow_copy->original_dag), root_dag(shallow_copy->root_dag), env(shallow_copy->env) {}
-
-    explicit SketchFunction(BooleanDAG *_dag_root, BooleanDAG *_original_dag = nullptr,
-                            ProgramEnvironment *_evn = nullptr,
-                            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr) :
-            root_dag(_dag_root), original_dag(_original_dag), env(_evn), solution(_solution){
-
-        if(new_way)
-        {
-            if(!keep_track_of_original)
-            {
-                original_dag = nullptr;
-            }
-        }
-        else
-        {
-            if(_original_dag != nullptr)
-            {
-                root_dag = original_dag;
-                original_dag = nullptr;
-            }
-        }
-
-        assert(root_dag != nullptr);
-        assert(original_dag == nullptr);
-
-        for(auto it: root_dag->getNodesByType(bool_node::UFUN)) {
+    explicit SketchFunction(
+            BooleanDAG *_dag_root,
+            ProgramEnvironment *_env = nullptr,
+            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr) :
+            BooleanDagUtility(_dag_root, _env), solution(_solution)
+    {
+        for(auto it: get_dag()->getNodesByType(bool_node::UFUN)){
             replaced_labels[it->get_name()] = it->get_name();
         }
-
     }
 
-    SketchFunction* produce_inlined_dag(bool deactivate_pcond = false)
+    SketchFunction *produce_inlined_dag()
     {
         VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
         return produce_concretization(var_store, var_type);
     }
-
-//    void do_inline(bool deactivate_pcond = false)
-//    {
-//        VarStore var_store;
-//        bool_node::Type var_type = bool_node::CTRL;
-//        produce_concretization(var_store, var_type, deactivate_pcond, false);
-//    }
 
     void concretize(VarStore &var_store, bool_node::Type var_type)
     {
@@ -113,11 +150,7 @@ public:
 
     SketchFunction *clone();
 
-    BooleanDAG *get_dag() {
-        return root_dag;
-    }
-
-    void clear(bool update_transformer = true, bool save_dag = false);
+    void clear();
 
 private:
     VarStore* solution_ctrl_var_store = nullptr;
@@ -172,7 +205,7 @@ public:
         return ret;
     }
 
-    SketchFunction* produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
+    SketchFunction *produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* var_store = solution_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL);
@@ -265,7 +298,7 @@ public:
         return new SolverLanguagePrimitives::HoleAssignment(solution);
     }
 
-    void concretize(SolverLanguagePrimitives::HoleAssignment* solution_holder, bool do_deactivate_pcond = false)
+    void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* local_solution = solution_holder->to_var_store();
         concretize(*local_solution, bool_node::CTRL);
@@ -280,30 +313,6 @@ public:
         SketchFunction* ret = produce_concretization(*inputs, bool_node::SRC);
         inputs->clear();
         inputs = nullptr;
-        return ret;
-    }
-
-    int count_passing_inputs(File* file) {
-        int ret = 0;
-        int num_0s = 0;
-        int num_1s = 0;
-        for(int i = 0;i<file->size();i++)
-        {
-//            SolverLanguagePrimitives::InputAssignment input =
-//                    SolverLanguagePrimitives::InputAssignment(file->at(i), env->get_floats());
-//            SketchFunction* concretized_function = produce_with_concretized_inputs(&input);
-//            BooleanDAG* dag = concretized_function->get_dag();
-            BooleanDAG* dag = get_dag()->clone();
-            get_env()->doInline(*dag, *file->at(i), bool_node::SRC);
-            assert(dag->getNodesByType(bool_node::CTRL).size() == 0);
-            assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
-            if(dag->get_failed_assert() == nullptr) {
-                ret += 1;
-            }
-            dag->clear();
-//            input.clear();
-        }
-        cout << "num_1s " << num_1s <<" num_0s "<< num_0s <<" ret "<< ret << endl;
         return ret;
     }
 

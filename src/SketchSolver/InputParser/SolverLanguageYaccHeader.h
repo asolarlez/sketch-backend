@@ -297,11 +297,11 @@ public:
             string var_type_str = var->get_type()->to_string();
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
-                string dag_name = var->get_name()->to_string();
+                string var_name = var->get_name()->to_string();
                 SketchFunction* sk_func = var_val->get_function(false);
                 FunctionMap& _function_map = sk_func->get_env()->function_map;
                 assert(&_function_map == &function_map);
-                function_map.insert(dag_name, sk_func);
+                function_map.insert(var_name, sk_func);
             }
             else if(var_type_str == "int") {
                 assert(var->get_name()->to_string() == "seed");

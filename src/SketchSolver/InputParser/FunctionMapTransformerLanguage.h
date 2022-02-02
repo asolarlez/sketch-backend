@@ -160,6 +160,10 @@ namespace FMTL {
 
     public:
 
+        bool get_is_erased() {
+            return is_erased;
+        }
+
         const string& get_function_name()
         {
             return function_name;

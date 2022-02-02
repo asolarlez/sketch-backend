@@ -48,7 +48,7 @@ FunctionMap boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_d
 
     for(const auto& it: boolean_dag_map)
     {
-        ret.insert(it.first, new SketchFunction(it.second, nullptr, the_env));
+        ret.insert(it.first, new SketchFunction(it.second, the_env));
     }
 
     return ret;
