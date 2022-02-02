@@ -14,7 +14,9 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
 
 class ProgramEnvironment;
 
-FunctionMap& boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
+FunctionMap boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
+
+static int num_program_envs = 0;
 
 class ProgramEnvironment
 {
@@ -22,7 +24,7 @@ public:
     CommandLineArgs& params;
     FloatManager& floats;
     HoleHardcoder& hardcoder;
-    FunctionMap& function_map;
+    FunctionMap function_map;
     int num_inlining_steps;
     map<string, map<string, string> > replaceMap;
 
@@ -31,7 +33,8 @@ public:
             params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
             function_map(boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_steps)
     {
-
+        assert(num_program_envs == 0);
+        num_program_envs+=1;
     }
 
     void doInline(BooleanDAG &dag)

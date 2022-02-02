@@ -1099,16 +1099,17 @@ namespace SolverLanguagePrimitives
 //
 //    }
 
-    inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name = "")
+    inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
     {
-        bool do_solver_program = file_name == "";
+        assert(file_name != "");
         if(do_solver_program) {
 
-            if(file_name.empty()) {
-//                file_name = "uav_kg_big__as_bools__smaller.data";
-                file_name = "uav_kg_big__as_bools.data";
-//                file_name = "zig_zag.data";
-            }
+//            if(file_name.empty()) {
+////                file_name = "uav_kg_big__as_bools__smaller.data";
+//                file_name = "uav_kg_big__as_bools.data";
+////                file_name = "zig_zag.data";
+//            }
+
             string solver_program_file_name;
 
 //            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
@@ -1171,6 +1172,7 @@ namespace SolverLanguagePrimitives
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
                 assert(init_function_map_transformer_size == local_harness->get_env()->function_map.transformer_size());
 
+                local_harness->clear();
                 return solution_holder;
             }
             else
@@ -1241,8 +1243,10 @@ namespace SolverLanguagePrimitives
                 assert(new_transformer_size_diff == 0);
 
                 //TODO: return function / relevant solution
-                assert(false);
-
+                HoleAssignment* ret = new HoleAssignment(true);
+                ret->set_sat_solver_result(SAT_SATISFIABLE);
+                local_harness->clear();
+                return ret;
             }
 
             assert(false);
@@ -1416,17 +1420,17 @@ public:
          bool hasGoodEnoughSolution, FunctionMap &function_map)
     {
         SolverProgramState* state =
-                new SolverProgramState(harness, floats, _args, _hc, hasGoodEnoughSolution, function_map);
-        return SolverLanguagePrimitives::target_best_effort(state, file_name);
+                new SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution, function_map);
+        return SolverLanguagePrimitives::target_best_effort(state, file_name, true);
     }
 
     SolverLanguagePrimitives::HoleAssignment *
-    eval(FunctionMap &function_map, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
+    eval(FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
-        SolverProgramState* state =
-                new SolverProgramState(function_map, floats, _args, _hc, hasGoodEnoughSolution);
-        return SolverLanguagePrimitives::target_best_effort(state);
+        SolverProgramState state =
+                SolverProgramState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
+        return SolverLanguagePrimitives::target_best_effort(&state, file_name, true);
     }
 };
 

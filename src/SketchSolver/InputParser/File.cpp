@@ -97,3 +97,7 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     return ret;
 }
 
+File::File() {
+
+}
+

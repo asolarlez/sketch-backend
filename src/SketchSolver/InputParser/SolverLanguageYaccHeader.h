@@ -118,8 +118,8 @@ public:
         SL::Var* var = new SL::Var(_var);
         all_new_vars.push_back(var);
         if(vars_map[*var] != nullptr){
-            vars_map[*var]->decrement_shared_ptr();
-            if(vars_map[*var]->get_num_shared_ptr() == 0)
+            bool is_deleted = vars_map[*var]->decrement_shared_ptr();
+            if(is_deleted)
             {
                 vars_map[*var] = nullptr;
                 vars_map.erase(*var);
@@ -243,15 +243,17 @@ public:
 
     SketchFunction* harness_ = nullptr;
 
-    SolverProgramState(SketchFunction* _harness, FloatManager& _floats, CommandLineArgs& _args,
+    const string& file_name;
+
+    SolverProgramState(SketchFunction* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
-            harness_(_harness),
+            harness_(_harness), file_name(_file_name),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
             function_map(_function_map),
             global() {}
-    SolverProgramState(FunctionMap& _function_map, FloatManager& _floats, CommandLineArgs& _args,
+    SolverProgramState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
-            function_map(_function_map),
+            function_map(_function_map), file_name(_file_name),
             floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr),
             global() {}
 

@@ -818,7 +818,13 @@ int InterpreterEnvironment::doallpairs() {
         {
             assert(howmany == 1);
             //TODO: Incorporate: hardcoder.setCurHarness((int)i);
-            result = run_solver_program(inlineAmnt);
+            assert(spskpairs.size() >= 1);
+            string str = spskpairs[0].file;
+            for(int i = 1;i<spskpairs.size();i++)
+            {
+                assert(str == spskpairs[i].file);
+            }
+            result = run_solver_program(inlineAmnt, spskpairs[0].file);
             assert(result == SAT_SATISFIABLE);
             return 0;
             break;
@@ -959,15 +965,15 @@ SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->
 }
 */
 
-SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt)
+SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const string& file_name)
 {
 
-    ProgramEnvironment *program_env =
-            new ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
+    ProgramEnvironment program_env =
+            ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
     SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
-            program_env->function_map, floats, params, hardcoder, hasGoodEnoughSolution);
+            program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
 
     cout << "EXITED SolverLanguage" << endl;
     if (ret->get_sat_solver_result() != SAT_SATISFIABLE)

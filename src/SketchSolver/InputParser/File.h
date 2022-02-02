@@ -28,12 +28,8 @@ class File: public vector<VarStore*>
     std::mt19937 generator;
 
     enum Result {NO_FILE, DONE, MOREBITS};
-
-public:
-
-    File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
-
-    void clear() {
+    void light_clear()
+    {
         counterexample_ids_over_time.clear();
         used.clear();
         for(auto& it : *this)
@@ -42,6 +38,14 @@ public:
             it = nullptr;
         }
         vector<VarStore*>::clear();
+    }
+public:
+
+    File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
+
+    void clear() {
+        light_clear();
+        delete this;
     }
 
     enum parseLineOut {end_of_file__empty_row, more_bits, incomplete_row, complete_row};
@@ -235,7 +239,7 @@ public:
     }
 
     Result parseFile(const string& fname, FloatManager& floats, vector<bool_node*>& inputNodes, const VarStore& inputs) {
-        clear();
+        light_clear();
         ifstream file;
         file.open(fname);
 
@@ -323,6 +327,8 @@ public:
     File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
 
     void relabel(SketchFunction *harness);
+
+    File();
 };
 
 

@@ -314,20 +314,6 @@ namespace FMTL {
 
         set<TransformPrimitive*> program;
         map<string, TransformPrimitive*> where_my_kids_at;
-    public:
-        explicit FunctionMapTransformer() = default;
-
-        void concretize(const string &function_name, VarStore &store, bool_node::Type type,
-                        const vector<string> *sub_functions);
-
-        void replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
-
-        void clone(const string &original_function_name, const string &clone_function_name);
-
-        void insert(const string& new_function_name);
-
-        void erase(const string& to_erase_name);
-
         void check_consistency();
 
         int calc_dag_size()
@@ -345,17 +331,31 @@ namespace FMTL {
             }
             return ret;
         }
+        void add_parent(TransformPrimitive* new_primitive, const string& parent_name) {
+            assert(where_my_kids_at.find(parent_name) != where_my_kids_at.end());
+            new_primitive->add_parent(where_my_kids_at[parent_name]);
+        }
+
+    public:
+        explicit FunctionMapTransformer() = default;
+
+        void concretize(const string &function_name, VarStore &store, bool_node::Type type,
+                        const vector<string> *sub_functions);
+
+        void replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
+
+        void clone(const string &original_function_name, const string &clone_function_name);
+
+        void insert(const string& new_function_name);
+
+        void erase(const string& to_erase_name);
+
 
         const VarStoreTreeNode* compile_var_store_tree(const string& function_name);
 
         size_t transformer_size()
         {
             return program.size();
-        }
-
-        void add_parent(TransformPrimitive* new_primitive, const string& parent_name) {
-            assert(where_my_kids_at.find(parent_name) != where_my_kids_at.end());
-            new_primitive->add_parent(where_my_kids_at[parent_name]);
         }
 
         bool has_cycle()

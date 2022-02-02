@@ -46,9 +46,6 @@ public:
         bool defined = false;
         bool is_array;
 	public:
-
-
-
 		string name;
 		objP* next;
 		OutType* otype;
@@ -71,21 +68,16 @@ public:
 			return name;
 		}
 
-//		~objP(){
-//		    defined = false;
-//			if(next != nullptr) {delete next;}
-//            name += "_DELETED";
-//		}
-
-		bool cleared = false;
+		~objP(){
+            clear();
+		}
 
         void clear()
         {
-			assert(!cleared);
-			cleared = true;
-            defined = false;
-            if(next != nullptr) {next->clear();}
-            name += "_DELETED";
+            name.clear();
+            vals.clear();
+		    defined = false;
+            if(next != nullptr) {delete next; next = nullptr;};
         }
 
 		objP(string  nm, int size, OutType* _otype):
@@ -290,15 +282,6 @@ public:
             }
         }
 
-//		void setVal(int idx, int v){
-//			assert(!is_array);
-//            if(this->index==idx){
-//				setVal(v);
-//			}else{
-//				if(next != NULL){ next->setVal(idx, v); }
-//			}
-//		}
-
 		///Return false if objP did not have enough bits to be made equal to v.
 		bool setValSafe(int v) {
 			if(v<0){
@@ -415,10 +398,10 @@ public:
 
 	void clear()
 	{
-		for(auto it:objs)
-		{
-            it.clear();
-		}
+//		for(auto it:objs)
+//		{
+//            it.clear();
+//		}
 
         objs.clear();
         index.clear();

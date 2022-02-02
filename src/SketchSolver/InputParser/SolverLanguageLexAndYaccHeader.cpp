@@ -303,7 +303,6 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         {
             assert(params.empty());
             file->clear();
-            delete file;
             file = nullptr;
             return new VarVal();
             break;

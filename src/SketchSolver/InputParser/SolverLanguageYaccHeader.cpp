@@ -18,6 +18,8 @@ SL::VarVal * SolverProgramState::eval(){
                                                  nullptr);
     global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Identifier("int"), new SL::Identifier("seed")),
                                                  new SL::VarVal(args.seed));
+    global.add_var_and_set_var_val_and_clear_var(new SL::Var(new SL::Identifier("string"), new SL::Identifier("file_name")),
+                                                 new SL::VarVal(file_name));
 
     SL::Var* init_f = new SL::Var(new SL::Identifier("Solution"), new SL::Identifier("main"));
     assert(*global.name_to_var(init_f->get_name()) == *init_f);

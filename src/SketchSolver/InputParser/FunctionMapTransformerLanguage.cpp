@@ -6,8 +6,11 @@
 
 using namespace FMTL;
 
+const bool omit_function_map_transformer = false;
+
 void FunctionMapTransformer::concretize(const string &function_name, VarStore &store, bool_node::Type type,
                                         const vector<string> *sub_functions) {
+    if(omit_function_map_transformer) { return; }
     assert(where_my_kids_at.find(function_name) != where_my_kids_at.end());
     assert(where_my_kids_at[function_name]->get_function_name() == function_name);
     TransformPrimitive* new_primitive =
@@ -25,6 +28,7 @@ void FunctionMapTransformer::concretize(const string &function_name, VarStore &s
 
 void FunctionMapTransformer::replace_label_with_another(
         const string& function_name, const string &replace_this_str, const string &with_this_str) {
+    if(omit_function_map_transformer) { return; }
     assert(where_my_kids_at.find(function_name) != where_my_kids_at.end());
     assert(where_my_kids_at[function_name]->get_function_name() == function_name);
     auto new_primitive = new ReplacePrimitive(function_name, replace_this_str, with_this_str);
@@ -36,6 +40,7 @@ void FunctionMapTransformer::replace_label_with_another(
 }
 
 void FunctionMapTransformer::clone(const string &original_function_name, const string &clone_function_name) {
+    if(omit_function_map_transformer) { return; }
     assert(where_my_kids_at.find(clone_function_name) == where_my_kids_at.end());
     auto new_primitive = new ClonePrimitive(original_function_name, clone_function_name);
     add_parent(new_primitive, original_function_name);
@@ -53,6 +58,7 @@ void FunctionMapTransformer::clone(const string &original_function_name, const s
 }
 
 void FunctionMapTransformer::insert(const string &new_function_name) {
+    if(omit_function_map_transformer) { return; }
     if(where_my_kids_at.find(new_function_name) == where_my_kids_at.end()) {
         auto new_primitive = new InitPrimitive(new_function_name);
         program.insert(new_primitive);
@@ -66,6 +72,7 @@ void FunctionMapTransformer::insert(const string &new_function_name) {
 }
 
 void FunctionMapTransformer::erase(const string &to_erase_name) {
+    if(omit_function_map_transformer) { return; }
     assert(where_my_kids_at.find(to_erase_name) != where_my_kids_at.end());
     assert(where_my_kids_at[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = where_my_kids_at[to_erase_name];
@@ -75,20 +82,24 @@ void FunctionMapTransformer::erase(const string &to_erase_name) {
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
+    if(omit_function_map_transformer) { assert(false); }
     return program;
 }
 
 map<string, TransformPrimitive *> & FunctionMapTransformer::get_where_my_kids_at() {
+    if(omit_function_map_transformer) { assert(false); }
     return where_my_kids_at;
 }
 
 const VarStoreTreeNode *FunctionMapTransformer::compile_var_store_tree(const string &function_name) {
+    if(omit_function_map_transformer) { assert(false); }
     assert(where_my_kids_at.find(function_name) != where_my_kids_at.end());
     const VarStoreTreeNode * ret = where_my_kids_at[function_name]->compile_var_store_tree();
     return ret;
 }
 
 void FunctionMapTransformer::check_consistency() {
+    if(omit_function_map_transformer) { return; }
     for(auto it: program) {
         assert(where_my_kids_at.find(it->get_function_name()) != where_my_kids_at.end());
         it->check_consistency(this);

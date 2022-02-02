@@ -54,7 +54,7 @@ return                       {print_rule("return", string(yytext)); return retur
 {Comment}                   {print_rule("Single Line Comment", string(yytext));}
 "/*"            {print_rule("Begin C_COMMENT", string(yytext)); BEGIN(C_COMMENT); }
 <C_COMMENT>"*/" {print_rule("END C_COMMENT", string(yytext));  BEGIN(INITIAL); }
-<C_COMMENT>.    {print_rule("READ C_COMMENT", string(yytext)); }
+<C_COMMENT>.    {}
 {WhiteSpace}                {print_rule("WhiteSpace", string(yytext));}
 {Operator}                  {print_rule("Operator", string(yytext));
                                 assert(string(yytext).size() == 1); return yytext[0];}

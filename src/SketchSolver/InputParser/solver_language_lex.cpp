@@ -879,7 +879,7 @@ YY_RULE_SETUP
 case 16:
 YY_RULE_SETUP
 #line 57 "solver_language_lexer.l"
-{print_rule("READ C_COMMENT", string(yytext)); }
+{}
 	YY_BREAK
 case 17:
 /* rule 17 can match eol */

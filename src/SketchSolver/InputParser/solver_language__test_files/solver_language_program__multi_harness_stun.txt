@@ -125,7 +125,7 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     seed_main_lvl1.sort();
     seed_main_lvl1.reverse();
 
-    assert(seed_main_lvl1.size() == (select_best*select_best), "FAILED: seed_main_lvl1.size() == (select_best*select_best)");
+    assert(seed_main_lvl1.size() == ((select_best*select_best)*num_trials), "FAILED: seed_main_lvl1.size() == (select_best*select_best)");
 
     return seed_main_lvl1;
 }
@@ -142,7 +142,9 @@ Solver check_predicate_and_assertion_consistency(the_predicate, file_name, the_h
 
 Solver top_down_and_bottom_up_synthesis_sketch_main()
 {
-    string file_name = "uav_kg_big__as_bools.data";
+    //for now these are passed as parameters from the sketch.
+    //the sketch follows a constraint that the file_names should be the same
+    //string file_name = "uav_kg_big__as_bools.data";
     //string file_name = "zig_zag.data";
 
     num_trials = 1;
@@ -155,12 +157,17 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
     File file = File(file_name, sketch_main_lvl0);
     left_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, num_trials, num_rows_per_sample);
+    print("DONE left_lvl0_programs");
     right_lvl0_programs = best_effort_programs(sketch_main_lvl0, file, num_trials, num_rows_per_sample);
+    print("DONE right_lvl0_programs");
 
     assert(left_lvl0_programs.size() >= select_best);
     assert(right_lvl0_programs.size() >= select_best);
 
     seed_main_lvl1 = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, num_trials, num_rows_per_sample);
+
+    all_programs = [];
+    concatenate(all_programs, seed_main_lvl1);
 
     improved_main_lvl1 = [];
 
@@ -168,9 +175,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     int new_best = seed_main_lvl1.get(0).first().first();
 
 
-    num_trials = 6;
+    num_trials = 12;
     num_rows_per_sample = 3;
-    select_best = 2;
+    select_best = 3;
     assert(num_trials >= select_best);
 
     while(new_best > prev_best)
@@ -195,9 +202,11 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
         for(int i = 0;i<select_best;i++)
         {
+            print("start i =", i);
             print("prev_score: ", seed_main_lvl1.get(i).first().first());
             local_program = seed_main_lvl1.get(i).first().second();
             //take condition
+            //condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
             condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution("condition"));
             condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
             condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
@@ -230,6 +239,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
                     if_true_file.relabel(left_sketch_main_lvl0);
                     left_sketch_main_lvl0_programs = best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
+                    print("DONE (i = ", i, ") left_sketch_main_lvl0_programs");
                     left_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().first());
                     left_sketch_main_lvl0_programs.sort();
                     left_sketch_main_lvl0_programs.reverse();
@@ -238,6 +248,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
                     if_false_file.relabel(right_sketch_main_lvl0);
                     right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
+                    print("DONE (i = ", i, ") right_sketch_main_lvl0_programs");
                     right_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().second());
                     right_sketch_main_lvl0_programs.sort();
                     right_sketch_main_lvl0_programs.reverse();
@@ -258,12 +269,14 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
                     print("new_score:", score);
 
+
                     improved_main_lvl1.append(
                         pair<pair<int, SketchFunction>, pair<pair<int, SketchFunction>, pair<int, SketchFunction> > >(
                             pair<int, SketchFunction>(score, new_best_sketch_main_lvl1),
                             pair<pair<int, SketchFunction>, pair<int, SketchFunction> >(
                                 left_sketch_main_lvl0_programs.get(0),
                                 right_sketch_main_lvl0_programs.get(0))));
+
 
                     //commented out in ordeer to test the existence of solutions in the very previous statement.
 
@@ -275,30 +288,42 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
 
                     concatenate(improved_main_lvl1, new_synthesized_lvl1);
-
                 }
             }
+            print("done i =", i);
         }
 
         improved_main_lvl1.sort();
         improved_main_lvl1.reverse();
 
+        print("SORTED");
+
         new_best = improved_main_lvl1.get(0).first().first();
+        print("new_best:", new_best);
         seed_main_lvl1 = improved_main_lvl1;
         improved_main_lvl1 = [];
+        concatenate(all_programs, seed_main_lvl1);
 
+        print("UPDATED seed_main_lvl1");
 
-        num_trials = num_trials+8;
+        num_trials = num_trials+4;
         num_rows_per_sample++;
-        select_best = select_best+2;
+        select_best = select_best+1;
         assert(num_trials >= select_best);
     }
 
+
     assert(new_best == prev_best);
 
-    assert(seed_main_lvl1.size() >= 1);
+    all_programs.sort();
+    all_programs.reverse();
 
-    return seed_main_lvl1.get(0).first().second();
+    assert(seed_main_lvl1.size() >= 1);
+    assert(all_programs.size() >= 1);
+    assert(all_programs.size() >= seed_main_lvl1.size());
+    assert(all_programs.get(0).first().first() == seed_main_lvl1.get(0).first().first());
+
+    return all_programs.get(0).first().second();
 }
 
 Solver left_and_right_and_cond_synthesis_sketch_main()
@@ -314,7 +339,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
 
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
-    
+
     file = File(file_name, sketch_main_lvl0_left__Wrapper);
     lvl0_left_solutions = best_effort_solutions(sketch_main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 
@@ -581,6 +606,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     Solution solution;
     SketchFunction program;
     int score;
+
     vector<pair<int, Solution> > solutions = vector<pair<int, Solution> >();
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
@@ -588,6 +614,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
 		solution = SATSolver(harness, subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
 		score = get_score(harness, solution, file);
+		print("TRIAL", trial_id, "/", num_trials, "SCORE", score);
 		solutions.append(pair<int, Solution>(score, solution));
 		if(score > best_score) // update the best_solution
 		{
@@ -648,5 +675,6 @@ Solver int count_passing_inputs(SketchFunction program, File file)
 		}
 		row_id++;
 	}
+	print("count_passing_inputs returns", score);
 	return score;
 }

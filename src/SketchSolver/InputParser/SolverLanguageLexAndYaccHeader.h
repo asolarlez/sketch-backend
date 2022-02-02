@@ -948,13 +948,18 @@ namespace SL {
             }
         }
 
-        void decrement_shared_ptr()
+        bool decrement_shared_ptr()
         {
             assert(num_shared_ptr >= 1);
             num_shared_ptr --;
 
             if (num_shared_ptr == 0) {
                 _clear();
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -983,7 +988,7 @@ namespace SL {
                     //do nothing
                     break;
                 case file_val_type:
-                    clear<File*>(file);
+                    clear<File*>(file, false);
                     break;
                 case method_val_type:
                     clear<Method*>(method);
