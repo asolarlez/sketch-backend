@@ -417,7 +417,7 @@ public:
         return objs.size();
     }
 
-	VarStore * copy() const {
+	VarStore * clone() const {
 
 	    Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
 	    Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
@@ -677,7 +677,7 @@ public:
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 {
-	VarStore* ret = _v1.copy();
+	VarStore* ret = _v1.clone();
 	for(int i = 0; i < v2.objs.size(); i++) {
 		ret->insertObj(v2.objs[i].name, ret->objs.size(), VarStore::objP(v2.objs[i]));
 	}

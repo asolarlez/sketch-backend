@@ -548,6 +548,9 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     AssertDebug(remaining_holes == 0,
                                 "This dag should not havey any holes remaining, but it has " + std::to_string(remaining_holes) + " remaining_holes.");
 
+                    SketchFunction* tmp = sk_func->clone();
+                    tmp->inline_this_dag(*the_var_store, bool_node::SRC);
+                    tmp->get_dag()->lprint(cout);
                     bool fails = node_evaluator.run(*the_var_store);
                     delete the_var_store;
                     the_var_store = nullptr;
@@ -557,10 +560,14 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(after_run_dests.size() == 1);
                     //SHOULD BE THIS BUT ISN'T
 //                    ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
-                    OutType* out_type = (*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)->getOtype();
-                    assert(out_type == OutType::BOOL);
+                    int tuple_node_id = node_evaluator.getValue(after_run_dests[0]);
+                    bool_node* tuple_node = (*the_dag)[tuple_node_id];
+                    assert(tuple_node->getOtype()->isTuple && tuple_node->type == bool_node::TUPLE_CREATE);
+                    AssertDebug(tuple_node->nparents() == 1, "NEET TO GENERALIZE THIS.");
+                    OutType* out_type = tuple_node->get_parent(0)->getOtype();
+                    AssertDebug(out_type == OutType::BOOL, "NEED TO GENERALIZE THIS. IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
                     //THIS IS A HACK BUT WORKS FOR NOW
-                    ret = new VarVal((bool)node_evaluator.getValue((*the_dag)[node_evaluator.getValue(after_run_dests[0])]->get_parent(0)));
+                    ret = new VarVal((bool)node_evaluator.getValue(tuple_node->get_parent(0)));
 
                     delete bool_dag_map;
                     bool_dag_map = nullptr;

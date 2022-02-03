@@ -31,9 +31,19 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &s
     const string& underlying_dag = find_subdag_name(from_dag, subfunc_name);
     auto it = find(underlying_dag);
     if(it != end()) {
-        cout << "produce_get returns SketchFunction with name: " << it->second->get_dag()->get_name() << " of underlying dag " << underlying_dag <<" hidden under name " << subfunc_name << endl;
-        AssertDebug(false, "NEED TO CONCRETIZE IT AS IT WAS from the point of view of 'from_dag'");
-        return it->second;
+        cout << "produce_get returns SketchFunction with name: " <<
+            it->second->get_dag()->get_name() << " of underlying dag " << underlying_dag <<" hidden under name " << subfunc_name << endl;
+        const VarStore* the_var_store = find_last_var_store_on_the_way_to(from_dag, underlying_dag);
+//        AssertDebug(false, "NEED TO CONCRETIZE IT AS IT WAS from the point of view of 'from_dag'");
+        if(the_var_store == nullptr) {
+            cout << "VAR STORE IN NULLPTR" << endl;
+            return it->second;
+        }
+        else
+        {
+            cout << "VAR STORE IN NOT NULLPTR" << endl;
+            return it->second->produce_concretization(*the_var_store->clone(), bool_node::CTRL, true);
+        }
     }
     else
     {

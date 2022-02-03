@@ -212,15 +212,7 @@ namespace FMTL {
             auto var_store = get_var_store();
             if(var_store != nullptr) {
                 if(function_name == var_name) {
-                    const VarStore* tmp_ret = var_store;
-                    if(ret_so_far != nullptr)
-                    {
-                        assert(ret_so_far == tmp_ret);
-                    }
-                    ret_so_far = tmp_ret;
-                }
-                if(ret_so_far != nullptr)
-                {
+                    ret_so_far = var_store;
                     found = true;
                     return ret_so_far;
                 }
@@ -242,16 +234,15 @@ namespace FMTL {
                         ret_so_far = tmp_ret;
                     }
                 }
-                else
-                {
-                    assert(!local_found);
-                }
-                if(local_found == true)
-                {
-                    if(var_store != nullptr)
-                    {
-                        assert(ret_so_far != nullptr);
-                        assert(ret_so_far == var_store);
+                if(local_found) {
+                    if(var_store != nullptr) {
+                        if(ret_so_far == nullptr) {
+                            ret_so_far = var_store;
+                        }
+                        else
+                        {
+                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
+                        }
                     }
                     found = true;
                 }
@@ -265,7 +256,11 @@ namespace FMTL {
         const bool_node::Type concretization_type;
     public:
         ConcretizePrimitive(const string &_function_name, VarStore &_store, bool_node::Type _concretization_type) :
-                var_store(_store.copy()), concretization_type(_concretization_type), TransformPrimitive(_function_name, _concretize) {}
+                var_store(_store.clone()),
+                concretization_type(_concretization_type),
+                TransformPrimitive(_function_name, _concretize) {
+            AssertDebug(concretization_type == bool_node::CTRL, "TODO: add support for concretization_type = bool_node::SRC. This requires careful consideration about what happens when querying the transformer for varstores, since there can be multiple varstores concretizing a dag (one for SRC, one for CTRL). So far only one var_store can concretize a dag, assumes that a ctrl var store doesn't leave holes unconcretized.");
+        }
 
         VarStore *get_var_store() const override
         {
@@ -371,9 +366,8 @@ namespace FMTL {
             assert(it != root_dag_reps.end());
             bool found = false;
             const VarStore* ret = it->second->find_last_var_store_on_the_way_to(to_this_dag, found);
-            assert(found);
+            AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag_name);
             return ret;
-
         }
 
         size_t transformer_size()

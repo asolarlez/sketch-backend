@@ -252,7 +252,7 @@ public:
         bool allow_new_iter = true;
         while (!file.eof()) {
             assert(allow_new_iter);
-            VarStore* new_row = inputs.copy();
+            VarStore* new_row = inputs.clone();
             parseLineOut ok;
             try {
                 ok = parseLine(file, floats, inputNodes, new_row);
@@ -296,7 +296,7 @@ public:
     {
         for(int i = 0;i<to_copy->size();i++)
         {
-            push_back(to_copy->at(i)->copy());
+            push_back(to_copy->at(i)->clone());
         }
     }
 
@@ -309,7 +309,7 @@ public:
         File* new_file = new File(generator);
         for(int i = 0;i<samples.size();i++)
         {
-            new_file->push_back(samples[i]->copy());
+            new_file->push_back(samples[i]->clone());
         }
         new_file->used = vector<int>(new_file->size(), 0);
         return new_file;

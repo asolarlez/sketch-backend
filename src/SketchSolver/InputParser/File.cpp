@@ -90,7 +90,7 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     {
         if(lambda_condition(at(i)))
         {
-            ret->push_back(at(i)->copy());
+            ret->push_back(at(i)->clone());
         }
     }
     ret->used = vector<int>(ret->size(), 0);

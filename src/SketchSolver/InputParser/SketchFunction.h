@@ -158,7 +158,7 @@ public:
         produce_concretization(var_store, var_type, false);
     }
 
-    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_print = true);
+    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone = true);
 
     SketchFunction *clone();
 
