@@ -973,6 +973,7 @@ namespace SL {
                 if(do_delete) {
                     delete val;
                 }
+                val = nullptr;
             }
         }
         template<typename T>
@@ -1108,7 +1109,8 @@ namespace SL {
     static map<string, MethodId> method_str_to_method_id_map;
     static map<MethodId, vector<string> > method_id_to_type_str;
 
-    static void add_to_method_str_to_method_id_map(const string& method_str, MethodId method_enum, string type_str_1, string type_str_2 = "");
+    static void add_to_method_str_to_method_id_map(
+            const string& method_str, MethodId method_enum, string type_str_1, string type_str_2 = "", string type_str_3 = "");
 
     static void init_method_str_to_method_id_map();
 

@@ -29,11 +29,14 @@ static bool new_way = true;
 class BooleanDagUtility {
     BooleanDAG* root_dag = nullptr;
     ProgramEnvironment* env;
+    int shared_ptr = 0;
+
 public:
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env):
         root_dag(_root_dag), env(_env) {
         assert(root_dag != nullptr);
     }
+
     BooleanDagUtility(BooleanDagUtility* shallow_copy): root_dag(shallow_copy->root_dag), env(shallow_copy->env) {
         assert(root_dag != nullptr);
     }
@@ -92,13 +95,26 @@ public:
         return ret;
     }
 
-    void clear()
+    bool clear()
     {
-        int prev_num = BooleanDAG::get_allocated().size();
-        assert(root_dag != nullptr);
-        root_dag->clear();
-        assert(prev_num - 1 == BooleanDAG::get_allocated().size());
-        root_dag = nullptr;
+        shared_ptr--;
+        assert(shared_ptr>=0);
+        if(shared_ptr == 0) {
+            int prev_num = BooleanDAG::get_allocated().size();
+            assert(root_dag != nullptr);
+            root_dag->clear();
+            assert(prev_num - 1 == BooleanDAG::get_allocated().size());
+            root_dag = nullptr;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    void increment_shared_ptr() {
+        assert(shared_ptr >= 0);
+        shared_ptr++;
     }
 };
 
@@ -118,16 +134,12 @@ class SketchFunction: public BooleanDagUtility
 
 public:
 
-    explicit SketchFunction(SketchFunction* shallow_copy): solution(shallow_copy->solution), BooleanDagUtility(shallow_copy),
-                                                           replaced_labels(shallow_copy->replaced_labels){
-
-    }
-
     explicit SketchFunction(
             BooleanDAG *_dag_root,
             ProgramEnvironment *_env = nullptr,
-            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr) :
-            BooleanDagUtility(_dag_root, _env), solution(_solution)
+            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
+            const map<string, string>& _replaced_labels = map<string, string>()) :
+            BooleanDagUtility(_dag_root, _env), solution(_solution), replaced_labels(_replaced_labels)
     {
         for(auto it: get_dag()->getNodesByType(bool_node::UFUN)){
             replaced_labels[it->get_name()] = it->get_name();
@@ -164,9 +176,6 @@ public:
         solution_ctrl_var_store = _ctrl_var_store;
     }
 
-    SketchFunction *get_harness() {
-        return this;
-    }
 private:
     static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
     {
@@ -214,56 +223,31 @@ public:
         return ret;
     }
 
-    void print_extras()
-    {
-        cout << "get_env()->function_map.transformer_size() " << get_env()->function_map.transformer_size() << endl;
-        pair<int, int> min_and_max_depth = get_env()->function_map.transformer_min_and_max_depth();
-        cout << "min_and_max_depth " << min_and_max_depth.first << " "<< min_and_max_depth.second << endl;
-        assert(!get_env()->function_map.has_cycle());
-        cout << "no cycles!" << endl;
-    }
-
     SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
-        if(solution == nullptr) {
-            assert(false);
-            print_extras();
-            const VarStoreTreeNode* compiled_var_store =
-                    get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
-            assert(compiled_var_store != nullptr);
-            solution =
-                    new SolverLanguagePrimitives::HoleAssignment(
-                            SAT_SATISFIABLE, compiled_var_store->get_var_store(),
-                            get_env()->floats);
-        }
         assert(solution != nullptr);
         return new SolverLanguagePrimitives::HoleAssignment(solution);
     }
 
     SolverLanguagePrimitives::HoleAssignment* get_solution(const string& sub_solution_label)
     {
+        get_env()->function_map.print_extras();
 
-        print_extras();
+        cout << "START find_subdag_name" << endl;
 
-        const VarStoreTreeNode* compiled_var_store =
-                get_env()->function_map.compile_var_store_tree(get_dag()->get_name());
+//        string underlying_function_name = get_env()->function_map.find_subdag_name(get_dag()->get_name(), sub_solution_label);
 
-        cout << "DONE COMPILING" << endl;
+        cout << "DONE find_subdag_name" << endl;
+        cout << "START find_last_var_store_on_the_way_to" << endl;
 
-        assert(compiled_var_store != nullptr);
-
-        string underlying_function_name = compiled_var_store->find_underlying_function_name(sub_solution_label);
-
-        cout << "DONE find_underlying_function_name" << endl;
-
-        bool found = false;
-        const VarStore* var_store_used_to_concretize_underlying_function_name =
-                compiled_var_store->find_last_var_store_on_the_way_to(underlying_function_name, found);
+        const VarStore* var_store_used_to_concretize_underlying_subdag =
+                get_env()->function_map.get_var_store_used_to_concretize_underlying_subdag(get_dag()->get_name(),
+                                                                                           sub_solution_label);
+//                get_env()->function_map.find_last_var_store_on_the_way_to(get_dag()->get_name(), underlying_function_name);
 
         cout << "DONE find_last_var_store_on_the_way_to" << endl;
 
-        assert(found);
-        assert(var_store_used_to_concretize_underlying_function_name != nullptr);
+        assert(var_store_used_to_concretize_underlying_subdag != nullptr);
 
         SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
 
@@ -273,7 +257,7 @@ public:
         }
 
         auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
-                dummy_sat_solver_result, var_store_used_to_concretize_underlying_function_name,
+                dummy_sat_solver_result, var_store_used_to_concretize_underlying_subdag,
                 get_env()->floats));
         if(solution != nullptr)
         {
@@ -285,7 +269,7 @@ public:
             new_solution = nullptr;
         }
         else {
-            TransformPrimitive* transform_program_root = get_env()->function_map.get_where_my_kids_at()[get_dag()->get_name()];
+            TransformPrimitive* transform_program_root = get_env()->function_map.get_root_dag_reps()[get_dag()->get_name()];
             AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
                         "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
                         "TODO: think how it works if it is clone.");
@@ -318,6 +302,7 @@ public:
 
     void replace(const string& replace_this, const string &with_this);
 
+    SketchFunction * produce_get(const string& subfunc_name);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

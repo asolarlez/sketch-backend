@@ -32,7 +32,31 @@ public:
                         continue;
                     }
                 }
-                it.second->decrement_shared_ptr();
+                string sk_func_name = "not_sk_func";
+                bool is_sk_func = false;
+                if(it.second->is_sketch_function())
+                {
+                    is_sk_func = true;
+                    SketchFunction* sk_func = it.second->get_function(false);
+                    if(sk_func != nullptr) {
+                        sk_func_name = sk_func->get_dag()->get_name();
+                    }
+                    else
+                    {
+                        sk_func_name = "nullptr";
+                    }
+                }
+                bool cleared = it.second->decrement_shared_ptr();
+                if(is_sk_func) {
+                    if (cleared) {
+                        cout << "CLEARED";
+                    }
+                    else
+                    {
+                        cout << "NOT CLEARED";
+                    }
+                    cout << " var " << it.first.to_string() << " holding sk_func " << sk_func_name << endl;
+                }
             }
         }
 

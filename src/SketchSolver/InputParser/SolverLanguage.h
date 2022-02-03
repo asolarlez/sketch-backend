@@ -69,17 +69,33 @@ namespace SolverLanguagePrimitives
 
     class ProblemAE;
 
-    class ProblemAE: public SketchFunction
+    class ProblemAE
     {
         File* file;
         string file_name;
+        SketchFunction *sk_func = nullptr;
     public:
         explicit ProblemAE(SketchFunction* _function, File* _file = NULL):
-                SketchFunction(_function), file(_file){}
+                sk_func(_function), file(_file){}
 
         File* get_file()
         {
             return file;
+        }
+
+        auto get_holes()
+        {
+            return sk_func->get_holes();
+        }
+
+        auto get_harness()
+        {
+            return sk_func;
+        }
+
+
+        BooleanDAG *get_dag() {
+            return sk_func->get_dag();
         }
 
         virtual string to_string()
@@ -104,6 +120,7 @@ namespace SolverLanguagePrimitives
             assert(false);
             return "ProblemE";
         }
+
     };
 
     class ProblemA: public ProblemAE
@@ -237,7 +254,7 @@ namespace SolverLanguagePrimitives
         {
             vector<SkHoleSpec>* hole_names = problem->get_holes();
             auto* ret = new HoleAssignment();
-            
+
             cout << "TODO: RandomSolver::solve" << endl;
             assert(false);
         }

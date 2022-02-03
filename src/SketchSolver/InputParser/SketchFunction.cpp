@@ -40,37 +40,51 @@ SketchFunction *SketchFunction::clone() {
 
     get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
+    SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
+
     if(solution != nullptr) {
-        return new SketchFunction(
-                cloned_dag, get_env(), new SolverLanguagePrimitives::HoleAssignment(solution));
+        new SolverLanguagePrimitives::HoleAssignment(solution);
     }
-    else
-    {
-        return new SketchFunction(cloned_dag, get_env(), nullptr);
-    }
+
+    return new SketchFunction(
+            cloned_dag, get_env(), solution_clone, replaced_labels);
 }
 
-void SketchFunction::clear()
-{
-    get_env()->function_map.erase(get_dag()->get_name());
-
-    BooleanDagUtility::clear();
-
-    if(solution != nullptr)
-    {
-        solution->clear();
-        delete solution;
+void SketchFunction::clear() {
+    string dag_name = get_dag()->get_name();
+    if(BooleanDagUtility::clear()) {
+        get_env()->function_map.erase(dag_name);
+        if (solution != nullptr) {
+            solution->clear();
+            delete solution;
+        }
+        delete this;
     }
-    delete this;
 }
 
 void SketchFunction::replace(const string& replace_this, const string &with_this) {
     assert(new_way);
-    AssertDebug(replaced_labels.find(replace_this) == replaced_labels.end(), "If this happens, it means that you are replacing a label that has previously been replaced (used as 'replace_this'). Not yet handled.");
+
     AssertDebug(replaced_labels.find(with_this) == replaced_labels.end(), "If this happens, it means that you are re-instating a label that has previously been replaced. Not sure why you are doing this. Not yet handled.");
 
-    replaced_labels[replace_this] = with_this;
+    if(replaced_labels.find(replace_this) == replaced_labels.end()) {
+        AssertDebug(replaced_labels.find(replace_this) == replaced_labels.end(),
+                    "If this happens, it means that you are replacing a label that has previously been replaced (used as 'replace_this'). Not yet handled.");
 
-    get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
-    get_dag()->replace_label_with_another(replace_this, with_this);
+        get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
+        get_dag()->replace_label_with_another(replace_this, with_this);
+    }
+    else
+    {
+        assert(replaced_labels.find(replace_this) != replaced_labels.end());
+        get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
+        get_dag()->replace_label_with_another(replaced_labels[replace_this], with_this);
+    }
+    replaced_labels[replace_this] = with_this;
 }
+
+SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
+    cout << "in produce get " << get_dag()->get_name() <<" "<< get_the_dag_under_this_varname << endl;
+    return get_env()->function_map.produce_get(get_dag()->get_name(), get_the_dag_under_this_varname);
+}
+

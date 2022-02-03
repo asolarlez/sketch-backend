@@ -23,6 +23,15 @@ public:
 
     const map<string, BooleanDAG *> * to_boolean_dag_map() const;
 
+    void print_extras()
+    {
+        cout << "get_env()->function_map.transformer_size() " << transformer_size() << endl;
+        pair<int, int> min_and_max_depth = transformer_min_and_max_depth();
+        cout << "min_and_max_depth " << min_and_max_depth.first << " "<< min_and_max_depth.second << endl;
+        assert(!has_cycle());
+        cout << "no cycles!" << endl;
+    }
+
     const vector<string>& get_function_names() const
     {
         vector<string>* ret = new vector<string>();
@@ -32,7 +41,7 @@ public:
         return *ret;
     }
 
-    void insert(const string& name, SketchFunction* sketch_function_map);
+    void insert(const string& name, SketchFunction* sketch_function);
 
     SketchFunction* operator[](const string& name)
     {
@@ -41,16 +50,19 @@ public:
         return it->second;
     }
 
-    void erase(const string& name, bool update_transformer = true)
+    void erase(const string& name)
     {
-        if(update_transformer) {
-            FunctionMapTransformer::erase(name);
-        }
+        FunctionMapTransformer::erase(name);
+
         auto it = find(name);
         if(it != end()) {
             map<string, SketchFunction *>::erase(it);
         }
     }
+
+    SketchFunction *produce_get(const string &from_dag, const string &subfunc_name);
+
+    const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_name);
 };
 
 

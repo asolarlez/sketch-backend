@@ -290,6 +290,8 @@ public:
     void replace_label_with_another(const string &replace_this,  const string & with_this);
 
     bool get_is_clone();
+
+    vector<string> get_ufun_names() const;
 };
 
 

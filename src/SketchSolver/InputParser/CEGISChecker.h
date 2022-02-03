@@ -38,6 +38,7 @@ class CEGISChecker
 
 
 	void pushProblem(SketchFunction* p){
+        p->increment_shared_ptr();
 		problemStack.push(p);
 	}
 	int problemLevel(){
@@ -130,6 +131,7 @@ public:
         }
 
         SketchFunction* inlined_harness = harness->produce_inlined_dag();
+        inlined_harness->increment_shared_ptr();
         redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 
         // IS THIS DEBUG CODE? YES

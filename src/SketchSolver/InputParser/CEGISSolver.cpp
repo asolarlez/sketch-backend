@@ -23,6 +23,7 @@ void CEGISSolver::addProblem(SketchFunction *harness, File *file){
     {
 
         SketchFunction* inlined_harness = harness->produce_inlined_dag();
+        inlined_harness->increment_shared_ptr();
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
@@ -257,6 +258,7 @@ bool CEGISSolver::solveCore(){
                         SketchFunction* concretized_function =
                                 checker->getHarness()->produce_concretization(
                                         ctrlStore, bool_node::CTRL);
+                        concretized_function->increment_shared_ptr();
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
                         assert(concretized_dag->get_failed_assert() == nullptr);
                         map<string, BooleanDAG*> empty;

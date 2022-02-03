@@ -463,12 +463,11 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblem()->lprint(std::cout);
 
-    SketchFunction* concretized_function = getHarness()->produce_concretization(controls, bool_node::CTRL);
-	pushProblem(concretized_function);
+	pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
 
     if(files.find(curProblem) != files.end())
     {
-        BooleanDAG *concretized_dag = concretized_function->get_dag();
+        BooleanDAG *concretized_dag = getHarness()->get_dag();
         map<string, BooleanDAG*> empty;
         CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
         VarStore &tmpin = get_input_store();

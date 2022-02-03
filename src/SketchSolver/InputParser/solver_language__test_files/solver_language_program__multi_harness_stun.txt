@@ -405,7 +405,7 @@ Solver recursive_function_stun()
     num_trials = 3;
     num_rows_per_sample = 3;
 
-    int stun_depth = 5;
+    int stun_depth = 3;
 
     harness_levels = [];
 
@@ -419,6 +419,9 @@ Solver recursive_function_stun()
         }
         else
         {
+
+            assert(i >= 1);
+
             cp_lvl_i = composite_predicate.clone();
 
             cp_lvl_i.replace("composite_predicate", harness_levels[i-1].get("sketch_main").get("composite_predicate"));
@@ -446,18 +449,18 @@ Solver recursive_function_stun()
             cp_lvl_i = cp_lvl_i.produce_replace("composite_predicate", cp_lvl_i);
         }
 
-        at_level = harness_level[stun_depth-1].get("harness_main").get("composite_predicate");
+        at_level = harness_levels[stun_depth-1].get("sketch_main").get("composite_predicate");
 
-        for(int j = 0; j<stun_depth-i-1;j++)
-        {
-            at_level = at_level.get("composite_predicate");
+        for(int j = 0; j<(stun_depth-i)-1;j++) {
+            tmp_at_level = at_level.get("composite_predicate");
+            at_level = tmp_at_level;
         }
 
         cp_lvl_i.concretize(at_level.get_solution());
 
-        harness_main.replace("composite_predicate", at_level);
+        sketch_main.replace("composite_predicate", at_level);
         score_ground_truth = count_passing_inputs(sketch_main__Wrapper, file);
-        harness_main.replace("composite_predicate", cp_lvl_i);
+        sketch_main.replace("composite_predicate", cp_lvl_i);
         score_predicted = count_passing_inputs(sketch_main__Wrapper, file);
 
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);

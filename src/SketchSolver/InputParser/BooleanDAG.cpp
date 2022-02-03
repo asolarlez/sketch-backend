@@ -95,7 +95,7 @@ void BooleanDAG::sliceH(bool_node* n, BooleanDAG* bd){
 
 
 
-void BooleanDAG::clear(){	
+void BooleanDAG::clear(){
 	if(ownsNodes){
 	  for(int i=0; i < nodes.size(); ++i){
 		  if (nodes[i] != nullptr) {
@@ -1454,4 +1454,15 @@ void BooleanDAG::replace_label_with_another(const string &replace_this,  const s
 
 bool BooleanDAG::get_is_clone() {
     return is_clone;
+}
+
+vector<string> BooleanDAG::get_ufun_names() const {
+    auto ufuns = getNodesByType(bool_node::UFUN);
+    vector<string> ret;
+    ret.reserve(ufuns.size());
+    for(auto it : ufuns)
+    {
+        ret.push_back(((UFUN_node*)it)->get_ufname());
+    }
+    return ret;
 }
