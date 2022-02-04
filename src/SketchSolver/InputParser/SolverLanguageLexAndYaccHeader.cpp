@@ -548,23 +548,23 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     BooleanDAG* the_dag = sk_func->get_dag()->clone();
                     sk_func->get_env()->doInline(*the_dag);
 
-                    SolverLanguagePrimitives::InputAssignment* input_assignment = input_val->get_input_holder();
-
                     const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
                     NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
 
+                    SolverLanguagePrimitives::InputAssignment* input_assignment = input_val->get_input_holder();
                     VarStore* the_var_store = input_assignment->to_var_store();
-                    BooleanDAG* inlined_dag = ((BooleanDagUtility*)sk_func)->produce_inlined_dag(*the_var_store, bool_node::SRC);
-                    int remaining_holes = inlined_dag->getNodesByType(bool_node::CTRL).size();
-                    AssertDebug(remaining_holes == 0,
-                                "This dag should not havey any holes remaining, but it has " + std::to_string(remaining_holes) + " remaining_holes.");
 
-                    bool view_input_concretized_dag = false;
-                    if(view_input_concretized_dag) {
-                        SketchFunction* tmp = sk_func->clone();
-                        tmp->inline_this_dag(*the_var_store, bool_node::SRC);
-                        tmp->get_dag()->lprint(cout);
+                    const bool assert_num_remaining_holes_is_0 = true;
+                    if(assert_num_remaining_holes_is_0) {
+                        BooleanDAG *inlined_dag =
+                                ((BooleanDagUtility *) sk_func)->produce_inlined_dag(*the_var_store, bool_node::SRC);
+                        int remaining_holes = inlined_dag->getNodesByType(bool_node::CTRL).size();
+                        AssertDebug(remaining_holes == 0,
+                                    "This dag should not havey any holes remaining, but it has " +
+                                    std::to_string(remaining_holes) + " remaining_holes.");
+                        inlined_dag->clear();
                     }
+
                     bool fails = node_evaluator.run(*the_var_store);
                     delete the_var_store;
                     the_var_store = nullptr;
@@ -1425,7 +1425,10 @@ SL::VarVal *SL::VarVal::eval(T& val, SolverProgramState *state, SL::FunctionCall
 {
     assert_type_invariant<T>();
     assert(val != nullptr);
-    return function_call->eval<T>(val, state, this);
+    increment_shared_ptr();
+    SL::VarVal* ret = function_call->eval<T>(val, state, this);
+    decrement_shared_ptr();
+    return ret;
 }
 
 SL::VarVal *SL::VarVal::clone() {

@@ -62,6 +62,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
     }
   }
 #endif
+//  assert(name != "composite_predicate__id23984");
 }
 
 

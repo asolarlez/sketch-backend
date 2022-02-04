@@ -141,6 +141,11 @@ public:
 
         SL::Var* var = new SL::Var(_var);
         all_new_vars.push_back(var);
+
+        if(var_val != nullptr) {
+            var_val->increment_shared_ptr();
+        }
+
         if(vars_map[*var] != nullptr){
             bool is_deleted = vars_map[*var]->decrement_shared_ptr();
             if(is_deleted)
@@ -149,9 +154,7 @@ public:
                 vars_map.erase(*var);
             }
         }
-        if(var_val != nullptr) {
-            var_val->increment_shared_ptr();
-        }
+
         vars_map[*var] = var_val;
         add_var_name(var, false);
     }
