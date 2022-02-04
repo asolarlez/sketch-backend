@@ -287,8 +287,9 @@ bool CEGISSolver::solveCore(){
 
                     if(file != nullptr)
                     {
-                        SketchFunction* concretized_function = checker->getHarness()->produce_concretization(ctrlStore,
-                                                                                                             bool_node::CTRL);
+                        SketchFunction* concretized_function =
+                                checker->getHarness()->produce_concretization(ctrlStore,bool_node::CTRL);
+                        concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr)
                         {
 //                            cout << "FILE FAILS OK!!" << endl;
@@ -410,7 +411,7 @@ bool_node* CEGISSolver::nodeForINode(INTER_node* inode, VarStore& values, DagOpt
 		arrsz = dynamic_cast<SRC_node*>(inode)->arrSz;
 	}
 	if(arrsz>=0){
-		VarStore::objP* val = &(values.getObj(inode->get_name()));
+		auto val = &(values.getObjConst(inode->get_name()));
 		int nbits = inode->get_nbits();
 		vector<bool_node*> multi_mother;
 		

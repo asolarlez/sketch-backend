@@ -217,7 +217,7 @@ bool CEGISFinder::minimizeHoleValue(VarStore& ctrlStore, vector<string>& mhnames
 	for(size_t i=0; i<mhsizes.size(); ++i){
 		string& locminVarNodeName = mhnames[i];
 		int minVarNodeSize = mhsizes[i];
-		int H__0_val = ctrlStore.getObj(locminVarNodeName).getInt(); 
+		int H__0_val = ctrlStore.getObjConst(locminVarNodeName).getInt();
 		int H__0_var_idx = dirFind.getVar(locminVarNodeName);
 		cout <<locminVarNodeName<<"=" << H__0_val << ", " << flush;
 		Tvalue tv = H__0_var_idx;		

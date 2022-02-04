@@ -375,19 +375,30 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         case _sat_solver:
         {
             assert(params.size() == 2);
+
             SketchFunction* harness = params[0]->eval(state)->get_harness()->produce_inlined_dag();
             harness->increment_shared_ptr();
+
             File* file = params[1]->eval(state)->get_file();
+            assert(file->like_unused());
+
             using namespace SolverLanguagePrimitives;
-            WrapperAssertDAG* solver =
-                    new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
-            assert(file->get_counterexample_ids_over_time().empty());
-            ProblemAE* problem = new ProblemAE(harness, file);
-            HoleAssignment* sol = (solver)->
-                    solve(problem);
+            auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
+            auto* problem = new ProblemAE(harness, file);
+            HoleAssignment* sol = (solver)->solve(problem);
+            file->reset();
+            assert(file->like_unused());
+
+            auto* test_full_concretization = new BooleanDagUtility(harness);
+            test_full_concretization->increment_shared_ptr();
+            test_full_concretization->inline_this_dag(*sol->to_var_store(), bool_node::CTRL);
+            assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
+            test_full_concretization->clear();
+
             delete problem;
             harness->clear();
             solver->clear();
+
             return new SL::VarVal(sol);
             break;
         }
@@ -548,13 +559,16 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     AssertDebug(remaining_holes == 0,
                                 "This dag should not havey any holes remaining, but it has " + std::to_string(remaining_holes) + " remaining_holes.");
 
-                    SketchFunction* tmp = sk_func->clone();
-                    tmp->inline_this_dag(*the_var_store, bool_node::SRC);
-                    tmp->get_dag()->lprint(cout);
+                    bool view_input_concretized_dag = false;
+                    if(view_input_concretized_dag) {
+                        SketchFunction* tmp = sk_func->clone();
+                        tmp->inline_this_dag(*the_var_store, bool_node::SRC);
+                        tmp->get_dag()->lprint(cout);
+                    }
                     bool fails = node_evaluator.run(*the_var_store);
                     delete the_var_store;
                     the_var_store = nullptr;
-                    assert(!fails);
+                    AssertDebug(!fails, "the dag " + the_dag->get_name() + " asserts false on this input.");
 
                     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
                     assert(after_run_dests.size() == 1);
@@ -799,23 +813,34 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
     switch (method_id) {
         case _produce_concretization:
         {
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            VarVal* var_val_sol = params[0]->eval(state);
-            var_val_sol->increment_shared_ptr();
-            HoleAssignment* sol = var_val_sol->get_solution();
-            SketchFunction* concretized_function =
-                    sk_func->produce_with_concretized_holes(sol);
-            var_val_sol->decrement_shared_ptr();
-            return new SL::VarVal(concretized_function);
+            if(params.size() == 1) {
+                using namespace SolverLanguagePrimitives;
+                VarVal *var_val_sol = params[0]->eval(state);
+                var_val_sol->increment_shared_ptr();
+                HoleAssignment *sol = var_val_sol->get_solution();
+                SketchFunction *concretized_function =
+                        sk_func->produce_with_concretized_holes(sol);
+                var_val_sol->decrement_shared_ptr();
+                return new SL::VarVal(concretized_function);
+            }
+            else if(params.empty()) {
+                SketchFunction *concretized_function = sk_func->produce_inlined_dag();
+                return new SL::VarVal(concretized_function);
+            }
+            else {
+                assert(false);
+            }
             break;
         }
         case _concretize:
         {
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
-            HoleAssignment* sol = params[0]->eval(state)->get_solution();
+            VarVal* sol_var_val = params[0]->eval(state);
+            sol_var_val->increment_shared_ptr();
+            HoleAssignment* sol = sol_var_val->get_solution();
             sk_func->concretize(sol);
+            sol_var_val->decrement_shared_ptr();
             return new SL::VarVal();
             break;
         }
@@ -831,11 +856,11 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
 
             BooleanDAG* to_concretize = sk_func->get_dag()->clone();
             sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
+            assert(to_concretize->getNodesByType(bool_node::CTRL).empty());
 
             inputs->clear();
             inputs = nullptr;
 
-            assert((to_concretize->size() == 0) == (to_concretize->get_failed_assert() == nullptr));
             bool ret = to_concretize->get_failed_assert() == nullptr;
 
             to_concretize->clear();

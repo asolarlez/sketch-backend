@@ -13,7 +13,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 	}
 	auto otype = inode->getOtype();
 	if(arrsz>=0) {
-        VarStore::objP *val = &(values.getObj(inode->get_name()));
+        auto val = &(values.getObjConst(inode->get_name()));
         int nbits = inode->get_nbits();
 		vector<bool_node*> multi_mother;
 
@@ -55,7 +55,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		else
 		{
             assert(!inode->isArrType());
-            assert(values.getObj(inode->get_name()).get_size() == inode->get_nbits());
+            assert(values.getObjConst(inode->get_name()).get_size() == inode->get_nbits());
 
 		    if(inode->getOtype() == OutType::BOOL){
 		        Assert(otype != OutType::FLOAT, "node should not be a FLOAT.");
@@ -85,9 +85,9 @@ void NodeHardcoder::visit( SRC_node& node ){
 	    if(values.contains(node.get_name()))
 	    {
             if (!node.isArrType()) {
-                assert(values.getObj(node.get_name()).get_size() == node.get_nbits());
+                assert(values.getObjConst(node.get_name()).get_size() == node.get_nbits());
             } else {
-                assert(values.getObj(node.get_name()).get_size() == node.get_nbits() * node.getArrSz());
+                assert(values.getObjConst(node.get_name()).get_size() == node.get_nbits() * node.getArrSz());
             }
             rvalue = nodeForINode(&node);
 	    }
@@ -147,7 +147,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 		OutType* type = tuple_type->entries[j];
 		Assert(!type->isTuple, "NYS");	
 		if(type->isArr){
-			VarStore::objP* val = &(values.getObj(sstr.str()));
+			auto val = &(values.getObjConst(sstr.str()));
 			int nbits = val->size();
 			vector<bool_node*> multi_mother;
 			

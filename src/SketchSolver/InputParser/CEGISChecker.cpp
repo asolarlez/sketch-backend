@@ -298,7 +298,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 					for(size_t i=0; i<ctrls.size(); ++i){
 						SRC_node* bn = dynamic_cast<SRC_node*>(ctrls[i]);
 						if(bn->id > h){						
-							tmpin.getObj(bn->get_name()).makeRandom();
+							tmpin._getObj(bn->get_name()).makeRandom();
 						}
 					}
 					bool done = eval.run(tmpin);								

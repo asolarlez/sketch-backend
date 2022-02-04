@@ -60,9 +60,9 @@ public:
         }
     }
 
-    SketchFunction *produce_get(const string &from_dag, const string &subfunc_name);
+    SketchFunction *produce_get(const string &from_dag, const string &under_this_var);
 
-    const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_name);
+    const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var);
 };
 
 

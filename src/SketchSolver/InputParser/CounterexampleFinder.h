@@ -184,7 +184,7 @@ public:
 					if(eq->mother()->type==bool_node::SRC){
 						int fv = this->getValue(eq->father());
 
-						VarStore::objP& op = inputs->getObj(eq->mother()->get_name());
+						auto op = inputs->getObjConst(eq->mother()->get_name());
 
 						bool inrange = op.setValSafe(fv);
 						if(!inrange){
@@ -197,7 +197,7 @@ public:
 					}
 					if(eq->father()->type==bool_node::SRC){
 						int fv = this->getValue(eq->mother());
-						bool inrange = inputs->getObj(eq->father()->get_name()).setValSafe(fv);
+						bool inrange = inputs->_getObj(eq->father()->get_name()).setValSafe(fv);
 						if(!inrange){
 							message = &(an->getMsg());
 							return UNSAT;
@@ -210,9 +210,9 @@ public:
 				int jmp = bdsz;
 				for(;it != -1; it = inf->next(it)){
 					if(sparseArray > 0.000001){
-						inputs->getObj(it).makeRandom(sparseArray);
+						inputs->_getObj(it).makeRandom(sparseArray);
 					}else{
-						inputs->getObj(it).makeRandom();
+						inputs->_getObj(it).makeRandom();
 					}
 					int jid = jumpids[it];
 					if(jid < jmp){ jmp = jid; }

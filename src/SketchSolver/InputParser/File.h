@@ -41,6 +41,26 @@ class File: public vector<VarStore*>
     }
 public:
 
+    void reset()
+    {
+        counterexample_ids_over_time.clear();
+        for(int i = 0;i<used.size();i++){
+            used[i] = 0;
+        }
+    }
+
+    bool like_unused() const{
+        if(!counterexample_ids_over_time.empty()) {
+            return false;
+        }
+        for(auto it :used) {
+            if(it != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
 
     void clear() {

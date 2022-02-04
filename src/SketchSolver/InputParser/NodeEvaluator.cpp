@@ -172,7 +172,7 @@ void NodeEvaluator::visit( SRC_node& node ){
 		if(vecvalues[node.id] != NULL){
 			delete vecvalues[node.id];
 		}
-		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObj(node.get_name())));
+		vecvalues[node.id] = new cpvec(node.arrSz, &(inputs->getObjConst(node.get_name())));
 		// for SRC arrays, anything beyond bounds are 0 by default
 		setbn(node, 0);
 	}else{
@@ -319,7 +319,7 @@ void NodeEvaluator::visit( UFUN_node& node ){
 				if(vecvalues[node.id] != NULL){
 					delete vecvalues[node.id];
 				}
-				VarStore::objP& op = inputs->getObj(sstr.str());
+				auto op = inputs->getObjConst(sstr.str());
 				
 				vecvalues[node.id] = new cpvec(op.arrSize(), &(op));
 			}else{

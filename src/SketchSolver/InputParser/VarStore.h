@@ -16,8 +16,10 @@ int intFromBV(T& bv, int start, int nbits){
 	int nval = 0;	
 	int t = 1;
 	
-	for(int i=0; i<nbits; ++i){		
-		if( bv[start + i] > 0){
+	for(int i=0; i<nbits; ++i){
+        int the_bit = bv[start + i];
+        assert(the_bit == 0 || the_bit == 1 || the_bit == -1);
+		if( the_bit > 0){
 			nval += t;	
 		}
 		t = t*2;
@@ -130,11 +132,17 @@ public:
             }
             for(int i = 0;i<vals.size();i++) {
                 if (vals[i] != other.vals[i]) {
-                    if(debug) {
-                        cout << "return false" << endl;
-                        AssertDebug(false, "not eq");
+                    if(vals[i] == 0 && other.vals[i] == -1)
+                    {
+                        //TODO: fix this. Artifact from CEGISSolver. -1 interpreted as 0 in int intFromBV(T& bv, int start, int nbits)
                     }
-                    return false;
+                    else {
+                        if (debug) {
+                            cout << "return false" << endl;
+                            AssertDebug(false, "not eq");
+                        }
+                        return false;
+                    }
                 }
             }
             if(name != other.name)
@@ -185,7 +193,7 @@ public:
                 }
                 return false;
             }
-            if((next == NULL) != (other.next == NULL))
+            if((next == nullptr) != (other.next == nullptr))
             {
                 if(debug) {
                     cout << "return false" << endl;
@@ -193,7 +201,7 @@ public:
                 }
                 return false;
             }
-            if(next != NULL)
+            if(next != nullptr)
             {
                 bool ret = (*next == *other.next);
                 if(debug) {
@@ -523,6 +531,10 @@ public:
 			idx = objs.size()-1;
       		index[name] = idx;
 		}
+        if(otype == OutType::BOOL)
+        {
+            assert(val == 0 || val == 1);
+        }
 		objs[idx].setVal(val);
         assert(!objs[idx].get_is_array());
 	}
@@ -590,7 +602,7 @@ public:
 			if(index.count(name)==0){
 				continue;
 			}
-			auto oo = this->getObj(name);
+			auto oo = this->getObjConst(name);
 			oo.setVal(atoi(val.c_str()));
 		}
 
@@ -639,7 +651,7 @@ public:
         assert(id < objs.size());
         return objs.at(id);
     }
-	objP& getObj(const string& name) {
+	objP& _getObj(const string& name) {
         int id = getId(name);
         assert(id < objs.size());
 		return objs.at(id);
@@ -648,7 +660,10 @@ public:
 		AssertDebug(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
 		return index.at(name);
 	}
-	objP& getObj(int id){ 
+    objP& _getObj(int id){
+        return objs[id];
+    }
+	const objP& getObjConst(int id) const{
 		return objs[id];
 	}
 	friend VarStore old_join(const VarStore& v1 , const VarStore& v2);

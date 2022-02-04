@@ -15,7 +15,7 @@ void FunctionMapTransformer::concretize(const string &function_name, VarStore &s
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
     TransformPrimitive* new_primitive =
             new ConcretizePrimitive(function_name, store, type);
-    add_parent(new_primitive, function_name);
+    add_parent(new_primitive, function_name, true);
     if(sub_functions != nullptr) {
         for (const auto &it: *sub_functions) {
             add_parent(new_primitive, it);
@@ -32,7 +32,7 @@ void FunctionMapTransformer::replace_label_with_another(
     assert(root_dag_reps.find(function_name) != root_dag_reps.end());
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
     auto new_primitive = new ReplacePrimitive(function_name, replace_this_str, with_this_str);
-    add_parent(new_primitive, function_name);
+    add_parent(new_primitive, function_name, true);
     add_parent(new_primitive, with_this_str);
     program.insert(new_primitive);
     root_dag_reps[function_name] = new_primitive;
@@ -43,7 +43,7 @@ void FunctionMapTransformer::clone(const string &original_function_name, const s
     if(omit_function_map_transformer) { return; }
     assert(root_dag_reps.find(clone_function_name) == root_dag_reps.end());
     auto new_primitive = new ClonePrimitive(original_function_name, clone_function_name);
-    add_parent(new_primitive, original_function_name);
+    add_parent(new_primitive, original_function_name, true);
     program.insert(new_primitive);
     root_dag_reps[clone_function_name] = new_primitive;
     assert(root_dag_reps[clone_function_name]->get_function_name() == clone_function_name);

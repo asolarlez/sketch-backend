@@ -61,6 +61,10 @@ For meeting:
             when concretizing holes, leave #PC.
             when concretizing inputs, set #PC to 1
             when solving, set #PC to 1.1
+    9. Discuss: when cloning a recursive function it stops being recursive because the clone rather than pointing to itself, points to the original.
+    10. setVal takes as input a size_t, is this something we should be worried about?
+    11. what are -1s in controls in CegisChecker (I guess they are 'unset'?); they seem to be interpreted as 0 here: int intFromBV(T& bv, int start, int nbits)
+        TODO: added that -1 and 0 are equal in ObjP:: bool operator == (const objP& other) const
 
 
 Priority for merging with Master
@@ -141,6 +145,7 @@ Necessary
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
     TODO: add parallelization capabilities though cilk.
     TODO: recursive subdag access.
+    TODO: fix produce_concretize to accept a HoleAssignment, rather than a var store, for the cases where the var_store came from a HoleAssignment. Because now you are ad-hock declaring the sat_result to create a hole_assignment.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

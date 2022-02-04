@@ -7,6 +7,7 @@
 #include <utility>
 
 SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone) {
+
     if(do_clone) {
         return clone()->produce_concretization(var_store, var_type, false);
     }
@@ -14,6 +15,36 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
         vector<string>* inlined_functions = nullptr;
 
         inline_this_dag(var_store, var_type, inlined_functions);
+
+        if(var_type == bool_node::CTRL && var_store.size() >= 1) {
+            SATSolverResult sat_solver_result = SAT_UNDETERMINED;
+            if(get_dag()->get_failed_assert() != nullptr) {
+                sat_solver_result = SAT_UNSATISFIABLE;
+            }
+            else if(!get_dag()->getNodesByType(bool_node::CTRL).empty())
+            {
+                sat_solver_result = SAT_NOT_FULLY_CONCRETIZED;
+            }
+            else if(get_dag()->get_failed_assert() == nullptr) {
+                sat_solver_result = SAT_SATISFIABLE;
+            }
+            else
+            {
+                assert(false);
+            }
+
+            auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store, get_env()->floats);
+
+            if(solution != nullptr) {
+                assert(*solution == *compare_solution);
+                compare_solution->clear();
+                delete compare_solution;
+            }
+            else {
+                solution = compare_solution;
+            }
+
+        }
 
 //        if (new_way) {
 //            assert(root_dag != nullptr);
@@ -50,9 +81,9 @@ SketchFunction *SketchFunction::clone() {
             cloned_dag, get_env(), solution_clone, replaced_labels);
 }
 
-void SketchFunction::clear() {
+void SketchFunction::clear(){
     string dag_name = get_dag()->get_name();
-    if(BooleanDagUtility::clear()) {
+    if(BooleanDagUtility::soft_clear()) {
         get_env()->function_map.erase(dag_name);
         if (solution != nullptr) {
             solution->clear();

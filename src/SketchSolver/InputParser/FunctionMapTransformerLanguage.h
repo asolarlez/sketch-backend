@@ -9,9 +9,8 @@
 
 #include "VarStore.h"
 
-namespace FMTL {
 
-    class FunctionMapTransformer;
+namespace FMTL {
 
     enum TransformPrimitiveMetaType
     {
@@ -20,6 +19,14 @@ namespace FMTL {
         _clone,
         _init
     };
+    static const string transform_primitive_meta_type_name[4] = {
+    "concretize",
+    "replace",
+    "clone",
+    "init"
+    };
+
+    class FunctionMapTransformer;
 
     class TransformPrimitive
     {
@@ -40,6 +47,7 @@ namespace FMTL {
         set<TransformPrimitive*> parents;
         set<TransformPrimitive*> children;
         TransformPrimitiveMetaType meta_type;
+        TransformPrimitive* main_parent = nullptr;
 
         virtual VarStore *get_var_store() const {
             return nullptr;
@@ -72,6 +80,13 @@ namespace FMTL {
             parents.insert(new_parent);
             assert(new_parent->children.find(this) == new_parent->children.end());
             new_parent->children.insert(this);
+        }
+
+        void set_main_parent(TransformPrimitive*& _main_parent)
+        {
+            assert(main_parent == nullptr);
+            assert(parents.find(_main_parent) != parents.end());
+            main_parent = _main_parent;
         }
 
         void set_not_visited() {
@@ -163,17 +178,31 @@ namespace FMTL {
 
         int num_reachable_nodes();
 
-        string find_underlying_function_name(const string& var_name, const bool print = false) const {
-            if(print) {
-                cout << "entering " << function_name << endl;
+        static string tab(int t)
+        {
+            string ret = "";
+            for(int i = 0;i<t;i++)
+            {
+                ret+="  |";
             }
-            string ret_so_far;
+            return ret;
+        }
+
+        string find_underlying_function_name(const string& var_name, const bool print = false, int t = 0) const {
             auto assign_map = get_assign_map();
+            string ret_so_far;
+            if(print) {
+                if((assign_map == nullptr || assign_map->size() == 0) && main_parent == nullptr) {
+                    return ret_so_far;
+                }
+                cout << tab(t) << "entering " << function_name << " (" << transform_primitive_meta_type_name[meta_type] <<") " << endl;
+            }
             if(assign_map != nullptr) {
                 if(print) {
-                    cout << function_name << " has ";
-                    for (auto it: *assign_map) {
-                        cout << it.first << " " << it.second << " | ";
+                    assert(assign_map->size() >= 1 || main_parent == nullptr);
+                    cout << tab(t+1) << function_name << " has ";
+                    for (const auto& it: *assign_map) {
+                        cout << it.first << " " << it.second << "; ";
                     }
                     cout << endl;
                 }
@@ -182,71 +211,102 @@ namespace FMTL {
                     string tmp_ret = (*assign_map).at(var_name);
                     assert(ret_so_far.empty());
                     ret_so_far = tmp_ret;
-                    return ret_so_far;
+//                    return ret_so_far;
                 }
             }
             else {
-                assert(meta_type != _replace);
+                assert(meta_type != _replace && meta_type != _init);
             }
-            assert(ret_so_far.empty());
-            for(const auto& it: parents) {
-                string tmp_ret = it->find_underlying_function_name(var_name, print);
-                if(!tmp_ret.empty()) {
-                    if (!ret_so_far.empty()) {
-                        assert(ret_so_far == tmp_ret);
-                    }
-                    else {
-                        ret_so_far = tmp_ret;
-                    }
+            if(ret_so_far.empty()) {
+                assert(ret_so_far.empty());
+                if(main_parent != nullptr)
+                {
+                    ret_so_far = main_parent->find_underlying_function_name(var_name, print, t+1);
                 }
+//                for (const auto &it: parents) {
+//                    string tmp_ret = it->find_underlying_function_name(var_name, print, t + 1);
+//                    if (!tmp_ret.empty()) {
+//                        if (!ret_so_far.empty()) {
+//                            assert(ret_so_far == tmp_ret);
+//                        } else {
+//                            ret_so_far = tmp_ret;
+//                        }
+//                    }
+//                }
             }
             if(print) {
-                cout << "exiting " << function_name << endl;
+                cout << tab(t+1) << "RETURNS '" << ret_so_far << "'" << endl;
+                cout << tab(t) << "exiting " << function_name << endl;
             }
             return ret_so_far;
         }
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& var_name, bool& found) const {
+        const VarStore* find_last_var_store_on_the_way_to(const string& dag_name, const string& var_name, bool& found) const {
             assert(!found);
             const VarStore* ret_so_far = nullptr;
             auto var_store = get_var_store();
             if(var_store != nullptr) {
-                if(function_name == var_name) {
+                if(function_name == dag_name) {
                     ret_so_far = var_store;
                     found = true;
                     return ret_so_far;
                 }
             }
-            if(function_name == var_name)
+
+            if(function_name == dag_name)
             {
                 found = true;
                 return nullptr;
             }
-            for(const auto& it: parents) {
-                bool local_found = false;
-                const VarStore* tmp_ret = it->find_last_var_store_on_the_way_to(var_name, local_found);
-                if(tmp_ret != nullptr) {
-                    assert(local_found);
-                    if (ret_so_far != nullptr) {
-                        assert(ret_so_far == tmp_ret);
-                    }
-                    else {
-                        ret_so_far = tmp_ret;
-                    }
-                }
-                if(local_found) {
-                    if(var_store != nullptr) {
-                        if(ret_so_far == nullptr) {
-                            ret_so_far = var_store;
-                        }
-                        else
-                        {
-                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
-                        }
-                    }
+
+            auto assign_map = get_assign_map();
+            if(assign_map != nullptr) {
+                auto it = assign_map->find(var_name);
+                if(it != assign_map->end()){
+                    assert(it->second == dag_name);
                     found = true;
+                    return nullptr;
                 }
             }
+
+            if(main_parent != nullptr) {
+                ret_so_far = main_parent->find_last_var_store_on_the_way_to(dag_name, var_name, found);
+                if(found) {
+                    if(ret_so_far == nullptr)
+                    {
+                        if(var_store != nullptr)
+                        {
+                            ret_so_far = var_store;
+                        }
+                    }
+                }
+            }
+
+//            for(const auto& it: parents) {
+//                bool local_found = false;
+//                const VarStore* tmp_ret = it->find_last_var_store_on_the_way_to(dag_name, local_found);
+//                if(tmp_ret != nullptr) {
+//                    assert(local_found);
+//                    if (ret_so_far != nullptr) {
+//                        assert(ret_so_far == tmp_ret);
+//                    }
+//                    else {
+//                        ret_so_far = tmp_ret;
+//                    }
+//                }
+//                if(local_found) {
+//                    if(var_store != nullptr) {
+//                        if(ret_so_far == nullptr) {
+//                            ret_so_far = var_store;
+//                        }
+//                        else
+//                        {
+//                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
+//                        }
+//                    }
+//                    found = true;
+//                }
+//            }
             return ret_so_far;
         }
     };
@@ -273,9 +333,8 @@ namespace FMTL {
     public:
         InitPrimitive(const string& _function_name, const vector<string>& _subfunction_names):
         TransformPrimitive(_function_name, _init){
-
             auto* tmp_assign_map = new map<string, string>();
-            for(auto it: _subfunction_names) {
+            for(const auto& it: _subfunction_names) {
                 (*tmp_assign_map)[it] = it;
             }
             assign_map = tmp_assign_map;
@@ -330,9 +389,13 @@ namespace FMTL {
             }
             return ret;
         }
-        void add_parent(TransformPrimitive* new_primitive, const string& parent_name) {
+        void add_parent(TransformPrimitive* new_primitive, const string& parent_name, bool is_main_parent = false) {
             assert(root_dag_reps.find(parent_name) != root_dag_reps.end());
-            new_primitive->add_parent(root_dag_reps[parent_name]);
+            TransformPrimitive* new_parent = root_dag_reps[parent_name];
+            new_primitive->add_parent(new_parent);
+            if(is_main_parent) {
+                new_primitive->set_main_parent(new_parent);
+            }
         }
 
     public:
@@ -353,19 +416,21 @@ namespace FMTL {
         {
             auto it = root_dag_reps.find(from_dag_name);
             assert(it != root_dag_reps.end());
-            bool print = false;
+            bool print = true;
             if(print)
-            cout << endl << "IN find_subdag_name " << from_dag_name << " " << find_what_dag_this_varname_maps_to << endl;
+                cout << endl << "IN find_subdag_name " << from_dag_name << " " << find_what_dag_this_varname_maps_to << endl;
             string ret = it->second->find_underlying_function_name(find_what_dag_this_varname_maps_to, print);
             assert(!ret.empty());
+            if(print)
+                cout << "find_subdag_name(" + from_dag_name + ", " + find_what_dag_this_varname_maps_to + ") returns " << ret << endl << endl;
             return ret;
         }
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& from_dag_name, const string& to_this_dag) const {
+        const VarStore* find_last_var_store_on_the_way_to(const string& from_dag_name, const string& under_this_var, const string& to_this_dag) const {
             auto it = root_dag_reps.find(from_dag_name);
             assert(it != root_dag_reps.end());
             bool found = false;
-            const VarStore* ret = it->second->find_last_var_store_on_the_way_to(to_this_dag, found);
+            const VarStore* ret = it->second->find_last_var_store_on_the_way_to(to_this_dag, under_this_var, found);
             AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag_name);
             return ret;
         }

@@ -1130,7 +1130,7 @@ namespace SolverLanguagePrimitives
 
                 delete var_val_ret;
 
-                BooleanDagUtility* concretized_function =
+                auto* concretized_function =
                         new BooleanDagUtility(local_harness->get_dag()->clone(), local_harness->get_env());
                 concretized_function->inline_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
                 int num_passing_inputs =
@@ -1146,7 +1146,7 @@ namespace SolverLanguagePrimitives
 
                 solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
 
-                local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
+//                local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
 
 
                 assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
@@ -1283,7 +1283,7 @@ namespace SolverLanguagePrimitives
             fout << "count\t" << solutions[i].first << " / " << all_file->size() <<" ("<< 100.0*(float)solutions[i].first/all_file->size() << " %)" << endl;
         }
 
-        state->harness_->set_solution_ctrl_var_store(solutions[0].second->to_var_store());
+//        state->harness_->set_solution_ctrl_var_store(solutions[0].second->to_var_store());
 
         if(solutions[0].second->get_sat_solver_result() == SAT_SATISFIABLE)
         {

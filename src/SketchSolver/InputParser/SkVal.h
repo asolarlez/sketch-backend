@@ -364,6 +364,7 @@ public:
     }
 
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
+
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
             OutType* out_type = (*it).getOtype();
@@ -399,10 +400,10 @@ public:
         assert(test_var_store->size() == var_store->size());
 
         for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
-            assert(test_var_store->getObj(it->getName()) == var_store->getObjConst(it->getName()));
+            assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
         }
         for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
-            assert(test_var_store->getObj(it->getName()) == var_store->getObjConst(it->getName()));
+            assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
         }
 
         delete test_var_store;

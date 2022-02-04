@@ -37,7 +37,7 @@ public:
         assert(root_dag != nullptr);
     }
 
-    BooleanDagUtility(BooleanDagUtility* shallow_copy): root_dag(shallow_copy->root_dag), env(shallow_copy->env) {
+    BooleanDagUtility(BooleanDagUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env) {
         assert(root_dag != nullptr);
     }
 
@@ -95,7 +95,17 @@ public:
         return ret;
     }
 
-    bool clear()
+    virtual void clear() {
+        if(soft_clear()){
+            assert(shared_ptr == 0);
+            delete this;
+        }
+        else {
+            assert(shared_ptr >= 1);
+        }
+    }
+
+    bool soft_clear()
     {
         shared_ptr--;
         assert(shared_ptr>=0);
@@ -125,12 +135,6 @@ class SketchFunction: public BooleanDagUtility
     bool new_way = true;
 
     map<string, string> replaced_labels;
-
-    void add_solution(SolverLanguagePrimitives::HoleAssignment* _solution_holder)
-    {
-        assert(solution == nullptr);
-        solution = new SolverLanguagePrimitives::HoleAssignment(_solution_holder);
-    }
 
 public:
 
@@ -162,19 +166,7 @@ public:
 
     SketchFunction *clone();
 
-    void clear();
-
-private:
-    VarStore* solution_ctrl_var_store = nullptr;
-public:
-    VarStore* get_solution_ctrl_var_store()
-    {
-        return solution_ctrl_var_store;
-    }
-    void set_solution_ctrl_var_store(VarStore* _ctrl_var_store)
-    {
-        solution_ctrl_var_store = _ctrl_var_store;
-    }
+    void clear() override;
 
 private:
     static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
@@ -219,36 +211,11 @@ public:
         VarStore* var_store = solution_holder->to_var_store();
         SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL);
         var_store->clear();
-        ret->add_solution(solution_holder);
         return ret;
     }
 
-    SolverLanguagePrimitives::HoleAssignment* get_solution()
+    SolverLanguagePrimitives::HoleAssignment* set_and_get_solution_from_var_store(const VarStore* var_store)
     {
-        assert(solution != nullptr);
-        return new SolverLanguagePrimitives::HoleAssignment(solution);
-    }
-
-    SolverLanguagePrimitives::HoleAssignment* get_solution(const string& sub_solution_label)
-    {
-        get_env()->function_map.print_extras();
-
-        cout << "START find_subdag_name" << endl;
-
-//        string underlying_function_name = get_env()->function_map.find_subdag_name(get_dag()->get_name(), sub_solution_label);
-
-        cout << "DONE find_subdag_name" << endl;
-        cout << "START find_last_var_store_on_the_way_to" << endl;
-
-        const VarStore* var_store_used_to_concretize_underlying_subdag =
-                get_env()->function_map.get_var_store_used_to_concretize_underlying_subdag(get_dag()->get_name(),
-                                                                                           sub_solution_label);
-//                get_env()->function_map.find_last_var_store_on_the_way_to(get_dag()->get_name(), underlying_function_name);
-
-        cout << "DONE find_last_var_store_on_the_way_to" << endl;
-
-        assert(var_store_used_to_concretize_underlying_subdag != nullptr);
-
         SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
 
         if(solution != nullptr)
@@ -257,7 +224,7 @@ public:
         }
 
         auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
-                dummy_sat_solver_result, var_store_used_to_concretize_underlying_subdag,
+                dummy_sat_solver_result, var_store,
                 get_env()->floats));
         if(solution != nullptr)
         {
@@ -282,13 +249,42 @@ public:
         return new SolverLanguagePrimitives::HoleAssignment(solution);
     }
 
+
+    SolverLanguagePrimitives::HoleAssignment* get_solution()
+    {
+        assert(solution != nullptr);
+        return new SolverLanguagePrimitives::HoleAssignment(solution);
+    }
+
+    SolverLanguagePrimitives::HoleAssignment* get_solution(const string& under_this_var)
+    {
+        get_env()->function_map.print_extras();
+
+        cout << "START find_subdag_name" << endl;
+
+//        string underlying_function_name = get_env()->function_map.find_subdag_name(get_dag()->get_name(), under_this_var);
+
+        cout << "DONE find_subdag_name" << endl;
+        cout << "START find_last_var_store_on_the_way_to" << endl;
+
+        const VarStore* var_store_used_to_concretize_underlying_subdag =
+                get_env()->function_map.get_var_store_used_to_concretize_underlying_subdag(get_dag()->get_name(),
+                                                                                           under_this_var);
+//                get_env()->function_map.find_last_var_store_on_the_way_to(get_dag()->get_name(), underlying_function_name);
+
+        cout << "DONE find_last_var_store_on_the_way_to" << endl;
+
+        assert(var_store_used_to_concretize_underlying_subdag != nullptr);
+
+        return set_and_get_solution_from_var_store(var_store_used_to_concretize_underlying_subdag);
+    }
+
     void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* local_solution = solution_holder->to_var_store();
         concretize(*local_solution, bool_node::CTRL);
         local_solution->clear();
         local_solution = nullptr;
-        add_solution(solution_holder);
     }
 
     SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputAssignment* input_holder)

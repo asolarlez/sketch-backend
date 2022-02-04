@@ -24,20 +24,24 @@ enum SATSolverResult{
 	SAT_SATISFIABLE,
 	SAT_TIME_OUT,
 	SAT_MEM_OUT,
-	SAT_ABORTED
+	SAT_ABORTED,
+
+    SAT_NOT_FULLY_CONCRETIZED
 };
 
-static const string SATSolverResultNames[6] =
+static const string SATSolverResultNames[7] =
 {
 	"SAT_UNDETERMINED",
 	"SAT_UNSATISFIABLE",
 	"SAT_SATISFIABLE",
 	"SAT_TIME_OUT",
 	"SAT_MEM_OUT",
-	"SAT_ABORTED"
+	"SAT_ABORTED",
+
+    "SAT_NOT_FULLY_CONCRETIZED"
 };
 
-class SATSolver {	
+class SATSolver {
 
 protected:
     string name;
