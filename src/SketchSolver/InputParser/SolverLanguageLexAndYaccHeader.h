@@ -487,7 +487,7 @@ namespace SL {
         };
         const VarValType var_val_type;
         int num_shared_ptr = 0;
-        vector<VarVal*> is_responsible_for;
+        map<string, VarVal*> is_responsible_for;
     public:
         explicit VarVal(string  _s);
 //        explicit VarVal(int val);
@@ -1025,8 +1025,8 @@ namespace SL {
                 default:
                     assert(false);
             }
-            for(auto child : is_responsible_for) {
-                child->decrement_shared_ptr();
+            for(auto it : is_responsible_for) {
+                it.second->decrement_shared_ptr();
             }
             is_responsible_for.clear();
             delete this;
@@ -1055,7 +1055,7 @@ namespace SL {
 
         VarVal *clone();
 
-        void add_responsibility(VarVal *pVal);
+        void add_responsibility(const string &var_name, SL::VarVal *new_child);
 
         bool is_input_holder();
 

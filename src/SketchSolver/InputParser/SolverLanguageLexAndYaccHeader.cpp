@@ -796,7 +796,7 @@ eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_fu
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
     SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
 
-    ret_var_val->add_responsibility(to_replace_with_var_val);
+    ret_var_val->add_responsibility(str_to_replace, to_replace_with_var_val);
 
     SketchFunction* to_replace_with_sk_func = to_replace_with_var_val->get_function();
     const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
@@ -1307,9 +1307,8 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
 
 SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 {
-    for(int i = 0;i< _to_copy->is_responsible_for.size();i++)
-    {
-        add_responsibility(new VarVal(_to_copy->is_responsible_for[i]));
+    for(auto it : _to_copy->is_responsible_for) {
+        add_responsibility(it.first, new VarVal(it.second));
     }
 
     switch (_to_copy->var_val_type) {
@@ -1436,9 +1435,17 @@ SL::VarVal *SL::VarVal::clone() {
     return new VarVal(skfunc->clone());
 }
 
-void SL::VarVal::add_responsibility(SL::VarVal *new_child) {
+void SL::VarVal::add_responsibility(const string &var_name, SL::VarVal *new_child) {
     new_child->increment_shared_ptr();
-    is_responsible_for.push_back(new_child);
+    auto it = is_responsible_for.find(var_name);
+    if(it == is_responsible_for.end()) {
+        is_responsible_for[var_name] = new_child;
+    }
+    else
+    {
+        it->second->decrement_shared_ptr();
+        is_responsible_for[var_name] = new_child;
+    }
 }
 
 bool SL::VarVal::is_input_holder() {
