@@ -30,8 +30,11 @@ void FunctionMapTransformer::concretize(const string &function_name, VarStore &s
 void FunctionMapTransformer::replace_label_with_another(
         const string& function_name, const string &replace_this_str, const string &with_this_str) {
     if(omit_function_map_transformer) { return; }
-    assert(root_dag_reps.find(function_name) != root_dag_reps.end());
-    assert(root_dag_reps[function_name]->get_function_name() == function_name);
+    auto main_parent_it = root_dag_reps.find(function_name);
+    assert( main_parent_it != root_dag_reps.end());
+    auto main_parent = main_parent_it->second;
+    assert(main_parent->get_function_name() == function_name);
+
     auto new_primitive = new ReplacePrimitive(function_name, replace_this_str, with_this_str);
     add_parent(new_primitive, function_name, true);
     add_parent(new_primitive, with_this_str);
@@ -85,9 +88,17 @@ void FunctionMapTransformer::erase(const string &to_erase_name) {
     assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = root_dag_reps[to_erase_name];
 //    check_consistency();
-    to_erase->erase(this);
-//    check_consistency();
+    auto ret = to_erase->erase(this);
+    if(ret == nullptr) {
+        assert(function_map->find(to_erase_name) == function_map->end());
+        root_dag_reps.erase(to_erase_name);
+//        assert(root_dag_reps.find(to_erase_name) == root_dag_reps.end());
+    }
+    else {
+        assert(root_dag_reps.find(to_erase_name)->second == ret);
+    }
     erased_root_dag_reps.insert(to_erase_name);
+//    check_consistency();
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
@@ -105,9 +116,19 @@ void FunctionMapTransformer::check_consistency() {
     for(auto it: program) {
         assert(root_dag_reps.find(it->get_function_name()) != root_dag_reps.end());
         it->check_consistency(this);
+        if(it->get_is_erased()) {
+            assert(function_map->find(it->get_function_name()) == function_map->end());
+            assert(erased_root_dag_reps.find(it->get_function_name()) != erased_root_dag_reps.end());
+        }
+        else {
+            assert(erased_root_dag_reps.find(it->get_function_name()) == erased_root_dag_reps.end());
+        }
     }
     for(auto it: root_dag_reps) {
         assert(it.first == it.second->get_function_name());
+    }
+    for(const auto& it: erased_root_dag_reps) {
+        assert(function_map->find(it) == function_map->end());
     }
 }
 
@@ -151,7 +172,22 @@ FunctionMapTransformer::reconstruct_sketch_function(
     return ret;
 }
 
-
+bool FunctionMapTransformer::contains_only_necessary()
+{
+    bool ret = true;
+    for(auto it: program)
+    {
+        if(!it->get_is_erased())
+        {
+            if(function_map->find(it->get_function_name()) == function_map->end())
+            {
+                cout << "contains unnecessary: " << it->get_function_name() << endl;
+                ret = false;
+            }
+        }
+    }
+    return ret;
+}
 void TransformPrimitive::set_is_erased(bool is_original)
 {
     if(!is_erased) {
@@ -183,7 +219,7 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
     }
 
     assert(children.empty());
-    for(auto it_parent : parents)
+    for(const auto& it_parent : parents)
     {
         auto parent = it_parent.second;
         auto this_child = parent->children.find(this);
@@ -198,7 +234,7 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
     set<TransformPrimitive*>& program = transformer->get_program();
 
     TransformPrimitive* ret = nullptr;
-    for(auto it_parent : parents)
+    for(const auto& it_parent : parents)
     {
         auto parent = it_parent.second;
         if(parent->is_erased) {
@@ -257,6 +293,8 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
         assert(meta_type != _replace);
     }
 
+    assert(program.find(this) == program.end());
+    cout << "ERASED: " << this->function_name << " " << this << endl;
     delete this;
     return ret;
 }
@@ -278,6 +316,9 @@ vector<string> TransformPrimitive::get_inlined_fs() {
 void TransformPrimitive::check_consistency(FunctionMapTransformer* transformer) {
     set<TransformPrimitive*>& program = transformer->get_program();
     auto root_dag_reps = transformer->get_root_dag_reps();
+    if(is_erased && children.empty()) {
+        assert(false);
+    }
     for(const auto& it_parent:parents)
     {
         auto it = it_parent.second;
@@ -604,5 +645,18 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
     }
 
     return nullptr;
+}
+
+string TransformPrimitive::parents_to_str() {
+    string ret;
+    for(auto it:parents)
+    {
+        ret+=it.second->function_name+", ";
+    }
+    return ret;
+}
+
+TransformPrimitiveMetaType TransformPrimitive::get_meta_type() {
+    return meta_type;
 }
 

@@ -20,6 +20,7 @@ static int num_program_envs = 0;
 
 class ProgramEnvironment
 {
+    int program_environment_id = -1;
 public:
     CommandLineArgs& params;
     FloatManager& floats;
@@ -39,6 +40,7 @@ public:
             params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
             function_map(*boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_num_inlining_steps)
     {
+        program_environment_id = num_program_envs;
         num_program_envs+=1;
     }
 
@@ -47,6 +49,7 @@ public:
             params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
             function_map(_function_map), num_inlining_steps(_num_inlining_steps)
     {
+        program_environment_id = num_program_envs;
         num_program_envs+=1;
     }
 

@@ -79,7 +79,7 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
     }
 
     return new SketchFunction(
-            cloned_dag, get_env(), solution_clone, replaced_labels);
+            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels);
 }
 
 void SketchFunction::clear(){
@@ -97,20 +97,26 @@ void SketchFunction::clear(){
 void SketchFunction::replace(const string& replace_this, const string &with_this) {
     assert(new_way);
 
-    AssertDebug(replaced_labels.find(with_this) == replaced_labels.end(), "If this happens, it means that you are re-instating a label that has previously been replaced. Not sure why you are doing this. Not yet handled.");
-
     if(replaced_labels.find(replace_this) == replaced_labels.end()) {
         AssertDebug(replaced_labels.find(replace_this) == replaced_labels.end(),
                     "If this happens, it means that you are replacing a label that has previously been replaced (used as 'replace_this'). Not yet handled.");
 
         get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
         get_dag()->replace_label_with_another(replace_this, with_this);
+
+        auto original_it = original_labels.find(replace_this);
+        assert(original_it == original_labels.end());
+        original_labels[replace_this] = replace_this;
     }
     else
     {
         assert(replaced_labels.find(replace_this) != replaced_labels.end());
         get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
         get_dag()->replace_label_with_another(replaced_labels[replace_this], with_this);
+
+        auto original_it = original_labels.find(replace_this);
+        assert(original_it != original_labels.end());
+        assert(original_it->second == replace_this);
     }
     replaced_labels[replace_this] = with_this;
 }
@@ -126,5 +132,25 @@ bool SketchFunction::solution_is_null() {
 
 SolverLanguagePrimitives::HoleAssignment *SketchFunction::get_same_soluton() {
     return solution;
+}
+
+string SketchFunction::get_assignment(const string& key) {
+    auto it = replaced_labels.find(key);
+    assert(it != replaced_labels.end());
+    return it->second;
+}
+
+void SketchFunction::reset(const string& key) {
+    auto it = replaced_labels.find(key);
+    assert(it != replaced_labels.end());
+
+    auto original_it = original_labels.find(key);
+    assert(original_it != original_labels.end());
+    assert(original_it->second == key);
+
+    get_env()->function_map.replace_label_with_another(get_dag()->get_name(), key, key);
+
+    replaced_labels.erase(it);
+    original_labels.erase(original_it);
 }
 

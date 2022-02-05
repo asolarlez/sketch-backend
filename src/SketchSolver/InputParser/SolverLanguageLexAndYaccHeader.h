@@ -1062,6 +1062,8 @@ namespace SL {
         bool is_solution_holder();
 
         void clear_assert_0_shared_ptrs();
+
+        void remove_responsibility(const string& key);
     };
 
     class Param;
@@ -1103,7 +1105,7 @@ namespace SL {
         _produce_replace,
         _replace, _get_solution,
         _produce_filter,
-        _not, _relabel};
+        _not, _relabel, _reset};
 
     static bool method_str_to_method_id_map_is_defined = false;
     static map<string, MethodId> method_str_to_method_id_map;

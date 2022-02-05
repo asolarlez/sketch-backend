@@ -79,7 +79,9 @@ namespace FMTL {
         virtual TransformPrimitive* erase(FunctionMapTransformer* transformer);
 
         explicit TransformPrimitive(string  _function_name, TransformPrimitiveMetaType _meta_type):
-        function_name(std::move(_function_name)), meta_type(_meta_type) {};
+        function_name(std::move(_function_name)), meta_type(_meta_type) {
+            assert(!function_name.empty());
+        };
 
         void add_parent(TransformPrimitive *&new_parent) {
             assert(new_parent != nullptr);
@@ -209,6 +211,9 @@ namespace FMTL {
 
         SketchFunction * reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var, bool& found, FunctionMapTransformer* root);
 
+        string parents_to_str();
+
+        TransformPrimitiveMetaType get_meta_type();
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
@@ -280,8 +285,6 @@ namespace FMTL {
         set<string> erased_root_dag_reps;
         FunctionMap *function_map = nullptr;
 
-        void check_consistency();
-
         int calc_dag_size() {
             for (auto it: program) {
                 it->set_not_visited();
@@ -306,6 +309,24 @@ namespace FMTL {
 
 
     public:
+
+        bool contains_only_necessary();
+
+        void print_not_erased()
+        {
+            cout << "print_not_erased(){" << endl;
+            for(TransformPrimitive* it: program)
+            {
+                if(!it->get_is_erased())
+                {
+                    cout << it->get_function_name() << " | parents: " << it->parents_to_str() << endl;
+                }
+            }
+            cout << "} done print_not_erased;" << endl;
+        }
+
+
+        void check_consistency();
 
         FunctionMap *get_function_map() {
             assert(function_map != nullptr);

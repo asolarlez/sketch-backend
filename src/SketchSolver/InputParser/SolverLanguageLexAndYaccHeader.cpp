@@ -757,6 +757,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
     add_to_method_str_to_method_id_map("not", _not, "namespace");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");
+    add_to_method_str_to_method_id_map("reset", _reset, "SketchFunction");
     method_str_to_method_id_map_is_defined = true;
 }
 
@@ -883,7 +884,6 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             return new VarVal(num_ctrls);
             break;
         }
-
         case _clone:
         {
             assert(params.empty());
@@ -891,7 +891,6 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             return new VarVal(ret);
             break;
         }
-
         case _produce_replace:
         {
             assert(params.size() == 2);
@@ -929,6 +928,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
 
             return new VarVal(sk_func->produce_get(subfunc_name));
+        }
+        case _reset:
+        {
+            string subfunc_name = params[0]->eval(state)->get_string(true, false);
+            the_var_val->remove_responsibility(subfunc_name);
+            sk_func->reset(subfunc_name);
+            return new VarVal();
         }
         default:
             assert(false);
@@ -1459,6 +1465,13 @@ bool SL::VarVal::is_solution_holder() {
 void SL::VarVal::clear_assert_0_shared_ptrs() {
     assert(num_shared_ptr == 0);
     _clear();
+}
+
+void SL::VarVal::remove_responsibility(const string& key) {
+    auto it = is_responsible_for.find(key);
+    assert(it != is_responsible_for.end());
+    it->second->decrement_shared_ptr();
+    is_responsible_for.erase(it);
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

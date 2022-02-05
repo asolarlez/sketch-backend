@@ -1081,43 +1081,25 @@ namespace SolverLanguagePrimitives
     inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
     {
         assert(file_name != "");
+        assert(state->harness_ == nullptr);
         if(do_solver_program) {
-
-//            if(file_name.empty()) {
-////                file_name = "uav_kg_big__as_bools__smaller.data";
-//                file_name = "uav_kg_big__as_bools.data";
-////                file_name = "zig_zag.data";
-//            }
 
             string solver_program_file_name;
 
-//            SketchFunction* local_harness = state->function_map["main_lvl1__Wrapper"]->clone();
-            SketchFunction* local_harness = state->function_map["sketch_main__Wrapper"]->clone();
+            assert(!state->function_map.empty());
 
-            File *file = nullptr;
-            if(state->harness_ == nullptr)
-            {
-                assert(!state->function_map.empty());
+            solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
 
-                file = new File(local_harness, file_name, state->floats, state->args.seed);
-                solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
-            }
-            else
-            {
-                assert(state->function_map.empty());
-                assert(state->harness_ != nullptr);
-                file = new File(state->harness_, file_name, state->floats, state->args.seed);
-                solver_program_file_name = "solver_language_program__single_harness_best_effort.txt";
-            }
-
-            cout << "BOOLEAN DAGS:" << endl;
 
             int init_num_global_dags = BooleanDAG::get_allocated().size();
-
             int init_num_global_nodes = bool_node::get_allocated().size();
 
-            int init_function_map_transformer_size = local_harness->get_env()->function_map.transformer_size();
+            SketchFunction* local_harness = state->function_map["sketch_main__Wrapper"]->clone();
+            local_harness->increment_shared_ptr();
 
+            FunctionMap& function_map = local_harness->get_env()->function_map;
+
+            int init_function_map_transformer_size = function_map.transformer_size();
 
             parse_solver_langauge_program(state, solver_program_file_name);
 
@@ -1130,11 +1112,12 @@ namespace SolverLanguagePrimitives
 
                 delete var_val_ret;
 
-                auto* concretized_function =
-                        new BooleanDagUtility(local_harness->get_dag()->clone(), local_harness->get_env());
-                concretized_function->inline_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
+                local_harness->inline_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
+
+                File *file = new File(local_harness, file_name, state->floats, state->args.seed);
+
                 int num_passing_inputs =
-                        concretized_function->count_passing_inputs(file);
+                        local_harness->count_passing_inputs(file);
 
                 cout << "HERE " << local_harness->get_dag()->get_name() << endl;
                 cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
@@ -1142,36 +1125,36 @@ namespace SolverLanguagePrimitives
 
                 file->clear();
 
-                concretized_function->clear();
+                local_harness->clear();
 
                 solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
 
 //                local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
 
-
                 assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
-                assert(init_function_map_transformer_size == local_harness->get_env()->function_map.transformer_size());
 
-                local_harness->clear();
+
+                assert(init_function_map_transformer_size == function_map.transformer_size());
+
                 return solution_holder;
             }
             else
             {
+                local_harness->clear();
+
                 assert(var_val_ret->is_sketch_function());
 
                 SketchFunction* sk_func = var_val_ret->get_function(false);
 
                 SketchFunction *concretized_function = sk_func;
 
-                file->clear();
-
-                file = new File(concretized_function, file_name, state->floats, state->args.seed);
+                File* file = new File(concretized_function, file_name, state->floats, state->args.seed);
 
                 int num_passing_inputs =
                         concretized_function->count_passing_inputs(file);
 
-                cout << "HERE " << local_harness->get_dag()->get_name() << endl;
+                cout << "HERE " << concretized_function->get_dag()->get_name() << endl;
                 cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
                      << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
 
@@ -1216,17 +1199,19 @@ namespace SolverLanguagePrimitives
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
-                int transformer_size_diff = local_harness->get_env()->function_map.transformer_size() - init_function_map_transformer_size;
-                int new_transformer_size_diff = local_harness->get_env()->function_map.transformer_size() - init_function_map_transformer_size;
 
-//                local_harness->get_env()->function_map.clean_transformer();
+                int transformer_size_diff = function_map.transformer_size() - init_function_map_transformer_size;
 
-                assert(new_transformer_size_diff == 0);
+                function_map.check_consistency();
+                assert(function_map.contains_only_necessary());
+
+//                if(transformer_size_diff != 0){
+//                    function_map.print_not_erased();
+//                }
 
                 //TODO: return function / relevant solution
                 HoleAssignment* ret = new HoleAssignment(true);
                 ret->set_sat_solver_result(SAT_SATISFIABLE);
-                local_harness->clear();
                 return ret;
             }
 

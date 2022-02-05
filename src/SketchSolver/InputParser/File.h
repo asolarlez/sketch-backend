@@ -17,6 +17,7 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=fals
 
 void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
+class BooleanDagUtility;
 class SketchFunction;
 
 class File: public vector<VarStore*>
@@ -61,7 +62,7 @@ public:
         return true;
     }
 
-    File(SketchFunction *harness, const string& file, FloatManager& floats, int seed);
+    File(BooleanDagUtility *harness, const string& file, FloatManager& floats, int seed);
 
     void clear() {
         light_clear();

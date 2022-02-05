@@ -54,17 +54,18 @@ public:
 
     void erase(const string& name)
     {
-        FunctionMapTransformer::erase(name);
-
         auto it = find(name);
         if(it != end()) {
             map<string, SketchFunction *>::erase(it);
         }
+
+        FunctionMapTransformer::erase(name);
     }
 
     SketchFunction *produce_get(const string &from_dag, const string &under_this_var);
 
     const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var);
+
 };
 
 

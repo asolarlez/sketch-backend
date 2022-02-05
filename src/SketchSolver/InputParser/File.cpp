@@ -25,7 +25,7 @@ void File::relabel(SketchFunction *harness) {
     cloned_inlined_harness->clear();
 }
 
-File::File(SketchFunction *harness, const string &file, FloatManager &floats, int seed) {
+File::File(BooleanDagUtility *harness, const string &file, FloatManager &floats, int seed) {
     generator = std::mt19937(seed);
 //    SketchFunction* cloned_inlined_harness = harness->produce_inlined_dag();
     BooleanDAG* problem = harness->get_dag()->clone();

@@ -136,6 +136,7 @@ class SketchFunction: public BooleanDagUtility
     bool new_way = true;
 
     map<string, string> replaced_labels;
+    map<string, string> original_labels;
 
 public:
 
@@ -143,8 +144,9 @@ public:
             BooleanDAG *_dag_root,
             ProgramEnvironment *_env = nullptr,
             SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
-            const map<string, string>& _replaced_labels = map<string, string>()) :
-            BooleanDagUtility(_dag_root, _env), solution(_solution), replaced_labels(_replaced_labels)
+            const map<string, string>& _replaced_labels = map<string, string>(),
+            const map<string, string>& _original_labels = map<string, string>()) :
+            BooleanDagUtility(_dag_root, _env), solution(_solution), replaced_labels(_replaced_labels), original_labels(_original_labels)
     {
         for(auto it: get_dag()->getNodesByType(bool_node::UFUN)){
             replaced_labels[it->get_name()] = it->get_name();
@@ -307,6 +309,10 @@ public:
     bool solution_is_null();
 
     SolverLanguagePrimitives::HoleAssignment *get_same_soluton();
+
+    string get_assignment(const string& key);
+
+    void reset(const string& basicString);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H
