@@ -44,7 +44,7 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
 
 FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_dag_map, ProgramEnvironment *the_env)
 {
-    auto ret = new FunctionMap();
+    auto ret = new FunctionMap(the_env);
 
     for(const auto& it: boolean_dag_map)
     {

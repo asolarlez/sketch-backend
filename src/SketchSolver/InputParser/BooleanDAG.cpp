@@ -74,7 +74,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
     }
   }
 #endif
-//  assert(name != "composite_predicate__id23984");
+//  assert(name != "composite_predicate__id104__id201");
 }
 
 

@@ -391,7 +391,9 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             auto* test_full_concretization = new BooleanDagUtility(harness);
             test_full_concretization->increment_shared_ptr();
-            test_full_concretization->inline_this_dag(*sol->to_var_store(), bool_node::CTRL);
+            VarStore* var_store = sol->to_var_store();
+            test_full_concretization->inline_this_dag(*var_store, bool_node::CTRL);
+            var_store->clear();
             assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
             test_full_concretization->clear();
 

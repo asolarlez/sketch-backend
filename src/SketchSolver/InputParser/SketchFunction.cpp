@@ -6,8 +6,7 @@
 
 #include <utility>
 
-SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone,
-                                                       FunctionMap* override_function_map) {
+SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone) {
 
     if(do_clone) {
         return clone()->produce_concretization(var_store, var_type, false);
@@ -15,7 +14,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
     else {
         vector<string>* inlined_functions = nullptr;
 
-        inline_this_dag(var_store, var_type, inlined_functions, override_function_map);
+        inline_this_dag(var_store, var_type, inlined_functions);
 
         if(var_type == bool_node::CTRL && var_store.size() >= 1) {
             SATSolverResult sat_solver_result = SAT_UNDETERMINED;
@@ -75,7 +74,7 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
     SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
 
     if(solution != nullptr) {
-        new SolverLanguagePrimitives::HoleAssignment(solution);
+        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
     }
 
     return new SketchFunction(
@@ -84,6 +83,7 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
 void SketchFunction::clear(){
     string dag_name = get_dag()->get_name();
+
     if(BooleanDagUtility::soft_clear()) {
         get_env()->function_map.erase(dag_name);
         if (solution != nullptr) {
@@ -122,7 +122,7 @@ void SketchFunction::replace(const string& replace_this, const string &with_this
 }
 
 SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
-    cout << "in produce get " << get_dag()->get_name() <<" "<< get_the_dag_under_this_varname << endl;
+//    cout << "in produce get " << get_dag()->get_name() <<" "<< get_the_dag_under_this_varname << endl;
     return get_env()->function_map.produce_get(get_dag()->get_name(), get_the_dag_under_this_varname);
 }
 
@@ -152,5 +152,31 @@ void SketchFunction::reset(const string& key) {
 
     replaced_labels.erase(it);
     original_labels.erase(original_it);
+}
+
+void SketchFunction::clear_assert_num_shared_ptr_is_0() {
+    string dag_name = get_dag()->get_name();
+
+    if(BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()) {
+        get_env()->function_map.erase(dag_name);
+        if (solution != nullptr) {
+            solution->clear();
+            delete solution;
+        }
+        delete this;
+    }
+}
+
+void BooleanDagUtility::swap_env(ProgramEnvironment *new_env) {
+    assert(original_program_env == nullptr);
+    original_program_env = env;
+    assert(new_env != env);
+    env = new_env;
+}
+
+void BooleanDagUtility::reset_env_to_original() {
+    assert(original_program_env != nullptr);
+    env = original_program_env;
+    original_program_env = nullptr;
 }
 

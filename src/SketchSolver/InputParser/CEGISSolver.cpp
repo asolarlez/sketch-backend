@@ -240,24 +240,12 @@ bool CEGISSolver::solveCore(){
                     assert(to_concretize->get_failed_assert() == nullptr);
                     to_concretize->clear();
 
-//                    SketchFunction to_concretize__all_inputs_dag = SketchFunction(
-//                            finder->get_all_inputs_dag(),
-//                            nullptr,
-//                            harness->get_env());
-//
-//                    SketchFunction* all_inputs_concretized_function =
-//                            to_concretize__all_inputs_dag.produce_concretization(
-//                                    ctrlStore, bool_node::CTRL);
-//
-//                    assert(all_inputs_concretized_function->get_dag()->get_failed_assert() == nullptr);
-//                    all_inputs_concretized_function->clear();
-
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
                     {
                         SketchFunction* concretized_function =
                                 checker->getHarness()->produce_concretization(
-                                        ctrlStore, bool_node::CTRL);
+                                        ctrlStore, bool_node::CTRL, true);
                         concretized_function->increment_shared_ptr();
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
                         assert(concretized_dag->get_failed_assert() == nullptr);
@@ -288,7 +276,7 @@ bool CEGISSolver::solveCore(){
                     if(file != nullptr)
                     {
                         SketchFunction* concretized_function =
-                                checker->getHarness()->produce_concretization(ctrlStore,bool_node::CTRL);
+                                checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL, true);
                         concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr)
                         {

@@ -13,17 +13,32 @@
 using namespace std;
 
 class SketchFunction;
+class ProgramEnvironment;
 
 using namespace FMTL;
 
 class FunctionMap: public map<string, SketchFunction*>, public FunctionMapTransformer
 {
+    ProgramEnvironment* __program_environment;
 public:
-    FunctionMap(): FunctionMapTransformer(this) {};
+    FunctionMap(ProgramEnvironment* _program_environment);
+
+    ProgramEnvironment* get_env();
+
+    bool empty() const {
+        if(map<string, SketchFunction*>::empty()) {
+            assert(FunctionMapTransformer::empty());
+        }
+        return map<string, SketchFunction*>::empty();
+    }
+
+    void clear_assert_num_shared_ptr_is_0();
 
     const map<string, BooleanDAG *> * to_boolean_dag_map() const;
 
     void populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag_map) const;
+
+    void check_consistency();
 
     void print_extras()
     {
@@ -52,20 +67,13 @@ public:
         return it->second;
     }
 
-    void erase(const string& name)
-    {
-        auto it = find(name);
-        if(it != end()) {
-            map<string, SketchFunction *>::erase(it);
-        }
-
-        FunctionMapTransformer::erase(name);
-    }
+    void erase(const string& name);
 
     SketchFunction *produce_get(const string &from_dag, const string &under_this_var);
 
     const VarStore *get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var);
 
+    void soft_clear_transformer();
 };
 
 

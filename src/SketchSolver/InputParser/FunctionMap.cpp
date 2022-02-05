@@ -49,12 +49,15 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
         else
         {
 //            cout << "VAR STORE IN NOT NULLPTR" << endl;
-            return it->second->produce_concretization(*the_var_store->clone(), bool_node::CTRL, true);
+            VarStore* var_store = the_var_store->clone();
+            //TODO: save this to give it back next time it is asked for.
+            auto ret = it->second->produce_concretization(*var_store, bool_node::CTRL, true);
+            var_store->clear();
+            return ret;
         }
     }
     else
     {
-//        AssertDebug(false, "TOOD: reconstruct the dag using the transformer");
         return reconstruct_sketch_function(from_dag, under_this_var, underlying_dag);
     }
 }
@@ -69,4 +72,71 @@ FunctionMap::get_var_store_used_to_concretize_underlying_subdag(const string &fr
                             under_this_var));
 }
 
+void FunctionMap::soft_clear_transformer() {
+    FunctionMapTransformer::soft_clear();
+}
 
+void FunctionMap::clear_assert_num_shared_ptr_is_0() {
+    cout << "START CLEAR" << endl;
+    vector<string> names;
+    for(const auto& it: *this) {
+        names.push_back(it.first);
+    }
+    for(int i = 0;i<names.size();i++) {
+        check_consistency();
+        cout << "i " << i << "A" << endl;
+        string name = names[i];
+        cout << "i " << i << "B" << endl;
+        auto it = find(name);
+        assert(it->first == name);
+        cout << "i " << i << "C" << endl;
+        assert(it != end());
+        cout << "i " << i << "D" << endl;
+        it->second->clear_assert_num_shared_ptr_is_0();
+
+        cout << "i " << i << "F" << endl;
+        assert(find(name) == end());
+
+    }
+    cout << "DONE FOR LOOP" << endl;
+    map::clear();
+    cout << "done with map::clear()" << endl;
+    check_consistency();
+    assert(FunctionMapTransformer::empty());
+    cout << "done with assert(FunctionMapTransformer::empty());" << endl;
+    FunctionMapTransformer::soft_clear();
+    cout << "done with  FunctionMapTransformer::soft_clear()" << endl;
+    cout << "END CLEAR" << endl;
+    delete this;
+}
+
+void FunctionMap::erase(const string &name)
+{
+    auto it = find(name);
+    if(it != end()) {
+        map<string, SketchFunction *>::erase(it);
+    }
+
+    FunctionMapTransformer::erase(name);
+}
+
+void FunctionMap::check_consistency() {
+    auto reps = get_root_dag_reps();
+    auto erased = get_erased();
+    cout << "checking consistency" <<endl;
+    for(const auto& it : *this)
+    {
+        assert(&it.second->get_env()->function_map == this);
+        assert(reps.find(it.first) != reps.end());
+        assert(erased.find(it.first) == erased.end());
+        cout << it.first << " is contained in reps" << endl;
+    }
+    FunctionMapTransformer::check_consistency();
+}
+
+FunctionMap::FunctionMap(ProgramEnvironment *_program_environment) : __program_environment(_program_environment), FunctionMapTransformer(this) {}
+
+ProgramEnvironment *FunctionMap::get_env() {
+    assert(&__program_environment->function_map == this);
+    return __program_environment;
+}

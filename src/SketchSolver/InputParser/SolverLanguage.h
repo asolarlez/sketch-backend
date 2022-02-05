@@ -980,6 +980,8 @@ namespace SolverLanguagePrimitives
 
         HoleAssignment* solve(ProblemAE* problem) override
         {
+            cout << endl;
+            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
             solver->addProblem(problem->get_harness(), problem->get_file());
 
             SATSolverResult ret_result = SAT_UNDETERMINED;
@@ -1022,8 +1024,8 @@ namespace SolverLanguagePrimitives
                 }
             }
             HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
-            cout << "exiting WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
-            cout << "returns " << ret->to_string() << endl;
+            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+            cout << "returns " << ret->to_string() << endl << endl;
             return ret;
         }
     };
@@ -1208,6 +1210,8 @@ namespace SolverLanguagePrimitives
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();
 //                }
+
+                function_map.soft_clear_transformer();
 
                 //TODO: return function / relevant solution
                 HoleAssignment* ret = new HoleAssignment(true);

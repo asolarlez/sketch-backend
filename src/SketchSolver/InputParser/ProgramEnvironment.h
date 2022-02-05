@@ -29,10 +29,10 @@ public:
     int num_inlining_steps;
     map<string, map<string, string> > replaceMap;
 
-    ProgramEnvironment* shallow_copy_w_new_function_map(FunctionMap* new_function_map)
+    ProgramEnvironment* shallow_copy_w_new_blank_function_map()
     {
         return new ProgramEnvironment(
-                params, floats, hardcoder, *new_function_map, num_inlining_steps, replaceMap);
+                params, floats, hardcoder, num_inlining_steps, replaceMap);
     }
 
     ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
@@ -44,10 +44,9 @@ public:
         num_program_envs+=1;
     }
 
-    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
-                       FunctionMap& _function_map, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
+    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
             params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
-            function_map(_function_map), num_inlining_steps(_num_inlining_steps)
+            function_map(*(new FunctionMap(this))), num_inlining_steps(_num_inlining_steps)
     {
         program_environment_id = num_program_envs;
         num_program_envs+=1;
@@ -66,7 +65,7 @@ public:
         delete tmp;
     }
 
-    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions, FunctionMap* override_function_map = nullptr) {
+    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions) {
 
         assert(inlined_functions == nullptr);
 
@@ -85,10 +84,6 @@ public:
 
         map<string, BooleanDAG *> boolean_dag_function_map;
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
-
-        if(override_function_map != nullptr) {
-            override_function_map->populate_boolean_dag_map(boolean_dag_function_map);
-        }
 
         findPureFuns(boolean_dag_function_map, pureFuns);
 

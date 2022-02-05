@@ -31,6 +31,8 @@ class BooleanDagUtility {
     ProgramEnvironment* env;
     int shared_ptr = 0;
 
+    ProgramEnvironment* original_program_env = nullptr;
+
 public:
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env):
         root_dag(_root_dag), env(_env) {
@@ -68,12 +70,11 @@ public:
         delete tmp;
     }
 
-    void inline_this_dag(VarStore& var_store, bool_node::Type var_type, vector<string> *&inlined_functions, FunctionMap* override_function_map = nullptr)
+    void inline_this_dag(VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions)
     {
         if (new_way) {
-            env->doInline(*root_dag, var_store, var_type, inlined_functions, override_function_map);
+            env->doInline(*root_dag, var_store, var_type, inlined_functions);
         } else {
-            assert(override_function_map == nullptr);
             hardCodeINodeNoClone(root_dag, var_store, var_type, env->get_floats());
             inlined_functions = nullptr;
         }
@@ -111,21 +112,56 @@ public:
         shared_ptr--;
         assert(shared_ptr>=0);
         if(shared_ptr == 0) {
-            int prev_num = BooleanDAG::get_allocated().size();
-            assert(root_dag != nullptr);
-            root_dag->clear();
-            assert(prev_num - 1 == BooleanDAG::get_allocated().size());
-            root_dag = nullptr;
-            return true;
+            bool ret = soft_clear_assert_num_shared_ptr_is_0();
+            assert(ret);
+            return ret;
         }
         else {
             return false;
         }
     }
 
+
+    bool soft_clear_assert_num_shared_ptr_is_0()
+    {
+        assert(shared_ptr == 0);
+        int prev_num = BooleanDAG::get_allocated().size();
+        assert(root_dag != nullptr);
+        root_dag->clear();
+        assert(prev_num - 1 == BooleanDAG::get_allocated().size());
+        root_dag = nullptr;
+        return true;
+    }
+
     void increment_shared_ptr() {
         assert(shared_ptr >= 0);
         shared_ptr++;
+    }
+
+
+    void decrement_shared_ptr_wo_clear() {
+        assert(shared_ptr >= 1);
+        shared_ptr--;
+    }
+
+    int get_num_shared_ptr() const
+    {
+        assert(shared_ptr >= 0);
+        return shared_ptr;
+    }
+
+    void swap_env(ProgramEnvironment *new_env);
+
+    void reset_env_to_original();
+
+    bool env_was_swapped() {
+        return original_program_env != nullptr;
+    }
+
+    void hard_swap_env(ProgramEnvironment* new_env)
+    {
+        assert(original_program_env == nullptr);
+        env = new_env;
     }
 };
 
@@ -157,7 +193,7 @@ public:
     {
         VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(var_store, var_type);
+        return produce_concretization(var_store, var_type, true);
     }
 
     void concretize(VarStore &var_store, bool_node::Type var_type)
@@ -165,8 +201,7 @@ public:
         produce_concretization(var_store, var_type, false);
     }
 
-    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone = true,
-                                           FunctionMap* overide_function_map = nullptr);
+    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone);
 
     SketchFunction *clone(const string& explicit_name = "");
 
@@ -213,7 +248,7 @@ public:
     SketchFunction *produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* var_store = solution_holder->to_var_store();
-        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL);
+        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL, true);
         var_store->clear();
         return ret;
     }
@@ -293,15 +328,6 @@ public:
         local_solution = nullptr;
     }
 
-    SketchFunction* produce_with_concretized_inputs(SolverLanguagePrimitives::InputAssignment* input_holder)
-    {
-        VarStore* inputs = input_holder->to_var_store();
-        SketchFunction* ret = produce_concretization(*inputs, bool_node::SRC);
-        inputs->clear();
-        inputs = nullptr;
-        return ret;
-    }
-
     void replace(const string& replace_this, const string &with_this);
 
     SketchFunction * produce_get(const string& subfunc_name);
@@ -313,6 +339,9 @@ public:
     string get_assignment(const string& key);
 
     void reset(const string& basicString);
+
+    void clear_assert_num_shared_ptr_is_0();
+
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

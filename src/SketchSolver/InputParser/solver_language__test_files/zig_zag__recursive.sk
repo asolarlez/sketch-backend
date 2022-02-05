@@ -1,0 +1,53 @@
+
+generator int line_generator(int x)
+{
+    return (??-16)*x + (??-16);
+}
+
+generator bit predicate_generator(int x)
+{
+    return {|0|7|8|15|16|23|} <= x && x <= {|0|7|8|15|16|23|};
+}
+
+generator int program_generator(int x) {
+    return line_generator(x);
+}
+
+bit predicate(int x)
+{
+    return predicate_generator(x);
+}
+
+bit program_lvl0(int x)
+{
+    return predicate_generator(x);
+}
+
+bit condition(int x)
+{
+    return predicate_generator(x);
+}
+
+bit composite_predicate(int x)
+{
+    if(condition(x)) {
+        return composite_predicate(x);
+    }
+    else {
+        return program_lvl0(x);
+    }
+}
+
+bit dummy_program(int x) {return 1;}
+
+@FromFile("zig_zag.data")
+harness bit eval_program_main_harness(int x, bit out)
+{
+    return dummy_program(x);
+}
+
+@FromFile("zig_zag.data")
+harness void sketch_main(int x, bit out)
+{
+    assert(composite_predicate(x) == out);
+}

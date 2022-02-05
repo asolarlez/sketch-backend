@@ -854,7 +854,7 @@ int InterpreterEnvironment::doallpairs() {
                 }
 
                 AssertDebug(false, "MAKE SURE THIS PATH WORKS WELL!!! AND CLEAN UP/TEST!!!");
-                result = assertHarness(local_harness, cout, spskpairs[i].file);
+                result = assertHarness(local_harness, program_env, cout, spskpairs[i].file);
 			}
 			catch (BadConcretization& bc) {
 				errMsg = bc.msg;
@@ -1003,7 +1003,7 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
     }
     else
     {
-        cout << "No solution";
+        cout << "No solution" <<endl;
     }
     cout << "EXITING assertHarness." << endl;
 
@@ -1021,7 +1021,8 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 }
 
 
-SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file)  {
+SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ProgramEnvironment *env, ostream &out,
+                                                      const string &file) {
 
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
@@ -1031,7 +1032,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, o
         SolverLanguage solver_language = SolverLanguage();
         SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 harness, file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new FunctionMap()));
+                *(new FunctionMap(env)));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
@@ -1050,7 +1051,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, o
         }
         else
         {
-            cout << "No solution";
+            cout << "No solution" <<endl;
         }
         cout << "EXITING assertHarness." << endl;
 
@@ -1181,9 +1182,10 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
+        AssertDebug(false, "need to pass a ProgramEnvironment to FunctionMap.")
         SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new FunctionMap()));
+                *(new FunctionMap(nullptr)));
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
@@ -1202,7 +1204,7 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
         }
         else
         {
-            cout << "No solution";
+            cout << "No solution" << endl;
         }
         cout << "EXITING assertDAG" << endl;
         return ret->get_sat_solver_result();

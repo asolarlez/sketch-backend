@@ -41,7 +41,7 @@ File::File(BooleanDagUtility *harness, const string &file, FloatManager &floats,
     const map<string, BooleanDAG *> * bool_dag_map = harness->get_env()->function_map.to_boolean_dag_map();
     while (res == File::MOREBITS) {
         int at_int_size = problem->getIntSize();
-        AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, PROBABLY WRONG CODE/INPUT/OUTPUT");
+        AssertDebug(at_int_size < max_num_bits, "TOO MANY BITS, CHECK THE INPUT TYPES OF YOUR HARNESS. OTHERWISE PROBABLY WRONG CODE/INPUT/OUTPUT.");
         growInputs(input_store, problem);
         if(true){
             assert(harness->get_dag()->getIntSize() == at_int_size);
