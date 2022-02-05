@@ -42,13 +42,13 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
 
 }
 
-FunctionMap boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_dag_map, ProgramEnvironment *the_env)
+FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_dag_map, ProgramEnvironment *the_env)
 {
-    auto ret = FunctionMap();
+    auto ret = new FunctionMap();
 
     for(const auto& it: boolean_dag_map)
     {
-        ret.insert(it.first, new SketchFunction(it.second, the_env));
+        ret->insert(it.first, new SketchFunction(it.second, the_env));
     }
 
     return ret;

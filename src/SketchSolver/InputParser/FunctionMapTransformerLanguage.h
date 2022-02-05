@@ -9,6 +9,8 @@
 
 #include "VarStore.h"
 
+class SketchFunction;
+class FunctionMap;
 
 namespace FMTL {
 
@@ -42,9 +44,11 @@ namespace FMTL {
         bool covered = false;
         bool in_path = false;
 
+        FunctionMap* current_local_function_map = nullptr;
+
     protected:
         const string function_name;
-        set<TransformPrimitive*> parents;
+        map<string, TransformPrimitive*> parents;
         set<TransformPrimitive*> children;
         TransformPrimitiveMetaType meta_type;
         TransformPrimitive* main_parent = nullptr;
@@ -53,6 +57,9 @@ namespace FMTL {
             return nullptr;
         }
         virtual const map<string, string> *get_assign_map() const {
+            return nullptr;
+        }
+        virtual const bool_node::Type *get_concretization_type() const {
             return nullptr;
         }
 
@@ -75,17 +82,19 @@ namespace FMTL {
         function_name(std::move(_function_name)), meta_type(_meta_type) {};
 
         void add_parent(TransformPrimitive *&new_parent) {
+            assert(new_parent != nullptr);
             assert(!new_parent->is_erased);
-            assert(parents.find(new_parent) == parents.end());
-            parents.insert(new_parent);
+            assert(parents.find(new_parent->function_name) == parents.end());
+            parents[new_parent->function_name] = new_parent;
             assert(new_parent->children.find(this) == new_parent->children.end());
             new_parent->children.insert(this);
         }
 
         void set_main_parent(TransformPrimitive*& _main_parent)
         {
+            assert(_main_parent != nullptr);
             assert(main_parent == nullptr);
-            assert(parents.find(_main_parent) != parents.end());
+            assert(parents.find(_main_parent->function_name) != parents.end());
             main_parent = _main_parent;
         }
 
@@ -133,12 +142,14 @@ namespace FMTL {
 
             visited = true;
 
-            for (auto parent: parents) {
+            for (auto it_parent: parents) {
+                auto parent = it_parent.second;
                 parent->num_children_visited += 1;
                 assert(parent->num_children_visited <= parent->children.size());
             }
 
-            for (auto parent: parents) {
+            for (auto it_parent: parents) {
+                auto parent = it_parent.second;
                 if(parent->ready_for_visit()){
                     parent->visit();
                 }
@@ -158,7 +169,8 @@ namespace FMTL {
                 return false;
             }
             in_path = true;
-            for(auto parent : parents){
+            for(auto it_parent : parents){
+                auto parent = it_parent.second;
                 if(parent->has_cycle()){
                     return true;
                 }
@@ -188,127 +200,15 @@ namespace FMTL {
             return ret;
         }
 
-        string find_underlying_function_name(const string& var_name, const bool print = false, int t = 0) const {
-            auto assign_map = get_assign_map();
-            string ret_so_far;
-            if(print) {
-                if((assign_map == nullptr || assign_map->size() == 0) && main_parent == nullptr) {
-                    return ret_so_far;
-                }
-                cout << tab(t) << "entering " << function_name << " (" << transform_primitive_meta_type_name[meta_type] <<") " << endl;
-            }
-            if(assign_map != nullptr) {
-                if(print) {
-                    assert(assign_map->size() >= 1 || main_parent == nullptr);
-                    cout << tab(t+1) << function_name << " has ";
-                    for (const auto& it: *assign_map) {
-                        cout << it.first << " " << it.second << "; ";
-                    }
-                    cout << endl;
-                }
-                if(assign_map->find(var_name) != assign_map->end())
-                {
-                    string tmp_ret = (*assign_map).at(var_name);
-                    assert(ret_so_far.empty());
-                    ret_so_far = tmp_ret;
-//                    return ret_so_far;
-                }
-            }
-            else {
-                assert(meta_type != _replace && meta_type != _init);
-            }
-            if(ret_so_far.empty()) {
-                assert(ret_so_far.empty());
-                if(main_parent != nullptr)
-                {
-                    ret_so_far = main_parent->find_underlying_function_name(var_name, print, t+1);
-                }
-//                for (const auto &it: parents) {
-//                    string tmp_ret = it->find_underlying_function_name(var_name, print, t + 1);
-//                    if (!tmp_ret.empty()) {
-//                        if (!ret_so_far.empty()) {
-//                            assert(ret_so_far == tmp_ret);
-//                        } else {
-//                            ret_so_far = tmp_ret;
-//                        }
-//                    }
-//                }
-            }
-            if(print) {
-                cout << tab(t+1) << "RETURNS '" << ret_so_far << "'" << endl;
-                cout << tab(t) << "exiting " << function_name << endl;
-            }
-            return ret_so_far;
-        }
+        TransformPrimitive *
+        find_underlying_function(const string &var_name, const FunctionMapTransformer *root, const bool print = false, int t = 0) const;
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& dag_name, const string& var_name, bool& found) const {
-            assert(!found);
-            const VarStore* ret_so_far = nullptr;
-            auto var_store = get_var_store();
-            if(var_store != nullptr) {
-                if(function_name == dag_name) {
-                    ret_so_far = var_store;
-                    found = true;
-                    return ret_so_far;
-                }
-            }
+        const VarStore* find_last_var_store_on_the_way_to(const string& to_this_dag, const string& under_this_var, bool& found) const;
 
-            if(function_name == dag_name)
-            {
-                found = true;
-                return nullptr;
-            }
+        SketchFunction *reconstruct_sketch_function(FunctionMapTransformer *root, FunctionMap *new_function_map);
 
-            auto assign_map = get_assign_map();
-            if(assign_map != nullptr) {
-                auto it = assign_map->find(var_name);
-                if(it != assign_map->end()){
-                    assert(it->second == dag_name);
-                    found = true;
-                    return nullptr;
-                }
-            }
+        SketchFunction * reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var, bool& found, FunctionMapTransformer* root);
 
-            if(main_parent != nullptr) {
-                ret_so_far = main_parent->find_last_var_store_on_the_way_to(dag_name, var_name, found);
-                if(found) {
-                    if(ret_so_far == nullptr)
-                    {
-                        if(var_store != nullptr)
-                        {
-                            ret_so_far = var_store;
-                        }
-                    }
-                }
-            }
-
-//            for(const auto& it: parents) {
-//                bool local_found = false;
-//                const VarStore* tmp_ret = it->find_last_var_store_on_the_way_to(dag_name, local_found);
-//                if(tmp_ret != nullptr) {
-//                    assert(local_found);
-//                    if (ret_so_far != nullptr) {
-//                        assert(ret_so_far == tmp_ret);
-//                    }
-//                    else {
-//                        ret_so_far = tmp_ret;
-//                    }
-//                }
-//                if(local_found) {
-//                    if(var_store != nullptr) {
-//                        if(ret_so_far == nullptr) {
-//                            ret_so_far = var_store;
-//                        }
-//                        else
-//                        {
-//                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
-//                        }
-//                    }
-//                    found = true;
-//                }
-//            }
-            return ret_so_far;
-        }
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
@@ -326,6 +226,12 @@ namespace FMTL {
         {
             return var_store;
         }
+
+        const bool_node::Type* get_concretization_type() const override
+        {
+            return &concretization_type;
+        }
+
     };
 
     class InitPrimitive: public TransformPrimitive{
@@ -369,37 +275,44 @@ namespace FMTL {
 
     class FunctionMapTransformer {
 
-        set<TransformPrimitive*> program;
-        map<string, TransformPrimitive*> root_dag_reps;
+        set<TransformPrimitive *> program;
+        map<string, TransformPrimitive *> root_dag_reps;
         set<string> erased_root_dag_reps;
+        FunctionMap *function_map = nullptr;
+
         void check_consistency();
 
-        int calc_dag_size()
-        {
-            for(auto it:program)
-            {
+        int calc_dag_size() {
+            for (auto it: program) {
                 it->set_not_visited();
             }
             int ret = 0;
-            for(auto it:program)
-            {
-                if(!it->get_visited()) {
+            for (auto it: program) {
+                if (!it->get_visited()) {
                     ret += it->num_reachable_nodes();
                 }
             }
             return ret;
         }
-        void add_parent(TransformPrimitive* new_primitive, const string& parent_name, bool is_main_parent = false) {
+
+        void add_parent(TransformPrimitive *new_primitive, const string &parent_name, bool is_main_parent = false) {
             assert(root_dag_reps.find(parent_name) != root_dag_reps.end());
-            TransformPrimitive* new_parent = root_dag_reps[parent_name];
+            TransformPrimitive *new_parent = root_dag_reps[parent_name];
             new_primitive->add_parent(new_parent);
-            if(is_main_parent) {
+            if (is_main_parent) {
                 new_primitive->set_main_parent(new_parent);
             }
         }
 
+
     public:
-        explicit FunctionMapTransformer() = default;
+
+        FunctionMap *get_function_map() {
+            assert(function_map != nullptr);
+            return function_map;
+        }
+
+        explicit FunctionMapTransformer(FunctionMap* _function_map): function_map(_function_map) {function_map != nullptr;}
 
         void concretize(const string &function_name, VarStore &store, bool_node::Type type,
                         const vector<string> *sub_functions);
@@ -412,28 +325,11 @@ namespace FMTL {
 
         void erase(const string& to_erase_name);
 
-        string find_subdag_name(const string& from_dag_name, const string& find_what_dag_this_varname_maps_to)
-        {
-            auto it = root_dag_reps.find(from_dag_name);
-            assert(it != root_dag_reps.end());
-            bool print = true;
-            if(print)
-                cout << endl << "IN find_subdag_name " << from_dag_name << " " << find_what_dag_this_varname_maps_to << endl;
-            string ret = it->second->find_underlying_function_name(find_what_dag_this_varname_maps_to, print);
-            assert(!ret.empty());
-            if(print)
-                cout << "find_subdag_name(" + from_dag_name + ", " + find_what_dag_this_varname_maps_to + ") returns " << ret << endl << endl;
-            return ret;
-        }
+        string find_subdag_name(const string& from_dag_name, const string& find_what_dag_this_varname_maps_to) const;
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& from_dag_name, const string& under_this_var, const string& to_this_dag) const {
-            auto it = root_dag_reps.find(from_dag_name);
-            assert(it != root_dag_reps.end());
-            bool found = false;
-            const VarStore* ret = it->second->find_last_var_store_on_the_way_to(to_this_dag, under_this_var, found);
-            AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag_name);
-            return ret;
-        }
+        const VarStore* find_last_var_store_on_the_way_to(const string& from_dag_name, const string& under_this_var, const string& to_this_dag) const;
+
+        SketchFunction* reconstruct_sketch_function(const string& from_dag, const string& under_this_var, const string& underlying_dag);
 
         size_t transformer_size()
         {
@@ -482,7 +378,7 @@ namespace FMTL {
 
         set<TransformPrimitive *> &get_program();
 
-        map<string, TransformPrimitive *> & get_root_dag_reps();
+        const map<string, TransformPrimitive *> & get_root_dag_reps() const;
     };
 }
 

@@ -19,7 +19,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 #ifdef SCHECKMEM
-int prev_num_dags = 0;
+size_t prev_num_dags = 0;
 set<BooleanDAG*> BooleanDAG::allocated;
 long long BooleanDAG::global_boolean_dag_id = 0;
 #endif
@@ -34,8 +34,20 @@ string BooleanDAG::get_suffix(bool modify_name, long long int dag_id)
     }
 }
 
-BooleanDAG::BooleanDAG(const string& name_, bool isModel_, bool _is_clone):
-    name(name_ + get_suffix(_is_clone,global_boolean_dag_id)), isModel(isModel_), is_clone(_is_clone)
+string construct_name(const string& name_, const string& explicit_name, bool _is_clone, long long global_boolean_dag_id)
+{
+    if(explicit_name.empty())
+    {
+        return name_ + BooleanDAG::get_suffix(_is_clone, global_boolean_dag_id);
+    }
+    else
+    {
+        return explicit_name;
+    }
+}
+
+BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explicit_name, bool _is_clone):
+    name(construct_name(name_, explicit_name, _is_clone, global_boolean_dag_id)), isModel(isModel_), is_clone(_is_clone)
 {  
   is_layered=false;
   is_sorted=false;
@@ -1356,7 +1368,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 
-BooleanDAG* BooleanDAG::clone(){
+BooleanDAG* BooleanDAG::clone(const string& explict_name){
 
     for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
         it != nodesByType.end(); ++it){
@@ -1365,7 +1377,8 @@ BooleanDAG* BooleanDAG::clone(){
         }
     }
 	Dout( cout<<" begin clone "<<endl );
-	BooleanDAG* bdag = new BooleanDAG(name, isModel, true);
+
+	BooleanDAG* bdag = new BooleanDAG(name, isModel, explict_name, true);
 	relabel();
 
 

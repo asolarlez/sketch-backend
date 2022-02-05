@@ -19,9 +19,11 @@ using namespace FMTL;
 class FunctionMap: public map<string, SketchFunction*>, public FunctionMapTransformer
 {
 public:
-    FunctionMap() = default;
+    FunctionMap(): FunctionMapTransformer(this) {};
 
     const map<string, BooleanDAG *> * to_boolean_dag_map() const;
+
+    void populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag_map) const;
 
     void print_extras()
     {

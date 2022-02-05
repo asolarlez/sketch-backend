@@ -14,7 +14,7 @@ void findPureFuns(const map<string, BooleanDAG *> &functionMap, set<string> &pur
 
 class ProgramEnvironment;
 
-FunctionMap boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
+FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG*>& boolean_dag_map, ProgramEnvironment* the_env);
 
 static int num_program_envs = 0;
 
@@ -24,16 +24,29 @@ public:
     CommandLineArgs& params;
     FloatManager& floats;
     HoleHardcoder& hardcoder;
-    FunctionMap function_map;
+    FunctionMap& function_map;
     int num_inlining_steps;
     map<string, map<string, string> > replaceMap;
 
-    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
-                       map<string, BooleanDAG*>& boolean_dag_map, int _steps, map<string, map<string, string> >& _replaceMap):
-            params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
-            function_map(boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_steps)
+    ProgramEnvironment* shallow_copy_w_new_function_map(FunctionMap* new_function_map)
     {
-        assert(num_program_envs == 0);
+        return new ProgramEnvironment(
+                params, floats, hardcoder, *new_function_map, num_inlining_steps, replaceMap);
+    }
+
+    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
+                       map<string, BooleanDAG*>& boolean_dag_map, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
+            params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
+            function_map(*boolean_dag_map_to_function_map(boolean_dag_map, this)), num_inlining_steps(_num_inlining_steps)
+    {
+        num_program_envs+=1;
+    }
+
+    ProgramEnvironment(CommandLineArgs& _params, FloatManager& _floats, HoleHardcoder& _hardcoder,
+                       FunctionMap& _function_map, int _num_inlining_steps, map<string, map<string, string> >& _replaceMap):
+            params(_params), floats(_floats), hardcoder(_hardcoder), replaceMap(std::move(_replaceMap)),
+            function_map(_function_map), num_inlining_steps(_num_inlining_steps)
+    {
         num_program_envs+=1;
     }
 
@@ -50,7 +63,7 @@ public:
         delete tmp;
     }
 
-    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions) {
+    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions, FunctionMap* override_function_map = nullptr) {
 
         assert(inlined_functions == nullptr);
 
@@ -67,7 +80,12 @@ public:
 
         set<string> pureFuns;
 
-        const map<string, BooleanDAG *>& boolean_dag_function_map = *function_map.to_boolean_dag_map();
+        map<string, BooleanDAG *> boolean_dag_function_map;
+        function_map.populate_boolean_dag_map(boolean_dag_function_map);
+
+        if(override_function_map != nullptr) {
+            override_function_map->populate_boolean_dag_map(boolean_dag_function_map);
+        }
 
         findPureFuns(boolean_dag_function_map, pureFuns);
 
@@ -110,7 +128,6 @@ public:
                     dag.set_failed_assert(dfi.get_failedAssert());
 
                     inlined_functions = dfi.get_inlined_functions();
-                    delete &boolean_dag_function_map;
 
                     return ;
                 }
@@ -149,7 +166,6 @@ public:
         }
 
        inlined_functions = dfi.get_inlined_functions();
-        delete &boolean_dag_function_map;
     }
 
     FloatManager &get_floats() {

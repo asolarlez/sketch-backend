@@ -68,11 +68,12 @@ public:
         delete tmp;
     }
 
-    void inline_this_dag(VarStore& var_store, bool_node::Type var_type, vector<string> *&inlined_functions)
+    void inline_this_dag(VarStore& var_store, bool_node::Type var_type, vector<string> *&inlined_functions, FunctionMap* override_function_map = nullptr)
     {
         if (new_way) {
-            env->doInline(*root_dag, var_store, var_type, inlined_functions);
+            env->doInline(*root_dag, var_store, var_type, inlined_functions, override_function_map);
         } else {
+            assert(override_function_map == nullptr);
             hardCodeINodeNoClone(root_dag, var_store, var_type, env->get_floats());
             inlined_functions = nullptr;
         }
@@ -162,9 +163,10 @@ public:
         produce_concretization(var_store, var_type, false);
     }
 
-    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone = true);
+    SketchFunction *produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone = true,
+                                           FunctionMap* overide_function_map = nullptr);
 
-    SketchFunction *clone();
+    SketchFunction *clone(const string& explicit_name = "");
 
     void clear() override;
 
@@ -236,7 +238,9 @@ public:
             new_solution = nullptr;
         }
         else {
-            TransformPrimitive* transform_program_root = get_env()->function_map.get_root_dag_reps()[get_dag()->get_name()];
+            auto reps = get_env()->function_map.get_root_dag_reps();
+            assert(reps.find(get_dag()->get_name()) != reps.end());
+            TransformPrimitive* transform_program_root = reps.at(get_dag()->get_name());
             AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
                         "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
                         "TODO: think how it works if it is clone.");
@@ -299,6 +303,10 @@ public:
     void replace(const string& replace_this, const string &with_this);
 
     SketchFunction * produce_get(const string& subfunc_name);
+
+    bool solution_is_null();
+
+    SolverLanguagePrimitives::HoleAssignment *get_same_soluton();
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

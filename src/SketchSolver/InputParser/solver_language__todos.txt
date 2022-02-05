@@ -110,7 +110,7 @@ Necessary
 1. Complete language
     DONE Remove ; at the end of {} blocks
     DONE Add {} block
-    *TODO: complete if - else block.
+    DONE: complete if - else block.
     *TODO: complete if - else if ... - else block
     DONE 1.1. implement subscoping for {} nesting (for, while, if, {}}
     Complete boolean predicates
@@ -144,7 +144,10 @@ Necessary
     TODO: deal with the case when not all holes are concretized after concretization
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
     TODO: add parallelization capabilities though cilk.
-    TODO: recursive subdag access.
+    recursive subdag access.
+        TODO: allow access even when subdag has been cleared.
+        TODO: set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
+    TODO: internalize inlining in solver langauge
     TODO: fix produce_concretize to accept a HoleAssignment, rather than a var store, for the cases where the var_store came from a HoleAssignment. Because now you are ad-hock declaring the sat_result to create a hole_assignment.
 
 TODO: 2. Incorporate numerical solver

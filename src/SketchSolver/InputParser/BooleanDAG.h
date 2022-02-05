@@ -57,10 +57,9 @@ private:
 #ifdef SCHECKMEM
     static long long global_boolean_dag_id;
 	static set<BooleanDAG*> allocated;
-
+public:
     static string get_suffix(bool modify_name, long long int dag_id);
 
-public:
     static set<BooleanDAG*>& get_allocated()
     {
         return allocated;
@@ -250,7 +249,7 @@ Dllist assertions;
 
   void repOK();
 
-  BooleanDAG* clone();
+  BooleanDAG* clone(const string& explicit_name = "");
   void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=NULL);
 
   void print(ostream& out)const;
@@ -271,7 +270,7 @@ Dllist assertions;
 	  return useSymbolicSolver;
   }
 
-   BooleanDAG(const string& name_="anon", bool isModel_=false, bool is_clone = false);
+   BooleanDAG(const string& name_="anon", bool isModel_=false, const string& explicit_name = "", bool is_clone = false);
 
 	virtual ~BooleanDAG();
 

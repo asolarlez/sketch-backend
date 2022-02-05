@@ -6,7 +6,8 @@
 
 #include <utility>
 
-SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone) {
+SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone,
+                                                       FunctionMap* override_function_map) {
 
     if(do_clone) {
         return clone()->produce_concretization(var_store, var_type, false);
@@ -14,7 +15,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
     else {
         vector<string>* inlined_functions = nullptr;
 
-        inline_this_dag(var_store, var_type, inlined_functions);
+        inline_this_dag(var_store, var_type, inlined_functions, override_function_map);
 
         if(var_type == bool_node::CTRL && var_store.size() >= 1) {
             SATSolverResult sat_solver_result = SAT_UNDETERMINED;
@@ -65,9 +66,9 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
     }
 }
 
-SketchFunction *SketchFunction::clone() {
+SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
-    BooleanDAG* cloned_dag = get_dag()->clone();
+    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name);
 
     get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
@@ -117,5 +118,13 @@ void SketchFunction::replace(const string& replace_this, const string &with_this
 SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
     cout << "in produce get " << get_dag()->get_name() <<" "<< get_the_dag_under_this_varname << endl;
     return get_env()->function_map.produce_get(get_dag()->get_name(), get_the_dag_under_this_varname);
+}
+
+bool SketchFunction::solution_is_null() {
+    return solution == nullptr;
+}
+
+SolverLanguagePrimitives::HoleAssignment *SketchFunction::get_same_soluton() {
+    return solution;
 }
 
