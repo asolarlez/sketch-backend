@@ -483,16 +483,18 @@ Solver recursive_function_stun()
 
         cp_lvl_i.concretize(at_level.get_solution());
 
-        sketch_main.replace("composite_predicate", cp_lvl_i);
-        score_predicted = count_passing_inputs(sketch_main__Wrapper, file);
         sketch_main.replace("composite_predicate", at_level);
         score_ground_truth = count_passing_inputs(sketch_main__Wrapper, file);
+        sketch_main.replace("composite_predicate", cp_lvl_i);
+        score_predicted = count_passing_inputs(sketch_main__Wrapper, file);
 
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
         assert(score_ground_truth == score_predicted, "FAILED: score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
 
         check_harness_levels.append(sketch_main__Wrapper.produce_concretization());
     }
+
+    sketch_main.reset("composite_predicate");
 
     return check_harness_levels[stun_depth-1];
     return check_harness_levels[stun_depth-1].get_solution();
