@@ -183,11 +183,7 @@ public:
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>()) :
             BooleanDagUtility(_dag_root, _env), solution(_solution), replaced_labels(_replaced_labels), original_labels(_original_labels)
-    {
-        for(auto it: get_dag()->getNodesByType(bool_node::UFUN)){
-            replaced_labels[it->get_name()] = it->get_name();
-        }
-    }
+    {}
 
     SketchFunction *produce_inlined_dag()
     {
@@ -341,6 +337,8 @@ public:
     void reset(const string& basicString);
 
     void clear_assert_num_shared_ptr_is_0();
+
+    const map<string, string> &get_replace_map() const;
 
 };
 

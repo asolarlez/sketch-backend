@@ -43,21 +43,15 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             else {
                 solution = compare_solution;
             }
-
         }
-
-//        if (new_way) {
-//            assert(root_dag != nullptr);
-//            env->doInline(*root_dag, var_store, var_type, inlined_functions);
-//        } else {
-//            BooleanDAG *concretized_unrolled_dag;
-//            concretized_unrolled_dag = hardCodeINode(root_dag, var_store, var_type, env->get_floats());
-//            root_dag->clear();
-//            root_dag = concretized_unrolled_dag;
-//        }
 
         get_env()->function_map.concretize(
                 get_dag()->get_name(), var_store, var_type, inlined_functions);
+
+        assert(get_dag()->getNodesByType(bool_node::UFUN).empty()); {
+            replaced_labels.clear();
+            original_labels.clear();
+        }
 
         delete inlined_functions;
 
@@ -165,6 +159,10 @@ void SketchFunction::clear_assert_num_shared_ptr_is_0() {
         }
         delete this;
     }
+}
+
+const map<string, string> &SketchFunction::get_replace_map() const {
+    return replaced_labels;
 }
 
 void BooleanDagUtility::swap_env(ProgramEnvironment *new_env) {

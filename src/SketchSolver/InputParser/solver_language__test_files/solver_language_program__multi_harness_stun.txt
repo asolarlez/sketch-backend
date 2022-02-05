@@ -84,7 +84,8 @@ Solver best_effort_synthesized_program(harness, file, num_trials, num_rows_per_s
 
 Solver main()
 {
-    return recursive_function_stun();
+    return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
+    //return recursive_function_stun();
     //return stun_main();
     //return top_down_and_bottom_up_synthesis_sketch_main();
     //return left_and_right_and_cond_synthesis_sketch_main();
@@ -234,18 +235,18 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
             condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
             condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
             condition_lvl1 = eval_predicate_main_harness__Wrapper.produce_replace("eval_predicate_main_harness", condition_lvl1_sub_harness);
-    
+
             //run this to check consistency condition_lvl1 and condition_lvl1_sub
             //this makes sure that the function_call operation of sketches works as expected.
             check_predicate_and_assertion_consistency(condition_lvl1_sub, file_name, condition_lvl1);
-    
+
             File file = File(file_name, condition_lvl1_sub);
             //split file based on condition
             if_true_file = file.produce_filter(lambda[condition_lvl1_sub](x){
                 return condition_lvl1_sub(x);});
             if_false_file = file.produce_filter(lambda[condition_lvl1_sub](x){
                 return not(condition_lvl1_sub(x));});
-    
+
             print("if_true_file.size()", if_true_file.size());
             print("if_false_file.size()", if_false_file.size());
 
@@ -257,9 +258,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     assert(if_true_file.size() >= num_rows_per_sample, "FAILED: if_true_file.size() >= num_rows_per_sample");
                     assert(if_false_file.size() >= num_rows_per_sample, "FAILED: if_false_file.size() >= num_rows_per_sample");
                     assert((if_true_file.size()+if_false_file.size()) == file.size(), "FAILED: if_true_file.size()+if_false_file.size() == file.size()");
-    
+
                     //resynthesize lvl0 left and right predicates.
-    
+
                     left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
                     if_true_file.relabel(left_sketch_main_lvl0);
@@ -269,7 +270,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     left_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().first());
                     left_sketch_main_lvl0_programs.sort();
                     left_sketch_main_lvl0_programs.reverse();
-    
+
                     right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
                     right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
                     if_false_file.relabel(right_sketch_main_lvl0);
@@ -278,21 +279,21 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     right_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().second());
                     right_sketch_main_lvl0_programs.sort();
                     right_sketch_main_lvl0_programs.reverse();
-    
+
                     //combine with condition
-    
+
                     new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
                     new_best_predicate_lvl1.replace("if_true_branch",
                         program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second().get_solution()));
                     new_best_predicate_lvl1.replace("if_false_branch",
                         program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second().get_solution()));
-    
+
                     new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
                     new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
-    
+
                     file = File(file_name, new_best_sketch_main_lvl1);
                     int score = count_passing_inputs(new_best_sketch_main_lvl1, file);
-    
+
                     print("new_score:", score);
 
 
@@ -310,9 +311,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                         synthesize_composite_programs_from_parts(
                             left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
                             select_best, file_name, num_trials, num_rows_per_sample);
-    
+
                     print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
-    
+
                     concatenate(improved_main_lvl1, new_synthesized_lvl1);
                 }
             }
@@ -453,6 +454,42 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
     return harness_levels[stun_depth-1];
 }
 
+Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports()
+{
+
+    File file = File(file_name, sketch_main__Wrapper);
+
+    num_trials = 2;
+    num_rows_per_sample = 3;
+
+    cp = composite_predicate.produce_replace("composite_predicate", composite_predicate.clone());
+
+    cp = cp.produce_concretization();
+
+    cp = composite_predicate.produce_replace("composite_predicate", cp.get("composite_predicate"));
+    cp = composite_predicate.produce_replace("composite_predicate", cp);
+    cp = composite_predicate.produce_replace("composite_predicate", cp);
+
+    cp = cp.produce_concretization();
+
+    print("HERE >>>>>>>>>>> A");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> B");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> C");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> D");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> E");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> F");
+    cp = cp.get("composite_predicate");
+    print("HERE >>>>>>>>>>> G");
+
+    return cp;
+}
+
+
 Solver recursive_function_stun()
 {
     File file = File(file_name, sketch_main__Wrapper);
@@ -460,7 +497,7 @@ Solver recursive_function_stun()
     num_trials = 2;
     num_rows_per_sample = 3;
 
-    int stun_depth = 3;
+    int stun_depth = 5;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample);
 

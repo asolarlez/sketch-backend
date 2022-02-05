@@ -154,7 +154,7 @@ string FunctionMapTransformer::find_subdag_name(const string &from_dag,
     if(print)
         cout << endl << "IN find_subdag_name " << from_dag << " " << find_what_dag_this_varname_maps_to << endl;
     TransformPrimitive* subdag = it->second->find_underlying_function(find_what_dag_this_varname_maps_to, this, print);
-    assert(subdag != nullptr);
+    AssertDebug(subdag != nullptr, "port_name: '" +find_what_dag_this_varname_maps_to +"' not found.");
     string subdag_name = subdag->get_function_name();
     assert(root_dag_reps.find(subdag_name) != root_dag_reps.end());
     assert(root_dag_reps.at(subdag_name) == subdag);
@@ -549,6 +549,8 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
+        new_env->function_map.check_consistency();
+        assert(almost_ret->get_replace_map().empty());
         assert(almost_ret->get_num_shared_ptr() == 0);
 
         assert(!almost_ret->env_was_swapped());
@@ -646,29 +648,20 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             break;
         }
         case _replace: {
-            AssertDebug(false, "CHECK NEXT ASSERT DEBUG.");
+
             auto assign_map = get_assign_map();
             assert(assign_map != nullptr);
             assert(assign_map->size() == 1);
-            //TODO: add responsibility in the sketch function as well.
-            //calculate
-            if(false)
-            {
-                string replace_with = assign_map->begin()->second;
-                auto it = parents.find(replace_with);
-                assert(it != parents.end());
-                auto replace_with_dag = it->second->reconstruct_sketch_function(root, new_env)->clone();
-                // add responsibility.
-            }
-            else
-            {
-                AssertDebug(false, "TODO: need to add the calculate part.")
-            }
+
+            string replace_with = assign_map->begin()->second;
+            auto it = parents.find(replace_with);
+            assert(it != parents.end());
+            auto replace_with_dag = it->second->reconstruct_sketch_function(root, new_env);
 
             auto ret = main_parent->reconstruct_sketch_function(root, new_env);
+            assert(ret->get_env() == new_env);
 
             ret->replace(assign_map->begin()->first, assign_map->begin()->second);
-            assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
             return ret;
