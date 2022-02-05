@@ -238,6 +238,8 @@ namespace FMTL {
         TransformPrimitiveMetaType get_meta_type();
 
         void unerase(TransformPrimitive* parent = nullptr);
+
+        const map<string, TransformPrimitive *> &get_parents() const;
     };
 
     class ConcretizePrimitive: public TransformPrimitive{

@@ -174,7 +174,21 @@ class SketchFunction: public BooleanDagUtility
     map<string, string> replaced_labels;
     map<string, string> original_labels;
 
+    map<string, SketchFunction*> responsibility;
+
 public:
+
+    const map<string, SketchFunction*>& get_responsibilities() const
+    {
+        return responsibility;
+    }
+
+    void add_responsibility(SketchFunction* to_add)
+    {
+        string name = to_add->get_dag()->get_name();
+        assert(responsibility.find(name) == responsibility.end());
+        responsibility[name] = to_add;
+    }
 
     explicit SketchFunction(
             BooleanDAG *_dag_root,

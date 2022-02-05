@@ -76,7 +76,9 @@ void FunctionMapTransformer::insert(const string &new_function_name, const vecto
     }
     else
     {
-        assert(root_dag_reps[new_function_name]->get_function_name() == new_function_name);
+        auto primitive = root_dag_reps[new_function_name];
+        assert(primitive->get_function_name() == new_function_name);
+        assert(!primitive->get_is_erased());
     }
 }
 
@@ -509,6 +511,75 @@ const VarStore *TransformPrimitive::find_last_var_store_on_the_way_to(
     return ret_so_far;
 }
 
+void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEnvironment* original_env, bool is_root = true) {
+    string name = almost_ret->get_dag()->get_name();
+    if(!is_root) {
+        assert(original_env->function_map.find(name) != original_env->function_map.end());
+    }
+    auto it = original_env->function_map.get_root_dag_reps().find(name);
+    assert(it != original_env->function_map.get_root_dag_reps().end());
+    for(const auto& replace_it : almost_ret->get_replace_map()) {
+        assert(it->second->get_parents().find(replace_it.second) != it->second->get_parents().end());
+        assert(original_env->function_map.find(replace_it.second) != original_env->function_map.end());
+        assert(almost_ret->get_responsibilities().find(replace_it.second) != almost_ret->get_responsibilities().end());
+        check_that_all_dependencies_are_there(almost_ret->get_responsibilities().find(replace_it.second)->second, original_env, false);
+    }
+}
+
+void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnvironment* new_env, ProgramEnvironment* original_env, bool is_root = true) {
+    cout << "NOW ADDING DEPENDENCIES FOR: " << almost_ret->get_dag()->get_name() <<" : ";
+    for(auto it: almost_ret->get_replace_map())
+    {
+        cout << it.second << endl;
+    }
+    cout << endl;
+    assert(almost_ret->get_num_shared_ptr() == 0);
+
+    //apply base case to every node.
+    if(!almost_ret->env_was_swapped()) {
+        assert(almost_ret->get_env() == new_env);
+        almost_ret->hard_swap_env(original_env);
+        assert(almost_ret->get_env() == original_env);
+        string name = almost_ret->get_dag()->get_name();
+        new_env->function_map.erase(name);
+
+        assert(original_env->function_map.get_root_dag_reps().find(name) != original_env->function_map.get_root_dag_reps().end());
+        assert(original_env->function_map.get_root_dag_reps().find(name)->second->get_is_erased() == true);
+
+        original_env->function_map.reinsert(name);
+        if(!is_root) {
+            assert(original_env->function_map.find(name) == original_env->function_map.end());
+            original_env->function_map.insert(name, almost_ret);
+        }
+    }
+    else {
+        assert(almost_ret->get_env() == new_env);
+        almost_ret->reset_env_to_original();
+        assert(almost_ret->get_env() == original_env);
+        string name = almost_ret->get_dag()->get_name();
+        new_env->function_map.erase(name);
+        assert(original_env->function_map.get_root_dag_reps().find(name) != original_env->function_map.get_root_dag_reps().end());
+        assert(original_env->function_map.get_root_dag_reps().find(name)->second->get_is_erased() == false);
+//        original_env->function_map.reinsert(name);
+        assert(!is_root);
+        if(!is_root) {
+            assert(original_env->function_map.find(name) != original_env->function_map.end());
+//            original_env->function_map.insert(name, almost_ret);
+        }
+    }
+
+    if(!almost_ret->get_replace_map().empty()) {
+        assert(almost_ret->get_responsibilities().empty());
+        for(const auto& it: almost_ret->get_replace_map()) {
+            almost_ret->add_responsibility(new_env->function_map[it.second]);
+        }
+        for(const auto& it: almost_ret->get_responsibilities())
+        {
+            add_dependencies_to_original_env(it.second, new_env, original_env, false);
+        }
+    }
+}
+
 SketchFunction *
 TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var, bool& found, FunctionMapTransformer* root) {
     assert(!found);
@@ -550,12 +621,16 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
         new_env->function_map.check_consistency();
-        assert(almost_ret->get_replace_map().empty());
-        assert(almost_ret->get_num_shared_ptr() == 0);
 
-        assert(!almost_ret->env_was_swapped());
-        almost_ret->hard_swap_env(root->get_function_map()->get_env());
-        new_env->function_map.erase(almost_ret->get_dag()->get_name());
+        add_dependencies_to_original_env(almost_ret, new_env, root->get_function_map()->get_env());
+        check_that_all_dependencies_are_there(almost_ret, root->get_function_map()->get_env());
+
+//            assert(almost_ret->get_num_shared_ptr() == 0);
+//
+//            assert(!almost_ret->env_was_swapped());
+//            almost_ret->hard_swap_env(root->get_function_map()->get_env());
+//            new_env->function_map.erase(almost_ret->get_dag()->get_name());
+//            root->get_function_map()->get_env()->function_map.reinsert(almost_ret->get_dag()->get_name());
 
         vector<string> to_erase_and_swap_back;
         for(const auto& it: new_env->function_map) {
@@ -577,7 +652,6 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 
         //THINK ABOUT HERE HOW/WHERE TO UTILIZE THE FUNCTION MAP THAT WAS CREATED BY reconstruct_sketch_function. (ret started off with a blank function map.)
 //        almost_ret->swap_env(root->get_function_map()->get_env());
-        root->get_function_map()->get_env()->function_map.reinsert(almost_ret->get_dag()->get_name());
         assert(almost_ret->get_env() != new_env);
         assert(almost_ret->get_env() == root->get_function_map()->get_env());
         assert(found);
@@ -618,6 +692,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
     if(!is_erased) {
         auto it = root->get_root_dag_reps().find(function_name);
         if(it->second == this) {
+            cout << "BASE CASE: " << it->first << endl;
             auto ret = (*root->get_function_map())[function_name];
             assert(ret->get_env() != new_env);
             ret->swap_env(new_env);
@@ -625,7 +700,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             return ret;
         }
         else {
-            assert(false);
+            AssertDebug(false, "IF THIS FAILS, IT MEANS THAT YOU HAVE FOUND A NON-ERASED FUNCTION WHICH IS NOT A REPRESENTATIVE OF IT'S NAME (IT'S BEEN OUTDATED).");
         }
     }
 
@@ -656,11 +731,14 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             string replace_with = assign_map->begin()->second;
             auto it = parents.find(replace_with);
             assert(it != parents.end());
+            auto rep_it = root->get_root_dag_reps().find(replace_with);
+            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
             auto replace_with_dag = it->second->reconstruct_sketch_function(root, new_env);
 
             auto ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(ret->get_env() == new_env);
 
+            cout << "REPLACE (in reconstruction)" << assign_map->begin()->first << " " << assign_map->begin()->second << endl;
             ret->replace(assign_map->begin()->first, assign_map->begin()->second);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
@@ -716,5 +794,9 @@ void TransformPrimitive::unerase(TransformPrimitive* parent) {
         main_parent->unerase(this);
     }
 
+}
+
+const map<string, TransformPrimitive *> &TransformPrimitive::get_parents() const {
+    return parents;
 }
 

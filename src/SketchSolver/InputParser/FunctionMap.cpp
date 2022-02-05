@@ -38,17 +38,15 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
     const string& underlying_dag = find_subdag_name(from_dag, under_this_var);
     auto it = find(underlying_dag);
     if(it != end()) {
-//        cout << "produce_get returns SketchFunction with name: " <<
-//             it->second->get_dag()->get_name() << " of underlying dag " << underlying_dag << " hidden under name " << under_this_var << endl;
         const VarStore* the_var_store = find_last_var_store_on_the_way_to(from_dag, under_this_var, underlying_dag);
-//        AssertDebug(false, "NEED TO CONCRETIZE IT AS IT WAS from the point of view of 'from_dag'");
         if(the_var_store == nullptr) {
+            cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " THIS: " << it->second->get_dag()->get_name() <<" NON CONCRETIZED" << endl;
 //            cout << "VAR STORE IN NULLPTR" << endl;
             return it->second;
         }
         else
         {
-//            cout << "VAR STORE IN NOT NULLPTR" << endl;
+            cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " THIS: " << it->second->get_dag()->get_name() <<" CLONING AND CONCRETIZING NOW" << endl;
             VarStore* var_store = the_var_store->clone();
             //TODO: save this to give it back next time it is asked for.
             auto ret = it->second->produce_concretization(*var_store, bool_node::CTRL, true);
@@ -58,6 +56,7 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
     }
     else
     {
+        cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " RECONSTRUCTING NOW" << endl;
         return reconstruct_sketch_function(from_dag, under_this_var, underlying_dag);
     }
 }

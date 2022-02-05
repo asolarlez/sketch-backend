@@ -462,11 +462,15 @@ Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_w
     num_trials = 2;
     num_rows_per_sample = 3;
 
-    cp = composite_predicate.produce_replace("composite_predicate", composite_predicate.clone());
+    cp = composite_predicate.clone();
+    cp = composite_predicate.produce_replace("composite_predicate", cp);
+    cp = composite_predicate.produce_replace("composite_predicate", cp);
 
     cp = cp.produce_concretization();
 
+    print("HERE -1");
     cp = composite_predicate.produce_replace("composite_predicate", cp.get("composite_predicate"));
+    print("HERE -2");
     cp = composite_predicate.produce_replace("composite_predicate", cp);
     cp = composite_predicate.produce_replace("composite_predicate", cp);
 
@@ -474,19 +478,11 @@ Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_w
 
     print("HERE >>>>>>>>>>> A");
     cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> B");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> C");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> D");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> E");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> F");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> G");
+    print("HERE >>>>>>>>>>> DONE A");
 
-    return cp;
+    sketch_main.replace("composite_predicate", cp);
+
+    return best_effort_synthesized_program(sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
 }
 
 
