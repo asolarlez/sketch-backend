@@ -75,7 +75,16 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
             cloned_dag, get_env(), solution_clone, replaced_labels, original_labels);
 }
 
-void SketchFunction::clear(){
+void SketchFunction::_clear()
+{
+    if(local_clear_id != global_clear_id) {
+        local_clear_id = global_clear_id;
+    }
+    else {
+        AssertDebug(false, "WOAH! A CYCLIC DEPENDENCY!! NICE!! (you can remove this now haha).")
+        return;
+    }
+
     string dag_name = get_dag()->get_name();
 
     if(BooleanDagUtility::soft_clear()) {
@@ -84,8 +93,16 @@ void SketchFunction::clear(){
             solution->clear();
             delete solution;
         }
+        for(auto it: responsibility) {
+            it.second->_clear();
+        }
         delete this;
     }
+}
+
+void SketchFunction::clear(){
+    global_clear_id++;
+    _clear();
 }
 
 void SketchFunction::replace(const string& replace_this, const string &with_this) {

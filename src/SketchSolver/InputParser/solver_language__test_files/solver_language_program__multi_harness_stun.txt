@@ -480,9 +480,11 @@ Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_w
     cp = cp.get("composite_predicate");
     print("HERE >>>>>>>>>>> DONE A");
 
-    sketch_main.replace("composite_predicate", cp);
+    sk_main = sketch_main.produce_replace("composite_predicate", cp);
 
-    return best_effort_synthesized_program(sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
+    sk_main_wrapper = sketch_main__Wrapper.produce_replace("sketch_main", sk_main);
+
+    return best_effort_synthesized_program(sk_main_wrapper, file, num_trials, num_rows_per_sample);
 }
 
 

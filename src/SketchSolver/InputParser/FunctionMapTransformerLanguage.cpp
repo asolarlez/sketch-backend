@@ -533,7 +533,6 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
         cout << it.second << endl;
     }
     cout << endl;
-    assert(almost_ret->get_num_shared_ptr() == 0);
 
     //apply base case to every node.
     if(!almost_ret->env_was_swapped()) {

@@ -165,6 +165,8 @@ public:
     }
 };
 
+static long long global_clear_id = 0;
+
 class SketchFunction: public BooleanDagUtility
 {
     SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
@@ -175,6 +177,8 @@ class SketchFunction: public BooleanDagUtility
     map<string, string> original_labels;
 
     map<string, SketchFunction*> responsibility;
+
+    long long local_clear_id = -1;
 
 public:
 
@@ -187,6 +191,7 @@ public:
     {
         string name = to_add->get_dag()->get_name();
         assert(responsibility.find(name) == responsibility.end());
+        to_add->increment_shared_ptr();
         responsibility[name] = to_add;
     }
 
@@ -216,6 +221,7 @@ public:
     SketchFunction *clone(const string& explicit_name = "");
 
     void clear() override;
+    void _clear();
 
 private:
     static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
