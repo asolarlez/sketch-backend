@@ -27,7 +27,8 @@ namespace SL
 static bool new_way = true;
 
 class BooleanDagUtility {
-    BooleanDAG* root_dag = nullptr;
+    const string& dag_name;
+     BooleanDAG* const root_dag = nullptr;
     ProgramEnvironment* env;
     int shared_ptr = 0;
 
@@ -35,11 +36,11 @@ class BooleanDagUtility {
 
 public:
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env):
-        root_dag(_root_dag), env(_env) {
+        root_dag(_root_dag), env(_env), dag_name(_root_dag->get_name()) {
         assert(root_dag != nullptr);
     }
 
-    BooleanDagUtility(BooleanDagUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env) {
+    BooleanDagUtility(BooleanDagUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env), dag_name(to_copy->dag_name) {
         assert(root_dag != nullptr);
     }
 
@@ -122,16 +123,7 @@ public:
     }
 
 
-    bool soft_clear_assert_num_shared_ptr_is_0()
-    {
-        assert(shared_ptr == 0);
-        int prev_num = BooleanDAG::get_allocated().size();
-        assert(root_dag != nullptr);
-        root_dag->clear();
-        assert(prev_num - 1 == BooleanDAG::get_allocated().size());
-        root_dag = nullptr;
-        return true;
-    }
+    bool soft_clear_assert_num_shared_ptr_is_0();
 
     void increment_shared_ptr() {
         assert(shared_ptr >= 0);
@@ -180,6 +172,9 @@ class SketchFunction: public BooleanDagUtility
 
     long long local_clear_id = -1;
 
+    const TransformPrimitive* rep = nullptr;
+    const TransformPrimitive* mirror_rep = nullptr;
+
 public:
 
     const map<string, SketchFunction*>& get_responsibilities() const
@@ -200,9 +195,16 @@ public:
             ProgramEnvironment *_env = nullptr,
             SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
             const map<string, string>& _replaced_labels = map<string, string>(),
-            const map<string, string>& _original_labels = map<string, string>()) :
-            BooleanDagUtility(_dag_root, _env), solution(_solution), replaced_labels(_replaced_labels), original_labels(_original_labels)
-    {}
+            const map<string, string>& _original_labels = map<string, string>(),
+            const TransformPrimitive* _rep = nullptr,
+            map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>()) :
+            BooleanDagUtility(_dag_root, _env), solution(_solution),
+            replaced_labels(_replaced_labels), original_labels(_original_labels),
+            rep(_rep), responsibility(_responsibility) {
+        for(auto dependency: responsibility) {
+            dependency.second->increment_shared_ptr();
+        }
+    }
 
     SketchFunction *produce_inlined_dag()
     {
@@ -333,6 +335,7 @@ public:
 
         assert(var_store_used_to_concretize_underlying_subdag != nullptr);
 
+        AssertDebug(false, "WHAT IF THIS SKFUNC HAS NOTHING TO DO WITH A SOLUTION TO under_this_dag. For example, if under_this_dag was concretized before?")
         return set_and_get_solution_from_var_store(var_store_used_to_concretize_underlying_subdag);
     }
 
@@ -344,7 +347,7 @@ public:
         local_solution = nullptr;
     }
 
-    void replace(const string& replace_this, const string &with_this);
+    void replace(const string replace_this, const string with_this);
 
     SketchFunction * produce_get(const string& subfunc_name);
 
@@ -360,6 +363,12 @@ public:
 
     const map<string, string> &get_replace_map() const;
 
+    void set_rep(const TransformPrimitive *pPrimitive);
+
+    const TransformPrimitive * get_rep();
+
+    void set_mirror_rep(const TransformPrimitive *) ;
+    const TransformPrimitive * get_mirror_rep() const;
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

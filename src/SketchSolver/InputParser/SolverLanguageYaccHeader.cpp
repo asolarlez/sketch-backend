@@ -126,7 +126,8 @@ void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchF
     assert(&_function_map == &function_map);
     if(function_map.find(sk_func_name) == function_map.end()) {
 
-        function_map.insert(sk_func_name, sk_func);
+        auto new_or_existing_primitive= function_map.insert(sk_func_name, sk_func);
+        sk_func->set_rep(new_or_existing_primitive);
 
 //        function_map[sk_func_name] = sk_func;
 //        sk_func->set_assert__it_is_in_this_function_map(&function_map);

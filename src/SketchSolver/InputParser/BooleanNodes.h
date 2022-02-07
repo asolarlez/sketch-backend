@@ -1543,6 +1543,7 @@ class UFUN_node: public bool_node, public DllistNode{
 	static int CALLSITES;
 	static int FGID;
 	int nbits;
+    string original_ufname;
 	string ufname;
     string tupleName;
 	//string name;
@@ -1582,7 +1583,7 @@ private:
 		uniquefid = FGID++;
 	}
 	UFUN_node(const UFUN_node& bn, bool copyChildren = true) :
-    bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
+            bool_node(bn, copyChildren), uniquefid(bn.uniquefid), nbits(bn.nbits), ufname(bn.ufname), original_ufname(bn.original_ufname), callsite(bn.callsite), outname(bn.outname), fgid(bn.fgid), ignoreAsserts(bn.ignoreAsserts), hardAssert(bn.hardAssert), isDependent(bn.isDependent), replaceFun(bn.replaceFun) { }
 
 public:
 
@@ -1606,6 +1607,9 @@ public:
 	}
 
     void modify_ufname(const string& name) {
+      if(original_ufname.empty()) {
+          original_ufname = ufname;
+      }
       ufname = name;
     }
     void makeDependent(){
@@ -1721,6 +1725,8 @@ public:
 		Assert(false,"There shouldn't be any UFUNs here");
 		return "";
 	}
+
+    const string &get_original_ufname();
 };
 
 

@@ -74,7 +74,8 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
     }
   }
 #endif
-//  assert(name != "composite_predicate__id104__id201");
+//      assert(name != "composite_predicate__id1887");
+
 }
 
 
@@ -1453,7 +1454,7 @@ void BooleanDAG::registerOutputs(){
 	 }
 }
 
-void BooleanDAG::replace_label_with_another(const string &replace_this,  const string & with_this) {
+void BooleanDAG::replace_label_with_another(const string replace_this, const string with_this) {
     auto ufun_nodes = getNodesByType(bool_node::UFUN);
     bool enter = false;
     for(auto ufun_node : ufun_nodes){

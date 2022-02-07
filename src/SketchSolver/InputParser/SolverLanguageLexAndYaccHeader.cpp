@@ -367,7 +367,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         case _file: {
             assert(params.size() == 2);
             string file_name = params[0]->eval(state)->get_string();
-            SketchFunction *harness = params[1]->eval(state)->get_harness();
+            SketchFunction *harness = params[1]->eval(state)->get_function();
             SL::VarVal *ret = new SL::VarVal(new File(harness, file_name, state->floats, state->args.seed));
             return ret;
             break;
@@ -376,7 +376,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         {
             assert(params.size() == 2);
 
-            SketchFunction* harness = params[0]->eval(state)->get_harness()->produce_inlined_dag();
+            SketchFunction* harness = params[0]->eval(state)->get_function()->produce_inlined_dag();
             harness->increment_shared_ptr();
 
             File* file = params[1]->eval(state)->get_file();
@@ -581,10 +581,21 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(tuple_node->getOtype()->isTuple && tuple_node->type == bool_node::TUPLE_CREATE);
                     AssertDebug(tuple_node->nparents() == 1, "NEET TO GENERALIZE THIS.");
                     OutType* out_type = tuple_node->get_parent(0)->getOtype();
-                    AssertDebug(out_type == OutType::BOOL, "NEED TO GENERALIZE THIS. IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
-                    //THIS IS A HACK BUT WORKS FOR NOW
-                    ret = new VarVal((bool)node_evaluator.getValue(tuple_node->get_parent(0)));
 
+                    int val = node_evaluator.getValue(tuple_node->get_parent(0));
+                    //THIS IS A HACK BUT WORKS FOR NOW
+                    if(out_type == OutType::BOOL) {
+                        ret = new VarVal((bool) val);
+                    }
+                    else if(out_type == OutType::INT)
+                    {
+                        ret = new VarVal((int)val);
+                    }
+                    else
+                    {
+                        AssertDebug(false, "NEED TO GENERALIZE THIS (^). IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
+
+                    }
                     delete bool_dag_map;
                     bool_dag_map = nullptr;
 
@@ -837,14 +848,22 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _concretize:
         {
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            VarVal* sol_var_val = params[0]->eval(state);
-            sol_var_val->increment_shared_ptr();
-            HoleAssignment* sol = sol_var_val->get_solution();
-            sk_func->concretize(sol);
-            sol_var_val->decrement_shared_ptr();
-            return new SL::VarVal();
+            if(params.size() == 1) {
+                using namespace SolverLanguagePrimitives;
+                VarVal *sol_var_val = params[0]->eval(state);
+                sol_var_val->increment_shared_ptr();
+                HoleAssignment *sol = sol_var_val->get_solution();
+                sk_func->concretize(sol);
+                sol_var_val->decrement_shared_ptr();
+                return new SL::VarVal();
+            }
+            else if(params.empty()) {
+                sk_func->produce_concretization(*new VarStore(), bool_node::CTRL, false);
+                return new SL::VarVal();
+            }
+            else {
+                assert(false);
+            }
             break;
         }
         case _passes:
@@ -859,12 +878,14 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
 
             BooleanDAG* to_concretize = sk_func->get_dag()->clone();
             sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
-            assert(to_concretize->getNodesByType(bool_node::CTRL).empty());
+            bool ret = to_concretize->get_failed_assert() == nullptr;
+            if(!to_concretize->getNodesByType(bool_node::CTRL).empty()) {
+                assert(!ret);
+            }
 
             inputs->clear();
             inputs = nullptr;
 
-            bool ret = to_concretize->get_failed_assert() == nullptr;
 
             to_concretize->clear();
             return new VarVal(ret);

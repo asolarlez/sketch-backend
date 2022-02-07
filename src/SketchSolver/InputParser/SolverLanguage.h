@@ -1026,6 +1026,18 @@ namespace SolverLanguagePrimitives
             HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
             cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
             cout << "returns " << ret->to_string() << endl << endl;
+
+
+            assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
+            {
+                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(), bool_node::CTRL, true);
+                assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
+                assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
+                tmp->increment_shared_ptr();
+                tmp->clear();
+            }
+
             return ret;
         }
     };

@@ -7,7 +7,7 @@
 
 using namespace FMTL;
 
-void FunctionMapTransformer::concretize(const string &function_name, VarStore &store, bool_node::Type type,
+const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, VarStore &store, bool_node::Type type,
                                         const vector<string> *sub_functions) {
     
     assert(root_dag_reps.find(function_name) != root_dag_reps.end());
@@ -23,9 +23,10 @@ void FunctionMapTransformer::concretize(const string &function_name, VarStore &s
     program.insert(new_primitive);
     root_dag_reps[function_name] = new_primitive;
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
+    return new_primitive;
 }
 
-void FunctionMapTransformer::replace_label_with_another(
+const TransformPrimitive * FunctionMapTransformer::replace_label_with_another(
         const string& function_name, const string &replace_this_str, const string &with_this_str) {
     
     auto main_parent_it = root_dag_reps.find(function_name);
@@ -35,13 +36,13 @@ void FunctionMapTransformer::replace_label_with_another(
 
     auto new_primitive = new ReplacePrimitive(function_name, replace_this_str, with_this_str);
     add_parent(new_primitive, function_name, true);
-    add_parent(new_primitive, with_this_str);
     program.insert(new_primitive);
     root_dag_reps[function_name] = new_primitive;
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
+    return new_primitive;
 }
 
-void FunctionMapTransformer::clone(const string &original_function_name, const string &clone_function_name) {
+const TransformPrimitive * FunctionMapTransformer::clone(const string &original_function_name, const string &clone_function_name) {
     
     assert(root_dag_reps.find(clone_function_name) == root_dag_reps.end());
     auto new_primitive = new ClonePrimitive(original_function_name, clone_function_name);
@@ -64,21 +65,25 @@ void FunctionMapTransformer::clone(const string &original_function_name, const s
         assert(dag_size == program.size());
         cout << endl;
     }
+
+    return new_primitive;
 }
 
-void FunctionMapTransformer::insert(const string &new_function_name, const vector<string>& subfunction_names) {
+const TransformPrimitive * FunctionMapTransformer::insert(const string &new_function_name, const vector<string>& subfunction_names) {
     
     if(root_dag_reps.find(new_function_name) == root_dag_reps.end()) {
         auto new_primitive = new InitPrimitive(new_function_name, subfunction_names);
         program.insert(new_primitive);
         root_dag_reps[new_function_name] = new_primitive;
         assert(root_dag_reps[new_function_name]->get_function_name() == new_function_name);
+        return new_primitive;
     }
     else
     {
-        auto primitive = root_dag_reps[new_function_name];
-        assert(primitive->get_function_name() == new_function_name);
-        assert(!primitive->get_is_erased());
+        auto existing_primitive = root_dag_reps[new_function_name];
+        assert(existing_primitive->get_function_name() == new_function_name);
+        assert(!existing_primitive->get_is_erased());
+        return existing_primitive;
     }
 }
 
@@ -89,7 +94,7 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
     assert(root_dag_reps.find(to_erase_name) != root_dag_reps.end());
     assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = root_dag_reps[to_erase_name];
-//    check_consistency();
+    check_consistency();
     auto ret = to_erase->erase(this);
     if(ret == nullptr) {
         assert(root_dag_reps.find(to_erase_name) == root_dag_reps.end());
@@ -98,7 +103,7 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
         assert(root_dag_reps.find(to_erase_name)->second == ret);
     }
     erased_root_dag_reps.insert(to_erase_name);
-//    check_consistency();
+    check_consistency();
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
@@ -130,32 +135,42 @@ void FunctionMapTransformer::check_consistency() {
     }
     for(auto it: root_dag_reps) {
         assert(it.first == it.second->get_function_name());
-    }
-    for(const auto& it: erased_root_dag_reps) {
-        assert(function_map->find(it) == function_map->end());
+        assert(!it.second->get_is_superseded() || it.second->get_is_erased());
     }
 }
 
-const VarStore *
-FunctionMapTransformer::find_last_var_store_on_the_way_to(const string &from_dag, const string &under_this_var,
-                                                          const string &to_this_dag) const  {
+SketchFunction *
+FunctionMapTransformer::extract_sketch_function(const string &from_dag, const string &under_this_var,
+                                                const string &to_this_dag) const  {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-    bool found = false;
-    const VarStore* ret = it->second->find_last_var_store_on_the_way_to(to_this_dag, under_this_var, found);
+//    if(from_dag == "sketch_main" && under_this_var == "composite_predicate" && to_this_dag == "composite_predicate")
+//    {
+//        cout << "here" << endl;
+//    }
+    SketchFunction* ret = it->second->extract_sketch_function(to_this_dag, under_this_var, this);
+    bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
+    ret->get_solution();
+//    auto check_all_good = ret->produce_inlined_dag();
+//    check_all_good->increment_shared_ptr();
+//    check_all_good->clear();
     return ret;
 }
 
-string FunctionMapTransformer::find_subdag_name(const string &from_dag,
-                                                const string &find_what_dag_this_varname_maps_to) const
+string FunctionMapTransformer::find_subdag_name(
+        const string &from_dag, const string &find_what_dag_this_varname_maps_to) const
 {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-    bool print = false;
+    bool print = true;
     if(print)
         cout << endl << "IN find_subdag_name " << from_dag << " " << find_what_dag_this_varname_maps_to << endl;
     TransformPrimitive* subdag = it->second->find_underlying_function(find_what_dag_this_varname_maps_to, this, print);
+
+    //NOW YOU KNOW THE NAME; NOW FIND THE EARLIEST TRANSOFORMER PRIMITIVE FROM THE SOURCE (from_dag) THAT HAS THAT NAME -> THIS IS WHAT YOU ARE LOOKING FOR.
+    //AND RECORD THE VARSTORE ON THE WAY. IF THIS FUNCTION YOU FIND IS NOT AT THE TOP, YOU NEED TO RECONSTRUCT IT!!!;
+
     AssertDebug(subdag != nullptr, "port_name: '" +find_what_dag_this_varname_maps_to +"' not found.");
     string subdag_name = subdag->get_function_name();
     assert(root_dag_reps.find(subdag_name) != root_dag_reps.end());
@@ -170,8 +185,8 @@ FunctionMapTransformer::reconstruct_sketch_function(
         const string &from_dag, const string &under_this_var, const string &to_this_dag) {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-    bool found = false;
-    auto ret = it->second->reconstruct_sketch_function(to_this_dag, under_this_var, found, this);
+    auto ret = it->second->reconstruct_sketch_function(to_this_dag, under_this_var, this);
+    bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
     return ret;
 }
@@ -208,14 +223,6 @@ void TransformPrimitive::set_is_erased(bool is_original)
         {
             if(main_parent->function_name == function_name) {
                 main_parent->set_is_erased(false);
-            }
-        }
-        for (auto it: children) {
-            if (it->function_name == function_name) {
-                if(is_original) {
-                    assert(false);
-                }
-                assert(it->is_erased);
             }
         }
     }
@@ -277,7 +284,8 @@ TransformPrimitive *TransformPrimitive::erase(FunctionMapTransformer *transforme
                 }
                 else
                 {
-                    assert(root_dag_reps.find(parent_name)->second == remaining_rep);
+//                    assert(!root_dag_reps.find(parent_name)->second->superseded || root_dag_reps.find(parent_name)->second->is_erased);
+//                    assert(root_dag_reps.find(parent_name)->second == remaining_rep);
                 }
             }
         }
@@ -404,15 +412,18 @@ TransformPrimitive * TransformPrimitive::find_underlying_function(const string &
             string target_dag_name = (*assign_map).at(var_name);
             assert(ret_so_far == nullptr);
             auto parent = parents.find(target_dag_name);
-            if(parent != parents.end()) {
-                ret_so_far = parent->second;
-            } else {
-                assert(meta_type == _init);
-                auto reps = root->get_root_dag_reps();
-                auto it = reps.find(target_dag_name);
-                assert(it != reps.end());
-                return it->second;
-            }
+//            if(parent != parents.end()) {
+//                ret_so_far = parent->second;
+//                return ret_so_far;
+//            } else {
+//                assert(meta_type == _init);
+//                auto reps = root->get_root_dag_reps();
+//                auto it = reps.find(target_dag_name);
+//                assert(it != reps.end());
+//                return it->second;
+//            }
+            assert(root->get_root_dag_reps().find(target_dag_name) != root->get_root_dag_reps().end());
+            return root->get_root_dag_reps().at(target_dag_name);
         }
     }
     else {
@@ -441,75 +452,187 @@ TransformPrimitive * TransformPrimitive::find_underlying_function(const string &
     return ret_so_far;
 }
 
-const VarStore *TransformPrimitive::find_last_var_store_on_the_way_to(
-        const string &to_this_dag, const string &under_this_var, bool &found) const  {
-    assert(!found);
-    const VarStore* ret_so_far = nullptr;
-    auto var_store = get_var_store();
-    if(var_store != nullptr) {
-        if(function_name == to_this_dag) {
-            ret_so_far = var_store;
-            found = true;
-            return ret_so_far;
-        }
-    }
 
-    if(function_name == to_this_dag)
-    {
-        found = true;
-        return nullptr;
-    }
+SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_this_dag, const string &under_this_var,
+                                                             const FunctionMapTransformer *root) const  {
+    switch (meta_type) {
+        case _concretize: {
+            assert(get_var_store() != nullptr);
+            for (const auto &parent_it: parents) {
+                if (parent_it.first == to_this_dag) {
+                    auto parent = parent_it.second;
+                    if (parent != main_parent) {
+                        //HELPFUL PRINT MESSAGE
+                    }
+                    assert(parent->function_name == to_this_dag);
+                    assert(!parent->is_erased);
+                    auto maybe_ret = parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
+                    assert(maybe_ret != nullptr);
+                    if(maybe_ret->get_same_soluton() != nullptr)
+                    {
+                        if(maybe_ret->get_same_soluton()->get_sat_solver_result() == SAT_SATISFIABLE) {
+                            assert(maybe_ret->get_dag()->getNodesByType(bool_node::CTRL).empty());
+                            assert(maybe_ret->get_dag()->getNodesByType(bool_node::UFUN).empty());
+                        }
 
-    auto assign_map = get_assign_map();
-    if(assign_map != nullptr) {
-        auto it = assign_map->find(under_this_var);
-        if(it != assign_map->end()){
-            assert(it->second == to_this_dag);
-            found = true;
-            return nullptr;
-        }
-    }
+                        return maybe_ret;
+                    }
+                    else {
+                        assert(*get_concretization_type() == bool_node::CTRL);
+                        return maybe_ret->produce_concretization(*get_var_store(), *get_concretization_type(), true);
+                    }
+                    if(false){
+                        if (parent->superseded) {
+                            return parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
+                        } else {
+                            auto rep_it = root->get_root_dag_reps().find(to_this_dag);
+                            assert(rep_it != root->get_root_dag_reps().end());
+                            assert(rep_it->second == parent);
 
-    if(main_parent != nullptr) {
-        ret_so_far = main_parent->find_last_var_store_on_the_way_to(to_this_dag, under_this_var, found);
-        if(found) {
-            if(ret_so_far == nullptr)
-            {
-                if(var_store != nullptr)
-                {
-                    ret_so_far = var_store;
+                            auto potential_ret =
+                                    parent->extract_sketch_function(
+                                            to_this_dag, under_this_var, root);
+
+                            if (potential_ret == nullptr) {
+                                auto to_this_dag_skfunc_it = root->get_function_map()->find(to_this_dag);
+                                assert(to_this_dag_skfunc_it != root->get_function_map()->end());
+                                assert(*get_concretization_type() == bool_node::CTRL);
+                                return to_this_dag_skfunc_it->second->produce_concretization(
+                                        *get_var_store(),
+                                        *get_concretization_type(),
+                                        true);
+                            } else {
+                                return potential_ret;
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
 
-//            for(const auto& it: parents) {
-//                bool local_found = false;
-//                const VarStore* tmp_ret = it->find_last_var_store_on_the_way_to(dag_name, local_found);
-//                if(tmp_ret != nullptr) {
-//                    assert(local_found);
-//                    if (ret_so_far != nullptr) {
-//                        assert(ret_so_far == tmp_ret);
-//                    }
-//                    else {
-//                        ret_so_far = tmp_ret;
-//                    }
-//                }
-//                if(local_found) {
-//                    if(var_store != nullptr) {
-//                        if(ret_so_far == nullptr) {
-//                            ret_so_far = var_store;
-//                        }
-//                        else
-//                        {
-//                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
-//                        }
-//                    }
-//                    found = true;
+            AssertDebug(false,
+                        "DIDN'T FIND to_this_dag. Can't look further than a _concretization step. You could potentially look further, in the case that to_this_dag was concretized before");
+            break;
+        }
+        case _init:
+        case _replace: {
+            if(main_parent != nullptr) {
+                assert(meta_type == _replace);
+            } else {
+                assert(meta_type == _init);
+            }
+            auto it = get_assign_map()->find(under_this_var);
+            if (it != get_assign_map()->end()) {
+                string name = it->second;
+                if(name != to_this_dag) {
+                    return nullptr;
+                }
+                auto it_parent = parents.find(to_this_dag);
+                assert(it_parent == parents.end());
+
+                assert(root->get_root_dag_reps().find(to_this_dag) != root->get_root_dag_reps().end());
+                return root->get_root_dag_reps().at(to_this_dag)->reconstruct_sketch_function(to_this_dag, under_this_var, root);
+            }
+            if(meta_type == _init)
+            {
+                assert(main_parent == nullptr);
+                return nullptr;
+            }
+            else {
+                assert(meta_type == _replace);
+                assert(main_parent != nullptr);
+                return main_parent->extract_sketch_function(to_this_dag, under_this_var, root);
+            }
+            break;
+        }
+        case _clone:
+            return main_parent->extract_sketch_function(to_this_dag, under_this_var, root);
+            break;
+        default:
+            AssertDebug(false, "IMPLEMENT UNKNOWN CASE");
+    }
+    AssertDebug(false, "NOT FOUND");
+}
+
+//const VarStore *TransformPrimitive::WRONG_find_last_var_store_on_the_way_to(
+//        const string &to_this_dag, const string &under_this_var, bool &found) const  {
+//    cout << "entering to_this_dag " << to_this_dag <<" under_this_val " << under_this_var << endl;
+//    assert(!found);
+//    const VarStore* ret_so_far = nullptr;
+//    auto var_store = get_var_store();
+////    if(var_store != nullptr)
+//    {
+//        for(const auto& it: parents)
+//        {
+//            if(it.second->function_name == to_this_dag)
+//            {
+//                found = true;
+//                return var_store;
+//            }
+//        }
+//        if(function_name == to_this_dag) {
+//            found = true;
+//            return var_store;
+//        }
+//    }
+//
+//    if(function_name == to_this_dag)
+//    {
+//        Assert(false, "AT TIME OF WRITING, THIS DOESN'T SEEM REACHABLE. MAYBE IF FUNCTION IS CALLING ITS SELF?")
+//        found = true;
+//        return nullptr;
+//    }
+//
+//    auto assign_map = get_assign_map();
+//    if(assign_map != nullptr) {
+//        auto it = assign_map->find(under_this_var);
+//        if(it != assign_map->end()){
+//            Assert(false, "AT TIME OF WRITING, THIS DOESN'T SEEM REACHABLE. IF YOU GET THIS FAR YOU HAVE PROBABLY MISSED IT.")
+//            assert(it->second == to_this_dag);
+//            found = true;
+//            return nullptr;
+//        }
+//    }
+//
+//    if(main_parent != nullptr) {
+//        ret_so_far = main_parent->find_last_var_store_on_the_way_to(to_this_dag, under_this_var, found);
+//        if(found) {
+//            if(ret_so_far == nullptr)
+//            {
+//                if(var_store != nullptr)
+//                {
+//                    ret_so_far = var_store;
 //                }
 //            }
-    return ret_so_far;
-}
+//        }
+//    }
+//
+////            for(const auto& it: parents) {
+////                bool local_found = false;
+////                const VarStore* tmp_ret = it->find_last_var_store_on_the_way_to(dag_name, local_found);
+////                if(tmp_ret != nullptr) {
+////                    assert(local_found);
+////                    if (ret_so_far != nullptr) {
+////                        assert(ret_so_far == tmp_ret);
+////                    }
+////                    else {
+////                        ret_so_far = tmp_ret;
+////                    }
+////                }
+////                if(local_found) {
+////                    if(var_store != nullptr) {
+////                        if(ret_so_far == nullptr) {
+////                            ret_so_far = var_store;
+////                        }
+////                        else
+////                        {
+////                            AssertDebug(false, "PUT SOME ASSERTS HERE. BASICALLY IT'S CONFUSING IF THERE ARE MULTIPLE VAR STORES.")
+////                        }
+////                    }
+////                    found = true;
+////                }
+////            }
+//    return ret_so_far;
+//}
 
 void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEnvironment* original_env, bool is_root = true) {
     string name = almost_ret->get_dag()->get_name();
@@ -528,7 +651,7 @@ void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEn
 
 void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnvironment* new_env, ProgramEnvironment* original_env, bool is_root = true) {
     cout << "NOW ADDING DEPENDENCIES FOR: " << almost_ret->get_dag()->get_name() <<" : ";
-    for(auto it: almost_ret->get_replace_map())
+    for(const auto& it: almost_ret->get_replace_map())
     {
         cout << it.second << endl;
     }
@@ -540,10 +663,14 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
         almost_ret->hard_swap_env(original_env);
         assert(almost_ret->get_env() == original_env);
         string name = almost_ret->get_dag()->get_name();
+
+        auto mirror_rep = almost_ret->get_mirror_rep();
+        assert(mirror_rep->get_is_erased() || mirror_rep->get_is_superseded());
+
         new_env->function_map.erase(name);
 
-        assert(original_env->function_map.get_root_dag_reps().find(name) != original_env->function_map.get_root_dag_reps().end());
-        assert(original_env->function_map.get_root_dag_reps().find(name)->second->get_is_erased() == true);
+        AssertDebug(mirror_rep->get_is_erased(), "THIS NEEDS TO BE ERASED, OTHERWISE YOU WILL HAVE TWO COPIES OF THE SAME NAME IN MEMORY. TODO: WHEN PERFORMIN PRODUCE_CONCRETIZE, ACTUALLY MAKE NON-CONCRETIZED CLONES OF ALL THE FUNCTIONS, AND APROPRIATELLY RENAME THEM. ");
+        mirror_rep->unerase();
 
         original_env->function_map.reinsert(name);
         if(!is_root) {
@@ -580,31 +707,34 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
 }
 
 SketchFunction *
-TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var, bool& found, FunctionMapTransformer* root) {
-    assert(!found);
+TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var,
+                                                const FunctionMapTransformer *root) const {
 
 //    cout << "trying to find " << to_this_dag << endl;
 
-    TransformPrimitive* the_dag = nullptr;
+    const TransformPrimitive* the_dag = nullptr;
 
     if(function_name == to_this_dag) {
-        assert(is_erased);
+        if(!is_erased && !superseded)
+        {
+            return (*root->get_function_map())[to_this_dag];
+        }
+        assert(is_erased || superseded);
 //        cout << "found " << function_name << endl;
         the_dag = this;
-        found = true;
     }
     else {
+        AssertDebug(false, "DOUBLE CHECK IF THIS IS WHAT YOU REALLY WANT;");
         auto assign_map = get_assign_map();
         if (assign_map != nullptr) {
             auto it_name = assign_map->find(under_this_var);
             if (it_name != assign_map->end()) {
                 assert(it_name->second == to_this_dag);
-                assert(is_erased);
+                assert(is_erased || superseded);
 //                cout << "found " << function_name << endl;
                 if (meta_type == _replace) {
                     assert(parents.find(to_this_dag) != parents.end());
-                    the_dag = parents[to_this_dag];
-                    found = true;
+                    the_dag = parents.at(to_this_dag);
                 } else {
                     AssertDebug(false, "meta_type is " + transform_primitive_meta_type_name[meta_type] +
                                        ". Needs to be _replace, bc otherwise it must be Init, but Inits can't be erased. Or there is another replacing mechanism which needs to be added.");
@@ -613,14 +743,15 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
         }
     }
 
-    if(found) {
+    if(the_dag != nullptr) {
         assert(the_dag != nullptr);
-        assert(the_dag->is_erased);
+        assert(the_dag->is_erased || the_dag->superseded);
 
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
         new_env->function_map.check_consistency();
 
+//        AssertDebug(false, "DEPENDENCIES SHOULD ALREADY BE IN THE FUNCTION MAP!!! ADD A FIELD TO SKETCH FUNCTION THAT REPRESENTS WHICH TRANSFORMER PRIMITIVE REPRESENTS IT!!!")
         add_dependencies_to_original_env(almost_ret, new_env, root->get_function_map()->get_env());
         check_that_all_dependencies_are_there(almost_ret, root->get_function_map()->get_env());
 
@@ -653,7 +784,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 //        almost_ret->swap_env(root->get_function_map()->get_env());
         assert(almost_ret->get_env() != new_env);
         assert(almost_ret->get_env() == root->get_function_map()->get_env());
-        assert(found);
+        assert(almost_ret != nullptr);
         delete new_env;
         return almost_ret;
     }
@@ -662,35 +793,32 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
     }
 
     if(main_parent != nullptr) {
-        SketchFunction* ret = main_parent->reconstruct_sketch_function(to_this_dag, under_this_var, found, root);
-        if(found) {
-            assert(ret != nullptr);
-            assert(found);
+        SketchFunction* ret = main_parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
+        if(ret != nullptr) {
             return ret;
-        }
-        else {
-            assert(ret == nullptr);
         }
     }
 
-    assert(!found);
     return nullptr;
 }
 
-SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTransformer *root,
-                                                                ProgramEnvironment *new_env) {
+SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMapTransformer  * root,
+                                                                ProgramEnvironment *new_env) const {
 
+//    cout << "HERE: " << function_name << endl;
     if(current_new_env == new_env) {
         auto ret_it = new_env->function_map.find(function_name);
         assert(ret_it != new_env->function_map.end());
         auto ret = ret_it->second;
         return ret;
     }
+
     current_new_env = new_env;
 
     if(!is_erased) {
         auto it = root->get_root_dag_reps().find(function_name);
         if(it->second == this) {
+            assert(!superseded);
             cout << "BASE CASE: " << it->first << endl;
             auto ret = (*root->get_function_map())[function_name];
             assert(ret->get_env() != new_env);
@@ -699,7 +827,8 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             return ret;
         }
         else {
-            AssertDebug(false, "IF THIS FAILS, IT MEANS THAT YOU HAVE FOUND A NON-ERASED FUNCTION WHICH IS NOT A REPRESENTATIVE OF IT'S NAME (IT'S BEEN OUTDATED).");
+            assert(superseded);
+//            AssertDebug(false, "IF THIS FAILS, IT MEANS THAT YOU HAVE FOUND A NON-ERASED FUNCTION WHICH IS NOT A REPRESENTATIVE OF IT'S NAME (IT'S BEEN OUTDATED).");
         }
     }
 
@@ -717,6 +846,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             const bool_node::Type *bool_node_type = get_concretization_type();
             assert((*bool_node_type) == bool_node::CTRL);
             ret->produce_concretization(*var_store, *bool_node_type, false);
+            ret->set_mirror_rep(this);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
             return ret;
             break;
@@ -728,19 +858,25 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             assert(assign_map->size() == 1);
 
             string replace_with = assign_map->begin()->second;
-            auto it = parents.find(replace_with);
-            assert(it != parents.end());
+//            auto it = parents.find(replace_with);
+//            AssertDebug(it == parents.end(), "UU, SOME RECURSIVE FUNCTION ;)");
             auto rep_it = root->get_root_dag_reps().find(replace_with);
-            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
-            auto replace_with_dag = it->second->reconstruct_sketch_function(root, new_env);
+//            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
+            auto replace_with_dag = rep_it->second->reconstruct_sketch_function(root, new_env);
+
+            if(new_env->function_map.find(replace_with) == new_env->function_map.end())
+            {
+                new_env->function_map.insert(replace_with, replace_with_dag);
+            }
 
             auto ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(ret->get_env() == new_env);
 
-            cout << "REPLACE (in reconstruction)" << assign_map->begin()->first << " " << assign_map->begin()->second << endl;
-            ret->replace(assign_map->begin()->first, assign_map->begin()->second);
+            cout << "REPLACE (in reconstruction)" << assign_map->begin()->first << " " << replace_with << endl;
+            ret->replace(assign_map->begin()->first, replace_with);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
+            ret->set_mirror_rep(this);
             return ret;
             break;
         }
@@ -748,17 +884,23 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(FunctionMapTrans
             assert(parents.size() == 1);
             assert(parents.begin()->second == main_parent);
 
+            if(!is_erased) {
+                assert(superseded);
+            }
             auto ret = main_parent->reconstruct_sketch_function(root, new_env)->clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
             new_env->function_map.insert(ret->get_dag()->get_name(), ret);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
+            ret->set_mirror_rep(this);
             return ret;
             break;
         }
         case _init:
-            AssertDebug(false, "_inits should never be erased.")
+            assert(superseded);
+            assert(!is_erased);
+            AssertDebug(false, "_inits should never be erased or superseded.")
             break;
         default:
             AssertDebug(false, "missing cases.");
@@ -780,7 +922,7 @@ TransformPrimitiveMetaType TransformPrimitive::get_meta_type() {
     return meta_type;
 }
 
-void TransformPrimitive::unerase(TransformPrimitive* parent) {
+void TransformPrimitive::unerase(const TransformPrimitive *parent) const{
     assert(is_erased);
     is_erased = false;
     for(auto it: children)
@@ -797,5 +939,9 @@ void TransformPrimitive::unerase(TransformPrimitive* parent) {
 
 const map<string, TransformPrimitive *> &TransformPrimitive::get_parents() const {
     return parents;
+}
+
+bool TransformPrimitive::get_is_superseded() const {
+    return superseded;
 }
 

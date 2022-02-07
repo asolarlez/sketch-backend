@@ -34,8 +34,9 @@ namespace FMTL {
     class TransformPrimitive
     {
     protected:
-        bool is_erased = false;
+        mutable bool is_erased = false;
     private:
+        bool superseded = false;
 
         bool visited = false;
         int num_children_visited = 0;
@@ -45,7 +46,7 @@ namespace FMTL {
         bool covered = false;
         bool in_path = false;
 
-        ProgramEnvironment* current_new_env = nullptr;
+        mutable ProgramEnvironment*  current_new_env = nullptr;
 
         void set_is_erased(bool is_original);
 
@@ -86,7 +87,7 @@ namespace FMTL {
 
     public:
 
-        bool get_is_erased() {
+        bool get_is_erased() const {
             return is_erased;
         }
 
@@ -109,6 +110,7 @@ namespace FMTL {
             parents[new_parent->function_name] = new_parent;
             assert(new_parent->children.find(this) == new_parent->children.end());
             new_parent->children.insert(this);
+            assert(!new_parent->is_erased);
         }
 
         void set_main_parent(TransformPrimitive*& _main_parent)
@@ -119,6 +121,17 @@ namespace FMTL {
             assert(it != parents.end());
             assert(it->second == _main_parent);
             main_parent = _main_parent;
+
+            assert(!is_erased);
+            assert(!main_parent->is_erased);
+            auto main_parent_parent_it = main_parent->parents.find(main_parent->function_name);
+            if(main_parent_parent_it != main_parent->parents.end())
+            {
+                assert(main_parent_parent_it->second->superseded);
+            }
+            if(main_parent->function_name == function_name) {
+                main_parent->superseded = true;
+            }
         }
 
         void set_not_visited() {
@@ -227,19 +240,23 @@ namespace FMTL {
         TransformPrimitive *
         find_underlying_function(const string &var_name, const FunctionMapTransformer *root, const bool print = false, int t = 0) const;
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& to_this_dag, const string& under_this_var, bool& found) const;
+        SketchFunction *extract_sketch_function(const string &to_this_dag, const string &under_this_var,
+                                                const FunctionMapTransformer *root) const;
 
-        SketchFunction *reconstruct_sketch_function(FunctionMapTransformer *root, ProgramEnvironment *new_env);
+        SketchFunction *reconstruct_sketch_function(const FunctionMapTransformer *root, ProgramEnvironment *new_env) const;
 
-        SketchFunction * reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var, bool& found, FunctionMapTransformer* root);
+        SketchFunction *reconstruct_sketch_function(const string &to_this_dag, const string &under_this_var,
+                                                    const FunctionMapTransformer *root) const;
 
         string parents_to_str();
 
         TransformPrimitiveMetaType get_meta_type();
 
-        void unerase(TransformPrimitive* parent = nullptr);
+        void unerase(const TransformPrimitive *parent = nullptr) const;
 
         const map<string, TransformPrimitive *> &get_parents() const;
+
+        bool get_is_superseded() const;
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
@@ -373,21 +390,21 @@ namespace FMTL {
 
         void check_consistency();
 
-        FunctionMap *get_function_map() {
+        FunctionMap *get_function_map() const {
             assert(function_map != nullptr);
             return function_map;
         }
 
         explicit FunctionMapTransformer(FunctionMap* _function_map): function_map(_function_map) {function_map != nullptr;}
 
-        void concretize(const string &function_name, VarStore &store, bool_node::Type type,
+        const TransformPrimitive * concretize(const string &function_name, VarStore &store, bool_node::Type type,
                         const vector<string> *sub_functions);
 
-        void replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
+        const TransformPrimitive * replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
 
-        void clone(const string &original_function_name, const string &clone_function_name);
+        const TransformPrimitive * clone(const string &original_function_name, const string &clone_function_name);
 
-        void insert(const string& new_function_name, const vector<string>& subfunction_names);
+        const TransformPrimitive * insert(const string& new_function_name, const vector<string>& subfunction_names);
 
         void erase(const string& to_erase_name, bool assert_not_in_function_map = true);
 
@@ -395,7 +412,7 @@ namespace FMTL {
 
         string find_subdag_name(const string& from_dag_name, const string& find_what_dag_this_varname_maps_to) const;
 
-        const VarStore* find_last_var_store_on_the_way_to(const string& from_dag_name, const string& under_this_var, const string& to_this_dag) const;
+        SketchFunction * extract_sketch_function(const string& from_dag, const string& under_this_var, const string& to_this_dag) const;
 
         SketchFunction* reconstruct_sketch_function(const string& from_dag, const string& under_this_var, const string& underlying_dag);
 

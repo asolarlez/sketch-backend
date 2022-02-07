@@ -286,7 +286,7 @@ public:
         return failed_assert;
     }
 
-    void replace_label_with_another(const string &replace_this,  const string & with_this);
+    void replace_label_with_another(const string replace_this, const string with_this);
 
     bool get_is_clone();
 

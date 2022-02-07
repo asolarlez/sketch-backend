@@ -848,10 +848,6 @@ namespace SL {
             return get<string>(s->to_string(), do_count, do_assert);
         }
 
-        SketchFunction *get_harness(bool do_count = true, bool do_assert = true) {
-            return get_function(do_count, do_assert);
-        }
-
         File *get_file(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == file_val_type);
             assert(do_assert);

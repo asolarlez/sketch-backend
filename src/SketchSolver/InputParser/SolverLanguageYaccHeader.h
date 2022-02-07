@@ -330,7 +330,8 @@ public:
                 SketchFunction* sk_func = var_val->get_function(false);
                 FunctionMap& _function_map = sk_func->get_env()->function_map;
                 assert(&_function_map == &function_map);
-                function_map.insert(var_name, sk_func);
+                auto new_primitive = function_map.insert(var_name, sk_func);
+                sk_func->set_rep(new_primitive);
             }
             else if(var_type_str == "int") {
                 assert(var->get_name()->to_string() == "seed");

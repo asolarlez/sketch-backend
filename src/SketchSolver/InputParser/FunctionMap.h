@@ -52,15 +52,15 @@ public:
     const vector<string>& get_function_names() const
     {
         vector<string>* ret = new vector<string>();
-        for(auto it: *this) {
+        for(const auto& it: *this) {
             ret->push_back(it.first);
         }
         return *ret;
     }
 
-    void insert(const string& name, SketchFunction* sketch_function);
+    const TransformPrimitive* insert(const string& name, SketchFunction* sketch_function);
 
-    SketchFunction* operator[](const string& name)
+    SketchFunction* operator[](const string& name) const
     {
         auto it = find(name);
         assert(it != end());

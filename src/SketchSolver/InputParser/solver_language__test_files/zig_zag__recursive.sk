@@ -13,14 +13,9 @@ generator int program_generator(int x) {
     return line_generator(x);
 }
 
-bit predicate(int x)
+int program_lvl0(int x)
 {
-    return predicate_generator(x);
-}
-
-bit program_lvl0(int x)
-{
-    return predicate_generator(x);
+    return program_generator(x);
 }
 
 bit condition(int x)
@@ -28,7 +23,7 @@ bit condition(int x)
     return predicate_generator(x);
 }
 
-bit composite_predicate(int x)
+int composite_predicate(int x)
 {
     if(condition(x)) {
         return composite_predicate(x);
@@ -38,16 +33,16 @@ bit composite_predicate(int x)
     }
 }
 
-bit dummy_program(int x) {return 1;}
+int dummy_program(int x) {return 1;}
 
 @FromFile("zig_zag.data")
-harness bit eval_program_main_harness(int x, bit out)
+harness int eval_program_main_harness(int x, int out)
 {
     return dummy_program(x);
 }
 
 @FromFile("zig_zag.data")
-harness void sketch_main(int x, bit out)
+harness void sketch_main(int x, int out)
 {
     assert(composite_predicate(x) == out);
 }
