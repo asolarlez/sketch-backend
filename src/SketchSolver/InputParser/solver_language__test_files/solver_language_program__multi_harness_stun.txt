@@ -684,7 +684,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
     return ret;
 }
 
-Solver int get_score(SketchFunction harness, Solution solution, File file)
+Solver get_score(SketchFunction harness, Solution solution, File file)
 {
     SketchFunction program = harness.produce_concretization(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score2 = count_passing_inputs(program, file); // count how many input-output examples are solved with this solution
@@ -887,6 +887,7 @@ Solver stun_main()
 }
 
 Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, int num_rows) {
+
 	Solution best_solution;
 	int best_score = 0;
 
@@ -899,7 +900,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness, subset_file); // invoke the Sketch Solver on the harness
+		solution = SATSolver(harness.clone(), subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
 		score = get_score(harness, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score);

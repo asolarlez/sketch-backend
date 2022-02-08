@@ -12,13 +12,48 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
         return clone()->produce_concretization(var_store, var_type, false);
     }
     else {
-        vector<string>* inlined_functions = nullptr;
+        vector<string> *inlined_functions = nullptr;
 
-        if(true) {
+        if(var_store.size() >= 1) {
+            //assert that all the holes of get_dag() have values in var_store AND vice versa
+
+            BooleanDagUtility* tmp_dag_util = new BooleanDagUtility(get_dag()->clone(), get_env());
+            tmp_dag_util->increment_shared_ptr();
+            tmp_dag_util->inline_this_dag();
+            BooleanDAG* tmp_dag = tmp_dag_util->get_dag();
+
+            cout << "nodes:  ";
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                cout << it->get_name() << "; ";
+            }
+            cout << endl;
+            cout << "vars: ";
+            for (const auto& objp_it: var_store) {
+                cout << objp_it.name << "; ";
+            }
+            cout << endl;
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                assert(var_store.has(it->get_name()));
+            }
+            for (const auto& objp_it: var_store) {
+                bool enter = false;
+                for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
+                    if (objp_it.name == bool_node_it->get_name()) {
+                        enter = true;
+                        break;
+                    }
+                }
+                assert(enter);
+            }
+            tmp_dag_util->clear();
+        }
+
+        if (true) {
             //first get all inlined functions
             //clone all inlined functions;
             //replace the name inside the inlined function with eachother's
 
+            //assert that all the ufuns are represented in the function map
             for (auto it: get_env()->function_map) {
                 for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
                     auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
@@ -29,6 +64,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             BooleanDagUtility *to_get_inlined_fs = new BooleanDagUtility(get_dag()->clone(), get_env());
             to_get_inlined_fs->increment_shared_ptr();
             to_get_inlined_fs->inline_this_dag(var_store, var_type, inlined_functions);
+            //assert that if the var_store is not empty, then the dag was actually concretized;
             if (var_store.size() >= 1) {
                 assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
                 assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::CTRL).empty());
@@ -36,6 +72,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
             to_get_inlined_fs->clear();
 
+            //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
             for (auto it: get_env()->function_map) {
                 for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
                     auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
@@ -43,140 +80,67 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
                 }
             }
 
+            //get all the inlined functions as a set; TODO: refactor to get it as a set in the first place
             set<string> inlined_fs_as_set;
-            for (auto it: *inlined_functions) {
+            for (const auto &it: *inlined_functions) {
                 inlined_fs_as_set.insert(it);
             }
 
-            for (auto inlined_f_name: *inlined_functions) {
+            // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
+            for (const auto &inlined_f_name: *inlined_functions) {
                 auto it_f = get_env()->function_map.find(inlined_f_name);
                 assert(it_f != get_env()->function_map.end());
-
                 for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
                     auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
                     assert(f != get_env()->function_map.end());
-                    if (inlined_fs_as_set.find(((UFUN_node *) ufun_it)->get_ufname()) == inlined_fs_as_set.end()) {
-                        assert(false);
-                        inlined_fs_as_set.insert(((UFUN_node *) ufun_it)->get_ufname());
-                    }
+                    assert(inlined_fs_as_set.find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_fs_as_set.end());
                 }
             }
 
-
-            cout << "REPLACING WITH COPIES" << endl;
             map<string, SketchFunction *> to_inline_skfuncs;
-            for (string inlined_function_name: *inlined_functions) {
+            for (const string &inlined_function_name: *inlined_functions) {
                 if (inlined_function_name != get_dag()->get_name()) {
                     assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
-
-//                for(auto ufun_it : get_env()->function_map[inlined_function_name]->get_dag()->getNodesByType(bool_node::UFUN))
-//                {
-//                    string ufname = ((UFUN_node*)ufun_it)->get_ufname();
-//                    assert(inlined_fs_as_set.find(ufname) != inlined_fs_as_set.end());
-////                    cout << ufname << " ";
-//                }
-
                     to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->clone();
-
-//                for(auto ufun_it : to_inline_skfuncs[inlined_function_name]->get_dag()->getNodesByType(bool_node::UFUN))
-//                {
-//                    string ufname = ((UFUN_node*)ufun_it)->get_ufname();
-//                    cout << ufname << " ";
-//                }
-//                for(auto ufun_it : to_inline_skfuncs[inlined_function_name]->get_dag()->getNodesByType(bool_node::UFUN))
-//                {
-//                    string ufname = ((UFUN_node*)ufun_it)->get_ufname();
-//                    assert(inlined_fs_as_set.find(ufname) != inlined_fs_as_set.end());
-////                    cout << ufname << " ";
-//                }
-
-//                assert(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name() != "condition__id587");
-
                     get_env()->function_map.insert(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name(),
                                                    to_inline_skfuncs[inlined_function_name]);
-                    cout << "REPLACE " << inlined_function_name << " WITH CLONE "
-                         << to_inline_skfuncs[inlined_function_name]->get_dag()->get_name() << " : ";
-
-//                for(auto ufun_it : to_inline_skfuncs[inlined_function_name]->get_dag()->getNodesByType(bool_node::UFUN))
-//                {
-//                    string ufname = ((UFUN_node*)ufun_it)->get_ufname();
-//                    assert(inlined_fs_as_set.find(ufname) != inlined_fs_as_set.end());
-//                    cout << ufname << " ";
-//                }
-
-                    cout << " ;;; " << endl;
                 } else {
                     AssertDebug(false, "TODO recursive case");
                 }
-
-//            cout << "STATE" << endl;
-//            for(auto skfunc : to_inline_skfuncs) {
-//                cout << skfunc.first <<" "<< skfunc.second->get_dag()->get_name() << " :: " << endl;
-//                for(auto ufun_it : skfunc.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-//                    string ufname = ((UFUN_node*)ufun_it)->get_ufname();
-//                    cout << "here: " << ufname << endl;
-//                }
-//                cout << "---" << endl;
-//            }
             }
+
 
             assert(to_inline_skfuncs.size() == inlined_functions->size());
 
-            for (auto it: *inlined_functions) {
+            for (const auto &it: *inlined_functions) {
                 assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
             }
 
-            for (auto skfunc: to_inline_skfuncs) {
-                cout << skfunc.first << " " << skfunc.second->get_dag()->get_name() << " :: " << endl;
+            if (to_inline_skfuncs.find(dag_name) != to_inline_skfuncs.end()) {
+                assert(to_inline_skfuncs[dag_name] == this);
+            } else {
+                to_inline_skfuncs[dag_name] = this;
+            }
 
+            //rename all the ufuns
+            for (auto skfunc: to_inline_skfuncs) {
                 set<pair<string, string> > ufnames;
+
                 for (auto ufun_it: skfunc.second->get_dag()->getNodesByType(bool_node::UFUN)) {
                     string ufname = ((UFUN_node *) ufun_it)->get_ufname();
                     string original = ((UFUN_node *) ufun_it)->get_original_ufname();
                     ufnames.insert(make_pair(ufname, original));
                 }
 
-                for (pair<string, string> ufname_now_original: ufnames) {
+                for (const pair<string, string> &ufname_now_original: ufnames) {
                     string ufname = ufname_now_original.first;
                     string original = ufname_now_original.second;
 
                     if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
-                         assert(false);
+                        AssertDebug(false, "this should fail here, it was checked before");
                     } else {
-                        cout << "ufname: " << ufname << endl;
-                        cout << "UFUN REPLACING " << ufname << " " << " WITH "
-                             << to_inline_skfuncs[ufname]->get_dag()->get_name() << " UNDER_VAR "
-                             << original << endl;
-
-                        skfunc.second->replace(original,
-                                               to_inline_skfuncs[ufname]->get_dag()->get_name());
+                        skfunc.second->replace(original, to_inline_skfuncs[ufname]->get_dag()->get_name());
                     }
-                }
-                cout << "---" << endl;
-            }
-
-            auto skfunc = make_pair(get_dag()->get_name(), this);
-            set<pair<string, string> > ufnames;
-            for (auto ufun_it: skfunc.second->get_dag()->getNodesByType(bool_node::UFUN)) {
-                string ufname = ((UFUN_node *) ufun_it)->get_ufname();
-                string original = ((UFUN_node *) ufun_it)->get_original_ufname();
-                ufnames.insert(make_pair(ufname, original));
-            }
-
-            for (pair<string, string> ufname_now_original: ufnames) {
-                string ufname = ufname_now_original.first;
-                string original = ufname_now_original.second;
-
-                if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
-                    assert(false);
-                } else {
-                    cout << "ufname: " << ufname << endl;
-                    cout << "UFUN REPLACING " << ufname << " " << " WITH "
-                         << to_inline_skfuncs[ufname]->get_dag()->get_name() << " UNDER_VAR "
-                         << original << endl;
-
-                    skfunc.second->replace(original,
-                                           to_inline_skfuncs[ufname]->get_dag()->get_name());
                 }
             }
 
@@ -184,42 +148,34 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             inlined_functions = nullptr;
         }
 
-        assert(!get_dag()->get_failed_assert());
-
         inline_this_dag(var_store, var_type, inlined_functions);
 
-
-
-        if(var_type == bool_node::CTRL && var_store.size() >= 1) {
+        //construct solution
+        if (var_type == bool_node::CTRL && var_store.size() >= 1) {
+            AssertDebug(solution == nullptr, "you can't concretize a function twice");
             SATSolverResult sat_solver_result = SAT_UNDETERMINED;
-            if(get_dag()->get_failed_assert() != nullptr) {
+            if (get_dag()->get_failed_assert() != nullptr) {
                 sat_solver_result = SAT_UNSATISFIABLE;
-            }
-            else if(!get_dag()->getNodesByType(bool_node::CTRL).empty())
-            {
+            } else if (!get_dag()->getNodesByType(bool_node::CTRL).empty()) {
                 sat_solver_result = SAT_NOT_FULLY_CONCRETIZED;
-            }
-            else if(get_dag()->get_failed_assert() == nullptr) {
+            } else if (get_dag()->get_failed_assert() == nullptr) {
                 sat_solver_result = SAT_SATISFIABLE;
-            }
-            else
-            {
+            } else {
                 assert(false);
             }
 
-            auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store, get_env()->floats);
+            auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store,
+                                                                                 get_env()->floats);
 
-            if(solution != nullptr) {
-                if(!(*solution == *compare_solution))
-                {
+            if (solution != nullptr) {
+                if (!(*solution == *compare_solution)) {
                     cout << solution->to_string() << endl;
                     cout << compare_solution->to_string() << endl;
                     assert(false);
                 }
                 compare_solution->clear();
                 delete compare_solution;
-            }
-            else {
+            } else {
                 solution = compare_solution;
             }
         }
@@ -228,25 +184,21 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
         rep = get_env()->function_map.concretize(
                 get_dag()->get_name(), var_store, var_type, inlined_functions);
 
-        if(!get_dag()->getNodesByType(bool_node::UFUN).empty())
-        {
-            if(!get_dag()->getNodesByType(bool_node::CTRL).empty()) {
-                assert(var_store.size() == 0 || solution->get_sat_solver_result() == SAT_UNSATISFIABLE);
-            }
-        }
-
-        if(var_store.size() >= 1) {
+        if (var_store.size() >= 1) {
             if (solution->get_sat_solver_result() == SAT_SATISFIABLE) {
                 assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
                 if (var_store.size() >= 1) assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
             }
-        }
-        else {
+        } else {
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
         }
         {
             replaced_labels.clear();
             original_labels.clear();
+            //TODO: this probably needs to happen, because after concretization there are no ufuns, but not sure why it crashes
+//            for (auto dep: responsibility) {
+//                dep.second->clear();
+//            }
         }
 
         delete inlined_functions;

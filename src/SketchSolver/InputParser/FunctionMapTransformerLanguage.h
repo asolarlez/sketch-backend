@@ -350,7 +350,6 @@ namespace FMTL {
             }
         }
 
-
     public:
 
         bool empty() const

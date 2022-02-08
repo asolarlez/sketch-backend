@@ -27,13 +27,14 @@ namespace SL
 static bool new_way = true;
 
 class BooleanDagUtility {
-    const string& dag_name;
-     BooleanDAG* const root_dag = nullptr;
+    BooleanDAG* const root_dag = nullptr;
     ProgramEnvironment* env;
     int shared_ptr = 0;
 
     ProgramEnvironment* original_program_env = nullptr;
 
+protected:
+    const string& dag_name;
 public:
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env):
         root_dag(_root_dag), env(_env), dag_name(_root_dag->get_name()) {
@@ -63,6 +64,11 @@ public:
         }
     }
 
+    void inline_this_dag()
+    {
+        VarStore var_store;
+        inline_this_dag(var_store, bool_node::CTRL);
+    }
 
     void inline_this_dag(VarStore& var_store, bool_node::Type var_type)
     {
@@ -73,6 +79,7 @@ public:
 
     void inline_this_dag(VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions)
     {
+        assert(!get_dag()->get_failed_assert());
         if (new_way) {
             env->doInline(*root_dag, var_store, var_type, inlined_functions);
         } else {
@@ -313,30 +320,6 @@ public:
     {
         assert(solution != nullptr);
         return new SolverLanguagePrimitives::HoleAssignment(solution);
-    }
-
-    SolverLanguagePrimitives::HoleAssignment* get_solution(const string& under_this_var)
-    {
-        get_env()->function_map.print_extras();
-
-        cout << "START find_subdag_name" << endl;
-
-//        string underlying_function_name = get_env()->function_map.find_subdag_name(get_dag()->get_name(), under_this_var);
-
-        cout << "DONE find_subdag_name" << endl;
-        cout << "START find_last_var_store_on_the_way_to" << endl;
-
-        const VarStore* var_store_used_to_concretize_underlying_subdag =
-                get_env()->function_map.get_var_store_used_to_concretize_underlying_subdag(get_dag()->get_name(),
-                                                                                           under_this_var);
-//                get_env()->function_map.find_last_var_store_on_the_way_to(get_dag()->get_name(), underlying_function_name);
-
-        cout << "DONE find_last_var_store_on_the_way_to" << endl;
-
-        assert(var_store_used_to_concretize_underlying_subdag != nullptr);
-
-        AssertDebug(false, "WHAT IF THIS SKFUNC HAS NOTHING TO DO WITH A SOLUTION TO under_this_dag. For example, if under_this_dag was concretized before?")
-        return set_and_get_solution_from_var_store(var_store_used_to_concretize_underlying_subdag);
     }
 
     void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)

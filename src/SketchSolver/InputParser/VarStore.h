@@ -656,8 +656,14 @@ public:
         assert(id < objs.size());
 		return objs.at(id);
 	}
+
+    bool has(const string& name) const
+    {
+        return index.find(name) != index.end();
+    }
+
 	int getId(const string& name) const{
-		AssertDebug(index.find(name) != index.end(), "Var " + name + " does't exists in this VarStore.")
+		AssertDebug(has(name), "Var " + name + " does't exists in this VarStore.")
 		return index.at(name);
 	}
     objP& _getObj(int id){

@@ -896,7 +896,7 @@ namespace SL {
             return get<PolyPair *>(poly_pair, do_count, do_assert);
         }
 
-        string to_string(bool do_count, bool do_assert)
+        string to_string(bool do_count = true, bool do_assert = true)
         {
             switch (var_val_type) {
 
@@ -1172,6 +1172,8 @@ namespace SL {
         void run(SolverProgramState *pState);
 
         void clear();
+
+        string to_string();
     };
 
     class Assignment
@@ -1235,6 +1237,7 @@ namespace SL {
 
         void clear();
 
+        string to_string();
     };
 
     class BinaryExpression;
@@ -1292,6 +1295,7 @@ namespace SL {
 
         void clear();
 
+        string to_string();
     };
 
     enum BinaryOp {_lt, _gt, _eq, _geq, _plus, _minus, _mult, _div};

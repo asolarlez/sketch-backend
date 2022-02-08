@@ -376,8 +376,11 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         {
             assert(params.size() == 2);
 
-            SketchFunction* harness = params[0]->eval(state)->get_function()->produce_inlined_dag();
+            VarVal* param_var_val = params[0]->eval(state);
+            param_var_val->increment_shared_ptr();
+            SketchFunction* harness = param_var_val->get_function()->produce_inlined_dag();
             harness->increment_shared_ptr();
+            param_var_val->decrement_shared_ptr();
 
             File* file = params[1]->eval(state)->get_file();
             assert(file->like_unused());
@@ -506,6 +509,8 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
+
+    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -800,6 +805,38 @@ SL::MethodId SL::FunctionCall::get_method_id() {
     }
 }
 
+string SL::FunctionCall::to_string(){
+    string ret;
+    if(expression != nullptr)
+    {
+        ret += expression->to_string() + ".";
+    }
+    switch (method_meta_type) {
+
+        case name_meta_type:
+            ret += method_name->to_string();
+            break;
+        case type_constructor_meta_type:
+            ret += type_constructor->to_string();
+            break;
+        default:
+            assert(false);
+    }
+    ret += "(";
+    bool first = true;
+    for(auto param:params)
+    {
+        if(first) {
+            first = false;
+        }
+        else {
+            ret+=",";
+        }
+        ret += param->to_string();
+    }
+    ret += ")";
+    return ret;
+}
 void
 eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_func, SolverProgramState *state,
                               const vector<SL::Param *> &params)
@@ -902,6 +939,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _num_holes: {
             assert(params.empty());
             SketchFunction* func_clone = sk_func->produce_inlined_dag();
+            func_clone->increment_shared_ptr();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
             func_clone->clear();
             return new VarVal(num_ctrls);
@@ -936,8 +974,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 return new VarVal(sk_func->get_solution());
             }
             else if(params.size() == 1){
-                string name = params[0]->eval(state)->get_string(true, false);
-                return new VarVal(sk_func->get_solution(name));
+                AssertDebug(false, "TODO: equivalent to sk_func.get(name).get_solution()");
             }
             else
             {
@@ -1071,6 +1108,21 @@ SL::Param::Param(SL::Param *to_copy): meta_type(to_copy->meta_type)
         default:
             assert(false);
     }
+}
+
+string SL::Param::to_string() {
+    switch (meta_type) {
+        case is_var:
+            return var->to_string();
+            break;
+        case is_expression:
+            return expression->to_string();
+            break;
+        default:
+            assert(false);
+    }
+    assert(false);
+
 }
 
 void SL::Methods::populate_state(Frame &frame)  {
@@ -1298,6 +1350,30 @@ SL::Expression::Expression(Expression* to_copy) : expression_meta_type(to_copy->
         default:
             assert(false);
     }
+}
+
+string SL::Expression::to_string() {
+    switch (expression_meta_type) {
+        case binary_expr_meta_type:
+            return "TODO binary_expr_meta_type in SL::Expression::to_string()";
+            break;
+        case func_call_meta_type:
+            return function_call->to_string();
+            break;
+        case identifier_meta_type:
+            return identifier->to_string();
+            break;
+        case var_val_meta_type:
+            return var_val->to_string(false);
+            break;
+        case lambda_expr_meta_type:
+            return "TODO lambda_expr_meta_type in SL::Expression::to_string()";
+            break;
+        case no_meta_type:
+            assert(false);
+            break;
+    }
+    assert(false);
 }
 
 
