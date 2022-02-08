@@ -106,10 +106,9 @@ public:
 	}
 
 	void updateCtrlVarStore(VarStore& ctrlStore) override {
-		for (map<string, int>::const_iterator it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)  {
-			if (!ctrlStore.contains(it->first)) {
-				ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first));
-			}
+		for (auto it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)  {
+            AssertDebug(ctrlStore.contains(it->first), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
+            ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first), dirFind.get_original_name(it->first));
 		}
 	}
 
@@ -215,7 +214,7 @@ public:
 			{
 				INTER_node* inter_node = (INTER_node*)allInputsDag->get_node(cname);
 				int cnt = inter_node->get_nbits();
-				Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+				Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 				int ctrl_val = outputControlInts[cname];
 				cout << "ctrl_val = " << ctrl_val << endl;
 				for(int i=0; i<cnt; ++i){
@@ -231,7 +230,7 @@ public:
 				sum = float_idx;
 				int cnt = float_idx_size; 
 				Assert((1<<cnt) > float_idx, "num bits for float idx is too small");
-				Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+				Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 				cout << "float_idx = " << float_idx << " | ctrl_val = " << floats.getFloat(float_idx) << endl;
 				for(int i=0; i<cnt; ++i){
 					//int val = mngFind.getVarVal(dirFind.getArr(cname, i));
@@ -256,18 +255,16 @@ public:
 
 	void updateCtrlVarStore(VarStore& ctrlStore) override
 	{
-		if(allInputsDag == NULL)
-		{
-			return;
+		if(allInputsDag == nullptr) {
+            return;
 		}
 		auto problemIn = allInputsDag->getNodesByType(bool_node::CTRL);
 	    for(int i=0; i<problemIn.size(); ++i){
-			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);	
-			if (ctrlnode->getOtype() == OutType::FLOAT) {
-				string name = ctrlnode->get_name();
-				if (!ctrlStore.contains(name)) {
-					ctrlStore.newVar(name, float_idx_size, OutType::FLOAT);
-				}
+			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
+            string name = ctrlnode->get_name();
+            AssertDebug(ctrlStore.contains(name), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
+            if (ctrlnode->getOtype() == OutType::FLOAT) {
+				ctrlStore.newVar(name, float_idx_size, OutType::FLOAT, ctrlnode->get_original_name());
 			}
 		}
 	}

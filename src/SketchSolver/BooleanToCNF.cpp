@@ -249,7 +249,7 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 		return mp->second;
 	}else{
 		int nbits = ctrlnode->get_nbits();
-		declareInArr(name, nbits, ctrlnode->getOtype());
+		declareInArr(name, nbits, ctrlnode->getOtype(), ctrlnode->get_original_name());
 		Tvalue& rv = controls[name];
 		rv = getArr(name, 0);
 		if(nbits > 1){			
@@ -676,6 +676,10 @@ void SolverHelper::dismissedPending() {
 void SolverHelper::set_pendingConstraints(bool val)
 {
 	pendingConstraints = val;
+}
+
+const string &SolverHelper::get_original_name(const string name) {
+    return ctrls_original_names[name];
 }
 
 /*

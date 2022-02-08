@@ -202,9 +202,8 @@ namespace SolverLanguagePrimitives
             Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
             finder->declareControl(cnode);
 
-            if(!ctrlStore.contains(cname)){
-                ctrlStore.newVar(cname, size, cnode->getOtype());
-            }
+            ctrlStore.newVar(cname, size, cnode->getOtype(), cnode->get_original_name());
+
         }
         void add_problem(BooleanDAG* problem, VarStore& ctrlStore)
         {
@@ -968,8 +967,7 @@ namespace SolverLanguagePrimitives
 
         void recordSolution(Assignment_SkVal* holes_to_sk_val)
         {
-//            hardcoder vals get recorded in external outer-loop.
-//            hardcoder.get_control_map_str_to_skval(holes_to_sk_val);
+            AssertDebug(false, "TODO: need to refactor both varstore, and HoleAssignment to keep track of hole renaming.");
             solver->get_control_map_as_map_str_skval(holes_to_sk_val);
             cout << "WrapperAssertDAG::recordSolution VALUES = ";
             for (auto it : holes_to_sk_val->get_assignment()) {

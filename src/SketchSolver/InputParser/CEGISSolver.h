@@ -93,6 +93,8 @@ public:
     }
 
 	VarStore ctrlStore;
+    map<string, string> current_hole_name_to_original_hole_name;
+
 	CEGISSolver(CEGISFinderSpec* _finder, HoleHardcoder& hc, CommandLineArgs& args, FloatManager& _floats, HoleHardcoder& _hc):
 	finder(_finder),
 	floats(_floats),

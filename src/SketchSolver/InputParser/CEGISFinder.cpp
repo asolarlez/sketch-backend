@@ -103,7 +103,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
 	for(auto it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->getName();
 		int cnt = dirFind.getArrSize(cname);
-		Assert( cnt == it->size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->size()<<endl);
+		Assert( cnt == it->element_size(), "find: SIZE MISMATCH: "<<cnt<<" != "<<it->element_size()<<endl);
 		for(int i=0; i<cnt; ++i){
 			int val = mngFind.getVarVal(dirFind.getArr(cname, i));
 			it->setBit(i, (val==1) ? 1 : 0);			

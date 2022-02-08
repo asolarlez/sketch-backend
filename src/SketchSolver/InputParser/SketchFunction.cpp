@@ -14,7 +14,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
     else {
         vector<string> *inlined_functions = nullptr;
 
-        if(var_store.size() >= 1) {
+        if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
             //assert that all the holes of get_dag() have values in var_store AND vice versa
 
             BooleanDagUtility* tmp_dag_util = new BooleanDagUtility(get_dag()->clone(), get_env());
@@ -33,18 +33,26 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             }
             cout << endl;
             for (auto it: tmp_dag->getNodesByType(var_type)) {
-                assert(var_store.has(it->get_name()));
+                AssertDebug(var_store.has_original_name(((CTRL_node*)it)->get_original_name()),  "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
+//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
             }
             for (const auto& objp_it: var_store) {
                 bool enter = false;
+                assert(var_type == bool_node::CTRL);
                 for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
-                    if (objp_it.name == bool_node_it->get_name()) {
+                    if (objp_it.get_original_name() == ((CTRL_node*)bool_node_it)->get_original_name()) {
                         enter = true;
                         break;
                     }
                 }
                 assert(enter);
             }
+
+            ///TODO: NEED TO TRANSLATE NAMES TO ORIGINAL NAMES;
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+            }
+
             tmp_dag_util->clear();
         }
 

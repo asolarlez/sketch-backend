@@ -128,6 +128,7 @@ class SolverHelper {
     map<string, int> varmap; //var names -> var id in the sat solver
     map<string, int> arrsize; //var names -> if arr then size
     map<string, OutType*> vartype;
+    map<string, string> ctrls_original_names;
 
 	map<string, Tvalue> controls;
 	map<string, SynthInSolver*> sins;
@@ -339,13 +340,13 @@ public:
 	}
     int getVarCnt() { return varCnt; }
 
-    void declareVar(const string& vname) {
-        int idx = mng.newVar();
-        lastVar = idx;
-        Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
-        varmap[vname]= idx;
-        ++varCnt;
-    }
+//    void declareVar(const string& vname) {
+//        int idx = mng.newVar();
+//        lastVar = idx;
+//        Dout( cout<<"declare "<<vname<<"  "<<idx<<endl );
+//        varmap[vname]= idx;
+//        ++varCnt;
+//    }
 
 	void outputVarMap(ostream& out){
 		cout<<" Outputing a map of size "<<varmap.size()<<endl;
@@ -357,7 +358,7 @@ public:
 		}		
 	}
 
-    void declareInArr(const string& arName, int size, OutType* otype) {
+    void declareInArr(const string& arName, int size, OutType* otype, const string& ctrl_original_name) {
 		map<string, int>::iterator fit = arrsize.find(arName);
 		if(fit != arrsize.end()){
 			Assert(fit->second == size, "You declared the same array with a different size earlier!");
@@ -377,6 +378,8 @@ public:
 			Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
 			mng.annotateInput(arName, frst, size);
 			varmap[arName] = frst;
+            assert(ctrls_original_names.find(arName) == ctrls_original_names.end());
+            ctrls_original_names[arName] = ctrl_original_name;
 			arrsize[arName] = size;
 			vartype[arName] = otype;
 			Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
@@ -525,6 +528,8 @@ public:
     void set_pendingConstraints(bool val);
 
     void dismissedPending();
+
+    const string &get_original_name(const string basicString);
 };
 
 /*

@@ -47,8 +47,10 @@ public:
         }
         bool defined = false;
         bool is_array;
+        const string original_name;
 	public:
 		string name;
+
 		objP* next;
 		OutType* otype;
 		int index;
@@ -76,15 +78,14 @@ public:
 
         void clear()
         {
-            name.clear();
             vals.clear();
 		    defined = false;
             if(next != nullptr) {delete next; next = nullptr;};
         }
 
-		objP(string  nm, int size, OutType* _otype):
-        name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(NULL), defined(true){
-		    assert(_otype != NULL);
+		objP(string  nm, int size, OutType* _otype, const string _original_name = ""):
+        name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name){
+		    assert(_otype != nullptr);
             if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
                 is_array = true;
                 assert(_otype->isArr);
@@ -97,26 +98,30 @@ public:
 		}
 
         objP(const objP& old):
-        vals(old.vals), name(old.name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
-		    if(old.next != NULL){
+        vals(old.vals), name(old.name), original_name(old.original_name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
+		    if(old.next != nullptr){
                 next=new objP(*old.next);
             }
-            else{next=NULL;}
+            else{next=nullptr;}
         }
 
-		objP& operator=(const objP& old){ 
-			vals = old.vals; name = old.name; isNeg = old.isNeg; index = old.index;  otype = old.otype; defined = old.defined;
-            is_array = old.is_array;
-			if(old.next!=NULL){ 
-				if(next!=NULL){
-					(*next)=*old.next;  
-				}else{
-					next = new objP(*old.next);
-				}
-			}else{
-				if(next!=NULL){ delete next; next=NULL;}
-			}
-			return *this;
+        const string& get_original_name() const {
+            return original_name;
+        }
+
+		objP operator=(const objP& old){
+            return objP(old);
+//			vals = old.vals; name = old.name; otype = old.otype; isNeg = old.isNeg; index = old.index;  defined = old.defined; is_array = old.is_array;
+//			if(old.next!=nullptr){
+//				if(next!=nullptr){
+//					(*next)=*old.next;
+//				}else{
+//					next = new objP(*old.next);
+//				}
+//			}else{
+//				if(next!=nullptr){ delete next; next=nullptr;}
+//			}
+//			return *this;
 		}
 
         bool operator == (const objP& other) const
@@ -146,6 +151,14 @@ public:
                 }
             }
             if(name != other.name)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(original_name != other.original_name)
             {
                 if(debug) {
                     cout << "return false" << endl;
@@ -226,27 +239,27 @@ public:
 			Assert(start < end, "Empty arr");
 			index = start;
 			if(start+1 < end){
-				if(next == NULL){
+				if(next == nullptr){
 					next = new objP(name, vals.size(), otype);
 				}				
 				next->makeArr(start+1, end);
 			}else{
-				if(next != NULL){
+				if(next != nullptr){
 					delete next;
-					next = NULL;
+					next = nullptr;
 				}
 			}
 		}
-		int arrSize(){ assert(is_array); if(next==NULL){ return 1; }else{ return next->arrSize() + 1;  } }
-		int size() const { return vals.size(); }
-		int globalSize() const { if(next == NULL){ return size();} return next->globalSize() + size(); }
-		int resize(int n){ int x=0; vals.resize(n); if(next != NULL){ x=next->resize(n); } return x+n; }
+		int arrSize(){ assert(is_array); if(next==nullptr){ return 1; }else{ return next->arrSize() + 1;  } }
+		int element_size() const { return vals.size(); }
+		int globalSize() const { if(next == nullptr){ return element_size();} return next->globalSize() + element_size(); }
+		int resize(int n){ int x=0; vals.resize(n); if(next != nullptr){ x=next->resize(n); } return x+n; }
 		objP* setBit(size_t i, int val){ 
 			if(i<vals.size()){ 
 				vals[i] = val; 
 				return this;
 			}else{ 
-				Assert(next != NULL, "bad bad"); 
+				Assert(next != nullptr, "bad bad");
 				return next->setBit(i-vals.size(), val);
 			}
 		}
@@ -266,7 +279,7 @@ public:
 			if(this->index==idx){
 				return getInt();
 			}else{
-				if(next != NULL){ return next->getInt(idx); }
+				if(next != nullptr){ return next->getInt(idx); }
                 else {return -1;}
 			}
 			Assert(false,"Control shouldn't reach here");
@@ -284,7 +297,7 @@ public:
             objP* at = this;
             for(int i = 0;i<arr->size();i++)
             {
-                assert(at != NULL && at->defined);
+                assert(at != nullptr && at->defined);
                 at->setVal(arr->at(i));
                 at = at->next;
             }
@@ -334,11 +347,11 @@ public:
 			for(size_t i=0; i<vals.size(); ++i){
 				out<<(vals[i]==1?1:0);
 			}
-			if(next!= NULL){ out<<"|"; next->printBit(out); }
+			if(next!= nullptr){ out<<"|"; next->printBit(out); }
 		}
 		void printContent(ostream& out) const{			
 			out << getInt();
-			if(next!= NULL){ out<<"|"; next->printContent(out); }
+			if(next!= nullptr){ out<<"|"; next->printContent(out); }
 		}
 
 		bool increment(){
@@ -350,7 +363,7 @@ public:
 					vals[i] = -1;
 				}				
 			}
-			if(next != NULL){
+			if(next != nullptr){
 				return next->increment();
 			}else{
 				return false;
@@ -373,20 +386,20 @@ public:
 					vals[i] = -1 ;
 				}
 			}
-			if(next!= NULL){ next->makeRandom(sparseDeg, n-1); }
+			if(next!= nullptr){ next->makeRandom(sparseDeg, n-1); }
 		}
 
 		void makeRandom(){/* Bias towards zeros */
 			for(size_t i=0; i<vals.size(); ++i){
 				vals[i] = (rand() & 0x3) > 0? -1 : 1;
 			}
-			if(next!= NULL){ next->makeRandom(); }
+			if(next!= nullptr){ next->makeRandom(); }
 		}
 		void zeroOut(){/* Bias towards zeros */
 			for(size_t i=0; i<vals.size(); ++i){
 				vals[i] = -1;
 			}
-			if(next!= NULL){ next->zeroOut(); }
+			if(next!= nullptr){ next->zeroOut(); }
 		}
 
         bool get_is_array() const {
@@ -397,6 +410,7 @@ public:
 private:
 	vector<objP> objs;
 	map<string, int> index;
+    map<string, string> original_name_to_name;
 	int bitsize = 0;
 		
 public:
@@ -513,12 +527,26 @@ public:
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, OutType* otype){
-		Assert(index.count(name)==0, name<<": This variable already existed!!");
-		int begidx = objs.size();
-		objs.emplace_back(objP(name, nbits, otype));
-		index[name] = begidx;
-		bitsize += nbits;
+	void newVar(const string& name, int nbits, OutType* otype, string original_name){
+        if(contains(name)) {
+            auto obj = getObjConst(name);
+            assert(obj.getName() == name);
+            assert(obj.get_size() == nbits && obj.element_size() == nbits);
+            assert(obj.getOtype() == otype);
+            assert(obj.get_original_name() == original_name);
+        }
+        else {
+            Assert(index.count(name) == 0, name << ": This variable already existed!!");
+            if(original_name == "declareInput()") {
+                original_name += "___"+name;
+            }
+            AssertDebug(original_name_to_name.find(original_name) == original_name_to_name.end(), "original_name should be unique.");
+            original_name_to_name[original_name] = name;
+            int begidx = objs.size();
+            objs.emplace_back(objP(name, nbits, otype, original_name));
+            index[name] = begidx;
+            bitsize += nbits;
+        }
         assert(!objs[index[name]].get_is_array());
 	}
 
@@ -555,7 +583,8 @@ public:
             assert(tmp.get_is_array());
 			bitsize -= tmp.globalSize();
 			tmp.makeArr(0, arrSize);
-			bitsize += arrSize*tmp.size();
+            assert(arrSize*tmp.element_size() == tmp.get_size());
+			bitsize += arrSize*tmp.element_size();
 		}
 	}
 	int getBitsize() const{
@@ -597,7 +626,7 @@ public:
 			if(t.size()==0){ break; }
 
 			int s  = t.find(':');
-			string name= t.substr(0, s);
+			string name = t.substr(0, s);
 			string val = t.substr(s+1);
 			if(index.count(name)==0){
 				continue;
@@ -657,8 +686,7 @@ public:
 		return objs.at(id);
 	}
 
-    bool has(const string& name) const
-    {
+    bool has(const string& name) const {
         return index.find(name) != index.end();
     }
 
@@ -694,6 +722,8 @@ public:
             index[objs[i].name] = i;
         }
     }
+
+    bool has_original_name(const string &original_name) const;
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

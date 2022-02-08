@@ -589,9 +589,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
     { // angelic var magic xD
         if (PARAMS->angelic_model) {
-            if (!input.contains("__rs_node")) {
-                input.newVar("__rs_node", 1, NULL);
-            }
+            input.newVar("__rs_node", 1, NULL, "check()");
             input.setVarVal("__rs_node", 0, NULL);
         }
     }
@@ -654,7 +652,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 			VarStore::objP* tmp = &(*it);
 			for(int i=0; i<cnt; ++i){				
 				int val = mngCheck.getVarVal(dirCheck.getArr(cname, i));
-				int qq = tmp->size() * tmp->index;
+				int qq = tmp->element_size() * tmp->index;
 				tmp = tmp->setBit(i-qq, (val==1)? 1 : 0);
 			}
 			Dout( cout<<" input "<<cname<<"  has value "<<it->getInt()<<endl );
@@ -719,7 +717,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				Assert(false, "Not possible");
 			}
 			else {
-				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz, srcnode->getOtype());
+				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz, srcnode->getOtype(), srcnode->get_name());
 			}
 		}
 		if ((*node_it)->type == bool_node::UFUN) {
@@ -735,7 +733,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				OutType* ttype = tuple_type->entries[tt];
 				bool isArr = ttype->isArr;
 				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1), ttype);
+				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1), ttype, ufunnode->get_original_ufname());
 			}
 		}
 	}	

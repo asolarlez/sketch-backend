@@ -66,9 +66,7 @@ void CEGISSolver::declareControl(CTRL_node* cnode){
 	Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
 	finder->declareControl(cnode);
 
-	if(!ctrlStore.contains(cname)){
-		ctrlStore.newVar(cname, size, cnode->getOtype());
-	}	
+    ctrlStore.newVar(cname, size, cnode->getOtype(), cnode->get_original_name());
 }
 
 bool CEGISSolver::solve(){
@@ -579,7 +577,7 @@ void CEGISSolver::setup2QBF(ofstream& out){
 		auto inter = bd->getNodesByType(bool_node::SRC);
 		for(BooleanDAG::iterator node_it = inter.begin(); node_it != inter.end(); ++node_it){			
 			INTER_node* srcnode = dynamic_cast<INTER_node*>(*node_it);										
-			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits(), srcnode->getOtype());
+			dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits(), srcnode->getOtype(), srcnode->get_name());
 			int base = dirCheck.getVar(srcnode->get_name());
 			int n = dirCheck.getArrSize(srcnode->get_name());
 			out<<"c "<<	(*node_it)->get_name()<<endl;

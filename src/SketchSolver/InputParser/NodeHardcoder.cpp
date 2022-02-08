@@ -23,7 +23,7 @@ bool_node* NodeHardcoder::nodeForINode(INTER_node* inode){
 		
 		while(val != nullptr){
 			bool_node* cnst;
-            assert(val->size() == nbits);
+            assert(val->element_size() == nbits);
 			if(nbits==1){
 				cnst= getCnode( val->getInt() ==1 );
 			}else{
@@ -148,7 +148,7 @@ bool_node* NodeHardcoder::nodeForFun(UFUN_node* uf){
 		Assert(!type->isTuple, "NYS");	
 		if(type->isArr){
 			auto val = &(values.getObjConst(sstr.str()));
-			int nbits = val->size();
+			int nbits = val->element_size();
 			vector<bool_node*> multi_mother;
 			
 			while(val != NULL){

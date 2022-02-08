@@ -1426,19 +1426,19 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name){
 
     auto ctrls = bdag->getNodesByType(bool_node::CTRL);
 
-    for (int i = 0; i < ctrls.size(); i++) {
-        assert(ctrls[i]->type == bool_node::CTRL);
-        const bool do_rename = false;
+    for (auto & ctrl : ctrls) {
+        assert(ctrl->type == bool_node::CTRL);
+        const bool do_rename = true;
         if(do_rename) {
-            string ctrl_name = ctrls[i]->get_name();
-            if (((CTRL_node *) ctrls[i])->get_Pcond()) {
+            string ctrl_name = ctrl->get_name();
+            if (((CTRL_node *) ctrl)->get_Pcond()) {
                 assert(ctrl_name == "#PC");
             } else {
                 assert(ctrl_name != "#PC");
                 if (ctrl_name.size() >= 3) {
                     assert(ctrl_name.substr(0, 3) != "#PC");
                 }
-                ((CTRL_node *) ctrls[i])->add_suffix_to_name(get_suffix(true, bdag->dag_id));
+                ((CTRL_node *) ctrl)->add_suffix_to_name(get_suffix(true, bdag->dag_id));
             }
         }
     }
