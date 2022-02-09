@@ -48,6 +48,8 @@ public:
         bool defined = false;
         bool is_array;
         const string original_name;
+        const string source_dag_name;
+        bool_node::Type type = bool_node::NO_TYPE;
 	public:
 		string name;
 
@@ -83,8 +85,8 @@ public:
             if(next != nullptr) {delete next; next = nullptr;};
         }
 
-		objP(string  nm, int size, OutType* _otype, const string _original_name = ""):
-        name(std::move(nm)),vals(size),otype(_otype), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name){
+		objP(string  nm, int size, OutType* _otype, bool_node::Type _type, const string _original_name = "", const string _source_dag_name = ""):
+        name(std::move(nm)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
 		    assert(_otype != nullptr);
             if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
                 is_array = true;
@@ -98,7 +100,9 @@ public:
 		}
 
         objP(const objP& old):
-        vals(old.vals), name(old.name), original_name(old.original_name), otype(old.otype), isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
+        vals(old.vals), name(old.name), original_name(old.original_name),
+        source_dag_name(old.source_dag_name), otype(old.otype), type(old.type),
+        isNeg(old.isNeg), index(old.index), defined(old.defined), is_array(old.is_array){
 		    if(old.next != nullptr){
                 next=new objP(*old.next);
             }
@@ -106,7 +110,15 @@ public:
         }
 
         const string& get_original_name() const {
+            if(type == bool_node::CTRL)
+            AssertDebug(!original_name.empty(), "check why this fails and act accordingly.")
             return original_name;
+        }
+
+        const string& get_source_dag_name() const {
+            if(type == bool_node::CTRL)
+            AssertDebug(!source_dag_name.empty(), "check why this fails and act accordingly.")
+            return source_dag_name;
         }
 
 		objP operator=(const objP& old){
@@ -165,7 +177,23 @@ public:
                 }
                 return false;
             }
+            if(source_dag_name != other.source_dag_name)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
             if(otype != other.otype)
+            {
+                if(debug) {
+                    cout << "return false" << endl;
+                    AssertDebug(false, "not eq");
+                }
+                return false;
+            }
+            if(type != other.type)
             {
                 if(debug) {
                     cout << "return false" << endl;
@@ -239,7 +267,7 @@ public:
 			index = start;
 			if(start+1 < end){
 				if(next == nullptr){
-					next = new objP(name, vals.size(), otype);
+					next = new objP(name, vals.size(), otype, type);
 				}				
 				next->makeArr(start+1, end);
 			}else{
@@ -408,14 +436,38 @@ public:
         void rename(const string &new_name) {
             name = new_name;
         }
+
+        bool_node::Type get_type() const {
+            assert(type != bool_node::NO_TYPE);
+            return type;
+        }
     };
 
 private:
 	vector<objP> objs;
 	map<string, int> index;
-    map<string, string> original_name_to_name;
+    map<string, map<string, string> > original_name_to_dag_name_to_name;
 	int bitsize = 0;
-		
+
+    void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
+    {
+        if(original_name == "declareInput()") {
+            original_name += "___"+name;
+        } else if(original_name == "to_var_store()") {
+            original_name += "___"+name;
+        }
+        if(original_name_to_dag_name_to_name.find(original_name) == original_name_to_dag_name_to_name.end()) {
+            original_name_to_dag_name_to_name[original_name] = map<string, string>();
+        }
+        else {
+            AssertDebug(
+                    original_name_to_dag_name_to_name[original_name].find(source_dag_name) ==
+                    original_name_to_dag_name_to_name[original_name].end(),
+                    "dag name should be unique for every original name.")
+        }
+        original_name_to_dag_name_to_name[original_name][source_dag_name] = name;
+    }
+
 public:
 
     map<string, SynthInSolver*> synths;
@@ -513,15 +565,14 @@ public:
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
 	    objs.push_back(obj);
 	    index[name] = idx;
-        assert(original_name_to_name.find(obj.get_original_name()) == original_name_to_name.end());
-        original_name_to_name[obj.get_original_name()] = obj.name;
+        insert_name_in_original_name_to_dag_name_to_name(obj.name, obj.get_original_name(), obj.get_source_dag_name());
     }
 
-	void newArr(const string& name, int nbits, int arrsz, OutType* otype){
+	void newArr(const string& name, int nbits, int arrsz, OutType* otype, bool_node::Type type){
 		Assert(index.count(name)==0, name<<": This array already existed!!");
 		int begidx = objs.size();
 		index[name] = begidx;
-		objs.emplace_back(name, nbits, otype);
+		objs.emplace_back(name, nbits, otype, type);
 		objs[begidx].makeArr(0, arrsz);
 		bitsize += nbits*arrsz;
         assert(objs[begidx].get_is_array());
@@ -533,39 +584,34 @@ public:
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, OutType* otype, string original_name){
+	void newVar(const string& name, int nbits, OutType* otype, bool_node::Type type, string original_name, string source_dag_name){
         if(contains(name)) {
             auto obj = getObjConst(name);
             assert(obj.getName() == name);
             assert(obj.get_size() == nbits && obj.element_size() == nbits);
             assert(obj.getOtype() == otype);
             assert(obj.get_original_name() == original_name);
+            assert(obj.get_source_dag_name() == source_dag_name);
         }
         else {
             Assert(index.count(name) == 0, name << ": This variable already existed!!");
-            if(original_name == "declareInput()") {
-                original_name += "___"+name;
-            } else if(original_name == "to_var_store()") {
-                original_name += "___"+name;
-            }
-            AssertDebug(original_name_to_name.find(original_name) == original_name_to_name.end(), "original_name should be unique.");
-            original_name_to_name[original_name] = name;
+            insert_name_in_original_name_to_dag_name_to_name(name, original_name, source_dag_name);
             int begidx = objs.size();
-            objs.emplace_back(objP(name, nbits, otype, original_name));
+            objs.emplace_back(objP(name, nbits, otype, type, original_name, source_dag_name));
             index[name] = begidx;
             bitsize += nbits;
         }
         assert(!objs[index[name]].get_is_array());
 	}
 
-	void setVarVal(const string& name, int val, OutType* otype){
+	void setVarVal(const string& name, int val, OutType* otype, bool_node::Type type){
         AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar first.");
 		int idx;
 		if(index.count(name)!=0){
 			idx = getId(name);
 		}else{
             AssertDebug(false, "check previous assert.");
-			objs.emplace_back(objP(name, 5, otype));
+			objs.emplace_back(objP(name, 5, otype, type));
 			idx = objs.size()-1;
       		index[name] = idx;
 

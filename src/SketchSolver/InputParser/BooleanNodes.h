@@ -120,7 +120,7 @@ private:
 	
 
     public:
-    enum Type {AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
+    enum Type {NO_TYPE, AND, OR, XOR, SRC, DST, NOT, CTRL,PLUS, TIMES, DIV, MOD, NEG, CONST, LT, EQ, ASSERT, ARRACC, UFUN, ARRASS, ACTRL, ARR_R, ARR_W, ARR_CREATE, TUPLE_CREATE, TUPLE_R} ;
 	typedef bool_node** parent_iter;
 
     const Type type;
@@ -1378,16 +1378,21 @@ private:
 	
 	CTRL_node(unsigned kind_):INTER_node(CTRL),arrSz(-1),spAngelic(false), spConcretize(false), max(-1), isFloat(false),isTuple(false), isSpecial(false), hasRange(false) {  this->kind = kind_;}
 	
-	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high), original_name(bn.original_name){
+	CTRL_node(const CTRL_node& bn, bool copyChildren = true): INTER_node(bn, copyChildren), spAngelic(bn.spAngelic), spConcretize(bn.spConcretize), max(bn.max), isFloat(bn.isFloat), isSpecial(bn.isSpecial), hasRange(bn.hasRange), low(bn.low), high(bn.high), original_name(bn.original_name), source_dag_name(bn.source_dag_name){
 		this->kind = bn.kind; this->arrSz = bn.arrSz;
 	}
 
     string original_name;
+    string source_dag_name;
+    bool has_new_suffix = false;
 public:
-    void add_suffix_to_name(const string& _suffix) {
+    void save_dag_name_and_add_suffix_to_name(const string& _dag_name, const string& _suffix) {
+        assert(!has_new_suffix);
+        has_new_suffix = true;
         if(original_name.empty()) {
             original_name = name;
         }
+        source_dag_name = _dag_name;
         name+=_suffix;
     }
 
@@ -1539,7 +1544,11 @@ public:
         else {
             return name;
         }
+    }
 
+    const string &get_source_dag_name() {
+        AssertDebug(!source_dag_name.empty(), "Need to add this for all ctrls.");
+        return source_dag_name;
     }
 };
 

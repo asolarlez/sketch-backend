@@ -589,8 +589,9 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
     { // angelic var magic xD
         if (PARAMS->angelic_model) {
-            input.newVar("__rs_node", 1, NULL, "check()");
-            input.setVarVal("__rs_node", 0, NULL);
+            AssertDebug(false, "ASK ARMANDO WHAT ANGELIC HOLES ARE, THEY ARE PROBABLY CTRLS.")
+            input.newVar("__rs_node", 1, NULL, bool_node::CTRL, "check()", "check()");
+            input.setVarVal("__rs_node", 0, NULL, bool_node::CTRL);
         }
     }
     //Return counter-example concretized dag
@@ -717,7 +718,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				Assert(false, "Not possible");
 			}
 			else {
-				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz, srcnode->getOtype(), srcnode->get_name());
+				dirCheck.declareInArr(srcnode->get_name(), srcnode->get_nbits()*arsz,  srcnode->getOtype(), bool_node::SRC, srcnode->get_name(), "setNewControls()#1");
 			}
 		}
 		if ((*node_it)->type == bool_node::UFUN) {
@@ -733,7 +734,7 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 				OutType* ttype = tuple_type->entries[tt];
 				bool isArr = ttype->isArr;
 				bool isBool = (ttype == OutType::BOOL || ttype == OutType::BOOL_ARR);
-				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1), ttype, ufunnode->get_original_ufname());
+				dirCheck.declareInArr(sstr.str(), (isBool ? 1 : nbits) * (isArr ? ASize : 1), ttype, bool_node::UFUN, ufunnode->get_original_ufname(), "setNewControls()#2");
 			}
 		}
 	}	

@@ -107,7 +107,7 @@ public:
 	void updateCtrlVarStore(VarStore& ctrlStore) override {
 		for (auto it = dirFind.arrsize_begin(); it != dirFind.arrsize_end(); ++it)  {
             AssertDebug(ctrlStore.contains(it->first), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
-            ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first), dirFind.get_original_name(it->first));
+            ctrlStore.newVar(it->first, it->second, dirFind.getOtype(it->first), dirFind.get_type(it->first), dirFind.get_original_name(it->first), dirFind.get_source_dag_name(it->first));
 		}
 	}
 
@@ -263,7 +263,7 @@ public:
             string name = ctrlnode->get_name();
             AssertDebug(ctrlStore.contains(name), "It seems like ctrlStore should already contain all ctrls bc VarStore is a reference, probably initialized before calling this function; not sure why this is necessary. IF THIS ASSERT FAILS examine why are certain holes not declared ahead of time. ");
             if (ctrlnode->getOtype() == OutType::FLOAT) {
-				ctrlStore.newVar(name, float_idx_size, OutType::FLOAT, ctrlnode->get_original_name());
+				ctrlStore.newVar(name, float_idx_size, OutType::FLOAT, bool_node::CTRL, ctrlnode->get_original_name(), ctrlnode->get_source_dag_name());
 			}
 		}
 	}

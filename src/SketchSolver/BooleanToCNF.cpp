@@ -250,7 +250,7 @@ Tvalue& SolverHelper::declareControl(CTRL_node* ctrlnode){
 		return mp->second;
 	}else{
 		int nbits = ctrlnode->get_nbits();
-		declareInArr(name, nbits, ctrlnode->getOtype(), ctrlnode->get_original_name());
+		declareInArr(name, nbits, ctrlnode->getOtype(), bool_node::CTRL, ctrlnode->get_original_name(), ctrlnode->get_source_dag_name());
 		Tvalue& rv = controls[name];
 		rv = getArr(name, 0);
 		if(nbits > 1){			
@@ -679,8 +679,19 @@ void SolverHelper::set_pendingConstraints(bool val)
 	pendingConstraints = val;
 }
 
-const string &SolverHelper::get_original_name(const string name) {
-    return ctrls_original_names[name];
+const string &SolverHelper::get_original_name(const string &name) const {
+    assert(ctrls_original_names.find(name) != ctrls_original_names.end());
+    return ctrls_original_names.at(name);
+}
+
+const string & SolverHelper::get_source_dag_name(const string &name) const {
+    assert(ctrls_dag_name.find(name) != ctrls_dag_name.end());
+    return ctrls_dag_name.at(name);
+}
+
+bool_node::Type SolverHelper::get_type(const string &name) const {
+    assert(ctrls_dag_name.find(name) != ctrls_dag_name.end());
+    return ctrls_type.at(name);
 }
 
 /*

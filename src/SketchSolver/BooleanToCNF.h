@@ -129,6 +129,8 @@ class SolverHelper {
     map<string, int> arrsize; //var names -> if arr then size
     map<string, OutType*> vartype;
     map<string, string> ctrls_original_names;
+    map<string, string> ctrls_dag_name;
+    map<string, bool_node::Type> ctrls_type;
 
 	map<string, Tvalue> controls;
 	map<string, SynthInSolver*> sins;
@@ -358,7 +360,7 @@ public:
 		}		
 	}
 
-    void declareInArr(const string& arName, int size, OutType* otype, const string& ctrl_original_name) {
+    void declareInArr(const string& arName, int size, OutType* otype, bool_node::Type type, const string& ctrl_original_name, const string& ctrls_source_dag_name) {
 		map<string, int>::iterator fit = arrsize.find(arName);
 		if(fit != arrsize.end()){
 			Assert(fit->second == size, "You declared the same array with a different size earlier!");
@@ -378,8 +380,15 @@ public:
 			Dout( cout<<"declareIn "<<arName<<"["<<size<<"] "<<frst<<"-"<<(frst+size-1)<<endl );
 			mng.annotateInput(arName, frst, size);
 			varmap[arName] = frst;
-            assert(ctrls_original_names.find(arName) == ctrls_original_names.end());
-            ctrls_original_names[arName] = ctrl_original_name;
+
+            { //CODE FOR INTEGRATION WITH SOLVER LANGUAGE.
+                assert(ctrls_original_names.find(arName) == ctrls_original_names.end());
+                ctrls_original_names[arName] = ctrl_original_name;
+                assert(ctrls_dag_name.find(arName) == ctrls_dag_name.end());
+                ctrls_dag_name[arName] = ctrls_source_dag_name;
+                assert(ctrls_type.find(arName) == ctrls_type.end());
+                ctrls_type[arName] = type;
+            }
 			arrsize[arName] = size;
 			vartype[arName] = otype;
 			Assert(size==0 ||  idx == (frst+size-1) , "This is bad, idx != (frst+size-1)");
@@ -529,7 +538,11 @@ public:
 
     void dismissedPending();
 
-    const string &get_original_name(const string basicString);
+    const string &get_original_name(const string &name) const ;
+
+    const string & get_source_dag_name(const string &name) const ;
+
+    bool_node::Type get_type(const string &name) const ;
 };
 
 /*

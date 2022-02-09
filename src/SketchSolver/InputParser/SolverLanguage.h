@@ -202,7 +202,7 @@ namespace SolverLanguagePrimitives
             Dout(cout<<"DECLARING CONTROL "<<cname<<" "<<size<<endl);
             finder->declareControl(cnode);
 
-            ctrlStore.newVar(cname, size, cnode->getOtype(), cnode->get_original_name());
+            ctrlStore.newVar(cname, size, cnode->getOtype(), bool_node::CTRL, cnode->get_original_name(), cnode->get_source_dag_name());
 
         }
         void add_problem(BooleanDAG* problem, VarStore& ctrlStore)
@@ -291,7 +291,7 @@ namespace SolverLanguagePrimitives
         HoleAssignment* solve(ProblemAE* problem) override
         {
             vector<SkHoleSpec>* blank_solution = problem->get_holes();
-            auto* ret = new Assignment_SkVal();
+            auto* ret = new Assignment_SkVal(bool_node::CTRL);
 
             for(int i = 0;i<blank_solution->size();i++)
             {
@@ -881,7 +881,7 @@ namespace SolverLanguagePrimitives
         {
             auto* checker = new CEGISChecker(args, hc, floats);
             checker->addProblem(problem->get_harness(), nullptr);
-            VarStore* controls = solution_holder->get_controls(floats);
+            VarStore* controls = solution_holder->to_var_store();
             cout << endl << "HERE: controls->printContent(cout);" << endl;
             controls->printContent(cout);
             cout << "END HERE" << endl << endl;

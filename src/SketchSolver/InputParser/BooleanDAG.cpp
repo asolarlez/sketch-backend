@@ -1440,7 +1440,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
                     if (ctrl_name.size() >= 3) {
                         assert(ctrl_name.substr(0, 3) != "#PC");
                     }
-                    ((CTRL_node *) ctrl)->add_suffix_to_name(get_suffix(true, bdag->dag_id));
+                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(bdag->get_name(), get_suffix(true, bdag->dag_id));
                 }
             }
         }

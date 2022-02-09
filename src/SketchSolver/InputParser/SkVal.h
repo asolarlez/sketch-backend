@@ -323,15 +323,52 @@ public:
 
 class Assignment_SkVal: public Mapping<SkVal> {
 
+    bool_node::Type type = bool_node::NO_TYPE;
+
     map<string, string> name_to_original_name;
+    map<string, string> name_to_dag_name;
+
+    void set_it(Assignment_SkVal *updated_assignment, string name, SkVal* val)
+    {
+        set(name, val->clone());
+        assert(updated_assignment->name_to_original_name.find(name) != updated_assignment->name_to_original_name.end());
+        name_to_original_name[name] = updated_assignment->name_to_original_name[name];
+        assert(updated_assignment->name_to_dag_name.find(name) != updated_assignment->name_to_dag_name.end());
+        name_to_dag_name[name] = updated_assignment->name_to_dag_name[name];
+    }
+
+    static OutType* sk_val_type_to_bool_node_out_type(SkValType sk_val_type) {
+        switch (sk_val_type) {
+            case sk_type_int:
+                return OutType::INT;
+                break;
+            case sk_type_float:
+                return OutType::FLOAT;
+                break;
+            case sk_type_bool:
+                return OutType::BOOL;
+                break;
+            case sk_type_boolarr:
+                return OutType::BOOL_ARR;
+                break;
+            default:
+                assert(false);
+        }
+        assert(false);
+    }
 
 public:
-    Assignment_SkVal(): Mapping<SkVal>() {}
+    Assignment_SkVal(bool_node::Type _type): type(_type), Mapping<SkVal>() {}
 
     template<typename T>
-    explicit Assignment_SkVal(T is_null): Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
+    explicit Assignment_SkVal(bool_node::Type _type, T is_null): type(_type), Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
 
-    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>(), name_to_original_name(to_copy->name_to_original_name) {
+    explicit Assignment_SkVal(Assignment_SkVal* to_copy):
+        Mapping<SkVal>(),
+        type(to_copy->type),
+        name_to_original_name(to_copy->name_to_original_name),
+        name_to_dag_name(to_copy->name_to_dag_name){
+
         for(auto it: to_copy->assignment)
         {
             SkValType sk_val_type = it.second->get_type();
@@ -368,9 +405,16 @@ public:
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
+            if(type != bool_node::NO_TYPE){
+                assert((*it).get_type() == type);
+            }
+            else {
+                type = (*it).get_type();
+            }
             OutType* out_type = (*it).getOtype();
             string name = (*it).getName();
             string original_name = (*it).get_original_name();
+            string source_dag_name = (*it).get_source_dag_name();
             if(out_type == OutType::INT) {
                 set(name, new SkValInt((*it).getInt(), (*it).get_size()));
             }
@@ -398,6 +442,8 @@ public:
 
             assert(name_to_original_name.find(name) == name_to_original_name.end());
             name_to_original_name[name] = original_name;
+            assert(name_to_dag_name.find(name) == name_to_dag_name.end());
+            name_to_dag_name[name] = source_dag_name;
 
         }
 
@@ -416,26 +462,7 @@ public:
         delete test_var_store;
 
     }
-    static OutType* sk_val_type_to_bool_node_out_type(SkValType sk_val_type)
-    {
-        switch (sk_val_type) {
-            case sk_type_int:
-                return OutType::INT;
-                break;
-            case sk_type_float:
-                return OutType::FLOAT;
-                break;
-            case sk_type_bool:
-                return OutType::BOOL;
-                break;
-            case sk_type_boolarr:
-                return OutType::BOOL_ARR;
-                break;
-            default:
-                assert(false);
-        }
-        assert(false);
-    }
+
     VarStore* to_var_store()
     {
         auto* ret = new VarStore();
@@ -443,31 +470,31 @@ public:
         {
             if(item.second->get_type() == sk_type_int)
             {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), name_to_original_name[item.first]);
-                ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name[item.first], name_to_dag_name[item.first]);
+                ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type);
 //                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValInt*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
             }
             else if(item.second->get_type() == sk_type_bool)
             {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), name_to_original_name[item.first]);
-                ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name[item.first], name_to_dag_name[item.first]);
+                ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type);
 //                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValBool*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
 
             }
             else if(item.second->get_type() == sk_type_boolarr)
             {
                 assert(item.second->get_nbits() == 1);
-                ret->newArr(item.first, 1,  ((SkValBoolArr*)item.second)->get().size(), OutType::BOOL_ARR);
+                ret->newArr(item.first, 1,  (int)((SkValBoolArr*)item.second)->get().size(), OutType::BOOL_ARR, type);
                 ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
             }
             else if(item.second->get_type() == sk_type_intarr)
             {
-                ret->newArr(item.first, item.second->get_nbits(),  ((SkValIntArr*)item.second)->get().size(), OutType::INT_ARR);
+                ret->newArr(item.first, item.second->get_nbits(),  (int)((SkValIntArr*)item.second)->get().size(), OutType::INT_ARR, type);
                 ret->setArr(item.first, ((SkValIntArr*)item.second)->get());
             }
             else
             {
-                Assert(false, "TODO: cast SkFloat back into an entry in VarStore.");
+                AssertDebug(false, "TODO: cast SkFloat back into an entry in VarStore.");
             }
         }
 
@@ -478,20 +505,15 @@ public:
         assert(!null);
         assert(!updated_assignment->null);
         for(const auto& it : updated_assignment->get_assignment()) {
-            set(it.first, it.second->clone());
-            assert(updated_assignment->name_to_original_name.find(it.first) != updated_assignment->name_to_original_name.end());
-            name_to_original_name[it.first] = updated_assignment->name_to_original_name[it.first];
+            set_it(updated_assignment, it.first, it.second->clone());
         }
     }
-    void join_with(Assignment_SkVal *assignment_to_join_with) {
+    void disjoint_join_with(Assignment_SkVal *assignment_to_join_with) {
         assert(!null);
         assert(!assignment_to_join_with->null);
-        for(const auto& it : assignment_to_join_with->get_assignment())
-        {
+        for(const auto& it : assignment_to_join_with->get_assignment()) {
             assert(!has(it.first));
-            set(it.first, it.second->clone());
-            assert(assignment_to_join_with->name_to_original_name.find(it.first) != assignment_to_join_with->name_to_original_name.end());
-            name_to_original_name[it.first] = assignment_to_join_with->name_to_original_name[it.first];
+            set_it(assignment_to_join_with, it.first, it.second->clone());
         }
     }
 };
@@ -596,32 +618,11 @@ namespace SolverLanguagePrimitives {
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
         HoleAssignment() = default;
-        explicit HoleAssignment(bool is_null): assignment_skval(new Assignment_SkVal(is_null)) {};
+        explicit HoleAssignment(bool is_null): assignment_skval(new Assignment_SkVal(bool_node::CTRL, is_null)) {};
 
         explicit HoleAssignment(ProblemAE* problem) {
             cout << "TODO: HoleAssignment::HoleAssignment" << endl;
             assert(false);
-        }
-        VarStore *get_controls(FloatManager &floats) {
-            VarStore *ret = new VarStore();
-            for (auto it: assignment_skval->get_assignment()) {
-                switch (it.second->get_type()) {
-
-                    case sk_type_int:
-                        ret->setVarVal(it.first, ((SkValInt *) it.second)->get(), OutType::INT);
-                        break;
-                    case sk_type_float:
-                        ret->setVarVal(it.first, floats.getIdx(((SkValFloat *) it.second)->get()), OutType::FLOAT);
-                        break;
-                    case sk_type_bool:
-                        ret->setVarVal(it.first, ((SkValBool *) it.second)->get(), OutType::BOOL);
-                        break;
-                    default:
-                        AssertDebug(false, "missing skval cases.")
-
-                }
-            }
-            return ret;
         }
 
         SATSolverResult get_sat_solver_result() {
@@ -664,7 +665,7 @@ namespace SolverLanguagePrimitives {
         void update(HoleAssignment *updated_solution_holder) {
             sat_solver_result = updated_solution_holder->get_sat_solver_result();
             if (updated_solution_holder->get_assignment()->is_null()) {
-                assignment_skval = new Assignment_SkVal();
+                assignment_skval = new Assignment_SkVal(bool_node::CTRL);
             } else {
                 assignment_skval->update(updated_solution_holder->get_assignment());
             }
@@ -685,7 +686,7 @@ namespace SolverLanguagePrimitives {
             if (other->get_assignment()->is_null()) {
                 //do nothing;
             } else {
-                assignment_skval->join_with(other->get_assignment());
+                assignment_skval->disjoint_join_with(other->get_assignment());
             }
         }
 
@@ -696,7 +697,7 @@ namespace SolverLanguagePrimitives {
 
     class InputAssignment : public Assignment_SkVal {
     public :
-        InputAssignment() : Assignment_SkVal() {}
+        InputAssignment() : Assignment_SkVal(bool_node::SRC) {}
 
         InputAssignment(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
 

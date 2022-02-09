@@ -56,7 +56,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             for (auto it: tmp_dag->getNodesByType(var_type)) {
                 string new_name =  ((CTRL_node*)it)->get_name();
                 string original_name = ((CTRL_node*)it)->get_original_name();
-                cout << "RENAME " << original_name <<" -> " << new_name << endl;
+                cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << ((CTRL_node*)it)->get_source_dag_name() << endl;
                 if(var_store.contains(new_name)){
                     //if new name already exists make sure that it's the same as the original name
                     assert(original_name == new_name);

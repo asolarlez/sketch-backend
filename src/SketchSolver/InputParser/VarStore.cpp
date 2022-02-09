@@ -5,11 +5,11 @@
 #include "VarStore.h"
 
 bool VarStore::has_original_name(const string &original_name) const {
-    return original_name_to_name.find(original_name) != original_name_to_name.end();
+    return original_name_to_dag_name_to_name.find(original_name) != original_name_to_dag_name_to_name.end();
 }
 
 void VarStore::rename(const string &original_name, const string &new_name) {
-    assert(original_name_to_name.find(original_name) != original_name_to_name.end());
+    assert(original_name_to_dag_name_to_name.find(original_name) != original_name_to_dag_name_to_name.end());
     if(contains(new_name)){
         //if new name already exists make sure that it's the same as the original name
         assert(original_name == new_name);
@@ -17,7 +17,8 @@ void VarStore::rename(const string &original_name, const string &new_name) {
     }
     else
     {
-        string obj_name = original_name_to_name[original_name];
+        AssertDebug(original_name_to_dag_name_to_name[original_name].size() == 1, "Check why this fails and respond accordingly.")
+        string obj_name = original_name_to_dag_name_to_name[original_name].begin()->second;
         assert(index.find(obj_name) != index.end());
         auto& obj = _getObj(obj_name);
         assert(obj.get_original_name() == original_name);
@@ -28,6 +29,6 @@ void VarStore::rename(const string &original_name, const string &new_name) {
         index[new_name] = index[obj_name];
         index.erase(obj_name);
 
-        original_name_to_name[original_name] = new_name;
+        original_name_to_dag_name_to_name[original_name].begin()->second = new_name;
     }
 }
