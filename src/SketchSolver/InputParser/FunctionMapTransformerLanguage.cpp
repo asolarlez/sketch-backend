@@ -7,8 +7,8 @@
 
 using namespace FMTL;
 
-const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, VarStore &store, bool_node::Type type,
-                                        const vector<string> *sub_functions) {
+const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, const VarStore &store, const bool_node::Type type,
+                                                              const vector<string> *sub_functions) {
     
     assert(root_dag_reps.find(function_name) != root_dag_reps.end());
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
@@ -152,7 +152,7 @@ FunctionMapTransformer::extract_sketch_function(const string &from_dag, const st
     bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
     ret->get_solution();
-//    auto check_all_good = ret->produce_inlined_dag();
+//    auto check_all_good = ret->produce_concretization();
 //    check_all_good->increment_shared_ptr();
 //    check_all_good->clear();
     return ret;

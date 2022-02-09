@@ -249,7 +249,7 @@ Dllist assertions;
 
   void repOK();
 
-  BooleanDAG* clone(const string& explicit_name = "");
+  BooleanDAG* clone(const string& explict_name = "", const bool rename_holes = false);
   void clone_nodes(vector<bool_node*>& nstore, Dllist* dl=NULL);
 
   void print(ostream& out)const;

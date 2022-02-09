@@ -14,7 +14,7 @@
 #include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CounterexampleFinder.h"
-#include "SketchFunction.h"
+#include "BooleanDagUtility.h"
 
 using namespace MSsolverNS;
 
@@ -37,7 +37,7 @@ class CEGISChecker
 	void growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 
 
-	void pushProblem(SketchFunction* p){
+	void pushProblem(BooleanDagUtility* p){
         p->increment_shared_ptr();
 		problemStack.push(p);
 	}
@@ -45,7 +45,7 @@ class CEGISChecker
 		return (int) problemStack.size();
 	}
 	void popProblem(){
-		SketchFunction* t = problemStack.top();
+        BooleanDagUtility* t = problemStack.top();
 		problemStack.pop();
 		t->clear();
 	}
@@ -55,7 +55,7 @@ class CEGISChecker
 
 //--moved from protected;
 
-	stack<SketchFunction*> problemStack;
+	stack<BooleanDagUtility*> problemStack;
 
 	map<int, File*> files;
 
@@ -64,7 +64,7 @@ class CEGISChecker
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<SketchFunction*> problems;
+	vector<BooleanDagUtility*> problems;
 
 	vector<Tvalue> check_node_ids;
 
@@ -106,7 +106,7 @@ public:
         return problemStack.top()->get_dag();
     }
 
-    SketchFunction* getHarness()
+    BooleanDagUtility* getHarness()
     {
         assert(!problemStack.empty());
         return problemStack.top();
@@ -122,7 +122,7 @@ public:
     }
 
 
-	void addProblem(SketchFunction *harness, File *file)
+	void addProblem(BooleanDagUtility *harness, File *file)
 	{
 		curProblem = (int) problems.size();
 		problems.push_back(harness);
@@ -130,7 +130,7 @@ public:
             files[curProblem] = file;
         }
 
-        SketchFunction* inlined_harness = harness->produce_inlined_dag();
+        BooleanDagUtility* inlined_harness = harness->produce_inlined_dag();
         inlined_harness->increment_shared_ptr();
         redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 

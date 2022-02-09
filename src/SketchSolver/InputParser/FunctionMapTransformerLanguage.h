@@ -263,7 +263,7 @@ namespace FMTL {
         VarStore* var_store;
         const bool_node::Type concretization_type;
     public:
-        ConcretizePrimitive(const string &_function_name, VarStore &_store, bool_node::Type _concretization_type) :
+        ConcretizePrimitive(const string &_function_name, const VarStore &_store, const bool_node::Type _concretization_type) :
                 var_store(_store.clone()),
                 concretization_type(_concretization_type),
                 TransformPrimitive(_function_name, _concretize) {
@@ -396,8 +396,8 @@ namespace FMTL {
 
         explicit FunctionMapTransformer(FunctionMap* _function_map): function_map(_function_map) {function_map != nullptr;}
 
-        const TransformPrimitive * concretize(const string &function_name, VarStore &store, bool_node::Type type,
-                        const vector<string> *sub_functions);
+        const TransformPrimitive * concretize(const string &function_name, const VarStore &store, const bool_node::Type type,
+                                              const vector<string> *sub_functions);
 
         const TransformPrimitive * replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);
 

@@ -273,7 +273,7 @@ bool_node *NodeHardcoder::get_rvalue() {
 	return rvalue;
 }
 
-BooleanDAG *hardCodeINodeNoClone(BooleanDAG *dag, VarStore &values, bool_node::Type type, FloatManager &floats) {
+BooleanDAG *hardCodeINodeNoClone(BooleanDAG *dag, const VarStore &values, const bool_node::Type type, FloatManager &floats) {
     int oldsize = dag->size();
 
     // if(PARAMS->verbosity > 2) {

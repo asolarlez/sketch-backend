@@ -322,14 +322,16 @@ public:
 };
 
 class Assignment_SkVal: public Mapping<SkVal> {
+
+    map<string, string> name_to_original_name;
+
 public:
     Assignment_SkVal(): Mapping<SkVal>() {}
 
     template<typename T>
     explicit Assignment_SkVal(T is_null): Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
 
-    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>() {
-
+    explicit Assignment_SkVal(Assignment_SkVal* to_copy): Mapping<SkVal>(), name_to_original_name(to_copy->name_to_original_name) {
         for(auto it: to_copy->assignment)
         {
             SkValType sk_val_type = it.second->get_type();
@@ -364,34 +366,39 @@ public:
     }
 
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
-
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
             OutType* out_type = (*it).getOtype();
+            string name = (*it).getName();
+            string original_name = (*it).get_original_name();
             if(out_type == OutType::INT) {
-                set((*it).getName(), new SkValInt((*it).getInt(), (*it).get_size()));
+                set(name, new SkValInt((*it).getInt(), (*it).get_size()));
             }
             else if (out_type == OutType::FLOAT)
             {
-                set((*it).getName(), new SkValFloat(floats.getFloat((*it).getInt()), (*it).get_size()));
+                set(name, new SkValFloat(floats.getFloat((*it).getInt()), (*it).get_size()));
             }
             else if (out_type == OutType::BOOL)
             {
-                set((*it).getName(), new SkValBool((*it).getInt()));
+                set(name, new SkValBool((*it).getInt()));
             }
             else if(out_type == OutType::BOOL_ARR)
             {
-                set((*it).getName(), new SkValBoolArr((*it).getArr()));
+                set(name, new SkValBoolArr((*it).getArr()));
             }
             else if(out_type == OutType::INT_ARR)
             {
-                set((*it).getName(), new SkValIntArr((*it).getArr()));
+                set(name, new SkValIntArr((*it).getArr()));
             }
             else
             {
                 assert(false);
                 Assert(false, "need to add more OutType to SkVal conversions.");
             }
+
+            assert(name_to_original_name.find(name) == name_to_original_name.end());
+            name_to_original_name[name] = original_name;
+
         }
 
         VarStore* test_var_store = to_var_store();
@@ -436,13 +443,13 @@ public:
         {
             if(item.second->get_type() == sk_type_int)
             {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), "to_var_store()");
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), name_to_original_name[item.first]);
                 ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
 //                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValInt*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
             }
             else if(item.second->get_type() == sk_type_bool)
             {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), "to_var_store()");
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), name_to_original_name[item.first]);
                 ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()));
 //                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValBool*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
 
@@ -472,6 +479,8 @@ public:
         assert(!updated_assignment->null);
         for(const auto& it : updated_assignment->get_assignment()) {
             set(it.first, it.second->clone());
+            assert(updated_assignment->name_to_original_name.find(it.first) != updated_assignment->name_to_original_name.end());
+            name_to_original_name[it.first] = updated_assignment->name_to_original_name[it.first];
         }
     }
     void join_with(Assignment_SkVal *assignment_to_join_with) {
@@ -481,6 +490,8 @@ public:
         {
             assert(!has(it.first));
             set(it.first, it.second->clone());
+            assert(assignment_to_join_with->name_to_original_name.find(it.first) != assignment_to_join_with->name_to_original_name.end());
+            name_to_original_name[it.first] = assignment_to_join_with->name_to_original_name[it.first];
         }
     }
 };

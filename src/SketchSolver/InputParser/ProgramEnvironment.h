@@ -65,7 +65,7 @@ public:
         delete tmp;
     }
 
-    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type, vector<string> *&inlined_functions) {
+    void doInline(BooleanDAG &dag, const VarStore &var_store, const bool_node::Type var_type, vector<string> *&inlined_functions) {
 
         assert(inlined_functions == nullptr);
 

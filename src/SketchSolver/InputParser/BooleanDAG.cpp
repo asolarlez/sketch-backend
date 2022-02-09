@@ -1369,7 +1369,7 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 
 
 
-BooleanDAG* BooleanDAG::clone(const string& explict_name){
+BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_holes){
 
     for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
         it != nodesByType.end(); ++it){
@@ -1424,21 +1424,24 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name){
 		}							
 	}
 
-    auto ctrls = bdag->getNodesByType(bool_node::CTRL);
 
-    for (auto & ctrl : ctrls) {
-        assert(ctrl->type == bool_node::CTRL);
-        const bool do_rename = true;
-        if(do_rename) {
-            string ctrl_name = ctrl->get_name();
-            if (((CTRL_node *) ctrl)->get_Pcond()) {
-                assert(ctrl_name == "#PC");
-            } else {
-                assert(ctrl_name != "#PC");
-                if (ctrl_name.size() >= 3) {
-                    assert(ctrl_name.substr(0, 3) != "#PC");
+    if(rename_holes){
+        cout << "WARNING: RENAMING HOLES!!! " << endl;
+        auto ctrls = bdag->getNodesByType(bool_node::CTRL);
+        for (auto & ctrl : ctrls) {
+            assert(ctrl->type == bool_node::CTRL);
+            const bool dont_actually_rename = false;
+            if(!dont_actually_rename) {
+                string ctrl_name = ctrl->get_name();
+                if (((CTRL_node *) ctrl)->get_Pcond()) {
+                    assert(ctrl_name == "#PC");
+                } else {
+                    assert(ctrl_name != "#PC");
+                    if (ctrl_name.size() >= 3) {
+                        assert(ctrl_name.substr(0, 3) != "#PC");
+                    }
+                    ((CTRL_node *) ctrl)->add_suffix_to_name(get_suffix(true, bdag->dag_id));
                 }
-                ((CTRL_node *) ctrl)->add_suffix_to_name(get_suffix(true, bdag->dag_id));
             }
         }
     }

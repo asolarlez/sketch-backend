@@ -65,6 +65,7 @@ For meeting:
     10. setVal takes as input a size_t, is this something we should be worried about?
     11. what are -1s in controls in CegisChecker (I guess they are 'unset'?); they seem to be interpreted as 0 here: int intFromBV(T& bv, int start, int nbits)
         TODO: added that -1 and 0 are equal in ObjP:: bool operator == (const objP& other) const
+    12. Can arrays be holes? Seems like only SRC can be arrays but not CTRLS. Otherwise, need to fix the tracking of original name for arrays.
 
 
 Priority for merging with Master

@@ -15,7 +15,6 @@
 #include "CEGISParams.h"
 #include "REASSolver.h"
 #include "IntToFloatRewriteDag.h"
-#include "SketchFunction.h"
 
 using namespace MSsolverNS;
 

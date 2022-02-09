@@ -7,6 +7,7 @@
 #include "SketchFunction.h"
 #include "File.h"
 #include "SolverLanguage.h"
+#include "BooleanDagUtility.h"
 
 void SL::Var::run(SolverProgramState *state)  {
     state->add_var(this);
@@ -395,7 +396,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             auto* test_full_concretization = new BooleanDagUtility(harness);
             test_full_concretization->increment_shared_ptr();
             VarStore* var_store = sol->to_var_store();
-            test_full_concretization->inline_this_dag(*var_store, bool_node::CTRL);
+            test_full_concretization->concretize_this_dag(*var_store, bool_node::CTRL);
             var_store->clear();
             assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
             test_full_concretization->clear();
@@ -563,8 +564,10 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 
                     const bool assert_num_remaining_holes_is_0 = true;
                     if(assert_num_remaining_holes_is_0) {
-                        BooleanDAG *inlined_dag =
-                                ((BooleanDagUtility *) sk_func)->produce_inlined_dag(*the_var_store, bool_node::SRC);
+                        BooleanDagUtility *_inlined_dag =
+                                ((BooleanDagUtility *) sk_func)->produce_concretization(*the_var_store, bool_node::SRC);
+                        _inlined_dag->increment_shared_ptr();
+                        BooleanDAG* inlined_dag = _inlined_dag->get_dag();
                         int remaining_holes = inlined_dag->getNodesByType(bool_node::CTRL).size();
                         AssertDebug(remaining_holes == 0,
                                     "This dag should not havey any holes remaining, but it has " +
@@ -913,6 +916,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             VarStore* inputs = input_holder->to_var_store();
             input_holder_var_val->decrement_shared_ptr();
 
+            assert(sk_func->get_dag()->get_failed_assert() == nullptr);
             BooleanDAG* to_concretize = sk_func->get_dag()->clone();
             sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
             bool ret = to_concretize->get_failed_assert() == nullptr;

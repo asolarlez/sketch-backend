@@ -236,7 +236,8 @@ Tvalue& SolverHelper::getControl(const string& name) {
 Tvalue& SolverHelper::getControl(CTRL_node* ctrlnode){	
 	Assert(!ctrlnode->get_Angelic(), "not allowed");
 	string name = ctrlnode->get_name();
-	map<string, Tvalue>::iterator mp = controls.find(name);	
+	map<string, Tvalue>::iterator mp = controls.find(name);
+    AssertDebug(mp != controls.end(), "Not here");
 	Assert(mp != controls.end(), "Not here");
 	return mp->second;
 }

@@ -714,17 +714,17 @@ class DagOneStepInlineAndConcretize : public DagFunctionInliner, public NodeHard
     set<string> inlined_functions;
 public:
     DagOneStepInlineAndConcretize(
-            VarStore& _ctrl_store,
-            bool_node::Type tp,
+            const VarStore &_ctrl_store,
+            const bool_node::Type tp,
             BooleanDAG& p_dag,
             const map<string, BooleanDAG*>& p_functionMap,
             map<string, map<string, string> > p_replaceMap,
             FloatManager& fm,
             HoleHardcoder* p_hcoder,
             const set<string>& p_pureFunctions,
-            bool p_randomize=false,
-            InlineControl* ict=NULL,
-            bool p_onlySpRandomize=false,
+            bool p_randomize= false,
+            InlineControl* ict= NULL,
+            bool p_onlySpRandomize= false,
             int p_spRandBias = 1):
             DagFunctionInliner(
                     p_dag, p_functionMap, std::move(p_replaceMap),

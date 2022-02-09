@@ -3103,7 +3103,6 @@ void NodesToSolver::process(BooleanDAG& bdag){
   
 	for(BooleanDAG::iterator node_it = bdag.begin(); node_it != bdag.end(); ++node_it, ++i){
 		try{
-	//		if ((i>=2423808 && i<=2423808+1024) || i%1024 == 0) cout << "processing " << i << " " << (*node_it)->lprint() << endl;
 		Dout(cout<<(*node_it)->get_name()<<":"<<(*node_it)->id<<endl);
 		int tmpbufs = TOTBUFFERS;
 		(*node_it)->accept(*this);
@@ -3137,9 +3136,9 @@ void NodesToSolver::process(BooleanDAG& bdag){
 	  //cout << endl;
       //		if(tv.getSize() > 20 && (*node_it)->getOtype() == bool_node::INT ) {cout<<(*node_it)->lprint()<<" -----> "<< tv.getSize()<<"  "<< tv <<endl;}
 		}catch(BasicError& be){
-//            assert(false);
-			throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");      		
-    		}
+            AssertDebug(false, "ERROR WAS IN THE FOLLOWING NODE" + (*node_it)->get_name());
+            throw BasicError((*node_it)->get_name(), "ERROR WAS IN THE FOLLOWING NODE");
+        }
 //		catch (exception e) {
 //			cout << "exception" << endl;
 //			cout << e.what() << endl;

@@ -16,7 +16,6 @@
 #include "CEGISChecker.h"
 #include "SkVal.h"
 #include "CEGISFinder.h"
-#include "SketchFunction.h"
 
 using namespace MSsolverNS;
 
@@ -55,7 +54,7 @@ protected:
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<SketchFunction*> problems;
+	vector<BooleanDagUtility*> problems;
     vector<File*> files;
 
 	void declareControl(CTRL_node* cnode);
@@ -107,7 +106,7 @@ public:
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(SketchFunction *harness, File *file);
+	void addProblem(BooleanDagUtility *harness, File *file);
 
 
     const ElapsedTime& get_last_elapsed_time()
@@ -123,7 +122,7 @@ public:
 
 
 
-    void get_control_map_as_map_str_skval(Assignment_SkVal *values);
+    Assignment_SkVal* get_control_map_as_map_str_skval();
 	void get_control_map_as_map_str_str(map<string, string>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);

@@ -10,19 +10,15 @@
 #include "CounterexampleFinder.h"
 #include "SkVal.h"
 
-//extern CommandLineArgs* PARAMS;
 
-
-
-
-void CEGISSolver::addProblem(SketchFunction *harness, File *file){
+void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
     checker->addProblem(harness, file);
 	problems.push_back(harness);
     files.push_back(file);
 
     {
 
-        SketchFunction* inlined_harness = harness->produce_inlined_dag();
+        BooleanDagUtility* inlined_harness = harness->produce_inlined_dag();
         inlined_harness->increment_shared_ptr();
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
@@ -229,7 +225,6 @@ bool CEGISSolver::solveCore(){
 
                 if(doMore) {
 
-//                    SketchFunction *harness = checker->getHarness();
                     ProgramEnvironment* env = checker->getHarness()->get_env();
 
                     BooleanDAG* to_concretize = finder->get_all_inputs_dag()->clone();
@@ -241,9 +236,9 @@ bool CEGISSolver::solveCore(){
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
                     {
-                        SketchFunction* concretized_function =
+                        BooleanDagUtility* concretized_function =
                                 checker->getHarness()->produce_concretization(
-                                        ctrlStore, bool_node::CTRL, true);
+                                        ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
                         assert(concretized_dag->get_failed_assert() == nullptr);
@@ -261,7 +256,7 @@ bool CEGISSolver::solveCore(){
                 else
                 {
 
-                    SketchFunction *harness = checker->getHarness();
+                    BooleanDagUtility *harness = checker->getHarness();
 
                         BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
                     harness->get_env()->doInline(
@@ -273,8 +268,8 @@ bool CEGISSolver::solveCore(){
 
                     if(file != nullptr)
                     {
-                        SketchFunction* concretized_function =
-                                checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL, true);
+                        BooleanDagUtility* concretized_function =
+                                checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr)
                         {
@@ -469,51 +464,52 @@ void CEGISSolver::print_control_map(ostream& out){
 	}
 }
 
-void CEGISSolver::get_control_map_as_map_str_skval(Assignment_SkVal *values)
+Assignment_SkVal* CEGISSolver::get_control_map_as_map_str_skval()
 {
-    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
-        if(it->otype == OutType::FLOAT)
-        {
-            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt()), it->get_size()));
-        }
-        else if (it->otype == OutType::INT)
-        {
-            values->set(it->getName(), new SkValInt(it->getInt(), it->get_size()));
-            assert((( SkValInt*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
-        }
-        else if (it->otype == OutType::BOOL)
-        {
-            assert(it->get_size() == 1);
-            values->set(it->getName(), new SkValBool(it->getInt()));
-            assert((( SkValBool*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
-        }
-        else
-        {
-            AssertDebug(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
-        }
-    }
-    for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
-
-        AssertDebug(false, "need to implement synthouts to map to SkVals, rather than strings");
+    return new Assignment_SkVal(&ctrlStore, floats);
+//    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
+//        if(it->otype == OutType::FLOAT)
+//        {
+//            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt()), it->get_size()));
+//        }
+//        else if (it->otype == OutType::INT)
+//        {
+//            values->set(it->getName(), new SkValInt(it->getInt(), it->get_size()));
+//            assert((( SkValInt*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
+//        }
+//        else if (it->otype == OutType::BOOL)
+//        {
+//            assert(it->get_size() == 1);
+//            values->set(it->getName(), new SkValBool(it->getInt()));
+//            assert((( SkValBool*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
+//        }
+//        else
+//        {
+//            AssertDebug(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
+//        }
+//    }
+//    for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
 //
-//        //stringstream str;
-//        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
-//        //it->second->print(str);
-//        values[it->first] = ctrlStore.synthouts[it->first];
-    }
-
-    VarStore* test_varstore = values->to_var_store();
-
-    assert(test_varstore->size() == ctrlStore.size());
-
-    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
-        assert(ctrlStore[it->getName()] == (*test_varstore)[it->getName()]);
-    }
-    for(auto it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
-        assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
-    }
-
-    delete test_varstore;
+//        AssertDebug(false, "need to implement synthouts to map to SkVals, rather than strings");
+////
+////        //stringstream str;
+////        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
+////        //it->second->print(str);
+////        values[it->first] = ctrlStore.synthouts[it->first];
+//    }
+//
+//    VarStore* test_varstore = values->to_var_store();
+//
+//    assert(test_varstore->size() == ctrlStore.size());
+//
+//    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
+//        assert(ctrlStore[it->getName()] == (*test_varstore)[it->getName()]);
+//    }
+//    for(auto it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
+//        assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
+//    }
+//
+//    delete test_varstore;
 
 
 }

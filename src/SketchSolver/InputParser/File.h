@@ -18,7 +18,6 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=fals
 void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
 class BooleanDagUtility;
-class SketchFunction;
 
 class File: public vector<VarStore*>
 {
@@ -347,7 +346,7 @@ public:
 
     File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
 
-    void relabel(SketchFunction *harness);
+    void relabel(BooleanDagUtility *harness);
 
     File();
 };

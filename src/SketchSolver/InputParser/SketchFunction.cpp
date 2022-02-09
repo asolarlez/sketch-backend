@@ -6,12 +6,15 @@
 
 #include <utility>
 
-SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool_node::Type var_type, bool do_clone) {
+SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_store, const bool_node::Type var_type, const bool do_clone) {
 
     if(do_clone) {
-        return clone()->produce_concretization(var_store, var_type, false);
+        return clone()->produce_concretization(_var_store, var_type, false);
     }
     else {
+
+        VarStore var_store = _var_store;
+
         vector<string> *inlined_functions = nullptr;
 
         if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
@@ -48,7 +51,12 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
                 assert(enter);
             }
 
-            ///TODO: NEED TO TRANSLATE NAMES TO ORIGINAL NAMES;
+            ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                var_store.rename(((CTRL_node*)it)->get_original_name(), ((CTRL_node*)it)->get_name());
+            }
+
             for (auto it: tmp_dag->getNodesByType(var_type)) {
                 AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
             }
@@ -71,7 +79,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
 
             BooleanDagUtility *to_get_inlined_fs = new BooleanDagUtility(get_dag()->clone(), get_env());
             to_get_inlined_fs->increment_shared_ptr();
-            to_get_inlined_fs->inline_this_dag(var_store, var_type, inlined_functions);
+            to_get_inlined_fs->concretize_this_dag(var_store, var_type, inlined_functions);
             //assert that if the var_store is not empty, then the dag was actually concretized;
             if (var_store.size() >= 1) {
                 assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
@@ -156,7 +164,55 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
             inlined_functions = nullptr;
         }
 
-        inline_this_dag(var_store, var_type, inlined_functions);
+        if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
+            //assert that all the holes of get_dag() have values in var_store AND vice versa
+
+            BooleanDagUtility* tmp_dag_util = clone();
+            tmp_dag_util->increment_shared_ptr();
+            tmp_dag_util->inline_this_dag();
+            BooleanDAG* tmp_dag = tmp_dag_util->get_dag();
+
+            cout << "nodes:  ";
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                cout << it->get_name() << "; ";
+            }
+            cout << endl;
+            cout << "vars: ";
+            for (const auto& objp_it: var_store) {
+                cout << objp_it.name << "; ";
+            }
+            cout << endl;
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                AssertDebug(var_store.has_original_name(((CTRL_node*)it)->get_original_name()),  "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
+//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+            }
+            for (const auto& objp_it: var_store) {
+                bool enter = false;
+                assert(var_type == bool_node::CTRL);
+                for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
+                    if (objp_it.get_original_name() == ((CTRL_node*)bool_node_it)->get_original_name()) {
+                        enter = true;
+                        break;
+                    }
+                }
+                assert(enter);
+            }
+
+            ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                var_store.rename(((CTRL_node*)it)->get_original_name(), ((CTRL_node*)it)->get_name());
+            }
+
+            for (auto it: tmp_dag->getNodesByType(var_type)) {
+                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+            }
+
+            tmp_dag_util->clear();
+        }
+
+
+        concretize_this_dag(var_store, var_type, inlined_functions);
 
         //construct solution
         if (var_type == bool_node::CTRL && var_store.size() >= 1) {
@@ -217,7 +273,7 @@ SketchFunction *SketchFunction::produce_concretization(VarStore &var_store, bool
 
 SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
-    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name);
+    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, false);
 
     auto new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
@@ -406,26 +462,3 @@ void SketchFunction::set_mirror_rep(const TransformPrimitive *_mirror_rep) {
     mirror_rep = _mirror_rep;
 }
 
-void BooleanDagUtility::swap_env(ProgramEnvironment *new_env) {
-    assert(original_program_env == nullptr);
-    original_program_env = env;
-    assert(new_env != env);
-    env = new_env;
-}
-
-void BooleanDagUtility::reset_env_to_original() {
-    assert(original_program_env != nullptr);
-    env = original_program_env;
-    original_program_env = nullptr;
-}
-
-bool BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()
-{
-    assert(shared_ptr == 0);
-    int prev_num = BooleanDAG::get_allocated().size();
-    assert(root_dag != nullptr);
-    root_dag->clear();
-    assert(prev_num - 1 == BooleanDAG::get_allocated().size());
-//    root_dag = nullptr;
-    return true;
-}

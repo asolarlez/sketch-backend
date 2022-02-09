@@ -73,7 +73,7 @@ namespace SolverLanguagePrimitives
     {
         File* file;
         string file_name;
-        SketchFunction *sk_func = nullptr;
+        BooleanDagUtility *sk_func = nullptr;
     public:
         explicit ProblemAE(SketchFunction* _function, File* _file = NULL):
                 sk_func(_function), file(_file){}
@@ -965,15 +965,14 @@ namespace SolverLanguagePrimitives
             solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
         }
 
-        void recordSolution(Assignment_SkVal* holes_to_sk_val)
-        {
-            AssertDebug(false, "TODO: need to refactor both varstore, and HoleAssignment to keep track of hole renaming.");
-            solver->get_control_map_as_map_str_skval(holes_to_sk_val);
+        Assignment_SkVal* recordSolution() {
+            auto ret = solver->get_control_map_as_map_str_skval();
             cout << "WrapperAssertDAG::recordSolution VALUES = ";
-            for (auto it : holes_to_sk_val->get_assignment()) {
+            for (auto it : ret->get_assignment()) {
                 cout << it.first << ": " << it.second->to_string() << ", ";
             }
             cout << endl;
+            return ret;
         }
 
         HoleAssignment* solve(ProblemAE* problem) override
@@ -983,7 +982,7 @@ namespace SolverLanguagePrimitives
             solver->addProblem(problem->get_harness(), problem->get_file());
 
             SATSolverResult ret_result = SAT_UNDETERMINED;
-            auto* holes_to_sk_val = new Assignment_SkVal();
+            Assignment_SkVal* holes_to_sk_val = nullptr;
             //copied from InterpreterEnviroment::assertDAG
             {
                 bool ret_result_determined = false;
@@ -992,7 +991,7 @@ namespace SolverLanguagePrimitives
 
                     solveCode = solver->solve();
                     if (solveCode || !hasGoodEnoughSolution) {
-                        recordSolution(holes_to_sk_val);
+                        holes_to_sk_val = recordSolution();
                     }
                 }
                 catch (SolverException *ex) {
@@ -1003,7 +1002,7 @@ namespace SolverLanguagePrimitives
                 }
                 catch (BasicError &be) {
                     if (!hasGoodEnoughSolution) {
-                        recordSolution(holes_to_sk_val);
+                        holes_to_sk_val = recordSolution();
                     }
 //                    needs InterpreterEnviroment::basename
 //                    cout << "ERROR: " << basename() << endl;
@@ -1029,7 +1028,7 @@ namespace SolverLanguagePrimitives
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
             if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
             {
-                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(), bool_node::CTRL, true);
+                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(), bool_node::CTRL);
                 assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
                 assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
                 tmp->increment_shared_ptr();
@@ -1124,7 +1123,7 @@ namespace SolverLanguagePrimitives
 
                 delete var_val_ret;
 
-                local_harness->inline_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
+                local_harness->concretize_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
 
                 File *file = new File(local_harness, file_name, state->floats, state->args.seed);
 

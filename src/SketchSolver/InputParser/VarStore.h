@@ -137,8 +137,7 @@ public:
             }
             for(int i = 0;i<vals.size();i++) {
                 if (vals[i] != other.vals[i]) {
-                    if(vals[i] == 0 && other.vals[i] == -1)
-                    {
+                    if(vals[i] == 0 && other.vals[i] == -1) {
                         //TODO: fix this. Artifact from CEGISSolver. -1 interpreted as 0 in int intFromBV(T& bv, int start, int nbits)
                     }
                     else {
@@ -405,6 +404,10 @@ public:
         bool get_is_array() const {
             return is_array;
         }
+
+        void rename(const string &new_name) {
+            name = new_name;
+        }
     };
 
 private:
@@ -439,18 +442,18 @@ public:
         return objs.size();
     }
 
-	VarStore * clone() const {
+    VarStore() = default;
 
-	    Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
-	    Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+    VarStore(const VarStore& to_copy)
+    {
+        Assert(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
+        Assert(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
-	    VarStore* ret = new VarStore();
-	    ret->bitsize = bitsize;
+        bitsize = to_copy.bitsize;
 
-	    vector<pair<int, string> > index_as_vec;
+        vector<pair<int, string> > index_as_vec;
 
-        for(const auto& it : index)
-        {
+        for(const auto& it : to_copy.index) {
             index_as_vec.emplace_back(it.second, it.first);
         }
 
@@ -461,15 +464,16 @@ public:
         {
             pair<int, string> it = index_as_vec[i];
             assert(it.first == i);
-            ret->insertObj(it.second, it.first, objP(objs[it.first]));
+            insertObj(it.second, it.first, objP(to_copy.objs[it.first]));
         }
+    }
 
-//	    for(const auto& it : index_as_vec)
-//        {
-//            ret->insertObj(it.second, it.first, new objP(objs[it.first]));
-//        }
+    VarStore operator = (const VarStore& other) const {
+        return VarStore(other);
+    }
 
-	    return ret;
+	VarStore* clone() const {
+        return new VarStore(*this);
     }
 
     auto begin()const { return objs.begin();}
@@ -509,6 +513,8 @@ public:
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
 	    objs.push_back(obj);
 	    index[name] = idx;
+        assert(original_name_to_name.find(obj.get_original_name()) == original_name_to_name.end());
+        original_name_to_name[obj.get_original_name()] = obj.name;
     }
 
 	void newArr(const string& name, int nbits, int arrsz, OutType* otype){
@@ -539,6 +545,8 @@ public:
             Assert(index.count(name) == 0, name << ": This variable already existed!!");
             if(original_name == "declareInput()") {
                 original_name += "___"+name;
+            } else if(original_name == "to_var_store()") {
+                original_name += "___"+name;
             }
             AssertDebug(original_name_to_name.find(original_name) == original_name_to_name.end(), "original_name should be unique.");
             original_name_to_name[original_name] = name;
@@ -551,13 +559,16 @@ public:
 	}
 
 	void setVarVal(const string& name, int val, OutType* otype){
+        AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar first.");
 		int idx;
 		if(index.count(name)!=0){
 			idx = getId(name);
 		}else{
+            AssertDebug(false, "check previous assert.");
 			objs.emplace_back(objP(name, 5, otype));
 			idx = objs.size()-1;
       		index[name] = idx;
+
 		}
         if(otype == OutType::BOOL)
         {
@@ -669,7 +680,7 @@ public:
 		}
 		Assert(found, "This is a bug");
 	}
-	int operator[](const string& name) {
+	int operator[](const string& name) const {
         int id = getId(name);
         AssertDebug(!objs[id].get_is_array(), "Can't return array as an int.");
 		return objs[getId(name)].getInt();
@@ -724,6 +735,8 @@ public:
     }
 
     bool has_original_name(const string &original_name) const;
+
+    void rename(const string &original_name, const string &new_name);
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
