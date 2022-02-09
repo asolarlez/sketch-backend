@@ -887,7 +887,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             if(!is_erased) {
                 assert(superseded);
             }
-            auto ret = main_parent->reconstruct_sketch_function(root, new_env)->clone(function_name);
+            SketchFunction* ret = main_parent->reconstruct_sketch_function(root, new_env)->clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
             new_env->function_map.insert(ret->get_dag()->get_name(), ret);

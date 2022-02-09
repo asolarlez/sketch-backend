@@ -54,7 +54,15 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
-                var_store.rename(((CTRL_node*)it)->get_original_name(), ((CTRL_node*)it)->get_name());
+                string new_name =  ((CTRL_node*)it)->get_name();
+                string original_name = ((CTRL_node*)it)->get_original_name();
+                cout << "RENAME " << original_name <<" -> " << new_name << endl;
+                if(var_store.contains(new_name)){
+                    //if new name already exists make sure that it's the same as the original name
+                    assert(original_name == new_name);
+                    assert(var_store.getObjConst(new_name).get_original_name() == original_name);
+                }
+                var_store.rename(original_name, new_name);
             }
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
@@ -273,7 +281,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
 SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
-    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, false);
+    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, true);
 
     auto new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
@@ -356,7 +364,6 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
 
 
     } else {
-
         assert(replaced_labels.find(replace_this) != replaced_labels.end());
 
 

@@ -84,10 +84,12 @@ Solver best_effort_synthesized_program(harness, file, num_trials, num_rows_per_s
 
 Solver main()
 {
-    //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
-    //return recursive_function_stun();
-    //return stun_main();
     return top_down_and_bottom_up_synthesis_sketch_main();
+    //return recursive_function_stun();
+
+
+    //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
+    //return stun_main();
     //return left_and_right_and_cond_synthesis_sketch_main();
 }
 
@@ -101,15 +103,37 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     for(int i = 0;i<select_best;i++) {
         for(int j = 0;j<select_best;j++) {
             print("LEFT", i+1, "/", select_best, "RIGHT", j+1, "/", select_best);
-            predicate_lvl1 =
-                composite_predicate.produce_replace("condition", predicate.clone());
-            predicate_lvl1.replace("if_true_branch",
-                program_lvl0.produce_concretization(left_programs.get(i).second().get_solution()));
-            predicate_lvl1.replace("if_false_branch",
-                program_lvl0.produce_concretization(right_programs.get(j).second().get_solution()));
+
+            //composite_predicate.replace("condition", condition);
+            //composite_predicate.replace("if_true_branch", if_true_branch);
+            //composite_predicate.replace("if_false_branch", if_false_branch);
+
+            assert(composite_predicate.num_holes() == 3, "cp has", composite_predicate.num_holes());
+
+            predicate_lvl1 = composite_predicate.produce_replace("condition", predicate.clone());
+            print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
+            int prev_num_holes = predicate_lvl1.num_holes();
+
+            tmp = program_lvl0.produce_concretization(left_programs.get(i).second().get_solution());
+            print("tmp.num_holes()", tmp.num_holes());
+            int new_num_holes = tmp.num_holes();
+
+            predicate_lvl1.replace("if_true_branch", tmp);
+            print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
+            assert((prev_num_holes + new_num_holes) >= predicate_lvl1.num_holes(), prev_num_holes, "+", new_num_holes, "<", predicate_lvl1.num_holes());
+
+            tmp = program_lvl0.produce_concretization(right_programs.get(j).second().get_solution());
+            print("tmp.num_holes()", tmp.num_holes());
+
+            predicate_lvl1.replace("if_false_branch", tmp);
+            print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
 
             sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", predicate_lvl1);
+            print("sketch_main_lvl1_sub.num_holes()", sketch_main_lvl1_sub.num_holes());
+
+
             sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl1_sub);
+            print("sketch_main_lvl1.num_holes()", sketch_main_lvl1.num_holes());
 
             File file = File(file_name, sketch_main_lvl1);
             local_sketch_main_lvl1_programs = best_effort_programs(sketch_main_lvl1, file, num_trials, num_rows_per_sample);
@@ -160,9 +184,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     int mult = 1;
 
 
-    num_trials = 4*mult;
-    num_rows_per_sample = 2;
-    select_best = 1;
+    num_trials = 2;
+    num_rows_per_sample = 1;
+    select_best = 2;
     assert(num_trials >= select_best);
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
@@ -177,7 +201,6 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     assert(left_lvl0_programs.size() >= select_best);
     assert(right_lvl0_programs.size() >= select_best);
 
-    num_trials = 1*mult;
     seed_main_lvl1 = synthesize_composite_programs_from_parts(left_lvl0_programs, right_lvl0_programs, select_best, file_name, num_trials, num_rows_per_sample);
 
     all_programs = [];
@@ -188,11 +211,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     int prev_best = 0-1;
     int new_best = seed_main_lvl1.get(0).first().first();
 
-
-    num_trials = 1*mult;
-    //num_rows_per_sample = 6;
-    //select_best = 2;
-    assert(num_trials >= select_best);
+    assert(num_trials >= select_best, "fails:", num_trials, "!>=", select_best);
 
     int iter_id = 0;
 
@@ -214,7 +233,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
             select_best = seed_main_lvl1.size();
         }
 
-        outer_loop_select_best = select_best*2;
+        outer_loop_select_best = select_best;
 
         if(outer_loop_select_best > seed_main_lvl1.size())
         {
@@ -265,7 +284,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
                     if_true_file.relabel(left_sketch_main_lvl0);
                     left_sketch_main_lvl0_programs =
-                        best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials*select_best*select_best, num_rows_per_sample);
+                        best_effort_programs(left_sketch_main_lvl0, if_true_file, num_trials, num_rows_per_sample);
                     print("DONE (i = ", i, ") left_sketch_main_lvl0_programs");
                     left_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().first());
                     left_sketch_main_lvl0_programs.sort();
@@ -274,7 +293,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
                     right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
                     if_false_file.relabel(right_sketch_main_lvl0);
-                    right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials*select_best*select_best, num_rows_per_sample);
+                    right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
                     print("DONE (i = ", i, ") right_sketch_main_lvl0_programs");
                     right_sketch_main_lvl0_programs.append(seed_main_lvl1.get(i).second().second());
                     right_sketch_main_lvl0_programs.sort();
@@ -312,6 +331,8 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                             left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
                             select_best, file_name, num_trials, num_rows_per_sample);
 
+                    print("DONE (i = ", i, ") new_synthesized_lvl1");
+
                     print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
 
                     concatenate(improved_main_lvl1, new_synthesized_lvl1);
@@ -324,7 +345,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     outer_loop_select_best = outer_loop_select_best+1;
                 }
             }
-            print("done i =", i);
+            print("DONE i =", i, "FINAL");
         }
 
         improved_main_lvl1.sort();
@@ -352,11 +373,6 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
         print("best_from_all_programs = ", all_programs[0].first().first());
 
         print("UPDATED seed_main_lvl1");
-
-        //num_trials = num_trials+4;
-        //num_rows_per_sample++;
-        //select_best = select_best+1;
-        assert(num_trials >= select_best);
     }
 
 
@@ -618,7 +634,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
 
     //string file_name = "zig_zag.data";
     string file_name = "uav_kg_big__as_bools.data";
-    
+
     file = File(file_name, sketch_main_lvl0_left__Wrapper);
     lvl0_left_solutions = best_effort_solutions(sketch_main_lvl0_left__Wrapper, file, num_trials, num_rows_per_sample);
 
@@ -903,7 +919,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
 		solution = SATSolver(harness.clone(), subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
 		score = get_score(harness, solution, file);
-		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score);
+		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());
 		solutions.append(pair<int, Solution>(score, solution));
 		if(score > best_score) // update the best_solution
 		{

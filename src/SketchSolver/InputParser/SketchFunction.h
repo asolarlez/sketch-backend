@@ -81,11 +81,6 @@ public:
         return produce_concretization(var_store, var_type, true);
     }
 
-    void concretize(VarStore &var_store, bool_node::Type var_type)
-    {
-        produce_concretization(var_store, var_type, false);
-    }
-
     SketchFunction *produce_concretization(const VarStore &var_store, const bool_node::Type var_type, const bool do_clone);
 
     SketchFunction *clone(const string& explicit_name = "");
@@ -94,14 +89,6 @@ public:
     void _clear();
 
 public:
-
-    SketchFunction *produce_with_concretized_holes(SolverLanguagePrimitives::HoleAssignment *solution_holder)
-    {
-        VarStore* var_store = solution_holder->to_var_store();
-        SketchFunction* ret = produce_concretization(*var_store, bool_node::CTRL, true);
-        var_store->clear();
-        return ret;
-    }
 
     SolverLanguagePrimitives::HoleAssignment* set_and_get_solution_from_var_store(const VarStore* var_store)
     {
@@ -150,7 +137,7 @@ public:
     void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* local_solution = solution_holder->to_var_store();
-        concretize(*local_solution, bool_node::CTRL);
+        produce_concretization(*local_solution, bool_node::CTRL, false);
         local_solution->clear();
         local_solution = nullptr;
     }

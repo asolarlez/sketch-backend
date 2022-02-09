@@ -58,6 +58,14 @@ public:
         assert(root_dag != nullptr);
     }
 
+    void print_hole_names()
+    {
+        for(auto it:get_dag()->getNodesByType(bool_node::CTRL))
+        {
+            cout << it->get_name() << endl;
+        }
+    }
+
     vector<SkHoleSpec>* get_holes()
     {
         BooleanDagUtility* inlined_harness = produce_inlined_dag();
@@ -76,6 +84,16 @@ public:
 
     BooleanDAG* get_dag() {
         return root_dag;
+    }
+
+    int get_num_holes()
+    {
+        return get_dag()->getNodesByType(bool_node::CTRL).size();
+    }
+
+    const string& get_dag_name()
+    {
+        return dag_name;
     }
 
     ProgramEnvironment* get_env() {

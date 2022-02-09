@@ -12,6 +12,7 @@ void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
 
 void File::relabel(BooleanDagUtility *harness) {
     BooleanDagUtility* cloned_inlined_harness = harness->produce_inlined_dag();
+    cloned_inlined_harness->increment_shared_ptr();
     BooleanDAG* problem = cloned_inlined_harness->get_dag();
     VarStore input_store;
     redeclareInputsAndAngelics(input_store, problem);

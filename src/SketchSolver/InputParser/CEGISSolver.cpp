@@ -17,8 +17,10 @@ void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
     files.push_back(file);
 
     {
-
         BooleanDagUtility* inlined_harness = harness->produce_inlined_dag();
+
+        inlined_harness->print_hole_names();
+
         inlined_harness->increment_shared_ptr();
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){

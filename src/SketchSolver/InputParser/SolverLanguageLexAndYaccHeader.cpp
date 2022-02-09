@@ -379,7 +379,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
-            SketchFunction* harness = param_var_val->get_function()->produce_inlined_dag();
+            SketchFunction* harness = ((SketchFunction*)param_var_val->get_function())->produce_inlined_dag();
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
 
@@ -447,7 +447,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             else if(params.size() >= 2) {
                 string message_prefix = "";
                 for(int i = 1;i<params.size();i++) {
-                    message_prefix += params[i]->eval(state)->to_string(true, false);
+                    message_prefix += params[i]->eval(state)->to_string(true, false) + " ";
                 }
                 AssertDebug(assert_true, "MESSAGE: " + message_prefix + message_suffix);
             }
@@ -856,6 +856,7 @@ eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_fu
     const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
 
     state->add_to_function_map(to_replace_with_name, to_replace_with_sk_func);
+    assert(state->function_map.find(to_replace_with_name) != state->function_map.end());
 
     ret_sk_func->replace(str_to_replace, to_replace_with_name);
 }
@@ -871,9 +872,10 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
-                HoleAssignment *sol = var_val_sol->get_solution();
-                SketchFunction *concretized_function =
-                        sk_func->produce_with_concretized_holes(sol);
+                HoleAssignment *solution_holder = var_val_sol->get_solution();
+                VarStore* var_store = solution_holder->to_var_store();
+                SketchFunction* concretized_function = sk_func->produce_concretization(*var_store, bool_node::CTRL, true);
+                var_store->clear();
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);
             }
@@ -942,7 +944,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _num_holes: {
             assert(params.empty());
-            SketchFunction* func_clone = sk_func->produce_inlined_dag();
+            BooleanDagUtility* func_clone = ((BooleanDagUtility*)sk_func)->produce_inlined_dag();
             func_clone->increment_shared_ptr();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
             func_clone->clear();
@@ -1434,6 +1436,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             method = new Method(_to_copy->get_method(false));
             break;
         case skfunc_val_type:
+            AssertDebug(false, "not sure how to handle this cloning, better leave it for later. (whether or not to make an exact clone, renamed clone / rename holes.");
             skfunc = _to_copy->get_function(false)->clone();
             break;
         case solution_val_type:
@@ -1539,10 +1542,10 @@ SL::VarVal *SL::VarVal::eval(T& val, SolverProgramState *state, SL::FunctionCall
     return ret;
 }
 
-SL::VarVal *SL::VarVal::clone() {
-    assert(is_sketch_function());
-    return new VarVal(skfunc->clone());
-}
+//SL::VarVal *SL::VarVal::clone() {
+//    assert(is_sketch_function());
+//    return new VarVal(skfunc->clone());
+//}
 
 void SL::VarVal::add_responsibility(const string &var_name, SL::VarVal *new_child) {
     new_child->increment_shared_ptr();

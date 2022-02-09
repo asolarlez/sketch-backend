@@ -197,11 +197,11 @@ bit predicate(int num_bools, bit[num_bools] bools)
     return predicate_generator(num_bools, bools);
 }
 
-bit condition(int num_bools, bit[num_bools] bools) {return 0;}
+bit condition(int num_bools, bit[num_bools] bools) {return ??;}
 
-bit if_true_branch(int num_bools, bit[num_bools] bools) {return 0;}
+bit if_true_branch(int num_bools, bit[num_bools] bools) {return ??;}
 
-bit if_false_branch(int num_bools, bit[num_bools] bools) {return 0;}
+bit if_false_branch(int num_bools, bit[num_bools] bools) {return ??;}
 
 bit composite_predicate(int num_bools, bit[num_bools] bools) {
     if(condition(num_bools, bools)) {

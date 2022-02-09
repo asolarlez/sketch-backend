@@ -75,7 +75,7 @@ namespace SolverLanguagePrimitives
         string file_name;
         BooleanDagUtility *sk_func = nullptr;
     public:
-        explicit ProblemAE(SketchFunction* _function, File* _file = NULL):
+        explicit ProblemAE(BooleanDagUtility* _function, File* _file = NULL):
                 sk_func(_function), file(_file){}
 
         File* get_file()
@@ -1105,7 +1105,7 @@ namespace SolverLanguagePrimitives
             int init_num_global_dags = BooleanDAG::get_allocated().size();
             int init_num_global_nodes = bool_node::get_allocated().size();
 
-            SketchFunction* local_harness = state->function_map["sketch_main__Wrapper"]->clone();
+            BooleanDagUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
             local_harness->increment_shared_ptr();
 
             FunctionMap& function_map = local_harness->get_env()->function_map;
@@ -1242,14 +1242,14 @@ namespace SolverLanguagePrimitives
             File* sub_file = all_file->sample_sub_file(rows_per_sample);
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
-            HoleAssignment* sol = (solver)->
+            HoleAssignment* solution_holder = (solver)->
                     solve(new ProblemAE(state->harness_, sub_file));
-            SketchFunction* concretized_function = state->harness_->produce_with_concretized_holes(
-                    sol);
+            BooleanDagUtility* concretized_function = ((BooleanDagUtility*)state->harness_)->produce_concretization(
+                    *solution_holder->to_var_store(), bool_node::CTRL);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();
-            sol->set_sat_solver_result(SAT_SATISFIABLE);
-            solutions.emplace_back(num_passing_inputs, sol);
+            solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
+            solutions.emplace_back(num_passing_inputs, solution_holder);
 
             cout << endl;
             cout << "######################################################" << endl;
