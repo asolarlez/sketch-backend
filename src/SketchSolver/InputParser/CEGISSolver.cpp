@@ -17,9 +17,13 @@ void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
     files.push_back(file);
 
     {
-        BooleanDagUtility* inlined_harness = harness->produce_inlined_dag();
-
-        inlined_harness->print_hole_names();
+        BooleanDagUtility* inlined_harness = harness;
+        bool new_clone = false;
+        if(!inlined_harness->has_it_been_at_least_inlined()) {
+            inlined_harness = inlined_harness->produce_inlined_dag();
+            inlined_harness->print_hole_names();
+            new_clone = true;
+        }
 
         inlined_harness->increment_shared_ptr();
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
@@ -29,7 +33,10 @@ void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
                 declareControl(ctrlnode);
             }
         }
-        inlined_harness->clear();
+
+        if(new_clone) {
+            inlined_harness->clear();
+        }
     }
 
 	finder->updateCtrlVarStore(ctrlStore);	

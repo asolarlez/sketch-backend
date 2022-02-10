@@ -379,7 +379,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
-            SketchFunction* harness = ((SketchFunction*)param_var_val->get_function())->produce_inlined_dag();
+            BooleanDagUtility* harness = ((BooleanDagUtility*)param_var_val->get_function())->produce_inlined_dag(true);
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
 

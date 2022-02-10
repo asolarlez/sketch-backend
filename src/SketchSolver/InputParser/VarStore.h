@@ -48,7 +48,7 @@ public:
         bool defined = false;
         bool is_array;
         const string original_name;
-        const string source_dag_name;
+        string source_dag_name;
         bool_node::Type type = bool_node::NO_TYPE;
 	public:
 		string name;
@@ -97,6 +97,7 @@ public:
                 is_array = false;
                 assert(!_otype->isArr);
             }
+            assert(source_dag_name != "program_lvl0__id26__id38");
 		}
 
         objP(const objP& old):
@@ -433,8 +434,10 @@ public:
             return is_array;
         }
 
-        void rename(const string &new_name) {
+        void rename(const string &new_name, const string &subdag_name) {
             name = new_name;
+            source_dag_name = subdag_name;
+            assert(source_dag_name != "sketch_main__Wrapper__id27__id29__id30__id41");
         }
 
         bool_node::Type get_type() const {
@@ -446,7 +449,7 @@ public:
 private:
 	vector<objP> objs;
 	map<string, int> index;
-    map<string, map<string, string> > original_name_to_dag_name_to_name;
+    map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
     void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
@@ -456,16 +459,16 @@ private:
         } else if(original_name == "to_var_store()") {
             original_name += "___"+name;
         }
-        if(original_name_to_dag_name_to_name.find(original_name) == original_name_to_dag_name_to_name.end()) {
-            original_name_to_dag_name_to_name[original_name] = map<string, string>();
+        if(var_name_to_dag_name_to_name.find(original_name) == var_name_to_dag_name_to_name.end()) {
+            var_name_to_dag_name_to_name[original_name] = map<string, string>();
         }
         else {
             AssertDebug(
-                    original_name_to_dag_name_to_name[original_name].find(source_dag_name) ==
-                    original_name_to_dag_name_to_name[original_name].end(),
+                    var_name_to_dag_name_to_name[original_name].find(source_dag_name) ==
+                    var_name_to_dag_name_to_name[original_name].end(),
                     "dag name should be unique for every original name.")
         }
-        original_name_to_dag_name_to_name[original_name][source_dag_name] = name;
+        var_name_to_dag_name_to_name[original_name][source_dag_name] = name;
     }
 
 public:
@@ -780,9 +783,12 @@ public:
         }
     }
 
+    bool has_original_name_and_source_dag(const string &original_name, const string &source_dag) const;
     bool has_original_name(const string &original_name) const;
 
-    void rename(const string &original_name, const string &new_name);
+    void rename(const string &original_name, const string& new_source_dag, const string &new_name);
+
+    const string &get_name(const string& var_name, const string &source_dag_name);
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

@@ -27,3 +27,7 @@ bool BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()
 //    root_dag = nullptr;
     return true;
 }
+
+bool BooleanDagUtility::has_it_been_at_least_inlined() {
+    return at_least_inlined;
+}

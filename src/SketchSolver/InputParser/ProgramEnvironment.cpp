@@ -48,6 +48,9 @@ FunctionMap* boolean_dag_map_to_function_map(map<string, BooleanDAG *> &boolean_
 
     for(const auto& it: boolean_dag_map)
     {
+        for(auto ctrl : it.second->getNodesByType(bool_node::CTRL)) {
+            ((CTRL_node*)ctrl)->set_dag_name(it.second->get_name());
+        }
         ret->insert(it.first, new SketchFunction(it.second, the_env));
     }
 

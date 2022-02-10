@@ -1393,7 +1393,15 @@ public:
             original_name = name;
         }
         source_dag_name = _dag_name;
+//        assert(source_dag_name != "sketch_main__Wrapper__id27__id29__id30__id41");
         name+=_suffix;
+    }
+
+    void set_dag_name(const string& _dag_name) {
+        assert(source_dag_name.empty());
+        source_dag_name = _dag_name;
+        assert(original_name.empty());
+        original_name = name;
     }
 
 	inline static CTRL_node* create(bool toMinimize = false){

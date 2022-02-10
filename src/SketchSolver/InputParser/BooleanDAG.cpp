@@ -1341,8 +1341,9 @@ void BooleanDAG::clone_nodes(vector<bool_node*>& nstore, Dllist* dl){
 	int nnodes = 0;
 	for(BooleanDAG::iterator node_it = begin(); node_it != end(); ++node_it){
 		if( (*node_it) != NULL ){		
-			Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
-			bool_node* bn = (*node_it)->clone(false);
+			AssertDebug( (*node_it)->id != -22 , "This node has already been deleted " + (*node_it)->get_name() );
+            Assert( (*node_it)->id != -22 , "This node has already been deleted "<<	(*node_it)->get_name() );
+            bool_node* bn = (*node_it)->clone(false);
             assert(bn->type == (*node_it)->type);
             assert(bn->id == (*node_it)->id);
 			
@@ -1399,13 +1400,6 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 	bdag->intSize = intSize;
 	bdag->useSymbolicSolver = useSymbolicSolver;
 
-	for(map<string, INTER_node*>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it){
-		Assert( it->second->id != -22 , "This node has already been deleted "<<it->first<<endl );
-		Assert( bdag->nodes.size() > it->second->id, " Bad node  "<<it->first<<endl );
-		bdag->named_nodes[it->first] = dynamic_cast<INTER_node*>(bdag->nodes[it->second->id]);	
-	}
-
-
     for(map<bool_node::Type, vector<bool_node*> >::iterator it =nodesByType.begin();
         it != nodesByType.end(); ++it){
         for(int i=0; i<it->second.size(); ++i){
@@ -1418,35 +1412,84 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 		vector<bool_node*>& tmp = bdag->nodesByType[it->first];
 		Assert( tmp.size() == 0, "This can't happen. This is an invariant.");
 		for(int i=0; i<it->second.size(); ++i){
+            AssertDebug( it->second[i]->id != -22 , "This node has already been deleted " + it->second[i]->get_name() + "\n");
 			Assert( it->second[i]->id != -22 , "This node has already been deleted "<<it->second[i]->get_name()<<endl );
             assert(bdag->nodes[ it->second[i]->id ]->type == it->first);
             tmp.push_back( bdag->nodes[ it->second[i]->id ] );
 		}							
 	}
 
-
-    if(rename_holes){
+    if(rename_holes) {
         cout << "WARNING: RENAMING HOLES!!! " << endl;
+    }
+
+    map<string, string> prev_name_to_new_name;
+//    if(rename_holes)
+    {
         auto ctrls = bdag->getNodesByType(bool_node::CTRL);
-        for (auto & ctrl : ctrls) {
+        for (auto &ctrl: ctrls) {
             assert(ctrl->type == bool_node::CTRL);
-            const bool dont_actually_rename = false;
-            if(!dont_actually_rename) {
-                string ctrl_name = ctrl->get_name();
-                if (((CTRL_node *) ctrl)->get_Pcond()) {
-                    assert(ctrl_name == "#PC");
+            string ctrl_name = ctrl->get_name();
+            if (((CTRL_node *) ctrl)->get_Pcond()) {
+                assert(ctrl_name == "#PC");
+            } else {
+                assert(ctrl_name != "#PC");
+                if (ctrl_name.size() >= 3) {
+                    assert(ctrl_name.substr(0, 3) != "#PC");
+                }
+                if (rename_holes) {
+                    string prev_name = ((CTRL_node *) ctrl)->get_name();
+                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
+                            bdag->get_name(), get_suffix(true, bdag->dag_id));
+                    string new_name = ((CTRL_node *) ctrl)->get_name();
+                    assert(prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end());
+                    prev_name_to_new_name[prev_name] = new_name;
                 } else {
-                    assert(ctrl_name != "#PC");
-                    if (ctrl_name.size() >= 3) {
-                        assert(ctrl_name.substr(0, 3) != "#PC");
-                    }
-                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(bdag->get_name(), get_suffix(true, bdag->dag_id));
+                    ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
+                            bdag->get_name(), "");
                 }
             }
         }
     }
 
-	return bdag;
+    if(rename_holes) {
+        for(auto it : bdag->getNodesByType(bool_node::CTRL)) {
+            string actual_name = ((CTRL_node*)it)->get_name();
+            if(actual_name != "#PC") {
+                string var_name = ((CTRL_node *) it)->get_original_name();
+                string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+                assert(sub_dag_name == bdag->get_name());
+            }
+        }
+
+        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+            AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
+            Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
+            AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
+            Assert(bdag->nodes.size() > it->second->id, " Bad node  " << it->first << endl);
+            if(prev_name_to_new_name.find(it->first) != prev_name_to_new_name.end())
+            {
+                //changed name
+                bdag->named_nodes[prev_name_to_new_name[it->first]] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+            }
+            else {
+                //name hasn't been changed
+                bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+            }
+        }
+    }
+    else {
+        for (map<string, INTER_node *>::iterator it = named_nodes.begin(); it != named_nodes.end(); ++it) {
+            AssertDebug(it->second->id != -22, "This node has already been deleted " + it->first + "\n");
+            Assert(it->second->id != -22, "This node has already been deleted " << it->first << endl);
+            AssertDebug(bdag->nodes.size() > it->second->id, " Bad node  " + it->first + "\n");
+            Assert(bdag->nodes.size() > it->second->id, " Bad node  " << it->first << endl);
+            bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
+        }
+    }
+
+    return bdag;
 }
 
 

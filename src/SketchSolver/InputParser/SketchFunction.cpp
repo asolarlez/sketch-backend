@@ -6,7 +6,21 @@
 
 #include <utility>
 
+const bool rename_holes = true;
+
 SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_store, const bool_node::Type var_type, const bool do_clone) {
+
+
+    if(rename_holes)
+    for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
+        string actual_name = ((CTRL_node*)it)->get_name();
+        if(actual_name != "#PC") {
+            string var_name = ((CTRL_node *) it)->get_original_name();
+            string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+            assert(sub_dag_name == dag_name);
+        }
+    }
 
     if(do_clone) {
         return clone()->produce_concretization(_var_store, var_type, false);
@@ -20,7 +34,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
             //assert that all the holes of get_dag() have values in var_store AND vice versa
 
-            BooleanDagUtility* tmp_dag_util = new BooleanDagUtility(get_dag()->clone(), get_env());
+            BooleanDagUtility* tmp_dag_util = ((BooleanDagUtility*)this)->clone(true);
             tmp_dag_util->increment_shared_ptr();
             tmp_dag_util->inline_this_dag();
             BooleanDAG* tmp_dag = tmp_dag_util->get_dag();
@@ -36,8 +50,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             }
             cout << endl;
             for (auto it: tmp_dag->getNodesByType(var_type)) {
-                AssertDebug(var_store.has_original_name(((CTRL_node*)it)->get_original_name()),  "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
-//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+                AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()), "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
             }
             for (const auto& objp_it: var_store) {
                 bool enter = false;
@@ -51,18 +64,14 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 assert(enter);
             }
 
-            ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+            ///TRANSLATE NAMES TO NAMES OF INCOMING DAG;
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
                 string new_name =  ((CTRL_node*)it)->get_name();
                 string original_name = ((CTRL_node*)it)->get_original_name();
+                string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
                 cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << ((CTRL_node*)it)->get_source_dag_name() << endl;
-                if(var_store.contains(new_name)){
-                    //if new name already exists make sure that it's the same as the original name
-                    assert(original_name == new_name);
-                    assert(var_store.getObjConst(new_name).get_original_name() == original_name);
-                }
-                var_store.rename(original_name, new_name);
+                var_store.rename(original_name, subdag_name, new_name);
             }
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
@@ -85,7 +94,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 }
             }
 
-            BooleanDagUtility *to_get_inlined_fs = new BooleanDagUtility(get_dag()->clone(), get_env());
+            BooleanDagUtility* to_get_inlined_fs = ((BooleanDagUtility*)this)->clone(true);
             to_get_inlined_fs->increment_shared_ptr();
             to_get_inlined_fs->concretize_this_dag(var_store, var_type, inlined_functions);
             //assert that if the var_store is not empty, then the dag was actually concretized;
@@ -175,7 +184,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
             //assert that all the holes of get_dag() have values in var_store AND vice versa
 
-            BooleanDagUtility* tmp_dag_util = clone();
+            BooleanDagUtility* tmp_dag_util = ((BooleanDagUtility*)this)->clone(true);
             tmp_dag_util->increment_shared_ptr();
             tmp_dag_util->inline_this_dag();
             BooleanDAG* tmp_dag = tmp_dag_util->get_dag();
@@ -191,7 +200,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             }
             cout << endl;
             for (auto it: tmp_dag->getNodesByType(var_type)) {
-                AssertDebug(var_store.has_original_name(((CTRL_node*)it)->get_original_name()),  "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
+                AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()), "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
 //                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
             }
             for (const auto& objp_it: var_store) {
@@ -209,7 +218,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
-                var_store.rename(((CTRL_node*)it)->get_original_name(), ((CTRL_node*)it)->get_name());
+                var_store.rename(((CTRL_node*)it)->get_original_name(), ((CTRL_node*)it)->get_source_dag_name(), ((CTRL_node*)it)->get_name());
             }
 
             for (auto it: tmp_dag->getNodesByType(var_type)) {
@@ -219,6 +228,22 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             tmp_dag_util->clear();
         }
 
+        assert(inlining_tree == nullptr);
+
+        inlining_tree = new InliningTree(this);
+
+        if(rename_holes)
+        for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
+            string actual_name = ((CTRL_node*)it)->get_name();
+            if(actual_name != "#PC") {
+                string var_name = ((CTRL_node *) it)->get_original_name();
+                string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+                assert(sub_dag_name == dag_name);
+
+                assert(var_store.get_name(var_name, dag_name) == actual_name);
+            }
+        }
 
         concretize_this_dag(var_store, var_type, inlined_functions);
 
@@ -236,6 +261,18 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 assert(false);
             }
 
+            if(rename_holes)
+            for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
+
+                string var_name = ((CTRL_node*)it)->get_original_name();
+                string actual_name = ((CTRL_node*)it)->get_name();
+                string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
+
+                assert(sub_dag_name == dag_name);
+
+                assert(var_store.get_name(var_name, dag_name) == actual_name);
+            }
+
             auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store,
                                                                                  get_env()->floats);
 
@@ -249,6 +286,18 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 delete compare_solution;
             } else {
                 solution = compare_solution;
+            }
+
+            if(rename_holes)
+            for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
+
+                string var_name = ((CTRL_node*)it)->get_original_name();
+                string actual_name = ((CTRL_node*)it)->get_name();
+                string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
+
+                assert(sub_dag_name == dag_name);
+
+                assert(solution->get_assignment()->get_name(var_name, dag_name) == actual_name);
             }
         }
 
@@ -281,18 +330,55 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
 SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
-    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, true);
+    BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes);
+
+    if(rename_holes)
+    for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
+        string actual_name = ((CTRL_node*)it)->get_name();
+        if(actual_name != "#PC") {
+            string var_name = ((CTRL_node *) it)->get_original_name();
+            string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+            assert(sub_dag_name == cloned_dag->get_name());
+        }
+    }
 
     auto new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
     SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
 
     if(solution != nullptr) {
+
+        for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
+
+            string var_name = ((CTRL_node*)it)->get_original_name();
+            string actual_name = ((CTRL_node*)it)->get_name();
+            string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
+
+            assert(sub_dag_name == dag_name);
+
+            assert(solution->get_assignment()->get_name(var_name, dag_name) == actual_name);
+        }
+
         solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
+
+        for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
+            string var_name = ((CTRL_node*)it)->get_original_name();
+            string actual_name = ((CTRL_node*)it)->get_name();
+            string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
+            assert(sub_dag_name == cloned_dag->get_name());
+            solution_clone->rename(actual_name, var_name, sub_dag_name, dag_name, solution->get_assignment()->get_name(var_name, dag_name));
+        }
+    }
+
+    InliningTree* inlining_tree_copy = nullptr;
+
+    if(inlining_tree != nullptr) {
+        inlining_tree_copy = new InliningTree(inlining_tree, cloned_dag->get_name());
     }
 
     return new SketchFunction(
-            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility);
+            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, inlining_tree_copy);
 }
 
 void SketchFunction::_clear()
@@ -468,4 +554,24 @@ const TransformPrimitive * SketchFunction::get_mirror_rep() const {
 void SketchFunction::set_mirror_rep(const TransformPrimitive *_mirror_rep) {
     mirror_rep = _mirror_rep;
 }
+
+InliningTree::InliningTree(SketchFunction *sk_func): dag_name(sk_func->get_dag_name()) {
+    for(auto it: sk_func->get_dag()->getNodesByType(bool_node::UFUN))
+    {
+        string var_name = ((UFUN_node*)it)->get_original_ufname();
+        string sub_dag_name = ((UFUN_node*)it)->get_ufname();
+        assert(sk_func->get_env()->function_map.find(sub_dag_name) != sk_func->get_env()->function_map.end());
+        add_subdag_under_var_name(var_name, sk_func->get_env()->function_map[sub_dag_name]);
+    }
+}
+
+void InliningTree::add_subdag_under_var_name(const string &var_name, SketchFunction *sub_dag)  {
+    if(var_name_to_dag_name.find(var_name) != var_name_to_dag_name.end()) {
+        assert(var_name_to_dag_name[var_name]->get_dag_name() == sub_dag->get_dag_name());
+    }
+    else {
+        var_name_to_dag_name[var_name] = new InliningTree(sub_dag);
+    }
+}
+
 

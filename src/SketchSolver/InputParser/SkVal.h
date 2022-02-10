@@ -327,14 +327,36 @@ class Assignment_SkVal: public Mapping<SkVal> {
 
     map<string, string> name_to_original_name;
     map<string, string> name_to_dag_name;
+    map<string, map<string, string> > var_name_to_dag_name_to_name;
 
-    void set_it(Assignment_SkVal *updated_assignment, string name, SkVal* val)
+    void set_var_name_to_dag_name_to_name(const string& name)
+    {
+        assert(name_to_original_name.find(name) != name_to_original_name.end());
+        assert(name_to_dag_name.find(name) != name_to_dag_name.end());
+        string original_name = name_to_original_name[name];
+        string dag_name = name_to_dag_name[name];
+
+        if(var_name_to_dag_name_to_name.find(original_name) == var_name_to_dag_name_to_name.end()) {
+            var_name_to_dag_name_to_name[original_name] = map<string, string>();
+        }
+        assert(var_name_to_dag_name_to_name[original_name].find(dag_name) == var_name_to_dag_name_to_name[original_name].end());
+        var_name_to_dag_name_to_name[original_name][dag_name] = name;
+    }
+
+    void set_it(Assignment_SkVal *updated_assignment, const string& name, SkVal* val)
     {
         set(name, val->clone());
         assert(updated_assignment->name_to_original_name.find(name) != updated_assignment->name_to_original_name.end());
         name_to_original_name[name] = updated_assignment->name_to_original_name[name];
         assert(updated_assignment->name_to_dag_name.find(name) != updated_assignment->name_to_dag_name.end());
         name_to_dag_name[name] = updated_assignment->name_to_dag_name[name];
+
+        if(type == bool_node::CTRL) {
+            set_var_name_to_dag_name_to_name(name);
+        }
+        else {
+            assert(type == bool_node::SRC);
+        }
     }
 
     static OutType* sk_val_type_to_bool_node_out_type(SkValType sk_val_type) {
@@ -363,11 +385,48 @@ public:
     template<typename T>
     explicit Assignment_SkVal(bool_node::Type _type, T is_null): type(_type), Mapping<SkVal>(is_null) {assert((std::is_same<T, bool>::value));}
 
+    void rename(const string& new_name, const string& var_name, const string& source_dag_name, const string& original_source_dag, const string& prev_name) {
+        AssertDebug(type == bool_node::CTRL, "FOR SRC SHOULD PROBABLY IMPLEMENT DIFFERENT RENAMING FUNCTION.");
+        assert(name_to_dag_name.find(prev_name) != name_to_dag_name.end());
+        assert(name_to_dag_name[prev_name] == original_source_dag);
+        assert(name_to_original_name.find(prev_name) != name_to_original_name.end());
+        assert(name_to_original_name[prev_name] == var_name);
+
+        assert(var_name_to_dag_name_to_name.find(var_name) != var_name_to_dag_name_to_name.end());
+        assert(var_name_to_dag_name_to_name[var_name].find(var_name) != var_name_to_dag_name_to_name[var_name].end());
+        assert(var_name_to_dag_name_to_name[var_name][original_source_dag] == prev_name);
+
+        name_to_dag_name.erase(prev_name);
+        name_to_dag_name[new_name] = source_dag_name;
+        name_to_original_name.erase(prev_name);
+        name_to_original_name[new_name] = var_name;
+
+        if(source_dag_name == original_source_dag) {
+            var_name_to_dag_name_to_name[var_name][source_dag_name] = new_name;
+        }
+        else {
+            var_name_to_dag_name_to_name[var_name].erase(original_source_dag);
+            if(var_name_to_dag_name_to_name[var_name].empty()) {
+                var_name_to_dag_name_to_name.erase(var_name);
+            }
+            set_var_name_to_dag_name_to_name(new_name);
+        }
+    }
+
+    string get_name(const string& var_name, const string& dag_name)
+    {
+        AssertDebug(type == bool_node::CTRL, "NOT SURE WHY YOU NEED THIS FOR ANYTHING OTHER THAN CTRL.")
+        assert(var_name_to_dag_name_to_name.find(var_name) != var_name_to_dag_name_to_name.end());
+        assert(var_name_to_dag_name_to_name[var_name].find(dag_name) != var_name_to_dag_name_to_name[var_name].end());
+        return var_name_to_dag_name_to_name[var_name][dag_name];
+    }
+
     explicit Assignment_SkVal(Assignment_SkVal* to_copy):
         Mapping<SkVal>(),
         type(to_copy->type),
         name_to_original_name(to_copy->name_to_original_name),
-        name_to_dag_name(to_copy->name_to_dag_name){
+        name_to_dag_name(to_copy->name_to_dag_name),
+        var_name_to_dag_name_to_name(to_copy->var_name_to_dag_name_to_name) {
 
         for(auto it: to_copy->assignment)
         {
@@ -436,15 +495,20 @@ public:
             }
             else
             {
-                assert(false);
-                Assert(false, "need to add more OutType to SkVal conversions.");
+                AssertDebug(false, "need to add more OutType to SkVal conversions.");
             }
 
-            assert(name_to_original_name.find(name) == name_to_original_name.end());
-            name_to_original_name[name] = original_name;
-            assert(name_to_dag_name.find(name) == name_to_dag_name.end());
-            name_to_dag_name[name] = source_dag_name;
+                assert(name_to_original_name.find(name) == name_to_original_name.end());
+                name_to_original_name[name] = original_name;
+                assert(name_to_dag_name.find(name) == name_to_dag_name.end());
+                name_to_dag_name[name] = source_dag_name;
 
+            if(type == bool_node::CTRL) {
+                set_var_name_to_dag_name_to_name(name);
+            }
+            else {
+                assert(type == bool_node::SRC);
+            }
         }
 
         VarStore* test_var_store = to_var_store();
@@ -693,6 +757,13 @@ namespace SolverLanguagePrimitives {
         HoleAssignment *clone() {
             return new HoleAssignment(this);
         }
+
+        void rename(const string& new_name, const string& var_name, const string& source_dag_name, const string& original_source_dag, const string& prev_name)
+        {
+            assert(assignment_skval != nullptr);
+            return assignment_skval->rename(new_name, var_name, source_dag_name, original_source_dag, prev_name);
+        }
+
     };
 
     class InputAssignment : public Assignment_SkVal {

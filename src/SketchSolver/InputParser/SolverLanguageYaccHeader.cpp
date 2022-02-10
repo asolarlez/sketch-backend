@@ -25,8 +25,6 @@ SL::VarVal * SolverProgramState::eval(){
     assert(*global.name_to_var(init_f->get_name()) == *init_f);
     auto input_params = vector<SL::Param*>();
 
-
-
     if(harness_ != nullptr)
     {
         assert(function_map.empty());
