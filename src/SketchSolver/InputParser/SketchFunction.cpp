@@ -11,6 +11,9 @@ const bool rename_holes = true;
 
 SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone) {
 
+    if(_var_store.size() >= 1 && var_type == bool_node::CTRL) {
+        assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
+    }
 
     if(rename_holes)
     for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
@@ -56,17 +59,10 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             for (auto it: tmp_dag->getNodesByType(var_type)) {
                 AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()), "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
             }
-            for (const auto& objp_it: var_store) {
-                bool enter = false;
-                assert(var_type == bool_node::CTRL);
-                for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
-                    if (objp_it.get_original_name() == ((CTRL_node*)bool_node_it)->get_original_name()) {
-                        enter = true;
-                        break;
-                    }
-                }
-                assert(enter);
+            for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
+                var_store.has_original_name(((CTRL_node *) bool_node_it)->get_original_name());
             }
+
 
             ///TRANSLATE NAMES TO NAMES OF INCOMING DAG;
 

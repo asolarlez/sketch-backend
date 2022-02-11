@@ -42,6 +42,10 @@ InliningTree *BooleanDagUtility::get_inlining_tree(bool assert_nonnull) {
     return inlining_tree;
 }
 
+bool BooleanDagUtility::has_been_concretized() {
+    return get_dag()->getNodesByType(bool_node::CTRL).empty();
+}
+
 InliningTree::InliningTree(BooleanDagUtility *_sk_func, map<BooleanDagUtility*, InliningTree*>& visited): skfunc(_sk_func) {
     assert(visited.find(skfunc) == visited.end());
     visited[skfunc] = this;
@@ -205,10 +209,18 @@ InliningTree *InliningTree::get_sub_inlining_tree(const string &under_this_name)
 
 void InliningTree::concretize(VarStore var_store, bool is_root) {
 
+    bool recurse = true;
     if(!is_root) {
-        ((SketchFunction*)skfunc)->produce_concretization(var_store, bool_node::CTRL, false, false);
+        if(!skfunc->has_been_concretized()) {
+            ((SketchFunction *) skfunc)->produce_concretization(var_store, bool_node::CTRL, false, false);
+        }
+        else
+        {
+            recurse = false;
+        }
     }
 
+    if(recurse)
     for(auto it: var_name_to_inlining_subtree)
     {
         VarStore new_var_store = var_store;

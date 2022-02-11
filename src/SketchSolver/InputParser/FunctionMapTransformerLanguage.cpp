@@ -43,7 +43,8 @@ const TransformPrimitive * FunctionMapTransformer::replace_label_with_another(
 }
 
 const TransformPrimitive * FunctionMapTransformer::clone(const string &original_function_name, const string &clone_function_name) {
-    
+
+    assert(original_function_name != clone_function_name);
     assert(root_dag_reps.find(clone_function_name) == root_dag_reps.end());
     auto new_primitive = new ClonePrimitive(original_function_name, clone_function_name);
     add_parent(new_primitive, original_function_name, true);
@@ -813,6 +814,8 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
         return ret;
     }
 
+    assert(current_new_env != new_env);
+
     current_new_env = new_env;
 
     if(!is_erased) {
@@ -840,6 +843,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             for (const auto &it_parent: parents) {
                 string parent_name = it_parent.first;
                 SketchFunction *parent_skfunc = it_parent.second->reconstruct_sketch_function(root, new_env);
+                assert(new_env->function_map.find(parent_skfunc->get_dag_name()) != new_env->function_map.end());
             }
             VarStore *var_store = get_var_store();
             assert(var_store != nullptr);
@@ -887,7 +891,8 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             if(!is_erased) {
                 assert(superseded);
             }
-            SketchFunction* ret = main_parent->reconstruct_sketch_function(root, new_env)->clone(function_name);
+            SketchFunction* almost_ret = main_parent->reconstruct_sketch_function(root, new_env);
+            SketchFunction* ret = almost_ret->clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
             new_env->function_map.insert(ret->get_dag()->get_name(), ret);

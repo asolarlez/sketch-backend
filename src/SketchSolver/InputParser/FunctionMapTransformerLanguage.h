@@ -106,10 +106,15 @@ namespace FMTL {
         void add_parent(TransformPrimitive *&new_parent) {
             assert(new_parent != nullptr);
             assert(!new_parent->is_erased);
-            assert(parents.find(new_parent->function_name) == parents.end());
-            parents[new_parent->function_name] = new_parent;
-            assert(new_parent->children.find(this) == new_parent->children.end());
-            new_parent->children.insert(this);
+            if(parents.find(new_parent->function_name) != parents.end()){
+                assert(parents[new_parent->function_name] == new_parent);
+                assert(new_parent->children.find(this) != new_parent->children.end());
+            }
+            else {
+                parents[new_parent->function_name] = new_parent;
+                assert(new_parent->children.find(this) == new_parent->children.end());
+                new_parent->children.insert(this);
+            }
             assert(!new_parent->is_erased);
         }
 

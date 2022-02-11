@@ -150,7 +150,8 @@ Necessary
         TODO: set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
     TODO: internalize inlining in solver langauge
     TODO: fix produce_concretize to accept a HoleAssignment, rather than a var store, for the cases where the var_store came from a HoleAssignment. Because now you are ad-hock declaring the sat_result to create a hole_assignment.
-    TODO: Test InliningTree on a recursive function.
+    DONE Test InliningTree on a recursive function.
+    TODO: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

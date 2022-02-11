@@ -328,6 +328,8 @@ public:
     bool is_inlining_tree_nonnull();
 
     InliningTree *get_inlining_tree(bool assert_nonnull = true);
+
+    bool has_been_concretized();
 };
 
 #endif //SKETCH_SOURCE_BOOLEANDAGUTILITY_H

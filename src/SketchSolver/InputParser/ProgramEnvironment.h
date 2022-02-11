@@ -85,6 +85,29 @@ public:
         map<string, BooleanDAG *> boolean_dag_function_map;
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
 
+        bool enter = false;
+        for(auto& it: boolean_dag_function_map)
+        {
+            if(it.second == &dag) {
+                assert(!enter);
+                enter = true;
+                it.second = it.second->clone(it.first);
+                assert(it.second != &dag);
+            }
+            cout << it.second->get_name() << " "<< it.second->get_dag_id() << endl;
+        }
+
+        for(const auto& it: boolean_dag_function_map)
+        {
+            assert(it.second != &dag);
+        }
+
+        if(false)
+        {
+            assert(boolean_dag_function_map.find(dag.get_name()) != boolean_dag_function_map.end());
+            boolean_dag_function_map[dag.get_name()] = dag.clone(dag.get_name());
+        }
+
         for(const auto& it: boolean_dag_function_map) {
             for(auto ctrl_it : it.second->getNodesByType(bool_node::CTRL))
             {
