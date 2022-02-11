@@ -1028,7 +1028,7 @@ namespace SolverLanguagePrimitives
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
             if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
             {
-                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(), bool_node::CTRL);
+                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(false), bool_node::CTRL);
                 assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
                 assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
                 tmp->increment_shared_ptr();

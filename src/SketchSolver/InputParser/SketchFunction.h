@@ -8,6 +8,8 @@
 //#include "BooleanDAG.h"
 //#include "ProgramEnvironment.h"
 
+#include <utility>
+
 #include "BooleanNodes.h"
 #include "VarStore.h"
 #include "SkVal.h"
@@ -27,41 +29,6 @@ namespace SL
 
 static long long global_clear_id = 0;
 
-class InliningTree
-{
-    const string& dag_name;
-    map<string, InliningTree*> var_name_to_dag_name;
-
-
-    void add_subdag_under_var_name(const string& var_name, SketchFunction* sub_dag);
-
-    const string& get_dag_name() {
-        return dag_name;
-    }
-
-    static const string& choose_dag_name(const string& new_dag_name, const string& prev_dag_name)
-    {
-        assert(!prev_dag_name.empty());
-        if(new_dag_name.empty()) {
-            return prev_dag_name;
-        }
-        else {
-            return new_dag_name;
-        }
-    }
-
-public:
-    explicit InliningTree(SketchFunction* sk_func);
-    InliningTree(InliningTree* to_copy, const string& new_dag_name = ""): dag_name(choose_dag_name(new_dag_name, to_copy->dag_name))
-    {
-        for(auto it:to_copy->var_name_to_dag_name) {
-            var_name_to_dag_name[it.first] = new InliningTree(it.second);
-        }
-    }
-
-    void clone(const string &basicString);
-};
-
 class SketchFunction: public BooleanDagUtility
 {
     SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
@@ -77,8 +44,6 @@ class SketchFunction: public BooleanDagUtility
 
     const TransformPrimitive* rep = nullptr;
     const TransformPrimitive* mirror_rep = nullptr;
-
-    InliningTree* inlining_tree = nullptr;
 
 public:
 
@@ -104,9 +69,9 @@ public:
             const TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
             InliningTree* _inlining_tree = nullptr) :
-            BooleanDagUtility(_dag_root, _env), solution(_solution),
+            BooleanDagUtility(_dag_root, _env, _inlining_tree), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
-            rep(_rep), responsibility(_responsibility), inlining_tree(_inlining_tree) {
+            rep(_rep), responsibility(std::move(_responsibility)) {
         for(auto dependency: responsibility) {
             dependency.second->increment_shared_ptr();
         }
@@ -119,55 +84,30 @@ public:
         return produce_concretization(var_store, var_type, true);
     }
 
-    SketchFunction *produce_concretization(const VarStore &var_store, const bool_node::Type var_type, const bool do_clone);
+    SketchFunction *produce_concretization(const VarStore &var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);
 
     SketchFunction *clone(const string& explicit_name = "");
 
     void clear() override;
     void _clear();
 
-//    SolverLanguagePrimitives::HoleAssignment* set_and_get_solution_from_var_store(const VarStore* var_store)
-//    {
-//        SATSolverResult dummy_sat_solver_result = SAT_SATISFIABLE;
-//
-//        if(solution != nullptr)
-//        {
-//            dummy_sat_solver_result = solution->get_sat_solver_result();
-//        }
-//
-//        auto new_solution = (new SolverLanguagePrimitives::HoleAssignment(
-//                dummy_sat_solver_result, var_store,
-//                get_env()->floats));
-//        if(solution != nullptr)
-//        {
-//            cout << solution->to_string() << endl;
-//            cout << new_solution->to_string() << endl;
-//            assert(*solution == *new_solution);
-//            new_solution->clear();
-//            delete new_solution;
-//            new_solution = nullptr;
-//        }
-//        else {
-//            auto reps = get_env()->function_map.get_root_dag_reps();
-//            assert(reps.find(get_dag()->get_name()) != reps.end());
-//            TransformPrimitive* transform_program_root = reps.at(get_dag()->get_name());
-//            AssertDebug(transform_program_root->get_primitive_type() == FMTL::_replace,
-//                        "could also be clone (bc if it is concretize, the solution gets stored automatically, checked by the previous if branch)."
-//                        "TODO: think how it works if it is clone.");
-//
-//            assert(solution == nullptr);
-//            solution = new_solution;
-//        }
-//        assert(solution != nullptr);
-//        cout << "RETURN SOLUTION" << endl;
-//        return new SolverLanguagePrimitives::HoleAssignment(solution);
-//    }
-
-
     SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
-        assert(solution != nullptr);
-        return new SolverLanguagePrimitives::HoleAssignment(solution);
+        if(solution != nullptr) {
+            return new SolverLanguagePrimitives::HoleAssignment(solution);
+        }
+        else
+        {
+            assert(!is_inlining_tree_nonnull());
+            InliningTree* inlining_tree = new InliningTree(this);
+            auto ret = inlining_tree->get_solution();
+            inlining_tree->clear();
+            inlining_tree = nullptr;
+
+            assert(ret != nullptr);
+
+            return ret;
+        }
     }
 
     void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)
@@ -200,6 +140,13 @@ public:
 
     void set_mirror_rep(const TransformPrimitive *) ;
     const TransformPrimitive * get_mirror_rep() const;
+
+    void deep_clone_tail() {
+        VarStore var_store;
+        deep_clone_tail(var_store);
+    }
+
+    void deep_clone_tail(const VarStore&);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

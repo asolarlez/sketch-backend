@@ -479,7 +479,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                     }
                     else {
                         assert(*get_concretization_type() == bool_node::CTRL);
-                        return maybe_ret->produce_concretization(*get_var_store(), *get_concretization_type(), true);
+                        return maybe_ret->produce_concretization(*get_var_store()->get_sub_var_store(under_this_var), *get_concretization_type(), false);
                     }
                     if(false){
                         if (parent->superseded) {

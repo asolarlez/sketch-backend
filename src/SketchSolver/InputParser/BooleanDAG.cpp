@@ -74,7 +74,8 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
     }
   }
 #endif
-//      assert(name != "composite_predicate__id1887");
+
+//      assert(dag_id != 122);
 
 }
 
@@ -247,7 +248,9 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 			named_nodes.erase(it);
 		}
 	}
-
+//    for (auto ctrl_it: this->getNodesByType(bool_node::CTRL)) {
+//        assert(ctrl_it->type == bool_node::CTRL);
+//    }
 	
 	//The assert list in nodesByType is left intentionally out of date, because it is rebuilt by cleanup later anyway.
 	if( onode->type == bool_node::SRC || onode->type == bool_node::DST || onode->type == bool_node::CTRL ||  onode->type == bool_node::UFUN){
@@ -261,6 +264,9 @@ void BooleanDAG::replace(int original, bool_node* replacement){
 			}
 		}			
 	}
+//    for (auto ctrl_it: this->getNodesByType(bool_node::CTRL)) {
+//        assert(ctrl_it->type == bool_node::CTRL);
+//    }
 	
 	nodes[i]->id = -22;
 	delete nodes[i];
@@ -1424,7 +1430,6 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
     }
 
     map<string, string> prev_name_to_new_name;
-//    if(rename_holes)
     {
         auto ctrls = bdag->getNodesByType(bool_node::CTRL);
         for (auto &ctrl: ctrls) {
@@ -1444,6 +1449,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
                     string new_name = ((CTRL_node *) ctrl)->get_name();
                     assert(prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end());
                     prev_name_to_new_name[prev_name] = new_name;
+                    cout << "RENAMED HOLE: " << prev_name <<" "<< new_name << endl;
                 } else {
                     ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
                             bdag->get_name(), "");
@@ -1470,10 +1476,16 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
             Assert(bdag->nodes.size() > it->second->id, " Bad node  " << it->first << endl);
             if(prev_name_to_new_name.find(it->first) != prev_name_to_new_name.end())
             {
+                assert(it->second->type == bool_node::CTRL);
+                assert(bdag->named_nodes.find(prev_name_to_new_name[it->first]) == bdag->named_nodes.end());
                 //changed name
+                assert(prev_name_to_new_name[it->first] != it->first);
                 bdag->named_nodes[prev_name_to_new_name[it->first]] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
             }
             else {
+                if(it->first != "#PC")
+                assert(it->second->type != bool_node::CTRL);
+                assert(bdag->named_nodes.find(it->first) == bdag->named_nodes.end());
                 //name hasn't been changed
                 bdag->named_nodes[it->first] = dynamic_cast<INTER_node *>(bdag->nodes[it->second->id]);
             }

@@ -6,11 +6,12 @@
 #include "DagOptim.h"
 #include "CommandLineArgs.h"
 #include "MiniSATSolver.h"
-#include "SkVal.h"
 
 /*
 Excelption class used to signal that a concretization failed.
 */
+
+class Assignment_SkVal;
 
 class BadConcretization {
 public:

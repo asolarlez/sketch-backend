@@ -163,6 +163,12 @@ void DagOneStepInlineAndConcretize::visit(UFUN_node& node)
     //if it is a function, then it is inside function_map
     //otherwise it's not inside functioMap
 
+//    for(auto func_it: functionMap) {
+//        for (auto ctrl_it: func_it.second->getNodesByType(bool_node::CTRL)) {
+//            assert(ctrl_it->type == bool_node::CTRL);
+//        }
+//    }
+
     if(functionMap.find(node.get_ufname()) != functionMap.end()) {
         inlined_functions.insert(node.get_ufname());
         //ufun is an actual function
@@ -443,6 +449,11 @@ void DagFunctionInliner::visit( UFUN_node& node ){
 
         assert(functionMap.find(name) != functionMap.end());
 		BooleanDAG& oldFun = *functionMap.at(name);
+
+        for(auto ctrl_it: oldFun.getNodesByType(bool_node::CTRL))
+        {
+            assert(ctrl_it->type == bool_node::CTRL);
+        }
 
 		if(oldFun.isModel && node.children.size() == 0){
 			rvalue = getCnode(false);
@@ -1055,13 +1066,36 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 	mpcontroller.clear();
 	failedAssert = NULL;
 	for(int i=0; i<dag.size() ; ++i ){
+
+        for(auto func_it: functionMap) {
+            if(func_it.second != &dag)
+            for (auto ctrl_it: func_it.second->getNodesByType(bool_node::CTRL)) {
+                assert(ctrl_it->type == bool_node::CTRL);
+            }
+        }
 		// Get the code for this node.
         //cout<<dag[i]->lprint()<<endl;
 		bool_node* node = computeOptim(dag[i]);
+
+        for(auto func_it: functionMap) {
+            if(func_it.second != &dag)
+            for (auto ctrl_it: func_it.second->getNodesByType(bool_node::CTRL)) {
+                assert(ctrl_it->type == bool_node::CTRL);
+            }
+        }
+
        if(dag[i] != node){
                 Dout(cout<<"replacing "<<dag[i]->get_name()<<" -> "<<node->get_name()<<endl );
 				dag.replace(i, node);
 		}
+
+        for(auto func_it: functionMap) {
+            if(func_it.second != &dag)
+            for (auto ctrl_it: func_it.second->getNodesByType(bool_node::CTRL)) {
+                assert(ctrl_it->type == bool_node::CTRL);
+            }
+        }
+
 //        assert(node->get_name() != "num_bools_4_0_0");
 	   if (failedAssert != NULL) {
 		   for (++i; i < dag.size(); ++i) {
@@ -1077,6 +1111,13 @@ void DagFunctionInliner::process(BooleanDAG& dag){
 			   throw BadConcretization(failedAssert->getMsg());
 		   }
 	   }
+
+        for(auto func_it: functionMap) {
+            if(func_it.second != &dag)
+            for (auto ctrl_it: func_it.second->getNodesByType(bool_node::CTRL)) {
+                assert(ctrl_it->type == bool_node::CTRL);
+            }
+        }
 	}
 
 	// cout<<" added nodes = "<<newnodes.size()<<endl;

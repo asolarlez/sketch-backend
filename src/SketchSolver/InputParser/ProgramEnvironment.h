@@ -85,6 +85,13 @@ public:
         map<string, BooleanDAG *> boolean_dag_function_map;
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
 
+        for(const auto& it: boolean_dag_function_map) {
+            for(auto ctrl_it : it.second->getNodesByType(bool_node::CTRL))
+            {
+                assert(ctrl_it->type == bool_node::CTRL);
+            }
+        }
+
         findPureFuns(boolean_dag_function_map, pureFuns);
 
         DagOneStepInlineAndConcretize dfi(

@@ -1097,7 +1097,7 @@ namespace SL {
         _print, _num_holes, _append,
         _first, _second,
         _to_float, _sort_vec,
-        _clone, _assert, _reverse,
+        _clone, _deep_clone, _assert, _reverse,
         _produce_replace,
         _replace, _get_solution,
         _produce_filter,

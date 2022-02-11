@@ -27,7 +27,8 @@ int intFromBV(T& bv, int start, int nbits){
 	return nval;
 }
 
-
+class InliningTree;
+class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
 class VarStore{
 private:
@@ -124,17 +125,6 @@ public:
 
 		objP operator=(const objP& old){
             return objP(old);
-//			vals = old.vals; name = old.name; otype = old.otype; isNeg = old.isNeg; index = old.index;  defined = old.defined; is_array = old.is_array;
-//			if(old.next!=nullptr){
-//				if(next!=nullptr){
-//					(*next)=*old.next;
-//				}else{
-//					next = new objP(*old.next);
-//				}
-//			}else{
-//				if(next!=nullptr){ delete next; next=nullptr;}
-//			}
-//			return *this;
 		}
 
         bool operator == (const objP& other) const
@@ -452,6 +442,8 @@ private:
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
+    InliningTree* inlining_tree = nullptr;
+
     void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
     {
         if(original_name == "declareInput()") {
@@ -471,10 +463,19 @@ private:
         var_name_to_dag_name_to_name[original_name][source_dag_name] = name;
     }
 
+
+    void rename(const string &original_name, const string& new_source_dag, const string &new_name, InliningTree* inlining_tree);
+
+
 public:
 
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
+
+    InliningTree* get_inlining_tree() const
+    {
+        return inlining_tree;
+    }
 
 	void clear()
 	{
@@ -499,29 +500,9 @@ public:
 
     VarStore() = default;
 
-    VarStore(const VarStore& to_copy)
-    {
-        Assert(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
-        Assert(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
+    VarStore(InliningTree* _inlining_tree);
 
-        bitsize = to_copy.bitsize;
-
-        vector<pair<int, string> > index_as_vec;
-
-        for(const auto& it : to_copy.index) {
-            index_as_vec.emplace_back(it.second, it.first);
-        }
-
-        sort(index_as_vec.begin(), index_as_vec.end());
-
-
-        for(int i = 0;i<index_as_vec.size(); i++)
-        {
-            pair<int, string> it = index_as_vec[i];
-            assert(it.first == i);
-            insertObj(it.second, it.first, objP(to_copy.objs[it.first]));
-        }
-    }
+    VarStore(const VarStore& to_copy);
 
     VarStore operator = (const VarStore& other) const {
         return VarStore(other);
@@ -786,9 +767,13 @@ public:
     bool has_original_name_and_source_dag(const string &original_name, const string &source_dag) const;
     bool has_original_name(const string &original_name) const;
 
-    void rename(const string &original_name, const string& new_source_dag, const string &new_name);
+    void rename(BooleanDagUtility *new_dag_util);
 
     const string &get_name(const string& var_name, const string &source_dag_name);
+
+    VarStore *get_sub_var_store(const string& descend_to);
+
+    void descend_to_subname(const string &under_this_name);
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

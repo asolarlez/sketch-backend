@@ -379,7 +379,15 @@ class Assignment_SkVal: public Mapping<SkVal> {
         assert(false);
     }
 
+private:
+    InliningTree* inlining_tree = nullptr;
 public:
+    void set_inlining_tree(InliningTree *_inlining_tree)
+    {
+        assert(inlining_tree == nullptr);
+        inlining_tree = _inlining_tree;
+    }
+
     Assignment_SkVal(bool_node::Type _type): type(_type), Mapping<SkVal>() {}
 
     template<typename T>
@@ -462,6 +470,7 @@ public:
     }
 
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
+        inlining_tree = var_store->get_inlining_tree();
         for(auto it = var_store->begin(); it != var_store->end(); it++)
         {
             if(type != bool_node::NO_TYPE){
@@ -511,7 +520,7 @@ public:
             }
         }
 
-        VarStore* test_var_store = to_var_store();
+        VarStore* test_var_store = to_var_store(false);
 
 
         assert(test_var_store->size() == var_store->size());
@@ -527,9 +536,11 @@ public:
 
     }
 
-    VarStore* to_var_store()
+    VarStore* to_var_store(bool assert_inlining_tree_not_null = true)
     {
-        auto* ret = new VarStore();
+        if(assert_inlining_tree_not_null)
+            assert(inlining_tree != nullptr);
+        auto* ret = new VarStore(inlining_tree);
         for(auto item : assignment)
         {
             if(item.second->get_type() == sk_type_int)
@@ -702,8 +713,8 @@ namespace SolverLanguagePrimitives {
             return ret;
         }
 
-        VarStore *to_var_store() {
-            return assignment_skval->to_var_store();
+        VarStore *to_var_store(bool assert_inlining_tree_not_null = true) {
+            return assignment_skval->to_var_store(assert_inlining_tree_not_null);
         }
 
         void get_control_map(map<string, string> &map) {
@@ -764,6 +775,10 @@ namespace SolverLanguagePrimitives {
             return assignment_skval->rename(new_name, var_name, source_dag_name, original_source_dag, prev_name);
         }
 
+        void set_inlining_tree(InliningTree *_inlining_tree)
+        {
+            assignment_skval->set_inlining_tree(_inlining_tree);
+        }
     };
 
     class InputAssignment : public Assignment_SkVal {

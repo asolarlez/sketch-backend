@@ -379,7 +379,11 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
-            BooleanDagUtility* harness = ((BooleanDagUtility*)param_var_val->get_function())->produce_inlined_dag(true);
+            SketchFunction* skfunc = param_var_val->get_function();
+
+            BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+            InliningTree* inlining_tree = harness->get_inlining_tree();
+
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
 
@@ -395,7 +399,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             auto* test_full_concretization = new BooleanDagUtility(harness);
             test_full_concretization->increment_shared_ptr();
-            VarStore* var_store = sol->to_var_store();
+            VarStore* var_store = sol->to_var_store(false);
             test_full_concretization->concretize_this_dag(*var_store, bool_node::CTRL);
             var_store->clear();
             assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
@@ -404,6 +408,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             delete problem;
             harness->clear();
             solver->clear();
+
+            sol->set_inlining_tree(inlining_tree);
 
             return new SL::VarVal(sol);
             break;
@@ -511,7 +517,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -770,6 +776,7 @@ void SL::init_method_str_to_method_id_map()
     add_to_method_str_to_method_id_map("float", _to_float, "namespace");
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
     add_to_method_str_to_method_id_map("clone", _clone, "SketchFunction", "Solution");
+    add_to_method_str_to_method_id_map("deep_clone", _deep_clone, "SketchFunction");
     add_to_method_str_to_method_id_map("assert", _assert, "namespace");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
     add_to_method_str_to_method_id_map("produce_replace", _produce_replace, "SketchFunction");
@@ -915,7 +922,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
             SolverLanguagePrimitives::InputAssignment* input_holder = input_holder_var_val->get_input_holder();
-            VarStore* inputs = input_holder->to_var_store();
+            VarStore* inputs = input_holder->to_var_store(false);
             input_holder_var_val->decrement_shared_ptr();
 
             assert(sk_func->get_dag()->get_failed_assert() == nullptr);
@@ -945,16 +952,28 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _num_holes: {
             assert(params.empty());
             BooleanDagUtility* func_clone = ((BooleanDagUtility*)sk_func)->produce_inlined_dag();
+            func_clone->print_hole_names(state->console_output);
             func_clone->increment_shared_ptr();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
             func_clone->clear();
             return new VarVal(num_ctrls);
             break;
         }
+        case _deep_clone:
+        {
+            SketchFunction* ret = sk_func->clone();
+            ret->deep_clone_tail();
+            return new VarVal(ret);
+        }
         case _clone:
         {
             assert(params.empty());
             SketchFunction* ret = sk_func->clone();
+            state->console_output << "SKFUNC:" << sk_func->get_dag_name() << endl;
+            ((BooleanDagUtility*)sk_func)->produce_inlined_dag()->print_hole_names(state->console_output);
+            state->console_output << "SKFUNC.CLONE:" << ret->get_dag_name() <<  endl;
+            ((BooleanDagUtility*)ret)->produce_inlined_dag()->print_hole_names(state->console_output);
+            state->console_output << "--" << endl;
             return new VarVal(ret);
             break;
         }
