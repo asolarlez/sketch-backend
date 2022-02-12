@@ -17,6 +17,25 @@ const TransformPrimitive * FunctionMapTransformer::concretize(const string &func
     add_parent(new_primitive, function_name, true);
     if(sub_functions != nullptr) {
         for (const auto &it: *sub_functions) {
+            if(root_dag_reps[it]->get_meta_type() != _concretize && it != function_name)
+            {
+                bool ok = false;
+                auto at = root_dag_reps[it];
+                while(at != nullptr)
+                {
+                    at = at->get_main_parent();
+                    if(at->get_meta_type() == _concretize)
+                    {
+                        ok = true;
+                        break;
+                    }
+                    else if(at->get_meta_type() != _clone)
+                    {
+                        assert(false);
+                    }
+                    assert(at->get_meta_type() == _clone);
+                }
+            }
             add_parent(new_primitive, it);
         }
     }
@@ -479,6 +498,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                         return maybe_ret;
                     }
                     else {
+                        AssertDebug(false, "HERE ONLY RETURN MAYBE_RET AND LATER EXTRACT THE VAR STORE AND WALK THE VAR STORE TO FIND THE APPROPRIATE HOLE VALS.")
                         assert(*get_concretization_type() == bool_node::CTRL);
                         return maybe_ret->produce_concretization(*get_var_store()->get_sub_var_store(under_this_var), *get_concretization_type(), false);
                     }
@@ -700,8 +720,7 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
         for(const auto& it: almost_ret->get_replace_map()) {
             almost_ret->add_responsibility(new_env->function_map[it.second]);
         }
-        for(const auto& it: almost_ret->get_responsibilities())
-        {
+        for(const auto& it: almost_ret->get_responsibilities()) {
             add_dependencies_to_original_env(it.second, new_env, original_env, false);
         }
     }
@@ -862,19 +881,25 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             assert(assign_map->size() == 1);
 
             string replace_with = assign_map->begin()->second;
-//            auto it = parents.find(replace_with);
-//            AssertDebug(it == parents.end(), "UU, SOME RECURSIVE FUNCTION ;)");
-            auto rep_it = root->get_root_dag_reps().find(replace_with);
-//            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
-            auto replace_with_dag = rep_it->second->reconstruct_sketch_function(root, new_env);
 
-            if(new_env->function_map.find(replace_with) == new_env->function_map.end())
-            {
-                new_env->function_map.insert(replace_with, replace_with_dag);
-            }
-
+            //first calc main
             auto ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(ret->get_env() == new_env);
+
+            //then calc other parent
+            {
+//            auto it = parents.find(replace_with);
+//            AssertDebug(it == parents.end(), "UU, SOME RECURSIVE FUNCTION ;)");
+                auto rep_it = root->get_root_dag_reps().find(replace_with);
+//            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
+                auto replace_with_dag = rep_it->second->reconstruct_sketch_function(root, new_env);
+
+                if (new_env->function_map.find(replace_with) == new_env->function_map.end()) {
+                    AssertDebug(false,
+                                "Ideally inserting in the fmap will be handled at the end of the previous recursive call.");
+                    new_env->function_map.insert(replace_with, replace_with_dag);
+                }
+            }
 
             cout << "REPLACE (in reconstruction)" << assign_map->begin()->first << " " << replace_with << endl;
             ret->replace(assign_map->begin()->first, replace_with);
@@ -892,6 +917,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
                 assert(superseded);
             }
             SketchFunction* almost_ret = main_parent->reconstruct_sketch_function(root, new_env);
+            assert(almost_ret->get_env() == new_env);
             SketchFunction* ret = almost_ret->clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
@@ -948,5 +974,9 @@ const map<string, TransformPrimitive *> &TransformPrimitive::get_parents() const
 
 bool TransformPrimitive::get_is_superseded() const {
     return superseded;
+}
+
+TransformPrimitive *TransformPrimitive::get_main_parent() {
+    return main_parent;
 }
 

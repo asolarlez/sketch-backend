@@ -429,45 +429,7 @@ public:
         return var_name_to_dag_name_to_name[var_name][dag_name];
     }
 
-    explicit Assignment_SkVal(Assignment_SkVal* to_copy):
-        Mapping<SkVal>(),
-        type(to_copy->type),
-        name_to_original_name(to_copy->name_to_original_name),
-        name_to_dag_name(to_copy->name_to_dag_name),
-        var_name_to_dag_name_to_name(to_copy->var_name_to_dag_name_to_name) {
-
-        for(auto it: to_copy->assignment)
-        {
-            SkValType sk_val_type = it.second->get_type();
-            assert(
-                    sk_val_type == sk_type_int ||
-                    sk_val_type == sk_type_bool ||
-                    sk_val_type == sk_type_boolarr);
-            switch (sk_val_type) {
-                case sk_type_int: {
-                    SkValInt *new_val = new SkValInt((SkValInt *) it.second);
-                    set(it.first, new_val);
-                    break;
-                }
-                case sk_type_intarr:
-                    assert(false);
-                    set(it.first, new SkValIntArr(*(SkValIntArr*)it.second));
-                    break;
-                case sk_type_bool: {
-                    SkValBool *new_val = new SkValBool((SkValBool *) it.second);
-                    set(it.first, new_val);
-                    break;
-                }
-                case sk_type_boolarr: {
-                    SkValBoolArr *new_val = new SkValBoolArr((SkValBoolArr *) it.second);
-                    set(it.first, new_val);
-                    break;
-                }
-                default:
-                    assert(false);
-            }
-        }
-    }
+    explicit Assignment_SkVal(Assignment_SkVal* to_copy);
 
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
         inlining_tree = var_store->get_inlining_tree();
@@ -590,6 +552,10 @@ public:
             assert(!has(it.first));
             set_it(assignment_to_join_with, it.first, it.second->clone());
         }
+    }
+
+    InliningTree *get_inlining_tree() {
+        return inlining_tree;
     }
 };
 

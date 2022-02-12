@@ -94,7 +94,6 @@ public:
                 it.second = it.second->clone(it.first);
                 assert(it.second != &dag);
             }
-            cout << it.second->get_name() << " "<< it.second->get_dag_id() << endl;
         }
 
         for(const auto& it: boolean_dag_function_map)

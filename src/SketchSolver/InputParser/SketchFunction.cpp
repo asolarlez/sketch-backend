@@ -34,52 +34,13 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
         VarStore var_store = _var_store;
 
-        if(var_store.size() >= 1 && var_type == bool_node::CTRL) {
-            //assert that all the holes of get_dag() have values in var_store AND vice versa
+        if(false) {
+            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+                //assert that all the holes of get_dag() have values in var_store AND vice versa
 //
 //            calc_inlining_tree();
 //            var_store.rename(get_inlining_tree());
 //            assert(false);
-
-            BooleanDagUtility* tmp_dag_util = ((BooleanDagUtility*)this)->clone(true);
-            tmp_dag_util->increment_shared_ptr();
-            tmp_dag_util->inline_this_dag();
-            BooleanDAG* tmp_dag = tmp_dag_util->get_dag();
-
-            cout << "nodes:  ";
-            for (auto it: tmp_dag->getNodesByType(var_type)) {
-                cout << it->get_name() << "; ";
-            }
-            cout << endl;
-            cout << "vars: ";
-            for (const auto& objp_it: var_store) {
-                cout << objp_it.name << "; ";
-            }
-            cout << endl;
-            for (auto it: tmp_dag->getNodesByType(var_type)) {
-                AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()), "NODE.original_name(): " + ((CTRL_node*)it)->get_original_name() + " DOESN'T EXIST.");
-            }
-            for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
-                var_store.has_original_name(((CTRL_node *) bool_node_it)->get_original_name());
-            }
-
-
-            ///TRANSLATE NAMES TO NAMES OF INCOMING DAG;
-
-            var_store.rename(tmp_dag_util);
-
-            for (auto it: tmp_dag->getNodesByType(var_type)) {
-                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
-            }
-
-            tmp_dag_util->clear();
-        }
-
-        if(do_deep_clone) {
-            deep_clone_tail(var_store);
-            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-                var_store = _var_store;
-                //assert that all the holes of get_dag() have values in var_store AND vice versa
 
                 BooleanDagUtility *tmp_dag_util = ((BooleanDagUtility *) this)->clone(true);
                 tmp_dag_util->increment_shared_ptr();
@@ -99,21 +60,11 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 for (auto it: tmp_dag->getNodesByType(var_type)) {
                     AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()),
                                 "NODE.original_name(): " + ((CTRL_node *) it)->get_original_name() + " DOESN'T EXIST.");
-//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
-                }
-                for (const auto &objp_it: var_store) {
-                    bool enter = false;
-                    assert(var_type == bool_node::CTRL);
-                    for (auto bool_node_it: tmp_dag->getNodesByType(var_type)) {
-                        if (objp_it.get_original_name() == ((CTRL_node *) bool_node_it)->get_original_name()) {
-                            enter = true;
-                            break;
-                        }
-                    }
-                    assert(enter);
                 }
 
-                ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+                ///TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+
+                tmp_dag_util->get_inlining_tree()->print();
 
                 var_store.rename(tmp_dag_util);
 
@@ -124,6 +75,75 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 tmp_dag_util->clear();
             }
         }
+        else
+        {
+            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+                InliningTree* tmp_inlining_tree = new InliningTree(this);
+                cout << "new_tree" << endl;
+                tmp_inlining_tree->print();
+                cout << "var_val_tree" << endl;
+                var_store.get_inlining_tree()->print();
+                cout << "--------" << endl;
+                assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
+                tmp_inlining_tree->rename_var_store(var_store);
+                tmp_inlining_tree->clear();
+            }
+        }
+
+        if(do_deep_clone) {
+            deep_clone_tail(var_store);
+            if(false) {
+                if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+                    var_store = _var_store;
+                    //assert that all the holes of get_dag() have values in var_store AND vice versa
+
+                    BooleanDagUtility *tmp_dag_util = ((BooleanDagUtility *) this)->clone(true);
+                    tmp_dag_util->increment_shared_ptr();
+                    tmp_dag_util->inline_this_dag();
+                    BooleanDAG *tmp_dag = tmp_dag_util->get_dag();
+
+                    cout << "nodes:  ";
+                    for (auto it: tmp_dag->getNodesByType(var_type)) {
+                        cout << it->get_name() << "; ";
+                    }
+                    cout << endl;
+                    cout << "vars: ";
+                    for (const auto &objp_it: var_store) {
+                        cout << objp_it.name << "; ";
+                    }
+                    cout << endl;
+                    for (auto it: tmp_dag->getNodesByType(var_type)) {
+                        AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()),
+                                    "NODE.original_name(): " + ((CTRL_node *) it)->get_original_name() +
+                                    " DOESN'T EXIST.");
+//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+                    }
+
+                    ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
+
+                    tmp_dag_util->get_inlining_tree()->print();
+
+                    var_store.rename(tmp_dag_util);
+
+                    for (auto it: tmp_dag->getNodesByType(var_type)) {
+                        AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
+                    }
+
+                    tmp_dag_util->clear();
+                }
+            }
+            else
+            {
+                if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+                    InliningTree* tmp_inlining_tree = new InliningTree(this);
+                    tmp_inlining_tree->print();
+                    assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
+                    tmp_inlining_tree->rename_var_store(var_store);
+                    tmp_inlining_tree->clear();
+                }
+            }
+        }
+
         if(rename_holes)
         for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
             string actual_name = ((CTRL_node*)it)->get_name();
@@ -137,21 +157,18 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             }
         }
 
+        if(do_deep_clone && var_store.size() >= 1 && var_type == bool_node::CTRL) {
+            calc_inlining_tree();
+            get_inlining_tree()->concretize(var_store, var_type);
+            get_inlining_tree()->clear();
+            get_inlining_tree() = nullptr;
+        }
+
         vector<string> *inlined_functions = nullptr;
+
         concretize_this_dag(var_store, var_type, inlined_functions);
 
         assert(inlined_functions != nullptr);
-
-        if(do_deep_clone) {
-
-            get_inlining_tree()->concretize(var_store, true);
-
-//            if (var_type == bool_node::CTRL && var_store.size() >= 1) {
-//                for (auto f_name: *inlined_functions) {
-//                    get_env()->function_map[f_name]->produce_concretization(var_store, var_type, false, false);
-//                }
-//            }
-        }
 
         //construct solution
         if (var_type == bool_node::CTRL && var_store.size() >= 1) {
@@ -279,7 +296,6 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
             solution_clone->rename(actual_name, var_name, sub_dag_name, dag_name, solution->get_assignment()->get_name(var_name, dag_name));
         }
     }
-
     return new SketchFunction(
             cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false));
 }
@@ -514,8 +530,10 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
     bool entered_recursive_case = false;
     map<string, SketchFunction *> to_inline_skfuncs;
     for (const string &inlined_function_name: *inlined_functions) {
+
         if (inlined_function_name != get_dag()->get_name()) {
             assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
+
             to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->clone();
             get_env()->function_map.insert(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name(),
                                            to_inline_skfuncs[inlined_function_name]);
@@ -544,6 +562,10 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
 
     //rename all the ufuns
     for (auto skfunc: to_inline_skfuncs) {
+        if(skfunc.second->get_dag()->get_name() == "composite_predicate__id107__id231")
+        {
+            cout << "here" << endl;
+        }
         set<pair<string, string> > ufnames;
 
         for (auto ufun_it: skfunc.second->get_dag()->getNodesByType(bool_node::UFUN)) {
@@ -561,6 +583,11 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
             } else {
                 skfunc.second->replace(original, to_inline_skfuncs[ufname]->get_dag()->get_name());
             }
+        }
+
+        if(skfunc.second->get_dag()->get_name() == "composite_predicate__id107__id231")
+        {
+            cout << "here" << endl;
         }
     }
 

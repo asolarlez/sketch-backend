@@ -21,7 +21,6 @@ void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
         bool new_clone = false;
         if(!inlined_harness->is_inlining_tree_nonnull()) {
             inlined_harness = inlined_harness->produce_inlined_dag();
-            inlined_harness->print_hole_names();
             new_clone = true;
         }
 

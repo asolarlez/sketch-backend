@@ -464,10 +464,10 @@ private:
     }
 
 
+public:
     void rename(const string &original_name, const string& new_source_dag, const string &new_name, InliningTree* inlining_tree);
 
 
-public:
 
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;

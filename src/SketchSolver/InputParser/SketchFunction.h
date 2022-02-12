@@ -94,13 +94,16 @@ public:
     SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
         if(solution != nullptr) {
-            return new SolverLanguagePrimitives::HoleAssignment(solution);
+            auto ret = new SolverLanguagePrimitives::HoleAssignment(solution);
+            assert(ret->get_assignment()->get_inlining_tree() != nullptr);
+            return ret;
         }
         else
         {
             assert(!is_inlining_tree_nonnull());
             InliningTree* inlining_tree = new InliningTree(this);
             auto ret = inlining_tree->get_solution();
+            assert(ret->get_assignment()->get_inlining_tree() != nullptr);
             inlining_tree->clear();
             inlining_tree = nullptr;
 
