@@ -11,8 +11,15 @@ const bool rename_holes = true;
 
 SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone) {
 
+    if(_var_store.size() >= 1 && var_type == bool_node::CTRL)
+    _var_store.check_rep();
+
     if(_var_store.size() >= 1 && var_type == bool_node::CTRL) {
         assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
+    }
+    else if(_var_store.size() == 0 && var_type == bool_node::CTRL)
+    {
+        assert(!get_dag()->getNodesByType(bool_node::UFUN).empty());
     }
 
     if(rename_holes)
@@ -34,135 +41,57 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
         VarStore var_store = _var_store;
 
-        if(false) {
-            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-                //assert that all the holes of get_dag() have values in var_store AND vice versa
-//
-//            calc_inlining_tree();
-//            var_store.rename(get_inlining_tree());
-//            assert(false);
+        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
+            var_store.check_rep();
 
-                BooleanDagUtility *tmp_dag_util = ((BooleanDagUtility *) this)->clone(true);
-                tmp_dag_util->increment_shared_ptr();
-                tmp_dag_util->inline_this_dag();
-                BooleanDAG *tmp_dag = tmp_dag_util->get_dag();
-
-                cout << "nodes:  ";
-                for (auto it: tmp_dag->getNodesByType(var_type)) {
-                    cout << it->get_name() << "; ";
-                }
-                cout << endl;
-                cout << "vars: ";
-                for (const auto &objp_it: var_store) {
-                    cout << objp_it.name << "; ";
-                }
-                cout << endl;
-                for (auto it: tmp_dag->getNodesByType(var_type)) {
-                    AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()),
-                                "NODE.original_name(): " + ((CTRL_node *) it)->get_original_name() + " DOESN'T EXIST.");
-                }
-
-                ///TRANSLATE NAMES TO NAMES OF INCOMING DAG;
-
-                tmp_dag_util->get_inlining_tree()->print();
-
-                var_store.rename(tmp_dag_util);
-
-                for (auto it: tmp_dag->getNodesByType(var_type)) {
-                    AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
-                }
-
-                tmp_dag_util->clear();
-            }
+        if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+            InliningTree* tmp_inlining_tree = new InliningTree(this);
+            cout << "new_tree" << endl;
+            tmp_inlining_tree->print();
+            cout << "var_val_tree" << endl;
+            var_store.get_inlining_tree()->print();
+            cout << "--------" << endl;
+            assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
+            var_store.check_rep();
+            tmp_inlining_tree->rename_var_store(var_store);
+            tmp_inlining_tree->clear();
         }
-        else
-        {
-            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-                InliningTree* tmp_inlining_tree = new InliningTree(this);
-                cout << "new_tree" << endl;
-                tmp_inlining_tree->print();
-                cout << "var_val_tree" << endl;
-                var_store.get_inlining_tree()->print();
-                cout << "--------" << endl;
-                assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
-                tmp_inlining_tree->rename_var_store(var_store);
-                tmp_inlining_tree->clear();
-            }
-        }
+
+        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
+            var_store.check_rep();
 
         if(do_deep_clone) {
             deep_clone_tail(var_store);
-            if(false) {
-                if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-                    var_store = _var_store;
-                    //assert that all the holes of get_dag() have values in var_store AND vice versa
 
-                    BooleanDagUtility *tmp_dag_util = ((BooleanDagUtility *) this)->clone(true);
-                    tmp_dag_util->increment_shared_ptr();
-                    tmp_dag_util->inline_this_dag();
-                    BooleanDAG *tmp_dag = tmp_dag_util->get_dag();
+            if(var_store.size() >= 1 && var_type == bool_node::CTRL)
+                var_store.check_rep();
 
-                    cout << "nodes:  ";
-                    for (auto it: tmp_dag->getNodesByType(var_type)) {
-                        cout << it->get_name() << "; ";
-                    }
-                    cout << endl;
-                    cout << "vars: ";
-                    for (const auto &objp_it: var_store) {
-                        cout << objp_it.name << "; ";
-                    }
-                    cout << endl;
-                    for (auto it: tmp_dag->getNodesByType(var_type)) {
-                        AssertDebug(var_store.has_original_name(((CTRL_node *) it)->get_original_name()),
-                                    "NODE.original_name(): " + ((CTRL_node *) it)->get_original_name() +
-                                    " DOESN'T EXIST.");
-//                AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
-                    }
-
-                    ///TODO: NEED TO TRANSLATE NAMES TO NAMES OF INCOMING DAG;
-
-                    tmp_dag_util->get_inlining_tree()->print();
-
-                    var_store.rename(tmp_dag_util);
-
-                    for (auto it: tmp_dag->getNodesByType(var_type)) {
-                        AssertDebug(var_store.has(it->get_name()), "NODE: " + it->get_name() + " DOESN'T EXIST.");
-                    }
-
-                    tmp_dag_util->clear();
-                }
+            if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+                InliningTree* tmp_inlining_tree = new InliningTree(this);
+                tmp_inlining_tree->print();
+                assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
+                var_store.check_rep();
+                tmp_inlining_tree->rename_var_store(var_store);
+                var_store.check_rep();
+                tmp_inlining_tree->clear();
             }
-            else
-            {
-                if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-                    InliningTree* tmp_inlining_tree = new InliningTree(this);
-                    tmp_inlining_tree->print();
-                    assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
-                    tmp_inlining_tree->rename_var_store(var_store);
-                    tmp_inlining_tree->clear();
-                }
-            }
+
+            if(var_store.size() >= 1 && var_type == bool_node::CTRL)
+                var_store.check_rep();
         }
 
-        if(rename_holes)
-        for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
-            string actual_name = ((CTRL_node*)it)->get_name();
-            if(actual_name != "#PC") {
-                string var_name = ((CTRL_node *) it)->get_original_name();
-                string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
-
-                assert(sub_dag_name == dag_name);
-
-                assert(var_store.get_name(var_name, dag_name) == actual_name);
-            }
-        }
-
-        if(do_deep_clone && var_store.size() >= 1 && var_type == bool_node::CTRL) {
+        if(do_deep_clone &&
+//        var_store.size() >= 1 &&
+        var_type == bool_node::CTRL) {
             calc_inlining_tree();
             get_inlining_tree()->concretize(var_store, var_type);
             get_inlining_tree()->clear();
             get_inlining_tree() = nullptr;
         }
+
+
+        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
+            var_store.check_rep();
 
         vector<string> *inlined_functions = nullptr;
 
@@ -184,17 +113,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 assert(false);
             }
 
-            if(rename_holes)
-            for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
-
-                string var_name = ((CTRL_node*)it)->get_original_name();
-                string actual_name = ((CTRL_node*)it)->get_name();
-                string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
-
-                assert(sub_dag_name == dag_name);
-
-                assert(var_store.get_name(var_name, dag_name) == actual_name);
-            }
+            var_store.check_rep();
 
             auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store,
                                                                                  get_env()->floats);
@@ -207,23 +126,15 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
                 }
                 compare_solution->clear();
                 delete compare_solution;
+                get_solution();
             } else {
                 solution = compare_solution;
-            }
-
-            if(rename_holes)
-            for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
-
-                string var_name = ((CTRL_node*)it)->get_original_name();
-                string actual_name = ((CTRL_node*)it)->get_name();
-                string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
-
-                assert(sub_dag_name == dag_name);
-
-                assert(solution->get_assignment()->get_name(var_name, dag_name) == actual_name);
+                get_solution();
             }
 
             get_inlining_tree();
+
+            get_solution();
         }
 
 
@@ -482,7 +393,6 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
     //clone all inlined functions;
     //replace the name inside the inlined function with eachother's
 
-    vector<string> *inlined_functions = nullptr;
     //assert that all the ufuns are represented in the function map
     for (auto it: get_env()->function_map) {
         for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
@@ -491,16 +401,25 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
         }
     }
 
-    BooleanDagUtility* to_get_inlined_fs = ((BooleanDagUtility*)this)->clone(true);
-    to_get_inlined_fs->increment_shared_ptr();
-    to_get_inlined_fs->concretize_this_dag(var_store, bool_node::CTRL, inlined_functions);
-    //assert that if the var_store is not empty, then the dag was actually concretized;
-    if (var_store.size() >= 1) {
+
+    if(false) {
+        vector<string> *inlined_functions = nullptr;
+        BooleanDagUtility *to_get_inlined_fs = ((BooleanDagUtility *) this)->clone(true);
+        to_get_inlined_fs->increment_shared_ptr();
+        to_get_inlined_fs->concretize_this_dag(var_store, bool_node::CTRL, inlined_functions);
+        //assert that if the var_store is not empty, then the dag was actually concretized;
+        if (var_store.size() >= 1) {
+            assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::CTRL).empty());
+        }
         assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
-        assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::CTRL).empty());
+        to_get_inlined_fs->clear();
     }
-    assert(to_get_inlined_fs->get_dag()->getNodesByType(bool_node::UFUN).empty());
-    to_get_inlined_fs->clear();
+
+    InliningTree* tmp_inlining_tree = new InliningTree(this);
+    set<string>* inlined_functions = tmp_inlining_tree->get_inlined_function();
+
+    assert(inlined_functions != nullptr);
 
     //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
     for (auto it: get_env()->function_map) {
@@ -510,12 +429,6 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
         }
     }
 
-    //get all the inlined functions as a set; TODO: refactor to get it as a set in the first place
-    set<string> inlined_fs_as_set;
-    for (const auto &it: *inlined_functions) {
-        inlined_fs_as_set.insert(it);
-    }
-
     // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
     for (const auto &inlined_f_name: *inlined_functions) {
         auto it_f = get_env()->function_map.find(inlined_f_name);
@@ -523,7 +436,7 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
         for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
             auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
             assert(f != get_env()->function_map.end());
-            assert(inlined_fs_as_set.find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_fs_as_set.end());
+            assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_functions->end());
         }
     }
 

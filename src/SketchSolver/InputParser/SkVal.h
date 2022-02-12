@@ -382,6 +382,9 @@ class Assignment_SkVal: public Mapping<SkVal> {
 private:
     InliningTree* inlining_tree = nullptr;
 public:
+
+    bool operator == (const Assignment_SkVal& other) const;
+
     void set_inlining_tree(InliningTree *_inlining_tree)
     {
         assert(inlining_tree == nullptr);

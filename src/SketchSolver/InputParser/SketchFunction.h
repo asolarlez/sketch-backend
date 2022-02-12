@@ -96,6 +96,7 @@ public:
         if(solution != nullptr) {
             auto ret = new SolverLanguagePrimitives::HoleAssignment(solution);
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
+            assert(ret->get_assignment()->to_var_store()->check_rep());
             return ret;
         }
         else
@@ -108,6 +109,8 @@ public:
             inlining_tree = nullptr;
 
             assert(ret != nullptr);
+
+            assert(ret->get_assignment()->to_var_store()->check_rep());
 
             return ret;
         }

@@ -71,6 +71,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         assert(obj.get_original_name() == original_name);
         assert(obj_name == obj.name);
         string prev_source_dag_name = obj.get_source_dag_name();
+        assert(prev_source_dag_name == var_name_to_dag_name_to_name[original_name].begin()->first);
         assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) != var_name_to_dag_name_to_name[original_name].end());
         obj.rename(new_name, new_source_dag);
 
@@ -97,13 +98,20 @@ VarStore::VarStore(InliningTree *_inlining_tree){
     }
 }
 
-VarStore::VarStore(const VarStore &to_copy)
+VarStore::VarStore(const VarStore &to_copy, InliningTree* _inlining_tree)
 {
     Assert(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     Assert(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
-    if(to_copy.inlining_tree != nullptr)
-        inlining_tree = new InliningTree(to_copy.inlining_tree);
+    if(_inlining_tree == nullptr) {
+        if (to_copy.inlining_tree != nullptr) {
+            inlining_tree = new InliningTree(to_copy.inlining_tree);
+        }
+    }
+    else
+    {
+        inlining_tree = new InliningTree(_inlining_tree);
+    }
 
     bitsize = to_copy.bitsize;
 
@@ -115,12 +123,16 @@ VarStore::VarStore(const VarStore &to_copy)
 
     sort(index_as_vec.begin(), index_as_vec.end());
 
+    int true_idx = 0;
 
     for(int i = 0;i<index_as_vec.size(); i++)
     {
         pair<int, string> it = index_as_vec[i];
         assert(it.first == i);
-        insertObj(it.second, it.first, objP(to_copy.objs[it.first]));
+        if(inlining_tree == nullptr || inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr) {
+            insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
+            true_idx++;
+        }
     }
 }
 
@@ -146,14 +158,41 @@ void VarStore::rename(BooleanDagUtility *new_dag_util) {
 
 }
 
-VarStore *VarStore::get_sub_var_store(const string& under_this_var) {
-    VarStore* ret = new VarStore(*this);
-    ret->descend_to_subname(under_this_var);
-    return ret;
+VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
+    if(inlining_tree != nullptr) {
+        return new VarStore(*this, inlining_tree->get_sub_inlining_tree(under_this_var));
+    }
+    else
+    {
+        assert(size() == 0);
+        return new VarStore(*this);
+    }
 }
 
 void VarStore::descend_to_subname(const string &under_this_name) {
     inlining_tree = inlining_tree->get_sub_inlining_tree(under_this_name);
+}
+
+bool VarStore::check_rep() const {
+    assert(inlining_tree != nullptr);
+    for(const auto& it: index) {
+        auto obj = getObjConst(it.first);
+        string original_name = obj.get_original_name();
+        string dag_name = obj.get_source_dag_name();
+        assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
+        assert(var_name_to_dag_name_to_name.at(original_name).find(dag_name) != var_name_to_dag_name_to_name.at(original_name).end());
+        assert(var_name_to_dag_name_to_name.at(original_name).at(dag_name) == it.first);
+
+        assert(inlining_tree->find(dag_name) != nullptr);
+
+    }
+    return true;
+}
+
+void VarStore::set_inlining_tree(InliningTree *new_inlining_tree) {
+    assert(inlining_tree != nullptr);
+    inlining_tree->clear();
+    inlining_tree = new InliningTree(new_inlining_tree);
 }
 
 

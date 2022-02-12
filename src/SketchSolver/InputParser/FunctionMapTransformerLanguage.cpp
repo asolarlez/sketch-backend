@@ -495,6 +495,8 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                             assert(maybe_ret->get_dag()->getNodesByType(bool_node::UFUN).empty());
                         }
 
+                        maybe_ret->get_solution();
+
                         return maybe_ret;
                     }
                     else {
@@ -737,7 +739,9 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
     if(function_name == to_this_dag) {
         if(!is_erased && !superseded)
         {
-            return (*root->get_function_map())[to_this_dag];
+            auto ret = (*root->get_function_map())[to_this_dag];
+            ret->get_solution();
+            return ret;
         }
         assert(is_erased || superseded);
 //        cout << "found " << function_name << endl;
@@ -769,6 +773,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
+        almost_ret->get_solution();
         new_env->function_map.check_consistency();
 
 //        AssertDebug(false, "DEPENDENCIES SHOULD ALREADY BE IN THE FUNCTION MAP!!! ADD A FIELD TO SKETCH FUNCTION THAT REPRESENTS WHICH TRANSFORMER PRIMITIVE REPRESENTS IT!!!")
@@ -871,6 +876,10 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             ret->produce_concretization(*var_store, *bool_node_type, false);
             ret->set_mirror_rep(this);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
+
+
+            ret->get_solution();
+
             return ret;
             break;
         }

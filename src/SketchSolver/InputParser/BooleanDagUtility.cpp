@@ -229,18 +229,15 @@ void InliningTree::concretize(const VarStore& var_store, bool is_root, set<Boole
 
     if(recurse) {
         for (auto it: var_name_to_inlining_subtree) {
-            VarStore new_var_store = var_store;
-            new_var_store.descend_to_subname(it.first);
-
+            VarStore* new_var_store = var_store.get_sub_var_store(it.first);
             if (visited->find(it.second->skfunc) == visited->end()) {
-                it.second->concretize(new_var_store, false, visited);
+                it.second->concretize(*new_var_store, false, visited);
             }
         }
         if(!is_root && !skfunc->has_been_concretized()) {
             ((SketchFunction *) skfunc)->produce_concretization(var_store, bool_node::CTRL, false, false);
         }
     }
-
 }
 
 const BooleanDagUtility *InliningTree::get_skfunc() {
@@ -305,8 +302,10 @@ void InliningTree::rename_var_store(VarStore &var_store, set<InliningTree*>* vis
     assert(visited->find(this) == visited->end());
     visited->insert(this);
 
+    bool is_root = false;
     if(root == nullptr)
     {
+        is_root = true;
         root = this;
     }
 
@@ -335,4 +334,25 @@ void InliningTree::rename_var_store(VarStore &var_store, set<InliningTree*>* vis
             it.second->rename_var_store(var_store, visited, root);
         }
     }
+
+    if(is_root)
+    {
+        var_store.set_inlining_tree(this);
+        var_store.check_rep();
+    }
+}
+
+set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, set<InliningTree*>* visited) {
+    assert(visited->find(this) == visited->end());
+    visited->insert(this);
+
+    for(auto it: var_name_to_inlining_subtree)
+    {
+        inlined_functions->insert(it.second->skfunc->get_dag_name());
+        if(visited->find(it.second) == visited->end()) {
+            it.second->get_inlined_function(inlined_functions, visited);
+        }
+    }
+
+    return inlined_functions;
 }

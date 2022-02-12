@@ -95,6 +95,8 @@ public:
     void print(int ntabs = 0, set<InliningTree*>* visited = new set<InliningTree*>());
 
     void rename_var_store(VarStore &var_store, set<InliningTree*> *visited = new set<InliningTree*>(), InliningTree* root = nullptr);
+
+    set<string> *get_inlined_function(set<string> * = new set<string>(), set<InliningTree*>* visited = new set<InliningTree*>());
 };
 
 class BooleanDagUtility {

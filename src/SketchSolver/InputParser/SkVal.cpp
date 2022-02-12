@@ -69,3 +69,21 @@ Assignment_SkVal::Assignment_SkVal(Assignment_SkVal *to_copy):
         }
     }
 }
+
+bool Assignment_SkVal::operator==(const Assignment_SkVal& other)  const
+{
+    if(!Mapping<SkVal>::operator==(other)) {
+        return false;
+    }
+    else
+    {
+        if(!inlining_tree->match_topology(other.inlining_tree)) {
+            return false;
+        }
+    }
+
+    //TODO: add logic to compare the maps as well.
+    //TODO: implement checkrep.
+
+    return true;
+}
