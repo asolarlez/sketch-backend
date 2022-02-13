@@ -391,6 +391,12 @@ public:
         inlining_tree = _inlining_tree;
     }
 
+    void update_inlining_tree(InliningTree *_inlining_tree)
+    {
+        assert(inlining_tree != nullptr);
+        inlining_tree = _inlining_tree;
+    }
+
     Assignment_SkVal(bool_node::Type _type): type(_type), Mapping<SkVal>() {}
 
     template<typename T>
@@ -543,14 +549,18 @@ public:
 
     void update(Assignment_SkVal *updated_assignment) {
         assert(!null);
-        assert(!updated_assignment->null);
+        if(updated_assignment->null) {
+            assert(updated_assignment->get_assignment().size() == 0);
+        }
         for(const auto& it : updated_assignment->get_assignment()) {
             set_it(updated_assignment, it.first, it.second->clone());
         }
     }
     void disjoint_join_with(Assignment_SkVal *assignment_to_join_with) {
         assert(!null);
-        assert(!assignment_to_join_with->null);
+        if(assignment_to_join_with->null) {
+            assert(assignment_to_join_with->get_assignment().size() == 0);
+        }
         for(const auto& it : assignment_to_join_with->get_assignment()) {
             assert(!has(it.first));
             set_it(assignment_to_join_with, it.first, it.second->clone());

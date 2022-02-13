@@ -85,7 +85,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 //        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
         if(!enter)
         {
-            assert(*prev_path != *new_path);
+            assert(prev_path == nullptr || *prev_path != *new_path);
             cout << "HERE" << endl;
             cout << "VARSTORE INLINING TREE" << endl;
             inlining_tree->print();
@@ -257,6 +257,17 @@ void VarStore::rename(BooleanDagUtility *new_dag_util) {
 VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
     if(inlining_tree != nullptr) {
         return new VarStore(*this, inlining_tree->get_sub_inlining_tree(under_this_var));
+    }
+    else
+    {
+        assert(size() == 0);
+        return new VarStore(*this);
+    }
+}
+
+VarStore *VarStore::get_root_var_store() const {
+    if(inlining_tree != nullptr) {
+        return new VarStore(*this, inlining_tree->get_root_inlining_tree());
     }
     else
     {

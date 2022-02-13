@@ -772,6 +772,7 @@ public:
     const string &get_name(const string& var_name, const string &source_dag_name);
 
     VarStore *get_sub_var_store(const string& descend_to) const;
+    VarStore *get_root_var_store() const;
 
     void descend_to_subname(const string &under_this_name);
 

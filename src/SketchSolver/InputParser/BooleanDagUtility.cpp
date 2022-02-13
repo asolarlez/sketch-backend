@@ -49,8 +49,9 @@ InliningTree *& BooleanDagUtility::get_inlining_tree(bool assert_nonnull) {
     return inlining_tree;
 }
 
-bool BooleanDagUtility::has_been_concretized() {
-    return get_dag()->getNodesByType(bool_node::CTRL).empty();
+bool BooleanDagUtility::get_has_been_concretized() {
+    return has_been_concretized;
+//    return get_dag()->getNodesByType(bool_node::CTRL).empty();
     //|| ( get_dag()->getNodesByType(bool_node::CTRL).size() == 1 && ((CTRL_node*)*get_dag()->getNodesByType(bool_node::CTRL).begin())->get_name() == "#PC");
 }
 
@@ -133,9 +134,11 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<Inlinin
     visited->insert(this);
     auto root_solution = ((SketchFunction*)skfunc)->get_same_soluton();
 
+    bool root_defied = false;
     SolverLanguagePrimitives::HoleAssignment* ret = nullptr;
     if(root_solution != nullptr)
     {
+        root_defied = true;
         ret = new SolverLanguagePrimitives::HoleAssignment(root_solution);
     }
 
@@ -143,9 +146,23 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<Inlinin
     {
         if(visited->find(it.second) == visited->end()) {
             if (ret == nullptr) {
-                ret = new SolverLanguagePrimitives::HoleAssignment(it.second->get_solution());
+                assert(!root_defied);
+                ret = it.second->get_solution();
+                InliningTree* local_inlining_tree = ret->get_assignment()->get_inlining_tree();
+                InliningTree* ret_inlining_tree = new InliningTree();
+                ret_inlining_tree->skfunc = skfunc;
+                ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
+                ret->get_assignment()->update_inlining_tree(ret_inlining_tree);
             } else {
-                ret->get_assignment()->disjoint_join_with(it.second->get_solution()->get_assignment());
+                auto assignment = it.second->get_solution()->get_assignment();
+                ret->get_assignment()->disjoint_join_with(assignment);
+                if(!root_defied) {
+                    InliningTree *local_inlining_tree = assignment->get_inlining_tree();
+                    InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree();
+                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) ==
+                           ret_inlining_tree->var_name_to_inlining_subtree.end());
+                    ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
+                }
             }
         }
     }
@@ -218,7 +235,7 @@ void InliningTree::concretize(const VarStore& var_store, bool is_root, set<Boole
 
     bool recurse = true;
     if(!is_root) {
-        if(!skfunc->has_been_concretized()) {
+        if(!skfunc->get_has_been_concretized()) {
 //            ((SketchFunction *) skfunc)->produce_concretization(var_store, bool_node::CTRL, false, true);
         }
         else
@@ -229,12 +246,11 @@ void InliningTree::concretize(const VarStore& var_store, bool is_root, set<Boole
 
     if(recurse) {
         for (auto it: var_name_to_inlining_subtree) {
-            VarStore* new_var_store = var_store.get_sub_var_store(it.first);
             if (visited->find(it.second->skfunc) == visited->end()) {
-                it.second->concretize(*new_var_store, false, visited);
+                it.second->concretize(*var_store.get_sub_var_store(it.first), false, visited);
             }
         }
-        if(!is_root && !skfunc->has_been_concretized()) {
+        if(!is_root && !skfunc->get_has_been_concretized()) {
             ((SketchFunction *) skfunc)->produce_concretization(var_store, bool_node::CTRL, false, false);
         }
     }
@@ -355,4 +371,39 @@ set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, 
     }
 
     return inlined_functions;
+}
+
+InliningTree *InliningTree::get_root_inlining_tree() {
+    InliningTree* ret = new InliningTree();
+    ret->skfunc = skfunc;
+    return ret;
+}
+
+bool InliningTree::has_no_holes(set<string>* hole_names, set<InliningTree*>* visited) {
+    assert(visited->find(this) == visited->end());
+    visited->insert(this);
+
+    for(auto it:skfunc->get_dag()->getNodesByType(bool_node::CTRL))
+    {
+        hole_names->insert(((CTRL_node*)it)->get_name());
+    }
+
+    for(auto it: var_name_to_inlining_subtree)
+    {
+        if(visited->find(it.second) == visited->end()) {
+            it.second->has_no_holes(hole_names, visited);
+        }
+    }
+
+    if(hole_names->size() == 0) {
+        return true;
+    }
+    else {
+        if (hole_names->size() == 1) {
+            if (*hole_names->begin() == "#PC") {
+                return true;
+            }
+        }
+    }
+    return false;
 }

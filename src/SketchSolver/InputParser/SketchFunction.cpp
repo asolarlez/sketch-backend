@@ -12,14 +12,20 @@ const bool rename_holes = true;
 SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone) {
 
     if(_var_store.size() >= 1 && var_type == bool_node::CTRL)
-    _var_store.check_rep();
+        _var_store.check_rep();
 
     if(_var_store.size() >= 1 && var_type == bool_node::CTRL) {
+//        BooleanDAG* tmp_dag = ((BooleanDagUtility*)this)->produce_inlined_dag()->get_dag();
+//        assert(!tmp_dag->getNodesByType(bool_node::CTRL).empty());
+//        assert(tmp_dag->getNodesByType(bool_node::CTRL).size() == _var_store.size()); // +1 for the #PC.
         assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
     }
     else if(_var_store.size() == 0 && var_type == bool_node::CTRL)
     {
-        assert(!get_dag()->getNodesByType(bool_node::UFUN).empty());
+        if(get_dag()->getNodesByType(bool_node::UFUN).empty()) {
+            assert(get_inlining_tree(false) == nullptr);
+            assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
+        }
     }
 
     if(rename_holes)
@@ -88,8 +94,9 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         var_type == bool_node::CTRL) {
             calc_inlining_tree();
             get_inlining_tree()->concretize(var_store, var_type);
-            get_inlining_tree()->clear();
+            InliningTree* inlining_tree_tmp_p = get_inlining_tree();
             get_inlining_tree() = nullptr;
+            inlining_tree_tmp_p->clear();
         }
 
 
@@ -98,12 +105,15 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
         vector<string> *inlined_functions = nullptr;
 
+        bool prev_has_been_concretized = get_has_been_concretized();
+        assert(!prev_has_been_concretized);
+
         concretize_this_dag(var_store, var_type, inlined_functions);
 
         assert(inlined_functions != nullptr);
 
         //construct solution
-        if (var_type == bool_node::CTRL && var_store.size() >= 1) {
+        if (var_type == bool_node::CTRL && get_has_been_concretized()) {
             AssertDebug(solution == nullptr, "you can't concretize a function twice");
             SATSolverResult sat_solver_result = SAT_UNDETERMINED;
             if (get_dag()->get_failed_assert() != nullptr) {
@@ -211,7 +221,7 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
         }
     }
     return new SketchFunction(
-            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false));
+            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false), get_has_been_concretized());
 }
 
 void SketchFunction::_clear()

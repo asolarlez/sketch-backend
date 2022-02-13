@@ -68,8 +68,9 @@ public:
             const map<string, string>& _original_labels = map<string, string>(),
             const TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
-            InliningTree* _inlining_tree = nullptr) :
-            BooleanDagUtility(_dag_root, _env, _inlining_tree), solution(_solution),
+            InliningTree* _inlining_tree = nullptr,
+            bool _has_been_concretized = false) :
+            BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
             rep(_rep), responsibility(std::move(_responsibility)) {
         for(auto dependency: responsibility) {
@@ -105,12 +106,13 @@ public:
             InliningTree* inlining_tree = new InliningTree(this);
             auto ret = inlining_tree->get_solution();
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
+
+            assert(ret->get_assignment()->to_var_store()->check_rep());
+
             inlining_tree->clear();
             inlining_tree = nullptr;
 
             assert(ret != nullptr);
-
-            assert(ret->get_assignment()->to_var_store()->check_rep());
 
             return ret;
         }
