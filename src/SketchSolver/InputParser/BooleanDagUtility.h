@@ -133,7 +133,7 @@ public:
         }
         if(has_been_concretized)
         {
-            assert(get_dag()->get_dag_id() != 31);
+//            assert(get_dag()->get_dag_id() != 31);
         }
     }
 
@@ -151,7 +151,7 @@ public:
         }
         if(has_been_concretized)
         {
-            assert(get_dag()->get_dag_id() != 31);
+//            assert(get_dag()->get_dag_id() != 31);
         }
     }
 
@@ -163,7 +163,7 @@ public:
 
         if(has_been_concretized)
         {
-            assert(get_dag()->get_dag_id() != 31);
+//            assert(get_dag()->get_dag_id() != 31);
         }
     }
 
@@ -324,7 +324,7 @@ public:
         }
 
         if(is_being_concretized) {
-            assert(get_dag()->get_dag_id() != 31);
+//            assert(get_dag()->get_dag_id() != 31);
             has_been_concretized = true;
         }
     }

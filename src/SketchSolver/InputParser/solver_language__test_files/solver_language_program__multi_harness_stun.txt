@@ -108,13 +108,13 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
             //composite_predicate.replace("if_true_branch", if_true_branch);
             //composite_predicate.replace("if_false_branch", if_false_branch);
 
-            assert(composite_predicate.num_holes() == 3, "cp has", composite_predicate.num_holes());
+            //assert(composite_predicate.num_holes() == 3, "cp has", composite_predicate.num_holes());
 
             predicate_lvl1 = composite_predicate.produce_replace("condition", predicate.clone());
             print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
             int prev_num_holes = predicate_lvl1.num_holes();
 
-            tmp = program_lvl0.produce_concretization(left_programs.get(i).second().get_solution());
+            tmp = program_lvl0.produce_concretization(left_programs.get(i).second()["sketch_main"]["dummy_program"].get_solution());
             print("tmp.num_holes()", tmp.num_holes());
             int new_num_holes = tmp.num_holes();
 
@@ -122,7 +122,7 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
             print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
             assert((prev_num_holes + new_num_holes) >= predicate_lvl1.num_holes(), prev_num_holes, "+", new_num_holes, "<", predicate_lvl1.num_holes());
 
-            tmp = program_lvl0.produce_concretization(right_programs.get(j).second().get_solution());
+            tmp = program_lvl0.produce_concretization(right_programs.get(j).second()["sketch_main"]["dummy_program"].get_solution());
             print("tmp.num_holes()", tmp.num_holes());
 
             predicate_lvl1.replace("if_false_branch", tmp);
@@ -215,6 +215,14 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
     int iter_id = 0;
 
+
+    if(false)
+    {
+        num_trials = 4;
+        num_rows_per_sample = 6;
+        select_best = 2;
+        assert(num_trials >= select_best);
+    }
     while(new_best > prev_best)
     {
         print("NEW_ITERATION", iter_id);
@@ -303,12 +311,14 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
                     new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
                     new_best_predicate_lvl1.replace("if_true_branch",
-                        program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second().get_solution()));
+                        program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
                     new_best_predicate_lvl1.replace("if_false_branch",
-                        program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second().get_solution()));
+                        program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
 
                     new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
                     new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
+
+                    solution = new_best_sketch_main_lvl1.get_solution();
 
                     file = File(file_name, new_best_sketch_main_lvl1);
                     int score = count_passing_inputs(new_best_sketch_main_lvl1, file);
@@ -325,17 +335,18 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
 
                     //commented out in ordeer to test the existence of solutions in the very previous statement.
+                    if(false){
+                        new_synthesized_lvl1 =
+                            synthesize_composite_programs_from_parts(
+                                left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
+                                select_best, file_name, num_trials, num_rows_per_sample);
 
-                    new_synthesized_lvl1 =
-                        synthesize_composite_programs_from_parts(
-                            left_sketch_main_lvl0_programs, right_sketch_main_lvl0_programs,
-                            select_best, file_name, num_trials, num_rows_per_sample);
+                        print("DONE (i = ", i, ") new_synthesized_lvl1");
 
-                    print("DONE (i = ", i, ") new_synthesized_lvl1");
+                        print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
 
-                    print("synthesized_best_score: ", new_synthesized_lvl1.get(0).first().first());
-
-                    concatenate(improved_main_lvl1, new_synthesized_lvl1);
+                        concatenate(improved_main_lvl1, new_synthesized_lvl1);
+                    }
                 }
             }
             if(not(entered))
@@ -453,28 +464,38 @@ Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_w
 Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper)
 {
 
-
-
     harness_levels = [];
 
     for(int i = 0;i<stun_depth;i++)
     {
         if(i == 0)
         {
+            print("num_holes(i =", i, "): ", local_sketch_main__Wrapper.num_holes());
             mhw_lvl0 = best_effort_synthesized_program(local_sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
 
+            print("after best_effort, i", i);
+
             harness_levels.append(mhw_lvl0);
+
         }
         else
         {
 
+            print("ENTERING i =", i);
+
             assert(i >= 1);
 
-            cp_lvl_i = composite_predicate.clone();
+            print("composite_predicate.num_holes();", composite_predicate.num_holes());
+
+            cp_lvl_i = composite_predicate.deep_clone();
+
+            print("cp_lvl_i.num_holes();", cp_lvl_i.num_holes());
 
             cp_lvl_i.replace("composite_predicate", harness_levels[i-1].get("sketch_main").get("composite_predicate"));
 
             local_sketch_main.replace("composite_predicate", cp_lvl_i);
+
+            print("num_holes(i =", i, "): ", local_sketch_main__Wrapper.num_holes());
 
             mhw_lvl_i = best_effort_synthesized_program(local_sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
 
@@ -512,17 +533,15 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
 Solver recursive_function_stun()
 {
 
-    local_sketch_main = sketch_main.clone();
+    local_sketch_main = sketch_main.deep_clone();
     local_sketch_main__Wrapper = sketch_main__Wrapper.produce_replace("sketch_main", local_sketch_main);
-
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 2;
+    num_trials = 10;
     num_rows_per_sample = 3;
 
-    int stun_depth = 2;
-
+    int stun_depth = 3;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 
@@ -530,12 +549,25 @@ Solver recursive_function_stun()
 
     for(int i = 0;i<stun_depth;i++)
     {
-        cp_lvl_i = composite_predicate.clone();
+        cp_lvl_i = composite_predicate.deep_clone();
+        cp_lvl_i.replace("composite_predicate", cp_lvl_i);
+
+        print("num_holes(i=", i, "j=", 0, "): ", cp_lvl_i.num_holes());
 
         for(int j = 0; j<i;j++)
         {
-            cp_lvl_i = cp_lvl_i.produce_replace("composite_predicate", cp_lvl_i);
+            print("i, j, (j<i)", i, j, (j<i));
+            assert((j < i), "fails: ", j, "!<", i);
+            assert(not(j == i), "fails: ", j, "!!=", i);
+
+
+            next_cp_lvl_i = composite_predicate.deep_clone();
+            next_cp_lvl_i.replace("composite_predicate", cp_lvl_i);
+            print("num_holes(i=", i, "j=", j+1, "): ", next_cp_lvl_i.num_holes());
+            cp_lvl_i = next_cp_lvl_i;
         }
+
+        print("num_holes(i =", i, "): ", cp_lvl_i.num_holes());
 
         intermediate_solutions = [];
 
@@ -563,51 +595,52 @@ Solver recursive_function_stun()
 
 
         //START
+        print("cp_lvl_i, i =", i);
         local_sketch_main.replace("composite_predicate", cp_lvl_i);
 
-                        if(true)
-                        {
-                            to_eval = eval_program_main_harness.produce_replace("dummy_program", local_sketch_main.produce_concretization().get("composite_predicate"));
+        {
+            to_eval = eval_program_main_harness.produce_replace("dummy_program", cp_lvl_i);
 
-                            local_file = File(file_name, to_eval);
-                            for(int k = 0;k < local_file.size(); k++)
-                            {
-                                if(to_eval.passes(local_file[k])){
-                                    //print("composite_predicate(file[", k, "]) passes");
-                                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
-                                }
-                                else
-                                {
-                                    print("composite_predicate(file[", k, "]) fails");
-                                }
-                            }
-                        }
+            local_file = File(file_name, to_eval);
+            for(int k = 0;k < local_file.size(); k++)
+            {
+                if(to_eval.passes(local_file[k])){
+                    //print("composite_predicate(file[", k, "]) passes");
+                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
+                }
+                else
+                {
+                    print("composite_predicate(file[", k, "]) fails");
+                }
+            }
+        }
 
         score_predicted = count_passing_inputs(local_sketch_main__Wrapper, file);
         //END
 
         //START
+        print("at_level, i =", i);
         local_sketch_main.replace("composite_predicate", at_level);
 
-                if(true)
-                {
-                    to_eval = eval_program_main_harness.produce_replace("dummy_program", local_sketch_main.produce_concretization().get("composite_predicate"));
+        {
+            to_eval = eval_program_main_harness.produce_replace("dummy_program", at_level);
 
-                    local_file = File(file_name, to_eval);
-                    for(int k = 0;k < local_file.size(); k++)
-                    {
-                        if(to_eval.passes(local_file[k])){
-                            //print("composite_predicate(file[", k, "]) passes");
-                            print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
-                        }
-                        else
-                        {
-                            print("composite_predicate(file[", k, "]) fails");
-                        }
-                    }
+            local_file = File(file_name, to_eval);
+            for(int k = 0;k < local_file.size(); k++)
+            {
+                if(to_eval.passes(local_file[k])){
+                    //print("composite_predicate(file[", k, "]) passes");
+                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
                 }
+                else
+                {
+                    print("composite_predicate(file[", k, "]) fails");
+                }
+            }
+        }
+
         score_ground_truth = count_passing_inputs(local_sketch_main__Wrapper, file);
-         //END
+        //END
 
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
         assert(score_ground_truth == score_predicted, "FAILED: score_ground_truth == score_predicted:: ", score_ground_truth, " != ", score_predicted);
