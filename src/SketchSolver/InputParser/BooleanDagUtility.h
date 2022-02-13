@@ -194,8 +194,7 @@ public:
         return get_dag()->getNodesByType(bool_node::CTRL).size();
     }
 
-    const string& get_dag_name()
-    {
+    const string & get_dag_name() const {
         return dag_name;
     }
 

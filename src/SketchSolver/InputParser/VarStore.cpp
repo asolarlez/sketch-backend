@@ -60,27 +60,123 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
     else
     {
         cout << "not_contains " << new_name << endl;
-        AssertDebug(var_name_to_dag_name_to_name[original_name].size() == 1, "Check why this fails and respond accordingly.");
-        assert(inlining_tree != nullptr);
-        vector<string>* prev_path = inlining_tree->find(var_name_to_dag_name_to_name[original_name].begin()->first);
-        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
-        AssertDebug(*prev_path == *new_path, "You are replacing a hole name with another hole name that doesn't match the topological location between the prev and new inlining tree");
-        string obj_name = var_name_to_dag_name_to_name[original_name].begin()->second;
-        assert(index.find(obj_name) != index.end());
-        auto& obj = _getObj(obj_name);
-        assert(obj.get_original_name() == original_name);
-        assert(obj_name == obj.name);
-        string prev_source_dag_name = obj.get_source_dag_name();
-        assert(prev_source_dag_name == var_name_to_dag_name_to_name[original_name].begin()->first);
-        assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) != var_name_to_dag_name_to_name[original_name].end());
-        obj.rename(new_name, new_source_dag);
 
-        assert(index.find(new_name) == index.end());
-        int prev_index = index[obj_name];
-        index.erase(obj_name);
-        index[new_name] = prev_index;
-        var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
-        var_name_to_dag_name_to_name[original_name][new_source_dag] = new_name;
+        string matching_subdag_name;
+
+        AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "checkrep should have failed.");
+        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
+        vector<string>* prev_path = nullptr;
+        bool enter = false;
+
+        for(const auto& it: var_name_to_dag_name_to_name[original_name])
+        {
+             prev_path = inlining_tree->find(it.first);
+             if(prev_path != nullptr && *prev_path == *new_path)
+             {
+                 enter = true;
+                 matching_subdag_name = it.first;
+                 break;
+             }
+        }
+
+//        AssertDebug(var_name_to_dag_name_to_name[original_name].size() == 1, "Check why this fails and respond accordingly.");
+        assert(inlining_tree != nullptr);
+//        vector<string>* prev_path = inlining_tree->find(var_name_to_dag_name_to_name[original_name].begin()->first);
+//        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
+        if(!enter)
+        {
+            assert(*prev_path != *new_path);
+            cout << "HERE" << endl;
+            cout << "VARSTORE INLINING TREE" << endl;
+            inlining_tree->print();
+            cout << "NEW INLINING TREE" << endl;
+            new_inlining_tree->print();
+            cout << endl;
+
+            InliningTree* subtree = inlining_tree;
+            for(int i = new_path->size()-1; i>=0;i--) {
+                subtree = subtree->get_sub_inlining_tree((*new_path)[i]);
+            }
+
+            string subdag_of_interest = subtree->get_skfunc()->get_dag_name();
+
+            assert(var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) == var_name_to_dag_name_to_name[original_name].end());
+
+            VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution()->to_var_store();
+            auto sub_var_name_to_dag_name_to_name = sub_var_store->var_name_to_dag_name_to_name;
+            auto sub_index = sub_var_store->index;
+            if(sub_var_name_to_dag_name_to_name.find(original_name) != sub_var_name_to_dag_name_to_name.end())
+            {
+                assert(sub_var_name_to_dag_name_to_name[original_name].size() == 1);
+                if(sub_var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) != sub_var_name_to_dag_name_to_name[original_name].end())
+                {
+                    auto obj_name = sub_var_name_to_dag_name_to_name[original_name][subdag_of_interest];
+
+                    assert(sub_index.find(obj_name) != sub_index.end());
+                    auto &obj = sub_var_store->_getObj(obj_name);
+                    assert(obj.get_original_name() == original_name);
+                    assert(obj_name == obj.name);
+                    string prev_source_dag_name = obj.get_source_dag_name();
+                    assert(prev_source_dag_name == sub_var_name_to_dag_name_to_name[original_name].begin()->first);
+                    assert(sub_var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
+                                   sub_var_name_to_dag_name_to_name[original_name].end());
+//                    obj.rename(new_name, new_source_dag);
+
+                    assert(sub_index.find(new_name) == sub_index.end());
+//                    int prev_index = sub_index[obj_name];
+                    assert(index.find(obj_name) == index.end());
+//                    cout << "ERASING " << obj_name << endl;
+//                    assert(false);
+//                    index.erase(obj_name);
+//                    index[new_name] = prev_index;
+                    assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
+                    assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) == var_name_to_dag_name_to_name[original_name].end());
+//                    var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
+                    assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) == var_name_to_dag_name_to_name[original_name].end());
+
+                    auto new_obj = objP(obj);
+                    new_obj.rename(new_name, new_source_dag);
+                    insertObj(new_name, objs.size(), new_obj);
+
+                    assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) != var_name_to_dag_name_to_name[original_name].end());
+                    assert(var_name_to_dag_name_to_name[original_name][new_source_dag] == new_name);
+                }
+                else {
+                    assert(false);
+                }
+            }
+            else
+            {
+                assert(false);
+            }
+        }
+        else {
+            AssertDebug(*prev_path == *new_path,
+                        "You are replacing a hole name with another hole name that doesn't match the topological location between the prev and new inlining tree");
+//            string obj_name = var_name_to_dag_name_to_name[original_name].begin()->second;
+
+            assert(var_name_to_dag_name_to_name[original_name].find(matching_subdag_name) != var_name_to_dag_name_to_name[original_name].end());
+            string obj_name = var_name_to_dag_name_to_name[original_name][matching_subdag_name];
+
+            assert(index.find(obj_name) != index.end());
+            auto &obj = _getObj(obj_name);
+            assert(obj.get_original_name() == original_name);
+            assert(obj_name == obj.name);
+            string prev_source_dag_name = obj.get_source_dag_name();
+            assert(prev_source_dag_name == matching_subdag_name);
+            assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
+                   var_name_to_dag_name_to_name[original_name].end());
+            obj.rename(new_name, new_source_dag);
+
+            assert(index.find(new_name) == index.end());
+            int prev_index = index[obj_name];
+            cout << "ERASING " << obj_name << endl;
+            index.erase(obj_name);
+            index[new_name] = prev_index;
+            assert(objs[index[new_name]].name == new_name);
+            var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
+            var_name_to_dag_name_to_name[original_name][new_source_dag] = new_name;
+        }
     }
 }
 

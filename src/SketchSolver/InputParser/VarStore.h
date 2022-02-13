@@ -427,7 +427,6 @@ public:
         void rename(const string &new_name, const string &subdag_name) {
             name = new_name;
             source_dag_name = subdag_name;
-            assert(source_dag_name != "sketch_main__Wrapper__id27__id29__id30__id41");
         }
 
         bool_node::Type get_type() const {
@@ -547,7 +546,8 @@ public:
     {
 	    AssertDebug(index.find(name) == index.end(), name + " should not be present in index.");
 	    AssertDebug(idx == objs.size(), "idx, " + std::to_string(idx) + " should be the same as objs.size() = " + std::to_string(objs.size()) + ".");
-	    objs.push_back(obj);
+	    assert(name == obj.name);
+        objs.push_back(obj);
 	    index[name] = idx;
         insert_name_in_original_name_to_dag_name_to_name(obj.name, obj.get_original_name(), obj.get_source_dag_name());
     }

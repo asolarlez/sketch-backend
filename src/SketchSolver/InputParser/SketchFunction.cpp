@@ -68,9 +68,12 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
             if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
                 InliningTree* tmp_inlining_tree = new InliningTree(this);
+                cout << "new_inlining_tree" << endl;
                 tmp_inlining_tree->print();
                 assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
                 var_store.check_rep();
+                cout <<"var_store.inlining_tree" << endl;
+                var_store.get_inlining_tree()->print();
                 tmp_inlining_tree->rename_var_store(var_store);
                 var_store.check_rep();
                 tmp_inlining_tree->clear();

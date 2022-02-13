@@ -289,7 +289,7 @@ void InliningTree::print(int ntabs, set<InliningTree*>* visited) {
         }
         else
         {
-            cout << tabs(ntabs+2) << "*" << endl;
+            cout << tabs(ntabs+2) << "*" << it.second->skfunc->get_dag_name() << endl;
         }
     }
     cout << tabs(ntabs) << "} " << endl;
