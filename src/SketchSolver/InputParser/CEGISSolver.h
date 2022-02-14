@@ -67,7 +67,7 @@ protected:
 //-- internal wrappers arround the checker methods
     BooleanDAG* getProblem()
     {
-        return checker->getProblem();
+        return checker->getProblemDag();
     }
 
 	bool problemStack_is_empty()

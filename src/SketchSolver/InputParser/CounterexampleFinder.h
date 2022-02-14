@@ -263,14 +263,16 @@ public:
             int row_id = file->get_counterexample_ids_over_time()[i];
             bool ok = parseLine(file->at(row_id));
             assert(ok);
-//            cout << "counterexample2: ";
 //            inputs->printBrief(cout);
-//            cout << endl;
             bool rv = this->run(*inputs);
             assert(bdag.get_failed_assert() == nullptr);
-//            assert(rv == (bdag.get_failed_assert() != nullptr));
             if(rv){
+                cout << "subset row id: " << i << " FAILS" << endl;
                 fails.push_back(row_id);
+            }
+            else
+            {
+                cout << "subset row id: " << i << " PASSES" << endl;
             }
         }
 

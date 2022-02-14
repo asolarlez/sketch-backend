@@ -164,28 +164,13 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     return seed_main_lvl1;
 }
 
-Solver check_predicate_and_assertion_consistency(the_predicate, file_name, the_harness)
-{
-    File file_for_predicate = File(file_name, the_predicate);
-    File file_for_harness = File(file_name, the_harness);
-    for(int i = 0;i<file_for_predicate.size();i++) {
-        //print("out", i, "(predicate)", the_predicate(file_for_predicate.get(i)), "(harness)", the_harness.passes(file_for_harness.get(i)));
-        assert(the_predicate(file_for_predicate.get(i)) == the_harness.passes(file_for_harness.get(i)), "MISSMATCH AT: ", i);
-    }
-}
-
 Solver top_down_and_bottom_up_synthesis_sketch_main()
 {
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
-    //string file_name = "uav_kg_big__as_bools.data";
-    //string file_name = "zig_zag.data";
 
-    int mult = 1;
-
-
-    num_trials = 2;
-    num_rows_per_sample = 1;
+    num_trials = 10;
+    num_rows_per_sample = 2;
     select_best = 2;
     assert(num_trials >= select_best);
 
@@ -259,13 +244,8 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
             //take condition
             //condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
             condition_lvl1_sub_sub = predicate.produce_concretization(local_program["sketch_main"]["dummy_program"]["condition"].get_solution());
-            condition_lvl1_sub = eval_predicate_main.produce_replace("dummy_predicate", condition_lvl1_sub_sub);
-            condition_lvl1_sub_harness = eval_predicate_main_harness.produce_replace("eval_predicate_main", condition_lvl1_sub);
-            condition_lvl1 = eval_predicate_main_harness__Wrapper.produce_replace("eval_predicate_main_harness", condition_lvl1_sub_harness);
-
-            //run this to check consistency condition_lvl1 and condition_lvl1_sub
-            //this makes sure that the function_call operation of sketches works as expected.
-            check_predicate_and_assertion_consistency(condition_lvl1_sub, file_name, condition_lvl1);
+            condition_lvl1_sub = eval_program_main.produce_replace("dummy_program", condition_lvl1_sub_sub);
+            condition_lvl1 = eval_program_main__Wrapper.produce_replace("eval_program_main", condition_lvl1_sub);
 
             File file = File(file_name, condition_lvl1_sub);
             //split file based on condition
@@ -538,10 +518,10 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 10;
+    num_trials = 20;
     num_rows_per_sample = 3;
 
-    int stun_depth = 3;
+    int stun_depth = 4;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 
@@ -645,7 +625,7 @@ Solver recursive_function_stun()
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
         assert(score_ground_truth == score_predicted, "FAILED: score_ground_truth == score_predicted:: ", score_ground_truth, " != ", score_predicted);
 
-        check_harness_levels.append(local_sketch_main__Wrapper.produce_concretization());
+        check_harness_levels.append(local_sketch_main__Wrapper.deep_clone());
     }
 
     local_sketch_main.reset("composite_predicate");
@@ -949,7 +929,7 @@ Solver best_effort_solutions(SketchFunction harness, File file, int num_trials, 
     for(int trial_id = 0; trial_id<num_trials; trial_id++)
 	{
 		subset_file = file.produce_subset_file(num_rows); //sample subset of the rows
-		solution = SATSolver(harness.clone(), subset_file); // invoke the Sketch Solver on the harness
+		solution = SATSolver(harness.deep_clone(), subset_file); // invoke the Sketch Solver on the harness
 		subset_file.clear();
 		score = get_score(harness, solution, file);
 		print("TRIAL", trial_id+1, "/", num_trials, "SCORE", score, "/", file.size());

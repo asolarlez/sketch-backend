@@ -75,18 +75,23 @@ public:
 			return name;
 		}
 
+    private:
+        bool in_clear = false;
+    public:
 		~objP(){
             clear();
 		}
 
         void clear()
         {
+            assert(!in_clear);
+            in_clear = true;
             vals.clear();
-		    defined = false;
-            if(next != nullptr) {delete next; next = nullptr;};
+            if(next != nullptr) {delete next; next = nullptr; };
+            defined = false;
         }
 
-		objP(string  nm, int size, OutType* _otype, bool_node::Type _type, const string _original_name = "", const string _source_dag_name = ""):
+		objP(string  nm, int size, OutType* _otype, bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
         name(std::move(nm)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
 		    assert(_otype != nullptr);
             if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
@@ -503,9 +508,7 @@ public:
 
     VarStore(const VarStore& to_copy, InliningTree* _inlining_tree = nullptr);
 
-    VarStore operator = (const VarStore& other) const {
-        return VarStore(other);
-    }
+    void operator = (const VarStore& to_copy);
 
 	VarStore* clone() const {
         return new VarStore(*this);
@@ -638,6 +641,7 @@ public:
 		for(size_t i=0; i<objs.size(); ++i){
 			objs[i].printBit(out);
 		}
+        cout << endl;
 	}
 	void finalizeSynthOutputs() {
 		synthouts.clear();

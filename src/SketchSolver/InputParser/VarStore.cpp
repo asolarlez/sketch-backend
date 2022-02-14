@@ -186,8 +186,6 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
     return var_name_to_dag_name_to_name[var_name][source_dag_name];
 }
 
-#include "BooleanDagUtility.h"
-
 VarStore::VarStore(InliningTree *_inlining_tree){
     if(_inlining_tree != nullptr) {
         inlining_tree = (new InliningTree(_inlining_tree));
@@ -196,63 +194,16 @@ VarStore::VarStore(InliningTree *_inlining_tree){
 
 VarStore::VarStore(const VarStore &to_copy, InliningTree* _inlining_tree)
 {
-    Assert(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
-    Assert(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
+    AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
+    AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
-    if(_inlining_tree == nullptr) {
-        if (to_copy.inlining_tree != nullptr) {
-            inlining_tree = new InliningTree(to_copy.inlining_tree);
-        }
-    }
-    else
-    {
+    if(_inlining_tree != nullptr) {
         inlining_tree = new InliningTree(_inlining_tree);
     }
 
-    bitsize = to_copy.bitsize;
+    *this = to_copy;
 
-    vector<pair<int, string> > index_as_vec;
-
-    for(const auto& it : to_copy.index) {
-        index_as_vec.emplace_back(it.second, it.first);
-    }
-
-    sort(index_as_vec.begin(), index_as_vec.end());
-
-    int true_idx = 0;
-
-    for(int i = 0;i<index_as_vec.size(); i++)
-    {
-        pair<int, string> it = index_as_vec[i];
-        assert(it.first == i);
-        if(inlining_tree == nullptr || inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr) {
-            insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
-            true_idx++;
-        }
-    }
 }
-
-//void VarStore::rename(BooleanDagUtility *new_dag_util) {
-//
-//    assert(inlining_tree != nullptr);
-//
-//    InliningTree* new_inlining_tree = new_dag_util->get_inlining_tree();
-//
-//    assert(new_inlining_tree->match_topology(inlining_tree));
-//
-//    BooleanDAG* tmp_dag = new_dag_util->get_dag();
-//
-//    for (auto it: tmp_dag->getNodesByType(bool_node::CTRL)) {
-//        string new_name =  ((CTRL_node*)it)->get_name();
-//        string original_name = ((CTRL_node*)it)->get_original_name();
-//        string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
-//        cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << ((CTRL_node*)it)->get_source_dag_name() << endl;
-//        rename(original_name, subdag_name, new_name, new_inlining_tree);
-//    }
-//
-//    inlining_tree = new InliningTree(new_inlining_tree);
-//
-//}
 
 VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
     if(inlining_tree != nullptr) {
@@ -302,4 +253,43 @@ void VarStore::set_inlining_tree(InliningTree *new_inlining_tree) {
     inlining_tree = new InliningTree(new_inlining_tree);
 }
 
+void VarStore::operator=(const VarStore &to_copy){
 
+    AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
+    AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
+
+    //local clear.
+    objs.clear();
+    index.clear();
+    var_name_to_dag_name_to_name.clear();
+    bitsize = 0;
+
+    if(inlining_tree == nullptr) {
+        if (to_copy.inlining_tree != nullptr) {
+            inlining_tree = new InliningTree(to_copy.inlining_tree);
+        }
+    }
+
+
+    bitsize = to_copy.bitsize;
+
+    vector<pair<int, string> > index_as_vec;
+
+    for(const auto& it : to_copy.index) {
+        index_as_vec.emplace_back(it.second, it.first);
+    }
+
+    sort(index_as_vec.begin(), index_as_vec.end());
+
+    int true_idx = 0;
+
+    for(int i = 0;i<index_as_vec.size(); i++)
+    {
+        pair<int, string> it = index_as_vec[i];
+        assert(it.first == i);
+        if(inlining_tree == nullptr || inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr) {
+            insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
+            true_idx++;
+        }
+    }
+}

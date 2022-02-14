@@ -1020,8 +1020,21 @@ namespace SolverLanguagePrimitives
                     }
                 }
             }
+
+
+            int num_passing_inputs = problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->count_passing_inputs(problem->get_file());
+            if(ret_result == SAT_SATISFIABLE)
+            {
+                assert(num_passing_inputs == problem->get_file()->size());
+            }
+            else
+            {
+                assert(num_passing_inputs < problem->get_file()->size());
+            }
+
             HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
             cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
             cout << "returns " << ret->to_string() << endl << endl;
 
 
@@ -1239,7 +1252,7 @@ namespace SolverLanguagePrimitives
         vector<pair<int, HoleAssignment*> > solutions;
         for(int i = 0;i<num_samples;i++)
         {
-            File* sub_file = all_file->sample_sub_file(rows_per_sample);
+            File* sub_file = all_file->sample_sub_file(rows_per_sample, fout);
             WrapperAssertDAG* solver =
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             HoleAssignment* solution_holder = (solver)->

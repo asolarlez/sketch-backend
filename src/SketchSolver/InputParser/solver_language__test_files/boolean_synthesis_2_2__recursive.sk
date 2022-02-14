@@ -225,10 +225,3 @@ harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
 {
     assert(composite_predicate(num_bools, bools) == out);
 }
-
-/*
-@FromFile("uav_kg_big__as_bools.data")
-harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
-{
-    assert(eval_program_main(num_bools, bools, out) == out);
-}*/

@@ -30,7 +30,7 @@ int CEGISChecker::valueForINode(INTER_node* inode, VarStore& values, int& nbits)
 // to remove or keep the assertions following the failing assertion.
 void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	if(inputStore.getBitsize() == 0) return;
-	BooleanDAG* dag = getProblem()->clone();
+	BooleanDAG* dag = getProblemDag()->clone();
 	int orisize = dag->size();
 	
 	if(orisize < 200){ return; }
@@ -137,7 +137,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	int iter = 0;
 	VarStore& tmpin = input;
 	map<string, BooleanDAG*> empty;	
-	BooleanDAG* dag = getProblem();
+	BooleanDAG* dag = getProblemDag();
 	vector<bool_node *> const & asserts = dag->getNodesByType(bool_node::ASSERT);
 	vector<bool_node *> hasserts;
 	if(asserts.size()==0){
@@ -371,7 +371,7 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 		if(PARAMS->verbosity > 5){ cout<<" * Simulation optimized it to = "<<dag->size()<<endl; }	
 		if(timesim){ tc.stop().print("didn't find a cex");	}
 		cout<<"After all optim"<<endl;
-		// getProblem()->lprint(std::cout);
+		// getProblemDag()->lprint(std::cout);
 		//dag->lprint(cout);
 		tv = (baseCheck(controls, input) == l_True); //Undefined means we are doing light verif so we treat it as false.
 	} else {
@@ -456,12 +456,12 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	{
 		pushProblem((*problems.rbegin())->clone());
 	}	
-	BooleanDAG* oriProblem = getProblem();
+	BooleanDAG* oriProblem = getProblemDag();
 	bool rv = false;
 	int ninputs = -1;
 	CheckControl cc(params, problems.size());
 	//cout<<"check: Before hard code"<<endl;
-	//getProblem()->lprint(std::cout);
+	//getProblemDag()->lprint(std::cout);
 
 	pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
 
@@ -479,26 +479,26 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
     }
 
 //	assert(false);
-//	OLD: pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats)));
+//	OLD: pushProblem(hardCodeINode(getProblemDag(), controls, bool_node::CTRL, floats)));
 //    cout<<"After hard code"<<endl;
-	// getProblem()->lprint(std::cout);
+	// getProblemDag()->lprint(std::cout);
 	do{
-		switch(cc.actionDecide(problemLevel() - 1, getProblem())){
+		switch(cc.actionDecide(problemLevel() - 1, getProblemDag())){
 			case CheckControl::POP_LEVEL:{
 				// must save the int size! tbd will be deleted by popProblem()
-				int tbdIntSize = getProblem()->getIntSize();
+				int tbdIntSize = getProblemDag()->getIntSize();
 				popProblem();
 				cout<<"CONTROL: Popping to level "<<problemLevel()<<endl;
 				{
-				    tbdIntSize = getProblem()->getIntSize();
+				    tbdIntSize = getProblemDag()->getIntSize();
 					// must save the int size! tbd will be deleted by popProblem()
 					popProblem();
-					oriProblem = getProblem();
+					oriProblem = getProblemDag();
 					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(input, oriProblem);
 					}
 					pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
-//					pushProblem(hardCodeINode(getProblem(), controls, bool_node::CTRL, floats));
+//					pushProblem(hardCodeINode(getProblemDag(), controls, bool_node::CTRL, floats));
 				}
 				continue;
 			}
@@ -509,7 +509,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 			}
 			case CheckControl::GROW_IN:{
 
-				BooleanDAG* dag = getProblem();
+				BooleanDAG* dag = getProblemDag();
 				if(PARAMS->verbosity > 5){
 					cout<<"CONTROL: growing l="<<problemLevel()<<" inputs to size "<< (dag->getIntSize()+1) <<endl;
 				}				
@@ -520,7 +520,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
 				if (files.count(curProblem) > 0) {
 					map<string, BooleanDAG*> empty;
-					BooleanDAG* dag = getProblem();
+					BooleanDAG* dag = getProblemDag();
 					CounterexampleFinder eval(empty, *dag, params.sparseArray, floats);
 					VarStore& tmpin = input;
 					eval.init(tmpin);
@@ -529,7 +529,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					
 					while (res == CounterexampleFinder::MOREBITS) {
                         assert(false); //After introducing File, this is no longer an issue.
-						BooleanDAG* dag = getProblem();
+						BooleanDAG* dag = getProblemDag();
 						if (PARAMS->verbosity > 5) {
 							cout << "CONTROL: growing l=" << problemLevel() << " inputs to size " << (dag->getIntSize() + 1) << endl;
 						}
@@ -664,7 +664,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 		cout << "counter example:" << endl;
 		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
-		BooleanDAG * prob = getProblem();
+		BooleanDAG * prob = getProblemDag();
 		NodeEvaluator eval(empty, *prob, floats);
 		eval.run(input);
 		cout<<"PRINT EVAL"<<endl;
@@ -701,9 +701,9 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 	int idx = 0;	
 	map<bool_node*,  int> node_values;
 	check_node_ids.clear();
-	check_node_ids.resize(getProblem()->size() );
-	size_t nbits = getProblem()->getIntSize();
-	for (BooleanDAG::iterator node_it = getProblem()->begin(); node_it != getProblem()->end(); ++node_it, ++idx) {
+	check_node_ids.resize(getProblemDag()->size() );
+	size_t nbits = getProblemDag()->getIntSize();
+	for (BooleanDAG::iterator node_it = getProblemDag()->begin(); node_it != getProblemDag()->end(); ++node_it, ++idx) {
 		(*node_it)->flag = true;
 		if ((*node_it)->type == bool_node::CTRL) {
 			CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(*node_it);
@@ -739,6 +739,6 @@ void CEGISChecker::setNewControls(VarStore& controls, SolverHelper& dirCheck){
 		}
 	}	
 	//cout << "setNewControls: problem=";
-	//getProblem()->lprint(cout);
-	NodesToSolver::createConstraints(*getProblem(), dirCheck, node_values, check_node_ids, floats, params.sparseArray);
+	//getProblemDag()->lprint(cout);
+	NodesToSolver::createConstraints(*getProblemDag(), dirCheck, node_values, check_node_ids, floats, params.sparseArray);
 }

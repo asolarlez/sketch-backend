@@ -82,7 +82,7 @@ bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bo
 		//timer.start();
 	bool stoppedEarly;
 		int YES = dir.newYES();
-		//getProblem()->lprint(cout);
+		//getProblemDag()->lprint(cout);
 		NodesToSolver nts(dir, "PROBLEM", node_values, node_ids, floats);	
 		nts.sparseArray = sparseArray;
 		try{
@@ -94,7 +94,7 @@ bool NodesToSolver::createConstraints(BooleanDAG& dag, SolverHelper& dir, map<bo
 			}
 
 			/*
-			BooleanDAG& bd = *getProblem();
+			BooleanDAG& bd = *getProblemDag();
 			for(int i=0; i<node_ids.size(); ++i){
 				cout<< bd[i]->lprint() <<"="<<node_ids[i]<<endl;
 			}

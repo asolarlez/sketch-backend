@@ -336,6 +336,7 @@ public:
         int num_1s = 0;
         for(int i = 0;i<file->size();i++)
         {
+//            file->at(i)->printBrief(cout);
             BooleanDagUtility* _dag = produce_concretization(*file->at(i), bool_node::SRC);
             _dag->increment_shared_ptr();
             auto dag = _dag->get_dag();

@@ -101,9 +101,15 @@ public:
         return input_store;
     }
 
-    BooleanDAG* getProblem(){
+    BooleanDAG* getProblemDag(){
         assert(!problemStack.empty());
         return problemStack.top()->get_dag();
+    }
+
+
+    BooleanDagUtility* getProblem(){
+        assert(!problemStack.empty());
+        return problemStack.top();
     }
 
     BooleanDagUtility* getHarness()

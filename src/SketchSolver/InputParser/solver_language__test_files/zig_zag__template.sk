@@ -1,4 +1,3 @@
-
 generator int line_generator(int x)
 {
     return (??-16)*x + (??-16);
@@ -37,9 +36,7 @@ int program_lvl0(int x) {
     return program_generator(x);
 }
 
-int dummy_program(int x) {return 1;}
-
-bit dummy_predicate(int x) {return 1;}
+int dummy_program(int x) {return 2;}
 
 @FromFile("zig_zag.data")
 harness void sketch_main(int x, int out)
@@ -48,21 +45,14 @@ harness void sketch_main(int x, int out)
 }
 
 @FromFile("zig_zag.data")
-bit eval_predicate_main(int x, int out)
+harness int eval_program_main(int x, int out)
 {
-    return dummy_predicate(x);
+    return dummy_program(x);
 }
 
 @FromFile("zig_zag.data")
-harness void eval_predicate_main_harness(int x, int out)
+harness void dummy_main(int x, int out)
 {
-    assert(eval_predicate_main(x, out) == 1);
-}
-
-@FromFile("zig_zag.data")
-harness void dummy_main(int x, bit out)
-{
-    assert(eval_predicate_main(x, out));
     assert(dummy_program(x) == 0);
     assert(predicate(x) == 0);
     assert(program_lvl0(x) == out);

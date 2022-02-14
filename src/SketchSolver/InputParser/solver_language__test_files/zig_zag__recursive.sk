@@ -36,7 +36,7 @@ int composite_predicate(int x)
 int dummy_program(int x) {return 1;}
 
 @FromFile("zig_zag.data")
-harness int eval_program_main_harness(int x, int out)
+harness int eval_program_main(int x, int out)
 {
     return dummy_program(x);
 }

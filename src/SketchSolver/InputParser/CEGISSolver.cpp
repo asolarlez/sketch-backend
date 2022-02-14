@@ -21,10 +21,10 @@ void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
         bool new_clone = false;
         if(!inlined_harness->is_inlining_tree_nonnull()) {
             inlined_harness = inlined_harness->produce_inlined_dag();
+            inlined_harness->increment_shared_ptr();
             new_clone = true;
         }
 
-        inlined_harness->increment_shared_ptr();
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
         for(int i=0; i<problemIn.size(); ++i){
             CTRL_node* ctrlnode = dynamic_cast<CTRL_node*>(problemIn[i]);
@@ -212,7 +212,6 @@ bool CEGISSolver::solveCore(){
 		if (doMore) {// Find
 			// cout<<"!%";	for(int i=0; i< input.size(); ++i) cout<<" "<<(input[i]==1?1:0); cout<<endl;
 
-
 			if (hasInputChanged) {
 				if(PARAMS->verbosity > 5){ cout<<"!% ";checker->get_input_store().printBrief(cout); cout<<endl;}
 				if(PARAMS->verbosity > 9){ cout<<"!% ";checker->get_input_store().printContent(cout); cout<<endl;}
@@ -233,7 +232,7 @@ bool CEGISSolver::solveCore(){
 
                 if(doMore) {
 
-                    ProgramEnvironment* env = checker->getHarness()->get_env();
+                    ProgramEnvironment* env = checker->getProblem()->get_env();
 
                     BooleanDAG* to_concretize = finder->get_all_inputs_dag()->clone();
                     env->doInline(*to_concretize, ctrlStore, bool_node::CTRL);
@@ -245,7 +244,7 @@ bool CEGISSolver::solveCore(){
                     if(file != nullptr)
                     {
                         BooleanDagUtility* concretized_function =
-                                checker->getHarness()->produce_concretization(
+                                checker->getProblem()->produce_concretization(
                                         ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
@@ -256,7 +255,7 @@ bool CEGISSolver::solveCore(){
                         eval.init(tmpin);
                         File *file = files[(int)files.size() - 1];
                         assert(eval.check_file_invariant(file));
-//                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
                         concretized_function->clear();
                     }
 
@@ -264,7 +263,7 @@ bool CEGISSolver::solveCore(){
                 else
                 {
 
-                    BooleanDagUtility *harness = checker->getHarness();
+                    BooleanDagUtility *harness = checker->getProblem();
 
                         BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
                     harness->get_env()->doInline(
@@ -277,11 +276,10 @@ bool CEGISSolver::solveCore(){
                     if(file != nullptr)
                     {
                         BooleanDagUtility* concretized_function =
-                                checker->getHarness()->produce_concretization(ctrlStore, bool_node::CTRL);
+                                checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
-                        if(concretized_function->get_dag()->get_failed_assert() != nullptr)
-                        {
-//                            cout << "FILE FAILS OK!!" << endl;
+                        if(concretized_function->get_dag()->get_failed_assert() != nullptr){
+                            cout << "FILE FAILS OK!! (1)" << endl;
                         }
                         else {
                             BooleanDAG *concretized_dag = concretized_function->get_dag();
@@ -291,7 +289,9 @@ bool CEGISSolver::solveCore(){
                             eval.init(tmpin);
                             File *file = files[(int) files.size() - 1];
                             assert(!eval.check_file_invariant(file));
-//                            cout << "FILE FAILS OK!!" << endl;
+                            int num_passing_inputs = checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL)->count_passing_inputs(file);
+                            assert(num_passing_inputs < file->size());
+
                         }
                         concretized_function->clear();
                     }

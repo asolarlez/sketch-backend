@@ -98,7 +98,7 @@ bool CEGISFinder::find(BooleanDAG* problem,
     }
 	Dout( dirFind.print() );
 	//dirFind.printAllVars();
-	//Get the values of the Controls.
+	//Get the values of the Controls.6-
 
 	for(auto it = controls.begin(); it !=controls.end(); ++it){
 		const string& cname = it->getName();
@@ -182,7 +182,7 @@ addInputsToTestSet(BooleanDAG* problem, VarStore& input){
 	// find_node_ids store the mapping between node in the DAG (miter) vs
 	// the variables in the CNF.
 	find_node_ids.resize(newdag->size());
-	//getProblem()->lprint(cout);
+	//getProblemDag()->lprint(cout);
 	
 	//FindCheckSolver::addInputsToTestSet(input);
 	//lastFproblem = newdag;	

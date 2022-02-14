@@ -217,7 +217,6 @@ bit program_lvl0(int num_bools, bit[num_bools] bools) {
 }
 
 bit dummy_program(int num_bools, bit[num_bools] bools) {return 1;}
-bit dummy_predicate(int num_bools, bit[num_bools] bools) {return 1;}
 
 @FromFile("uav_kg_big__as_bools.data")
 harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
@@ -226,23 +225,16 @@ harness void sketch_main(int num_bools, bit[num_bools] bools, bit out)
 }
 
 @FromFile("uav_kg_big__as_bools.data")
-bit eval_predicate_main(int num_bools, bit[num_bools] bools, bit out)
+harness bit eval_program_main(int num_bools, bit[num_bools] bools, bit out)
 {
-    return dummy_predicate(num_bools, bools);
-}
-
-@FromFile("uav_kg_big__as_bools.data")
-harness void eval_predicate_main_harness(int num_bools, bit[num_bools] bools, bit out)
-{
-    assert(eval_predicate_main(num_bools, bools, out) == 1);
+    return dummy_program(num_bools, bools);
 }
 
 @FromFile("uav_kg_big__as_bools.data")
 harness void dummy_main(int num_bools, bit[num_bools] bools, bit out)
 {
-    assert(eval_predicate_main(num_bools, bools, out));
+    assert(eval_program_main(num_bools, bools, out));
     assert(dummy_program(num_bools, bools) == 0);
-    assert(dummy_predicate(num_bools, bools) == 0);
     assert(predicate(num_bools, bools) == 0);
     assert(program_lvl0(num_bools, bools) == out);
     assert(composite_predicate(num_bools, bools) == out);

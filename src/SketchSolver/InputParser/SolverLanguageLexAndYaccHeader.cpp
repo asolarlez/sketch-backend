@@ -301,7 +301,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         {
             assert(params.size() == 1);
             int num_rows = params[0]->eval(state)->get_int();
-            return new SL::VarVal(file->sample_sub_file(num_rows));
+            return new SL::VarVal(file->sample_sub_file(num_rows, state->console_output));
             break;
         }
         case _size:
@@ -410,6 +410,9 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             solver->clear();
 
             sol->set_inlining_tree(inlining_tree);
+
+            state->console_output << "SOLUTION: " << endl;
+            state->console_output << sol->to_string() << endl;
 
             return new SL::VarVal(sol);
             break;
@@ -925,7 +928,10 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             VarStore* inputs = input_holder->to_var_store(false);
             input_holder_var_val->decrement_shared_ptr();
 
-            assert(sk_func->get_dag()->get_failed_assert() == nullptr);
+            if(sk_func->get_dag()->get_failed_assert() != nullptr)
+            {
+                return new VarVal(false);
+            }
             BooleanDAG* to_concretize = sk_func->get_dag()->clone();
             sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
             bool ret = to_concretize->get_failed_assert() == nullptr;
