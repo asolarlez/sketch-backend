@@ -75,7 +75,7 @@ namespace SolverLanguagePrimitives
         string file_name;
         BooleanDagUtility *sk_func = nullptr;
     public:
-        explicit ProblemAE(BooleanDagUtility* _function, File* _file = NULL):
+        explicit ProblemAE(BooleanDagUtility* _function, File* _file = nullptr):
                 sk_func(_function), file(_file){}
 
         File* get_file()

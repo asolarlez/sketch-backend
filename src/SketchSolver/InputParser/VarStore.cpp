@@ -24,7 +24,7 @@ bool VarStore::has_original_name(const string &original_name) const {
     return ret;
 }
 
-void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, InliningTree* new_inlining_tree) {
+void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const InliningTree *new_inlining_tree) {
     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
     if(contains(new_name)){
         cout << "contains " << new_name << endl;
@@ -216,21 +216,6 @@ VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
     }
 }
 
-VarStore *VarStore::get_root_var_store() const {
-    if(inlining_tree != nullptr) {
-        return new VarStore(*this, inlining_tree->get_root_inlining_tree());
-    }
-    else
-    {
-        assert(size() == 0);
-        return new VarStore(*this);
-    }
-}
-
-void VarStore::descend_to_subname(const string &under_this_name) {
-    inlining_tree = inlining_tree->get_sub_inlining_tree(under_this_name);
-}
-
 bool VarStore::check_rep() const {
     assert(inlining_tree != nullptr);
     for(const auto& it: index) {
@@ -247,7 +232,7 @@ bool VarStore::check_rep() const {
     return true;
 }
 
-void VarStore::set_inlining_tree(InliningTree *new_inlining_tree) {
+void VarStore::set_inlining_tree(const InliningTree *new_inlining_tree) {
     assert(inlining_tree != nullptr);
     inlining_tree->clear();
     inlining_tree = new InliningTree(new_inlining_tree);

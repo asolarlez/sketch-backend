@@ -41,8 +41,9 @@ bool BooleanDagUtility::is_inlining_tree_nonnull() {
 }
 
 InliningTree *& BooleanDagUtility::get_inlining_tree(bool assert_nonnull) {
-    if(assert_nonnull)
-    assert(inlining_tree != nullptr);
+    if(assert_nonnull) {
+        assert(inlining_tree != nullptr);
+    }
     if(inlining_tree != nullptr) {
         assert(inlining_tree->get_skfunc() == this);
     }
@@ -51,11 +52,9 @@ InliningTree *& BooleanDagUtility::get_inlining_tree(bool assert_nonnull) {
 
 bool BooleanDagUtility::get_has_been_concretized() {
     return has_been_concretized;
-//    return get_dag()->getNodesByType(bool_node::CTRL).empty();
-    //|| ( get_dag()->getNodesByType(bool_node::CTRL).size() == 1 && ((CTRL_node*)*get_dag()->getNodesByType(bool_node::CTRL).begin())->get_name() == "#PC");
 }
 
-InliningTree::InliningTree(BooleanDagUtility *_sk_func, map<BooleanDagUtility*, InliningTree*>* visited): skfunc(_sk_func) {
+InliningTree::InliningTree(BooleanDagUtility *sk_func, map<BooleanDagUtility *, const InliningTree *> *visited): skfunc(sk_func) {
     assert(visited->find(skfunc) == visited->end());
 
     for(auto it: *visited)
@@ -115,22 +114,21 @@ InliningTree::InliningTree(BooleanDagUtility *_sk_func, map<BooleanDagUtility*, 
     assert_nonnull();
 }
 
-void InliningTree::clear() {
+void InliningTree::clear() const{
     return;
     if(deleted)
     {
         return;
     }
     deleted = true;
-    for(auto it: var_name_to_inlining_subtree)
+    for(const auto& it: var_name_to_inlining_subtree)
     {
         it.second->clear();
     }
-    var_name_to_inlining_subtree.clear();
     delete this;
 }
 
-SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<InliningTree*>* visited) {
+SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const InliningTree *> *visited) const {
     assert(visited->find(this) == visited->end());
     visited->insert(this);
     auto root_solution = ((SketchFunction*)skfunc)->get_same_soluton();
@@ -183,17 +181,15 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<Inlinin
     return ret;
 }
 
-vector<string>* InliningTree::find(const string target_dag, set<BooleanDagUtility*>* visited) {
+vector<string>* InliningTree::find(const string& target_dag, set<BooleanDagUtility*>* visited) const {
     assert(visited->find(skfunc) == visited->end());
     visited->insert(skfunc);
     if(skfunc->get_dag_name() == target_dag)
     {
         return new vector<string>();
     }
-    else
-    {
-        for(auto it: var_name_to_inlining_subtree)
-        {
+    else {
+        for(auto it: var_name_to_inlining_subtree)  {
             if(visited->find(it.second->skfunc) == visited->end()) {
                 auto ret = it.second->find(target_dag);
                 if(ret != nullptr) {
@@ -206,7 +202,7 @@ vector<string>* InliningTree::find(const string target_dag, set<BooleanDagUtilit
     return nullptr;
 }
 
-bool InliningTree::match_topology(InliningTree *other, set<string> *visited, set<string> *other_visited) {
+bool InliningTree::match_topology(const InliningTree *other, set<string> *visited, set<string> *other_visited) const {
 
     assert_nonnull();
     other->assert_nonnull();
@@ -216,34 +212,25 @@ bool InliningTree::match_topology(InliningTree *other, set<string> *visited, set
     assert(other_visited->find(other->skfunc->get_dag_name()) == other_visited->end());
     other_visited->insert(other->skfunc->get_dag_name());
     assert(visited->size() == other_visited->size());
-    cout << "UNDER " << skfunc->get_dag_name() <<" ~~ " << other->skfunc->get_dag_name() << endl;
+
     for(const auto& it: var_name_to_inlining_subtree)
     {
-        string name = it.first;
-        assert(other->var_name_to_inlining_subtree.find(it.first) != other->var_name_to_inlining_subtree.end());
-        cout << name << " -> " << it.second->skfunc->get_dag_name() <<" ~~ " << other->var_name_to_inlining_subtree.find(it.first)->second->skfunc->get_dag_name() << endl;
-    }
-
-    for(auto it: var_name_to_inlining_subtree)
-    {
         if(visited->find(it.second->skfunc->get_dag_name()) == visited->end()) {
-            assert(other_visited->find(other->var_name_to_inlining_subtree[it.first]->skfunc->get_dag_name()) == other_visited->end());
-            assert(it.second->match_topology(other->var_name_to_inlining_subtree[it.first], visited, other_visited));
+
+            assert(other->var_name_to_inlining_subtree.find(it.first) != other->var_name_to_inlining_subtree.end());
+            assert(other_visited->find(other->var_name_to_inlining_subtree.at(it.first)->skfunc->get_dag_name()) == other_visited->end());
+            assert(it.second->match_topology(other->var_name_to_inlining_subtree.at(it.first), visited, other_visited));
         }
         else
         {
-            assert(other_visited->find(other->var_name_to_inlining_subtree[it.first]->skfunc->get_dag_name()) != other_visited->end());
+            assert(other->var_name_to_inlining_subtree.find(it.first) != other->var_name_to_inlining_subtree.end());
+            assert(other_visited->find(other->var_name_to_inlining_subtree.at(it.first)->skfunc->get_dag_name()) != other_visited->end());
         }
     }
     return true;
 }
 
-InliningTree *InliningTree::get_sub_inlining_tree(const string &under_this_name) {
-    assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
-    return var_name_to_inlining_subtree[under_this_name];
-}
-
-void InliningTree::concretize(const VarStore& var_store, bool is_root, set<BooleanDagUtility*>* visited) {
+void InliningTree::concretize(const VarStore& var_store, bool is_root, set<BooleanDagUtility*>* visited) const {
     assert(visited->find(skfunc) == visited->end());
     visited->insert(skfunc);
 
@@ -270,11 +257,11 @@ void InliningTree::concretize(const VarStore& var_store, bool is_root, set<Boole
     }
 }
 
-const BooleanDagUtility *InliningTree::get_skfunc() {
+const BooleanDagUtility *InliningTree::get_skfunc() const {
     return skfunc;
 }
 
-InliningTree::InliningTree(BooleanDagUtility *_skfunc, InliningTree *to_copy, map<BooleanDagUtility*, InliningTree*>* visited): skfunc(_skfunc) {
+InliningTree::InliningTree(BooleanDagUtility *to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited): skfunc(to_replace_root) {
     assert(visited->find(skfunc) == visited->end());
     assert(visited->find(to_copy->skfunc) == visited->end());
     (*visited)[skfunc] = this;
@@ -301,7 +288,7 @@ string tabs(int ntabs)
     return ret;
 }
 
-void InliningTree::print(int ntabs, set<InliningTree*>* visited) {
+void InliningTree::print(int ntabs, set<const InliningTree*>* visited) const {
     assert(visited->find(this) == visited->end());
 
     for(auto it: *visited)
@@ -328,7 +315,7 @@ void InliningTree::print(int ntabs, set<InliningTree*>* visited) {
 
 #include <VarStore.h>
 
-void InliningTree::rename_var_store(VarStore &var_store, set<InliningTree*>* visited, InliningTree* root) {
+void InliningTree::rename_var_store(VarStore &var_store, set<const InliningTree*>* visited, const InliningTree *root) const {
     assert(visited->find(this) == visited->end());
     visited->insert(this);
 
@@ -351,7 +338,6 @@ void InliningTree::rename_var_store(VarStore &var_store, set<InliningTree*>* vis
         string original_name = ((CTRL_node*)it)->get_original_name();
         if(original_name != "#PC") {
             string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
-            cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << subdag_name << endl;
             var_store.rename(original_name, subdag_name, new_name, root);
         }
         else {
@@ -368,11 +354,10 @@ void InliningTree::rename_var_store(VarStore &var_store, set<InliningTree*>* vis
     if(is_root)
     {
         var_store.set_inlining_tree(this);
-        var_store.check_rep();
     }
 }
 
-set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, set<InliningTree*>* visited) {
+set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, set<const InliningTree*>* visited) const {
     assert(visited->find(this) == visited->end());
     visited->insert(this);
 
@@ -387,13 +372,7 @@ set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, 
     return inlined_functions;
 }
 
-InliningTree *InliningTree::get_root_inlining_tree() {
-    InliningTree* ret = new InliningTree();
-    ret->skfunc = skfunc;
-    return ret;
-}
-
-bool InliningTree::has_no_holes(set<string>* hole_names, set<InliningTree*>* visited) {
+bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*>* visited) const {
     assert(visited->find(this) == visited->end());
     visited->insert(this);
 
@@ -409,7 +388,7 @@ bool InliningTree::has_no_holes(set<string>* hole_names, set<InliningTree*>* vis
         }
     }
 
-    if(hole_names->size() == 0) {
+    if(hole_names->empty()) {
         return true;
     }
     else {

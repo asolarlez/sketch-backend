@@ -469,7 +469,7 @@ private:
 
 
 public:
-    void rename(const string &original_name, const string& new_source_dag, const string &new_name, InliningTree* inlining_tree);
+    void rename(const string &original_name, const string& new_source_dag, const string &new_name, const InliningTree *new_inlining_tree);
 
 
 
@@ -776,13 +776,10 @@ public:
     const string &get_name(const string& var_name, const string &source_dag_name);
 
     VarStore *get_sub_var_store(const string& descend_to) const;
-    VarStore *get_root_var_store() const;
-
-    void descend_to_subname(const string &under_this_name);
 
     bool check_rep() const;
 
-    void set_inlining_tree(InliningTree *new_inlining_tree);
+    void set_inlining_tree(const InliningTree *new_inlining_tree);
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

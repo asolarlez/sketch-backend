@@ -169,7 +169,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    num_trials = 10;
+    num_trials = 2;
     num_rows_per_sample = 2;
     select_best = 2;
     assert(num_trials >= select_best);

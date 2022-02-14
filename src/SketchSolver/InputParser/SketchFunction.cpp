@@ -15,9 +15,6 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         _var_store.check_rep();
 
     if(_var_store.size() >= 1 && var_type == bool_node::CTRL) {
-//        BooleanDAG* tmp_dag = ((BooleanDagUtility*)this)->produce_inlined_dag()->get_dag();
-//        assert(!tmp_dag->getNodesByType(bool_node::CTRL).empty());
-//        assert(tmp_dag->getNodesByType(bool_node::CTRL).size() == _var_store.size()); // +1 for the #PC.
         assert(!get_dag()->getNodesByType(bool_node::CTRL).empty());
     }
     else if(_var_store.size() == 0 && var_type == bool_node::CTRL)
@@ -25,17 +22,6 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         if(get_dag()->getNodesByType(bool_node::UFUN).empty()) {
             assert(get_inlining_tree(false) == nullptr);
             assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
-        }
-    }
-
-    if(rename_holes)
-    for(auto it : get_dag()->getNodesByType(bool_node::CTRL)) {
-        string actual_name = ((CTRL_node*)it)->get_name();
-        if(actual_name != "#PC") {
-            string var_name = ((CTRL_node *) it)->get_original_name();
-            string sub_dag_name = ((CTRL_node *) it)->get_source_dag_name();
-
-            assert(sub_dag_name == dag_name);
         }
     }
 
@@ -47,25 +33,6 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
         VarStore var_store = _var_store;
 
-        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
-            var_store.check_rep();
-
-//        if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-//            InliningTree* tmp_inlining_tree = new InliningTree(this);
-//            cout << "new_tree" << endl;
-//            tmp_inlining_tree->print();
-//            cout << "var_val_tree" << endl;
-//            var_store.get_inlining_tree()->print();
-//            cout << "--------" << endl;
-//            assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
-//            var_store.check_rep();
-//            tmp_inlining_tree->rename_var_store(var_store);
-//            tmp_inlining_tree->clear();
-//        }
-
-        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
-            var_store.check_rep();
-
         if(do_deep_clone) {
             deep_clone_tail(var_store);
 
@@ -74,34 +41,20 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
 
             if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
                 InliningTree* tmp_inlining_tree = new InliningTree(this);
-                cout << "new_inlining_tree" << endl;
-                tmp_inlining_tree->print();
                 assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
-                var_store.check_rep();
-                cout <<"var_store.inlining_tree" << endl;
-                var_store.get_inlining_tree()->print();
                 tmp_inlining_tree->rename_var_store(var_store);
                 var_store.check_rep();
                 tmp_inlining_tree->clear();
             }
-
-            if(var_store.size() >= 1 && var_type == bool_node::CTRL)
-                var_store.check_rep();
         }
 
-        if(do_deep_clone &&
-//        var_store.size() >= 1 &&
-        var_type == bool_node::CTRL) {
+        if(do_deep_clone && var_type == bool_node::CTRL) {
             calc_inlining_tree();
             get_inlining_tree()->concretize(var_store, var_type);
             InliningTree* inlining_tree_tmp_p = get_inlining_tree();
             get_inlining_tree() = nullptr;
             inlining_tree_tmp_p->clear();
         }
-
-
-        if(var_store.size() >= 1 && var_type == bool_node::CTRL)
-            var_store.check_rep();
 
         vector<string> *inlined_functions = nullptr;
 
@@ -125,8 +78,6 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             } else {
                 assert(false);
             }
-
-            var_store.check_rep();
 
             auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store,
                                                                                  get_env()->floats);

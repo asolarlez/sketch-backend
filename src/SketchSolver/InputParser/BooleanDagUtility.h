@@ -37,14 +37,14 @@ class BooleanDagUtility;
 
 class InliningTree
 {
-    bool deleted = false;
+    mutable bool deleted = false;
     BooleanDagUtility* skfunc = nullptr;
-    map<string, InliningTree*> var_name_to_inlining_subtree;
+    map<string, const InliningTree*> var_name_to_inlining_subtree;
 
 public:
     InliningTree() = default;
-    InliningTree(BooleanDagUtility* to_replace_root, InliningTree* to_copy, map<BooleanDagUtility*, InliningTree*>* visited = new map<BooleanDagUtility*, InliningTree*>());
-    InliningTree(InliningTree* to_copy, map<BooleanDagUtility*, InliningTree*>* visited = new map<BooleanDagUtility*, InliningTree*>()): skfunc(to_copy->skfunc)
+    InliningTree(BooleanDagUtility* to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
+    InliningTree(const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>()): skfunc(to_copy->skfunc)
     {
         assert(visited->find(skfunc) == visited->end());
         (*visited)[skfunc] = this;
@@ -61,8 +61,7 @@ public:
         assert_nonnull();
     }
 
-    bool assert_nonnull(set<InliningTree*>* visited = new set<InliningTree*>())
-    {
+    bool assert_nonnull(set<const InliningTree*>* visited = new set<const InliningTree*>()) const {
         assert(visited->find(this) == visited->end());
         visited->insert(this);
         assert(skfunc != nullptr);
@@ -77,31 +76,27 @@ public:
         return true;
     }
 
-    InliningTree(BooleanDagUtility* sk_func, map<BooleanDagUtility*, InliningTree*>* visited = new map<BooleanDagUtility*, InliningTree*>());
+    InliningTree(BooleanDagUtility* sk_func, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
 
-    void clear();
+    void clear() const;
 
-    SolverLanguagePrimitives::HoleAssignment *get_solution(set<InliningTree*>* visited = new set<InliningTree*>());
+    SolverLanguagePrimitives::HoleAssignment *get_solution(set<const InliningTree *> *visited = new set<const InliningTree*>()) const;
 
-    vector<string>* find(const string target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>());
+    vector<string>* find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
 
-    bool match_topology(InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>());
+    bool match_topology(const InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>()) const;
 
-    InliningTree *get_sub_inlining_tree(const string &under_this_name);
+    void concretize(const VarStore& store, bool is_root = false, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
 
-    void concretize(const VarStore& store, bool is_root = false, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>());
+    const BooleanDagUtility *get_skfunc() const ;
 
-    const BooleanDagUtility *get_skfunc();
+    void print(int ntabs = 0, set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
 
-    void print(int ntabs = 0, set<InliningTree*>* visited = new set<InliningTree*>());
+    void rename_var_store(VarStore &var_store, set<const InliningTree*> *visited = new set<const InliningTree*>(), const InliningTree *root = nullptr) const;
 
-    void rename_var_store(VarStore &var_store, set<InliningTree*> *visited = new set<InliningTree*>(), InliningTree* root = nullptr);
+    set<string> *get_inlined_function(set<string> * = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const ;
 
-    set<string> *get_inlined_function(set<string> * = new set<string>(), set<InliningTree*>* visited = new set<InliningTree*>());
-
-    InliningTree *get_root_inlining_tree();
-
-    bool has_no_holes(set<string>* hole_names = new set<string>(), set<InliningTree*>* visited = new set<InliningTree*>());
+    bool has_no_holes(set<string>* hole_names = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
 };
 
 class BooleanDagUtility {
