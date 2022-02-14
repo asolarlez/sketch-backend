@@ -116,6 +116,7 @@ InliningTree::InliningTree(BooleanDagUtility *_sk_func, map<BooleanDagUtility*, 
 }
 
 void InliningTree::clear() {
+    return;
     if(deleted)
     {
         return;
@@ -140,6 +141,7 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<Inlinin
     {
         root_defied = true;
         ret = new SolverLanguagePrimitives::HoleAssignment(root_solution);
+        assert(ret->get_assignment()->get_inlining_tree()->get_skfunc() == skfunc);
     }
 
     for(auto it: var_name_to_inlining_subtree)
@@ -163,9 +165,21 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<Inlinin
                            ret_inlining_tree->var_name_to_inlining_subtree.end());
                     ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
                 }
+                else
+                {
+                    InliningTree *local_inlining_tree = assignment->get_inlining_tree();
+                    InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree();
+                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) !=
+                           ret_inlining_tree->var_name_to_inlining_subtree.end());
+                    assert(ret_inlining_tree->var_name_to_inlining_subtree[it.first] == local_inlining_tree);
+                }
             }
         }
     }
+
+    assert(ret->get_assignment()->get_inlining_tree()->get_skfunc() == skfunc);
+    assert(skfunc != nullptr);
+
     return ret;
 }
 

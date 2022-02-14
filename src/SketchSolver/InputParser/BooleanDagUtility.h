@@ -38,7 +38,7 @@ class BooleanDagUtility;
 class InliningTree
 {
     bool deleted = false;
-    BooleanDagUtility* skfunc;
+    BooleanDagUtility* skfunc = nullptr;
     map<string, InliningTree*> var_name_to_inlining_subtree;
 
 public:

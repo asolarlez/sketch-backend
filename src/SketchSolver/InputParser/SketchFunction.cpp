@@ -50,18 +50,18 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
         if(var_store.size() >= 1 && var_type == bool_node::CTRL)
             var_store.check_rep();
 
-        if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
-            InliningTree* tmp_inlining_tree = new InliningTree(this);
-            cout << "new_tree" << endl;
-            tmp_inlining_tree->print();
-            cout << "var_val_tree" << endl;
-            var_store.get_inlining_tree()->print();
-            cout << "--------" << endl;
-            assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
-            var_store.check_rep();
-            tmp_inlining_tree->rename_var_store(var_store);
-            tmp_inlining_tree->clear();
-        }
+//        if (var_store.size() >= 1 && var_type == bool_node::CTRL) {
+//            InliningTree* tmp_inlining_tree = new InliningTree(this);
+//            cout << "new_tree" << endl;
+//            tmp_inlining_tree->print();
+//            cout << "var_val_tree" << endl;
+//            var_store.get_inlining_tree()->print();
+//            cout << "--------" << endl;
+//            assert(tmp_inlining_tree->match_topology(var_store.get_inlining_tree()));
+//            var_store.check_rep();
+//            tmp_inlining_tree->rename_var_store(var_store);
+//            tmp_inlining_tree->clear();
+//        }
 
         if(var_store.size() >= 1 && var_type == bool_node::CTRL)
             var_store.check_rep();
@@ -148,6 +148,8 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             get_inlining_tree();
 
             get_solution();
+
+            assert(get_solution()->get_assignment()->to_var_store()->check_rep());
         }
 
 

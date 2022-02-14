@@ -232,27 +232,27 @@ VarStore::VarStore(const VarStore &to_copy, InliningTree* _inlining_tree)
     }
 }
 
-void VarStore::rename(BooleanDagUtility *new_dag_util) {
-
-    assert(inlining_tree != nullptr);
-
-    InliningTree* new_inlining_tree = new_dag_util->get_inlining_tree();
-
-    assert(new_inlining_tree->match_topology(inlining_tree));
-
-    BooleanDAG* tmp_dag = new_dag_util->get_dag();
-
-    for (auto it: tmp_dag->getNodesByType(bool_node::CTRL)) {
-        string new_name =  ((CTRL_node*)it)->get_name();
-        string original_name = ((CTRL_node*)it)->get_original_name();
-        string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
-        cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << ((CTRL_node*)it)->get_source_dag_name() << endl;
-        rename(original_name, subdag_name, new_name, new_inlining_tree);
-    }
-
-    inlining_tree = new InliningTree(new_inlining_tree);
-
-}
+//void VarStore::rename(BooleanDagUtility *new_dag_util) {
+//
+//    assert(inlining_tree != nullptr);
+//
+//    InliningTree* new_inlining_tree = new_dag_util->get_inlining_tree();
+//
+//    assert(new_inlining_tree->match_topology(inlining_tree));
+//
+//    BooleanDAG* tmp_dag = new_dag_util->get_dag();
+//
+//    for (auto it: tmp_dag->getNodesByType(bool_node::CTRL)) {
+//        string new_name =  ((CTRL_node*)it)->get_name();
+//        string original_name = ((CTRL_node*)it)->get_original_name();
+//        string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
+//        cout << "RENAME " << original_name <<" -> " << new_name << " OF DAG " << ((CTRL_node*)it)->get_source_dag_name() << endl;
+//        rename(original_name, subdag_name, new_name, new_inlining_tree);
+//    }
+//
+//    inlining_tree = new InliningTree(new_inlining_tree);
+//
+//}
 
 VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
     if(inlining_tree != nullptr) {
