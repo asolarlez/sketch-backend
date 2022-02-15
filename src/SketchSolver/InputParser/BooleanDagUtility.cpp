@@ -155,20 +155,24 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const I
             } else {
                 auto assignment = it.second->get_solution()->get_assignment();
                 ret->get_assignment()->disjoint_join_with(assignment);
+
+                InliningTree *local_inlining_tree = assignment->get_inlining_tree();
+                InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree();
                 if(!root_defied) {
-                    InliningTree *local_inlining_tree = assignment->get_inlining_tree();
-                    InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree();
                     assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) ==
                            ret_inlining_tree->var_name_to_inlining_subtree.end());
                     ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
                 }
                 else
                 {
-                    InliningTree *local_inlining_tree = assignment->get_inlining_tree();
-                    InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree();
                     assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) !=
                            ret_inlining_tree->var_name_to_inlining_subtree.end());
-                    assert(ret_inlining_tree->var_name_to_inlining_subtree[it.first] == local_inlining_tree);
+                    if(ret_inlining_tree->var_name_to_inlining_subtree[it.first] == local_inlining_tree) {
+                        AssertDebug(false, "false here because when you define the ret, you actually deep copy the inlining tree of the existing solution. If this gets triggered, it means that you are not copying anymore.");
+                        //all good
+                    } else {
+                        assert(ret_inlining_tree->var_name_to_inlining_subtree[it.first]->match_topology(local_inlining_tree));
+                    }
                 }
             }
         }

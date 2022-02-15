@@ -295,10 +295,6 @@ public:
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_skfunc() == this);
         }
-//        if(var_store.size() >= 1) {
-//            assert(var_store.get_inlining_tree() != nullptr);
-//            assert(inlining_tree->match_topology(var_store.get_inlining_tree()));
-//        }
 
         bool is_being_concretized = false;
         if(var_type == bool_node::CTRL) {
