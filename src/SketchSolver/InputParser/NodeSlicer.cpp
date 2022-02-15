@@ -1,7 +1,7 @@
 #include "NodeSlicer.h"
 
 NodeSlicer::NodeSlicer(map<string, BooleanDAG*>& functionMap_p, VarStore& inputs_p, BooleanDAG& bdag_p, FloatManager& _floats):
-functionMap(functionMap_p), inputs(inputs_p), ne(functionMap_p, bdag_p, _floats)
+functionMap(functionMap_p), inputs(inputs_p), ne(bdag_p, _floats)
 {
 }
 

@@ -114,7 +114,7 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
     assert(root_dag_reps.find(to_erase_name) != root_dag_reps.end());
     assert(root_dag_reps[to_erase_name]->get_function_name() == to_erase_name);
     auto to_erase = root_dag_reps[to_erase_name];
-    check_consistency();
+//    check_consistency();
     auto ret = to_erase->erase(this);
     if(ret == nullptr) {
         assert(root_dag_reps.find(to_erase_name) == root_dag_reps.end());
@@ -123,7 +123,7 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
         assert(root_dag_reps.find(to_erase_name)->second == ret);
     }
     erased_root_dag_reps.insert(to_erase_name);
-    check_consistency();
+//    check_consistency();
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {

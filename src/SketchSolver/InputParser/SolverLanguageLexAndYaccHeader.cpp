@@ -411,8 +411,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
             sol->set_inlining_tree(inlining_tree);
 
-            state->console_output << "SOLUTION: " << endl;
-            state->console_output << sol->to_string() << endl;
+//            state->console_output << "SOLUTION: " << endl;
+//            state->console_output << sol->to_string() << endl;
 
             return new SL::VarVal(sol);
             break;
@@ -520,7 +520,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -562,61 +562,11 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(input_val->is_input_holder());
 
                     SketchFunction* sk_func = method_var_val->get_function();
-                    BooleanDAG* the_dag = sk_func->get_dag()->clone();
-                    sk_func->get_env()->doInline(*the_dag);
+                    SolverLanguagePrimitives::InputAssignment *input_assignment = input_val->get_input_holder();
+                    ret = SketchFunctionEvaluator::eval(sk_func, input_assignment);
 
-                    const map<string, BooleanDAG *> * bool_dag_map = sk_func->get_env()->function_map.to_boolean_dag_map();
-                    NodeEvaluator node_evaluator(*bool_dag_map, *the_dag, sk_func->get_env()->floats);
+                    assert(ret != nullptr);
 
-                    SolverLanguagePrimitives::InputAssignment* input_assignment = input_val->get_input_holder();
-                    VarStore* the_var_store = input_assignment->to_var_store(false);
-
-                    const bool assert_num_remaining_holes_is_0 = true;
-                    if(assert_num_remaining_holes_is_0) {
-                        BooleanDagUtility *_inlined_dag =
-                                ((BooleanDagUtility *) sk_func)->produce_concretization(*the_var_store, bool_node::SRC);
-                        _inlined_dag->increment_shared_ptr();
-                        BooleanDAG* inlined_dag = _inlined_dag->get_dag();
-                        int remaining_holes = inlined_dag->getNodesByType(bool_node::CTRL).size();
-                        AssertDebug(remaining_holes == 0,
-                                    "This dag should not havey any holes remaining, but it has " +
-                                    std::to_string(remaining_holes) + " remaining_holes.");
-                        inlined_dag->clear();
-                    }
-
-                    bool fails = node_evaluator.run(*the_var_store);
-                    delete the_var_store;
-                    the_var_store = nullptr;
-                    AssertDebug(!fails, "the dag " + the_dag->get_name() + " asserts false on this input.");
-
-                    auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
-                    assert(after_run_dests.size() == 1);
-                    //SHOULD BE THIS BUT ISN'T
-//                    ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
-                    int tuple_node_id = node_evaluator.getValue(after_run_dests[0]);
-                    bool_node* tuple_node = (*the_dag)[tuple_node_id];
-                    assert(tuple_node->getOtype()->isTuple && tuple_node->type == bool_node::TUPLE_CREATE);
-                    AssertDebug(tuple_node->nparents() == 1, "NEET TO GENERALIZE THIS.");
-                    OutType* out_type = tuple_node->get_parent(0)->getOtype();
-
-                    int val = node_evaluator.getValue(tuple_node->get_parent(0));
-                    //THIS IS A HACK BUT WORKS FOR NOW
-                    if(out_type == OutType::BOOL) {
-                        ret = new VarVal((bool) val);
-                    }
-                    else if(out_type == OutType::INT)
-                    {
-                        ret = new VarVal((int)val);
-                    }
-                    else
-                    {
-                        AssertDebug(false, "NEED TO GENERALIZE THIS (^). IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
-
-                    }
-                    delete bool_dag_map;
-                    bool_dag_map = nullptr;
-
-                    the_dag->clear();
                     input_val->decrement_shared_ptr();
                 }
                 method_var_val->decrement_shared_ptr();
@@ -924,27 +874,42 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
 
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
-            SolverLanguagePrimitives::InputAssignment* input_holder = input_holder_var_val->get_input_holder();
-            VarStore* inputs = input_holder->to_var_store(false);
-            input_holder_var_val->decrement_shared_ptr();
 
-            if(sk_func->get_dag()->get_failed_assert() != nullptr)
+            SolverLanguagePrimitives::InputAssignment *input_holder = input_holder_var_val->get_input_holder();
+            if(true) { // new version
+
+//                auto ret_ground_truth = SketchFunctionEvaluator::passes(sk_func, input_holder);
+
+                auto ret_predicted = SketchFunctionEvaluator::new_passes(sk_func, input_holder);
+//                assert(ret_ground_truth->get_bool(false) == ret_predicted->get_bool(false));
+
+                input_holder_var_val->decrement_shared_ptr();
+
+                return ret_predicted;
+            }
+            else // existing version
             {
-                return new VarVal(false);
+                VarStore* inputs = input_holder->to_var_store(false);
+                input_holder_var_val->decrement_shared_ptr();
+
+                if(sk_func->get_dag()->get_failed_assert() != nullptr)
+                {
+                    return new VarVal(false);
+                }
+                BooleanDAG* to_concretize = sk_func->get_dag()->clone();
+                sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
+                bool ret = to_concretize->get_failed_assert() == nullptr;
+                if(!to_concretize->getNodesByType(bool_node::CTRL).empty()) {
+                    assert(!ret);
+                }
+
+                inputs->clear();
+                inputs = nullptr;
+
+
+                to_concretize->clear();
+                return new VarVal(ret);
             }
-            BooleanDAG* to_concretize = sk_func->get_dag()->clone();
-            sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
-            bool ret = to_concretize->get_failed_assert() == nullptr;
-            if(!to_concretize->getNodesByType(bool_node::CTRL).empty()) {
-                assert(!ret);
-            }
-
-            inputs->clear();
-            inputs = nullptr;
-
-
-            to_concretize->clear();
-            return new VarVal(ret);
             break;
         }
         case _clear:

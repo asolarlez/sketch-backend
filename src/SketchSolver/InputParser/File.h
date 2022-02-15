@@ -323,35 +323,37 @@ public:
     File(std::mt19937 _generator): generator(_generator){}
 
     File *sample_sub_file(int num_rows, ofstream& out) {
-        vector<int> ids;
-        for(int i = 0;i<size();i++) {
-            ids.push_back(i);
+        if(false) {
+            //DEBUG VERSION TO SEE WHICH IDs ARE CHOSEN
+            vector<int> ids;
+            for (int i = 0; i < size(); i++) {
+                ids.push_back(i);
+            }
+            vector<int> sample_ids;
+            sample(ids.begin(), ids.end(), back_inserter(sample_ids),
+                   num_rows, generator);
+            File *new_file = new File(generator);
+            out << "samples: ";
+            for(auto i : sample_ids)
+            {
+                out << i << " ";
+                new_file->push_back(at(i)->clone());
+            }
+            out << endl;
+            new_file->used = vector<int>(new_file->size(), 0);
+            return new_file;
         }
-        vector<int> sample_ids;
-        sample(ids.begin(), ids.end(), back_inserter(sample_ids),
-               num_rows, generator);
-        File* new_file = new File(generator);
-        out << "samples: ";
-        for(auto i : sample_ids)
-        {
-            out << i << " ";
-            new_file->push_back(at(i)->clone());
+        else {
+            vector<VarStore*> samples;
+            sample(begin(), end(), back_inserter(samples),
+                   num_rows, generator);
+            File* new_file = new File(generator);
+            for(int i = 0;i<samples.size();i++) {
+                new_file->push_back(samples[i]->clone());
+            }
+            new_file->used = vector<int>(new_file->size(), 0);
+            return new_file;
         }
-        out << endl;
-        new_file->used = vector<int>(new_file->size(), 0);
-        return new_file;
-
-
-//        vector<VarStore*> samples;
-//        sample(begin(), end(), back_inserter(samples),
-//               num_rows, generator);
-//        File* new_file = new File(generator);
-//        for(int i = 0;i<samples.size();i++)
-//        {
-//            new_file->push_back(samples[i]->clone());
-//        }
-//        new_file->used = vector<int>(new_file->size(), 0);
-//        return new_file;
     }
 
     int get_used(int i);

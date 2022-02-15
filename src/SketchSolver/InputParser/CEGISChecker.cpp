@@ -38,7 +38,7 @@ void CEGISChecker::abstractProblem(VarStore & inputStore, VarStore& ctrlStore){
 	VarStore tmp = old_join(inputStore, ctrlStore);
 	map<string, BooleanDAG*> empty;	
 	
-	NodeEvaluator eval(empty, *dag, floats);
+	NodeEvaluator eval(*dag, floats);
 	
 	eval.run(tmp);
 	vector<bool_node*> asserts = dag->getNodesByType(bool_node::ASSERT);
@@ -665,7 +665,7 @@ lbool CEGISChecker::baseCheck(VarStore& controls, VarStore& input){
 		input.printContent(cout);
 		map<string, BooleanDAG*> empty;
 		BooleanDAG * prob = getProblemDag();
-		NodeEvaluator eval(empty, *prob, floats);
+		NodeEvaluator eval(*prob, floats);
 		eval.run(input);
 		cout<<"PRINT EVAL"<<endl;
 		for(size_t i=0; i<check_node_ids.size(); ++i){

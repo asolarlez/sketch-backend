@@ -157,4 +157,15 @@ public:
     void deep_clone_tail(const VarStore&);
 };
 
+#include "NodeEvaluator.h"
+
+namespace SketchFunctionEvaluator
+{
+    SL::VarVal* eval(SketchFunction* sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment);
+
+    SL::VarVal* passes(const SketchFunction *sk_func, const SolverLanguagePrimitives::InputAssignment *input_assignment);
+
+    SL::VarVal* new_passes(SketchFunction* sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment);
+};
+
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

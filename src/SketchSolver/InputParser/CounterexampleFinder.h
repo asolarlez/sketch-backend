@@ -246,7 +246,7 @@ public:
 	}
 
 	CounterexampleFinder(map<string, BooleanDAG*>& functionMap_p, BooleanDAG& bdag_p, float sparseArray_p, FloatManager& _floats):
-	NodeEvaluator(functionMap_p, bdag_p, _floats), sparseArray(sparseArray_p)
+            NodeEvaluator(bdag_p, _floats), sparseArray(sparseArray_p)
 	{
 	}
 
@@ -267,12 +267,12 @@ public:
             bool rv = this->run(*inputs);
             assert(bdag.get_failed_assert() == nullptr);
             if(rv){
-                cout << "subset row id: " << i << " FAILS" << endl;
+//                cout << "subset row id: " << i << " FAILS" << endl;
                 fails.push_back(row_id);
             }
             else
             {
-                cout << "subset row id: " << i << " PASSES" << endl;
+//                cout << "subset row id: " << i << " PASSES" << endl;
             }
         }
 

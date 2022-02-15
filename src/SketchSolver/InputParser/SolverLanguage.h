@@ -980,8 +980,8 @@ namespace SolverLanguagePrimitives
 
         HoleAssignment* solve(ProblemAE* problem) override
         {
-            cout << endl;
-            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+//            cout << endl;
+//            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
             solver->addProblem(problem->get_harness(), problem->get_file());
 
             SATSolverResult ret_result = SAT_UNDETERMINED;
@@ -1036,9 +1036,9 @@ namespace SolverLanguagePrimitives
             }
 
             HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
-            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
-            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
-            cout << "returns " << ret->to_string() << endl << endl;
+//            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+//            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
+//            cout << "returns " << ret->to_string() << endl << endl;
 
 
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());

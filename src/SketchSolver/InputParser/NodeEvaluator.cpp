@@ -3,8 +3,8 @@
 #include <iomanip>
 
 // Class for interpreter of BooleanDAG.
-NodeEvaluator::NodeEvaluator(const map<string, BooleanDAG *> &functionMap_p, BooleanDAG& bdag_p, FloatManager& _floats):
-functionMap(functionMap_p), trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
+NodeEvaluator::NodeEvaluator(BooleanDAG &bdag_p, FloatManager &_floats) :
+trackChange(false), failedAssert(false), bdag(bdag_p), floats(_floats)
 {
 	values.resize(bdag.size());
 	changes.resize(bdag.size(), false);

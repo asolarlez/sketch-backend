@@ -1425,10 +1425,6 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
 		}							
 	}
 
-    if(rename_holes) {
-        cout << "WARNING: RENAMING HOLES!!! " << endl;
-    }
-
     map<string, string> prev_name_to_new_name;
     {
         auto ctrls = bdag->getNodesByType(bool_node::CTRL);
@@ -1449,7 +1445,7 @@ BooleanDAG* BooleanDAG::clone(const string& explict_name, const bool rename_hole
                     string new_name = ((CTRL_node *) ctrl)->get_name();
                     assert(prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end());
                     prev_name_to_new_name[prev_name] = new_name;
-                    cout << "RENAMED HOLE: " << prev_name <<" "<< new_name << endl;
+//                    cout << "RENAMED HOLE: " << prev_name <<" "<< new_name << endl;
                 } else {
                     ((CTRL_node *) ctrl)->save_dag_name_and_add_suffix_to_name(
                             bdag->get_name(), "");

@@ -82,6 +82,10 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore &_var_stor
             auto compare_solution = new SolverLanguagePrimitives::HoleAssignment(sat_solver_result, &var_store,
                                                                                  get_env()->floats);
 
+            if(compare_solution->get_assignment()->get_inlining_tree() == nullptr) {
+                compare_solution->get_assignment()->set_inlining_tree(get_inlining_tree());
+            }
+
             if (solution != nullptr) {
                 if (!(*solution == *compare_solution)) {
                     cout << solution->to_string() << endl;
@@ -474,4 +478,131 @@ void SketchFunction::deep_clone_tail(const VarStore& var_store) {
     inlined_functions = nullptr;
 }
 
+#include "SolverLanguageLexAndYaccHeader.h"
 
+SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment) {
+    BooleanDAG *the_dag = nullptr;
+    bool new_clone = false;
+
+    assert(sk_func->get_has_been_concretized());
+    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).empty());
+    assert(sk_func->get_dag()->getNodesByType(bool_node::UFUN).empty());
+
+    if (sk_func->get_has_been_concretized()) {
+        the_dag = sk_func->get_dag();
+    } else {
+        the_dag = sk_func->get_dag()->clone();
+        new_clone = true;
+        sk_func->get_env()->doInline(*the_dag);
+    }
+
+    VarStore *the_var_store = input_assignment->to_var_store(false);
+
+    const bool assert_num_remaining_holes_is_0 = true;
+    if (assert_num_remaining_holes_is_0) {
+        int remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+        AssertDebug(remaining_holes == 0,
+                    "This dag should not havey any holes remaining, but it has " +
+                    std::to_string(remaining_holes) + " remaining_holes.");
+    }
+
+    NodeEvaluator node_evaluator(*the_dag, sk_func->get_env()->floats);
+    bool fails = node_evaluator.run(*the_var_store);
+
+    delete the_var_store;
+    the_var_store = nullptr;
+    AssertDebug(!fails, "the dag " + the_dag->get_name() + " asserts false on this input.");
+
+    auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
+    assert(after_run_dests.size() == 1);
+    //SHOULD BE THIS BUT ISN'T
+//                      ret = new VarVal(node_evaluator.getValue(after_run_dests[0]));
+    int tuple_node_id = node_evaluator.getValue(after_run_dests[0]);
+    bool_node *tuple_node = (*the_dag)[tuple_node_id];
+    assert(tuple_node->getOtype()->isTuple && tuple_node->type == bool_node::TUPLE_CREATE);
+    AssertDebug(tuple_node->nparents() == 1, "NEET TO GENERALIZE THIS.");
+    OutType *out_type = tuple_node->get_parent(0)->getOtype();
+
+    int val = node_evaluator.getValue(tuple_node->get_parent(0));
+    //THIS IS A HACK BUT WORKS FOR NOW
+    SL::VarVal* ret = nullptr;
+    if (out_type == OutType::BOOL) {
+        ret = new SL::VarVal((bool) val);
+    } else if (out_type == OutType::INT) {
+        ret = new SL::VarVal((int) val);
+    } else {
+        AssertDebug(false,
+                    "NEED TO GENERALIZE THIS (^). IN GENERAL out_type can be anything. This was put like this because ::BOOL was the only time that was being used for testing.");
+    }
+
+    if (new_clone) {
+        the_dag->clear();
+    }
+
+    assert(ret != nullptr);
+    return ret;
+}
+
+SL::VarVal *
+SketchFunctionEvaluator::passes(const SketchFunction *sk_func, const SolverLanguagePrimitives::InputAssignment *input_assignment)
+{
+    AssertDebug(false, "USE new_passes instead.");
+    if(sk_func->get_dag()->get_failed_assert() != nullptr) {
+        return new SL::VarVal(false);
+    }
+    VarStore* inputs = input_assignment->to_var_store(false);
+    BooleanDAG* concretized_dag = sk_func->get_dag()->clone();
+    sk_func->get_env()->doInline(*concretized_dag, *inputs, bool_node::SRC);
+    bool ret = concretized_dag->get_failed_assert() == nullptr;
+    if(!concretized_dag->getNodesByType(bool_node::CTRL).empty()) {
+        assert(!ret);
+    }
+
+    inputs->clear();
+    concretized_dag->clear();
+
+    return new SL::VarVal(ret);
+}
+
+SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *sk_func,
+                                                SolverLanguagePrimitives::InputAssignment *input_assignment) {
+
+    if(sk_func->get_dag()->get_failed_assert() != nullptr) {
+        return new SL::VarVal(false);
+    }
+
+    assert(sk_func->get_has_been_concretized());
+    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).empty());
+    assert(sk_func->get_dag()->getNodesByType(bool_node::UFUN).empty());
+
+    BooleanDAG *the_dag = nullptr;
+    bool new_clone = false;
+
+    if (sk_func->get_has_been_concretized()) {
+        the_dag = sk_func->get_dag();
+    } else {
+        the_dag = sk_func->get_dag()->clone();
+        new_clone = true;
+        sk_func->get_env()->doInline(*the_dag);
+    }
+
+    VarStore *the_var_store = input_assignment->to_var_store(false);
+
+    const bool assert_num_remaining_holes_is_0 = true;
+    if (assert_num_remaining_holes_is_0) {
+        int remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+        AssertDebug(remaining_holes == 0,
+                    "This dag should not havey any holes remaining, but it has " +
+                    std::to_string(remaining_holes) + " remaining_holes.");
+    }
+
+    NodeEvaluator node_evaluator(*the_dag, sk_func->get_env()->floats);
+    bool fails = node_evaluator.run(*the_var_store);
+
+    if(new_clone) {
+        the_dag->clear();
+    }
+    the_var_store->clear();
+
+    return new SL::VarVal(!fails);
+}

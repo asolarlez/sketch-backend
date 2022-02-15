@@ -89,7 +89,8 @@ bool CEGISSolver::solve(){
 	
 	
 	ctrlStore.makeRandom();
-	cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;
+    if(PARAMS->verbosity >= 1)
+    {cout<<"!+";	ctrlStore.printBrief(cout); cout<<endl;}
 //        std::vector<int, std::allocator<int> > ctrlstore_serialized =
 //                    ctrlStore.serialize();
 //	cpt.checkpoint('c', ctrlstore_serialized);
@@ -255,7 +256,7 @@ bool CEGISSolver::solveCore(){
                         eval.init(tmpin);
                         File *file = files[(int)files.size() - 1];
                         assert(eval.check_file_invariant(file));
-                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+//                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
                         concretized_function->clear();
                     }
 
@@ -279,7 +280,7 @@ bool CEGISSolver::solveCore(){
                                 checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr){
-                            cout << "FILE FAILS OK!! (1)" << endl;
+//                            cout << "FILE FAILS OK!! (1)" << endl;
                         }
                         else {
                             BooleanDAG *concretized_dag = concretized_function->get_dag();
@@ -291,7 +292,7 @@ bool CEGISSolver::solveCore(){
                             assert(!eval.check_file_invariant(file));
                             int num_passing_inputs = checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL)->count_passing_inputs(file);
                             assert(num_passing_inputs < file->size());
-
+//                            cout << "FILE FAILS OK!! (2)" << endl;
                         }
                         concretized_function->clear();
                     }

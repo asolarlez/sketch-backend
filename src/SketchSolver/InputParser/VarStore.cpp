@@ -27,7 +27,7 @@ bool VarStore::has_original_name(const string &original_name) const {
 void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const InliningTree *new_inlining_tree) {
     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
     if(contains(new_name)){
-        cout << "contains " << new_name << endl;
+//        cout << "contains " << new_name << endl;
         //if new name already exists make sure that it's the same as the original name
 
         auto& obj = getObjConst(new_name);
@@ -59,7 +59,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
     }
     else
     {
-        cout << "not_contains " << new_name << endl;
+//        cout << "not_contains " << new_name << endl;
 
         string matching_subdag_name;
 
@@ -86,12 +86,12 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         if(!enter)
         {
             assert(prev_path == nullptr || *prev_path != *new_path);
-            cout << "HERE" << endl;
-            cout << "VARSTORE INLINING TREE" << endl;
-            inlining_tree->print();
-            cout << "NEW INLINING TREE" << endl;
-            new_inlining_tree->print();
-            cout << endl;
+//            cout << "HERE" << endl;
+//            cout << "VARSTORE INLINING TREE" << endl;
+//            inlining_tree->print();
+//            cout << "NEW INLINING TREE" << endl;
+//            new_inlining_tree->print();
+//            cout << endl;
 
             const InliningTree* subtree = inlining_tree;
             for(int i = new_path->size()-1; i>=0;i--) {
@@ -170,7 +170,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 
             assert(index.find(new_name) == index.end());
             int prev_index = index[obj_name];
-            cout << "ERASING " << obj_name << endl;
+//            cout << "ERASING " << obj_name << endl;
             index.erase(obj_name);
             index[new_name] = prev_index;
             assert(objs[index[new_name]].name == new_name);

@@ -507,34 +507,29 @@ public:
 
     }
 
-    VarStore* to_var_store(bool assert_inlining_tree_not_null = true)
+    VarStore* to_var_store(bool assert_inlining_tree_not_null = true) const
     {
         if(assert_inlining_tree_not_null)
             assert(inlining_tree != nullptr);
         auto* ret = new VarStore(inlining_tree);
         for(auto item : assignment)
         {
-            if(item.second->get_type() == sk_type_int)
-            {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name[item.first], name_to_dag_name[item.first]);
+            assert(name_to_original_name.find(item.first) != name_to_original_name.end());
+            assert(name_to_dag_name.find(item.first) != name_to_dag_name.end());
+            if(item.second->get_type() == sk_type_int) {
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name.at(item.first), name_to_dag_name.at(item.first));
                 ret->setVarVal(item.first, ((SkValInt*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type);
-//                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValInt*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
             }
-            else if(item.second->get_type() == sk_type_bool)
-            {
-                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name[item.first], name_to_dag_name[item.first]);
+            else if(item.second->get_type() == sk_type_bool) {
+                ret->newVar(item.first, item.second->get_nbits(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type, name_to_original_name.at(item.first), name_to_dag_name.at(item.first));
                 ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type);
-//                cout << item.first <<" (varstore) "<< (*ret)[item.first] << " (SkValBool) val "<< ((SkValBool*) item.second)->get() << " nbits " << item.second->get_nbits()<< endl;
-
             }
-            else if(item.second->get_type() == sk_type_boolarr)
-            {
+            else if(item.second->get_type() == sk_type_boolarr) {
                 assert(item.second->get_nbits() == 1);
                 ret->newArr(item.first, 1,  (int)((SkValBoolArr*)item.second)->get().size(), OutType::BOOL_ARR, type);
                 ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
             }
-            else if(item.second->get_type() == sk_type_intarr)
-            {
+            else if(item.second->get_type() == sk_type_intarr) {
                 ret->newArr(item.first, item.second->get_nbits(),  (int)((SkValIntArr*)item.second)->get().size(), OutType::INT_ARR, type);
                 ret->setArr(item.first, ((SkValIntArr*)item.second)->get());
             }

@@ -1594,6 +1594,7 @@ bool Solver::simplify()
 	if (remove_satisfied) {       // Can be turned off.
 		auto bef = clauses.size();
 		removeSatisfied(clauses);
+        if(verbosity >= 1)
 		cout << " Removed " << (bef - clauses.size()) << " clauses"<< endl;
 	}
     // Remove fixed variables from the variable heap:
@@ -1662,6 +1663,7 @@ bool Solver::simplifyAndCompact() {
 			}
 
 		}
+        if(verbosity >= 1)
 		cout << " Removed " << (i-j) << " clauses" << endl;
 		clauses.shrink(i - j);
 	}
@@ -2023,8 +2025,8 @@ lbool Solver::solve(const vec<Lit>& assumps)
     double  nof_learnts   = max(nClauses() * learntsize_factor, 1000.0);
     lbool   status        = l_Undef;
 	uint64_t decisionsStart = decisions;
-	cout << "DECISIONS START = " << decisionsStart << endl;
     if (verbosity >= 1){
+        cout << "DECISIONS START = " << decisionsStart << endl;
         printf("============================[ Search Statistics ]==============================\n");
         printf("| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
         printf("|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");

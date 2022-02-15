@@ -216,7 +216,7 @@ public:
         return ret;
     }
 
-    BooleanDAG* get_dag() {
+    BooleanDAG* get_dag() const {
         return root_dag;
     }
 
@@ -229,7 +229,7 @@ public:
         return dag_name;
     }
 
-    ProgramEnvironment* get_env() {
+    ProgramEnvironment* get_env() const {
         return env;
     }
 
