@@ -35,16 +35,29 @@ static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
 
 class BooleanDagUtility;
 
-class InliningTree
+class SkFuncSetter
+{
+protected:
+    BooleanDagUtility * const skfunc = nullptr;
+    SkFuncSetter(BooleanDagUtility* _skfunc);
+    void clear() const;
+};
+
+class InliningTree: private SkFuncSetter
 {
     mutable bool deleted = false;
-    BooleanDagUtility* skfunc = nullptr;
     map<string, const InliningTree*> var_name_to_inlining_subtree;
 
+    mutable map<string, const vector<string>* > dag_name_to_path;
+
 public:
-    InliningTree() = default;
+    InliningTree(BooleanDagUtility* _skfunc, bool do_recurse): SkFuncSetter(_skfunc){ assert(!do_recurse); };
+    //copy by replacing root skfunc
     InliningTree(BooleanDagUtility* to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
-    InliningTree(const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>()): skfunc(to_copy->skfunc)
+    //pure construct from skfunct
+    InliningTree(BooleanDagUtility* sk_func, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
+    //pure copy
+    InliningTree(const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>()): SkFuncSetter(to_copy->skfunc)
     {
         assert(visited->find(skfunc) == visited->end());
         (*visited)[skfunc] = this;
@@ -76,13 +89,16 @@ public:
         return true;
     }
 
-    InliningTree(BooleanDagUtility* sk_func, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
-
     void clear() const;
+
+    const InliningTree *get_sub_inlining_tree(const string &under_this_name) const {
+        assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
+        return var_name_to_inlining_subtree.at(under_this_name);
+    }
 
     SolverLanguagePrimitives::HoleAssignment *get_solution(set<const InliningTree *> *visited = new set<const InliningTree*>()) const;
 
-    vector<string>* find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
+    const vector<string>* find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
 
     bool match_topology(const InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>()) const;
 

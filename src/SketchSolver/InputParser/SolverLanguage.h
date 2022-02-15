@@ -30,6 +30,9 @@
 #include "SolverLanguageYaccHeader.h"
 #include "SketchFunction.h"
 
+#include <unistd.h>
+#include <stdio.h>
+#include <limits.h>
 
 using namespace std;
 
@@ -1062,45 +1065,6 @@ namespace SolverLanguagePrimitives
             (new WrapperAssertDAG(floats, _hc, _args, hasGoodEnoughSolution))->
             solve(new ProblemAE(harness, new File(harness, file_name, floats, _args.seed)));
     }
-
-
-//    class ConcretizationUnit
-//    {
-//        int harness_id;
-//        string function_to_concretize;
-//    };
-//
-//    inline HoleAssignment* STUN(ProgramEnvironment* env, bool hasGoodEnoughSolution)
-//    {
-//        /**
-//         * generator g_pred(x);
-//         * function f_pred0(x) {g_pred(x);}
-//         * function f_pred1(x) {if(g_pred(x)){f_pred0(x)}{g_ped(x)})
-//         * function f_pred2(x) {if(g_pred(x)){f_pred1(x)}{g_pred(x)})
-//         * harness h0(x, y) {assert(f_pred0(x) == y));}
-//         * harness h1(x, y) {assert(f_pred1(x) == y));}
-//         * harness h2(x, y) {assert(f_pred2(x) == y));}
-//         */
-//
-//        //solve h0:
-//        //set up h0 as a harness
-//        BooleanDAG* bd = prepareMiter(getCopy(spskpairs[i].spec), getCopy(spskpairs[i].sketch), inlineAmnt);
-//
-//        Harness* local_harness = new Harness(getCopy(env->spskpairs[i].sketch), bd, program_env);
-//
-//        local_harness = local_harness->produce_concretization(partial_concretization, bool_node::CTRL);
-//
-//        local_harness->set_name(spskpairs[i].sketch);
-//
-//        //concretize f_pred0;
-//        //replace f_pred0 with the concretized version
-//        //solve h1;
-//        //
-//
-//        HoleAssignment* sol = (new WrapperAssertDAG(env->get_floats(), env->get_hardcoder(), env->params, hasGoodEnoughSolution))->
-//                solve(new ProblemAE(new Function(harness, floats), sub_file));
-//
-//    }
 
     inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
     {

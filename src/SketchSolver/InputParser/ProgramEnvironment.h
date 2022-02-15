@@ -86,6 +86,7 @@ public:
         function_map.populate_boolean_dag_map(boolean_dag_function_map);
 
         bool enter = false;
+        BooleanDAG* new_dag_to_delete = nullptr;
         for(auto& it: boolean_dag_function_map)
         {
             if(it.second == &dag) {
@@ -93,6 +94,7 @@ public:
                 enter = true;
                 it.second = it.second->clone(it.first);
                 assert(it.second != &dag);
+                new_dag_to_delete = it.second;
             }
         }
 
@@ -156,6 +158,9 @@ public:
 
                     inlined_functions = dfi.get_inlined_functions();
 
+                    if(new_dag_to_delete != nullptr) {
+                        new_dag_to_delete->clear();
+                    }
                     return ;
                 }
                 //
@@ -193,6 +198,11 @@ public:
         }
 
        inlined_functions = dfi.get_inlined_functions();
+
+        if(new_dag_to_delete != nullptr) {
+            new_dag_to_delete->clear();
+        }
+        return ;
     }
 
     FloatManager &get_floats() {

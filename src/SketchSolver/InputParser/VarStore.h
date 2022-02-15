@@ -506,7 +506,7 @@ public:
 
     VarStore(InliningTree* _inlining_tree);
 
-    VarStore(const VarStore& to_copy, InliningTree* _inlining_tree = nullptr);
+    VarStore(const VarStore& to_copy, const InliningTree* _inlining_tree = nullptr);
 
     void operator = (const VarStore& to_copy);
 

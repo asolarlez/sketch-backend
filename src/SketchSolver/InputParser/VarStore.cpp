@@ -64,8 +64,8 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         string matching_subdag_name;
 
         AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "checkrep should have failed.");
-        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
-        vector<string>* prev_path = nullptr;
+        const vector<string>* new_path = new_inlining_tree->find(new_source_dag);
+        const vector<string>* prev_path = nullptr;
         bool enter = false;
 
         for(const auto& it: var_name_to_dag_name_to_name[original_name])
@@ -93,7 +93,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             new_inlining_tree->print();
             cout << endl;
 
-            InliningTree* subtree = inlining_tree;
+            const InliningTree* subtree = inlining_tree;
             for(int i = new_path->size()-1; i>=0;i--) {
                 subtree = subtree->get_sub_inlining_tree((*new_path)[i]);
             }
@@ -192,7 +192,7 @@ VarStore::VarStore(InliningTree *_inlining_tree){
     }
 }
 
-VarStore::VarStore(const VarStore &to_copy, InliningTree* _inlining_tree)
+VarStore::VarStore(const VarStore &to_copy, const InliningTree* _inlining_tree)
 {
     AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");

@@ -75,7 +75,7 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-//      assert(dag_id != 420);
+//      assert(dag_id != 134);
 
 }
 

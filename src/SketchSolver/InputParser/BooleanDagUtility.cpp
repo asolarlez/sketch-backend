@@ -54,7 +54,7 @@ bool BooleanDagUtility::get_has_been_concretized() {
     return has_been_concretized;
 }
 
-InliningTree::InliningTree(BooleanDagUtility *sk_func, map<BooleanDagUtility *, const InliningTree *> *visited): skfunc(sk_func) {
+InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, const InliningTree *> *visited): SkFuncSetter(_skfunc) {
     assert(visited->find(skfunc) == visited->end());
 
     for(auto it: *visited)
@@ -115,7 +115,6 @@ InliningTree::InliningTree(BooleanDagUtility *sk_func, map<BooleanDagUtility *, 
 }
 
 void InliningTree::clear() const{
-    return;
     if(deleted)
     {
         return;
@@ -125,6 +124,7 @@ void InliningTree::clear() const{
     {
         it.second->clear();
     }
+    SkFuncSetter::clear();
     delete this;
 }
 
@@ -142,15 +142,14 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const I
         assert(ret->get_assignment()->get_inlining_tree()->get_skfunc() == skfunc);
     }
 
-    for(auto it: var_name_to_inlining_subtree)
+    for(const auto& it: var_name_to_inlining_subtree)
     {
         if(visited->find(it.second) == visited->end()) {
             if (ret == nullptr) {
                 assert(!root_defied);
                 ret = it.second->get_solution();
                 InliningTree* local_inlining_tree = ret->get_assignment()->get_inlining_tree();
-                InliningTree* ret_inlining_tree = new InliningTree();
-                ret_inlining_tree->skfunc = skfunc;
+                InliningTree* ret_inlining_tree = new InliningTree(skfunc, false);
                 ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
                 ret->get_assignment()->update_inlining_tree(ret_inlining_tree);
             } else {
@@ -181,25 +180,38 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const I
     return ret;
 }
 
-vector<string>* InliningTree::find(const string& target_dag, set<BooleanDagUtility*>* visited) const {
+///THIS RUNS IN n^2 memory and time. TODO: make it O(n) memory and time.
+const vector<string>* InliningTree::find(const string& target_dag, set<BooleanDagUtility*>* visited) const {
     assert(visited->find(skfunc) == visited->end());
     visited->insert(skfunc);
+
+    if(dag_name_to_path.find(target_dag) != dag_name_to_path.end())
+    {
+        return dag_name_to_path[target_dag];
+    }
+
+    vector<string>* ret = nullptr;
+
     if(skfunc->get_dag_name() == target_dag)
     {
-        return new vector<string>();
+        ret = new vector<string>();
     }
     else {
-        for(auto it: var_name_to_inlining_subtree)  {
+        for(const auto& it: var_name_to_inlining_subtree)  {
             if(visited->find(it.second->skfunc) == visited->end()) {
-                auto ret = it.second->find(target_dag);
-                if(ret != nullptr) {
+                const vector<string>* local_ret = it.second->find(target_dag);
+                if(local_ret != nullptr) {
+                    assert(ret == nullptr);
+                    ret = new vector<string>(*local_ret);
                     ret->push_back(it.first);
                     return ret;
                 }
             }
         }
     }
-    return nullptr;
+    assert(dag_name_to_path.find(target_dag) == dag_name_to_path.end());
+    dag_name_to_path[target_dag] = ret;
+    return ret;
 }
 
 bool InliningTree::match_topology(const InliningTree *other, set<string> *visited, set<string> *other_visited) const {
@@ -246,7 +258,7 @@ void InliningTree::concretize(const VarStore& var_store, bool is_root, set<Boole
     }
 
     if(recurse) {
-        for (auto it: var_name_to_inlining_subtree) {
+        for (const auto& it: var_name_to_inlining_subtree) {
             if (visited->find(it.second->skfunc) == visited->end()) {
                 it.second->concretize(*var_store.get_sub_var_store(it.first), false, visited);
             }
@@ -261,7 +273,7 @@ const BooleanDagUtility *InliningTree::get_skfunc() const {
     return skfunc;
 }
 
-InliningTree::InliningTree(BooleanDagUtility *to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited): skfunc(to_replace_root) {
+InliningTree::InliningTree(BooleanDagUtility *to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited): SkFuncSetter(to_replace_root) {
     assert(visited->find(skfunc) == visited->end());
     assert(visited->find(to_copy->skfunc) == visited->end());
     (*visited)[skfunc] = this;
@@ -381,7 +393,7 @@ bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*
         hole_names->insert(((CTRL_node*)it)->get_name());
     }
 
-    for(auto it: var_name_to_inlining_subtree)
+    for(const auto& it: var_name_to_inlining_subtree)
     {
         if(visited->find(it.second) == visited->end()) {
             it.second->has_no_holes(hole_names, visited);
@@ -399,4 +411,14 @@ bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*
         }
     }
     return false;
+}
+
+SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc) {
+    skfunc->increment_shared_ptr();
+    assert(skfunc != nullptr);
+}
+
+void SkFuncSetter::clear() const {
+    assert(skfunc != nullptr);
+    skfunc->clear();
 }
