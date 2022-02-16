@@ -45,6 +45,8 @@ class SketchFunction: public BooleanDagUtility
     const TransformPrimitive* rep = nullptr;
     const TransformPrimitive* mirror_rep = nullptr;
 
+    void core_clear(const string& dag_name);
+
 public:
 
     const map<string, SketchFunction*>& get_responsibilities() const
@@ -88,6 +90,12 @@ public:
     {
         bool_node::Type var_type = bool_node::CTRL;
         return produce_concretization(nullptr, var_type, true);
+    }
+
+    SketchFunction *inline_this_dag()
+    {
+        bool_node::Type var_type = bool_node::CTRL;
+        return produce_concretization(nullptr, var_type, false);
     }
 
     SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);

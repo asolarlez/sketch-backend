@@ -16,6 +16,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         SketchFunction* the_clone = clone();
         the_clone->increment_shared_ptr();
         the_clone->produce_concretization(_var_store, var_type, false, do_deep_clone);
+        the_clone->decrement_shared_ptr_wo_clear();
         return the_clone;
     }
     else {
@@ -23,6 +24,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         VarStore* var_store = nullptr;
 
         if(_var_store != nullptr) {
+            assert(_var_store->check_rep());
             var_store = new VarStore(*_var_store);
         }
 
@@ -154,23 +156,58 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
             string actual_name = ((CTRL_node*)it)->get_name();
             string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
 
-            assert(sub_dag_name == dag_name);
+            assert(sub_dag_name == get_dag_name());
 
-            assert(solution->get_assignment()->get_name(var_name, dag_name) == actual_name);
+            assert(solution->get_assignment()->get_name(var_name, get_dag_name()) == actual_name);
         }
 
-        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
+//        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
 
-        for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
-            string var_name = ((CTRL_node*)it)->get_original_name();
-            string actual_name = ((CTRL_node*)it)->get_name();
-            string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
-            assert(sub_dag_name == cloned_dag->get_name());
-            solution_clone->rename(actual_name, var_name, sub_dag_name, dag_name, solution->get_assignment()->get_name(var_name, dag_name));
-        }
+        VarStore* var_store = solution->to_var_store();
+        InliningTree* local_inlining_tree = new InliningTree(this);
+        local_inlining_tree->rename_var_store(*var_store);
+        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
+        var_store->clear();
+        local_inlining_tree->clear();
+
+//        for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
+//            string var_name = ((CTRL_node*)it)->get_original_name();
+//            string actual_name = ((CTRL_node*)it)->get_name();
+//            string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
+//            assert(sub_dag_name == cloned_dag->get_name());
+//            solution_clone->rename(actual_name, var_name, sub_dag_name, get_dag_name(), solution->get_assignment()->get_name(var_name, get_dag_name()));
+//        }
     }
     return new SketchFunction(
             cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false), get_has_been_concretized());
+}
+
+void SketchFunction::core_clear(const string& dag_name)
+{
+    assert(local_clear_id == global_clear_id);
+    get_env()->function_map.erase(dag_name);
+
+
+    for(const auto& sk_it : get_env()->function_map)
+    {
+        auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
+        for(auto it_ufun : ufuns)
+        {
+            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
+            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+        }
+    }
+
+    if (solution != nullptr) {
+        solution->clear();
+        delete solution;
+    }
+
+    for(auto it: responsibility) {
+        it.second->_clear();
+    }
+
+    delete this;
 }
 
 void SketchFunction::_clear()
@@ -186,29 +223,7 @@ void SketchFunction::_clear()
     string dag_name = get_dag()->get_name();
 
     if(BooleanDagUtility::soft_clear()) {
-        get_env()->function_map.erase(dag_name);
-
-
-        for(const auto& sk_it : get_env()->function_map)
-        {
-            auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
-            for(auto it_ufun : ufuns)
-            {
-                string ufname = ((UFUN_node*)it_ufun)->get_ufname();
-                assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
-            }
-        }
-
-        if (solution != nullptr) {
-            solution->clear();
-            delete solution;
-        }
-
-        for(auto it: responsibility) {
-            it.second->_clear();
-        }
-
-        delete this;
+        core_clear(dag_name);
     }
 }
 
@@ -216,6 +231,17 @@ void SketchFunction::clear(){
     global_clear_id++;
     _clear();
 }
+
+void SketchFunction::clear_assert_num_shared_ptr_is_0() {
+    global_clear_id++;
+
+    string dag_name = get_dag()->get_name();
+
+    if(BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()) {
+        core_clear(dag_name);
+    }
+}
+
 
 void SketchFunction::replace(const string replace_this, const string with_this) {
     assert(new_way);
@@ -327,20 +353,6 @@ void SketchFunction::reset(const string& key) {
     original_labels.erase(original_it);
 }
 
-void SketchFunction::clear_assert_num_shared_ptr_is_0() {
-    string dag_name = get_dag()->get_name();
-
-    if(BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()) {
-        get_env()->function_map.erase(dag_name);
-        if (solution != nullptr) {
-            solution->clear();
-            delete solution;
-        }
-
-        delete this;
-    }
-}
-
 const map<string, string> &SketchFunction::get_replace_map() const {
     return replaced_labels;
 }
@@ -368,18 +380,6 @@ void SketchFunction::set_mirror_rep(const TransformPrimitive *_mirror_rep) {
 
 void SketchFunction::deep_clone_tail() {
 
-    if(get_dag()->dag_id == 21)
-    {
-        cout << "break";
-    }
-    const bool debug = false;
-    if(debug)
-    {
-        auto env = get_env();
-        auto dag = get_dag();
-        auto name = dag->get_name();
-        assert(env->function_map.find("hello") == env->function_map.end());
-    }
     //first get all inlined functions
     //clone all inlined functions;
     //replace the name inside the inlined function with eachother's
@@ -391,13 +391,7 @@ void SketchFunction::deep_clone_tail() {
             assert(f != get_env()->function_map.end());
         }
     }
-    if(debug)
-    {
-        auto env = get_env();
-        auto dag = get_dag();
-        auto name = dag->get_name();
-        assert(env->function_map.find("hello") == env->function_map.end());
-    }
+
     const InliningTree* tmp_inlining_tree = new InliningTree(this);
     set<string>* inlined_functions = tmp_inlining_tree->get_inlined_function();
     if(get_dag()->dag_id == 21)
@@ -409,13 +403,6 @@ void SketchFunction::deep_clone_tail() {
 
     assert(inlined_functions != nullptr);
 
-    if(debug)
-    {
-        auto env = get_env();
-        auto dag = get_dag();
-        auto name = dag->get_name();
-        assert(env->function_map.find("hello") == env->function_map.end());
-    }
     //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
     for (const auto& it: get_env()->function_map) {
         for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
@@ -423,13 +410,7 @@ void SketchFunction::deep_clone_tail() {
             assert(f != get_env()->function_map.end());
         }
     }
-    if(debug)
-    {
-        auto env = get_env();
-        auto dag = get_dag();
-        auto name = dag->get_name();
-        assert(env->function_map.find("hello") == env->function_map.end());
-    }
+
     // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
     for (const auto &inlined_f_name: *inlined_functions) {
         auto it_f = get_env()->function_map.find(inlined_f_name);
@@ -440,23 +421,10 @@ void SketchFunction::deep_clone_tail() {
             assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_functions->end());
         }
     }
-    if(debug)
-    {
-        auto env = get_env();
-        auto dag = get_dag();
-        auto name = dag->get_name();
-        assert(env->function_map.find("hello") == env->function_map.end());
-    }
+
     bool entered_recursive_case = false;
     map<string, SketchFunction *> to_inline_skfuncs;
     for (const string &inlined_function_name: *inlined_functions) {
-        if(debug)
-        {
-            auto env = get_env();
-            auto dag = get_dag();
-            auto name = dag->get_name();
-            assert(env->function_map.find("hello") == env->function_map.end());
-        }
         if (inlined_function_name != get_dag()->get_name()) {
             assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
 
@@ -468,13 +436,6 @@ void SketchFunction::deep_clone_tail() {
             entered_recursive_case = true;
             assert(get_env()->function_map.find(get_dag()->get_name()) != get_env()->function_map.end());
             to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name];
-        }
-        if(debug)
-        {
-            auto env = get_env();
-            auto dag = get_dag();
-            auto name = dag->get_name();
-            auto fmap = env->function_map;
         }
     }
 
@@ -488,12 +449,12 @@ void SketchFunction::deep_clone_tail() {
     inlined_functions->clear();
     inlined_functions = nullptr;
 
-    if (to_inline_skfuncs.find(dag_name) != to_inline_skfuncs.end()) {
+    if (to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end()) {
         assert(entered_recursive_case);
-        assert(to_inline_skfuncs[dag_name] == this);
+        assert(to_inline_skfuncs[get_dag_name()] == this);
     } else {
         assert(!entered_recursive_case);
-        to_inline_skfuncs[dag_name] = this;
+        to_inline_skfuncs[get_dag_name()] = this;
     }
 
     //rename all the ufuns

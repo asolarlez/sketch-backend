@@ -397,21 +397,16 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             file->reset();
             assert(file->like_unused());
 
-            auto* test_full_concretization = new BooleanDagUtility(harness);
-            test_full_concretization->increment_shared_ptr();
-            VarStore* var_store = sol->to_var_store(false);
-            test_full_concretization->concretize_this_dag(var_store, bool_node::CTRL);
-            var_store->clear();
-            assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
-            test_full_concretization->clear();
-
-            harness->clear_get_inlining_tree();
+            assert(sol->to_var_store()->check_rep());
+            harness->clear_inlining_tree();
+            assert(sol->to_var_store()->check_rep());
             harness->clear();
             solver->clear();
             delete problem;
 
 //            state->console_output << "SOLUTION: " << endl;
 //            state->console_output << sol->to_string() << endl;
+
 
             return new SL::VarVal(sol);
             break;
@@ -834,6 +829,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 var_val_sol->increment_shared_ptr();
                 const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
+                assert(var_store->check_rep());
                 SketchFunction* concretized_function = sk_func->produce_concretization(var_store, bool_node::CTRL, true);
                 var_store->clear();
                 var_val_sol->decrement_shared_ptr();
@@ -860,7 +856,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 return new SL::VarVal();
             }
             else if(params.empty()) {
-                sk_func->produce_concretization(new VarStore(), bool_node::CTRL, false);
+                sk_func->inline_this_dag();
                 return new SL::VarVal();
             }
             else {

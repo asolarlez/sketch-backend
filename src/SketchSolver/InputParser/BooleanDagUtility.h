@@ -7,133 +7,10 @@
 
 #include "File.h"
 #include "SkVal.h"
-#include "ProgramEnvironment.h"
-
-static bool new_way = true;
+#include "BooleanDagLightUtility.h"
 
 
-static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
-{
-    assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
-    if(out_type == OutType::INT)
-    {
-        return sk_type_int;
-    }
-    else if(out_type == OutType::BOOL)
-    {
-        return sk_type_bool;
-    }
-    else if(out_type == OutType::FLOAT)
-    {
-        return sk_type_float;
-    }
-    else
-    {
-        assert(false);
-    }
-}
-
-class BooleanDAGLightUtility
-{
-    //todo
-};
-
-class BooleanDagUtility;
-
-class SkFuncSetter;
-
-class SkFuncSetter
-{
-public:
-    static long long inlining_tree_global_id;
-    static set<const SkFuncSetter*> all_inlining_trees;
-private:
-
-    const long long inlining_tree_id;
-protected:
-    BooleanDagUtility * const skfunc = nullptr;
-    SkFuncSetter(BooleanDagUtility* _skfunc);
-    void clear(bool clear_dag = true) const;
-};
-
-class InliningTree: private SkFuncSetter
-{
-
-    mutable bool deleted = false;
-    map<string, const InliningTree*> var_name_to_inlining_subtree;
-
-    mutable map<string, const vector<string>* > dag_name_to_path;
-
-public:
-    InliningTree(BooleanDagUtility* _skfunc, bool do_recurse): SkFuncSetter(_skfunc){ assert(!do_recurse); };
-    //copy by replacing root skfunc
-    InliningTree(BooleanDagUtility* to_replace_root, const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
-    //pure construct from skfunct
-    InliningTree(BooleanDagUtility* sk_func, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>());
-    //pure copy
-    InliningTree(const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>()):
-    SkFuncSetter(to_copy->skfunc)
-    {
-        assert(visited->find(skfunc) == visited->end());
-        (*visited)[skfunc] = this;
-        for(const auto& it: to_copy->var_name_to_inlining_subtree)
-        {
-            if(visited->find(it.second->skfunc) == visited->end()) {
-                var_name_to_inlining_subtree[it.first] = new InliningTree(it.second, visited);
-            }
-            else
-            {
-                var_name_to_inlining_subtree[it.first] = (*visited)[it.second->skfunc];
-            }
-        }
-        assert_nonnull();
-    }
-
-    bool assert_nonnull(set<const InliningTree*>* visited = new set<const InliningTree*>()) const {
-        assert(visited->find(this) == visited->end());
-        visited->insert(this);
-        assert(skfunc != nullptr);
-        for(auto it: var_name_to_inlining_subtree)
-        {
-            assert(it.second != nullptr);
-            if(visited->find(it.second) == visited->end())
-            {
-                it.second->assert_nonnull(visited);
-            }
-        }
-        return true;
-    }
-
-    void clear(bool clear_root = true) const;
-
-    const InliningTree *get_sub_inlining_tree(const string &under_this_name) const {
-        assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
-        return var_name_to_inlining_subtree.at(under_this_name);
-    }
-
-    SolverLanguagePrimitives::HoleAssignment *get_solution(set<const InliningTree *> *visited = new set<const InliningTree*>()) const;
-
-    const vector<string>* find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
-
-    bool match_topology(const InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>()) const;
-
-    void concretize(const VarStore *var_store, bool is_root = false, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
-
-    const BooleanDagUtility *get_skfunc() const ;
-
-    void print(int ntabs = 0, set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
-
-    void rename_var_store(VarStore &var_store, set<const InliningTree*> *visited = new set<const InliningTree*>(), const InliningTree *root = nullptr) const;
-
-    set<string> *get_inlined_function(set<string> * = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const ;
-
-    bool has_no_holes(set<string>* hole_names = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
-};
-
-class BooleanDagUtility: public BooleanDAGLightUtility {
-    BooleanDAG* const root_dag = nullptr;
-    ProgramEnvironment* env = nullptr;
-    int shared_ptr = 0;
+class BooleanDagUtility: public BooleanDagLightUtility {
 
     ProgramEnvironment* original_program_env = nullptr;
 
@@ -141,19 +18,13 @@ class BooleanDagUtility: public BooleanDAGLightUtility {
 
     bool has_been_concretized = false;
 
-protected:
-    const string& dag_name;
 public:
 
-    BooleanDagUtility(BooleanDAG* _root_dag):
-            root_dag(_root_dag), dag_name(_root_dag->get_name()) {
-        assert(root_dag != nullptr);
-        AssertDebug(env != nullptr, "env needs to be defined.");
-    }
+    BooleanDagUtility(BooleanDAG* _root_dag): BooleanDagLightUtility(_root_dag) {}
 
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, ProgramEnvironment* _original_env, InliningTree* _inlining_tree, bool _has_been_concretized):
-        root_dag(_root_dag), env(_env), dag_name(_root_dag->get_name()), original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
-        assert(root_dag != nullptr);
+            BooleanDagLightUtility(_root_dag, _env),
+            original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
         }
@@ -164,8 +35,7 @@ public:
     }
 
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, InliningTree* _inlining_tree, bool _has_been_concretized):
-            root_dag(_root_dag), env(_env), dag_name(_root_dag->get_name()), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
-        assert(root_dag != nullptr);
+            BooleanDagLightUtility(_root_dag, _env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
 
 //        if(get_dag_name() == "composite_predicate__id107__id231")
 //        {
@@ -181,8 +51,7 @@ public:
         }
     }
 
-    BooleanDagUtility(BooleanDagUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env), dag_name(to_copy->dag_name), inlining_tree(to_copy->inlining_tree), has_been_concretized(to_copy->has_been_concretized) {
-        assert(root_dag != nullptr);
+    BooleanDagUtility(BooleanDagUtility* to_copy): BooleanDagLightUtility(to_copy), inlining_tree(to_copy->inlining_tree), has_been_concretized(to_copy->has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
         }
@@ -215,37 +84,24 @@ public:
         }
     }
 
-    vector<SkHoleSpec>* get_holes()
-    {
-        BooleanDagUtility* inlined_harness = produce_inlined_dag();
-        auto ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
-        auto* ret = new vector<SkHoleSpec>();
-        for(auto & ctrl_node : ctrl_nodes)
-        {
-            ret->push_back(
-                    SkHoleSpec(
-                            ctrl_node->get_name(),
-                            bool_node_out_type_to_sk_val_type(ctrl_node->getOtype())));
-        }
-        inlined_harness->clear();
-        return ret;
+    virtual void clear() override {
+        return BooleanDagLightUtility::clear(inlining_tree);
     }
 
-    BooleanDAG* get_dag() const {
-        return root_dag;
+    virtual bool soft_clear()
+    {
+        return BooleanDagLightUtility::soft_clear(inlining_tree);
+    }
+
+    virtual bool soft_clear_assert_num_shared_ptr_is_0() override
+    {
+        assert(inlining_tree == nullptr);
+        return BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0();
     }
 
     int get_num_holes()
     {
         return get_dag()->getNodesByType(bool_node::CTRL).size();
-    }
-
-    const string & get_dag_name() const {
-        return dag_name;
-    }
-
-    ProgramEnvironment* get_env() const {
-        return env;
     }
 
     BooleanDagUtility* produce_inlined_dag(bool use_same_name = false)
@@ -258,12 +114,12 @@ public:
     BooleanDagUtility* clone(bool use_same_name = false) {
         BooleanDAG* new_dag = nullptr;
         if(use_same_name) {
-            new_dag = get_dag()->clone(dag_name);
+            new_dag = get_dag()->clone(get_dag_name());
         }
         else {
             new_dag = get_dag()->clone();
         }
-        return new BooleanDagUtility(new_dag, env, original_program_env, inlining_tree, has_been_concretized);
+        return new BooleanDagUtility(new_dag, get_env(), original_program_env, inlining_tree, has_been_concretized);
     }
 
     BooleanDagUtility* produce_concretization(const VarStore* var_store, bool_node::Type var_type)
@@ -337,99 +193,12 @@ public:
         {
             var_store = new VarStore();
         }
-        if (new_way) {
-            env->doInline(*root_dag, *var_store, var_type, inlined_functions);
-        } else {
-            hardCodeINodeNoClone(root_dag, *var_store, var_type, env->get_floats());
-            inlined_functions = nullptr;
-        }
+
+        BooleanDagLightUtility::concretize_this_dag(var_store, var_type, inlined_functions);
 
         if(is_being_concretized) {
-//            assert(get_dag()->get_dag_id() != 31);
             has_been_concretized = true;
         }
-    }
-
-    int count_passing_inputs(File* file) {
-        int ret = 0;
-        int num_0s = 0;
-        int num_1s = 0;
-        for(int i = 0;i<file->size();i++)
-        {
-//            file->at(i)->printBrief(cout);
-            BooleanDagUtility* _dag = produce_concretization(file->at(i), bool_node::SRC);
-            _dag->increment_shared_ptr();
-            auto dag = _dag->get_dag();
-            assert(dag->getNodesByType(bool_node::CTRL).size() == 0);
-            assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
-            if(dag->get_failed_assert() == nullptr) {
-                ret += 1;
-            }
-            _dag->clear();
-        }
-        return ret;
-    }
-
-    virtual void clear() {
-        if(soft_clear()){
-            assert(shared_ptr == 0);
-            delete this;
-        }
-        else {
-            assert(shared_ptr >= 1);
-        }
-    }
-
-    bool soft_clear()
-    {
-        shared_ptr--;
-        assert(shared_ptr>=0);
-
-        if(inlining_tree != nullptr) {
-            assert(inlining_tree->get_skfunc() == this);
-            if(shared_ptr == 1) {
-                InliningTree* tmp_inlining_tree = inlining_tree;
-                inlining_tree = nullptr;
-                tmp_inlining_tree->clear(false);
-                assert(shared_ptr == 1);
-                shared_ptr--;
-                assert(shared_ptr == 0);
-            }
-        }
-
-        if(shared_ptr == 0) {
-            bool ret = soft_clear_assert_num_shared_ptr_is_0();
-            assert(ret);
-            return ret;
-        }
-        else {
-            return false;
-        }
-    }
-
-    bool soft_clear_assert_num_shared_ptr_is_0();
-
-    void increment_shared_ptr() {
-        if(get_dag()->dag_id == 201)
-        {
-            cout << "here" << endl;
-        }
-        assert(shared_ptr >= 0);
-        shared_ptr++;
-    }
-
-    void decrement_shared_ptr_wo_clear() {
-        assert(shared_ptr >= 1);
-        shared_ptr--;
-        if(shared_ptr == 0) {
-
-        }
-    }
-
-    int get_num_shared_ptr() const
-    {
-        assert(shared_ptr >= 0);
-        return shared_ptr;
     }
 
     void swap_env(ProgramEnvironment *new_env);
@@ -440,10 +209,9 @@ public:
         return original_program_env != nullptr;
     }
 
-    void hard_swap_env(ProgramEnvironment* new_env)
-    {
+    void hard_swap_env(ProgramEnvironment* new_env) {
         assert(original_program_env == nullptr);
-        env = new_env;
+        get_env_ref() = new_env;
     }
 
     bool is_inlining_tree_nonnull();
@@ -452,9 +220,7 @@ public:
 
     bool get_has_been_concretized();
 
-    void decrement_shared_ptr();
-
-    void clear_get_inlining_tree();
+    void clear_inlining_tree();
 };
 
 #endif //SKETCH_SOURCE_BOOLEANDAGUTILITY_H

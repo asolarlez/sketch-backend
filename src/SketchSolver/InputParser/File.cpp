@@ -2,16 +2,17 @@
 // Created by kliment on 12/20/21.
 //
 
+#include "BooleanDagLightUtility.h"
 #include "File.h"
-#include "BooleanDagUtility.h"
+#include "BooleanDAG.h"
 
 void File::growInputs(VarStore & inputStore, BooleanDAG* dag){
     dag->growInputIntSizes();
     redeclareInputs(inputStore, dag);
 }
 
-void File::relabel(BooleanDagUtility *harness) {
-    BooleanDagUtility* cloned_inlined_harness = harness->produce_inlined_dag();
+void File::relabel(BooleanDagLightUtility *harness) {
+    BooleanDagLightUtility* cloned_inlined_harness = harness->produce_inlined_dag();
     cloned_inlined_harness->increment_shared_ptr();
     BooleanDAG* problem = cloned_inlined_harness->get_dag();
     VarStore input_store;
@@ -26,7 +27,7 @@ void File::relabel(BooleanDagUtility *harness) {
     cloned_inlined_harness->clear();
 }
 
-File::File(BooleanDagUtility *harness, const string &file, FloatManager &floats, int seed) {
+File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &floats, int seed) {
     generator = std::mt19937(seed);
 //    SketchFunction* cloned_inlined_harness = harness->produce_concretization();
     BooleanDAG* problem = harness->get_dag()->clone();

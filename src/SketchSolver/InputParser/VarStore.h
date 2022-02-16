@@ -28,7 +28,7 @@ int intFromBV(T& bv, int start, int nbits){
 }
 
 class InliningTree;
-class BooleanDagUtility;
+//class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
 class VarStore{
 private:
@@ -755,7 +755,7 @@ public:
     bool has_original_name_and_source_dag(const string &original_name, const string &source_dag) const;
     bool has_original_name(const string &original_name) const;
 
-    void rename(BooleanDagUtility *new_dag_util);
+//    void rename(BooleanDagUtility *new_dag_util);
 
     const string &get_name(const string& var_name, const string &source_dag_name);
 

@@ -17,7 +17,7 @@ void redeclareInputs(VarStore & inputStore, BooleanDAG* dag, bool firstTime=fals
 
 void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
-class BooleanDagUtility;
+class BooleanDagLightUtility;
 
 class File: public vector<VarStore*>
 {
@@ -61,7 +61,7 @@ public:
         return true;
     }
 
-    File(BooleanDagUtility *harness, const string& file, FloatManager& floats, int seed);
+    File(BooleanDagLightUtility *harness, const string& file, FloatManager& floats, int seed);
 
     void clear() {
         light_clear();
@@ -367,7 +367,7 @@ public:
 
     File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
 
-    void relabel(BooleanDagUtility *harness);
+    void relabel(BooleanDagLightUtility *harness);
 
     File();
 };

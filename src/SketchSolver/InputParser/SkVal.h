@@ -385,6 +385,8 @@ public:
 
     bool operator == (const Assignment_SkVal& other) const;
 
+    void clear();
+
     void set_inlining_tree(const InliningTree *_inlining_tree);
 
     void update_inlining_tree(InliningTree *_inlining_tree)

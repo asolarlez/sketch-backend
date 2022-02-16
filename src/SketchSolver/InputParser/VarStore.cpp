@@ -272,7 +272,7 @@ void VarStore::operator=(const VarStore &to_copy){
     {
         pair<int, string> it = index_as_vec[i];
         assert(it.first == i);
-        if(inlining_tree == nullptr || inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr) {
+        if(inlining_tree == nullptr || (inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr)) {
             insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
             true_idx++;
         }

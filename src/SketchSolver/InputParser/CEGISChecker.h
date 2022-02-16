@@ -14,11 +14,10 @@
 #include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CounterexampleFinder.h"
-#include "BooleanDagUtility.h"
 
 using namespace MSsolverNS;
 
-
+#include "BooleanDagLightUtility.h"
 
 class CEGISChecker
 {
@@ -37,7 +36,7 @@ class CEGISChecker
 	void growInputs(VarStore & inputStore, BooleanDAG* dag, BooleanDAG* oridag, bool isTop);
 
 
-	void pushProblem(BooleanDagUtility* p){
+	void pushProblem(BooleanDagLightUtility* p){
         p->increment_shared_ptr();
 		problemStack.push(p);
 	}
@@ -45,7 +44,7 @@ class CEGISChecker
 		return (int) problemStack.size();
 	}
 	void popProblem(){
-        BooleanDagUtility* t = problemStack.top();
+        BooleanDagLightUtility* t = problemStack.top();
 		problemStack.pop();
 		t->clear();
 	}
@@ -55,7 +54,7 @@ class CEGISChecker
 
 //--moved from protected;
 
-	stack<BooleanDagUtility*> problemStack;
+	stack<BooleanDagLightUtility*> problemStack;
 
 	map<int, File*> files;
 
@@ -64,7 +63,7 @@ class CEGISChecker
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<BooleanDagUtility*> problems;
+	vector<BooleanDagLightUtility*> problems;
 
 	vector<Tvalue> check_node_ids;
 
@@ -107,12 +106,12 @@ public:
     }
 
 
-    BooleanDagUtility* getProblem(){
+    BooleanDagLightUtility* getProblem(){
         assert(!problemStack.empty());
         return problemStack.top();
     }
 
-    BooleanDagUtility* getHarness()
+    BooleanDagLightUtility* getHarness()
     {
         assert(!problemStack.empty());
         return problemStack.top();
@@ -128,7 +127,7 @@ public:
     }
 
 
-	void addProblem(BooleanDagUtility *harness, File *file)
+	void addProblem(BooleanDagLightUtility *harness, File *file)
 	{
 		curProblem = (int) problems.size();
 		problems.push_back(harness);
@@ -136,7 +135,7 @@ public:
             files[curProblem] = file;
         }
 
-        BooleanDagUtility* inlined_harness = harness->produce_inlined_dag();
+        BooleanDagLightUtility* inlined_harness = harness->produce_inlined_dag();
         inlined_harness->increment_shared_ptr();
         redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 

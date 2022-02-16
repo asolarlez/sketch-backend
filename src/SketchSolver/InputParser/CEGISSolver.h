@@ -54,7 +54,7 @@ protected:
 	FloatManager& floats;
 	CEGISparams params;
 
-	vector<BooleanDagUtility*> problems;
+	vector<BooleanDagLightUtility*> problems;
     vector<File*> files;
 
 	void declareControl(CTRL_node* cnode);
@@ -106,7 +106,7 @@ public:
 			
 	}
 	~CEGISSolver(void);
-	void addProblem(BooleanDagUtility *harness, File *file);
+	void addProblem(BooleanDagLightUtility *harness, File *file);
 
 
     const ElapsedTime& get_last_elapsed_time()

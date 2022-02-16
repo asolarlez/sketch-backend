@@ -24,9 +24,6 @@
 #include "CEGISSolver.h"
 #include "NodeHardcoder.h"
 #include "CounterexampleFinder.h"
-//#include "DagFunctionInliner.h"
-//#include "InterpreterEnvironment.h"
-
 #include "SolverLanguageYaccHeader.h"
 #include "SketchFunction.h"
 
@@ -72,9 +69,9 @@ namespace SolverLanguagePrimitives
     {
         File* file;
         string file_name;
-        BooleanDagUtility *sk_func = nullptr;
+        BooleanDagLightUtility *sk_func = nullptr;
     public:
-        explicit ProblemAE(BooleanDagUtility* _function, File* _file = nullptr):
+        explicit ProblemAE(BooleanDagLightUtility* _function, File* _file = nullptr):
                 sk_func(_function), file(_file){}
 
         File* get_file()

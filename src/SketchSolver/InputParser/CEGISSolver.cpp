@@ -11,18 +11,28 @@
 #include "SkVal.h"
 
 
-void CEGISSolver::addProblem(BooleanDagUtility *harness, File *file){
+void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
     checker->addProblem(harness, file);
 	problems.push_back(harness);
     files.push_back(file);
 
     {
-        BooleanDagUtility* inlined_harness = harness;
+        BooleanDagLightUtility* inlined_harness = harness;
         bool new_clone = false;
-        if(!inlined_harness->is_inlining_tree_nonnull()) {
+        if(new_clone) {
+            //BE CAREFUL, THIS RENAMES THE SOURCE DAG OF THE HOLES.
             inlined_harness = inlined_harness->produce_inlined_dag();
             inlined_harness->increment_shared_ptr();
             new_clone = true;
+        }
+        else
+        {
+            //ASSERT THAT THE DAG WAS ALREADY INLINED.
+            //IF THIS FAILS THE DAG WASN'T INLINED.
+            assert(inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            for(auto it:inlined_harness->get_dag()->getNodesByType(bool_node::CTRL)) {
+                assert(it->get_name() != "#PC");
+            }
         }
 
         auto problemIn = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
@@ -244,7 +254,7 @@ bool CEGISSolver::solveCore(){
                     //check that all inputs used from the file pass on the the checker's harness
                     if(file != nullptr)
                     {
-                        BooleanDagUtility* concretized_function =
+                        BooleanDagLightUtility* concretized_function =
                                 checker->getProblem()->produce_concretization(
                                         &ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
@@ -264,7 +274,7 @@ bool CEGISSolver::solveCore(){
                 else
                 {
 
-                    BooleanDagUtility *harness = checker->getProblem();
+                    BooleanDagLightUtility *harness = checker->getProblem();
 
                         BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
                     harness->get_env()->doInline(
@@ -276,7 +286,7 @@ bool CEGISSolver::solveCore(){
 
                     if(file != nullptr)
                     {
-                        BooleanDagUtility* concretized_function =
+                        BooleanDagLightUtility* concretized_function =
                                 checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr){
