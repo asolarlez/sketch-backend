@@ -30,7 +30,6 @@ protected:
 
 class InliningTree: private SkFuncSetter
 {
-
     mutable bool deleted = false;
     map<string, const InliningTree*> var_name_to_inlining_subtree;
 
@@ -258,6 +257,11 @@ public:
         bool clear_inlining_tree = false;
         bool clear_solution = false;
 
+        if(solution != nullptr) {
+            assert(solution->get_assignment()->get_inlining_tree() != nullptr);
+            assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() == (const BooleanDagUtility*)this);
+        }
+
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_skfunc() == (const BooleanDagUtility*)this);
             if(shared_ptr == 1) {
@@ -313,7 +317,6 @@ public:
                 }
                 else
                 {
-//                    assert(false);
                     //don't clear bc skfunc still used
                 }
             }
@@ -334,7 +337,7 @@ public:
     }
 
     void increment_shared_ptr() {
-        if(get_dag()->dag_id == 264)
+        if(get_dag()->dag_id == 227)
         {
             cout << "here" << endl;
         }
@@ -343,7 +346,7 @@ public:
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->dag_id == 264)
+        if(get_dag()->dag_id == 227)
         {
             cout << "here" << endl;
         }
@@ -357,9 +360,6 @@ public:
         assert(shared_ptr >= 0);
         return shared_ptr;
     }
-
-    void decrement_shared_ptr();
-
 };
 
 

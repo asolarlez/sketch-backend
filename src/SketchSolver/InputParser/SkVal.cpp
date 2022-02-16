@@ -146,19 +146,21 @@ Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floa
         }
     }
 
-    VarStore* test_var_store = to_var_store(false);
-
-
-    assert(test_var_store->size() == var_store->size());
-
-    for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
-        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
-    }
-    for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
-        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
-    }
-
-    test_var_store->clear();
+//    last time this ran was failed the assert(sk.sol.inl.sk == sk) bc this is being checked before actually enforcing the assert.
+//    otherwise it worked. MIGHT NOT WORK WHEN NEW SKTYPES ARE INTRODUCED.
+//    VarStore* test_var_store = to_var_store(false);
+//
+//
+//    assert(test_var_store->size() == var_store->size());
+//
+//    for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
+//        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
+//    }
+//    for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
+//        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
+//    }
+//
+//    test_var_store->clear();
 
 }
 

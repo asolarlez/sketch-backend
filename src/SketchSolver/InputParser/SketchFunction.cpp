@@ -235,6 +235,7 @@ void SketchFunction::_clear()
         assert(prev_gloval == global_clear_id);
         core_clear(dag_name);
     }
+    local_clear_id = -1;
 }
 
 void SketchFunction::clear(){

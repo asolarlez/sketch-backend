@@ -805,8 +805,11 @@ eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_fu
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
     SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
 
-    ret_var_val->add_responsibility(str_to_replace, to_replace_with_var_val);
+//    assert(to_replace_with_var_val->get_function(false)->get_dag_name() != ret_sk_func->get_dag_name());
 
+//    ret_var_val->add_responsibility(str_to_replace, to_replace_with_var_val);
+
+    to_replace_with_var_val->increment_shared_ptr();
     SketchFunction* to_replace_with_sk_func = to_replace_with_var_val->get_function();
     const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
 
@@ -814,6 +817,7 @@ eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_fu
     assert(state->function_map.find(to_replace_with_name) != state->function_map.end());
 
     ret_sk_func->replace(str_to_replace, to_replace_with_name);
+    to_replace_with_var_val->decrement_shared_ptr();
 }
 
 template<>
@@ -994,7 +998,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _reset:
         {
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
-            the_var_val->remove_responsibility(subfunc_name);
+//            the_var_val->remove_responsibility(subfunc_name);
             sk_func->reset(subfunc_name);
             return new VarVal();
         }
@@ -1416,10 +1420,6 @@ SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
 
 SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 {
-    for(auto it : _to_copy->is_responsible_for) {
-        add_responsibility(it.first, new VarVal(it.second));
-    }
-
     switch (_to_copy->var_val_type) {
         case string_val_type:
             s = new Identifier(_to_copy->get_string(false));
@@ -1540,24 +1540,6 @@ SL::VarVal *SL::VarVal::eval(T& val, SolverProgramState *state, SL::FunctionCall
     return ret;
 }
 
-//SL::VarVal *SL::VarVal::clone() {
-//    assert(is_sketch_function());
-//    return new VarVal(skfunc->clone());
-//}
-
-void SL::VarVal::add_responsibility(const string &var_name, SL::VarVal *new_child) {
-    new_child->increment_shared_ptr();
-    auto it = is_responsible_for.find(var_name);
-    if(it == is_responsible_for.end()) {
-        is_responsible_for[var_name] = new_child;
-    }
-    else
-    {
-        it->second->decrement_shared_ptr();
-        is_responsible_for[var_name] = new_child;
-    }
-}
-
 bool SL::VarVal::is_input_holder() {
     return var_val_type == input_val_type;
 }
@@ -1569,13 +1551,6 @@ bool SL::VarVal::is_solution_holder() {
 void SL::VarVal::clear_assert_0_shared_ptrs() {
     assert(num_shared_ptr == 0);
     _clear();
-}
-
-void SL::VarVal::remove_responsibility(const string& key) {
-    auto it = is_responsible_for.find(key);
-    assert(it != is_responsible_for.end());
-    it->second->decrement_shared_ptr();
-    is_responsible_for.erase(it);
 }
 
 SL::UnitLine::UnitLine(SL::UnitLine *to_copy): line_type(to_copy->line_type)

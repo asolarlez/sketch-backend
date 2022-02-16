@@ -14,12 +14,6 @@ bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
     return true;
 }
 
-
-void BooleanDagLightUtility::decrement_shared_ptr() {
-    shared_ptr--;
-    assert(shared_ptr>=1);
-}
-
 #include "File.h"
 
 int BooleanDagLightUtility::count_passing_inputs(File *file) {
@@ -430,7 +424,7 @@ SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlinin
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
 
-    if(inlining_tree_id == 127) {
+    if(inlining_tree_id == 488) {
         cout << "break" << endl;
     }
 }

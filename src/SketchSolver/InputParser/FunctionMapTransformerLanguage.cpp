@@ -876,10 +876,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
 
             //then calc other parent
             {
-//            auto it = parents.find(replace_with);
-//            AssertDebug(it == parents.end(), "UU, SOME RECURSIVE FUNCTION ;)");
                 auto rep_it = root->get_root_dag_reps().find(replace_with);
-//            AssertDebug(rep_it->second == it->second, "IF THIS FAILS, IT MEANS THAT THE SUBFUNCTION IS NOT A REPRESENTATIVE OF IT'S NAME IN THE ORIGINAL FUNCTION MAP (IT'S BEEN OUTDATED).");
                 auto replace_with_dag = rep_it->second->reconstruct_sketch_function(root, new_env);
 
                 if (new_env->function_map.find(replace_with) == new_env->function_map.end()) {
@@ -889,7 +886,6 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
                 }
             }
 
-            cout << "REPLACE (in reconstruction)" << assign_map->begin()->first << " " << replace_with << endl;
             ret->replace(assign_map->begin()->first, replace_with);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 

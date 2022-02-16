@@ -234,6 +234,7 @@ bool VarStore::check_rep() const {
 
 void VarStore::set_inlining_tree(const InliningTree *new_inlining_tree) {
     assert(inlining_tree != nullptr);
+    auto tmo_id = inlining_tree->get_skfunc()->get_dag()->get_dag_id();
     inlining_tree->clear();
     inlining_tree = new InliningTree(new_inlining_tree);
 }

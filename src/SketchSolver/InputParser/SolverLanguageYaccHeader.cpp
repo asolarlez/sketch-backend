@@ -123,17 +123,8 @@ void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchF
     FunctionMap& _function_map = sk_func->get_env()->function_map;
     assert(&_function_map == &function_map);
     if(function_map.find(sk_func_name) == function_map.end()) {
-
-        cout << "ADDING NEW TO FMAP" << endl;
         auto new_or_existing_primitive= function_map.insert(sk_func_name, sk_func);
         sk_func->set_rep(new_or_existing_primitive);
-
-//        function_map[sk_func_name] = sk_func;
-//        sk_func->set_assert__it_is_in_this_function_map(&function_map);
-//
-//        FunctionMap& function_map = sk_func->get_env()->function_map;
-//        assert(function_map.find(sk_func_name) == function_map.end());
-//        function_map[sk_func_name] = sk_func;
     }
     else {
         assert(function_map.find(sk_func_name) != function_map.end());
