@@ -1018,7 +1018,9 @@ namespace SolverLanguagePrimitives
             }
 
 
-            int num_passing_inputs = problem->get_harness()->produce_concretization(holes_to_sk_val->to_var_store(false), bool_node::CTRL)->count_passing_inputs(problem->get_file());
+            auto tmp_dag = problem->get_harness()->produce_concretization(holes_to_sk_val->to_var_store(false), bool_node::CTRL);
+            tmp_dag->increment_shared_ptr();
+            int num_passing_inputs = tmp_dag->count_passing_inputs(problem->get_file());
             if(ret_result == SAT_SATISFIABLE)
             {
                 assert(num_passing_inputs == problem->get_file()->size());
@@ -1027,6 +1029,7 @@ namespace SolverLanguagePrimitives
             {
                 assert(num_passing_inputs < problem->get_file()->size());
             }
+            tmp_dag->clear();
 
             HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
 //            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;

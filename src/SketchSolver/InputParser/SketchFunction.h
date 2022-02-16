@@ -79,6 +79,7 @@ public:
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
             rep(_rep), responsibility(std::move(_responsibility)) {
+
         for(auto dependency: responsibility) {
             assert(dependency.second != this);
             assert(dependency.second->get_dag_name() != get_dag_name());

@@ -300,7 +300,10 @@ bool CEGISSolver::solveCore(){
                             eval.init(tmpin);
                             File *file = files[(int) files.size() - 1];
                             assert(!eval.check_file_invariant(file));
-                            int num_passing_inputs = checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL)->count_passing_inputs(file);
+                            auto tmp_dag = checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
+                            tmp_dag->increment_shared_ptr();
+                            int num_passing_inputs = tmp_dag->count_passing_inputs(file);
+                            tmp_dag->clear();
                             assert(num_passing_inputs < file->size());
 //                            cout << "FILE FAILS OK!! (2)" << endl;
                         }

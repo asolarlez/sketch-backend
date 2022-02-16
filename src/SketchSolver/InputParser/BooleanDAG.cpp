@@ -75,7 +75,10 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-//      assert(dag_id != 134);
+//      if(dag_id == 194)
+//      {
+//         cout << "in BooleanDAG" << endl;
+//      }
 
 }
 

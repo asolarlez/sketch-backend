@@ -117,14 +117,6 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
             assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
         }
-        {
-//            replaced_labels.clear();
-//            original_labels.clear();
-            //TODO: this probably needs to happen, because after concretization there are no ufuns, but not sure why it crashes
-//            for (auto dep: responsibility) {
-//                dep.second->clear();
-//            }
-        }
 
         delete inlined_functions;
 
@@ -287,6 +279,8 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
         if(replaced_labels[replace_this] == with_this){
             assert(get_dag_name() == with_this);
 
+            assert(responsibility.find(with_this) != responsibility.end());
+
             //nothing to do.
             //replacing a label with itself in a self-recursive function.
             return;
@@ -312,6 +306,18 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
         responsibility.erase(prev_dep_name);
+
+        if(get_inlining_tree(false) != nullptr)
+        {
+            AssertDebug(false, "before you couldn't rename after inlining. attend to this. need to edit the inlining tree.");
+            assert(get_inlining_tree()->find(prev_dep_name) != nullptr);
+
+        }
+        if(solution != nullptr)
+        {
+            AssertDebug(false, "before you couldn't rename after concretizing. attend to this, need to edit the concretized solution.");
+            assert(solution->get_assignment()->get_inlining_tree()->find(prev_dep_name) != nullptr);
+        }
     }
 
     auto dependency_it = get_env()->function_map.find(with_this);
@@ -358,10 +364,7 @@ void SketchFunction::reset(const string& key) {
     assert(original_it != original_labels.end());
     assert(original_it->second == key);
 
-    rep = get_env()->function_map.replace_label_with_another(get_dag()->get_name(), key, key);
-
-    replaced_labels.erase(it);
-    original_labels.erase(original_it);
+    replace(key, key);
 }
 
 const map<string, string> &SketchFunction::get_replace_map() const {
