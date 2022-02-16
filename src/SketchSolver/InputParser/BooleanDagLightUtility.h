@@ -96,7 +96,7 @@ public:
 
     void rename_var_store(VarStore &var_store, set<const InliningTree*> *visited = new set<const InliningTree*>(), const InliningTree *root = nullptr) const;
 
-    set<string> *get_inlined_function(set<string> * = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const ;
+//    set<string> *get_inlined_function(set<string> * = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const ;
 
     bool has_no_holes(set<string>* hole_names = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
 };
@@ -124,6 +124,8 @@ public:
     explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env), dag_name(to_copy->dag_name) {
         assert(root_dag != nullptr);
     }
+
+    set<string>* get_inlined_functions(set<string>* ret = new set<string>());
 
     BooleanDAG* get_dag() const {
         return root_dag;
@@ -337,7 +339,7 @@ public:
     }
 
     void increment_shared_ptr() {
-        if(get_dag()->dag_id == 227)
+        if(get_dag()->dag_id == 217)
         {
             cout << "here" << endl;
         }
@@ -346,7 +348,7 @@ public:
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->dag_id == 227)
+        if(get_dag()->dag_id == 217)
         {
             cout << "here" << endl;
         }

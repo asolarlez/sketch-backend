@@ -37,19 +37,9 @@ public:
 
     BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, InliningTree* _inlining_tree, bool _has_been_concretized):
             BooleanDagLightUtility(_root_dag, _env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
-
-//        if(get_dag_name() == "composite_predicate__id107__id231")
-//        {
-//            cout << "here" << endl;
-//        }
-
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
             assert(inlining_tree->get_skfunc() == this);
-        }
-        if(has_been_concretized)
-        {
-//            assert(get_dag()->get_dag_id() != 31);
         }
     }
 

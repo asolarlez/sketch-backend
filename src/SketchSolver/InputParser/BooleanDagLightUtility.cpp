@@ -36,8 +36,22 @@ int BooleanDagLightUtility::count_passing_inputs(File *file) {
     return ret;
 }
 
-
 #include "SketchFunction.h"
+
+set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) {
+    for(auto node_it: get_dag()->getNodesByType(bool_node::UFUN)) {
+        UFUN_node* ufun_it = (UFUN_node*)node_it;
+        string ufname = ufun_it->get_ufname();
+        if(ret->find(ufname) == ret->end()) {
+            ret->insert(ufname);
+            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+            ((BooleanDagUtility*)(get_env()->function_map.find(ufname)->second))->get_inlined_functions(ret);
+        }
+    }
+    return ret;
+}
+
+
 
 InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, const InliningTree *> *visited): SkFuncSetter(_skfunc) {
     assert(visited->find(skfunc) == visited->end());
@@ -369,20 +383,20 @@ void InliningTree::rename_var_store(VarStore &var_store, set<const InliningTree*
     }
 }
 
-set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, set<const InliningTree*>* visited) const {
-    assert(visited->find(this) == visited->end());
-    visited->insert(this);
-
-    for(auto it: var_name_to_inlining_subtree)
-    {
-        inlined_functions->insert(it.second->skfunc->get_dag_name());
-        if(visited->find(it.second) == visited->end()) {
-            it.second->get_inlined_function(inlined_functions, visited);
-        }
-    }
-
-    return inlined_functions;
-}
+//set<string> *InliningTree::get_inlined_function(set<string>* inlined_functions, set<const InliningTree*>* visited) const {
+//    assert(visited->find(this) == visited->end());
+//    visited->insert(this);
+//
+//    for(const auto& it: var_name_to_inlining_subtree)
+//    {
+//        inlined_functions->insert(it.second->skfunc->get_dag_name());
+//        if(visited->find(it.second) == visited->end()) {
+//            it.second->get_inlined_function(inlined_functions, visited);
+//        }
+//    }
+//
+//    return inlined_functions;
+//}
 
 bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*>* visited) const {
     assert(visited->find(this) == visited->end());
@@ -418,13 +432,13 @@ set<const SkFuncSetter*> SkFuncSetter::all_inlining_trees = set<const SkFuncSett
 
 
 SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlining_tree_id(inlining_tree_global_id++) {
-    skfunc->increment_shared_ptr();
     assert(skfunc != nullptr);
+    skfunc->increment_shared_ptr();
 
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
 
-    if(inlining_tree_id == 488) {
+    if(inlining_tree_id == 908) {
         cout << "break" << endl;
     }
 }

@@ -403,14 +403,7 @@ void SketchFunction::deep_clone_tail() {
         }
     }
 
-    const InliningTree* tmp_inlining_tree = new InliningTree(this);
-    set<string>* inlined_functions = tmp_inlining_tree->get_inlined_function();
-    if(get_dag()->dag_id == 21)
-    {
-        cout << "break";
-    }
-    tmp_inlining_tree->clear();
-    assert(SkFuncSetter::all_inlining_trees.find((SkFuncSetter*)tmp_inlining_tree) == SkFuncSetter::all_inlining_trees.end());
+    set<string>* inlined_functions = get_inlined_functions();
 
     assert(inlined_functions != nullptr);
 
