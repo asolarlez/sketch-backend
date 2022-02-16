@@ -107,9 +107,10 @@ public:
 
     const VarStore* get_solution_var_store()
     {
-        auto local_solution = get_solution();
+        const SolverLanguagePrimitives::HoleAssignment* local_solution = get_solution();
         const VarStore* ret = solution->get_assignment()->to_var_store();
-        local_solution->clear();
+        assert(local_solution->get_num_shared_ptr() == 0);
+        local_solution->clear_assert_num_shared_ptr_is_0();
         return ret;
     }
 

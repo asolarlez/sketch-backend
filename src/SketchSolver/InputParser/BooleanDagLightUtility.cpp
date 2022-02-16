@@ -71,8 +71,18 @@ InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, 
         if(skfunc_inlining_tree != nullptr)
         {
             assert(skfunc_inlining_tree->skfunc == skfunc);
+
             for(const auto& it: skfunc->get_inlining_tree()->var_name_to_inlining_subtree)
             {
+
+//                string var_name = it.first;
+//                string sub_dag_name = ((SketchFunction*)skfunc)->get_assignment(var_name);
+//                assert(skfunc->get_env()->function_map.find(sub_dag_name) != skfunc->get_env()->function_map.end());
+//                BooleanDagUtility *sub_dag = skfunc->get_env()->function_map[sub_dag_name];
+//                if(visited->find(it.second->skfunc) == visited->end()) {
+//                    var_name_to_inlining_subtree[it.first] = new InliningTree(sub_dag, visited);
+//                }
+
                 if(visited->find(it.second->skfunc) == visited->end()) {
                     var_name_to_inlining_subtree[it.first] = new InliningTree(it.second, visited);
                 }
@@ -104,7 +114,7 @@ InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, 
     assert_nonnull();
 }
 
-void InliningTree::clear(bool clear_root) const{
+void InliningTree::clear(bool clear_root, bool sub_clear) const{
     if(deleted)
     {
         return;
@@ -112,9 +122,9 @@ void InliningTree::clear(bool clear_root) const{
     deleted = true;
     for(const auto& it: var_name_to_inlining_subtree)
     {
-        it.second->clear();
+        it.second->clear(true, sub_clear);
     }
-    SkFuncSetter::clear(clear_root);
+    SkFuncSetter::clear(clear_root, sub_clear);
     delete this;
 }
 
@@ -421,15 +431,21 @@ SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlinin
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
 
-    if(inlining_tree_id == 484) {
+    if(inlining_tree_id == 471) {
         cout << "break" << endl;
     }
 }
 
-void SkFuncSetter::clear(bool clear_dag) const {
+void SkFuncSetter::clear(bool clear_dag, bool sub_clear) const {
     assert(skfunc != nullptr);
-    if(clear_dag) {
-        ((SketchFunction *) skfunc)->clear();
+    if(clear_dag)
+    {
+        if(sub_clear) {
+            ((SketchFunction *) skfunc)->_clear();
+        }
+        else {
+            ((SketchFunction *) skfunc)->clear();
+        }
     }
 
     assert(all_inlining_trees.find(this) != all_inlining_trees.end());

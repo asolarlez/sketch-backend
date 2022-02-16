@@ -1075,7 +1075,7 @@ namespace SolverLanguagePrimitives
             int init_num_global_dags = BooleanDAG::get_allocated().size();
             int init_num_global_nodes = bool_node::get_allocated().size();
 
-            BooleanDagUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
+            BooleanDagLightUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
             local_harness->increment_shared_ptr();
 
             FunctionMap& function_map = local_harness->get_env()->function_map;
@@ -1217,7 +1217,7 @@ namespace SolverLanguagePrimitives
                     new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             HoleAssignment* solution_holder = (solver)->
                     solve(new ProblemAE(state->harness_, sub_file));
-            BooleanDagUtility* concretized_function = ((BooleanDagUtility*)state->harness_)->produce_concretization(
+            BooleanDagLightUtility* concretized_function = ((BooleanDagUtility*)state->harness_)->produce_concretization(
                     solution_holder->to_var_store(), bool_node::CTRL);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();

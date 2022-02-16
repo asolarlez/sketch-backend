@@ -84,13 +84,18 @@ public:
         }
     }
 
-    virtual void clear() override {
-        return BooleanDagLightUtility::clear(inlining_tree);
+    void clear(const SolverLanguagePrimitives::HoleAssignment*& solution) {
+        return BooleanDagLightUtility::clear(inlining_tree, solution);
     }
 
-    virtual bool soft_clear()
+    virtual void clear() override {
+        const SolverLanguagePrimitives::HoleAssignment* tmp_solution = nullptr;
+        return BooleanDagLightUtility::clear(inlining_tree, tmp_solution);
+    }
+
+    bool soft_clear(const SolverLanguagePrimitives::HoleAssignment*& solution)
     {
-        return BooleanDagLightUtility::soft_clear(inlining_tree);
+        return BooleanDagLightUtility::soft_clear(inlining_tree, solution);
     }
 
     virtual bool soft_clear_assert_num_shared_ptr_is_0() override
@@ -152,7 +157,7 @@ public:
     }
 
     void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type, vector<string>*& inlined_functions) {
-        assert(!get_dag()->get_failed_assert());
+        assert(get_dag()->get_failed_assert() == nullptr);
 
         if(inlining_tree != nullptr) {
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());

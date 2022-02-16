@@ -385,7 +385,7 @@ public:
 
     bool operator == (const Assignment_SkVal& other) const;
 
-    void clear();
+    void clear(bool clear_root = true, bool sub_clear = false);
 
     void set_inlining_tree(const InliningTree *_inlining_tree);
 
@@ -562,13 +562,34 @@ namespace SolverLanguagePrimitives {
     class ProblemAE;
 
     class HoleAssignment {
+
+        mutable int shared_ptr = 0;
+
         Assignment_SkVal * assignment_skval = nullptr;
         mutable SATSolverResult sat_solver_result = SAT_UNDETERMINED;
+
     public :
 
         void clear() const {
-            assignment_skval->clear();
+            assert(shared_ptr >= 1);
+            shared_ptr--;
+            if(shared_ptr == 0) {
+                clear_assert_num_shared_ptr_is_0();
+            }
+        }
+
+        void clear_assert_num_shared_ptr_is_0(bool clear_root = true, bool sub_clear = false) const
+        {
+            assert(shared_ptr == 0);
+            sat_solver_result = SAT_UNDETERMINED;
+            assignment_skval->clear(clear_root, sub_clear);
             delete assignment_skval;
+        }
+
+        void increment_shared_ptr() const
+        {
+            assert(shared_ptr >= 0);
+            shared_ptr++;
         }
 
         explicit HoleAssignment(SATSolverResult _sat_solver_result) :
@@ -696,6 +717,10 @@ namespace SolverLanguagePrimitives {
         void set_inlining_tree(InliningTree *_inlining_tree) const
         {
             assignment_skval->set_inlining_tree(_inlining_tree);
+        }
+
+        int get_num_shared_ptr() const {
+            return shared_ptr;
         }
     };
 

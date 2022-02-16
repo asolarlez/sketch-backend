@@ -25,7 +25,7 @@ private:
 protected:
     BooleanDagUtility * const skfunc = nullptr;
     SkFuncSetter(BooleanDagUtility* _skfunc);
-    void clear(bool clear_dag = true) const;
+    void clear(bool clear_dag = true, bool sub_clear = false) const;
 };
 
 class InliningTree: private SkFuncSetter
@@ -76,7 +76,7 @@ public:
         return true;
     }
 
-    void clear(bool clear_root = true) const;
+    void clear(bool clear_root = true, bool sub_clear = false) const;
 
     const InliningTree *get_sub_inlining_tree(const string &under_this_name) const {
         assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
@@ -170,6 +170,11 @@ public:
         return ret;
     }
 
+    void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type) {
+        vector<string>* inlined_functions = nullptr;
+        concretize_this_dag(var_store, var_type, inlined_functions);
+    }
+
     void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type, vector<string>*& inlined_functions)
     {
         if(var_store == nullptr) {
@@ -229,8 +234,8 @@ public:
 
     int count_passing_inputs(File* file);
 
-    virtual void clear(InliningTree*& inlining_tree) {
-        if(soft_clear(inlining_tree)){
+    virtual void clear(InliningTree*& inlining_tree, const SolverLanguagePrimitives::HoleAssignment*& solution) {
+        if(soft_clear(inlining_tree, solution)){
             assert(shared_ptr == 0);
             delete this;
         }
@@ -242,24 +247,78 @@ public:
 
     virtual void clear() {
         InliningTree* tmp = nullptr;
-        clear(tmp);
+        const SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
+        clear(tmp, solution);
     }
 
-    virtual bool soft_clear(InliningTree*& inlining_tree)
+    virtual bool soft_clear(InliningTree*& inlining_tree, const SolverLanguagePrimitives::HoleAssignment*& solution)
     {
-        shared_ptr--;
-        assert(shared_ptr>=0);
+        decrement_shared_ptr_wo_clear();
+
+        bool clear_inlining_tree = false;
+        bool clear_solution = false;
 
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_skfunc() == (const BooleanDagUtility*)this);
             if(shared_ptr == 1) {
+                assert(solution == nullptr ||
+                       solution->get_assignment()->get_inlining_tree() == nullptr ||
+                       solution->get_assignment()->get_inlining_tree()->get_skfunc() != (const BooleanDagUtility*)this);
+
+                clear_inlining_tree = true;
+
                 InliningTree* tmp_inlining_tree = inlining_tree;
                 inlining_tree = nullptr;
-                tmp_inlining_tree->clear(false);
+                tmp_inlining_tree->clear(false, true);
                 assert(shared_ptr == 1);
-                shared_ptr--;
+                decrement_shared_ptr_wo_clear();
                 assert(shared_ptr == 0);
             }
+            else if(shared_ptr == 2)
+            {
+                if(solution != nullptr) {
+                    assert(solution->get_assignment()->get_inlining_tree() != nullptr);
+                    if(solution->get_assignment()->get_inlining_tree()->get_skfunc() == (const BooleanDagUtility*)this) {
+                        if (solution->get_num_shared_ptr() == 0) {
+
+                            clear_solution = true;
+
+                            const SolverLanguagePrimitives::HoleAssignment *tmp_solution = solution;
+                            solution = nullptr;
+                            tmp_solution->clear_assert_num_shared_ptr_is_0(false, true);
+                            assert(shared_ptr == 2);
+                            decrement_shared_ptr_wo_clear();
+                            assert(shared_ptr == 1);
+
+                            clear_inlining_tree = true;
+
+                            InliningTree* tmp_inlining_tree = inlining_tree;
+                            inlining_tree = nullptr;
+                            tmp_inlining_tree->clear(false, true);
+                            assert(shared_ptr == 1);
+                            decrement_shared_ptr_wo_clear();
+                            assert(shared_ptr == 0);
+                        }
+                        else
+                        {
+                            //don't clear bc inlining skfunc doesnt match.
+                            AssertDebug(false, "all non-0 shared_ptr of solution are cloned before going to the solver language");
+                        }
+                    }
+                    else
+                    {
+                        //don't clear either bc solution is still used.
+                    }
+                }
+                else
+                {
+                    //don't clear either bc skfunc still used
+                }
+            }
+        }
+        else
+        {
+            assert(solution == nullptr);
         }
 
         if(shared_ptr == 0) {
@@ -273,7 +332,7 @@ public:
     }
 
     void increment_shared_ptr() {
-        if(get_dag()->dag_id == 186)
+        if(get_dag()->dag_id == 264)
         {
             cout << "here" << endl;
         }
@@ -282,11 +341,13 @@ public:
     }
 
     void decrement_shared_ptr_wo_clear() {
+        if(get_dag()->dag_id == 264)
+        {
+            cout << "here" << endl;
+        }
         assert(shared_ptr >= 1);
         shared_ptr--;
-        if(shared_ptr == 0) {
-            //do nothing
-        }
+        assert(shared_ptr >= 0);
     }
 
     int get_num_shared_ptr() const

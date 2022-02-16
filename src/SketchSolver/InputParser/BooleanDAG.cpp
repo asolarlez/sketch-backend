@@ -127,10 +127,6 @@ void BooleanDAG::clear(){
 
 BooleanDAG::~BooleanDAG()
 {
-    if(dag_id == 22)
-    {
-        cout << "here" << endl;
-    }
 #ifdef SCHECKMEM
 	allocated.erase(this);
 #endif

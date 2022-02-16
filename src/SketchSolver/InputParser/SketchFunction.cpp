@@ -199,7 +199,9 @@ void SketchFunction::core_clear(const string& dag_name)
     }
 
     if (solution != nullptr) {
-        solution->clear();
+        assert(solution->get_num_shared_ptr() == 0);
+        assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() != this);
+        solution->clear_assert_num_shared_ptr_is_0(true, true);
         delete solution;
     }
 
@@ -222,7 +224,9 @@ void SketchFunction::_clear()
 
     string dag_name = get_dag()->get_name();
 
-    if(BooleanDagUtility::soft_clear()) {
+    int prev_gloval = global_clear_id;
+    if(BooleanDagUtility::soft_clear(solution)) {
+        assert(prev_gloval == global_clear_id);
         core_clear(dag_name);
     }
 }
@@ -458,7 +462,7 @@ void SketchFunction::deep_clone_tail() {
     }
 
     //rename all the ufuns
-    for (auto skfunc_it: to_inline_skfuncs) {
+    for (const auto& skfunc_it: to_inline_skfuncs) {
         set<pair<string, string> > ufnames;
 
         for (auto ufun_it: skfunc_it.second->get_dag()->getNodesByType(bool_node::UFUN)) {

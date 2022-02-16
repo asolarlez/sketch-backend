@@ -168,13 +168,13 @@ void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
     inlining_tree = new InliningTree(_inlining_tree);
 }
 
-void Assignment_SkVal::clear() {
+void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {
     type = bool_node::NO_TYPE;
     name_to_original_name.clear();
     name_to_dag_name.clear();
     var_name_to_dag_name_to_name.clear();
     if(inlining_tree != nullptr) {
-        inlining_tree->clear();
+        inlining_tree->clear(clear_root, sub_clear);
     }
     Mapping<SkVal>::clear();
 }

@@ -397,9 +397,9 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             file->reset();
             assert(file->like_unused());
 
-            assert(sol->to_var_store()->check_rep());
+            assert(sol->to_var_store()->check_rep_and_clear());
             harness->clear_inlining_tree();
-            assert(sol->to_var_store()->check_rep());
+            assert(sol->to_var_store()->check_rep_and_clear());
             harness->clear();
             solver->clear();
             delete problem;
@@ -1387,7 +1387,9 @@ SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(s
 }
 SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
 SL::VarVal::VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
-SL::VarVal::VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){}
+SL::VarVal::VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){
+    solution->increment_shared_ptr();
+}
 SL::VarVal::VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
 
 SL::VarVal::VarVal(string  _s) : s(new Identifier(_s)), var_val_type(string_val_type) {}
