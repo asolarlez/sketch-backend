@@ -271,13 +271,15 @@ namespace FMTL {
     };
 
     class ConcretizePrimitive: public TransformPrimitive{
-        VarStore* var_store;
+        VarStore* var_store = nullptr;
         const bool_node::Type concretization_type;
     public:
-        ConcretizePrimitive(const string &_function_name, const VarStore &_store, const bool_node::Type _concretization_type) :
-                var_store(_store.clone()),
+        ConcretizePrimitive(const string &_function_name, const VarStore *_store, const bool_node::Type _concretization_type) :
                 concretization_type(_concretization_type),
                 TransformPrimitive(_function_name, _concretize) {
+            if(var_store != nullptr) {
+                var_store = _store->clone();
+            }
             AssertDebug(concretization_type == bool_node::CTRL, "TODO: add support for concretization_type = bool_node::SRC. This requires careful consideration about what happens when querying the transformer for varstores, since there can be multiple varstores concretizing a dag (one for SRC, one for CTRL). So far only one var_store can concretize a dag, assumes that a ctrl var store doesn't leave holes unconcretized.");
         }
 
@@ -407,7 +409,7 @@ namespace FMTL {
 
         explicit FunctionMapTransformer(FunctionMap* _function_map): function_map(_function_map) {function_map != nullptr;}
 
-        const TransformPrimitive * concretize(const string &function_name, const VarStore &store, const bool_node::Type type,
+        const TransformPrimitive * concretize(const string &function_name, const VarStore *store, const bool_node::Type type,
                                               const vector<string> *sub_functions);
 
         const TransformPrimitive * replace_label_with_another(const string& function_name, const string &replace_this_str, const string &with_this_str);

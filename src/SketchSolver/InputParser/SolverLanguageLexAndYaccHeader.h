@@ -119,10 +119,6 @@ namespace SL {
             else if(rest != nullptr && other.rest == nullptr){
                 return true;
             }
-            else if(rest == nullptr && other.rest != nullptr)
-            {
-                return false;
-            }
             else
             {
                 return *rest < *other.rest;
@@ -141,10 +137,6 @@ namespace SL {
                 return true;
             }
             else if(rest != nullptr && other.rest == nullptr){
-                return false;
-            }
-            else if(rest == nullptr && other.rest != nullptr)
-            {
                 return false;
             }
             else {
@@ -275,7 +267,7 @@ namespace SL {
             return type->is_defined();
         }
 
-        bool accepts_type(string type_name)
+        bool accepts_type(const string& type_name)
         {
             if(!has_type() || has_any_type()) {
                 return true;
@@ -296,6 +288,7 @@ namespace SL {
     class PolyType
     {
         vector<SL::SLType*>* type_params = nullptr;
+
     public:
         explicit PolyType(TypeParams* _type_params){
             type_params = new vector<SL::SLType*>();
@@ -480,7 +473,7 @@ namespace SL {
             File* file;
             Method* method;
             SketchFunction* skfunc;
-            SolverLanguagePrimitives::HoleAssignment* solution;
+            const SolverLanguagePrimitives::HoleAssignment* solution;
             SolverLanguagePrimitives::InputAssignment* input_holder;
             PolyVec* poly_vec;
             PolyPair* poly_pair;
@@ -499,7 +492,7 @@ namespace SL {
         explicit VarVal(SketchFunction* _harness);
         explicit VarVal(PolyVec* _poly_vec);
         explicit VarVal(PolyPair* _poly_pair);
-        explicit VarVal(SolverLanguagePrimitives::HoleAssignment* _solution);
+        explicit VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution);
         explicit VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder);
         explicit VarVal(VarVal* _to_copy);
 
@@ -772,7 +765,7 @@ namespace SL {
             else if(std::is_same<File*,T>::value){
                 assert(var_val_type == file_val_type);
             }
-            else if(std::is_same<SolverLanguagePrimitives::HoleAssignment *,T>::value){
+            else if(std::is_same<const SolverLanguagePrimitives::HoleAssignment *,T>::value){
                 assert(var_val_type == solution_val_type);
             }
             else if(std::is_same<SolverLanguagePrimitives::InputAssignment *,T>::value){
@@ -854,12 +847,12 @@ namespace SL {
             return get<File *>(file, do_count, do_assert);
         }
 
-        SolverLanguagePrimitives::HoleAssignment *get_solution(bool do_count = true, bool do_assert = true) {
+        const SolverLanguagePrimitives::HoleAssignment *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
                 assert(do_assert);
             }
-            return get<SolverLanguagePrimitives::HoleAssignment *>(solution, do_count, do_assert);
+            return get<const SolverLanguagePrimitives::HoleAssignment *>(solution, do_count, do_assert);
         }
 
         SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
@@ -994,7 +987,7 @@ namespace SL {
                     clear<SketchFunction*>(skfunc, false);
                     break;
                 case solution_val_type:
-                    clear<SolverLanguagePrimitives::HoleAssignment*>(solution);
+                    clear<const SolverLanguagePrimitives::HoleAssignment*>(solution);
                     break;
                 case input_val_type:
                     clear<SolverLanguagePrimitives::InputAssignment*>(input_holder);

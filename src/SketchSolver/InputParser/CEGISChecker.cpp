@@ -463,7 +463,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 	//cout<<"check: Before hard code"<<endl;
 	//getProblemDag()->lprint(std::cout);
 
-	pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 
     if(files.find(curProblem) != files.end())
     {
@@ -497,7 +497,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 					if(tbdIntSize != oriProblem->getIntSize()){
 						redeclareInputs(input, oriProblem);
 					}
-					pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+					pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 //					pushProblem(hardCodeINode(getProblemDag(), controls, bool_node::CTRL, floats));
 				}
 				continue;
@@ -577,7 +577,7 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 				}
 				pushProblem(problems[curProblem]->clone());				
 
-				pushProblem(getHarness()->produce_concretization(controls, bool_node::CTRL));
+				pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 //				pushProblem(hardCodeINode(oriProblem, controls, bool_node::CTRL, floats));
 				continue;
 			}

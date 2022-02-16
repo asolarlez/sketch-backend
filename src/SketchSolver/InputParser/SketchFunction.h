@@ -31,7 +31,7 @@ static long long global_clear_id = 0;
 
 class SketchFunction: public BooleanDagUtility
 {
-    SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
+    const SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
 
     bool new_way = true;
 
@@ -56,14 +56,18 @@ public:
     {
         string name = to_add->get_dag()->get_name();
         assert(responsibility.find(name) == responsibility.end());
-        to_add->increment_shared_ptr();
+
+        assert(to_add != this);
+        assert(to_add->get_dag_name() != get_dag_name());
+
         responsibility[name] = to_add;
+        to_add->increment_shared_ptr();
     }
 
     explicit SketchFunction(
             BooleanDAG *_dag_root,
             ProgramEnvironment *_env = nullptr,
-            SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
+            const SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>(),
             const TransformPrimitive* _rep = nullptr,
@@ -74,43 +78,55 @@ public:
             replaced_labels(_replaced_labels), original_labels(_original_labels),
             rep(_rep), responsibility(std::move(_responsibility)) {
         for(auto dependency: responsibility) {
+            assert(dependency.second != this);
+            assert(dependency.second->get_dag_name() != get_dag_name());
             dependency.second->increment_shared_ptr();
         }
     }
 
     SketchFunction *produce_inlined_dag()
     {
-        VarStore var_store;
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(var_store, var_type, true);
+        return produce_concretization(nullptr, var_type, true);
     }
 
-    SketchFunction *produce_concretization(const VarStore &var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);
+    SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);
 
     SketchFunction *clone(const string& explicit_name = "");
 
     void clear() override;
     void _clear();
 
-    SolverLanguagePrimitives::HoleAssignment* get_solution()
+    const VarStore* get_solution_var_store()
+    {
+        auto local_solution = get_solution();
+        const VarStore* ret = solution->get_assignment()->to_var_store();
+        local_solution->clear();
+        return ret;
+    }
+
+    const SolverLanguagePrimitives::HoleAssignment* get_solution()
     {
         if(solution != nullptr) {
+            assert(get_inlining_tree() != nullptr);
             auto ret = new SolverLanguagePrimitives::HoleAssignment(solution);
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
-            assert(ret->get_assignment()->to_var_store()->check_rep());
+            assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
+            assert(ret->get_assignment()->get_inlining_tree() != get_inlining_tree());
             return ret;
         }
         else
         {
             assert(!is_inlining_tree_nonnull());
-            InliningTree* inlining_tree = new InliningTree(this);
-            auto ret = inlining_tree->get_solution();
+            InliningTree* local_inlining_tree = new InliningTree(this);
+            auto ret = local_inlining_tree->get_solution();
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
+            assert(ret->get_assignment()->get_inlining_tree() != local_inlining_tree);
 
-            assert(ret->get_assignment()->to_var_store()->check_rep());
+            assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
 
-            inlining_tree->clear();
-            inlining_tree = nullptr;
+            local_inlining_tree->clear();
+            local_inlining_tree = nullptr;
 
             assert(ret != nullptr);
 
@@ -118,10 +134,10 @@ public:
         }
     }
 
-    void concretize(SolverLanguagePrimitives::HoleAssignment *solution_holder)
+    void concretize(const SolverLanguagePrimitives::HoleAssignment *solution_holder)
     {
         VarStore* local_solution = solution_holder->to_var_store();
-        produce_concretization(*local_solution, bool_node::CTRL, false);
+        produce_concretization(local_solution, bool_node::CTRL, false);
         local_solution->clear();
         local_solution = nullptr;
     }
@@ -132,7 +148,7 @@ public:
 
     bool solution_is_null();
 
-    SolverLanguagePrimitives::HoleAssignment *get_same_soluton();
+    const SolverLanguagePrimitives::HoleAssignment * get_same_soluton();
 
     string get_assignment(const string& key);
 
@@ -149,12 +165,7 @@ public:
     void set_mirror_rep(const TransformPrimitive *) ;
     const TransformPrimitive * get_mirror_rep() const;
 
-    void deep_clone_tail() {
-        VarStore var_store;
-        deep_clone_tail(var_store);
-    }
-
-    void deep_clone_tail(const VarStore&);
+    void deep_clone_tail();
 };
 
 #include "NodeEvaluator.h"

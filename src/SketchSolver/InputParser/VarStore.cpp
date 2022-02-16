@@ -102,7 +102,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 
             assert(var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) == var_name_to_dag_name_to_name[original_name].end());
 
-            VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution()->to_var_store();
+            const VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution_var_store();
             auto sub_var_name_to_dag_name_to_name = sub_var_store->var_name_to_dag_name_to_name;
             auto sub_index = sub_var_store->index;
             if(sub_var_name_to_dag_name_to_name.find(original_name) != sub_var_name_to_dag_name_to_name.end())
@@ -113,7 +113,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
                     auto obj_name = sub_var_name_to_dag_name_to_name[original_name][subdag_of_interest];
 
                     assert(sub_index.find(obj_name) != sub_index.end());
-                    auto &obj = sub_var_store->_getObj(obj_name);
+                    auto &obj = sub_var_store->getObjConst(obj_name);
                     assert(obj.get_original_name() == original_name);
                     assert(obj_name == obj.name);
                     string prev_source_dag_name = obj.get_source_dag_name();
@@ -186,7 +186,7 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
     return var_name_to_dag_name_to_name[var_name][source_dag_name];
 }
 
-VarStore::VarStore(InliningTree *_inlining_tree){
+VarStore::VarStore(const InliningTree *_inlining_tree){
     if(_inlining_tree != nullptr) {
         inlining_tree = (new InliningTree(_inlining_tree));
     }
@@ -277,4 +277,31 @@ void VarStore::operator=(const VarStore &to_copy){
             true_idx++;
         }
     }
+}
+
+void VarStore::clear()
+{
+//		for(auto it:objs)
+//		{
+//            it.clear();
+//		}
+
+    var_name_to_dag_name_to_name.clear();
+    if(inlining_tree != nullptr) {
+        inlining_tree->clear();
+    }
+
+    objs.clear();
+    index.clear();
+
+    Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+    Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
+
+    delete this;
+}
+
+bool VarStore::check_rep_and_clear() {
+    bool ret = check_rep();
+    clear();
+    return ret;
 }

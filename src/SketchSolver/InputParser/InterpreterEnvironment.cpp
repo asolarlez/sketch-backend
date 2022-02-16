@@ -983,7 +983,7 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
-    SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+    const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
             program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
 
     cout << "EXITED SolverLanguage" << endl;
@@ -1030,7 +1030,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, P
     if (test_solver_language)
     {
         SolverLanguage solver_language = SolverLanguage();
-        SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+        const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 harness, file, floats, params, hardcoder, hasGoodEnoughSolution,
                 *(new FunctionMap(env)));
 
@@ -1183,7 +1183,7 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
     {
         SolverLanguage solver_language = SolverLanguage();
         AssertDebug(false, "need to pass a ProgramEnvironment to FunctionMap.")
-        SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+        const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
                 *(new FunctionMap(nullptr)));
 

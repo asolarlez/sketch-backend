@@ -7,7 +7,7 @@
 
 using namespace FMTL;
 
-const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, const VarStore &store, const bool_node::Type type,
+const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, const VarStore *store, const bool_node::Type type,
                                                               const vector<string> *sub_functions) {
     
     assert(root_dag_reps.find(function_name) != root_dag_reps.end());
@@ -171,7 +171,8 @@ FunctionMapTransformer::extract_sketch_function(const string &from_dag, const st
     SketchFunction* ret = it->second->extract_sketch_function(to_this_dag, under_this_var, this);
     bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
-    ret->get_solution();
+    //debug code, it's memory-leaky.
+//    ret->get_solution();
 //    auto check_all_good = ret->produce_concretization();
 //    check_all_good->increment_shared_ptr();
 //    check_all_good->clear();
@@ -477,7 +478,6 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                                                              const FunctionMapTransformer *root) const  {
     switch (meta_type) {
         case _concretize: {
-            assert(get_var_store() != nullptr);
             for (const auto &parent_it: parents) {
                 if (parent_it.first == to_this_dag) {
                     auto parent = parent_it.second;
@@ -495,39 +495,19 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                             assert(maybe_ret->get_dag()->getNodesByType(bool_node::UFUN).empty());
                         }
 
-                        maybe_ret->get_solution();
+//                        maybe_ret->get_solution(); //debug code, it's memory-leaky
 
                         return maybe_ret;
                     }
                     else {
                         AssertDebug(false, "HERE ONLY RETURN MAYBE_RET AND LATER EXTRACT THE VAR STORE AND WALK THE VAR STORE TO FIND THE APPROPRIATE HOLE VALS.")
                         assert(*get_concretization_type() == bool_node::CTRL);
-                        return maybe_ret->produce_concretization(*get_var_store()->get_sub_var_store(under_this_var), *get_concretization_type(), false);
-                    }
-                    if(false){
-                        if (parent->superseded) {
-                            return parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
-                        } else {
-                            auto rep_it = root->get_root_dag_reps().find(to_this_dag);
-                            assert(rep_it != root->get_root_dag_reps().end());
-                            assert(rep_it->second == parent);
 
-                            auto potential_ret =
-                                    parent->extract_sketch_function(
-                                            to_this_dag, under_this_var, root);
-
-                            if (potential_ret == nullptr) {
-                                auto to_this_dag_skfunc_it = root->get_function_map()->find(to_this_dag);
-                                assert(to_this_dag_skfunc_it != root->get_function_map()->end());
-                                assert(*get_concretization_type() == bool_node::CTRL);
-                                return to_this_dag_skfunc_it->second->produce_concretization(
-                                        *get_var_store(),
-                                        *get_concretization_type(),
-                                        true);
-                            } else {
-                                return potential_ret;
-                            }
+                        VarStore* local_var_store = get_var_store();
+                        if(local_var_store != nullptr) {
+                            local_var_store = local_var_store->get_sub_var_store(under_this_var);
                         }
+                        return maybe_ret->produce_concretization(local_var_store, *get_concretization_type(), false);
                     }
                 }
             }
@@ -740,7 +720,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
         if(!is_erased && !superseded)
         {
             auto ret = (*root->get_function_map())[to_this_dag];
-            ret->get_solution();
+//            ret->get_solution();  //debug code, it's memory-leaky
             return ret;
         }
         assert(is_erased || superseded);
@@ -773,7 +753,7 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
 
         ProgramEnvironment* new_env = root->get_function_map()->get_env()->shallow_copy_w_new_blank_function_map();
         auto almost_ret =  the_dag->reconstruct_sketch_function(root, new_env);
-        almost_ret->get_solution();
+//        almost_ret->get_solution(); // debug code, memory leaky
         new_env->function_map.check_consistency();
 
 //        AssertDebug(false, "DEPENDENCIES SHOULD ALREADY BE IN THE FUNCTION MAP!!! ADD A FIELD TO SKETCH FUNCTION THAT REPRESENTS WHICH TRANSFORMER PRIMITIVE REPRESENTS IT!!!")
@@ -873,12 +853,11 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             assert(var_store != nullptr);
             const bool_node::Type *bool_node_type = get_concretization_type();
             assert((*bool_node_type) == bool_node::CTRL);
-            ret->produce_concretization(*var_store, *bool_node_type, false);
+            ret->produce_concretization(var_store, *bool_node_type, false);
             ret->set_mirror_rep(this);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) != new_env->function_map.end());
 
-
-            ret->get_solution();
+//            ret->get_solution(); // debug code, memory leaky
 
             return ret;
             break;

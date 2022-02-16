@@ -385,11 +385,7 @@ public:
 
     bool operator == (const Assignment_SkVal& other) const;
 
-    void set_inlining_tree(InliningTree *_inlining_tree)
-    {
-        assert(inlining_tree == nullptr);
-        inlining_tree = _inlining_tree;
-    }
+    void set_inlining_tree(const InliningTree *_inlining_tree);
 
     void update_inlining_tree(InliningTree *_inlining_tree)
     {
@@ -440,72 +436,9 @@ public:
 
     explicit Assignment_SkVal(Assignment_SkVal* to_copy);
 
-    Assignment_SkVal(const VarStore* var_store, FloatManager& floats): Mapping<SkVal>() {
-        inlining_tree = var_store->get_inlining_tree();
-        for(auto it = var_store->begin(); it != var_store->end(); it++)
-        {
-            if(type != bool_node::NO_TYPE){
-                assert((*it).get_type() == type);
-            }
-            else {
-                type = (*it).get_type();
-            }
-            OutType* out_type = (*it).getOtype();
-            string name = (*it).getName();
-            string original_name = (*it).get_original_name();
-            string source_dag_name = (*it).get_source_dag_name();
-            if(out_type == OutType::INT) {
-                set(name, new SkValInt((*it).getInt(), (*it).get_size()));
-            }
-            else if (out_type == OutType::FLOAT)
-            {
-                set(name, new SkValFloat(floats.getFloat((*it).getInt()), (*it).get_size()));
-            }
-            else if (out_type == OutType::BOOL)
-            {
-                set(name, new SkValBool((*it).getInt()));
-            }
-            else if(out_type == OutType::BOOL_ARR)
-            {
-                set(name, new SkValBoolArr((*it).getArr()));
-            }
-            else if(out_type == OutType::INT_ARR)
-            {
-                set(name, new SkValIntArr((*it).getArr()));
-            }
-            else
-            {
-                AssertDebug(false, "need to add more OutType to SkVal conversions.");
-            }
+    Assignment_SkVal(const VarStore* var_store, FloatManager& floats);
 
-                assert(name_to_original_name.find(name) == name_to_original_name.end());
-                name_to_original_name[name] = original_name;
-                assert(name_to_dag_name.find(name) == name_to_dag_name.end());
-                name_to_dag_name[name] = source_dag_name;
-
-            if(type == bool_node::CTRL) {
-                set_var_name_to_dag_name_to_name(name);
-            }
-            else {
-                assert(type == bool_node::SRC);
-            }
-        }
-
-        VarStore* test_var_store = to_var_store(false);
-
-
-        assert(test_var_store->size() == var_store->size());
-
-        for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
-            assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
-        }
-        for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
-            assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
-        }
-
-        delete test_var_store;
-
-    }
+    Assignment_SkVal(const InliningTree* _inlining_tree, FloatManager& floats);
 
     VarStore* to_var_store(bool assert_inlining_tree_not_null = true) const
     {
@@ -562,7 +495,12 @@ public:
         }
     }
 
-    InliningTree *get_inlining_tree() {
+    const InliningTree *get_inlining_tree() const {
+        return inlining_tree;
+    }
+
+
+    InliningTree *get_inlining_tree_nonconst() {
         return inlining_tree;
     }
 };
@@ -622,14 +560,13 @@ namespace SolverLanguagePrimitives {
     class ProblemAE;
 
     class HoleAssignment {
-        Assignment_SkVal *assignment_skval = nullptr;
-        SATSolverResult sat_solver_result = SAT_UNDETERMINED;
+        Assignment_SkVal * assignment_skval = nullptr;
+        mutable SATSolverResult sat_solver_result = SAT_UNDETERMINED;
     public :
 
-        void clear() {
+        void clear() const {
             assignment_skval->clear();
             delete assignment_skval;
-            assignment_skval = nullptr;
         }
 
         explicit HoleAssignment(SATSolverResult _sat_solver_result) :
@@ -663,18 +600,22 @@ namespace SolverLanguagePrimitives {
         HoleAssignment(SATSolverResult _sat_solver_result, const VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
 
-        explicit HoleAssignment(HoleAssignment *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
+        HoleAssignment(SATSolverResult _sat_solver_result, const InliningTree *inlining_tree, FloatManager &floats) :
+                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
+
+        explicit HoleAssignment(const HoleAssignment *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
 
         HoleAssignment() = default;
-        explicit HoleAssignment(bool is_null): assignment_skval(new Assignment_SkVal(bool_node::CTRL, is_null)) {};
+        template<typename T>
+        explicit HoleAssignment(T is_null): assignment_skval(new Assignment_SkVal(bool_node::CTRL, is_null)) {assert((std::is_same<T, bool>::value));};
 
         explicit HoleAssignment(ProblemAE* problem) {
             cout << "TODO: HoleAssignment::HoleAssignment" << endl;
             assert(false);
         }
 
-        SATSolverResult get_sat_solver_result() {
+        SATSolverResult get_sat_solver_result() const {
             return sat_solver_result;
         }
 
@@ -682,16 +623,16 @@ namespace SolverLanguagePrimitives {
             sat_solver_result = _rez;
         }
 
-        string to_string() {
+        string to_string() const {
             string ret = SATSolverResultNames[sat_solver_result] + assignment_skval->to_string();
             return ret;
         }
 
-        VarStore *to_var_store(bool assert_inlining_tree_not_null = true) {
+        VarStore *to_var_store(bool assert_inlining_tree_not_null = true) const {
             return assignment_skval->to_var_store(assert_inlining_tree_not_null);
         }
 
-        void get_control_map(map<string, string> &map) {
+        void get_control_map(map<string, string> &map) const {
             if (assignment_skval != NULL) {
                 for (auto it: assignment_skval->get_assignment()) {
                     map[it.first] = it.second->to_string();
@@ -699,7 +640,7 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        bool has_assignment_skval() {
+        bool has_assignment_skval() const {
             if (assignment_skval == NULL) {
                 return false;
             } else {
@@ -707,20 +648,21 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        Assignment_SkVal *get_assignment() {
+        Assignment_SkVal *get_assignment() const {
             return assignment_skval;
         }
 
         void update(HoleAssignment *updated_solution_holder) {
             sat_solver_result = updated_solution_holder->get_sat_solver_result();
             if (updated_solution_holder->get_assignment()->is_null()) {
+                assignment_skval->clear();
                 assignment_skval = new Assignment_SkVal(bool_node::CTRL);
             } else {
                 assignment_skval->update(updated_solution_holder->get_assignment());
             }
         }
 
-        void join_with(HoleAssignment* other)
+        void join_with(const HoleAssignment* other) const
         {
             if(other->sat_solver_result == SAT_UNSATISFIABLE) {
                 sat_solver_result = SAT_UNSATISFIABLE;
@@ -749,7 +691,7 @@ namespace SolverLanguagePrimitives {
             return assignment_skval->rename(new_name, var_name, source_dag_name, original_source_dag, prev_name);
         }
 
-        void set_inlining_tree(InliningTree *_inlining_tree)
+        void set_inlining_tree(InliningTree *_inlining_tree) const
         {
             assignment_skval->set_inlining_tree(_inlining_tree);
         }

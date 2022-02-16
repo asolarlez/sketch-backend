@@ -27,8 +27,6 @@ const TransformPrimitive* FunctionMap::insert(const string &name, SketchFunction
     auto it = find(name);
     if(it == end()) {
         map<string, SketchFunction *>::operator[](name) = sketch_function;
-        if(sketch_function->get_same_soluton() != nullptr)
-            sketch_function->get_solution();
         return FunctionMapTransformer::insert(sketch_function->get_dag()->get_name(), sketch_function->get_dag()->get_ufun_names());
     }
     else
@@ -67,15 +65,15 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
     }
 }
 
-const VarStore *
-FunctionMap::get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var) {
-    return extract_sketch_function(
-            from_dag,
-            under_this_var,
-            find_subdag_name(
-                    from_dag,
-                    under_this_var))->get_solution()->to_var_store();
-}
+//const VarStore *
+//FunctionMap::get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var) {
+//    return extract_sketch_function(
+//            from_dag,
+//            under_this_var,
+//            find_subdag_name(
+//                    from_dag,
+//                    under_this_var))->get_solution()->to_var_store();
+//}
 
 void FunctionMap::soft_clear_transformer() {
     FunctionMapTransformer::soft_clear();

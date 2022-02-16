@@ -87,3 +87,83 @@ bool Assignment_SkVal::operator==(const Assignment_SkVal& other)  const
 
     return true;
 }
+
+Assignment_SkVal::Assignment_SkVal(const InliningTree *_inlining_tree, FloatManager &floats) :
+Mapping<SkVal>(), inlining_tree(new InliningTree(_inlining_tree)) {}
+
+Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floats): Mapping<SkVal>() {
+    assert(var_store != nullptr);
+    if(var_store->get_inlining_tree() != nullptr) {
+        inlining_tree = new InliningTree(var_store->get_inlining_tree());
+    }
+
+    for(auto it = var_store->begin(); it != var_store->end(); it++)
+    {
+        if(type != bool_node::NO_TYPE){
+            assert((*it).get_type() == type);
+        }
+        else {
+            type = (*it).get_type();
+        }
+        OutType* out_type = (*it).getOtype();
+        string name = (*it).getName();
+        string original_name = (*it).get_original_name();
+        string source_dag_name = (*it).get_source_dag_name();
+        if(out_type == OutType::INT) {
+            set(name, new SkValInt((*it).getInt(), (*it).get_size()));
+        }
+        else if (out_type == OutType::FLOAT)
+        {
+            set(name, new SkValFloat(floats.getFloat((*it).getInt()), (*it).get_size()));
+        }
+        else if (out_type == OutType::BOOL)
+        {
+            set(name, new SkValBool((*it).getInt()));
+        }
+        else if(out_type == OutType::BOOL_ARR)
+        {
+            set(name, new SkValBoolArr((*it).getArr()));
+        }
+        else if(out_type == OutType::INT_ARR)
+        {
+            set(name, new SkValIntArr((*it).getArr()));
+        }
+        else
+        {
+            AssertDebug(false, "need to add more OutType to SkVal conversions.");
+        }
+
+        assert(name_to_original_name.find(name) == name_to_original_name.end());
+        name_to_original_name[name] = original_name;
+        assert(name_to_dag_name.find(name) == name_to_dag_name.end());
+        name_to_dag_name[name] = source_dag_name;
+
+        if(type == bool_node::CTRL) {
+            set_var_name_to_dag_name_to_name(name);
+        }
+        else {
+            assert(type == bool_node::SRC);
+        }
+    }
+
+    VarStore* test_var_store = to_var_store(false);
+
+
+    assert(test_var_store->size() == var_store->size());
+
+    for(auto it = var_store->begin(); it !=var_store->end(); ++it) {
+        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
+    }
+    for(auto it = (*test_var_store).begin(); it !=(*test_var_store).end(); ++it) {
+        assert(test_var_store->getObjConst(it->getName()) == var_store->getObjConst(it->getName()));
+    }
+
+    test_var_store->clear();
+
+}
+
+void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
+{
+    assert(inlining_tree == nullptr);
+    inlining_tree = new InliningTree(_inlining_tree);
+}

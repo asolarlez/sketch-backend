@@ -446,7 +446,7 @@ private:
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
-    InliningTree* inlining_tree = nullptr;
+    const InliningTree* inlining_tree = nullptr;
 
     void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
     {
@@ -471,31 +471,15 @@ private:
 public:
     void rename(const string &original_name, const string& new_source_dag, const string &new_name, const InliningTree *new_inlining_tree);
 
-
-
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
 
-    InliningTree* get_inlining_tree() const
+    const InliningTree* get_inlining_tree() const
     {
         return inlining_tree;
     }
 
-	void clear()
-	{
-//		for(auto it:objs)
-//		{
-//            it.clear();
-//		}
-
-        objs.clear();
-        index.clear();
-
-        Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
-        Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");
-
-        delete this;
-	}
+	void clear();
 
     int size() const
     {
@@ -504,7 +488,7 @@ public:
 
     VarStore() = default;
 
-    VarStore(InliningTree* _inlining_tree);
+    VarStore(const InliningTree* _inlining_tree);
 
     VarStore(const VarStore& to_copy, const InliningTree* _inlining_tree = nullptr);
 
@@ -780,6 +764,8 @@ public:
     bool check_rep() const;
 
     void set_inlining_tree(const InliningTree *new_inlining_tree);
+
+    bool check_rep_and_clear();
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

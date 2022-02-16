@@ -382,7 +382,6 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             SketchFunction* skfunc = param_var_val->get_function();
 
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
-            InliningTree* inlining_tree = harness->get_inlining_tree();
 
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
@@ -393,23 +392,23 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             using namespace SolverLanguagePrimitives;
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             auto* problem = new ProblemAE(harness, file);
-            HoleAssignment* sol = (solver)->solve(problem);
+            const HoleAssignment* sol = (solver)->solve(problem);
+            sol->set_inlining_tree(harness->get_inlining_tree());
             file->reset();
             assert(file->like_unused());
 
             auto* test_full_concretization = new BooleanDagUtility(harness);
             test_full_concretization->increment_shared_ptr();
             VarStore* var_store = sol->to_var_store(false);
-            test_full_concretization->concretize_this_dag(*var_store, bool_node::CTRL);
+            test_full_concretization->concretize_this_dag(var_store, bool_node::CTRL);
             var_store->clear();
             assert(test_full_concretization->get_dag()->getNodesByType(bool_node::CTRL).empty());
             test_full_concretization->clear();
 
-            delete problem;
+            harness->clear_get_inlining_tree();
             harness->clear();
             solver->clear();
-
-            sol->set_inlining_tree(inlining_tree);
+            delete problem;
 
 //            state->console_output << "SOLUTION: " << endl;
 //            state->console_output << sol->to_string() << endl;
@@ -421,7 +420,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
         {
             assert(params.empty());
             using namespace SolverLanguagePrimitives;
-            return new VarVal(new HoleAssignment(false));
+            const HoleAssignment* ret = new HoleAssignment(false);
+            return new VarVal(ret);
         }
         case _print:
         {
@@ -479,14 +479,14 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<SolverLanguagePrimitives::HoleAssignment*>(
-        SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, SL::VarVal* the_var_val) {
+SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignment*>(
+        const SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, SL::VarVal* the_var_val) {
     assert(the_solution == the_var_val->get_solution(false));
     switch (method_id) {
         case _join: {
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
-            HoleAssignment *other_solution = params[0]->eval(state)->get_solution();
+            const HoleAssignment *other_solution = params[0]->eval(state)->get_solution();
             the_solution->join_with(other_solution);
             return new VarVal();
         }
@@ -832,9 +832,9 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
-                HoleAssignment *solution_holder = var_val_sol->get_solution();
+                const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
-                SketchFunction* concretized_function = sk_func->produce_concretization(*var_store, bool_node::CTRL, true);
+                SketchFunction* concretized_function = sk_func->produce_concretization(var_store, bool_node::CTRL, true);
                 var_store->clear();
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);
@@ -854,13 +854,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 using namespace SolverLanguagePrimitives;
                 VarVal *sol_var_val = params[0]->eval(state);
                 sol_var_val->increment_shared_ptr();
-                HoleAssignment *sol = sol_var_val->get_solution();
+                const HoleAssignment *sol = sol_var_val->get_solution();
                 sk_func->concretize(sol);
                 sol_var_val->decrement_shared_ptr();
                 return new SL::VarVal();
             }
             else if(params.empty()) {
-                sk_func->produce_concretization(*new VarStore(), bool_node::CTRL, false);
+                sk_func->produce_concretization(new VarStore(), bool_node::CTRL, false);
                 return new SL::VarVal();
             }
             else {
@@ -933,7 +933,17 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _deep_clone:
         {
             SketchFunction* ret = sk_func->clone();
+            ret->increment_shared_ptr();
+
+            {
+                auto env = ret->get_env();
+                auto dag = ret->get_dag();
+                auto name = dag->get_name();
+                auto fmap = env->function_map;
+            }
+
             ret->deep_clone_tail();
+            ret->decrement_shared_ptr_wo_clear();
             return new VarVal(ret);
         }
         case _clone:
@@ -1381,7 +1391,7 @@ SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(s
 }
 SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
 SL::VarVal::VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
-SL::VarVal::VarVal(SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){}
+SL::VarVal::VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){}
 SL::VarVal::VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
 
 SL::VarVal::VarVal(string  _s) : s(new Identifier(_s)), var_val_type(string_val_type) {}
@@ -1491,7 +1501,7 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
             return eval<SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
-            return eval<SolverLanguagePrimitives::HoleAssignment*>(solution, state, func_call);
+            return eval<const SolverLanguagePrimitives::HoleAssignment*>(solution, state, func_call);
             break;
         case input_val_type:
             //nothing to do yet

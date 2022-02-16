@@ -246,7 +246,7 @@ bool CEGISSolver::solveCore(){
                     {
                         BooleanDagUtility* concretized_function =
                                 checker->getProblem()->produce_concretization(
-                                        ctrlStore, bool_node::CTRL);
+                                        &ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         BooleanDAG *concretized_dag = concretized_function->get_dag();
                         assert(concretized_dag->get_failed_assert() == nullptr);
@@ -277,7 +277,7 @@ bool CEGISSolver::solveCore(){
                     if(file != nullptr)
                     {
                         BooleanDagUtility* concretized_function =
-                                checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL);
+                                checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
                         concretized_function->increment_shared_ptr();
                         if(concretized_function->get_dag()->get_failed_assert() != nullptr){
 //                            cout << "FILE FAILS OK!! (1)" << endl;
@@ -290,7 +290,7 @@ bool CEGISSolver::solveCore(){
                             eval.init(tmpin);
                             File *file = files[(int) files.size() - 1];
                             assert(!eval.check_file_invariant(file));
-                            int num_passing_inputs = checker->getProblem()->produce_concretization(ctrlStore, bool_node::CTRL)->count_passing_inputs(file);
+                            int num_passing_inputs = checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL)->count_passing_inputs(file);
                             assert(num_passing_inputs < file->size());
 //                            cout << "FILE FAILS OK!! (2)" << endl;
                         }

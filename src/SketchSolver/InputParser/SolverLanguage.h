@@ -24,15 +24,11 @@
 #include "CEGISSolver.h"
 #include "NodeHardcoder.h"
 #include "CounterexampleFinder.h"
-#include "DagFunctionInliner.h"
-#include "InterpreterEnvironment.h"
+//#include "DagFunctionInliner.h"
+//#include "InterpreterEnvironment.h"
 
 #include "SolverLanguageYaccHeader.h"
 #include "SketchFunction.h"
-
-#include <unistd.h>
-#include <stdio.h>
-#include <limits.h>
 
 using namespace std;
 
@@ -1025,7 +1021,7 @@ namespace SolverLanguagePrimitives
             }
 
 
-            int num_passing_inputs = problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->count_passing_inputs(problem->get_file());
+            int num_passing_inputs = problem->get_harness()->produce_concretization(holes_to_sk_val->to_var_store(false), bool_node::CTRL)->count_passing_inputs(problem->get_file());
             if(ret_result == SAT_SATISFIABLE)
             {
                 assert(num_passing_inputs == problem->get_file()->size());
@@ -1044,7 +1040,7 @@ namespace SolverLanguagePrimitives
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
             if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
             {
-                auto tmp = problem->get_harness()->produce_concretization(*ret->to_var_store(false), bool_node::CTRL);
+                auto tmp = problem->get_harness()->produce_concretization(ret->to_var_store(false), bool_node::CTRL);
                 assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
                 assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
                 tmp->increment_shared_ptr();
@@ -1066,9 +1062,9 @@ namespace SolverLanguagePrimitives
             solve(new ProblemAE(harness, new File(harness, file_name, floats, _args.seed)));
     }
 
-    inline HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
+    inline const HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
     {
-        assert(file_name != "");
+        assert(!file_name.empty());
         assert(state->harness_ == nullptr);
         if(do_solver_program) {
 
@@ -1096,11 +1092,11 @@ namespace SolverLanguagePrimitives
             if(var_val_ret->is_solution_holder())
             {
 
-                SolverLanguagePrimitives::HoleAssignment* solution_holder = var_val_ret->get_solution(false);
+                const SolverLanguagePrimitives::HoleAssignment* solution_holder = var_val_ret->get_solution(false);
 
                 delete var_val_ret;
 
-                local_harness->concretize_this_dag(*solution_holder->to_var_store(), bool_node::CTRL);
+                local_harness->concretize_this_dag(solution_holder->to_var_store(), bool_node::CTRL);
 
                 File *file = new File(local_harness, file_name, state->floats, state->args.seed);
 
@@ -1115,7 +1111,9 @@ namespace SolverLanguagePrimitives
 
                 local_harness->clear();
 
-                solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
+//                solution_holder->set_sat_solver_result(SAT_SATISFIABLE); // requires solution_holder to be non-const
+                assert(solution_holder->get_sat_solver_result() == SAT_SATISFIABLE);
+
 
 //                local_harness->set_solution_ctrl_var_store(solution_holder->to_var_store());
 
@@ -1185,6 +1183,7 @@ namespace SolverLanguagePrimitives
 //count	1058 / 1743 (60.6999 %)
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+                int all_remaining_inlining_trees = SkFuncSetter::all_inlining_trees.size();
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
@@ -1222,7 +1221,7 @@ namespace SolverLanguagePrimitives
             HoleAssignment* solution_holder = (solver)->
                     solve(new ProblemAE(state->harness_, sub_file));
             BooleanDagUtility* concretized_function = ((BooleanDagUtility*)state->harness_)->produce_concretization(
-                    *solution_holder->to_var_store(), bool_node::CTRL);
+                    solution_holder->to_var_store(), bool_node::CTRL);
             int num_passing_inputs = concretized_function->count_passing_inputs(all_file);
             concretized_function->clear();
             solution_holder->set_sat_solver_result(SAT_SATISFIABLE);
@@ -1370,7 +1369,7 @@ public:
 //        SolverLanguagePrimitives::target_cegis(finder);
     }
 
-    SolverLanguagePrimitives::HoleAssignment *
+    const SolverLanguagePrimitives::HoleAssignment *
     eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
          HoleHardcoder &_hc,
          bool hasGoodEnoughSolution, FunctionMap &function_map)
@@ -1380,7 +1379,7 @@ public:
         return SolverLanguagePrimitives::target_best_effort(state, file_name, true);
     }
 
-    SolverLanguagePrimitives::HoleAssignment *
+    const SolverLanguagePrimitives::HoleAssignment *
     eval(FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
