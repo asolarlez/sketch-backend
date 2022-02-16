@@ -98,6 +98,10 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
             } else {
                 assert(solution == nullptr);
                 solution = compare_solution;
+
+                if(solution != nullptr) {
+                    assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() == this);
+                }
             }
 
         }
@@ -114,8 +118,8 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
             assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
         }
         {
-            replaced_labels.clear();
-            original_labels.clear();
+//            replaced_labels.clear();
+//            original_labels.clear();
             //TODO: this probably needs to happen, because after concretization there are no ufuns, but not sure why it crashes
 //            for (auto dep: responsibility) {
 //                dep.second->clear();
@@ -146,7 +150,7 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
 
     auto new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
-    SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
+    const SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
 
     if(solution != nullptr) {
 
@@ -161,14 +165,16 @@ SketchFunction *SketchFunction::clone(const string& explicit_name) {
             assert(solution->get_assignment()->get_name(var_name, get_dag_name()) == actual_name);
         }
 
+        solution_clone = solution;
+
 //        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
 
-        VarStore* var_store = solution->to_var_store();
-        InliningTree* local_inlining_tree = new InliningTree(this);
-        local_inlining_tree->rename_var_store(*var_store);
-        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
-        var_store->clear();
-        local_inlining_tree->clear();
+//        VarStore* var_store = solution->to_var_store();
+//        InliningTree* local_inlining_tree = new InliningTree(this);
+//        local_inlining_tree->rename_var_store(*var_store);
+//        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
+//        var_store->clear();
+//        local_inlining_tree->clear();
 
 //        for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
 //            string var_name = ((CTRL_node*)it)->get_original_name();

@@ -370,8 +370,7 @@ void InliningTree::rename_var_store(VarStore &var_store, set<const InliningTree*
         }
     }
 
-    if(is_root)
-    {
+    if(is_root) {
         var_store.set_inlining_tree(this);
     }
 }
@@ -431,7 +430,7 @@ SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlinin
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
 
-    if(inlining_tree_id == 471) {
+    if(inlining_tree_id == 127) {
         cout << "break" << endl;
     }
 }

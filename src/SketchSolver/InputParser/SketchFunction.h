@@ -84,6 +84,19 @@ public:
             assert(dependency.second->get_dag_name() != get_dag_name());
             dependency.second->increment_shared_ptr();
         }
+        if(solution != nullptr) {
+            VarStore* var_store = solution->to_var_store();
+
+            get_inlining_tree()->rename_var_store(*var_store);
+            solution = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
+            assert(solution != nullptr);
+            increment_shared_ptr();
+            var_store->clear();
+            decrement_shared_ptr_wo_clear();
+            assert(solution != nullptr);
+
+            assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() == this);
+        }
     }
 
     SketchFunction *produce_inlined_dag()

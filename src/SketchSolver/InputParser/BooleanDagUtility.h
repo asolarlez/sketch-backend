@@ -27,6 +27,7 @@ public:
             original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
+            assert(inlining_tree->get_skfunc() == this);
         }
         if(has_been_concretized)
         {
@@ -44,6 +45,7 @@ public:
 
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
+            assert(inlining_tree->get_skfunc() == this);
         }
         if(has_been_concretized)
         {
@@ -54,6 +56,7 @@ public:
     BooleanDagUtility(BooleanDagUtility* to_copy): BooleanDagLightUtility(to_copy), inlining_tree(to_copy->inlining_tree), has_been_concretized(to_copy->has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
+            assert(inlining_tree->get_skfunc() == this);
         }
 
         if(has_been_concretized)

@@ -307,12 +307,14 @@ public:
                     }
                     else
                     {
+                        AssertDebug(false, "invariant not maintained");
                         //don't clear either bc solution is still used.
                     }
                 }
                 else
                 {
-                    //don't clear either bc skfunc still used
+//                    assert(false);
+                    //don't clear bc skfunc still used
                 }
             }
         }
