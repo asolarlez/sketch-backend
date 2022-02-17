@@ -479,7 +479,7 @@ public:
         return inlining_tree;
     }
 
-	void clear();
+	void clear() const;
 
     int size() const
     {

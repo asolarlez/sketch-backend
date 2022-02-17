@@ -570,13 +570,7 @@ namespace SolverLanguagePrimitives {
 
     public :
 
-        void clear() const {
-            assert(shared_ptr >= 1);
-            shared_ptr--;
-            if(shared_ptr == 0) {
-                clear_assert_num_shared_ptr_is_0();
-            }
-        }
+        void clear() const ;
 
         void clear_assert_num_shared_ptr_is_0(bool clear_root = true, bool sub_clear = false) const
         {

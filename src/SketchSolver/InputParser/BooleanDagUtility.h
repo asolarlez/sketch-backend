@@ -97,11 +97,6 @@ public:
         return BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0();
     }
 
-    int get_num_holes()
-    {
-        return get_dag()->getNodesByType(bool_node::CTRL).size();
-    }
-
     BooleanDagUtility* produce_inlined_dag(bool use_same_name = false)
     {
         BooleanDagUtility* ret = clone(use_same_name);
@@ -174,12 +169,15 @@ public:
             {
                 if(var_store != nullptr) {
                     is_being_concretized = true;
+                    if(var_store->size() == 0) {
+                        assert(inlining_tree->has_no_holes());
+                    }
                 }
                 else {
-                    assert(inlining_tree!= nullptr);
-                    if(inlining_tree->has_no_holes()) {
+                    if (inlining_tree->has_no_holes()) {
                         is_being_concretized = true;
                     }
+                    assert(inlining_tree!= nullptr);
                 }
             }
             if(is_being_concretized) {

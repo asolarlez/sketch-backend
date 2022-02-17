@@ -149,6 +149,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             {
                 assert(false);
             }
+            sub_var_store->clear();
         }
         else {
             AssertDebug(*prev_path == *new_path,
@@ -280,20 +281,21 @@ void VarStore::operator=(const VarStore &to_copy){
     }
 }
 
-void VarStore::clear()
+void VarStore::clear() const
 {
 //		for(auto it:objs)
 //		{
 //            it.clear();
 //		}
 
-    var_name_to_dag_name_to_name.clear();
+//    var_name_to_dag_name_to_name.clear();
+
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
     }
 
-    objs.clear();
-    index.clear();
+//    objs.clear();
+//    index.clear();
 
     Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
     Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");

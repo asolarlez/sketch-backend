@@ -1184,6 +1184,11 @@ namespace SolverLanguagePrimitives
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 int all_remaining_inlining_trees = SkFuncSetter::all_inlining_trees.size();
+
+                for(auto it: SkFuncSetter::all_inlining_trees) {
+                    cout << it->get_skfunc()->get_dag_name() << " " << it->get_skfunc()->get_num_shared_ptr() << " id: " << it->get_id() << endl;
+                }
+
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 

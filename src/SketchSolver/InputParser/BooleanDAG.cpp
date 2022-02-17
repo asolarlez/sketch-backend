@@ -75,10 +75,10 @@ BooleanDAG::BooleanDAG(const string& name_, bool isModel_, const string& explici
   }
 #endif
 
-//      if(dag_id == 194)
-//      {
-//         cout << "in BooleanDAG" << endl;
-//      }
+      if(dag_id == 1112)
+      {
+         cout << "in BooleanDAG" << endl;
+      }
 
 }
 

@@ -180,3 +180,12 @@ void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {
     }
     Mapping<SkVal>::clear();
 }
+
+void SolverLanguagePrimitives::HoleAssignment::clear() const{
+    assert(shared_ptr == 1);
+    assert(shared_ptr >= 1);
+    shared_ptr--;
+    if(shared_ptr == 0) {
+        clear_assert_num_shared_ptr_is_0();
+    }
+}

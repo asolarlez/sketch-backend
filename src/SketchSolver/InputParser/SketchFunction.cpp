@@ -58,7 +58,9 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         assert(inlined_functions != nullptr);
 
         //construct solution
-        if (var_type == bool_node::CTRL && get_has_been_concretized()) {
+        if (var_type == bool_node::CTRL
+        && get_has_been_concretized()
+        ) {
             AssertDebug(solution == nullptr, "you can't concretize a function twice");
             SATSolverResult sat_solver_result = SAT_UNDETERMINED;
             if (get_dag()->get_failed_assert() != nullptr) {
@@ -216,7 +218,6 @@ void SketchFunction::_clear()
         local_clear_id = global_clear_id;
     }
     else {
-//        AssertDebug(false, "WOAH! A CYCLIC DEPENDENCY!! NICE!! (you can remove this now haha).")
         return;
     }
 

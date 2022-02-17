@@ -22,11 +22,13 @@ generator bit predicate_generator(int x)
 }
 
 generator int program_generator(int x) {
+    printf_gen(1);
     return line_generator(x);
 }
 
 bit predicate(int x)
 {
+    printf_gen(1);
     return predicate_generator(x);
 }
 
@@ -46,6 +48,7 @@ int composite_predicate(int x) {
 }
 
 int program_lvl0(int x) {
+    printf_gen(1);
     return program_generator(x);
 }
 

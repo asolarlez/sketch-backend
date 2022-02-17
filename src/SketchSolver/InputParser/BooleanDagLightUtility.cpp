@@ -115,7 +115,11 @@ InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, 
                     var_name_to_inlining_subtree[var_name] = new InliningTree(sub_dag, visited);
                 }
             } else {
-                var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag];
+                if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
+                    assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag]);
+                } else {
+                    var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag];
+                }
             }
         }
     }
@@ -166,22 +170,33 @@ SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const I
 
                 const InliningTree *local_inlining_tree = assignment->get_inlining_tree();
                 InliningTree *ret_inlining_tree = ret->get_assignment()->get_inlining_tree_nonconst();
-                if(!root_defied) {
-                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) ==
-                           ret_inlining_tree->var_name_to_inlining_subtree.end());
+
+                if(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) ==
+                           ret_inlining_tree->var_name_to_inlining_subtree.end()) {
                     ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
                 }
-                else
-                {
-                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) !=
-                           ret_inlining_tree->var_name_to_inlining_subtree.end());
-                    if(ret_inlining_tree->var_name_to_inlining_subtree[it.first] == local_inlining_tree) {
-                        AssertDebug(false, "false here because when you define the ret, you actually deep copy the inlining tree of the existing solution. If this gets triggered, it means that you are not copying anymore.");
-                        //all good
-                    } else {
-                        assert(ret_inlining_tree->var_name_to_inlining_subtree[it.first]->match_topology(local_inlining_tree));
-                    }
+                else {
+                    ret_inlining_tree->var_name_to_inlining_subtree[it.first]->clear();
+                    ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
                 }
+
+
+//                if(!root_defied) {
+//                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) ==
+//                           ret_inlining_tree->var_name_to_inlining_subtree.end());
+//                    ret_inlining_tree->var_name_to_inlining_subtree[it.first] = local_inlining_tree;
+//                }
+//                else
+//                {
+//                    assert(ret_inlining_tree->var_name_to_inlining_subtree.find(it.first) !=
+//                           ret_inlining_tree->var_name_to_inlining_subtree.end());
+//                    if(ret_inlining_tree->var_name_to_inlining_subtree[it.first] == local_inlining_tree) {
+//                        AssertDebug(false, "false here because when you define the ret, you actually deep copy the inlining tree of the existing solution. If this gets triggered, it means that you are not copying anymore.");
+//                        //all good
+//                    } else {
+//                        assert(ret_inlining_tree->var_name_to_inlining_subtree[it.first]->match_topology(local_inlining_tree));
+//                    }
+//                }
             }
         }
     }
@@ -438,12 +453,13 @@ SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlinin
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
 
-    if(inlining_tree_id == 211) {
-        cout << "break" << endl;
-    }
+//    if(inlining_tree_id == 680) {
+//        cout << "break" << endl; //sol
+//    }
 }
 
 void SkFuncSetter::clear(bool clear_dag, bool sub_clear) const {
+
     assert(skfunc != nullptr);
     if(clear_dag)
     {
@@ -457,4 +473,8 @@ void SkFuncSetter::clear(bool clear_dag, bool sub_clear) const {
 
     assert(all_inlining_trees.find(this) != all_inlining_trees.end());
     all_inlining_trees.erase(this);
+}
+
+int SkFuncSetter::get_id() const {
+    return inlining_tree_id;
 }

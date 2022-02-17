@@ -26,6 +26,13 @@ protected:
     BooleanDagUtility * const skfunc = nullptr;
     SkFuncSetter(BooleanDagUtility* _skfunc);
     void clear(bool clear_dag = true, bool sub_clear = false) const;
+public:
+    const BooleanDagUtility* get_skfunc() const
+    {
+        return skfunc;
+    }
+
+    int get_id() const;
 };
 
 class InliningTree: private SkFuncSetter
@@ -339,19 +346,19 @@ public:
     }
 
     void increment_shared_ptr() {
-        if(get_dag()->dag_id == 260)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->dag_id == 260)
+//        {
+//            cout << "here" << endl;
+//        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->dag_id == 260)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->dag_id == 260)
+//        {
+//            cout << "here" << endl;
+//        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);
