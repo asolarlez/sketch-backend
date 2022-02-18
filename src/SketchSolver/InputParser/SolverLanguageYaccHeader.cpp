@@ -25,17 +25,17 @@ SL::VarVal * SolverProgramState::eval(){
     assert(*global.name_to_var(init_f->get_name()) == *init_f);
     auto input_params = vector<SL::Param*>();
 
-    if(harness_ != nullptr)
-    {
-        assert(function_map.empty());
-        global.set_var_val(new SL::Var(new SL::Identifier("SketchFunction"), new SL::Identifier("harness")),
-                           new SL::VarVal(harness_));
-
-        input_params.emplace_back(new SL::Param(new SL::Expression(new SL::VarVal(harness_))));
-
-    }
-    else
-    {
+//    if(harness_ != nullptr)
+//    {
+//        assert(function_map.empty());
+//        global.set_var_val(new SL::Var(new SL::Identifier("SketchFunction"), new SL::Identifier("harness")),
+//                           new SL::VarVal(harness_));
+//
+//        input_params.emplace_back(new SL::Param(new SL::Expression(new SL::VarVal(harness_))));
+//
+//    }
+//    else
+//    {
         assert(!function_map.empty());
         for(const auto& it: function_map){
             global.add_var_and_set_var_val_and_clear_var(
@@ -43,7 +43,7 @@ SL::VarVal * SolverProgramState::eval(){
                                 new SL::Identifier(it.first)),
                     new SL::VarVal(function_map[it.first]));
         }
-    }
+//    }
 
     new_stack_frame();
     assert(frames.size() == 1);

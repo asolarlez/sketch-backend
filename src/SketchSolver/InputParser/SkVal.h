@@ -211,7 +211,7 @@ protected:
     bool null = true;
     map<string, ValType*> assignment;
 public:
-    void clear()
+    virtual void clear()
     {
         for(auto& it:assignment)
         {
@@ -385,7 +385,7 @@ public:
 
     bool operator == (const Assignment_SkVal& other) const;
 
-    void clear(bool clear_root = true, bool sub_clear = false);
+    virtual void clear(bool clear_root = true, bool sub_clear = false);
 
     void set_inlining_tree(const InliningTree *_inlining_tree);
 
@@ -728,6 +728,11 @@ namespace SolverLanguagePrimitives {
         InputAssignment(VarStore *input, FloatManager &floats) : Assignment_SkVal(input, floats) {}
 
         explicit InputAssignment(InputAssignment *to_copy) : Assignment_SkVal(new Assignment_SkVal((Assignment_SkVal*)to_copy)) {}
+
+        void clear() override {
+            Assignment_SkVal::clear();
+            delete this;
+        }
 
     };
 

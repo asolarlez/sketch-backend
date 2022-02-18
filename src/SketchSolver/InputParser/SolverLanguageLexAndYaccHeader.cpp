@@ -37,6 +37,7 @@ void SL::While::run(SolverProgramState* state)
 
 void SL::While::clear()
 {
+    //clears everything
     expression->clear();
     body->clear();
     delete this;
@@ -65,6 +66,7 @@ void SL::For::run(SolverProgramState* state)
 }
 
 void SL::For::clear() {
+    //clears everything
     def->clear();
     expression->clear();
     plus_plus->clear();
@@ -93,6 +95,7 @@ void SL::If::run(SolverProgramState *state) {
 }
 
 void SL::If::clear() {
+    //clears everything
     expression->clear();
     body->clear();
     if(else_body != nullptr)
@@ -116,6 +119,7 @@ void SL::Return::run(SolverProgramState *state){
 }
 
 void SL::Return::clear() {
+    //clears everything
     expression->clear();
     delete this;
 }
@@ -164,6 +168,7 @@ bool SL::Assignment::has_assignment() {
 
 void SL::Assignment::clear()
 {
+    //clears everything
     switch (dest_type) {
         case name_dest_type:
             dest_name->clear();
@@ -201,6 +206,9 @@ SL::Assignment::Assignment(SL::Assignment *to_copy) : dest_type(to_copy->dest_ty
         expression = new Expression(to_copy->expression);
     }
 }
+
+int SL::Identifier::global_identifier_id = 0;
+
 SL::VarVal* SL::Identifier::eval(SolverProgramState *state)  {
     return state->get_var_val(state->name_to_var(this));
 }
@@ -231,7 +239,7 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(SolverProgramState* state)
             PolyType* type_params = type_constructor->get_type_params();
             assert(type_params->size() == 1);
             assert(params.empty());
-            return new SL::VarVal(new PolyVec(type_params));
+            return new SL::VarVal(new PolyVec(new PolyType(type_params)));
             break;
         }
         case pair: {
@@ -255,9 +263,9 @@ SL::VarVal* SL::FunctionCall::eval_type_constructor(SolverProgramState* state)
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverProgramState* state, SL::VarVal* the_var_val)
+SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverProgramState* state, const SL::VarVal* const the_var_val)
 {
-    assert(poly_vec == the_var_val->get_poly_vec(false));
+    assert(poly_vec == the_var_val->get_poly_vec_const(false));
     switch (method_id) {
         case _size: {
             assert(params.empty());
@@ -300,8 +308,8 @@ SL::VarVal *SL::FunctionCall::eval<SL::PolyVec*>(SL::PolyVec*& poly_vec, SolverP
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state, SL::VarVal* the_var_val) {
-    assert(file == the_var_val->get_file(false));
+SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state, const SL::VarVal* const the_var_val) {
+    assert(file == the_var_val->get_file_const(false));
     switch (method_id) {
         case _produce_subset_file:
         {
@@ -481,8 +489,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 
 template<>
 SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignment*>(
-        const SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, SL::VarVal* the_var_val) {
-    assert(the_solution == the_var_val->get_solution(false));
+        const SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, const SL::VarVal* const the_var_val) {
+    assert(the_solution == the_var_val->get_solution_const(false));
     switch (method_id) {
         case _join: {
             assert(params.size() == 1);
@@ -498,9 +506,9 @@ SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignmen
 }
 
 template<>
-SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state, SL::VarVal* the_var_val)
+SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state, const SL::VarVal* const the_var_val)
 {
-    assert(poly_pair == the_var_val->get_poly_pair(false));
+    assert(poly_pair == the_var_val->get_poly_pair_const(false));
     switch (method_id) {
         case _first: {
             assert(params.empty());
@@ -588,6 +596,7 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 void SL::FunctionCall::run(SolverProgramState *state) {
     SL::VarVal* ret = eval(state);
     assert(ret->is_void());
+    ret->clear_assert_0_shared_ptrs();
 }
 
 pair<SL::Var *, SL::VarVal* > SL::FunctionCall::get_var_and_var_val_and_assert_type(
@@ -802,10 +811,10 @@ string SL::FunctionCall::to_string(){
     return ret;
 }
 void
-eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_func, SolverProgramState *state,
+eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFunction *ret_sk_func, SolverProgramState *state,
                               const vector<SL::Param *> &params)
 {
-    AssertDebug(ret_var_val->get_function(false) == ret_sk_func, "ret_sk_func must be the same as what ret_var_val is holding.");
+    AssertDebug(ret_var_val->get_function_const(false) == ret_sk_func, "ret_sk_func must be the same as what ret_var_val is holding.");
     assert(params.size() == 2);
 
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
@@ -827,9 +836,9 @@ eval__sketch_function_replace(SL::VarVal *ret_var_val, SketchFunction *ret_sk_fu
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state, VarVal* the_var_val) {
+SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state, const VarVal* const the_var_val) {
 
-    assert(sk_func == the_var_val->get_function(false));
+    assert(sk_func == the_var_val->get_function_const(false));
     switch (method_id) {
         case _produce_concretization:
         {
@@ -877,45 +886,14 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _passes:
         {
             assert(params.size() == 1);
-
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
 
             SolverLanguagePrimitives::InputAssignment *input_holder = input_holder_var_val->get_input_holder();
-            if(true) { // new version
+            auto ret_predicted = SketchFunctionEvaluator::new_passes(sk_func, input_holder);
 
-//                auto ret_ground_truth = SketchFunctionEvaluator::passes(sk_func, input_holder);
-
-                auto ret_predicted = SketchFunctionEvaluator::new_passes(sk_func, input_holder);
-//                assert(ret_ground_truth->get_bool(false) == ret_predicted->get_bool(false));
-
-                input_holder_var_val->decrement_shared_ptr();
-
-                return ret_predicted;
-            }
-            else // existing version
-            {
-                VarStore* inputs = input_holder->to_var_store(false);
-                input_holder_var_val->decrement_shared_ptr();
-
-                if(sk_func->get_dag()->get_failed_assert() != nullptr)
-                {
-                    return new VarVal(false);
-                }
-                BooleanDAG* to_concretize = sk_func->get_dag()->clone();
-                sk_func->get_env()->doInline(*to_concretize, *inputs, bool_node::SRC);
-                bool ret = to_concretize->get_failed_assert() == nullptr;
-                if(!to_concretize->getNodesByType(bool_node::CTRL).empty()) {
-                    assert(!ret);
-                }
-
-                inputs->clear();
-                inputs = nullptr;
-
-
-                to_concretize->clear();
-                return new VarVal(ret);
-            }
+            input_holder_var_val->decrement_shared_ptr();
+            return ret_predicted;
             break;
         }
         case _clear:
@@ -928,7 +906,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _num_holes: {
             assert(params.empty());
-            BooleanDagUtility* func_clone = ((BooleanDagUtility*)sk_func)->produce_inlined_dag();
+            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)sk_func)->produce_inlined_dag();
 //            func_clone->print_hole_names(state->console_output);
             func_clone->increment_shared_ptr();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
@@ -1045,6 +1023,7 @@ void SL::Method::run(SolverProgramState *state, vector<SL::VarVal *> &input_para
 
 void SL::Method::clear()
 {
+    //clear everything
     body->clear();
     var->clear();
     for(int i = 0;i<params->size();i++)
@@ -1062,6 +1041,7 @@ void SL::Method::clear()
         meta_params->clear();
         delete meta_params;
     }
+    delete this;
 }
 
 vector<SL::Param*>* copy_params(vector<SL::Param*>* to_copy)
@@ -1095,6 +1075,7 @@ SL::VarVal* SL::Param::eval(SolverProgramState *state)  {
 }
 
 void SL::Param::clear() {
+    //clears everything
     switch (meta_type) {
         case is_expression:
             expression->clear();
@@ -1222,7 +1203,6 @@ void SL::PolyVec::reverse() {
 }
 
 void SL::PolyVec::clear()  {
-    PolyType::clear();
     for(int i = 0;i<size();i++)
     {
         if(at(i) != nullptr) {
@@ -1230,6 +1210,8 @@ void SL::PolyVec::clear()  {
         }
     }
     vector<SL::VarVal*>::clear();
+    PolyType::soft_clear();
+    delete this;
 }
 
 vector<SL::SLType *> * SL::copy_type_params(vector<SL::SLType *> *to_copy)
@@ -1281,7 +1263,8 @@ bool SL::PolyPair::operator<(const SL::PolyPair &other) const
 void SL::PolyPair::clear() {
     first()->decrement_shared_ptr();
     second()->decrement_shared_ptr();
-    PolyType::clear();
+    PolyType::soft_clear();
+    delete this;
 }
 
 SL::PolyPair::PolyPair(SL::PolyPair *to_copy): PolyType(to_copy), pair<SL::VarVal*, SL::VarVal*>(
@@ -1315,6 +1298,7 @@ SL::VarVal* SL::Expression::eval(SolverProgramState *state)
 
 void SL::Expression::clear()
 {
+    //clears all
     switch (expression_meta_type) {
         case binary_expr_meta_type:
             binary_expression->clear();
@@ -1327,6 +1311,7 @@ void SL::Expression::clear()
             break;
         case var_val_meta_type:
             var_val->increment_shared_ptr();
+            assert(var_val->get_num_shared_ptr() == 1);
             var_val->decrement_shared_ptr();
             break;
         case lambda_expr_meta_type:
@@ -1479,6 +1464,16 @@ void SL::VarVal::set_return() {
     assert(!is_return);
     is_return = true;
     increment_shared_ptr();
+//    cout << "SET RETURN" << endl;
+}
+
+void SL::VarVal::complete_return()
+{
+    assert(is_return);
+    num_shared_ptr--;
+    assert(num_shared_ptr >= 0);
+    is_return = false;
+//    cout << "COMPLETE RETURN" << endl;
 }
 
 bool SL::VarVal::get_is_return() const {
@@ -1623,6 +1618,7 @@ void SL::UnitLine::run(SolverProgramState *state) {
 }
 
 void SL::UnitLine::clear() {
+    //clears everything
     switch (line_type) {
         case var_line:
             var->clear();
@@ -1630,6 +1626,7 @@ void SL::UnitLine::clear() {
         case assign_line:
             assignment->clear();
             break;
+
         case while_line:
             while_loop->clear();
             break;
@@ -1639,6 +1636,7 @@ void SL::UnitLine::clear() {
         case return_line:
             return_stmt->clear();
             break;
+
         case expression_line:
             expression->clear();
             break;
@@ -1660,7 +1658,8 @@ SL::BinaryExpression::BinaryExpression(SL::BinaryExpression *to_copy): op(to_cop
     right_operand = new SL::Expression(to_copy->right_operand);
 }
 
-SL::SLType::SLType(SL::Identifier *_name, SL::TypeParams *_type_params) : name(_name), type_params(new PolyType(_type_params)){}
+SL::SLType::SLType(SL::Identifier *_name, SL::TypeParams *_type_params) : name(_name),
+type_params(new PolyType(_type_params)){}
 
 SL::SLType::SLType(SL::SLType *to_copy) : name(new Identifier(to_copy->name)) {
     if(to_copy->type_params != nullptr) {
@@ -1670,12 +1669,12 @@ SL::SLType::SLType(SL::SLType *to_copy) : name(new Identifier(to_copy->name)) {
 
 void SL::SLType::clear()
 {
-    assert(name->is_defined() == 1) ;
+    //clears everything
+    assert(name->is_defined()) ;
     name->clear();
     name = nullptr;
     if(type_params != nullptr) {
         type_params->clear();
-        delete type_params;
         type_params = nullptr;
     }
     delete this;
@@ -1799,3 +1798,26 @@ void SL::LambdaExpression::clear() {
     delete this;
 }
 
+//void SL::Params::populate_vector(vector<Param *> *params)
+//{
+//    assert(params != nullptr);
+//    assert(params->empty());
+//    Params* at = this;
+//    while(at != nullptr)
+//    {
+//        if(at->head != nullptr) {
+//            params->emplace_back(new Param(at->head));
+//        }
+//        at = at->rest;
+//    }
+//}
+//
+//void SL::Params::clear() {
+//    head->clear();
+//    head = nullptr;
+//    if(rest != nullptr) {
+//        rest->clear();
+//        rest = nullptr;
+//    }
+//    delete this;
+//}

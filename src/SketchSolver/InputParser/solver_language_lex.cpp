@@ -797,67 +797,74 @@ case 1:
 YY_RULE_SETUP
 #line 30 "solver_language_lexer.l"
 {print_rule("Solver", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return solver_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return solver_token;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 32 "solver_language_lexer.l"
+#line 33 "solver_language_lexer.l"
 {print_rule("while", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return while_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return while_token;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 34 "solver_language_lexer.l"
+#line 36 "solver_language_lexer.l"
 {print_rule("for", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return for_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return for_token;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 36 "solver_language_lexer.l"
+#line 39 "solver_language_lexer.l"
 {print_rule("if", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return if_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return if_token;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 38 "solver_language_lexer.l"
+#line 42 "solver_language_lexer.l"
 {print_rule("else", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return else_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return else_token;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 40 "solver_language_lexer.l"
+#line 45 "solver_language_lexer.l"
 {print_rule("lambda", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return lambda_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return lambda_token;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 42 "solver_language_lexer.l"
+#line 48 "solver_language_lexer.l"
 {print_rule("return", string(yytext)); return return_token;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 43 "solver_language_lexer.l"
+#line 49 "solver_language_lexer.l"
 {print_rule("op_eq", string(yytext)); return op_eq;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 44 "solver_language_lexer.l"
+#line 50 "solver_language_lexer.l"
 {print_rule("op_geq", string(yytext)); return op_geq;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 45 "solver_language_lexer.l"
+#line 51 "solver_language_lexer.l"
 {print_rule("++", string(yytext)); return op_plus_plus;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 47 "solver_language_lexer.l"
+#line 53 "solver_language_lexer.l"
 {print_rule("Identifier", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return identifier;}
+                                yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return identifier;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 49 "solver_language_lexer.l"
+#line 56 "solver_language_lexer.l"
 {print_rule("String", string(yytext));
                                 string ret = string(yytext);
                                 ret = ret.substr(1, ret.size()-2);
@@ -866,53 +873,53 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 54 "solver_language_lexer.l"
+#line 61 "solver_language_lexer.l"
 {print_rule("Integer", string(yytext));
                                 yylval->var_val = new SL::VarVal((int)atoi(yytext)); return var_val_rule;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 56 "solver_language_lexer.l"
+#line 63 "solver_language_lexer.l"
 {print_rule("Single Line Comment", string(yytext));}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 57 "solver_language_lexer.l"
+#line 64 "solver_language_lexer.l"
 {print_rule("Begin C_COMMENT", string(yytext)); BEGIN(C_COMMENT); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 58 "solver_language_lexer.l"
+#line 65 "solver_language_lexer.l"
 {print_rule("END C_COMMENT", string(yytext));  BEGIN(INITIAL); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 59 "solver_language_lexer.l"
+#line 66 "solver_language_lexer.l"
 {}
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 60 "solver_language_lexer.l"
+#line 67 "solver_language_lexer.l"
 {print_rule("WhiteSpace", string(yytext));}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 61 "solver_language_lexer.l"
+#line 68 "solver_language_lexer.l"
 {print_rule("Operator", string(yytext));
                                 assert(string(yytext).size() == 1); return yytext[0];}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 63 "solver_language_lexer.l"
+#line 70 "solver_language_lexer.l"
 {print_rule("NotRecognized", string(yytext)); assert(false);}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 64 "solver_language_lexer.l"
+#line 71 "solver_language_lexer.l"
 ECHO;
 	YY_BREAK
-#line 916 "lex.yy.c"
+#line 923 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(C_COMMENT):
 	yyterminate();
@@ -2082,7 +2089,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 64 "solver_language_lexer.l"
+#line 71 "solver_language_lexer.l"
 
 
 void print_rule(string description, string str)

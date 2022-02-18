@@ -92,7 +92,13 @@ binary_op:
 	'*' {$$ = SL::BinaryOp::_mult;} |
 	'/' {$$ = SL::BinaryOp::_div;}
 
-constant: '[' ']' {$$ = new SL::VarVal(new SL::PolyVec(new SL::PolyType(new vector<SL::SLType*>(1, new SL::SLType(new SL::Identifier("any"))))));}
+constant: '[' ']' {
+	auto e = new SL::Identifier("any");
+	auto d = new SL::SLType(e);
+	auto c = new vector<SL::SLType*>(1, d);
+	auto b = new SL::PolyType(c);
+	auto a = new SL::PolyVec(b);
+	$$ = new SL::VarVal(a);}
 
 expression:
 	identifier {$$ = new SL::Expression($1);} |
@@ -121,10 +127,10 @@ maybe_else:
 	else_token '{' code_block '}' {$$ = $3;}
 
 macro_unit:
-	while_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While(new SL::Expression($3), $6));} |
-	if_token '(' expression ')' '{' code_block '}' maybe_else {$$ = new SL::UnitLine(new SL::If(new SL::Expression($3), $6, $8));} |
+	while_token '(' expression ')' '{' code_block '}' {$$ = new SL::UnitLine(new SL::While($3, $6));} |
+	if_token '(' expression ')' '{' code_block '}' maybe_else {$$ = new SL::UnitLine(new SL::If($3, $6, $8));} |
 	for_token '(' unit_line ';' expression ';' unit_line ')' '{' code_block '}'
-		{$$ = new SL::UnitLine(new SL::For($3, new SL::Expression($5), $7, $10));} |
+		{$$ = new SL::UnitLine(new SL::For($3, $5, $7, $10));} |
 	'{' code_block '}' {$$ = new SL::UnitLine($2);}
 
 function_call : expression '.' identifier '(' params ')' {$$ = new SL::FunctionCall($1, $3, $5);}
@@ -150,7 +156,7 @@ assignment:
 		new SL::Expression(
 			new SL::BinaryExpression(
 				SL::BinaryOp::_plus,
-				new SL::Expression($1),
+				new SL::Expression(new SL::Identifier($1)),
 				new SL::Expression(new SL::VarVal((int)1)))));}
 
 param : expression {$$ = new SL::Param($1);} | constuctor_call_expression {$$ = new SL::Param($1);}
@@ -178,7 +184,7 @@ root: methods {state->add_root($1);}
 
 void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
-	void* scanner = nullptr;
+	yyscan_t scanner;
 	yylex_init(&scanner);
 
 	char solver_program_file_char[solver_program_file.size()];
@@ -190,5 +196,6 @@ void parse_solver_langauge_program(SolverProgramState* state, string solver_prog
 	FILE* file_pointer = fopen(solver_program_file_char, "r");
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);
+	free(scanner);
 }
 

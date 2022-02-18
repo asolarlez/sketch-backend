@@ -73,6 +73,9 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
                 matching_subdag_name = it.first;
                 //break;
             }
+            else if (tmp_path != nullptr) {
+                delete tmp_path;
+            }
         }
 
         assert(inlining_tree != nullptr);

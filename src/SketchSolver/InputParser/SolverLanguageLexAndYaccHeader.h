@@ -39,11 +39,16 @@ namespace SL {
     class VarVal;
 
     class Identifier {
+
+        static int global_identifier_id;
+
+        int identifier_id = 0;
+
         bool defined = false;
         string identifier;
     public:
-        explicit Identifier(string _name) : identifier(std::move(_name)), defined(true) {};
-        explicit Identifier(Identifier* to_copy) : identifier(to_copy->to_string()), defined(to_copy->defined) { assert(defined); };
+        explicit Identifier(string _name) : identifier(std::move(_name)), defined(true), identifier_id(Identifier::global_identifier_id++) {};
+        explicit Identifier(Identifier* to_copy) : identifier(to_copy->to_string()), defined(to_copy->defined), identifier_id(Identifier::global_identifier_id++) {assert(defined); };
 
         string to_string() const {
             assert(defined);
@@ -52,16 +57,12 @@ namespace SL {
 
         void clear()
         {
-            assert(defined == 1);
+//            cout << "CLEAR IDENTIFIER ID = " <<identifier_id << " name: " << identifier << endl;
+            //clears everything
+            assert(defined);
             identifier.clear();
-            assert(defined == 1);
-            delete this;
-        }
-
-        ~Identifier()
-        {
-            assert(defined == 1);
             defined = false;
+            delete this;
         }
 
         SL::VarVal* eval(SolverProgramState *state);
@@ -87,6 +88,7 @@ namespace SL {
         Head* head = nullptr;
         LinkedList* rest = nullptr;
     public:
+        LinkedList() = default;
         explicit LinkedList(Head* _head): head(_head) {}
         LinkedList(Head* _head, LinkedList* _rest): head(_head), rest(_rest) {}
 
@@ -94,11 +96,33 @@ namespace SL {
         {
             assert(ret.size() == 0);
             LinkedList<Head>* at = this;
-            while(at != nullptr)
-            {
-                ret.push_back(at->head);
+            while(at != nullptr) {
+                if(at->head != nullptr) {
+                    ret.push_back(new Head(at->head));
+                }
+                else {
+                    assert(at->rest == nullptr);
+                }
                 at = at->rest;
             }
+        }
+
+        void clear()
+        {
+            if(head != nullptr) {
+                head->clear();
+                head = nullptr;
+            }
+            else
+            {
+                assert(rest == nullptr);
+            }
+            if(rest != nullptr)
+            {
+                rest->clear();
+                rest = nullptr;
+            }
+            delete this;
         }
 
         bool operator < (const LinkedList& other) const
@@ -214,6 +238,7 @@ namespace SL {
 
         void clear()
         {
+            //clears everything
             type->clear();
             name->clear();
             delete this;
@@ -293,6 +318,7 @@ namespace SL {
         explicit PolyType(TypeParams* _type_params){
             type_params = new vector<SL::SLType*>();
             _type_params->populate_vector(*type_params);
+            _type_params->clear();
         }
         explicit PolyType(vector<SLType*>* _type_params): type_params(_type_params) {}
         explicit PolyType(PolyType* to_copy): type_params(copy_type_params(to_copy->type_params)) {};
@@ -334,6 +360,12 @@ namespace SL {
         }
 
         virtual void clear()
+        {
+            soft_clear();
+            delete this;
+        }
+
+        void soft_clear()
         {
             for(auto & it: *type_params)
             {
@@ -394,6 +426,7 @@ namespace SL {
     public:
         explicit PolyVec(PolyType* _type_params): PolyType(_type_params){
             assert(get_type_params()->size() == 1);
+            _type_params->clear();
         }
         explicit PolyVec(PolyVec* to_copy);
 
@@ -826,7 +859,7 @@ namespace SL {
             return get<Method *>(method, do_count, do_assert);
         }
 
-        bool is_sketch_function()
+        bool is_sketch_function() const
         {
             return var_val_type == skfunc_val_type;
         }
@@ -846,6 +879,13 @@ namespace SL {
             return get<File *>(file, do_count, do_assert);
         }
 
+        File *get_file_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == file_val_type);
+            return file;
+        }
+
+
         const SolverLanguagePrimitives::HoleAssignment *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
@@ -854,10 +894,22 @@ namespace SL {
             return get<const SolverLanguagePrimitives::HoleAssignment *>(solution, do_count, do_assert);
         }
 
+        const SolverLanguagePrimitives::HoleAssignment *get_solution_const(bool do_count = true) const {
+            assert(var_val_type == solution_val_type);
+            assert(!do_count);
+            return solution;
+        }
+
         SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
             assert(is_sketch_function());
             assert(do_assert);
             return get<SketchFunction *>(skfunc, do_count, do_assert);
+        }
+
+        SketchFunction *get_function_const(bool do_count) const {
+            assert(!do_count);
+            assert(is_sketch_function());
+            return skfunc;
         }
 
         SolverLanguagePrimitives::InputAssignment *get_input_holder(bool do_count = true, bool do_assert = true) {
@@ -882,10 +934,22 @@ namespace SL {
             return get<PolyVec *>(poly_vec, do_count, do_assert);
         }
 
+        PolyVec *get_poly_vec_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == poly_vec_type);
+            return poly_vec;
+        }
+
         PolyPair *get_poly_pair(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == poly_pair_type);
             assert(do_assert);
             return get<PolyPair *>(poly_pair, do_count, do_assert);
+        }
+
+        PolyPair *get_poly_pair_const(bool do_count) const {
+            assert(!do_count);
+            assert(var_val_type == poly_pair_type);
+            return poly_pair;
         }
 
         string to_string(bool do_count = true, bool do_assert = true)
@@ -980,7 +1044,7 @@ namespace SL {
                     clear<File*>(file, false);
                     break;
                 case method_val_type:
-                    clear<Method*>(method);
+                    clear<Method*>(method, false);
                     break;
                 case skfunc_val_type:
                     clear<SketchFunction*>(skfunc, false);
@@ -989,7 +1053,7 @@ namespace SL {
                     clear<const SolverLanguagePrimitives::HoleAssignment*>(solution, false);
                     break;
                 case input_val_type:
-                    clear<SolverLanguagePrimitives::InputAssignment*>(input_holder);
+                    clear<SolverLanguagePrimitives::InputAssignment*>(input_holder, false);
                     break;
                 case bool_val_type:
                     //do nothing
@@ -1005,10 +1069,10 @@ namespace SL {
                     //do nothing
                     break;
                 case poly_pair_type:
-                    clear<SL::PolyPair*>(poly_pair);
+                    clear<SL::PolyPair*>(poly_pair, false);
                     break;
                 case poly_vec_type:
-                    clear<SL::PolyVec*>(poly_vec);
+                    clear<SL::PolyVec*>(poly_vec, false);
                     break;
                 default:
                     assert(false);
@@ -1019,13 +1083,7 @@ namespace SL {
     public:
         void increment_shared_ptr();
 
-        void complete_return()
-        {
-            assert(is_return);
-            num_shared_ptr--;
-            assert(num_shared_ptr >= 0);
-            is_return = false;
-        }
+        void complete_return();
 
 
     private:
@@ -1052,27 +1110,27 @@ namespace SL {
 
     class Param;
 
-    class Params {
-        Param *head = nullptr;
-        Params *rest = nullptr;
+
+    class Params: public LinkedList<Param>
+    {
     public:
-        Params() = default;
-        Params(Param *_head, Params *_rest = nullptr) : head(_head), rest(_rest) {};
-        Params(Param *_head, Param *_next) : head(_head), rest(new Params(_next)) {};
-        void populate_vector(vector<Param*>* params)
-        {
-            assert(params != nullptr);
-            assert(params->empty());
-            Params* at = this;
-            while(at != nullptr)
-            {
-                if(at->head != nullptr) {
-                    params->emplace_back(at->head);
-                }
-                at = at->rest;
-            }
-        }
+        Params(): LinkedList<Param>() {};
+        explicit Params(Param* _head): LinkedList<Param>(_head) {}
+        Params(Param* _head, Params* _rest): LinkedList<Param>(_head, _rest) {}
     };
+
+//    class Params {
+//        Param *head = nullptr;
+//        Params *rest = nullptr;
+//    public:
+//        Params() = default;
+//        Params(Param *_head, Params *_rest = nullptr) : head(_head), rest(_rest) {};
+//        Params(Param *_head, Param *_next) : head(_head), rest(new Params(_next)) {}; //TODO: seems like _next should be deleted?
+//
+//        void populate_vector(vector<Param*>* params);
+//
+//        void clear();
+//    };
 
     class Expression;
 
@@ -1126,14 +1184,16 @@ namespace SL {
         FunctionCall(
                 Expression *_expression, Identifier *_method_name, Params *_params) :
                 expression(_expression), method_name(_method_name), method_meta_type(name_meta_type) {
-            _params->populate_vector(&params);
+            _params->populate_vector(params);
+            _params->clear();
             method_id = get_method_id();
 
         };
         FunctionCall(
                 Identifier *_method_name, Params *_params) :
                 method_name(_method_name), method_meta_type(name_meta_type) {
-            _params->populate_vector(&params);
+            _params->populate_vector(params);
+            _params->clear();
             method_id = get_method_id();
         };
         FunctionCall(SLType *_type_constructor, Params *_params){
@@ -1147,7 +1207,8 @@ namespace SL {
                 type_constructor = _type_constructor;
                 method_meta_type = type_constructor_meta_type;
             }
-            _params->populate_vector(&params);
+            _params->populate_vector(params);
+            _params->clear();
             method_id = get_method_id();
         };
         explicit FunctionCall(FunctionCall* to_copy);
@@ -1155,7 +1216,7 @@ namespace SL {
         SL::VarVal* eval(SolverProgramState* state);
 
         template<typename VarType>
-        SL::VarVal* eval(VarType& var, SolverProgramState* state, VarVal* the_var_val);
+        SL::VarVal* eval(VarType& var, SolverProgramState* state, const VarVal* const the_var_val);
 
         void run(SolverProgramState *pState);
 
@@ -1206,8 +1267,9 @@ namespace SL {
     public:
         explicit Param(Expression *_expression) : expression(_expression), meta_type(is_expression) {};
         explicit Param(Var *_var) : var(_var), meta_type(is_var) {};
-        explicit Param(Assignment *assignment) : var(assignment->get_var()), meta_type(is_var) {
+        explicit Param(Assignment *assignment) : var(new Var(assignment->get_var())), meta_type(is_var) {
             assert(!assignment->has_assignment());
+            assignment->clear();
         };
         explicit Param(Param* to_copy);
 
@@ -1357,9 +1419,11 @@ namespace SL {
     public:
         LambdaExpression(SL::Params* _meta_params, SL::Params* _params, SL::CodeBlock* _code_block): code_block(_code_block) {
             params = new vector<Param*>();
-            _params->populate_vector(params);
+            _params->populate_vector(*params);
+            _params->clear();
             meta_params = new vector<Param*>();
-            _meta_params->populate_vector(meta_params);
+            _meta_params->populate_vector(*meta_params);
+            _meta_params->clear();
         }
         LambdaExpression(LambdaExpression* to_copy);
 
@@ -1475,6 +1539,7 @@ namespace SL {
 
         void clear()
         {
+            //clears everything
             head->clear();
             head = nullptr;
             if(rest != nullptr) {
@@ -1496,7 +1561,8 @@ namespace SL {
         Method(Var* _var, Params* _params, CodeBlock* _body): var(_var), body(_body)
         {
             params = new vector<Param*>();
-            _params->populate_vector(params);
+            _params->populate_vector(*params);
+            _params->clear();
         }
 
         Method(Var* _var, vector<Param*>* _params, CodeBlock* _body, vector<Param*>* _meta_params = nullptr):
@@ -1533,6 +1599,17 @@ namespace SL {
         Methods(Method* _head, Methods* _rest): head(_head), rest(_rest) {}
 
         void populate_state(Frame& frame);
+
+        void clear()
+        {
+            head->clear();
+            head = nullptr;
+            if(rest != nullptr) {
+                rest->clear();
+                rest = nullptr;
+            }
+            delete this;
+        }
     };
 };
 

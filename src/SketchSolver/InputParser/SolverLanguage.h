@@ -1068,7 +1068,7 @@ namespace SolverLanguagePrimitives
     inline const HoleAssignment* target_best_effort(SolverProgramState* state, string file_name, bool do_solver_program)
     {
         assert(!file_name.empty());
-        assert(state->harness_ == nullptr);
+//        assert(state->harness_ == nullptr);
         if(do_solver_program) {
 
             string solver_program_file_name;
@@ -1098,6 +1098,7 @@ namespace SolverLanguagePrimitives
                 const SolverLanguagePrimitives::HoleAssignment* solution_holder = var_val_ret->get_solution(false);
 
                 delete var_val_ret;
+                state->clear();
 
                 local_harness->concretize_this_dag(solution_holder->to_var_store(), bool_node::CTRL);
 
@@ -1134,9 +1135,7 @@ namespace SolverLanguagePrimitives
 
                 assert(var_val_ret->is_sketch_function());
 
-                SketchFunction* sk_func = var_val_ret->get_function(false);
-
-                SketchFunction *concretized_function = sk_func;
+                SketchFunction* concretized_function = var_val_ret->get_function(false);
 
                 File* file = new File(concretized_function, file_name, state->floats, state->args.seed);
 
@@ -1150,6 +1149,7 @@ namespace SolverLanguagePrimitives
                 file->clear();
 
                 var_val_ret->clear_assert_0_shared_ptrs();
+                state->clear();
 
 //                BEST SO FAR: count	1249 / 1743 (71.6581 %)
 //                count	1258 / 1743 (72.1744 %)
@@ -1215,6 +1215,7 @@ namespace SolverLanguagePrimitives
             assert(false);
         }
 
+        /*
 //        expose lightverif
         ofstream fout = ofstream("fixes_old__"+state->harness_->get_dag()->get_name());
         File* all_file = new File(state->harness_, file_name, state->floats, state->args.seed);
@@ -1276,7 +1277,7 @@ namespace SolverLanguagePrimitives
             cout << "return NOT SAT_SATISFIABLE" << endl;
         }
 
-        return solutions[0].second;
+        return solutions[0].second;*/
     }
 
     /**
@@ -1377,15 +1378,15 @@ public:
 //        SolverLanguagePrimitives::target_cegis(finder);
     }
 
-    const SolverLanguagePrimitives::HoleAssignment *
-    eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
-         HoleHardcoder &_hc,
-         bool hasGoodEnoughSolution, FunctionMap &function_map)
-    {
-        SolverProgramState* state =
-                new SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution, function_map);
-        return SolverLanguagePrimitives::target_best_effort(state, file_name, true);
-    }
+//    const SolverLanguagePrimitives::HoleAssignment *
+//    eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
+//         HoleHardcoder &_hc,
+//         bool hasGoodEnoughSolution, FunctionMap &function_map)
+//    {
+//        SolverProgramState* state =
+//                new SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution, function_map);
+//        return SolverLanguagePrimitives::target_best_effort(state, file_name, true);
+//    }
 
     const SolverLanguagePrimitives::HoleAssignment *
     eval(FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,

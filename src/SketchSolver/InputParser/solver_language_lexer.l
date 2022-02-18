@@ -28,24 +28,31 @@ Comment      ("//"[^\n]*)
 
 %%
 Solver                      {print_rule("Solver", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return solver_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return solver_token;}
 while                       {print_rule("while", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return while_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return while_token;}
 for                       {print_rule("for", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return for_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return for_token;}
 if                       {print_rule("if", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return if_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return if_token;}
 else                       {print_rule("else", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return else_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return else_token;}
 lambda                       {print_rule("lambda", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return lambda_token;}
+                                //yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return lambda_token;}
 return                       {print_rule("return", string(yytext)); return return_token;}
 ==                          {print_rule("op_eq", string(yytext)); return op_eq;}
 >=                          {print_rule("op_geq", string(yytext)); return op_geq;}
 \+\+                          {print_rule("++", string(yytext)); return op_plus_plus;}
 
 {Identifier}                {print_rule("Identifier", string(yytext));
-                                yylval->identifier_ = new SL::Identifier(string(yytext)); return identifier;}
+                                yylval->identifier_ = new SL::Identifier(string(yytext));
+                                return identifier;}
 {String}                    {print_rule("String", string(yytext));
                                 string ret = string(yytext);
                                 ret = ret.substr(1, ret.size()-2);

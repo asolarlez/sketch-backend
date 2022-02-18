@@ -482,12 +482,12 @@ static const yytype_uint8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    80,    80,    81,    82,    83,    86,    87,    88,    89,
-      90,    91,    92,    93,    95,    98,    99,   100,   101,   102,
-     103,   104,   107,   110,   113,   115,   116,   117,   120,   121,
-     124,   125,   126,   128,   130,   131,   132,   135,   137,   137,
-     139,   140,   143,   144,   145,   146,   147,   156,   156,   158,
-     158,   159,   162,   163,   165,   165,   166,   168,   170,   173,
-     173,   175
+      90,    91,    92,    93,    95,   104,   105,   106,   107,   108,
+     109,   110,   113,   116,   119,   121,   122,   123,   126,   127,
+     130,   131,   132,   134,   136,   137,   138,   141,   143,   143,
+     145,   146,   149,   150,   151,   152,   153,   162,   162,   164,
+     164,   165,   168,   169,   171,   171,   172,   174,   176,   179,
+     179,   181
 };
 #endif
 
@@ -1440,300 +1440,306 @@ yyreduce:
 
   case 14:
 #line 95 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.var_val) = new SL::VarVal(new SL::PolyVec(new SL::PolyType(new vector<SL::SLType*>(1, new SL::SLType(new SL::Identifier("any"))))));}
-#line 1445 "y.tab.c" /* yacc.c:1646  */
-    break;
-
-  case 15:
-#line 98 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].identifier_));}
+    {
+	auto e = new SL::Identifier("any");
+	auto d = new SL::SLType(e);
+	auto c = new vector<SL::SLType*>(1, d);
+	auto b = new SL::PolyType(c);
+	auto a = new SL::PolyVec(b);
+	(yyval.var_val) = new SL::VarVal(a);}
 #line 1451 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 16:
-#line 99 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].func_call));}
+  case 15:
+#line 104 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].identifier_));}
 #line 1457 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 17:
-#line 100 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].bool_expr));}
+  case 16:
+#line 105 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].func_call));}
 #line 1463 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 18:
-#line 101 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].var_val));}
+  case 17:
+#line 106 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].bool_expr));}
 #line 1469 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 19:
-#line 102 "solver_language_parser.y" /* yacc.c:1646  */
+  case 18:
+#line 107 "solver_language_parser.y" /* yacc.c:1646  */
     {(yyval.expression) = new SL::Expression((yyvsp[0].var_val));}
 #line 1475 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 20:
-#line 103 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].lambda_expr));}
+  case 19:
+#line 108 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].var_val));}
 #line 1481 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 21:
-#line 104 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = (yyvsp[-1].expression);}
+  case 20:
+#line 109 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].lambda_expr));}
 #line 1487 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 22:
-#line 107 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.expression) = new SL::Expression((yyvsp[0].func_call));}
+  case 21:
+#line 110 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = (yyvsp[-1].expression);}
 #line 1493 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 23:
-#line 110 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.lambda_expr) = new SL::LambdaExpression((yyvsp[-7].params), (yyvsp[-4].params), (yyvsp[-1].code_block));}
+  case 22:
+#line 113 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.expression) = new SL::Expression((yyvsp[0].func_call));}
 #line 1499 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 24:
-#line 113 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.bool_expr) = new SL::BinaryExpression((yyvsp[-1].my_operator), (yyvsp[-2].expression), (yyvsp[0].expression));}
+  case 23:
+#line 116 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.lambda_expr) = new SL::LambdaExpression((yyvsp[-7].params), (yyvsp[-4].params), (yyvsp[-1].code_block));}
 #line 1505 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 25:
-#line 115 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].assignment));}
+  case 24:
+#line 119 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.bool_expr) = new SL::BinaryExpression((yyvsp[-1].my_operator), (yyvsp[-2].expression), (yyvsp[0].expression));}
 #line 1511 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 26:
-#line 116 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine(new SL::Return((yyvsp[0].expression)));}
+  case 25:
+#line 121 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].assignment));}
 #line 1517 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 27:
-#line 117 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].expression));}
+  case 26:
+#line 122 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine(new SL::Return((yyvsp[0].expression)));}
 #line 1523 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 28:
-#line 120 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.code_block) = nullptr;}
+  case 27:
+#line 123 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine((yyvsp[0].expression));}
 #line 1529 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 29:
-#line 121 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.code_block) = (yyvsp[-1].code_block);}
+  case 28:
+#line 126 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.code_block) = nullptr;}
 #line 1535 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 30:
-#line 124 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine(new SL::While(new SL::Expression((yyvsp[-4].expression)), (yyvsp[-1].code_block)));}
+  case 29:
+#line 127 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.code_block) = (yyvsp[-1].code_block);}
 #line 1541 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 31:
-#line 125 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine(new SL::If(new SL::Expression((yyvsp[-5].expression)), (yyvsp[-2].code_block), (yyvsp[0].code_block)));}
+  case 30:
+#line 130 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine(new SL::While((yyvsp[-4].expression), (yyvsp[-1].code_block)));}
 #line 1547 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 32:
-#line 127 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine(new SL::For((yyvsp[-8].unit_line), new SL::Expression((yyvsp[-6].expression)), (yyvsp[-4].unit_line), (yyvsp[-1].code_block)));}
+  case 31:
+#line 131 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine(new SL::If((yyvsp[-5].expression), (yyvsp[-2].code_block), (yyvsp[0].code_block)));}
 #line 1553 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 33:
-#line 128 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.unit_line) = new SL::UnitLine((yyvsp[-1].code_block));}
+  case 32:
+#line 133 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine(new SL::For((yyvsp[-8].unit_line), (yyvsp[-6].expression), (yyvsp[-4].unit_line), (yyvsp[-1].code_block)));}
 #line 1559 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 34:
-#line 130 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-5].expression), (yyvsp[-3].identifier_), (yyvsp[-1].params));}
+  case 33:
+#line 134 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.unit_line) = new SL::UnitLine((yyvsp[-1].code_block));}
 #line 1565 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 35:
-#line 131 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].identifier_), (yyvsp[-1].params));}
+  case 34:
+#line 136 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-5].expression), (yyvsp[-3].identifier_), (yyvsp[-1].params));}
 #line 1571 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 36:
-#line 132 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].expression), new SL::Identifier("get"), (yyvsp[-1].params));}
+  case 35:
+#line 137 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].identifier_), (yyvsp[-1].params));}
 #line 1577 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 37:
-#line 135 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].my_type), (yyvsp[-1].params));}
+  case 36:
+#line 138 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].expression), new SL::Identifier("get"), (yyvsp[-1].params));}
 #line 1583 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 38:
-#line 137 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.type_params) = new SL::TypeParams((yyvsp[0].my_type));}
+  case 37:
+#line 141 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.func_call) = new SL::FunctionCall((yyvsp[-3].my_type), (yyvsp[-1].params));}
 #line 1589 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 39:
-#line 137 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.type_params) = new SL::TypeParams((yyvsp[-2].my_type), (yyvsp[0].type_params));}
+  case 38:
+#line 143 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.type_params) = new SL::TypeParams((yyvsp[0].my_type));}
 #line 1595 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 40:
-#line 139 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.my_type) = new SL::SLType((yyvsp[0].identifier_));}
+  case 39:
+#line 143 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.type_params) = new SL::TypeParams((yyvsp[-2].my_type), (yyvsp[0].type_params));}
 #line 1601 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 41:
-#line 140 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.my_type) = new SL::SLType((yyvsp[-3].identifier_), (yyvsp[-1].type_params));}
+  case 40:
+#line 145 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.my_type) = new SL::SLType((yyvsp[0].identifier_));}
 #line 1607 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 42:
-#line 143 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-1].my_type), (yyvsp[0].identifier_)));}
+  case 41:
+#line 146 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.my_type) = new SL::SLType((yyvsp[-3].identifier_), (yyvsp[-1].type_params));}
 #line 1613 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 43:
-#line 144 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-3].my_type), (yyvsp[-2].identifier_)), (yyvsp[0].expression));}
+  case 42:
+#line 149 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-1].my_type), (yyvsp[0].identifier_)));}
 #line 1619 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 44:
-#line 145 "solver_language_parser.y" /* yacc.c:1646  */
+  case 43:
+#line 150 "solver_language_parser.y" /* yacc.c:1646  */
     {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-3].my_type), (yyvsp[-2].identifier_)), (yyvsp[0].expression));}
 #line 1625 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 45:
-#line 146 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment((yyvsp[-2].identifier_), (yyvsp[0].expression));}
+  case 44:
+#line 151 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-3].my_type), (yyvsp[-2].identifier_)), (yyvsp[0].expression));}
 #line 1631 "y.tab.c" /* yacc.c:1646  */
     break;
 
+  case 45:
+#line 152 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.assignment) = new SL::Assignment((yyvsp[-2].identifier_), (yyvsp[0].expression));}
+#line 1637 "y.tab.c" /* yacc.c:1646  */
+    break;
+
   case 46:
-#line 148 "solver_language_parser.y" /* yacc.c:1646  */
+#line 154 "solver_language_parser.y" /* yacc.c:1646  */
     {(yyval.assignment) = new SL::Assignment(
 		(yyvsp[-1].identifier_),
 		new SL::Expression(
 			new SL::BinaryExpression(
 				SL::BinaryOp::_plus,
-				new SL::Expression((yyvsp[-1].identifier_)),
+				new SL::Expression(new SL::Identifier((yyvsp[-1].identifier_))),
 				new SL::Expression(new SL::VarVal((int)1)))));}
-#line 1643 "y.tab.c" /* yacc.c:1646  */
-    break;
-
-  case 47:
-#line 156 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.param) = new SL::Param((yyvsp[0].expression));}
 #line 1649 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 48:
-#line 156 "solver_language_parser.y" /* yacc.c:1646  */
+  case 47:
+#line 162 "solver_language_parser.y" /* yacc.c:1646  */
     {(yyval.param) = new SL::Param((yyvsp[0].expression));}
 #line 1655 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 49:
-#line 158 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params();}
+  case 48:
+#line 162 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.param) = new SL::Param((yyvsp[0].expression));}
 #line 1661 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 50:
-#line 158 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params((yyvsp[0].param));}
+  case 49:
+#line 164 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params();}
 #line 1667 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 51:
-#line 159 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params((yyvsp[-2].param), (yyvsp[0].params));}
+  case 50:
+#line 164 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params((yyvsp[0].param));}
 #line 1673 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 52:
-#line 162 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-1].my_type), (yyvsp[0].identifier_)));}
+  case 51:
+#line 165 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params((yyvsp[-2].param), (yyvsp[0].params));}
 #line 1679 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 53:
-#line 163 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.assignment) = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Identifier("any")), (yyvsp[0].identifier_)), nullptr);}
+  case 52:
+#line 168 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.assignment) = new SL::Assignment(new SL::Var((yyvsp[-1].my_type), (yyvsp[0].identifier_)));}
 #line 1685 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 54:
-#line 165 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params();}
+  case 53:
+#line 169 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.assignment) = new SL::Assignment(new SL::Var(new SL::SLType(new SL::Identifier("any")), (yyvsp[0].identifier_)), nullptr);}
 #line 1691 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 55:
-#line 165 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params(new SL::Param((yyvsp[0].assignment)));}
+  case 54:
+#line 171 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params();}
 #line 1697 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 56:
-#line 166 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.params) = new SL::Params(new SL::Param((yyvsp[-2].assignment)), (yyvsp[0].params));}
+  case 55:
+#line 171 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params(new SL::Param((yyvsp[0].assignment)));}
 #line 1703 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 57:
-#line 169 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.method) = new SL::Method(new SL::Var((yyvsp[-7].my_type), (yyvsp[-6].identifier_)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
+  case 56:
+#line 172 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.params) = new SL::Params(new SL::Param((yyvsp[-2].assignment)), (yyvsp[0].params));}
 #line 1709 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 58:
-#line 171 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.method) = new SL::Method(new SL::Var(new SL::SLType(new SL::Identifier("any")), (yyvsp[-6].identifier_)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
+  case 57:
+#line 175 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.method) = new SL::Method(new SL::Var((yyvsp[-7].my_type), (yyvsp[-6].identifier_)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
 #line 1715 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 59:
-#line 173 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.methods) = new SL::Methods((yyvsp[0].method));}
+  case 58:
+#line 177 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.method) = new SL::Method(new SL::Var(new SL::SLType(new SL::Identifier("any")), (yyvsp[-6].identifier_)), (yyvsp[-4].params), (yyvsp[-1].code_block));}
 #line 1721 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 60:
-#line 173 "solver_language_parser.y" /* yacc.c:1646  */
-    {(yyval.methods) = new SL::Methods((yyvsp[-1].method), (yyvsp[0].methods));}
+  case 59:
+#line 179 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.methods) = new SL::Methods((yyvsp[0].method));}
 #line 1727 "y.tab.c" /* yacc.c:1646  */
     break;
 
-  case 61:
-#line 175 "solver_language_parser.y" /* yacc.c:1646  */
-    {state->add_root((yyvsp[0].methods));}
+  case 60:
+#line 179 "solver_language_parser.y" /* yacc.c:1646  */
+    {(yyval.methods) = new SL::Methods((yyvsp[-1].method), (yyvsp[0].methods));}
 #line 1733 "y.tab.c" /* yacc.c:1646  */
     break;
 
+  case 61:
+#line 181 "solver_language_parser.y" /* yacc.c:1646  */
+    {state->add_root((yyvsp[0].methods));}
+#line 1739 "y.tab.c" /* yacc.c:1646  */
+    break;
 
-#line 1737 "y.tab.c" /* yacc.c:1646  */
+
+#line 1743 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1961,12 +1967,12 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 177 "solver_language_parser.y" /* yacc.c:1906  */
+#line 183 "solver_language_parser.y" /* yacc.c:1906  */
 
 
 void parse_solver_langauge_program(SolverProgramState* state, string solver_program_file)
 {
-	void* scanner = nullptr;
+	yyscan_t scanner;
 	yylex_init(&scanner);
 
 	char solver_program_file_char[solver_program_file.size()];
@@ -1978,5 +1984,6 @@ void parse_solver_langauge_program(SolverProgramState* state, string solver_prog
 	FILE* file_pointer = fopen(solver_program_file_char, "r");
 	yyset_in(file_pointer, scanner);
 	int rv = yyparse(scanner, state);
+	free(scanner);
 }
 

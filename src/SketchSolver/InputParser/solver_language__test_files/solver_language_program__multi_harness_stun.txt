@@ -84,8 +84,8 @@ Solver best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_
 
 Solver main()
 {
-    //return top_down_and_bottom_up_synthesis_sketch_main();
-    return recursive_function_stun();
+    return top_down_and_bottom_up_synthesis_sketch_main();
+    //return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -170,7 +170,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     //the sketch follows a constraint that the file_names should be the same
 
     num_trials = 1;
-    num_rows_per_sample = 3;
+    num_rows_per_sample = 1;
     select_best = 1;
     assert(num_trials >= select_best);
 
@@ -520,7 +520,7 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 2;
+    num_trials = 5;
     num_rows_per_sample = 3;
 
     int stun_depth = 3;

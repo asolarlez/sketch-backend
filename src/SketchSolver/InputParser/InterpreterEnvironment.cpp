@@ -1031,6 +1031,8 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ProgramEnvironment *env, ostream &out,
                                                       const string &file) {
 
+    /*
+     * running a solver program on a single harness is DEPRECIATED
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
     bool test_solver_language = true;
@@ -1075,7 +1077,7 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, P
         return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
-
+    */
     Assert(status == READY, "You can't do this if you are UNSAT");
     ++assertionStep;
 
@@ -1180,9 +1182,11 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, P
 
 SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out, const string &file) {
 
+    //DEPRECIATED BC IT IS EXPECTED THAT DAG IS WRAPPED IN AT LEAST A BooleanDagLightUtility
     assert(false);
 
-
+/*
+ *
     /// *** STILL IN PROGRESS
     ///  vvvvvvvvvvvvvvvvvvvv
     bool test_solver_language = false;
@@ -1192,7 +1196,8 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
         AssertDebug(false, "need to pass a ProgramEnvironment to FunctionMap.")
         const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
                 new SketchFunction(dag), file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new FunctionMap(nullptr)));
+                *(new FunctionMap(nullptr))
+                );
 
         cout << "EXITED SolverLanguage" << endl;
         if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
@@ -1217,6 +1222,7 @@ SATSolverResult InterpreterEnvironment::assertDAG(BooleanDAG *dag, ostream &out,
         return ret->get_sat_solver_result();
     }
     ///  ^^^^^^^^^^^^^^^^^^^
+    */
 
 	Assert(status == READY, "You can't do this if you are UNSAT");
 	++assertionStep;

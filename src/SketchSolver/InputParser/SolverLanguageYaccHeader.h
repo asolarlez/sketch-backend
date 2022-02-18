@@ -19,6 +19,11 @@ class Frame {
     vector<SL::Var*> all_new_vars;
 
 public:
+
+    bool is_empty() {
+        return vars_map.empty() && name_to_var_map.empty() && all_new_vars.empty();
+    }
+
     Frame() = default;
 
     void clear(bool is_global = false)
@@ -268,32 +273,63 @@ public:
 
     FunctionMap& function_map;
 
-    SketchFunction* harness_ = nullptr;
+//    SketchFunction* harness_ = nullptr;
 
     const string& file_name;
 
     ofstream console_output = ofstream("console_output.out");
 
-    SolverProgramState(SketchFunction* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
-                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
-            harness_(_harness), file_name(_file_name),
-            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
-            function_map(_function_map),
-            global() {}
+    SL::Methods* init_root = nullptr;
+
+    Frame global;
+
+    vector<NestedFrame> frames;
+
+    void clear()
+    {
+//        FloatManager& floats;
+//        CommandLineArgs& args;
+//        HoleHardcoder& hc;
+//        bool hasGoodEnoughSolution;
+
+//        FunctionMap& function_map;
+
+//        SketchFunction* harness_ = nullptr;
+
+//        const string& file_name;
+
+//        ofstream console_output = ofstream("console_output.out");
+        console_output.close();
+
+        init_root->clear();
+
+        assert(global.is_empty());
+
+        for(auto it: frames)
+        {
+            assert(it.is_empty());
+        }
+
+        frames.clear();
+
+    }
+
+//    SolverProgramState(SketchFunction* _harness, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
+//                       HoleHardcoder& _hc, bool _hasGoodEnoughSolution, FunctionMap& _function_map):
+//            harness_(_harness), file_name(_file_name),
+//            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),
+//            function_map(_function_map),
+//            global() {}
     SolverProgramState(FunctionMap& _function_map, const string& _file_name, FloatManager& _floats, CommandLineArgs& _args,
                        HoleHardcoder& _hc, bool _hasGoodEnoughSolution):
             function_map(_function_map), file_name(_file_name),
-            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution), harness_(nullptr),
+            floats(_floats), args(_args), hc(_hc), hasGoodEnoughSolution(_hasGoodEnoughSolution),// harness_(nullptr),
             global() {}
 
-    SL::Methods* init_root = nullptr;
     void add_root(SL::Methods* _init_root)
     {
         init_root = _init_root;
     }
-
-    Frame global;
-    vector<NestedFrame> frames;
 
     void add_var(SL::Var *var) {
         assert(!frames.empty());
