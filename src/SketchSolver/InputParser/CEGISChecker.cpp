@@ -465,18 +465,21 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
 	pushProblem(getHarness()->produce_concretization(&controls, bool_node::CTRL));
 
-    if(files.find(curProblem) != files.end())
+    #ifdef CHECK_FILE_INVARIANT
     {
-        BooleanDAG *concretized_dag = getHarness()->get_dag();
-        map<string, BooleanDAG*> empty;
-        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
-        VarStore &tmpin = get_input_store();
-        eval.init(tmpin);
-        auto inputs = concretized_dag->getNodesByType(bool_node::SRC);
-        File *file = files[curProblem];
-        assert(eval.check_file_invariant(file));
-//        cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
+        if (files.find(curProblem) != files.end()) {
+            BooleanDAG *concretized_dag = getHarness()->get_dag();
+            map<string, BooleanDAG *> empty;
+            CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
+            VarStore &tmpin = get_input_store();
+            eval.init(tmpin);
+            auto inputs = concretized_dag->getNodesByType(bool_node::SRC);
+            File *file = files[curProblem];
+            assert(eval.check_file_invariant(file));
+            //cout << "FILE PASSES OK (IN CHECKER) !!" << endl;
+        }
     }
+    #endif
 
 //	assert(false);
 //	OLD: pushProblem(hardCodeINode(getProblemDag(), controls, bool_node::CTRL, floats)));

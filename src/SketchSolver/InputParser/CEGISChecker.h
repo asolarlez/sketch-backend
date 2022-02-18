@@ -19,6 +19,7 @@ using namespace MSsolverNS;
 
 #include "BooleanDagLightUtility.h"
 
+
 class CEGISChecker
 {
 

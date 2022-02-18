@@ -11,7 +11,6 @@
 
 using namespace std;
 
-
 class CounterexampleFinder :
 	public NodeEvaluator
 {
@@ -120,7 +119,11 @@ public:
 //			return UNSAT;
 //		}
 
-        assert(check_file_invariant(file));
+        #ifdef CHECK_FILE_INVARIANT
+        {
+            assert(check_file_invariant(file));
+        }
+        #endif
 //        cout << "FILE PASSES OK (in FromFile)!!" << endl;
 
 		for(int i = 0;i<file->size();i++) {
@@ -142,8 +145,10 @@ public:
 			}
 			bool rv = this->run(*inputs);
 			if (rv) {
+#ifdef CHECK_FILE_INVARIANT
                 assert(file->get_used(i) == 0);
                 file->set_used(i);
+#endif
 				return FOUND;
 			}
 		}
@@ -255,29 +260,30 @@ public:
 		
 	}
 
-    bool check_file_invariant(File* file) {
-
-        vector<int> fails;
-        for(int i = 0;i<file->get_counterexample_ids_over_time().size();i++)
-        {
-            int row_id = file->get_counterexample_ids_over_time()[i];
-            bool ok = parseLine(file->at(row_id));
-            assert(ok);
-//            inputs->printBrief(cout);
-            bool rv = this->run(*inputs);
-            assert(bdag.get_failed_assert() == nullptr);
-            if(rv){
-//                cout << "subset row id: " << i << " FAILS" << endl;
-                fails.push_back(row_id);
-            }
-            else
+    #ifdef CHECK_FILE_INVARIANT
+        bool check_file_invariant(File* file) {
+            vector<int> fails;
+            for(int i = 0;i<file->get_counterexample_ids_over_time().size();i++)
             {
-//                cout << "subset row id: " << i << " PASSES" << endl;
+                int row_id = file->get_counterexample_ids_over_time()[i];
+                bool ok = parseLine(file->at(row_id));
+                assert(ok);
+                //inputs->printBrief(cout);
+                bool rv = this->run(*inputs);
+                assert(bdag.get_failed_assert() == nullptr);
+                if(rv){
+                    //cout << "subset row id: " << i << " FAILS" << endl;
+                    fails.push_back(row_id);
+                }
+                else
+                {
+                    //cout << "subset row id: " << i << " PASSES" << endl;
+                }
             }
-        }
 
-        return fails.empty();
-    }
+            return fails.empty();
+        }
+    #endif
 };
 
 

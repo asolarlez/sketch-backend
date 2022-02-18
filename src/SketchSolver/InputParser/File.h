@@ -19,19 +19,26 @@ void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 
 class BooleanDagLightUtility;
 
+
+//#define CHECK_FILE_INVARIANT
+
 class File: public vector<VarStore*>
 {
+    #ifdef CHECK_FILE_INVARIANT
+        vector<int> counterexample_ids_over_time;
+        vector<int> used;
+    #endif
 
-    vector<int> counterexample_ids_over_time;
-    vector<int> used;
     static void growInputs(VarStore & inputStore, BooleanDAG* dag);
     std::mt19937 generator;
 
     enum Result {NO_FILE, DONE, MOREBITS};
     void light_clear()
     {
+#ifdef CHECK_FILE_INVARIANT
         counterexample_ids_over_time.clear();
         used.clear();
+#endif
         for(auto& it : *this)
         {
             it->clear();
@@ -43,13 +50,16 @@ public:
 
     void reset()
     {
+#ifdef CHECK_FILE_INVARIANT
         counterexample_ids_over_time.clear();
         for(int i = 0;i<used.size();i++){
             used[i] = 0;
         }
+#endif
     }
 
     bool like_unused() const{
+#ifdef CHECK_FILE_INVARIANT
         if(!counterexample_ids_over_time.empty()) {
             return false;
         }
@@ -58,6 +68,7 @@ public:
                 return false;
             }
         }
+#endif
         return true;
     }
 
@@ -340,7 +351,9 @@ public:
                 new_file->push_back(at(i)->clone());
             }
             out << endl;
+#ifdef CHECK_FILE_INVARIANT
             new_file->used = vector<int>(new_file->size(), 0);
+#endif
             return new_file;
         }
         else {
@@ -351,7 +364,9 @@ public:
             for(int i = 0;i<samples.size();i++) {
                 new_file->push_back(samples[i]->clone());
             }
+#ifdef CHECK_FILE_INVARIANT
             new_file->used = vector<int>(new_file->size(), 0);
+#endif
             return new_file;
         }
     }
@@ -359,11 +374,12 @@ public:
     int get_used(int i);
 
     void set_used(int i);
-
+#ifdef CHECK_FILE_INVARIANT
     const vector<int>& get_counterexample_ids_over_time()
     {
         return counterexample_ids_over_time;
     }
+#endif
 
     File *produce_filter(std::function< bool(VarStore*) >& lambda_condition);
 

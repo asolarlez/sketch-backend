@@ -71,12 +71,15 @@ File::File(BooleanDagLightUtility *harness, const string &file, FloatManager &fl
         res = parseFile(file, floats, inputs, input_store);
     }
     assert(res == File::DONE);
+#ifdef CHECK_FILE_INVARIANT
     used = vector<int>(size(), 0);
+#endif
     delete bool_dag_map;
     bool_dag_map = nullptr;
     problem->clear();
 }
 
+#ifdef CHECK_FILE_INVARIANT
 int File::get_used(int i) {
     return used[i];
 }
@@ -85,6 +88,8 @@ void File::set_used(int i) {
     used[i]++;
     counterexample_ids_over_time.emplace_back(i);
 }
+
+#endif
 
 File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
     File* ret = new File(generator);
@@ -95,7 +100,9 @@ File *File::produce_filter(std::function< bool(VarStore*) >& lambda_condition) {
             ret->push_back(at(i)->clone());
         }
     }
+#ifdef CHECK_FILE_INVARIANT
     ret->used = vector<int>(ret->size(), 0);
+#endif
     return ret;
 }
 

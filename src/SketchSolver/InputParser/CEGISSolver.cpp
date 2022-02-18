@@ -161,10 +161,12 @@ bool CEGISSolver::solveCore(){
 		getMinVarHoleNode(mhnames, mhsizes);		
 	}
 
+#ifdef CHECK_FILE_INVARIANT
     File *file = files[(int)files.size() - 1];
     if(file != nullptr) {
         assert(file->get_counterexample_ids_over_time().size() == 0);
     }
+#endif
 
 	while(doMore){
 		// Verifier
@@ -239,77 +241,77 @@ bool CEGISSolver::solveCore(){
                     counterexample_concretized_dag = nullptr;
                 }
 
-                File *file = files[(int)files.size() - 1];
-
-                if(doMore) {
-
-                    ProgramEnvironment* env = checker->getProblem()->get_env();
-
-                    BooleanDAG* to_concretize = finder->get_all_inputs_dag()->clone();
-                    env->doInline(*to_concretize, ctrlStore, bool_node::CTRL);
-
-                    assert(to_concretize->get_failed_assert() == nullptr);
-                    to_concretize->clear();
-
-                    //check that all inputs used from the file pass on the the checker's harness
-                    if(file != nullptr)
-                    {
-                        BooleanDagLightUtility* concretized_function =
-                                checker->getProblem()->produce_concretization(
-                                        &ctrlStore, bool_node::CTRL);
-                        concretized_function->increment_shared_ptr();
-                        BooleanDAG *concretized_dag = concretized_function->get_dag();
-                        assert(concretized_dag->get_failed_assert() == nullptr);
-                        map<string, BooleanDAG*> empty;
-                        CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
-                        VarStore &tmpin = checker->get_input_store();
-                        eval.init(tmpin);
-                        File *file = files[(int)files.size() - 1];
-                        assert(eval.check_file_invariant(file));
-//                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
-                        concretized_function->clear();
-                    }
-
-                }
-                else
+                #ifdef CHECK_FILE_INVARIANT
                 {
+                    File *file = files[(int)files.size() - 1];
 
-                    BooleanDagLightUtility *harness = checker->getProblem();
+                    if (doMore) {
 
-                        BooleanDAG* the_dag = finder->get_all_inputs_dag()->clone();
-                    harness->get_env()->doInline(
-                            *the_dag, ctrlStore, bool_node::CTRL);
+                        ProgramEnvironment *env = checker->getProblem()->get_env();
 
+                        BooleanDAG *to_concretize = finder->get_all_inputs_dag()->clone();
+                        env->doInline(*to_concretize, ctrlStore, bool_node::CTRL);
 
-                    assert(the_dag->get_failed_assert() != nullptr);
-                    the_dag->clear();
+                        assert(to_concretize->get_failed_assert() == nullptr);
+                        to_concretize->clear();
 
-                    if(file != nullptr)
-                    {
-                        BooleanDagLightUtility* concretized_function =
-                                checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
-                        concretized_function->increment_shared_ptr();
-                        if(concretized_function->get_dag()->get_failed_assert() != nullptr){
-//                            cout << "FILE FAILS OK!! (1)" << endl;
-                        }
-                        else {
+                        //check that all inputs used from the file pass on the the checker's harness
+                        if (file != nullptr) {
+                            BooleanDagLightUtility *concretized_function =
+                                    checker->getProblem()->produce_concretization(
+                                            &ctrlStore, bool_node::CTRL);
+                            concretized_function->increment_shared_ptr();
                             BooleanDAG *concretized_dag = concretized_function->get_dag();
+                            assert(concretized_dag->get_failed_assert() == nullptr);
                             map<string, BooleanDAG *> empty;
                             CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
                             VarStore &tmpin = checker->get_input_store();
                             eval.init(tmpin);
                             File *file = files[(int) files.size() - 1];
-                            assert(!eval.check_file_invariant(file));
-                            auto tmp_dag = checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
-                            tmp_dag->increment_shared_ptr();
-                            int num_passing_inputs = tmp_dag->count_passing_inputs(file);
-                            tmp_dag->clear();
-                            assert(num_passing_inputs < file->size());
-//                            cout << "FILE FAILS OK!! (2)" << endl;
+                            assert(eval.check_file_invariant(file));
+//                        cout << "FILE PASSES OK (in CEGIS Slver)!!" << endl;
+                            concretized_function->clear();
                         }
-                        concretized_function->clear();
+
+                    } else {
+
+                        BooleanDagLightUtility *harness = checker->getProblem();
+
+                        BooleanDAG *the_dag = finder->get_all_inputs_dag()->clone();
+                        harness->get_env()->doInline(
+                                *the_dag, ctrlStore, bool_node::CTRL);
+
+
+                        assert(the_dag->get_failed_assert() != nullptr);
+                        the_dag->clear();
+
+                        if (file != nullptr) {
+                            BooleanDagLightUtility *concretized_function =
+                                    checker->getProblem()->produce_concretization(&ctrlStore, bool_node::CTRL);
+                            concretized_function->increment_shared_ptr();
+                            if (concretized_function->get_dag()->get_failed_assert() != nullptr) {
+//                            cout << "FILE FAILS OK!! (1)" << endl;
+                            } else {
+                                BooleanDAG *concretized_dag = concretized_function->get_dag();
+                                map<string, BooleanDAG *> empty;
+                                CounterexampleFinder eval(empty, *concretized_dag, params.sparseArray, floats);
+                                VarStore &tmpin = checker->get_input_store();
+                                eval.init(tmpin);
+                                File *file = files[(int) files.size() - 1];
+                                assert(!eval.check_file_invariant(file));
+                                auto tmp_dag = checker->getProblem()->produce_concretization(&ctrlStore,
+                                                                                             bool_node::CTRL);
+                                tmp_dag->increment_shared_ptr();
+                                int num_passing_inputs = tmp_dag->count_passing_inputs(file);
+                                tmp_dag->clear();
+                                assert(num_passing_inputs < file->size());
+//                            cout << "FILE FAILS OK!! (2)" << endl;
+                            }
+                            concretized_function->clear();
+                        }
                     }
                 }
+                #endif
 
             }catch(BasicError& e){
 				doMore = false;
