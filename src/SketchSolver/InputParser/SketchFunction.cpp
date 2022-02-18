@@ -212,6 +212,8 @@ void SketchFunction::core_clear(const string& dag_name)
     delete this;
 }
 
+long long SketchFunction::global_clear_id = 0;
+
 void SketchFunction::_clear()
 {
     if(local_clear_id != global_clear_id) {

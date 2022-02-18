@@ -27,10 +27,10 @@ namespace SL
     class FunctionCall;
 }
 
-static long long global_clear_id = 0;
-
 class SketchFunction: public BooleanDagUtility
 {
+    static long long global_clear_id;
+
     const SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
 
     bool new_way = true;

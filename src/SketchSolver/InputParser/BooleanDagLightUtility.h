@@ -25,7 +25,7 @@ private:
 protected:
     BooleanDagUtility * const skfunc = nullptr;
     SkFuncSetter(BooleanDagUtility* _skfunc);
-    void clear(bool clear_dag = true, bool sub_clear = false) const;
+    void soft_clear(bool clear_dag = true, bool sub_clear = false) const;
 public:
     const BooleanDagUtility* get_skfunc() const
     {
@@ -42,6 +42,8 @@ class InliningTree: private SkFuncSetter
 
     mutable map<string, string> find_dag_name_to_child_name;
 
+    void soft_clear(bool clear_root = true, bool sub_clear = false) const;
+    void _clear(set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
 public:
     InliningTree(BooleanDagUtility* _skfunc, bool do_recurse): SkFuncSetter(_skfunc){ assert(!do_recurse); };
     //copy by replacing root skfunc

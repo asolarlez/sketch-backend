@@ -114,7 +114,7 @@ InliningTree::InliningTree(BooleanDagUtility *_skfunc, map<BooleanDagUtility *, 
     if(is_root) delete visited;
 }
 
-void InliningTree::clear(bool clear_root, bool sub_clear) const{
+void InliningTree::soft_clear(bool clear_root, bool sub_clear) const{
     if(deleted)
     {
         return;
@@ -122,10 +122,33 @@ void InliningTree::clear(bool clear_root, bool sub_clear) const{
     deleted = true;
     for(const auto& it: var_name_to_inlining_subtree)
     {
-        it.second->clear(true, sub_clear);
+        it.second->soft_clear(true, sub_clear);
     }
-    SkFuncSetter::clear(clear_root, sub_clear);
+    SkFuncSetter::soft_clear(clear_root, sub_clear);
+//    delete this;
+}
+
+void InliningTree::_clear(set<const InliningTree*>* visited) const {
+    assert(deleted);
+    assert(visited->find(this) == visited->end());
+    bool is_root = visited->empty();
+    visited->insert(this);
+
+    for(const auto& it: var_name_to_inlining_subtree)
+    {
+        if(visited->find(it.second) == visited->end()) {
+            it.second->_clear(visited);
+        }
+    }
+
+    if(is_root) delete visited;
     delete this;
+}
+
+void InliningTree::clear(bool clear_root, bool sub_clear) const{
+    assert(!deleted);
+    soft_clear(clear_root, sub_clear);
+    _clear();
 }
 
 SolverLanguagePrimitives::HoleAssignment *InliningTree::get_solution(set<const InliningTree *> *visited) const {
@@ -447,6 +470,7 @@ bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*
     return ret;
 }
 
+
 long long SkFuncSetter::inlining_tree_global_id = 0;
 set<const SkFuncSetter*> SkFuncSetter::all_inlining_trees = set<const SkFuncSetter*>();
 
@@ -463,7 +487,7 @@ SkFuncSetter::SkFuncSetter(BooleanDagUtility *_skfunc): skfunc(_skfunc), inlinin
 //    }
 }
 
-void SkFuncSetter::clear(bool clear_dag, bool sub_clear) const {
+void SkFuncSetter::soft_clear(bool clear_dag, bool sub_clear) const {
 
     assert(skfunc != nullptr);
     if(clear_dag)
@@ -479,6 +503,7 @@ void SkFuncSetter::clear(bool clear_dag, bool sub_clear) const {
     assert(all_inlining_trees.find(this) != all_inlining_trees.end());
     all_inlining_trees.erase(this);
 }
+
 
 int SkFuncSetter::get_id() const {
     return inlining_tree_id;
