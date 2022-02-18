@@ -44,7 +44,7 @@ public:
             assert(false);
         }
     }
-    const T& get() const {
+    T& get() {
         return val;
     }
     bool operator == (const PolyVal<T>& other) const
@@ -62,7 +62,7 @@ class SkVal
     bool size_defined = false;
     int nbits;
 public:
-    explicit SkVal(const SkVal* to_copy):
+    explicit SkVal(SkVal* to_copy):
         sketch_val_type(to_copy->sketch_val_type), size_defined(to_copy->size_defined), nbits(to_copy->nbits) {}
     SkVal(SkValType _sketch_val_type, int _nbits):
             sketch_val_type(_sketch_val_type), nbits(_nbits), size_defined(true) {}
@@ -91,7 +91,7 @@ public:
             nbits == other.nbits);
     }
 
-    virtual SkVal* clone() const
+    virtual SkVal* clone()
     {
         assert(false);
         return nullptr;
@@ -103,12 +103,12 @@ class SkValBool: public SkVal, public PolyVal<bool>
 public:
     explicit SkValBool(int _val): PolyVal<bool>(_val), SkVal(sk_type_bool, 1) {assert(_val == 0 ||  _val == 1);}
     string to_string() override {return std::to_string(get());}
-    explicit SkValBool(const SkValBool* to_copy): SkVal(to_copy), PolyVal<bool>(to_copy){}
+    explicit SkValBool(SkValBool* to_copy): SkVal(to_copy), PolyVal<bool>(to_copy){}
     bool operator == (const SkValBool& other)
     {
         return SkVal::operator==(other) && PolyVal<bool>::operator==(other);
     }
-    SkValBool* clone() const override {
+    SkValBool* clone() override {
         return new SkValBool(this);
     }
 };
@@ -125,11 +125,11 @@ public:
         }
     }
 
-    explicit SkValBoolArr(const SkValBoolArr* to_copy): SkVal(to_copy), PolyVal<vector<int>>((PolyVal<vector<int>>*)to_copy){}
+    explicit SkValBoolArr(SkValBoolArr* to_copy): SkVal(to_copy), PolyVal<vector<int>>((PolyVal<vector<int>>*)to_copy){}
 
     string to_string() override {
         string ret;
-        const vector<int>& val = get();
+        vector<int>& val = get();
         for(int i = 0;i < val.size();i++)
         {
             ret += std::to_string(val.at(i));
@@ -140,7 +140,7 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
     }
-    SkValBoolArr* clone() const override {
+    SkValBoolArr* clone() override {
         return new SkValBoolArr(this);
     }
 };
@@ -154,7 +154,7 @@ public:
     PolyVal<vector<int>>(local_get_first(_val)), SkVal(sk_type_intarr, local_get_nbits(_val)) {}
     string to_string() override {
         string ret;
-        const vector<int>& val = get();
+        vector<int>& val = get();
         for(int i = 0;i < val.size();i++)
         {
             ret += std::to_string(val.at(i));
@@ -165,7 +165,7 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<vector<int>>::operator==(other);
     }
-    SkValIntArr* clone() const override {
+    SkValIntArr* clone() override {
         assert(false);
 //        return new SkValIntArr(this);
     }
@@ -177,14 +177,14 @@ public:
     explicit SkValInt(int _val, int _size): PolyVal<int>(_val), SkVal(sk_type_int, _size){
         assert(_val <= (1<<_size)-1);
     }
-    explicit SkValInt(const SkValInt* to_copy): SkVal(to_copy), PolyVal<int>(to_copy->get()){}
+    explicit SkValInt(SkValInt* to_copy): SkVal(to_copy), PolyVal<int>(to_copy){}
     string to_string() override {return std::to_string(get());}
 
     bool operator == (const SkValInt& other)
     {
         return SkVal::operator==(other) && PolyVal<int>::operator==(other);
     }
-    SkValInt* clone() const override {
+    SkValInt* clone() override {
         return new SkValInt(this);
     }
 };
@@ -198,7 +198,7 @@ public:
     {
         return SkVal::operator==(other) && PolyVal<float>::operator==(other);
     }
-    SkValFloat* clone() const override {
+    SkValFloat* clone() override {
         assert(false);
 //        return new SkValFloat(this);
     }
@@ -343,7 +343,7 @@ class Assignment_SkVal: public Mapping<SkVal> {
         var_name_to_dag_name_to_name[original_name][dag_name] = name;
     }
 
-    void set_it(Assignment_SkVal *updated_assignment, const string& name, const SkVal* const val)
+    void set_it(Assignment_SkVal *updated_assignment, const string& name, SkVal* val)
     {
         set(name, val->clone());
         assert(updated_assignment->name_to_original_name.find(name) != updated_assignment->name_to_original_name.end());
@@ -480,7 +480,7 @@ public:
     void update(Assignment_SkVal *updated_assignment) {
         assert(!null);
         if(updated_assignment->null) {
-            assert(updated_assignment->get_assignment().empty());
+            assert(updated_assignment->get_assignment().size() == 0);
         }
         for(const auto& it : updated_assignment->get_assignment()) {
             set_it(updated_assignment, it.first, it.second);
@@ -489,7 +489,7 @@ public:
     void disjoint_join_with(Assignment_SkVal *assignment_to_join_with) {
         assert(!null);
         if(assignment_to_join_with->null) {
-            assert(assignment_to_join_with->get_assignment().empty());
+            assert(assignment_to_join_with->get_assignment().size() == 0);
         }
         for(const auto& it : assignment_to_join_with->get_assignment()) {
             assert(!has(it.first));
@@ -701,7 +701,7 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        HoleAssignment *clone() const {
+        HoleAssignment *clone() {
             return new HoleAssignment(this);
         }
 
@@ -729,7 +729,8 @@ namespace SolverLanguagePrimitives {
 
         explicit InputAssignment(InputAssignment *to_copy) : Assignment_SkVal(new Assignment_SkVal((Assignment_SkVal*)to_copy)) {}
 
-        void clear() override {
+        void clear() override
+        {
             Assignment_SkVal::clear();
             delete this;
         }

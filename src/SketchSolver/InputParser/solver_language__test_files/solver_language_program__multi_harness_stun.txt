@@ -520,10 +520,10 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 5;
-    num_rows_per_sample = 3;
+    num_trials = 1;
+    num_rows_per_sample = 1;
 
-    int stun_depth = 3;
+    int stun_depth = 2;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 

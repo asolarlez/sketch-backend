@@ -199,10 +199,10 @@ void SketchFunction::core_clear(const string& dag_name)
     }
 
     if (solution != nullptr) {
+        AssertDebug(false, "solution SHOULD HAVE BEEN CLEARED AND SET TO 0 IN BooleanDagUtility.soft_clear((&)solution) by being passed as a parameter.")
         assert(solution->get_num_shared_ptr() == 0);
         assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() != this);
         solution->clear_assert_num_shared_ptr_is_0(true, true);
-        delete solution;
     }
 
     for(auto it: responsibility) {
