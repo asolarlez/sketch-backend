@@ -521,7 +521,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {

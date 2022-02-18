@@ -40,7 +40,7 @@ class InliningTree: private SkFuncSetter
     mutable bool deleted = false;
     map<string, const InliningTree*> var_name_to_inlining_subtree;
 
-    mutable map<string, const vector<string>* > dag_name_to_path;
+    mutable map<string, string> find_dag_name_to_child_name;
 
 public:
     InliningTree(BooleanDagUtility* _skfunc, bool do_recurse): SkFuncSetter(_skfunc){ assert(!do_recurse); };
@@ -52,6 +52,7 @@ public:
     InliningTree(const InliningTree *to_copy, map<BooleanDagUtility *, const InliningTree *> *visited = new map<BooleanDagUtility *, const InliningTree *>()):
             SkFuncSetter(to_copy->skfunc)
     {
+        bool is_root = visited->empty();
         assert(visited->find(skfunc) == visited->end());
         (*visited)[skfunc] = this;
         for(const auto& it: to_copy->var_name_to_inlining_subtree)
@@ -65,9 +66,13 @@ public:
             }
         }
         assert_nonnull();
+        if(is_root){
+            delete visited;
+        }
     }
 
     bool assert_nonnull(set<const InliningTree*>* visited = new set<const InliningTree*>()) const {
+        bool is_root = visited->empty();
         assert(visited->find(this) == visited->end());
         visited->insert(this);
         assert(skfunc != nullptr);
@@ -79,6 +84,7 @@ public:
                 it.second->assert_nonnull(visited);
             }
         }
+        if(is_root) delete visited;
         return true;
     }
 
@@ -91,7 +97,17 @@ public:
 
     SolverLanguagePrimitives::HoleAssignment *get_solution(set<const InliningTree *> *visited = new set<const InliningTree*>()) const;
 
-    const vector<string>* find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
+    vector<string>* _find(const string& target_dag, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
+    const vector<string>* find(const string& target_dag) const {
+        return _find(target_dag);
+    }
+    bool contains(const string& target_dag) const
+    {
+        const vector<string>* tmp_path = find(target_dag);
+        bool ret = tmp_path != nullptr;
+        delete tmp_path;
+        return ret;
+    }
 
     bool match_topology(const InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>()) const;
 

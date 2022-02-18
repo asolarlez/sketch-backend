@@ -505,6 +505,8 @@ public:
     InliningTree *get_inlining_tree_nonconst() {
         return inlining_tree;
     }
+
+    void set_inlining_tree_to_nullptr();
 };
 
 class SkHoleSpec

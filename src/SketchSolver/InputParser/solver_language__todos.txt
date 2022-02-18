@@ -79,7 +79,6 @@ Priority for merging with Master
 TODO: Priority for integration with Siemens
     1. Integrate with Python frontend.
 
-
 Use-cases
 Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
     DONE: one shot level1. (bot-top-bot)
@@ -90,7 +89,7 @@ Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
     TODO: crete more complicated zig-zag example.
     TODO: implement 'synthesize_composite_programs_from_parts' as a constructed sketch. (instead of the two for loops, make them holes in a sketch)
     TODO: use pareto frontier when selecting best candidates for left/right split (pareto frontier on both parts). Can use both best_effort on both parts for both parts
-    TODO: Stun with recursive function.
+    DONE: Stun with recursive function.
 
 Finish FunctionMapTransformer:
     DONE 1. Fix weird bug with FunctionMapTransformer
@@ -146,12 +145,14 @@ Necessary
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
     TODO: add parallelization capabilities though cilk.
     recursive subdag access.
-        TODO: allow access even when subdag has been cleared.
-        TODO: set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
+        allow access even when subdag has been cleared.
+            TODO: check what happens with name conflicts when reconstructing a superseeded dag.
+        DONE: (it's called superseeded) set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
     TODO: internalize inlining in solver langauge
     TODO: fix produce_concretize to accept a HoleAssignment, rather than a var store, for the cases where the var_store came from a HoleAssignment. Because now you are ad-hock declaring the sat_result to create a hole_assignment.
     DONE Test InliningTree on a recursive function.
-    TODO: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
+    (MAYBE DONE) TODO: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
+    TODO: reason about what happens in InliningTree._find when there are multiple ways to get to the target_dag (what needs to happen on at the site where the result is needed?) Probably you need extra asserts for type checking that the user knows what they are doing.
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs
@@ -166,7 +167,7 @@ DONE 4. Dynamic typing
     DONE add 'any' type.
 6. Implement methods for modification of sketches
     6.1. DONE replace_produce, and replace
-    *TODO: Fix renaming.
+    *DONE: Fix renaming.
     Return file that modifies the sketch to the frontend
         DONE: FunctionMapTransformerLanguage that keeps track of the modification of the sketch.
         DONE: Read solution from a FunctionMapTransformer program

@@ -27,9 +27,6 @@ bool VarStore::has_original_name(const string &original_name) const {
 void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const InliningTree *new_inlining_tree) {
     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
     if(contains(new_name)){
-//        cout << "contains " << new_name << endl;
-        //if new name already exists make sure that it's the same as the original name
-
         auto& obj = getObjConst(new_name);
         assert(obj.name == new_name);
         assert(obj.get_original_name() == original_name);
@@ -59,8 +56,6 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
     }
     else
     {
-//        cout << "not_contains " << new_name << endl;
-
         string matching_subdag_name;
 
         AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "checkrep should have failed.");
@@ -68,31 +63,29 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         const vector<string>* prev_path = nullptr;
         bool enter = false;
 
-        for(const auto& it: var_name_to_dag_name_to_name[original_name])
-        {
-             prev_path = inlining_tree->find(it.first);
-             if(prev_path != nullptr && *prev_path == *new_path)
-             {
-                 enter = true;
-                 matching_subdag_name = it.first;
-                 break;
-             }
+        for(const auto& it: var_name_to_dag_name_to_name[original_name]){
+            assert(enter == (prev_path != nullptr));
+            auto tmp_path = inlining_tree->find(it.first);
+            if(tmp_path != nullptr && *tmp_path == *new_path) {
+                AssertDebug(prev_path == nullptr && !enter, "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN InliningTree._find.");
+                enter = true;
+                prev_path = tmp_path;
+                matching_subdag_name = it.first;
+                //break;
+            }
+
+//            prev_path = inlining_tree->find(it.first);
+//            if(prev_path != nullptr && *prev_path == *new_path) {
+//                enter = true;
+//                matching_subdag_name = it.first;
+////                break;
+//            }
         }
 
-//        AssertDebug(var_name_to_dag_name_to_name[original_name].size() == 1, "Check why this fails and respond accordingly.");
         assert(inlining_tree != nullptr);
-//        vector<string>* prev_path = inlining_tree->find(var_name_to_dag_name_to_name[original_name].begin()->first);
-//        vector<string>* new_path = new_inlining_tree->find(new_source_dag);
         if(!enter)
         {
             assert(prev_path == nullptr || *prev_path != *new_path);
-//            cout << "HERE" << endl;
-//            cout << "VARSTORE INLINING TREE" << endl;
-//            inlining_tree->print();
-//            cout << "NEW INLINING TREE" << endl;
-//            new_inlining_tree->print();
-//            cout << endl;
-
             const InliningTree* subtree = inlining_tree;
             for(int i = new_path->size()-1; i>=0;i--) {
                 subtree = subtree->get_sub_inlining_tree((*new_path)[i]);
@@ -120,18 +113,10 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
                     assert(prev_source_dag_name == sub_var_name_to_dag_name_to_name[original_name].begin()->first);
                     assert(sub_var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
                                    sub_var_name_to_dag_name_to_name[original_name].end());
-//                    obj.rename(new_name, new_source_dag);
-
                     assert(sub_index.find(new_name) == sub_index.end());
-//                    int prev_index = sub_index[obj_name];
                     assert(index.find(obj_name) == index.end());
-//                    cout << "ERASING " << obj_name << endl;
-//                    assert(false);
-//                    index.erase(obj_name);
-//                    index[new_name] = prev_index;
                     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
                     assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) == var_name_to_dag_name_to_name[original_name].end());
-//                    var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
                     assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) == var_name_to_dag_name_to_name[original_name].end());
 
                     auto new_obj = objP(obj);
@@ -154,7 +139,6 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         else {
             AssertDebug(*prev_path == *new_path,
                         "You are replacing a hole name with another hole name that doesn't match the topological location between the prev and new inlining tree");
-//            string obj_name = var_name_to_dag_name_to_name[original_name].begin()->second;
 
             assert(var_name_to_dag_name_to_name[original_name].find(matching_subdag_name) != var_name_to_dag_name_to_name[original_name].end());
             string obj_name = var_name_to_dag_name_to_name[original_name][matching_subdag_name];
@@ -171,12 +155,16 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 
             assert(index.find(new_name) == index.end());
             int prev_index = index[obj_name];
-//            cout << "ERASING " << obj_name << endl;
             index.erase(obj_name);
             index[new_name] = prev_index;
             assert(objs[index[new_name]].name == new_name);
             var_name_to_dag_name_to_name[original_name].erase(prev_source_dag_name);
             var_name_to_dag_name_to_name[original_name][new_source_dag] = new_name;
+        }
+
+        delete new_path;
+        if(prev_path != nullptr) {
+            delete prev_path;
         }
     }
 }
@@ -227,7 +215,7 @@ bool VarStore::check_rep() const {
         assert(var_name_to_dag_name_to_name.at(original_name).find(dag_name) != var_name_to_dag_name_to_name.at(original_name).end());
         assert(var_name_to_dag_name_to_name.at(original_name).at(dag_name) == it.first);
 
-        assert(inlining_tree->find(dag_name) != nullptr);
+        assert(inlining_tree->contains(dag_name));
 
     }
     return true;
@@ -274,7 +262,7 @@ void VarStore::operator=(const VarStore &to_copy){
     {
         pair<int, string> it = index_as_vec[i];
         assert(it.first == i);
-        if(inlining_tree == nullptr || (inlining_tree->find(to_copy.objs[it.first].get_source_dag_name()) != nullptr)) {
+        if(inlining_tree == nullptr || inlining_tree->contains(to_copy.objs[it.first].get_source_dag_name())) {
             insertObj(it.second, true_idx, objP(to_copy.objs[it.first]));
             true_idx++;
         }

@@ -181,6 +181,11 @@ void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {
     Mapping<SkVal>::clear();
 }
 
+void Assignment_SkVal::set_inlining_tree_to_nullptr() {
+    assert(inlining_tree != nullptr);
+    inlining_tree = nullptr;
+}
+
 void SolverLanguagePrimitives::HoleAssignment::clear() const{
     assert(shared_ptr == 1);
     assert(shared_ptr >= 1);
