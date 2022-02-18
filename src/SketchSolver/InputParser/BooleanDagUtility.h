@@ -144,7 +144,7 @@ public:
         }
     }
 
-    void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type, vector<string>*& inlined_functions) {
+    void concretize_this_dag(const VarStore* const _var_store, bool_node::Type var_type, vector<string>*& inlined_functions) {
         assert(get_dag()->get_failed_assert() == nullptr);
 
         if(inlining_tree != nullptr) {
@@ -167,9 +167,9 @@ public:
             }
             else
             {
-                if(var_store != nullptr) {
+                if(_var_store != nullptr) {
                     is_being_concretized = true;
-                    if(var_store->size() == 0) {
+                    if(_var_store->size() == 0) {
                         assert(inlining_tree->has_no_holes());
                     }
                 }
@@ -185,12 +185,7 @@ public:
             }
         }
 
-        if(var_store == nullptr)
-        {
-            var_store = new VarStore();
-        }
-
-        BooleanDagLightUtility::concretize_this_dag(var_store, var_type, inlined_functions);
+        BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
 
         if(is_being_concretized) {
             has_been_concretized = true;

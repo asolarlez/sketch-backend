@@ -119,10 +119,10 @@ public:
     void clear() override;
     void _clear();
 
-    const VarStore* get_solution_var_store()
+    VarStore* get_solution_var_store()
     {
         const SolverLanguagePrimitives::HoleAssignment* local_solution = get_solution();
-        const VarStore* ret = solution->get_assignment()->to_var_store();
+        VarStore* ret = solution->get_assignment()->to_var_store();
         assert(local_solution->get_num_shared_ptr() == 0);
         local_solution->clear_assert_num_shared_ptr_is_0();
         return ret;

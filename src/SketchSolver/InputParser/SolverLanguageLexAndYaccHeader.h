@@ -986,7 +986,7 @@ namespace SL {
                     clear<SketchFunction*>(skfunc, false);
                     break;
                 case solution_val_type:
-                    clear<const SolverLanguagePrimitives::HoleAssignment*>(solution);
+                    clear<const SolverLanguagePrimitives::HoleAssignment*>(solution, false);
                     break;
                 case input_val_type:
                     clear<SolverLanguagePrimitives::InputAssignment*>(input_holder);

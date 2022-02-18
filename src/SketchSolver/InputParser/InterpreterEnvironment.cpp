@@ -983,17 +983,22 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
-    const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
+    const SolverLanguagePrimitives::HoleAssignment* almost_ret = solver_language.eval(
             program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+    for(auto it: program_env.function_map)
+    {
+        delete it.second; // keeps the underlying dags, but deletes the skfunc.
+    }
+    delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
 
     cout << "EXITED SolverLanguage" << endl;
-    if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
+    if (almost_ret->get_sat_solver_result() != SAT_SATISFIABLE)
     {
         status = UNSAT;
     }
-    if(ret->has_assignment_skval()) {
+    if(almost_ret->has_assignment_skval()) {
         hardcoder.get_control_map(currentControls);
-        ret->get_control_map(currentControls);
+        almost_ret->get_control_map(currentControls);
         cout << "recorded_solution" << endl;
         cout << "VALUES ";
         for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
@@ -1007,7 +1012,7 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
     }
     cout << "EXITING assertHarness." << endl;
 
-    if(ret->get_sat_solver_result() == SAT_SATISFIABLE)
+    if(almost_ret->get_sat_solver_result() == SAT_SATISFIABLE)
     {
         cout << "return SAT_SATISFIABLE" << endl;
     }
@@ -1016,8 +1021,10 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
         cout << "return NOT SAT_SATISFIABLE" << endl;
     }
 
-    assert(ret->get_sat_solver_result() == SAT_SATISFIABLE);
-    return ret->get_sat_solver_result();
+    assert(almost_ret->get_sat_solver_result() == SAT_SATISFIABLE);
+    auto ret = almost_ret->get_sat_solver_result();
+    almost_ret->clear_assert_num_shared_ptr_is_0();
+    return ret;
 }
 
 

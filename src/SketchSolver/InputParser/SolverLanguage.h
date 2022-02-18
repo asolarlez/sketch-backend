@@ -1017,8 +1017,9 @@ namespace SolverLanguagePrimitives
                 }
             }
 
-
-            auto tmp_dag = problem->get_harness()->produce_concretization(holes_to_sk_val->to_var_store(false), bool_node::CTRL);
+            VarStore* tmp_var_store = holes_to_sk_val->to_var_store(false);
+            auto tmp_dag = problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
+            tmp_var_store->clear();
             tmp_dag->increment_shared_ptr();
             int num_passing_inputs = tmp_dag->count_passing_inputs(problem->get_file());
             if(ret_result == SAT_SATISFIABLE)
@@ -1040,7 +1041,9 @@ namespace SolverLanguagePrimitives
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
             if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
             {
-                auto tmp = problem->get_harness()->produce_concretization(ret->to_var_store(false), bool_node::CTRL);
+                auto tmp_local_var_store = ret->to_var_store(false);
+                auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
+                tmp_local_var_store->clear();
                 assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
                 assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
                 tmp->increment_shared_ptr();

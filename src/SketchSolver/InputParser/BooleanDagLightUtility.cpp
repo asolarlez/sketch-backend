@@ -270,7 +270,7 @@ bool InliningTree::match_topology(const InliningTree *other, set<string> *visite
     return true;
 }
 
-void InliningTree::concretize(const VarStore *var_store, bool is_root, set<BooleanDagUtility*>* visited) const {
+void InliningTree::concretize(const VarStore * const var_store, bool is_root, set<BooleanDagUtility*>* visited) const {
     assert(is_root == visited->empty());
     assert(visited->find(skfunc) == visited->end());
     visited->insert(skfunc);
@@ -438,7 +438,11 @@ bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*
         }
     }
 
-    if(is_root) delete visited;
+    if(is_root)
+    {
+        delete visited;
+        delete hole_names;
+    }
 
     return ret;
 }

@@ -315,7 +315,7 @@ public:
 		    return ret;
         }
 
-        void setArr(vector<int> *arr) {
+        void setArr(const vector<int> *arr) {
             assert(is_array);
             objP* at = this;
             for(int i = 0;i<arr->size();i++)
@@ -479,7 +479,7 @@ public:
         return inlining_tree;
     }
 
-	void clear() const;
+	void clear();
 
     int size() const
     {
@@ -549,7 +549,7 @@ public:
         assert(objs[begidx].get_is_array());
 	}
 
-    void setArr(const string& name, vector<int>& arr) {
+    void setArr(const string& name, const vector<int>& arr) {
 	    Assert(index.find(name) != index.end(), name + " not found.");
         objs[index[name]].setArr(&arr);
         assert(objs[index[name]].get_is_array());

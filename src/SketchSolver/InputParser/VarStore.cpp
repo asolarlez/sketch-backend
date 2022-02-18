@@ -73,13 +73,6 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
                 matching_subdag_name = it.first;
                 //break;
             }
-
-//            prev_path = inlining_tree->find(it.first);
-//            if(prev_path != nullptr && *prev_path == *new_path) {
-//                enter = true;
-//                matching_subdag_name = it.first;
-////                break;
-//            }
         }
 
         assert(inlining_tree != nullptr);
@@ -95,7 +88,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
 
             assert(var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) == var_name_to_dag_name_to_name[original_name].end());
 
-            const VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution_var_store();
+            VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution_var_store();
             auto sub_var_name_to_dag_name_to_name = sub_var_store->var_name_to_dag_name_to_name;
             auto sub_index = sub_var_store->index;
             if(sub_var_name_to_dag_name_to_name.find(original_name) != sub_var_name_to_dag_name_to_name.end())
@@ -269,21 +262,27 @@ void VarStore::operator=(const VarStore &to_copy){
     }
 }
 
-void VarStore::clear() const
+void VarStore::clear()
 {
 //		for(auto it:objs)
 //		{
 //            it.clear();
 //		}
 
-//    var_name_to_dag_name_to_name.clear();
+    for(auto it:var_name_to_dag_name_to_name)
+    {
+        it.second.clear();
+    }
+
+    var_name_to_dag_name_to_name.clear();
+
 
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
     }
 
-//    objs.clear();
-//    index.clear();
+    objs.clear();
+    index.clear();
 
     Assert(synths.size() == 0, "TODO: implement copy logic for synths and synthouths.");
     Assert(synthouts.size() == 0, "TODO: implement copy logic for synths and synthouths.");

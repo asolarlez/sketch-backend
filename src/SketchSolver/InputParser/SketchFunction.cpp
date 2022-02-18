@@ -228,7 +228,9 @@ void SketchFunction::_clear()
         assert(prev_gloval == global_clear_id);
         core_clear(dag_name);
     }
-    local_clear_id = -1;
+    else {
+        local_clear_id = -1;
+    }
 }
 
 void SketchFunction::clear(){
@@ -454,7 +456,7 @@ void SketchFunction::deep_clone_tail() {
         assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
     }
 
-    inlined_functions->clear();
+    delete inlined_functions;
     inlined_functions = nullptr;
 
     if (to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end()) {

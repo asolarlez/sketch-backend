@@ -111,7 +111,7 @@ public:
 
     bool match_topology(const InliningTree *other, set<string> *visited = new set<string>(), set<string> *other_visited = new set<string>()) const;
 
-    void concretize(const VarStore *var_store, bool is_root = false, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
+    void concretize(const VarStore * const var_store, bool is_root = false, set<BooleanDagUtility*>* visited = new set<BooleanDagUtility*>()) const;
 
     const BooleanDagUtility *get_skfunc() const ;
 
@@ -186,7 +186,7 @@ public:
     }
 
 
-    BooleanDagLightUtility* produce_concretization(const VarStore* var_store, const bool_node::Type var_type) {
+    BooleanDagLightUtility* produce_concretization(const VarStore* const var_store, const bool_node::Type var_type) {
         BooleanDagLightUtility* ret = clone();
         vector<string>* inlined_functions = nullptr;
         ret->concretize_this_dag(var_store, var_type, inlined_functions);
@@ -194,15 +194,19 @@ public:
         return ret;
     }
 
-    void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type) {
+    void concretize_this_dag(const VarStore* const var_store, bool_node::Type var_type) {
         vector<string>* inlined_functions = nullptr;
         concretize_this_dag(var_store, var_type, inlined_functions);
     }
 
-    void concretize_this_dag(const VarStore* var_store, bool_node::Type var_type, vector<string>*& inlined_functions)
+    void concretize_this_dag(const VarStore* const _var_store, bool_node::Type var_type, vector<string>*& inlined_functions)
     {
-        if(var_store == nullptr) {
+        const VarStore* var_store = nullptr;
+        if(_var_store == nullptr) {
             var_store = new VarStore();
+        }
+        else {
+            var_store = _var_store;
         }
 
         if (new_way) {
@@ -212,6 +216,13 @@ public:
             assert(var_store != nullptr);
             hardCodeINodeNoClone(root_dag, *var_store, var_type, env->get_floats());
             inlined_functions = nullptr;
+        }
+
+        if(_var_store == nullptr)
+        {
+            assert(var_store != nullptr);
+            assert(var_store->size() == 0);
+            delete var_store;
         }
     }
 
