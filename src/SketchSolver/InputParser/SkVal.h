@@ -323,6 +323,8 @@ public:
 
 class Assignment_SkVal: public Mapping<SkVal> {
 
+    FloatManager* fm = nullptr;
+
     bool_node::Type type = bool_node::NO_TYPE;
 
     map<string, string> name_to_original_name;
@@ -687,7 +689,7 @@ namespace SolverLanguagePrimitives {
             }
         }
 
-        void join_with(const HoleAssignment* other) const
+        void disjoint_join_with(const HoleAssignment* other) const
         {
             if(other->sat_solver_result == SAT_UNSATISFIABLE) {
                 sat_solver_result = SAT_UNSATISFIABLE;

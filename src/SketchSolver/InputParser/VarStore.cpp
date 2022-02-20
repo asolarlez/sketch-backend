@@ -280,7 +280,6 @@ VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
 
 bool VarStore::check_rep() const {
     assert(inlining_tree != nullptr);
-    inlining_tree->check_rep(this);
     for(const auto& it: index) {
         auto obj = getObjConst(it.first);
         string original_name = obj.get_original_name();
@@ -293,12 +292,14 @@ bool VarStore::check_rep() const {
         assert(inlining_tree->contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
 
     }
+    inlining_tree->check_rep(this);
     return true;
 }
 
 void VarStore::set_inlining_tree(const InliningTree *new_inlining_tree) {
-    assert(inlining_tree != nullptr);
-    inlining_tree->clear();
+    if(inlining_tree != nullptr) {
+        inlining_tree->clear();
+    }
     inlining_tree = new LightInliningTree(new_inlining_tree);
 }
 
@@ -446,7 +447,6 @@ void VarStore::change_id(const string &prev_name, int new_id) {
 
 bool VarStore::contains(const VarStore::objP &obj, vector<string> *path) const
 {
-
 
     assert(var_name_to_dag_name_to_name.find(obj.get_original_name()) != var_name_to_dag_name_to_name.end());
     assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).find(obj.get_source_dag_name()) != var_name_to_dag_name_to_name.at(obj.get_original_name()).end());

@@ -17,7 +17,7 @@ class BooleanDagUtility: public BooleanDagLightUtility {
     InliningTree* inlining_tree = nullptr;
 
     bool has_been_concretized = false;
-    const VarStore* var_store_used_for_concretization = nullptr;
+    VarStore* var_store_used_for_concretization = nullptr;
 
 public:
 
@@ -163,6 +163,7 @@ public:
         else {
             assert(inlining_tree == nullptr);
             inlining_tree = new InliningTree(this);
+            inlining_tree->get_solution();
         }
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_dag_id()  == get_dag_id());
@@ -195,6 +196,11 @@ public:
             }
         }
 
+        vector<string> local_hole_names;
+        for(auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
+            local_hole_names.push_back(it->get_name());
+        }
+
         BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
 
         if(is_being_concretized) {
@@ -202,8 +208,16 @@ public:
             has_been_concretized = true;
             assert(var_store_used_for_concretization == nullptr);
             if(_var_store != nullptr) {
-                var_store_used_for_concretization = new VarStore(*_var_store);
-                inlining_tree->set_var_store(var_store_used_for_concretization);
+                var_store_used_for_concretization = new VarStore();
+                for(int i = 0; i< local_hole_names.size();i++)
+                {
+                    string hole_name = local_hole_names[i];
+                    if(hole_name != "#PC") {
+                        var_store_used_for_concretization->insertObj(hole_name, var_store_used_for_concretization->size(), VarStore::objP(
+                                _var_store->getObjConst(hole_name)));
+                    }
+                }
+                inlining_tree->set_var_store(_var_store);
 //                inlining_tree->check_rep();
             }
         }

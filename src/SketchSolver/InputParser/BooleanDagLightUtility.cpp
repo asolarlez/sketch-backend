@@ -72,9 +72,9 @@ void TemplateInliningTree<BaseClass>::
         at_var_store = new VarStore();
     }
     else {
-        cout <<"APPENDING SOLUTION OF DAG: " << get_dag_name() << endl;
-        at_var_store->printContent(cout);
-        cout << endl;
+//        cout <<"APPENDING SOLUTION OF DAG: " << get_dag_name() << endl;
+//        at_var_store->printContent(cout);
+//        cout << endl;
         append_join(*running_var_store, *at_var_store);
     }
     for(const auto& it: var_name_to_inlining_subtree){
@@ -331,7 +331,7 @@ void InliningTree::rename_var_store(VarStore &var_store, const LightInliningTree
     }
 
     assert(prev_name_to_new_name.size() <= 1);
-    if(prev_name_to_new_name.size() >= 1) {
+    if(!prev_name_to_new_name.empty()) {
         assert(prev_name_to_new_name.size() == 1);
         assert(var_store_inlining_tree->get_dag_name() == prev_name_to_new_name.begin()->first);
         assert(get_dag_name() == prev_name_to_new_name.begin()->second);
@@ -342,7 +342,8 @@ void InliningTree::rename_var_store(VarStore &var_store, const LightInliningTree
     }
     else {
         assert(prev_name_to_new_name.empty());
-        if(var_store_inlining_tree->get_var_store_used_for_concretization() == nullptr) {
+        if(var_store_inlining_tree->get_var_store_used_for_concretization() == nullptr ||
+                var_store_inlining_tree->get_var_store_used_for_concretization()->size() == 0) {
             var_store.rename_subdag(var_store_inlining_tree->get_dag_name(), get_dag_name());
             var_store.change_id(var_store_inlining_tree->get_dag_name(), get_dag_id());
         }

@@ -102,7 +102,8 @@ protected:
         if(!var_store->contains(obj.name)) {
             assert(_num_unconcretized_holes >= 1);
             _num_unconcretized_holes--;
-            var_store->newVar(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
+            var_store->insertObj(obj.name, var_store->size(), VarStore::objP(obj));
+//            var_store->newVar(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
         }
         else
         {
@@ -141,11 +142,6 @@ public:
             var_store = to_copy->var_store->clone();
         }
         assert(var_store != nullptr || _num_unconcretized_holes == 0);
-        if(get_dag_name().substr(0, 9) == "condition")
-        {
-            assert(var_store != nullptr);
-            assert(var_store->size() == 2);
-        }
     }
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
 
@@ -247,7 +243,7 @@ class TemplateInliningTree: public BaseClass
 
     TemplateInliningTree* get_target(const string& target_subdag)
     {
-        const vector<string>* path = find(target_subdag);
+        const vector<string>* path = find_any_path(target_subdag);
         TemplateInliningTree* at = this;
         for(int i = path->size()-1;i>=0;i--) {
             assert(at->var_name_to_inlining_subtree.find(path->at(i)) != at->var_name_to_inlining_subtree.end());
@@ -329,7 +325,8 @@ public:
 
     explicit TemplateInliningTree(const BooleanDagUtility* _skfunc, map<const BooleanDagUtility*, TemplateInliningTree *> *visited = new map<const BooleanDagUtility*, TemplateInliningTree *>());
 
-    TemplateInliningTree(const BooleanDagUtility *to_replace_root, const TemplateInliningTree *to_copy, map<int, TemplateInliningTree *> *visited = new map<int, TemplateInliningTree *>()): BaseClass(to_replace_root)
+    TemplateInliningTree(const BooleanDagUtility *to_replace_root, const TemplateInliningTree *to_copy, map<int, TemplateInliningTree *> *visited = new map<int, TemplateInliningTree *>()):
+        BaseClass(to_replace_root)
     {
         bool is_root = visited->empty();
         assert(visited->find(get_dag_id()) == visited->end());
@@ -405,7 +402,7 @@ public:
         return true;
     }
 
-    vector<string>* _find(const string& target_dag, set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const
+    vector<string>* _find(const string& target_dag, bool find_any_path, set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const
     {
         bool is_root = visited->empty();
         assert(visited->find(this) == visited->end());
@@ -439,13 +436,15 @@ public:
         else {
             for(const auto& it: var_name_to_inlining_subtree)  {
                 if(visited->find(it.second) == visited->end()) {
-                    vector<string>* tmp_ret = it.second->_find(target_dag);
+                    vector<string>* tmp_ret = it.second->_find(target_dag, find_any_path);
                     if(tmp_ret != nullptr) {
                         AssertDebug(ret == nullptr, "IF THIS IS TRIGGERED, IT MEANS THAT THERE ARE MULTIPLE PATHS TO target_dag ("+target_dag+"). FIGURE OUT WHAT TO DO IN THIS CASE. PROBABLY MORE ASSERTS NEED TO BE ADDED WHERE THIS RESULT IS USED IN ORDER TO MAKE SURE THE USER KNOWS WHAT THEY ARE DOING. POSSIBLY NEED TO RETURN ALL PATHS.");
                         tmp_ret->push_back(it.first);
                         ret = tmp_ret;
                         head_str = it.first;
-                        //break;
+                        if(find_any_path) {
+                            break;
+                        }
                     }
                 }
             }
@@ -458,7 +457,11 @@ public:
 
 
     const vector<string>* find(const string& target_dag) const {
-        return _find(target_dag);
+        return _find(target_dag, false);
+    }
+
+    const vector<string>* find_any_path(const string& target_dag) const {
+        return _find(target_dag, true);
     }
 
     virtual const TemplateInliningTree *get_sub_inlining_tree(const string &under_this_name) const {
@@ -468,7 +471,7 @@ public:
 
     void _get_solution(VarStore* running_var_store, set<const TemplateInliningTree *> *visited = new set<const TemplateInliningTree *>()) const;
 
-    const VarStore * get_solution() const {
+    VarStore * get_solution() const {
         VarStore* ret = new VarStore();
         _get_solution(ret);
         return ret;
@@ -526,6 +529,7 @@ public:
         TemplateInliningTree* target = get_target(prev_name);
         target->BaseClass::rename_dag(new_name);
     }
+
     void change_id(const string& prev_name, int new_id)
     {
         TemplateInliningTree* target = get_target(prev_name);
@@ -534,10 +538,18 @@ public:
 
     void set_var_store(const VarStore* new_var_store)
     {
+//        cout << "IN SET_VAR_STORE new_var_store" << endl;
+//        new_var_store->printContent(cout);
+//        cout << "IN SET_VAR_STORE prev:" << endl;
+//        get_solution()->printContent(cout);
+//        cout << "--" << endl;
         assert(new_var_store != nullptr);
         for(auto obj: *new_var_store){
             insert_var(obj);
         }
+//        cout << "-- post:" << endl;
+//        get_solution()->printContent(cout);
+//        cout << "EXITING set_var_store " << endl;
     }
 };
 
@@ -823,19 +835,19 @@ public:
     }
 
     void increment_shared_ptr() const {
-//        if(get_dag()->get_dag_id() == 91)
-//        {
-//            cout << "here" << endl;
-//        }
+        if(get_dag()->get_dag_id() == 190)
+        {
+            cout << "here" << endl;
+        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }
 
     void decrement_shared_ptr_wo_clear() {
-//        if(get_dag()->get_dag_id() == 91)
-//        {
-//            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
-//        }
+        if(get_dag()->get_dag_id() == 190)
+        {
+            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
+        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);

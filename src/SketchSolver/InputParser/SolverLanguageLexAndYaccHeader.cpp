@@ -394,8 +394,11 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
             SketchFunction* skfunc = param_var_val->get_function();
+//            cout << "SAT SOLER ON DAG: " << skfunc->get_dag_id() << endl;
 
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
+//            harness->get_inlining_tree()->get_solution()->check_rep();
+
 
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
@@ -407,14 +410,19 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             auto* problem = new ProblemAE(harness, file);
             const HoleAssignment* sol = (solver)->solve(problem);
+            assert(sol->get_assignment()->get_inlining_tree() == nullptr);
             //NEXT TODO: refactor inlining tree to store the assignment indexed by tree path,
             //rather than as a solution in a skfunc, bc we don't want the skfunc to necessarily exist
-            const VarStore* subsolution = harness->get_inlining_tree()->get_solution();
-            harness->get_inlining_tree()->set_var_store(subsolution);
+//            const VarStore* subsolution = harness->get_inlining_tree()->get_solution();
+//            harness->get_inlining_tree()->set_var_store(subsolution);
+            HoleAssignment* append_sol = new HoleAssignment(SAT_SATISFIABLE, harness->get_inlining_tree()->get_solution(), harness->get_env()->floats);
             harness->get_inlining_tree()->set_var_store(sol->to_var_store(false));
+            sol->disjoint_join_with(append_sol);
             sol->set_inlining_tree(harness->get_inlining_tree());
             file->reset();
             assert(file->like_unused());
+
+
 
             assert(sol->to_var_store()->check_rep_and_clear());
 ////            harness->increment_shared_ptr();
@@ -503,7 +511,7 @@ SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignmen
             assert(params.size() == 1);
             using namespace SolverLanguagePrimitives;
             const HoleAssignment *other_solution = params[0]->eval(state)->get_solution();
-            the_solution->join_with(other_solution);
+            the_solution->disjoint_join_with(other_solution);
             return new VarVal();
         }
 //        case _get:
@@ -544,7 +552,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {

@@ -86,10 +86,15 @@ public:
             dependency.second->increment_shared_ptr();
         }
         if(solution != nullptr) {
-            VarStore* var_store = solution->to_var_store();
+//            VarStore* var_store = solution->to_var_store();
+//
+//            get_inlining_tree()->rename_var_store(*var_store, var_store->get_inlining_tree());
 
-            get_inlining_tree()->rename_var_store(*var_store, var_store->get_inlining_tree());
+            VarStore* var_store = get_inlining_tree()->get_solution();
+            var_store->set_inlining_tree(get_inlining_tree());
+
             solution = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
+//            solution->set_inlining_tree(get_inlining_tree());
             assert(solution != nullptr);
             increment_shared_ptr();
             var_store->clear();
