@@ -1134,20 +1134,36 @@ namespace SL {
 
     class Expression;
 
+    //sketch function types
+        //sketch function with holes
+        //concretized unit sketch function
+        //concretized inlined sketch function (executable SkFunc)
+
     enum MethodId {
         _unknown_method,
         _file, _produce_subset_file,
-        _sat_solver, _produce_concretization,
-        _concretize, _size, _get,
+        _sat_solver, _size, _get,
         _passes, _clear, _Solution, _join,
         _print, _num_holes, _append,
         _first, _second,
         _to_float, _sort_vec,
-        _clone, _deep_clone, _assert, _reverse,
-        _produce_replace,
-        _replace, _get_solution,
+        _assert, _reverse,
         _produce_filter,
-        _not, _relabel, _reset};
+        _not, _relabel, _reset,
+        _produce_deep_concretize,
+//        TODO: produce_unit_concretize
+        _inplace_deep_concretize,
+//        TODO: inplace_unit_concretize,
+        _produce_executable,
+        _make_executable,
+        _clone,
+        _deep_clone,
+        _unit_clone,
+        //_inline_deep_replace,
+        _inplace_unit_replace, // _inline_unit_replace
+        //_produce_deep_replace,
+        _produce_unit_replace, // _produce_unit_replace
+        _get_solution};
 
     static bool method_str_to_method_id_map_is_defined = false;
     static map<string, MethodId> method_str_to_method_id_map;

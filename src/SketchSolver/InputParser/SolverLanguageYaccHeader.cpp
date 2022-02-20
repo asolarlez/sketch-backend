@@ -118,17 +118,17 @@ void SolverProgramState::close_subframe() {
     frames.rbegin()->close_subframe();
 }
 
-void SolverProgramState::add_to_function_map(const string &sk_func_name, SketchFunction *sk_func) {
-    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
-    FunctionMap& _function_map = sk_func->get_env()->function_map;
+void SolverProgramState::add_to_function_map(const string &skfunc_name, SketchFunction *skfunc) {
+    assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).size() >= 0);
+    FunctionMap& _function_map = skfunc->get_env()->function_map;
     assert(&_function_map == &function_map);
-    if(function_map.find(sk_func_name) == function_map.end()) {
-        auto new_or_existing_primitive= function_map.insert(sk_func_name, sk_func);
-        sk_func->set_rep(new_or_existing_primitive);
+    if(function_map.find(skfunc_name) == function_map.end()) {
+        auto new_or_existing_primitive= function_map.insert(skfunc_name, skfunc);
+        skfunc->set_rep(new_or_existing_primitive);
     }
     else {
-        assert(function_map.find(sk_func_name) != function_map.end());
-        assert(function_map[sk_func_name] == sk_func);
+        assert(function_map.find(skfunc_name) != function_map.end());
+        assert(function_map[skfunc_name] == skfunc);
     }
 }
 

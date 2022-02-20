@@ -15,9 +15,7 @@ using namespace std;
 class SketchFunction;
 class ProgramEnvironment;
 
-using namespace FMTL;
-
-class FunctionMap: public map<string, SketchFunction*>, public FunctionMapTransformer
+class FunctionMap: public map<string, SketchFunction*>, public FMTL::FunctionMapTransformer
 {
     ProgramEnvironment* __program_environment;
 public:
@@ -27,7 +25,7 @@ public:
 
     bool empty() const {
         if(map<string, SketchFunction*>::empty()) {
-            assert(FunctionMapTransformer::empty());
+            assert(FMTL::FunctionMapTransformer::empty());
         }
         return map<string, SketchFunction*>::empty();
     }
@@ -58,7 +56,7 @@ public:
         return *ret;
     }
 
-    const TransformPrimitive* insert(const string& name, SketchFunction* sketch_function);
+    const FMTL::TransformPrimitive* insert(const string& name, SketchFunction* sketch_function);
 
     SketchFunction* operator[](const string& name) const
     {

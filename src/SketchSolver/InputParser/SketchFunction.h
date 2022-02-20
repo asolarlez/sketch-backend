@@ -42,8 +42,8 @@ class SketchFunction: public BooleanDagUtility
 
     long long local_clear_id = -1;
 
-    const TransformPrimitive* rep = nullptr;
-    const TransformPrimitive* mirror_rep = nullptr;
+    const FMTL::TransformPrimitive* rep = nullptr;
+    const FMTL::TransformPrimitive* mirror_rep = nullptr;
 
     void core_clear(const string& dag_name);
 
@@ -72,7 +72,7 @@ public:
             const SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>(),
-            const TransformPrimitive* _rep = nullptr,
+            const FMTL::TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
             InliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
@@ -96,17 +96,23 @@ public:
             decrement_shared_ptr_wo_clear();
             assert(solution != nullptr);
 
-            assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() == this);
+            assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
         }
     }
 
-    SketchFunction *produce_inlined_dag()
+    SketchFunction *produce_executable()
     {
+        // inline, and then assert that everything has been concretized and inlined.
         bool_node::Type var_type = bool_node::CTRL;
-        return produce_concretization(nullptr, var_type, true);
+        SketchFunction* ret = produce_concretization(nullptr, var_type, true);
+
+        AssertDebug(ret->get_dag()->getNodesByType(bool_node::UFUN).empty(), "failed to produce executable, bc there are uninlined ufuns.");
+        AssertDebug(ret->get_dag()->getNodesByType(bool_node::CTRL).empty(), "failed to produce executable, bc there are unconcretized holes.");
+
+        return ret;
     }
 
-    SketchFunction *inline_this_dag()
+    SketchFunction *make_executable()
     {
         bool_node::Type var_type = bool_node::CTRL;
         return produce_concretization(nullptr, var_type, false);
@@ -114,7 +120,8 @@ public:
 
     SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);
 
-    SketchFunction *clone(const string& explicit_name = "");
+    SketchFunction *unit_clone(const string& explicit_name = "");
+    SketchFunction *deep_clone();
 
     void clear() override;
     void _clear();
@@ -135,16 +142,20 @@ public:
             auto ret = new SolverLanguagePrimitives::HoleAssignment(solution);
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
             assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
-            assert(ret->get_assignment()->get_inlining_tree() != get_inlining_tree());
             return ret;
         }
         else
         {
             assert(!is_inlining_tree_nonnull());
             InliningTree* local_inlining_tree = new InliningTree(this);
-            auto ret = local_inlining_tree->get_solution();
+            const VarStore* almost_ret = local_inlining_tree->get_solution();
+
+            const SolverLanguagePrimitives::HoleAssignment* ret =
+                    new SolverLanguagePrimitives::HoleAssignment(SAT_UNDETERMINED, almost_ret, get_env()->get_floats());
+
+            ret->set_inlining_tree(local_inlining_tree);
+
             assert(ret->get_assignment()->get_inlining_tree() != nullptr);
-            assert(ret->get_assignment()->get_inlining_tree() != local_inlining_tree);
 
             assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
 
@@ -171,7 +182,7 @@ public:
 
     bool solution_is_null();
 
-    const SolverLanguagePrimitives::HoleAssignment * get_same_soluton();
+    const SolverLanguagePrimitives::HoleAssignment * get_same_solution() const;
 
     string get_assignment(const string& key);
 
@@ -181,12 +192,12 @@ public:
 
     const map<string, string> &get_replace_map() const;
 
-    void set_rep(const TransformPrimitive *pPrimitive);
+    void set_rep(const FMTL::TransformPrimitive *pPrimitive);
 
-    const TransformPrimitive * get_rep();
+    const FMTL::TransformPrimitive * get_rep();
 
-    void set_mirror_rep(const TransformPrimitive *) ;
-    const TransformPrimitive * get_mirror_rep() const;
+    void set_mirror_rep(const FMTL::TransformPrimitive *) ;
+    const FMTL::TransformPrimitive * get_mirror_rep() const;
 
     void deep_clone_tail();
 };
@@ -195,11 +206,11 @@ public:
 
 namespace SketchFunctionEvaluator
 {
-    SL::VarVal* eval(SketchFunction* sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment);
+    SL::VarVal* eval(SketchFunction* skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment);
 
-    SL::VarVal* passes(const SketchFunction *sk_func, const SolverLanguagePrimitives::InputAssignment *input_assignment);
+    SL::VarVal* passes(const SketchFunction *skfunc, const SolverLanguagePrimitives::InputAssignment *input_assignment);
 
-    SL::VarVal* new_passes(SketchFunction* sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment);
+    SL::VarVal* new_passes(SketchFunction* skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment);
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

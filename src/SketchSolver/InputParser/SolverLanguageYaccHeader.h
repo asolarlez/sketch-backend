@@ -37,22 +37,22 @@ public:
                         continue;
                     }
                 }
-//                string sk_func_name = "not_sk_func";
-//                bool is_sk_func = false;
+//                string skfunc_name = "not_skfunc";
+//                bool is_skfunc = false;
 //                if(it.second->is_sketch_function())
 //                {
-//                    is_sk_func = true;
-//                    SketchFunction* sk_func = it.second->get_function(false);
-//                    if(sk_func != nullptr) {
-//                        sk_func_name = sk_func->get_dag()->get_name();
+//                    is_skfunc = true;
+//                    SketchFunction* skfunc = it.second->get_function(false);
+//                    if(skfunc != nullptr) {
+//                        skfunc_name = skfunc->get_dag()->get_name();
 //                    }
 //                    else
 //                    {
-//                        sk_func_name = "nullptr";
+//                        skfunc_name = "nullptr";
 //                    }
 //                }
                 bool cleared = it.second->decrement_shared_ptr();
-//                if(is_sk_func) {
+//                if(is_skfunc) {
 //                    if (cleared) {
 //                        cout << "CLEARED";
 //                    }
@@ -60,7 +60,7 @@ public:
 //                    {
 //                        cout << "NOT CLEARED";
 //                    }
-//                    cout << " var " << it.first.to_string() << " holding sk_func " << sk_func_name << endl;
+//                    cout << " var " << it.first.to_string() << " holding skfunc " << skfunc_name << endl;
 //                }
             }
         }
@@ -363,11 +363,11 @@ public:
             if(var_type_str == "SketchFunction") {
                 global.set_var_val(var, var_val);
                 string var_name = var->get_name()->to_string();
-                SketchFunction* sk_func = var_val->get_function(false);
-                FunctionMap& _function_map = sk_func->get_env()->function_map;
+                SketchFunction* skfunc = var_val->get_function(false);
+                FunctionMap& _function_map = skfunc->get_env()->function_map;
                 assert(&_function_map == &function_map);
-                auto new_primitive = function_map.insert(var_name, sk_func);
-                sk_func->set_rep(new_primitive);
+                auto new_primitive = function_map.insert(var_name, skfunc);
+                skfunc->set_rep(new_primitive);
             }
             else if(var_type_str == "int") {
                 assert(var->get_name()->to_string() == "seed");
@@ -475,7 +475,7 @@ public:
 
     void close_subframe();
 
-    void add_to_function_map(const string &sk_func_name, SketchFunction *sk_func);
+    void add_to_function_map(const string &skfunc_name, SketchFunction *skfunc);
 
 };
 

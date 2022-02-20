@@ -54,24 +54,27 @@ inline bool comp_layer(bool_node* n1, bool_node* n2){
 class BooleanDAG  
 {
 private:
-#ifdef SCHECKMEM
+    long long dag_id;
     static long long global_boolean_dag_id;
+#ifdef SCHECKMEM
 	static set<BooleanDAG*> allocated;
 public:
-    static string get_suffix(bool modify_name, long long int dag_id);
-
     static set<BooleanDAG*>& get_allocated()
     {
         return allocated;
     }
-    long long dag_id;
+#endif
+    static string get_suffix(bool modify_name, long long int dag_id);
+    static long long get_global_boolean_dag_id()
+    {
+        return global_boolean_dag_id;
+    }
     long long get_dag_id()
     {
         return dag_id;
     }
 private:
 
-#endif
 
 
   int n_inputs;

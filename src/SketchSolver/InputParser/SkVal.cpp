@@ -35,7 +35,7 @@ Assignment_SkVal::Assignment_SkVal(Assignment_SkVal *to_copy):
         name_to_original_name(to_copy->name_to_original_name),
         name_to_dag_name(to_copy->name_to_dag_name),
         var_name_to_dag_name_to_name(to_copy->var_name_to_dag_name_to_name),
-        inlining_tree(new InliningTree(to_copy->inlining_tree)){
+        inlining_tree(new LightInliningTree(to_copy->inlining_tree)){
 
     for(auto it: to_copy->assignment)
     {
@@ -88,13 +88,16 @@ bool Assignment_SkVal::operator==(const Assignment_SkVal& other)  const
     return true;
 }
 
+Assignment_SkVal::Assignment_SkVal(const LightInliningTree *_inlining_tree, FloatManager &floats) :
+Mapping<SkVal>(), inlining_tree(new LightInliningTree(_inlining_tree)) {}
+
 Assignment_SkVal::Assignment_SkVal(const InliningTree *_inlining_tree, FloatManager &floats) :
-Mapping<SkVal>(), inlining_tree(new InliningTree(_inlining_tree)) {}
+        Mapping<SkVal>(), inlining_tree(new LightInliningTree(_inlining_tree)) {}
 
 Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floats): Mapping<SkVal>() {
     assert(var_store != nullptr);
     if(var_store->get_inlining_tree() != nullptr) {
-        inlining_tree = new InliningTree(var_store->get_inlining_tree());
+        inlining_tree = new LightInliningTree(var_store->get_inlining_tree());
     }
 
     for(auto it = var_store->begin(); it != var_store->end(); it++)
@@ -164,10 +167,18 @@ Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floa
 
 }
 
+void Assignment_SkVal::set_inlining_tree(const LightInliningTree *_inlining_tree)
+{
+    assert(inlining_tree == nullptr);
+    //TODO: refactor this so that it doesn't copy
+    inlining_tree = new LightInliningTree(_inlining_tree);
+}
+
 void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
 {
     assert(inlining_tree == nullptr);
-    inlining_tree = new InliningTree(_inlining_tree);
+    //TODO: refactor this so that it doesn't copy
+    inlining_tree = new LightInliningTree(_inlining_tree);
 }
 
 void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {

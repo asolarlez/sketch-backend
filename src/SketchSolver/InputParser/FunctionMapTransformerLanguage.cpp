@@ -9,7 +9,7 @@ using namespace FMTL;
 
 const TransformPrimitive * FunctionMapTransformer::concretize(const string &function_name, const VarStore *store, const bool_node::Type type,
                                                               const vector<string> *sub_functions) {
-    
+
     assert(root_dag_reps.find(function_name) != root_dag_reps.end());
     assert(root_dag_reps[function_name]->get_function_name() == function_name);
     TransformPrimitive* new_primitive =
@@ -47,7 +47,7 @@ const TransformPrimitive * FunctionMapTransformer::concretize(const string &func
 
 const TransformPrimitive * FunctionMapTransformer::replace_label_with_another(
         const string& function_name, const string &replace_this_str, const string &with_this_str) {
-    
+
     auto main_parent_it = root_dag_reps.find(function_name);
     assert( main_parent_it != root_dag_reps.end());
     auto main_parent = main_parent_it->second;
@@ -90,7 +90,7 @@ const TransformPrimitive * FunctionMapTransformer::clone(const string &original_
 }
 
 const TransformPrimitive * FunctionMapTransformer::insert(const string &new_function_name, const vector<string>& subfunction_names) {
-    
+
     if(root_dag_reps.find(new_function_name) == root_dag_reps.end()) {
         auto new_primitive = new InitPrimitive(new_function_name, subfunction_names);
         program.insert(new_primitive);
@@ -127,12 +127,12 @@ void FunctionMapTransformer::erase(const string &to_erase_name, bool assert_not_
 }
 
 set<TransformPrimitive *> &FunctionMapTransformer::get_program() {
-    
+
     return program;
 }
 
 const map<string, TransformPrimitive *> & FunctionMapTransformer::get_root_dag_reps() const {
-    
+
     return root_dag_reps;
 }
 
@@ -141,7 +141,7 @@ map<string, TransformPrimitive *> & FunctionMapTransformer::get_root_dag_reps_no
 }
 
 void FunctionMapTransformer::check_consistency() {
-    
+
     for(auto it: program) {
         assert(root_dag_reps.find(it->get_function_name()) != root_dag_reps.end());
         it->check_consistency(this);
@@ -488,9 +488,9 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                     assert(!parent->is_erased);
                     auto maybe_ret = parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
                     assert(maybe_ret != nullptr);
-                    if(maybe_ret->get_same_soluton() != nullptr)
+                    if(maybe_ret->get_same_solution() != nullptr)
                     {
-                        if(maybe_ret->get_same_soluton()->get_sat_solver_result() == SAT_SATISFIABLE) {
+                        if(maybe_ret->get_same_solution()->get_sat_solver_result() == SAT_SATISFIABLE) {
                             assert(maybe_ret->get_dag()->getNodesByType(bool_node::CTRL).empty());
                             assert(maybe_ret->get_dag()->getNodesByType(bool_node::UFUN).empty());
                         }
@@ -561,7 +561,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
 //    cout << "entering to_this_dag " << to_this_dag <<" under_this_val " << under_this_var << endl;
 //    assert(!found);
 //    const VarStore* ret_so_far = nullptr;
-//    auto var_store = get_var_store();
+//    auto var_store = get_var_store_used_for_concretization();
 ////    if(var_store != nullptr)
 //    {
 //        for(const auto& it: parents)
@@ -902,7 +902,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
             }
             SketchFunction* almost_ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(almost_ret->get_env() == new_env);
-            SketchFunction* ret = almost_ret->clone(function_name);
+            SketchFunction* ret = almost_ret->unit_clone(function_name);
             assert(ret->get_env() == new_env);
             assert(new_env->function_map.find(ret->get_dag()->get_name()) == new_env->function_map.end());
             new_env->function_map.insert(ret->get_dag()->get_name(), ret);

@@ -69,10 +69,10 @@ namespace SolverLanguagePrimitives
     {
         File* file;
         string file_name;
-        BooleanDagLightUtility *sk_func = nullptr;
+        BooleanDagLightUtility *skfunc = nullptr;
     public:
         explicit ProblemAE(BooleanDagLightUtility* _function, File* _file = nullptr):
-                sk_func(_function), file(_file){}
+                skfunc(_function), file(_file){}
 
         File* get_file()
         {
@@ -81,17 +81,17 @@ namespace SolverLanguagePrimitives
 
         auto get_holes()
         {
-            return sk_func->get_holes();
+            return skfunc->get_holes();
         }
 
         auto get_harness()
         {
-            return sk_func;
+            return skfunc;
         }
 
 
         BooleanDAG *get_dag() {
-            return sk_func->get_dag();
+            return skfunc->get_dag();
         }
 
         virtual string to_string()
@@ -1188,10 +1188,6 @@ namespace SolverLanguagePrimitives
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
                 int all_remaining_inlining_trees = SkFuncSetter::all_inlining_trees.size();
 
-                for(auto it: SkFuncSetter::all_inlining_trees) {
-                    cout << it->get_skfunc()->get_dag_name() << " " << it->get_skfunc()->get_num_shared_ptr() << " id: " << it->get_id() << endl;
-                }
-
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
 
@@ -1199,6 +1195,9 @@ namespace SolverLanguagePrimitives
 
                 function_map.check_consistency();
                 assert(function_map.contains_only_necessary());
+
+                cout << SkFuncSetter::max_count <<endl;
+                assert(SkFuncSetter::max_count == 1);
 
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();

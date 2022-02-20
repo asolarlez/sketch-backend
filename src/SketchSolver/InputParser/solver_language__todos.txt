@@ -153,6 +153,14 @@ Necessary
     DONE Test InliningTree on a recursive function.
     (MAYBE DONE) TODO: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
     TODO: reason about what happens in InliningTree._find when there are multiple ways to get to the target_dag (what needs to happen on at the site where the result is needed?) Probably you need extra asserts for type checking that the user knows what they are doing.
+    TODO: fix exponential blow-up in #inlining_trees
+        TODO: produce_deep_concretize
+        TODO: produce_unit_concretize
+        TODO: inplace_deep_concretize
+        TODO: inplace_unit_concretize
+        TODO: make_executable
+        TODO: deep_clone
+        TODO: unit_clone
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs

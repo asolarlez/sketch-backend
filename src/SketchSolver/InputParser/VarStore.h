@@ -27,6 +27,7 @@ int intFromBV(T& bv, int start, int nbits){
 	return nval;
 }
 
+class LightInliningTree;
 class InliningTree;
 //class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
@@ -446,7 +447,7 @@ private:
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
-    const InliningTree* inlining_tree = nullptr;
+    const LightInliningTree* inlining_tree = nullptr;
 
     void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
     {
@@ -474,7 +475,7 @@ public:
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
 
-    const InliningTree* get_inlining_tree() const
+    const LightInliningTree* get_inlining_tree() const
     {
         return inlining_tree;
     }
@@ -488,9 +489,9 @@ public:
 
     VarStore() = default;
 
-    VarStore(const InliningTree* _inlining_tree);
+    VarStore(const LightInliningTree* _inlining_tree);
 
-    VarStore(const VarStore& to_copy, const InliningTree* _inlining_tree = nullptr);
+    VarStore(const VarStore& to_copy, const LightInliningTree* _inlining_tree = nullptr);
 
     void operator = (const VarStore& to_copy);
 
@@ -731,6 +732,8 @@ public:
 	}
 	friend VarStore old_join(const VarStore& v1 , const VarStore& v2);
 	friend VarStore* produce_join(const VarStore& v1 , const VarStore& v2);
+    friend VarStore* append_join(VarStore& v1 , const VarStore& v2);
+    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
 
     void relabel(vector<bool_node*>& inputs){
 
@@ -777,6 +780,27 @@ inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 	ret->bitsize += v2.bitsize;
 	return ret;
 }
+
+inline VarStore* append_join(VarStore& _v1, const VarStore& v2)
+{
+    VarStore* ret = &_v1;
+    for(int i = 0; i < v2.objs.size(); i++) {
+        ret->insertObj(v2.objs[i].name, ret->objs.size(), VarStore::objP(v2.objs[i]));
+    }
+    ret->bitsize += v2.bitsize;
+    return ret;
+}
+
+inline VarStore* concatenate_join(VarStore& _v1, const VarStore& v2)
+{
+    VarStore* ret = &_v1;
+    for(int i = 0; i < v2.objs.size(); i++) {
+        ret->insertObj(v2.objs[i].name, ret->objs.size(), v2.objs[i]);
+    }
+    ret->bitsize += v2.bitsize;
+    return ret;
+}
+
 
 inline VarStore old_join(const VarStore& v1 , const VarStore& v2){
 	VarStore rv = v1;

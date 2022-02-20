@@ -22,6 +22,7 @@ namespace FMTL {
         _clone,
         _init
     };
+
     static const string transform_primitive_meta_type_name[4] = {
     "concretize",
     "replace",

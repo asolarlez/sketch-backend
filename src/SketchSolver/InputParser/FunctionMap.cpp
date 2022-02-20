@@ -20,7 +20,7 @@ void FunctionMap::populate_boolean_dag_map(map<string, BooleanDAG*>& boolean_dag
 }
 
 
-const TransformPrimitive* FunctionMap::insert(const string &name, SketchFunction *sketch_function)
+const FMTL::TransformPrimitive* FunctionMap::insert(const string &name, SketchFunction *sketch_function)
 {
 
     assert(name == sketch_function->get_dag()->get_name());

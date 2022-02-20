@@ -67,7 +67,7 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             assert(enter == (prev_path != nullptr));
             auto tmp_path = inlining_tree->find(it.first);
             if(tmp_path != nullptr && *tmp_path == *new_path) {
-                AssertDebug(prev_path == nullptr && !enter, "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN InliningTree._find.");
+                AssertDebug(prev_path == nullptr && !enter, "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN LightInliningTree._find.");
                 enter = true;
                 prev_path = tmp_path;
                 matching_subdag_name = it.first;
@@ -81,56 +81,62 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         assert(inlining_tree != nullptr);
         if(!enter)
         {
-            assert(prev_path == nullptr || *prev_path != *new_path);
-            const InliningTree* subtree = inlining_tree;
-            for(int i = new_path->size()-1; i>=0;i--) {
-                subtree = subtree->get_sub_inlining_tree((*new_path)[i]);
-            }
-
-            string subdag_of_interest = subtree->get_skfunc()->get_dag_name();
-
-            assert(var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) == var_name_to_dag_name_to_name[original_name].end());
-
-            VarStore* sub_var_store = ((SketchFunction*)subtree->get_skfunc())->get_solution_var_store();
-            auto sub_var_name_to_dag_name_to_name = sub_var_store->var_name_to_dag_name_to_name;
-            auto sub_index = sub_var_store->index;
-            if(sub_var_name_to_dag_name_to_name.find(original_name) != sub_var_name_to_dag_name_to_name.end())
+            AssertDebug(false, "HOLE IS MISSING; BEST IF YOU MAKE SURE THAT THIS DOESN'T HAPPEN");
+            #define DONT_ALLOW_RENAMING_MISSING_HOLES
+            #ifndef DONT_ALLOW_RENAMING_MISSING_HOLES
             {
-                assert(sub_var_name_to_dag_name_to_name[original_name].size() == 1);
-                if(sub_var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) != sub_var_name_to_dag_name_to_name[original_name].end())
-                {
-                    auto obj_name = sub_var_name_to_dag_name_to_name[original_name][subdag_of_interest];
-
-                    assert(sub_index.find(obj_name) != sub_index.end());
-                    auto &obj = sub_var_store->getObjConst(obj_name);
-                    assert(obj.get_original_name() == original_name);
-                    assert(obj_name == obj.name);
-                    string prev_source_dag_name = obj.get_source_dag_name();
-                    assert(prev_source_dag_name == sub_var_name_to_dag_name_to_name[original_name].begin()->first);
-                    assert(sub_var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
-                                   sub_var_name_to_dag_name_to_name[original_name].end());
-                    assert(sub_index.find(new_name) == sub_index.end());
-                    assert(index.find(obj_name) == index.end());
-                    assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
-                    assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) == var_name_to_dag_name_to_name[original_name].end());
-                    assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) == var_name_to_dag_name_to_name[original_name].end());
-
-                    auto new_obj = objP(obj);
-                    new_obj.rename(new_name, new_source_dag);
-                    insertObj(new_name, objs.size(), new_obj);
-
-                    assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) != var_name_to_dag_name_to_name[original_name].end());
-                    assert(var_name_to_dag_name_to_name[original_name][new_source_dag] == new_name);
+                assert(prev_path == nullptr || *prev_path != *new_path);
+                const LightInliningTree *subtree = inlining_tree;
+                for (int i = new_path->size() - 1; i >= 0; i--) {
+                    subtree = subtree->get_sub_inlining_tree((*new_path)[i]);
                 }
-                else {
+
+                string subdag_of_interest = subtree->get_dag_name();
+
+                assert(var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) ==
+                       var_name_to_dag_name_to_name[original_name].end());
+
+                VarStore *sub_var_store = ((SketchFunction *) subtree->get_skfunc())->get_solution_var_store();
+                auto sub_var_name_to_dag_name_to_name = sub_var_store->var_name_to_dag_name_to_name;
+                auto sub_index = sub_var_store->index;
+                if (sub_var_name_to_dag_name_to_name.find(original_name) != sub_var_name_to_dag_name_to_name.end()) {
+                    assert(sub_var_name_to_dag_name_to_name[original_name].size() == 1);
+                    if (sub_var_name_to_dag_name_to_name[original_name].find(subdag_of_interest) !=
+                        sub_var_name_to_dag_name_to_name[original_name].end()) {
+                        auto obj_name = sub_var_name_to_dag_name_to_name[original_name][subdag_of_interest];
+
+                        assert(sub_index.find(obj_name) != sub_index.end());
+                        auto &obj = sub_var_store->getObjConst(obj_name);
+                        assert(obj.get_original_name() == original_name);
+                        assert(obj_name == obj.name);
+                        string prev_source_dag_name = obj.get_source_dag_name();
+                        assert(prev_source_dag_name == sub_var_name_to_dag_name_to_name[original_name].begin()->first);
+                        assert(sub_var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) !=
+                               sub_var_name_to_dag_name_to_name[original_name].end());
+                        assert(sub_index.find(new_name) == sub_index.end());
+                        assert(index.find(obj_name) == index.end());
+                        assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
+                        assert(var_name_to_dag_name_to_name[original_name].find(prev_source_dag_name) ==
+                               var_name_to_dag_name_to_name[original_name].end());
+                        assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) ==
+                               var_name_to_dag_name_to_name[original_name].end());
+
+                        auto new_obj = objP(obj);
+                        new_obj.rename(new_name, new_source_dag);
+                        insertObj(new_name, objs.size(), new_obj);
+
+                        assert(var_name_to_dag_name_to_name[original_name].find(new_source_dag) !=
+                               var_name_to_dag_name_to_name[original_name].end());
+                        assert(var_name_to_dag_name_to_name[original_name][new_source_dag] == new_name);
+                    } else {
+                        assert(false);
+                    }
+                } else {
                     assert(false);
                 }
+                sub_var_store->clear();
             }
-            else
-            {
-                assert(false);
-            }
-            sub_var_store->clear();
+            #endif
         }
         else {
             AssertDebug(*prev_path == *new_path,
@@ -171,19 +177,19 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
     return var_name_to_dag_name_to_name[var_name][source_dag_name];
 }
 
-VarStore::VarStore(const InliningTree *_inlining_tree){
+VarStore::VarStore(const LightInliningTree *_inlining_tree){
     if(_inlining_tree != nullptr) {
-        inlining_tree = (new InliningTree(_inlining_tree));
+        inlining_tree = (new LightInliningTree(_inlining_tree));
     }
 }
 
-VarStore::VarStore(const VarStore &to_copy, const InliningTree* _inlining_tree)
+VarStore::VarStore(const VarStore &to_copy, const LightInliningTree* _inlining_tree)
 {
     AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
     if(_inlining_tree != nullptr) {
-        inlining_tree = new InliningTree(_inlining_tree);
+        inlining_tree = new LightInliningTree(_inlining_tree);
     }
 
     *this = to_copy;
@@ -219,9 +225,8 @@ bool VarStore::check_rep() const {
 
 void VarStore::set_inlining_tree(const InliningTree *new_inlining_tree) {
     assert(inlining_tree != nullptr);
-    auto tmo_id = inlining_tree->get_skfunc()->get_dag()->get_dag_id();
     inlining_tree->clear();
-    inlining_tree = new InliningTree(new_inlining_tree);
+    inlining_tree = new LightInliningTree(new_inlining_tree);
 }
 
 void VarStore::operator=(const VarStore &to_copy){
@@ -237,7 +242,7 @@ void VarStore::operator=(const VarStore &to_copy){
 
     if(inlining_tree == nullptr) {
         if (to_copy.inlining_tree != nullptr) {
-            inlining_tree = new InliningTree(to_copy.inlining_tree);
+            inlining_tree = new LightInliningTree(to_copy.inlining_tree);
         }
     }
 

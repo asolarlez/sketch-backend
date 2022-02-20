@@ -17,8 +17,13 @@ class BooleanDagUtility: public BooleanDagLightUtility {
     InliningTree* inlining_tree = nullptr;
 
     bool has_been_concretized = false;
+    const VarStore* var_store_used_for_concretization;
 
 public:
+
+    const VarStore* get_var_store_used_for_concretization() const {
+        return var_store_used_for_concretization;
+    }
 
     BooleanDagUtility(BooleanDAG* _root_dag): BooleanDagLightUtility(_root_dag) {}
 
@@ -27,7 +32,7 @@ public:
             original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
-            assert(inlining_tree->get_skfunc() == this);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
         if(has_been_concretized)
         {
@@ -39,14 +44,14 @@ public:
             BooleanDagLightUtility(_root_dag, _env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
-            assert(inlining_tree->get_skfunc() == this);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
     }
 
     BooleanDagUtility(BooleanDagUtility* to_copy): BooleanDagLightUtility(to_copy), inlining_tree(to_copy->inlining_tree), has_been_concretized(to_copy->has_been_concretized) {
         if(inlining_tree != nullptr) {
             inlining_tree = new InliningTree(this, inlining_tree);
-            assert(inlining_tree->get_skfunc() == this);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
 
         if(has_been_concretized)
@@ -73,7 +78,7 @@ public:
         assert(inlining_tree == nullptr);
         inlining_tree = new InliningTree(this);
         if(inlining_tree != nullptr) {
-            assert(inlining_tree->get_skfunc() == this);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
     }
 
@@ -99,12 +104,12 @@ public:
 
     BooleanDagUtility* produce_inlined_dag(bool use_same_name = false)
     {
-        BooleanDagUtility* ret = clone(use_same_name);
+        BooleanDagUtility* ret = unit_clone(use_same_name);
         ret->concretize_this_dag(nullptr, bool_node::CTRL);
         return ret;
     }
 
-    BooleanDagUtility* clone(bool use_same_name = false) {
+    BooleanDagUtility* unit_clone(bool use_same_name = false) {
         BooleanDAG* new_dag = nullptr;
         if(use_same_name) {
             new_dag = get_dag()->clone(get_dag_name());
@@ -117,7 +122,7 @@ public:
 
     BooleanDagUtility* produce_concretization(const VarStore* var_store, bool_node::Type var_type)
     {
-        BooleanDagUtility* ret = clone();
+        BooleanDagUtility* ret = unit_clone();
         ret->concretize_this_dag(var_store, var_type);
         return ret;
     }
@@ -155,7 +160,7 @@ public:
             inlining_tree = new InliningTree(this);
         }
         if(inlining_tree != nullptr) {
-            assert(inlining_tree->get_skfunc() == this);
+            assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
 
         bool is_being_concretized = false;
@@ -189,6 +194,8 @@ public:
 
         if(is_being_concretized) {
             has_been_concretized = true;
+            assert(var_store_used_for_concretization == nullptr);
+            var_store_used_for_concretization = new VarStore(*_var_store);
         }
     }
 
@@ -207,9 +214,9 @@ public:
 
     bool is_inlining_tree_nonnull();
 
-    InliningTree *& get_inlining_tree(bool assert_nonnull = true);
+    InliningTree * const & get_inlining_tree(bool assert_nonnull = true) const;
 
-    bool get_has_been_concretized();
+    bool get_has_been_concretized() const ;
 
     void clear_inlining_tree();
 };

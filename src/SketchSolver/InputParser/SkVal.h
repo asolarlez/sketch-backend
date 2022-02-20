@@ -380,16 +380,17 @@ class Assignment_SkVal: public Mapping<SkVal> {
     }
 
 private:
-    InliningTree* inlining_tree = nullptr;
+    LightInliningTree* inlining_tree = nullptr;
 public:
 
     bool operator == (const Assignment_SkVal& other) const;
 
     virtual void clear(bool clear_root = true, bool sub_clear = false);
 
+    void set_inlining_tree(const LightInliningTree *_inlining_tree);
     void set_inlining_tree(const InliningTree *_inlining_tree);
 
-    void update_inlining_tree(InliningTree *_inlining_tree)
+    void update_inlining_tree(LightInliningTree *_inlining_tree)
     {
         assert(inlining_tree != nullptr);
         inlining_tree = _inlining_tree;
@@ -440,6 +441,7 @@ public:
 
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats);
 
+    Assignment_SkVal(const LightInliningTree* _inlining_tree, FloatManager& floats);
     Assignment_SkVal(const InliningTree* _inlining_tree, FloatManager& floats);
 
     VarStore* to_var_store(bool assert_inlining_tree_not_null = true) const
@@ -497,12 +499,12 @@ public:
         }
     }
 
-    const InliningTree *get_inlining_tree() const {
+    const LightInliningTree *get_inlining_tree() const {
         return inlining_tree;
     }
 
 
-    InliningTree *get_inlining_tree_nonconst() {
+    LightInliningTree *get_inlining_tree_nonconst() {
         return inlining_tree;
     }
 
@@ -589,10 +591,6 @@ namespace SolverLanguagePrimitives {
             shared_ptr++;
         }
 
-        explicit HoleAssignment(SATSolverResult _sat_solver_result) :
-                sat_solver_result(_sat_solver_result) {
-        }
-
         bool operator < (const HoleAssignment& other) const
         {
             if(sat_solver_result < other.sat_solver_result){
@@ -612,13 +610,18 @@ namespace SolverLanguagePrimitives {
             return eq_compare_pointers(assignment_skval, other.assignment_skval);
         }
 
-
+        explicit HoleAssignment(SATSolverResult _sat_solver_result) :
+                sat_solver_result(_sat_solver_result) {
+        }
 
         HoleAssignment(SATSolverResult _sat_solver_result, Assignment_SkVal *_assignment_skval) :
                 sat_solver_result(_sat_solver_result), assignment_skval(_assignment_skval) {}
 
         HoleAssignment(SATSolverResult _sat_solver_result, const VarStore *ctrl_store, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(ctrl_store, floats)) {}
+
+        HoleAssignment(SATSolverResult _sat_solver_result, const LightInliningTree *inlining_tree, FloatManager &floats) :
+                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
 
         HoleAssignment(SATSolverResult _sat_solver_result, const InliningTree *inlining_tree, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
@@ -709,6 +712,11 @@ namespace SolverLanguagePrimitives {
         {
             assert(assignment_skval != nullptr);
             return assignment_skval->rename(new_name, var_name, source_dag_name, original_source_dag, prev_name);
+        }
+
+        void set_inlining_tree(LightInliningTree *_inlining_tree) const
+        {
+            assignment_skval->set_inlining_tree(_inlining_tree);
         }
 
         void set_inlining_tree(InliningTree *_inlining_tree) const

@@ -364,10 +364,10 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         case _relabel:
         {
             assert(params.size() == 1);
-            VarVal* sk_func_var_val = params[0]->eval(state);
-            sk_func_var_val->increment_shared_ptr();
-            file->relabel(sk_func_var_val->get_function());
-            sk_func_var_val->decrement_shared_ptr();
+            VarVal* skfunc_var_val = params[0]->eval(state);
+            skfunc_var_val->increment_shared_ptr();
+            file->relabel(skfunc_var_val->get_function());
+            skfunc_var_val->decrement_shared_ptr();
             return new VarVal();
         }
         default:
@@ -407,6 +407,8 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             auto* problem = new ProblemAE(harness, file);
             const HoleAssignment* sol = (solver)->solve(problem);
+            //NEXT TODO: refactor inlining tree to store the assignment indexed by tree path,
+            //rather than as a solution in a skfunc, bc we don't want the skfunc to necessarily exist
             sol->set_inlining_tree(harness->get_inlining_tree());
             file->reset();
             assert(file->like_unused());
@@ -499,6 +501,14 @@ SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignmen
             the_solution->join_with(other_solution);
             return new VarVal();
         }
+//        case _get:
+//        {
+//            assert(params.size() == 1);
+//
+//            string subfunc_name = params[0]->eval(state)->get_string(true, false);
+//
+//            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_solution());
+//        }
         default:
             assert(false);
     }
@@ -570,9 +580,9 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     input_val->increment_shared_ptr();
                     assert(input_val->is_input_holder());
 
-                    SketchFunction* sk_func = method_var_val->get_function();
+                    SketchFunction* skfunc = method_var_val->get_function();
                     SolverLanguagePrimitives::InputAssignment *input_assignment = input_val->get_input_holder();
-                    ret = SketchFunctionEvaluator::eval(sk_func, input_assignment);
+                    ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
 
                     assert(ret != nullptr);
 
@@ -721,35 +731,70 @@ void SL::init_method_str_to_method_id_map()
 {
     assert(method_str_to_method_id_map_is_defined == false);
     add_to_method_str_to_method_id_map("File", _file, "namespace");
-    add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
     add_to_method_str_to_method_id_map("SATSolver", _sat_solver, "namespace");
-    add_to_method_str_to_method_id_map("produce_concretization", _produce_concretization, "SketchFunction");
-    add_to_method_str_to_method_id_map("concretize", _concretize, "SketchFunction");
-    add_to_method_str_to_method_id_map("size", _size, "File", "vector");
-    add_to_method_str_to_method_id_map("get", _get, "File", "vector", "SketchFunction");
-    add_to_method_str_to_method_id_map("passes", _passes, "SketchFunction");
-    add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
     add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
-    add_to_method_str_to_method_id_map("join", _join, "Solution");
     add_to_method_str_to_method_id_map("print", _print, "namespace");
-    add_to_method_str_to_method_id_map("num_holes", _num_holes, "SketchFunction");
-    add_to_method_str_to_method_id_map("append", _append, "vector");
+    add_to_method_str_to_method_id_map("float", _to_float, "namespace");
+    add_to_method_str_to_method_id_map("assert", _assert, "namespace");
+    add_to_method_str_to_method_id_map("not", _not, "namespace");
+
+    add_to_method_str_to_method_id_map("join", _join, "Solution");
+    add_to_method_str_to_method_id_map("clone", _clone,  "Solution");
+
     add_to_method_str_to_method_id_map("first", _first, "pair");
     add_to_method_str_to_method_id_map("second", _second, "pair");
-    add_to_method_str_to_method_id_map("float", _to_float, "namespace");
     add_to_method_str_to_method_id_map("sort", _sort_vec, "vector");
-    add_to_method_str_to_method_id_map("clone", _clone, "SketchFunction", "Solution");
-    add_to_method_str_to_method_id_map("deep_clone", _deep_clone, "SketchFunction");
-    add_to_method_str_to_method_id_map("assert", _assert, "namespace");
     add_to_method_str_to_method_id_map("reverse", _reverse, "vector");
-    add_to_method_str_to_method_id_map("produce_replace", _produce_replace, "SketchFunction");
-    add_to_method_str_to_method_id_map("replace", _replace, "SketchFunction");
-    add_to_method_str_to_method_id_map("get_solution", _get_solution, "SketchFunction");
+    add_to_method_str_to_method_id_map("append", _append, "vector");
+    add_to_method_str_to_method_id_map("size", _size, "File", "vector");
     add_to_method_str_to_method_id_map("produce_filter", _produce_filter, "File");
-    add_to_method_str_to_method_id_map("not", _not, "namespace");
     add_to_method_str_to_method_id_map("relabel", _relabel, "File");
+    add_to_method_str_to_method_id_map("produce_subset_file", _produce_subset_file, "File");
+
+    add_to_method_str_to_method_id_map("clear", _clear, "SketchFunction", "File");
+    add_to_method_str_to_method_id_map("get", _get, "File", "vector", "SketchFunction");
+
+    add_to_method_str_to_method_id_map("passes", _passes, "SketchFunction");
+    add_to_method_str_to_method_id_map("num_holes", _num_holes, "SketchFunction");
+    add_to_method_str_to_method_id_map("get_solution", _get_solution, "SketchFunction");
     add_to_method_str_to_method_id_map("reset", _reset, "SketchFunction");
-    method_str_to_method_id_map_is_defined = true;
+
+    add_to_method_str_to_method_id_map("produce_executable", _produce_executable, "SketchFunction");
+    add_to_method_str_to_method_id_map("make_executable", _make_executable, "SketchFunction");
+
+    add_to_method_str_to_method_id_map("produce_deep_concretize", _produce_deep_concretize, "SketchFunction");
+//    add_to_method_str_to_method_id_map("_produce_unit_concretize", _produce_unit_concretize, "SketchFunction");
+    add_to_method_str_to_method_id_map("inplace_deep_concretize", _inplace_deep_concretize, "SketchFunction");
+//    add_to_method_str_to_method_id_map("_inplace_unit_concretize", _inplace_unit_concretize, "SketchFunction");
+
+    add_to_method_str_to_method_id_map("deep_clone", _deep_clone, "SketchFunction");
+    add_to_method_str_to_method_id_map("unit_clone", _unit_clone, "SketchFunction");
+
+    add_to_method_str_to_method_id_map("produce_replace", _produce_unit_replace, "SketchFunction");
+    add_to_method_str_to_method_id_map("replace", _inplace_unit_replace, "SketchFunction");
+//    add_to_method_str_to_method_id_map("produce_deep_replace", _produce_deep_replace, "SketchFunction");
+//    add_to_method_str_to_method_id_map("inplace_deep_replace", _inplace_deep_replace, "SketchFunction");
+
+/*
+        _produce_executable,
+        _make_executable,
+        //--
+        _produce_deep_concretize,
+        //produce_unit_concretize
+        _inplace_deep_concretize,
+        //inplace_unit_concretize,
+        /--
+        _deep_clone,
+        _unit_clone,
+        /--
+        //_inline_deep_replace,
+        _replace, // _inline_unit_replace
+        //_produce_deep_replace,
+        _produce_replace, // _produce_unit_replace
+ */
+
+
+method_str_to_method_id_map_is_defined = true;
 }
 
 SL::MethodId SL::FunctionCall::get_method_id() {
@@ -811,36 +856,36 @@ string SL::FunctionCall::to_string(){
     return ret;
 }
 void
-eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFunction *ret_sk_func, SolverProgramState *state,
+eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFunction *ret_skfunc, SolverProgramState *state,
                               const vector<SL::Param *> &params)
 {
-    AssertDebug(ret_var_val->get_function_const(false) == ret_sk_func, "ret_sk_func must be the same as what ret_var_val is holding.");
+    AssertDebug(ret_var_val->get_function_const(false) == ret_skfunc, "ret_skfunc must be the same as what ret_var_val is holding.");
     assert(params.size() == 2);
 
     string str_to_replace = params[0]->eval(state)->get_string(true, false);
     SL::VarVal* to_replace_with_var_val = params[1]->eval(state);
 
-//    assert(to_replace_with_var_val->get_function(false)->get_dag_name() != ret_sk_func->get_dag_name());
+//    assert(to_replace_with_var_val->get_function(false)->get_dag_name() != ret_skfunc->get_dag_name());
 
 //    ret_var_val->add_responsibility(str_to_replace, to_replace_with_var_val);
 
     to_replace_with_var_val->increment_shared_ptr();
-    SketchFunction* to_replace_with_sk_func = to_replace_with_var_val->get_function();
-    const string& to_replace_with_name = to_replace_with_sk_func->get_dag()->get_name();
+    SketchFunction* to_replace_with_skfunc = to_replace_with_var_val->get_function();
+    const string& to_replace_with_name = to_replace_with_skfunc->get_dag()->get_name();
 
-    state->add_to_function_map(to_replace_with_name, to_replace_with_sk_func);
+    state->add_to_function_map(to_replace_with_name, to_replace_with_skfunc);
     assert(state->function_map.find(to_replace_with_name) != state->function_map.end());
 
-    ret_sk_func->replace(str_to_replace, to_replace_with_name);
+    ret_skfunc->replace(str_to_replace, to_replace_with_name);
     to_replace_with_var_val->decrement_shared_ptr();
 }
 
 template<>
-SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, SolverProgramState *state, const VarVal* const the_var_val) {
+SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, SolverProgramState *state, const VarVal* const the_var_val) {
 
-    assert(sk_func == the_var_val->get_function_const(false));
+    assert(skfunc == the_var_val->get_function_const(false));
     switch (method_id) {
-        case _produce_concretization:
+        case _produce_executable:
         {
             if(params.size() == 1) {
                 using namespace SolverLanguagePrimitives;
@@ -849,13 +894,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
                 const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
                 assert(var_store->check_rep());
-                SketchFunction* concretized_function = sk_func->produce_concretization(var_store, bool_node::CTRL, true);
+                SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_store->clear();
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);
             }
             else if(params.empty()) {
-                SketchFunction *concretized_function = sk_func->produce_inlined_dag();
+                SketchFunction *concretized_function = skfunc->produce_executable();
                 return new SL::VarVal(concretized_function);
             }
             else {
@@ -863,19 +908,19 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             }
             break;
         }
-        case _concretize:
+        case _make_executable:
         {
             if(params.size() == 1) {
                 using namespace SolverLanguagePrimitives;
                 VarVal *sol_var_val = params[0]->eval(state);
                 sol_var_val->increment_shared_ptr();
                 const HoleAssignment *sol = sol_var_val->get_solution();
-                sk_func->concretize(sol);
+                skfunc->concretize(sol);
                 sol_var_val->decrement_shared_ptr();
                 return new SL::VarVal();
             }
             else if(params.empty()) {
-                sk_func->inline_this_dag();
+                skfunc->make_executable();
                 return new SL::VarVal();
             }
             else {
@@ -890,7 +935,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
             input_holder_var_val->increment_shared_ptr();
 
             SolverLanguagePrimitives::InputAssignment *input_holder = input_holder_var_val->get_input_holder();
-            auto ret_predicted = SketchFunctionEvaluator::new_passes(sk_func, input_holder);
+            auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
 
             input_holder_var_val->decrement_shared_ptr();
             return ret_predicted;
@@ -899,14 +944,14 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         case _clear:
         {
             assert(params.empty());
-            sk_func->clear();
-            sk_func = nullptr;
+            skfunc->clear();
+            skfunc = nullptr;
             return new VarVal();
             break;
         }
         case _num_holes: {
             assert(params.empty());
-            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)sk_func)->produce_inlined_dag();
+            BooleanDagLightUtility* func_clone = ((BooleanDagLightUtility*)skfunc)->produce_inlined_dag();
 //            func_clone->print_hole_names(state->console_output);
             func_clone->increment_shared_ptr();
             int num_ctrls = (int) func_clone->get_dag()->getNodesByType(bool_node::CTRL).size();
@@ -916,55 +961,44 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
         }
         case _deep_clone:
         {
-            SketchFunction* ret = sk_func->clone();
-            ret->increment_shared_ptr();
-
-            {
-                auto env = ret->get_env();
-                auto dag = ret->get_dag();
-                auto name = dag->get_name();
-                auto fmap = env->function_map;
-            }
-
-            ret->deep_clone_tail();
-            ret->decrement_shared_ptr_wo_clear();
+            SketchFunction* ret = skfunc->deep_clone();
             return new VarVal(ret);
         }
-        case _clone:
+        case _unit_clone:
         {
             assert(params.empty());
-            SketchFunction* ret = sk_func->clone();
-//            state->console_output << "SKFUNC:" << sk_func->get_dag_name() << endl;
-//            ((BooleanDagUtility*)sk_func)->produce_inlined_dag()->print_hole_names(state->console_output);
+            SketchFunction* ret = skfunc->unit_clone();
+//            state->console_output << "SKFUNC:" << skfunc->get_dag_name() << endl;
+//            ((BooleanDagUtility*)skfunc)->produce_inlined_dag()->print_hole_names(state->console_output);
 //            state->console_output << "SKFUNC.CLONE:" << ret->get_dag_name() <<  endl;
 //            ((BooleanDagUtility*)ret)->produce_inlined_dag()->print_hole_names(state->console_output);
 //            state->console_output << "--" << endl;
             return new VarVal(ret);
             break;
         }
-        case _produce_replace:
+        case _produce_unit_replace:
         {
             assert(params.size() == 2);
-            SketchFunction* ret_sk_func = sk_func->clone();
-            VarVal* ret_var_val = new VarVal(ret_sk_func);
-            eval__sketch_function_replace(ret_var_val, ret_sk_func, state, params);
+            SketchFunction* ret_skfunc = skfunc->unit_clone();
+            VarVal* ret_var_val = new VarVal(ret_skfunc);
+            eval__sketch_function_replace(ret_var_val, ret_skfunc, state, params);
             return ret_var_val;
             break;
         }
-        case _replace:
+        case _inplace_unit_replace:
         {
             assert(params.size() == 2);
-            eval__sketch_function_replace(the_var_val, sk_func, state, params);
+            eval__sketch_function_replace(the_var_val, skfunc, state, params);
             return new VarVal();
             break;
         }
         case _get_solution:
         {
             if(params.empty()) {
-                return new VarVal(sk_func->get_solution());
+                return new VarVal(skfunc->get_solution());
             }
             else if(params.size() == 1){
-                AssertDebug(false, "TODO: equivalent to sk_func.get(name).get_solution()");
+                AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_solution()");
             }
             else
             {
@@ -977,13 +1011,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& sk_func, So
 
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
 
-            return new VarVal(sk_func->produce_get(subfunc_name));
+            return new VarVal(skfunc->produce_get(subfunc_name));
         }
         case _reset:
         {
             string subfunc_name = params[0]->eval(state)->get_string(true, false);
 //            the_var_val->remove_responsibility(subfunc_name);
-            sk_func->reset(subfunc_name);
+            skfunc->reset(subfunc_name);
             return new VarVal();
         }
         default:
@@ -1426,7 +1460,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             break;
         case skfunc_val_type:
             AssertDebug(false, "not sure how to handle this cloning, better leave it for later. (whether or not to make an exact clone, renamed clone / rename holes.");
-            skfunc = _to_copy->get_function(false)->clone();
+            skfunc = _to_copy->get_function(false)->unit_clone();
             break;
         case solution_val_type:
             assert(false);

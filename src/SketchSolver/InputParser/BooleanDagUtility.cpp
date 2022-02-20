@@ -22,22 +22,22 @@ void BooleanDagUtility::reset_env_to_original() {
 bool BooleanDagUtility::is_inlining_tree_nonnull() {
     bool ret = inlining_tree != nullptr;
     if(inlining_tree != nullptr) {
-        assert(inlining_tree->get_skfunc() == this);
+        assert(inlining_tree->get_dag_id() == get_dag_id());
     }
     return ret;
 }
 
-InliningTree *& BooleanDagUtility::get_inlining_tree(bool assert_nonnull) {
+InliningTree * const & BooleanDagUtility::get_inlining_tree(bool assert_nonnull) const {
     if(assert_nonnull) {
         assert(inlining_tree != nullptr);
     }
     if(inlining_tree != nullptr) {
-        assert(inlining_tree->get_skfunc() == this);
+        assert(inlining_tree->get_dag_id() == get_dag_id());
     }
     return inlining_tree;
 }
 
-bool BooleanDagUtility::get_has_been_concretized() {
+bool BooleanDagUtility::get_has_been_concretized() const {
     return has_been_concretized;
 }
 

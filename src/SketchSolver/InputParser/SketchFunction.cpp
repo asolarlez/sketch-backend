@@ -13,7 +13,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
 
     if(do_clone) {
         assert(do_deep_clone);
-        SketchFunction* the_clone = clone();
+        SketchFunction* the_clone = unit_clone();
         the_clone->increment_shared_ptr();
         the_clone->produce_concretization(_var_store, var_type, false, do_deep_clone);
         the_clone->decrement_shared_ptr_wo_clear();
@@ -31,9 +31,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         if(do_deep_clone) {
             deep_clone_tail();
 
-            if(var_type == bool_node::CTRL)
-            {
-
+            if(var_type == bool_node::CTRL) {
                 InliningTree *tmp_inlining_tree = new InliningTree(this);
 
                 if(var_store != nullptr) {
@@ -102,7 +100,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
                 solution = compare_solution;
 
                 if(solution != nullptr) {
-                    assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() == this);
+                    assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
                 }
             }
 
@@ -126,7 +124,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
     }
 }
 
-SketchFunction *SketchFunction::clone(const string& explicit_name) {
+SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
 
     assert(rename_holes);
     BooleanDAG* cloned_dag = get_dag()->clone(explicit_name, rename_holes);
@@ -201,7 +199,7 @@ void SketchFunction::core_clear(const string& dag_name)
     if (solution != nullptr) {
         AssertDebug(false, "solution SHOULD HAVE BEEN CLEARED AND SET TO 0 IN BooleanDagUtility.soft_clear((&)solution) by being passed as a parameter.")
         assert(solution->get_num_shared_ptr() == 0);
-        assert(solution->get_assignment()->get_inlining_tree()->get_skfunc() != this);
+        assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() != get_dag_id());
         solution->clear_assert_num_shared_ptr_is_0(true, true);
     }
 
@@ -351,7 +349,7 @@ bool SketchFunction::solution_is_null() {
     return solution == nullptr;
 }
 
-const SolverLanguagePrimitives::HoleAssignment * SketchFunction::get_same_soluton() {
+const SolverLanguagePrimitives::HoleAssignment * SketchFunction::get_same_solution() const {
     return solution;
 }
 
@@ -376,7 +374,7 @@ const map<string, string> &SketchFunction::get_replace_map() const {
     return replaced_labels;
 }
 
-void SketchFunction::set_rep(const TransformPrimitive *new_or_existing_primitive) {
+void SketchFunction::set_rep(const FMTL::TransformPrimitive *new_or_existing_primitive) {
     if(rep == nullptr) {
         rep = new_or_existing_primitive;
     }
@@ -385,16 +383,23 @@ void SketchFunction::set_rep(const TransformPrimitive *new_or_existing_primitive
     }
 }
 
-const TransformPrimitive * SketchFunction::get_rep() {
+const FMTL::TransformPrimitive * SketchFunction::get_rep() {
     return rep;
 }
 
-const TransformPrimitive * SketchFunction::get_mirror_rep() const {
+const FMTL::TransformPrimitive * SketchFunction::get_mirror_rep() const {
     return mirror_rep;
 }
 
-void SketchFunction::set_mirror_rep(const TransformPrimitive *_mirror_rep) {
+void SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep) {
     mirror_rep = _mirror_rep;
+}
+
+SketchFunction* SketchFunction::deep_clone()
+{
+    SketchFunction* ret = unit_clone();
+    ret->deep_clone_tail();
+    return ret;
 }
 
 void SketchFunction::deep_clone_tail() {
@@ -440,7 +445,7 @@ void SketchFunction::deep_clone_tail() {
         if (inlined_function_name != get_dag()->get_name()) {
             assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
 
-            to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->clone();
+            to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->unit_clone();
             assert(get_env()->function_map.find(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name()) == get_env()->function_map.end());
             get_env()->function_map.insert(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name(),
                                            to_inline_skfuncs[inlined_function_name]);
@@ -498,20 +503,20 @@ void SketchFunction::deep_clone_tail() {
 
 #include "SolverLanguageLexAndYaccHeader.h"
 
-SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *sk_func, SolverLanguagePrimitives::InputAssignment *input_assignment) {
+SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment) {
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
-    assert(sk_func->get_has_been_concretized());
-    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).empty());
-    assert(sk_func->get_dag()->getNodesByType(bool_node::UFUN).empty());
+    assert(skfunc->get_has_been_concretized());
+    assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
+    assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
-    if (sk_func->get_has_been_concretized()) {
-        the_dag = sk_func->get_dag();
+    if (skfunc->get_has_been_concretized()) {
+        the_dag = skfunc->get_dag();
     } else {
-        the_dag = sk_func->get_dag()->clone();
+        the_dag = skfunc->get_dag()->clone();
         new_clone = true;
-        sk_func->get_env()->doInline(*the_dag);
+        skfunc->get_env()->doInline(*the_dag);
     }
 
     VarStore *the_var_store = input_assignment->to_var_store(false);
@@ -524,7 +529,7 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *sk_func, SolverLanguag
                     std::to_string(remaining_holes) + " remaining_holes.");
     }
 
-    NodeEvaluator node_evaluator(*the_dag, sk_func->get_env()->floats);
+    NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*the_var_store);
 
     delete the_var_store;
@@ -562,15 +567,15 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *sk_func, SolverLanguag
 }
 
 SL::VarVal *
-SketchFunctionEvaluator::passes(const SketchFunction *sk_func, const SolverLanguagePrimitives::InputAssignment *input_assignment)
+SketchFunctionEvaluator::passes(const SketchFunction *skfunc, const SolverLanguagePrimitives::InputAssignment *input_assignment)
 {
     AssertDebug(false, "USE new_passes instead.");
-    if(sk_func->get_dag()->get_failed_assert() != nullptr) {
+    if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
     }
     VarStore* inputs = input_assignment->to_var_store(false);
-    BooleanDAG* concretized_dag = sk_func->get_dag()->clone();
-    sk_func->get_env()->doInline(*concretized_dag, *inputs, bool_node::SRC);
+    BooleanDAG* concretized_dag = skfunc->get_dag()->clone();
+    skfunc->get_env()->doInline(*concretized_dag, *inputs, bool_node::SRC);
     bool ret = concretized_dag->get_failed_assert() == nullptr;
     if(!concretized_dag->getNodesByType(bool_node::CTRL).empty()) {
         assert(!ret);
@@ -582,26 +587,26 @@ SketchFunctionEvaluator::passes(const SketchFunction *sk_func, const SolverLangu
     return new SL::VarVal(ret);
 }
 
-SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *sk_func,
+SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
                                                 SolverLanguagePrimitives::InputAssignment *input_assignment) {
 
-    if(sk_func->get_dag()->get_failed_assert() != nullptr) {
+    if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
     }
 
-    assert(sk_func->get_has_been_concretized());
-    assert(sk_func->get_dag()->getNodesByType(bool_node::CTRL).empty());
-    assert(sk_func->get_dag()->getNodesByType(bool_node::UFUN).empty());
+    assert(skfunc->get_has_been_concretized());
+    assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
+    assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
-    if (sk_func->get_has_been_concretized()) {
-        the_dag = sk_func->get_dag();
+    if (skfunc->get_has_been_concretized()) {
+        the_dag = skfunc->get_dag();
     } else {
-        the_dag = sk_func->get_dag()->clone();
+        the_dag = skfunc->get_dag()->clone();
         new_clone = true;
-        sk_func->get_env()->doInline(*the_dag);
+        skfunc->get_env()->doInline(*the_dag);
     }
 
     VarStore *the_var_store = input_assignment->to_var_store(false);
@@ -614,7 +619,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *sk_func,
                     std::to_string(remaining_holes) + " remaining_holes.");
     }
 
-    NodeEvaluator node_evaluator(*the_dag, sk_func->get_env()->floats);
+    NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*the_var_store);
 
     if(new_clone) {
