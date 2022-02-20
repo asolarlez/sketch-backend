@@ -197,9 +197,8 @@ void SketchFunction::core_clear(const string& dag_name)
     }
 
     if (solution != nullptr) {
-        AssertDebug(false, "solution SHOULD HAVE BEEN CLEARED AND SET TO 0 IN BooleanDagUtility.soft_clear((&)solution) by being passed as a parameter.")
         assert(solution->get_num_shared_ptr() == 0);
-        assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() != get_dag_id());
+        assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
         solution->clear_assert_num_shared_ptr_is_0(true, true);
     }
 
@@ -223,9 +222,9 @@ void SketchFunction::_clear()
 
     string dag_name = get_dag()->get_name();
 
-    int prev_gloval = global_clear_id;
-    if(BooleanDagUtility::soft_clear(solution)) {
-        assert(prev_gloval == global_clear_id);
+    int prev_global = global_clear_id;
+    if(BooleanDagUtility::soft_clear()) {
+        assert(prev_global == global_clear_id);
         core_clear(dag_name);
     }
     else {
@@ -253,6 +252,8 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
     assert(new_way);
 
     AssertDebug(!is_inlining_tree_nonnull(), "TODO: when renaming, need to update inlining tree.");
+    AssertDebug(!get_has_been_concretized(), "TODO: Implement ability to replace after concretizing.")
+
 
     assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 

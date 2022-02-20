@@ -21,10 +21,13 @@ class LightSkFuncSetter
     mutable bool cleared = false;
     mutable int num_shared_ptr = 1;
 
-    const string& dag_name;
+    const string dag_name;
     const int dag_id;
 
     const VarStore* var_store = nullptr;
+
+    int num_unconcretized_holes = -1;
+
 
 protected:
 
@@ -54,12 +57,14 @@ protected:
         return var_store;
     }
 
+    int get_num_unconcretized_holes() const
+    {
+        return num_unconcretized_holes;
+    }
+
 public:
 
-    explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy): dag_name(to_copy->dag_name), dag_id(to_copy->dag_id) {
-        if(to_copy->var_store != nullptr) {
-            var_store = to_copy->var_store;
-        }
+    explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy): dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), var_store(to_copy->var_store), num_unconcretized_holes(to_copy->num_unconcretized_holes) {
     }
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
 
@@ -90,9 +95,11 @@ private:
     const long long inlining_tree_id;
     const BooleanDagUtility * const skfunc = nullptr;
 
+    void init();
+
 protected:
     SkFuncSetter(const BooleanDagUtility* _skfunc);
-    SkFuncSetter(const SkFuncSetter* to_copy): LightSkFuncSetter(to_copy), skfunc(to_copy->skfunc), inlining_tree_id(inlining_tree_global_id++) {}
+    SkFuncSetter(const SkFuncSetter* to_copy);
     void soft_clear(bool clear_dag = true, bool sub_clear = false) const;
 
     bool assert_nonnull() const
@@ -109,7 +116,7 @@ public:
         return skfunc;
     }
 
-    int get_tree_id() const;
+    long long int get_tree_id() const;
 
 };
 
@@ -358,6 +365,8 @@ public:
         delete tmp_path;
         return ret;
     }
+
+    bool has_no_holes(set<string>* hole_names = new set<string>(), set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const;
 };
 
 class LightInliningTree: public TemplateInliningTree<LightSkFuncSetter>
@@ -370,6 +379,10 @@ public:
     explicit LightInliningTree(const LightInliningTree* to_copy): TemplateInliningTree<LightSkFuncSetter>(to_copy) {}
     template<typename OtherBaseClass>
     explicit LightInliningTree(const TemplateInliningTree<OtherBaseClass>* to_copy): TemplateInliningTree<LightSkFuncSetter>(to_copy) {}
+    explicit LightInliningTree(const BooleanDagUtility* _sk_func): TemplateInliningTree(_sk_func) {}
+    LightInliningTree(
+            const BooleanDagUtility* to_replace_root, const LightInliningTree *to_copy):
+            TemplateInliningTree<LightSkFuncSetter>(to_replace_root, to_copy) {}
 
     const LightInliningTree *get_sub_inlining_tree(const string &under_this_name) const override {
         assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
@@ -395,7 +408,6 @@ public:
 
     void rename_var_store(VarStore &var_store, set<const InliningTree*> *visited = new set<const InliningTree*>(), const InliningTree *root = nullptr) const;
 
-    bool has_no_holes(set<string>* hole_names = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
 };
 
 
@@ -548,8 +560,8 @@ public:
 
     int count_passing_inputs(File* file);
 
-    virtual void clear(InliningTree*& inlining_tree, const SolverLanguagePrimitives::HoleAssignment*& solution) {
-        if(soft_clear(inlining_tree, solution)){
+    virtual void clear(LightInliningTree*& inlining_tree) {
+        if(soft_clear(inlining_tree)){
             assert(shared_ptr == 0);
             delete this;
         }
@@ -560,85 +572,73 @@ public:
 
 
     virtual void clear() {
-        InliningTree* tmp = nullptr;
-        const SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
-        clear(tmp, solution);
+        LightInliningTree* tmp = nullptr;
+        clear(tmp);
     }
 
-    virtual bool soft_clear(InliningTree*& inlining_tree, const SolverLanguagePrimitives::HoleAssignment*& solution)
+    virtual bool soft_clear(LightInliningTree*& inlining_tree)
     {
         decrement_shared_ptr_wo_clear();
 
         bool clear_inlining_tree = false;
         bool clear_solution = false;
 
-        if(solution != nullptr) {
-            assert(solution->get_assignment()->get_inlining_tree() != nullptr);
-            assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == dag_id);
-        }
-
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_dag_id() == dag_id);
-            if(shared_ptr == 1) {
-                assert(solution == nullptr ||
-                       solution->get_assignment()->get_inlining_tree() == nullptr ||
-                       solution->get_assignment()->get_inlining_tree()->get_dag_id() != dag_id);
-
+            if(shared_ptr == 0) {
                 clear_inlining_tree = true;
 
-                InliningTree* tmp_inlining_tree = inlining_tree;
+                LightInliningTree* tmp_inlining_tree = inlining_tree;
                 inlining_tree = nullptr;
                 tmp_inlining_tree->clear(false, true);
-                assert(shared_ptr == 1);
-                decrement_shared_ptr_wo_clear();
-                assert(shared_ptr == 0);
+//                assert(shared_ptr == 1);
+//                decrement_shared_ptr_wo_clear();
+//                assert(shared_ptr == 0);
             }
-            else if(shared_ptr == 2)
-            {
-                if(solution != nullptr) {
-                    assert(solution->get_assignment()->get_inlining_tree() != nullptr);
-                    if(solution->get_assignment()->get_inlining_tree()->get_dag_id() == dag_id) {
-                        if (solution->get_num_shared_ptr() == 0) {
 
-                            clear_solution = true;
-
-                            const SolverLanguagePrimitives::HoleAssignment *tmp_solution = solution;
-                            solution = nullptr;
-                            tmp_solution->clear_assert_num_shared_ptr_is_0(false, true);
-                            assert(shared_ptr == 2);
-                            decrement_shared_ptr_wo_clear();
-                            assert(shared_ptr == 1);
-
-                            clear_inlining_tree = true;
-
-                            InliningTree* tmp_inlining_tree = inlining_tree;
-                            inlining_tree = nullptr;
-                            tmp_inlining_tree->clear(false, true);
-                            assert(shared_ptr == 1);
-                            decrement_shared_ptr_wo_clear();
-                            assert(shared_ptr == 0);
-                        }
-                        else
-                        {
-                            //don't clear bc inlining skfunc doesnt match.
-                            AssertDebug(false, "all non-0 shared_ptr of solution are cloned before going to the solver language");
-                        }
-                    }
-                    else
-                    {
-                        AssertDebug(false, "invariant not maintained");
-                        //don't clear either bc solution is still used.
-                    }
-                }
-                else
-                {
-                    //don't clear bc skfunc still used
-                }
-            }
-        }
-        else
-        {
-            assert(solution == nullptr);
+//            else if(shared_ptr == 2)
+//            {
+//                if(solution != nullptr) {
+//                    assert(solution->get_assignment()->get_inlining_tree() != nullptr);
+//                    if(solution->get_assignment()->get_inlining_tree()->get_dag_id() == dag_id) {
+//                        if (solution->get_num_shared_ptr() == 0) {
+//
+//                            clear_solution = true;
+//
+//                            const SolverLanguagePrimitives::HoleAssignment *tmp_solution = solution;
+//                            solution = nullptr;
+//                            tmp_solution->clear_assert_num_shared_ptr_is_0(false, true);
+//                            assert(shared_ptr == 2);
+//                            decrement_shared_ptr_wo_clear();
+//                            assert(shared_ptr == 1);
+//
+//                            clear_inlining_tree = true;
+//
+//                            InliningTree* tmp_inlining_tree = inlining_tree;
+//                            inlining_tree = nullptr;
+//                            tmp_inlining_tree->clear(false, true);
+//                            assert(shared_ptr == 1);
+//                            decrement_shared_ptr_wo_clear();
+//                            assert(shared_ptr == 0);
+//                        }
+//                        else
+//                        {
+//                            //don't clear bc inlining skfunc doesnt match.
+//                            AssertDebug(false, "all non-0 shared_ptr of solution are cloned before going to the solver language");
+//                        }
+//                    }
+//                    else
+//                    {
+//                        AssertDebug(false, "invariant not maintained");
+//                        //don't clear either bc solution is still used.
+//                    }
+//                }
+//                else
+//                {
+//                    //don't clear bc skfunc still used
+//                }
+//            }
+//
         }
 
         if(shared_ptr == 0) {
@@ -652,19 +652,19 @@ public:
     }
 
     void increment_shared_ptr() const {
-        if(get_dag()->get_dag_id() == 26)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->get_dag_id() == 91)
+//        {
+//            cout << "here" << endl;
+//        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->get_dag_id() == 26)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->get_dag_id() == 91)
+//        {
+//            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
+//        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);

@@ -74,7 +74,7 @@ public:
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
-            InliningTree* _inlining_tree = nullptr,
+            LightInliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
@@ -147,7 +147,7 @@ public:
         else
         {
             assert(!is_inlining_tree_nonnull());
-            InliningTree* local_inlining_tree = new InliningTree(this);
+            LightInliningTree* local_inlining_tree = new LightInliningTree(this);
             const VarStore* almost_ret = local_inlining_tree->get_solution();
 
             const SolverLanguagePrimitives::HoleAssignment* ret =

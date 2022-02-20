@@ -102,7 +102,10 @@ void FunctionMap::erase(const string &name) {
     auto it = find(name);
     if(it != end()) {
 
-//        assert(name != "composite_predicate__id104");
+//        if(name == "sketch_main__id18__id39")
+//        {
+//            cout << "here";
+//        }
         map<string, SketchFunction *>::erase(it);
     }
     FunctionMapTransformer::erase(name);

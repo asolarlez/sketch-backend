@@ -512,7 +512,7 @@ namespace SL {
             PolyPair* poly_pair;
         };
         const VarValType var_val_type;
-        int num_shared_ptr = 0;
+        mutable int num_shared_ptr = 0;
     public:
         explicit VarVal(string  _s);
 //        explicit VarVal(int val);
@@ -774,7 +774,7 @@ namespace SL {
         }
 
         template<typename T>
-        void assert_type_invariant()
+        void assert_type_invariant() const
         {
             if(std::is_same<bool,T>::value){
                 assert(var_val_type == bool_val_type);
@@ -1017,7 +1017,7 @@ namespace SL {
 
     private:
         template<typename T>
-        void clear(T & val, bool do_delete = true)
+        void clear(T& val, bool do_delete = true)
         {
             assert_type_invariant<T>();
             if(val != nullptr) {

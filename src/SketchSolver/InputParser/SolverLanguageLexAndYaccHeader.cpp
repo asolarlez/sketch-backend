@@ -414,7 +414,9 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             assert(file->like_unused());
 
             assert(sol->to_var_store()->check_rep_and_clear());
-            harness->clear_inlining_tree();
+////            harness->increment_shared_ptr();
+//            harness->clear_inlining_tree();
+////            harness->decrement_shared_ptr_wo_clear();
             assert(sol->to_var_store()->check_rep_and_clear());
             harness->clear();
             solver->clear();
