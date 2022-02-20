@@ -462,11 +462,13 @@ public:
                 ret->setVarVal(item.first, ((SkValBool*) item.second)->get(), sk_val_type_to_bool_node_out_type(item.second->get_type()), type);
             }
             else if(item.second->get_type() == sk_type_boolarr) {
+                assert(type == bool_node::SRC);
                 assert(item.second->get_nbits() == 1);
                 ret->newArr(item.first, 1,  (int)((SkValBoolArr*)item.second)->get().size(), OutType::BOOL_ARR, type);
                 ret->setArr(item.first, ((SkValBoolArr*)item.second)->get());
             }
             else if(item.second->get_type() == sk_type_intarr) {
+                assert(type == bool_node::SRC);
                 ret->newArr(item.first, item.second->get_nbits(),  (int)((SkValIntArr*)item.second)->get().size(), OutType::INT_ARR, type);
                 ret->setArr(item.first, ((SkValIntArr*)item.second)->get());
             }

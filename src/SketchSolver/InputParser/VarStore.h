@@ -92,8 +92,8 @@ public:
             defined = false;
         }
 
-		objP(string  nm, int size, OutType* _otype, bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
-        name(std::move(nm)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
+		objP(string  name, int size, OutType* _otype, bool_node::Type _type, const string& _original_name = "", const string _source_dag_name = ""):
+        name(std::move(name)),vals(size),otype(_otype), type(_type), isNeg(false), index(0), next(nullptr), defined(true), original_name(_original_name), source_dag_name(_source_dag_name){
 		    assert(_otype != nullptr);
             if(_otype == OutType::INT_ARR || _otype == OutType::BOOL_ARR || _otype == OutType::FLOAT_ARR) {
                 is_array = true;
@@ -135,7 +135,7 @@ public:
 
         bool operator == (const objP& other) const
         {
-            const bool debug = false;
+            const bool debug = true;
             if(other.vals.size() != vals.size())
             {
                 if(debug) {
@@ -447,7 +447,7 @@ private:
     map<string, map<string, string> > var_name_to_dag_name_to_name;
 	int bitsize = 0;
 
-    const LightInliningTree* inlining_tree = nullptr;
+    LightInliningTree* inlining_tree = nullptr;
 
     void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
     {
@@ -470,7 +470,8 @@ private:
 
 
 public:
-    void rename(const string &original_name, const string& new_source_dag, const string &new_name, const InliningTree *new_inlining_tree);
+    void rename(const string &original_name, const string& new_source_dag, const string &new_name, const InliningTree *new_inlining_tree, string& prev_source_dag_name);
+    void rename(const objP& obj, const string &new_name, const string& new_source_dag);
 
     map<string, SynthInSolver*> synths;
     map<string, string> synthouts;
@@ -556,45 +557,9 @@ public:
         assert(objs[index[name]].get_is_array());
 	}
 
-	void newVar(const string& name, int nbits, OutType* otype, bool_node::Type type, string original_name, string source_dag_name){
-        if(contains(name)) {
-            auto obj = getObjConst(name);
-            assert(obj.getName() == name);
-            assert(obj.get_size() == nbits && obj.element_size() == nbits);
-            assert(obj.getOtype() == otype);
-            assert(obj.get_original_name() == original_name);
-            assert(obj.get_source_dag_name() == source_dag_name);
-        }
-        else {
-            Assert(index.count(name) == 0, name << ": This variable already existed!!");
-            insert_name_in_original_name_to_dag_name_to_name(name, original_name, source_dag_name);
-            int begidx = objs.size();
-            objs.emplace_back(objP(name, nbits, otype, type, original_name, source_dag_name));
-            index[name] = begidx;
-            bitsize += nbits;
-        }
-        assert(!objs[index[name]].get_is_array());
-	}
+	void newVar(const string& name, int nbits, OutType* otype, bool_node::Type type, string original_name, string source_dag_name);
 
-	void setVarVal(const string& name, int val, OutType* otype, bool_node::Type type){
-        AssertDebug(contains(name), "IF THIS FAILS, REWRITE THIS FUNCTION TO USE newVar first.");
-		int idx;
-		if(index.count(name)!=0){
-			idx = getId(name);
-		}else{
-            AssertDebug(false, "check previous assert.");
-			objs.emplace_back(objP(name, 5, otype, type));
-			idx = objs.size()-1;
-      		index[name] = idx;
-
-		}
-        if(otype == OutType::BOOL)
-        {
-            assert(val == 0 || val == 1);
-        }
-		objs[idx].setVal(val);
-        assert(!objs[idx].get_is_array());
-	}
+	void setVarVal(const string& name, int val, OutType* otype, bool_node::Type type);
 
 	void resizeVar(const string& name, int size){
 		int idx = getId(name);
@@ -671,6 +636,8 @@ public:
 	bool contains(const string& name) const{
 		return index.count(name)>0;
 	}
+
+    bool contains(const objP& obj, vector<string>* path) const;
 	void setFromString(const string& in){
 		for(size_t i=0; i<in.size(); ++i){
 			setBit(i, in[i]=='1'? 1 : -1);
@@ -769,6 +736,9 @@ public:
     void set_inlining_tree(const InliningTree *new_inlining_tree);
 
     bool check_rep_and_clear();
+
+    void rename_subdag(const string &prev_name, const string &new_name);
+    void change_id(const string &prev_name, int new_id);
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)

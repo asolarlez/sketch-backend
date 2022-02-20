@@ -1197,7 +1197,7 @@ namespace SolverLanguagePrimitives
                 assert(function_map.contains_only_necessary());
 
                 cout << SkFuncSetter::max_count <<endl;
-                assert(SkFuncSetter::max_count == 1);
+//                assert(SkFuncSetter::max_count == 1);
 
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();

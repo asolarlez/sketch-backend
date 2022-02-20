@@ -74,7 +74,7 @@ public:
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
-            LightInliningTree* _inlining_tree = nullptr,
+            InliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
@@ -88,7 +88,7 @@ public:
         if(solution != nullptr) {
             VarStore* var_store = solution->to_var_store();
 
-            get_inlining_tree()->rename_var_store(*var_store);
+            get_inlining_tree()->rename_var_store(*var_store, var_store->get_inlining_tree());
             solution = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
             assert(solution != nullptr);
             increment_shared_ptr();

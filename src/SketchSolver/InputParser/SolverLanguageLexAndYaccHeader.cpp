@@ -409,6 +409,9 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             const HoleAssignment* sol = (solver)->solve(problem);
             //NEXT TODO: refactor inlining tree to store the assignment indexed by tree path,
             //rather than as a solution in a skfunc, bc we don't want the skfunc to necessarily exist
+            const VarStore* subsolution = harness->get_inlining_tree()->get_solution();
+            harness->get_inlining_tree()->set_var_store(subsolution);
+            harness->get_inlining_tree()->set_var_store(sol->to_var_store(false));
             sol->set_inlining_tree(harness->get_inlining_tree());
             file->reset();
             assert(file->like_unused());
@@ -417,7 +420,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
 ////            harness->increment_shared_ptr();
 //            harness->clear_inlining_tree();
 ////            harness->decrement_shared_ptr_wo_clear();
-            assert(sol->to_var_store()->check_rep_and_clear());
+//            assert(sol->to_var_store()->check_rep_and_clear());
             harness->clear();
             solver->clear();
             delete problem;
@@ -541,7 +544,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {

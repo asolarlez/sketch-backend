@@ -57,17 +57,25 @@ _get_solution(VarStore* running_var_store, set<const TemplateInliningTree *> *vi
 template void TemplateInliningTree<LightSkFuncSetter>::
 _get_solution(VarStore* running_var_store, set<const TemplateInliningTree *> *visited) const;
 
+#include <VarStore.h>
+
 template<typename BaseClass>
 void TemplateInliningTree<BaseClass>::
     _get_solution(VarStore* running_var_store, set<const TemplateInliningTree *> *visited) const {
     bool is_root = visited->empty();
     assert(visited->find(this) == visited->end());
     visited->insert(this);
-    if(BaseClass::get_var_store_used_for_concretization() == nullptr){
-        AssertDebug(BaseClass::get_num_unconcretized_holes() == 0, "TRYING TO GET THE SOLUTION OF A DAG WITH SOME HOLES LEFT UNCONCRETIZED.");
+    const VarStore* at_var_store = BaseClass::get_var_store_used_for_concretization();
+    if(at_var_store == nullptr){
+//        cout << get_dag_name() << " DOESNT HAVE A SOLUTION" << endl;
+//        AssertDebug(BaseClass::_get_num_unconcretized_holes() == 0, "TRYING TO GET THE SOLUTION OF A DAG WITH SOME HOLES LEFT UNCONCRETIZED.");
+        at_var_store = new VarStore();
     }
     else {
-        append_join(*running_var_store, *BaseClass::get_var_store_used_for_concretization());
+        cout <<"APPENDING SOLUTION OF DAG: " << get_dag_name() << endl;
+        at_var_store->printContent(cout);
+        cout << endl;
+        append_join(*running_var_store, *at_var_store);
     }
     for(const auto& it: var_name_to_inlining_subtree){
         if(visited->find(it.second) == visited->end()) {
@@ -134,11 +142,11 @@ void TemplateInliningTree<BaseClass>::
 //}
 //
 
-template TemplateInliningTree<SkFuncSetter>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, const TemplateInliningTree*>* visited);
-template TemplateInliningTree<LightSkFuncSetter>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, const TemplateInliningTree*>* visited);
+template TemplateInliningTree<SkFuncSetter>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, TemplateInliningTree*>* visited);
+template TemplateInliningTree<LightSkFuncSetter>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, TemplateInliningTree*>* visited);
 
 template<typename BaseClass>
-TemplateInliningTree<BaseClass>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, const TemplateInliningTree*>* visited): BaseClass(_skfunc) {
+TemplateInliningTree<BaseClass>::TemplateInliningTree(const BooleanDagUtility *_skfunc, map<const BooleanDagUtility*, TemplateInliningTree*>* visited): BaseClass(_skfunc) {
     bool is_root = visited->empty();
     assert(visited->find(_skfunc) == visited->end());
 
@@ -146,6 +154,9 @@ TemplateInliningTree<BaseClass>::TemplateInliningTree(const BooleanDagUtility *_
 
     auto ufun_nodes = _skfunc->get_dag()->getNodesByType(bool_node::UFUN);
     auto skfunc_inlining_tree = _skfunc->get_inlining_tree(false);
+    if(skfunc_inlining_tree == nullptr) {
+        assert(_skfunc->get_var_store_used_for_concretization() == nullptr);
+    }
 
     if(!ufun_nodes.empty()) {
         assert(skfunc_inlining_tree == nullptr);
@@ -243,35 +254,38 @@ string tabs(int ntabs)
     return ret;
 }
 
-void InliningTree::print(int ntabs, set<const InliningTree*>* visited) const {
+
+template void TemplateInliningTree<SkFuncSetter>::print(int ntabs, set<const TemplateInliningTree*>* visited) const;
+template void TemplateInliningTree<LightSkFuncSetter>::print(int ntabs, set<const TemplateInliningTree*>* visited) const;
+
+template<typename BaseClass>
+void TemplateInliningTree<BaseClass>::print(int ntabs, set<const TemplateInliningTree*>* visited) const {
     bool is_root = visited->empty();
     assert(visited->find(this) == visited->end());
 
     for(auto it: *visited)
     {
-        assert(it->get_skfunc()->get_dag_name() != get_skfunc()->get_dag_name());
+        assert(it->get_dag_name() != get_dag_name());
     }
 
     visited->insert(this);
 
-    cout << tabs(ntabs) << get_skfunc()->get_dag_name() << " { " << endl;
+    cout << tabs(ntabs) << get_dag_name() << " { " << endl;
     for(const auto& it: var_name_to_inlining_subtree){
         cout << tabs(ntabs+1)<< it.first << " : " << endl;
-        if(visited->find((const InliningTree*)it.second) == visited->end()) {
-            ((const InliningTree*)it.second)->print(ntabs + 2, visited);
+        if(visited->find((const TemplateInliningTree*)it.second) == visited->end()) {
+            ((const TemplateInliningTree*)it.second)->print(ntabs + 2, visited);
         }
         else
         {
-            cout << tabs(ntabs+2) << "*" << it.second->get_skfunc()->get_dag_name() << endl;
+            cout << tabs(ntabs+2) << "*" << it.second->get_dag_name() << endl;
         }
     }
     cout << tabs(ntabs) << "} " << endl;
     if(is_root) delete visited;
 }
 
-#include <VarStore.h>
-
-void InliningTree::rename_var_store(VarStore &var_store, set<const InliningTree*>* visited, const InliningTree *root) const {
+void InliningTree::rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree, set<const InliningTree*>* visited, const InliningTree *root) const {
 
     bool is_root = false;
     if(root == nullptr)
@@ -292,78 +306,99 @@ void InliningTree::rename_var_store(VarStore &var_store, set<const InliningTree*
         }
     }
 
+    var_store.check_rep();
+
+    map<string, string> prev_name_to_new_name;
+
+
     for (auto it: get_skfunc()->get_dag()->getNodesByType(bool_node::CTRL)) {
-        string new_name =  ((CTRL_node*)it)->get_name();
-        string original_name = ((CTRL_node*)it)->get_original_name();
-        if(original_name != "#PC") {
-            string subdag_name = ((CTRL_node*)it)->get_source_dag_name();
-            var_store.rename(original_name, subdag_name, new_name, root);
-        }
-        else {
+        string new_name = ((CTRL_node *) it)->get_name();
+        string original_name = ((CTRL_node *) it)->get_original_name();
+        if (original_name != "#PC") {
+            string subdag_name = ((CTRL_node *) it)->get_source_dag_name();
+
+            string prev_name = "";
+
+            var_store.rename(original_name, subdag_name, new_name, root, prev_name);
+            if (prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end()) {
+                prev_name_to_new_name[prev_name] = subdag_name;
+            } else {
+                assert(prev_name_to_new_name[prev_name] == subdag_name);
+            }
+        } else {
             assert(new_name == "#PC");
         }
     }
 
-    for(const auto& it: var_name_to_inlining_subtree) {
-        if(visited->find((InliningTree*)it.second) == visited->end()) {
-            ((InliningTree*)it.second)->rename_var_store(var_store, visited, root);
+    assert(prev_name_to_new_name.size() <= 1);
+    if(prev_name_to_new_name.size() >= 1) {
+        assert(prev_name_to_new_name.size() == 1);
+        assert(var_store_inlining_tree->get_dag_name() == prev_name_to_new_name.begin()->first);
+        assert(get_dag_name() == prev_name_to_new_name.begin()->second);
+        for(const auto& it: prev_name_to_new_name){
+            var_store.rename_subdag(it.first, it.second);
+        }
+        var_store.change_id(var_store_inlining_tree->get_dag_name(), get_dag_id());
+    }
+    else {
+        assert(prev_name_to_new_name.empty());
+        if(var_store_inlining_tree->get_var_store_used_for_concretization() == nullptr) {
+            var_store.rename_subdag(var_store_inlining_tree->get_dag_name(), get_dag_name());
+            var_store.change_id(var_store_inlining_tree->get_dag_name(), get_dag_id());
+        }
+        else
+        {
+            //means that you have hole values for already concretized holes; do nothing.
+            assert(var_store_inlining_tree->get_var_store_used_for_concretization()->size() >= 1);
+            assert(get_skfunc()->get_dag()->getNodesByType(bool_node::CTRL).empty());
         }
     }
 
-    if(is_root) {
-        var_store.set_inlining_tree(this);
+    var_store.check_rep();
+
+    for(const auto& it: var_name_to_inlining_subtree) {
+        if(visited->find((InliningTree*)it.second) == visited->end()) {
+            ((InliningTree*)it.second)->rename_var_store(var_store, var_store_inlining_tree->get_sub_inlining_tree(it.first), visited, root);
+        }
     }
+
+    var_store.check_rep();
+
+//    if(is_root) {
+//        var_store.set_inlining_tree(this);
+//    }
 
     if(is_root) delete visited;
 }
 
-
-
-template bool TemplateInliningTree<SkFuncSetter>::has_no_holes(set<string>* hole_names, set<const TemplateInliningTree*>* visited) const;
-template bool TemplateInliningTree<LightSkFuncSetter>::has_no_holes(set<string>* hole_names, set<const TemplateInliningTree*>* visited) const;
-
-template<typename BaseClass>
-bool TemplateInliningTree<BaseClass>::has_no_holes(set<string>* hole_names, set<const TemplateInliningTree*>* visited) const {
+bool InliningTree::has_no_holes(set<string>* hole_names, set<const InliningTree*>* visited) const {
     bool is_root = visited->empty();
     assert(visited->find(this) == visited->end());
     visited->insert(this);
 
-
-//    for(auto it:get_skfunc()->get_dag()->getNodesByType(bool_node::CTRL))
-//    {
-//        hole_names->insert(((CTRL_node*)it)->get_name());
-//    }
-
-
-    bool ret = true;
-
-    if(BaseClass::get_num_unconcretized_holes() >= 1)
+    for(auto it:get_skfunc()->get_dag()->getNodesByType(bool_node::CTRL))
     {
-        ret = false;
+        hole_names->insert(((CTRL_node*)it)->get_name());
     }
-    else {
-        for (const auto &it: var_name_to_inlining_subtree) {
-            assert(ret);
-            if (visited->find(it.second) == visited->end()) {
-                if (!(((InliningTree *) it.second)->has_no_holes(hole_names, visited))) {
-                    ret = false;
-                    break;
-                }
-            }
+
+    for(const auto& it: var_name_to_inlining_subtree)
+    {
+        if(visited->find((InliningTree*)it.second) == visited->end()) {
+            ((InliningTree*)it.second)->has_no_holes(hole_names, visited);
         }
     }
 
-//    bool ret = false;
-//    if(hole_names->empty()) {
-//        ret = true;
-//    }
-//    else {
-//        if (hole_names->size() == 1) {
-//            if (*hole_names->begin() == "#PC") {
-//                ret = true;
-//            }
-//        }
-//    }
+    bool ret = false;
+    if(hole_names->empty()) {
+        ret = true;
+    }
+    else {
+        if (hole_names->size() == 1) {
+            if (*hole_names->begin() == "#PC") {
+                ret = true;
+            }
+        }
+    }
 
     if(is_root)
     {
@@ -427,12 +462,23 @@ void SkFuncSetter::init() {
 SkFuncSetter::SkFuncSetter(const SkFuncSetter *to_copy): LightSkFuncSetter(to_copy), skfunc(to_copy->skfunc), inlining_tree_id(inlining_tree_global_id++) {
     init();
 }
-LightSkFuncSetter::LightSkFuncSetter(const BooleanDagUtility *_skfunc): dag_name(_skfunc->get_dag_name()), dag_id(_skfunc->get_dag_id()), var_store(
-        _skfunc->get_var_store_used_for_concretization()){
-    num_unconcretized_holes = 0;
+LightSkFuncSetter::LightSkFuncSetter(const BooleanDagUtility *_skfunc): dag_name(_skfunc->get_dag_name()), dag_id(_skfunc->get_dag_id()){
+
+    const VarStore* _var_store = _skfunc->get_var_store_used_for_concretization();
+    if(_var_store != nullptr) {
+        var_store = _var_store->clone();
+    }
+    if(get_dag_name().substr(0, 9) == "condition")
+    {
+        if(var_store == nullptr)
+        {
+            cout << "not good" << endl;
+        }
+    }
+    _num_unconcretized_holes = 0;
     for(auto it: _skfunc->get_dag()->getNodesByType(bool_node::CTRL)) {
         if(it->get_name() != "#PC") {
-            num_unconcretized_holes += 1;
+            _num_unconcretized_holes += 1;
         }
     }
 }

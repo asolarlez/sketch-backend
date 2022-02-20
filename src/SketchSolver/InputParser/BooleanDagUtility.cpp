@@ -27,7 +27,7 @@ bool BooleanDagUtility::is_inlining_tree_nonnull() {
     return ret;
 }
 
-LightInliningTree * const & BooleanDagUtility::get_inlining_tree(bool assert_nonnull) const {
+InliningTree * const & BooleanDagUtility::get_inlining_tree(bool assert_nonnull) const {
     if(assert_nonnull) {
         assert(inlining_tree != nullptr);
     }

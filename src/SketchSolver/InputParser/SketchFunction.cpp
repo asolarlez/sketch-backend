@@ -26,6 +26,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         if(_var_store != nullptr) {
             assert(_var_store->check_rep());
             var_store = new VarStore(*_var_store);
+            assert(var_store->check_rep());
         }
 
         if(do_deep_clone) {
@@ -37,7 +38,10 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
                 if(var_store != nullptr) {
                     var_store->check_rep();
                     assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
-                    tmp_inlining_tree->rename_var_store(*var_store);
+                    cout << "tmp_inlining_tree" << endl;
+                    tmp_inlining_tree->print();
+                    var_store->check_rep();
+                    tmp_inlining_tree->rename_var_store(*var_store, var_store->get_inlining_tree());
                     var_store->check_rep();
                 }
 
@@ -73,10 +77,12 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
 
             SolverLanguagePrimitives::HoleAssignment* compare_solution = nullptr;
 
-            if(var_store == nullptr) {
+            if(var_store == nullptr)
+            {
                 compare_solution = new SolverLanguagePrimitives::HoleAssignment(
                         sat_solver_result, get_inlining_tree(), get_env()->floats);
-            } else {
+            }
+            else {
                 get_inlining_tree()->match_topology(var_store->get_inlining_tree());
                 compare_solution = new SolverLanguagePrimitives::HoleAssignment(
                         sat_solver_result, var_store, get_env()->floats);
@@ -100,7 +106,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
                 solution = compare_solution;
 
                 if(solution != nullptr) {
-                    assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
+                    assert(solution->get_assignment()->get_inlining_tree()->get_dag_name() == get_dag_name());
                 }
             }
 

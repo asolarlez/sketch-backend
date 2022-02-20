@@ -179,6 +179,7 @@ void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
     assert(inlining_tree == nullptr);
     //TODO: refactor this so that it doesn't copy
     inlining_tree = new LightInliningTree(_inlining_tree);
+
 }
 
 void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {
