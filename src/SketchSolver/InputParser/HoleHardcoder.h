@@ -11,7 +11,7 @@
 Excelption class used to signal that a concretization failed.
 */
 
-//#define REMOVE_SkVal
+#define REMOVE_SkVal
 
 #ifndef REMOVE_SkVal
 class Assignment_SkVal;

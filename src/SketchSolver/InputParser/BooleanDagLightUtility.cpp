@@ -374,6 +374,10 @@ void LightSkFuncSetter::init() {
     }
     name_to_count[get_dag_name()]+=1;
     max_count = max(max_count, name_to_count[get_dag_name()]);
+    if(all_inlining_trees.size() == 8)
+    {
+        cout << "examine" << endl;
+    }
     cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
     cout << "";
 }

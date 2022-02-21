@@ -1031,7 +1031,7 @@ namespace SolverLanguagePrimitives
                 }
             }
 
-            VarStore* tmp_var_store = holes_to_sk_val;
+            VarStore* tmp_var_store = new VarStore(*holes_to_sk_val);
             auto tmp_dag = problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
             tmp_var_store->clear();
             tmp_dag->increment_shared_ptr();
@@ -1057,7 +1057,7 @@ namespace SolverLanguagePrimitives
             assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
             if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
             {
-                auto tmp_local_var_store = ret;//;->to_var_store(false);
+                auto tmp_local_var_store = new VarStore(*ret);//;->to_var_store(false);
                 auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
                 tmp_local_var_store->clear();
                 assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());

@@ -579,9 +579,9 @@ VarStore *SketchFunction::get_solution() {
 
     assert(local_inlining_tree != nullptr);
 
-    VarStore* ret = get_inlining_tree()->get_solution();
+    VarStore* ret = local_inlining_tree->get_solution();
     assert(ret->get_inlining_tree() == nullptr);
-    ret->set_inlining_tree(get_inlining_tree());
+    ret->set_inlining_tree(local_inlining_tree);
 
     return ret;
 }
@@ -591,7 +591,7 @@ VarStore *SketchFunction::get_solution() {
 
 SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc,
 #ifdef REMOVE_SkVal
-                                          const VarStore* the_var_store
+                                          const VarStore* _the_var_store
 #else
                                           SolverLanguagePrimitives::InputAssignment *input_assignment
 #endif
@@ -613,6 +613,8 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc,
 
 #ifndef REMOVE_SkVal
     VarStore *the_var_store = input_assignment->to_var_store(false);
+#else
+    VarStore *the_var_store = new VarStore(*_the_var_store);
 #endif
 
     const bool assert_num_remaining_holes_is_0 = true;
@@ -626,10 +628,9 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc,
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*the_var_store);
 
-#ifndef REMOVE_SkVal
     the_var_store->clear();
     the_var_store = nullptr;
-#endif
+
     AssertDebug(!fails, "the dag " + the_dag->get_name() + " asserts false on this input.");
 
     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
@@ -696,7 +697,7 @@ SketchFunctionEvaluator::passes(const SketchFunction *skfunc,
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
 #ifdef REMOVE_SkVal
-                                                const VarStore* the_var_store
+                                                const VarStore* _the_var_store
 #else
                                                 SolverLanguagePrimitives::InputAssignment *input_assignment
 #endif
@@ -724,6 +725,8 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
 
 #ifndef REMOVE_SkVal
     VarStore *the_var_store = input_assignment->to_var_store(false);
+#else
+    VarStore *the_var_store = new VarStore(*_the_var_store);
 #endif
 
     const bool assert_num_remaining_holes_is_0 = true;
@@ -740,9 +743,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
     if(new_clone) {
         the_dag->clear();
     }
-#ifndef REMOVE_SkVal
     the_var_store->clear();
-#endif
 
     return new SL::VarVal(!fails);
 }

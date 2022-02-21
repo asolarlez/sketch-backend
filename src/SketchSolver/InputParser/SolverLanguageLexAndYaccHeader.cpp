@@ -427,7 +427,7 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             harness->get_inlining_tree()->set_var_store(sol);
             sol->disjoint_join_with(*append_sol);
             sol->set_inlining_tree(harness->get_inlining_tree());
-            assert(sol->check_rep_and_clear());
+            assert(sol->check_rep());
 #else
             const HoleAssignment* sol = (solver)->solve(problem);
 
@@ -588,7 +588,7 @@ SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, Solv
 SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
 {
 
-//    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
+    cout << "ENTERING |" << to_string() + "|.SL::FunctionCall::eval(state)" << endl;
 
     if(method_id != _unknown_method)
     {
@@ -945,7 +945,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 var_val_sol->increment_shared_ptr();
 #ifdef REMOVE_SkVal
                 HoleVarStore *solution_holder = var_val_sol->get_solution();
-                VarStore* var_store = solution_holder;
+                VarStore* var_store = new VarStore(*solution_holder);
 #else
                 const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
@@ -1060,7 +1060,11 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
         case _get_solution:
         {
             if(params.empty()) {
-                return new VarVal(/*(HoleVarStore*)*/skfunc->get_solution());
+#ifdef REMOVE_SkVal
+                return new VarVal((HoleVarStore*)skfunc->get_solution());
+#else
+                return new VarVal(skfunc->get_solution());
+#endif
             }
             else if(params.size() == 1){
                 AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_solution()");

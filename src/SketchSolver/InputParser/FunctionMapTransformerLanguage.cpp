@@ -490,7 +490,8 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                     assert(maybe_ret != nullptr);
 
 #ifdef REMOVE_SkVal
-                    AssertDebug(false, "TODO")
+                    AssertDebug(maybe_ret->get_has_been_concretized(), "YOU NEED TO RETHINK RECONSTRUCTION ONCE THIS FAILS. NEED MORE INVOLVED STRATEGY.");
+                    return maybe_ret;
 #else
                     if(maybe_ret->get_same_solution() != nullptr)
                     {
@@ -727,6 +728,10 @@ TransformPrimitive::reconstruct_sketch_function(const string &to_this_dag, const
             auto ret = (*root->get_function_map())[to_this_dag];
 //            ret->get_solution();  //debug code, it's memory-leaky
             return ret;
+        }
+        else
+        {
+            AssertDebug(false, "CURRENT THOUGH: YOU SHOULDN'T REACH HERE BC ALL THE DAGS THAT YOU MIGHT WANT TO RECONSTRUCT HAVE BEEN CONCRETIZED AND CLONED AND THEY EXIST IN THE VAR STORE.")
         }
         assert(is_erased || superseded);
 //        cout << "found " << function_name << endl;
