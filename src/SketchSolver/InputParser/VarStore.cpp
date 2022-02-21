@@ -96,6 +96,9 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         string matching_subdag_name;
 
         AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "checkrep should have failed.");
+
+        AssertDebug(false, "REFACTOR THIS BY USING A STRONGER VERSION OF match_topology WHICH KEEPS TRACK OF THE MAPPING BETWEEN FUNCTIONS. USE THIS MAPPING TO FIND WHICH DAG MATCHES TO THE ONE OF INTEREST. NO NEED TO MAKE A SEPERATE DATA STRUCTURE AND THEN DO DAG ISOMORPHISM.")
+
         const vector<string>* new_path = new_inlining_tree->find(new_source_dag);
         const vector<string>* prev_path = nullptr;
         bool enter = false;

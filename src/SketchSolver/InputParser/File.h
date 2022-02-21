@@ -20,7 +20,7 @@ void redeclareInputsAndAngelics(VarStore & inputStore, BooleanDAG* dag);
 class BooleanDagLightUtility;
 
 
-#define CHECK_FILE_INVARIANT
+//#define CHECK_FILE_INVARIANT
 
 class File: public vector<VarStore*>
 {

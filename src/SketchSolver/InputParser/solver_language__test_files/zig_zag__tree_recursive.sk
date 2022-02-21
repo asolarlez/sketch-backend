@@ -1,9 +1,3 @@
-void printf(){
-    if(??)
-    {
-        printf();
-    }
-}
 
 generator int line_generator(int x)
 {
@@ -21,21 +15,33 @@ generator int program_generator(int x) {
 
 int program_lvl0(int x)
 {
-    printf();
     return program_generator(x);
 }
 
-bit condition(int x)
+bit top_condition(int x)
 {
-    printf();
     return predicate_generator(x);
+}
+
+int composite_predicate_left(int x)
+{
+    return composite_predicate(x);
+}
+
+int composite_predicate_right(int x)
+{
+    return composite_predicate(x);
 }
 
 int composite_predicate(int x)
 {
-    printf();
-    if(condition(x)) {
-        return composite_predicate(x);
+    if(??) {
+        if(condition(x)) {
+            return composite_predicate_left(x);
+        }
+        else {
+            return composite_predicate_right(x);
+        }
     }
     else {
         return program_lvl0(x);

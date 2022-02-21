@@ -71,21 +71,21 @@ Solver best_effort_programs(harness1, file, num_trials, num_rows_per_sample)
     programs = [];
     for(int i = 0;i<solutions.size();i++)
     {
-        programs.append(pair<int, SketchFunction>(solutions.get(i).first(), harness1.produce_concretization(solutions.get(i).second())));
+        programs.append(pair<int, SketchFunction>(solutions.get(i).first(), harness1.produce_executable(solutions.get(i).second())));
     }
     return programs;
 }
 
 Solver best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_sample)
 {
-    return harness2.produce_concretization(
+    return harness2.produce_executable(
         best_effort_synthesis(harness2, file, num_trials, num_rows_per_sample));
 }
 
 Solver main()
 {
-    return top_down_and_bottom_up_synthesis_sketch_main();
-    //return recursive_function_stun();
+    //return top_down_and_bottom_up_synthesis_sketch_main();
+    return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -110,11 +110,11 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
 
             //assert(composite_predicate.num_holes() == 3, "cp has", composite_predicate.num_holes());
 
-            predicate_lvl1 = composite_predicate.produce_replace("condition", predicate.clone());
+            predicate_lvl1 = composite_predicate.produce_replace("condition", predicate.unit_clone());
             print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
             int prev_num_holes = predicate_lvl1.num_holes();
 
-            tmp = program_lvl0.produce_concretization(left_programs.get(i).second()["sketch_main"]["dummy_program"].get_solution());
+            tmp = program_lvl0.produce_executable(left_programs.get(i).second()["sketch_main"]["dummy_program"].get_solution());
             print("tmp.num_holes()", tmp.num_holes());
             int new_num_holes = tmp.num_holes();
 
@@ -122,7 +122,7 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
             print("predicate_lvl1.num_holes()", predicate_lvl1.num_holes());
             assert((prev_num_holes + new_num_holes) >= predicate_lvl1.num_holes(), prev_num_holes, "+", new_num_holes, "<", predicate_lvl1.num_holes());
 
-            tmp = program_lvl0.produce_concretization(right_programs.get(j).second()["sketch_main"]["dummy_program"].get_solution());
+            tmp = program_lvl0.produce_executable(right_programs.get(j).second()["sketch_main"]["dummy_program"].get_solution());
             print("tmp.num_holes()", tmp.num_holes());
 
             predicate_lvl1.replace("if_false_branch", tmp);
@@ -169,12 +169,12 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    num_trials = 8;
+    num_trials = 16;
     num_rows_per_sample = 6;
     select_best = 2;
     assert(num_trials >= select_best);
 
-    sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+    sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
     sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", sketch_main_lvl0_sub);
 
     File file = File(file_name, sketch_main_lvl0);
@@ -243,9 +243,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
             print("prev_score: ", seed_main_lvl1.get(i).first().first());
             local_program = seed_main_lvl1.get(i).first().second();
             //take condition
-            //condition_lvl1_sub_sub = predicate.produce_concretization(local_program.get_solution());
-            condition_lvl1_sub_sub = predicate.produce_concretization(local_program["sketch_main"]["dummy_program"]["condition"].get_solution());
-            condition_lvl1_sub = eval_program_main.produce_replace("dummy_program", condition_lvl1_sub_sub).produce_concretization();
+            //condition_lvl1_sub_sub = predicate.produce_executable(local_program.get_solution());
+            condition_lvl1_sub_sub = predicate.produce_executable(local_program["sketch_main"]["dummy_program"]["condition"].get_solution());
+            condition_lvl1_sub = eval_program_main.produce_replace("dummy_program", condition_lvl1_sub_sub).produce_executable();
             condition_lvl1 = eval_program_main__Wrapper.produce_replace("eval_program_main", condition_lvl1_sub);
 
             File file = File(file_name, condition_lvl1_sub);
@@ -269,7 +269,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
                     //resynthesize lvl0 left and right predicates.
 
-                    left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                    left_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
                     left_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", left_tmp);
                     if_true_file.relabel(left_sketch_main_lvl0);
                     left_sketch_main_lvl0_programs =
@@ -279,7 +279,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     left_sketch_main_lvl0_programs.sort();
                     left_sketch_main_lvl0_programs.reverse();
 
-                    right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.clone());
+                    right_tmp = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
                     right_sketch_main_lvl0 = sketch_main__Wrapper.produce_replace("sketch_main", right_tmp);
                     if_false_file.relabel(right_sketch_main_lvl0);
                     right_sketch_main_lvl0_programs = best_effort_programs(right_sketch_main_lvl0, if_false_file, num_trials, num_rows_per_sample);
@@ -292,9 +292,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
 
                     new_best_predicate_lvl1 = composite_predicate.produce_replace("condition", condition_lvl1_sub_sub);
                     new_best_predicate_lvl1.replace("if_true_branch",
-                        program_lvl0.produce_concretization(left_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
+                        program_lvl0.produce_executable(left_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
                     new_best_predicate_lvl1.replace("if_false_branch",
-                        program_lvl0.produce_concretization(right_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
+                        program_lvl0.produce_executable(right_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
 
                     new_best_sketch_main_lvl1_sub = sketch_main.produce_replace("dummy_program", new_best_predicate_lvl1);
                     new_best_sketch_main_lvl1 = sketch_main__Wrapper.produce_replace("sketch_main", new_best_sketch_main_lvl1_sub);
@@ -302,7 +302,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                     solution = new_best_sketch_main_lvl1.get_solution();
 
                     file = File(file_name, new_best_sketch_main_lvl1);
-                    dag_for_score = new_best_sketch_main_lvl1.produce_concretization();
+                    dag_for_score = new_best_sketch_main_lvl1.produce_executable();
                     int score = count_passing_inputs(dag_for_score, file);
 
                     print("new_score:", score);
@@ -365,6 +365,8 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
         print("best_from_all_programs = ", all_programs[0].first().first());
 
         print("UPDATED seed_main_lvl1");
+
+        iter_id++;
     }
 
 
@@ -406,40 +408,6 @@ bit composite_predicate(x)
 }
 
 */
-
-
-Solver recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports()
-{
-
-    File file = File(file_name, sketch_main__Wrapper);
-
-    num_trials = 10;
-    num_rows_per_sample = 3;
-
-    cp = composite_predicate.clone();
-    cp = composite_predicate.produce_replace("composite_predicate", cp);
-    cp = composite_predicate.produce_replace("composite_predicate", cp);
-
-    cp = cp.produce_concretization();
-
-    print("HERE -1");
-    cp = composite_predicate.produce_replace("composite_predicate", cp.get("composite_predicate"));
-    print("HERE -2");
-    cp = composite_predicate.produce_replace("composite_predicate", cp);
-    cp = composite_predicate.produce_replace("composite_predicate", cp);
-
-    cp = cp.produce_concretization();
-
-    print("HERE >>>>>>>>>>> A");
-    cp = cp.get("composite_predicate");
-    print("HERE >>>>>>>>>>> DONE A");
-
-    sk_main = sketch_main.produce_replace("composite_predicate", cp);
-
-    sk_main_wrapper = sketch_main__Wrapper.produce_replace("sketch_main", sk_main);
-
-    return best_effort_synthesized_program(sk_main_wrapper, file, num_trials, num_rows_per_sample);
-}
 
 
 Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper)
@@ -486,7 +454,7 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
         if(true)
         {
             to_eval = eval_program_main_harness.produce_replace("dummy_program", harness_levels[i].get("sketch_main").get("composite_predicate"));
-            to_eval = to_eval.produce_concretization();
+            to_eval = to_eval.produce_executable();
 
             local_file = File(file_name, to_eval);
             for(int k = 0;k < local_file.size(); k++)
@@ -520,10 +488,10 @@ Solver recursive_function_stun()
 
     File file = File(file_name, local_sketch_main__Wrapper);
 
-    num_trials = 5;
-    num_rows_per_sample = 6;
+    num_trials = 2;
+    num_rows_per_sample = 3;
 
-    int stun_depth = 3;
+    int stun_depth = 14;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 
@@ -573,7 +541,7 @@ Solver recursive_function_stun()
         }
 
         // can't do this bc different holes are aliased.
-        cp_lvl_i.concretize(at_level.get_solution());
+        cp_lvl_i.make_executable(at_level.get_solution());
 
 
         //START
@@ -582,7 +550,7 @@ Solver recursive_function_stun()
 
         {
             to_eval = eval_program_main_harness.produce_replace("dummy_program", cp_lvl_i);
-            to_eval = to_eval.produce_concretization();
+            to_eval = to_eval.produce_executable();
 
             local_file = File(file_name, to_eval);
             for(int k = 0;k < local_file.size(); k++)
@@ -598,7 +566,7 @@ Solver recursive_function_stun()
             }
         }
 
-        score_predicted = count_passing_inputs(local_sketch_main__Wrapper.produce_concretization(), file);
+        score_predicted = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
         //END
 
         //START
@@ -607,7 +575,7 @@ Solver recursive_function_stun()
 
         {
             to_eval = eval_program_main_harness.produce_replace("dummy_program", at_level);
-            to_eval = to_eval.produce_concretization();
+            to_eval = to_eval.produce_executable();
 
             local_file = File(file_name, to_eval);
             for(int k = 0;k < local_file.size(); k++)
@@ -623,7 +591,7 @@ Solver recursive_function_stun()
             }
         }
 
-        score_ground_truth = count_passing_inputs(local_sketch_main__Wrapper.produce_concretization(), file);
+        score_ground_truth = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
         //END
 
         print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
@@ -661,8 +629,8 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
     print("first lvl0_left_solutions.size() ", lvl0_left_solutions.size());
     print("first lvl0_right_solutions.size() ", lvl0_right_solutions.size());
 
-    predicate_lvl0_left_original = predicate_lvl0_left.clone();
-    predicate_lvl0_right_original = predicate_lvl0_right.clone();
+    predicate_lvl0_left_original = predicate_lvl0_left.unit_clone();
+    predicate_lvl0_right_original = predicate_lvl0_right.unit_clone();
 
     any ret;
 
@@ -673,10 +641,10 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
         print("lvl0_right_solutions.size() ", lvl0_right_solutions.size());
         for(i = 0;i<select_best;i++)
         {
-            predicate_lvl0_left.concretize(lvl0_left_solutions.get(i).second());
+            predicate_lvl0_left.make_executable(lvl0_left_solutions.get(i).second());
             for(j = 0;j<select_best; j++)
             {
-                predicate_lvl0_right.concretize(lvl0_right_solutions.get(j).second());
+                predicate_lvl0_right.make_executable(lvl0_right_solutions.get(j).second());
 
                 any compound_solutions;
                 {
@@ -696,11 +664,11 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
                 concatenate(all_compound_solutions, compound_solutions);
 
                 //predicate_lvl0_right.clear();
-                predicate_lvl0_right = predicate_lvl0_right_original.clone();
+                predicate_lvl0_right = predicate_lvl0_right_original.unit_clone();
             }
 
             //predicate_lvl0_left.clear();
-            predicate_lvl0_left = predicate_lvl0_left_original.clone();
+            predicate_lvl0_left = predicate_lvl0_left_original.unit_clone();
         }
 
         all_compound_solutions.sort();
@@ -719,7 +687,7 @@ Solver left_and_right_and_cond_synthesis_sketch_main()
 
 Solver get_score(SketchFunction harness3, Solution solution, File file)
 {
-    SketchFunction program = harness3.produce_concretization(solution); // create a program that uses the solution to fill in the holes of the harness.
+    SketchFunction program = harness3.produce_executable(solution); // create a program that uses the solution to fill in the holes of the harness.
     int score2 = count_passing_inputs(program, file); // count how many input-output examples are solved with this solution
     program.clear();
     return score2;
@@ -776,10 +744,10 @@ Solver Solution beam_search_sketch_main()
     SketchFunction throw_away;
     for(i = 0;i<beam_breath;i++)
     {
-        harness4 = sketch_main_lvl1__Wrapper.clone();
+        harness4 = sketch_main_lvl1__Wrapper.unit_clone();
         assert(indexed_solutions.get(i).second().first() == 0);
         partial_solution = indexed_solutions.get(i).second().second();
-        harness4.concretize(partial_solution);
+        harness4.make_executable(partial_solution);
         file = File(file_name, harness4);
         best_effort_solutions = best_effort_solutions(harness4, file, num_trials, num_rows_per_sample);
 
@@ -787,7 +755,7 @@ Solver Solution beam_search_sketch_main()
 
         for(j = 0;j<local_n;j++)
         {
-            tmp_solution = partial_solution.clone();
+            tmp_solution = partial_solution.unit_clone();
             tmp_solution.join(best_effort_solutions.get(j).second());
             next_frontier.append(
                 pair<int, pair<int, Solution> >(
@@ -807,10 +775,10 @@ Solver Solution beam_search_sketch_main()
     int counter = 0;
     for(i = 0;i<beam_breath;i++)
     {
-        harness4 = sketch_main_lvl2__Wrapper.clone();
+        harness4 = sketch_main_lvl2__Wrapper.unit_clone();
         assert(next_frontier.get(i).second().first() == 1);
         partial_solution = next_frontier.get(i).second().second();
-        harness4.concretize(partial_solution);
+        harness4.make_executable(partial_solution);
         file = File(file_name, harness4);
         best_effort_solutions = best_effort_solutions(harness4, file, num_trials, num_rows_per_sample);
 
@@ -818,7 +786,7 @@ Solver Solution beam_search_sketch_main()
 
         for(j = 0;j<local_n;j++)
         {
-            tmp_solution = partial_solution.clone();
+            tmp_solution = partial_solution.unit_clone();
             tmp_solution.join(best_effort_solutions.get(j).second());
             final_frontier.append(
                 pair<int, pair<int, Solution> >(
@@ -870,9 +838,9 @@ Solver stun_main()
 
     Solution total_solution = Solution();
 
-    SketchFunction org_program_lvl0 = program_lvl0.clone();
-    SketchFunction org_program_lvl1 = program_lvl1.clone();
-    SketchFunction org_program_lvl2 = program_lvl2.clone();
+    SketchFunction org_program_lvl0 = program_lvl0.unit_clone();
+    SketchFunction org_program_lvl1 = program_lvl1.unit_clone();
+    SketchFunction org_program_lvl2 = program_lvl2.unit_clone();
 
     SketchFunction tmp_program_lvl0 = program_lvl0;
     SketchFunction tmp_program_lvl1 = program_lvl1;
@@ -889,7 +857,7 @@ Solver stun_main()
     total_solution.join(solution_lvl0);
 
 	//concretize the predicate lvl0
-	program_lvl0.concretize(solution_lvl0);
+	program_lvl0.make_executable(solution_lvl0);
 
 	//solve the harness lvl1
 	file = File(file_name, main_lvl1__Wrapper);
@@ -898,7 +866,7 @@ Solver stun_main()
     total_solution.join(solution_lvl1);
 
 	//concretize the predicate lvl1
-	program_lvl1.concretize(solution_lvl1);
+	program_lvl1.make_executable(solution_lvl1);
 
 	//solve the harness lvl2
 	file = File(file_name, main_lvl2__Wrapper);
@@ -907,7 +875,7 @@ Solver stun_main()
     total_solution.join(solution_lvl2);
 
 	//concretize the predicate lvl2
-	program_lvl2.concretize(solution_lvl2);
+	program_lvl2.make_executable(solution_lvl2);
 
 	//done, no more predicates to concretize.
 

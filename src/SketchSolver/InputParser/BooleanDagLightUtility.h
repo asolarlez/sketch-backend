@@ -504,7 +504,7 @@ public:
 
     bool contains(const string& target_dag) const
     {
-        const vector<string>* tmp_path = find(target_dag);
+        const vector<string>* tmp_path = find_any_path(target_dag);
         bool ret = tmp_path != nullptr;
         delete tmp_path;
         return ret;
