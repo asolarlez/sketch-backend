@@ -41,39 +41,14 @@ SketchFunction *FunctionMap::produce_get(const string &from_dag, const string &u
     auto it = find(underlying_dag);
     if(it != end()) {
         return extract_sketch_function(from_dag, under_this_var, underlying_dag);
-//        const SketchFunction* the_var_store = extract_sketch_function(from_dag, under_this_var, underlying_dag);
-//        if(the_var_store == nullptr) {
-//            cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " THIS: " << it->second->get_dag()->get_name() <<" NON CONCRETIZED" << endl;
-////            cout << "VAR STORE IN NULLPTR" << endl;
-//            return it->second;
-//        }
-//        else
-//        {
-//            cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " THIS: " << it->second->get_dag()->get_name() <<" CLONING AND CONCRETIZING NOW" << endl;
-//            VarStore* var_store = the_var_store->clone();
-//            //TODO: save this to give it back next time it is asked for.
-//            auto ret = it->second->produce_concretization(*var_store, bool_node::CTRL, true);
-//            var_store->clear();
-//            return ret;
-//        }
     }
     else
     {
         AssertDebug(false, "CHECK IF YOU CAN MERGE THE TWO BRANCES!!!");
-        cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " RECONSTRUCTING NOW" << endl;
+//        cout << "FOUND from_dag " << from_dag << " under_this_var " << under_this_var << " RECONSTRUCTING NOW" << endl;
         return reconstruct_sketch_function(from_dag, under_this_var, underlying_dag);
     }
 }
-
-//const VarStore *
-//FunctionMap::get_var_store_used_to_concretize_underlying_subdag(const string &from_dag, const string &under_this_var) {
-//    return extract_sketch_function(
-//            from_dag,
-//            under_this_var,
-//            find_subdag_name(
-//                    from_dag,
-//                    under_this_var))->get_solution()->to_var_store();
-//}
 
 void FunctionMap::soft_clear_transformer() {
     FunctionMapTransformer::soft_clear();

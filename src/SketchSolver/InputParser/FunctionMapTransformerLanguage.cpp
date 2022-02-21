@@ -164,46 +164,35 @@ FunctionMapTransformer::extract_sketch_function(const string &from_dag, const st
                                                 const string &to_this_dag) const  {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-//    if(from_dag == "sketch_main" && under_this_var == "composite_predicate" && to_this_dag == "composite_predicate")
-//    {
-//        cout << "here" << endl;
-//    }
     SketchFunction* ret = it->second->extract_sketch_function(to_this_dag, under_this_var, this);
     bool found = ret != nullptr;
     AssertDebug(found, "this indicates that " + to_this_dag + " wasn't found starting from " + from_dag);
-    //debug code, it's memory-leaky.
-//    ret->get_solution();
-//    auto check_all_good = ret->produce_concretization();
-//    check_all_good->increment_shared_ptr();
-//    check_all_good->clear();
     return ret;
 }
 
-string FunctionMapTransformer::find_subdag_name(
-        const string &from_dag, const string &find_what_dag_this_varname_maps_to) const
+string FunctionMapTransformer::find_subdag_name(const string &from_dag, const string &find_what_dag_this_varname_maps_to) const
 {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
-    bool print = true;
+
+    bool print = false;
     if(print)
         cout << endl << "IN find_subdag_name " << from_dag << " " << find_what_dag_this_varname_maps_to << endl;
-    TransformPrimitive* subdag = it->second->find_underlying_function(find_what_dag_this_varname_maps_to, this, print);
 
-    //NOW YOU KNOW THE NAME; NOW FIND THE EARLIEST TRANSOFORMER PRIMITIVE FROM THE SOURCE (from_dag) THAT HAS THAT NAME -> THIS IS WHAT YOU ARE LOOKING FOR.
-    //AND RECORD THE VARSTORE ON THE WAY. IF THIS FUNCTION YOU FIND IS NOT AT THE TOP, YOU NEED TO RECONSTRUCT IT!!!;
+    TransformPrimitive* subdag = it->second->find_underlying_function(find_what_dag_this_varname_maps_to, this, print);
 
     AssertDebug(subdag != nullptr, "port_name: '" +find_what_dag_this_varname_maps_to +"' not found.");
     string subdag_name = subdag->get_function_name();
     assert(root_dag_reps.find(subdag_name) != root_dag_reps.end());
     assert(root_dag_reps.at(subdag_name) == subdag);
+
     if(print)
         cout << "find_subdag_name(" + from_dag + ", " + find_what_dag_this_varname_maps_to + ") returns " << subdag << endl << endl;
+
     return subdag_name;
 }
 
-SketchFunction *
-FunctionMapTransformer::reconstruct_sketch_function(
-        const string &from_dag, const string &under_this_var, const string &to_this_dag) {
+SketchFunction * FunctionMapTransformer::reconstruct_sketch_function(const string &from_dag, const string &under_this_var, const string &to_this_dag) {
     auto it = root_dag_reps.find(from_dag);
     assert(it != root_dag_reps.end());
     auto ret = it->second->reconstruct_sketch_function(to_this_dag, under_this_var, this);
@@ -212,16 +201,11 @@ FunctionMapTransformer::reconstruct_sketch_function(
     return ret;
 }
 
-bool FunctionMapTransformer::contains_only_necessary()
-{
+bool FunctionMapTransformer::contains_only_necessary() {
     bool ret = true;
-    for(auto it: program)
-    {
-        if(!it->get_is_erased())
-        {
-            if(function_map->find(it->get_function_name()) == function_map->end())
-            {
-                cout << "contains unnecessary: " << it->get_function_name() << endl;
+    for(auto it: program) {
+        if (!it->get_is_erased()) {
+            if (function_map->find(it->get_function_name()) == function_map->end()) {
                 ret = false;
             }
         }
@@ -236,13 +220,11 @@ void FunctionMapTransformer::reinsert(const string &to_reinsert_name) {
     rep->second->unerase();
 }
 
-void TransformPrimitive::set_is_erased(bool is_original)
-{
-    if(!is_erased) {
+void TransformPrimitive::set_is_erased(bool is_original) {
+    if (!is_erased) {
         is_erased = true;
-        if(main_parent != nullptr)
-        {
-            if(main_parent->function_name == function_name) {
+        if (main_parent != nullptr) {
+            if (main_parent->function_name == function_name) {
                 main_parent->set_is_erased(false);
             }
         }

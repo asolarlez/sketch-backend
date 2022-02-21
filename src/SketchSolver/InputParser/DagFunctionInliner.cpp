@@ -370,7 +370,6 @@ void DagFunctionInliner::visit( UFUN_node& node ){
   map<string, map<string, string> >::iterator it = replaceMap.find(name);
   if (it != replaceMap.end()) {
     if (ictrl != NULL && ictrl->isRecursive(node)) {
-      cout << "Replacing ufun node " << name << endl;
       string oldOutputType = node.getTupleName();
       
       int oriInpSize = node.nargs();

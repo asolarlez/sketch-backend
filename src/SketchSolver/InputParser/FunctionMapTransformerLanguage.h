@@ -102,10 +102,6 @@ namespace FMTL {
         explicit TransformPrimitive(string  _function_name, TransformPrimitiveMetaType _meta_type):
         function_name(std::move(_function_name)), meta_type(_meta_type) {
             assert(!function_name.empty());
-            if(function_name == "composite_predicate__id142"  && meta_type == _concretize)
-            {
-                cout << "beak" << endl;
-            }
         };
 
         void add_parent(TransformPrimitive *&new_parent) {

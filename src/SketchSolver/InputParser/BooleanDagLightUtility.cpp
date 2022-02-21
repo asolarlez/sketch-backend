@@ -363,10 +363,10 @@ long long int LightSkFuncSetter::get_tree_id() const {
 
 void LightSkFuncSetter::init() {
     inlining_tree_id = inlining_tree_global_id++;
-    if(dag_id == 23)
-    {
-        cout << "here" << endl;
-    }
+//    if(dag_id == 23)
+//    {
+//        cout << "here" << endl;
+//    }
     assert(all_inlining_trees.find(this) == all_inlining_trees.end());
     all_inlining_trees.insert(this);
     if(name_to_count.find(get_dag_name()) == name_to_count.end()) {
@@ -374,12 +374,8 @@ void LightSkFuncSetter::init() {
     }
     name_to_count[get_dag_name()]+=1;
     max_count = max(max_count, name_to_count[get_dag_name()]);
-    if(all_inlining_trees.size() == 8)
-    {
-        cout << "examine" << endl;
-    }
-    cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
-    cout << "";
+//    cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
+//    cout << "";
 }
 
 LightSkFuncSetter::LightSkFuncSetter(const BooleanDagUtility *_skfunc): dag_name(_skfunc->get_dag_name()), dag_id(_skfunc->get_dag_id()){
@@ -387,13 +383,6 @@ LightSkFuncSetter::LightSkFuncSetter(const BooleanDagUtility *_skfunc): dag_name
     const VarStore* _var_store = _skfunc->get_var_store();
     if(_var_store != nullptr) {
         var_store = _var_store->clone();
-    }
-    if(get_dag_name().substr(0, 9) == "condition")
-    {
-        if(var_store == nullptr)
-        {
-            cout << "not good" << endl;
-        }
     }
     for(auto it: _skfunc->get_dag()->getNodesByType(bool_node::CTRL)) {
         if(it->get_name() != "#PC") {
