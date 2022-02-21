@@ -382,7 +382,7 @@ class Assignment_SkVal: public Mapping<SkVal> {
     }
 
 private:
-    LightInliningTree* inlining_tree = nullptr;
+    const LightInliningTree* inlining_tree = nullptr;
 public:
 
     bool operator == (const Assignment_SkVal& other) const;
@@ -508,9 +508,9 @@ public:
     }
 
 
-    LightInliningTree *get_inlining_tree_nonconst() {
-        return inlining_tree;
-    }
+//    const LightInliningTree *get_inlining_tree_nonconst() {
+//        return inlining_tree;
+//    }
 
     void set_inlining_tree_to_nullptr();
 };

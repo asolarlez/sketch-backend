@@ -449,7 +449,7 @@ private:
 
     LightInliningTree* inlining_tree = nullptr;
 
-    void insert_name_in_original_name_to_dag_name_to_name(string name, string original_name, string source_dag_name)
+    void insert_name_in_original_name_to_dag_name_to_name(const string& name, string original_name, string source_dag_name)
     {
         if(original_name == "declareInput()") {
             original_name += "___"+name;

@@ -99,7 +99,11 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
             assert(_skfunc->get_has_been_concretized());
             for(const auto& it: skfunc_inlining_tree->get_var_name_to_inlining_subtree()) {
                 if(visited->find(it.second->get_dag_id()) == visited->end()) {
+#ifndef NO_CLONE_INLINING_TREE
                     var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
+#else
+                    var_name_to_inlining_subtree[it.first] = it.second;
+#endif
                 }
                 else
                 {

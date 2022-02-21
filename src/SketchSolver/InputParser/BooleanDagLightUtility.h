@@ -16,7 +16,7 @@ static bool new_way = true;
 
 class BooleanDagUtility;
 
-
+//#define NO_CLONE_INLINING_TREE
 
 class LightSkFuncSetter
 {
@@ -177,6 +177,7 @@ public:
         return var_store;
     }
 
+#ifndef NO_CLONE_INLINING_TREE
     explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy):
     dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
         assert(this != to_copy);
@@ -187,6 +188,8 @@ public:
         }
         assert(var_store != nullptr || unconc_hole_original_name_to_name.empty());
     }
+#endif
+
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
 
     int get_dag_id() const
@@ -247,7 +250,18 @@ class LightInliningTree: public LightSkFuncSetter
 protected:
     map<string, LightInliningTree*> var_name_to_inlining_subtree;
 public:
-    LightInliningTree* get_target(const string& target_subdag)
+    const LightInliningTree* get_target(const string& target_subdag) const
+    {
+        const vector<string>* path = find_any_path(target_subdag);
+        const LightInliningTree* at = this;
+        for(int i = path->size()-1;i>=0;i--) {
+            assert(at->var_name_to_inlining_subtree.find(path->at(i)) != at->var_name_to_inlining_subtree.end());
+            at = at->var_name_to_inlining_subtree.at(path->at(i));
+        }
+        return at;
+    }
+
+    LightInliningTree* get_target_non_const(const string& target_subdag)
     {
         const vector<string>* path = find_any_path(target_subdag);
         LightInliningTree* at = this;
@@ -303,7 +317,7 @@ public:
     }
 
     LightInliningTree(const BooleanDagUtility* _skfunc, bool do_recurse): LightSkFuncSetter(_skfunc) {assert(!do_recurse);}
-
+#ifndef NO_CLONE_INLINING_TREE
     LightInliningTree(const LightInliningTree* _to_copy, bool do_recurse): LightSkFuncSetter(_to_copy) {assert(!do_recurse);}
 
     explicit LightInliningTree(
@@ -326,6 +340,7 @@ public:
             delete visited;
         }
     }
+#endif
 
     explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>());
 
@@ -340,7 +355,11 @@ public:
 
         for(const auto& it: to_copy->var_name_to_inlining_subtree) {
             if(visited->find(it.second->get_dag_id()) == visited->end() ) {
+#ifndef NO_CLONE_INLINING_TREE
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
+#else
+                var_name_to_inlining_subtree[it.first] = it.second;
+#endif
             }
             else {
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
@@ -491,51 +510,51 @@ public:
     void print(int ntabs = 0, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
 
     bool contains_var(
-            const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name)
+            const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
     {
-        LightInliningTree* target = get_target(source_dag_name);
+        const LightInliningTree* target = get_target(source_dag_name);
         assert(target->LightSkFuncSetter::contains_var(name, nbits, otype, type, original_name, source_dag_name));
         return true;
     }
 
     bool contains_var(
-            const VarStore::objP& obj)
+            const VarStore::objP& obj) const
     {
-        LightInliningTree* target = get_target(obj.get_source_dag_name());
+        const LightInliningTree* target = get_target(obj.get_source_dag_name());
         assert(target->LightSkFuncSetter::contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 
     void insert_var(const VarStore::objP& obj)
     {
-        LightInliningTree* target = get_target(obj.get_source_dag_name());
+        LightInliningTree* target = get_target_non_const(obj.get_source_dag_name());
         target->LightSkFuncSetter::insert_var(obj);
     }
 
     void set_var_val(
-            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name)
+            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
     {
-        LightInliningTree* target = get_target(source_dag_name);
+        const LightInliningTree* target = get_target(source_dag_name);
         target->LightSkFuncSetter::set_var_val(name, val, nbits, otype, type, original_name, source_dag_name);
     }
 
-    void rename_var(const VarStore::objP& obj, const string& new_name, const string& new_source_dag)
+    void rename_var(const VarStore::objP& obj, const string& new_name, const string& new_source_dag) const
     {
         const string& prev_source_dag_name = obj.get_source_dag_name();
-        LightInliningTree* target = get_target(prev_source_dag_name);
+        const LightInliningTree* target = get_target(prev_source_dag_name);
         target->LightSkFuncSetter::rename_var(obj, new_name, new_source_dag);
 //        target->LightSkFuncSetter::rename_dag(new_source_dag);
     }
 
     void rename_subdag(const string& prev_name, const string& new_name)
     {
-        LightInliningTree* target = get_target(prev_name);
+        LightInliningTree* target = get_target_non_const(prev_name);
         target->LightSkFuncSetter::rename_dag(new_name);
     }
 
     void change_id(const string& prev_name, int new_id)
     {
-        LightInliningTree* target = get_target(prev_name);
+        LightInliningTree* target = get_target_non_const(prev_name);
         target->LightSkFuncSetter::change_id(new_id);
     }
 
