@@ -9,6 +9,23 @@
 
 const bool rename_holes = true;
 
+set<string> SketchFunction::get_deep_holes()
+{
+    set<string> ret;
+    set<string>* subf_names = get_inlined_functions();
+    for(auto f_name : *subf_names)
+    {
+        assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
+        SketchFunction* subf = get_env()->function_map.find(f_name)->second;
+
+        for(auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
+            if(it->get_name() != "#PC")
+            ret.insert(it->get_name());
+        }
+    }
+    return ret;
+}
+
 SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone) {
 
     if(do_clone) {
@@ -33,19 +50,50 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
             deep_clone_tail();
 
             if(var_type == bool_node::CTRL) {
-                InliningTree *tmp_inlining_tree = new InliningTree(this);
+                LightInliningTree *tmp_inlining_tree = new LightInliningTree(this);
+
+                set<string>* subf_names = get_inlined_functions();
+
+                for(const auto& f_name: *subf_names)
+                {
+                    auto target = tmp_inlining_tree->get_target(f_name);
+                    assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
+                    SketchFunction* subf = get_env()->function_map.find(f_name)->second;
+
+                    for(auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
+                        if(it->get_name() != "#PC") {
+                            if(target->get_var_store() != nullptr) {
+                                assert(false);
+                                assert(!target->get_var_store()->contains(it->get_name()));
+                            }
+                            else
+                            {
+                                string org_name = ((CTRL_node*)it)->get_original_name();
+                                assert(target->get_unconc_map().find(org_name) != target->get_unconc_map().end());
+                                assert(target->get_unconc_map().at(org_name).find(f_name) != target->get_unconc_map().at(org_name).end());
+                                assert(target->get_unconc_map().at(org_name).at(f_name) == it->get_name());
+                            }
+                        }
+                    }
+                }
 
                 if(var_store != nullptr) {
                     var_store->check_rep();
                     assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
-                    cout << "tmp_inlining_tree" << endl;
-                    tmp_inlining_tree->print();
+//                    cout << "tmp_inlining_tree" << endl;
+//                    tmp_inlining_tree->print();
                     var_store->check_rep();
                     tmp_inlining_tree->rename_var_store(*var_store, var_store->get_inlining_tree());
                     var_store->check_rep();
+
+                    set<string> all_holes = get_deep_holes();
+                    for(const auto& it: all_holes) {
+                        assert(var_store->contains(it));
+                    }
+
                 }
 
-                tmp_inlining_tree->concretize(var_store, var_type);
+                tmp_inlining_tree->concretize(this, var_store);
                 tmp_inlining_tree->clear();
             }
         }
@@ -506,6 +554,15 @@ void SketchFunction::deep_clone_tail() {
         }
     }
 
+}
+
+set<string> SketchFunction::ufun_names() {
+    set<string> ret;
+    for(auto it: get_dag()->getNodesByType(bool_node::UFUN))
+    {
+        ret.insert(((UFUN_node*)it)->get_ufname());
+    }
+    return ret;
 }
 
 #include "SolverLanguageLexAndYaccHeader.h"

@@ -561,7 +561,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
 //    cout << "entering to_this_dag " << to_this_dag <<" under_this_val " << under_this_var << endl;
 //    assert(!found);
 //    const VarStore* ret_so_far = nullptr;
-//    auto var_store = get_var_store_used_for_concretization();
+//    auto var_store = get_var_store();
 ////    if(var_store != nullptr)
 //    {
 //        for(const auto& it: parents)

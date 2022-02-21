@@ -54,7 +54,7 @@ void VarStore::rename(const objP& _obj, const string &new_name, const string& ne
 
 }
 
-void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const InliningTree *new_inlining_tree, string& _ret_prev_source_dag_name) {
+void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const LightInliningTree *new_inlining_tree, string& _ret_prev_source_dag_name) {
     assert(_ret_prev_source_dag_name == "");
     assert(inlining_tree != nullptr);
     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
@@ -100,28 +100,28 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
         const vector<string>* prev_path = nullptr;
         bool enter = false;
 
-        cout << "var_val's inlining_tree" << endl;
-        inlining_tree->print();
+//        cout << "var_val's inlining_tree" << endl;
+//        inlining_tree->print();
+//
+//        cout << "original_name:" << original_name << endl;
+//        for(const auto& it: var_name_to_dag_name_to_name[original_name])
+//        {
+//            cout << "it.first " << it.first << " -> " << it.second << endl;
+//        }
 
-        cout << "original_name:" << original_name << endl;
-        for(const auto& it: var_name_to_dag_name_to_name[original_name])
-        {
-            cout << "it.first " << it.first << " -> " << it.second << endl;
-        }
-
-        cout << "paths tried:" << endl;
+//        cout << "paths tried:" << endl;
         for(const auto& it: var_name_to_dag_name_to_name[original_name]){
             assert(enter == (prev_path != nullptr));
             auto tmp_path = inlining_tree->find(it.first);
-            if(tmp_path != nullptr) {
-                cout << "tmp_path.size() " << tmp_path->size() << endl;
-                cout << "BOTTOM <- ";
-                for (const auto &link: *tmp_path) {
-                    cout << link << " <- ";
-                }
-                cout << "TOP" << endl;
-                cout << endl;
-            }
+//            if(tmp_path != nullptr) {
+//                cout << "tmp_path.size() " << tmp_path->size() << endl;
+//                cout << "BOTTOM <- ";
+//                for (const auto &link: *tmp_path) {
+//                    cout << link << " <- ";
+//                }
+//                cout << "TOP" << endl;
+//                cout << endl;
+//            }
             if(tmp_path != nullptr && *tmp_path == *new_path) {
                 AssertDebug(prev_path == nullptr && !enter, "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN LightInliningTree._find.");
                 enter = true;
@@ -250,7 +250,7 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
 
 VarStore::VarStore(const LightInliningTree *_inlining_tree){
     if(_inlining_tree != nullptr) {
-        inlining_tree = (new LightInliningTree(_inlining_tree));
+        inlining_tree = new LightInliningTree(_inlining_tree);
     }
 }
 
@@ -296,7 +296,7 @@ bool VarStore::check_rep() const {
     return true;
 }
 
-void VarStore::set_inlining_tree(const InliningTree *new_inlining_tree) {
+void VarStore::set_inlining_tree(const LightInliningTree *new_inlining_tree) {
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
     }

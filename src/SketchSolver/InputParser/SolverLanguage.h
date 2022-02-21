@@ -1186,7 +1186,7 @@ namespace SolverLanguagePrimitives
 //count	1058 / 1743 (60.6999 %)
 
                 int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
-                int all_remaining_inlining_trees = SkFuncSetter::all_inlining_trees.size();
+                int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
 
                 assert(dags_diff == 0);
                 assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
@@ -1196,8 +1196,8 @@ namespace SolverLanguagePrimitives
                 function_map.check_consistency();
                 assert(function_map.contains_only_necessary());
 
-                cout << SkFuncSetter::max_count <<endl;
-//                assert(SkFuncSetter::max_count == 1);
+                cout << LightSkFuncSetter::max_count <<endl;
+                assert(LightSkFuncSetter::max_count == 1);
 
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();

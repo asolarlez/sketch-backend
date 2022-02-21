@@ -390,7 +390,7 @@ public:
     virtual void clear(bool clear_root = true, bool sub_clear = false);
 
     void set_inlining_tree(const LightInliningTree *_inlining_tree);
-    void set_inlining_tree(const InliningTree *_inlining_tree);
+//    void set_inlining_tree(const InliningTree *_inlining_tree);
 
     void update_inlining_tree(LightInliningTree *_inlining_tree)
     {
@@ -444,7 +444,7 @@ public:
     Assignment_SkVal(const VarStore* var_store, FloatManager& floats);
 
     Assignment_SkVal(const LightInliningTree* _inlining_tree, FloatManager& floats);
-    Assignment_SkVal(const InliningTree* _inlining_tree, FloatManager& floats);
+//    Assignment_SkVal(const InliningTree* _inlining_tree, FloatManager& floats);
 
     VarStore* to_var_store(bool assert_inlining_tree_not_null = true) const
     {
@@ -627,8 +627,8 @@ namespace SolverLanguagePrimitives {
         HoleAssignment(SATSolverResult _sat_solver_result, const LightInliningTree *inlining_tree, FloatManager &floats) :
                 sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
 
-        HoleAssignment(SATSolverResult _sat_solver_result, const InliningTree *inlining_tree, FloatManager &floats) :
-                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
+//        HoleAssignment(SATSolverResult _sat_solver_result, const InliningTree *inlining_tree, FloatManager &floats) :
+//                sat_solver_result(_sat_solver_result), assignment_skval(new Assignment_SkVal(inlining_tree, floats)) {}
 
         explicit HoleAssignment(const HoleAssignment *to_copy) : sat_solver_result(to_copy->sat_solver_result), assignment_skval(
                 new Assignment_SkVal(to_copy->assignment_skval)) {}
@@ -723,10 +723,10 @@ namespace SolverLanguagePrimitives {
             assignment_skval->set_inlining_tree(_inlining_tree);
         }
 
-        void set_inlining_tree(InliningTree *_inlining_tree) const
-        {
-            assignment_skval->set_inlining_tree(_inlining_tree);
-        }
+//        void set_inlining_tree(InliningTree *_inlining_tree) const
+//        {
+//            assignment_skval->set_inlining_tree(_inlining_tree);
+//        }
 
         int get_num_shared_ptr() const {
             return shared_ptr;

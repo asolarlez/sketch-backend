@@ -14,24 +14,25 @@ class BooleanDagUtility: public BooleanDagLightUtility {
 
     ProgramEnvironment* original_program_env = nullptr;
 
-    InliningTree* inlining_tree = nullptr;
+    LightInliningTree* inlining_tree = nullptr;
 
     bool has_been_concretized = false;
     VarStore* var_store_used_for_concretization = nullptr;
 
 public:
 
-    const VarStore* get_var_store_used_for_concretization() const {
+    const VarStore* get_var_store() const {
         return var_store_used_for_concretization;
     }
 
     BooleanDagUtility(BooleanDAG* _root_dag): BooleanDagLightUtility(_root_dag) {}
 
-    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, ProgramEnvironment* _original_env, InliningTree* _inlining_tree, bool _has_been_concretized):
+    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, ProgramEnvironment* _original_env, LightInliningTree* _inlining_tree, bool _has_been_concretized):
             BooleanDagLightUtility(_root_dag, _env),
             original_program_env(_original_env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
-            inlining_tree = new InliningTree(this, inlining_tree);
+            inlining_tree = new LightInliningTree(this, inlining_tree);
+            inlining_tree->get_solution();
             assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
         if(has_been_concretized)
@@ -40,17 +41,17 @@ public:
         }
     }
 
-    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, InliningTree* _inlining_tree, bool _has_been_concretized):
+    BooleanDagUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env, LightInliningTree* _inlining_tree, bool _has_been_concretized):
             BooleanDagLightUtility(_root_dag, _env), inlining_tree(_inlining_tree), has_been_concretized(_has_been_concretized) {
         if(inlining_tree != nullptr) {
-            inlining_tree = new InliningTree(this, inlining_tree);
+            inlining_tree = new LightInliningTree(this, inlining_tree);
             assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
     }
 
     BooleanDagUtility(BooleanDagUtility* to_copy): BooleanDagLightUtility(to_copy), inlining_tree(to_copy->inlining_tree), has_been_concretized(to_copy->has_been_concretized) {
         if(inlining_tree != nullptr) {
-            inlining_tree = new InliningTree(this, inlining_tree);
+            inlining_tree = new LightInliningTree(this, inlining_tree);
             assert(inlining_tree->get_dag_id()  == get_dag_id());
         }
 
@@ -76,7 +77,7 @@ public:
 //    void calc_inlining_tree()
 //    {
 //        assert(inlining_tree == nullptr);
-//        inlining_tree = new InliningTree(this);
+//        inlining_tree = new LightInliningTree(this);
 //        if(inlining_tree != nullptr) {
 //            assert(inlining_tree->get_dag_id()  == get_dag_id());
 //        }
@@ -162,7 +163,7 @@ public:
         }
         else {
             assert(inlining_tree == nullptr);
-            inlining_tree = new InliningTree(this);
+            inlining_tree = new LightInliningTree(this);
             inlining_tree->get_solution();
         }
         if(inlining_tree != nullptr) {
@@ -198,13 +199,20 @@ public:
 
         vector<string> local_hole_names;
         for(auto it: get_dag()->getNodesByType(bool_node::CTRL)) {
-            local_hole_names.push_back(it->get_name());
+            if(it->get_name() != "#PC") {
+                assert(_var_store->contains(it->get_name()));
+                local_hole_names.push_back(it->get_name());
+            }
         }
 
         BooleanDagLightUtility::concretize_this_dag(_var_store, var_type, inlined_functions);
 
         if(is_being_concretized) {
             assert(!has_been_concretized);
+//            if(get_dag_id() == 33)
+//            {
+//                cout << "here" << endl;
+//            }
             has_been_concretized = true;
             assert(var_store_used_for_concretization == nullptr);
             if(_var_store != nullptr) {
@@ -238,7 +246,7 @@ public:
 
     bool is_inlining_tree_nonnull();
 
-    InliningTree * const & get_inlining_tree(bool assert_nonnull = true) const;
+    LightInliningTree * const & get_inlining_tree(bool assert_nonnull = true) const;
 
     bool get_has_been_concretized() const ;
 

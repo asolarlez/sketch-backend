@@ -91,8 +91,8 @@ bool Assignment_SkVal::operator==(const Assignment_SkVal& other)  const
 Assignment_SkVal::Assignment_SkVal(const LightInliningTree *_inlining_tree, FloatManager &floats) :
 Mapping<SkVal>(), inlining_tree(new LightInliningTree(_inlining_tree)) {}
 
-Assignment_SkVal::Assignment_SkVal(const InliningTree *_inlining_tree, FloatManager &floats) :
-        Mapping<SkVal>(), inlining_tree(new LightInliningTree(_inlining_tree)) {}
+//Assignment_SkVal::Assignment_SkVal(const InliningTree *_inlining_tree, FloatManager &floats) :
+//        Mapping<SkVal>(), inlining_tree(new LightInliningTree(_inlining_tree)) {}
 
 Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floats): Mapping<SkVal>() {
     assert(var_store != nullptr);
@@ -174,27 +174,27 @@ void Assignment_SkVal::set_inlining_tree(const LightInliningTree *_inlining_tree
     inlining_tree = new LightInliningTree(_inlining_tree);
 }
 
-void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
-{
-    assert(inlining_tree == nullptr);
-    //TODO: refactor this so that it doesn't copy
-//    auto prev_store = _inlining_tree->get_solution();
-//    cout << "--" << endl;
-//    cout << "at_init sol" << endl;
-//    cout << to_string() << endl;
-//    cout << "at_init var_store" << endl;
-//    to_var_store(false)->printContent(cout);
-//    cout << "prev_store" << endl;
-//    prev_store->printContent(cout);
-    inlining_tree = new LightInliningTree(_inlining_tree);
-//    auto post_store = inlining_tree->get_solution();
-//    cout << "post_store" << endl;
-//    post_store->printContent(cout);
-//    cout << "to_var_store" << endl;
-//    to_var_store()->printContent(cout);
-//    cout << "--" << endl;
-
-}
+//void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)
+//{
+//    assert(inlining_tree == nullptr);
+//    //TODO: refactor this so that it doesn't copy
+////    auto prev_store = _inlining_tree->get_solution();
+////    cout << "--" << endl;
+////    cout << "at_init sol" << endl;
+////    cout << to_string() << endl;
+////    cout << "at_init var_store" << endl;
+////    to_var_store(false)->printContent(cout);
+////    cout << "prev_store" << endl;
+////    prev_store->printContent(cout);
+//    inlining_tree = new LightInliningTree(_inlining_tree);
+////    auto post_store = inlining_tree->get_solution();
+////    cout << "post_store" << endl;
+////    post_store->printContent(cout);
+////    cout << "to_var_store" << endl;
+////    to_var_store()->printContent(cout);
+////    cout << "--" << endl;
+//
+//}
 
 void Assignment_SkVal::clear(bool clear_root, bool sub_clear) {
     type = bool_node::NO_TYPE;

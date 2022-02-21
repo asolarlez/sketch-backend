@@ -20,6 +20,15 @@ class BooleanDagUtility;
 
 class LightSkFuncSetter
 {
+
+public:
+    static long long inlining_tree_global_id;
+    static set<const LightSkFuncSetter*> all_inlining_trees;
+    static map<string, int> name_to_count;
+    static int max_count;
+    long long int get_tree_id() const;
+private:
+    int inlining_tree_id = -1;
     mutable bool cleared = false;
     mutable int num_shared_ptr = 1;
 
@@ -28,14 +37,25 @@ class LightSkFuncSetter
 
     VarStore* var_store = nullptr;
 
-    int _num_unconcretized_holes = -1;
+    map<string, map<string, string> > unconc_hole_original_name_to_name;
 
+    void init();
 
 protected:
 
     void rename_dag(string new_name)
     {
+        assert(name_to_count.find(dag_name) != name_to_count.end());
+        name_to_count[dag_name]--;
+        if(name_to_count[dag_name] == 0)
+        {
+            name_to_count.erase(dag_name);
+        }
         dag_name = std::move(new_name);
+        if(name_to_count.find(dag_name) == name_to_count.end()) {
+            name_to_count[dag_name] = 0;
+        }
+        name_to_count[dag_name]+=1;
     }
 
     void change_id(int new_id){
@@ -58,16 +78,29 @@ protected:
         assert(num_shared_ptr == 0);
     }
 
-    void soft_clear(bool _clear_root, bool _sub_clear) const {
+    void soft_clear() const {
         assert(get_num_shared_ptr() == 0);
         assert(!cleared);
         cleared = true;
+        assert(name_to_count.find(get_dag_name()) != name_to_count.end());
+        name_to_count[get_dag_name()] --;
+        if(name_to_count[get_dag_name()] == 0) {
+            name_to_count.erase(get_dag_name());
+        }
+        assert(all_inlining_trees.find(this) != all_inlining_trees.end());
+        all_inlining_trees.erase(this);
     }
 
 
     int _get_num_unconcretized_holes() const
     {
-        return _num_unconcretized_holes;
+        int size = 0;
+        for(auto it: unconc_hole_original_name_to_name)
+        {
+            assert(!it.second.empty());
+            size+=it.second.size();
+        }
+        return size;
     }
 
     bool contains_var(
@@ -100,8 +133,10 @@ protected:
             var_store = new VarStore();
         }
         if(!var_store->contains(obj.name)) {
-            assert(_num_unconcretized_holes >= 1);
-            _num_unconcretized_holes--;
+            assert(unconc_hole_original_name_to_name.find(obj.get_original_name()) != unconc_hole_original_name_to_name.end());
+            assert(unconc_hole_original_name_to_name[obj.get_original_name()].find(get_dag_name()) != unconc_hole_original_name_to_name[obj.get_original_name()].end());
+            assert(unconc_hole_original_name_to_name[obj.get_original_name()][get_dag_name()] == obj.name);
+            unconc_hole_original_name_to_name.erase(obj.get_original_name());
             var_store->insertObj(obj.name, var_store->size(), VarStore::objP(obj));
 //            var_store->newVar(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name());
         }
@@ -133,19 +168,28 @@ protected:
     }
 
 public:
-    const VarStore* get_var_store_used_for_concretization() const {
+
+    const map<string, map<string, string> >& get_unconc_map() const {
+        return unconc_hole_original_name_to_name;
+    }
+
+    const VarStore* get_var_store() const {
         return var_store;
     }
 
-    explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy): dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), _num_unconcretized_holes(to_copy->_num_unconcretized_holes) {
+    explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy):
+    dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
+        assert(this != to_copy);
+        assert(all_inlining_trees.find(this) == all_inlining_trees.end());
+        init();
         if(to_copy->var_store != nullptr) {
             var_store = to_copy->var_store->clone();
         }
-        assert(var_store != nullptr || _num_unconcretized_holes == 0);
+        assert(var_store != nullptr || unconc_hole_original_name_to_name.empty());
     }
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
 
-    const int get_dag_id() const
+    int get_dag_id() const
     {
         return dag_id;
     }
@@ -159,63 +203,21 @@ public:
         num_shared_ptr++;
     }
 };
-
-class SkFuncSetter: public LightSkFuncSetter
+class LightInliningTree: public LightSkFuncSetter
 {
-public:
-    static long long inlining_tree_global_id;
-    static set<const SkFuncSetter*> all_inlining_trees;
-    static map<string, int> name_to_count;
-    static int max_count;
-private:
-
-    const long long inlining_tree_id;
-    const BooleanDagUtility * const skfunc = nullptr;
-
-    void init();
-
-protected:
-    SkFuncSetter(const BooleanDagUtility* _skfunc);
-    SkFuncSetter(const SkFuncSetter* to_copy);
-    void soft_clear(bool clear_dag = true, bool sub_clear = false) const;
-
-    bool assert_nonnull() const
-    {
-        assert(skfunc != nullptr);
-        assert(LightSkFuncSetter::assert_nonnull());
-        return true;
-    }
-
-public:
-
-    const BooleanDagUtility* get_skfunc() const
-    {
-        return skfunc;
-    }
-
-    long long int get_tree_id() const;
-
-};
-
-template<typename BaseClass>
-class TemplateInliningTree: public BaseClass
-{
-
     mutable bool deleted = false;
-//    mutable map<string, string> find_dag_name_to_child_name;
-
 
     bool soft_clear(bool clear_root = true, bool sub_clear = false) const {
         if (deleted) {
             return true;
         }
-        BaseClass::decrement_num_shared_ptr();
-        if(BaseClass::get_num_shared_ptr() == 0) {
+        LightSkFuncSetter::decrement_num_shared_ptr();
+        if(LightSkFuncSetter::get_num_shared_ptr() == 0) {
             deleted = true;
             for (const auto &it: var_name_to_inlining_subtree) {
                 it.second->soft_clear(true, sub_clear);
             }
-            BaseClass::soft_clear(clear_root, sub_clear);
+            LightSkFuncSetter::soft_clear();
             return true;
         }
         else
@@ -224,7 +226,7 @@ class TemplateInliningTree: public BaseClass
         }
     }
 
-    void _clear(set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const {
+    void _clear(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const {
         if(deleted) {
             assert(visited->find(this) == visited->end());
             bool is_root = visited->empty();
@@ -241,10 +243,14 @@ class TemplateInliningTree: public BaseClass
         }
     }
 
-    TemplateInliningTree* get_target(const string& target_subdag)
+
+protected:
+    map<string, LightInliningTree*> var_name_to_inlining_subtree;
+public:
+    LightInliningTree* get_target(const string& target_subdag)
     {
         const vector<string>* path = find_any_path(target_subdag);
-        TemplateInliningTree* at = this;
+        LightInliningTree* at = this;
         for(int i = path->size()-1;i>=0;i--) {
             assert(at->var_name_to_inlining_subtree.find(path->at(i)) != at->var_name_to_inlining_subtree.end());
             at = at->var_name_to_inlining_subtree.at(path->at(i));
@@ -252,10 +258,7 @@ class TemplateInliningTree: public BaseClass
         return at;
     }
 
-protected:
-    map<string, TemplateInliningTree*> var_name_to_inlining_subtree;
-public:
-    void insert_into_var_name_to_inlining_subtree(const string& key, TemplateInliningTree* val) {
+    void insert_into_var_name_to_inlining_subtree(const string& key, LightInliningTree* val) {
         assert(var_name_to_inlining_subtree.find(key) == var_name_to_inlining_subtree.end());
         var_name_to_inlining_subtree[key] = val;
     }
@@ -264,7 +267,7 @@ public:
         var_name_to_inlining_subtree.at(key)->clear();
         var_name_to_inlining_subtree.erase(key);
     }
-    const map<string, TemplateInliningTree*>& get_var_name_to_inlining_subtree() const {
+    const map<string, LightInliningTree*>& get_var_name_to_inlining_subtree() const {
         return var_name_to_inlining_subtree;
     }
     void clear(bool clear_root = true, bool sub_clear = false) const {
@@ -273,15 +276,15 @@ public:
             _clear();
         }
     }
-    int get_dag_id() const {return BaseClass::get_dag_id(); };
-    const string& get_dag_name() const {return BaseClass::get_dag_name(); };
+    int get_dag_id() const {return LightSkFuncSetter::get_dag_id(); };
+    const string& get_dag_name() const {return LightSkFuncSetter::get_dag_name(); };
 
-    void check_rep(const VarStore* to_check, set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>(), vector<string>* path = new vector<string>()) const
+    void check_rep(const VarStore* to_check, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>(), vector<string>* path = new vector<string>()) const
     {
         bool is_root = visited->empty();
         visited->insert(this);
-        const VarStore* _var_store = BaseClass::get_var_store_used_for_concretization();
-        assert(_var_store != nullptr || BaseClass::_get_num_unconcretized_holes() == 0);
+        const VarStore* _var_store = LightSkFuncSetter::get_var_store();
+        assert(_var_store != nullptr || LightSkFuncSetter::_get_num_unconcretized_holes() == 0);
         if(_var_store != nullptr){
             for(const VarStore::objP& obj : *_var_store)
             {
@@ -299,20 +302,21 @@ public:
         if(is_root) delete visited;
     }
 
-    TemplateInliningTree(const BooleanDagUtility* _skfunc, bool do_recurse): BaseClass(_skfunc) {assert(!do_recurse);}
+    LightInliningTree(const BooleanDagUtility* _skfunc, bool do_recurse): LightSkFuncSetter(_skfunc) {assert(!do_recurse);}
 
-    template<typename OtherBaseClass>
-    TemplateInliningTree(const TemplateInliningTree<OtherBaseClass>* _to_copy, bool do_recurse): BaseClass(_to_copy) {assert(!do_recurse);}
+    LightInliningTree(const LightInliningTree* _to_copy, bool do_recurse): LightSkFuncSetter(_to_copy) {assert(!do_recurse);}
 
-    template<typename OtherBaseClass>
-    explicit TemplateInliningTree(const TemplateInliningTree<OtherBaseClass>* to_copy, map<int, TemplateInliningTree *> *visited = new map<int, TemplateInliningTree *>()): BaseClass(to_copy)
+    explicit LightInliningTree(
+            const LightInliningTree* to_copy,
+            map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
+            LightSkFuncSetter(to_copy)
     {
         bool is_root = visited->empty();
         assert(visited->find(get_dag_id()) == visited->end());
         (*visited)[get_dag_id()] = this;
         for (const auto &it: to_copy->get_var_name_to_inlining_subtree()) {
             if (visited->find(it.second->get_dag_id()) == visited->end()) {
-                var_name_to_inlining_subtree[it.first] = new TemplateInliningTree(it.second, visited);
+                var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
             } else {
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
@@ -323,10 +327,10 @@ public:
         }
     }
 
-    explicit TemplateInliningTree(const BooleanDagUtility* _skfunc, map<const BooleanDagUtility*, TemplateInliningTree *> *visited = new map<const BooleanDagUtility*, TemplateInliningTree *>());
+    explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>());
 
-    TemplateInliningTree(const BooleanDagUtility *to_replace_root, const TemplateInliningTree *to_copy, map<int, TemplateInliningTree *> *visited = new map<int, TemplateInliningTree *>()):
-        BaseClass(to_replace_root)
+    LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
+        LightSkFuncSetter(to_replace_root)
     {
         bool is_root = visited->empty();
         assert(visited->find(get_dag_id()) == visited->end());
@@ -336,7 +340,7 @@ public:
 
         for(const auto& it: to_copy->var_name_to_inlining_subtree) {
             if(visited->find(it.second->get_dag_id()) == visited->end() ) {
-                var_name_to_inlining_subtree[it.first] = new TemplateInliningTree(it.second, visited);
+                var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
             }
             else {
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
@@ -345,11 +349,11 @@ public:
         if(is_root) delete visited;
     }
 
-    bool assert_nonnull(set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const {
+    bool assert_nonnull(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const {
         bool is_root = visited->empty();
         assert(visited->find(this) == visited->end());
         visited->insert(this);
-        assert(BaseClass::assert_nonnull());
+        assert(LightSkFuncSetter::assert_nonnull());
         for(auto it: var_name_to_inlining_subtree)
         {
             assert(it.second != nullptr);
@@ -362,11 +366,10 @@ public:
         return true;
     }
 
-    template<typename OtherBaseClass>
     bool match_topology(
-            const TemplateInliningTree<OtherBaseClass> *other,
-            set<const TemplateInliningTree*> *visited = new set<const TemplateInliningTree*>(),
-            set<const TemplateInliningTree<OtherBaseClass>*> *other_visited = new set<const TemplateInliningTree<OtherBaseClass>*>()) const
+            const LightInliningTree *other,
+            set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(),
+            set<const LightInliningTree*> *other_visited = new set<const LightInliningTree*>()) const
     {
         assert(visited->empty() == other_visited->empty());
         bool is_root = visited->empty();
@@ -402,7 +405,7 @@ public:
         return true;
     }
 
-    vector<string>* _find(const string& target_dag, bool find_any_path, set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const
+    vector<string>* _find(const string& target_dag, bool find_any_path, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const
     {
         bool is_root = visited->empty();
         assert(visited->find(this) == visited->end());
@@ -464,12 +467,12 @@ public:
         return _find(target_dag, true);
     }
 
-    virtual const TemplateInliningTree *get_sub_inlining_tree(const string &under_this_name) const {
+    virtual const LightInliningTree *get_sub_inlining_tree(const string &under_this_name) const {
         assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
         return var_name_to_inlining_subtree.at(under_this_name);
     }
 
-    void _get_solution(VarStore* running_var_store, set<const TemplateInliningTree *> *visited = new set<const TemplateInliningTree *>()) const;
+    void _get_solution(VarStore* running_var_store, set<const LightInliningTree *> *visited = new set<const LightInliningTree *>()) const;
 
     VarStore * get_solution() const {
         VarStore* ret = new VarStore();
@@ -485,114 +488,72 @@ public:
         return ret;
     }
 
-    void print(int ntabs = 0, set<const TemplateInliningTree*>* visited = new set<const TemplateInliningTree*>()) const;
+    void print(int ntabs = 0, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
 
     bool contains_var(
             const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name)
     {
-        TemplateInliningTree* target = get_target(source_dag_name);
-        assert(target->BaseClass::contains_var(name, nbits, otype, type, original_name, source_dag_name));
+        LightInliningTree* target = get_target(source_dag_name);
+        assert(target->LightSkFuncSetter::contains_var(name, nbits, otype, type, original_name, source_dag_name));
         return true;
     }
 
     bool contains_var(
             const VarStore::objP& obj)
     {
-        TemplateInliningTree* target = get_target(obj.get_source_dag_name());
-        assert(target->BaseClass::contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
+        LightInliningTree* target = get_target(obj.get_source_dag_name());
+        assert(target->LightSkFuncSetter::contains_var(obj.name, obj.element_size(), obj.otype, obj.get_type(), obj.get_original_name(), obj.get_source_dag_name()));
         return true;
     }
 
     void insert_var(const VarStore::objP& obj)
     {
-        TemplateInliningTree* target = get_target(obj.get_source_dag_name());
-        target->BaseClass::insert_var(obj);
+        LightInliningTree* target = get_target(obj.get_source_dag_name());
+        target->LightSkFuncSetter::insert_var(obj);
     }
 
     void set_var_val(
             const string &name, int val, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name)
     {
-        TemplateInliningTree* target = get_target(source_dag_name);
-        target->BaseClass::set_var_val(name, val, nbits, otype, type, original_name, source_dag_name);
+        LightInliningTree* target = get_target(source_dag_name);
+        target->LightSkFuncSetter::set_var_val(name, val, nbits, otype, type, original_name, source_dag_name);
     }
 
     void rename_var(const VarStore::objP& obj, const string& new_name, const string& new_source_dag)
     {
         const string& prev_source_dag_name = obj.get_source_dag_name();
-        TemplateInliningTree* target = get_target(prev_source_dag_name);
-        target->BaseClass::rename_var(obj, new_name, new_source_dag);
-//        target->BaseClass::rename_dag(new_source_dag);
+        LightInliningTree* target = get_target(prev_source_dag_name);
+        target->LightSkFuncSetter::rename_var(obj, new_name, new_source_dag);
+//        target->LightSkFuncSetter::rename_dag(new_source_dag);
     }
 
     void rename_subdag(const string& prev_name, const string& new_name)
     {
-        TemplateInliningTree* target = get_target(prev_name);
-        target->BaseClass::rename_dag(new_name);
+        LightInliningTree* target = get_target(prev_name);
+        target->LightSkFuncSetter::rename_dag(new_name);
     }
 
     void change_id(const string& prev_name, int new_id)
     {
-        TemplateInliningTree* target = get_target(prev_name);
-        target->BaseClass::change_id(new_id);
+        LightInliningTree* target = get_target(prev_name);
+        target->LightSkFuncSetter::change_id(new_id);
     }
 
     void set_var_store(const VarStore* new_var_store)
     {
-//        cout << "IN SET_VAR_STORE new_var_store" << endl;
-//        new_var_store->printContent(cout);
-//        cout << "IN SET_VAR_STORE prev:" << endl;
-//        get_solution()->printContent(cout);
-//        cout << "--" << endl;
         assert(new_var_store != nullptr);
         for(auto obj: *new_var_store){
             insert_var(obj);
         }
-//        cout << "-- post:" << endl;
-//        get_solution()->printContent(cout);
-//        cout << "EXITING set_var_store " << endl;
     }
+
+
+    bool has_no_holes(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
+
+    void concretize(SketchFunction* skfunc, const VarStore * const var_store, set<int>* visited = new set<int>()) const;
+
+    void rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree, set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(), const LightInliningTree *root = nullptr) const;
 };
-
-class LightInliningTree: public TemplateInliningTree<LightSkFuncSetter>
-{
-
-public:
-
-    template<typename OtherBaseClass>
-    LightInliningTree(const TemplateInliningTree<OtherBaseClass>* _to_copy, bool do_recurse): TemplateInliningTree<LightSkFuncSetter>(_to_copy, do_recurse){ assert(!do_recurse); };
-//    explicit LightInliningTree(const LightInliningTree* to_copy): TemplateInliningTree<LightSkFuncSetter>(to_copy) {}
-    template<typename OtherBaseClass>
-    explicit LightInliningTree(const TemplateInliningTree<OtherBaseClass>* to_copy): TemplateInliningTree<LightSkFuncSetter>(to_copy) {}
-    explicit LightInliningTree(const BooleanDagUtility* _sk_func): TemplateInliningTree(_sk_func) {}
-    LightInliningTree(
-            const BooleanDagUtility* to_replace_root, const InliningTree *to_copy):
-            TemplateInliningTree<LightSkFuncSetter>(to_replace_root, to_copy) {}
-
-    const LightInliningTree *get_sub_inlining_tree(const string &under_this_name) const override {
-        assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
-        return (LightInliningTree*)var_name_to_inlining_subtree.at(under_this_name);
-    }
-};
-
-class InliningTree: public TemplateInliningTree<SkFuncSetter>
-{
-
-public:
-    //copy by replacing root skfunc
-    InliningTree(const BooleanDagUtility* to_replace_root, const InliningTree *to_copy, map<const BooleanDagUtility *, const InliningTree *> *visited = new map<const BooleanDagUtility *, const InliningTree *>());
-    //pure construct from skfunct
-    InliningTree(const BooleanDagUtility* skfunc);
-    //pure copy
-    InliningTree(const InliningTree *to_copy):
-            TemplateInliningTree<SkFuncSetter>(to_copy) {}
-
-    void concretize(const VarStore * const var_store, bool is_root = false, set<const BooleanDagUtility*>* visited = new set<const BooleanDagUtility*>()) const;
-
-    void rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree, set<const InliningTree*> *visited = new set<const InliningTree*>(), const InliningTree *root = nullptr) const;
-
-    bool has_no_holes(set<string>* hole_names = new set<string>(), set<const InliningTree*>* visited = new set<const InliningTree*>()) const;
-};
-
 
 class BooleanDagLightUtility
 {
@@ -743,7 +704,7 @@ public:
 
     int count_passing_inputs(File* file);
 
-    virtual void clear(InliningTree*& inlining_tree) {
+    virtual void clear(LightInliningTree*& inlining_tree) {
         if(soft_clear(inlining_tree)){
             assert(shared_ptr == 0);
             delete this;
@@ -755,11 +716,11 @@ public:
 
 
     virtual void clear() {
-        InliningTree* tmp = nullptr;
+        LightInliningTree* tmp = nullptr;
         clear(tmp);
     }
 
-    virtual bool soft_clear(InliningTree*& inlining_tree)
+    virtual bool soft_clear(LightInliningTree*& inlining_tree)
     {
         decrement_shared_ptr_wo_clear();
 
@@ -768,60 +729,13 @@ public:
 
         if(inlining_tree != nullptr) {
             assert(inlining_tree->get_dag_id() == dag_id);
-            if(shared_ptr == 1) {
+            if(shared_ptr == 0) {
                 clear_inlining_tree = true;
 
-                InliningTree* tmp_inlining_tree = inlining_tree;
+                LightInliningTree* tmp_inlining_tree = inlining_tree;
                 inlining_tree = nullptr;
                 tmp_inlining_tree->clear(false, true);
-                assert(shared_ptr == 1);
-                decrement_shared_ptr_wo_clear();
-                assert(shared_ptr == 0);
             }
-
-//            else if(shared_ptr == 2)
-//            {
-//                if(solution != nullptr) {
-//                    assert(solution->get_assignment()->get_inlining_tree() != nullptr);
-//                    if(solution->get_assignment()->get_inlining_tree()->get_dag_id() == dag_id) {
-//                        if (solution->get_num_shared_ptr() == 0) {
-//
-//                            clear_solution = true;
-//
-//                            const SolverLanguagePrimitives::HoleAssignment *tmp_solution = solution;
-//                            solution = nullptr;
-//                            tmp_solution->clear_assert_num_shared_ptr_is_0(false, true);
-//                            assert(shared_ptr == 2);
-//                            decrement_shared_ptr_wo_clear();
-//                            assert(shared_ptr == 1);
-//
-//                            clear_inlining_tree = true;
-//
-//                            InliningTree* tmp_inlining_tree = inlining_tree;
-//                            inlining_tree = nullptr;
-//                            tmp_inlining_tree->clear(false, true);
-//                            assert(shared_ptr == 1);
-//                            decrement_shared_ptr_wo_clear();
-//                            assert(shared_ptr == 0);
-//                        }
-//                        else
-//                        {
-//                            //don't clear bc inlining skfunc doesnt match.
-//                            AssertDebug(false, "all non-0 shared_ptr of solution are cloned before going to the solver language");
-//                        }
-//                    }
-//                    else
-//                    {
-//                        AssertDebug(false, "invariant not maintained");
-//                        //don't clear either bc solution is still used.
-//                    }
-//                }
-//                else
-//                {
-//                    //don't clear bc skfunc still used
-//                }
-//            }
-//
         }
 
         if(shared_ptr == 0) {
@@ -835,19 +749,19 @@ public:
     }
 
     void increment_shared_ptr() const {
-        if(get_dag()->get_dag_id() == 190)
-        {
-            cout << "here" << endl;
-        }
+//        if(get_dag()->get_dag_id() == 190)
+//        {
+//            cout << "here" << endl;
+//        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->get_dag_id() == 190)
-        {
-            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
-        }
+//        if(get_dag()->get_dag_id() == 190)
+//        {
+//            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
+//        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);

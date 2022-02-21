@@ -47,6 +47,8 @@ class SketchFunction: public BooleanDagUtility
 
     void core_clear(const string& dag_name);
 
+    set<string> get_deep_holes();
+
 public:
 
     const map<string, SketchFunction*>& get_responsibilities() const
@@ -74,7 +76,7 @@ public:
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
             map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
-            InliningTree* _inlining_tree = nullptr,
+            LightInliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized), solution(_solution),
             replaced_labels(_replaced_labels), original_labels(_original_labels),
@@ -205,6 +207,8 @@ public:
     const FMTL::TransformPrimitive * get_mirror_rep() const;
 
     void deep_clone_tail();
+
+    set<string> ufun_names();
 };
 
 #include "NodeEvaluator.h"
