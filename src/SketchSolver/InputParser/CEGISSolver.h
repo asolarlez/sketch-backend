@@ -14,7 +14,6 @@
 #include "FloatSupport.h"
 #include "CEGISParams.h"
 #include "CEGISChecker.h"
-#include "SkVal.h"
 #include "CEGISFinder.h"
 
 using namespace MSsolverNS;
@@ -120,9 +119,9 @@ public:
 
 	bool solveFromCheckpoint(istream& in);
 
-
-
+#ifndef REMOVE_SkVal
     Assignment_SkVal* get_control_map_as_map_str_skval();
+#endif
 	void get_control_map_as_map_str_str(map<string, string>& values);
 	void outputEuclid(ostream& fout);
 	void setup2QBF(ofstream& out);

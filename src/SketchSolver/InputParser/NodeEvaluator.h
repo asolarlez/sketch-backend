@@ -175,7 +175,7 @@ protected:
     vector<cptuple*> tuplevalues;
 	vector<bool> changes;
 	vector<bool> isset;
-	VarStore* inputs;	
+	VarStore* inputs;
 	bool failedAssert;
 	bool failedHAssert;
 	bool trackChange;

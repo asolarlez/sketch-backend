@@ -11,7 +11,11 @@
 Excelption class used to signal that a concretization failed.
 */
 
+//#define REMOVE_SkVal
+
+#ifndef REMOVE_SkVal
 class Assignment_SkVal;
+#endif
 
 class BadConcretization {
 public:
@@ -177,8 +181,7 @@ public:
     int fixValue(CTRL_node& node, int bound, int nbits);
 
 	void get_control_map(map<string, string>& values);
-    void get_control_map_str_to_skval(Assignment_SkVal *values);
-	
+
 	/*
 	This function updates the current set of rand degrees using an MCMC style search to try to 
 	converge to the best rand degree.

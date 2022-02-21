@@ -8,7 +8,10 @@
 #include <utility>
 
 #include "ProgramEnvironment.h"
+
+#ifndef REMOVE_SkVal
 #include "SkVal.h"
+#endif
 
 class File;
 
@@ -682,6 +685,7 @@ public:
 
     virtual bool soft_clear_assert_num_shared_ptr_is_0();
 
+#ifndef REMOVE_SkVal
     static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
     {
         assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
@@ -719,6 +723,7 @@ public:
         inlined_harness->clear();
         return ret;
     }
+#endif
 
 
     int count_passing_inputs(File* file);

@@ -8,7 +8,7 @@
 #include "NodeSlicer.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
-#include "SkVal.h"
+//#include "SkVal.h"
 
 
 void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
@@ -488,55 +488,12 @@ void CEGISSolver::print_control_map(ostream& out){
 	}
 }
 
+#ifndef REMOVE_SkVal
 Assignment_SkVal* CEGISSolver::get_control_map_as_map_str_skval()
 {
     return new Assignment_SkVal(&ctrlStore, floats);
-//    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){
-//        if(it->otype == OutType::FLOAT)
-//        {
-//            values->set(it->getName(), new SkValFloat((float) floats.getFloat(it->getInt()), it->get_size()));
-//        }
-//        else if (it->otype == OutType::INT)
-//        {
-//            values->set(it->getName(), new SkValInt(it->getInt(), it->get_size()));
-//            assert((( SkValInt*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
-//        }
-//        else if (it->otype == OutType::BOOL)
-//        {
-//            assert(it->get_size() == 1);
-//            values->set(it->getName(), new SkValBool(it->getInt()));
-//            assert((( SkValBool*) values->get(it->getName()))->get() == ctrlStore[it->getName()]);
-//        }
-//        else
-//        {
-//            AssertDebug(false, "need to add more cases in CEGISSolver::get_control_map_as_map_str_skval.")
-//        }
-//    }
-//    for (auto it = ctrlStore.synths.begin(); it != ctrlStore.synths.end(); ++it) {
-//
-//        AssertDebug(false, "need to implement synthouts to map to SkVals, rather than strings");
-////
-////        //stringstream str;
-////        Assert(ctrlStore.synthouts.find(it->first) != ctrlStore.synthouts.end(), "Synthouts should have been fleshed out")
-////        //it->second->print(str);
-////        values[it->first] = ctrlStore.synthouts[it->first];
-//    }
-//
-//    VarStore* test_varstore = values->to_var_store();
-//
-//    assert(test_varstore->size() == ctrlStore.size());
-//
-//    for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it) {
-//        assert(ctrlStore[it->getName()] == (*test_varstore)[it->getName()]);
-//    }
-//    for(auto it = (*test_varstore).begin(); it !=(*test_varstore).end(); ++it) {
-//        assert((*test_varstore)[it->getName()] == ctrlStore[it->getName()]);
-//    }
-//
-//    delete test_varstore;
-
-
 }
+#endif
 
 void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
 	for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){

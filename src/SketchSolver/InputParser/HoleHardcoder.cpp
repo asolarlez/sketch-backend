@@ -1,6 +1,5 @@
 
 #include "HoleHardcoder.h"
-#include "SkVal.h"
 
 
 void HoleHardcoder::afterInline() {
@@ -32,16 +31,6 @@ void HoleHardcoder::get_control_map(map<string, string>& values) {
 		}
 	}
 }
-
-//void HoleHardcoder::get_control_map_str_to_skval(Assignment_SkVal *values) {
-//    for (map<string, int>::iterator it = randholes.begin(); it != randholes.end(); ++it) {
-//        if (!LEAVEALONE(it->second)) {
-//            values->set(it->first, new SkValInt(it->second));
-//        }
-//    }
-//}
-
-
 
 
 int HoleHardcoder::fixValue(CTRL_node& node, int bound, int nbits) {

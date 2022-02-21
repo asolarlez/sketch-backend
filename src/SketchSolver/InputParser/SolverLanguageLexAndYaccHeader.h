@@ -27,10 +27,12 @@ class HoleHardcoder;
 class File;
 class SketchFunction;
 
+#ifndef REMOVE_SkVal
 namespace SolverLanguagePrimitives{
     class HoleAssignment;
     class InputAssignment;
 };
+#endif
 
 //using namespace SolverLanguagePrimitives;
 
@@ -470,6 +472,18 @@ namespace SL {
 
     class Method;
 
+#ifdef REMOVE_SkVal
+
+    template<bool_node::Type type>
+    class GenericVarStore: public VarStore {
+    public:
+        explicit GenericVarStore(const VarStore& _to_copy): VarStore(_to_copy) {}
+    };
+
+    typedef GenericVarStore<bool_node::SRC> InputVarStore;
+    typedef GenericVarStore<bool_node::CTRL> HoleVarStore;
+#endif
+
     enum VarValType {
         string_val_type, int_val_type, file_val_type,
         method_val_type, skfunc_val_type, solution_val_type,
@@ -506,8 +520,13 @@ namespace SL {
             File* file;
             Method* method;
             SketchFunction* skfunc;
+#ifdef REMOVE_SkVal
+            HoleVarStore* solution;
+            InputVarStore* input_holder;
+#else
             const SolverLanguagePrimitives::HoleAssignment* solution;
             SolverLanguagePrimitives::InputAssignment* input_holder;
+#endif
             PolyVec* poly_vec;
             PolyPair* poly_pair;
         };
@@ -524,8 +543,14 @@ namespace SL {
         explicit VarVal(SketchFunction* _harness);
         explicit VarVal(PolyVec* _poly_vec);
         explicit VarVal(PolyPair* _poly_pair);
+
+#ifdef REMOVE_SkVal
+        explicit VarVal(HoleVarStore* _solution);
+        explicit VarVal(InputVarStore* _input_holder);
+#else
         explicit VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution);
         explicit VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder);
+#endif
         explicit VarVal(VarVal* _to_copy);
 
         VarVal(): var_val_type(void_val_type) {}
@@ -737,7 +762,11 @@ namespace SL {
                     return false;
                     break;
                 case solution_val_type:
+#ifdef REMOVE_SkVal
+                    return false;
+#else
                     return *solution < *other.solution;
+#endif
                     break;
                 case input_val_type:
                     assert(false);
@@ -797,12 +826,21 @@ namespace SL {
             else if(std::is_same<File*,T>::value){
                 assert(var_val_type == file_val_type);
             }
+#ifdef REMOVE_SkVal
+            else if(std::is_same<HoleVarStore *,T>::value){
+                assert(var_val_type == solution_val_type);
+            }
+            else if(std::is_same<InputVarStore *,T>::value){
+                assert(var_val_type == input_val_type);
+            }
+#else
             else if(std::is_same<const SolverLanguagePrimitives::HoleAssignment *,T>::value){
                 assert(var_val_type == solution_val_type);
             }
             else if(std::is_same<SolverLanguagePrimitives::InputAssignment *,T>::value){
                 assert(var_val_type == input_val_type);
             }
+#endif
             else if(std::is_same<float,T>::value){
                 assert(var_val_type == float_val_type);
             }
@@ -885,7 +923,25 @@ namespace SL {
             return file;
         }
 
-
+#ifdef REMOVE_SkVal
+        HoleVarStore *get_solution(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == solution_val_type);
+            if(do_count) {
+                assert(do_assert);
+            }
+            return get<HoleVarStore *>(solution, do_count, do_assert);
+        }
+        HoleVarStore *get_solution_const(bool do_count = true) const {
+            assert(var_val_type == solution_val_type);
+            assert(!do_count);
+            return solution;
+        }
+        InputVarStore* get_input_holder(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == input_val_type);
+            assert(do_assert);
+            return get<InputVarStore *>(input_holder, do_count, do_assert);
+        }
+#else
         const SolverLanguagePrimitives::HoleAssignment *get_solution(bool do_count = true, bool do_assert = true) {
             assert(var_val_type == solution_val_type);
             if(do_count) {
@@ -893,12 +949,18 @@ namespace SL {
             }
             return get<const SolverLanguagePrimitives::HoleAssignment *>(solution, do_count, do_assert);
         }
-
         const SolverLanguagePrimitives::HoleAssignment *get_solution_const(bool do_count = true) const {
             assert(var_val_type == solution_val_type);
             assert(!do_count);
             return solution;
         }
+        SolverLanguagePrimitives::InputAssignment *get_input_holder(bool do_count = true, bool do_assert = true) {
+            assert(var_val_type == input_val_type);
+            assert(do_assert);
+            return get<SolverLanguagePrimitives::InputAssignment *>(input_holder, do_count, do_assert);
+        }
+#endif
+
 
         SketchFunction *get_function(bool do_count = true, bool do_assert = true) {
             assert(is_sketch_function());
@@ -912,11 +974,6 @@ namespace SL {
             return skfunc;
         }
 
-        SolverLanguagePrimitives::InputAssignment *get_input_holder(bool do_count = true, bool do_assert = true) {
-            assert(var_val_type == input_val_type);
-            assert(do_assert);
-            return get<SolverLanguagePrimitives::InputAssignment *>(input_holder, do_count, do_assert);
-        }
 
         bool is_void(){
             return var_val_type == void_val_type;
@@ -1049,12 +1106,22 @@ namespace SL {
                 case skfunc_val_type:
                     clear<SketchFunction*>(skfunc, false);
                     break;
+#ifdef REMOVE_SkVal
+
+                case solution_val_type:
+                    clear<HoleVarStore*>(solution, false);
+                    break;
+                case input_val_type:
+                    clear<InputVarStore*>(input_holder, false);
+                    break;
+#else
                 case solution_val_type:
                     clear<const SolverLanguagePrimitives::HoleAssignment*>(solution, false);
                     break;
                 case input_val_type:
                     clear<SolverLanguagePrimitives::InputAssignment*>(input_holder, false);
                     break;
+#endif
                 case bool_val_type:
                     //do nothing
                     break;
@@ -1143,7 +1210,9 @@ namespace SL {
         _unknown_method,
         _file, _produce_subset_file,
         _sat_solver, _size, _get,
-        _passes, _clear, _Solution, _join,
+        _passes, _clear,
+//        _Solution,
+        _join,
         _print, _num_holes, _append,
         _first, _second,
         _to_float, _sort_vec,

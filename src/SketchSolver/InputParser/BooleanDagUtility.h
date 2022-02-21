@@ -6,7 +6,6 @@
 #define SKETCH_SOURCE_BOOLEANDAGUTILITY_H
 
 #include "File.h"
-#include "SkVal.h"
 #include "BooleanDagLightUtility.h"
 
 
@@ -83,16 +82,11 @@ public:
 //        }
 //    }
 
-    void clear(const SolverLanguagePrimitives::HoleAssignment*& solution) {
-        return BooleanDagLightUtility::clear(inlining_tree);
-    }
-
     virtual void clear() override {
         return BooleanDagLightUtility::clear(inlining_tree);
     }
 
-    bool soft_clear()
-    {
+    bool soft_clear() {
         return BooleanDagLightUtility::soft_clear(inlining_tree);
     }
 

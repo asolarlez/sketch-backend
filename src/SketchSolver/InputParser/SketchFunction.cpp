@@ -13,7 +13,7 @@ set<string> SketchFunction::get_deep_holes()
 {
     set<string> ret;
     set<string>* subf_names = get_inlined_functions();
-    for(auto f_name : *subf_names)
+    for(const auto& f_name : *subf_names)
     {
         assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
         SketchFunction* subf = get_env()->function_map.find(f_name)->second;
@@ -107,6 +107,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
 
         assert(inlined_functions != nullptr);
 
+#ifndef REMOVE_SkVal
         //construct solution
         if (var_type == bool_node::CTRL
         && get_has_been_concretized()
@@ -157,8 +158,8 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
                     assert(solution->get_assignment()->get_inlining_tree()->get_dag_name() == get_dag_name());
                 }
             }
-
         }
+#endif
 
         rep = get_env()->function_map.concretize(
                 get_dag()->get_name(), var_store, var_type, inlined_functions);
@@ -166,8 +167,10 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
         if(var_store != nullptr) {
             var_store->clear();
         }
-
-        if (solution->get_sat_solver_result() == SAT_SATISFIABLE) {
+#ifndef REMOVE_SkVal
+        if (solution->get_sat_solver_result() == SAT_SATISFIABLE)
+#endif
+        {
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
             assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
         }
@@ -194,8 +197,9 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
         }
     }
 
-    auto new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
+    const FMTL::TransformPrimitive * new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
 
+#ifndef REMOVE_SkVal
     const SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
 
     if(solution != nullptr) {
@@ -212,26 +216,15 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
         }
 
         solution_clone = solution;
-
-//        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution);
-
-//        VarStore* var_store = solution->to_var_store();
-//        InliningTree* local_inlining_tree = new InliningTree(this);
-//        local_inlining_tree->rename_var_store(*var_store);
-//        solution_clone = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
-//        var_store->clear();
-//        local_inlining_tree->clear();
-
-//        for(auto it : cloned_dag->getNodesByType(bool_node::CTRL)) {
-//            string var_name = ((CTRL_node*)it)->get_original_name();
-//            string actual_name = ((CTRL_node*)it)->get_name();
-//            string sub_dag_name = ((CTRL_node*)it)->get_source_dag_name();
-//            assert(sub_dag_name == cloned_dag->get_name());
-//            solution_clone->rename(actual_name, var_name, sub_dag_name, get_dag_name(), solution->get_assignment()->get_name(var_name, get_dag_name()));
-//        }
     }
+#endif
     return new SketchFunction(
-            cloned_dag, get_env(), solution_clone, replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false), get_has_been_concretized());
+            cloned_dag, get_env(),
+#ifndef REMOVE_SkVal
+            solution_clone,
+#endif
+            replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false), get_has_been_concretized());
+
 }
 
 void SketchFunction::core_clear(const string& dag_name)
@@ -250,11 +243,13 @@ void SketchFunction::core_clear(const string& dag_name)
         }
     }
 
+#ifndef REMOVE_SkVal
     if (solution != nullptr) {
         assert(solution->get_num_shared_ptr() == 0);
         assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
         solution->clear_assert_num_shared_ptr_is_0(true, true);
     }
+#endif
 
     for(auto it: responsibility) {
         it.second->_clear();
@@ -276,7 +271,7 @@ void SketchFunction::_clear()
 
     string dag_name = get_dag()->get_name();
 
-    int prev_global = global_clear_id;
+    long long prev_global = global_clear_id;
     if(BooleanDagUtility::soft_clear()) {
         assert(prev_global == global_clear_id);
         core_clear(dag_name);
@@ -371,11 +366,14 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
             assert(get_inlining_tree()->find(prev_dep_name) != nullptr);
 
         }
+
+#ifndef REMOVE_SkVal
         if(solution != nullptr)
         {
             AssertDebug(false, "before you couldn't rename after concretizing. attend to this, need to edit the concretized solution.");
             assert(solution->get_assignment()->get_inlining_tree()->find(prev_dep_name) != nullptr);
         }
+#endif
     }
 
     auto dependency_it = get_env()->function_map.find(with_this);
@@ -400,6 +398,8 @@ SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_thi
     return get_env()->function_map.produce_get(get_dag()->get_name(), get_the_dag_under_this_varname);
 }
 
+
+#ifndef REMOVE_SkVal
 bool SketchFunction::solution_is_null() {
     return solution == nullptr;
 }
@@ -407,6 +407,7 @@ bool SketchFunction::solution_is_null() {
 const SolverLanguagePrimitives::HoleAssignment * SketchFunction::get_same_solution() const {
     return solution;
 }
+#endif
 
 string SketchFunction::get_assignment(const string& key) {
     auto it = replaced_labels.find(key);
@@ -565,9 +566,36 @@ set<string> SketchFunction::ufun_names() {
     return ret;
 }
 
+#ifdef REMOVE_SkVal
+VarStore *SketchFunction::get_solution() {
+    LightInliningTree* local_inlining_tree = nullptr;
+    if(get_has_been_concretized()) {
+        assert(get_inlining_tree() != nullptr);
+        local_inlining_tree = get_inlining_tree();
+    }
+    else {
+        local_inlining_tree = new LightInliningTree(this);
+    }
+
+    assert(local_inlining_tree != nullptr);
+
+    VarStore* ret = get_inlining_tree()->get_solution();
+    assert(ret->get_inlining_tree() == nullptr);
+    ret->set_inlining_tree(get_inlining_tree());
+
+    return ret;
+}
+#endif
+
 #include "SolverLanguageLexAndYaccHeader.h"
 
-SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment) {
+SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc,
+#ifdef REMOVE_SkVal
+                                          const VarStore* the_var_store
+#else
+                                          SolverLanguagePrimitives::InputAssignment *input_assignment
+#endif
+                                          ) {
     BooleanDAG *the_dag = nullptr;
     bool new_clone = false;
 
@@ -583,11 +611,13 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, SolverLanguage
         skfunc->get_env()->doInline(*the_dag);
     }
 
+#ifndef REMOVE_SkVal
     VarStore *the_var_store = input_assignment->to_var_store(false);
+#endif
 
     const bool assert_num_remaining_holes_is_0 = true;
     if (assert_num_remaining_holes_is_0) {
-        int remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+        size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
         AssertDebug(remaining_holes == 0,
                     "This dag should not havey any holes remaining, but it has " +
                     std::to_string(remaining_holes) + " remaining_holes.");
@@ -596,8 +626,10 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, SolverLanguage
     NodeEvaluator node_evaluator(*the_dag, skfunc->get_env()->floats);
     bool fails = node_evaluator.run(*the_var_store);
 
-    delete the_var_store;
+#ifndef REMOVE_SkVal
+    the_var_store->clear();
     the_var_store = nullptr;
+#endif
     AssertDebug(!fails, "the dag " + the_dag->get_name() + " asserts false on this input.");
 
     auto after_run_dests = the_dag->getNodesByType(bool_node::DST);
@@ -631,13 +663,22 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc, SolverLanguage
 }
 
 SL::VarVal *
-SketchFunctionEvaluator::passes(const SketchFunction *skfunc, const SolverLanguagePrimitives::InputAssignment *input_assignment)
+SketchFunctionEvaluator::passes(const SketchFunction *skfunc,
+#ifdef REMOVE_SkVal
+                                const VarStore* inputs
+#else
+                                const SolverLanguagePrimitives::InputAssignment *input_assignment
+#endif
+
+                                )
 {
     AssertDebug(false, "USE new_passes instead.");
     if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
     }
+#ifndef REMOVE_SkVal
     VarStore* inputs = input_assignment->to_var_store(false);
+#endif
     BooleanDAG* concretized_dag = skfunc->get_dag()->clone();
     skfunc->get_env()->doInline(*concretized_dag, *inputs, bool_node::SRC);
     bool ret = concretized_dag->get_failed_assert() == nullptr;
@@ -645,14 +686,22 @@ SketchFunctionEvaluator::passes(const SketchFunction *skfunc, const SolverLangua
         assert(!ret);
     }
 
+#ifndef REMOVE_SkVal
     inputs->clear();
+#endif
     concretized_dag->clear();
 
     return new SL::VarVal(ret);
 }
 
 SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
-                                                SolverLanguagePrimitives::InputAssignment *input_assignment) {
+#ifdef REMOVE_SkVal
+                                                const VarStore* the_var_store
+#else
+                                                SolverLanguagePrimitives::InputAssignment *input_assignment
+#endif
+
+                                                ) {
 
     if(skfunc->get_dag()->get_failed_assert() != nullptr) {
         return new SL::VarVal(false);
@@ -673,11 +722,13 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
         skfunc->get_env()->doInline(*the_dag);
     }
 
+#ifndef REMOVE_SkVal
     VarStore *the_var_store = input_assignment->to_var_store(false);
+#endif
 
     const bool assert_num_remaining_holes_is_0 = true;
     if (assert_num_remaining_holes_is_0) {
-        int remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
+        size_t remaining_holes = the_dag->getNodesByType(bool_node::CTRL).size();
         AssertDebug(remaining_holes == 0,
                     "This dag should not havey any holes remaining, but it has " +
                     std::to_string(remaining_holes) + " remaining_holes.");
@@ -689,7 +740,9 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
     if(new_clone) {
         the_dag->clear();
     }
+#ifndef REMOVE_SkVal
     the_var_store->clear();
+#endif
 
     return new SL::VarVal(!fails);
 }

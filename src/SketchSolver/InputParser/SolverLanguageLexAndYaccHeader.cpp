@@ -2,12 +2,10 @@
 // Created by kliment on 12/19/21.
 //
 
-#include "SolverLanguageLexAndYaccHeader.h"
+#include <utility>
+
 #include "SolverLanguageYaccHeader.h"
-#include "SketchFunction.h"
-#include "File.h"
 #include "SolverLanguage.h"
-#include "BooleanDagUtility.h"
 
 void SL::Var::run(SolverProgramState *state)  {
     state->add_var(this);
@@ -328,7 +326,11 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         {
             assert(params.size() == 1);
             int row_id = params[0]->eval(state)->get_int();
+#ifdef REMOVE_SkVal
+            return new SL::VarVal(new SL::InputVarStore(*file->at(row_id)));
+#else
             return new SL::VarVal(new SolverLanguagePrimitives::InputAssignment(file->at(row_id), state->floats));
+#endif
             break;
         }
         case _clear:
@@ -350,7 +352,13 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
 
             std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
                 vector<SL::VarVal*> local_inputs;
-                local_inputs.push_back(new VarVal(new SolverLanguagePrimitives::InputAssignment(x, state->floats)));
+                local_inputs.push_back(new VarVal(
+#ifdef REMOVE_SkVal
+        new InputVarStore(*x)
+#else
+                        new SolverLanguagePrimitives::InputAssignment(x, state->floats)
+#endif
+                        ));
                 auto var_val = condition_method->eval(state, local_inputs);
                 auto ret = var_val->get_bool(true, false);
                 return ret;
@@ -409,44 +417,50 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             using namespace SolverLanguagePrimitives;
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             auto* problem = new ProblemAE(harness, file);
+
+#ifdef REMOVE_SkVal
+            HoleVarStore* sol = (solver)->solve(problem);
+
+            assert(sol->get_inlining_tree() == nullptr);
+
+            VarStore* append_sol = harness->get_inlining_tree()->get_solution();
+            harness->get_inlining_tree()->set_var_store(sol);
+            sol->disjoint_join_with(*append_sol);
+            sol->set_inlining_tree(harness->get_inlining_tree());
+            assert(sol->check_rep_and_clear());
+#else
             const HoleAssignment* sol = (solver)->solve(problem);
+
             assert(sol->get_assignment()->get_inlining_tree() == nullptr);
-            //NEXT TODO: refactor inlining tree to store the assignment indexed by tree path,
-            //rather than as a solution in a skfunc, bc we don't want the skfunc to necessarily exist
-//            const VarStore* subsolution = harness->get_inlining_tree()->get_solution();
-//            harness->get_inlining_tree()->set_var_store(subsolution);
+
             HoleAssignment* append_sol = new HoleAssignment(SAT_SATISFIABLE, harness->get_inlining_tree()->get_solution(), harness->get_env()->floats);
             harness->get_inlining_tree()->set_var_store(sol->to_var_store(false));
             sol->disjoint_join_with(append_sol);
             sol->set_inlining_tree(harness->get_inlining_tree());
+            assert(sol->to_var_store()->check_rep_and_clear());
+#endif
+
             file->reset();
             assert(file->like_unused());
 
-
-
-            assert(sol->to_var_store()->check_rep_and_clear());
-////            harness->increment_shared_ptr();
-//            harness->clear_inlining_tree();
-////            harness->decrement_shared_ptr_wo_clear();
-//            assert(sol->to_var_store()->check_rep_and_clear());
             harness->clear();
             solver->clear();
+
             delete problem;
 
 //            state->console_output << "SOLUTION: " << endl;
 //            state->console_output << sol->to_string() << endl;
 
-
             return new SL::VarVal(sol);
             break;
         }
-        case _Solution:
-        {
-            assert(params.empty());
-            using namespace SolverLanguagePrimitives;
-            const HoleAssignment* ret = new HoleAssignment(false);
-            return new VarVal(ret);
-        }
+//        case _Solution:
+//        {
+//            assert(params.empty());
+//            using namespace SolverLanguagePrimitives;
+//            const HoleAssignment* ret = new HoleAssignment(false);
+//            return new VarVal(ret);
+//        }
         case _print:
         {
             assert(!params.empty());
@@ -502,6 +516,30 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
     assert(false);
 }
 
+#ifdef REMOVE_SkVal
+template<>
+SL::VarVal *SL::FunctionCall::eval<SL::HoleVarStore *>(
+        SL::HoleVarStore* & the_solution, SolverProgramState *state, const SL::VarVal* const the_var_val) {
+    assert(the_solution == the_var_val->get_solution_const(false));
+    switch (method_id) {
+        case _join: {
+            assert(params.size() == 1);
+            using namespace SolverLanguagePrimitives;
+            SL::HoleVarStore *other_solution = params[0]->eval(state)->get_solution();
+            the_solution->disjoint_join_with(*other_solution);
+            return new VarVal();
+        }
+//        case _get: {
+//            assert(params.size() == 1);
+//            string subfunc_name = params[0]->eval(state)->get_string(true, false);
+//            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_solution());
+//        }
+        default:
+            assert(false);
+    }
+    assert(false);
+}
+#else
 template<>
 SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignment*>(
         const SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, const SL::VarVal* const the_var_val) {
@@ -514,12 +552,9 @@ SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignmen
             the_solution->disjoint_join_with(other_solution);
             return new VarVal();
         }
-//        case _get:
-//        {
+//        case _get: {
 //            assert(params.size() == 1);
-//
 //            string subfunc_name = params[0]->eval(state)->get_string(true, false);
-//
 //            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_solution());
 //        }
         default:
@@ -527,6 +562,7 @@ SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignmen
     }
     assert(false);
 }
+#endif
 
 template<>
 SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state, const SL::VarVal* const the_var_val)
@@ -594,9 +630,12 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(input_val->is_input_holder());
 
                     SketchFunction* skfunc = method_var_val->get_function();
+#ifdef REMOVE_SkVal
+                    SL::InputVarStore *input_assignment = input_val->get_input_holder();
+#else
                     SolverLanguagePrimitives::InputAssignment *input_assignment = input_val->get_input_holder();
+#endif
                     ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
-
                     assert(ret != nullptr);
 
                     input_val->decrement_shared_ptr();
@@ -745,7 +784,7 @@ void SL::init_method_str_to_method_id_map()
     assert(method_str_to_method_id_map_is_defined == false);
     add_to_method_str_to_method_id_map("File", _file, "namespace");
     add_to_method_str_to_method_id_map("SATSolver", _sat_solver, "namespace");
-    add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
+//    add_to_method_str_to_method_id_map("Solution", _Solution, "namespace");
     add_to_method_str_to_method_id_map("print", _print, "namespace");
     add_to_method_str_to_method_id_map("float", _to_float, "namespace");
     add_to_method_str_to_method_id_map("assert", _assert, "namespace");
@@ -904,8 +943,13 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
+#ifdef REMOVE_SkVal
+                HoleVarStore *solution_holder = var_val_sol->get_solution();
+                VarStore* var_store = solution_holder;
+#else
                 const HoleAssignment *solution_holder = var_val_sol->get_solution();
                 VarStore* var_store = solution_holder->to_var_store();
+#endif
                 assert(var_store->check_rep());
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_store->clear();
@@ -927,7 +971,11 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 using namespace SolverLanguagePrimitives;
                 VarVal *sol_var_val = params[0]->eval(state);
                 sol_var_val->increment_shared_ptr();
+#ifdef REMOVE_SkVal
+                HoleVarStore *sol = sol_var_val->get_solution();
+#else
                 const HoleAssignment *sol = sol_var_val->get_solution();
+#endif
                 skfunc->concretize(sol);
                 sol_var_val->decrement_shared_ptr();
                 return new SL::VarVal();
@@ -947,7 +995,11 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
 
+#ifdef REMOVE_SkVal
+            InputVarStore* input_holder = input_holder_var_val->get_input_holder();
+#else
             SolverLanguagePrimitives::InputAssignment *input_holder = input_holder_var_val->get_input_holder();
+#endif
             auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
 
             input_holder_var_val->decrement_shared_ptr();
@@ -1008,7 +1060,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
         case _get_solution:
         {
             if(params.empty()) {
-                return new VarVal(skfunc->get_solution());
+                return new VarVal(/*(HoleVarStore*)*/skfunc->get_solution());
             }
             else if(params.size() == 1){
                 AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_solution()");
@@ -1429,12 +1481,17 @@ SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(s
 }
 SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
 SL::VarVal::VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
+#ifdef REMOVE_SkVal
+SL::VarVal::VarVal(SL::HoleVarStore * _solution) : solution(_solution), var_val_type(solution_val_type){}
+SL::VarVal::VarVal(SL::InputVarStore * _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
+#else
 SL::VarVal::VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){
     solution->increment_shared_ptr();
 }
 SL::VarVal::VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
+#endif
 
-SL::VarVal::VarVal(string  _s) : s(new Identifier(_s)), var_val_type(string_val_type) {}
+SL::VarVal::VarVal(string  _s) : s(new Identifier(std::move(_s))), var_val_type(string_val_type) {}
 
 template <typename T>
 SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
@@ -1476,11 +1533,14 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
             skfunc = _to_copy->get_function(false)->unit_clone();
             break;
         case solution_val_type:
-            assert(false);
 //            solution = new SolverLanguagePrimitives::HoleAssignment(_to_copy->get_solution(false));
             break;
         case input_val_type:
+#ifdef REMOVE_SkVal
+            input_holder = new InputVarStore(*_to_copy->get_input_holder(false));
+#else
             input_holder = new SolverLanguagePrimitives::InputAssignment(_to_copy->get_input_holder(false));
+#endif
             break;
         case bool_val_type:
             b = _to_copy->get_bool(false);
@@ -1530,16 +1590,18 @@ bool SL::VarVal::get_is_return() const {
 SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_call) {
     switch (var_val_type) {
         case string_val_type:
-            //do nothing
+            AssertDebug(false, "string has no methods (yet).");
 //            eval<Identifier*>(s, state, func_call);
             break;
         case int_val_type:
+            AssertDebug(false, "int has no methods (yet).");
             //do nothing
             break;
         case file_val_type:
             return eval<File*>(file, state, func_call);
             break;
         case method_val_type:
+            AssertDebug(false, "method has no methods (yet).");
             //nothing to do yet
 //            eval<Method*>(method, state, func_call);
             break;
@@ -1547,22 +1609,30 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
             return eval<SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
+#ifdef REMOVE_SkVal
+            return eval<HoleVarStore*>(solution, state, func_call);
+#else
             return eval<const SolverLanguagePrimitives::HoleAssignment*>(solution, state, func_call);
+#endif
             break;
         case input_val_type:
+            AssertDebug(false, "input has no methods (yet).");
             //nothing to do yet
 //            eval<SolverLanguagePrimitives::InputAssignment*>(input_holder, state, func_call);
             break;
         case bool_val_type:
+            AssertDebug(false, "bool has no methods (yet).");
             //do nothing
             break;
         case void_val_type:
+            AssertDebug(false, "void has no methods (yet).");
             //do nothing
             break;
         case no_type:
             assert(false);
             break;
         case float_val_type:
+            AssertDebug(false, "float has no methods (yet).");
             //do nothing
             break;
         case poly_pair_type:
@@ -1574,7 +1644,7 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
         default:
             assert(false);
     }
-    assert(false);
+    AssertDebug(false, "MISSING CASES OR WRONG INPUT.");
 }
 
 template<typename T>

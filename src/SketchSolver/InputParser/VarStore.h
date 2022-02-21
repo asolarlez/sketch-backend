@@ -584,7 +584,7 @@ public:
 	int getBitsize() const{
 		return bitsize;
 	}
-	int getIntsize(){
+	int getIntsize() const {
 		return objs.size();
 	}
 	void printBrief(ostream& out) const{
@@ -699,8 +699,8 @@ public:
 	}
 	friend VarStore old_join(const VarStore& v1 , const VarStore& v2);
 	friend VarStore* produce_join(const VarStore& v1 , const VarStore& v2);
-    friend VarStore* append_join(VarStore& v1 , const VarStore& v2);
-    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
+    friend void append_join(VarStore& v1 , const VarStore& v2);
+//    friend VarStore* concatenate_join(VarStore& v1 , const VarStore& v2);
 
     void relabel(vector<bool_node*>& inputs){
 
@@ -739,6 +739,11 @@ public:
 
     void rename_subdag(const string &prev_name, const string &new_name);
     void change_id(const string &prev_name, int new_id);
+
+    void disjoint_join_with(const VarStore& v2)
+    {
+        append_join(*this, v2);
+    }
 };
 
 inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
@@ -751,25 +756,24 @@ inline VarStore* produce_join(const VarStore& _v1, const VarStore& v2)
 	return ret;
 }
 
-inline VarStore* append_join(VarStore& _v1, const VarStore& v2)
+inline void append_join(VarStore& _v1, const VarStore& v2)
 {
     VarStore* ret = &_v1;
     for(int i = 0; i < v2.objs.size(); i++) {
         ret->insertObj(v2.objs[i].name, ret->objs.size(), VarStore::objP(v2.objs[i]));
     }
     ret->bitsize += v2.bitsize;
-    return ret;
 }
 
-inline VarStore* concatenate_join(VarStore& _v1, const VarStore& v2)
-{
-    VarStore* ret = &_v1;
-    for(int i = 0; i < v2.objs.size(); i++) {
-        ret->insertObj(v2.objs[i].name, ret->objs.size(), v2.objs[i]);
-    }
-    ret->bitsize += v2.bitsize;
-    return ret;
-}
+//inline void concatenate_join(VarStore& _v1, const VarStore& v2)
+//{
+//    VarStore* ret = &_v1;
+//    for(int i = 0; i < v2.objs.size(); i++) {
+//        ret->insertObj(v2.objs[i].name, ret->objs.size(), v2.objs[i]);
+//    }
+//    ret->bitsize += v2.bitsize;
+////    return ret;
+//}
 
 
 inline VarStore old_join(const VarStore& v1 , const VarStore& v2){

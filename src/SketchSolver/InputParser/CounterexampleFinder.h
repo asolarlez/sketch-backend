@@ -103,7 +103,7 @@ public:
 		inputs = &vs;
 		computeInfluences();
 	}
-    bool parseLine(VarStore* var_store)
+    bool parseLine(const VarStore* var_store)
     {
         *inputs = *var_store;
         return true;

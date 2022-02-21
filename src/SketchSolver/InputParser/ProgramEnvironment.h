@@ -58,7 +58,7 @@ public:
         doInline(dag, var_store, bool_node::CTRL);
     }
 
-    void doInline(BooleanDAG &dag, VarStore &var_store, bool_node::Type var_type)
+    void doInline(BooleanDAG &dag, const VarStore &var_store, bool_node::Type var_type)
     {
         vector<string>* tmp = nullptr;
         doInline(dag, var_store, var_type, tmp);

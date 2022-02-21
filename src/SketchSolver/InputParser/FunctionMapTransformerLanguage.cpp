@@ -488,6 +488,10 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                     assert(!parent->is_erased);
                     auto maybe_ret = parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
                     assert(maybe_ret != nullptr);
+
+#ifdef REMOVE_SkVal
+                    AssertDebug(false, "TODO")
+#else
                     if(maybe_ret->get_same_solution() != nullptr)
                     {
                         if(maybe_ret->get_same_solution()->get_sat_solver_result() == SAT_SATISFIABLE) {
@@ -509,6 +513,7 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                         }
                         return maybe_ret->produce_concretization(local_var_store, *get_concretization_type(), false);
                     }
+#endif
                 }
             }
 

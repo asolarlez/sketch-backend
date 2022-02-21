@@ -1,12 +1,9 @@
 #include "InterpreterEnvironment.h"
 
 #include <utility>
-//#include "ABCSATSolver.h"
 #include "InputReader.h"
 #include "CallGraphAnalysis.h"
-#include "ComplexInliner.h"
 #include "DagFunctionToAssertion.h"
-#include "InputReader.h" // INp yylex_init, yyparse, etc.
 #include "Util.h"
 
 #include "ArithmeticExpressionBuilder.h"
@@ -53,12 +50,12 @@ public:
 			BooleanDAG* cl = newdag->clone();
 			for (int i = 0; i<newdag->size(); ++i) {
 				// Get the code for this node.				
-				if ((*newdag)[i] != NULL) {
+				if ((*newdag)[i] != nullptr) {
 					if ((*newdag)[i]->type == bool_node::CTRL) {
 						INTER_node* inode = dynamic_cast<INTER_node*>((*newdag)[i]);
 						int nbits;
 						int t = valueForINode(inode, values, nbits);
-						bool_node * repl = NULL;
+						bool_node * repl = nullptr;
 						if (nbits == 1) {
 							repl = cse.getCnode(t == 1);
 						}
@@ -983,14 +980,16 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
-    const SolverLanguagePrimitives::HoleAssignment* almost_ret = solver_language.eval(
-            program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
+#ifndef REMOVE_SkVal
+    const SolverLanguagePrimitives::HoleAssignment* almost_ret =
+#endif
+    solver_language.eval(program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
     for(auto it: program_env.function_map)
     {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
     }
     delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
-
+#ifndef REMOVE_SkVal
     cout << "EXITED SolverLanguage" << endl;
     if (almost_ret->get_sat_solver_result() != SAT_SATISFIABLE)
     {
@@ -1025,6 +1024,8 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
     auto ret = almost_ret->get_sat_solver_result();
     almost_ret->clear_assert_num_shared_ptr_is_0();
     return ret;
+#endif
+    return SAT_UNDETERMINED;
 }
 
 

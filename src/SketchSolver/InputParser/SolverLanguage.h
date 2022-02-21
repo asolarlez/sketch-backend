@@ -15,8 +15,7 @@
 #include <cassert>
 #include <fstream>
 
-#include "SkVal.h"
-#include "BooleanDAG.h"
+//#include "SkVal.h"
 #include "SATSolver.h"
 #include "VarStore.h"
 #include "CEGISFinder.h"
@@ -49,6 +48,7 @@ namespace SolverLanguagePrimitives
         }
     };
 
+#ifndef REMOVE_SkVal
     class ValInt: public Val, public PolyVal<int>{
     public:
         explicit ValInt(int _val): PolyVal<int>(_val), Val(type_int){}
@@ -60,6 +60,7 @@ namespace SolverLanguagePrimitives
         explicit ValBool(bool _val): PolyVal<bool>(_val), Val(type_bool){}
         string to_string() override {return std::to_string(get());}
     };
+#endif
 
     class InputAssignment;
 
@@ -79,10 +80,12 @@ namespace SolverLanguagePrimitives
             return file;
         }
 
+#ifndef REMOVE_SkVal
         auto get_holes()
         {
             return skfunc->get_holes();
         }
+#endif
 
         auto get_harness()
         {
@@ -131,6 +134,7 @@ namespace SolverLanguagePrimitives
         }
     };
 
+#ifndef REMOVE_SkVal
     class ValProblemE: public Val, public PolyVal<ProblemE*>
     {
     public:
@@ -168,17 +172,25 @@ namespace SolverLanguagePrimitives
         virtual string to_string()
         { assert(false); }
     };
+#endif
 
     class Solver_AE
     {
     public:
         Solver_AE()= default;
+
+#ifdef REMOVE_SkVal
+        virtual SL::HoleVarStore * solve(ProblemAE* problem)
+        { assert(false); }
+#else
         virtual HoleAssignment* solve(ProblemAE* problem)
         { assert(false); }
+#endif
         virtual string to_string()
         { assert(false); }
     };
 
+#ifndef REMOVE_SkVal
     class WrapperCEGISFinderSpec: public Solver_E
     {
         CEGISFinderSpec* finder;
@@ -258,12 +270,10 @@ namespace SolverLanguagePrimitives
             return "RandomSolver";
         }
     };
-
     class ConstantSolver: public Solver_AE
     {
     public:
         ConstantSolver(): Solver_AE() {}
-
         SkVal* get_const_val(SkValType sk_val_type)
         {
             SkVal* ret;
@@ -302,7 +312,6 @@ namespace SolverLanguagePrimitives
             return "ConstantSolver";
         }
     };
-
     class ValSolverE: public Val, public PolyVal<Solver_E*>
     {
     public:
@@ -325,7 +334,6 @@ namespace SolverLanguagePrimitives
         explicit ValState(State* _val): PolyVal<State*>(_val), Val(type_state){}
         string to_string() override {return get()->to_string();}
     };
-
     class RetNode
     {
     public:
@@ -378,6 +386,7 @@ namespace SolverLanguagePrimitives
             return state;
         }
     };
+
 
     class StateAssignment: public StateNode
     {
@@ -914,9 +923,7 @@ namespace SolverLanguagePrimitives
         }
         return solution_holder;
     }
-
-
-
+#endif
 
     class WrapperAssertDAG: public Solver_AE
     {
@@ -961,6 +968,7 @@ namespace SolverLanguagePrimitives
             solver = new ::CEGISSolver(cegisfind, hardcoder, params, floats, _hardcoder);
         }
 
+#ifndef REMOVE_SkVal
         Assignment_SkVal* recordSolution() {
             auto ret = solver->get_control_map_as_map_str_skval();
             cout << "WrapperAssertDAG::recordSolution VALUES = ";
@@ -970,7 +978,98 @@ namespace SolverLanguagePrimitives
             cout << endl;
             return ret;
         }
+#else
+        SL::HoleVarStore* recordSolution() {
+            return new SL::HoleVarStore(solver->ctrlStore);
+        }
+#endif
 
+#ifdef REMOVE_SkVal
+        SL::HoleVarStore * solve(ProblemAE* problem) override
+        {
+//            cout << endl;
+//            cout << "ENTERING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+            solver->addProblem(problem->get_harness(), problem->get_file());
+
+            SATSolverResult ret_result = SAT_UNDETERMINED;
+            SL::HoleVarStore* holes_to_sk_val = nullptr;
+            //copied from InterpreterEnviroment::assertDAG
+            {
+                bool ret_result_determined = false;
+                int solveCode = 0;
+                try {
+
+                    solveCode = solver->solve();
+                    if (solveCode || !hasGoodEnoughSolution) {
+                        holes_to_sk_val = recordSolution();
+                    }
+                }
+                catch (SolverException *ex) {
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR " << basename() << ": " << ex->code << "  " << ex->msg << endl;
+                    ret_result = ex->code;
+                    ret_result_determined = true;
+                }
+                catch (BasicError &be) {
+                    if (!hasGoodEnoughSolution) {
+                        holes_to_sk_val = recordSolution();
+                    }
+//                    needs InterpreterEnviroment::basename
+//                    cout << "ERROR: " << basename() << endl;
+                    ret_result = SAT_ABORTED;
+                    ret_result_determined = true;
+                }
+
+                if (!ret_result_determined)
+                {
+                    if (!solveCode) {
+                        ret_result = SAT_UNSATISFIABLE;
+                    }
+                    else {
+                        ret_result = SAT_SATISFIABLE;
+                    }
+                }
+            }
+
+            VarStore* tmp_var_store = holes_to_sk_val;
+            auto tmp_dag = problem->get_harness()->produce_concretization(tmp_var_store, bool_node::CTRL);
+            tmp_var_store->clear();
+            tmp_dag->increment_shared_ptr();
+            int num_passing_inputs = tmp_dag->count_passing_inputs(problem->get_file());
+            if(ret_result == SAT_SATISFIABLE)
+            {
+                assert(num_passing_inputs == problem->get_file()->size());
+            }
+            else
+            {
+                assert(num_passing_inputs < problem->get_file()->size());
+            }
+            tmp_dag->clear();
+
+//            HoleAssignment* ret = new HoleAssignment(ret_result, holes_to_sk_val);
+            SL::HoleVarStore * ret = holes_to_sk_val;
+
+//            cout << "EXITING WrapperAssertDAG->solve(" << problem->get_harness()->get_dag()->get_name() << ")" << endl;
+//            cout << "failing assert: " << problem->get_harness()->produce_concretization(*holes_to_sk_val->to_var_store(false), bool_node::CTRL)->get_dag()->get_failed_assert() << endl;
+//            cout << "returns " << ret->to_string() << endl << endl;
+
+
+            assert(problem->get_harness()->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            if(!problem->get_harness()->get_dag()->getNodesByType(bool_node::CTRL).empty())
+            {
+                auto tmp_local_var_store = ret;//;->to_var_store(false);
+                auto tmp = problem->get_harness()->produce_concretization(tmp_local_var_store, bool_node::CTRL);
+                tmp_local_var_store->clear();
+                assert(tmp->get_dag()->getNodesByType(bool_node::UFUN).empty());
+                assert(tmp->get_dag()->getNodesByType(bool_node::CTRL).empty());
+                tmp->increment_shared_ptr();
+                tmp->clear();
+            }
+
+            return ret;
+        }
+    };
+#else
         HoleAssignment* solve(ProblemAE* problem) override
         {
 //            cout << endl;
@@ -1053,7 +1152,9 @@ namespace SolverLanguagePrimitives
             return ret;
         }
     };
+#endif
 
+#ifndef REMOVE_SkVal
     inline HoleAssignment* wrapper_assert_dag(
             SketchFunction* harness, const string& file_name,
             FloatManager& floats, CommandLineArgs& _args,
@@ -1278,7 +1379,7 @@ namespace SolverLanguagePrimitives
 
         return solutions[0].second;*/
     }
-
+#endif
     /**
  *
 package ALL{
@@ -1368,54 +1469,169 @@ public:
     SolverLanguage()
     {
 
-
     }
-
-    void sandbox()
-    {
-        SolverLanguagePrimitives::basic_while();
-//        SolverLanguagePrimitives::target_cegis(finder);
-    }
-
-//    const SolverLanguagePrimitives::HoleAssignment *
-//    eval(SketchFunction *harness, const string &file_name, FloatManager &floats, CommandLineArgs &_args,
-//         HoleHardcoder &_hc,
-//         bool hasGoodEnoughSolution, FunctionMap &function_map)
-//    {
-//        SolverProgramState* state =
-//                new SolverProgramState(harness, file_name, floats, _args, _hc, hasGoodEnoughSolution, function_map);
-//        return SolverLanguagePrimitives::target_best_effort(state, file_name, true);
-//    }
-
+#ifndef REMOVE_SkVal
     const SolverLanguagePrimitives::HoleAssignment *
+#else
+    void
+#endif
+
     eval(FunctionMap &function_map, const string& file_name, FloatManager &floats, CommandLineArgs &_args, HoleHardcoder &_hc,
          bool hasGoodEnoughSolution)
     {
-        SolverProgramState state =
+        SolverProgramState state_abs =
                 SolverProgramState(function_map, file_name, floats, _args, _hc, hasGoodEnoughSolution);
-        return SolverLanguagePrimitives::target_best_effort(&state, file_name, true);
-    }
-};
 
-class SolverProgram: public BooleanDAG
-{
+        SolverProgramState* state = &state_abs;
 
-};
-
-class SolverLanguageParser
-{
-    SolverProgram program;
-public:
-    SolverLanguageParser(const string& file_name)
-    {
-        ifstream file(file_name);
-        string line;
-        while ( getline (file, line) )
         {
-            cout << line << '\n';
+
+            string solver_program_file_name;
+
+            assert(!state->function_map.empty());
+
+            solver_program_file_name = "solver_language_program__multi_harness_stun.txt";
+
+
+            int init_num_global_dags = BooleanDAG::get_allocated().size();
+            int init_num_global_nodes = bool_node::get_allocated().size();
+
+            BooleanDagLightUtility* local_harness = ((BooleanDagUtility*)state->function_map["sketch_main__Wrapper"])->clone();
+            local_harness->increment_shared_ptr();
+
+            FunctionMap& function_map = local_harness->get_env()->function_map;
+
+            int init_function_map_transformer_size = function_map.transformer_size();
+
+            parse_solver_langauge_program(state, solver_program_file_name);
+
+            SL::VarVal *var_val_ret = state->eval();
+
+            if(var_val_ret->is_solution_holder())
+            {
+
+#ifndef REMOVE_SkVal
+                const SolverLanguagePrimitives::HoleAssignment* solution_holder = var_val_ret->get_solution(false);
+                assert(solution_holder->get_sat_solver_result() == SAT_SATISFIABLE);
+#else
+                const SL::HoleVarStore * solution_holder = var_val_ret->get_solution(false);
+#endif
+                delete var_val_ret;
+                state->clear();
+
+#ifndef REMOVE_SkVal
+                local_harness->concretize_this_dag(solution_holder->to_var_store(), bool_node::CTRL);
+#else
+                local_harness->concretize_this_dag(solution_holder, bool_node::CTRL);
+#endif
+                File *file = new File(local_harness, file_name, state->floats, state->args.seed);
+
+                int num_passing_inputs =
+                        local_harness->count_passing_inputs(file);
+
+                cout << "HERE " << local_harness->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                file->clear();
+
+                local_harness->clear();
+
+                assert(BooleanDAG::get_allocated().size() - init_num_global_dags == 0);
+                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+
+
+                assert(init_function_map_transformer_size == function_map.transformer_size());
+#ifndef REMOVE_SkVal
+                return solution_holder;
+#endif
+            }
+            else
+            {
+                local_harness->clear();
+
+                assert(var_val_ret->is_sketch_function());
+
+                SketchFunction* concretized_function = var_val_ret->get_function(false);
+
+                File* file = new File(concretized_function, file_name, state->floats, state->args.seed);
+
+                int num_passing_inputs =
+                        concretized_function->count_passing_inputs(file);
+
+                cout << "HERE " << concretized_function->get_dag()->get_name() << endl;
+                cout << "count\t" << num_passing_inputs << " / " << file->size() << " ("
+                     << 100.0 * (float) num_passing_inputs / file->size() << " %)" << endl;
+
+                file->clear();
+
+                var_val_ret->clear_assert_0_shared_ptrs();
+                state->clear();
+
+//                BEST SO FAR: count	1249 / 1743 (71.6581 %)
+//                count	1258 / 1743 (72.1744 %)
+
+// with params:X
+//                num_trials = 6;
+//                num_rows_per_sample = 4;
+//                select_best = 3;
+//count	1224 / 1743 (70.2238 %)
+
+// with params:
+//                num_trials = 20;
+//                num_rows_per_sample = 4;
+//                select_best = 8;
+//count	1288 / 1743 (73.8956 %)
+
+// with params:
+//                num_trials = 20;
+//                num_rows_per_sample = 6;
+//                select_best = 8;
+//                count	1186 / 1743 (68.0436 %)
+
+
+
+// num_trials = 20;
+// num_rows_per_sample = 4;
+// select_best = 8;
+// with x2 (40, 4, 11 maybe);
+// count	1288 / 1743 (73.8956 %)
+
+//                num_trials = 6;
+//                num_rows_per_sample = 6;
+//                select_best = 3;
+//count	1058 / 1743 (60.6999 %)
+
+                int dags_diff = BooleanDAG::get_allocated().size() - init_num_global_dags;
+                int all_remaining_inlining_trees = LightSkFuncSetter::all_inlining_trees.size();
+
+                assert(dags_diff == 0);
+                assert(bool_node::get_allocated().size() - init_num_global_nodes == 0);
+
+                int transformer_size_diff = function_map.transformer_size() - init_function_map_transformer_size;
+
+                function_map.check_consistency();
+                assert(function_map.contains_only_necessary());
+
+                cout << LightSkFuncSetter::max_count <<endl;
+                assert(LightSkFuncSetter::max_count == 1);
+
+//                if(transformer_size_diff != 0){
+//                    function_map.print_not_erased();
+//                }
+
+                function_map.soft_clear_transformer();
+
+#ifndef REMOVE_SkVal
+                SolverLanguagePrimitives::HoleAssignment* ret = new SolverLanguagePrimitives::HoleAssignment(true);
+                ret->set_sat_solver_result(SAT_SATISFIABLE);
+                return ret;
+#endif
+            }
+
+            assert(false);
         }
     }
 };
-
 
 #endif //SKETCH_SOURCE_SOLVERLANGUAGE_H
