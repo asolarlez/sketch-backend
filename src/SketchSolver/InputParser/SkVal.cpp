@@ -35,11 +35,7 @@ Assignment_SkVal::Assignment_SkVal(Assignment_SkVal *to_copy):
         name_to_original_name(to_copy->name_to_original_name),
         name_to_dag_name(to_copy->name_to_dag_name),
         var_name_to_dag_name_to_name(to_copy->var_name_to_dag_name_to_name),
-#ifndef NO_CLONE_INLINING_TREE
         inlining_tree(new LightInliningTree(to_copy->inlining_tree))
-#else
-        inlining_tree(to_copy->inlining_tree)
-#endif
         {
 
     for(auto it: to_copy->assignment)
@@ -95,11 +91,7 @@ bool Assignment_SkVal::operator==(const Assignment_SkVal& other)  const
 
 Assignment_SkVal::Assignment_SkVal(const LightInliningTree *_inlining_tree, FloatManager &floats) :
 Mapping<SkVal>(),
-#ifndef NO_CLONE_INLINING_TREE
     inlining_tree(new LightInliningTree(_inlining_tree))
-#else
-    inlining_tree(_inlining_tree)
-#endif
         {}
 
 //Assignment_SkVal::Assignment_SkVal(const InliningTree *_inlining_tree, FloatManager &floats) :
@@ -108,11 +100,7 @@ Mapping<SkVal>(),
 Assignment_SkVal::Assignment_SkVal(const VarStore *var_store, FloatManager &floats): Mapping<SkVal>() {
     assert(var_store != nullptr);
     if(var_store->get_inlining_tree() != nullptr) {
-#ifndef NO_CLONE_INLINING_TREE
         inlining_tree = new LightInliningTree(var_store->get_inlining_tree());
-#else
-        inlining_tree = var_store->get_inlining_tree();
-#endif
     }
 
     for(auto it = var_store->begin(); it != var_store->end(); it++)
@@ -186,12 +174,8 @@ void Assignment_SkVal::set_inlining_tree(const LightInliningTree *_inlining_tree
 {
     assert(inlining_tree == nullptr);
 
-#ifndef NO_CLONE_INLINING_TREE
-    //TODO: refactor this so that it doesn't copy
     inlining_tree = new LightInliningTree(_inlining_tree);
-#else
-    inlining_tree = _inlining_tree;
-#endif
+
 }
 
 //void Assignment_SkVal::set_inlining_tree(const InliningTree *_inlining_tree)

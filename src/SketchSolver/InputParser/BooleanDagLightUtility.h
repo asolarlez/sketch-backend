@@ -19,7 +19,7 @@ static bool new_way = true;
 
 class BooleanDagUtility;
 
-//#define NO_CLONE_INLINING_TREE
+#define NO_CLONE_INLINING_TREE
 
 class LightSkFuncSetter
 {
@@ -78,7 +78,6 @@ protected:
     void decrement_num_shared_ptr() const {
         assert(num_shared_ptr >= 1);
         num_shared_ptr--;
-        assert(num_shared_ptr == 0);
     }
 
     void soft_clear() const {
@@ -180,7 +179,6 @@ public:
         return var_store;
     }
 
-#ifndef NO_CLONE_INLINING_TREE
     explicit LightSkFuncSetter(const LightSkFuncSetter* to_copy):
     dag_name(to_copy->dag_name), dag_id(to_copy->dag_id), unconc_hole_original_name_to_name(to_copy->unconc_hole_original_name_to_name) {
         assert(this != to_copy);
@@ -191,7 +189,6 @@ public:
         }
         assert(var_store != nullptr || unconc_hole_original_name_to_name.empty());
     }
-#endif
 
     explicit LightSkFuncSetter(const BooleanDagUtility* _skfunc);
 
@@ -211,11 +208,19 @@ public:
 };
 class LightInliningTree: public LightSkFuncSetter
 {
+    static long long global_clear_id;
+    mutable long long local_clear_id = -1;
     mutable bool deleted = false;
 
     bool soft_clear(bool clear_root = true, bool sub_clear = false) const {
         if (deleted) {
             return true;
+        }
+        if(local_clear_id != global_clear_id) {
+            local_clear_id = global_clear_id;
+        }
+        else {
+            return false;
         }
         LightSkFuncSetter::decrement_num_shared_ptr();
         if(LightSkFuncSetter::get_num_shared_ptr() == 0) {
@@ -234,6 +239,7 @@ class LightInliningTree: public LightSkFuncSetter
 
     void _clear(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const {
         if(deleted) {
+            assert(get_num_shared_ptr() == 0);
             assert(visited->find(this) == visited->end());
             bool is_root = visited->empty();
             visited->insert(this);
@@ -247,8 +253,10 @@ class LightInliningTree: public LightSkFuncSetter
             if (is_root) delete visited;
             delete this;
         }
+        else{
+            assert(get_num_shared_ptr() >= 1);
+        }
     }
-
 
 protected:
     map<string, LightInliningTree*> var_name_to_inlining_subtree;
@@ -275,20 +283,14 @@ public:
         return at;
     }
 
-    void insert_into_var_name_to_inlining_subtree(const string& key, LightInliningTree* val) {
-        assert(var_name_to_inlining_subtree.find(key) == var_name_to_inlining_subtree.end());
-        var_name_to_inlining_subtree[key] = val;
-    }
-    void erase_from_var_name_to_inlining_subtree(const string& key) {
-        assert(var_name_to_inlining_subtree.find(key) != var_name_to_inlining_subtree.end());
-        var_name_to_inlining_subtree.at(key)->clear();
-        var_name_to_inlining_subtree.erase(key);
-    }
     const map<string, LightInliningTree*>& get_var_name_to_inlining_subtree() const {
         return var_name_to_inlining_subtree;
     }
     void clear(bool clear_root = true, bool sub_clear = false) const {
         assert(!deleted);
+
+        global_clear_id++;
+
         if(soft_clear(clear_root, sub_clear)) {
             _clear();
         }
@@ -319,10 +321,6 @@ public:
         if(is_root) delete visited;
     }
 
-    LightInliningTree(const BooleanDagUtility* _skfunc, bool do_recurse): LightSkFuncSetter(_skfunc) {assert(!do_recurse);}
-#ifndef NO_CLONE_INLINING_TREE
-    LightInliningTree(const LightInliningTree* _to_copy, bool do_recurse): LightSkFuncSetter(_to_copy) {assert(!do_recurse);}
-
     explicit LightInliningTree(
             const LightInliningTree* to_copy,
             map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
@@ -335,6 +333,7 @@ public:
             if (visited->find(it.second->get_dag_id()) == visited->end()) {
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
             } else {
+//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
@@ -343,11 +342,11 @@ public:
             delete visited;
         }
     }
-#endif
 
     explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>());
 
-    LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
+    LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy,
+                      map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
         LightSkFuncSetter(to_replace_root)
     {
         bool is_root = visited->empty();
@@ -361,10 +360,12 @@ public:
 #ifndef NO_CLONE_INLINING_TREE
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
 #else
+                it.second->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = it.second;
 #endif
             }
             else {
+//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
@@ -463,6 +464,11 @@ public:
         return var_name_to_inlining_subtree.at(under_this_name);
     }
 
+    virtual LightInliningTree *get_sub_inlining_tree_non_const(const string &under_this_name) const {
+        assert(var_name_to_inlining_subtree.find(under_this_name) != var_name_to_inlining_subtree.end());
+        return var_name_to_inlining_subtree.at(under_this_name);
+    }
+
     void _get_solution(VarStore* running_var_store, set<const LightInliningTree *> *visited = new set<const LightInliningTree *>()) const;
 
     VarStore * get_solution() const {
@@ -533,7 +539,7 @@ public:
     void set_var_store(const VarStore* new_var_store)
     {
         assert(new_var_store != nullptr);
-        for(auto obj: *new_var_store){
+        for(const auto& obj: *new_var_store){
             insert_var(obj);
         }
     }

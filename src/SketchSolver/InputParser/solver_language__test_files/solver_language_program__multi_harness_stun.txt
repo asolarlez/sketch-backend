@@ -56,203 +56,7 @@ harness void sketch_main(int x, int out)
 //-------------------------------------------
 //------------RECURSIVE TREE----------------
 
-
-Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper)
-{
-
-    harness_levels = [];
-
-    for(int i = 0;i<stun_depth;i++)
-    {
-        if(i == 0)
-        {
-            print("num_holes(i =", i, "): ", local_sketch_main__Wrapper.num_holes());
-            mhw_lvl0 = best_effort_synthesized_program(local_sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
-
-            print("after best_effort, i", i);
-
-            harness_levels.append(mhw_lvl0);
-
-        }
-        else
-        {
-
-            print("ENTERING i =", i);
-
-            assert(i >= 1);
-
-            print("composite_predicate.num_holes();", composite_predicate.num_holes());
-
-            cp_lvl_i = composite_predicate.deep_clone();
-
-            print("cp_lvl_i.num_holes();", cp_lvl_i.num_holes());
-
-            cp_lvl_i.replace("composite_predicate", harness_levels[i-1].get("sketch_main").get("composite_predicate"));
-
-            local_sketch_main.replace("composite_predicate", cp_lvl_i);
-
-            print("num_holes(i =", i, "): ", local_sketch_main__Wrapper.num_holes());
-
-            mhw_lvl_i = best_effort_synthesized_program(local_sketch_main__Wrapper, file, num_trials, num_rows_per_sample);
-
-            harness_levels.append(mhw_lvl_i);
-        }
-
-        if(true)
-        {
-            to_eval = eval_program_main.produce_replace("dummy_program", harness_levels[i].get("sketch_main").get("composite_predicate"));
-            to_eval = to_eval.produce_executable();
-
-            local_file = File(file_name, to_eval);
-            for(int k = 0;k < local_file.size(); k++)
-            {
-                if(to_eval.passes(local_file[k])){
-                    //print("composite_predicate(file[", k, "]) passes");
-                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
-                }
-                else
-                {
-                    print("composite_predicate(file[", k, "]) fails");
-                }
-            }
-        }
-
-        score = count_passing_inputs(harness_levels[i], file);
-
-        print("score[", i, "] =", score);
-    }
-
-    return harness_levels[stun_depth-1];
-}
-
-
-
-Solver recursive_function_stun()
-{
-
-    local_sketch_main = sketch_main.deep_clone();
-    local_sketch_main__Wrapper = sketch_main__Wrapper.produce_replace("sketch_main", local_sketch_main);
-
-    File file = File(file_name, local_sketch_main__Wrapper);
-
-    num_trials = 2;
-    num_rows_per_sample = 3;
-
-    int stun_depth = 14;
-
-    recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
-
-    check_harness_levels = [];
-
-    for(int i = 0;i<stun_depth;i++)
-    {
-        cp_lvl_i = composite_predicate.deep_clone();
-        cp_lvl_i.replace("composite_predicate", cp_lvl_i);
-
-        print("num_holes(i=", i, "j=", 0, "): ", cp_lvl_i.num_holes());
-
-        for(int j = 0; j<i;j++)
-        {
-            print("i, j, (j<i)", i, j, (j<i));
-            assert((j < i), "fails: ", j, "!<", i);
-            assert(not(j == i), "fails: ", j, "!!=", i);
-
-
-            next_cp_lvl_i = composite_predicate.deep_clone();
-            next_cp_lvl_i.replace("composite_predicate", cp_lvl_i);
-            print("num_holes(i=", i, "j=", j+1, "): ", next_cp_lvl_i.num_holes());
-            cp_lvl_i = next_cp_lvl_i;
-        }
-
-        print("num_holes(i =", i, "): ", cp_lvl_i.num_holes());
-
-        intermediate_solutions = [];
-
-        print("TRY intermediate_solutions.append(recursive_program.get_solution()); i = ", i);
-        intermediate_solutions.append(recursive_program.get_solution());
-        print("DONE intermediate_solutions.append(recursive_program.get_solution()); i = ", i);
-
-        print("TRY intermediate_solutions.append(recursive_program.get('sketch_main').get_solution()); i = ", i);
-        intermediate_solutions.append(recursive_program.get("sketch_main").get_solution());
-        print("DONE intermediate_solutions.append(recursive_program.get('sketch_main').get_solution()); i = ", i);
-
-        at_level = recursive_program.get("sketch_main").get("composite_predicate");
-
-        local_depth = (stun_depth-i)-1;
-        for(int j = 0; j<local_depth; j++) {
-            print("TRY intermediate_solutions.append(at_level.get_solution()); i, j = ", i, j, "/ ", local_depth);
-            intermediate_solutions.append(at_level.get_solution());
-            print("DONE intermediate_solutions.append(at_level.get_solution()); i, j = ", i, j, "/ ", local_depth);
-
-            at_level = at_level.get("composite_predicate");
-        }
-
-        // can't do this bc different holes are aliased.
-        cp_lvl_i.make_executable(at_level.get_solution());
-
-
-        //START
-        print("cp_lvl_i, i =", i);
-        local_sketch_main.replace("composite_predicate", cp_lvl_i);
-
-        {
-            to_eval = eval_program_main.produce_replace("dummy_program", cp_lvl_i);
-            to_eval = to_eval.produce_executable();
-
-            local_file = File(file_name, to_eval);
-            for(int k = 0;k < local_file.size(); k++)
-            {
-                if(to_eval.passes(local_file[k])){
-                    //print("composite_predicate(file[", k, "]) passes");
-                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
-                }
-                else
-                {
-                    print("composite_predicate(file[", k, "]) fails");
-                }
-            }
-        }
-
-        score_predicted = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
-        //END
-
-        //START
-        print("at_level, i =", i);
-        local_sketch_main.replace("composite_predicate", at_level);
-
-        {
-            to_eval = eval_program_main.produce_replace("dummy_program", at_level);
-            to_eval = to_eval.produce_executable();
-
-            local_file = File(file_name, to_eval);
-            for(int k = 0;k < local_file.size(); k++)
-            {
-                if(to_eval.passes(local_file[k])){
-                    //print("composite_predicate(file[", k, "]) passes");
-                    print("composite_predicate(file[", k, "]) = ", to_eval(local_file[k]));
-                }
-                else
-                {
-                    print("composite_predicate(file[", k, "]) fails");
-                }
-            }
-        }
-
-        score_ground_truth = count_passing_inputs(local_sketch_main__Wrapper.produce_executable(), file);
-        //END
-
-        print("score_ground_truth == score_predicted:: ", score_ground_truth, " == ", score_predicted);
-        assert(score_ground_truth == score_predicted, "FAILED: score_ground_truth == score_predicted:: ", score_ground_truth, " != ", score_predicted);
-
-        check_harness_levels.append(local_sketch_main__Wrapper.deep_clone());
-    }
-
-    local_sketch_main.reset("composite_predicate");
-
-    return check_harness_levels[stun_depth-1];
-    return check_harness_levels[stun_depth-1].get_solution();
-}
-
+//todo
 
 //-------------------------END RECURSIVE TREE -------------------------
 //---------------------------------------------------------------------
@@ -345,8 +149,10 @@ Solver best_effort_synthesized_program(harness2, file, num_trials, num_rows_per_
 
 Solver main()
 {
-    return top_down_and_bottom_up_synthesis_sketch_main();
-    //return recursive_function_stun();
+
+    //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
+    //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
+    return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -425,14 +231,14 @@ Solver synthesize_composite_programs_from_parts(left_programs, right_programs, s
     return seed_main_lvl1;
 }
 
-Solver top_down_and_bottom_up_synthesis_sketch_main()
+Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
 {
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    num_trials = 2;
+    num_trials = 1;
     num_rows_per_sample = 1;
-    select_best = 2;
+    select_best = 1;
     assert(num_trials >= select_best);
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
@@ -555,7 +361,7 @@ Solver top_down_and_bottom_up_synthesis_sketch_main()
                         program_lvl0.produce_executable(left_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
                     new_best_predicate_lvl1.replace("if_false_branch",
                         program_lvl0.produce_executable(right_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"].get_solution()));
-                    if(true) {
+                    if(with_printf) {
                         new_best_predicate_lvl1.replace("printf",
                             printf.produce_executable(left_sketch_main_lvl0_programs.get(0).second()["sketch_main"]["dummy_program"]["printf"].get_solution()));
                     }
@@ -752,9 +558,9 @@ Solver recursive_function_stun()
     File file = File(file_name, local_sketch_main__Wrapper);
 
     num_trials = 2;
-    num_rows_per_sample = 3;
+    num_rows_per_sample = 6;
 
-    int stun_depth = 12;
+    int stun_depth = 4;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 

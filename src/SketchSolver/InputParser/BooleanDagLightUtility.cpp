@@ -4,6 +4,8 @@
 
 #include "BooleanDagLightUtility.h"
 
+long long LightInliningTree::global_clear_id = 0;
+
 bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
 {
     assert(shared_ptr == 0);
@@ -107,11 +109,13 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
 #ifndef NO_CLONE_INLINING_TREE
                     var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
 #else
+                    it.second->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = it.second;
 #endif
                 }
                 else
                 {
+//                    (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
                 }
             }
@@ -134,6 +138,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                 if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
                     assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
                 } else {
+//                    (*visited)[sub_dag->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
                 }
             }
@@ -183,9 +188,9 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
                     it.second->concretize(next_skfunc, var_store, visited);
                 }
                 else {
-                    VarStore* sub_var_store = var_store->get_sub_var_store(it.first);
+                    const VarStore* sub_var_store = var_store->get_sub_var_store(it.first);
                     it.second->concretize(next_skfunc, sub_var_store, visited);
-                    sub_var_store->clear();
+                    delete sub_var_store;
                 }
             }
             else
@@ -194,7 +199,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
             }
         }
         if(!is_root && !has_been_concretized) {
-            skfunc->produce_concretization(var_store, bool_node::CTRL, false, false, false);
+            skfunc->_inplace_concretize(var_store, bool_node::CTRL);
         }
     }
 

@@ -491,9 +491,10 @@ public:
 
     VarStore() = default;
 
-    VarStore(const LightInliningTree* _inlining_tree);
+//    VarStore(const LightInliningTree* _inlining_tree);
 
-    VarStore(const VarStore& to_copy, const LightInliningTree* _inlining_tree = nullptr);
+    VarStore(const VarStore& to_copy);
+    VarStore(const VarStore& to_copy, LightInliningTree* _inlining_tree);
 
     void operator = (const VarStore& to_copy);
 
@@ -730,7 +731,7 @@ public:
 
     const string &get_name(const string& var_name, const string &source_dag_name);
 
-    VarStore *get_sub_var_store(const string& descend_to) const;
+    const VarStore *get_sub_var_store(const string& descend_to) const;
 
     bool check_rep() const;
 

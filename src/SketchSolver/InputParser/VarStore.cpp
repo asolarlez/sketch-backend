@@ -256,76 +256,36 @@ const string &VarStore::get_name(const string& var_name, const string &source_da
     return var_name_to_dag_name_to_name[var_name][source_dag_name];
 }
 
-#ifndef NO_CLONE_INLINING_TREE
-VarStore::VarStore(const LightInliningTree *_inlining_tree){
-    if(_inlining_tree != nullptr) {
-        inlining_tree = new LightInliningTree(_inlining_tree);
-    }
-}
-#else
-VarStore::VarStore(const LightInliningTree *_inlining_tree){
-    assert(_inlining_tree == nullptr);
-}
-#endif
-
-
 //VarStore::VarStore(const LightInliningTree *_inlining_tree){
 //    if(_inlining_tree != nullptr) {
-//#ifndef NO_CLONE_INLINING_TREE
 //        inlining_tree = new LightInliningTree(_inlining_tree);
-//#else
-//        inlining_tree = _inlining_tree;
-//#endif
 //    }
 //}
 
-#ifndef NO_CLONE_INLINING_TREE
-VarStore::VarStore(const VarStore &to_copy, const LightInliningTree* _inlining_tree)
+VarStore::VarStore(const VarStore &to_copy)
+{
+    AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
+    AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
+
+    *this = to_copy;
+}
+
+VarStore::VarStore(const VarStore &to_copy, LightInliningTree* _inlining_tree)
 {
     AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
     AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
     if(_inlining_tree != nullptr) {
-        inlining_tree = new LightInliningTree(_inlining_tree);
+        inlining_tree = _inlining_tree;
     }
 
     *this = to_copy;
 }
-#else
-VarStore::VarStore(const VarStore &to_copy, const LightInliningTree* _inlining_tree)
-{
-    assert(_inlining_tree == nullptr);
-    AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
-    AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
 
-//    if(_inlining_tree != nullptr) {
-//        inlining_tree = new LightInliningTree(_inlining_tree);
-//    }
-
-    *this = to_copy;
-}
-#endif
-
-//VarStore::VarStore(const VarStore &to_copy, const LightInliningTree* _inlining_tree)
-//{
-//    AssertDebug(to_copy.synths.empty(), "TODO: implement copy logic for synths and synthouths.");
-//    AssertDebug(to_copy.synthouts.empty(), "TODO: implement copy logic for synths and synthouths.");
-//
-//    if(_inlining_tree != nullptr) {
-//#ifndef NO_CLONE_INLINING_TREE
-//        inlining_tree = new LightInliningTree(_inlining_tree);
-//#else
-//        inlining_tree = _inlining_tree;
-//#endif
-//    }
-//
-//    *this = to_copy;
-//
-//}
-
-VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
+const VarStore *VarStore::get_sub_var_store(const string& under_this_var) const {
     if(inlining_tree != nullptr) {
-        return new VarStore(*this, inlining_tree->get_sub_inlining_tree(under_this_var));
+        //TODO: ideally you won't be passing a non-const since we don't want to modify the inlining_tree
+        return new VarStore(*this, inlining_tree->get_sub_inlining_tree_non_const(under_this_var));
     }
     else
     {
@@ -352,29 +312,12 @@ bool VarStore::check_rep() const {
     return true;
 }
 
-#ifndef NO_CLONE_INLINING_TREE
 void VarStore::set_inlining_tree(const LightInliningTree *new_inlining_tree) {
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
     }
     inlining_tree = new LightInliningTree(new_inlining_tree);
 }
-#else
-void VarStore::set_inlining_tree(const LightInliningTree *new_inlining_tree) {
-    assert(new_inlining_tree == nullptr);
-}
-#endif
-
-//void VarStore::set_inlining_tree(const LightInliningTree *new_inlining_tree) {
-//    if(inlining_tree != nullptr) {
-//        inlining_tree->clear();
-//    }
-//#ifndef NO_CLONE_INLINING_TREE
-//    inlining_tree = new LightInliningTree(new_inlining_tree);
-//#else
-//    inlining_tree = new_inlining_tree;
-//#endif
-//}
 
 void VarStore::operator=(const VarStore &to_copy){
 
@@ -389,13 +332,7 @@ void VarStore::operator=(const VarStore &to_copy){
 
     if(inlining_tree == nullptr) {
         if (to_copy.inlining_tree != nullptr) {
-
-#ifndef NO_CLONE_INLINING_TREE
             inlining_tree = new LightInliningTree(to_copy.inlining_tree);
-#else
-            inlining_tree = to_copy.inlining_tree;
-#endif
-
         }
     }
 
@@ -425,18 +362,11 @@ void VarStore::operator=(const VarStore &to_copy){
 
 void VarStore::clear()
 {
-//		for(auto it:objs)
-//		{
-//            it.clear();
-//		}
-
-    for(auto it:var_name_to_dag_name_to_name)
-    {
+    for(auto it:var_name_to_dag_name_to_name) {
         it.second.clear();
     }
 
     var_name_to_dag_name_to_name.clear();
-
 
     if(inlining_tree != nullptr) {
         inlining_tree->clear();
@@ -531,14 +461,13 @@ bool VarStore::contains(const VarStore::objP &obj, vector<string> *path) const
     assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).find(obj.get_source_dag_name()) != var_name_to_dag_name_to_name.at(obj.get_original_name()).end());
     assert(var_name_to_dag_name_to_name.at(obj.get_original_name()).at(obj.get_source_dag_name()) == obj.name);
 
+    assert(contains(obj.name));
+
     const LightInliningTree* subtree = inlining_tree;
     for (int i = 0; i < path->size(); i++) {
+        subtree->contains(obj.name);
         subtree = subtree->get_sub_inlining_tree((*path)[i]);
     }
-
-//    assert(subtree->get_dag_name() == obj.get_source_dag_name());
-
-    assert(contains(obj.name));
 
     return true;
 }
