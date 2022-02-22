@@ -17,7 +17,7 @@ namespace FMTL {
 
     enum TransformPrimitiveMetaType
     {
-        _concretize,
+        _make_executable,
         _replace,
         _clone,
         _init
@@ -273,7 +273,7 @@ namespace FMTL {
     public:
         ConcretizePrimitive(const string &_function_name, const VarStore *_store, const bool_node::Type _concretization_type) :
                 concretization_type(_concretization_type),
-                TransformPrimitive(_function_name, _concretize) {
+                TransformPrimitive(_function_name, _make_executable) {
             if(var_store != nullptr) {
                 var_store = _store->clone();
             }

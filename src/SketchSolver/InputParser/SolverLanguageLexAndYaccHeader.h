@@ -1164,15 +1164,12 @@ namespace SL {
 
         VarVal *clone();
 
-        void add_responsibility(const string &var_name, SL::VarVal *new_child);
-
         bool is_input_holder();
 
         bool is_solution_holder();
 
         void clear_assert_0_shared_ptrs();
 
-        void remove_responsibility(const string& key);
     };
 
     class Param;

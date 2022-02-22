@@ -919,7 +919,7 @@ eval__sketch_function_replace(const SL::VarVal * const ret_var_val, SketchFuncti
 
 //    assert(to_replace_with_var_val->get_function(false)->get_dag_name() != ret_skfunc->get_dag_name());
 
-//    ret_var_val->add_responsibility(str_to_replace, to_replace_with_var_val);
+//    ret_var_val->add_dependency(str_to_replace, to_replace_with_var_val);
 
     to_replace_with_var_val->increment_shared_ptr();
     SketchFunction* to_replace_with_skfunc = to_replace_with_var_val->get_function();

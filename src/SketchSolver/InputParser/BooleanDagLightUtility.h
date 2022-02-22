@@ -803,19 +803,19 @@ public:
     }
 
     void increment_shared_ptr() const {
-//        if(get_dag()->get_dag_id() == 190)
-//        {
-//            cout << "here" << endl;
-//        }
+        if(get_dag()->get_dag_id() == 91)
+        {
+            cout << "here" << endl;
+        }
         assert(shared_ptr >= 0);
         shared_ptr++;
     }
 
     void decrement_shared_ptr_wo_clear() {
-//        if(get_dag()->get_dag_id() == 190)
-//        {
-//            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
-//        }
+        if(get_dag()->get_dag_id() == 91)
+        {
+            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
+        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);

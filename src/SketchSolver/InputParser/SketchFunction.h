@@ -35,7 +35,46 @@ class SketchFunction: public BooleanDagUtility
     map<string, string> replaced_labels;
     map<string, string> original_labels;
 
-    map<string, SketchFunction*> responsibility;
+    class Dependencies: private map<string, SketchFunction*> {
+
+    public:
+    public:
+        Dependencies() = default;
+
+        auto find(const string &key) const {
+            return map<string, SketchFunction *>::find(key);
+        }
+
+        auto end() const {
+            return map<string, SketchFunction *>::end();
+        }
+
+        void insert(const string &key, SketchFunction *val) {
+            assert(find(key) == end());
+            map<string, SketchFunction *>::operator[](key) = val;
+            val->increment_shared_ptr();
+        }
+
+        auto begin() const {
+            return map<string, SketchFunction *>::begin();
+        }
+
+        bool has(const string& key) const {
+            return find(key) != end();
+        }
+
+        void erase(const string& key) {
+            assert(has(key));
+            at(key)->clear();
+            map<string, SketchFunction *>::erase(key);
+        }
+
+        bool empty() const {
+            return map<string, SketchFunction *>::empty();
+        }
+    };
+
+    Dependencies dependencies;
 
     long long local_clear_id = -1;
 
@@ -48,21 +87,16 @@ class SketchFunction: public BooleanDagUtility
 
 public:
 
-    const map<string, SketchFunction*>& get_responsibilities() const
-    {
-        return responsibility;
+    const Dependencies& get_dependencies() const {
+        return dependencies;
     }
 
-    void add_responsibility(SketchFunction* to_add)
+    void add_dependency(SketchFunction* to_add)
     {
         string name = to_add->get_dag()->get_name();
-        assert(responsibility.find(name) == responsibility.end());
+        assert(dependencies.find(name) == dependencies.end());
 
-        assert(to_add != this);
-        assert(to_add->get_dag_name() != get_dag_name());
-
-        responsibility[name] = to_add;
-        to_add->increment_shared_ptr();
+        dependencies.insert(name, to_add);
     }
 
     explicit SketchFunction(
@@ -74,7 +108,7 @@ public:
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
-            map<string, SketchFunction*> _responsibility = map<string, SketchFunction*>(),
+            Dependencies _responsibility = Dependencies(),
             LightInliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized),
@@ -82,9 +116,9 @@ public:
              solution(_solution),
 #endif
             replaced_labels(_replaced_labels), original_labels(_original_labels),
-            rep(_rep), responsibility(std::move(_responsibility)) {
+            rep(_rep), dependencies(std::move(_responsibility)) {
 
-        for(auto dependency: responsibility) {
+        for(const auto& dependency: dependencies) {
             assert(dependency.second != this);
             assert(dependency.second->get_dag_name() != get_dag_name());
             dependency.second->increment_shared_ptr();
@@ -123,10 +157,12 @@ public:
         return produce_concretization(nullptr, var_type, false);
     }
 
-    SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true);
+    SketchFunction *produce_concretization(const VarStore *var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone = true, const bool do_recursive_concretize = true);
 
+    SketchFunction* unit_clone_and_insert_in_function_map();
     SketchFunction *unit_clone(const string& explicit_name = "");
-    SketchFunction *deep_clone();
+    SketchFunction *deep_clone(bool only_tail = false);
+    void deep_clone_tail();
 
     void clear() override;
     void _clear();
@@ -220,9 +256,9 @@ public:
     void set_mirror_rep(const FMTL::TransformPrimitive *) ;
     const FMTL::TransformPrimitive * get_mirror_rep() const;
 
-    void deep_clone_tail();
-
     set<string> ufun_names();
+
+    void set_dependencies(const FunctionMap* fmap);
 };
 
 #include "NodeEvaluator.h"

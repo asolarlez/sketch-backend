@@ -26,13 +26,15 @@ set<string> SketchFunction::get_deep_holes()
     return ret;
 }
 
-SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone) {
+SketchFunction *SketchFunction::produce_concretization(
+        const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
 
     if(do_clone) {
-        assert(do_deep_clone);
-        SketchFunction* the_clone = unit_clone();
+        assert(do_deep_clone_tail);
+        SketchFunction* the_clone = deep_clone();
+//        SketchFunction* the_clone = unit_clone();
         the_clone->increment_shared_ptr();
-        the_clone->produce_concretization(_var_store, var_type, false, do_deep_clone);
+        the_clone->produce_concretization(_var_store, var_type, false, false, do_recursive_concretize);
         the_clone->decrement_shared_ptr_wo_clear();
         return the_clone;
     }
@@ -46,28 +48,34 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
             assert(var_store->check_rep());
         }
 
-        if(do_deep_clone) {
+        if(do_deep_clone_tail) {
             deep_clone_tail();
-
+        }
+        if(do_recursive_concretize){
             if(var_type == bool_node::CTRL) {
                 LightInliningTree *tmp_inlining_tree = new LightInliningTree(this);
 
                 set<string>* subf_names = get_inlined_functions();
 
+                //for every subfunction
                 for(const auto& f_name: *subf_names)
                 {
                     auto target = tmp_inlining_tree->get_target(f_name);
                     assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
                     SketchFunction* subf = get_env()->function_map.find(f_name)->second;
 
+                    //for every non-concretized hole in the subfunction
                     for(auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
                         if(it->get_name() != "#PC") {
                             if(target->get_var_store() != nullptr) {
+                                //a concratization must not exists
                                 assert(false);
                                 assert(!target->get_var_store()->contains(it->get_name()));
                             }
                             else
                             {
+                                //if a concretization doesn't exist
+                                //make sure that the rep knows that the hole is unconcretized
                                 string org_name = ((CTRL_node*)it)->get_original_name();
                                 assert(target->get_unconc_map().find(org_name) != target->get_unconc_map().end());
                                 assert(target->get_unconc_map().at(org_name).find(f_name) != target->get_unconc_map().at(org_name).end());
@@ -86,15 +94,19 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
                     tmp_inlining_tree->rename_var_store(*var_store);
                     var_store->check_rep();
 
-                    set<string> all_holes = get_deep_holes();
-                    for(const auto& it: all_holes) {
-                        assert(var_store->contains(it));
+                    for(const auto& it: get_deep_holes()) {
+                        AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
                     }
 
                 }
 
                 tmp_inlining_tree->concretize(this, var_store);
                 tmp_inlining_tree->clear();
+            }
+        } else {
+            //assert all holes are represented in var_store.
+            for(const auto& it: get_deep_holes()) {
+                AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
             }
         }
 
@@ -162,23 +174,34 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
 #endif
 
         rep = get_env()->function_map.concretize(
-                get_dag()->get_name(), var_store, var_type, inlined_functions);
+                get_dag_name(), var_store, var_type, inlined_functions);
 
         if(var_store != nullptr) {
             var_store->clear();
         }
-#ifndef REMOVE_SkVal
-        if (solution->get_sat_solver_result() == SAT_SATISFIABLE)
-#endif
-        {
+
+#ifdef REMOVE_SkVal
+        if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {
+            assert(get_dag()->get_failed_assert() != nullptr);
+        }
+#else
+        if (solution->get_sat_solver_result() == SAT_SATISFIABLE) {
             assert(get_dag()->getNodesByType(bool_node::UFUN).empty());
             assert(get_dag()->getNodesByType(bool_node::CTRL).empty());
         }
+#endif
 
         delete inlined_functions;
 
         return this;
     }
+}
+
+SketchFunction *SketchFunction::unit_clone_and_insert_in_function_map() {
+    SketchFunction *ret_clone = unit_clone();
+    assert(get_env()->function_map.find(ret_clone->get_dag_name()) == get_env()->function_map.end());
+    get_env()->function_map.insert(ret_clone->get_dag_name(), ret_clone);
+    return ret_clone;
 }
 
 SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
@@ -197,7 +220,7 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
         }
     }
 
-    const FMTL::TransformPrimitive * new_primitive = get_env()->function_map.clone(get_dag()->get_name(), cloned_dag->get_name());
+    const FMTL::TransformPrimitive * new_primitive = get_env()->function_map.clone(get_dag_name(), cloned_dag->get_name());
 
 #ifndef REMOVE_SkVal
     const SolverLanguagePrimitives::HoleAssignment* solution_clone = nullptr;
@@ -223,25 +246,15 @@ SketchFunction *SketchFunction::unit_clone(const string& explicit_name) {
 #ifndef REMOVE_SkVal
             solution_clone,
 #endif
-            replaced_labels, original_labels, new_primitive, responsibility, get_inlining_tree(false), get_has_been_concretized());
+            replaced_labels, original_labels, new_primitive, dependencies, get_inlining_tree(false), get_has_been_concretized());
 
 }
 
 void SketchFunction::core_clear(const string& dag_name)
 {
     assert(local_clear_id == global_clear_id);
+
     get_env()->function_map.erase(dag_name);
-
-
-    for(const auto& sk_it : get_env()->function_map)
-    {
-        auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
-        for(auto it_ufun : ufuns)
-        {
-            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
-            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
-        }
-    }
 
 #ifndef REMOVE_SkVal
     if (solution != nullptr) {
@@ -251,7 +264,10 @@ void SketchFunction::core_clear(const string& dag_name)
     }
 #endif
 
-    for(auto it: responsibility) {
+    for(auto it: dependencies) {
+        if(it.second->local_clear_id != global_clear_id) {
+            assert(get_env()->function_map.find(it.second->get_dag_name()) != get_env()->function_map.end());
+        }
         it.second->_clear();
     }
 
@@ -269,7 +285,7 @@ void SketchFunction::_clear()
         return;
     }
 
-    string dag_name = get_dag()->get_name();
+    string dag_name = get_dag_name();
 
     long long prev_global = global_clear_id;
     if(BooleanDagUtility::soft_clear()) {
@@ -282,14 +298,36 @@ void SketchFunction::_clear()
 }
 
 void SketchFunction::clear(){
+
+    //assert invai
+    for(const auto& sk_it : get_env()->function_map)
+    {
+        auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
+        for(auto it_ufun : ufuns)
+        {
+            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
+            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+        }
+    }
+
     global_clear_id++;
     _clear();
+
+    for(const auto& sk_it : get_env()->function_map)
+    {
+        auto ufuns = sk_it.second->get_dag()->getNodesByType(bool_node::UFUN);
+        for(auto it_ufun : ufuns)
+        {
+            string ufname = ((UFUN_node*)it_ufun)->get_ufname();
+            assert(get_env()->function_map.find(ufname) != get_env()->function_map.end());
+        }
+    }
 }
 
 void SketchFunction::clear_assert_num_shared_ptr_is_0() {
     global_clear_id++;
 
-    string dag_name = get_dag()->get_name();
+    string dag_name = get_dag_name();
 
     if(BooleanDagUtility::soft_clear_assert_num_shared_ptr_is_0()) {
         core_clear(dag_name);
@@ -298,21 +336,30 @@ void SketchFunction::clear_assert_num_shared_ptr_is_0() {
 
 
 void SketchFunction::replace(const string replace_this, const string with_this) {
+
+    if(get_dag_name() == "sketch_main__id14" && with_this == "composite_predicate__id91")
+    {
+        cout << "here" << endl;
+    }
+//    assert(with_this != get_dag_name());
+
     assert(new_way);
 
     AssertDebug(!is_inlining_tree_nonnull(), "TODO: when renaming, need to update inlining tree.");
     AssertDebug(!get_has_been_concretized(), "TODO: Implement ability to replace after concretizing.")
 
-
     assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
     if (replaced_labels.find(replace_this) == replaced_labels.end()) {
+
+        AssertDebug(false, "DEPRECIATED BC OF SET_DEPENDENCIES WHICH SHOULD HAPPEN AT INITIALIZATION (RIGHT AFTER CREATING OF FMAP).");
+
         AssertDebug(replaced_labels.find(replace_this) == replaced_labels.end(),
                     "If this happens, it means that you are replacing a label that has previously been replaced (used as 'replace_this'). Not yet handled.");
 
         assert(replaced_labels.find(replace_this) == replaced_labels.end());
 
-        rep = get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
+        rep = get_env()->function_map.replace_label_with_another(get_dag_name(), replace_this, with_this);
 
         assert(replaced_labels.find(replace_this) == replaced_labels.end());
 
@@ -326,20 +373,21 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
-    } else {
+    }
+    else {
         assert(replaced_labels.find(replace_this) != replaced_labels.end());
 
         if(replaced_labels[replace_this] == with_this){
             assert(get_dag_name() == with_this);
 
-            assert(responsibility.find(with_this) != responsibility.end());
+            assert(dependencies.find(with_this) != dependencies.end());
 
             //nothing to do.
             //replacing a label with itself in a self-recursive function.
             return;
         }
 
-        rep = get_env()->function_map.replace_label_with_another(get_dag()->get_name(), replace_this, with_this);
+        rep = get_env()->function_map.replace_label_with_another(get_dag_name(), replace_this, with_this);
         get_dag()->replace_label_with_another(replaced_labels[replace_this], with_this);
 
         assert(replaced_labels.find(replace_this) != replaced_labels.end());
@@ -351,14 +399,19 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
 
         auto dependency_it = get_env()->function_map.find(prev_dep_name);
         assert(dependency_it != get_env()->function_map.end());
-        assert(responsibility.find(prev_dep_name) != responsibility.end());
+        assert(dependencies.find(prev_dep_name) != dependencies.end());
 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
-        responsibility[prev_dep_name]->clear();
+//        assert(prev_dep_name != get_dag_name());
+//        increment_shared_ptr(); //necessary because the clear below might erase this.
+//        dependencies->clear(prev_dep_name);
+        dependencies.erase(prev_dep_name);
+
+//        decrement_shared_ptr_wo_clear(); //undoing the increment from above.
+
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
-        responsibility.erase(prev_dep_name);
 
         if(get_inlining_tree(false) != nullptr)
         {
@@ -378,24 +431,23 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
 
     auto dependency_it = get_env()->function_map.find(with_this);
     assert(dependency_it != get_env()->function_map.end());
-    assert(responsibility.find(with_this) == responsibility.end());
+    assert(dependencies.find(with_this) == dependencies.end());
 
     if (dependency_it->second != this){
         assert(dependency_it->second->get_dag_name() != get_dag_name());
-
-        responsibility[with_this] = dependency_it->second;
-        responsibility[with_this]->increment_shared_ptr();
+        dependencies.insert(with_this, dependency_it->second);
     }
     else {
-        responsibility[with_this] = dependency_it->second;
+        assert(dependency_it->second->get_dag_name() == get_dag_name());
+        dependencies.insert(with_this, dependency_it->second);
     }
 
     replaced_labels[replace_this] = with_this;
 }
 
 SketchFunction * SketchFunction::produce_get(const string& get_the_dag_under_this_varname) {
-//    cout << "in produce get " << get_dag()->get_name() <<" "<< get_the_dag_under_this_varname << endl;
-    return get_env()->function_map.produce_get(get_dag()->get_name(), get_the_dag_under_this_varname);
+//    cout << "in produce get " << get_dag_name() <<" "<< get_the_dag_under_this_varname << endl;
+    return get_env()->function_map.produce_get(get_dag_name(), get_the_dag_under_this_varname);
 }
 
 
@@ -451,15 +503,17 @@ void SketchFunction::set_mirror_rep(const FMTL::TransformPrimitive *_mirror_rep)
     mirror_rep = _mirror_rep;
 }
 
-SketchFunction* SketchFunction::deep_clone()
+SketchFunction* SketchFunction::deep_clone(bool only_tail)
 {
-    SketchFunction* ret = unit_clone();
-    ret->deep_clone_tail();
-    return ret;
-}
+//    assert(!only_tail);
+    if(false) {
+        auto ret = unit_clone();
 
-void SketchFunction::deep_clone_tail() {
+        assert(*get_inlined_functions() == *ret->get_inlined_functions());
 
+        ret->deep_clone_tail();
+        return ret;
+    }
     //first get all inlined functions
     //clone all inlined functions;
     //replace the name inside the inlined function with eachother's
@@ -495,23 +549,41 @@ void SketchFunction::deep_clone_tail() {
         }
     }
 
+    SketchFunction* clone_of_this = nullptr;
+
     bool entered_recursive_case = false;
     map<string, SketchFunction *> to_inline_skfuncs;
-    for (const string &inlined_function_name: *inlined_functions) {
-        if (inlined_function_name != get_dag()->get_name()) {
-            assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
-
-            to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->unit_clone();
-            assert(get_env()->function_map.find(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name()) == get_env()->function_map.end());
-            get_env()->function_map.insert(to_inline_skfuncs[inlined_function_name]->get_dag()->get_name(),
-                                           to_inline_skfuncs[inlined_function_name]);
-        } else {
-            entered_recursive_case = true;
-            assert(get_env()->function_map.find(get_dag()->get_name()) != get_env()->function_map.end());
-            to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name];
+    for (const string &_inlined_function_name: *inlined_functions) {
+        assert(get_env()->function_map.find(_inlined_function_name) != get_env()->function_map.end());
+        assert(to_inline_skfuncs.find(_inlined_function_name) == to_inline_skfuncs.end());
+        if(only_tail) {
+            if (_inlined_function_name != get_dag_name()) {
+                const string &to_clone_fname = _inlined_function_name;
+                to_inline_skfuncs[to_clone_fname] = get_env()->function_map[to_clone_fname]->unit_clone_and_insert_in_function_map();
+            } else {
+                assert(_inlined_function_name == get_dag_name());
+                entered_recursive_case = true;
+                to_inline_skfuncs[_inlined_function_name] = get_env()->function_map[_inlined_function_name];
+            }
+        }
+        else {
+            const string &to_clone_fname = _inlined_function_name;
+            if(get_dag_name() == _inlined_function_name)
+            assert(get_env()->function_map[to_clone_fname] == this);
+            to_inline_skfuncs[to_clone_fname] = get_env()->function_map[to_clone_fname]->unit_clone_and_insert_in_function_map();
+            if (_inlined_function_name == get_dag_name()) {
+                entered_recursive_case = true;
+                clone_of_this = to_inline_skfuncs[to_clone_fname];
+            }
         }
     }
 
+    if(entered_recursive_case) {
+        assert(to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end());
+    }
+    else {
+        assert(to_inline_skfuncs.find(get_dag_name()) == to_inline_skfuncs.end());
+    }
 
     assert(to_inline_skfuncs.size() == inlined_functions->size());
 
@@ -524,10 +596,28 @@ void SketchFunction::deep_clone_tail() {
 
     if (to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end()) {
         assert(entered_recursive_case);
-        assert(to_inline_skfuncs[get_dag_name()] == this);
+        if(only_tail) {
+            assert(to_inline_skfuncs[get_dag_name()] == this);
+        }
     } else {
         assert(!entered_recursive_case);
-        to_inline_skfuncs[get_dag_name()] = this;
+        assert(clone_of_this == nullptr);
+        if(only_tail)
+        {
+            to_inline_skfuncs[get_dag_name()] = this;
+        }
+        else {
+            const string &to_clone_fname = get_dag_name();
+            assert(to_inline_skfuncs.find(to_clone_fname) == to_inline_skfuncs.end());
+            to_inline_skfuncs[to_clone_fname] = unit_clone_and_insert_in_function_map();
+            clone_of_this = to_inline_skfuncs[to_clone_fname];
+        }
+    }
+
+    assert(to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end());
+
+    if(only_tail) {
+        assert(clone_of_this == nullptr);
     }
 
     //rename all the ufuns
@@ -544,17 +634,126 @@ void SketchFunction::deep_clone_tail() {
             string ufname = ufname_now_original.first;
             string original = ufname_now_original.second;
 
-            assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(to_inline_skfuncs[ufname]->get_dag()->get_name()) != to_inline_skfuncs[ufname]->get_env()->function_map.end());
+            assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(to_inline_skfuncs[ufname]->get_dag_name()) !=
+            to_inline_skfuncs[ufname]->get_env()->function_map.end());
 
             if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
                 AssertDebug(false, "this should fail here, it was checked before");
             } else {
                 SketchFunction* skfunc = skfunc_it.second;
-                skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag()->get_name());
+                skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
             }
         }
     }
 
+    if(only_tail) {
+        assert(clone_of_this == nullptr);
+    }
+
+    return clone_of_this;
+}
+
+void SketchFunction::deep_clone_tail() {
+    assert(deep_clone(true) == nullptr);
+    if(false) {
+        //depreciated by deep_clone(true)
+        //first get all inlined functions
+        //clone all inlined functions;
+        //replace the name inside the inlined function with eachother's
+
+        //assert that all the ufuns are represented in the function map
+        for (const auto &it: get_env()->function_map) {
+            for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+                assert(f != get_env()->function_map.end());
+            }
+        }
+
+        set <string> *inlined_functions = get_inlined_functions();
+
+        assert(inlined_functions != nullptr);
+
+        //assert that all that the previous operation hasn't corrupted the function map ufuns invariant
+        for (const auto &it: get_env()->function_map) {
+            for (auto ufun_it: it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+                assert(f != get_env()->function_map.end());
+            }
+        }
+
+        // assert that all the dags in the inlined functions have all the ufuns also in the inlined functions
+        for (const auto &inlined_f_name: *inlined_functions) {
+            auto it_f = get_env()->function_map.find(inlined_f_name);
+            assert(it_f != get_env()->function_map.end());
+            for (auto ufun_it: it_f->second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                auto f = get_env()->function_map.find(((UFUN_node *) ufun_it)->get_ufname());
+                assert(f != get_env()->function_map.end());
+                assert(inlined_functions->find(((UFUN_node *) ufun_it)->get_ufname()) != inlined_functions->end());
+            }
+        }
+
+        bool entered_recursive_case = false;
+        map < string, SketchFunction * > to_inline_skfuncs;
+        for (const string &inlined_function_name: *inlined_functions) {
+            if (inlined_function_name != get_dag_name()) {
+                assert(to_inline_skfuncs.find(inlined_function_name) == to_inline_skfuncs.end());
+
+                to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name]->unit_clone();
+                assert(get_env()->function_map.find(to_inline_skfuncs[inlined_function_name]->get_dag_name()) ==
+                       get_env()->function_map.end());
+                get_env()->function_map.insert(to_inline_skfuncs[inlined_function_name]->get_dag_name(),
+                                               to_inline_skfuncs[inlined_function_name]);
+            } else {
+                entered_recursive_case = true;
+                assert(get_env()->function_map.find(get_dag_name()) != get_env()->function_map.end());
+                to_inline_skfuncs[inlined_function_name] = get_env()->function_map[inlined_function_name];
+            }
+        }
+
+        assert(to_inline_skfuncs.size() == inlined_functions->size());
+
+        for (const auto &it: *inlined_functions) {
+            assert(to_inline_skfuncs.find(it) != to_inline_skfuncs.end());
+        }
+
+        delete inlined_functions;
+        inlined_functions = nullptr;
+
+        if (to_inline_skfuncs.find(get_dag_name()) != to_inline_skfuncs.end()) {
+            assert(entered_recursive_case);
+            assert(to_inline_skfuncs[get_dag_name()] == this);
+        } else {
+            assert(!entered_recursive_case);
+            to_inline_skfuncs[get_dag_name()] = this;
+        }
+
+        //rename all the ufuns
+        for (const auto &skfunc_it: to_inline_skfuncs) {
+            set <pair<string, string>> ufnames;
+
+            for (auto ufun_it: skfunc_it.second->get_dag()->getNodesByType(bool_node::UFUN)) {
+                string ufname = ((UFUN_node *) ufun_it)->get_ufname();
+                string original = ((UFUN_node *) ufun_it)->get_original_ufname();
+                ufnames.insert(make_pair(ufname, original));
+            }
+
+            for (const pair <string, string> &ufname_now_original: ufnames) {
+                string ufname = ufname_now_original.first;
+                string original = ufname_now_original.second;
+
+                assert(to_inline_skfuncs[ufname]->get_env()->function_map.find(
+                        to_inline_skfuncs[ufname]->get_dag_name()) !=
+                       to_inline_skfuncs[ufname]->get_env()->function_map.end());
+
+                if (to_inline_skfuncs.find(ufname) == to_inline_skfuncs.end()) {
+                    AssertDebug(false, "this should fail here, it was checked before");
+                } else {
+                    SketchFunction *skfunc = skfunc_it.second;
+                    skfunc->replace(original, to_inline_skfuncs[ufname]->get_dag_name());
+                }
+            }
+        }
+    }
 }
 
 set<string> SketchFunction::ufun_names() {
@@ -585,6 +784,35 @@ VarStore *SketchFunction::get_solution() {
 
     return ret;
 }
+
+void SketchFunction::set_dependencies(const FunctionMap* fmap) {
+    assert(dependencies.empty());
+    assert(replaced_labels.empty());
+    assert(original_labels.empty());
+    for(auto it: get_dag()->getNodesByType(bool_node::UFUN))
+    {
+        string ufun_name = ((UFUN_node*)it)->get_ufname();
+        if(dependencies.find(ufun_name) == dependencies.end()) {
+            assert(fmap->find(ufun_name) != fmap->end());
+            dependencies.insert(ufun_name, (*fmap)[ufun_name]);
+
+            assert(replaced_labels.find(ufun_name) == replaced_labels.end());
+            replaced_labels[ufun_name] = ufun_name;
+            assert(original_labels.find(ufun_name) == original_labels.end());
+            original_labels[ufun_name] = ufun_name;
+
+        }
+
+        else
+        {
+            assert(replaced_labels.find(ufun_name) != replaced_labels.end());
+            assert(replaced_labels[ufun_name] == ufun_name);
+            assert(original_labels.find(ufun_name) != original_labels.end());
+            assert(original_labels[ufun_name] == ufun_name);
+        }
+    }
+}
+
 #endif
 
 #include "SolverLanguageLexAndYaccHeader.h"
@@ -600,12 +828,14 @@ SL::VarVal* SketchFunctionEvaluator::eval(SketchFunction *skfunc,
     bool new_clone = false;
 
     assert(skfunc->get_has_been_concretized());
+    AssertDebug(skfunc->get_dag()->get_failed_assert() == nullptr, "YOU CAN'T EVALUATE A SKFUNC THAT HAS A FAILING ASSERT BEFORE EVEN PASSING THE INPUT.");
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
     assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 
     if (skfunc->get_has_been_concretized()) {
         the_dag = skfunc->get_dag();
     } else {
+        AssertDebug(false, "You could support this. If the dag wasn't concretized, then inline it and see if it's evaluable.")
         the_dag = skfunc->get_dag()->clone();
         new_clone = true;
         skfunc->get_env()->doInline(*the_dag);
@@ -709,6 +939,7 @@ SL::VarVal *SketchFunctionEvaluator::new_passes(SketchFunction *skfunc,
     }
 
     assert(skfunc->get_has_been_concretized());
+    assert(skfunc->get_dag()->get_failed_assert() == nullptr);
     assert(skfunc->get_dag()->getNodesByType(bool_node::CTRL).empty());
     assert(skfunc->get_dag()->getNodesByType(bool_node::UFUN).empty());
 

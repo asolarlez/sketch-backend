@@ -78,6 +78,11 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
     bool is_root = visited->empty();
     assert(visited->find(get_dag_id()) == visited->end());
 
+//    if(_skfunc->get_dag_name() == "printf")
+//    {
+//        cout << "here" << endl
+//    }
+
     (*visited)[get_dag_id()] = this;
 
     auto ufun_nodes = _skfunc->get_dag()->getNodesByType(bool_node::UFUN);
@@ -189,7 +194,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
             }
         }
         if(!is_root && !has_been_concretized) {
-            skfunc->produce_concretization(var_store, bool_node::CTRL, false, false);
+            skfunc->produce_concretization(var_store, bool_node::CTRL, false, false, false);
         }
     }
 

@@ -17,14 +17,14 @@ const TransformPrimitive * FunctionMapTransformer::concretize(const string &func
     add_parent(new_primitive, function_name, true);
     if(sub_functions != nullptr) {
         for (const auto &it: *sub_functions) {
-            if(root_dag_reps[it]->get_meta_type() != _concretize && it != function_name)
+            if(root_dag_reps[it]->get_meta_type() != _make_executable && it != function_name)
             {
                 bool ok = false;
                 auto at = root_dag_reps[it];
                 while(at != nullptr)
                 {
                     at = at->get_main_parent();
-                    if(at->get_meta_type() == _concretize)
+                    if(at->get_meta_type() == _make_executable)
                     {
                         ok = true;
                         break;
@@ -459,7 +459,7 @@ TransformPrimitive * TransformPrimitive::find_underlying_function(const string &
 SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_this_dag, const string &under_this_var,
                                                              const FunctionMapTransformer *root) const  {
     switch (meta_type) {
-        case _concretize: {
+        case _make_executable: {
             for (const auto &parent_it: parents) {
                 if (parent_it.first == to_this_dag) {
                     auto parent = parent_it.second;
@@ -635,8 +635,8 @@ void check_that_all_dependencies_are_there(SketchFunction* almost_ret, ProgramEn
     for(const auto& replace_it : almost_ret->get_replace_map()) {
         assert(it->second->get_parents().find(replace_it.second) != it->second->get_parents().end());
         assert(original_env->function_map.find(replace_it.second) != original_env->function_map.end());
-        assert(almost_ret->get_responsibilities().find(replace_it.second) != almost_ret->get_responsibilities().end());
-        check_that_all_dependencies_are_there(almost_ret->get_responsibilities().find(replace_it.second)->second, original_env, false);
+        assert(almost_ret->get_dependencies().find(replace_it.second) != almost_ret->get_dependencies().end());
+        check_that_all_dependencies_are_there(almost_ret->get_dependencies().find(replace_it.second)->second, original_env, false);
     }
 }
 
@@ -686,11 +686,11 @@ void add_dependencies_to_original_env(SketchFunction* almost_ret, ProgramEnviron
     }
 
     if(!almost_ret->get_replace_map().empty()) {
-        assert(almost_ret->get_responsibilities().empty());
+        assert(almost_ret->get_dependencies().empty());
         for(const auto& it: almost_ret->get_replace_map()) {
-            almost_ret->add_responsibility(new_env->function_map[it.second]);
+            almost_ret->add_dependency(new_env->function_map[it.second]);
         }
-        for(const auto& it: almost_ret->get_responsibilities()) {
+        for(const auto& it: almost_ret->get_dependencies()) {
             add_dependencies_to_original_env(it.second, new_env, original_env, false);
         }
     }
@@ -833,7 +833,7 @@ SketchFunction *TransformPrimitive::reconstruct_sketch_function(const FunctionMa
 
     switch (meta_type) {
 
-        case _concretize: {
+        case _make_executable: {
             auto ret = main_parent->reconstruct_sketch_function(root, new_env);
             assert(ret->get_env() == new_env);
             for (const auto &it_parent: parents) {
