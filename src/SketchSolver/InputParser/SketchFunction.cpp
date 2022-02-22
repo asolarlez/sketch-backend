@@ -273,13 +273,13 @@ void SketchFunction::core_clear(const string& dag_name)
 
 long long SketchFunction::global_clear_id = 0;
 
-void SketchFunction::_clear()
+bool SketchFunction::_clear()
 {
     if(local_clear_id != global_clear_id) {
         local_clear_id = global_clear_id;
     }
     else {
-        return;
+        return false;
     }
 
     string dag_name = get_dag_name();
@@ -288,9 +288,17 @@ void SketchFunction::_clear()
     if(BooleanDagUtility::soft_clear()) {
         assert(prev_global == global_clear_id);
         core_clear(dag_name);
+        return true;
     }
     else {
         local_clear_id = -1;
+        if(dependencies.has(dag_name) && get_num_shared_ptr() == 1) {
+            assert(dependencies.at(dag_name) == this);
+            bool ret = _clear();
+            assert(ret);
+            return ret;
+        }
+        return false;
     }
 }
 
@@ -369,7 +377,9 @@ void SketchFunction::replace(const string replace_this, const string with_this) 
 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 
+        increment_shared_ptr(); // need this bc the instruction bellow might erase it otherwise.
         dependencies.erase(prev_dep_name);
+        decrement_shared_ptr_wo_clear(); // need this bc the instruction bellow might erase it otherwise.
 
         assert(get_env()->function_map.find(with_this) != get_env()->function_map.end());
 

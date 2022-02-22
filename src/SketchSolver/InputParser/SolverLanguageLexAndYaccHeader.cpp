@@ -407,7 +407,6 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
 //            harness->get_inlining_tree()->get_solution()->check_rep();
 
-
             harness->increment_shared_ptr();
             param_var_val->decrement_shared_ptr();
 

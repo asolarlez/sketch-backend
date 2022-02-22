@@ -55,6 +55,11 @@ class SketchFunction: public BooleanDagUtility
             val->increment_shared_ptr();
         }
 
+        auto at(const string& key) const {
+            assert(has(key));
+            return map<string, SketchFunction *>::at(key);
+        }
+
         auto begin() const {
             return map<string, SketchFunction *>::begin();
         }
@@ -165,7 +170,7 @@ public:
     void deep_clone_tail();
 
     void clear() override;
-    void _clear();
+    bool _clear();
 
     VarStore* get_solution_var_store()
     {
