@@ -25,115 +25,90 @@ set<string> SketchFunction::get_deep_holes(){
     return ret;
 }
 
-
 SketchFunction *SketchFunction::produce_concretization(
         const VarStore* _var_store, const bool_node::Type var_type, const bool do_clone, const bool do_deep_clone_tail, const bool do_recursive_concretize) {
 
-    assert(do_clone || do_deep_clone_tail);
-    assert(do_recursive_concretize);
-
-    VarStore* var_store = nullptr;
-    if(_var_store != nullptr) {
-        assert(_var_store->check_rep());
-        var_store = new VarStore(*_var_store);
-        assert(var_store->check_rep());
-    }
-
-    SketchFunction* ret = nullptr;
-
     if(do_clone) {
         assert(do_deep_clone_tail);
-        ret = deep_clone();
+        SketchFunction* the_clone = deep_clone();
 //        SketchFunction* the_clone = unit_clone();
+        the_clone->increment_shared_ptr();
+        the_clone->produce_concretization(_var_store, var_type, false, false, do_recursive_concretize);
+        the_clone->decrement_shared_ptr_wo_clear();
+        return the_clone;
     }
     else {
-        ret = this;
-        if (do_deep_clone_tail) {
+
+        VarStore* var_store = nullptr;
+
+        if(_var_store != nullptr) {
+            assert(_var_store->check_rep());
+            var_store = new VarStore(*_var_store);
+            assert(var_store->check_rep());
+        }
+
+        if(do_deep_clone_tail) {
             deep_clone_tail();
         }
-    }
+        if(do_recursive_concretize){
+            if(var_type == bool_node::CTRL) {
+                LightInliningTree *tmp_inlining_tree = new LightInliningTree(this);
 
-    ret->increment_shared_ptr();
+                set<string>* subf_names = get_inlined_functions();
 
-    ret->_inplace_recursive_concretize(var_store, var_type, do_recursive_concretize);
+                //for every subfunction
+                for(const auto& f_name: *subf_names)
+                {
+                    auto target = tmp_inlining_tree->get_target(f_name);
+                    assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
+                    SketchFunction* subf = get_env()->function_map.find(f_name)->second;
 
-    ret->decrement_shared_ptr_wo_clear();
-
-    if(var_store != nullptr) {
-        var_store->clear();
-    }
-
-    return ret;
-
-}
-
-SketchFunction *SketchFunction::_inplace_recursive_concretize(
-        VarStore* var_store, const bool_node::Type var_type, bool do_recursive_concretize) {
-    if (do_recursive_concretize) {
-        if (var_type == bool_node::CTRL) {
-            LightInliningTree *tmp_inlining_tree = new LightInliningTree(this);
-
-            set<string> *subf_names = get_inlined_functions();
-
-            //for every subfunction
-            for (const auto &f_name: *subf_names) {
-                auto target = tmp_inlining_tree->get_target(f_name);
-                assert(get_env()->function_map.find(f_name) != get_env()->function_map.end());
-                SketchFunction *subf = get_env()->function_map.find(f_name)->second;
-
-                //for every non-concretized hole in the subfunction
-                for (auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
-                    if (it->get_name() != "#PC") {
-                        if (target->get_var_store() != nullptr) {
-                            //a concratization must not exists
-                            assert(false);
-                            assert(!target->get_var_store()->contains(it->get_name()));
-                        } else {
-                            //if a concretization doesn't exist
-                            //make sure that the rep knows that the hole is unconcretized
-                            string org_name = ((CTRL_node *) it)->get_original_name();
-                            assert(target->get_unconc_map().find(org_name) != target->get_unconc_map().end());
-                            assert(target->get_unconc_map().at(org_name).find(f_name) !=
-                                   target->get_unconc_map().at(org_name).end());
-                            assert(target->get_unconc_map().at(org_name).at(f_name) == it->get_name());
+                    //for every non-concretized hole in the subfunction
+                    for(auto it: subf->get_dag()->getNodesByType(bool_node::CTRL)) {
+                        if(it->get_name() != "#PC") {
+                            if(target->get_var_store() != nullptr) {
+                                //a concratization must not exists
+                                assert(false);
+                                assert(!target->get_var_store()->contains(it->get_name()));
+                            }
+                            else
+                            {
+                                //if a concretization doesn't exist
+                                //make sure that the rep knows that the hole is unconcretized
+                                string org_name = ((CTRL_node*)it)->get_original_name();
+                                assert(target->get_unconc_map().find(org_name) != target->get_unconc_map().end());
+                                assert(target->get_unconc_map().at(org_name).find(f_name) != target->get_unconc_map().at(org_name).end());
+                                assert(target->get_unconc_map().at(org_name).at(f_name) == it->get_name());
+                            }
                         }
                     }
                 }
-            }
 
-            if (var_store != nullptr) {
-                var_store->check_rep();
-                assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
+                if(var_store != nullptr) {
+                    var_store->check_rep();
+                    assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
 //                    cout << "tmp_inlining_tree" << endl;
 //                    tmp_inlining_tree->print();
-                var_store->check_rep();
-                tmp_inlining_tree->rename_var_store(*var_store);
-                var_store->check_rep();
+                    var_store->check_rep();
+                    tmp_inlining_tree->rename_var_store(*var_store);
+                    var_store->check_rep();
 
-                for (const auto &it: get_deep_holes()) {
-                    AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
+                    for(const auto& it: get_deep_holes()) {
+                        AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
+                    }
+
                 }
+
+                tmp_inlining_tree->concretize(this, var_store);
+                tmp_inlining_tree->clear();
             }
-
-            tmp_inlining_tree->concretize(this, var_store);
-            tmp_inlining_tree->clear();
+        } else {
+            //assert all holes are represented in var_store.
+            for(const auto& it: get_deep_holes()) {
+                AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
+            }
         }
-    }
-    else {
-        //assert all holes are represented in var_store.
-        for (const auto &it: get_deep_holes()) {
-            AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
-        }
-    }
 
-    _inplace_concretize(var_store, var_type);
-
-}
-
-SketchFunction *SketchFunction::_inplace_concretize(
-        const VarStore* var_store, const bool_node::Type var_type) {
-
-    {
         vector<string> *inlined_functions = nullptr;
 
         bool prev_has_been_concretized = get_has_been_concretized();
@@ -200,9 +175,9 @@ SketchFunction *SketchFunction::_inplace_concretize(
         rep = get_env()->function_map.concretize(
                 get_dag_name(), var_store, var_type, inlined_functions);
 
-//        if(var_store != nullptr) {
-//            var_store->clear();
-//        }
+        if(var_store != nullptr) {
+            var_store->clear();
+        }
 
 #ifdef REMOVE_SkVal
         if(!get_dag()->getNodesByType(bool_node::UFUN).empty() || !get_dag()->getNodesByType(bool_node::CTRL).empty()) {

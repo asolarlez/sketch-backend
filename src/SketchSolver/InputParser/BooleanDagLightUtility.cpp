@@ -111,11 +111,11 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
 #else
                     it.second->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = it.second;
+                    var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited);
 #endif
                 }
                 else
                 {
-//                    (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
                 }
             }
@@ -138,7 +138,6 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                 if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
                     assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
                 } else {
-//                    (*visited)[sub_dag->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
                 }
             }
@@ -199,7 +198,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
             }
         }
         if(!is_root && !has_been_concretized) {
-            skfunc->_inplace_concretize(var_store, bool_node::CTRL);
+            skfunc->produce_concretization(var_store, bool_node::CTRL, false, false, false);
         }
     }
 
@@ -374,6 +373,19 @@ bool LightInliningTree::match_topology(const LightInliningTree *other) const
 {
     TopologyMatcher topology_matcher(this, other);
     return true;
+}
+
+void LightInliningTree::populate_and_assert_not_visited(map<int, LightInliningTree *> *visited) {
+    assert(visited->find(get_dag_id()) == visited->end());
+    (*visited)[get_dag_id()] = this;
+    for(auto it: var_name_to_inlining_subtree) {
+        if(visited->find(it.second->get_dag_id()) == visited->end()) {
+            it.second->populate_and_assert_not_visited(visited);
+        }
+        else {
+            assert(it.second == visited->find(it.second->get_dag_id())->second);
+        }
+    }
 }
 
 long long LightSkFuncSetter::inlining_tree_global_id = 0;

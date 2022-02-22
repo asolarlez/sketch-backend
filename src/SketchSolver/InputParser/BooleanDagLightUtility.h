@@ -333,7 +333,6 @@ public:
             if (visited->find(it.second->get_dag_id()) == visited->end()) {
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
             } else {
-//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
@@ -344,6 +343,8 @@ public:
     }
 
     explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>());
+
+    void populate_and_assert_not_visited(map<int, LightInliningTree *> *visited);
 
     LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy,
                       map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
@@ -362,10 +363,10 @@ public:
 #else
                 it.second->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = it.second;
+                var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited);
 #endif
             }
             else {
-//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
