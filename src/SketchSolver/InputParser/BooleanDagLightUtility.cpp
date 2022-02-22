@@ -76,7 +76,7 @@ void LightInliningTree::
     if(is_root) delete visited;
 }
 
-LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, LightInliningTree*>* visited): LightSkFuncSetter(_skfunc) {
+LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, LightInliningTree*>* visited, set<LightInliningTree*>* not_owned): LightSkFuncSetter(_skfunc) {
     bool is_root = visited->empty();
     assert(visited->find(get_dag_id()) == visited->end());
 
@@ -109,15 +109,18 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
 #ifndef NO_CLONE_INLINING_TREE
                     var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
 #else
-                    it.second->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = it.second;
-                    var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited);
+                    var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
+                    assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
+                    it.second->increment_num_shared_ptr();
 #endif
                 }
                 else
                 {
-//                    (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
+                    if(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end()) {
+                        var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                    }
                 }
             }
         }
@@ -139,8 +142,10 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                 if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
                     assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
                 } else {
-//                    (*visited)[sub_dag->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
+                    if(not_owned->find(var_name_to_inlining_subtree[var_name]) != not_owned->end()) {
+                        var_name_to_inlining_subtree[var_name]->increment_num_shared_ptr();
+                    }
                 }
             }
         }
@@ -149,6 +154,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
     get_solution();
     if(is_root){
         delete visited;
+        delete not_owned;
     }
 }
 
@@ -377,12 +383,14 @@ bool LightInliningTree::match_topology(const LightInliningTree *other) const
     return true;
 }
 
-void LightInliningTree::populate_and_assert_not_visited(map<int, LightInliningTree *> *visited) {
+void LightInliningTree::populate_and_assert_not_visited(map<int, LightInliningTree *> *visited, set<LightInliningTree *> *not_owned) {
     assert(visited->find(get_dag_id()) == visited->end());
+    assert(not_owned->find(this) == not_owned->end());
     (*visited)[get_dag_id()] = this;
-    for(auto it: var_name_to_inlining_subtree) {
+    not_owned->insert(this);
+    for(const auto& it: var_name_to_inlining_subtree) {
         if(visited->find(it.second->get_dag_id()) == visited->end()) {
-            it.second->populate_and_assert_not_visited(visited);
+            it.second->populate_and_assert_not_visited(visited, not_owned);
         }
         else {
             assert(it.second == visited->find(it.second->get_dag_id())->second);

@@ -323,7 +323,9 @@ public:
 
     explicit LightInliningTree(
             const LightInliningTree* to_copy,
-            map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
+            map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
+            set<LightInliningTree *> *not_owned = new set<LightInliningTree *>()
+    ):
             LightSkFuncSetter(to_copy)
     {
         bool is_root = visited->empty();
@@ -340,15 +342,18 @@ public:
         assert_nonnull();
         if (is_root) {
             delete visited;
+            delete not_owned;
         }
     }
 
-    explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>());
+    explicit LightInliningTree(const BooleanDagUtility* _skfunc, map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
+                               set<LightInliningTree *> *not_owned = new set<LightInliningTree *>());
 
-    void populate_and_assert_not_visited(map<int, LightInliningTree *> *visited);
+    void populate_and_assert_not_visited(map<int, LightInliningTree *> *visited, set<LightInliningTree*>* not_owned);
 
     LightInliningTree(const BooleanDagUtility *to_replace_root, const LightInliningTree *to_copy,
-                      map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>()):
+                      map<int, LightInliningTree *> *visited = new map<int, LightInliningTree *>(),
+                      set<LightInliningTree *> *not_owned = new set<LightInliningTree *>()):
         LightSkFuncSetter(to_replace_root)
     {
         bool is_root = visited->empty();
@@ -362,17 +367,24 @@ public:
 #ifndef NO_CLONE_INLINING_TREE
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
 #else
-                it.second->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = it.second;
-                var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited);
+                var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
+                assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
+                it.second->increment_num_shared_ptr();
 #endif
             }
             else {
-//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
+                if(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end()) {
+                    var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
+                }
             }
         }
-        if(is_root) delete visited;
+        if(is_root)
+        {
+            delete visited;
+            delete not_owned;
+        }
     }
 
     bool assert_nonnull(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const {
@@ -380,7 +392,7 @@ public:
         assert(visited->find(this) == visited->end());
         visited->insert(this);
         assert(LightSkFuncSetter::assert_nonnull());
-        for(auto it: var_name_to_inlining_subtree)
+        for(const auto& it: var_name_to_inlining_subtree)
         {
             assert(it.second != nullptr);
             if(visited->find(it.second) == visited->end())
