@@ -31,7 +31,7 @@ public:
     static int max_count;
     long long int get_tree_id() const;
 private:
-    int inlining_tree_id = -1;
+    long long inlining_tree_id = -1;
     mutable bool cleared = false;
     mutable int num_shared_ptr = 1;
 
@@ -98,7 +98,7 @@ protected:
     int _get_num_unconcretized_holes() const
     {
         int size = 0;
-        for(auto it: unconc_hole_original_name_to_name)
+        for(const auto& it: unconc_hole_original_name_to_name)
         {
             assert(!it.second.empty());
             size+=it.second.size();
@@ -107,7 +107,7 @@ protected:
     }
 
     bool contains_var(
-            const string &name, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
+            const string &name, int nbits, OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
     {
         assert(get_dag_name() == source_dag_name);
         assert(type == bool_node::CTRL);
@@ -155,7 +155,7 @@ protected:
     }
 
     bool set_var_val(
-            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, string original_name, string source_dag_name) const
+            const string &name, int val, int nbits, OutType *otype, bool_node::Type type, const string& original_name, const string& source_dag_name) const
     {
         assert(contains_var(name, nbits, otype, type, original_name, source_dag_name));
         var_store->setVarVal(name, val, otype, type);
@@ -388,46 +388,15 @@ public:
         return true;
     }
 
-    bool match_topology(
-            const LightInliningTree *other,
-            set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(),
-            set<const LightInliningTree*> *other_visited = new set<const LightInliningTree*>()) const
-    {
-        assert(visited->empty() == other_visited->empty());
-        bool is_root = visited->empty();
+    bool match_topology(const LightInliningTree *other) const;
 
-        assert_nonnull();
-        other->assert_nonnull();
+//    const LightInliningTree *
+//    get_corresponding(const string &target_dag_name, const LightInliningTree *in_this_tree) const {
+//        TopologyMatcher topology_matcher(this, in_this_tree);
+//        return topology_matcher.get_corresponding(target_dag_name);
+//    }
 
-        assert(visited->size() == other_visited->size());
-        assert(visited->find(this) == visited->end());
-        visited->insert(this);
-        assert(other_visited->find(other) == other_visited->end());
-        other_visited->insert(other);
-        assert(visited->size() == other_visited->size());
-
-        for(const auto& it: var_name_to_inlining_subtree)
-        {
-            if(visited->find(it.second) == visited->end()) {
-                assert(other->get_var_name_to_inlining_subtree().find(it.first) != other->get_var_name_to_inlining_subtree().end());
-                assert(other_visited->find(other->get_var_name_to_inlining_subtree().at(it.first)) == other_visited->end());
-                assert(it.second->match_topology(other->get_var_name_to_inlining_subtree().at(it.first), visited, other_visited));
-            }
-            else {
-                assert(other->get_var_name_to_inlining_subtree().find(it.first) != other->get_var_name_to_inlining_subtree().end());
-                assert(other_visited->find(other->get_var_name_to_inlining_subtree().at(it.first)) != other_visited->end());
-            }
-        }
-
-        if(is_root)
-        {
-            delete visited;
-            delete other_visited;
-        }
-        return true;
-    }
-
-    vector<string>* _find(const string& target_dag, bool find_any_path, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const
+    vector<string>* _find(const string& target_dag, bool assert_at_most_one_path, set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const
     {
         bool is_root = visited->empty();
         assert(visited->find(this) == visited->end());
@@ -461,13 +430,13 @@ public:
         else {
             for(const auto& it: var_name_to_inlining_subtree)  {
                 if(visited->find(it.second) == visited->end()) {
-                    vector<string>* tmp_ret = it.second->_find(target_dag, find_any_path);
+                    vector<string>* tmp_ret = it.second->_find(target_dag, assert_at_most_one_path);
                     if(tmp_ret != nullptr) {
                         AssertDebug(ret == nullptr, "IF THIS IS TRIGGERED, IT MEANS THAT THERE ARE MULTIPLE PATHS TO target_dag ("+target_dag+"). FIGURE OUT WHAT TO DO IN THIS CASE. PROBABLY MORE ASSERTS NEED TO BE ADDED WHERE THIS RESULT IS USED IN ORDER TO MAKE SURE THE USER KNOWS WHAT THEY ARE DOING. POSSIBLY NEED TO RETURN ALL PATHS.");
                         tmp_ret->push_back(it.first);
                         ret = tmp_ret;
                         head_str = it.first;
-                        if(find_any_path) {
+                        if(!assert_at_most_one_path) {
                             break;
                         }
                     }
@@ -482,11 +451,11 @@ public:
 
 
     const vector<string>* find(const string& target_dag) const {
-        return _find(target_dag, false);
+        return _find(target_dag, true);
     }
 
     const vector<string>* find_any_path(const string& target_dag) const {
-        return _find(target_dag, true);
+        return _find(target_dag, false);
     }
 
     virtual const LightInliningTree *get_sub_inlining_tree(const string &under_this_name) const {
@@ -569,13 +538,74 @@ public:
         }
     }
 
-
     bool has_no_holes(set<const LightInliningTree*>* visited = new set<const LightInliningTree*>()) const;
 
     void concretize(SketchFunction* skfunc, const VarStore * const var_store, set<int>* visited = new set<int>()) const;
 
-    void rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree, set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(), const LightInliningTree *root = nullptr) const;
+    void rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree = nullptr, set<const LightInliningTree*> *visited = new set<const LightInliningTree*>(), const TopologyMatcher* topology_matcher = nullptr) const;
 };
+
+
+class TopologyMatcher{
+
+    map<const LightInliningTree *, const LightInliningTree *> visited = map<const LightInliningTree *, const LightInliningTree *>();
+    map<const LightInliningTree *, const LightInliningTree *> other_visited = map<const LightInliningTree *, const LightInliningTree *>();
+
+    bool match_topology(
+            const LightInliningTree *this_, const LightInliningTree *other) {
+        assert(visited.empty() == other_visited.empty());
+        bool is_root = visited.empty();
+
+        this_->assert_nonnull();
+        other->assert_nonnull();
+
+        assert(visited.size() == other_visited.size());
+        assert(visited.find(this_) == visited.end());
+        assert(other_visited.find(other) == other_visited.end());
+        visited[this_] = other;
+        other_visited[other] = this_;
+        assert(visited.size() == other_visited.size());
+
+        for (const auto &it: this_->get_var_name_to_inlining_subtree()) {
+            if (visited.find(it.second) == visited.end()) {
+                assert(other->get_var_name_to_inlining_subtree().find(it.first) !=
+                       other->get_var_name_to_inlining_subtree().end());
+                assert(other_visited.find(other->get_var_name_to_inlining_subtree().at(it.first)) ==
+                       other_visited.end());
+                assert(match_topology(it.second, other->get_var_name_to_inlining_subtree().at(it.first)));
+            } else {
+                assert(other->get_var_name_to_inlining_subtree().find(it.first) !=
+                       other->get_var_name_to_inlining_subtree().end());
+                assert(other_visited.find(other->get_var_name_to_inlining_subtree().at(it.first)) !=
+                       other_visited.end());
+            }
+        }
+
+        return true;
+    }
+    const LightInliningTree* this_ = nullptr;
+    const LightInliningTree* other = nullptr;
+public:
+
+    TopologyMatcher(const LightInliningTree* _this_, const LightInliningTree *_other): this_(_this_), other(_other) {
+        assert(match_topology(this_, other));
+    }
+
+    const LightInliningTree* get_corresponding(const string& target_dag_name) const {
+        const LightInliningTree* to_this = this_->get_target(target_dag_name);
+        assert(visited.find(to_this) != visited.end());
+        return visited.at(to_this);
+    }
+
+    const LightInliningTree* get_this_() const {
+        return this_;
+    }
+
+    const LightInliningTree* get_other() const {
+        return other;
+    }
+};
+
 
 class BooleanDagLightUtility
 {
@@ -583,7 +613,7 @@ class BooleanDagLightUtility
     ProgramEnvironment* env = nullptr;
     mutable int shared_ptr = 0;
     const string& dag_name;
-    const int dag_id;
+    const long long dag_id;
 
 public:
 
@@ -605,7 +635,7 @@ public:
         assert(root_dag != nullptr);
     }
 
-    set<string>* get_inlined_functions(set<string>* ret = new set<string>());
+    set<string>* get_inlined_functions(set<string>* ret = new set<string>()) const;
 
     BooleanDAG* get_dag() const {
         return root_dag;

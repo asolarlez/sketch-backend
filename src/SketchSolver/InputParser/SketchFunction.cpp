@@ -83,7 +83,7 @@ SketchFunction *SketchFunction::produce_concretization(const VarStore* _var_stor
 //                    cout << "tmp_inlining_tree" << endl;
 //                    tmp_inlining_tree->print();
                     var_store->check_rep();
-                    tmp_inlining_tree->rename_var_store(*var_store, var_store->get_inlining_tree());
+                    tmp_inlining_tree->rename_var_store(*var_store);
                     var_store->check_rep();
 
                     set<string> all_holes = get_deep_holes();

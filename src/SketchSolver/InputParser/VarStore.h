@@ -28,6 +28,7 @@ int intFromBV(T& bv, int start, int nbits){
 }
 
 class LightInliningTree;
+class TopologyMatcher;
 //class InliningTree;
 //class BooleanDagUtility;
 // VarStore -- Keeps the mapping of node in the DAG vs its value.
@@ -470,7 +471,7 @@ private:
 
 
 public:
-    void rename(const string &original_name, const string& new_source_dag, const string &new_name, const LightInliningTree *new_inlining_tree, string& prev_source_dag_name);
+    void rename(const string &original_name, const string& new_source_dag, const string &new_name, const TopologyMatcher *new_inlining_tree, string& prev_source_dag_name);
     void rename(const objP& obj, const string &new_name, const string& new_source_dag);
 
     map<string, SynthInSolver*> synths;

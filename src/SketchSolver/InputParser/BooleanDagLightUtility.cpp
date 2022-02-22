@@ -7,7 +7,7 @@
 bool BooleanDagLightUtility::soft_clear_assert_num_shared_ptr_is_0()
 {
     assert(shared_ptr == 0);
-    int prev_num = BooleanDAG::get_allocated().size();
+    size_t prev_num = BooleanDAG::get_allocated().size();
     assert(root_dag != nullptr);
     root_dag->clear();
     assert(prev_num - 1 == BooleanDAG::get_allocated().size());
@@ -26,7 +26,7 @@ int BooleanDagLightUtility::count_passing_inputs(File *file) {
         BooleanDagLightUtility* _dag = produce_concretization(file->at(i), bool_node::SRC);
         _dag->increment_shared_ptr();
         auto dag = _dag->get_dag();
-        assert(dag->getNodesByType(bool_node::CTRL).size() == 0);
+        assert(dag->getNodesByType(bool_node::CTRL).empty());
         assert((dag->size() == 0) == (dag->get_failed_assert() == nullptr));
         if(dag->get_failed_assert() == nullptr) {
             ret += 1;
@@ -38,9 +38,9 @@ int BooleanDagLightUtility::count_passing_inputs(File *file) {
 
 #include "SketchFunction.h"
 
-set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) {
+set<string> *BooleanDagLightUtility::get_inlined_functions(set<string> *ret) const {
     for(auto node_it: get_dag()->getNodesByType(bool_node::UFUN)) {
-        UFUN_node* ufun_it = (UFUN_node*)node_it;
+        auto* ufun_it = (UFUN_node*)node_it;
         string ufname = ufun_it->get_ufname();
         if(ret->find(ufname) == ret->end()) {
             ret->insert(ufname);
@@ -232,14 +232,21 @@ void LightInliningTree::print(int ntabs, set<const LightInliningTree*>* visited)
     if(is_root) delete visited;
 }
 
-void LightInliningTree::rename_var_store(VarStore &var_store, const LightInliningTree* var_store_inlining_tree, set<const LightInliningTree*>* visited, const LightInliningTree *root) const {
+void LightInliningTree::rename_var_store(VarStore &var_store, const LightInliningTree* var_store_sub_inlining_tree, set<const LightInliningTree*>* visited, const TopologyMatcher* topology_matcher) const {
 
-    bool is_root = false;
-    if(root == nullptr)
-    {
-        assert(visited->empty());
+    bool is_root = visited->empty();
+    if(is_root) {
+        assert(var_store_sub_inlining_tree == nullptr);
+        assert(topology_matcher == nullptr);
         is_root = true;
-        root = this;
+        var_store_sub_inlining_tree = var_store.get_inlining_tree();
+        topology_matcher = new TopologyMatcher(this, var_store_sub_inlining_tree);
+    }
+    else {
+        assert(!visited->empty());
+        assert(var_store_sub_inlining_tree != nullptr);
+        assert(topology_matcher != nullptr);
+        //TODO: can assert that the inlining tree corresponding to this one in var_store.inlining_tree is the same as var_store_sub_inlining_tree
     }
 
     assert(visited->find(this) == visited->end());
@@ -276,7 +283,8 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
 
             string prev_name;
 
-            var_store.rename(original_name, subdag_name, new_name, (LightInliningTree *) root, prev_name);
+            var_store.rename(original_name, subdag_name, new_name, topology_matcher, prev_name);
+            assert(!prev_name.empty());
             if (prev_name_to_new_name.find(prev_name) == prev_name_to_new_name.end()) {
                 prev_name_to_new_name[prev_name] = subdag_name;
             } else {
@@ -290,24 +298,25 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
     assert(prev_name_to_new_name.size() <= 1);
     if(!prev_name_to_new_name.empty()) {
         assert(prev_name_to_new_name.size() == 1);
-        assert(var_store_inlining_tree->get_dag_name() == prev_name_to_new_name.begin()->first);
+        assert(var_store_sub_inlining_tree->get_dag_name() == prev_name_to_new_name.begin()->first);
         assert(get_dag_name() == prev_name_to_new_name.begin()->second);
         for(const auto& it: prev_name_to_new_name){
             var_store.rename_subdag(it.first, it.second);
         }
-        var_store.change_id(var_store_inlining_tree->get_dag_name(), get_dag_id());
+        //TODO: optimize this, doesn't need to go though var_store.change_id bc you already have access to the particular inlining_tree in the var_store.
+        var_store.change_id(var_store_sub_inlining_tree->get_dag_name(), get_dag_id());
     }
     else {
         assert(prev_name_to_new_name.empty());
-        if(var_store_inlining_tree->get_var_store() == nullptr ||
-                var_store_inlining_tree->get_var_store()->size() == 0) {
-            var_store.rename_subdag(var_store_inlining_tree->get_dag_name(), get_dag_name());
-            var_store.change_id(var_store_inlining_tree->get_dag_name(), get_dag_id());
+        if(var_store_sub_inlining_tree->get_var_store() == nullptr ||
+                var_store_sub_inlining_tree->get_var_store()->size() == 0) {
+            var_store.rename_subdag(var_store_sub_inlining_tree->get_dag_name(), get_dag_name());
+            var_store.change_id(var_store_sub_inlining_tree->get_dag_name(), get_dag_id());
         }
         else
         {
             //means that you have hole values for already concretized holes; do nothing.
-            assert(var_store_inlining_tree->get_var_store()->size() >= 1);
+            assert(var_store_sub_inlining_tree->get_var_store()->size() >= 1);
             assert(LightSkFuncSetter::_get_num_unconcretized_holes() == 0);
         }
     }
@@ -316,7 +325,7 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
 
     for(const auto& it: var_name_to_inlining_subtree) {
         if(visited->find(it.second) == visited->end()) {
-            it.second->rename_var_store(var_store, var_store_inlining_tree->get_sub_inlining_tree(it.first), visited, root);
+            it.second->rename_var_store(var_store, var_store_sub_inlining_tree->get_sub_inlining_tree(it.first), visited, topology_matcher);
         }
     }
 
@@ -351,6 +360,11 @@ bool LightInliningTree::has_no_holes(set<const LightInliningTree*>* visited) con
     return ret;
 }
 
+bool LightInliningTree::match_topology(const LightInliningTree *other) const
+{
+    TopologyMatcher topology_matcher(this, other);
+    return true;
+}
 
 long long LightSkFuncSetter::inlining_tree_global_id = 0;
 set<const LightSkFuncSetter*> LightSkFuncSetter::all_inlining_trees = set<const LightSkFuncSetter*>();

@@ -54,9 +54,10 @@ void VarStore::rename(const objP& _obj, const string &new_name, const string& ne
 
 }
 
-void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const LightInliningTree *new_inlining_tree, string& _ret_prev_source_dag_name) {
-    assert(_ret_prev_source_dag_name == "");
+void VarStore::rename(const string &original_name, const string &new_source_dag, const string &new_name, const TopologyMatcher *topology_matcher, string& _ret_prev_source_dag_name) {
+    assert(_ret_prev_source_dag_name.empty());
     assert(inlining_tree != nullptr);
+    assert(topology_matcher->get_other() == inlining_tree);
     assert(var_name_to_dag_name_to_name.find(original_name) != var_name_to_dag_name_to_name.end());
 
     if(contains(new_name)){
@@ -93,47 +94,58 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
     }
     else
     {
+        AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "check_rep should have failed.");
+
+        bool enter = false;
         string matching_subdag_name;
 
-        AssertDebug(!var_name_to_dag_name_to_name[original_name].empty(), "checkrep should have failed.");
+        bool assert_single_path = false;
+        if(assert_single_path) {
+            const vector<string> *new_path = topology_matcher->get_this_()->find(new_source_dag);
+            const vector<string> *prev_path = nullptr;
 
-        AssertDebug(false, "REFACTOR THIS BY USING A STRONGER VERSION OF match_topology WHICH KEEPS TRACK OF THE MAPPING BETWEEN FUNCTIONS. USE THIS MAPPING TO FIND WHICH DAG MATCHES TO THE ONE OF INTEREST. NO NEED TO MAKE A SEPERATE DATA STRUCTURE AND THEN DO DAG ISOMORPHISM.")
+            for (const auto &it: var_name_to_dag_name_to_name[original_name]) {
+                assert(enter == (prev_path != nullptr));
+                auto tmp_path = inlining_tree->find(it.first);
 
-        const vector<string>* new_path = new_inlining_tree->find(new_source_dag);
-        const vector<string>* prev_path = nullptr;
-        bool enter = false;
-
-//        cout << "var_val's inlining_tree" << endl;
-//        inlining_tree->print();
-//
-//        cout << "original_name:" << original_name << endl;
-//        for(const auto& it: var_name_to_dag_name_to_name[original_name])
-//        {
-//            cout << "it.first " << it.first << " -> " << it.second << endl;
-//        }
-
-//        cout << "paths tried:" << endl;
-        for(const auto& it: var_name_to_dag_name_to_name[original_name]){
-            assert(enter == (prev_path != nullptr));
-            auto tmp_path = inlining_tree->find(it.first);
-//            if(tmp_path != nullptr) {
-//                cout << "tmp_path.size() " << tmp_path->size() << endl;
-//                cout << "BOTTOM <- ";
-//                for (const auto &link: *tmp_path) {
-//                    cout << link << " <- ";
-//                }
-//                cout << "TOP" << endl;
-//                cout << endl;
-//            }
-            if(tmp_path != nullptr && *tmp_path == *new_path) {
-                AssertDebug(prev_path == nullptr && !enter, "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN LightInliningTree._find.");
-                enter = true;
-                prev_path = tmp_path;
-                matching_subdag_name = it.first;
-                //break;
+                if (tmp_path != nullptr && *tmp_path == *new_path) {
+                    AssertDebug(prev_path == nullptr && !enter,
+                                "MULTIPLE DAGS HAVING THE SAME ORIGINAL HOLE NAME! MOST PROBABLY THE DAGS WERE CLONES OF THE SAME ORIGINAL DAG. MULTIPLE WAYS TO GET TO THE SAME DAG. THINK ABOUT WHAT THIS CASE MEANS AND WHAT ADDITIONAL ASSERTS HAVE TO BE ADDED. CONNECTED WITH A SIMILAR ASSERT IN LightInliningTree._find.");
+                    enter = true;
+                    prev_path = tmp_path;
+                    matching_subdag_name = it.first;
+                    //break;
+                } else if (tmp_path != nullptr) {
+                    delete tmp_path;
+                }
             }
-            else if (tmp_path != nullptr) {
-                delete tmp_path;
+
+            if(enter) {
+                AssertDebug(*prev_path == *new_path,
+                            "You are replacing a hole name with another hole name that doesn't match the topological location between the prev and new inlining tree");
+
+            }
+
+            delete new_path;
+            if(prev_path != nullptr) {
+                delete prev_path;
+            }
+        }
+//        else
+        {
+            if(!assert_single_path) {
+                assert(!enter);
+                assert(matching_subdag_name.empty());
+            }
+            const LightInliningTree* mathing_node = topology_matcher->get_corresponding(new_source_dag);
+            if(assert_single_path) {
+                assert(enter);
+                assert(matching_subdag_name == mathing_node->get_dag_name());
+            }
+            else
+            {
+                enter = true;
+                matching_subdag_name = mathing_node->get_dag_name();
             }
         }
 
@@ -199,9 +211,6 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             #endif
         }
         else {
-            AssertDebug(*prev_path == *new_path,
-                        "You are replacing a hole name with another hole name that doesn't match the topological location between the prev and new inlining tree");
-
             assert(var_name_to_dag_name_to_name[original_name].find(matching_subdag_name) != var_name_to_dag_name_to_name[original_name].end());
             string obj_name = var_name_to_dag_name_to_name[original_name][matching_subdag_name];
 
@@ -238,10 +247,6 @@ void VarStore::rename(const string &original_name, const string &new_source_dag,
             //insert in inline
         }
 
-        delete new_path;
-        if(prev_path != nullptr) {
-            delete prev_path;
-        }
     }
 }
 

@@ -1,3 +1,10 @@
+void printf(){
+    if(??)
+    {
+        printf();
+    }
+}
+
 generator int line_generator(int x)
 {
     return (??-16)*x + (??-16);
@@ -14,16 +21,19 @@ generator int program_generator(int x) {
 
 int program_lvl0(int x)
 {
+    printf();
     return program_generator(x);
 }
 
 bit condition(int x)
 {
+    printf();
     return predicate_generator(x);
 }
 
 int composite_predicate(int x)
 {
+    printf();
     if(condition(x)) {
         return composite_predicate(x);
     }
