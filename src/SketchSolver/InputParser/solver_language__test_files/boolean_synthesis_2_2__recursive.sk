@@ -215,7 +215,7 @@ bit composite_predicate(int num_bools, bit[num_bools] bools)
 bit dummy_program(int num_bools, bit[num_bools] bools) {return 1;}
 
 @FromFile("uav_kg_big__as_bools.data")
-harness bit eval_program_main_harness(int num_bools, bit[num_bools] bools, bit out)
+harness bit eval_program_main(int num_bools, bit[num_bools] bools, bit out)
 {
     return dummy_program(num_bools, bools);
 }
