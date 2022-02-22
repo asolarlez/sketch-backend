@@ -116,6 +116,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                 }
                 else
                 {
+//                    (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
                 }
             }
@@ -138,6 +139,7 @@ LightInliningTree::LightInliningTree(const BooleanDagUtility *_skfunc, map<int, 
                 if (var_name_to_inlining_subtree.find(var_name) != var_name_to_inlining_subtree.end()) {
                     assert(var_name_to_inlining_subtree[var_name] == (*visited)[sub_dag->get_dag_id()]);
                 } else {
+//                    (*visited)[sub_dag->get_dag_id()]->increment_num_shared_ptr();
                     var_name_to_inlining_subtree[var_name] = (*visited)[sub_dag->get_dag_id()];
                 }
             }
@@ -198,7 +200,7 @@ void LightInliningTree::concretize(SketchFunction* skfunc, const VarStore * cons
             }
         }
         if(!is_root && !has_been_concretized) {
-            skfunc->produce_concretization(var_store, bool_node::CTRL, false, false, false);
+            skfunc->_inplace_concretize(var_store, bool_node::CTRL);
         }
     }
 

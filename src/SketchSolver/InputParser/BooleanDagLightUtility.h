@@ -333,6 +333,7 @@ public:
             if (visited->find(it.second->get_dag_id()) == visited->end()) {
                 var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
             } else {
+//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
@@ -367,6 +368,7 @@ public:
 #endif
             }
             else {
+//                (*visited)[it.second->get_dag_id()]->increment_num_shared_ptr();
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
             }
         }
