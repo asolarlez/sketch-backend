@@ -326,11 +326,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
         {
             assert(params.size() == 1);
             int row_id = params[0]->eval(state)->get_int();
-#ifdef REMOVE_SkVal
             return new SL::VarVal(new SL::InputVarStore(*file->at(row_id)));
-#else
-            return new SL::VarVal(new SolverLanguagePrimitives::InputAssignment(file->at(row_id), state->floats));
-#endif
             break;
         }
         case _clear:
@@ -352,13 +348,7 @@ SL::VarVal *SL::FunctionCall::eval<File*>(File*& file, SolverProgramState *state
 
             std::function<bool(VarStore*) > lambda_condition = [&state, &condition_method](VarStore* x) {
                 vector<SL::VarVal*> local_inputs;
-                local_inputs.push_back(new VarVal(
-#ifdef REMOVE_SkVal
-        new InputVarStore(*x)
-#else
-                        new SolverLanguagePrimitives::InputAssignment(x, state->floats)
-#endif
-                        ));
+                local_inputs.push_back(new VarVal(new InputVarStore(*x)));
                 auto var_val = condition_method->eval(state, local_inputs);
                 auto ret = var_val->get_bool(true, false);
                 return ret;
@@ -402,27 +392,21 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             VarVal* param_var_val = params[0]->eval(state);
             param_var_val->increment_shared_ptr();
             SketchFunction* skfunc = param_var_val->get_function();
-//            cout << "SAT SOLER ON DAG: " << skfunc->get_dag_id() << endl;
 
             vector<string> prev_holes = skfunc->get_deep_holes();
-
             sort(prev_holes.begin(), prev_holes.end());
 
             BooleanDagUtility* harness = ((BooleanDagUtility*)skfunc)->produce_inlined_dag(true);
-//            harness->get_inlining_tree()->get_solution()->check_rep();
+            harness->increment_shared_ptr();
 
-            vector<string> after_holes = harness->get_deep_holes();
-
-            sort(after_holes.begin(), after_holes.end());
-
-            assert(prev_holes.size() == after_holes.size());
-
-
-            if(harness->get_dag_id() == 83) {
-                cout << "here" << endl;
+            const bool concretize_after_solving = false;
+            if(!concretize_after_solving) {
+                param_var_val->decrement_shared_ptr();
             }
 
-            harness->increment_shared_ptr();
+            vector<string> after_holes = harness->get_deep_holes();
+            sort(after_holes.begin(), after_holes.end());
+            assert(prev_holes.size() == after_holes.size());
 
             File* file = params[1]->eval(state)->get_file();
             assert(file->like_unused());
@@ -431,7 +415,6 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             auto* solver = new WrapperAssertDAG(state->floats, state->hc, state->args, state->hasGoodEnoughSolution);
             auto* problem = new ProblemAE(harness, file);
 
-#ifdef REMOVE_SkVal
             HoleVarStore* sol = (solver)->solve(problem);
 
             assert(sol->get_inlining_tree() == nullptr);
@@ -443,35 +426,19 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             sol->set_inlining_tree(harness_inlining_tree);
             assert(sol->check_rep());
 
-            //make sure produce_concretiz
-            SketchFunction* to_test = skfunc->produce_concretization(sol, bool_node::CTRL, true, true, true);
-            to_test->increment_shared_ptr();
-            to_test->clear();
-
-            param_var_val->decrement_shared_ptr();
-
-#else
-            const HoleAssignment* sol = (solver)->solve(problem);
-
-            assert(sol->get_assignment()->get_inlining_tree() == nullptr);
-
-            HoleAssignment* append_sol = new HoleAssignment(SAT_SATISFIABLE, harness->get_inlining_tree()->get_solution(), harness->get_env()->floats);
-            harness->get_inlining_tree()->set_var_store(sol->to_var_store(false));
-            sol->disjoint_join_with(append_sol);
-            sol->set_inlining_tree(harness->get_inlining_tree());
-            assert(sol->to_var_store()->check_rep_and_clear());
-#endif
+            if(concretize_after_solving) {
+                //make sure produce_concretiz
+                SketchFunction *to_test = skfunc->produce_concretization(sol, bool_node::CTRL, true, true, true);
+                to_test->increment_shared_ptr();
+                to_test->clear();
+                param_var_val->decrement_shared_ptr();
+            }
 
             file->reset();
             assert(file->like_unused());
-
             harness->clear();
             solver->clear();
-
             delete problem;
-
-//            state->console_output << "SOLUTION: " << endl;
-//            state->console_output << sol->to_string() << endl;
 
             return new SL::VarVal(sol);
             break;
@@ -538,7 +505,6 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
     assert(false);
 }
 
-#ifdef REMOVE_SkVal
 template<>
 SL::VarVal *SL::FunctionCall::eval<SL::HoleVarStore *>(
         SL::HoleVarStore* & the_solution, SolverProgramState *state, const SL::VarVal* const the_var_val) {
@@ -561,30 +527,6 @@ SL::VarVal *SL::FunctionCall::eval<SL::HoleVarStore *>(
     }
     assert(false);
 }
-#else
-template<>
-SL::VarVal *SL::FunctionCall::eval<const SolverLanguagePrimitives::HoleAssignment*>(
-        const SolverLanguagePrimitives::HoleAssignment*& the_solution, SolverProgramState *state, const SL::VarVal* const the_var_val) {
-    assert(the_solution == the_var_val->get_solution_const(false));
-    switch (method_id) {
-        case _join: {
-            assert(params.size() == 1);
-            using namespace SolverLanguagePrimitives;
-            const HoleAssignment *other_solution = params[0]->eval(state)->get_solution();
-            the_solution->disjoint_join_with(other_solution);
-            return new VarVal();
-        }
-//        case _get: {
-//            assert(params.size() == 1);
-//            string subfunc_name = params[0]->eval(state)->get_string(true, false);
-//            return new VarVal(the_solution->get_assignment()->get_inlining_tree()->get_sub_inlining_tree(subfunc_name)->get_solution());
-//        }
-        default:
-            assert(false);
-    }
-    assert(false);
-}
-#endif
 
 template<>
 SL::VarVal* SL::FunctionCall::eval<SL::PolyPair*>(SL::PolyPair*& poly_pair, SolverProgramState* state, const SL::VarVal* const the_var_val)
@@ -652,11 +594,7 @@ SL::VarVal* SL::FunctionCall::eval(SolverProgramState *state)
                     assert(input_val->is_input_holder());
 
                     SketchFunction* skfunc = method_var_val->get_function();
-#ifdef REMOVE_SkVal
                     SL::InputVarStore *input_assignment = input_val->get_input_holder();
-#else
-                    SolverLanguagePrimitives::InputAssignment *input_assignment = input_val->get_input_holder();
-#endif
                     ret = SketchFunctionEvaluator::eval(skfunc, input_assignment);
                     assert(ret != nullptr);
 
@@ -965,12 +903,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 using namespace SolverLanguagePrimitives;
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
-#ifdef REMOVE_SkVal
                 HoleVarStore *var_store = var_val_sol->get_solution();
-#else
-                const HoleAssignment *solution_holder = var_val_sol->get_solution();
-                VarStore* var_store = solution_holder->to_var_store();
-#endif
                 assert(var_store->check_rep());
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_val_sol->decrement_shared_ptr();
@@ -991,11 +924,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 using namespace SolverLanguagePrimitives;
                 VarVal *sol_var_val = params[0]->eval(state);
                 sol_var_val->increment_shared_ptr();
-#ifdef REMOVE_SkVal
                 HoleVarStore *sol = sol_var_val->get_solution();
-#else
-                const HoleAssignment *sol = sol_var_val->get_solution();
-#endif
                 skfunc->concretize(sol);
                 sol_var_val->decrement_shared_ptr();
                 return new SL::VarVal();
@@ -1014,14 +943,8 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
             assert(params.size() == 1);
             VarVal* input_holder_var_val = params[0]->eval(state);
             input_holder_var_val->increment_shared_ptr();
-
-#ifdef REMOVE_SkVal
             InputVarStore* input_holder = input_holder_var_val->get_input_holder();
-#else
-            SolverLanguagePrimitives::InputAssignment *input_holder = input_holder_var_val->get_input_holder();
-#endif
             auto ret_predicted = SketchFunctionEvaluator::new_passes(skfunc, input_holder);
-
             input_holder_var_val->decrement_shared_ptr();
             return ret_predicted;
             break;
@@ -1080,11 +1003,7 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
         case _get_solution:
         {
             if(params.empty()) {
-#ifdef REMOVE_SkVal
                 return new VarVal((HoleVarStore*)skfunc->get_solution());
-#else
-                return new VarVal(skfunc->get_solution());
-#endif
             }
             else if(params.size() == 1){
                 AssertDebug(false, "TODO: equivalent to skfunc.get(name).get_solution()");
@@ -1505,16 +1424,8 @@ SL::VarVal::VarVal(SketchFunction* _harness) : skfunc(_harness) , var_val_type(s
 }
 SL::VarVal::VarVal(PolyVec* _poly_vec) : poly_vec(_poly_vec) , var_val_type(poly_vec_type){}
 SL::VarVal::VarVal(PolyPair* _poly_pair) : poly_pair(_poly_pair) , var_val_type(poly_pair_type){}
-#ifdef REMOVE_SkVal
 SL::VarVal::VarVal(SL::HoleVarStore * _solution) : solution(_solution), var_val_type(solution_val_type){}
 SL::VarVal::VarVal(SL::InputVarStore * _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
-#else
-SL::VarVal::VarVal(const SolverLanguagePrimitives::HoleAssignment* _solution) : solution(_solution), var_val_type(solution_val_type){
-    solution->increment_shared_ptr();
-}
-SL::VarVal::VarVal(SolverLanguagePrimitives::InputAssignment* _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
-#endif
-
 SL::VarVal::VarVal(string  _s) : s(new Identifier(std::move(_s))), var_val_type(string_val_type) {}
 
 template <typename T>
@@ -1560,11 +1471,7 @@ SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 //            solution = new SolverLanguagePrimitives::HoleAssignment(_to_copy->get_solution(false));
             break;
         case input_val_type:
-#ifdef REMOVE_SkVal
             input_holder = new InputVarStore(*_to_copy->get_input_holder(false));
-#else
-            input_holder = new SolverLanguagePrimitives::InputAssignment(_to_copy->get_input_holder(false));
-#endif
             break;
         case bool_val_type:
             b = _to_copy->get_bool(false);
@@ -1633,11 +1540,7 @@ SL::VarVal *SL::VarVal::eval(SolverProgramState *state, SL::FunctionCall *func_c
             return eval<SketchFunction*>(skfunc, state, func_call);
             break;
         case solution_val_type:
-#ifdef REMOVE_SkVal
             return eval<HoleVarStore*>(solution, state, func_call);
-#else
-            return eval<const SolverLanguagePrimitives::HoleAssignment*>(solution, state, func_call);
-#endif
             break;
         case input_val_type:
             AssertDebug(false, "input has no methods (yet).");

@@ -471,32 +471,8 @@ SketchFunction * TransformPrimitive::extract_sketch_function(const string &to_th
                     auto maybe_ret = parent->reconstruct_sketch_function(to_this_dag, under_this_var, root);
                     assert(maybe_ret != nullptr);
 
-#ifdef REMOVE_SkVal
                     AssertDebug(maybe_ret->get_has_been_concretized(), "YOU NEED TO RETHINK RECONSTRUCTION ONCE THIS FAILS. NEED MORE INVOLVED STRATEGY.");
                     return maybe_ret;
-#else
-                    if(maybe_ret->get_same_solution() != nullptr)
-                    {
-                        if(maybe_ret->get_same_solution()->get_sat_solver_result() == SAT_SATISFIABLE) {
-                            assert(maybe_ret->get_dag()->getNodesByType(bool_node::CTRL).empty());
-                            assert(maybe_ret->get_dag()->getNodesByType(bool_node::UFUN).empty());
-                        }
-
-//                        maybe_ret->get_solution(); //debug code, it's memory-leaky
-
-                        return maybe_ret;
-                    }
-                    else {
-                        AssertDebug(false, "HERE ONLY RETURN MAYBE_RET AND LATER EXTRACT THE VAR STORE AND WALK THE VAR STORE TO FIND THE APPROPRIATE HOLE VALS.")
-                        assert(*get_concretization_type() == bool_node::CTRL);
-
-                        VarStore* local_var_store = get_var_store();
-                        if(local_var_store != nullptr) {
-                            local_var_store = local_var_store->get_sub_var_store(under_this_var);
-                        }
-                        return maybe_ret->produce_concretization(local_var_store, *get_concretization_type(), false);
-                    }
-#endif
                 }
             }
 

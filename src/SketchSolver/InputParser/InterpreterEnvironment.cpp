@@ -975,57 +975,18 @@ SATSolverResult InterpreterEnvironment::assertDAGNumerical(BooleanDAG* harness->
 
 SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const string& file_name)
 {
-
     ProgramEnvironment program_env =
             ProgramEnvironment(params, floats, hardcoder, functionMap, inlineAmnt, replaceMap);
 
     SolverLanguage solver_language = SolverLanguage();
-#ifndef REMOVE_SkVal
-    const SolverLanguagePrimitives::HoleAssignment* almost_ret =
-#endif
     solver_language.eval(program_env.function_map, file_name, floats, params, hardcoder, hasGoodEnoughSolution);
     for(auto it: program_env.function_map)
     {
         delete it.second; // keeps the underlying dags, but deletes the skfunc.
     }
     delete &program_env.function_map; //.clear_assert_num_shared_ptr_is_0(); // at this point all dags are cleared.
-#ifndef REMOVE_SkVal
-    cout << "EXITED SolverLanguage" << endl;
-    if (almost_ret->get_sat_solver_result() != SAT_SATISFIABLE)
-    {
-        status = UNSAT;
-    }
-    if(almost_ret->has_assignment_skval()) {
-        hardcoder.get_control_map(currentControls);
-        almost_ret->get_control_map(currentControls);
-        cout << "recorded_solution" << endl;
-        cout << "VALUES ";
-        for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
-            cout << it->first << ": " << it->second << ", ";
-        }
-        cout << endl;
-    }
-    else
-    {
-        cout << "No solution" <<endl;
-    }
-    cout << "EXITING assertHarness." << endl;
 
-    if(almost_ret->get_sat_solver_result() == SAT_SATISFIABLE)
-    {
-        cout << "return SAT_SATISFIABLE" << endl;
-    }
-    else
-    {
-        cout << "return NOT SAT_SATISFIABLE" << endl;
-    }
-
-    assert(almost_ret->get_sat_solver_result() == SAT_SATISFIABLE);
-    auto ret = almost_ret->get_sat_solver_result();
-    almost_ret->clear_assert_num_shared_ptr_is_0();
-    return ret;
-#endif
-    return SAT_UNDETERMINED;
+    return SAT_SATISFIABLE;
 }
 
 

@@ -8,8 +8,6 @@
 #include "NodeSlicer.h"
 #include "MiniSATSolver.h"
 #include "CounterexampleFinder.h"
-//#include "SkVal.h"
-
 
 void CEGISSolver::addProblem(BooleanDagLightUtility *harness, File *file){
     checker->addProblem(harness, file);
@@ -487,13 +485,6 @@ void CEGISSolver::print_control_map(ostream& out){
 		out<<it->first<<"\t"<<it->second<<endl;
 	}
 }
-
-#ifndef REMOVE_SkVal
-Assignment_SkVal* CEGISSolver::get_control_map_as_map_str_skval()
-{
-    return new Assignment_SkVal(&ctrlStore, floats);
-}
-#endif
 
 void CEGISSolver::get_control_map_as_map_str_str(map<string, string>& values){
 	for(auto it = ctrlStore.begin(); it !=ctrlStore.end(); ++it){

@@ -19,17 +19,10 @@ namespace SL
     class FunctionCall;
 }
 
-#ifndef REMOVE_SkVal
-#include "SkVal.h"
-#endif
-
 class SketchFunction: public BooleanDagUtility
 {
     static long long global_clear_id;
 
-#ifndef REMOVE_SkVal
-    const SolverLanguagePrimitives::HoleAssignment* solution = nullptr;
-#endif
     bool new_way = true;
 
     map<string, string> replaced_labels;
@@ -105,9 +98,6 @@ public:
     explicit SketchFunction(
             BooleanDAG *_dag_root,
             ProgramEnvironment *_env = nullptr,
-#ifndef REMOVE_SkVal
-            const SolverLanguagePrimitives::HoleAssignment *_solution = nullptr,
-#endif
             const map<string, string>& _replaced_labels = map<string, string>(),
             const map<string, string>& _original_labels = map<string, string>(),
             const FMTL::TransformPrimitive* _rep = nullptr,
@@ -115,9 +105,6 @@ public:
             const LightInliningTree* _inlining_tree = nullptr,
             bool _has_been_concretized = false) :
             BooleanDagUtility(_dag_root, _env, _inlining_tree, _has_been_concretized),
-#ifndef REMOVE_SkVal
-             solution(_solution),
-#endif
             replaced_labels(_replaced_labels), original_labels(_original_labels),
             rep(_rep), dependencies(std::move(_responsibility)) {
 
@@ -126,20 +113,6 @@ public:
             assert(dependency.second->get_dag_name() != get_dag_name());
             dependency.second->increment_shared_ptr();
         }
-#ifndef REMOVE_SkVal
-        if(solution != nullptr) {
-            VarStore* var_store = get_inlining_tree()->get_solution();
-            var_store->set_inlining_tree(get_inlining_tree());
-            solution = new SolverLanguagePrimitives::HoleAssignment(solution->get_sat_solver_result(), var_store, get_env()->floats);
-            assert(solution != nullptr);
-            increment_shared_ptr();
-            var_store->clear();
-            decrement_shared_ptr_wo_clear();
-            assert(solution != nullptr);
-
-            assert(solution->get_assignment()->get_inlining_tree()->get_dag_id() == get_dag_id());
-        }
-#endif
     }
 
     SketchFunction *produce_executable()
@@ -172,79 +145,17 @@ public:
     void clear() override;
     bool _clear();
 
-    VarStore* get_solution_var_store()
-    {
-#ifdef REMOVE_SkVal
-        //TODO
-#else
-        const SolverLanguagePrimitives::HoleAssignment* local_solution = get_solution();
-        VarStore* ret = solution->get_assignment()->to_var_store();
-        assert(local_solution->get_num_shared_ptr() == 0);
-        local_solution->clear_assert_num_shared_ptr_is_0();
-        return ret;
-#endif
-    }
-
-#ifdef REMOVE_SkVal
     VarStore* get_solution();
-#else
-    const SolverLanguagePrimitives::HoleAssignment* get_solution()
-    {
-        if(solution != nullptr) {
-            assert(get_inlining_tree() != nullptr);
-            auto ret = new SolverLanguagePrimitives::HoleAssignment(solution);
-            assert(ret->get_assignment()->get_inlining_tree() != nullptr);
-            assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
-            return ret;
-        }
-        else
-        {
-            assert(!is_inlining_tree_nonnull());
-            LightInliningTree* local_inlining_tree = new LightInliningTree(this);
-            const VarStore* almost_ret = local_inlining_tree->get_solution();
 
-            const SolverLanguagePrimitives::HoleAssignment* ret =
-                    new SolverLanguagePrimitives::HoleAssignment(SAT_UNDETERMINED, almost_ret, get_env()->get_floats());
-
-            ret->set_inlining_tree(local_inlining_tree);
-
-            assert(ret->get_assignment()->get_inlining_tree() != nullptr);
-
-            assert(ret->get_assignment()->to_var_store()->check_rep_and_clear());
-
-            local_inlining_tree->clear();
-            local_inlining_tree = nullptr;
-
-            assert(ret != nullptr);
-
-            return ret;
-        }
-    }
-#endif
-
-#ifdef REMOVE_SkVal
     void concretize(const VarStore *local_solution) {
         produce_concretization(local_solution, bool_node::CTRL, false);
     }
-#else
-    void concretize(const SolverLanguagePrimitives::HoleAssignment *solution_holder)
-    {
-        VarStore* local_solution = solution_holder->to_var_store();
-        produce_concretization(local_solution, bool_node::CTRL, false);
-        local_solution->clear();
-        local_solution = nullptr;
-    }
-#endif
 
     void replace(const string replace_this, const string with_this);
 
     SketchFunction * produce_get(const string& subfunc_name);
 
     bool solution_is_null();
-
-#ifndef REMOVE_SkVal
-    const SolverLanguagePrimitives::HoleAssignment * get_same_solution() const;
-#endif
 
     string get_assignment(const string& key);
 
@@ -270,22 +181,12 @@ public:
 
 namespace SketchFunctionEvaluator
 {
-#ifdef REMOVE_SkVal
-
     SL::VarVal* eval(SketchFunction* skfunc, const VarStore *input_var_store);
 
     SL::VarVal* passes(const SketchFunction *skfunc, const VarStore *input_var_store);
 
     SL::VarVal* new_passes(SketchFunction* skfunc, const VarStore *input_var_store);
-#else
 
-    SL::VarVal* eval(SketchFunction* skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment);
-
-    SL::VarVal* passes(const SketchFunction *skfunc, const SolverLanguagePrimitives::InputAssignment *input_assignment);
-
-    SL::VarVal* new_passes(SketchFunction* skfunc, SolverLanguagePrimitives::InputAssignment *input_assignment);
-
-#endif
 };
 
 #endif //SKETCH_SOURCE_SKETCHFUNCTION_H

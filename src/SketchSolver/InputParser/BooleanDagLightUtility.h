@@ -9,10 +9,6 @@
 
 #include "ProgramEnvironment.h"
 
-#ifndef REMOVE_SkVal
-#include "SkVal.h"
-#endif
-
 class File;
 
 static bool new_way = true;
@@ -771,47 +767,6 @@ public:
 
     virtual bool soft_clear_assert_num_shared_ptr_is_0();
 
-#ifndef REMOVE_SkVal
-    static SkValType bool_node_out_type_to_sk_val_type(OutType* out_type)
-    {
-        assert(out_type == OutType::INT || out_type == OutType::BOOL || OutType::FLOAT);
-        if(out_type == OutType::INT)
-        {
-            return sk_type_int;
-        }
-        else if(out_type == OutType::BOOL)
-        {
-            return sk_type_bool;
-        }
-        else if(out_type == OutType::FLOAT)
-        {
-            return sk_type_float;
-        }
-        else
-        {
-            assert(false);
-        }
-    }
-
-
-    vector<SkHoleSpec>* get_holes()
-    {
-        BooleanDagLightUtility* inlined_harness = produce_inlined_dag();
-        auto ctrl_nodes = inlined_harness->get_dag()->getNodesByType(bool_node::CTRL);
-        auto* ret = new vector<SkHoleSpec>();
-        for(auto & ctrl_node : ctrl_nodes)
-        {
-            ret->push_back(
-                    SkHoleSpec(
-                            ctrl_node->get_name(),
-                            bool_node_out_type_to_sk_val_type(ctrl_node->getOtype())));
-        }
-        inlined_harness->clear();
-        return ret;
-    }
-#endif
-
-
     int count_passing_inputs(File* file);
 
     virtual void clear(LightInliningTree*& inlining_tree) {
@@ -868,10 +823,10 @@ public:
     }
 
     void decrement_shared_ptr_wo_clear() {
-        if(get_dag()->get_dag_id() == 91)
-        {
-            cout << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
-        }
+//        if(get_dag()->get_dag_id() == 91)
+//        {
+//            cout << "here " << "DECREMENTING (--) shared_ptr of " << get_dag_name() <<" from " << shared_ptr <<" to " << shared_ptr-1 << endl;
+//        }
         assert(shared_ptr >= 1);
         shared_ptr--;
         assert(shared_ptr >= 0);

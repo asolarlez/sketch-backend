@@ -181,7 +181,6 @@ libcegis_a_SOURCES =				\
     InputParser/CEGISChecker.cpp \
     InputParser/CEGISFinder.cpp \
     InputParser/CounterexampleFinder.cpp \
-    InputParser/SkVal.cpp \
     InputParser/solver_language_yacc.cpp \
     InputParser/solver_language_lex.cpp \
     InputParser/SketchFunction.cpp \
