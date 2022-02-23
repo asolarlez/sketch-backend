@@ -72,7 +72,7 @@ Priority for merging with Master
     DONE: Add separate file as console output for Solver Language.
         TODO: add an error/warning file
     TODO: 3. Set up pipeline
-        *7.1. Thread params for which file to use
+        *7.1. Thread params for which solver program file to use
         *7.2. Two pipelines: old and new
         *7.3. merge with master.
 
@@ -83,7 +83,7 @@ Use-cases
 Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
     DONE: one shot level1. (bot-top-bot)
     DONE: bot-top-bot-top
-    TODO: iterative lvl1.
+    DONE: iterative lvl1.
     TODO: one shot lvl2
     TODO: iterative lvl2
     TODO: crete more complicated zig-zag example.
@@ -93,18 +93,16 @@ Implement bottom-up-and-top-down STUN for boolean synthesis in solver language
 
 Finish FunctionMapTransformer:
     DONE 1. Fix weird bug with FunctionMapTransformer
-    2. Fix exponential time query function in FunctionMapTransformer
     DONE 3. Fix VarStore delete/clear in order to remove leaks
-    4. Further stress-test this functionality
-    5. Print the FunctionMapTransformer program for the frontend.
+    TODO: 4. Further stress-test this functionality
+    TODO: 5. Print the FunctionMapTransformer program for the frontend.
 
 Light tasks:
-    remove dead code.
-    add printing to a file.
+    DONE remove dead code.
+    DONE add printing to a file.
     remove debug code
         turn off SCHECKMEM
-        add flag for checking file invariant in cegis solver and checker.
-        add flag for checking translation invariant between VarStore and InputAssignment/HoleAssignment in Assignment_SkVal
+        DONE add flag for checking file invariant in cegis solver and checker.
 
 Necessary
 1. Complete language
@@ -124,6 +122,7 @@ Necessary
         *TODO: FIX ORDER OF OPERATIONS
 
     DONE Implement garbage collection
+    TODO: Implement garbage collection when there are cycles of skfuncs
     TODO: Remove harness from argument in File.
         Have current File be implemented as a vector rather than having a specific File class.
             Interpret an input as a InputStore right before using in a sketch.
@@ -140,8 +139,9 @@ Necessary
             continue
             break
     *TODO: Add custom output files to Solver Language.
-    TODO: Shed dead code.
+    DONE: Shed dead code.
     TODO: deal with the case when not all holes are concretized after concretization
+    TODO: deal with the case where some holes are optimized out due to inlining.
     TODO: figure out what to do with adding/removing do_deactivate_pcond.
     TODO: add parallelization capabilities though cilk.
     recursive subdag access.
@@ -149,18 +149,18 @@ Necessary
             TODO: check what happens with name conflicts when reconstructing a superseeded dag.
         DONE: (it's called superseeded) set (intermediate-)is_erased when a dag gets modified and the original version is not kept. update use of is_erased in reconstruct_sketch_function.
     TODO: internalize inlining in solver langauge
-    TODO: fix produce_concretize to accept a HoleAssignment, rather than a var store, for the cases where the var_store came from a HoleAssignment. Because now you are ad-hock declaring the sat_result to create a hole_assignment.
     DONE Test InliningTree on a recursive function.
-    (MAYBE DONE) TODO: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
-    TODO: reason about what happens in InliningTree._find when there are multiple ways to get to the target_dag (what needs to happen on at the site where the result is needed?) Probably you need extra asserts for type checking that the user knows what they are doing.
-    TODO: fix exponential blow-up in #inlining_trees
-        TODO: produce_deep_concretize
-        TODO: produce_unit_concretize
-        TODO: inplace_deep_concretize
-        TODO: inplace_unit_concretize
-        TODO: make_executable
-        TODO: deep_clone
-        TODO: unit_clone
+    DONE: when narrowing down InliningTree within VarStore, remove excess holes that are not aplicable after the narrowing.
+    DONE: reason about what happens in InliningTree._find when there are multiple ways to get to the target_dag (what needs to happen on at the site where the result is needed?) Probably you need extra asserts for type checking that the user knows what they are doing.
+    DONE: fix exponential blow-up in #inlining_trees
+    TODO: produce_deep_concretize
+    TODO: produce_unit_concretize
+    TODO: inplace_deep_concretize
+    TODO: inplace_unit_concretize
+    DONE: produce_executable
+    DONE: make_executable
+    DONE: deep_clone
+    DONE: unit_clone
 
 TODO: 2. Incorporate numerical solver
 TODO: 3. Incorporate doallpairs
@@ -195,7 +195,7 @@ Good to do
 Refactor interpreter to use classes and subclasses instead of switches for different values/methods (like in SolverLanguage.h).
 
 Medium term
-0. Implement useful error/warning messages with line numbers.
+0. TODO: Implement useful error/warning messages with line numbers.
 1. refactor backend code to look like solver language (meaning the signatures of the functions concretize and file).
     1.1 Compile directly to Cpp rather than interpreting program
 3. Implement classes
@@ -211,5 +211,5 @@ Longer term
         1.2.1 Geometric images
         1.2.2 Timeseries
 2. How to integrate with hardcoder and parallelism
-    1. Have doallparis be a module.
+    1. TODO: Have doallparis be a module.
     2. ...

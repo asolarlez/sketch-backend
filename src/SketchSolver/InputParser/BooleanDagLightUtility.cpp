@@ -107,15 +107,11 @@ LightInliningTree::LightInliningTree(
             assert(_skfunc->get_has_been_concretized());
             for(const auto& it: skfunc_inlining_tree->get_var_name_to_inlining_subtree()) {
                 if(visited->find(it.second->get_dag_id()) == visited->end()) {
-#ifndef NO_CLONE_INLINING_TREE
-                    var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
-#else
                     var_name_to_inlining_subtree[it.first] = it.second;
                     var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
                     assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
                     var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
                     local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
-#endif
                 }
                 else
                 {

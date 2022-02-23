@@ -808,7 +808,7 @@ int InterpreterEnvironment::doallpairs() {
 			inlineAmnt = hardcoder.getValue(inline_ctrl->name) + minInlining;
 		}
 
-        bool do_solver_program = true;
+        bool do_solver_program = false;
 
         if(do_solver_program)
         {
@@ -837,12 +837,11 @@ int InterpreterEnvironment::doallpairs() {
 
                 SketchFunction* local_harness = nullptr;
                 if(new_way) {
-                    bool inline_ahead_of_time = false;
+                    bool inline_ahead_of_time = true;
                     if(inline_ahead_of_time) {
                         local_harness = new SketchFunction(bd, program_env);
                     }
-                    else
-                    {
+                    else {
                         local_harness = new SketchFunction(getCopy(spskpairs[i].sketch), program_env);
                     }
                 }
@@ -850,8 +849,8 @@ int InterpreterEnvironment::doallpairs() {
                     local_harness = new SketchFunction(bd, program_env);
                 }
 
-                AssertDebug(false, "MAKE SURE THIS PATH WORKS WELL!!! AND CLEAN UP/TEST!!!");
-                result = assertHarness(local_harness, program_env, cout, spskpairs[i].file);
+                result = assertHarness(local_harness, cout, spskpairs[i].file);
+                printControls("");
 			}
 			catch (BadConcretization& bc) {
 				errMsg = bc.msg;
@@ -990,63 +989,14 @@ SATSolverResult InterpreterEnvironment::run_solver_program(int inlineAmnt, const
 }
 
 
-SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ProgramEnvironment *env, ostream &out,
-                                                      const string &file) {
+SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, ostream &out, const string &file) {
 
-    /*
-     * running a solver program on a single harness is DEPRECIATED
-    /// *** STILL IN PROGRESS
-    ///  vvvvvvvvvvvvvvvvvvvv
-    bool test_solver_language = true;
-    if (test_solver_language)
-    {
-        SolverLanguage solver_language = SolverLanguage();
-        const SolverLanguagePrimitives::HoleAssignment* ret = solver_language.eval(
-                harness, file, floats, params, hardcoder, hasGoodEnoughSolution,
-                *(new FunctionMap(env)));
-
-        cout << "EXITED SolverLanguage" << endl;
-        if (ret->get_sat_solver_result() != SAT_SATISFIABLE)
-        {
-            status = UNSAT;
-        }
-        if(ret->has_assignment_skval()) {
-            hardcoder.get_control_map(currentControls);
-            ret->get_control_map(currentControls);
-            cout << "recorded_solution" << endl;
-            cout << "VALUES ";
-            for (auto it = currentControls.begin(); it != currentControls.end(); ++it) {
-                cout << it->first << ": " << it->second << ", ";
-            }
-            cout << endl;
-        }
-        else
-        {
-            cout << "No solution" <<endl;
-        }
-        cout << "EXITING assertHarness." << endl;
-
-        if(ret->get_sat_solver_result() == SAT_SATISFIABLE)
-        {
-            cout << "return SAT_SATISFIABLE" << endl;
-        }
-        else
-        {
-            cout << "return NOT SAT_SATISFIABLE" << endl;
-        }
-
-        assert(ret->get_sat_solver_result() == SAT_SATISFIABLE);
-        return ret->get_sat_solver_result();
-    }
-    ///  ^^^^^^^^^^^^^^^^^^^
-    */
     Assert(status == READY, "You can't do this if you are UNSAT");
     ++assertionStep;
 
     File* new_file;
     if (!file.empty())
     {
-//        AssertDebug(false, "Incorporate prog_evn, activate line below.");
         new_file = new File(harness, file, floats, params.seed);
     }
     else
@@ -1056,16 +1006,9 @@ SATSolverResult InterpreterEnvironment::assertHarness(SketchFunction *harness, P
 
     solver->addProblem(harness, new_file);
 
-    //	cout << "InterpreterEnvironment: new problem" << endl;
-    //	problem->lprint(cout);
-
     if (params.superChecks) {
         history.push_back(harness->get_dag()->clone());
     }
-
-    // problem->repOK();
-
-
 
     if (params.outputEuclid) {
         ofstream fout("bench.ucl");
@@ -1549,6 +1492,9 @@ void InterpreterEnvironment::abstractNumericalPart(BooleanDAG& dag) {
 /*
  *
 
+ commit: e2ce24fe204235b26a28bcb9fdad2f9ec2b834f5
+ @Nov 11th, 2021
+
 1. Finalized refactoring of inlining and concretization.
 2. Handling #PC node as intended when concretizing functions.
 3. Added seed to random generator in File for the sampler.
@@ -1609,3 +1555,162 @@ echo "END OF LIST"
 END OF LIST
 
  */
+
+
+/*
+
+@Jan 23rd, 2022
+
+Running with 0.02mins timeout
+50 tests fail.
+
+LISTED BELOW ARE THE FAILED TESTS (IF ANY)
+diff -w cur ref > result; cat result; wc `(cat result | awk '/>/{print $2}' | sed 's/\.output/\.sk/g');echo "cur"`
+183a184,186
+> miniTestb180.output
+> miniTestb181.output
+> miniTestb182.output
+229a233
+> miniTestb228.output
+246a251
+> miniTestb246.output
+257a263,264
+> miniTestb258.output
+> miniTestb259.output
+258a266,267
+> miniTestb261.output
+> miniTestb262.output
+265a275
+> miniTestb270.output
+306a317
+> miniTestb312.output
+313a325
+> miniTestb320_hole.output
+330a343,344
+> miniTestb347.output
+> miniTestb348.output
+339a354
+> miniTestb358.output
+340a356
+> miniTestb360.output
+349a366
+> miniTestb370.output
+353a371
+> miniTestb375.output
+354a373
+> miniTestb377.output
+362a382
+> miniTestb386.output
+364a385
+> miniTestb389.output
+374a396
+> miniTestb400.output
+387a410
+> miniTestb414.output
+398a422
+> miniTestb426.output
+404a429
+> miniTestb433.output
+405a431,432
+> miniTestb435.output
+> miniTestb436.output
+457a485
+> miniTestb489.output
+498a527
+> miniTestb531.output
+530a560
+> miniTestb566_angelic.output
+531a562
+> miniTestb567_angelic.output
+641a673
+> miniTestb678.output
+668a701
+> miniTestb706.output
+757a791
+> miniTestb795.output
+759a794
+> miniTestb798.output
+802a838
+> miniTestb841.output
+811a848,849
+> miniTestb851.output
+> miniTestb852.output
+818a857,859
+> miniTestb860.output
+> miniTestb861.output
+> miniTestb862.output
+823a865,866
+> miniTestb868.output
+> miniTestb869.output
+829a873
+> miniTestb876.output
+832a877
+> miniTestb880.output
+836a882
+> miniTestb885.output
+845a892
+> miniTestb895.output
+846a894
+> miniTestb897.output
+851a900
+> miniTestb903.output
+856a906
+> miniTestBigInts2.output
+    22     64    343 miniTestb180.sk
+    26     68    369 miniTestb181.sk
+    26     75    385 miniTestb182.sk
+   128    447   3012 miniTestb228.sk
+    36    120    744 miniTestb246.sk
+    33     85    624 miniTestb258.sk
+    40    114    805 miniTestb259.sk
+    24     80    573 miniTestb261.sk
+    18     66    403 miniTestb262.sk
+    14     37    229 miniTestb270.sk
+    28    101    740 miniTestb312.sk
+    38    157   1080 miniTestb320_hole.sk
+   126    420   2701 miniTestb347.sk
+    22     81    675 miniTestb348.sk
+    32    123    729 miniTestb358.sk
+    19     61    358 miniTestb360.sk
+    20     84    634 miniTestb370.sk
+    28     71    433 miniTestb375.sk
+   212    745   4630 miniTestb377.sk
+   718   2390  15669 miniTestb386.sk
+    15     48    363 miniTestb389.sk
+    88    226   1973 miniTestb400.sk
+   185    428   3057 miniTestb414.sk
+    21     53    446 miniTestb426.sk
+    17     53    313 miniTestb433.sk
+    25     78    459 miniTestb435.sk
+    25     81    470 miniTestb436.sk
+    81    226   1729 miniTestb489.sk
+    16     47    320 miniTestb531.sk
+   105    329   2075 miniTestb566_angelic.sk
+   140    499   2695 miniTestb567_angelic.sk
+  2894   9528 146863 miniTestb678.sk
+   125    535   3074 miniTestb706.sk
+   102    379   2260 miniTestb795.sk
+   147    549   2937 miniTestb798.sk
+   588   6967  35372 miniTestb841.sk
+  1626   5939  45424 miniTestb851.sk
+   336   1749   9832 miniTestb852.sk
+    64    105    971 miniTestb860.sk
+    37     65    603 miniTestb861.sk
+    29     59    441 miniTestb862.sk
+    46    170    949 miniTestb868.sk
+    75    314   1743 miniTestb869.sk
+    65    266   1590 miniTestb876.sk
+    35    104    687 miniTestb880.sk
+    89    332   2237 miniTestb885.sk
+   204    527   4831 miniTestb895.sk
+    31     84    707 miniTestb897.sk
+    12     45    328 miniTestb903.sk
+    30     85    460 miniTestBigInts2.sk
+   860    860  17291 cur
+  9723  36119 327636 total
+echo "END OF LIST"
+END OF LIST
+rm cur
+
+ */
+

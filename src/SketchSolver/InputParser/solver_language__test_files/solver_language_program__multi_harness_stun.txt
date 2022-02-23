@@ -151,8 +151,8 @@ Solver main()
 {
 
     //return top_down_and_bottom_up_synthesis_sketch_main(true); //with printf
-    //return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
-    return recursive_function_stun();
+    return top_down_and_bottom_up_synthesis_sketch_main(false); //NOT with printf
+    //return recursive_function_stun();
 
 
     //return recursive_function_stun_reconstructing_inlined_non_concretized_function_with_replaced_ports();
@@ -236,9 +236,9 @@ Solver top_down_and_bottom_up_synthesis_sketch_main(with_printf)
     //for now these are passed as parameters from the sketch.
     //the sketch follows a constraint that the file_names should be the same
 
-    num_trials = 1;
-    num_rows_per_sample = 1;
-    select_best = 1;
+    num_trials = 2;
+    num_rows_per_sample = 3;
+    select_best = 2;
     assert(num_trials >= select_best);
 
     sketch_main_lvl0_sub = sketch_main.produce_replace("dummy_program", program_lvl0.unit_clone());
@@ -547,8 +547,6 @@ Solver recursive_program_constructor(int stun_depth, file, num_trials, num_rows_
     return harness_levels[stun_depth-1];
 }
 
-
-
 Solver recursive_function_stun()
 {
 
@@ -560,7 +558,7 @@ Solver recursive_function_stun()
     num_trials = 2;
     num_rows_per_sample = 6;
 
-    int stun_depth = 4;
+    int stun_depth = 3;
 
     recursive_program = recursive_program_constructor(stun_depth, file, num_trials, num_rows_per_sample, local_sketch_main, local_sketch_main__Wrapper);
 

@@ -148,7 +148,12 @@ public:
         {
             //ASSERT THAT THE DAG WAS ALREADY INLINED.
             //IF THIS FAILS THE DAG WASN'T INLINED.
-            assert(inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            if(!inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty()) {
+                for(auto it: inlined_harness->get_dag()->getNodesByType(bool_node::UFUN)) {
+                    string ufname = ((UFUN_node*)it)->get_ufname();
+                    assert(inlined_harness->get_env()->function_map.find(ufname) == inlined_harness->get_env()->function_map.end());
+                }
+            }
             for(auto it:inlined_harness->get_dag()->getNodesByType(bool_node::CTRL)) {
                 assert(it->get_name() != "#PC");
             }

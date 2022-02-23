@@ -11,11 +11,9 @@
 
 class File;
 
-static bool new_way = true;
+static bool new_way = false;
 
 class BooleanDagUtility;
-
-#define NO_CLONE_INLINING_TREE
 
 class LightSkFuncSetter
 {
@@ -393,15 +391,11 @@ public:
 
         for(const auto& it: to_copy->var_name_to_inlining_subtree) {
             if(visited->find(it.second->get_dag_id()) == visited->end() ) {
-#ifndef NO_CLONE_INLINING_TREE
-                var_name_to_inlining_subtree[it.first] = new LightInliningTree(it.second, visited);
-#else
                 var_name_to_inlining_subtree[it.first] = it.second;
                 var_name_to_inlining_subtree[it.first]->populate_and_assert_not_visited(visited, not_owned);
                 assert(not_owned->find(var_name_to_inlining_subtree[it.first]) != not_owned->end());
                 local_not_owned.insert(var_name_to_inlining_subtree[it.first]);
                 var_name_to_inlining_subtree[it.first]->increment_num_shared_ptr();
-#endif
             }
             else {
                 var_name_to_inlining_subtree[it.first] = (*visited)[it.second->get_dag_id()];
@@ -662,7 +656,7 @@ public:
 class BooleanDagLightUtility
 {
     BooleanDAG* const root_dag = nullptr;
-    ProgramEnvironment* env = nullptr;
+    ProgramEnvironment* _env = nullptr;
     mutable int shared_ptr = 0;
     const string& dag_name;
     const long long dag_id;
@@ -676,14 +670,14 @@ public:
     BooleanDagLightUtility(BooleanDAG* _root_dag):
             root_dag(_root_dag), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()) {
         assert(root_dag != nullptr);
-        AssertDebug(env != nullptr, "env needs to be defined.");
+        assert(_root_dag->getNodesByType(bool_node::UFUN).empty());
     }
 
-    BooleanDagLightUtility(BooleanDAG* _root_dag, ProgramEnvironment* _env): root_dag(_root_dag), env(_env), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()) {
+    BooleanDagLightUtility(BooleanDAG* _root_dag, ProgramEnvironment* __env): root_dag(_root_dag), _env(__env), dag_name(_root_dag->get_name()), dag_id(_root_dag->get_dag_id()) {
         assert(root_dag != nullptr);
     }
 
-    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy): root_dag(to_copy->root_dag->clone()), env(to_copy->env), dag_name(to_copy->dag_name), dag_id(root_dag->get_dag_id()) {
+    explicit BooleanDagLightUtility(BooleanDagLightUtility* to_copy): root_dag(to_copy->root_dag->clone()), _env(to_copy->get_env()), dag_name(to_copy->dag_name), dag_id(root_dag->get_dag_id()) {
         assert(root_dag != nullptr);
     }
 
@@ -698,11 +692,12 @@ public:
     }
 
     ProgramEnvironment* get_env() const {
-        return env;
+        assert(_env != nullptr);
+        return _env;
     }
 
     ProgramEnvironment*& get_env_ref() {
-        return env;
+        return _env;
     }
 
     BooleanDagLightUtility* clone(bool use_same_name = false) {
@@ -750,10 +745,10 @@ public:
 
         if (new_way) {
             assert(var_store != nullptr);
-            env->doInline(*root_dag, *var_store, var_type, inlined_functions);
+            get_env()->doInline(*root_dag, *var_store, var_type, inlined_functions);
         } else {
             assert(var_store != nullptr);
-            hardCodeINodeNoClone(root_dag, *var_store, var_type, env->get_floats());
+            hardCodeINodeNoClone(root_dag, *var_store, var_type, get_env()->get_floats());
             inlined_functions = nullptr;
         }
 

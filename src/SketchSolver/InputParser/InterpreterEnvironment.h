@@ -300,7 +300,7 @@ public:
 
 
 	void recordSolution() {
-	    // hoels concretized during hardcoding
+	    // holes concretized during hardcoding
 		hardcoder.get_control_map(currentControls);
 		//holes concretized during cegis (previously hardcoded holes are invisible)
         solver->get_control_map_as_map_str_str(currentControls);
@@ -372,8 +372,7 @@ public:
 	dag will be useless, and possibly deallocated.
 	*/
     SATSolverResult assertDAG(BooleanDAG *dag, ostream &out, const string &file);
-    SATSolverResult assertHarness(SketchFunction *harness, ProgramEnvironment *env, ostream &out,
-                                  const string &file);
+    SATSolverResult assertHarness(SketchFunction *harness, ostream &out, const string &file);
 	// SATSolverResult assertDAGNumerical(BooleanDAG* dag, ostream& out);
 	int assertDAG_wrapper(BooleanDAG* dag);
 	int assertDAG_wrapper(BooleanDAG* dag, const char* fileName);

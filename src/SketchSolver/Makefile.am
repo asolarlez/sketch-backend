@@ -121,7 +121,11 @@ noinst_HEADERS = $(SOLVER_HDRS)				\
     InputParser/SolverLanguageYaccHeader.h \
     InputParser/SketchFunction.h \
     InputParser/ProgramEnvironment.h \
-    InputParser/File.h
+    InputParser/File.h \
+    InputParser/BooleanDagLightUtility.h \
+    InputParser/BooleanDagUtility.h \
+    InputParser/FunctionMapTransformerLanguage.h \
+    InputParser/FunctionMap.h
 
 libcegis_a_SOURCES =				\
 	$(SOLVER_SRCS)				\
@@ -182,11 +186,17 @@ libcegis_a_SOURCES =				\
     InputParser/CEGISFinder.cpp \
     InputParser/CounterexampleFinder.cpp \
     InputParser/solver_language_yacc.cpp \
-    InputParser/solver_language_lex.cpp \
     InputParser/SketchFunction.cpp \
     InputParser/ProgramEnvironment.cpp \
-    InputParser/File.cpp
-
+    InputParser/File.cpp \
+    InputParser/VarStore.cpp \
+    InputParser/SolverLanguageLexAndYaccHeader.cpp \
+    InputParser/SolverLanguageYaccHeader.cpp \
+    InputParser/BooleanDagLightUtility.cpp \
+    InputParser/BooleanDagUtility.cpp \
+    InputParser/FunctionMapTransformerLanguage.cpp \
+    InputParser/solver_language_lex.cpp \
+    InputParser/FunctionMap.cpp
 
 
 cegis_SOURCES =	InputParser/CegisMain.cpp
@@ -202,7 +212,7 @@ BUILT_SOURCES = InputParser.cpp InputParser.hpp InputLexer.cpp
 InputParser/InputReader.cpp: InputParser.cpp InputLexer.cpp
 
 InputLexer.cpp: InputParser/InputLexer.ll InputParser.cpp
-	$(LEX) -o$@ $<
+	$(LEX)$@ $<
 
 InputParser.hpp: InputParser.cpp
 

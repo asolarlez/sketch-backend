@@ -23,8 +23,6 @@ class SketchFunction: public BooleanDagUtility
 {
     static long long global_clear_id;
 
-    bool new_way = true;
-
     map<string, string> replaced_labels;
     map<string, string> original_labels;
 

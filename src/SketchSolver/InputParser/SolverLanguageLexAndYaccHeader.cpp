@@ -1426,26 +1426,6 @@ SL::VarVal::VarVal(SL::HoleVarStore * _solution) : solution(_solution), var_val_
 SL::VarVal::VarVal(SL::InputVarStore * _input_holder) : input_holder(_input_holder), var_val_type(input_val_type){}
 SL::VarVal::VarVal(string  _s) : s(new Identifier(std::move(_s))), var_val_type(string_val_type) {}
 
-template <typename T>
-SL::VarVal::VarVal(T val): var_val_type(get_var_val_type(val)){
-
-    if(std::is_same<bool,T>::value)
-    {
-        b = val;
-    }
-    else if(std::is_same<int,T>::value)
-    {
-        i = val;
-    }
-    else {
-        assert(false);
-    }
-}
-
-//SL::VarVal::VarVal(int val): i(val), var_val_type(int_val_type){}
-
-
-
 SL::VarVal::VarVal(VarVal* _to_copy): var_val_type(_to_copy->var_val_type)
 {
     switch (_to_copy->var_val_type) {

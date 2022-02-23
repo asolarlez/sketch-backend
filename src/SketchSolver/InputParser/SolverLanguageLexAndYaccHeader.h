@@ -518,7 +518,20 @@ namespace SL {
     public:
         explicit VarVal(string  _s);
         template <typename T>
-        explicit VarVal(T val);
+        VarVal(T val): var_val_type(get_var_val_type(val)){
+
+            if(std::is_same<bool,T>::value)
+            {
+                b = val;
+            }
+            else if(std::is_same<int,T>::value)
+            {
+                i = val;
+            }
+            else {
+                assert(false);
+            }
+        }
         explicit VarVal(float _float_val);
         explicit VarVal(File* _file);
         explicit VarVal(Method* _method);

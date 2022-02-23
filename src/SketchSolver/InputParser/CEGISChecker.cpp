@@ -157,7 +157,6 @@ bool CEGISChecker::simulate(VarStore& controls, VarStore& input, vector<VarStore
 	}
 	dag = dag->clone();
 	// NOTE xzl: we push here, so that when we finished, popProblem will free the memory occupied by the cloned dag. Note that in the process of slicing, dag itself will be smaller and smaller.
-    AssertDebug(false, "SketchFunction here doesn't accept an env, this is not tested. It might work, but it might not work either. env is needed for inlining because it stores the function_map");
     pushProblem(new BooleanDagLightUtility(dag));
 	bool hasInput = true;
 	int hold = -1;
@@ -592,16 +591,17 @@ BooleanDAG* CEGISChecker::check(VarStore& controls, VarStore& input){
 
     { // angelic var magic xD
         if (PARAMS->angelic_model) {
-            AssertDebug(false, "ASK ARMANDO WHAT ANGELIC HOLES ARE, THEY ARE PROBABLY CTRLS.")
-            input.newVar("__rs_node", 1, NULL, bool_node::CTRL, "check()", "check()");
-            input.setVarVal("__rs_node", 0, NULL, bool_node::CTRL);
+//            AssertDebug(false, "ASK ARMANDO WHAT ANGELIC HOLES ARE, THEY ARE PROBABLY CTRLS.");
+            input.newVar("__rs_node", 1, nullptr, bool_node::CTRL, "check()", "check()");
+            input.setVarVal("__rs_node", 0, nullptr, bool_node::CTRL);
         }
     }
     //Return counter-example concretized dag
 
+    BooleanDAG* ret_dag = getHarness()->produce_concretization(&input, bool_node::SRC)->get_dag();
 
-    BooleanDAG* ret_dag = getHarness()->get_dag()->clone();
-    getHarness()->get_env()->doInline(*ret_dag, input, bool_node::SRC);
+//    BooleanDAG* ret_dag = getHarness()->get_dag()->clone();
+//    getHarness()->get_env()->doInline(*ret_dag, input, bool_node::SRC);
 
 	return ret_dag;
 }

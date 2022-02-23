@@ -542,6 +542,10 @@ VarStore *SketchFunction::get_solution() {
 }
 
 void SketchFunction::set_dependencies(const FunctionMap* fmap) {
+    if(!new_way)
+    {
+        return;
+    }
     assert(dependencies.empty());
     assert(replaced_labels.empty());
     assert(original_labels.empty());
