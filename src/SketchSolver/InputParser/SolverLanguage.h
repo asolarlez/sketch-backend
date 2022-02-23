@@ -1615,7 +1615,7 @@ public:
                 assert(function_map.contains_only_necessary());
 
                 cout << LightSkFuncSetter::max_count <<endl;
-                assert(LightSkFuncSetter::max_count == 1);
+                assert(LightSkFuncSetter::max_count <= 3);
 
 //                if(transformer_size_diff != 0){
 //                    function_map.print_not_erased();

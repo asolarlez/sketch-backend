@@ -76,11 +76,6 @@ void FunctionMap::clear_assert_num_shared_ptr_is_0() {
 void FunctionMap::erase(const string &name) {
     auto it = find(name);
     if(it != end()) {
-
-//        if(name == "sketch_main__id18__id39")
-//        {
-//            cout << "here";
-//        }
         map<string, SketchFunction *>::erase(it);
     }
     FunctionMapTransformer::erase(name);

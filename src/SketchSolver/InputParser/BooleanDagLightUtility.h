@@ -50,10 +50,10 @@ protected:
     {
         assert(name_to_count.find(dag_name) != name_to_count.end());
         name_to_count[dag_name]--;
-        if(dag_name == "printf__id14__id54")
-        {
-            cout << "here" << endl;
-        }
+//        if(dag_name == "printf__id14__id54")
+//        {
+//            cout << "here" << endl;
+//        }
         if(name_to_count[dag_name] == 0)
         {
             name_to_count.erase(dag_name);
@@ -62,10 +62,10 @@ protected:
         if(name_to_count.find(dag_name) == name_to_count.end()) {
             name_to_count[dag_name] = 0;
         }
-        if(dag_name == "printf__id14__id54")
-        {
-            cout << "here" << endl;
-        }
+//        if(dag_name == "printf__id14__id54")
+//        {
+//            cout << "here" << endl;
+//        }
         name_to_count[dag_name]+=1;
         max_count = max(max_count, name_to_count[dag_name]);
     }
@@ -86,10 +86,10 @@ protected:
 
     void decrement_num_shared_ptr() const {
         assert(num_shared_ptr >= 1);
-        if(inlining_tree_id == 622)
-        {
-            cout << "here" << endl;
-        }
+//        if(inlining_tree_id == 622)
+//        {
+//            cout << "here" << endl;
+//        }
         num_shared_ptr--;
     }
 
@@ -99,10 +99,10 @@ protected:
         cleared = true;
         assert(name_to_count.find(get_dag_name()) != name_to_count.end());
         name_to_count[get_dag_name()] --;
-        if(dag_name == "printf__id14__id54")
-        {
-            cout << "here" << endl;
-        }
+//        if(dag_name == "printf__id14__id54")
+//        {
+//            cout << "here" << endl;
+//        }
         if(name_to_count[get_dag_name()] == 0) {
             name_to_count.erase(get_dag_name());
         }
@@ -219,10 +219,6 @@ public:
     }
 
     void increment_num_shared_ptr() {
-        if(inlining_tree_id == 622)
-        {
-            cout << "here" << endl;
-        }
         num_shared_ptr++;
     }
 };

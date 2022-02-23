@@ -136,8 +136,25 @@ public:
             files[curProblem] = file;
         }
 
-        BooleanDagLightUtility* inlined_harness = harness->produce_inlined_dag();
-        inlined_harness->increment_shared_ptr();
+        BooleanDagLightUtility* inlined_harness = harness;
+        bool new_clone = false;
+        if(new_clone) {
+            //BE CAREFUL, THIS RENAMES THE SOURCE DAG OF THE HOLES.
+            inlined_harness = inlined_harness->produce_inlined_dag();
+            inlined_harness->increment_shared_ptr();
+            new_clone = true;
+        }
+        else
+        {
+            //ASSERT THAT THE DAG WAS ALREADY INLINED.
+            //IF THIS FAILS THE DAG WASN'T INLINED.
+            assert(inlined_harness->get_dag()->getNodesByType(bool_node::UFUN).empty());
+            for(auto it:inlined_harness->get_dag()->getNodesByType(bool_node::CTRL)) {
+                assert(it->get_name() != "#PC");
+            }
+        }
+
+
         redeclareInputsAndAngelics(get_input_store(), inlined_harness->get_dag());
 
         // IS THIS DEBUG CODE? YES
@@ -165,7 +182,9 @@ public:
             }
         }
 
-        inlined_harness->clear();
+        if(new_clone) {
+            inlined_harness->clear();
+        }
     }
 
 

@@ -103,19 +103,6 @@ public:
             assert(it.second != &dag);
         }
 
-        if(false)
-        {
-            assert(boolean_dag_function_map.find(dag.get_name()) != boolean_dag_function_map.end());
-            boolean_dag_function_map[dag.get_name()] = dag.clone(dag.get_name());
-        }
-
-        for(const auto& it: boolean_dag_function_map) {
-            for(auto ctrl_it : it.second->getNodesByType(bool_node::CTRL))
-            {
-                assert(ctrl_it->type == bool_node::CTRL);
-            }
-        }
-
         findPureFuns(boolean_dag_function_map, pureFuns);
 
         DagOneStepInlineAndConcretize dfi(

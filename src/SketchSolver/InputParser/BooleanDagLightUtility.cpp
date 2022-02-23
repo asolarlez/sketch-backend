@@ -85,11 +85,6 @@ LightInliningTree::LightInliningTree(
 
     assert(visited->find(get_dag_id()) == visited->end());
 
-//    if(_skfunc->get_dag_name() == "printf")
-//    {
-//        cout << "here" << endl
-//    }
-
     (*visited)[get_dag_id()] = this;
 
     auto ufun_nodes = _skfunc->get_dag()->getNodesByType(bool_node::UFUN);
@@ -438,10 +433,10 @@ void LightSkFuncSetter::init() {
     }
     name_to_count[get_dag_name()]+=1;
     max_count = max(max_count, name_to_count[get_dag_name()]);
-    if(get_dag_name() == "printf__id14__id54" && name_to_count[get_dag_name()] >= 1)
-    {
-        cout << "here" << endl;
-    }
+//    if(get_dag_name() == "printf__id14__id54" && name_to_count[get_dag_name()] >= 1)
+//    {
+//        cout << "here" << endl;
+//    }
 //    cout << "#trees " << all_inlining_trees.size() <<", tree_id: " << inlining_tree_global_id << ", dag_name: " << get_dag_name() << ", count: "<< name_to_count[get_dag_name()] << ", ptr: " << this << endl;
 //    cout << "";
 }
