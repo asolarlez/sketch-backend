@@ -18,9 +18,7 @@ SketchFunction *SketchFunction::produce_concretization(
 
     VarStore* var_store = nullptr;
     if(_var_store != nullptr) {
-        assert(_var_store->check_rep());
         var_store = new VarStore(*_var_store, true);
-        assert(var_store->check_rep());
     }
 
     SketchFunction* ret = nullptr;
@@ -86,19 +84,12 @@ SketchFunction *SketchFunction::_inplace_recursive_concretize(
             }
 
             if (var_store != nullptr) {
-                var_store->check_rep();
                 assert(tmp_inlining_tree->match_topology(var_store->get_inlining_tree()));
-//                    cout << "tmp_inlining_tree" << endl;
-//                    tmp_inlining_tree->print();
-                var_store->check_rep();
                 tmp_inlining_tree->rename_var_store(*var_store);
-                var_store->check_rep();
-
                 for (const auto &it: get_deep_holes()) {
                     AssertDebug(var_store->contains(it), "MISSING VALUE FOR HOLE: " + it + ".");
                 }
             }
-
             tmp_inlining_tree->concretize(this, var_store);
             tmp_inlining_tree->clear();
         }

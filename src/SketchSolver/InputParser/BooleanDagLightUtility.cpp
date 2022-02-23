@@ -303,8 +303,6 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
         }
     }
 
-    var_store.check_rep();
-
     map<string, string> prev_name_to_new_name;
 
     for (const auto& it: LightSkFuncSetter::get_unconc_map()) {
@@ -354,15 +352,11 @@ void LightInliningTree::rename_var_store(VarStore &var_store, const LightInlinin
         }
     }
 
-    var_store.check_rep();
-
     for(const auto& it: var_name_to_inlining_subtree) {
         if(visited->find(it.second) == visited->end()) {
             it.second->rename_var_store(var_store, var_store_sub_inlining_tree->get_sub_inlining_tree(it.first), visited, topology_matcher);
         }
     }
-
-    var_store.check_rep();
 
     if(is_root) delete visited;
 }

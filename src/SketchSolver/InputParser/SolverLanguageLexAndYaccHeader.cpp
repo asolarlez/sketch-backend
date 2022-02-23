@@ -424,7 +424,6 @@ SL::VarVal* SL::FunctionCall::eval_global(SolverProgramState *state)
             harness_inlining_tree->set_var_store(sol);
             sol->disjoint_join_with(*append_sol);
             sol->set_inlining_tree(harness_inlining_tree);
-            assert(sol->check_rep());
 
             if(concretize_after_solving) {
                 //make sure produce_concretiz
@@ -904,7 +903,6 @@ SL::VarVal *SL::FunctionCall::eval<SketchFunction*>(SketchFunction*& skfunc, Sol
                 VarVal *var_val_sol = params[0]->eval(state);
                 var_val_sol->increment_shared_ptr();
                 HoleVarStore *var_store = var_val_sol->get_solution();
-                assert(var_store->check_rep());
                 SketchFunction* concretized_function = skfunc->produce_concretization(var_store, bool_node::CTRL, true);
                 var_val_sol->decrement_shared_ptr();
                 return new SL::VarVal(concretized_function);

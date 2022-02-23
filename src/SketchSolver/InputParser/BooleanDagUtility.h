@@ -151,7 +151,6 @@ public:
         if(_var_store != nullptr)
         {
             assert(_var_store->get_inlining_tree() != nullptr);
-            _var_store->check_rep();
         }
 
         if(inlining_tree != nullptr) {
